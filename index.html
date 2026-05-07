@@ -299,15 +299,15 @@
                     <div class="relative flex items-center text-gray-700 dark:text-gray-300 hover:text-secondary dark:hover:text-primary cursor-pointer font-body text-[14px] lg:text-[15px] font-bold group h-full px-2 lg:px-3" tabindex="0" onclick="this.querySelector('.dropdown-menu').classList.toggle('invisible'); this.querySelector('.dropdown-menu').classList.toggle('opacity-0');">
                         <span class="flex items-center h-full py-6">የኮርስ ክፍሎች (Explore) <i class="fa-solid fa-chevron-down ml-1 lg:ml-2 text-[10px] group-hover:rotate-180 transition-transform duration-300"></i></span>
                         <div class="dropdown-menu absolute top-full left-0 bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 shadow-xl rounded-xl py-3 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform origin-top-left group-hover:translate-y-0 translate-y-2 z-50">
-                            <a href="courses.html" class="block px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-slate-700 hover:text-secondary dark:hover:text-primary font-semibold transition"><i class="fa-solid fa-bag-shopping w-5 text-primary"></i> ኢ-ኮሜርስ</a>
-                            <a href="courses.html" class="block px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-slate-700 hover:text-secondary dark:hover:text-primary font-semibold transition"><i class="fa-solid fa-bullhorn w-5 text-secondary"></i> ዲጂታል ማርኬቲንግ</a>
-                            <a href="courses.html" class="block px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-slate-700 hover:text-secondary dark:hover:text-primary font-semibold transition"><i class="fa-brands fa-bitcoin w-5 text-[#F3BA2F]"></i> ክሪፕቶ እና ክፍያ</a>
-                            <a href="courses.html" class="block px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-slate-700 hover:text-secondary dark:hover:text-primary font-semibold transition"><i class="fa-solid fa-code w-5 text-gray-800 dark:text-gray-400"></i> ዌብ ዴቨሎፕመንት</a>
+                            <a href="javascript:void(0)" onclick="window.requireAuthAndNavigate('courses.html')" class="block px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-slate-700 hover:text-secondary dark:hover:text-primary font-semibold transition"><i class="fa-solid fa-bag-shopping w-5 text-primary"></i> ኢ-ኮሜርስ</a>
+                            <a href="javascript:void(0)" onclick="window.requireAuthAndNavigate('courses.html')" class="block px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-slate-700 hover:text-secondary dark:hover:text-primary font-semibold transition"><i class="fa-solid fa-bullhorn w-5 text-secondary"></i> ዲጂታል ማርኬቲንግ</a>
+                            <a href="javascript:void(0)" onclick="window.requireAuthAndNavigate('courses.html')" class="block px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-slate-700 hover:text-secondary dark:hover:text-primary font-semibold transition"><i class="fa-brands fa-bitcoin w-5 text-[#F3BA2F]"></i> ክሪፕቶ እና ክፍያ</a>
+                            <a href="javascript:void(0)" onclick="window.requireAuthAndNavigate('courses.html')" class="block px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-slate-700 hover:text-secondary dark:hover:text-primary font-semibold transition"><i class="fa-solid fa-code w-5 text-gray-800 dark:text-gray-400"></i> ዌብ ዴቨሎፕመንት</a>
                         </div>
                     </div>
 
                     <a href="#home" class="text-gray-700 dark:text-gray-300 hover:text-secondary dark:hover:text-primary font-bold transition text-[14px] lg:text-[15px] px-2 lg:px-3">ዋና ገፅ</a>
-                    <a href="courses.html" class="text-gray-700 dark:text-gray-300 hover:text-secondary dark:hover:text-primary font-bold transition text-[14px] lg:text-[15px] px-2 lg:px-3">የኮርሶች ገበያ</a>
+                    <a href="javascript:void(0)" onclick="window.requireAuthAndNavigate('courses.html')" class="text-gray-700 dark:text-gray-300 hover:text-secondary dark:hover:text-primary font-bold transition text-[14px] lg:text-[15px] px-2 lg:px-3">የኮርሶች ገበያ</a>
                     
                     <div class="relative flex items-center text-gray-700 dark:text-gray-300 hover:text-secondary dark:hover:text-primary cursor-pointer font-body text-[14px] lg:text-[15px] font-bold group h-full px-2 lg:px-3">
                         <span class="flex items-center h-full py-6">ተጨማሪ <i class="fa-solid fa-chevron-down ml-1 text-[10px] group-hover:rotate-180 transition-transform duration-300"></i></span>
@@ -321,7 +321,7 @@
                 
                 <!-- Desktop Search Bar -->
                 <div class="flex-1 max-w-md hidden md:flex items-center border border-gray-200 dark:border-slate-700 rounded-full px-4 py-2 search-bar mx-2 lg:mx-4 relative">
-                    <i class="fa-solid fa-magnifying-glass text-gray-500 dark:text-gray-400 text-sm lg:text-base cursor-pointer hover:text-primary transition" onclick="window.location.href='courses.html';"></i>
+                    <i class="fa-solid fa-magnifying-glass text-gray-500 dark:text-gray-400 text-sm lg:text-base cursor-pointer hover:text-primary transition" onclick="window.requireAuthAndNavigate('courses.html');"></i>
                     <input type="text" id="courseSearchInput" oninput="window.searchCourses(event, false)" onkeypress="window.handleSearchEnter(event)" placeholder="ኮርሶችን ይፈልጉ..." class="bg-transparent border-none outline-none w-full ml-2 lg:ml-3 text-[14px] lg:text-[15px] font-body text-dark dark:text-white placeholder-gray-500">
                     <!-- Live Search Dropdown Desktop -->
                     <div id="desktop-search-results" class="absolute top-[110%] left-0 w-full bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-gray-100 dark:border-slate-700 overflow-hidden hidden flex-col z-[100] max-h-80 overflow-y-auto text-left"></div>
@@ -355,7 +355,7 @@
                 <!-- Search Bar (Mobile) -->
                 <div class="mb-4 mt-2 px-2 relative">
                     <div class="flex items-center border border-gray-200 dark:border-slate-700 rounded-full px-4 py-2 bg-gray-50 dark:bg-slate-800">
-                        <i class="fa-solid fa-magnifying-glass text-gray-500 text-sm cursor-pointer" onclick="window.location.href='courses.html';"></i>
+                        <i class="fa-solid fa-magnifying-glass text-gray-500 text-sm cursor-pointer" onclick="window.requireAuthAndNavigate('courses.html');"></i>
                         <input type="text" oninput="window.searchCourses(event, true)" onkeypress="window.handleSearchEnter(event)" placeholder="ኮርሶችን ይፈልጉ..." class="bg-transparent border-none outline-none w-full ml-2 text-sm font-body text-dark dark:text-white">
                     </div>
                     <!-- Live Search Dropdown Mobile -->
@@ -364,9 +364,16 @@
                 
                 <div class="grid grid-cols-2 gap-2 mb-2 px-2">
                     <a href="#home" onclick="document.getElementById('home').scrollIntoView({behavior: 'smooth'}); document.getElementById('mobile-menu').classList.remove('open');" class="block px-3 py-2 text-secondary dark:text-primary font-bold rounded-md hover:bg-gray-50 dark:hover:bg-slate-800 border border-gray-100 dark:border-slate-700">ዋና ገፅ</a>
-                    <a href="courses.html" class="block px-3 py-2 text-gray-700 dark:text-gray-300 font-bold rounded-md hover:bg-gray-50 dark:hover:bg-slate-800 border border-gray-100 dark:border-slate-700">የኮርሶች ገበያ</a>
+                    <a href="javascript:void(0)" onclick="window.requireAuthAndNavigate('courses.html'); document.getElementById('mobile-menu').classList.remove('open');" class="block px-3 py-2 text-gray-700 dark:text-gray-300 font-bold rounded-md hover:bg-gray-50 dark:hover:bg-slate-800 border border-gray-100 dark:border-slate-700">የኮርሶች ገበያ</a>
                     <a href="#features" onclick="document.getElementById('features').scrollIntoView({behavior: 'smooth'}); document.getElementById('mobile-menu').classList.remove('open');" class="block px-3 py-2 text-gray-700 dark:text-gray-300 font-bold rounded-md hover:bg-gray-50 dark:hover:bg-slate-800 border border-gray-100 dark:border-slate-700">ጥቅሞች</a>
                     <a href="#footer" onclick="document.getElementById('footer').scrollIntoView({behavior: 'smooth'}); document.getElementById('mobile-menu').classList.remove('open');" class="block px-3 py-2 text-gray-700 dark:text-gray-300 font-bold rounded-md hover:bg-gray-50 dark:hover:bg-slate-800 border border-gray-100 dark:border-slate-700">ስለ እኛ</a>
+                </div>
+                
+                <div class="py-3 bg-gray-50 dark:bg-slate-800 rounded-xl my-2">
+                    <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">የኮርስ ክፍሎች (Explore)</p>
+                    <a href="javascript:void(0)" onclick="window.requireAuthAndNavigate('courses.html')" class="block px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 font-semibold hover:text-secondary dark:hover:text-primary"><i class="fa-solid fa-bag-shopping w-5 text-primary"></i> ኢ-ኮሜርስ</a>
+                    <a href="javascript:void(0)" onclick="window.requireAuthAndNavigate('courses.html')" class="block px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 font-semibold hover:text-secondary dark:hover:text-primary"><i class="fa-solid fa-bullhorn w-5 text-secondary"></i> ዲጂታል ማርኬቲንግ</a>
+                    <a href="javascript:void(0)" onclick="window.requireAuthAndNavigate('courses.html')" class="block px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 font-semibold hover:text-secondary dark:hover:text-primary"><i class="fa-brands fa-bitcoin w-5 text-[#F3BA2F]"></i> ክሪፕቶ እና ክፍያ</a>
                 </div>
                 
                 <div class="py-3 bg-gray-50 dark:bg-slate-800 rounded-xl my-2">
@@ -398,7 +405,7 @@
                 <div class="inline-flex items-center gap-2 bg-white/10 border border-white/20 text-white font-bold px-4 py-1.5 rounded-full text-xs sm:text-sm mb-6 backdrop-blur-md shadow-sm">
                     <i class="fa-solid fa-medal text-primary"></i> የኢትዮጵያ #1 የኦንላይን መማሪያ ፕላትፎርም
                 </div>
-                <h1 class="text-4xl sm:text-5xl lg:text-6xl font-black mb-5 leading-[1.15] text-white">
+                <h1 id="hero-welcome" class="text-4xl sm:text-5xl lg:text-6xl font-black mb-5 leading-[1.15] text-white">
                     ክህሎትዎን ያሳድጉ፣ <br> 
                     <span class="text-gradient">ቢዝነስዎን ይጀምሩ።</span>
                 </h1>
@@ -407,7 +414,7 @@
                 </p>
                 
                 <div class="flex flex-col sm:flex-row gap-4" id="hero-action-buttons">
-                    <button onclick="try{window.location.href='courses.html';}catch(e){}" class="bg-primary text-dark px-6 py-3.5 rounded-xl font-extrabold transition btn-glow flex items-center justify-center gap-3 text-base">
+                    <button onclick="window.requireAuthAndNavigate('courses.html')" class="bg-primary text-dark px-6 py-3.5 rounded-xl font-extrabold transition btn-glow flex items-center justify-center gap-3 text-base">
                         ኮርሶችን ያስሱ <i class="fa-solid fa-arrow-right"></i>
                     </button>
                     <button onclick="document.getElementById('features').scrollIntoView({behavior: 'smooth'})" class="bg-white/10 hover:bg-white/20 border border-white/30 text-white backdrop-blur-md px-6 py-3.5 rounded-xl font-bold transition flex items-center justify-center gap-3 text-base">
@@ -656,18 +663,18 @@
                     </div>
                 </div>
                 
-                <div>
-                    <h4 class="text-white font-black mb-5 font-heading tracking-wide text-base border-l-4 border-primary pl-2">ታዋቂ ኮርሶች</h4>
+                <div class="flex flex-col items-center text-center">
+                    <h4 class="text-white font-black mb-5 font-heading tracking-wide text-base border-b-2 border-primary pb-2 inline-block">ታዋቂ ኮርሶች</h4>
                     <ul class="space-y-3 text-sm">
-                        <li><a href="courses.html" class="hover:text-primary transition flex items-center gap-2">የ Shein ገቢ ንግድ</a></li>
-                        <li><a href="courses.html" class="hover:text-primary transition flex items-center gap-2">ዲጂታል ማርኬቲንግ</a></li>
-                        <li><a href="courses.html" class="hover:text-primary transition flex items-center gap-2">ዌብ ዴቨሎፕመንት</a></li>
-                        <li><a href="courses.html" class="hover:text-primary transition flex items-center gap-2">የክሪፕቶ ግብይት</a></li>
+                        <li><a href="javascript:void(0)" onclick="window.requireAuthAndNavigate('courses.html')" class="hover:text-primary transition flex items-center gap-2">የ Shein ገቢ ንግድ</a></li>
+                        <li><a href="javascript:void(0)" onclick="window.requireAuthAndNavigate('courses.html')" class="hover:text-primary transition flex items-center gap-2">ዲጂታል ማርኬቲንግ</a></li>
+                        <li><a href="javascript:void(0)" onclick="window.requireAuthAndNavigate('courses.html')" class="hover:text-primary transition flex items-center gap-2">ዌብ ዴቨሎፕመንት</a></li>
+                        <li><a href="javascript:void(0)" onclick="window.requireAuthAndNavigate('courses.html')" class="hover:text-primary transition flex items-center gap-2">የክሪፕቶ ግብይት</a></li>
                     </ul>
                 </div>
 
-                <div>
-                    <h4 class="text-white font-black mb-5 font-heading tracking-wide text-base border-l-4 border-primary pl-2">ድጋፍ እና ህግ</h4>
+                <div class="flex flex-col items-end text-right">
+                    <h4 class="text-white font-black mb-5 font-heading tracking-wide text-base border-b-2 border-primary pb-2 inline-block">ድጋፍ እና ህግ</h4>
                     <ul class="space-y-3 text-sm">
                         <li><a href="javascript:void(0)" onclick="document.getElementById('faq').scrollIntoView({behavior: 'smooth'})" class="hover:text-primary transition flex items-center gap-2">ተደጋጋሚ ጥያቄዎች (FAQ)</a></li>
                         <li><a href="javascript:void(0)" onclick="window.openTermsModal()" class="hover:text-primary transition flex items-center gap-2">የአጠቃቀም ህግ (Terms)</a></li>
@@ -699,6 +706,21 @@
         window.isSignupMode = false;
         window.allFetchedCourses = []; 
         window.hasAgreedTerms = false;
+        window.currentUser = null;
+
+        window.requireAuthAndNavigate = function(url) {
+            if (window.currentUser && !window.currentUser.isAnonymous) {
+                window.location.href = url;
+            } else {
+                window.openAuthModal(false);
+                const errDiv = document.getElementById('auth-error');
+                if (errDiv) {
+                    errDiv.innerHTML = "<b>ማሳሰቢያ፡</b> ኮርሶችን ለማየት እና ለመግዛት መጀመሪያ ይግቡ ወይም አዲስ ይመዝገቡ!";
+                    errDiv.className = "bg-warning/20 text-warning border border-warning/50 text-sm p-3 rounded-lg mb-5 font-bold text-center";
+                    errDiv.classList.remove('hidden');
+                }
+            }
+        };
 
         window.openAuthModal = function(signup) {
             const mobileMenu = document.getElementById('mobile-menu');
@@ -805,7 +827,7 @@
                     let isFree = c.price == 0 || !c.price;
                     let priceText = isFree ? 'ነፃ (Free)' : `${Number(c.price).toLocaleString()} ብር`;
                     resultsContainer.innerHTML += `
-                        <div onclick="try{window.location.href='courses.html'}catch(e){}" class="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-slate-700 cursor-pointer border-b border-gray-50 dark:border-slate-700 transition">
+                        <div onclick="window.requireAuthAndNavigate('courses.html')" class="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-slate-700 cursor-pointer border-b border-gray-50 dark:border-slate-700 transition">
                             <img src="${c.image}" class="w-12 h-12 rounded-lg object-cover" onerror="this.src='https://placehold.co/100x100'">
                             <div class="flex-1 min-w-0 text-left">
                                 <h4 class="text-[13px] font-bold text-dark dark:text-white truncate">${c.title}</h4>
@@ -823,7 +845,7 @@
         window.handleSearchEnter = function(e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
-                try { window.location.href = 'courses.html'; } catch(err) { console.warn(err); }
+                window.requireAuthAndNavigate('courses.html');
             }
         };
 
@@ -960,7 +982,7 @@
                             const loadingElem = document.getElementById(loadingId);
                             if(loadingElem) {
                                 loadingElem.className = "self-start max-w-[85%] bg-red-50 dark:bg-red-900/30 text-danger p-4 rounded-2xl border-l-4 border-danger leading-relaxed text-sm font-bold shadow-sm";
-                                loadingElem.innerText = "የቴክኒክ ችግር አጋጥሟል! (Backend API አልተገኘም)";
+                                loadingElem.innerText = "የቴክኒክ ችግር አጋጥሟል! (Backend API አልተገኘም) እባክዎ Vercel ላይ ይፈትሹ።";
                             }
                         } else {
                             await new Promise(r => setTimeout(r, delays[i]));
@@ -982,7 +1004,7 @@
         try {
             // For Firebase JS SDK v7.20.0 and later, measurementId is optional
         const firebaseConfig = {
-          apiKey: "AIzaSyDCxlwfYAS_I0D7c-8e-iB-Y-Rh2ZZoHZw",
+          apiKey: "AIzaSyDCxLwfYAS_I0D7c-8e-iB-Y-Rh2ZZoHZw",
           authDomain: "tsehaycampus-e1a6d.firebaseapp.com",
           projectId: "tsehaycampus-e1a6d",
           storageBucket: "tsehaycampus-e1a6d.firebasestorage.app",
@@ -1032,7 +1054,7 @@
                         let freeBadgeHTML = isFree ? `<div class="absolute top-3 right-3 bg-success text-white text-[10px] font-black uppercase px-3 py-1.5 rounded-lg shadow-md z-10 animate-pulse">ነፃ ኮርስ</div>` : '';
 
                         listUi.innerHTML += `
-                            <div class="course-card rounded-2xl overflow-hidden flex flex-col group cursor-pointer shadow-sm border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800" onclick="try{window.location.href='courses.html'}catch(e){}">
+                            <div class="course-card rounded-2xl overflow-hidden flex flex-col group cursor-pointer shadow-sm border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800" onclick="window.requireAuthAndNavigate('courses.html')">
                                 <div class="relative overflow-hidden h-48 bg-gray-100 dark:bg-slate-700">
                                     ${freeBadgeHTML}
                                     <img src="${c.image}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500" onerror="this.src='https://placehold.co/400x250?text=Course'">
@@ -1069,14 +1091,24 @@
             };
             initAuth();
 
+            window.logoutUser = async () => {
+                await auth.signOut();
+                window.location.reload();
+            };
+
             onAuthStateChanged(auth, (user) => {
+                window.currentUser = user;
                 const heroBtns = document.getElementById('hero-action-buttons');
                 const navAuthBtns = document.getElementById('nav-auth-buttons');
+                const heroWelcome = document.getElementById('hero-welcome');
                 const isDark = document.documentElement.classList.contains('dark');
                 const themeIcon = isDark ? 'fa-sun' : 'fa-moon';
                 const themeColor = isDark ? 'text-yellow-400' : 'text-gray-600';
 
                 if (user && !user.isAnonymous) {
+                    const name = user.displayName || "የካምፓስ ተማሪ";
+                    if (heroWelcome) heroWelcome.innerHTML = `ሰላም ${name}! 👋 <br> <span class="text-gradient">ትምህርትዎን ይቀጥሉ።</span>`;
+
                     if (heroBtns) {
                         heroBtns.innerHTML = `
                             <button onclick="window.goToDashboard()" class="bg-primary text-dark px-6 py-3.5 rounded-xl font-extrabold transition btn-glow flex items-center justify-center gap-3 text-base">
@@ -1096,13 +1128,17 @@
                                 <i class="fa-solid fa-wand-magic-sparkles text-primary animate-pulse"></i> <span class="hidden lg:inline">Tsehay AI</span>
                             </a>
                             <div class="h-5 w-px bg-gray-300 dark:bg-slate-700 mx-0.5 lg:mx-1"></div>
-                            <button onclick="window.goToDashboard()" class="bg-primary text-dark px-4 lg:px-6 py-2 lg:py-2.5 rounded-lg font-bold hover:bg-secondary dark:hover:bg-yellow-400 transition shadow-md btn-glow whitespace-nowrap">ወደ ትምህርት ገፅ <i class="fa-solid fa-arrow-right ml-1"></i></button>
+                            <span class="text-dark dark:text-white font-bold text-sm hidden lg:inline mx-2">${name}</span>
+                            <button onclick="window.goToDashboard()" class="bg-primary text-dark px-4 lg:px-6 py-2 lg:py-2.5 rounded-lg font-bold hover:bg-secondary dark:hover:bg-yellow-400 transition shadow-md btn-glow whitespace-nowrap">ዳሽቦርድ</button>
+                            <button onclick="window.logoutUser()" class="text-gray-400 hover:text-danger transition ml-2"><i class="fa-solid fa-power-off"></i></button>
                         `;
                     }
                 } else {
+                    if (heroWelcome) heroWelcome.innerHTML = `ክህሎትዎን ያሳድጉ፣ <br> <span class="text-gradient">ቢዝነስዎን ይጀምሩ።</span>`;
+
                     if (heroBtns) {
                         heroBtns.innerHTML = `
-                            <button onclick="try{window.location.href='courses.html';}catch(e){}" class="bg-primary text-dark px-6 py-3.5 rounded-xl font-extrabold transition btn-glow flex items-center justify-center gap-3 text-base">
+                            <button onclick="window.requireAuthAndNavigate('courses.html')" class="bg-primary text-dark px-6 py-3.5 rounded-xl font-extrabold transition btn-glow flex items-center justify-center gap-3 text-base">
                                 ኮርሶችን ያስሱ <i class="fa-solid fa-arrow-right"></i>
                             </button>
                             <button onclick="document.getElementById('features').scrollIntoView({behavior: 'smooth'})" class="bg-white/10 hover:bg-white/20 border border-white/30 text-white backdrop-blur-md px-6 py-3.5 rounded-xl font-bold transition flex items-center justify-center gap-3 text-base">

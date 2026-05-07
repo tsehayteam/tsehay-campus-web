@@ -180,7 +180,7 @@
         html { top: 0 !important; height: 100%; }
     </style>
 </head>
-<body class="text-dark dark:text-gray-100 antialiased h-screen flex overflow-hidden relative bg-bodyBg dark:bg-slate-900 transition-colors duration-300">
+<body class="text-dark dark:text-gray-100 antialiased h-screen flex overflow-hidden relative bg-bodyBg dark:bg-slate-900 transition-colors duration-300 hidden" id="main-body">
 
     <!-- Toast Notification -->
     <div id="toast"><i class="fa-solid fa-cloud-arrow-up mr-2"></i> ሴቭ ተደርጓል!</div>
@@ -861,30 +861,49 @@
     <!-- Firebase & Application Integration -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signOut, updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential, sendPasswordResetEmail, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, signOut, updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential, sendPasswordResetEmail, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'tsehaycampus-e1a6d';
         
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-            apiKey: "AIzaSyDCxlwfYAS_I0D7c-8e-iB-Y-Rh2ZZoHZw",
+            apiKey: "AIzaSyDCxLwfYAS_I0D7c-8e-iB-Y-Rh2ZZoHZw",
             authDomain: "tsehaycampus-e1a6d.firebaseapp.com",
-            projectId: "tsehaycampus-e1a6d"
+            projectId: "tsehaycampus-e1a6d",
+            storageBucket: "tsehaycampus-e1a6d.firebasestorage.app",
+            messagingSenderId: "1043616909865",
+            appId: "1:1043616909865:web:9ecca7d9a14deef0f5ea38"
         };
 
         const app = initializeApp(firebaseConfig);
         window.auth = getAuth(app); 
         const db = getFirestore(app);
 
+        // Safe Redirect Wrapper
+        window.safeRedirect = function(target) {
+            try {
+                if (window.location.protocol === 'blob:' || window.location.origin === 'null') {
+                    throw new Error("Canvas Environment Redirect Blocked");
+                }
+                const url = new URL(target, window.location.href);
+                window.location.href = url.href;
+            } catch (e) {
+                document.body.innerHTML = `
+                    <div style="height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0f172a;color:white;font-family:sans-serif;text-align:center;padding:20px;">
+                        <i class="fa-solid fa-lock" style="font-size:4rem;color:#ef4444;margin-bottom:1rem;"></i>
+                        <h2 style="font-weight:900;font-size:1.8rem;margin-bottom:0.5rem;font-family: 'Montserrat', sans-serif;">መግቢያ ያስፈልጋል!</h2>
+                        <p style="color:#94a3b8;max-width:450px;line-height:1.6;font-family: 'Roboto', sans-serif;">በ Canvas የሙከራ ገፅ ላይ ስለሆኑ ወደ ማረፊያ ገፅ መመለስ አልተቻለም። እባክዎ መጀመሪያ <b>index.html</b> ፋይልን ከፍተው Login ያድርጉና ከዚያ ይህን ገፅ ይመልከቱ።</p>
+                    </div>`;
+            }
+        };
+
         // Strict Auth Init
         const initAuth = async () => {
             try {
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                     await signInWithCustomToken(window.auth, __initial_auth_token);
-                } else if (!window.auth.currentUser) {
-                    // Fallback to anonymous if no external user exists
-                    await signInAnonymously(window.auth).catch(e=>{});
-                }
+                } 
+                // Anonymous Sign In is STRICTLY Removed to protect the dashboard
             } catch (err) { console.error("Auth init error:", err); }
         };
         initAuth();
@@ -895,8 +914,8 @@
         let courseCompletedLessons = 0;
         let courseTotalLessons = 4;
         let userId = null;
-        let userName = "አዲስ ተማሪ (Guest)";
-        let currentCourseTitle = "የኢ-ኮሜርስ ስልጠና";
+        let userName = "ተማሪ";
+        let currentCourseTitle = "ኮርስ";
         let currentCourseAiPrompt = "አንተ 'Tsehay Ai' የተባልክ የቢዝነስ ረዳት ነህ። አጠር እና ግልፅ አድርገህ በአማርኛ መልስ ስጥ።";
         let allCourses = [];
         let systemNotifications = [];
@@ -914,25 +933,36 @@
 
         // Gemini AI Call (Robust with Backoff) - Secured Backend Integration
         async function callGemini(prompt, systemInstruction) {
-            const url = `/api/chat`; // Vercel API Backend
-            const payload = {
-                prompt: prompt,
-                systemInstruction: systemInstruction
-            };
-
             const delays = [1000, 2000, 4000, 8000, 16000];
             for (let i = 0; i < 5; i++) {
                 try {
-                    const response = await fetch(url, { 
-                        method: 'POST', 
-                        headers: { 'Content-Type': 'application/json' }, 
-                        body: JSON.stringify(payload) 
-                    });
+                    let response;
+                    try {
+                        const url = window.location.hostname.includes('google') || window.location.hostname === '' ? 'https://tsehay-campus-web.vercel.app/api/chat' : '/api/chat';
+                        response = await fetch(url, { 
+                            method: 'POST', 
+                            headers: { 'Content-Type': 'application/json' }, 
+                            body: JSON.stringify({ prompt, systemInstruction }) 
+                        });
+                        if (!response.ok) throw new Error('Vercel API Failed');
+                    } catch (e) {
+                        // Fallback API if backend fails
+                        const apiKey = ""; 
+                        response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                contents: [{ parts: [{ text: prompt }] }],
+                                systemInstruction: { parts: [{ text: systemInstruction }] }
+                            })
+                        });
+                    }
+
                     if (!response.ok) throw new Error('API Error');
                     const data = await response.json();
                     
                     if (data.error) {
-                        return "የ API ስህተት: " + data.error;
+                        return "የ API ስህተት: " + (data.error.message || data.error);
                     }
 
                     let cleanResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -942,7 +972,7 @@
                     }
                     return "ምላሽ የለም";
                 } catch (err) { 
-                    if (i === 4) return "ስህተት ተከስቷል። እባክዎ ኢንተርኔት መኖሩን አረጋግጠው እንደገና ይሞክሩ። (Backend API አልተገኘም)";
+                    if (i === 4) return "የቴክኒክ ችግር አጋጥሟል! (Backend API አልተገኘም)። እባክዎ Vercel ላይ ይፈትሹ።";
                     await new Promise(r => setTimeout(r, delays[i]));
                 }
             }
@@ -1000,21 +1030,36 @@
             window.clearMessageBadge();
         }
 
-        // Firebase Auth State
+        // Firebase Auth State (Strict Guard)
         onAuthStateChanged(window.auth, (user) => {
-            if (!user) return; // Wait for initAuth
+            if (!user || user.isAnonymous) {
+                window.safeRedirect('index.html');
+                return;
+            }
+
+            document.getElementById('main-body').classList.remove('hidden');
+
             userId = user.uid;
             userName = user.displayName || (user.email ? user.email.split('@')[0] : "የካምፓስ ተማሪ");
             const photo = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=0f172a&color=fff`;
             
-            document.getElementById('user-name-display').innerText = userName;
-            document.getElementById('user-role-display').innerText = "Pro Member";
-            document.getElementById('user-avatar-img').src = photo;
+            const userNameDisplay = document.getElementById('user-name-display');
+            if(userNameDisplay) userNameDisplay.innerText = userName;
+            const navUserName = document.getElementById('nav-user-name');
+            if(navUserName) navUserName.innerText = userName;
+            const userRoleDisplay = document.getElementById('user-role-display');
+            if(userRoleDisplay) userRoleDisplay.innerText = "Pro Member";
+            const userAvatarImg = document.getElementById('user-avatar-img');
+            if(userAvatarImg) userAvatarImg.src = photo;
             
-            document.getElementById('settings-name').value = userName;
-            document.getElementById('settings-email').value = user.email || 'No Email (Anonymous)';
-            document.getElementById('settings-avatar').src = photo;
-            document.getElementById('settings-photo-base64').value = user.photoURL || '';
+            const settingsName = document.getElementById('settings-name');
+            if(settingsName) settingsName.value = userName;
+            const settingsEmail = document.getElementById('settings-email');
+            if(settingsEmail) settingsEmail.value = user.email || 'No Email (Anonymous)';
+            const settingsAvatar = document.getElementById('settings-avatar');
+            if(settingsAvatar) settingsAvatar.src = photo;
+            const settingsPhotoBase64 = document.getElementById('settings-photo-base64');
+            if(settingsPhotoBase64) settingsPhotoBase64.value = user.photoURL || '';
             
             loadUserData();
         });
@@ -1038,7 +1083,10 @@
                     displayName: newName, photoURL: newPhotoBase64, phone: phone, bio: bio, emailNotif: emailNotif, courseNotif: courseNotif
                 }, {merge: true});
 
+                userName = newName;
                 document.getElementById('user-name-display').innerText = newName;
+                document.getElementById('nav-user-name').innerText = newName;
+                
                 const displayPhoto = newPhotoBase64 || `https://ui-avatars.com/api/?name=${encodeURIComponent(newName)}&background=0f172a&color=fff`;
                 document.getElementById('user-avatar-img').src = displayPhoto;
                 
@@ -1077,7 +1125,7 @@
         window.handleLogout = async function() {
             if(confirm("እርግጠኛ ነዎት መውጣት ይፈልጋሉ?")) {
                 try { await signOut(window.auth); } catch(e) {}
-                try { window.location.href = 'index.html'; } catch(err) { console.warn(err); }
+                window.safeRedirect('index.html');
             }
         };
 

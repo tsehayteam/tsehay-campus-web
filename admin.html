@@ -673,16 +673,15 @@
     </script>
     <script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
 
-    <!-- Firebase Integration & AI Functions -->
+    <!-- Firebase Integration -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, onAuthStateChanged, signOut, updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, collection, onSnapshot, deleteDoc, getDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // ሀብታሙ፣ የ API Key ስህተቱ የተፈጠረው እኔ በእጄ ስጽፈው አንድ ፊደል ስለተሳሳትኩ ነው (ለምሳሌ I እና l ይመሳሰላሉ)።
-        // እባክህ ኪይውን ከኔ ኮድ ላይ ኮፒ ከማድረግ ይልቅ፣ በቀጥታ ከ Firebase Console ላይ የራስህን firebaseConfig ሙሉ በሙሉ Copy አድርገህ እዚህ ቦታ ላይ Paste አድርገው!!!
+        // አስተካክለነዋል! DCxLwf (በትልቁ L)
         const firebaseConfig = {
-            apiKey: "AIzaSyDCxlwfYAS_I0D7c-8e-iB-Y-Rh2ZZoHZw",
+            apiKey: "AIzaSyDCxLwfYAS_I0D7c-8e-iB-Y-Rh2ZZoHZw",
             authDomain: "tsehaycampus-e1a6d.firebaseapp.com",
             projectId: "tsehaycampus-e1a6d",
             storageBucket: "tsehaycampus-e1a6d.firebasestorage.app",
@@ -695,6 +694,24 @@
         const db = getFirestore(app);
 
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'tsehaycampus-e1a6d';
+
+        // --- Safe Redirect for Canvas ---
+        window.safeRedirect = function(target) {
+            try {
+                if (window.location.protocol === 'blob:' || window.location.origin === 'null') {
+                    throw new Error("Canvas Environment Redirect Blocked");
+                }
+                const url = new URL(target, window.location.href);
+                window.location.href = url.href;
+            } catch (e) {
+                document.body.innerHTML = `
+                    <div style="height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0f172a;color:white;font-family:sans-serif;text-align:center;padding:20px;">
+                        <i class="fa-solid fa-shield-halved" style="font-size:4rem;color:#ef4444;margin-bottom:1rem;"></i>
+                        <h2 style="font-weight:900;font-size:1.8rem;margin-bottom:0.5rem;font-family: 'Montserrat', sans-serif;">መግቢያ ተከልክሏል!</h2>
+                        <p style="color:#94a3b8;max-width:450px;line-height:1.6;font-family: 'Roboto', sans-serif;">ወደ ማረፊያ ገፅ መመለስ አልተቻለም (Canvas Mode)። እባክዎ <b>index.html</b>ን በተለመደው መንገድ ይክፈቱ።</p>
+                    </div>`;
+            }
+        };
 
         // --- Make Functions Global ---
         window.loginAdmin = async function() {
@@ -803,7 +820,6 @@
             container.appendChild(toast);
             playNotifSound();
             
-            // Auto remove after 5 seconds
             setTimeout(() => {
                 toast.style.opacity = '0';
                 toast.style.transform = 'translateX(100%)';
@@ -816,10 +832,8 @@
             unreadCount++;
             updateNotifBadge();
             
-            const notif = {
-                title, desc, iconClass, iconColorClass, time: new Date().toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'})
-            };
-            notifications.unshift(notif); // Add to top
+            const notif = { title, desc, iconClass, iconColorClass, time: new Date().toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'}) };
+            notifications.unshift(notif);
             renderDropdownList();
             createLiveToast(title + ": " + desc, iconClass, iconColorClass);
         }
@@ -860,7 +874,7 @@
             const dropdown = document.getElementById('notif-dropdown');
             dropdown.classList.toggle('hidden');
             if(!dropdown.classList.contains('hidden')) {
-                unreadCount = 0; // reset on open
+                unreadCount = 0;
                 updateNotifBadge();
             }
         };
@@ -880,11 +894,12 @@
             window.toggleNotifications();
         };
 
-        // UI & Clock Utilities
         function updateClock() {
             const now = new Date();
-            document.getElementById('current-time').innerText = now.toLocaleTimeString('en-US', { hour: '2-digit', minute:'2-digit', hour12: true });
-            document.getElementById('current-date').innerText = now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            const timeEl = document.getElementById('current-time');
+            const dateEl = document.getElementById('current-date');
+            if(timeEl) timeEl.innerText = now.toLocaleTimeString('en-US', { hour: '2-digit', minute:'2-digit', hour12: true });
+            if(dateEl) dateEl.innerText = now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
         }
         setInterval(updateClock, 1000); updateClock();
 
@@ -892,48 +907,55 @@
             document.documentElement.classList.toggle('dark');
             const isDark = document.documentElement.classList.contains('dark');
             localStorage.setItem('theme', isDark ? 'dark' : 'light');
-            document.getElementById('theme-icon').className = isDark ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+            const icon = document.getElementById('theme-icon');
+            if(icon) icon.className = isDark ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
         };
 
         window.switchTab = function(tabId, btnElement) {
             document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
             document.querySelectorAll('.sidebar-link').forEach(btn => btn.classList.remove('active', 'dark:bg-slate-700'));
-            document.getElementById(tabId).classList.add('active');
+            const targetTab = document.getElementById(tabId);
+            if(targetTab) targetTab.classList.add('active');
+            
             if(btnElement) {
                 btnElement.classList.add('active');
-                document.getElementById('tab-heading').innerText = btnElement.innerText.trim();
+                const tabHeading = document.getElementById('tab-heading');
+                if(tabHeading) tabHeading.innerText = btnElement.innerText.trim();
             }
             if(window.innerWidth < 768) {
                 const sidebar = document.getElementById('admin-sidebar');
-                if(!sidebar.classList.contains('-translate-x-full')) window.toggleSidebar();
+                if(sidebar && !sidebar.classList.contains('-translate-x-full')) window.toggleSidebar();
             }
         };
 
         window.toggleSidebar = function() {
-            document.getElementById('admin-sidebar').classList.toggle('-translate-x-full');
-            document.getElementById('sidebar-overlay').classList.toggle('hidden');
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            if(sidebar) sidebar.classList.toggle('-translate-x-full');
+            if(overlay) overlay.classList.toggle('hidden');
         };
 
-        // --- Custom Toast ---
         window.showToast = function(msg, isError = false) {
             const toast = document.getElementById("toast");
+            if(!toast) return;
             toast.innerHTML = `<i class="fa-solid ${isError ? 'fa-triangle-exclamation' : 'fa-circle-check'} mr-2"></i> ${msg}`;
             toast.className = isError ? "show error" : "show";
             setTimeout(() => { toast.className = toast.className.replace("show", "").replace("error", ""); }, 3000);
         };
 
-        // Custom Confirm Modal
         let confirmAction = null;
         window.openConfirmModal = (title, msg, action) => {
-            document.getElementById('confirm-title').innerText = title;
-            document.getElementById('confirm-msg').innerText = msg;
+            const titleEl = document.getElementById('confirm-title');
+            const msgEl = document.getElementById('confirm-msg');
+            if(titleEl) titleEl.innerText = title;
+            if(msgEl) msgEl.innerText = msg;
             confirmAction = action;
             const m = document.getElementById('confirm-modal');
-            m.classList.remove('hidden'); m.classList.add('show');
+            if(m) { m.classList.remove('hidden'); m.classList.add('show'); }
         };
         window.closeConfirmModal = () => {
             const m = document.getElementById('confirm-modal');
-            m.classList.remove('show'); m.classList.add('hidden');
+            if(m) { m.classList.remove('show'); m.classList.add('hidden'); }
         };
         
         document.addEventListener('DOMContentLoaded', () => {
@@ -946,15 +968,34 @@
             }
         });
 
+        // የተፈቀዱ አድሚኖች ኢሜል (Admin Whitelist Guard)
+        const ADMIN_EMAILS = ['habte@gmail.com', 'cryptomaster758@gmail.com', 'admin@tsehaycampus.com'];
+
         // --- Authentication ---
         onAuthStateChanged(auth, (user) => {
-            if (user) {
+            if (user && !user.isAnonymous) {
+                const userEmail = user.email ? user.email.toLowerCase() : '';
+                
+                // 1. የገባው ሰው አድሚን መሆኑን ማረጋገጥ! 
+                // ካልሆነ ወደ ማረፊያ ገፅ ወርውሮ መቆለፍ።
+                if (!ADMIN_EMAILS.includes(userEmail)) {
+                    signOut(auth).then(() => {
+                        window.showToast("ይቅርታ! ይህ ገፅ ለአስተዳዳሪዎች (Admins) ብቻ የተፈቀደ ነው።", true);
+                        isLoggedIn = false;
+                        const loginScreen = document.getElementById('admin-login-screen');
+                        if(loginScreen) loginScreen.style.display = 'flex';
+                    });
+                    return;
+                }
+
+                // አድሚን ከሆነ ወደ ውስጥ አስገባው
                 isLoggedIn = true;
-                document.getElementById('admin-login-screen').style.display = 'none';
+                const loginScreen = document.getElementById('admin-login-screen');
+                if(loginScreen) loginScreen.style.display = 'none';
                 
                 let disp = user.displayName;
                 if(!disp && user.email) {
-                    disp = user.email === 'habte@gmail.com' ? 'ሀብታሙ (Admin)' : user.email.split('@')[0];
+                    disp = user.email.split('@')[0];
                 }
                 if(!disp) disp = "አድሚን";
 
@@ -970,13 +1011,18 @@
                 if(settingNameInput) settingNameInput.value = disp;
                 if(settingEmailInput) settingEmailInput.value = user.email || '';
                 
+                const hAvatar = document.getElementById('admin-avatar-header');
+                const sAvatar = document.getElementById('admin-avatar-img');
+                const setAvatar = document.getElementById('settings-admin-avatar');
+                
                 if(user.photoURL) {
-                    const hAvatar = document.getElementById('admin-avatar-header');
-                    const sAvatar = document.getElementById('admin-avatar-img');
-                    const setAvatar = document.getElementById('settings-admin-avatar');
                     if(hAvatar) hAvatar.src = user.photoURL;
                     if(sAvatar) sAvatar.src = user.photoURL;
                     if(setAvatar) setAvatar.src = user.photoURL;
+                } else {
+                    if(hAvatar) hAvatar.src = photo;
+                    if(sAvatar) sAvatar.src = photo;
+                    if(setAvatar) setAvatar.src = photo;
                 }
 
                 window.renderCourses();
@@ -986,13 +1032,15 @@
                 loadSettings();
             } else {
                 isLoggedIn = false;
-                document.getElementById('admin-login-screen').style.display = 'flex';
+                const loginScreen = document.getElementById('admin-login-screen');
+                if(loginScreen) loginScreen.style.display = 'flex';
             }
         });
 
         window.logoutAdmin = () => {
             window.openConfirmModal("መውጣት ይፈልጋሉ?", "ከአድሚን ዳሽቦርዱ ይወጣሉ።", async () => {
                 await signOut(auth);
+                // After sign out, the onAuthStateChanged listener will show the login screen
             });
         };
 
@@ -1018,7 +1066,6 @@
             }
         };
 
-        // --- Settings: Profile Picture & Name ---
         window.triggerAdminImageUpload = () => document.getElementById('admin-profile-upload').click();
         
         window.handleAdminImageUpload = function(event) {
@@ -1038,8 +1085,10 @@
                     ctx.drawImage(img, 0, 0, w, h);
                     const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
                     
-                    document.getElementById('settings-admin-avatar').src = dataUrl;
-                    document.getElementById('settings-admin-photo-base64').value = dataUrl;
+                    const avatarEl = document.getElementById('settings-admin-avatar');
+                    if(avatarEl) avatarEl.src = dataUrl;
+                    const base64El = document.getElementById('settings-admin-photo-base64');
+                    if(base64El) base64El.value = dataUrl;
                 };
                 img.src = e.target.result;
             };
@@ -1048,8 +1097,12 @@
 
         window.saveAdminProfile = async function() {
             if(!auth.currentUser) return;
-            const newName = document.getElementById('setting-admin-name').value.trim();
-            const newPhoto = document.getElementById('settings-admin-photo-base64').value.trim();
+            const newNameInput = document.getElementById('setting-admin-name');
+            const newPhotoInput = document.getElementById('settings-admin-photo-base64');
+            
+            const newName = newNameInput ? newNameInput.value.trim() : '';
+            const newPhoto = newPhotoInput ? newPhotoInput.value.trim() : '';
+            
             try {
                 await updateProfile(auth.currentUser, { displayName: newName, photoURL: newPhoto });
                 
@@ -1072,43 +1125,46 @@
             } catch(e) { window.showToast('ስህተት: ' + e.message, true); }
         };
 
-        // --- Site Settings ---
         function loadSettings() {
             getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'general')).then(docSnap => {
                 if(docSnap.exists()) {
                     const data = docSnap.data();
-                    if(data.siteName) document.getElementById('setting-site-name').value = data.siteName;
-                    if(data.telegramLink) document.getElementById('setting-telegram').value = data.telegramLink;
+                    const siteNameEl = document.getElementById('setting-site-name');
+                    const telLinkEl = document.getElementById('setting-telegram');
+                    if(data.siteName && siteNameEl) siteNameEl.value = data.siteName;
+                    if(data.telegramLink && telLinkEl) telLinkEl.value = data.telegramLink;
                 }
             }).catch(e => console.log(e));
         }
 
         window.saveSiteSettings = async function() {
-            const siteName = document.getElementById('setting-site-name').value.trim();
-            const telegramLink = document.getElementById('setting-telegram').value.trim();
+            const siteNameEl = document.getElementById('setting-site-name');
+            const telLinkEl = document.getElementById('setting-telegram');
+            const siteName = siteNameEl ? siteNameEl.value.trim() : '';
+            const telegramLink = telLinkEl ? telLinkEl.value.trim() : '';
+            
             try {
                 await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'general'), { siteName, telegramLink }, { merge: true });
                 window.showToast('የሲስተም ቅንብሮቹ ሴቭ ተደርገዋል!');
             } catch(e) { window.showToast('ስህተት: ' + e.message, true); }
         };
 
-        // --- Core Data Listeners (Courses, Waitlist, Payments, QA) ---
-        
-        // Courses
         onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'courses'), (snapshot) => {
             globalCourses = [];
             snapshot.forEach(docSnap => globalCourses.push({ id: docSnap.id, ...docSnap.data() }));
             if(isLoggedIn) window.renderCourses();
         });
 
-        // Waitlist
         function loadWaitlist() {
             onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'waitlist'), (snapshot) => {
                 let waitlistData = [];
                 snapshot.forEach(docSnap => waitlistData.push(docSnap.data()));
                 
-                document.getElementById('total-waitlist-count').innerText = snapshot.size;
-                document.getElementById('sidebar-waitlist-badge').innerText = snapshot.size;
+                const totalWaitlistEl = document.getElementById('total-waitlist-count');
+                const sidebarBadgeEl = document.getElementById('sidebar-waitlist-badge');
+                
+                if(totalWaitlistEl) totalWaitlistEl.innerText = snapshot.size;
+                if(sidebarBadgeEl) sidebarBadgeEl.innerText = snapshot.size;
                 
                 if(!isInitialWaitlistLoad) {
                     snapshot.docChanges().forEach(change => {
@@ -1120,7 +1176,9 @@
                 isInitialWaitlistLoad = false;
                 
                 const tbody = document.getElementById('waitlist-table-body');
+                if(!tbody) return;
                 tbody.innerHTML = '';
+                
                 if(waitlistData.length === 0) {
                     tbody.innerHTML = `<tr><td colspan="3" class="p-16 text-center text-gray-400 font-bold">ምንም ተማሪ የለም።</td></tr>`; return;
                 }
@@ -1145,11 +1203,11 @@
             link.download = "TsehayCampus_Waitlist.csv"; link.click();
         };
 
-        // Payments
         function loadPayments() {
             onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'payments'), (snap) => {
                 let total = 0; let count = 0;
                 const tbody = document.getElementById('payments-table-body');
+                if(!tbody) return;
                 tbody.innerHTML = '';
                 
                 if(!isInitialPaymentsLoad) {
@@ -1173,12 +1231,13 @@
                     });
                 }
                 const totalStr = total.toLocaleString();
-                document.getElementById('main-total-revenue').innerHTML = `${totalStr} <span class="text-sm text-gray-500 font-bold">ETB</span>`;
-                document.getElementById('top-total-revenue').innerHTML = `${totalStr} ብር`;
+                const mainRevEl = document.getElementById('main-total-revenue');
+                const topRevEl = document.getElementById('top-total-revenue');
+                if(mainRevEl) mainRevEl.innerHTML = `${totalStr} <span class="text-sm text-gray-500 font-bold">ETB</span>`;
+                if(topRevEl) topRevEl.innerHTML = `${totalStr} ብር`;
             });
         }
 
-        // Q&A
         function loadQA() {
             onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'qa'), (snapshot) => {
                 const list = document.getElementById('admin-qa-list');
@@ -1223,19 +1282,23 @@
             });
         }
 
-        // --- Course Management ---
         window.renderCourses = function() {
             const tbody = document.getElementById('course-table-body');
             const noMsg = document.getElementById('no-courses-msg');
             const table = document.getElementById('courses-table');
+            const coursesCountEl = document.getElementById('total-courses-count');
             
+            if(!tbody) return;
             tbody.innerHTML = '';
-            document.getElementById('total-courses-count').innerText = globalCourses.length;
+            if(coursesCountEl) coursesCountEl.innerText = globalCourses.length;
 
             if(globalCourses.length === 0) {
-                noMsg.classList.remove('hidden'); table.classList.add('hidden'); return;
+                if(noMsg) noMsg.classList.remove('hidden'); 
+                if(table) table.classList.add('hidden'); 
+                return;
             }
-            noMsg.classList.add('hidden'); table.classList.remove('hidden');
+            if(noMsg) noMsg.classList.add('hidden'); 
+            if(table) table.classList.remove('hidden');
 
             globalCourses.forEach(c => {
                 const tr = document.createElement('tr');
@@ -1279,17 +1342,18 @@
             
             document.getElementById('modal-title').innerText = 'አዲስ ኮርስ ጨምር';
             const lessonsContainer = document.getElementById('lessons-container');
-            lessonsContainer.innerHTML = '';
+            if(lessonsContainer) lessonsContainer.innerHTML = '';
             window.addLessonRow();
             
             const modal = document.getElementById('course-modal');
             const content = document.getElementById('course-modal-content');
-            modal.classList.remove('hide'); modal.classList.add('show'); 
-            setTimeout(() => { content.classList.remove('scale-95'); content.classList.add('scale-100'); }, 10);
+            if(modal) { modal.classList.remove('hide'); modal.classList.add('show'); }
+            if(content) { setTimeout(() => { content.classList.remove('scale-95'); content.classList.add('scale-100'); }, 10); }
         };
 
         window.addLessonRow = function(l = {title: '', video: '', duration: '', points: 100}) {
             const container = document.getElementById('lessons-container');
+            if(!container) return;
             const row = document.createElement('div');
             row.className = 'lesson-row bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 p-4 rounded-2xl flex flex-col md:flex-row gap-4 items-start md:items-center relative shadow-sm transition-all hover:border-primary/50';
             row.innerHTML = `
@@ -1357,10 +1421,9 @@
             const btnText = document.getElementById("save-btn-text");
             const btnIcon = document.getElementById("save-btn-icon");
             
-            // በተኑ እንዳይደገም ቆልፈው (Disable it)
             if(btnSave) btnSave.disabled = true;
-            btnText.innerText = "ሴቭ በማድረግ ላይ...";
-            btnIcon.className = "fa-solid fa-spinner fa-spin text-lg";
+            if(btnText) btnText.innerText = "ሴቭ በማድረግ ላይ...";
+            if(btnIcon) btnIcon.className = "fa-solid fa-spinner fa-spin text-lg";
 
             const currentAppId = typeof __app_id !== 'undefined' ? __app_id : 'tsehaycampus-e1a6d';
 
@@ -1376,18 +1439,17 @@
                 window.showToast("ሴቭ ማድረግ አልተቻለም: " + e.message, true); 
                 console.error(e);
             } finally {
-                btnText.innerText = "ኮርሱን ሴቭ አድርግ";
-                btnIcon.className = "fa-solid fa-floppy-disk text-lg";
-                // በተኑን መልሰህ ክፈተው
+                if(btnText) btnText.innerText = "ኮርሱን ሴቭ አድርግ";
+                if(btnIcon) btnIcon.className = "fa-solid fa-floppy-disk text-lg";
                 if(btnSave) btnSave.disabled = false;
             }
         };
 
         window.openCourseModal = (dataStr) => { 
             const form = document.getElementById('course-form');
-            form.reset();
+            if(form) form.reset();
             const lessonsContainer = document.getElementById('lessons-container');
-            lessonsContainer.innerHTML = ''; 
+            if(lessonsContainer) lessonsContainer.innerHTML = ''; 
             
             if(dataStr) {
                 try {
@@ -1404,7 +1466,8 @@
                     document.getElementById('c-desc').value = c.desc || '';
                     document.getElementById('c-ai-prompt').value = c.aiPrompt || '';
                     
-                    document.getElementById('modal-title').innerText = 'ኮርስ አስተካክል (Edit)';
+                    const modalTitle = document.getElementById('modal-title');
+                    if(modalTitle) modalTitle.innerText = 'ኮርስ አስተካክል (Edit)';
 
                     if(c.lessons && Array.isArray(c.lessons) && c.lessons.length > 0) {
                         c.lessons.forEach(l => window.addLessonRow(l));
@@ -1414,21 +1477,22 @@
                 } catch(e) { console.error("Error parsing course data", e); window.addLessonRow(); }
             } else {
                 document.getElementById('course-id').value = '';
-                document.getElementById('modal-title').innerText = 'አዲስ ኮርስ ጨምር';
+                const modalTitle = document.getElementById('modal-title');
+                if(modalTitle) modalTitle.innerText = 'አዲስ ኮርስ ጨምር';
                 window.addLessonRow();
             }
 
             const modal = document.getElementById('course-modal');
             const content = document.getElementById('course-modal-content');
-            modal.classList.remove('hide'); modal.classList.add('show'); 
-            setTimeout(() => { content.classList.remove('scale-95'); content.classList.add('scale-100'); }, 10);
+            if(modal) { modal.classList.remove('hide'); modal.classList.add('show'); }
+            if(content) { setTimeout(() => { content.classList.remove('scale-95'); content.classList.add('scale-100'); }, 10); }
         };
         
         window.closeCourseModal = () => { 
             const modal = document.getElementById('course-modal');
             const content = document.getElementById('course-modal-content');
-            content.classList.remove('scale-100'); content.classList.add('scale-95');
-            setTimeout(() => { modal.classList.remove('show'); modal.classList.add('hide'); }, 300);
+            if(content) { content.classList.remove('scale-100'); content.classList.add('scale-95'); }
+            if(modal) { setTimeout(() => { modal.classList.remove('show'); modal.classList.add('hide'); }, 300); }
         };
 
         window.deleteCourse = (id) => {
@@ -1441,7 +1505,9 @@
         };
 
         window.searchTable = function() {
-            let input = document.getElementById("course-search").value.toLowerCase();
+            let inputEl = document.getElementById("course-search");
+            if(!inputEl) return;
+            let input = inputEl.value.toLowerCase();
             let rows = document.getElementsByClassName("course-row");
             for (let i = 0; i < rows.length; i++) {
                 let titleCol = rows[i].getElementsByClassName("course-title-cell")[0];
