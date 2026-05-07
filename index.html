@@ -980,14 +980,16 @@
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'tsehaycampus-e1a6d';
 
         try {
-            const firebaseConfig = {
-              apiKey: "AIzaSyDCxLwfYAS_I0D7c-8e-iB-Y-Rh2ZZoHZw",
-              authDomain: "tsehaycampus-e1a6d.firebaseapp.com",
-              projectId: "tsehaycampus-e1a6d",
-              storageBucket: "tsehaycampus-e1a6d.firebasestorage.app",
-              messagingSenderId: "1043616909865",
-              appId: "1:1043616909865:web:9ecca7d9a14deef0f5ea38"
-            };
+            // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+        const firebaseConfig = {
+          apiKey: "AIzaSyDCxlwfYAS_I0D7c-8e-iB-Y-Rh2ZZoHZw",
+          authDomain: "tsehaycampus-e1a6d.firebaseapp.com",
+          projectId: "tsehaycampus-e1a6d",
+          storageBucket: "tsehaycampus-e1a6d.firebasestorage.app",
+          messagingSenderId: "1043616909865",
+          appId: "1:1043616909865:web:9ecca7d9a14deef0f5ea38",
+          measurementId: "G-6WWL8RFCV2"
+        };
 
             const app = initializeApp(firebaseConfig);
             const auth = getAuth(app);
