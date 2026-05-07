@@ -3,7 +3,7 @@ module.exports = async function(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    // ኪዩን ከ Vercel ይወስዳል
+    // ኪዩን ከ Vercel Environment Variables ይወስዳል
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) return res.status(500).json({ error: 'የ API ኪይ አልተገኘም (Vercel Environment Variables ውስጥ ያስገቡ)' });
 
