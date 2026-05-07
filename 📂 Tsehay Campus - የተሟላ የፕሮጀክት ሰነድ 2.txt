@@ -1,0 +1,101 @@
+📂 Tsehay Campus - የተሟላ የፕሮጀክት ሰነድ (Master Documentation)
+
+ይህ ሰነድ ለ Tsehay Campus የተገነባውን ሙሉ የ Full-Stack ኢ-ለርኒንግ ፕላትፎርም ስትራቴጂ፣ የቴክኒክ አወቃቀር እና የቀጣይ ማሻሻያ እቅዶችን በአንድ ላይ ይዟል።
+
+1. የፕሮጀክቱ ፋይሎች ዝርዝር (Project Assets)
+
+እነዚህ በዚፕ ፋይሉ ውስጥ ሊኖሩ የሚገቡ ዋና ዋና ፋይሎች ናቸው፦
+
+index.html: ዋናው ማረፊያ ገፅ (Landing Page) ከ Firebase ምዝገባ ጋር።
+
+dashboard.html: የተማሪዎች መማሪያ ዳሽቦርድ (የቪዲዮ ማጫወቻ እና AI ያለው)።
+
+admin.html: አዳዲስ ኮርሶችን መጨመሪያ እና ማስተዳደሪያ ፓኔል።
+
+shein_full_course.html: በስላይድ መልክ የተዘጋጀው ኢንተራክቲቭ ስልጠና።
+
+coming_soon.html: ገና ላልተጨረሱ ክፍሎች የሚሆን ማራኪ ገፅ።
+
+Assets: የድርጅቱ ሎጎዎች (Campus Logo.jpg, TD Logo.jpg) እና የአሰልጣኞች ፎቶዎች።
+
+2. የጀርባ ቴክኖሎጂ (Backend & API Setup)
+
+ሀ. Google Firebase (ዳታቤዝ እና ደህንነት)
+
+ዌብሳይቱ መረጃዎችን በክላውድ ላይ እንዲያስቀምጥ የሚከተሉት በ Firebase ላይ መብራት አለባቸው፦
+
+Authentication: ተማሪዎች በኢሜል እንዲመዘገቡ (Email/Password) Enable መደረግ አለበት።
+
+Firestore Database: ኮርሶች፣ ማስታወሻዎች እና ጥያቄዎች የሚቀመጡበት። (ማሳሰቢያ፦ Rules ስር allow read, write: if true; ለሙከራ፣ በኋላ ግን ለደህንነት መቆለፍ አለበት)።
+
+ለ. Gemini AI Integration (ሰው ሰራሽ አስተውሎት)
+
+የ AI ቻትቦቱ እንዲሰራ የ API ቁልፍ ያስፈልጋል።
+
+ቁልፉን ለማግኘት: https://aistudio.google.com/app/apikey
+
+ደህንነት: ቁልፍህ እንዳይሰረቅ በ Google Cloud Console ላይ "Website Restriction" ማድረግህን አትርሳ። (ፈቃድ ስጥ ለ፦ https://tsehaycampu.pages.dev/*)
+
+3. የረጅም ጊዜ ማሻሻያ እቅድ (The Master Plan)
+
+ዌብሳይቱን ወደ ትልቅ ካምፓኒ ለማሳደግ የሚከተሉት ደረጃዎች ተቀምጠዋል፦
+
+Phase 1 (አሁን ያለንበት): መሰረታዊ የቪዲዮ ትምህርት፣ AI ረዳት እና የክላውድ ዳታቤዝ።
+
+Phase 2 (ቀጣይ): የክፍያ ሲስተም (Chapa/Telebirr) ማገናኘት እና ኮርሱን የገዙ ብቻ ዳሽቦርዱ እንዲከፈትላቸው ማድረግ።
+
+Phase 3 (ፍፃሜ): አውቶማቲክ የ PDF ሰርተፍኬት ማመንጫ እና የተማሪዎች የርስ በርስ መወያያ ፎረም መጨመር።
+
+4. ፖርትፎሊዮ እና ደንበኛ የመሳቢያ ስልት (Portfolio Strategy)
+
+ይህ ፕሮጀክት ያንተን ብቃት ለማሳየት ትልቁ ማስረጃህ ነው። ለደንበኛ ስታሳይ እነዚህን 4 ነጥቦች አጥብቀህ ንገረው፦
+
+Full-Stack: ዌብሳይቱ ፊት ለፊት ብቻ ሳይሆን የራሱ ዳታቤዝ እና አድሚን ፓኔል ያለው መሆኑ።
+
+AI integration: ለኢትዮጵያ ገበያ የተሰሩ የ AI ቢዝነስ መሳሪያዎች (Product Analyzer) መኖራቸው።
+
+Real-time: ተማሪው ዌብሳይቱን ቢዘጋው እንኳን የደረሰበት ደረጃ እና ማስታወሻው አለመጥፋቱ።
+
+Responsive: በሁሉም ስልኮች ላይ ያለምንም ችግር መስራቱ።
+
+5. ጠቃሚ ማሳሰቢያዎች
+
+Hosting: ለፈጣን ስራ Cloudflare Pages ተመራጭ ነው።
+
+Video Hosting: ትላልቅ ቪዲዮዎችን በቀጥታ ዌብሳይቱ ላይ ከመጫን ይልቅ YouTube (Unlisted) ወይም Google Drive ላይ ጭኖ ሊንኩን በአድሚን ፓኔል መጠቀም ለዌብሳይቱ ፍጥነት ይመከራል።
+
+6. ፕሮጀክቱን የማስተላለፊያ እና ሴቭ ማድረጊያ መመሪያ
+
+ሀ. የዚፕ (Zip) ፋይል እንዴት ይዘጋጃል?
+
+በኮምፒውተርህ ላይ ያሉትን ሁሉንም የፕሮጀክቱን ፋይሎች (HTML እና ምስሎች) በአንድ ፎልደር ውስጥ አድርጋቸው።
+
+ፎልደሩ ላይ Right Click አድርግ።
+
+"Compress to ZIP file" (በዊንዶውስ 11) ወይም "Send to" > "Compressed (zipped) folder" (በዊንዶውስ 10) የሚለውን ምረጥ።
+
+አሁን Tsehay_Campus.zip የሚል አንድ ፋይል ይፈጠርልሃል።
+
+ለ. በቴሌግራም (Telegram) ለመላክ
+
+ቴሌግራምህን በኮምፒውተርህ (Telegram Desktop) ላይ ክፈት።
+
+ፋይሉን መላክ ወደምትፈልግበት ሰው ወይም ወደ "Saved Messages" ግባ።
+
+የፋይል ማያያዣ ምልክቷን (📎 Paperclip) ተጫን።
+
+የፈጠርከውን የዚፕ ፋይል መርጠህ Open በለው።
+
+ፋይሉ መላኩን አረጋግጥ።
+
+ሐ. በጎግል ድራይቭ (Google Drive) ሴቭ ለማድረግ
+
+ወደ drive.google.com ሂድና በ Gmail አካውንትህ ግባ።
+
+በግራ በኩል ያለውን "+ New" የሚለውን ቁልፍ ተጫን።
+
+"File upload" የሚለውን መርጠህ የዚፕ ፋይሉን ጫነው።
+
+ፋይሉ ተጭኖ ሲያልቅ፣ ፋይሉ ላይ Right click አድርገህ "Share" በማለት ሊንኩን ለፈለግከው ሰው መላክ ትችላለህ።
+
+ባለቤትነት፦ ይህ ሙሉ ፕሮጀክት በ Tsehay Digital ስር ለ Tsehay Campus የተገነባ የኢ-ለርኒንግ ሲስተም ነው።

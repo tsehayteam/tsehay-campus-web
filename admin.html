@@ -1,0 +1,1466 @@
+<!DOCTYPE html>
+<html lang="am" id="html-root">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Tsehay Campus</title>
+    
+    <!-- Theme Check Script -->
+    <script>
+        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <script>
+        window.tailwind = window.tailwind || {};
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#F9B03C',
+                        secondary: '#3268BA',
+                        dark: '#0f172a',
+                        light: '#FFFFFF',
+                        bodyBg: '#f1f5f9',
+                        success: '#10b981',
+                        warning: '#f59e0b',
+                        danger: '#ef4444'
+                    },
+                    fontFamily: {
+                        heading: ['Montserrat', 'sans-serif'],
+                        body: ['Inter', 'sans-serif'],
+                    },
+                    animation: {
+                        'blob': 'blob 10s infinite alternate',
+                        'slide-left': 'slideLeft 0.3s ease-out forwards'
+                    },
+                    keyframes: {
+                        blob: {
+                            '0%': { transform: 'translate(0px, 0px) scale(1)' },
+                            '33%': { transform: 'translate(30px, -50px) scale(1.1)' },
+                            '66%': { transform: 'translate(-20px, 20px) scale(0.9)' },
+                            '100%': { transform: 'translate(0px, 0px) scale(1)' },
+                        },
+                        slideLeft: {
+                            '0%': { transform: 'translateX(100%)', opacity: '0' },
+                            '100%': { transform: 'translateX(0)', opacity: '1' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: var(--bodyBg); transition: background-color 0.3s; }
+        .dark body { background-color: #0f172a; }
+        h1, h2, h3, h4, h5, h6 { font-family: 'Montserrat', sans-serif; }
+        
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .dark ::-webkit-scrollbar-thumb { background: #334155; }
+        
+        .modal { transition: opacity 0.3s ease, visibility 0.3s ease; }
+        .modal.show { opacity: 1; visibility: visible; }
+        .modal.hide { opacity: 0; visibility: hidden; }
+
+        .glass-login {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .sidebar-link { transition: all 0.3s ease; cursor: pointer; text-align: left; }
+        .sidebar-link.active { background: linear-gradient(90deg, rgba(50, 104, 186, 0.1) 0%, transparent 100%); border-left: 4px solid var(--secondary); color: var(--secondary); font-weight: 700; }
+        .dark .sidebar-link.active { background: linear-gradient(90deg, rgba(249, 176, 60, 0.1) 0%, transparent 100%); border-left: 4px solid var(--primary); color: var(--primary); }
+        .sidebar-link:hover:not(.active) { background: rgba(241, 245, 249, 0.8); transform: translateX(5px); }
+        .dark .sidebar-link:hover:not(.active) { background: rgba(30, 41, 59, 0.8); }
+
+        .tab-content { display: none; animation: fadeIn 0.4s ease-out; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .premium-table th { padding: 1rem; border-bottom: 2px solid #f1f5f9; background-color: #ffffff; color: #64748b; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 800; }
+        .dark .premium-table th { border-bottom: 2px solid #334155; background-color: #1e293b; color: #94a3b8; }
+        .premium-table td { padding: 1rem; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+        .dark .premium-table td { border-bottom: 1px solid #334155; color: #cbd5e1; }
+
+        .profile-upload-overlay {
+            position: absolute; inset: 0; background: rgba(0,0,0,0.5); border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; color: white; opacity: 0;
+            transition: opacity 0.2s; cursor: pointer;
+        }
+        .profile-image-container:hover .profile-upload-overlay { opacity: 1; }
+        
+        /* Modern Toast Notification Container */
+        #notification-container {
+            position: fixed; top: 20px; right: 20px; z-index: 10000;
+            display: flex; flex-direction: column; gap: 10px; pointer-events: none;
+        }
+        .live-toast {
+            background: white; border-left: 4px solid var(--secondary); color: #334155;
+            padding: 15px 20px; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: 14px;
+            pointer-events: auto;
+        }
+        .dark .live-toast {
+            background: #1e293b; border-left: 4px solid var(--primary); color: white; box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+
+        /* Toggle Switch */
+        .toggle-checkbox:checked { right: 0; border-color: var(--secondary); }
+        .toggle-checkbox:checked + .toggle-label { background-color: var(--secondary); }
+        .dark .toggle-checkbox:checked + .toggle-label { background-color: var(--primary); }
+    </style>
+</head>
+<body class="text-dark dark:text-gray-100 antialiased h-screen overflow-hidden flex bg-bodyBg dark:bg-slate-900 transition-colors duration-300">
+
+    <!-- Notification Sound (Optional hidden audio element) -->
+    <audio id="notif-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
+
+    <!-- Notification Container for Real-time alerts -->
+    <div id="notification-container"></div>
+
+    <!-- Custom Confirm Modal -->
+    <div id="confirm-modal" class="modal-overlay fixed inset-0 bg-black/70 z-[10000] flex items-center justify-center p-4 backdrop-blur-md hidden">
+        <div class="modal-content bg-white dark:bg-slate-800 rounded-3xl p-6 md:p-8 max-w-sm w-full text-center shadow-2xl border border-gray-200 dark:border-slate-700">
+            <div class="w-16 h-16 bg-red-50 dark:bg-red-900/30 text-danger rounded-full flex items-center justify-center text-3xl mx-auto mb-4"><i class="fa-solid fa-triangle-exclamation"></i></div>
+            <h3 class="text-xl font-black text-dark dark:text-white mb-2 font-heading" id="confirm-title">እርግጠኛ ነዎት?</h3>
+            <p class="text-gray-500 dark:text-gray-400 mb-6 font-body text-sm leading-relaxed" id="confirm-msg">ይህ ድርጊት ወደኋላ አይመለስም።</p>
+            <div class="flex gap-3">
+                <button onclick="window.closeConfirmModal()" class="flex-1 bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 font-bold py-3 rounded-xl hover:bg-gray-200 dark:hover:bg-slate-600 transition">ሰርዝ</button>
+                <button id="confirm-yes-btn" class="flex-1 bg-danger text-white font-bold py-3 rounded-xl hover:bg-red-600 transition shadow-lg">አረጋግጥ</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- የመግቢያ ገጽ (Login Screen) -->
+    <div id="admin-login-screen" class="fixed inset-0 z-[9999] flex items-center justify-center p-4 overflow-hidden bg-dark transition-all duration-500">
+        <div class="absolute -top-40 -right-40 w-96 h-96 bg-secondary rounded-full mix-blend-screen filter blur-[120px] opacity-40 animate-blob"></div>
+        <div class="absolute -bottom-40 -left-40 w-[30rem] h-[30rem] bg-primary rounded-full mix-blend-screen filter blur-[120px] opacity-20 animate-blob" style="animation-delay: 2s;"></div>
+        
+        <div class="relative glass-login p-10 md:p-12 rounded-[2.5rem] w-full max-w-md text-center text-white">
+            <div class="mb-8">
+                <div class="w-24 h-24 bg-white rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-[0_0_30px_rgba(255,255,255,0.1)] p-2 border border-gray-200">
+                    <img src="Campus Logo.jpg" alt="Logo" class="w-full h-full object-contain rounded-2xl" onerror="this.src='https://ui-avatars.com/api/?name=TC&background=3268BA&color=fff'">
+                </div>
+                <h1 class="text-3xl font-black font-heading mb-2">Tsehay <span class="text-primary">Admin</span></h1>
+                <p class="text-gray-400 text-sm font-body">ወደ መቆጣጠሪያ ዳሽቦርድ ይግቡ</p>
+            </div>
+            
+            <div id="login-error" class="hidden text-white text-sm font-bold bg-danger/20 backdrop-blur-md p-4 rounded-xl mb-6 border border-danger/50 text-left"></div>
+            
+            <div id="admin-name-field" class="relative mb-5 text-left hidden">
+                <label class="block text-sm font-bold text-gray-300 mb-2">ሙሉ ስም (Full Name)</label>
+                <div class="relative group">
+                    <i class="fa-solid fa-user absolute left-4 top-4 text-gray-500 group-focus-within:text-primary transition-colors"></i>
+                    <input type="text" id="admin-name" placeholder="ስምዎን ያስገቡ..." class="w-full bg-dark/50 border border-gray-600 rounded-xl py-3.5 pl-12 pr-4 text-sm text-white outline-none focus:border-primary focus:bg-dark/80 transition-all shadow-inner">
+                </div>
+            </div>
+
+            <div class="relative mb-5 text-left">
+                <label class="block text-sm font-bold text-gray-300 mb-2">ኢሜል (Email)</label>
+                <div class="relative group">
+                    <i class="fa-solid fa-envelope absolute left-4 top-4 text-gray-500 group-focus-within:text-primary transition-colors"></i>
+                    <input type="email" id="admin-email" placeholder="admin@tsehaycampus.com" class="w-full bg-dark/50 border border-gray-600 rounded-xl py-3.5 pl-12 pr-4 text-sm text-white outline-none focus:border-primary focus:bg-dark/80 transition-all shadow-inner">
+                </div>
+            </div>
+
+            <div class="relative mb-8 text-left">
+                <label class="block text-sm font-bold text-gray-300 mb-2">የይለፍ ቃል (Password)</label>
+                <div class="relative group">
+                    <i class="fa-solid fa-lock absolute left-4 top-4 text-gray-500 group-focus-within:text-primary transition-colors"></i>
+                    <input type="password" id="admin-pwd" placeholder="••••••••" class="w-full bg-dark/50 border border-gray-600 rounded-xl py-3.5 pl-12 pr-4 text-sm text-white outline-none focus:border-primary focus:bg-dark/80 transition-all shadow-inner" onkeypress="if(event.key === 'Enter') window.loginAdmin()">
+                </div>
+            </div>
+            
+            <button id="login-btn" onclick="window.loginAdmin()" class="w-full bg-primary text-dark font-black py-4 rounded-xl hover:bg-yellow-400 transition-all shadow-[0_0_20px_rgba(249,176,60,0.3)] hover:shadow-[0_0_30px_rgba(249,176,60,0.5)] flex justify-center items-center gap-2 transform hover:-translate-y-1">
+                ግባ (Log in) <i class="fa-solid fa-arrow-right-to-bracket"></i>
+            </button>
+
+            <div class="mt-8 flex justify-between items-center text-sm">
+                <button type="button" onclick="window.toggleAdminAuthMode()" id="admin-switch-btn" class="bg-white/10 hover:bg-white/20 border border-white/20 text-white px-4 py-2.5 rounded-lg font-bold transition flex items-center gap-2">
+                    <i class="fa-solid fa-user-plus"></i> አዲስ አድሚን
+                </button>
+                <button type="button" onclick="window.resetAdminPassword()" class="text-primary font-bold hover:text-white transition hover:underline underline-offset-4">
+                    ፓስወርድ ረሱ?
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- የጎን ማውጫ (Sidebar) -->
+    <aside class="w-72 bg-white dark:bg-slate-800 border-r border-gray-200 dark:border-slate-700 flex flex-col h-full shadow-sm z-30 shrink-0 hidden md:flex transition-colors duration-300" id="sidebar">
+        <div class="h-20 flex items-center px-8 border-b border-gray-100 dark:border-slate-700 shrink-0">
+            <img src="Campus Logo.jpg" alt="Logo" class="h-10 w-auto rounded-xl shadow-sm mr-3 border border-gray-100 dark:border-slate-600 p-0.5" onerror="this.src='https://ui-avatars.com/api/?name=TC&background=3268BA&color=fff'">
+            <span class="font-heading font-black text-xl tracking-tight text-dark dark:text-white">Admin<span class="text-secondary dark:text-primary">Panel</span></span>
+        </div>
+
+        <div class="p-6 pb-2 shrink-0">
+            <p class="text-[11px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-4">ዋና ማውጫ</p>
+        </div>
+        
+        <nav class="flex-1 overflow-y-auto px-4 space-y-2 font-body pb-4">
+            <button onclick="window.switchTab('dashboard', this)" class="sidebar-link active w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-gray-600 dark:text-gray-300 font-semibold text-sm">
+                <i class="fa-solid fa-chart-pie w-5 text-center text-lg"></i> አጠቃላይ መረጃ
+            </button>
+            <button onclick="window.switchTab('courses-tab', this)" class="sidebar-link w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-gray-600 dark:text-gray-300 font-semibold text-sm">
+                <i class="fa-solid fa-layer-group w-5 text-center text-lg"></i> ኮርሶች ማስተዳደሪያ
+            </button>
+            <button onclick="window.switchTab('waitlist-tab', this)" class="sidebar-link w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-gray-600 dark:text-gray-300 font-semibold text-sm">
+                <i class="fa-solid fa-users w-5 text-center text-lg"></i> የተጠባባቂዎች ዝርዝር
+                <span class="ml-auto bg-primary text-dark text-[10px] font-black px-2.5 py-1 rounded-md shadow-sm" id="sidebar-waitlist-badge">0</span>
+            </button>
+            <button onclick="window.switchTab('payments-tab', this)" class="sidebar-link w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-gray-600 dark:text-gray-300 font-semibold text-sm">
+                <i class="fa-solid fa-money-bill-trend-up w-5 text-center text-lg"></i> የክፍያ ሪፖርቶች
+                <span class="ml-auto bg-success text-white text-[10px] font-black px-2.5 py-1 rounded-md shadow-sm hidden" id="sidebar-payment-badge">አዲስ</span>
+            </button>
+            <button onclick="window.switchTab('qa-tab', this)" class="sidebar-link w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-gray-600 dark:text-gray-300 font-semibold text-sm">
+                <i class="fa-solid fa-comments w-5 text-center text-lg"></i> የተማሪዎች ጥያቄ
+                <span class="ml-auto bg-danger text-white text-[10px] font-black px-2.5 py-1 rounded-md shadow-sm hidden" id="sidebar-qa-badge">0</span>
+            </button>
+            <button onclick="window.switchTab('settings-tab', this)" class="sidebar-link w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-gray-600 dark:text-gray-300 font-semibold text-sm mt-4 border-t border-gray-100 dark:border-slate-700 pt-4">
+                <i class="fa-solid fa-gear w-5 text-center text-lg"></i> ሲስተም ቅንብሮች
+            </button>
+        </nav>
+
+        <div class="p-6 border-t border-gray-100 dark:border-slate-700 bg-gray-50/80 dark:bg-slate-800/50 shrink-0">
+            <div class="flex items-center gap-3 mb-5 cursor-pointer hover:bg-white dark:hover:bg-slate-700 p-2 rounded-xl transition" onclick="window.switchTab('settings-tab', document.querySelectorAll('.sidebar-link')[5])">
+                <img id="admin-avatar-img" src="https://ui-avatars.com/api/?name=Admin&background=3268BA&color=fff" class="w-10 h-10 rounded-full border border-gray-200 dark:border-slate-600 object-cover shadow-sm">
+                <div class="overflow-hidden flex-1">
+                    <p class="text-sm font-bold text-dark dark:text-white truncate" id="admin-user-display">Admin</p>
+                    <p class="text-xs text-success font-bold flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-success animate-pulse block"></span> Online</p>
+                </div>
+            </div>
+            <button onclick="window.logoutAdmin()" class="w-full bg-white dark:bg-slate-700 border border-red-200 dark:border-red-900/30 text-danger font-bold py-3 rounded-xl hover:bg-red-50 dark:hover:bg-red-500/10 transition flex items-center justify-center gap-2 text-sm shadow-sm">
+                <i class="fa-solid fa-arrow-right-from-bracket"></i> መውጫ (Logout)
+            </button>
+        </div>
+    </aside>
+
+    <div id="sidebar-overlay" class="fixed inset-0 bg-black/50 z-10 hidden lg:hidden" onclick="window.toggleSidebar()"></div>
+
+    <!-- Main Content Area -->
+    <div class="flex-1 flex flex-col h-full bg-bodyBg dark:bg-slate-900 overflow-hidden relative transition-colors duration-300">
+        
+        <header class="h-20 bg-white/90 dark:bg-slate-800/90 backdrop-blur-md border-b border-gray-200 dark:border-slate-700 flex items-center justify-between px-6 md:px-8 shrink-0 z-20 sticky top-0 shadow-sm transition-colors duration-300">
+            <div class="flex items-center gap-4">
+                <button class="md:hidden text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white text-xl" onclick="window.toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
+                <h2 class="font-black font-heading text-xl text-dark dark:text-white hidden sm:block" id="tab-heading">አጠቃላይ መረጃ</h2>
+            </div>
+            <div class="flex items-center gap-3 md:gap-5">
+                
+                <!-- Notification Bell -->
+                <div class="relative">
+                    <button onclick="window.toggleNotifications()" class="relative w-10 h-10 rounded-full bg-gray-100 dark:bg-slate-700 flex items-center justify-center text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600 transition shadow-sm">
+                        <i class="fa-solid fa-bell"></i>
+                        <span id="header-notif-badge" class="absolute top-0 right-0 w-2.5 h-2.5 bg-danger rounded-full border-2 border-white dark:border-slate-800 hidden animate-pulse"></span>
+                    </button>
+                    <!-- Notification Dropdown -->
+                    <div id="notif-dropdown" class="hidden absolute right-0 mt-3 w-80 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-gray-100 dark:border-slate-700 overflow-hidden z-50 transform origin-top-right transition-all">
+                        <div class="p-4 border-b border-gray-100 dark:border-slate-700 flex justify-between items-center bg-gray-50 dark:bg-slate-800/50">
+                            <span class="font-bold text-dark dark:text-white text-sm">ማሳወቂያዎች</span>
+                            <button onclick="window.clearNotifications()" class="text-xs text-secondary dark:text-primary font-bold hover:underline">ሁሉንም አጽዳ</button>
+                        </div>
+                        <div id="notif-dropdown-list" class="max-h-80 overflow-y-auto divide-y divide-gray-50 dark:divide-slate-700/50">
+                            <div class="p-6 text-center text-gray-400 dark:text-gray-500 text-sm">ምንም አዲስ ማሳወቂያ የለም</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Theme Switcher -->
+                <button onclick="window.toggleTheme()" class="w-10 h-10 rounded-full bg-gray-100 dark:bg-slate-700 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-slate-600 transition shadow-sm text-gray-600 dark:text-yellow-400">
+                    <i id="theme-icon" class="fa-solid fa-moon"></i>
+                </button>
+
+                <button onclick="window.open('index.html', '_blank')" class="hidden sm:flex text-sm font-bold text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 px-5 py-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-600 transition items-center gap-2 shadow-sm">
+                    <i class="fa-solid fa-eye text-secondary dark:text-primary"></i> ዌብሳይቱን እይ
+                </button>
+                <div class="h-8 w-px bg-gray-200 dark:bg-slate-700 hidden lg:block"></div>
+                <div class="text-right hidden lg:block">
+                    <p class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest" id="current-date">--</p>
+                    <p class="text-sm font-black text-dark dark:text-white" id="current-time">--:--</p>
+                </div>
+            </div>
+        </header>
+
+        <main class="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 scroll-smooth" onclick="window.closeNotificationDropdown()">
+            <div class="max-w-7xl mx-auto">
+                
+                <!-- VIEW 0: DASHBOARD STATS -->
+                <div id="dashboard" class="tab-content active">
+                    <!-- Quick Stats -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-8">
+                        <div class="bg-white dark:bg-slate-800 p-5 rounded-3xl shadow-sm border border-gray-100 dark:border-slate-700 flex flex-col sm:flex-row items-center sm:items-start gap-4 hover:-translate-y-1 transition duration-300 text-center sm:text-left">
+                            <div class="w-12 h-12 sm:w-16 sm:h-16 bg-blue-50/50 dark:bg-blue-900/20 text-secondary dark:text-blue-400 rounded-2xl flex items-center justify-center text-xl sm:text-2xl border border-blue-100 dark:border-blue-800/50 shrink-0"><i class="fa-solid fa-video"></i></div>
+                            <div class="flex-1">
+                                <p class="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 font-bold mb-1 uppercase tracking-wider">ኮርሶች</p>
+                                <p class="text-2xl sm:text-3xl font-black font-heading text-dark dark:text-white" id="total-courses-count">0</p>
+                            </div>
+                        </div>
+                        <div class="bg-white dark:bg-slate-800 p-5 rounded-3xl shadow-sm border border-gray-100 dark:border-slate-700 flex flex-col sm:flex-row items-center sm:items-start gap-4 hover:-translate-y-1 transition duration-300 relative overflow-hidden group text-center sm:text-left">
+                            <div class="absolute -right-4 -top-4 w-24 h-24 bg-primary/10 rounded-full blur-xl group-hover:bg-primary/20 transition"></div>
+                            <div class="w-12 h-12 sm:w-16 sm:h-16 bg-orange-50/50 dark:bg-orange-900/20 text-primary rounded-2xl flex items-center justify-center text-xl sm:text-2xl border border-orange-100 dark:border-orange-800/50 relative z-10 shrink-0"><i class="fa-solid fa-users"></i></div>
+                            <div class="flex-1 relative z-10">
+                                <p class="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 font-bold mb-1 uppercase tracking-wider">ተጠባባቂዎች</p>
+                                <p class="text-2xl sm:text-3xl font-black font-heading text-dark dark:text-white" id="total-waitlist-count">0</p>
+                            </div>
+                        </div>
+                        <div class="bg-white dark:bg-slate-800 p-5 rounded-3xl shadow-sm border border-gray-100 dark:border-slate-700 flex flex-col sm:flex-row items-center sm:items-start gap-4 hover:-translate-y-1 transition duration-300 text-center sm:text-left">
+                            <div class="w-12 h-12 sm:w-16 sm:h-16 bg-green-50/50 dark:bg-green-900/20 text-success rounded-2xl flex items-center justify-center text-xl sm:text-2xl border border-green-100 dark:border-green-800/50 shrink-0"><i class="fa-solid fa-money-bill-trend-up"></i></div>
+                            <div class="flex-1">
+                                <p class="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 font-bold mb-1 uppercase tracking-wider">ጠቅላላ ገቢ</p>
+                                <p class="text-xl sm:text-2xl font-black font-heading text-dark dark:text-white whitespace-nowrap" id="top-total-revenue">0 ብር</p>
+                            </div>
+                        </div>
+                        <div class="bg-white dark:bg-slate-800 p-5 rounded-3xl shadow-sm border border-gray-100 dark:border-slate-700 flex flex-col sm:flex-row items-center sm:items-start gap-4 hover:-translate-y-1 transition duration-300 text-center sm:text-left">
+                            <div class="w-12 h-12 sm:w-16 sm:h-16 bg-purple-50/50 dark:bg-purple-900/20 text-purple-500 rounded-2xl flex items-center justify-center text-xl sm:text-2xl border border-purple-100 dark:border-purple-800/50 shrink-0"><i class="fa-solid fa-server"></i></div>
+                            <div class="flex-1">
+                                <p class="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 font-bold mb-1 uppercase tracking-wider">የሲስተም ሁኔታ</p>
+                                <p class="text-base sm:text-lg font-black font-heading text-success">Online</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 1. ኮርሶች (Courses Tab) -->
+                <div id="courses-tab" class="tab-content">
+                    <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden">
+                        <div class="p-6 md:p-8 border-b border-gray-100 dark:border-slate-700 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-5">
+                            <div>
+                                <h3 class="font-black text-2xl text-dark dark:text-white font-heading mb-1">የኮርሶች ዝርዝር</h3>
+                                <p class="text-sm text-gray-500 dark:text-gray-400 font-medium">በዌብሳይቱ ላይ ያሉትን ኮርሶች እዚህ ይቆጣጠሩ</p>
+                            </div>
+                            
+                            <div class="flex flex-col sm:flex-row items-center gap-4 w-full lg:w-auto">
+                                <div class="relative w-full sm:w-72">
+                                    <i class="fa-solid fa-search absolute left-4 top-3.5 text-gray-400"></i>
+                                    <input type="text" id="course-search" onkeyup="window.searchTable()" placeholder="ኮርስ ፈልግ..." class="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-600 rounded-xl py-3 pl-11 pr-4 text-sm text-dark dark:text-white outline-none focus:border-secondary dark:focus:border-primary focus:ring-2 focus:ring-secondary/20 transition">
+                                </div>
+                                <button onclick="window.addNewCourse()" class="w-full sm:w-auto bg-dark dark:bg-primary text-white dark:text-dark px-6 py-3 rounded-xl font-bold shadow-lg hover:bg-secondary dark:hover:bg-yellow-400 transition flex items-center justify-center gap-2 text-sm whitespace-nowrap transform hover:-translate-y-1">
+                                    <i class="fa-solid fa-plus"></i> አዲስ ኮርስ
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse premium-table" id="courses-table">
+                                <thead>
+                                    <tr>
+                                        <th class="w-24">ፎቶ</th>
+                                        <th>የኮርሱ ርዕስ</th>
+                                        <th>ዋጋ (ብር)</th>
+                                        <th>ቆይታ</th>
+                                        <th>ሁኔታ</th>
+                                        <th class="text-right">ድርጊት</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="course-table-body" class="text-sm divide-y divide-gray-50 dark:divide-slate-700 bg-white dark:bg-slate-800">
+                                </tbody>
+                            </table>
+                            <div id="no-courses-msg" class="hidden p-20 text-center">
+                                <div class="w-24 h-24 bg-gray-50 dark:bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-4"><i class="fa-solid fa-folder-open text-5xl text-gray-300 dark:text-gray-500"></i></div>
+                                <h4 class="text-lg font-black text-dark dark:text-white">ምንም ኮርስ አልተገኘም</h4>
+                                <p class="text-gray-500 dark:text-gray-400 mt-2">"አዲስ ኮርስ" የሚለውን ተጭነው የመጀመሪያውን ያስገቡ።</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. ተጠባባቂዎች (Waitlist Tab) -->
+                <div id="waitlist-tab" class="tab-content">
+                    <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden">
+                        <div class="p-6 md:p-8 border-b border-gray-100 dark:border-slate-700 flex flex-col md:flex-row justify-between items-center gap-4">
+                            <div>
+                                <h3 class="font-black text-2xl text-dark dark:text-white font-heading mb-1">የተጠባባቂዎች ዝርዝር</h3>
+                                <p class="text-sm text-gray-500 dark:text-gray-400 font-medium">ከ "Coming Soon" ገፅ ኢሜላቸውን ያስገቡ ተማሪዎች</p>
+                            </div>
+                            <button onclick="window.exportWaitlist()" class="w-full md:w-auto bg-green-50 dark:bg-green-900/20 text-success border border-green-200 dark:border-green-800 px-5 py-2.5 rounded-xl font-bold hover:bg-success hover:text-white transition flex items-center justify-center gap-2 text-sm shadow-sm">
+                                <i class="fa-solid fa-file-csv"></i> ወደ Excel አውርድ
+                            </button>
+                        </div>
+                        
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse premium-table">
+                                <thead>
+                                    <tr>
+                                        <th class="w-20">ተ.ቁ</th>
+                                        <th>የተማሪ ኢሜል</th>
+                                        <th>የተመዘገበበት ቀንና ሰዓት</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="waitlist-table-body" class="text-sm divide-y divide-gray-50 dark:divide-slate-700 bg-white dark:bg-slate-800">
+                                    <tr><td colspan="3" class="p-16 text-center text-gray-400 font-bold"><i class="fa-solid fa-spinner fa-spin mr-2"></i> መረጃ በመጫን ላይ...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. ክፍያ (Payments Tab) -->
+                <div id="payments-tab" class="tab-content">
+                    <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden p-6 md:p-8">
+                        <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 pb-6 border-b border-gray-100 dark:border-slate-700 gap-4">
+                            <div>
+                                <h3 class="font-black text-2xl text-dark dark:text-white font-heading">የክፍያ ሪፖርቶች</h3>
+                                <p class="text-gray-500 dark:text-gray-400 text-sm mt-1">የተማሪዎችን የክፍያ ታሪክ ይቆጣጠሩ</p>
+                            </div>
+                            <div class="bg-success/10 px-6 py-3 rounded-xl border border-success/20 text-center w-full lg:w-auto">
+                                <p class="text-xs text-success font-bold uppercase tracking-wider mb-1">ጠቅላላ የተጣራ ገቢ</p>
+                                <p class="text-2xl font-black text-dark dark:text-white" id="main-total-revenue">0 <span class="text-sm text-gray-500 font-bold">ETB</span></p>
+                            </div>
+                        </div>
+                        
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse premium-table">
+                                <thead>
+                                    <tr>
+                                        <th class="w-20">ተ.ቁ</th>
+                                        <th>ተማሪ</th>
+                                        <th>ኮርስ</th>
+                                        <th>መጠን (ብር)</th>
+                                        <th>ቀን</th>
+                                        <th>ሁኔታ</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="payments-table-body" class="text-sm divide-y divide-gray-50 dark:divide-slate-700 bg-white dark:bg-slate-800">
+                                    <tr><td colspan="6" class="p-16 text-center text-gray-400 font-bold"><i class="fa-solid fa-spinner fa-spin mr-2"></i> የክፍያ መረጃ በመጫን ላይ...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. የተማሪዎች ጥያቄ (Q&A Tab) -->
+                <div id="qa-tab" class="tab-content">
+                    <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden">
+                        <div class="p-6 md:p-8 border-b border-gray-100 dark:border-slate-700">
+                            <h3 class="font-black text-2xl text-dark dark:text-white font-heading mb-1">የተማሪዎች ጥያቄዎች</h3>
+                            <p class="text-sm text-gray-500 dark:text-gray-400 font-medium">በዳሽቦርዱ ላይ የተጠየቁ የጋራ ጥያቄዎች እና ውይይቶች</p>
+                        </div>
+                        <div class="p-6 md:p-8 bg-gray-50/50 dark:bg-slate-900/50 min-h-[400px]">
+                            <div id="admin-qa-list" class="space-y-4 max-w-4xl mx-auto">
+                                <div class="text-center py-20 text-gray-400"><i class="fa-solid fa-spinner fa-spin text-2xl"></i> ጥያቄዎችን በማምጣት ላይ...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5. ሲስተም ቅንብሮች (Settings Tab) -->
+                <div id="settings-tab" class="tab-content">
+                    <div class="max-w-4xl mx-auto space-y-6">
+                        <h2 class="text-2xl font-black text-dark dark:text-white font-heading mb-6">የሲስተም እና ፕሮፋይል መቼት</h2>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Profile Update -->
+                            <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-gray-200 dark:border-slate-700 p-6 md:p-8">
+                                <h3 class="font-bold text-lg text-dark dark:text-white border-b border-gray-100 dark:border-slate-700 pb-3 mb-6"><i class="fa-solid fa-user-pen text-secondary dark:text-primary mr-2"></i> አድሚን ፕሮፋይል</h3>
+                                
+                                <div class="flex flex-col lg:flex-row items-center lg:items-start gap-6 mb-8 text-center lg:text-left">
+                                    <div class="relative group cursor-pointer profile-image-container w-24 h-24 shrink-0 mx-auto lg:mx-0" onclick="window.triggerAdminImageUpload()">
+                                        <img id="settings-admin-avatar" src="https://ui-avatars.com/api/?name=Admin&background=0f172a&color=fff" class="w-full h-full rounded-full border-4 border-gray-50 dark:border-slate-700 object-cover shadow-sm">
+                                        <div class="profile-upload-overlay text-xs"><i class="fa-solid fa-camera"></i> ቀይር</div>
+                                    </div>
+                                    <input type="file" id="admin-profile-upload" accept="image/*" class="hidden" onchange="window.handleAdminImageUpload(event)">
+                                    <input type="hidden" id="settings-admin-photo-base64" value="">
+                                    
+                                    <div class="flex-1 w-full">
+                                        <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">ሙሉ ስም (Full Name)</label>
+                                        <input type="text" id="setting-admin-name" class="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-600 rounded-xl p-3.5 text-sm text-dark dark:text-white outline-none focus:border-secondary dark:focus:border-primary transition">
+                                    </div>
+                                </div>
+                                <div class="mb-6">
+                                    <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">የመግቢያ ኢሜል <span class="text-xs text-gray-400 font-normal">(መቀየር አይቻልም)</span></label>
+                                    <input type="email" id="setting-admin-email" disabled class="w-full bg-gray-100 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl p-3.5 text-sm text-gray-500 cursor-not-allowed">
+                                </div>
+                                <button onclick="window.saveAdminProfile()" class="w-full bg-dark dark:bg-primary text-white dark:text-dark px-6 py-3.5 rounded-xl font-bold shadow hover:bg-secondary dark:hover:bg-yellow-400 transition flex items-center justify-center gap-2">
+                                    ፕሮፋይል አዘምን (Update) <i class="fa-solid fa-floppy-disk"></i>
+                                </button>
+                            </div>
+                            
+                            <!-- Password Change -->
+                            <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-gray-200 dark:border-slate-700 p-6 md:p-8">
+                                <h3 class="font-bold text-lg text-danger border-b border-gray-100 dark:border-slate-700 pb-3 mb-6"><i class="fa-solid fa-shield-halved mr-2"></i> የይለፍ ቃል (Password) መለወጫ</h3>
+                                
+                                <form onsubmit="window.changeAdminPassword(event)">
+                                    <div class="space-y-5 mb-6">
+                                        <div>
+                                            <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">የድሮ ፓስወርድ (Current)</label>
+                                            <input id="settings-current-pwd" type="password" class="w-full p-3.5 rounded-xl border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-900 text-dark dark:text-white outline-none focus:border-danger transition text-sm" placeholder="••••••••">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">አዲስ ፓስወርድ (New)</label>
+                                            <input id="settings-new-pwd" type="password" class="w-full p-3.5 rounded-xl border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-900 text-dark dark:text-white outline-none focus:border-danger transition text-sm" placeholder="ቢያንስ 6 ፊደል/ቁጥር">
+                                        </div>
+                                    </div>
+                                    
+                                    <button type="submit" class="w-full bg-danger text-white px-6 py-3.5 rounded-xl font-bold shadow hover:bg-red-600 transition mb-4">
+                                        ፓስወርድ ቀይር (Change)
+                                    </button>
+                                </form>
+                                
+                                <div class="text-center border-t border-gray-100 dark:border-slate-700 pt-4">
+                                    <button onclick="window.resetAdminPassword()" class="text-sm font-bold text-secondary dark:text-primary hover:underline flex items-center justify-center gap-1 mx-auto">
+                                        <i class="fa-solid fa-envelope"></i> የድሮው ከጠፋብኝ ሊንክ በኢሜል ይላክልኝ
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Site Settings -->
+                        <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-gray-200 dark:border-slate-700 p-6 md:p-8">
+                            <h3 class="font-bold text-lg text-dark dark:text-white border-b border-gray-100 dark:border-slate-700 pb-3 mb-6"><i class="fa-solid fa-globe text-secondary dark:text-primary mr-2"></i> አጠቃላይ የዌብሳይት ቅንብሮች</h3>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                                <div>
+                                    <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">የፕላትፎርሙ ስም (Site Name)</label>
+                                    <input type="text" id="setting-site-name" placeholder="Tsehay Campus" class="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-600 rounded-xl p-3.5 text-sm text-dark dark:text-white outline-none focus:border-secondary dark:focus:border-primary transition">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">የቴሌግራም Support ሊንክ</label>
+                                    <input type="text" id="setting-telegram" placeholder="https://t.me/TsehayTeam" class="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-600 rounded-xl p-3.5 text-sm text-dark dark:text-white outline-none focus:border-secondary dark:focus:border-primary transition">
+                                </div>
+                            </div>
+
+                            <div class="border-t border-gray-100 dark:border-slate-700 pt-6">
+                                <div class="flex items-center justify-between mb-4">
+                                    <div>
+                                        <p class="text-sm font-bold text-dark dark:text-white">የድምፅ ማሳወቂያዎች (Sound Notifications)</p>
+                                        <p class="text-xs text-gray-500">አዲስ ነገር ሲኖር ኮምፒውተሩ ድምፅ እንዲያሰማ (Ring)</p>
+                                    </div>
+                                    <div class="relative inline-block w-12 align-middle select-none transition duration-200 ease-in">
+                                        <input type="checkbox" id="toggle-sound-notif" checked class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer border-gray-300 z-10 transition-all duration-300"/>
+                                        <label for="toggle-sound-notif" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer transition-colors duration-300"></label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-6 flex justify-end">
+                                <button onclick="window.saveSiteSettings()" class="bg-secondary dark:bg-primary text-white dark:text-dark px-8 py-3.5 rounded-xl font-bold shadow-lg hover:bg-blue-700 dark:hover:bg-yellow-400 transition flex items-center gap-2 transform hover:-translate-y-1">
+                                    <i class="fa-solid fa-floppy-disk"></i> ቅንብሩን ሴቭ አድርግ
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- Course Modal -->
+    <div id="course-modal" class="modal hide fixed inset-0 bg-dark/80 z-[9999] flex items-center justify-center p-4 md:p-8 backdrop-blur-md overflow-y-auto">
+        <div class="bg-white dark:bg-slate-800 w-full max-w-4xl rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col transform transition-transform scale-95 my-auto border border-white/10 dark:border-slate-700" id="course-modal-content">
+            <div class="p-6 md:p-8 border-b border-gray-100 dark:border-slate-700 flex justify-between items-center bg-white dark:bg-slate-800 sticky top-0 z-20 shadow-sm">
+                <div>
+                    <h2 class="font-black text-2xl text-dark dark:text-white font-heading mb-1" id="modal-title">አዲስ ኮርስ ጨምር</h2>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 font-medium">የኮርሱን መረጃዎች በትክክል ይሙሉ (ነፃ ኮርስ ከሆነ ዋጋውን 0 ያድርጉት)</p>
+                </div>
+                <button type="button" onclick="window.closeCourseModal()" class="text-gray-400 hover:text-danger bg-gray-50 dark:bg-slate-700 hover:bg-red-50 dark:hover:bg-red-500/20 w-10 h-10 md:w-12 md:h-12 rounded-full transition text-xl flex items-center justify-center border border-gray-200 dark:border-slate-600 hover:border-red-200"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <div class="p-6 md:p-8 overflow-y-auto font-body space-y-6 bg-gray-50/50 dark:bg-slate-900/50">
+                <form id="course-form" onsubmit="window.saveCourse(event)">
+                    <input type="hidden" id="course-id">
+                    
+                    <div class="bg-white dark:bg-slate-800 p-6 md:p-8 rounded-3xl border border-gray-100 dark:border-slate-700 shadow-sm">
+                        <h4 class="font-bold text-dark dark:text-white border-b border-gray-100 dark:border-slate-700 pb-3 mb-6 text-lg"><i class="fa-solid fa-circle-info text-primary mr-2"></i> መሰረታዊ መረጃ</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">የኮርሱ ርዕስ <span class="text-danger">*</span></label>
+                                <input type="text" id="c-title" placeholder="ለምሳሌ: የ Shein ቢዝነስ ኮርስ" class="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-600 rounded-xl p-3.5 outline-none focus:border-secondary dark:focus:border-primary focus:bg-white dark:focus:bg-slate-800 transition text-dark dark:text-white">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">አሰልጣኝ <span class="text-danger">*</span></label>
+                                <input type="text" id="c-instructor" placeholder="ለምሳሌ: Tsehay Campus" class="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-600 rounded-xl p-3.5 outline-none focus:border-secondary dark:focus:border-primary focus:bg-white dark:focus:bg-slate-800 transition text-dark dark:text-white">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">ዋጋ (ብር) <span class="text-danger">*</span></label>
+                                <input type="number" id="c-price" placeholder="0" class="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-600 rounded-xl p-3.5 outline-none focus:border-secondary dark:focus:border-primary transition font-black text-secondary dark:text-primary">
+                                <p class="text-[10px] text-gray-500 mt-1">ነፃ ኮርስ ከሆነ 0 ብለው ይፃፉ።</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">የድሮ ዋጋ <span class="text-gray-400 font-normal">(አማራጭ)</span></label>
+                                <input type="number" id="c-oldprice" placeholder="4000" class="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-600 rounded-xl p-3.5 outline-none focus:border-secondary dark:focus:border-primary transition line-through text-gray-400">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">ሁኔታ <span class="text-danger">*</span></label>
+                                <select id="c-status" class="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-600 rounded-xl p-3.5 outline-none focus:border-success focus:bg-white dark:focus:bg-slate-800 transition font-bold text-dark dark:text-white cursor-pointer">
+                                    <option value="Active">🟢 Active (ይፋዊ)</option>
+                                    <option value="Draft">⚪ Draft (በዝግጅት ላይ)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mt-6">
+                            <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">የኮርሱ ቆይታ (Duration) <span class="text-danger">*</span></label>
+                            <input type="text" id="c-duration" placeholder="ለምሳሌ: 5 ሰዓት 30 ደቂቃ ወይም 12 ክፍሎች" class="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-600 rounded-xl p-3.5 outline-none focus:border-secondary dark:focus:border-primary focus:bg-white dark:focus:bg-slate-800 transition text-dark dark:text-white">
+                        </div>
+                    </div>
+
+                    <div class="bg-white dark:bg-slate-800 p-6 md:p-8 rounded-3xl border border-gray-100 dark:border-slate-700 shadow-sm">
+                        <h4 class="font-bold text-dark dark:text-white border-b border-gray-100 dark:border-slate-700 pb-3 mb-6 text-lg"><i class="fa-solid fa-photo-film text-secondary dark:text-primary mr-2"></i> ሚዲያ ፋይሎች</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">የሽፋን ፎቶ (Image URL) <span class="text-danger">*</span></label>
+                                <input type="text" id="c-image" placeholder="Drive link or https://..." class="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-600 rounded-xl p-3.5 outline-none focus:border-secondary dark:focus:border-primary transition text-dark dark:text-white text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">የዋና ቪዲዮ ሊንክ (Video URL) <span class="text-danger">*</span></label>
+                                <input type="text" id="c-video" placeholder="Drive link or https://..." class="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-600 rounded-xl p-3.5 outline-none focus:border-secondary dark:focus:border-primary transition text-dark dark:text-white text-sm">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Lessons Section -->
+                    <div class="bg-white dark:bg-slate-800 p-6 md:p-8 rounded-3xl border border-gray-100 dark:border-slate-700 shadow-sm">
+                        <div class="flex items-center justify-between border-b border-gray-100 dark:border-slate-700 pb-3 mb-6">
+                            <h4 class="font-bold text-dark dark:text-white text-lg"><i class="fa-solid fa-layer-group text-secondary dark:text-primary mr-2"></i> የትምህርት ክፍሎች (Lessons)</h4>
+                            <button type="button" onclick="window.addLessonRow()" class="bg-success/10 text-success hover:bg-success hover:text-white px-4 py-2 rounded-lg font-black text-xs transition flex items-center gap-2 shadow-sm border border-success/30">
+                                <i class="fa-solid fa-circle-plus"></i> አዲስ ክፍል ጨምር
+                            </button>
+                        </div>
+                        
+                        <div id="lessons-container" class="space-y-4">
+                            <!-- Lesson rows will be injected here -->
+                        </div>
+                    </div>
+
+                    <div class="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-900 p-6 md:p-8 rounded-3xl border border-blue-100 dark:border-slate-700 shadow-sm mt-6">
+                        <h4 class="font-black text-secondary dark:text-primary border-b border-blue-200 dark:border-slate-700 pb-3 mb-6 text-lg flex items-center gap-2"><i class="fa-solid fa-robot text-2xl"></i> ማብራሪያ እና የ AI ትዕዛዝ</h4>
+                        <div class="mb-6">
+                            <label class="block text-sm font-bold text-gray-800 dark:text-gray-200 mb-2">ስለ ኮርሱ አጭር ማብራሪያ (Description) <span class="text-danger">*</span></label>
+                            <textarea id="c-desc" rows="3" placeholder="ይህ ኮርስ የሚያተኩረው..." class="w-full bg-white dark:bg-slate-800 border border-blue-200 dark:border-slate-600 rounded-xl p-3.5 outline-none focus:border-secondary dark:focus:border-primary transition resize-none shadow-sm text-sm text-dark dark:text-white"></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-800 dark:text-gray-200 mb-2">የ AI መመሪያ (System Prompt) <span class="text-danger">*</span></label>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mb-3 font-medium">ተማሪው ይህን ኮርስ ሲወስድ የ AI ቻትቦቱ የሚታዘዝበት ትዕዛዝ፦</p>
+                            <textarea id="c-ai-prompt" rows="3" placeholder="ለምሳሌ: አንተ የኢ-ኮሜርስ አማካሪ ነህ..." class="w-full bg-white dark:bg-slate-800 border border-blue-200 dark:border-slate-600 rounded-xl p-3.5 outline-none focus:border-secondary dark:focus:border-primary transition resize-none shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300"></textarea>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="p-6 md:p-8 border-t border-gray-100 dark:border-slate-700 flex justify-end gap-4 bg-white dark:bg-slate-800 sticky bottom-0 z-20">
+                <button type="button" onclick="window.closeCourseModal()" class="px-6 py-3.5 rounded-xl font-bold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 transition font-heading border border-gray-200 dark:border-slate-600">ሰርዝ (Cancel)</button>
+                <button type="button" onclick="document.getElementById('course-form').requestSubmit()" id="btn-save-course" class="bg-secondary dark:bg-primary text-white dark:text-dark px-8 py-3.5 rounded-xl font-black shadow-lg hover:bg-blue-700 dark:hover:bg-yellow-400 transition flex items-center gap-2 transform hover:-translate-y-1 font-heading uppercase tracking-widest">
+                    <span id="save-btn-text">ኮርሱን ሴቭ አድርግ</span> <i class="fa-solid fa-floppy-disk" id="save-btn-icon"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Google Translate Script (For Cross-page persistence) -->
+    <script>
+        function googleTranslateElementInit() {
+            new google.translate.TranslateElement({
+                pageLanguage: 'am',
+                includedLanguages: 'am,en,om,ti,ar,zh-CN,so,fr,es',
+                autoDisplay: false
+            }, 'google_translate_element');
+        }
+    </script>
+    <script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+
+    <!-- Firebase Integration & AI Functions -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, onAuthStateChanged, signOut, updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, collection, onSnapshot, deleteDoc, getDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // ሀብታሙ፣ የ API Key ስህተቱ የተፈጠረው እኔ በእጄ ስጽፈው አንድ ፊደል ስለተሳሳትኩ ነው (ለምሳሌ I እና l ይመሳሰላሉ)።
+        // እባክህ ኪይውን ከኔ ኮድ ላይ ኮፒ ከማድረግ ይልቅ፣ በቀጥታ ከ Firebase Console ላይ የራስህን firebaseConfig ሙሉ በሙሉ Copy አድርገህ እዚህ ቦታ ላይ Paste አድርገው!!!
+        const firebaseConfig = {
+            apiKey: "AIzaSyDCxlwfYAS_I0D7c-8e-iB-Y-Rh2ZZoHZw",
+            authDomain: "tsehaycampus-e1a6d.firebaseapp.com",
+            projectId: "tsehaycampus-e1a6d",
+            storageBucket: "tsehaycampus-e1a6d.firebasestorage.app",
+            messagingSenderId: "1043616909865",
+            appId: "1:1043616909865:web:9ecca7d9a14deef0f5ea38"
+        };
+        
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'tsehaycampus-e1a6d';
+
+        // --- Make Functions Global ---
+        window.loginAdmin = async function() {
+            const email = document.getElementById('admin-email').value.trim();
+            const pwd = document.getElementById('admin-pwd').value;
+            const name = document.getElementById('admin-name').value.trim();
+            const btn = document.getElementById('login-btn');
+            const err = document.getElementById('login-error');
+
+            if(!email || !pwd || (window.isAdminSignup && !name)) {
+                err.innerHTML = '<i class="fa-solid fa-triangle-exclamation mr-1"></i> እባክዎ ሁሉንም መረጃዎች ያስገቡ!';
+                err.classList.remove('hidden'); return;
+            }
+
+            const originalBtn = btn.innerHTML;
+            btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> በመግባት ላይ...';
+
+            try {
+                if (window.isAdminSignup) {
+                    const cred = await createUserWithEmailAndPassword(auth, email, pwd);
+                    await updateProfile(cred.user, { displayName: name });
+                } else {
+                    await signInWithEmailAndPassword(auth, email, pwd);
+                }
+            } catch(e) {
+                err.classList.remove('hidden');
+                
+                if (e.code === 'auth/invalid-credential' || e.code === 'auth/user-not-found' || e.code === 'auth/wrong-password') {
+                    err.innerHTML = '<i class="fa-solid fa-triangle-exclamation mr-1"></i> ኢሜል ወይም የይለፍ ቃል ትክክል አይደለም።';
+                } else if (e.code === 'auth/email-already-in-use') {
+                    err.innerHTML = '<i class="fa-solid fa-triangle-exclamation mr-1"></i> ይህ ኢሜል ከዚህ በፊት ተመዝግቧል! እባክዎ "ግባ (Login)" የሚለውን ይጫኑ።';
+                } else if (e.code === 'auth/weak-password') {
+                    err.innerHTML = '<i class="fa-solid fa-triangle-exclamation mr-1"></i> የይለፍ ቃሉ ቢያንስ 6 ፊደል መሆን አለበት!';
+                } else {
+                    err.innerHTML = '<i class="fa-solid fa-triangle-exclamation mr-1"></i> ስህተት: ' + e.message;
+                }
+                
+                err.className = "bg-danger/20 text-white border border-danger/50 text-sm p-4 rounded-xl mb-6 font-bold text-left";
+                btn.disabled = false; btn.innerHTML = originalBtn;
+            }
+        };
+
+        window.toggleAdminAuthMode = function() {
+            window.isAdminSignup = !window.isAdminSignup;
+            const btn = document.getElementById('login-btn');
+            const switchBtn = document.getElementById('admin-switch-btn');
+            const nameField = document.getElementById('admin-name-field');
+            if (window.isAdminSignup) {
+                btn.innerHTML = 'አዲስ አድሚን መዝግብ <i class="fa-solid fa-user-plus"></i>';
+                switchBtn.innerHTML = '<i class="fa-solid fa-arrow-left"></i> ወደ መግቢያ ተመለስ';
+                nameField.classList.remove('hidden');
+            } else {
+                btn.innerHTML = 'ግባ (Log in) <i class="fa-solid fa-arrow-right-to-bracket"></i>';
+                switchBtn.innerHTML = '<i class="fa-solid fa-user-plus"></i> አዲስ አድሚን';
+                nameField.classList.add('hidden');
+            }
+        };
+
+        window.resetAdminPassword = async function() {
+            let email = document.getElementById('admin-email')?.value.trim() || document.getElementById('setting-admin-email')?.value.trim();
+            if(!email && auth.currentUser) email = auth.currentUser.email;
+            
+            if(!email) {
+                window.showToast("እባክዎ መጀመሪያ ኢሜልዎን ያስገቡ።", true);
+                return;
+            }
+            try {
+                await sendPasswordResetEmail(auth, email);
+                window.showToast(`የይለፍ ቃል መቀየሪያ ሊንክ ወደ ${email} ተልኳል! ኢሜልዎን ይፈትሹ።`);
+            } catch(e) {
+                window.showToast('ስህተት: ' + e.message, true);
+            }
+        };
+
+        let globalCourses = [];
+        let isLoggedIn = false;
+
+        // --- Real-time Notification Logic ---
+        let notifications = [];
+        let unreadCount = 0;
+        let isInitialWaitlistLoad = true;
+        let isInitialPaymentsLoad = true;
+        let isInitialQALoad = true;
+
+        function playNotifSound() {
+            const soundEnabled = document.getElementById('toggle-sound-notif')?.checked;
+            if (soundEnabled) {
+                const audio = document.getElementById('notif-sound');
+                if(audio) { audio.currentTime = 0; audio.play().catch(e=>{}); }
+            }
+        }
+
+        function createLiveToast(message, iconClass = 'fa-bell', iconColorClass = 'text-primary') {
+            const container = document.getElementById('notification-container');
+            const toast = document.createElement('div');
+            toast.className = `live-toast animate-slide-left`;
+            toast.innerHTML = `
+                <div class="w-10 h-10 rounded-full bg-gray-100 dark:bg-slate-700 flex items-center justify-center shrink-0">
+                    <i class="fa-solid ${iconClass} ${iconColorClass} text-lg"></i>
+                </div>
+                <div class="flex-1 min-w-0 pr-4">
+                    <p class="truncate">${message}</p>
+                </div>
+                <button onclick="this.parentElement.remove()" class="text-gray-400 hover:text-dark dark:hover:text-white ml-auto"><i class="fa-solid fa-xmark"></i></button>
+            `;
+            container.appendChild(toast);
+            playNotifSound();
+            
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(100%)';
+                toast.style.transition = 'all 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, 5000);
+        }
+
+        function addNotificationToDropdown(title, desc, iconClass, iconColorClass) {
+            unreadCount++;
+            updateNotifBadge();
+            
+            const notif = {
+                title, desc, iconClass, iconColorClass, time: new Date().toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'})
+            };
+            notifications.unshift(notif); // Add to top
+            renderDropdownList();
+            createLiveToast(title + ": " + desc, iconClass, iconColorClass);
+        }
+
+        function renderDropdownList() {
+            const list = document.getElementById('notif-dropdown-list');
+            if(notifications.length === 0) {
+                list.innerHTML = '<div class="p-6 text-center text-gray-400 dark:text-gray-500 text-sm">ምንም አዲስ ማሳወቂያ የለም</div>';
+                return;
+            }
+            list.innerHTML = '';
+            notifications.forEach(n => {
+                list.innerHTML += `
+                    <div class="p-4 flex gap-3 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition cursor-pointer">
+                        <div class="w-8 h-8 rounded-full bg-gray-100 dark:bg-slate-700 flex items-center justify-center shrink-0 mt-0.5">
+                            <i class="fa-solid ${n.iconClass} ${n.iconColorClass} text-sm"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-bold text-dark dark:text-white">${n.title}</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">${n.desc}</p>
+                            <p class="text-[10px] font-bold text-gray-400 mt-1">${n.time}</p>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function updateNotifBadge() {
+            const badge = document.getElementById('header-notif-badge');
+            if (unreadCount > 0) {
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        window.toggleNotifications = function() {
+            const dropdown = document.getElementById('notif-dropdown');
+            dropdown.classList.toggle('hidden');
+            if(!dropdown.classList.contains('hidden')) {
+                unreadCount = 0; // reset on open
+                updateNotifBadge();
+            }
+        };
+
+        window.closeNotificationDropdown = function() {
+            const dropdown = document.getElementById('notif-dropdown');
+            if(dropdown && !dropdown.classList.contains('hidden')) {
+                dropdown.classList.add('hidden');
+            }
+        };
+
+        window.clearNotifications = function() {
+            notifications = [];
+            unreadCount = 0;
+            updateNotifBadge();
+            renderDropdownList();
+            window.toggleNotifications();
+        };
+
+        // UI & Clock Utilities
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('current-time').innerText = now.toLocaleTimeString('en-US', { hour: '2-digit', minute:'2-digit', hour12: true });
+            document.getElementById('current-date').innerText = now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        }
+        setInterval(updateClock, 1000); updateClock();
+
+        window.toggleTheme = function() {
+            document.documentElement.classList.toggle('dark');
+            const isDark = document.documentElement.classList.contains('dark');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            document.getElementById('theme-icon').className = isDark ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+        };
+
+        window.switchTab = function(tabId, btnElement) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.sidebar-link').forEach(btn => btn.classList.remove('active', 'dark:bg-slate-700'));
+            document.getElementById(tabId).classList.add('active');
+            if(btnElement) {
+                btnElement.classList.add('active');
+                document.getElementById('tab-heading').innerText = btnElement.innerText.trim();
+            }
+            if(window.innerWidth < 768) {
+                const sidebar = document.getElementById('admin-sidebar');
+                if(!sidebar.classList.contains('-translate-x-full')) window.toggleSidebar();
+            }
+        };
+
+        window.toggleSidebar = function() {
+            document.getElementById('admin-sidebar').classList.toggle('-translate-x-full');
+            document.getElementById('sidebar-overlay').classList.toggle('hidden');
+        };
+
+        // --- Custom Toast ---
+        window.showToast = function(msg, isError = false) {
+            const toast = document.getElementById("toast");
+            toast.innerHTML = `<i class="fa-solid ${isError ? 'fa-triangle-exclamation' : 'fa-circle-check'} mr-2"></i> ${msg}`;
+            toast.className = isError ? "show error" : "show";
+            setTimeout(() => { toast.className = toast.className.replace("show", "").replace("error", ""); }, 3000);
+        };
+
+        // Custom Confirm Modal
+        let confirmAction = null;
+        window.openConfirmModal = (title, msg, action) => {
+            document.getElementById('confirm-title').innerText = title;
+            document.getElementById('confirm-msg').innerText = msg;
+            confirmAction = action;
+            const m = document.getElementById('confirm-modal');
+            m.classList.remove('hidden'); m.classList.add('show');
+        };
+        window.closeConfirmModal = () => {
+            const m = document.getElementById('confirm-modal');
+            m.classList.remove('show'); m.classList.add('hidden');
+        };
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            const confirmYesBtn = document.getElementById('confirm-yes-btn');
+            if(confirmYesBtn) {
+                confirmYesBtn.addEventListener('click', () => {
+                    if(confirmAction) confirmAction();
+                    window.closeConfirmModal();
+                });
+            }
+        });
+
+        // --- Authentication ---
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                isLoggedIn = true;
+                document.getElementById('admin-login-screen').style.display = 'none';
+                
+                let disp = user.displayName;
+                if(!disp && user.email) {
+                    disp = user.email === 'habte@gmail.com' ? 'ሀብታሙ (Admin)' : user.email.split('@')[0];
+                }
+                if(!disp) disp = "አድሚን";
+
+                const photo = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(disp)}&background=3268BA&color=fff`;
+                
+                const adminNameHeader = document.getElementById('admin-name-header');
+                const adminNameSidebar = document.getElementById('admin-user-display');
+                const settingNameInput = document.getElementById('setting-admin-name');
+                const settingEmailInput = document.getElementById('setting-admin-email');
+
+                if(adminNameHeader) adminNameHeader.innerText = disp;
+                if(adminNameSidebar) adminNameSidebar.innerText = disp;
+                if(settingNameInput) settingNameInput.value = disp;
+                if(settingEmailInput) settingEmailInput.value = user.email || '';
+                
+                if(user.photoURL) {
+                    const hAvatar = document.getElementById('admin-avatar-header');
+                    const sAvatar = document.getElementById('admin-avatar-img');
+                    const setAvatar = document.getElementById('settings-admin-avatar');
+                    if(hAvatar) hAvatar.src = user.photoURL;
+                    if(sAvatar) sAvatar.src = user.photoURL;
+                    if(setAvatar) setAvatar.src = user.photoURL;
+                }
+
+                window.renderCourses();
+                loadWaitlist();
+                loadPayments();
+                loadQA();
+                loadSettings();
+            } else {
+                isLoggedIn = false;
+                document.getElementById('admin-login-screen').style.display = 'flex';
+            }
+        });
+
+        window.logoutAdmin = () => {
+            window.openConfirmModal("መውጣት ይፈልጋሉ?", "ከአድሚን ዳሽቦርዱ ይወጣሉ።", async () => {
+                await signOut(auth);
+            });
+        };
+
+        window.changeAdminPassword = async function(e) {
+            e.preventDefault();
+            if(!auth.currentUser || auth.currentUser.isAnonymous) return window.showToast('ኢሜል የለም!', true);
+            const currentPwd = document.getElementById('settings-current-pwd').value;
+            const newPwd = document.getElementById('settings-new-pwd').value;
+            
+            if(!currentPwd || !newPwd) return window.showToast('እባክዎ የድሮውን እና አዲሱን ፓስወርድ ያስገቡ', true);
+            if(newPwd.length < 6) return window.showToast('አዲሱ ፓስወርድ ቢያንስ 6 ፊደል መሆን አለበት', true);
+
+            try {
+                const credential = EmailAuthProvider.credential(auth.currentUser.email, currentPwd);
+                await reauthenticateWithCredential(auth.currentUser, credential);
+                await updatePassword(auth.currentUser, newPwd);
+                
+                window.showToast('ፓስወርድ በተሳካ ሁኔታ ተቀይሯል!');
+                document.getElementById('settings-current-pwd').value = '';
+                document.getElementById('settings-new-pwd').value = '';
+            } catch(error) {
+                window.showToast('ያስገቡት የድሮ ፓስወርድ ትክክል አይደለም ወይም ስህተት ተፈጥሯል።', true);
+            }
+        };
+
+        // --- Settings: Profile Picture & Name ---
+        window.triggerAdminImageUpload = () => document.getElementById('admin-profile-upload').click();
+        
+        window.handleAdminImageUpload = function(event) {
+            const file = event.target.files[0];
+            if(!file) return;
+            if(!file.type.match('image.*')) return window.showToast("እባክዎ ፎቶ ብቻ ያስገቡ!", true);
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    let w = img.width, h = img.height;
+                    if (w > 300) { h *= 300 / w; w = 300; }
+                    canvas.width = w; canvas.height = h;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, w, h);
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                    
+                    document.getElementById('settings-admin-avatar').src = dataUrl;
+                    document.getElementById('settings-admin-photo-base64').value = dataUrl;
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        };
+
+        window.saveAdminProfile = async function() {
+            if(!auth.currentUser) return;
+            const newName = document.getElementById('setting-admin-name').value.trim();
+            const newPhoto = document.getElementById('settings-admin-photo-base64').value.trim();
+            try {
+                await updateProfile(auth.currentUser, { displayName: newName, photoURL: newPhoto });
+                
+                await setDoc(doc(db, 'artifacts', appId, 'users', auth.currentUser.uid, 'profile', 'info'), {
+                    displayName: newName, photoURL: newPhoto
+                }, { merge: true });
+
+                const hAvatar = document.getElementById('admin-avatar-header');
+                const sAvatar = document.getElementById('admin-avatar-img');
+                const hName = document.getElementById('admin-name-header');
+                const sName = document.getElementById('admin-user-display');
+                if(hName) hName.innerText = newName;
+                if(sName) sName.innerText = newName;
+                if(newPhoto) {
+                    if(hAvatar) hAvatar.src = newPhoto;
+                    if(sAvatar) sAvatar.src = newPhoto;
+                }
+
+                window.showToast('ፕሮፋይልዎ በተሳካ ሁኔታ ተስተካክሏል!');
+            } catch(e) { window.showToast('ስህተት: ' + e.message, true); }
+        };
+
+        // --- Site Settings ---
+        function loadSettings() {
+            getDoc(doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'general')).then(docSnap => {
+                if(docSnap.exists()) {
+                    const data = docSnap.data();
+                    if(data.siteName) document.getElementById('setting-site-name').value = data.siteName;
+                    if(data.telegramLink) document.getElementById('setting-telegram').value = data.telegramLink;
+                }
+            }).catch(e => console.log(e));
+        }
+
+        window.saveSiteSettings = async function() {
+            const siteName = document.getElementById('setting-site-name').value.trim();
+            const telegramLink = document.getElementById('setting-telegram').value.trim();
+            try {
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'general'), { siteName, telegramLink }, { merge: true });
+                window.showToast('የሲስተም ቅንብሮቹ ሴቭ ተደርገዋል!');
+            } catch(e) { window.showToast('ስህተት: ' + e.message, true); }
+        };
+
+        // --- Core Data Listeners (Courses, Waitlist, Payments, QA) ---
+        
+        // Courses
+        onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'courses'), (snapshot) => {
+            globalCourses = [];
+            snapshot.forEach(docSnap => globalCourses.push({ id: docSnap.id, ...docSnap.data() }));
+            if(isLoggedIn) window.renderCourses();
+        });
+
+        // Waitlist
+        function loadWaitlist() {
+            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'waitlist'), (snapshot) => {
+                let waitlistData = [];
+                snapshot.forEach(docSnap => waitlistData.push(docSnap.data()));
+                
+                document.getElementById('total-waitlist-count').innerText = snapshot.size;
+                document.getElementById('sidebar-waitlist-badge').innerText = snapshot.size;
+                
+                if(!isInitialWaitlistLoad) {
+                    snapshot.docChanges().forEach(change => {
+                        if (change.type === 'added') {
+                            addNotificationToDropdown("አዲስ ተጠባባቂ", change.doc.data().email, "fa-user-plus", "text-primary");
+                        }
+                    });
+                }
+                isInitialWaitlistLoad = false;
+                
+                const tbody = document.getElementById('waitlist-table-body');
+                tbody.innerHTML = '';
+                if(waitlistData.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="3" class="p-16 text-center text-gray-400 font-bold">ምንም ተማሪ የለም።</td></tr>`; return;
+                }
+                waitlistData.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp)).forEach((user, index) => {
+                    tbody.innerHTML += `
+                        <tr class="hover:bg-gray-50/50 dark:hover:bg-slate-700/50 transition">
+                            <td class="font-bold text-gray-400">${index + 1}</td>
+                            <td class="font-black text-dark dark:text-white text-[15px]">${user.email}</td>
+                            <td class="text-xs text-gray-500 font-bold">${new Date(user.timestamp).toLocaleString('en-US')}</td>
+                        </tr>`;
+                });
+            });
+        }
+
+        window.exportWaitlist = async () => {
+            const snap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'waitlist'));
+            if(snap.empty) return window.showToast("የሚወርድ መረጃ የለም!", true);
+            let csv = "Email,Date\n";
+            snap.forEach(doc => { const d=doc.data(); csv += `${d.email},${new Date(d.timestamp).toLocaleString('en-US')}\n`; });
+            const link = document.createElement("a");
+            link.href = encodeURI("data:text/csv;charset=utf-8," + csv);
+            link.download = "TsehayCampus_Waitlist.csv"; link.click();
+        };
+
+        // Payments
+        function loadPayments() {
+            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'payments'), (snap) => {
+                let total = 0; let count = 0;
+                const tbody = document.getElementById('payments-table-body');
+                tbody.innerHTML = '';
+                
+                if(!isInitialPaymentsLoad) {
+                    snap.docChanges().forEach(change => {
+                        if (change.type === 'added') {
+                            addNotificationToDropdown("አዲስ ክፍያ", `${change.doc.data().amount || 0} ብር ገቢ ሆኗል`, "fa-money-bill", "text-success");
+                        }
+                    });
+                }
+                isInitialPaymentsLoad = false;
+
+                if (snap.empty) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="p-16 text-center text-gray-400 font-bold"><i class="fa-solid fa-receipt text-3xl mb-3 block text-gray-300"></i> ምንም የክፍያ መረጃ አልተገኘም</td></tr>';
+                } else {
+                    snap.forEach(doc => {
+                        const data = doc.data();
+                        total += Number(data.amount || 0); count++;
+                        const dateStr = data.timestamp ? new Date(data.timestamp).toLocaleDateString('en-US') : 'N/A';
+                        const statusBadge = data.status === 'Completed' ? `<span class="bg-green-100 text-success text-[10px] font-black uppercase px-2 py-1 rounded border border-green-200">ተከፍሏል</span>` : `<span class="bg-yellow-100 text-warning text-[10px] font-black uppercase px-2 py-1 rounded border border-yellow-200">በሂደት ላይ</span>`;
+                        tbody.innerHTML += `<tr class="hover:bg-gray-50/50 dark:hover:bg-slate-700/50 transition"><td class="font-bold text-gray-400">${count}</td><td class="font-bold text-dark dark:text-white">${data.userName || data.userEmail || 'Unknown'}</td><td class="text-gray-600 dark:text-gray-400 font-medium">${data.courseName || 'Course'}</td><td class="font-black text-success">${Number(data.amount || 0).toLocaleString()}</td><td class="text-xs text-gray-500 font-bold">${dateStr}</td><td>${statusBadge}</td></tr>`;
+                    });
+                }
+                const totalStr = total.toLocaleString();
+                document.getElementById('main-total-revenue').innerHTML = `${totalStr} <span class="text-sm text-gray-500 font-bold">ETB</span>`;
+                document.getElementById('top-total-revenue').innerHTML = `${totalStr} ብር`;
+            });
+        }
+
+        // Q&A
+        function loadQA() {
+            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'qa'), (snapshot) => {
+                const list = document.getElementById('admin-qa-list');
+                const badge = document.getElementById('sidebar-qa-badge');
+                if(!list) return;
+                
+                let qaArray = [];
+                snapshot.forEach(doc => qaArray.push({ id: doc.id, ...doc.data() }));
+                qaArray.sort((a, b) => b.timestamp - a.timestamp);
+                
+                if (badge) {
+                    badge.innerText = qaArray.length;
+                    badge.classList.remove('hidden');
+                }
+
+                if(!isInitialQALoad) {
+                    snapshot.docChanges().forEach(change => {
+                        if (change.type === 'added') {
+                            addNotificationToDropdown("አዲስ የተማሪ ጥያቄ", change.doc.data().text, "fa-comment-dots", "text-secondary");
+                        }
+                    });
+                }
+                isInitialQALoad = false;
+
+                list.innerHTML = '';
+                if(qaArray.length === 0) {
+                    list.innerHTML = '<div class="text-center py-20 text-gray-400 font-bold"><i class="fa-solid fa-comments text-4xl mb-4 text-gray-200 dark:text-gray-700 block"></i> ምንም ጥያቄ አልቀረበም።</div>';
+                } else {
+                    qaArray.forEach(q => {
+                        let timeStr = new Date(q.timestamp).toLocaleTimeString('am-ET', { hour: '2-digit', minute: '2-digit', month: 'short', day: 'numeric' });
+                        list.innerHTML += `
+                            <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-gray-200 dark:border-slate-700 shadow-sm hover:shadow-md transition">
+                                <div class="flex justify-between items-start mb-3 border-b border-gray-100 dark:border-slate-700 pb-3">
+                                    <span class="font-bold text-dark dark:text-white"><i class="fa-solid fa-user-graduate text-secondary dark:text-primary mr-2"></i> ${q.userName || 'ተማሪ'}</span>
+                                    <span class="text-xs text-gray-400 font-bold flex items-center gap-1"><i class="fa-solid fa-clock"></i> ${timeStr}</span>
+                                </div>
+                                <p class="text-[15px] text-gray-700 dark:text-gray-300 font-body leading-relaxed">${q.text}</p>
+                            </div>
+                        `;
+                    });
+                }
+            });
+        }
+
+        // --- Course Management ---
+        window.renderCourses = function() {
+            const tbody = document.getElementById('course-table-body');
+            const noMsg = document.getElementById('no-courses-msg');
+            const table = document.getElementById('courses-table');
+            
+            tbody.innerHTML = '';
+            document.getElementById('total-courses-count').innerText = globalCourses.length;
+
+            if(globalCourses.length === 0) {
+                noMsg.classList.remove('hidden'); table.classList.add('hidden'); return;
+            }
+            noMsg.classList.add('hidden'); table.classList.remove('hidden');
+
+            globalCourses.forEach(c => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-gray-50/50 dark:hover:bg-slate-700/50 transition duration-300 course-row";
+                
+                let isFree = c.price == 0 || !c.price;
+                let priceDisplay = isFree ? '<span class="text-success font-black">ነፃ (Free)</span>' : `${Number(c.price).toLocaleString()} ብር`;
+
+                const statusBadge = c.status === 'Active' 
+                    ? `<span class="bg-green-100 dark:bg-green-900/30 text-success text-[10px] font-black uppercase px-2.5 py-1 rounded border border-green-200 dark:border-green-800">Active</span>`
+                    : `<span class="bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-gray-400 text-[10px] font-black uppercase px-2.5 py-1 rounded border border-gray-200 dark:border-slate-600">Draft</span>`;
+
+                const safeDataStr = encodeURIComponent(JSON.stringify(c));
+
+                tr.innerHTML = `
+                    <td><img src="${c.image}" class="w-16 h-12 object-cover rounded-xl shadow-sm border border-gray-200 dark:border-slate-600" onerror="this.src='https://placehold.co/100x80?text=No+Img'"></td>
+                    <td class="font-black text-dark dark:text-white course-title-cell text-[15px]">${c.title}</td>
+                    <td class="font-black text-secondary dark:text-primary">${priceDisplay}</td>
+                    <td class="text-sm font-bold text-gray-500 dark:text-gray-400">${c.duration || 'N/A'}</td>
+                    <td>${statusBadge}</td>
+                    <td class="text-right">
+                        <button onclick="window.openCourseModal('${safeDataStr}')" class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-secondary dark:text-primary hover:bg-secondary dark:hover:bg-primary hover:text-white dark:hover:text-dark transition shadow-sm border border-blue-100 dark:border-blue-800/50 mr-2"><i class="fa-solid fa-pen text-sm"></i></button>
+                        <button onclick="window.deleteCourse('${c.id}')" class="w-10 h-10 rounded-xl bg-red-50 dark:bg-red-500/10 text-danger hover:bg-danger hover:text-white transition shadow-sm border border-red-100 dark:border-red-500/20"><i class="fa-solid fa-trash text-sm"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        };
+
+        window.addNewCourse = () => { 
+            document.getElementById('course-id').value = '';
+            document.getElementById('c-title').value = '';
+            document.getElementById('c-instructor').value = '';
+            document.getElementById('c-price').value = '';
+            document.getElementById('c-oldprice').value = '';
+            document.getElementById('c-duration').value = '';
+            document.getElementById('c-image').value = '';
+            document.getElementById('c-video').value = '';
+            document.getElementById('c-desc').value = '';
+            document.getElementById('c-ai-prompt').value = '';
+            
+            document.getElementById('modal-title').innerText = 'አዲስ ኮርስ ጨምር';
+            const lessonsContainer = document.getElementById('lessons-container');
+            lessonsContainer.innerHTML = '';
+            window.addLessonRow();
+            
+            const modal = document.getElementById('course-modal');
+            const content = document.getElementById('course-modal-content');
+            modal.classList.remove('hide'); modal.classList.add('show'); 
+            setTimeout(() => { content.classList.remove('scale-95'); content.classList.add('scale-100'); }, 10);
+        };
+
+        window.addLessonRow = function(l = {title: '', video: '', duration: '', points: 100}) {
+            const container = document.getElementById('lessons-container');
+            const row = document.createElement('div');
+            row.className = 'lesson-row bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 p-4 rounded-2xl flex flex-col md:flex-row gap-4 items-start md:items-center relative shadow-sm transition-all hover:border-primary/50';
+            row.innerHTML = `
+                <div class="flex-1 w-full grid grid-cols-1 md:grid-cols-12 gap-4">
+                    <div class="md:col-span-4"><label class="text-[10px] font-black text-gray-400 uppercase mb-1 block">የክፍሉ ስም</label><input type="text" name="l-title" value="${l.title}" required class="w-full bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm font-bold outline-none focus:border-secondary transition shadow-sm dark:text-white"></div>
+                    <div class="md:col-span-4"><label class="text-[10px] font-black text-gray-400 uppercase mb-1 block">ቪዲዮ ሊንክ (URL)</label><input type="url" name="l-video" value="${l.video}" class="w-full bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-secondary transition shadow-sm dark:text-white"></div>
+                    <div class="md:col-span-2"><label class="text-[10px] font-black text-gray-400 uppercase mb-1 block text-center">ቆይታ</label><input type="text" name="l-duration" value="${l.duration}" placeholder="10:00" class="w-full bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm text-center font-bold outline-none dark:text-white"></div>
+                    <div class="md:col-span-2"><label class="text-[10px] font-black text-gray-400 uppercase mb-1 block text-center">ነጥብ</label><input type="number" name="l-points" value="${l.points}" required class="w-full bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm text-center font-bold outline-none dark:text-white"></div>
+                </div>
+                <button type="button" onclick="this.parentElement.remove()" class="bg-red-50 dark:bg-red-900/30 text-danger w-10 h-10 rounded-xl flex items-center justify-center hover:bg-danger hover:text-white transition shrink-0 absolute top-2 right-2 md:relative md:top-0 md:right-0 shadow-sm"><i class="fa-solid fa-trash-can"></i></button>`;
+            container.appendChild(row);
+        };
+
+        function formatDriveLink(url, type) {
+            if (!url) return url;
+            if (!url.includes('drive.google.com')) return url;
+            const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+            if (match && match[1]) {
+                return type === 'image' ? `https://lh3.googleusercontent.com/d/${match[1]}` : `https://drive.google.com/file/d/${match[1]}/preview`; 
+            }
+            return url;
+        }
+
+        window.saveCourse = async function(e) {
+            if(e) e.preventDefault();
+            const title = document.getElementById('c-title').value.trim();
+            const instructor = document.getElementById('c-instructor').value.trim();
+            const priceInput = document.getElementById('c-price').value.trim();
+            const price = priceInput === "" ? 0 : parseFloat(priceInput);
+            const oldPrice = document.getElementById('c-oldprice').value.trim();
+            const duration = document.getElementById('c-duration').value.trim();
+            let image = document.getElementById('c-image').value.trim();
+            let video = document.getElementById('c-video').value.trim();
+            const desc = document.getElementById('c-desc').value.trim();
+            const aiPrompt = document.getElementById('c-ai-prompt').value.trim();
+            const status = document.getElementById('c-status').value;
+
+            if(!title || !instructor || priceInput === "" || !duration || !image || !video || !desc || !aiPrompt) {
+                return window.showToast("እባክዎ ኮከብ (*) ያላቸውን መረጃዎች ያስገቡ!", true);
+            }
+
+            image = formatDriveLink(image, 'image');
+            video = formatDriveLink(video, 'video');
+
+            const lTitles = document.getElementsByName('l-title');
+            const lVideos = document.getElementsByName('l-video');
+            const lDurations = document.getElementsByName('l-duration');
+            const lPoints = document.getElementsByName('l-points');
+
+            let lessonsArr = [];
+            for(let i=0; i<lTitles.length; i++) {
+                if(lTitles[i].value.trim() !== '') {
+                    lessonsArr.push({
+                        title: lTitles[i].value.trim(),
+                        video: formatDriveLink(lVideos[i].value.trim(), 'video'),
+                        duration: lDurations[i].value.trim(),
+                        points: Number(lPoints[i].value) || 0
+                    });
+                }
+            }
+
+            const id = document.getElementById('course-id').value || 'course_' + Date.now();
+            
+            const btnSave = document.getElementById("btn-save-course");
+            const btnText = document.getElementById("save-btn-text");
+            const btnIcon = document.getElementById("save-btn-icon");
+            
+            // በተኑ እንዳይደገም ቆልፈው (Disable it)
+            if(btnSave) btnSave.disabled = true;
+            btnText.innerText = "ሴቭ በማድረግ ላይ...";
+            btnIcon.className = "fa-solid fa-spinner fa-spin text-lg";
+
+            const currentAppId = typeof __app_id !== 'undefined' ? __app_id : 'tsehaycampus-e1a6d';
+
+            try {
+                await setDoc(doc(db, 'artifacts', currentAppId, 'public', 'data', 'courses', id), {
+                    title, instructor, price, oldPrice, duration, status, image, video, desc, aiPrompt,
+                    lessons: lessonsArr, timestamp: Date.now()
+                }, { merge: true });
+                
+                window.showToast("ኮርሱ በተሳካ ሁኔታ ተመዝግቧል!");
+                window.closeCourseModal();
+            } catch(e) { 
+                window.showToast("ሴቭ ማድረግ አልተቻለም: " + e.message, true); 
+                console.error(e);
+            } finally {
+                btnText.innerText = "ኮርሱን ሴቭ አድርግ";
+                btnIcon.className = "fa-solid fa-floppy-disk text-lg";
+                // በተኑን መልሰህ ክፈተው
+                if(btnSave) btnSave.disabled = false;
+            }
+        };
+
+        window.openCourseModal = (dataStr) => { 
+            const form = document.getElementById('course-form');
+            form.reset();
+            const lessonsContainer = document.getElementById('lessons-container');
+            lessonsContainer.innerHTML = ''; 
+            
+            if(dataStr) {
+                try {
+                    const c = JSON.parse(decodeURIComponent(dataStr));
+                    document.getElementById('course-id').value = c.id;
+                    document.getElementById('c-title').value = c.title || '';
+                    document.getElementById('c-instructor').value = c.instructor || '';
+                    document.getElementById('c-price').value = c.price !== undefined ? c.price : 0;
+                    document.getElementById('c-oldprice').value = c.oldPrice || '';
+                    document.getElementById('c-duration').value = c.duration || '';
+                    document.getElementById('c-status').value = c.status || 'Active';
+                    document.getElementById('c-image').value = c.image || '';
+                    document.getElementById('c-video').value = c.video || '';
+                    document.getElementById('c-desc').value = c.desc || '';
+                    document.getElementById('c-ai-prompt').value = c.aiPrompt || '';
+                    
+                    document.getElementById('modal-title').innerText = 'ኮርስ አስተካክል (Edit)';
+
+                    if(c.lessons && Array.isArray(c.lessons) && c.lessons.length > 0) {
+                        c.lessons.forEach(l => window.addLessonRow(l));
+                    } else {
+                        window.addLessonRow();
+                    }
+                } catch(e) { console.error("Error parsing course data", e); window.addLessonRow(); }
+            } else {
+                document.getElementById('course-id').value = '';
+                document.getElementById('modal-title').innerText = 'አዲስ ኮርስ ጨምር';
+                window.addLessonRow();
+            }
+
+            const modal = document.getElementById('course-modal');
+            const content = document.getElementById('course-modal-content');
+            modal.classList.remove('hide'); modal.classList.add('show'); 
+            setTimeout(() => { content.classList.remove('scale-95'); content.classList.add('scale-100'); }, 10);
+        };
+        
+        window.closeCourseModal = () => { 
+            const modal = document.getElementById('course-modal');
+            const content = document.getElementById('course-modal-content');
+            content.classList.remove('scale-100'); content.classList.add('scale-95');
+            setTimeout(() => { modal.classList.remove('show'); modal.classList.add('hide'); }, 300);
+        };
+
+        window.deleteCourse = (id) => {
+            window.openConfirmModal("ኮርሱን ማጥፋት ይፈልጋሉ?", "ይህ ኮርስ ከዳታቤዝ ሙሉ በሙሉ ይጠፋል።", async () => {
+                try {
+                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'courses', id));
+                    window.showToast("ኮርሱ ጠፍቷል!");
+                } catch(e) { window.showToast("ስህተት ተከስቷል!", true); }
+            });
+        };
+
+        window.searchTable = function() {
+            let input = document.getElementById("course-search").value.toLowerCase();
+            let rows = document.getElementsByClassName("course-row");
+            for (let i = 0; i < rows.length; i++) {
+                let titleCol = rows[i].getElementsByClassName("course-title-cell")[0];
+                if (titleCol) {
+                    let txtValue = titleCol.textContent || titleCol.innerText;
+                    rows[i].style.display = txtValue.toLowerCase().indexOf(input) > -1 ? "" : "none";
+                }       
+            }
+        };
+
+        // Failsafe loader hider
+        setTimeout(() => {
+            const l = document.getElementById('global-loader');
+            if(l && l.style.display !== 'none') {
+                l.style.opacity = '0';
+                setTimeout(()=>l.style.display='none', 500);
+            }
+        }, 3000);
+
+    </script>
+</body>
+</html>
