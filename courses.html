@@ -53,22 +53,7 @@
         @keyframes modalPop { 0% { opacity: 0; transform: scale(0.95); } 100% { opacity: 1; transform: scale(1); } }
         .payment-option.selected { border-color: #3268BA; background-color: rgba(50, 104, 186, 0.05); }
         .dark .payment-option.selected { border-color: #F9B03C; background-color: rgba(249, 176, 60, 0.1); }
-        /* Google Translate Fixed Styling */
-        .goog-te-banner-frame { display: none !important; }
-        .VIpgJd-ZVi9od-ORHb-OEVmcd { display: none !important; }
-        body { top: 0px !important; position: static !important; }
-        html { top: 0 !important; height: 100%; }
-        #google_translate_element select {
-            background-color: #f1f5f9; color: #334155; border: 1px solid #e2e8f0; border-radius: 0.5rem;
-            padding: 0.4rem 0.8rem; font-family: 'Montserrat', sans-serif; font-size: 0.8rem; font-weight: 700;
-            outline: none; cursor: pointer;
-        }
-        .dark #google_translate_element select {
-            background-color: #1e293b; color: #cbd5e1; border-color: #334155;
-        }
-        #google_translate_element select:hover { border-color: #3268BA; }
-        .goog-logo-link { display: none !important; }
-        .goog-te-gadget { color: transparent !important; }
+        
         /* Google Translate Fixed Styling */
         .goog-te-banner-frame { display: none !important; }
         .VIpgJd-ZVi9od-ORHb-OEVmcd { display: none !important; }
@@ -108,9 +93,10 @@
                 <!-- Profile & Links -->
                 <div class="flex items-center space-x-4 lg:space-x-6">
                     <a href="javascript:void(0)" onclick="window.safeRedirect('index.html')" class="hidden md:block text-gray-600 dark:text-gray-300 hover:text-secondary dark:hover:text-primary font-bold transition text-sm">ዋና ገፅ</a>
-                    <!-- 
-                <!-- Google Translate Dropdown -->
-                    <div id="google_translate_element" class="hidden sm:block mt-1"></div>
+                    
+                    <!-- Google Translate Dropdown -->
+                    <div id="google_translate_element" class="hidden sm:block mt-1 mr-2"></div>
+                    
                     <button onclick="window.toggleTheme()" class="w-10 h-10 rounded-full bg-gray-100 dark:bg-slate-800 flex items-center justify-center text-gray-600 dark:text-yellow-400 hover:scale-110 transition shadow-sm"><i id="theme-icon" class="fa-solid fa-moon"></i></button>
                     
                     <div class="flex items-center gap-2 lg:gap-3 bg-white dark:bg-slate-800 px-3 py-1.5 rounded-2xl border border-gray-200 dark:border-slate-700 shadow-sm">
@@ -208,7 +194,7 @@
             
             <div class="p-6">
                 <!-- Course Summary -->
-                <div class="flex items-center gap-4 bg-gray-50 dark:bg-slate-900 p-4 rounded-2xl border border-gray-100 dark:border-slate-700 mb-6">
+                <div class="flex items-center gap-4 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-gray-100 dark:border-slate-700 mb-6">
                     <img id="pay-course-img" src="" class="w-16 h-16 rounded-xl object-cover shadow-sm">
                     <div class="flex-1">
                         <p class="text-[10px] text-gray-500 font-bold mb-1 uppercase tracking-widest">የሚገዙት ኮርስ</p>
@@ -311,9 +297,34 @@
                         <span class="text-primary">Tsehay Digital</span>
                     </div>
                 </div>
+
+                <!-- Google Translate Dropdown in Footer (For Mobile mostly) -->
+                <div class="mt-4 md:mt-0 flex flex-col items-center md:items-end sm:hidden">
+                    <div id="google_translate_element_footer" class="bg-dark rounded-lg p-1.5 border border-slate-700 hover:border-slate-500 transition overflow-hidden"></div>
+                </div>
             </div>
         </div>
     </footer>
+
+    <!-- Google Translate Script (For global persistence) -->
+    <script>
+        function googleTranslateElementInit() {
+            new google.translate.TranslateElement({
+                pageLanguage: 'am',
+                includedLanguages: 'am,en,om,ti,ar,zh-CN,so,fr,es',
+                autoDisplay: false
+            }, 'google_translate_element');
+            
+            setTimeout(function() {
+                new google.translate.TranslateElement({
+                    pageLanguage: 'am',
+                    includedLanguages: 'am,en,om,ti,ar,zh-CN,so,fr,es',
+                    autoDisplay: false
+                }, 'google_translate_element_footer');
+            }, 1000);
+        }
+    </script>
+    <script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
 
     <!-- Firebase & Application Logic -->
     <script type="module">
@@ -321,7 +332,7 @@
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, getDocs, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const firebaseConfig = { apiKey: "AIzaSyDCxlwfYAS_I0D7c-8e-iB-Y-Rh2ZZoHZw", authDomain: "tsehaycampus-e1a6d.firebaseapp.com", projectId: "tsehaycampus-e1a6d", storageBucket: "tsehaycampus-e1a6d.firebasestorage.app", messagingSenderId: "1043616909865", appId: "1:1043616909865:web:9ecca7d9a14deef0f5ea38" };
+        const firebaseConfig = { apiKey: "AIzaSyDCxLwfYAS_I0D7c-8e-iB-Y-Rh2ZZoHZw", authDomain: "tsehaycampus-e1a6d.firebaseapp.com", projectId: "tsehaycampus-e1a6d", storageBucket: "tsehaycampus-e1a6d.firebasestorage.app", messagingSenderId: "1043616909865", appId: "1:1043616909865:web:9ecca7d9a14deef0f5ea38" };
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
