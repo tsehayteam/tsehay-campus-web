@@ -69,6 +69,22 @@
         #google_translate_element select:hover { border-color: #3268BA; }
         .goog-logo-link { display: none !important; }
         .goog-te-gadget { color: transparent !important; }
+        /* Google Translate Fixed Styling */
+        .goog-te-banner-frame { display: none !important; }
+        .VIpgJd-ZVi9od-ORHb-OEVmcd { display: none !important; }
+        body { top: 0px !important; position: static !important; }
+        html { top: 0 !important; height: 100%; }
+        #google_translate_element select, #google_translate_element_footer select {
+            background-color: #f1f5f9; color: #334155; border: 1px solid #e2e8f0; border-radius: 0.5rem;
+            padding: 0.4rem 0.8rem; font-family: 'Montserrat', sans-serif; font-size: 0.8rem; font-weight: 700;
+            outline: none; cursor: pointer;
+        }
+        .dark #google_translate_element select, .dark #google_translate_element_footer select {
+            background-color: #1e293b; color: #cbd5e1; border-color: #334155;
+        }
+        #google_translate_element select:hover, #google_translate_element_footer select:hover { border-color: #3268BA; }
+        .goog-logo-link { display: none !important; }
+        .goog-te-gadget { color: transparent !important; }
     </style>
 </head>
 <body class="bg-bodyBg dark:bg-slate-900 text-dark dark:text-gray-100 antialiased pt-24 min-h-screen flex flex-col hidden" id="main-body">
@@ -92,8 +108,9 @@
                 <!-- Profile & Links -->
                 <div class="flex items-center space-x-4 lg:space-x-6">
                     <a href="javascript:void(0)" onclick="window.safeRedirect('index.html')" class="hidden md:block text-gray-600 dark:text-gray-300 hover:text-secondary dark:hover:text-primary font-bold transition text-sm">ዋና ገፅ</a>
-                    <!-- Google Translate Dropdown -->
-                <div id="google_translate_element" class="hidden sm:block mt-1 mr-3"></div>
+                    <!-- 
+                <!-- Google Translate Dropdown -->
+                    <div id="google_translate_element" class="hidden sm:block mt-1"></div>
                     <button onclick="window.toggleTheme()" class="w-10 h-10 rounded-full bg-gray-100 dark:bg-slate-800 flex items-center justify-center text-gray-600 dark:text-yellow-400 hover:scale-110 transition shadow-sm"><i id="theme-icon" class="fa-solid fa-moon"></i></button>
                     
                     <div class="flex items-center gap-2 lg:gap-3 bg-white dark:bg-slate-800 px-3 py-1.5 rounded-2xl border border-gray-200 dark:border-slate-700 shadow-sm">
