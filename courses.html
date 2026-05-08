@@ -119,6 +119,9 @@
                                     <button id="dropdown-dashboard-btn" onclick="window.safeRedirect('dashboard.html')" class="hidden w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-slate-700 hover:text-secondary dark:hover:text-primary rounded-xl font-bold transition items-center gap-3">
                                         <i class="fa-solid fa-chart-pie w-4"></i> የመማሪያ ክፍል
                                     </button>
+                                    <button onclick="window.safeRedirect('dashboard.html?tab=settings-tab')" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-slate-700 hover:text-secondary dark:hover:text-primary rounded-xl font-bold transition flex items-center gap-3">
+                                        <i class="fa-solid fa-user-gear w-4"></i> መቼት (Settings)
+                                    </button>
                                     <button onclick="window.logoutUser()" class="w-full text-left px-4 py-2.5 text-sm text-danger hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl font-bold transition flex items-center gap-3">
                                         <i class="fa-solid fa-arrow-right-from-bracket w-4"></i> መውጫ (Logout)
                                     </button>
@@ -128,7 +131,7 @@
                         
                         <div id="nav-dashboard-divider" class="hidden h-6 w-px bg-gray-200 dark:bg-slate-700 mx-0.5"></div>
                         
-                        <!-- Smart Dashboard Button (Only visible if enrolled) -->
+                        <!-- Smart Dashboard Button -->
                         <button id="nav-dashboard-btn" onclick="window.safeRedirect('dashboard.html')" class="hidden bg-primary text-dark px-4 py-2 rounded-xl font-black text-xs hover:bg-yellow-400 transition shadow-md items-center gap-2">
                             <i class="fa-solid fa-chart-pie"></i> <span class="hidden sm:inline">ዳሽቦርድ</span>
                         </button>
@@ -194,7 +197,7 @@
             
             <div class="p-6">
                 <!-- Course Summary -->
-                <div class="flex items-center gap-4 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-gray-100 dark:border-slate-700 mb-6">
+                <div class="flex items-center gap-4 bg-gray-50 dark:bg-slate-900 p-4 rounded-2xl border border-gray-100 dark:border-slate-700 mb-6">
                     <img id="pay-course-img" src="" class="w-16 h-16 rounded-xl object-cover shadow-sm">
                     <div class="flex-1">
                         <p class="text-[10px] text-gray-500 font-bold mb-1 uppercase tracking-widest">የሚገዙት ኮርስ</p>
@@ -332,7 +335,7 @@
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, getDocs, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // ✅ Firebase Key (በትልቁ L)
+        // ✅ Firebase Key (በትልቁ L የተስተካከለ)
         const firebaseConfig = { apiKey: "AIzaSyDCxlwfYAS_I0D7c-8e-iB-Y-Rh2ZZoHZw", authDomain: "tsehaycampus-e1a6d.firebaseapp.com", projectId: "tsehaycampus-e1a6d", storageBucket: "tsehaycampus-e1a6d.firebasestorage.app", messagingSenderId: "1043616909865", appId: "1:1043616909865:web:9ecca7d9a14deef0f5ea38" };
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
