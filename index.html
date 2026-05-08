@@ -787,7 +787,7 @@
         };
 
         window.goToDashboard = function() {
-            try { window.location.href = 'dashboard.html'; } catch(err) { console.warn(err); }
+            try { window.location.href = 'courses.html'; } catch(err) { console.warn(err); }
         };
 
         window.openTermsModal = function() {
@@ -1004,7 +1004,7 @@
         try {
             // For Firebase JS SDK v7.20.0 and later, measurementId is optional
         const firebaseConfig = {
-          apiKey: "AIzaSyDCxlwfYAS_I0D7c-8e-iB-Y-Rh2ZZoHZw",
+          apiKey: "AIzaSyDCxLwfYAS_I0D7c-8e-iB-Y-Rh2ZZoHZw",
           authDomain: "tsehaycampus-e1a6d.firebaseapp.com",
           projectId: "tsehaycampus-e1a6d",
           storageBucket: "tsehaycampus-e1a6d.firebasestorage.app",
@@ -1112,7 +1112,7 @@
                     if (heroBtns) {
                         heroBtns.innerHTML = `
                             <button onclick="window.goToDashboard()" class="bg-primary text-dark px-6 py-3.5 rounded-xl font-extrabold transition btn-glow flex items-center justify-center gap-3 text-base">
-                                ወደ ትምህርት ገፅ (Dashboard) <i class="fa-solid fa-arrow-right"></i>
+                                ወደ ኮርሶች ገበያ <i class="fa-solid fa-arrow-right"></i>
                             </button>
                             <button onclick="document.getElementById('features').scrollIntoView({behavior: 'smooth'})" class="bg-white/10 hover:bg-white/20 border border-white/30 text-white backdrop-blur-md px-6 py-3.5 rounded-xl font-bold transition flex items-center justify-center gap-3 text-base">
                                 <i class="fa-solid fa-circle-play text-lg"></i> እንዴት እንደሚሰራ ይመልከቱ
@@ -1129,7 +1129,7 @@
                             </a>
                             <div class="h-5 w-px bg-gray-300 dark:bg-slate-700 mx-0.5 lg:mx-1"></div>
                             <span class="text-dark dark:text-white font-bold text-sm hidden lg:inline mx-2">${name}</span>
-                            <button onclick="window.goToDashboard()" class="bg-primary text-dark px-4 lg:px-6 py-2 lg:py-2.5 rounded-lg font-bold hover:bg-secondary dark:hover:bg-yellow-400 transition shadow-md btn-glow whitespace-nowrap">ዳሽቦርድ</button>
+                            <button onclick="window.goToDashboard()" class="bg-primary text-dark px-4 lg:px-6 py-2 lg:py-2.5 rounded-lg font-bold hover:bg-secondary dark:hover:bg-yellow-400 transition shadow-md btn-glow whitespace-nowrap">ወደ ኮርሶች ገበያ</button>
                             <button onclick="window.logoutUser()" class="text-gray-400 hover:text-danger transition ml-2"><i class="fa-solid fa-power-off"></i></button>
                         `;
                     }
