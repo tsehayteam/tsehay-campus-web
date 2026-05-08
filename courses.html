@@ -80,15 +80,15 @@
                     
                     <div class="flex items-center gap-2 lg:gap-3 bg-white dark:bg-slate-800 px-3 py-1.5 rounded-2xl border border-gray-200 dark:border-slate-700 shadow-sm">
                         
-                        <!-- Clickable Profile Box -->
-                        <div onclick="window.safeRedirect('dashboard.html')" class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700 p-1.5 rounded-xl transition" title="ፕሮፋይል (Profile)">
+                        <!-- Clickable Profile Box -> Opens Settings directly -->
+                        <div onclick="window.safeRedirect('dashboard.html?tab=settings-tab')" class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700 p-1.5 rounded-xl transition" title="ፕሮፋይል መቼት (Profile Settings)">
                             <img id="nav-user-avatar" src="https://ui-avatars.com/api/?name=User" class="w-8 h-8 rounded-full border border-gray-200 dark:border-slate-600 object-cover shadow-sm">
                             <span id="nav-user-name" class="text-sm font-black dark:text-white tracking-tight hidden sm:block pr-1">ተማሪ</span>
                         </div>
                         
                         <div class="h-6 w-px bg-gray-200 dark:bg-slate-700 mx-0.5"></div>
                         
-                        <!-- Smart Dashboard Button (Hidden initially) -->
+                        <!-- Smart Dashboard Button -->
                         <button id="nav-dashboard-btn" onclick="window.safeRedirect('dashboard.html')" class="hidden bg-primary text-dark px-4 py-2 rounded-xl font-black text-xs hover:bg-yellow-400 transition shadow-md items-center gap-2">
                             <i class="fa-solid fa-chart-pie"></i> <span class="hidden sm:inline">ዳሽቦርድ</span>
                         </button>
@@ -112,15 +112,18 @@
                 የርስዎን እምቅ አቅም ወደ ተጨባጭ ውጤት የሚቀይሩበት ትክክለኛው ቦታ ላይ ነዎት። ከጀማሪ እስከ ፕሮፌሽናል ደረጃ በጥንቃቄ ከተዘጋጁት <b>ነፃ</b> እና <b>ፕሪሚየም</b> ስልጠናዎች በመምረጥ ዛሬውኑ መማር ይጀምሩ።
             </p>
             
-            <!-- Live Search Bar -->
+            <!-- Standard Course Filter Search Bar -->
             <div class="max-w-2xl mx-auto relative mb-10 shadow-xl rounded-full group">
-                <i class="fa-solid fa-magnifying-glass absolute left-6 top-1/2 -translate-y-1/2 text-gray-400 text-lg group-focus-within:text-secondary dark:group-focus-within:text-primary transition-colors"></i>
-                <input type="text" id="searchInput" oninput="window.filterCourses()" placeholder="የኮርስ ስም በLive ይፈልጉ..." class="w-full bg-white dark:bg-slate-900 border-2 border-gray-200 dark:border-slate-600 rounded-full py-4.5 pl-14 pr-6 text-dark dark:text-white font-bold outline-none focus:border-secondary dark:focus:border-primary transition shadow-inner text-base lg:text-lg">
+                <i class="fa-solid fa-search absolute left-6 top-1/2 -translate-y-1/2 text-gray-400 text-lg group-focus-within:text-secondary dark:group-focus-within:text-primary transition-colors"></i>
+                <input type="text" id="searchInput" oninput="window.filterCourses()" placeholder="የኮርስ ስም ወይም ቁልፍ ቃል ይፈልጉ..." class="w-full bg-white dark:bg-slate-900 border-2 border-gray-200 dark:border-slate-600 rounded-full py-4.5 pl-14 pr-6 text-dark dark:text-white font-bold outline-none focus:border-secondary dark:focus:border-primary transition shadow-inner text-base lg:text-lg">
             </div>
 
-            <!-- Categories -->
+            <!-- Enhanced Categories including Free and Paid -->
             <div class="flex flex-wrap justify-center gap-3" id="categoryFilters">
-                <button onclick="window.setCategory('All')" class="cat-btn active px-6 py-2.5 rounded-full font-bold text-sm bg-secondary text-white shadow-md transition">ሁሉም ኮርሶች</button>
+                <button onclick="window.setCategory('All')" class="cat-btn active px-6 py-2.5 rounded-full font-bold text-sm bg-secondary text-white shadow-md transition">ሁሉም</button>
+                <button onclick="window.setCategory('Free')" class="cat-btn px-6 py-2.5 rounded-full font-bold text-sm bg-success/10 text-success hover:bg-success hover:text-white transition border border-success/30">ነፃ ኮርሶች</button>
+                <button onclick="window.setCategory('Paid')" class="cat-btn px-6 py-2.5 rounded-full font-bold text-sm bg-orange-50 dark:bg-orange-900/20 text-primary hover:bg-primary hover:text-dark transition border border-primary/30">ፕሪሚየም (ክፍያ)</button>
+                <div class="w-full sm:w-auto h-0 sm:h-8 border-l border-gray-300 dark:border-slate-600 mx-2 hidden sm:block"></div>
                 <button onclick="window.setCategory('Ecommerce')" class="cat-btn px-6 py-2.5 rounded-full font-bold text-sm bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600 transition border border-gray-200 dark:border-slate-600">ኢ-ኮሜርስ</button>
                 <button onclick="window.setCategory('Marketing')" class="cat-btn px-6 py-2.5 rounded-full font-bold text-sm bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600 transition border border-gray-200 dark:border-slate-600">ማርኬቲንግ</button>
                 <button onclick="window.setCategory('Crypto')" class="cat-btn px-6 py-2.5 rounded-full font-bold text-sm bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600 transition border border-gray-200 dark:border-slate-600">ክሪፕቶ</button>
@@ -130,14 +133,14 @@
     </section>
 
     <!-- Main Course Grid -->
-    <main class="flex-grow max-w-7xl mx-auto px-4 py-16 w-full">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" id="courseGrid">
+    <main class="flex-grow max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8 py-16 w-full">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8" id="courseGrid">
             <!-- Courses will be injected here -->
         </div>
         
         <div id="emptyState" class="hidden text-center py-20">
             <i class="fa-solid fa-box-open text-6xl text-gray-300 dark:text-slate-700 mb-4"></i>
-            <h3 class="text-xl font-black text-gray-400 dark:text-gray-500">ምንም ኮርስ አልተገኘም!</h3>
+            <h3 class="text-xl font-black text-gray-400 dark:text-gray-500">በመረጡት መስፈርት ኮርስ አልተገኘም!</h3>
         </div>
     </main>
 
@@ -205,13 +208,56 @@
         <p class="text-gray-500 font-bold">እባክዎ ይህን ገፅ አይዝጉት!</p>
     </div>
 
-    <!-- Footer -->
-    <footer class="bg-dark text-gray-300 py-8 border-t-4 border-primary mt-auto">
-        <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4 text-sm font-bold">
-            <p>&copy; 2026 Tsehay Campus. መብቱ በህግ የተጠበቀ ነው።</p>
-            <div class="flex gap-4">
-                <a href="#" class="hover:text-primary transition">የአጠቃቀም ህግ</a>
-                <a href="#" class="hover:text-primary transition">ድጋፍ (Support)</a>
+    <!-- Full Professional Footer -->
+    <footer id="footer" class="bg-dark text-gray-300 pt-16 pb-8 font-body border-t-[6px] border-primary mt-auto">
+        <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8 mb-12">
+                <div class="lg:col-span-2 pr-4">
+                    <div class="flex items-center gap-3 cursor-pointer mb-6 group" onclick="window.safeRedirect('index.html')">
+                        <div class="bg-white p-1 rounded-md">
+                            <img src="Campus Logo.jpg" alt="Logo" class="h-10 w-auto object-contain rounded-sm" onerror="this.src='https://ui-avatars.com/api/?name=TC&background=fff&color=0f172a'">
+                        </div>
+                        <span class="font-heading font-black text-2xl text-white tracking-tight">Tsehay<span class="text-primary">Campus</span></span>
+                    </div>
+                    <p class="text-gray-400 text-sm leading-relaxed mb-6 max-w-sm">
+                        Tsehay Campus በ <b>Tsehay Digital</b> ስር የተመሰረተ ሲሆን በኢትዮጵያ ውስጥ በ AI የተደገፈ የመጀመሪያው የኦንላይን መማሪያ ፕላትፎርም ነው። አላማችን ወጣቶችን በተግባራዊ የቢዝነስ ክህሎት ማብቃት ነው።
+                    </p>
+                    <div class="flex gap-3">
+                        <a href="https://t.me/tsehaycampus" target="_blank" class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-primary hover:text-dark transition-all transform hover:-translate-y-1"><i class="fa-brands fa-telegram text-lg"></i></a>
+                        <a href="https://tiktok.com/@tsehaydigital" target="_blank" class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-primary hover:text-dark transition-all transform hover:-translate-y-1"><i class="fa-brands fa-tiktok text-lg"></i></a>
+                        <a href="https://facebook.com/tsehaydigital" target="_blank" class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-primary hover:text-dark transition-all transform hover:-translate-y-1"><i class="fa-brands fa-facebook-f text-lg"></i></a>
+                    </div>
+                </div>
+                
+                <div class="flex flex-col items-center text-center">
+                    <h4 class="text-white font-black mb-5 font-heading tracking-wide text-base border-b-2 border-primary pb-2 inline-block">ፈጣን ማውጫ</h4>
+                    <ul class="space-y-3 text-sm">
+                        <li><button onclick="window.setCategory('Ecommerce')" class="hover:text-primary transition flex items-center gap-2">የ Shein ገቢ ንግድ</button></li>
+                        <li><button onclick="window.setCategory('Marketing')" class="hover:text-primary transition flex items-center gap-2">ዲጂታል ማርኬቲንግ</button></li>
+                        <li><button onclick="window.setCategory('Tech')" class="hover:text-primary transition flex items-center gap-2">ዌብ ዴቨሎፕመንት</button></li>
+                        <li><button onclick="window.setCategory('Crypto')" class="hover:text-primary transition flex items-center gap-2">የክሪፕቶ ግብይት</button></li>
+                    </ul>
+                </div>
+
+                <div class="flex flex-col items-end text-right">
+                    <h4 class="text-white font-black mb-5 font-heading tracking-wide text-base border-b-2 border-primary pb-2 inline-block">ድጋፍ እና ህግ</h4>
+                    <ul class="space-y-3 text-sm">
+                        <li><a href="index.html#faq" class="hover:text-primary transition flex items-center gap-2">ተደጋጋሚ ጥያቄዎች (FAQ)</a></li>
+                        <li><a href="#" class="hover:text-primary transition flex items-center gap-2">የአጠቃቀም ህግ (Terms)</a></li>
+                        <li><a href="#" class="hover:text-primary transition flex items-center gap-2">የግላዊነት ፖሊሲ (Privacy)</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="border-t border-white/10 pt-6 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-gray-500">
+                <div class="text-center md:text-left">
+                    <p>&copy; 2026 Tsehay Campus, Inc. መብቱ በህግ የተጠበቀ ነው።</p>
+                    <div class="mt-2.5 flex items-center justify-center md:justify-start gap-2 text-gray-400 font-bold uppercase tracking-widest text-[11px]">
+                        <span>Powered By</span>
+                        <img src="TD Logo.jpg" alt="TD Logo" class="h-6 w-auto rounded-sm shadow-sm" onerror="this.src='https://ui-avatars.com/api/?name=TD&background=F9B03C&color=0f172a&rounded=true'">
+                        <span class="text-primary">Tsehay Digital</span>
+                    </div>
+                </div>
             </div>
         </div>
     </footer>
@@ -392,7 +438,7 @@
 
                             <div class="pt-4 border-t border-gray-100 dark:border-slate-700 flex items-center justify-between">
                                 <span class="font-black text-xl ${isFree ? 'text-success' : 'text-dark dark:text-white'}">${priceText}</span>
-                                <button class="${btnHtml.includes('bg-success') ? 'bg-success text-white hover:bg-green-600' : btnHtml.includes('bg-secondary') ? 'bg-primary text-dark hover:bg-yellow-400' : 'bg-gray-100 dark:bg-slate-700 hover:bg-primary text-gray-700 dark:text-gray-300 hover:text-dark'} px-5 py-2.5 rounded-xl font-bold text-sm transition duration-300 shadow-sm">${btnHtml.includes('በነፃ ጀምር') ? 'በነፃ ጀምር' : btnHtml.includes('ኮርሱን ግዛ') ? 'ኮርሱን ግዛ' : 'ወደ መማሪያ ክፍል'} <i class="fa-solid fa-arrow-right ml-1"></i></button>
+                                <div class="w-1/2">${btnHtml}</div>
                             </div>
                         </div>
                     </div>
@@ -400,12 +446,26 @@
             });
         }
 
-        // 5. Filtering and Search (LIVE oninput)
+        // 5. Filtering and Search (Updated for Free/Paid logic)
         window.filterCourses = () => {
             const query = document.getElementById('searchInput').value.toLowerCase();
+            
             const filtered = window.allCourses.filter(c => {
                 const matchesSearch = c.title.toLowerCase().includes(query) || (c.desc && c.desc.toLowerCase().includes(query));
-                const matchesCategory = window.currentCategory === 'All' || (c.category && c.category.includes(window.currentCategory));
+                
+                let isFree = c.price == 0 || !c.price;
+                let matchesCategory = false;
+                
+                if (window.currentCategory === 'All') {
+                    matchesCategory = true;
+                } else if (window.currentCategory === 'Free') {
+                    matchesCategory = isFree;
+                } else if (window.currentCategory === 'Paid') {
+                    matchesCategory = !isFree;
+                } else {
+                    matchesCategory = c.category && c.category.includes(window.currentCategory);
+                }
+
                 return matchesSearch && matchesCategory;
             });
             renderCourses(filtered);
@@ -413,10 +473,32 @@
 
         window.setCategory = (cat) => {
             window.currentCategory = cat;
+            
+            // Reset all buttons
             document.querySelectorAll('.cat-btn').forEach(btn => {
-                btn.className = "cat-btn px-6 py-2.5 rounded-full font-bold text-sm transition bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600 border border-gray-200 dark:border-slate-600";
+                btn.classList.remove('active', 'bg-secondary', 'text-white', 'shadow-md');
+                
+                // Specific reset for Free/Paid colors
+                if(btn.innerText.includes('ነፃ')) {
+                    btn.className = "cat-btn px-6 py-2.5 rounded-full font-bold text-sm transition bg-success/10 text-success hover:bg-success hover:text-white border border-success/30";
+                } else if(btn.innerText.includes('ፕሪሚየም')) {
+                    btn.className = "cat-btn px-6 py-2.5 rounded-full font-bold text-sm transition bg-orange-50 dark:bg-orange-900/20 text-primary hover:bg-primary hover:text-dark border border-primary/30";
+                } else {
+                    btn.className = "cat-btn px-6 py-2.5 rounded-full font-bold text-sm transition bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600 border border-gray-200 dark:border-slate-600";
+                }
             });
-            if(event && event.target) event.target.className = "cat-btn active px-6 py-2.5 rounded-full font-bold text-sm transition bg-secondary text-white shadow-md";
+            
+            // Style active button
+            if(event && event.target) {
+                if(cat === 'Free') {
+                    event.target.className = "cat-btn active px-6 py-2.5 rounded-full font-bold text-sm transition bg-success text-white shadow-md";
+                } else if(cat === 'Paid') {
+                    event.target.className = "cat-btn active px-6 py-2.5 rounded-full font-bold text-sm transition bg-primary text-dark shadow-md";
+                } else {
+                    event.target.className = "cat-btn active px-6 py-2.5 rounded-full font-bold text-sm transition bg-secondary text-white shadow-md";
+                }
+            }
+            
             window.filterCourses();
         };
 
