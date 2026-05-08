@@ -80,20 +80,38 @@
                     
                     <div class="flex items-center gap-2 lg:gap-3 bg-white dark:bg-slate-800 px-3 py-1.5 rounded-2xl border border-gray-200 dark:border-slate-700 shadow-sm">
                         
-                        <!-- Clickable Profile Box -> Opens Settings directly -->
-                        <div onclick="window.safeRedirect('dashboard.html?tab=settings-tab')" class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700 p-1.5 rounded-xl transition" title="ፕሮፋይል መቼት (Profile Settings)">
-                            <img id="nav-user-avatar" src="https://ui-avatars.com/api/?name=User" class="w-8 h-8 rounded-full border border-gray-200 dark:border-slate-600 object-cover shadow-sm">
-                            <span id="nav-user-name" class="text-sm font-black dark:text-white tracking-tight hidden sm:block pr-1">ተማሪ</span>
+                        <!-- Profile Dropdown Container -->
+                        <div class="relative" id="profile-menu-container">
+                            <div onclick="document.getElementById('profile-dropdown').classList.toggle('hidden')" class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700 p-1.5 rounded-xl transition" title="ፕሮፋይል (Profile)">
+                                <img id="nav-user-avatar" src="https://ui-avatars.com/api/?name=User" class="w-8 h-8 rounded-full border border-gray-200 dark:border-slate-600 object-cover shadow-sm">
+                                <span id="nav-user-name" class="text-sm font-black dark:text-white tracking-tight hidden sm:block pr-1">ተማሪ</span>
+                                <i class="fa-solid fa-chevron-down text-[10px] text-gray-400"></i>
+                            </div>
+                            
+                            <!-- Dropdown Menu -->
+                            <div id="profile-dropdown" class="hidden absolute top-full right-0 mt-2 w-60 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 overflow-hidden z-[60]">
+                                <div class="p-4 border-b border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50">
+                                    <p class="text-sm font-black text-dark dark:text-white truncate" id="dropdown-user-name">ተማሪ</p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 truncate" id="dropdown-user-email">user@email.com</p>
+                                </div>
+                                <div class="p-2 space-y-1">
+                                    <button id="dropdown-dashboard-btn" onclick="window.safeRedirect('dashboard.html')" class="hidden w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-slate-700 hover:text-secondary dark:hover:text-primary rounded-xl font-bold transition items-center gap-3">
+                                        <i class="fa-solid fa-chart-pie w-4"></i> የመማሪያ ክፍል
+                                    </button>
+                                    <button onclick="window.logoutUser()" class="w-full text-left px-4 py-2.5 text-sm text-danger hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl font-bold transition flex items-center gap-3">
+                                        <i class="fa-solid fa-arrow-right-from-bracket w-4"></i> መውጫ (Logout)
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                         
-                        <div class="h-6 w-px bg-gray-200 dark:bg-slate-700 mx-0.5"></div>
+                        <div id="nav-dashboard-divider" class="hidden h-6 w-px bg-gray-200 dark:bg-slate-700 mx-0.5"></div>
                         
-                        <!-- Smart Dashboard Button -->
+                        <!-- Smart Dashboard Button (Only visible if enrolled) -->
                         <button id="nav-dashboard-btn" onclick="window.safeRedirect('dashboard.html')" class="hidden bg-primary text-dark px-4 py-2 rounded-xl font-black text-xs hover:bg-yellow-400 transition shadow-md items-center gap-2">
                             <i class="fa-solid fa-chart-pie"></i> <span class="hidden sm:inline">ዳሽቦርድ</span>
                         </button>
                         
-                        <button onclick="window.logoutUser()" title="ውጣ (Logout)" class="text-gray-400 hover:text-danger transition ml-1 px-2"><i class="fa-solid fa-right-from-bracket"></i></button>
                     </div>
                 </div>
             </div>
@@ -268,21 +286,28 @@
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, getDocs, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Firebase Configuration
         const firebaseConfig = { apiKey: "AIzaSyDCxlwfYAS_I0D7c-8e-iB-Y-Rh2ZZoHZw", authDomain: "tsehaycampus-e1a6d.firebaseapp.com", projectId: "tsehaycampus-e1a6d", storageBucket: "tsehaycampus-e1a6d.firebasestorage.app", messagingSenderId: "1043616909865", appId: "1:1043616909865:web:9ecca7d9a14deef0f5ea38" };
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
         const appId = 'tsehaycampus-e1a6d';
 
-        // Global States
         window.currentUser = null;
         window.allCourses = [];
         window.userEnrollments = [];
         window.currentCategory = 'All';
         window.selectedCourseToPay = null;
 
-        // Safe Redirect Wrapper
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('#profile-menu-container')) {
+                const dropdown = document.getElementById('profile-dropdown');
+                if(dropdown && !dropdown.classList.contains('hidden')) {
+                    dropdown.classList.add('hidden');
+                }
+            }
+        });
+
         window.safeRedirect = function(target) {
             try {
                 if (window.location.protocol === 'blob:' || window.location.origin === 'null') {
@@ -308,7 +333,6 @@
             }
         };
 
-        // 1. STRICT Auth Guard (No Anonymous Allowed)
         onAuthStateChanged(auth, async (user) => {
             if (!user || user.isAnonymous) {
                 window.safeRedirect('index.html');
@@ -318,12 +342,16 @@
             window.currentUser = user;
             document.getElementById('main-body').classList.remove('hidden');
             
-            // Set User Profile UI
             const name = user.displayName || (user.email ? user.email.split('@')[0] : "ተማሪ");
             const photo = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=3268BA&color=fff`;
             
             const nameDisplay = document.getElementById('nav-user-name');
+            const dropNameDisplay = document.getElementById('dropdown-user-name');
+            const dropEmailDisplay = document.getElementById('dropdown-user-email');
+            
             if(nameDisplay) nameDisplay.innerText = name;
+            if(dropNameDisplay) dropNameDisplay.innerText = name;
+            if(dropEmailDisplay) dropEmailDisplay.innerText = user.email || "";
             
             const avatarDisplay = document.getElementById('nav-user-avatar');
             if(avatarDisplay) avatarDisplay.src = photo;
@@ -340,25 +368,25 @@
             window.safeRedirect('index.html');
         };
 
-        // 2. Fetch User Enrollments (And Toggle Dashboard Button)
         async function fetchUserEnrollments(uid) {
             try {
                 const enrollRef = collection(db, 'artifacts', appId, 'users', uid, 'enrollments');
                 const snap = await getDocs(enrollRef);
                 window.userEnrollments = snap.docs.map(d => d.id); 
                 
-                // Dashboard Button Logic (Only show if enrolled in >= 1 course)
+                // Show/Hide Dashboard buttons based on enrollment
                 const dashBtn = document.getElementById('nav-dashboard-btn');
+                const dashDiv = document.getElementById('nav-dashboard-divider');
+                const dropDashBtn = document.getElementById('dropdown-dashboard-btn');
+                
                 if (window.userEnrollments.length > 0) {
-                    if(dashBtn) {
-                        dashBtn.classList.remove('hidden');
-                        dashBtn.classList.add('flex');
-                    }
+                    if(dashBtn) { dashBtn.classList.remove('hidden'); dashBtn.classList.add('flex'); }
+                    if(dashDiv) { dashDiv.classList.remove('hidden'); dashDiv.classList.add('block'); }
+                    if(dropDashBtn) { dropDashBtn.classList.remove('hidden'); dropDashBtn.classList.add('flex'); }
                 } else {
-                    if(dashBtn) {
-                        dashBtn.classList.add('hidden');
-                        dashBtn.classList.remove('flex');
-                    }
+                    if(dashBtn) { dashBtn.classList.add('hidden'); dashBtn.classList.remove('flex'); }
+                    if(dashDiv) { dashDiv.classList.add('hidden'); dashDiv.classList.remove('block'); }
+                    if(dropDashBtn) { dropDashBtn.classList.add('hidden'); dropDashBtn.classList.remove('flex'); }
                 }
             } catch(e) {
                 console.error("Enrollment Fetch Error:", e);
@@ -366,7 +394,6 @@
             }
         }
 
-        // 3. Fetch All Public Courses
         async function fetchAllCourses() {
             try {
                 const coursesRef = collection(db, 'artifacts', appId, 'public', 'data', 'courses');
@@ -384,7 +411,6 @@
             }
         }
 
-        // 4. Render Courses to UI
         function renderCourses(courses) {
             const grid = document.getElementById('courseGrid');
             const empty = document.getElementById('emptyState');
@@ -400,6 +426,17 @@
                 const isFree = !c.price || c.price == 0;
                 const priceText = isFree ? 'ነፃ (Free)' : `${Number(c.price).toLocaleString()} ብር`;
                 const isEnrolled = window.userEnrollments.includes(c.id);
+                
+                // Smart Category Detection for UI display
+                let displayCat = c.category;
+                if (!displayCat) {
+                    const t = (c.title || '').toLowerCase();
+                    if (t.includes('shein') || t.includes('ገቢ') || t.includes('ኢ-ኮሜርስ') || t.includes('ecommerce')) displayCat = 'Ecommerce';
+                    else if (t.includes('marketing') || t.includes('ማርኬቲንግ') || t.includes('digital') || t.includes('ዲጂታል')) displayCat = 'Marketing';
+                    else if (t.includes('crypto') || t.includes('ክሪፕቶ') || t.includes('trading')) displayCat = 'Crypto';
+                    else if (t.includes('web') || t.includes('ዌብ') || t.includes('tech') || t.includes('ዴቨሎፕመንት')) displayCat = 'Tech';
+                    else displayCat = 'General';
+                }
                 
                 let btnHtml = '';
                 let badgeHtml = '';
@@ -422,23 +459,23 @@
                             <img src="${c.image}" class="w-full h-full object-cover group-hover:scale-110 transition duration-700" onerror="this.src='https://placehold.co/600x400?text=Course'">
                             <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
                             <div class="absolute bottom-4 left-4 text-white">
-                                <span class="bg-black/50 backdrop-blur-sm px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider border border-white/10">${c.category || 'General'}</span>
+                                <span class="bg-black/50 backdrop-blur-sm px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider border border-white/10">${displayCat}</span>
                             </div>
                         </div>
                         <div class="p-6 flex flex-col flex-grow">
                             <h3 class="font-black text-xl mb-2 text-dark dark:text-white leading-snug line-clamp-2">${c.title}</h3>
                             <p class="text-xs text-gray-500 font-bold mb-4 flex items-center gap-2"><i class="fa-solid fa-chalkboard-user text-secondary dark:text-primary"></i> ${c.instructor || 'Tsehay Campus'}</p>
+                            <p class="text-[14px] text-gray-600 dark:text-gray-400 mb-6 line-clamp-3 leading-relaxed">${c.desc || 'ምንም ማብራሪያ አልተጻፈም።'}</p>
                             
-                            <p class="text-[14px] text-gray-600 dark:text-gray-300 font-body mb-5 line-clamp-3 leading-relaxed">${c.desc || 'ምንም ማብራሪያ አልተጻፈም።'}</p>
-                            
-                            <div class="flex items-center gap-2 mb-5 mt-auto">
-                                <span class="bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-300 text-[11px] font-bold px-2.5 py-1.5 rounded-md flex items-center gap-1.5"><i class="fa-regular fa-clock text-secondary dark:text-primary"></i> ${c.duration || '00:00'}</span>
-                                <span class="bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-300 text-[11px] font-bold px-2.5 py-1.5 rounded-md flex items-center gap-1.5"><i class="fa-solid fa-list-ul text-primary"></i> ${c.lessons ? c.lessons.length : 0} ክፍሎች</span>
-                            </div>
-
-                            <div class="pt-4 border-t border-gray-100 dark:border-slate-700 flex items-center justify-between">
-                                <span class="font-black text-xl ${isFree ? 'text-success' : 'text-dark dark:text-white'}">${priceText}</span>
-                                <div class="w-1/2">${btnHtml}</div>
+                            <div class="mt-auto pt-5 border-t border-gray-100 dark:border-slate-700">
+                                <div class="flex justify-between items-center mb-5">
+                                    <span class="font-black text-2xl ${isFree ? 'text-success' : 'text-dark dark:text-white'}">${priceText}</span>
+                                    <div class="flex gap-3 text-xs font-bold text-gray-400">
+                                        <span title="የኮርሱ ርዝመት" class="bg-gray-50 dark:bg-slate-900 px-2.5 py-1.5 rounded-md border border-gray-200 dark:border-slate-700 flex items-center gap-1.5"><i class="fa-regular fa-clock text-secondary dark:text-primary"></i> ${c.duration || '00:00'}</span>
+                                        <span title="ክፍሎች" class="bg-gray-50 dark:bg-slate-900 px-2.5 py-1.5 rounded-md border border-gray-200 dark:border-slate-700 flex items-center gap-1.5"><i class="fa-solid fa-list-ul text-primary"></i> ${c.lessons ? c.lessons.length : 0} ክፍሎች</span>
+                                    </div>
+                                </div>
+                                ${btnHtml}
                             </div>
                         </div>
                     </div>
@@ -446,12 +483,14 @@
             });
         }
 
-        // 5. Filtering and Search (Updated for Free/Paid logic)
         window.filterCourses = () => {
             const query = document.getElementById('searchInput').value.toLowerCase();
             
             const filtered = window.allCourses.filter(c => {
-                const matchesSearch = c.title.toLowerCase().includes(query) || (c.desc && c.desc.toLowerCase().includes(query));
+                const titleLower = (c.title || '').toLowerCase();
+                const descLower = (c.desc || '').toLowerCase();
+                
+                const matchesSearch = titleLower.includes(query) || descLower.includes(query);
                 
                 let isFree = c.price == 0 || !c.price;
                 let matchesCategory = false;
@@ -463,7 +502,16 @@
                 } else if (window.currentCategory === 'Paid') {
                     matchesCategory = !isFree;
                 } else {
-                    matchesCategory = c.category && c.category.includes(window.currentCategory);
+                    const cat = window.currentCategory;
+                    if (c.category && c.category.includes(cat)) {
+                        matchesCategory = true;
+                    } else {
+                        // Smart keyword matching for categories (Smart Filter Fallback)
+                        if (cat === 'Ecommerce' && (titleLower.includes('ecommerce') || titleLower.includes('shein') || titleLower.includes('ገቢ ንግድ') || titleLower.includes('ኢ-ኮሜርስ'))) matchesCategory = true;
+                        if (cat === 'Marketing' && (titleLower.includes('marketing') || titleLower.includes('digital') || titleLower.includes('ማርኬቲንግ') || titleLower.includes('ዲጂታል'))) matchesCategory = true;
+                        if (cat === 'Crypto' && (titleLower.includes('crypto') || titleLower.includes('bitcoin') || titleLower.includes('ክሪፕቶ') || titleLower.includes('ትሬዲንግ'))) matchesCategory = true;
+                        if (cat === 'Tech' && (titleLower.includes('tech') || titleLower.includes('web') || titleLower.includes('ዌብ') || titleLower.includes('ቴክኖሎጂ') || titleLower.includes('ዴቨሎፕመንት'))) matchesCategory = true;
+                    }
                 }
 
                 return matchesSearch && matchesCategory;
@@ -474,11 +522,9 @@
         window.setCategory = (cat) => {
             window.currentCategory = cat;
             
-            // Reset all buttons
             document.querySelectorAll('.cat-btn').forEach(btn => {
                 btn.classList.remove('active', 'bg-secondary', 'text-white', 'shadow-md');
                 
-                // Specific reset for Free/Paid colors
                 if(btn.innerText.includes('ነፃ')) {
                     btn.className = "cat-btn px-6 py-2.5 rounded-full font-bold text-sm transition bg-success/10 text-success hover:bg-success hover:text-white border border-success/30";
                 } else if(btn.innerText.includes('ፕሪሚየም')) {
@@ -488,7 +534,6 @@
                 }
             });
             
-            // Style active button
             if(event && event.target) {
                 if(cat === 'Free') {
                     event.target.className = "cat-btn active px-6 py-2.5 rounded-full font-bold text-sm transition bg-success text-white shadow-md";
@@ -502,7 +547,6 @@
             window.filterCourses();
         };
 
-        // 6. Free Enrollment Process
         window.enrollFreeCourse = async (courseId) => {
             const course = window.allCourses.find(c => c.id === courseId);
             if(!course) return;
@@ -531,7 +575,6 @@
             }
         };
 
-        // 7. Payment Modal UI Logic
         window.openPaymentModal = (courseId) => {
             const course = window.allCourses.find(c => c.id === courseId);
             if(!course) return;
@@ -561,7 +604,6 @@
             });
         });
 
-        // 8. REAL Payment Processing via Backend
         window.processRealPayment = async () => {
             const errDiv = document.getElementById('payment-error');
             const method = document.querySelector('input[name="paymethod"]:checked').value;
@@ -621,7 +663,6 @@
             }
         };
 
-        // Theme Toggle
         window.toggleTheme = () => {
             const isDark = document.documentElement.classList.toggle('dark');
             localStorage.setItem('theme', isDark ? 'dark' : 'light');
