@@ -37,9 +37,10 @@ module.exports = async function(req, res) {
       return sendErrorAsMessage('እባክዎ ጥያቄዎን ያስገቡ። (Prompt is missing)');
     }
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    // ሞዴሉን ወደ አዲሱ ቨርዥን ቀይረነዋል
+    let url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
 
-    const payload = {
+    let payload = {
       contents: [{ parts: [{ text: prompt }] }]
     };
 
@@ -49,12 +50,12 @@ module.exports = async function(req, res) {
       };
     }
 
-    // Fetch API መኖሩን ማረጋገጥ (ለ አሮጌ Vercel Node ቨርዥኖች)
+    // Fetch API መኖሩን ማረጋገጥ
     if (typeof fetch === 'undefined') {
         return sendErrorAsMessage('በዚህ Vercel ቨርዥን ላይ Fetch API አይሰራም። እባክዎ Node.js 18+ ይጠቀሙ።');
     }
 
-    const response = await fetch(url, {
+    let response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -62,9 +63,29 @@ module.exports = async function(req, res) {
       body: JSON.stringify(payload)
     });
 
-    const data = await response.json();
+    let data = await response.json();
 
-    // Google API ስህተት ካመጣ
+    // 💡 AUTO-FALLBACK: ጎግል አሁንም ይሄኛውንም ሞዴል አላውቀውም (Not found) ካለ፣ 
+    // ምንም ኤረር ሳያሳይ በራሱ ጊዜ ወደ ሁለተኛው (Universal) ሞዴል 'gemini-pro' አሻሽሎ ይልካል!
+    if (!response.ok && data.error?.message?.toLowerCase().includes('not found')) {
+        url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`;
+        
+        // Gemini Pro 1.0 መመሪያዎችን የሚቀበለው ከጥያቄው ጋር ተደምሮ ስለሆነ
+        payload = {
+          contents: [{ parts: [{ text: (systemInstruction ? systemInstruction + "\n\nተጠቃሚው የሚከተለውን ጥያቄ ጠይቋል:\n" : "") + prompt }] }]
+        };
+        
+        response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+        data = await response.json();
+    }
+
+    // አሁንም Google API ሌላ ስህተት ካመጣ
     if (!response.ok) {
        return sendErrorAsMessage('ከ Google AI ስህተት ተገኝቷል: ' + (data.error?.message || response.statusText));
     }
