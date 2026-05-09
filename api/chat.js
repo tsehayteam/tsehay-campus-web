@@ -1,6 +1,6 @@
 /**
  * Gemini AI API Backend (Fetch API በመጠቀም)
- * ይህ ፋይል የዌብሳይትህን ጥያቄ ተቀብሎ ወደ Google Gemini ይልካል (Vercel Serverless Function).
+ * ይህ ኮድ ማንኛውንም ስህተት በቀጥታ በቻት ቦክሱ ላይ ይጽፍልሃል!
  */
 module.exports = async function(req, res) {
   // 1. የ Vercel ሴኪዩሪቲ (CORS) እንዳያግደው መፍቀጃ
@@ -13,41 +13,47 @@ module.exports = async function(req, res) {
     return res.status(200).end();
   }
 
-  // የ POST ጥያቄ (Request) ብቻ እንዲቀበል
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'POST request ብቻ ነው የሚፈቀደው።' });
-  }
+  // 💡 ብልጡ ዘዴ፡ ማንኛውንም ስህተት እንደ AI መልስ (Fake Message) አድርጎ ወደ ዌብሳይቱ የሚልክ ፋንክሽን
+  const sendErrorAsMessage = (msg) => {
+    return res.status(200).json({
+      candidates: [{ content: { parts: [{ text: "⚠️ የሲስተም መልእክት: " + msg }] } }]
+    });
+  };
 
   try {
-    // 2. የ API ኪዩን (Key) ከ Vercel Settings ላይ ይወስዳል
+    if (req.method !== 'POST') {
+      return sendErrorAsMessage('POST request ብቻ ነው የሚፈቀደው።');
+    }
+
     const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
     
     if (!apiKey) {
-      return res.status(500).json({ error: 'የ API Key አልተገኘም! እባክዎ Vercel Settings ላይ ያስገቡ። (Redeploy ማድረጎን አይርሱ)' });
+      return sendErrorAsMessage('የ API Key Vercel ላይ አልተገኘም! እባክዎ Settings -> Environment Variables ውስጥ GEMINI_API_KEY ያስገቡ እና Redeploy ያድርጉ።');
     }
 
     const { prompt, systemInstruction } = req.body;
 
     if (!prompt) {
-      return res.status(400).json({ error: 'እባክዎ ጥያቄዎን ያስገቡ።' });
+      return sendErrorAsMessage('እባክዎ ጥያቄዎን ያስገቡ። (Prompt is missing)');
     }
 
-    // 3. የ Google Gemini API ሊንክ (Gemini 1.5 Flash model)
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
-    // ለ AIው የሚላከው ዳታ (Payload)
     const payload = {
       contents: [{ parts: [{ text: prompt }] }]
     };
 
-    // የ AIው መመሪያ (System Instruction) ካለ መጨመር
     if (systemInstruction) {
       payload.systemInstruction = {
         parts: [{ text: systemInstruction }]
       };
     }
 
-    // 4. ጥያቄውን ወደ Google መላክ
+    // Fetch API መኖሩን ማረጋገጥ (ለ አሮጌ Vercel Node ቨርዥኖች)
+    if (typeof fetch === 'undefined') {
+        return sendErrorAsMessage('በዚህ Vercel ቨርዥን ላይ Fetch API አይሰራም። እባክዎ Node.js 18+ ይጠቀሙ።');
+    }
+
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -58,16 +64,16 @@ module.exports = async function(req, res) {
 
     const data = await response.json();
 
+    // Google API ስህተት ካመጣ
     if (!response.ok) {
-       return res.status(400).json({ error: data.error?.message || 'ከ Google AI ጋር መገናኘት አልተቻለም።' });
+       return sendErrorAsMessage('ከ Google AI ስህተት ተገኝቷል: ' + (data.error?.message || response.statusText));
     }
 
-    // 5. የተመለሰውን መልስ ለዌብሳይታችን (Frontend) መላክ
+    // ሁሉም ነገር ትክክል ከሆነ ትክክለኛውን መልስ መላክ
     return res.status(200).json(data);
 
   } catch (error) {
     console.error("AI Error:", error);
-    // የኢንተርኔት ወይም የሰርቨር ችግር ካለ ማሳወቅ
-    return res.status(500).json({ error: 'የቴክኒክ ችግር! ከ AI አገልጋይ ጋር መገናኘት አልተቻለም።' });
+    return sendErrorAsMessage('የኮድ ስህተት ተፈጥሯል (Backend Crash): ' + error.message);
   }
 }
