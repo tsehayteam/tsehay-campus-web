@@ -1,6 +1,6 @@
 /**
- * Gemini AI API Backend (Fetch API በመጠቀም)
- * ይህ ኮድ ማንኛውንም ስህተት በቀጥታ በቻት ቦክሱ ላይ ይጽፍልሃል!
+ * Gemini AI API Backend (Pro Account Optimized)
+ * ይህ ኮድ ለ Pro Account ተጠቃሚዎች ተብሎ የተዘጋጀ ሲሆን 'gemini-1.5-pro'ን ይጠቀማል።
  */
 module.exports = async function(req, res) {
   // 1. የ Vercel ሴኪዩሪቲ (CORS) እንዳያግደው መፍቀጃ
@@ -13,7 +13,7 @@ module.exports = async function(req, res) {
     return res.status(200).end();
   }
 
-  // 💡 ብልጡ ዘዴ፡ ማንኛውንም ስህተት እንደ AI መልስ (Fake Message) አድርጎ ወደ ዌብሳይቱ የሚልክ ፋንክሽን
+  // 💡 ስህተቶችን በቻት ቦክሱ ላይ ለመጻፍ
   const sendErrorAsMessage = (msg) => {
     return res.status(200).json({
       candidates: [{ content: { parts: [{ text: "⚠️ የሲስተም መልእክት: " + msg }] } }]
@@ -28,50 +28,62 @@ module.exports = async function(req, res) {
     const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
     
     if (!apiKey) {
-      return sendErrorAsMessage('የ API Key Vercel ላይ አልተገኘም! እባክዎ Settings -> Environment Variables ውስጥ GEMINI_API_KEY ያስገቡ እና Redeploy ያድርጉ።');
-    }
-
-    // 🚨 ትልቁ ማረጋገጫ (Firebase ኪይ መሆኑን ማጣሪያ) 🚨
-    if (apiKey.includes('AIzaSyDCxLwfYAS')) {
-        return sendErrorAsMessage('❌ ስህተት! Vercel ላይ ያስገቡት የ Firebase ኪይን ነው። እባክዎ ወደ aistudio.google.com/app/apikey ሄደው አዲስ የ Gemini ኪይ ይፍጠሩ እና Vercel ላይ ቀይረው Redeploy ያድርጉ።');
+      return sendErrorAsMessage('የ API Key Vercel ላይ አልተገኘም! እባክዎ Settings -> Environment Variables ውስጥ GEMINI_API_KEY ያስገቡ።');
     }
 
     const { prompt, systemInstruction } = req.body;
 
     if (!prompt) {
-      return sendErrorAsMessage('እባክዎ ጥያቄዎን ያስገቡ። (Prompt is missing)');
+      return sendErrorAsMessage('እባክዎ ጥያቄዎን ያስገቡ።');
     }
 
-    // ሞዴሉን ወደ gemini-pro ቀይረነዋል (ለሁሉም ኪዮች በተሻለ እንዲሰራ)
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`;
+    /**
+     * 💡 PRO ACCOUNT OPTIMIZATION
+     * ለ Pro ተጠቃሚዎች 'gemini-1.5-pro' ምርጥ እና ብልጥ ምርጫ ነው።
+     */
+    const modelName = "gemini-1.5-pro"; 
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
 
-    // Gemini Pro system instruction ስለማይቀበል፣ መመሪያውን ከጥያቄው ጋር እንደምረዋለን
-    const combinedPrompt = systemInstruction ? `${systemInstruction}\n\nተጠቃሚው የሚከተለውን ጥያቄ ጠይቋል:\n${prompt}` : prompt;
-
-    let payload = {
-      contents: [{ parts: [{ text: combinedPrompt }] }]
+    const payload = {
+      contents: [{ parts: [{ text: prompt }] }]
     };
+
+    if (systemInstruction) {
+      payload.systemInstruction = {
+        parts: [{ text: systemInstruction }]
+      };
+    }
 
     let response = await fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
 
     let data = await response.json();
 
-    // ከ Google API ስህተት ከመጣ (ለምሳሌ የተሳሳተ API Key ከሆነ)
     if (!response.ok) {
-       return sendErrorAsMessage('ከ Google AI ስህተት ተገኝቷል: ' + (data.error?.message || response.statusText) + ' (እባክዎ ትክክለኛ የ Google AI Studio API Key መጠቀሞን ያረጋግጡ)');
+       let errorMsg = data.error?.message || response.statusText;
+       
+       // ሞዴሉ ካልተገኘ ወደ Flash ሞዴል በራሱ ይቀይራል
+       if (errorMsg.toLowerCase().includes('not found')) {
+           const fallbackUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+           const fbResponse = await fetch(fallbackUrl, {
+               method: 'POST',
+               headers: { 'Content-Type': 'application/json' },
+               body: JSON.stringify(payload)
+           });
+           const fbData = await fbResponse.json();
+           if (fbResponse.ok) return res.status(200).json(fbData);
+       }
+       
+       return sendErrorAsMessage('ጎግል ስህተት መለሰ: ' + errorMsg);
     }
 
-    // ሁሉም ነገር ትክክል ከሆነ ትክክለኛውን መልስ መላክ
     return res.status(200).json(data);
 
   } catch (error) {
     console.error("AI Error:", error);
-    return sendErrorAsMessage('የኮድ ስህተት ተፈጥሯል (Backend Crash): ' + error.message);
+    return sendErrorAsMessage('የባክኤንድ ስህተት (Crash): ' + error.message);
   }
 }
