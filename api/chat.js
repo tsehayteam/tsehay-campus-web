@@ -1,6 +1,6 @@
 /**
- * Gemini AI API Backend (ለነፃ አካውንት የተስተካከለ)
- * ይህ ኮድ በተለይ ለነፃ የ AI Studio ቁልፎች እንዲሰራ ተደርጎ የተዘጋጀ ነው።
+ * Gemini AI API Backend (Pro & Free Account Optimized)
+ * ይህ ኮድ ለ Pro አካውንት ተጠቃሚዎች Gemini 1.5 Proን ቅድሚያ እንዲጠቀም ተደርጎ የተስተካከለ ነው።
  */
 module.exports = async function(req, res) {
   // 1. የ Vercel ሴኪዩሪቲ (CORS) እንዳያግደው መፍቀጃ
@@ -35,16 +35,16 @@ module.exports = async function(req, res) {
     if (!prompt) return sendErrorAsMessage('እባክዎ ጥያቄዎን ያስገቡ።');
 
     /**
-     * 💡 FREE TIER OPTIMIZED LOGIC
-     * ለነፃ ተጠቃሚዎች 'gemini-1.5-flash' በጣም አስተማማኝ እና ፈጣን ሞዴል ነው።
+     * 💡 MODEL PRIORITY LOGIC
+     * ለ Pro አካውንት 'gemini-1.5-pro' ምርጥ ምርጫ ነው።
      */
-    const modelsToTry = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-pro"];
+    const modelsToTry = ["gemini-1.5-pro", "gemini-1.5-flash", "gemini-pro"];
     let lastError = "";
     let finalData = null;
 
     for (const modelName of modelsToTry) {
       try {
-        // የ API ስሪቱን ወደ v1beta ወይም v1 መጠቀም ይቻላል
+        // የ API ስሪቱን ወደ v1beta በመጠቀም የቅርብ ጊዜ ሞዴሎችን ማግኘት ይቻላል
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
         
         const isLegacy = modelName === "gemini-pro";
@@ -65,10 +65,10 @@ module.exports = async function(req, res) {
 
         if (response.ok && data.candidates) {
           finalData = data;
-          break; // በትክክል ከሰራ ከሉፑ ይወጣል
+          break; // አንደኛው ሞዴል ከሰራ ከሉፑ ይወጣል
         } else {
           lastError = data.error?.message || "Unknown error";
-          // ሞዴሉ ካልተገኘ ብቻ ወደ ቀጣዩ ሞዴል ይሸጋገራል
+          // ሞዴሉ ካልተገኘ ብቻ ወደ ቀጣዩ (ለምሳሌ ከ Pro ወደ Flash) ይሸጋገራል
           if (lastError.toLowerCase().includes("not found")) continue;
           else break; 
         }
@@ -81,7 +81,7 @@ module.exports = async function(req, res) {
     if (finalData) {
       return res.status(200).json(finalData);
     } else {
-      return sendErrorAsMessage(`ጎግል ስህተት መለሰ: ${lastError}። እባክዎ የ API ቁልፍዎ በትክክል መገባቱን ያረጋግጡ።`);
+      return sendErrorAsMessage(`ጎግል ስህተት መለሰ: ${lastError}። እባክዎ የ API ቁልፍዎ በ AI Studio (aistudio.google.com) መፈጠሩን ያረጋግጡ።`);
     }
 
   } catch (error) {
