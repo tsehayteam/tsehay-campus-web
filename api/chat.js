@@ -1,6 +1,6 @@
 /**
- * Gemini AI API Backend (Pro & Free Account Optimized)
- * ይህ ኮድ ለ Pro አካውንት ተጠቃሚዎች Gemini 1.5 Proን ቅድሚያ እንዲጠቀም ተደርጎ የተስተካከለ ነው።
+ * Gemini AI API Backend (Stable v1 Optimized)
+ * ይህ ኮድ ማንኛውንም የ Google AI Studio ቁልፍ እንዲቀበል ተደርጎ የተስተካከለ የመጨረሻ ስሪት ነው።
  */
 module.exports = async function(req, res) {
   // 1. የ Vercel ሴኪዩሪቲ (CORS) እንዳያግደው መፍቀጃ
@@ -35,25 +35,30 @@ module.exports = async function(req, res) {
     if (!prompt) return sendErrorAsMessage('እባክዎ ጥያቄዎን ያስገቡ።');
 
     /**
-     * 💡 MODEL PRIORITY LOGIC
-     * ለ Pro አካውንት 'gemini-1.5-pro' ምርጥ ምርጫ ነው።
+     * 💡 STABLE MODEL LOGIC
+     * 'gemini-1.5-flash' በአሁኑ ሰዓት ለሁሉም የ AI Studio ቁልፎች (ነፃም ሆነ ፕሪሚየም) 
+     * በ 'v1' ስሪት ላይ በጣም አስተማማኝው ሞዴል ነው።
      */
-    const modelsToTry = ["gemini-1.5-pro", "gemini-1.5-flash", "gemini-pro"];
+    const modelsToTry = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-pro"];
     let lastError = "";
     let finalData = null;
 
     for (const modelName of modelsToTry) {
       try {
-        // የ API ስሪቱን ወደ v1beta በመጠቀም የቅርብ ጊዜ ሞዴሎችን ማግኘት ይቻላል
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+        // የ API ስሪቱን ወደ 'v1' በመቀየር የበለጠ አስተማማኝ እንዲሆን አድርገነዋል
+        const url = `https://generativelanguage.googleapis.com/v1/models/${modelName}:generateContent?key=${apiKey}`;
         
-        const isLegacy = modelName === "gemini-pro";
-        const payload = isLegacy ? {
-          contents: [{ parts: [{ text: (systemInstruction ? systemInstruction + "\n\nጥያቄ:\n" : "") + prompt }] }]
-        } : {
+        // ለ Gemini 1.5 እና ከዚያ በላይ ለሆኑ ሞዴሎች የተስተካከለ ዳታ (Payload)
+        const payload = {
           contents: [{ parts: [{ text: prompt }] }],
           systemInstruction: systemInstruction ? { parts: [{ text: systemInstruction }] } : undefined
         };
+
+        // የቆየ ሞዴል (gemini-pro 1.0) ከሆነ ፔይሎዱን እናስተካክላለን
+        if (modelName === "gemini-pro") {
+            delete payload.systemInstruction;
+            payload.contents[0].parts[0].text = (systemInstruction ? systemInstruction + "\n\nጥያቄ:\n" : "") + prompt;
+        }
 
         const response = await fetch(url, {
           method: 'POST',
@@ -68,8 +73,8 @@ module.exports = async function(req, res) {
           break; // አንደኛው ሞዴል ከሰራ ከሉፑ ይወጣል
         } else {
           lastError = data.error?.message || "Unknown error";
-          // ሞዴሉ ካልተገኘ ብቻ ወደ ቀጣዩ (ለምሳሌ ከ Pro ወደ Flash) ይሸጋገራል
-          if (lastError.toLowerCase().includes("not found")) continue;
+          // ሞዴሉ ካልተገኘ ብቻ ወደ ቀጣዩ ይሸጋገራል
+          if (lastError.toLowerCase().includes("not found") || lastError.toLowerCase().includes("not supported")) continue;
           else break; 
         }
       } catch (err) {
@@ -81,7 +86,7 @@ module.exports = async function(req, res) {
     if (finalData) {
       return res.status(200).json(finalData);
     } else {
-      return sendErrorAsMessage(`ጎግል ስህተት መለሰ: ${lastError}። እባክዎ የ API ቁልፍዎ በ AI Studio (aistudio.google.com) መፈጠሩን ያረጋግጡ።`);
+      return sendErrorAsMessage(`ጎግል ስህተት መለሰ: ${lastError}። እባክዎ አዲስ API Key በ AI Studio (aistudio.google.com) ዛሬውኑ ፈጥረው Vercel ላይ ይቀይሩ።`);
     }
 
   } catch (error) {
