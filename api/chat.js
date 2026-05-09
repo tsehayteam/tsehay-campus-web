@@ -37,8 +37,8 @@ module.exports = async function(req, res) {
       return sendErrorAsMessage('እባክዎ ጥያቄዎን ያስገቡ። (Prompt is missing)');
     }
 
-    // መጀመሪያ አዲሱን እና ፈጣኑን ሞዴል እንሞክራለን (gemini-1.5-flash)
-    let url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    // ትክክለኛው እና ፈጣኑ ሞዴል (gemini-1.5-flash)
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
     let payload = {
       contents: [{ parts: [{ text: prompt }] }]
@@ -48,11 +48,6 @@ module.exports = async function(req, res) {
       payload.systemInstruction = {
         parts: [{ text: systemInstruction }]
       };
-    }
-
-    // Fetch API መኖሩን ማረጋገጥ
-    if (typeof fetch === 'undefined') {
-        return sendErrorAsMessage('በዚህ Vercel ቨርዥን ላይ Fetch API አይሰራም። እባክዎ Node.js 18+ ይጠቀሙ።');
     }
 
     let response = await fetch(url, {
@@ -65,37 +60,9 @@ module.exports = async function(req, res) {
 
     let data = await response.json();
 
-    // 💡 AUTO-FALLBACK 1: የመጀመሪያው ሞዴል እምቢ ካለ ወደ ትልቁ (gemini-1.5-pro) ይሞክራል
-    if (!response.ok && data.error?.message?.toLowerCase().includes('not found')) {
-        url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${apiKey}`;
-        response = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        data = await response.json();
-    }
-
-    // 💡 AUTO-FALLBACK 2: አሁንም እምቢ ካለ (አሮጌ API Key ከሆነ) ወደ አሮጌው (gemini-1.0-pro) ይሞክራል
-    if (!response.ok && data.error?.message?.toLowerCase().includes('not found')) {
-        url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.0-pro:generateContent?key=${apiKey}`;
-        
-        // አሮጌው ሞዴል systemInstruction ስለማይቀበል ከጥያቄው ጋር ደምረን እንልከዋለን
-        payload = {
-          contents: [{ parts: [{ text: (systemInstruction ? systemInstruction + "\n\nተጠቃሚው የሚከተለውን ጥያቄ ጠይቋል:\n" : "") + prompt }] }]
-        };
-        
-        response = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        data = await response.json();
-    }
-
-    // አሁንም Google API ሌላ ስህተት ካመጣ
+    // ከ Google API ስህተት ከመጣ (ለምሳሌ የተሳሳተ API Key ከሆነ)
     if (!response.ok) {
-       return sendErrorAsMessage('ከ Google AI ስህተት ተገኝቷል: ' + (data.error?.message || response.statusText));
+       return sendErrorAsMessage('ከ Google AI ስህተት ተገኝቷል: ' + (data.error?.message || response.statusText) + ' (እባክዎ ትክክለኛ የ Google AI Studio API Key መጠቀሞን ያረጋግጡ)');
     }
 
     // ሁሉም ነገር ትክክል ከሆነ ትክክለኛውን መልስ መላክ
