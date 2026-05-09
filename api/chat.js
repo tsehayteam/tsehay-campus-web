@@ -37,28 +37,26 @@ module.exports = async function(req, res) {
     /**
      * 💡 STABLE MODEL LOGIC
      * 'gemini-1.5-flash' በአሁኑ ሰዓት ለሁሉም የ AI Studio ቁልፎች (ነፃም ሆነ ፕሪሚየም) 
-     * በ 'v1' ስሪት ላይ በጣም አስተማማኝው ሞዴል ነው።
+     * በጣም አስተማማኝው ሞዴል ነው።
      */
     const modelsToTry = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-pro"];
     let lastError = "";
     let finalData = null;
 
+    // 💡 'Unknown name systemInstruction' የሚለውን ኤረር ለመፍታት፡
+    // መመሪያውን እና ጥያቄውን በአንድ ላይ አጣምረን እንልከዋለን። 
+    // ይህ አሰራር በማንኛውም የጎግል ቨርዥን ላይ ይሰራል!
+    const combinedText = systemInstruction 
+      ? `System Instruction: ${systemInstruction}\n\nUser Prompt: ${prompt}` 
+      : prompt;
+
     for (const modelName of modelsToTry) {
       try {
-        // የ API ስሪቱን ወደ 'v1' በመቀየር የበለጠ አስተማማኝ እንዲሆን አድርገነዋል
-        const url = `https://generativelanguage.googleapis.com/v1/models/${modelName}:generateContent?key=${apiKey}`;
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
         
-        // ለ Gemini 1.5 እና ከዚያ በላይ ለሆኑ ሞዴሎች የተስተካከለ ዳታ (Payload)
         const payload = {
-          contents: [{ parts: [{ text: prompt }] }],
-          systemInstruction: systemInstruction ? { parts: [{ text: systemInstruction }] } : undefined
+          contents: [{ parts: [{ text: combinedText }] }]
         };
-
-        // የቆየ ሞዴል (gemini-pro 1.0) ከሆነ ፔይሎዱን እናስተካክላለን
-        if (modelName === "gemini-pro") {
-            delete payload.systemInstruction;
-            payload.contents[0].parts[0].text = (systemInstruction ? systemInstruction + "\n\nጥያቄ:\n" : "") + prompt;
-        }
 
         const response = await fetch(url, {
           method: 'POST',
