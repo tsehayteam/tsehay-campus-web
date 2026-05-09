@@ -31,24 +31,26 @@ module.exports = async function(req, res) {
       return sendErrorAsMessage('የ API Key Vercel ላይ አልተገኘም! እባክዎ Settings -> Environment Variables ውስጥ GEMINI_API_KEY ያስገቡ እና Redeploy ያድርጉ።');
     }
 
+    // 🚨 ትልቁ ማረጋገጫ (Firebase ኪይ መሆኑን ማጣሪያ) 🚨
+    if (apiKey.includes('AIzaSyDCxLwfYAS')) {
+        return sendErrorAsMessage('❌ ስህተት! Vercel ላይ ያስገቡት የ Firebase ኪይን ነው። እባክዎ ወደ aistudio.google.com/app/apikey ሄደው አዲስ የ Gemini ኪይ ይፍጠሩ እና Vercel ላይ ቀይረው Redeploy ያድርጉ።');
+    }
+
     const { prompt, systemInstruction } = req.body;
 
     if (!prompt) {
       return sendErrorAsMessage('እባክዎ ጥያቄዎን ያስገቡ። (Prompt is missing)');
     }
 
-    // ትክክለኛው እና ፈጣኑ ሞዴል (gemini-1.5-flash)
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    // ሞዴሉን ወደ gemini-pro ቀይረነዋል (ለሁሉም ኪዮች በተሻለ እንዲሰራ)
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`;
+
+    // Gemini Pro system instruction ስለማይቀበል፣ መመሪያውን ከጥያቄው ጋር እንደምረዋለን
+    const combinedPrompt = systemInstruction ? `${systemInstruction}\n\nተጠቃሚው የሚከተለውን ጥያቄ ጠይቋል:\n${prompt}` : prompt;
 
     let payload = {
-      contents: [{ parts: [{ text: prompt }] }]
+      contents: [{ parts: [{ text: combinedPrompt }] }]
     };
-
-    if (systemInstruction) {
-      payload.systemInstruction = {
-        parts: [{ text: systemInstruction }]
-      };
-    }
 
     let response = await fetch(url, {
       method: 'POST',
