@@ -1,9 +1,10 @@
 /**
- * Gemini AI API Backend (Pro Account Optimized)
- * ይህ ኮድ ለ Pro Account ተጠቃሚዎች ተብሎ የተዘጋጀ ሲሆን 'gemini-1.5-pro'ን ይጠቀማል።
+ * Gemini AI API Backend (Universal Model Fallback)
+ * Khoutu ye e hlamilwe go šoma le diakhaunto tša Pro le tša Mahala.
+ * E leka mebotlolo ye mentši go netefatša gore tšhomišo ga e kgaotše.
  */
 module.exports = async function(req, res) {
-  // 1. የ Vercel ሴኪዩሪቲ (CORS) እንዳያግደው መፍቀጃ
+  // 1. Thulaganyo ya Vercel (CORS) - Tšhireletšo
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
@@ -13,7 +14,7 @@ module.exports = async function(req, res) {
     return res.status(200).end();
   }
 
-  // 💡 ስህተቶችን በቻት ቦክሱ ላይ ለመጻፍ
+  // Romela phošo bjalo ka molaetša wa AI (Fake message for UI)
   const sendErrorAsMessage = (msg) => {
     return res.status(200).json({
       candidates: [{ content: { parts: [{ text: "⚠️ የሲስተም መልእክት: " + msg }] } }]
@@ -25,62 +26,66 @@ module.exports = async function(req, res) {
       return sendErrorAsMessage('POST request ብቻ ነው የሚፈቀደው።');
     }
 
+    // Lekola selotlolo sa API go tšwa go Vercel
     const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
     
     if (!apiKey) {
-      return sendErrorAsMessage('የ API Key Vercel ላይ አልተገኘም! እባክዎ Settings -> Environment Variables ውስጥ GEMINI_API_KEY ያስገቡ።');
+      return sendErrorAsMessage('የ API Key Vercel ላይ አልተገኘም! እባክዎ Settings ውስጥ GEMINI_API_KEY ያስገቡ።');
     }
 
     const { prompt, systemInstruction } = req.body;
-
-    if (!prompt) {
-      return sendErrorAsMessage('እባክዎ ጥያቄዎን ያስገቡ።');
-    }
+    if (!prompt) return sendErrorAsMessage('እባክዎ ጥያቄዎን ያስገቡ።');
 
     /**
-     * 💡 PRO ACCOUNT OPTIMIZATION
-     * ለ Pro ተጠቃሚዎች 'gemini-1.5-pro' ምርጥ እና ብልጥ ምርጫ ነው።
+     * 💡 UNIVERSAL FALLBACK LOGIC
+     * Mebotlolo ye re tlago e leka ka tatelano.
      */
-    const modelName = "gemini-1.5-pro"; 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+    const modelsToTry = ["gemini-1.5-pro", "gemini-1.5-flash", "gemini-pro"];
+    let lastError = "";
+    let finalData = null;
 
-    const payload = {
-      contents: [{ parts: [{ text: prompt }] }]
-    };
+    for (const modelName of modelsToTry) {
+      try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+        
+        // Gemini 1.5 versions handle system instructions directly
+        // gemini-pro (1.0) needs instructions appended to prompt
+        const isLegacy = modelName === "gemini-pro";
+        const payload = isLegacy ? {
+          contents: [{ parts: [{ text: (systemInstruction ? systemInstruction + "\n\nጥያቄ:\n" : "") + prompt }] }]
+        } : {
+          contents: [{ parts: [{ text: prompt }] }],
+          systemInstruction: systemInstruction ? { parts: [{ text: systemInstruction }] } : undefined
+        };
 
-    if (systemInstruction) {
-      payload.systemInstruction = {
-        parts: [{ text: systemInstruction }]
-      };
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.candidates) {
+          finalData = data;
+          break; // Success! Exit the loop.
+        } else {
+          lastError = data.error?.message || "Unknown error";
+          // If the model specifically is not found, continue to next model
+          if (lastError.toLowerCase().includes("not found")) continue;
+          else break; // If it's a different error (like quota), stop.
+        }
+      } catch (err) {
+        lastError = err.message;
+        continue;
+      }
     }
 
-    let response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-
-    let data = await response.json();
-
-    if (!response.ok) {
-       let errorMsg = data.error?.message || response.statusText;
-       
-       // ሞዴሉ ካልተገኘ ወደ Flash ሞዴል በራሱ ይቀይራል
-       if (errorMsg.toLowerCase().includes('not found')) {
-           const fallbackUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-           const fbResponse = await fetch(fallbackUrl, {
-               method: 'POST',
-               headers: { 'Content-Type': 'application/json' },
-               body: JSON.stringify(payload)
-           });
-           const fbData = await fbResponse.json();
-           if (fbResponse.ok) return res.status(200).json(fbData);
-       }
-       
-       return sendErrorAsMessage('ጎግል ስህተት መለሰ: ' + errorMsg);
+    if (finalData) {
+      return res.status(200).json(finalData);
+    } else {
+      return sendErrorAsMessage(`ጎግል ስህተት መለሰ: ${lastError}። እባክዎ አዲስ API Key በ AI Studio ፈጥረው Vercel ላይ ይቀይሩ።`);
     }
-
-    return res.status(200).json(data);
 
   } catch (error) {
     console.error("AI Error:", error);
