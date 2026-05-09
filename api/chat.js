@@ -37,8 +37,8 @@ module.exports = async function(req, res) {
       return sendErrorAsMessage('እባክዎ ጥያቄዎን ያስገቡ። (Prompt is missing)');
     }
 
-    // ሞዴሉን ወደ አዲሱ ቨርዥን ቀይረነዋል
-    let url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
+    // መጀመሪያ አዲሱን እና ፈጣኑን ሞዴል እንሞክራለን (gemini-1.5-flash)
+    let url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
     let payload = {
       contents: [{ parts: [{ text: prompt }] }]
@@ -65,21 +65,29 @@ module.exports = async function(req, res) {
 
     let data = await response.json();
 
-    // 💡 AUTO-FALLBACK: ጎግል አሁንም ይሄኛውንም ሞዴል አላውቀውም (Not found) ካለ፣ 
-    // ምንም ኤረር ሳያሳይ በራሱ ጊዜ ወደ ሁለተኛው (Universal) ሞዴል 'gemini-pro' አሻሽሎ ይልካል!
+    // 💡 AUTO-FALLBACK 1: የመጀመሪያው ሞዴል እምቢ ካለ ወደ ትልቁ (gemini-1.5-pro) ይሞክራል
     if (!response.ok && data.error?.message?.toLowerCase().includes('not found')) {
-        url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`;
+        url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${apiKey}`;
+        response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        data = await response.json();
+    }
+
+    // 💡 AUTO-FALLBACK 2: አሁንም እምቢ ካለ (አሮጌ API Key ከሆነ) ወደ አሮጌው (gemini-1.0-pro) ይሞክራል
+    if (!response.ok && data.error?.message?.toLowerCase().includes('not found')) {
+        url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.0-pro:generateContent?key=${apiKey}`;
         
-        // Gemini Pro 1.0 መመሪያዎችን የሚቀበለው ከጥያቄው ጋር ተደምሮ ስለሆነ
+        // አሮጌው ሞዴል systemInstruction ስለማይቀበል ከጥያቄው ጋር ደምረን እንልከዋለን
         payload = {
           contents: [{ parts: [{ text: (systemInstruction ? systemInstruction + "\n\nተጠቃሚው የሚከተለውን ጥያቄ ጠይቋል:\n" : "") + prompt }] }]
         };
         
         response = await fetch(url, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
         data = await response.json();
