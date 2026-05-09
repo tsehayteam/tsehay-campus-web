@@ -1,10 +1,9 @@
 /**
- * Gemini AI API Backend (Universal Model Fallback)
- * Khoutu ye e hlamilwe go šoma le diakhaunto tša Pro le tša Mahala.
- * E leka mebotlolo ye mentši go netefatša gore tšhomišo ga e kgaotše.
+ * Gemini AI API Backend (ለነፃ አካውንት የተስተካከለ)
+ * ይህ ኮድ በተለይ ለነፃ የ AI Studio ቁልፎች እንዲሰራ ተደርጎ የተዘጋጀ ነው።
  */
 module.exports = async function(req, res) {
-  // 1. Thulaganyo ya Vercel (CORS) - Tšhireletšo
+  // 1. የ Vercel ሴኪዩሪቲ (CORS) እንዳያግደው መፍቀጃ
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
@@ -14,7 +13,7 @@ module.exports = async function(req, res) {
     return res.status(200).end();
   }
 
-  // Romela phošo bjalo ka molaetša wa AI (Fake message for UI)
+  // ስህተቶችን በቻት ቦክሱ ላይ ለመጻፍ
   const sendErrorAsMessage = (msg) => {
     return res.status(200).json({
       candidates: [{ content: { parts: [{ text: "⚠️ የሲስተም መልእክት: " + msg }] } }]
@@ -26,7 +25,6 @@ module.exports = async function(req, res) {
       return sendErrorAsMessage('POST request ብቻ ነው የሚፈቀደው።');
     }
 
-    // Lekola selotlolo sa API go tšwa go Vercel
     const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
     
     if (!apiKey) {
@@ -37,19 +35,18 @@ module.exports = async function(req, res) {
     if (!prompt) return sendErrorAsMessage('እባክዎ ጥያቄዎን ያስገቡ።');
 
     /**
-     * 💡 UNIVERSAL FALLBACK LOGIC
-     * Mebotlolo ye re tlago e leka ka tatelano.
+     * 💡 FREE TIER OPTIMIZED LOGIC
+     * ለነፃ ተጠቃሚዎች 'gemini-1.5-flash' በጣም አስተማማኝ እና ፈጣን ሞዴል ነው።
      */
-    const modelsToTry = ["gemini-1.5-pro", "gemini-1.5-flash", "gemini-pro"];
+    const modelsToTry = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-pro"];
     let lastError = "";
     let finalData = null;
 
     for (const modelName of modelsToTry) {
       try {
+        // የ API ስሪቱን ወደ v1beta ወይም v1 መጠቀም ይቻላል
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
         
-        // Gemini 1.5 versions handle system instructions directly
-        // gemini-pro (1.0) needs instructions appended to prompt
         const isLegacy = modelName === "gemini-pro";
         const payload = isLegacy ? {
           contents: [{ parts: [{ text: (systemInstruction ? systemInstruction + "\n\nጥያቄ:\n" : "") + prompt }] }]
@@ -68,12 +65,12 @@ module.exports = async function(req, res) {
 
         if (response.ok && data.candidates) {
           finalData = data;
-          break; // Success! Exit the loop.
+          break; // በትክክል ከሰራ ከሉፑ ይወጣል
         } else {
           lastError = data.error?.message || "Unknown error";
-          // If the model specifically is not found, continue to next model
+          // ሞዴሉ ካልተገኘ ብቻ ወደ ቀጣዩ ሞዴል ይሸጋገራል
           if (lastError.toLowerCase().includes("not found")) continue;
-          else break; // If it's a different error (like quota), stop.
+          else break; 
         }
       } catch (err) {
         lastError = err.message;
@@ -84,7 +81,7 @@ module.exports = async function(req, res) {
     if (finalData) {
       return res.status(200).json(finalData);
     } else {
-      return sendErrorAsMessage(`ጎግል ስህተት መለሰ: ${lastError}። እባክዎ አዲስ API Key በ AI Studio ፈጥረው Vercel ላይ ይቀይሩ።`);
+      return sendErrorAsMessage(`ጎግል ስህተት መለሰ: ${lastError}። እባክዎ የ API ቁልፍዎ በትክክል መገባቱን ያረጋግጡ።`);
     }
 
   } catch (error) {
