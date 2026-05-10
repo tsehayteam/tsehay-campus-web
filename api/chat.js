@@ -1,9 +1,9 @@
 /**
- * Gemini AI API Backend - Ultimate Auto-Healing Version
- * ይህ ኮድ ማንኛውንም የሞዴል መጥፋት ወይም የ API ስሪት አለመጣጣም ችግርን በራሱ ይፈታል!
+ * Gemini AI API Backend - Gemini 2.0 Flash Support
+ * ይህ ኮድ አዲሱን እና ፈጣኑን Gemini 2.0 ሞዴል ቅድሚያ እንዲጠቀም ተደርጎ የተዘጋጀ ነው።
  */
 module.exports = async function(req, res) {
-  // 1. የ Vercel ሴኪዩሪቲ (CORS) መፍቀጃ
+  // CORS Security
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
@@ -11,7 +11,6 @@ module.exports = async function(req, res) {
 
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  // ስህተቶችን ለተጠቃሚው መልእክት አድርጎ መላኪያ
   const sendErrorAsMessage = (msg) => {
     return res.status(200).json({
       candidates: [{ content: { parts: [{ text: "⚠️ የሲስተም ማሳወቂያ: " + msg }] } }]
@@ -21,18 +20,16 @@ module.exports = async function(req, res) {
   try {
     if (req.method !== 'POST') return sendErrorAsMessage('POST request ብቻ ነው የሚፈቀደው።');
 
-    // 💡 ኪዩን በማጽዳት (Trim) ማንኛውንም ክፍት ቦታ እናጠፋለን
     const rawKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || '';
     const apiKey = rawKey.trim();
     
-    if (!apiKey) return sendErrorAsMessage('የ API Key Vercel ላይ አልተገኘም!');
+    if (!apiKey) return sendErrorAsMessage('የ API Key አልተገኘም!');
 
     const { prompt, systemInstruction } = req.body;
-    if (!prompt) return sendErrorAsMessage('እባክዎ ጥያቄዎን ያስገቡ።');
+    if (!prompt) return sendErrorAsMessage('ጥያቄ ያስገቡ።');
 
-    // 💡 መመሪያውን እና ጥያቄውን በአንድ ላይ ማዋሃድ (ለሁሉም ሞዴሎች እንዲሰራ)
     const combinedText = systemInstruction 
-      ? `System Instruction: ${systemInstruction}\n\nUser Prompt: ${prompt}` 
+      ? `System Instruction: ${systemInstruction}\n\nUser Question: ${prompt}` 
       : prompt;
 
     const payload = {
@@ -40,22 +37,21 @@ module.exports = async function(req, res) {
     };
 
     /**
-     * 🚀 AUTO-HEALING LOGIC
-     * የተለያዩ የሞዴል እና የ API ስሪት ጥምረቶችን እናዘጋጃለን።
-     * አንደኛው "Not Found" ካለ በራሱ ወደ ቀጣዩ ይዘላል።
+     * 🚀 NEXT-GEN MODEL PRIORITY
+     * 1. gemini-2.0-flash-exp (እጅግ ፈጣኑ እና አዲሱ)
+     * 2. gemini-1.5-flash (ሁልጊዜ አስተማማኙ)
      */
-    const configurations = [
-      { model: "gemini-1.5-flash", version: "v1" },
-      { model: "gemini-1.5-flash", version: "v1beta" },
-      { model: "gemini-1.5-pro", version: "v1beta" },
-      { model: "gemini-pro", version: "v1" }
+    const modelsToTry = [
+      "gemini-2.0-flash-exp",
+      "gemini-1.5-flash"
     ];
 
     let lastError = "";
 
-    for (const config of configurations) {
+    for (const modelName of modelsToTry) {
       try {
-        const url = `https://generativelanguage.googleapis.com/${config.version}/models/${config.model}:generateContent?key=${apiKey}`;
+        // Gemini 2.0 የሚሰራው በ v1beta ስሪት ብቻ ነው
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
         
         const response = await fetch(url, {
           method: 'POST',
@@ -65,18 +61,17 @@ module.exports = async function(req, res) {
 
         const data = await response.json();
 
-        // ስራው ከተሳካ ውጤቱን ልከን እንወጣለን
         if (response.ok && data.candidates) {
+          // የትኛው ሞዴል እንደመለሰልን ምልክት እንጨምርበታለን (ለእኛ ለማወቅ)
+          const modelMark = modelName.includes("2.0") ? "🚀 [Gemini 2.0]" : "⚡ [Gemini 1.5]";
+          data.candidates[0].content.parts[0].text = `${modelMark}\n\n` + data.candidates[0].content.parts[0].text;
+          
           return res.status(200).json(data);
         } else {
-          lastError = data.error?.message || "Unknown Google error";
-          // ሞዴሉ ካልተገኘ ብቻ ወደ ቀጣዩ እንቀጥላለን
-          if (lastError.toLowerCase().includes("not found") || lastError.toLowerCase().includes("not supported")) {
-            continue;
-          } else {
-            // ሌሎች ስህተቶች (እንደ Quota ያሉ) ካሉ እዚህ ያቆማል
-            break;
-          }
+          lastError = data.error?.message || "Unknown error";
+          // ሞዴሉ ካልተገኘ ብቻ ወደ ቀጣዩ ይሸጋገራል
+          if (lastError.toLowerCase().includes("not found") || lastError.toLowerCase().includes("not supported")) continue;
+          else break;
         }
       } catch (err) {
         lastError = err.message;
@@ -84,8 +79,7 @@ module.exports = async function(req, res) {
       }
     }
 
-    // ሁሉም አማራጮች ካልሰሩ የመጨረሻውን ስህተት እናሳያለን
-    return sendErrorAsMessage(`ምንም የሚሰራ የ AI ሞዴል አልተገኘም! የመጨረሻ ስህተት: "${lastError}"። እባክዎ የ API Key በትክክል መገባቱን ያረጋግጡ።`);
+    return sendErrorAsMessage(`ምንም የሚሰራ ሞዴል አልተገኘም። ስህተት: "${lastError}"`);
 
   } catch (error) {
     return sendErrorAsMessage('Backend Crash: ' + error.message);
