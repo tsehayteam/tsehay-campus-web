@@ -1,6 +1,6 @@
 /**
- * Gemini AI API Backend - Auto-Healing Version
- * ይህ ኮድ አንዱ የጎግል ሞዴል እምቢ ሲል ሌላኛውን በራሱ እየቀያየረ ይሞክራል!
+ * Gemini AI API Backend - Clean & Trimmed Version
+ * የ API ኪይ ላይ ያሉ ክፍት ቦታዎችን (Spaces) የሚያጸዳ እና ትክክለኛውን የ Flash ሞዴል ብቻ የሚጠቀም።
  */
 module.exports = async function(req, res) {
   // CORS Security
@@ -13,20 +13,24 @@ module.exports = async function(req, res) {
 
   const sendErrorAsMessage = (msg) => {
     return res.status(200).json({
-      candidates: [{ content: { parts: [{ text: "⚠️ System Notification: " + msg }] } }]
+      candidates: [{ content: { parts: [{ text: "⚠️ " + msg }] } }]
     });
   };
 
   try {
     if (req.method !== 'POST') return sendErrorAsMessage('POST request ብቻ ነው የሚፈቀደው።');
 
-    const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
+    // 💡 ኪዩን ከ Vercel እናነባለን
+    const rawKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || '';
+    
+    // 💡 ይህ በጣም ወሳኝ ነው! (Space ወይም Enter አብሮ ኮፒ ተደርጎ ከሆነ ያጠፋዋል)
+    const apiKey = rawKey.trim(); 
+    
     if (!apiKey) return sendErrorAsMessage('API Key አልተገኘም!');
 
     const { prompt, systemInstruction } = req.body;
     if (!prompt) return sendErrorAsMessage('ጥያቄ ያስገቡ።');
 
-    // መመሪያውን እና ጥያቄውን በአንድ ላይ ማዋሃድ (ለሁሉም ሞዴሎች እንዲሰራ)
     const combinedText = systemInstruction 
       ? `System Instruction: ${systemInstruction}\n\nUser Prompt: ${prompt}` 
       : prompt;
@@ -35,43 +39,26 @@ module.exports = async function(req, res) {
       contents: [{ parts: [{ text: combinedText }] }]
     };
 
-    // የመፍትሄ ዘዴ፡ የተለያዩ የጎግል ሊንኮችን እና ሞዴሎችን እናዘጋጃለን
-    // አንደኛው እምቢ ካለ ወደ ቀጣዩ ይዘላል!
-    const endpointsToTry = [
-      `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${apiKey}`,
-      `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${apiKey}`,
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`
-    ];
+    // በቀጥታ አዲሱን እና ፈጣኑን ሞዴል ብቻ እንጠቀማለን
+    const modelName = "gemini-1.5-flash";
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
 
-    let lastErrorMessage = "";
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
 
-    // በየተራ መሞከር (Loop)
-    for (const url of endpointsToTry) {
-      try {
-        const response = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
+    const data = await response.json();
 
-        const data = await response.json();
-
-        // 100% ከተሳካ፣ መልሱን ለተጠቃሚው ልኮ ያቆማል!
-        if (response.ok && data.candidates) {
-          return res.status(200).json(data);
-        } else {
-          lastErrorMessage = data.error?.message || "Unknown Google Error";
-        }
-      } catch (err) {
-        lastErrorMessage = err.message;
-      }
+    if (response.ok && data.candidates) {
+      return res.status(200).json(data);
+    } else {
+      const errorMsg = data.error?.message || "Unknown Google Error";
+      return sendErrorAsMessage(`Google Error (${modelName}): "${errorMsg}"`);
     }
 
-    // ሁሉም ሊንኮች እምቢ ካሉ ብቻ ይህንን ያሳያል
-    return sendErrorAsMessage(`ሁሉም የ AI ሞዴሎች እምቢ ብለዋል! ዋናው ስህተት: "${lastErrorMessage}"`);
-
   } catch (error) {
-    return sendErrorAsMessage('Backend Error (Crash): ' + error.message);
+    return sendErrorAsMessage('Backend Crash: ' + error.message);
   }
 }
