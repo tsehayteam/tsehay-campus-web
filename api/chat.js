@@ -3,7 +3,7 @@
  * ይህ ኮድ አንዱ የጎግል ሞዴል እምቢ ሲል ሌላኛውን በራሱ እየቀያየረ ይሞክራል!
  */
 module.exports = async function(req, res) {
-  // የ Vercel ሴኪዩሪቲ (CORS) መፍቀጃ
+  // CORS Security
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
@@ -13,7 +13,7 @@ module.exports = async function(req, res) {
 
   const sendErrorAsMessage = (msg) => {
     return res.status(200).json({
-      candidates: [{ content: { parts: [{ text: "⚠️ የሲስተም ማሳወቂያ: " + msg }] } }]
+      candidates: [{ content: { parts: [{ text: "⚠️ System Notification: " + msg }] } }]
     });
   };
 
@@ -21,12 +21,12 @@ module.exports = async function(req, res) {
     if (req.method !== 'POST') return sendErrorAsMessage('POST request ብቻ ነው የሚፈቀደው።');
 
     const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
-    if (!apiKey) return sendErrorAsMessage('የ API Key አልተገኘም!');
+    if (!apiKey) return sendErrorAsMessage('API Key አልተገኘም!');
 
     const { prompt, systemInstruction } = req.body;
     if (!prompt) return sendErrorAsMessage('ጥያቄ ያስገቡ።');
 
-    // 💡 መመሪያውን እና ጥያቄውን በአንድ ላይ እናጣምራለን (ለሁሉም ሞዴሎች እንዲሰራ)
+    // መመሪያውን እና ጥያቄውን በአንድ ላይ ማዋሃድ (ለሁሉም ሞዴሎች እንዲሰራ)
     const combinedText = systemInstruction 
       ? `System Instruction: ${systemInstruction}\n\nUser Prompt: ${prompt}` 
       : prompt;
@@ -35,7 +35,7 @@ module.exports = async function(req, res) {
       contents: [{ parts: [{ text: combinedText }] }]
     };
 
-    // 💡 ብልጡ አሰራር፡ የተለያዩ የጎግል ሊንኮችን እና ሞዴሎችን እናዘጋጃለን
+    // የመፍትሄ ዘዴ፡ የተለያዩ የጎግል ሊንኮችን እና ሞዴሎችን እናዘጋጃለን
     // አንደኛው እምቢ ካለ ወደ ቀጣዩ ይዘላል!
     const endpointsToTry = [
       `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
@@ -46,7 +46,7 @@ module.exports = async function(req, res) {
 
     let lastErrorMessage = "";
 
-    // ሉፕ (Loop) እያደረግን እንሞክራለን
+    // በየተራ መሞከር (Loop)
     for (const url of endpointsToTry) {
       try {
         const response = await fetch(url, {
@@ -57,7 +57,7 @@ module.exports = async function(req, res) {
 
         const data = await response.json();
 
-        // 100% ከተሳካ መልሱን ለተጠቃሚው ልከን እናቆማለን!
+        // 100% ከተሳካ፣ መልሱን ለተጠቃሚው ልኮ ያቆማል!
         if (response.ok && data.candidates) {
           return res.status(200).json(data);
         } else {
@@ -68,10 +68,10 @@ module.exports = async function(req, res) {
       }
     }
 
-    // ሁሉም ሊንኮች እምቢ ካሉ ብቻ ይሄንን ያሳያል
+    // ሁሉም ሊንኮች እምቢ ካሉ ብቻ ይህንን ያሳያል
     return sendErrorAsMessage(`ሁሉም የ AI ሞዴሎች እምቢ ብለዋል! ዋናው ስህተት: "${lastErrorMessage}"`);
 
   } catch (error) {
-    return sendErrorAsMessage('የባክኤንድ ስህተት (Crash): ' + error.message);
+    return sendErrorAsMessage('Backend Error (Crash): ' + error.message);
   }
 }
