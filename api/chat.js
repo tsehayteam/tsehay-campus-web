@@ -1,6 +1,6 @@
 /**
  * Gemini AI API Backend - Clean & Trimmed Version
- * የ API ኪይ ላይ ያሉ ክፍት ቦታዎችን (Spaces) የሚያጸዳ እና ትክክለኛውን የ Flash ሞዴል ብቻ የሚጠቀም።
+ * የ API ኪይ ላይ ያሉ ክፍት ቦታዎችን (Spaces) የሚያጸዳ እና የተረጋጋውን v1 API የሚጠቀም።
  */
 module.exports = async function(req, res) {
   // CORS Security
@@ -39,9 +39,9 @@ module.exports = async function(req, res) {
       contents: [{ parts: [{ text: combinedText }] }]
     };
 
-    // በቀጥታ አዲሱን እና ፈጣኑን ሞዴል ብቻ እንጠቀማለን
-    const modelName = "gemini-1.5-flash";
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+    // 💡 መፍትሄው፡ ሞዴሉን ወደ አንጋፋው 'gemini-pro' እና ስሪቱን ወደ 'v1' ቀይረናል!
+    const modelName = "gemini-pro";
+    const url = `https://generativelanguage.googleapis.com/v1/models/${modelName}:generateContent?key=${apiKey}`;
 
     const response = await fetch(url, {
       method: 'POST',
