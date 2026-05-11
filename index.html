@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tsehay Campus - የኢትዮጵያ ምርጡ የኦንላይን መማሪያ ፕላትፎርም</title>
+    <title>የስልጠና ማዕከል - Tsehay Campus</title>
     
     <script>
         if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
@@ -15,7 +15,6 @@
 
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Tailwind Configuration -->
     <script>
         window.tailwind = window.tailwind || {};
         window.tailwind.config = {
@@ -26,34 +25,13 @@
                         primary: '#F9B03C',
                         secondary: '#3268BA',
                         dark: '#0f172a',
-                        light: '#FFFFFF',
                         bodyBg: '#f8fafc',
                         success: '#10b981',
                         danger: '#ef4444',
-                        warning: '#f59e0b'
                     },
                     fontFamily: {
                         heading: ['Montserrat', 'Noto Sans Ethiopic', 'sans-serif'],
                         body: ['Roboto', 'Noto Sans Ethiopic', 'sans-serif'],
-                    },
-                    animation: {
-                        'gradient-x': 'gradient-x 15s ease infinite',
-                        'float': 'float 6s ease-in-out infinite',
-                        'pulse-glow': 'pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-                    },
-                    keyframes: {
-                        'gradient-x': {
-                            '0%, 100%': { 'background-size': '200% 200%', 'background-position': 'left center' },
-                            '50%': { 'background-size': '200% 200%', 'background-position': 'right center' }
-                        },
-                        'float': {
-                            '0%, 100%': { transform: 'translateY(0)' },
-                            '50%': { transform: 'translateY(-15px)' },
-                        },
-                        'pulse-glow': {
-                            '0%, 100%': { opacity: 1, boxShadow: '0 0 0 0 rgba(249, 176, 60, 0.7)' },
-                            '50%': { opacity: .8, boxShadow: '0 0 0 15px rgba(249, 176, 60, 0)' }
-                        }
                     }
                 }
             }
@@ -61,80 +39,41 @@
     </script>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&family=Noto+Sans+Ethiopic:wght@400;500;700;900&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&family=Noto+Sans+Ethiopic:wght@400;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     
-    <!-- Custom Styles -->
     <style>
-        body { font-family: 'Roboto', 'Noto Sans Ethiopic', sans-serif; scroll-behavior: smooth; background-color: var(--bodyBg); transition: background-color 0.3s ease; }
+        body { font-family: 'Roboto', 'Noto Sans Ethiopic', sans-serif; background-color: var(--bodyBg); }
         .dark body { background-color: #0f172a; }
-        h1, h2, h3, h4, h5, h6 { font-family: 'Montserrat', 'Noto Sans Ethiopic', sans-serif; }
-        
-        .glass-nav { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-bottom: 1px solid rgba(229, 231, 235, 0.6); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03); }
+        .glass-nav { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(229, 231, 235, 0.5); }
         .dark .glass-nav { background: rgba(15, 23, 42, 0.95); border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+        .course-card { transition: all 0.3s ease; }
+        .course-card:hover { transform: translateY(-8px); box-shadow: 0 20px 25px -5px rgba(50, 104, 186, 0.15); }
+        .hero-pattern { background-image: radial-gradient(rgba(50, 104, 186, 0.1) 1px, transparent 1px); background-size: 20px 20px; }
+        .modal-animate { animation: modalPop 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes modalPop { 0% { opacity: 0; transform: scale(0.95); } 100% { opacity: 1; transform: scale(1); } }
+        .payment-option.selected { border-color: #3268BA; background-color: rgba(50, 104, 186, 0.05); }
+        .dark .payment-option.selected { border-color: #F9B03C; background-color: rgba(249, 176, 60, 0.1); }
         
-        .course-card { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); transform-style: preserve-3d; }
-        .course-card:hover { box-shadow: 0 20px 25px -5px rgba(50, 104, 186, 0.1), 0 10px 10px -5px rgba(50, 104, 186, 0.04); transform: translateY(-6px); border-color: rgba(249, 176, 60, 0.4); }
-        .dark .course-card:hover { box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5); }
-        
-        .search-bar { transition: all 0.3s ease; background: rgba(243, 244, 246, 0.8); }
-        .dark .search-bar { background: rgba(30, 41, 59, 0.8); border-color: rgba(255, 255, 255, 0.1); }
-        .search-bar:focus-within { background: #ffffff; border-color: #3268BA; box-shadow: 0 0 0 4px rgba(50, 104, 186, 0.1); }
-        .dark .search-bar:focus-within { background: #1e293b; border-color: #F9B03C; box-shadow: 0 0 0 4px rgba(249, 176, 60, 0.1); }
-
-        .text-gradient { background: linear-gradient(135deg, #3268BA 0%, #F9B03C 100%, #3268BA 200%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-size: 200% auto; animation: textShine 4s linear infinite; }
-        @keyframes textShine { to { background-position: 200% center; } }
-
-        .hero-mesh { background-color: #0f172a; background-image: radial-gradient(at 0% 0%, rgba(50, 104, 186, 0.4) 0px, transparent 50%), radial-gradient(at 100% 0%, rgba(249, 176, 60, 0.3) 0px, transparent 50%), radial-gradient(at 100% 100%, rgba(50, 104, 186, 0.4) 0px, transparent 50%), radial-gradient(at 0% 100%, rgba(249, 176, 60, 0.3) 0px, transparent 50%); animation: gradient-x 15s ease infinite; }
-
-        .btn-glow { transition: all 0.3s ease; }
-        .btn-glow:hover { box-shadow: 0 0 20px rgba(249, 176, 60, 0.5); transform: translateY(-2px); }
-
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #3268BA; }
-        .dark ::-webkit-scrollbar-thumb { background: #334155; }
-        
-        .chat-input-area input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 20px; outline: none; font-family: inherit; color: var(--black); }
-        .chat-input-area button { background: none; border: none; color: var(--secondary); font-size: 20px; margin-left: 10px; cursor: pointer; }
-
-        /* Google Translate Fixed Styling */
-        .goog-te-banner-frame { display: none !important; }
-        .VIpgJd-ZVi9od-ORHb-OEVmcd { display: none !important; }
+        /* Google Translate Custom Styling */
+        .goog-te-banner-frame, .VIpgJd-ZVi9od-ORHb-OEVmcd { display: none !important; }
         body { top: 0px !important; position: static !important; }
         html { top: 0 !important; height: 100%; }
         
-        #google_translate_element select {
-            background-color: #1e293b;
-            color: #ffffff;
-            border: 1px solid #334155;
-            border-radius: 0.5rem;
-            padding: 0.6rem 1rem;
-            font-family: 'Montserrat', sans-serif;
-            font-size: 0.875rem;
-            font-weight: 600;
-            outline: none;
-            cursor: pointer;
-            min-width: 150px;
+        /* Hide from Header only */
+        #google_translate_element { display: none !important; } 
+        
+        /* Style for Footer Element */
+        #google_translate_element_footer select {
+            background-color: #f1f5f9; color: #334155; border: 1px solid #e2e8f0; border-radius: 0.5rem;
+            padding: 0.4rem 0.8rem; font-family: 'Montserrat', sans-serif; font-size: 0.8rem; font-weight: 700;
+            outline: none; cursor: pointer; max-width: 150px;
         }
-        #google_translate_element select:hover {
-            border-color: #3268BA;
+        .dark #google_translate_element_footer select {
+            background-color: #1e293b; color: #cbd5e1; border-color: #334155;
         }
+        #google_translate_element_footer select:hover { border-color: #3268BA; }
         .goog-logo-link { display: none !important; }
         .goog-te-gadget { color: transparent !important; }
-
-        @keyframes modalPop {
-            0% { opacity: 0; transform: scale(0.95); }
-            100% { opacity: 1; transform: scale(1); }
-        }
-        .modal-animate {
-            animation: modalPop 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-
-        #mobile-menu { transition: max-height 0.3s ease-in-out; max-height: 0; overflow: hidden; }
-        #mobile-menu.open { max-height: 500px; }
         
         /* Custom scrollbar for modal */
         .custom-modal-scroll::-webkit-scrollbar { width: 6px; }
@@ -143,7 +82,82 @@
         .dark .custom-modal-scroll::-webkit-scrollbar-thumb { background: #475569; }
     </style>
 </head>
-<body class="text-dark dark:text-gray-100 antialiased relative">
+<body class="bg-bodyBg dark:bg-slate-900 text-dark dark:text-gray-100 antialiased pt-24 min-h-screen flex flex-col hidden" id="main-body">
+
+    <!-- Screen Loader -->
+    <div id="screen-loader" class="fixed inset-0 bg-white dark:bg-slate-900 z-[10000] flex flex-col items-center justify-center transition-opacity duration-300">
+        <i class="fa-solid fa-spinner fa-spin text-5xl text-secondary dark:text-primary mb-5"></i>
+        <p class="text-gray-600 dark:text-gray-300 font-black tracking-widest uppercase text-sm">ኮርሶችን በማዘጋጀት ላይ...</p>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="glass-nav fixed w-full top-0 z-50 transition-all duration-300">
+        <div class="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20 gap-2 md:gap-4">
+                <!-- Logo -->
+                <div class="flex items-center cursor-pointer group shrink-0" onclick="window.safeRedirect('index.html')">
+                    <img src="Campus Logo.jpg" alt="Logo" class="h-10 md:h-12 w-auto mr-2 md:mr-3 rounded-xl shadow-md group-hover:scale-105 transition" onerror="this.src='https://ui-avatars.com/api/?name=TC&background=3268BA&color=fff'">
+                    <span class="font-heading font-black text-xl lg:text-2xl text-dark dark:text-white hidden lg:block tracking-tight">Tsehay<span class="text-secondary dark:text-primary">Campus</span></span>
+                </div>
+
+                <!-- Profile & Links -->
+                <div class="flex items-center space-x-2 md:space-x-4 lg:space-x-6 shrink-0">
+                    <a href="javascript:void(0)" onclick="window.safeRedirect('index.html')" class="hidden lg:block text-gray-600 dark:text-gray-300 hover:text-secondary dark:hover:text-primary font-bold transition text-sm whitespace-nowrap">ዋና ገፅ</a>
+                    
+                    <!-- Hidden in header intentionally -->
+                    <div id="google_translate_element"></div>
+                    
+                    <div class="flex items-center gap-2 lg:gap-4 font-heading text-sm shrink-0" id="nav-auth-buttons">
+                        <!-- Navigation Auth Buttons (Will be populated by JS) -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Page Header & Search -->
+    <section class="relative bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 py-6 lg:py-8 hero-pattern">
+        <div class="max-w-7xl mx-auto px-4 text-center relative z-10">
+            <div class="inline-flex items-center gap-2 bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-800 text-secondary dark:text-blue-400 font-bold px-4 py-1.5 rounded-full text-xs sm:text-sm mb-4 shadow-sm">
+                <i class="fa-solid fa-graduation-cap"></i> ለርስዎ ስኬት የተዘጋጀ መድረክ
+            </div>
+            
+            <h1 class="text-3xl md:text-4xl lg:text-5xl font-black font-heading mb-3 dark:text-white">አቅምዎን ያሳድጉ፣ <span class="text-secondary dark:text-primary">ህይወትዎን ይቀይሩ</span></h1>
+            <p class="text-gray-600 dark:text-gray-300 font-body text-sm md:text-base max-w-3xl mx-auto mb-6 leading-relaxed">
+                የርስዎን እምቅ አቅም ወደ ተጨባጭ ውጤት የሚቀይሩበት ትክክለኛው ቦታ ላይ ነዎት። ከጀማሪ እስከ ፕሮፌሽናል ደረጃ በጥንቃቄ ከተዘጋጁት <b>ነፃ</b> እና <b>ፕሪሚየም</b> ስልጠናዎች በመምረጥ ዛሬውኑ መማር ይጀምሩ።
+            </p>
+            
+            <!-- Standard Course Filter Search Bar -->
+            <div class="max-w-2xl mx-auto relative mb-8 shadow-xl rounded-full group">
+                <i class="fa-solid fa-search absolute left-6 top-1/2 -translate-y-1/2 text-gray-400 text-lg group-focus-within:text-secondary dark:group-focus-within:text-primary transition-colors"></i>
+                <input type="text" id="searchInput" oninput="window.filterCourses()" placeholder="የኮርስ ስም ወይም ቁልፍ ቃል ይፈልጉ..." class="w-full bg-white dark:bg-slate-900 border-2 border-gray-200 dark:border-slate-600 rounded-full py-4.5 pl-14 pr-6 text-dark dark:text-white font-bold outline-none focus:border-secondary dark:focus:border-primary transition shadow-inner text-base lg:text-lg">
+            </div>
+
+            <!-- Enhanced Categories including Free and Paid -->
+            <div class="flex flex-wrap justify-center gap-3" id="categoryFilters">
+                <button onclick="window.setCategory('All')" class="cat-btn active px-6 py-2.5 rounded-full font-bold text-sm bg-secondary text-white shadow-md transition">ሁሉም</button>
+                <button onclick="window.setCategory('Free')" class="cat-btn px-6 py-2.5 rounded-full font-bold text-sm bg-success/10 text-success hover:bg-success hover:text-white transition border border-success/30">ነፃ ኮርሶች</button>
+                <button onclick="window.setCategory('Paid')" class="cat-btn px-6 py-2.5 rounded-full font-bold text-sm bg-orange-50 dark:bg-orange-900/20 text-primary hover:bg-primary hover:text-dark transition border border-primary/30">ፕሪሚየም (ክፍያ)</button>
+                <div class="w-full sm:w-auto h-0 sm:h-8 border-l border-gray-300 dark:border-slate-600 mx-2 hidden sm:block"></div>
+                <button onclick="window.setCategory('Ecommerce')" class="cat-btn px-6 py-2.5 rounded-full font-bold text-sm bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600 transition border border-gray-200 dark:border-slate-600">ኢ-ኮሜርስ</button>
+                <button onclick="window.setCategory('Marketing')" class="cat-btn px-6 py-2.5 rounded-full font-bold text-sm bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600 transition border border-gray-200 dark:border-slate-600">ማርኬቲንግ</button>
+                <button onclick="window.setCategory('Crypto')" class="cat-btn px-6 py-2.5 rounded-full font-bold text-sm bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600 transition border border-gray-200 dark:border-slate-600">ክሪፕቶ</button>
+                <button onclick="window.setCategory('Tech')" class="cat-btn px-6 py-2.5 rounded-full font-bold text-sm bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600 transition border border-gray-200 dark:border-slate-600">ቴክኖሎጂ</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Course Grid -->
+    <main class="flex-grow max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-12 w-full">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8" id="courseGrid">
+            <!-- Courses will be injected here -->
+        </div>
+        
+        <div id="emptyState" class="hidden text-center py-20">
+            <i class="fa-solid fa-box-open text-6xl text-gray-300 dark:text-slate-700 mb-4"></i>
+            <h3 class="text-xl font-black text-gray-400 dark:text-gray-500">በመረጡት መስፈርት ኮርስ አልተገኘም!</h3>
+        </div>
+    </main>
 
     <!-- Auth Modal -->
     <div id="auth-modal" class="hidden fixed inset-0 bg-black/60 z-[9999] items-center justify-center backdrop-blur-sm p-4" onclick="if(event.target === this) window.closeAuthModal()">
@@ -175,7 +189,7 @@
 
                 <form id="auth-form" onsubmit="window.handleAuthSubmit(event)" class="space-y-4 px-1">
                     
-                    <!-- NEW SIGNUP FIELDS -->
+                    <!-- SIGNUP FIELDS -->
                     <div class="signup-only hidden">
                         <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">ሙሉ ስም (Full Name) <span class="text-danger">*</span></label>
                         <div class="relative">
@@ -216,7 +230,7 @@
                         </div>
                     </div>
                     
-                    <!-- ALWAYS VISIBLE FIELDS (Email & Password) -->
+                    <!-- ALWAYS VISIBLE FIELDS -->
                     <div>
                         <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">ኢሜል (Email) <span class="text-danger">*</span></label>
                         <div class="relative">
@@ -282,401 +296,83 @@
                         <li><strong class="text-danger">ህገወጥ ስርጭት፡</strong> ኮርሶችን ስክሪን ሪከርድ ማድረግ (Screen record)፣ ማውረድ (Download)፣ በቴሌግራም፣ በዩቲዩብ ወይም በሌላ በማንኛውም ሚዲያ ማሰራጨት፣ አሊያም ለሶስተኛ ወገን መሸጥ (Piracy) ህገወጥ እና በወንጀል የሚያስጠይቅ ድርጊት ነው። ይህን በሚያደርጉ አካላት ላይ ካምፓኒው ህጋዊ እርምጃ ይወስዳል።</li>
                     </ul>
                 </div>
-                
-                <div>
-                    <h3 class="font-black text-dark dark:text-white text-base border-b border-gray-100 dark:border-slate-700 pb-2 mb-3"><i class="fa-solid fa-money-bill-transfer text-primary mr-2"></i> 3. የክፍያ እና ተመላሽ ፖሊሲ (Refund Policy)</h3>
-                    <ul class="list-disc ml-5 space-y-2">
-                        <li>ለማንኛውም ኮርስ የሚፈጸሙ ክፍያዎች በሙሉ የመጨረሻ ናቸው (Non-refundable)።</li>
-                        <li>ክፍያ ከተፈጸመ እና ኮርሱ ለእርስዎ ከተከፈተ በኋላ፣ በምንም አይነት ምክንያት (ሀሳብ በመቀየር ወይም ጊዜ በማጣት) ገንዘብ ተመላሽ አይደረግም። እባክዎ ከመግዛትዎ በፊት ስለ ኮርሱ የተሰጠውን ማብራሪያ በደንብ ያንብቡ።</li>
-                    </ul>
-                </div>
-
-                <div>
-                    <h3 class="font-black text-dark dark:text-white text-base border-b border-gray-100 dark:border-slate-700 pb-2 mb-3"><i class="fa-solid fa-handshake text-primary mr-2"></i> 4. የተማሪዎች ስነ-ምግባር</h3>
-                    <ul class="list-disc ml-5 space-y-2">
-                        <li>በተማሪዎች ፎረም፣ የድጋፍ ቻት (Support Chat) እና ግሩፖች ላይ ጸያፍ ቃላትን መጠቀም፣ ሰዎችን መስደብ ወይም ማዋረድ የተከለከለ ነው።</li>
-                        <li>ያለ አድሚን ፈቃድ የራስን ቢዝነስ፣ ሊንክ ወይም ሌላ ምርት ፎረሙ ላይ ማስተዋወቅ (Spamming) አካውንትን ያሳግዳል።</li>
-                    </ul>
-                </div>
-
-                <div>
-                    <h3 class="font-black text-dark dark:text-white text-base border-b border-gray-100 dark:border-slate-700 pb-2 mb-3"><i class="fa-solid fa-robot text-primary mr-2"></i> 5. የ AI መሳሪያዎች አጠቃቀም</h3>
-                    <ul class="list-disc ml-5 space-y-2">
-                        <li>በካምፓሱ ውስጥ ያሉት የ AI መሳሪያዎች ለትምህርት እና ለንግድ እገዛ ብቻ የተዘጋጁ ናቸው። ሆን ብሎ ሲስተሙን ለማጣበብ ብዛት ያላቸውን ጥያቄዎች መላክ (Spamming API) አይፈቀድም።</li>
-                    </ul>
-                </div>
-                
-                <div class="bg-blue-50 dark:bg-slate-900 p-4 rounded-xl border border-blue-100 dark:border-slate-700 mt-4">
-                    <p class="text-secondary dark:text-primary font-bold text-xs leading-relaxed">ማሳሰቢያ፦ የ Tsehay Campus አስተዳደር አስፈላጊ ሆኖ ሲገኝ እነዚህን ህጎች በማንኛውም ጊዜ የማሻሻል መብቱ የተጠበቀ ነው። ለውጦች ሲኖሩ በዌብሳይቱ ላይ ይፋ ይደረጋል።</p>
-                </div>
             </div>
             
             <div class="p-5 md:p-6 border-t border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 flex flex-col shrink-0">
-                <div id="terms-error" class="hidden bg-red-50 dark:bg-red-900/30 text-danger border border-red-200 dark:border-red-800 text-sm p-3 rounded-lg mb-4 font-bold text-center"></div>
-                <div class="flex flex-col sm:flex-row justify-between items-center gap-4 w-full">
-                    <div class="flex items-start gap-3 w-full sm:w-auto">
-                        <input type="checkbox" id="modal-terms-check" class="mt-1 w-6 h-6 text-primary bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-600 rounded focus:ring-secondary cursor-pointer shrink-0">
-                        <label for="modal-terms-check" class="text-sm font-bold text-dark dark:text-white cursor-pointer leading-tight">በሁሉም የአጠቃቀም ህጎች፣ የግላዊነት ፖሊሲዎች እና ግዴታዎች ተስማምቻለሁ።</label>
-                    </div>
-                    <button onclick="window.agreeToTermsFromModal()" class="w-full sm:w-auto bg-primary text-dark font-black px-8 py-3.5 rounded-xl hover:bg-yellow-400 transition shadow-md flex items-center justify-center gap-2 whitespace-nowrap">
-                        እስማማለሁ <i class="fa-solid fa-check-circle"></i>
+                <div class="flex flex-col sm:flex-row justify-end items-center gap-4 w-full">
+                    <button onclick="window.closeTermsModal()" class="w-full sm:w-auto bg-primary text-dark font-black px-8 py-3.5 rounded-xl hover:bg-yellow-400 transition shadow-md flex items-center justify-center gap-2 whitespace-nowrap">
+                        አንብቤያለሁ <i class="fa-solid fa-check-circle"></i>
                     </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Navigation -->
-    <nav class="glass-nav fixed w-full top-0 z-50 transition-all duration-300">
-        <div class="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-20 gap-4 lg:gap-6">
-                
-                <div class="flex-shrink-0 flex items-center cursor-pointer group" onclick="window.location.reload()">
-                    <img src="Campus Logo.jpg" alt="Tsehay Campus Logo" class="h-14 w-auto object-contain mr-2 lg:mr-3 rounded-md shadow-sm group-hover:shadow-md transition duration-300" onerror="this.src='https://ui-avatars.com/api/?name=TC&background=3268BA&color=fff'">
-                    <span class="font-heading font-black text-xl lg:text-2xl text-dark dark:text-white hidden lg:block tracking-tight">Tsehay<span class="text-secondary dark:text-primary">Campus</span></span>
-                </div>
-
-                <div class="hidden lg:flex items-center h-full">
-                    <div class="relative flex items-center text-gray-700 dark:text-gray-300 hover:text-secondary dark:hover:text-primary cursor-pointer font-body text-[14px] lg:text-[15px] font-bold group h-full px-2 lg:px-3" tabindex="0" onclick="this.querySelector('.dropdown-menu').classList.toggle('invisible'); this.querySelector('.dropdown-menu').classList.toggle('opacity-0');">
-                        <span class="flex items-center h-full py-6">የኮርስ ክፍሎች (Explore) <i class="fa-solid fa-chevron-down ml-1 lg:ml-2 text-[10px] group-hover:rotate-180 transition-transform duration-300"></i></span>
-                        <div class="dropdown-menu absolute top-full left-0 bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 shadow-xl rounded-xl py-3 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform origin-top-left group-hover:translate-y-0 translate-y-2 z-50">
-                            <a href="javascript:void(0)" onclick="document.getElementById('courses').scrollIntoView({behavior: 'smooth'})" class="block px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-slate-700 hover:text-secondary dark:hover:text-primary font-semibold transition"><i class="fa-solid fa-bag-shopping w-5 text-primary"></i> ኢ-ኮሜርስ</a>
-                            <a href="javascript:void(0)" onclick="document.getElementById('courses').scrollIntoView({behavior: 'smooth'})" class="block px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-slate-700 hover:text-secondary dark:hover:text-primary font-semibold transition"><i class="fa-solid fa-bullhorn w-5 text-secondary"></i> ዲጂታል ማርኬቲንግ</a>
-                            <a href="javascript:void(0)" onclick="document.getElementById('courses').scrollIntoView({behavior: 'smooth'})" class="block px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-slate-700 hover:text-secondary dark:hover:text-primary font-semibold transition"><i class="fa-brands fa-bitcoin w-5 text-[#F3BA2F]"></i> ክሪፕቶ እና ክፍያ</a>
-                            <a href="javascript:void(0)" onclick="document.getElementById('courses').scrollIntoView({behavior: 'smooth'})" class="block px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-slate-700 hover:text-secondary dark:hover:text-primary font-semibold transition"><i class="fa-solid fa-code w-5 text-gray-800 dark:text-gray-400"></i> ዌብ ዴቨሎፕመንት</a>
-                        </div>
-                    </div>
-
-                    <a href="#home" onclick="document.getElementById('home').scrollIntoView({behavior: 'smooth'})" class="text-gray-700 dark:text-gray-300 hover:text-secondary dark:hover:text-primary font-bold transition text-[14px] lg:text-[15px] px-2 lg:px-3">ዋና ገፅ</a>
-                    <a href="javascript:void(0)" onclick="document.getElementById('courses').scrollIntoView({behavior: 'smooth'})" class="text-gray-700 dark:text-gray-300 hover:text-secondary dark:hover:text-primary font-bold transition text-[14px] lg:text-[15px] px-2 lg:px-3">ሁሉም ኮርሶች</a>
-                    
-                    <div class="relative flex items-center text-gray-700 dark:text-gray-300 hover:text-secondary dark:hover:text-primary cursor-pointer font-body text-[14px] lg:text-[15px] font-bold group h-full px-2 lg:px-3">
-                        <span class="flex items-center h-full py-6">ተጨማሪ <i class="fa-solid fa-chevron-down ml-1 text-[10px] group-hover:rotate-180 transition-transform duration-300"></i></span>
-                        <div class="absolute top-full left-0 bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 shadow-xl rounded-xl py-3 w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform origin-top-left group-hover:translate-y-0 translate-y-2 z-50">
-                            <a href="#features" onclick="document.getElementById('features').scrollIntoView({behavior: 'smooth'})" class="block px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-slate-700 hover:text-secondary dark:hover:text-primary font-semibold transition"><i class="fa-solid fa-star text-primary w-5"></i> ጥቅሞች</a>
-                            <a href="#footer" onclick="document.getElementById('footer').scrollIntoView({behavior: 'smooth'})" class="block px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-slate-700 hover:text-secondary dark:hover:text-primary font-semibold transition"><i class="fa-solid fa-users text-secondary w-5"></i> ስለ እኛ</a>
-                            <a href="#footer" onclick="document.getElementById('footer').scrollIntoView({behavior: 'smooth'})" class="block px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-slate-700 hover:text-secondary dark:hover:text-primary font-semibold transition"><i class="fa-solid fa-envelope text-gray-500 w-5"></i> ያግኙን</a>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Desktop Search Bar -->
-                <div class="flex-1 max-w-md hidden md:flex items-center border border-gray-200 dark:border-slate-700 rounded-full px-4 py-2 search-bar mx-2 lg:mx-4 relative">
-                    <i class="fa-solid fa-magnifying-glass text-gray-500 dark:text-gray-400 text-sm lg:text-base cursor-pointer hover:text-primary transition" onclick="document.getElementById('courses').scrollIntoView({behavior: 'smooth'})"></i>
-                    <input type="text" id="courseSearchInput" oninput="window.searchCourses(event, false)" onkeypress="window.handleSearchEnter(event)" placeholder="ኮርሶችን ይፈልጉ..." class="bg-transparent border-none outline-none w-full ml-2 lg:ml-3 text-[14px] lg:text-[15px] font-body text-dark dark:text-white placeholder-gray-500">
-                    <!-- Live Search Dropdown Desktop -->
-                    <div id="desktop-search-results" class="absolute top-[110%] left-0 w-full bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-gray-100 dark:border-slate-700 overflow-hidden hidden flex-col z-[100] max-h-80 overflow-y-auto text-left"></div>
-                </div>
-                
-                <div class="hidden md:flex items-center gap-2 lg:gap-4 font-heading text-sm" id="nav-auth-buttons">
-                    <button onclick="window.toggleTheme()" class="w-10 h-10 rounded-full bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-slate-700 transition shadow-sm text-gray-600 dark:text-yellow-400">
-                        <i id="theme-icon" class="fa-solid fa-moon"></i>
-                    </button>
-                    
-                    <a href="#ai-feature" onclick="document.getElementById('ai-feature').scrollIntoView({behavior: 'smooth'})" class="text-gray-700 dark:text-gray-300 hover:text-secondary dark:hover:text-primary font-bold transition flex items-center gap-1.5 lg:gap-2 px-1 lg:px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 whitespace-nowrap">
-                        <i class="fa-solid fa-wand-magic-sparkles text-primary animate-pulse"></i> <span class="hidden lg:inline">Tsehay AI</span>
-                    </a>
-                    <div class="h-5 w-px bg-gray-300 dark:bg-slate-700 mx-0.5 lg:mx-1"></div>
-                    <button onclick="window.openAuthModal(false)" class="text-dark dark:text-white font-bold hover:text-secondary dark:hover:text-primary transition px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 whitespace-nowrap">ግባ (Login)</button>
-                    <button onclick="window.openAuthModal(true)" class="bg-dark dark:bg-primary text-white dark:text-dark px-4 lg:px-6 py-2 lg:py-2.5 rounded-lg font-bold hover:bg-secondary dark:hover:bg-yellow-400 transition shadow-md btn-glow whitespace-nowrap">አዲስ ይመዝገቡ</button>
-                </div>
-
-                <div class="md:hidden flex items-center gap-5">
-                    <button onclick="window.toggleTheme()" class="text-gray-600 dark:text-yellow-400 text-xl"><i id="mobile-theme-icon" class="fa-solid fa-moon"></i></button>
-                    <i class="fa-solid fa-magnifying-glass text-dark dark:text-white text-xl" onclick="document.getElementById('mobile-menu').classList.toggle('open');"></i>
-                    <button id="mobile-btn" class="text-dark dark:text-white text-2xl focus:outline-none"><i class="fa-solid fa-bars"></i></button>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Mobile Menu -->
-        <div id="mobile-menu" class="md:hidden bg-light dark:bg-slate-900 border-t border-gray-100 dark:border-slate-800 shadow-xl overflow-hidden transition-all duration-300" style="max-height: 0;">
-            <div class="px-4 pt-2 pb-6 space-y-2 text-center flex flex-col h-[70vh] overflow-y-auto">
-                
-                <!-- Search Bar (Mobile) -->
-                <div class="mb-4 mt-2 px-2 relative">
-                    <div class="flex items-center border border-gray-200 dark:border-slate-700 rounded-full px-4 py-2 bg-gray-50 dark:bg-slate-800">
-                        <i class="fa-solid fa-magnifying-glass text-gray-500 text-sm cursor-pointer" onclick="document.getElementById('courses').scrollIntoView({behavior: 'smooth'}); document.getElementById('mobile-menu').classList.remove('open');"></i>
-                        <input type="text" oninput="window.searchCourses(event, true)" onkeypress="window.handleSearchEnter(event)" placeholder="ኮርሶችን ይፈልጉ..." class="bg-transparent border-none outline-none w-full ml-2 text-sm font-body text-dark dark:text-white">
-                    </div>
-                    <!-- Live Search Dropdown Mobile -->
-                    <div id="mobile-search-results" class="absolute top-full mt-2 left-2 right-2 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-gray-100 dark:border-slate-700 overflow-hidden hidden flex-col z-[100] max-h-72 overflow-y-auto text-left"></div>
-                </div>
-                
-                <div class="grid grid-cols-2 gap-2 mb-2 px-2">
-                    <a href="#home" onclick="document.getElementById('home').scrollIntoView({behavior: 'smooth'}); document.getElementById('mobile-menu').classList.remove('open');" class="block px-3 py-2 text-secondary dark:text-primary font-bold rounded-md hover:bg-gray-50 dark:hover:bg-slate-800 border border-gray-100 dark:border-slate-700">ዋና ገፅ</a>
-                    <a href="javascript:void(0)" onclick="document.getElementById('courses').scrollIntoView({behavior: 'smooth'}); document.getElementById('mobile-menu').classList.remove('open');" class="block px-3 py-2 text-gray-700 dark:text-gray-300 font-bold rounded-md hover:bg-gray-50 dark:hover:bg-slate-800 border border-gray-100 dark:border-slate-700">ሁሉም ኮርሶች</a>
-                    <a href="#features" onclick="document.getElementById('features').scrollIntoView({behavior: 'smooth'}); document.getElementById('mobile-menu').classList.remove('open');" class="block px-3 py-2 text-gray-700 dark:text-gray-300 font-bold rounded-md hover:bg-gray-50 dark:hover:bg-slate-800 border border-gray-100 dark:border-slate-700">ጥቅሞች</a>
-                    <a href="#footer" onclick="document.getElementById('footer').scrollIntoView({behavior: 'smooth'}); document.getElementById('mobile-menu').classList.remove('open');" class="block px-3 py-2 text-gray-700 dark:text-gray-300 font-bold rounded-md hover:bg-gray-50 dark:hover:bg-slate-800 border border-gray-100 dark:border-slate-700">ስለ እኛ</a>
-                </div>
-                
-                <div class="py-3 bg-gray-50 dark:bg-slate-800 rounded-xl my-2">
-                    <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">የኮርስ ክፍሎች (Explore)</p>
-                    <a href="javascript:void(0)" onclick="document.getElementById('courses').scrollIntoView({behavior: 'smooth'}); document.getElementById('mobile-menu').classList.remove('open');" class="block px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 font-semibold hover:text-secondary dark:hover:text-primary"><i class="fa-solid fa-bag-shopping w-5 text-primary"></i> ኢ-ኮሜርስ</a>
-                    <a href="javascript:void(0)" onclick="document.getElementById('courses').scrollIntoView({behavior: 'smooth'}); document.getElementById('mobile-menu').classList.remove('open');" class="block px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 font-semibold hover:text-secondary dark:hover:text-primary"><i class="fa-solid fa-bullhorn w-5 text-secondary"></i> ዲጂታል ማርኬቲንግ</a>
-                    <a href="javascript:void(0)" onclick="document.getElementById('courses').scrollIntoView({behavior: 'smooth'}); document.getElementById('mobile-menu').classList.remove('open');" class="block px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 font-semibold hover:text-secondary dark:hover:text-primary"><i class="fa-brands fa-bitcoin w-5 text-[#F3BA2F]"></i> ክሪፕቶ እና ክፍያ</a>
-                </div>
-                
-                <hr class="my-2 border-gray-200 dark:border-slate-700">
-                <button onclick="window.openAuthModal(false)" class="w-full text-secondary dark:text-primary font-bold py-2.5 hover:bg-gray-50 dark:hover:bg-slate-800 rounded-lg border border-secondary dark:border-primary transition">ግባ (Login)</button>
-                <button onclick="window.openAuthModal(true)" class="w-full bg-primary text-dark font-bold py-2.5 rounded-lg mt-2 shadow-md hover:bg-yellow-400 transition">አዲስ ይመዝገቡ</button>
-            </div>
-        </div>
-    </nav>
-
-    <!-- Hero Section -->
-    <section class="relative pt-28 pb-16 lg:pt-36 lg:pb-24 overflow-hidden hero-mesh" id="home">
-        <div class="absolute inset-0 opacity-20 mix-blend-overlay" style="background-image: url('https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=2071&auto=format&fit=crop'); background-size: cover; background-position: center;"></div>
-        
-        <div class="absolute bottom-0 left-0 w-full overflow-hidden leading-[0]">
-            <svg viewBox="0 0 1200 120" preserveAspectRatio="none" class="w-full h-[40px] md:h-[80px] block" style="transform: rotate(180deg);">
-                <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V120H0V95.8C59.71,118.08,130.83,123.82,200,111.4,241.9,103.95,281.87,83.47,321.39,56.44Z" fill="var(--bodyBg)"></path>
-            </svg>
-        </div>
-
-        <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 w-full relative z-10 flex flex-col lg:flex-row items-center gap-10 lg:gap-16">
-            <div class="max-w-2xl lg:w-1/2">
-                <div class="inline-flex items-center gap-2 bg-white/10 border border-white/20 text-white font-bold px-4 py-1.5 rounded-full text-xs sm:text-sm mb-6 backdrop-blur-md shadow-sm">
-                    <i class="fa-solid fa-medal text-primary"></i> የኢትዮጵያ #1 የኦንላይን መማሪያ ፕላትፎርም
-                </div>
-                <h1 id="hero-welcome" class="text-4xl sm:text-5xl lg:text-6xl font-black mb-5 leading-[1.15] text-white">
-                    ክህሎትዎን ያሳድጉ፣ <br> 
-                    <span class="text-gradient">ቢዝነስዎን ይጀምሩ።</span>
-                </h1>
-                <p class="text-base sm:text-lg text-gray-200 mb-8 font-body leading-relaxed">
-                    Tsehay Campus በ <strong class="text-white">Tsehay Digital</strong> ስር የሚተዳደር ሲሆን፣ በኢትዮጵያ የኦንላይን ክህሎት ስልጠና ቀዳሚው ፕላትፎርም ነው። በተግባር እና በ AI የታገዘ ስልጠና ወስደው ቢዝነስዎን ዛሬውኑ ይጀምሩ።
-                </p>
-                
-                <div class="flex flex-col sm:flex-row gap-4" id="hero-action-buttons">
-                    <button onclick="document.getElementById('courses').scrollIntoView({behavior: 'smooth'})" class="bg-primary text-dark px-6 py-3.5 rounded-xl font-extrabold transition btn-glow flex items-center justify-center gap-3 text-base">
-                        ኮርሶችን ያስሱ <i class="fa-solid fa-arrow-right"></i>
-                    </button>
-                    <button onclick="document.getElementById('features').scrollIntoView({behavior: 'smooth'})" class="bg-white/10 hover:bg-white/20 border border-white/30 text-white backdrop-blur-md px-6 py-3.5 rounded-xl font-bold transition flex items-center justify-center gap-3 text-base">
-                        <i class="fa-solid fa-circle-play text-lg"></i> እንዴት እንደሚሰራ ይመልከቱ
-                    </button>
-                </div>
-            </div>
-
-            <div class="lg:w-1/2 hidden lg:flex justify-center relative animate-float">
-                <div class="relative w-full max-w-[450px]">
-                    <div class="absolute inset-0 bg-secondary rounded-full blur-[100px] opacity-50"></div>
-                    <img src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=2070&auto=format&fit=crop" alt="Students Learning" class="relative z-10 w-full h-[350px] object-cover rounded-2xl shadow-2xl border-4 border-white/10">
-                    
-                    <div class="absolute -bottom-5 -left-8 bg-white dark:bg-slate-800 p-3 rounded-xl shadow-xl z-20 flex items-center gap-3 animate-float border border-gray-100 dark:border-slate-700" style="animation-delay: 1s;">
-                        <div class="bg-green-100 dark:bg-green-900/30 text-success p-2.5 rounded-full text-xl"><i class="fa-solid fa-check-double"></i></div>
-                        <div>
-                            <p class="text-[10px] text-gray-500 dark:text-gray-400 font-bold uppercase leading-none">እውቅና ያለው ሰርተፍኬት</p>
-                            <p class="text-dark dark:text-white font-black text-sm">Recognized</p>
-                        </div>
-                    </div>
-                    <div class="absolute -top-6 -right-6 bg-white dark:bg-slate-800 p-3 rounded-xl shadow-xl z-20 flex items-center gap-3 animate-float border border-gray-100 dark:border-slate-700" style="animation-delay: 2s;">
-                        <div class="bg-blue-100 dark:bg-blue-900/30 text-secondary dark:text-primary p-2.5 rounded-full text-xl"><i class="fa-solid fa-users"></i></div>
-                        <div>
-                            <p class="text-[10px] text-gray-500 dark:text-gray-400 font-bold uppercase leading-none">ተማሪዎች</p>
-                            <p class="text-dark dark:text-white font-black text-sm">500+</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Trust Badges -->
-    <section class="py-10 bg-white dark:bg-slate-800 border-b border-gray-100 dark:border-slate-700 relative z-20 shadow-sm transition-colors duration-300">
-        <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <div class="inline-block bg-blue-50 dark:bg-slate-900 border border-blue-100 dark:border-slate-700 rounded-full px-5 py-2 mb-6 shadow-sm">
-                <p class="font-accent text-secondary dark:text-primary font-extrabold tracking-widest text-[11px] sm:text-xs uppercase">ከ 500+ በላይ ተማሪዎች እና አለምአቀፍ ፕላትፎርሞች የታመነ</p>
-            </div>
-            <div class="flex justify-center items-center gap-6 sm:gap-10 md:gap-16 flex-wrap">
-                <div class="flex items-center gap-2 text-lg md:text-2xl font-black font-heading text-gray-800 dark:text-gray-200 hover:text-[#EA4335] transition transform hover:scale-110 cursor-default">
-                    <i class="fa-brands fa-google text-[#EA4335]"></i> Google
-                </div>
-                <div class="flex items-center gap-2 text-lg md:text-2xl font-black font-heading text-gray-800 dark:text-gray-200 hover:text-[#0668E1] transition transform hover:scale-110 cursor-default">
-                    <i class="fa-brands fa-meta text-[#0668E1]"></i> Meta
-                </div>
-                <div class="flex items-center gap-2 text-lg md:text-2xl font-black font-heading text-gray-800 dark:text-gray-200 hover:text-[#95BF47] transition transform hover:scale-110 cursor-default">
-                    <i class="fa-brands fa-shopify text-[#95BF47]"></i> Shopify
-                </div>
-                <div class="flex items-center gap-2 text-lg md:text-2xl font-black font-heading text-gray-800 dark:text-gray-200 hover:text-black dark:hover:text-white transition transform hover:scale-110 cursor-default">
-                    <i class="fa-brands fa-tiktok text-black dark:text-gray-100"></i> TikTok
-                </div>
-                <div class="flex items-center gap-2 text-lg md:text-2xl font-black font-heading text-gray-800 dark:text-gray-200 hover:text-[#F3BA2F] transition transform hover:scale-110 cursor-default">
-                    <i class="fa-brands fa-bitcoin text-[#F3BA2F]"></i> Crypto
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Features -->
-    <section id="features" class="py-24 relative overflow-hidden bg-gradient-to-b from-slate-50 to-white dark:from-slate-900 dark:to-slate-800 border-b border-gray-200 dark:border-slate-700 transition-colors duration-300">
-        <div class="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
-            <div class="absolute -top-32 -left-32 w-[500px] h-[500px] bg-primary/5 rounded-full blur-3xl"></div>
-            <div class="absolute top-1/2 -right-32 w-[500px] h-[500px] bg-secondary/5 rounded-full blur-3xl"></div>
-            <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.03] dark:opacity-[0.01]"></div>
-        </div>
-
-        <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-            <div class="text-center max-w-2xl mx-auto mb-16">
-                <h2 class="font-heading font-black text-3xl sm:text-5xl text-dark dark:text-white mb-4">የእኛ <span class="text-secondary dark:text-primary">ልዩነት</span></h2>
-                <div class="w-20 h-1.5 bg-primary mx-auto rounded-full"></div>
-                <p class="mt-5 text-gray-500 dark:text-gray-400 font-body text-lg">ከሌሎች የኦንላይን ስልጠናዎች በምን እንለያለን?</p>
+    <!-- Real Payment Modal -->
+    <div id="payment-modal" class="hidden fixed inset-0 bg-black/80 z-[9999] items-center justify-center backdrop-blur-sm p-4" onclick="if(event.target === this) window.closePaymentModal()">
+        <div class="bg-white dark:bg-slate-800 w-full max-w-lg rounded-[2rem] shadow-2xl overflow-hidden flex flex-col relative modal-animate border border-gray-100 dark:border-slate-700">
+            
+            <div class="p-6 border-b border-gray-100 dark:border-slate-700 flex justify-between items-center bg-gray-50 dark:bg-slate-900/50">
+                <h3 class="font-black text-xl font-heading dark:text-white flex items-center gap-2"><i class="fa-solid fa-shield-check text-secondary dark:text-primary"></i> ደህንነቱ የተጠበቀ ክፍያ</h3>
+                <button onclick="window.closePaymentModal()" class="text-gray-400 hover:text-danger transition text-xl"><i class="fa-solid fa-xmark"></i></button>
             </div>
             
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-10">
-                <div class="bg-white dark:bg-slate-800 p-10 rounded-[2rem] shadow-sm border border-gray-100 dark:border-slate-700 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 group">
-                    <div class="w-20 h-20 bg-blue-50 dark:bg-blue-900/30 text-secondary dark:text-primary rounded-2xl flex items-center justify-center text-4xl mb-8 group-hover:bg-secondary dark:group-hover:bg-primary group-hover:text-white dark:group-hover:text-dark transition-colors duration-300 shadow-inner">
-                        <i class="fa-solid fa-chalkboard-user"></i>
+            <div class="p-6">
+                <!-- Course Summary -->
+                <div class="flex items-center gap-4 bg-gray-50 dark:bg-slate-900 p-4 rounded-2xl border border-gray-100 dark:border-slate-700 mb-6">
+                    <img id="pay-course-img" src="" class="w-16 h-16 rounded-xl object-cover shadow-sm">
+                    <div class="flex-1">
+                        <p class="text-[10px] text-gray-500 font-bold mb-1 uppercase tracking-widest">የሚገዙት ኮርስ</p>
+                        <h4 id="pay-course-title" class="font-black text-dark dark:text-white leading-tight line-clamp-2">Course Title</h4>
                     </div>
-                    <h3 class="font-black text-2xl text-dark dark:text-white mb-4 font-heading">የተግባር ኮርሶች</h3>
-                    <p class="text-gray-600 dark:text-gray-300 font-body leading-relaxed text-[15px]">ወቅታዊ፣ በተግባር ላይ ያተኮሩ እና ልምድ ባላቸው ባለሙያዎች የተዘጋጁ ኮርሶች።</p>
-                </div>
-                
-                <div class="bg-white dark:bg-slate-800 p-10 rounded-[2rem] shadow-xl border border-primary/30 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 group relative overflow-hidden transform md:-translate-y-6">
-                    <div class="absolute -right-10 -top-10 bg-gradient-to-br from-primary/20 to-transparent w-40 h-40 rounded-full -z-10 group-hover:scale-150 transition-transform duration-700"></div>
-                    <div class="w-20 h-20 bg-orange-50 dark:bg-orange-900/30 text-primary rounded-2xl flex items-center justify-center text-4xl mb-8 group-hover:bg-primary group-hover:text-white transition-colors duration-300 shadow-inner relative z-10">
-                        <i class="fa-solid fa-robot"></i>
-                    </div>
-                    <h3 class="font-black text-2xl text-dark dark:text-white mb-4 font-heading relative z-10">Tsehay AI ትስስር</h3>
-                    <p class="text-gray-600 dark:text-gray-300 font-body leading-relaxed text-[15px] relative z-10">በእያንዳንዱ ኮርስ ውስጥ የተካተተ፣ ጥያቄ የሚመልስ እና የቢዝነስ ትንታኔ የሚሰጥ AI።</p>
-                    <div class="absolute top-5 right-5 bg-primary text-dark text-xs font-black px-3 py-1 rounded-md shadow-sm animate-pulse">አዲስ</div>
                 </div>
 
-                <div class="bg-white dark:bg-slate-800 p-10 rounded-[2rem] shadow-sm border border-gray-100 dark:border-slate-700 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 group">
-                    <div class="w-20 h-20 bg-green-50 dark:bg-green-900/30 text-success rounded-2xl flex items-center justify-center text-4xl mb-8 group-hover:bg-success group-hover:text-white transition-colors duration-300 shadow-inner">
-                        <i class="fa-solid fa-certificate"></i>
-                    </div>
-                    <h3 class="font-black text-2xl text-dark dark:text-white mb-4 font-heading">እውቅና ያለው ሰርተፍኬት</h3>
-                    <p class="text-gray-600 dark:text-gray-300 font-body leading-relaxed text-[15px]">ትምህርትዎን እንዳጠናቀቁ፣ ክህሎትዎን የሚያረጋግጥ ዲጂታል ሰርተፍኬት ወዲያውኑ ያገኛሉ።</p>
+                <div class="flex justify-between items-center mb-6 pb-6 border-b border-gray-100 dark:border-slate-700">
+                    <span class="text-gray-600 dark:text-gray-400 font-bold">ጠቅላላ ክፍያ (Total)</span>
+                    <span id="pay-course-price" class="text-3xl font-black text-dark dark:text-white tracking-tighter">0 ብር</span>
                 </div>
-            </div>
-        </div>
-    </section>
 
-    <!-- Courses List (Updated matching courses.html style) -->
-    <section id="courses" class="py-20 bg-gray-50 dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 transition-colors duration-300">
-        <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex flex-col items-center text-center mb-12 gap-4">
-                <div>
-                    <h2 class="font-heading font-black text-3xl sm:text-4xl text-dark dark:text-white mb-3">በብዛት የሚፈለጉ ኮርሶች</h2>
-                    <p class="text-gray-600 dark:text-gray-400 font-body text-lg">ተማሪዎቻችን በአሁኑ ጊዜ በስፋት እየተከታተሉ ያሉ ስልጠናዎች</p>
+                <!-- Payment Methods -->
+                <h4 class="font-bold text-sm text-gray-500 mb-3 uppercase tracking-wider">የክፍያ አማራጭ ይምረጡ</h4>
+                <div class="space-y-3 mb-8">
+                    <label class="payment-option selected flex items-center justify-between p-4 rounded-xl border border-gray-200 dark:border-slate-600 cursor-pointer transition">
+                        <div class="flex items-center gap-3">
+                            <input type="radio" name="paymethod" value="chapa" checked class="w-4 h-4 text-secondary focus:ring-secondary">
+                            <span class="font-black dark:text-white text-sm md:text-base">Chapa (በባንክ ካርድ / ሞባይል ባንኪንግ)</span>
+                        </div>
+                        <img src="https://chapa.co/images/logo.png" class="h-4 md:h-5 object-contain opacity-70" alt="Chapa" onerror="this.style.display='none'">
+                    </label>
+                    <label class="payment-option flex items-center justify-between p-4 rounded-xl border border-gray-200 dark:border-slate-600 cursor-pointer transition">
+                        <div class="flex items-center gap-3">
+                            <input type="radio" name="paymethod" value="telebirr" class="w-4 h-4 text-secondary focus:ring-secondary">
+                            <span class="font-black dark:text-white text-sm md:text-base">Telebirr (ቴሌብር)</span>
+                        </div>
+                        <i class="fa-solid fa-mobile-screen-button text-gray-400 text-xl"></i>
+                    </label>
                 </div>
-            </div>
 
-            <!-- Courses Container -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8" id="courseList">
-                <div class="p-10 text-center col-span-full text-gray-400 dark:text-gray-500 font-bold w-full">
-                    <i class="fa-solid fa-circle-notch fa-spin text-4xl mb-4 text-secondary dark:text-primary"></i><br>ኮርሶችን በማምጣት ላይ...
-                </div>
+                <div id="payment-error" class="hidden bg-red-50 dark:bg-red-900/30 text-danger border border-red-200 dark:border-red-800 p-3 rounded-xl mb-4 font-bold text-sm text-center"></div>
+
+                <button id="btn-process-pay" onclick="window.processRealPayment()" class="w-full bg-secondary text-white py-4 rounded-2xl font-black text-lg hover:bg-blue-800 transition shadow-lg flex items-center justify-center gap-2 group">
+                    <span>ወደ ክፍያ ገፅ ሂድ</span> <i class="fa-solid fa-arrow-up-right-from-square group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform"></i>
+                </button>
             </div>
             
-            <!-- No Results Message -->
-            <div id="noCourseMessage" class="hidden text-center py-10">
-                <i class="fa-solid fa-box-open text-5xl text-gray-300 dark:text-slate-600 mb-4"></i>
-                <p class="text-gray-500 dark:text-gray-400 font-bold text-lg">ይቅርታ፣ ኮርስ አልተገኘም።</p>
+            <div class="bg-gray-50 dark:bg-slate-900/50 p-4 text-center border-t border-gray-100 dark:border-slate-700 flex items-center justify-center gap-2">
+                <i class="fa-solid fa-lock text-success"></i>
+                <p class="text-xs text-gray-500 font-bold uppercase tracking-wider">ክፍያዎ 100% ደህንነቱ የተጠበቀ ነው</p>
             </div>
         </div>
-    </section>
+    </div>
 
-    <!-- AI Demo Section -->
-    <section id="ai-feature" class="relative py-24 lg:py-32 overflow-hidden hero-mesh text-white border-y border-white/10">
-        <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20 mix-blend-overlay"></div>
-        <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col lg:flex-row items-center gap-12 relative z-10">
-            <div class="flex-1 text-center lg:text-left animate-float" style="animation-duration: 6s;">
-                <h2 class="text-3xl sm:text-5xl font-black font-heading mb-6 leading-tight"><span class="text-gradient">Tsehay AI</span> በመጠቀም ትምህርትዎን ስማርት ያድርጉ</h2>
-                <p class="text-lg text-blue-100 font-body mb-8 leading-relaxed">የእኛ ፕላትፎርም ቪዲዮ በማየት ብቻ አያበቃም። የ AI ረዳቱ በእያንዳንዱ ኮርስ ውስጥ ተካቷል፤ እቃዎችን ይተነትናል፣ ማስታወቂያ ይፅፋል፣ እና 24/7 ከጎንዎ ቆሞ ያግዝዎታል።</p>
-                <button onclick="document.getElementById('ai-landing-input').focus()" class="bg-white text-secondary font-black px-8 py-3.5 rounded-xl hover:bg-primary hover:text-dark transition shadow-[0_0_20px_rgba(249,176,60,0.5)] transform hover:-translate-y-1">የ AI ዳሽቦርዱን ይሞክሩ</button>
-            </div>
-            <div class="flex-1 w-full max-w-lg bg-white/95 dark:bg-slate-800/95 backdrop-blur-md p-8 rounded-[3rem] shadow-2xl text-dark border border-white/20">
-                <div class="flex items-center gap-3 border-b border-gray-100 dark:border-slate-700 pb-4 mb-5">
-                    <div class="bg-secondary text-white p-2.5 rounded-xl shadow-inner"><i class="fa-solid fa-robot animate-pulse"></i></div>
-                    <h3 class="font-black text-base dark:text-white">Tsehay AI ረዳት (ማሳያ)</h3>
-                </div>
-                <div class="space-y-4 mb-6 text-sm font-body h-64 overflow-y-auto pr-2" id="ai-landing-chat">
-                    <div class="bg-blue-50 dark:bg-slate-700 p-4 rounded-2xl max-w-[85%] border-l-4 border-primary shadow-sm leading-relaxed text-gray-800 dark:text-gray-200 font-medium">ሰላም! 👋 ስለ Shein ቢዝነስ ወይም ስለ ኮርሶቻችን የፈለጉትን ይጠይቁኝ።</div>
-                </div>
-                <div class="flex gap-2">
-                    <input type="text" id="ai-landing-input" placeholder="ጥያቄዎን እዚህ ያስገቡ..." class="flex-1 bg-gray-100 dark:bg-slate-700 dark:text-white border-none rounded-full px-5 py-3 text-sm focus:ring-2 focus:ring-secondary/30 outline-none transition" onkeypress="if(event.key === 'Enter') window.askAiLanding()">
-                    <button onclick="window.askAiLanding()" class="bg-secondary text-white w-12 h-12 rounded-full flex items-center justify-center hover:bg-dark dark:hover:bg-primary transition shadow-md">
-                        <i class="fa-solid fa-paper-plane"></i>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </section>
+    <!-- Full Screen Loader for Payments -->
+    <div id="payment-processing-loader" class="hidden fixed inset-0 bg-white/90 dark:bg-slate-900/90 z-[10000] flex-col items-center justify-center backdrop-blur-md">
+        <div class="w-16 h-16 border-4 border-gray-200 border-t-secondary rounded-full animate-spin mb-4"></div>
+        <h2 class="text-2xl font-black font-heading text-dark dark:text-white mb-2" id="payment-loader-text">ወደ ክፍያ ስርዓት በማቅናት ላይ...</h2>
+        <p class="text-gray-500 font-bold">እባክዎ ይህን ገፅ አይዝጉት!</p>
+    </div>
 
-    <!-- FAQ -->
-    <section id="faq" class="py-16 bg-blue-50/50 dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 transition-colors duration-300">
-        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center mb-10">
-                <h2 class="font-heading font-black text-3xl sm:text-4xl text-dark dark:text-white mb-3">ተደጋጋሚ ጥያቄዎች (FAQ)</h2>
-                <div class="w-16 h-1.5 bg-primary mx-auto rounded-full"></div>
-            </div>
-            
-            <div class="space-y-4">
-                <div class="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm">
-                    <button class="w-full text-left p-5 font-bold flex justify-between items-center hover:bg-gray-50 dark:hover:bg-slate-700 transition" onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('i.fa-chevron-down').classList.toggle('rotate-180')">
-                        <span class="text-dark dark:text-white text-lg flex items-center gap-3"><i class="fa-solid fa-circle-question text-primary"></i> ይህንን ስልጠና ለመውሰድ ምን ያስፈልገኛል?</span>
-                        <i class="fa-solid fa-chevron-down text-gray-400 transition duration-300"></i>
-                    </button>
-                    <div class="hidden px-5 pb-5 text-gray-700 dark:text-gray-300 border-t border-gray-100 dark:border-slate-700 pt-4 font-body text-[15px]">
-                        <p class="ml-7">ስማርት ስልክ፣ የኢንተርኔት ግንኙነት እና የቴሌግራም አካውንት ብቻ በቂ ነው። ለኮምፒውተርም ምቹ ነው።</p>
-                    </div>
-                </div>
-                <div class="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm">
-                    <button class="w-full text-left p-5 font-bold flex justify-between items-center hover:bg-gray-50 dark:hover:bg-slate-700 transition" onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('i.fa-chevron-down').classList.toggle('rotate-180')">
-                        <span class="text-dark dark:text-white text-lg flex items-center gap-3"><i class="fa-solid fa-circle-question text-primary"></i> የ AI ረዳቱን ለመጠቀም ተጨማሪ ክፍያ አለው?</span>
-                        <i class="fa-solid fa-chevron-down text-gray-400 transition duration-300"></i>
-                    </button>
-                    <div class="hidden px-5 pb-5 text-gray-700 dark:text-gray-300 border-t border-gray-100 dark:border-slate-700 pt-4 font-body text-[15px]">
-                        <p class="ml-7">አይ፣ የለውም። የ AI ረዳቱ (የዕቃ ተንታኝ፣ ማስታወቂያ ፀሐፊ፣ ወዘተ) ከኮርሱ ክፍያ ጋር የተካተተ እና በነፃ የሚሰጥ ነው።</p>
-                    </div>
-                </div>
-                <div class="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm">
-                    <button class="w-full text-left p-5 font-bold flex justify-between items-center hover:bg-gray-50 dark:hover:bg-slate-700 transition" onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('i.fa-chevron-down').classList.toggle('rotate-180')">
-                        <span class="text-dark dark:text-white text-lg flex items-center gap-3"><i class="fa-solid fa-circle-question text-primary"></i> ትምህርቱን ስጨርስ ሰርተፍኬት አገኛለሁ?</span>
-                        <i class="fa-solid fa-chevron-down text-gray-400 transition duration-300"></i>
-                    </button>
-                    <div class="hidden px-5 pb-5 text-gray-700 dark:text-gray-300 border-t border-gray-100 dark:border-slate-700 pt-4 font-body text-[15px]">
-                        <p class="ml-7">አዎ! ሁሉንም የትምህርት ክፍሎች እና ጥያቄዎች (Quiz) እንዳጠናቀቁ፣ ሲስተሙ ራሱ በስምዎ የተዘጋጀ ዲጂታል ሰርተፍኬት ያመነጭልዎታል።</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Call to Action -->
-    <section class="py-24 relative overflow-hidden bg-white dark:bg-slate-900 transition-colors duration-300">
-        <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-            <div class="relative bg-dark rounded-[3rem] overflow-hidden shadow-2xl border border-gray-800 p-10 md:p-20 text-center">
-                
-                <div class="absolute -top-32 -right-32 w-80 h-80 bg-primary rounded-full mix-blend-screen filter blur-[100px] opacity-50 animate-pulse"></div>
-                <div class="absolute -bottom-32 -left-32 w-80 h-80 bg-secondary rounded-full mix-blend-screen filter blur-[100px] opacity-40 animate-pulse" style="animation-delay: 2s;"></div>
-                <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20 mix-blend-overlay"></div>
-
-                <div class="relative z-10 max-w-3xl mx-auto">
-                    <div class="inline-flex items-center justify-center w-24 h-24 rounded-full bg-white/5 backdrop-blur-xl mb-8 border border-white/10 shadow-[0_0_30px_rgba(255,255,255,0.1)]">
-                        <i class="fa-solid fa-rocket text-5xl text-primary transform -rotate-12 animate-float" style="animation-duration: 3s;"></i>
-                    </div>
-                    
-                    <h2 class="text-4xl sm:text-5xl md:text-6xl font-black font-heading text-white mb-6 leading-tight">የስኬት ጉዞዎን <br><span class="text-primary">ዛሬውኑ ይጀምሩ</span></h2>
-                    
-                    <p class="text-lg sm:text-xl text-gray-300 font-body mb-10 leading-relaxed max-w-2xl mx-auto">ከ 500 በላይ ተማሪዎችን በመቀላቀል ቢዝነስዎን ይጀምሩ። የምዝገባው ሂደት ከ1 ደቂቃ በታች ነው የሚፈጀው።</p>
-                    
-                    <div class="flex flex-col sm:flex-row justify-center items-center gap-5">
-                        <button onclick="window.openAuthModal(true)" class="bg-primary text-dark px-10 py-5 rounded-2xl font-black text-lg sm:text-xl hover:bg-yellow-400 transition-all duration-300 shadow-[0_0_40px_rgba(249,176,60,0.4)] hover:shadow-[0_0_60px_rgba(249,176,60,0.6)] transform hover:-translate-y-2 flex items-center gap-3">
-                            <span>በነፃ አካውንት ይክፈቱ (Sign Up)</span> <i class="fa-solid fa-arrow-right"></i>
-                        </button>
-                    </div>
-                    
-                    <p class="mt-8 text-sm text-gray-400 font-bold uppercase tracking-widest flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-shield-halved text-success"></i> ምንም አይነት የክሬዲት ካርድ አያስፈልግም
-                    </p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Footer -->
+    <!-- Full Professional Footer -->
     <footer id="footer" class="bg-dark text-gray-300 pt-16 pb-8 font-body border-t-[6px] border-primary mt-auto">
         <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8 mb-12">
@@ -700,10 +396,10 @@
                 <div class="flex flex-col items-center text-center">
                     <h4 class="text-white font-black mb-5 font-heading tracking-wide text-base border-b-2 border-primary pb-2 inline-block">ፈጣን ማውጫ</h4>
                     <ul class="space-y-3 text-sm">
-                        <li><button onclick="document.getElementById('courses').scrollIntoView({behavior: 'smooth'})" class="hover:text-primary transition flex items-center gap-2">የ Shein ገቢ ንግድ</button></li>
-                        <li><button onclick="document.getElementById('courses').scrollIntoView({behavior: 'smooth'})" class="hover:text-primary transition flex items-center gap-2">ዲጂታል ማርኬቲንግ</button></li>
-                        <li><button onclick="document.getElementById('courses').scrollIntoView({behavior: 'smooth'})" class="hover:text-primary transition flex items-center gap-2">ዌብ ዴቨሎፕመንት</button></li>
-                        <li><button onclick="document.getElementById('courses').scrollIntoView({behavior: 'smooth'})" class="hover:text-primary transition flex items-center gap-2">የክሪፕቶ ግብይት</button></li>
+                        <li><button onclick="window.setCategory('Ecommerce')" class="hover:text-primary transition flex items-center gap-2">የ Shein ገቢ ንግድ</button></li>
+                        <li><button onclick="window.setCategory('Marketing')" class="hover:text-primary transition flex items-center gap-2">ዲጂታል ማርኬቲንግ</button></li>
+                        <li><button onclick="window.setCategory('Tech')" class="hover:text-primary transition flex items-center gap-2">ዌብ ዴቨሎፕመንት</button></li>
+                        <li><button onclick="window.setCategory('Crypto')" class="hover:text-primary transition flex items-center gap-2">የክሪፕቶ ግብይት</button></li>
                     </ul>
                 </div>
 
@@ -727,251 +423,26 @@
                     </div>
                 </div>
 
-                <!-- Google Translate Dropdown in Footer (For Mobile mostly) -->
-                <div class="mt-4 md:mt-0 flex flex-col items-center md:items-end sm:hidden">
-                    <div id="google_translate_element_footer" class="bg-dark rounded-lg p-1.5 border border-slate-700 hover:border-slate-500 transition overflow-hidden"></div>
+                <!-- Google Translate Dropdown in Footer -->
+                <div class="mt-4 md:mt-0 flex flex-col items-center md:items-end">
+                    <div id="google_translate_element_footer" class="bg-dark rounded-lg p-1.5 border border-slate-700 hover:border-slate-500 transition overflow-hidden max-w-[150px]"></div>
                 </div>
             </div>
         </div>
     </footer>
 
-    <!-- Floating Contact Buttons -->
     <div class="fixed bottom-6 right-6 z-[9999] flex flex-col gap-4">
-        <!-- Telegram Button -->
         <a href="https://t.me/TsehayTeam" target="_blank" class="w-[52px] h-[52px] bg-[#2CA5E0] text-white rounded-full flex items-center justify-center text-[22px] shadow-[0_0_20px_rgba(44,165,224,0.5)] hover:scale-110 transition-all duration-300 relative group border-2 border-white/10">
             <i class="fa-regular fa-paper-plane"></i>
             <span class="absolute right-full mr-4 bg-dark dark:bg-slate-800 text-white text-xs font-bold px-3 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap pointer-events-none border border-gray-700 shadow-xl">በቴሌግራም ያግኙን</span>
         </a>
-        <!-- Phone Button -->
         <a href="tel:0980209090" class="w-[52px] h-[52px] bg-[#10B981] text-white rounded-full flex items-center justify-center text-[22px] shadow-[0_0_20px_rgba(16,185,129,0.5)] hover:scale-110 transition-all duration-300 relative group border-2 border-white/10">
             <i class="fa-solid fa-phone"></i>
             <span class="absolute right-full mr-4 bg-dark dark:bg-slate-800 text-white text-xs font-bold px-3 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap pointer-events-none border border-gray-700 shadow-xl">ስልክ ይደውሉ</span>
         </a>
     </div>
 
-    <!-- UI Logic Scripts -->
-    <script>
-        window.isSignupMode = false;
-        window.allFetchedCourses = []; 
-        window.hasAgreedTerms = false;
-        window.currentUser = null;
-
-        window.requireAuthAndNavigate = function(url) {
-            if (window.currentUser && !window.currentUser.isAnonymous) {
-                window.location.href = url;
-            } else {
-                window.openAuthModal(false);
-                const errDiv = document.getElementById('auth-error');
-                if (errDiv) {
-                    errDiv.innerHTML = "<b>ማሳሰቢያ፡</b> ኮርሶችን ለማየት እና ለመግዛት መጀመሪያ ይግቡ ወይም አዲስ ይመዝገቡ!";
-                    errDiv.className = "bg-warning/20 text-warning border border-warning/50 text-sm p-3 rounded-lg mb-5 font-bold text-center";
-                    errDiv.classList.remove('hidden');
-                }
-            }
-        };
-
-        window.openAuthModal = function(signup) {
-            const mobileMenu = document.getElementById('mobile-menu');
-            if (mobileMenu && mobileMenu.classList.contains('open')) {
-                mobileMenu.classList.remove('open');
-                const icon = document.querySelector('#mobile-btn i');
-                if(icon) {
-                    icon.classList.add('fa-bars');
-                    icon.classList.remove('fa-xmark');
-                }
-            }
-
-            if (signup && !window.hasAgreedTerms) {
-                window.closeAuthModal();
-                window.openTermsModal();
-                return;
-            }
-
-            window.isSignupMode = signup;
-            const authModal = document.getElementById('auth-modal');
-            if (authModal) {
-                authModal.classList.remove('hidden');
-                authModal.classList.add('flex');
-            }
-            
-            const errDiv = document.getElementById('auth-error');
-            if (errDiv) errDiv.classList.add('hidden');
-            
-            const titleElem = document.getElementById('auth-title');
-            if (titleElem) titleElem.innerText = signup ? "አካውንት ይፍጠሩ" : "ወደ ካምፓስ ይግቡ";
-            
-            const submitBtn = document.getElementById('auth-submit-btn');
-            if (submitBtn) submitBtn.innerHTML = signup ? '<span>አዲስ ይመዝገቡ</span> <i class="fa-solid fa-arrow-right"></i>' : '<span>ግባ (Login)</span> <i class="fa-solid fa-arrow-right"></i>';
-            
-            const switchText = document.getElementById('auth-switch-text');
-            if (switchText) switchText.innerText = signup ? "አካውንት አለዎት?" : "አካውንት የለዎትም?";
-            
-            const switchBtn = document.getElementById('auth-switch-btn');
-            if (switchBtn) switchBtn.innerText = signup ? "ግባ (Login)" : "አዲስ ይመዝገቡ (Sign Up)";
-
-            const forgotBtn = document.getElementById('forgot-pwd-btn');
-            if (forgotBtn) forgotBtn.style.display = signup ? 'none' : 'block';
-
-            // Toggle ALL signup fields based on the mode
-            document.querySelectorAll('.signup-only').forEach(el => {
-                el.classList.toggle('hidden', !signup);
-            });
-
-            const termsField = document.getElementById('terms-field');
-            if (termsField) termsField.classList.toggle('hidden', !signup);
-            
-            const termsBox = document.getElementById('auth-terms');
-            if(termsBox && signup) termsBox.checked = false;
-        };
-
-        window.closeAuthModal = function() {
-            const modal = document.getElementById('auth-modal');
-            if (modal) {
-                modal.classList.add('hidden');
-                modal.classList.remove('flex');
-            }
-        };
-
-        window.toggleAuthMode = function() { 
-            window.openAuthModal(!window.isSignupMode); 
-        };
-
-        window.goToDashboard = function() {
-            try { window.location.href = 'courses.html'; } catch(err) { console.warn(err); }
-        };
-
-        window.openTermsModal = function() {
-            const tModal = document.getElementById('terms-modal');
-            if (tModal) {
-                tModal.classList.remove('hidden');
-                tModal.classList.add('flex');
-            }
-        };
-
-        window.closeTermsModal = function() {
-            const tModal = document.getElementById('terms-modal');
-            if (tModal) {
-                tModal.classList.add('hidden');
-                tModal.classList.remove('flex');
-            }
-        };
-
-        window.searchCourses = function(e, isMobile) {
-            const query = e.target.value.toLowerCase().trim();
-            const resultsContainer = isMobile ? document.getElementById('mobile-search-results') : document.getElementById('desktop-search-results');
-            if (!resultsContainer) return;
-
-            if (!query) {
-                resultsContainer.classList.add('hidden');
-                resultsContainer.classList.remove('flex');
-                return;
-            }
-
-            const filtered = window.allFetchedCourses.filter(c => c.title.toLowerCase().includes(query) && c.status === 'Active');
-            
-            resultsContainer.innerHTML = '';
-            if (filtered.length === 0) {
-                resultsContainer.innerHTML = '<div class="p-4 text-center text-sm text-gray-500 font-bold">ምንም ኮርስ አልተገኘም</div>';
-            } else {
-                filtered.forEach(c => {
-                    let isFree = c.price == 0 || !c.price;
-                    let priceText = isFree ? 'ነፃ (Free)' : `${Number(c.price).toLocaleString()} ብር`;
-                    let oldPriceHtml = (!isFree && c.oldPrice) ? `<span class="text-[10px] text-gray-400 line-through font-bold ml-1">${Number(c.oldPrice).toLocaleString()}</span>` : '';
-                    
-                    resultsContainer.innerHTML += `
-                        <div onclick="window.requireAuthAndNavigate('courses.html')" class="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-slate-700 cursor-pointer border-b border-gray-50 dark:border-slate-700 transition">
-                            <img src="${c.image}" class="w-12 h-12 rounded-lg object-cover" onerror="this.src='https://placehold.co/100x100'">
-                            <div class="flex-1 min-w-0 text-left">
-                                <h4 class="text-[13px] font-bold text-dark dark:text-white truncate">${c.title}</h4>
-                                <p class="text-[11px] text-gray-500 truncate"><i class="fa-solid fa-chalkboard-user"></i> ${c.instructor}</p>
-                            </div>
-                            <div class="text-[11px] font-black ${isFree ? 'text-success' : 'text-secondary dark:text-primary'} bg-gray-50 dark:bg-slate-800 px-2 py-1 rounded shadow-sm flex items-center">
-                                ${priceText} ${oldPriceHtml}
-                            </div>
-                        </div>
-                    `;
-                });
-            }
-            resultsContainer.classList.remove('hidden');
-            resultsContainer.classList.add('flex');
-        };
-
-        window.handleSearchEnter = function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                window.requireAuthAndNavigate('courses.html');
-            }
-        };
-
-        window.toggleTheme = function() {
-            document.documentElement.classList.toggle('dark');
-            const isDark = document.documentElement.classList.contains('dark');
-            localStorage.setItem('theme', isDark ? 'dark' : 'light');
-            
-            const icon1 = document.getElementById('theme-icon');
-            const icon2 = document.getElementById('mobile-theme-icon');
-            
-            if (icon1) icon1.className = isDark ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
-            if (icon2) icon2.className = isDark ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
-        };
-
-        document.addEventListener('DOMContentLoaded', () => {
-            const isDark = document.documentElement.classList.contains('dark');
-            const icon1 = document.getElementById('theme-icon');
-            const icon2 = document.getElementById('mobile-theme-icon');
-            if (icon1) icon1.className = isDark ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
-            if (icon2) icon2.className = isDark ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
-
-            const mobileBtn = document.getElementById('mobile-btn');
-            if (mobileBtn) {
-                mobileBtn.addEventListener('click', () => {
-                    const menu = document.getElementById('mobile-menu');
-                    if(menu) menu.classList.toggle('open');
-                    const icon = mobileBtn.querySelector('i');
-                    if(icon) {
-                        icon.classList.toggle('fa-bars');
-                        icon.classList.toggle('fa-xmark');
-                    }
-                });
-            }
-        });
-
-        document.addEventListener('click', function(e) {
-            if (!e.target.closest('.search-bar') && !e.target.closest('#desktop-search-results')) {
-                const d = document.getElementById('desktop-search-results');
-                if(d) { d.classList.add('hidden'); d.classList.remove('flex'); }
-            }
-            if (!e.target.closest('.relative') && !e.target.closest('#mobile-search-results')) {
-                const m = document.getElementById('mobile-search-results');
-                if(m) { m.classList.add('hidden'); m.classList.remove('flex'); }
-            }
-        });
-
-        window.agreeToTermsFromModal = function() {
-            const modalCheck = document.getElementById('modal-terms-check');
-            const termsErr = document.getElementById('terms-error');
-            
-            if (modalCheck && !modalCheck.checked) {
-                if(termsErr) {
-                    termsErr.innerText = "እባክዎ 'በሁሉም የአጠቃቀም ህጎች... ተስማምቻለሁ' የሚለውን ሳጥን (Checkbox) ቲክ ያድርጉ!";
-                    termsErr.classList.remove('hidden');
-                }
-                return;
-            }
-            if(termsErr) termsErr.classList.add('hidden');
-            
-            window.hasAgreedTerms = true;
-            window.closeTermsModal();
-            window.openAuthModal(true);
-            
-            const authTerms = document.getElementById('auth-terms');
-            if (authTerms) {
-                authTerms.checked = true;
-            }
-        };
-    </script>
-
-    <!-- Google Translate Script (ቋንቋው አንዴ ከተቀየረ ዳሽቦርድ ላይም እንዳይጠፋ ያደርጋል) -->
+    <!-- Google Translate Script (For global persistence) -->
     <script>
         function googleTranslateElementInit() {
             new google.translate.TranslateElement({
@@ -979,395 +450,483 @@
                 includedLanguages: 'am,en,om,ti,ar,zh-CN,so,fr,es',
                 autoDisplay: false
             }, 'google_translate_element');
+            
+            setTimeout(function() {
+                new google.translate.TranslateElement({
+                    pageLanguage: 'am',
+                    includedLanguages: 'am,en,om,ti,ar,zh-CN,so,fr,es',
+                    autoDisplay: false
+                }, 'google_translate_element_footer');
+            }, 1000);
         }
     </script>
     <script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
 
-    <!-- Firebase Integration & AI Functions -->
+    <!-- Firebase & Application Logic -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged, signOut, createUserWithEmailAndPassword, updateProfile, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, getDocs, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // ==========================================
-        // 1. AI Functions (API Backend Integration)
-        // ==========================================
-        window.processAiChat = async function(inputId, chatContainerId) {
-            const inputElem = document.getElementById(inputId);
-            if(!inputElem) return;
-            const input = inputElem.value.trim();
-            if(!input) return;
-            
-            const chat = document.getElementById(chatContainerId);
-            inputElem.value = '';
-            
-            if(chat) {
-                chat.innerHTML += `<div class="self-end max-w-[85%] bg-primary text-dark font-medium p-3 rounded-2xl rounded-tr-none shadow-sm">${input}</div>`;
-                chat.scrollTop = chat.scrollHeight;
+        // ✅ Firebase Key
+        const firebaseConfig = { apiKey: "AIzaSyDCxlwfYAS_I0D7c-8e-iB-Y-Rh2ZZoHZw", authDomain: "tsehaycampus-e1a6d.firebaseapp.com", projectId: "tsehaycampus-e1a6d", storageBucket: "tsehaycampus-e1a6d.firebasestorage.app", messagingSenderId: "1043616909865", appId: "1:1043616909865:web:9ecca7d9a14deef0f5ea38" };
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = 'tsehaycampus-e1a6d';
 
-                const loadingId = 'loading-' + Date.now();
-                chat.innerHTML += `<div id="${loadingId}" class="self-start max-w-[85%] bg-gray-100 dark:bg-slate-700 p-3 rounded-2xl border-l-4 border-primary leading-relaxed text-gray-800 dark:text-gray-200 text-sm shadow-sm"><i class="fa-solid fa-spinner fa-spin text-secondary"></i> Tsehay AI በማሰብ ላይ ነው...</div>`;
-                chat.scrollTop = chat.scrollHeight;
+        window.currentUser = null;
+        window.allCourses = [];
+        window.userEnrollments = [];
+        window.currentCategory = 'All';
+        window.selectedCourseToPay = null;
 
-                const url = `/api/chat`; // Vercel API Backend
-                const systemInst = "አንተ 'Tsehay AI' የተባልክ የ Tsehay Campus (የኢትዮጵያ ምርጡ የኦንላይን መማሪያ ፕላትፎርም) የደንበኞች አገልጋይ ነህ። ለጎብኚዎች እና አዲስ ተማሪዎች ትህትና በተሞላበት፣ ሳቢ እና አበረታች በሆነ የአማርኛ ቋንቋ ምላሽ ስጥ። ጥያቄዎችን አጠር እና ግልፅ አድርገህ መልስ።";
-                const payload = { prompt: input, systemInstruction: systemInst };
-                
-                const delays = [1000, 2000, 4000, 8000, 16000];
-                for(let i=0; i<5; i++) {
-                    try {
-                        const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                        if (!response.ok) throw new Error("API Error");
-                        const data = await response.json();
-                        const loadingElem = document.getElementById(loadingId);
-                        if(loadingElem) {
-                            let cleanResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
-                            if(cleanResponse) {
-                                cleanResponse = cleanResponse.replace(/[\`]{3}[a-zA-Z]*\n?/gi, '').replace(/[\`]{3}/g, '').trim();
-                                loadingElem.innerHTML = cleanResponse.replace(/\n/g, '<br>');
-                            } else if (data.error) {
-                                loadingElem.innerHTML = "የ API ስህተት: " + data.error;
-                                loadingElem.className = "self-start max-w-[85%] bg-red-50 dark:bg-red-900/30 text-danger p-4 rounded-2xl border-l-4 border-danger leading-relaxed text-sm font-bold shadow-sm";
-                            }
-                        }
-                        break;
-                    } catch (e) { 
-                        if(i === 4) {
-                            const loadingElem = document.getElementById(loadingId);
-                            if(loadingElem) {
-                                loadingElem.className = "self-start max-w-[85%] bg-red-50 dark:bg-red-900/30 text-danger p-4 rounded-2xl border-l-4 border-danger leading-relaxed text-sm font-bold shadow-sm";
-                                loadingElem.innerText = "የቴክኒክ ችግር አጋጥሟል! (Backend API አልተገኘም) እባክዎ Vercel ላይ ይፈትሹ።";
-                            }
-                        } else {
-                            await new Promise(r => setTimeout(r, delays[i]));
-                        }
-                    }
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('#profile-menu-container')) {
+                const dropdown = document.getElementById('profile-dropdown');
+                if(dropdown && !dropdown.classList.contains('hidden')) {
+                    dropdown.classList.add('hidden');
                 }
-                chat.scrollTop = chat.scrollHeight;
+            }
+        });
+
+        window.safeRedirect = function(target) {
+            try {
+                if (window.location.protocol === 'blob:' || window.location.origin === 'null') {
+                    throw new Error("Blocked");
+                }
+                window.location.href = target;
+            } catch (e) {
+                console.log(e);
             }
         };
 
-        window.askAiLanding = function() { window.processAiChat('ai-landing-input', 'ai-landing-chat'); };
-        window.sendChatMessage = function() { window.processAiChat('chat-input', 'chat-messages'); };
+        // 💡 100% የጠራ የ Auth Logic (ያለ Anonymous Overwrite)
+        onAuthStateChanged(auth, async (user) => {
+            document.getElementById('main-body').classList.remove('hidden');
+            const navAuthBtns = document.getElementById('nav-auth-buttons');
+            const isDark = document.documentElement.classList.contains('dark');
+            const themeIcon = isDark ? 'fa-sun' : 'fa-moon';
+            const themeColor = isDark ? 'text-yellow-400' : 'text-gray-600';
 
-        // ==========================================
-        // 2. Firebase App Initialization 
-        // ==========================================
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'tsehaycampus-e1a6d';
-
-        try {
-            // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-            const firebaseConfig = {
-                apiKey: "AIzaSyDCxlwfYAS_I0D7c-8e-iB-Y-Rh2ZZoHZw",
-                authDomain: "tsehaycampus-e1a6d.firebaseapp.com",
-                projectId: "tsehaycampus-e1a6d",
-                storageBucket: "tsehaycampus-e1a6d.firebasestorage.app",
-                messagingSenderId: "1043616909865",
-                appId: "1:1043616909865:web:9ecca7d9a14deef0f5ea38",
-                measurementId: "G-6WWL8RFCV2"
-            };
-
-            const app = initializeApp(firebaseConfig);
-            const auth = getAuth(app);
-            const db = getFirestore(app);
-
-            // ==========================================
-            // 코ርሶችን በ Real-time ማምጣት (ከ Login ውጭ የሚሰራ)
-            // ==========================================
-            const fetchPublicCourses = () => {
-                const currentAppId = typeof __app_id !== 'undefined' ? __app_id : 'tsehaycampus-e1a6d';
-                const coursesCol = collection(db, 'artifacts', currentAppId, 'public', 'data', 'courses');
-                
-                onSnapshot(coursesCol, (snapshot) => {
-                    if (window.allFetchedCourses !== undefined) window.allFetchedCourses = [];
-                    const listUi = document.getElementById('courseList');
-                    if (listUi) listUi.innerHTML = '';
-                    
-                    if (snapshot.empty) {
-                        if(listUi) listUi.innerHTML = '<p class="col-span-full text-center text-gray-400 font-bold">እስካሁን ምንም ኮርስ አልተጨመረም!</p>';
-                        return;
-                    }
-                    
-                    let count = 0;
-                    snapshot.forEach(docSnap => {
-                        const c = docSnap.data();
-                        if (c.status !== 'Active') return;
-                        
-                        if (window.allFetchedCourses !== undefined) window.allFetchedCourses.push(c);
-                        
-                        if (!listUi || count >= 8) return; // ማረፊያ ገፅ ላይ እስከ 8 ኮርስ ብቻ ያሳያል
-                        count++;
-
-                        let isFree = c.price == 0 || !c.price;
-                        let priceText = isFree ? 'ነፃ (Free)' : `${Number(c.price).toLocaleString()} ብር`;
-                        let btnText = isFree ? 'በነፃ ጀምር' : 'ኮርሱን ግዛ';
-                        let btnClass = isFree ? 'bg-success text-white hover:bg-green-600' : 'bg-primary text-dark hover:bg-yellow-400';
-                        let shortDesc = c.desc ? c.desc : 'ስለዚህ ኮርስ ተጨማሪ ማብራሪያ ለማግኘት ይመልከቱ...';
-                        let durationInfo = c.duration || '00:00:00';
-                        let lessonsCount = c.lessons ? c.lessons.length : 0;
-                        
-                        // NEW BADGE LOGIC
-                        let badgeHTML = isFree 
-                            ? `<div class="absolute top-3 right-3 bg-success text-white text-[10px] font-black uppercase px-3 py-1.5 rounded-lg shadow-md z-10 animate-pulse"><i class="fa-solid fa-gift mr-1"></i> ነፃ ኮርስ</div>` 
-                            : `<div class="absolute top-3 right-3 bg-primary text-dark text-[10px] font-black uppercase px-3 py-1.5 rounded-lg shadow-md z-10"><i class="fa-solid fa-star mr-1"></i> ፕሪሚየም</div>`;
-                            
-                        // NEW OLD PRICE LOGIC
-                        let oldPriceHtml = (!isFree && c.oldPrice) ? `<span class="text-xs text-gray-400 line-through font-bold ml-2">${Number(c.oldPrice).toLocaleString()} ብር</span>` : '';
-                        
-                        // NEW LEVEL LOGIC
-                        let levelText = c.level || 'ጀማሪ';
-
-                        listUi.innerHTML += `
-                            <div class="course-card rounded-2xl overflow-hidden flex flex-col group cursor-pointer shadow-sm border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800" onclick="window.requireAuthAndNavigate('courses.html')">
-                                <div class="relative overflow-hidden h-48 bg-gray-100 dark:bg-slate-700">
-                                    ${badgeHTML}
-                                    <img src="${c.image}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500" onerror="this.src='https://placehold.co/400x250?text=Course'">
-                                    <div class="absolute inset-0 bg-black/20 group-hover:bg-transparent transition duration-500"></div>
-                                </div>
-                                <div class="p-6 flex flex-col flex-1">
-                                    <h3 class="font-black text-dark dark:text-white text-lg leading-snug mb-1 font-heading line-clamp-2">${c.title}</h3>
-                                    <p class="text-xs text-gray-500 dark:text-gray-400 font-bold mb-3"><i class="fa-solid fa-user-tie text-secondary dark:text-primary"></i> ${c.instructor || 'Tsehay Campus'}</p>
-                                    
-                                    <p class="text-[14px] text-gray-600 dark:text-gray-300 font-body mb-5 line-clamp-3 leading-relaxed">${shortDesc}</p>
-                                    
-                                    <div class="flex flex-wrap items-center gap-2 mb-5 mt-auto">
-                                        <span class="bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-300 text-[11px] font-bold px-2.5 py-1.5 rounded-md flex items-center gap-1.5"><i class="fa-regular fa-clock text-secondary dark:text-primary"></i> ${durationInfo}</span>
-                                        <span class="bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-300 text-[11px] font-bold px-2.5 py-1.5 rounded-md flex items-center gap-1.5"><i class="fa-solid fa-list-ul text-primary"></i> ${lessonsCount} ክፍሎች</span>
-                                        <span class="bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-300 text-[11px] font-bold px-2.5 py-1.5 rounded-md flex items-center gap-1.5"><i class="fa-solid fa-signal text-warning"></i> ${levelText}</span>
-                                    </div>
-
-                                    <div class="pt-4 border-t border-gray-100 dark:border-slate-700 flex items-center justify-between">
-                                        <div class="flex items-center">
-                                            <span class="font-black text-xl ${isFree ? 'text-success' : 'text-dark dark:text-white'}">${priceText}</span>
-                                            ${oldPriceHtml}
-                                        </div>
-                                        <button class="${btnClass} px-5 py-2.5 rounded-xl font-bold text-sm transition duration-300 shadow-sm">${btnText} <i class="fa-solid fa-arrow-right ml-1"></i></button>
-                                    </div>
-                                </div>
-                            </div>`;
-                    });
-                }, (error) => console.error(error));
-            };
-
-            // ማንኛውም ጎብኚ እንደከፈተ ወዲያውኑ ኮርሶቹን ያመጣል
-            fetchPublicCourses();
-
-            const initAuth = async () => {
-                try {
-                    await signInAnonymously(auth).catch(e=>{});
-                } catch (e) { console.error("Auth Error", e); }
-            };
-            initAuth();
-
-            window.logoutUser = async () => {
-                await auth.signOut();
-                window.location.reload();
-            };
-
-            onAuthStateChanged(auth, (user) => {
-                window.currentUser = user;
-                const heroBtns = document.getElementById('hero-action-buttons');
-                const navAuthBtns = document.getElementById('nav-auth-buttons');
-                const heroWelcome = document.getElementById('hero-welcome');
-                const isDark = document.documentElement.classList.contains('dark');
-                const themeIcon = isDark ? 'fa-sun' : 'fa-moon';
-                const themeColor = isDark ? 'text-yellow-400' : 'text-gray-600';
-
+            try {
                 if (user && !user.isAnonymous) {
-                    const name = user.displayName || "የካምፓስ ተማሪ";
-                    if (heroWelcome) heroWelcome.innerHTML = `ሰላም ${name}! 👋 <br> <span class="text-gradient">ትምህርትዎን ይቀጥሉ።</span>`;
-
-                    if (heroBtns) {
-                        heroBtns.innerHTML = `
-                            <button onclick="document.getElementById('courses').scrollIntoView({behavior: 'smooth'})" class="bg-primary text-dark px-6 py-3.5 rounded-xl font-extrabold transition btn-glow flex items-center justify-center gap-3 text-base">
-                                ወደ ሁሉም ኮርሶች <i class="fa-solid fa-arrow-right"></i>
-                            </button>
-                            <button onclick="document.getElementById('features').scrollIntoView({behavior: 'smooth'})" class="bg-white/10 hover:bg-white/20 border border-white/30 text-white backdrop-blur-md px-6 py-3.5 rounded-xl font-bold transition flex items-center justify-center gap-3 text-base">
-                                <i class="fa-solid fa-circle-play text-lg"></i> እንዴት እንደሚሰራ ይመልከቱ
-                            </button>
-                        `;
-                    }
+                    window.currentUser = user;
+                    const name = user.displayName || (user.email ? user.email.split('@')[0] : "ተማሪ");
+                    const photo = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=3268BA&color=fff`;
+                    
                     if (navAuthBtns) {
                         navAuthBtns.innerHTML = `
-                            <button onclick="window.toggleTheme()" class="w-10 h-10 rounded-full bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-slate-700 transition shadow-sm ${themeColor}">
+                            <button onclick="window.toggleTheme()" class="w-10 h-10 rounded-full bg-gray-100 dark:bg-slate-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-slate-700 transition shadow-sm shrink-0 ${themeColor}">
                                 <i id="theme-icon" class="fa-solid ${themeIcon}"></i>
                             </button>
-                            <a href="#ai-feature" onclick="document.getElementById('ai-feature').scrollIntoView({behavior: 'smooth'})" class="text-gray-700 dark:text-gray-300 hover:text-secondary dark:hover:text-primary font-bold transition flex items-center gap-1.5 lg:gap-2 px-1 lg:px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 whitespace-nowrap">
-                                <i class="fa-solid fa-wand-magic-sparkles text-primary animate-pulse"></i> <span class="hidden lg:inline">Tsehay AI</span>
-                            </a>
-                            <div class="h-5 w-px bg-gray-300 dark:bg-slate-700 mx-0.5 lg:mx-1"></div>
-                            <span class="text-dark dark:text-white font-bold text-sm hidden lg:inline mx-2">${name}</span>
-                            <button onclick="window.goToDashboard()" class="bg-primary text-dark px-4 lg:px-6 py-2 lg:py-2.5 rounded-lg font-bold hover:bg-secondary dark:hover:bg-yellow-400 transition shadow-md btn-glow whitespace-nowrap">ወደ ኮርሶች ገበያ</button>
-                            <button onclick="window.logoutUser()" class="text-gray-400 hover:text-danger transition ml-2"><i class="fa-solid fa-power-off"></i></button>
+                            <div class="relative ml-1 md:ml-2 shrink-0" id="profile-menu-container">
+                                <div onclick="document.getElementById('profile-dropdown').classList.toggle('hidden')" class="flex items-center gap-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-600 p-1.5 pr-2 md:pr-3 rounded-full border border-gray-200 dark:border-slate-500 shadow-sm transition bg-white dark:bg-slate-700">
+                                    <img src="${photo}" class="w-7 h-7 md:w-8 md:h-8 rounded-full object-cover">
+                                    <span class="text-xs md:text-sm font-bold text-dark dark:text-white truncate max-w-[80px] md:max-w-[120px]">${name}</span>
+                                    <i class="fa-solid fa-chevron-down text-[10px] text-gray-400 ml-1"></i>
+                                </div>
+                                <div id="profile-dropdown" class="hidden absolute top-full right-0 mt-2 w-56 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 overflow-hidden z-[60]">
+                                    <div class="p-2 space-y-1">
+                                        <button onclick="window.safeRedirect('dashboard.html')" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-slate-700 hover:text-secondary dark:hover:text-primary rounded-xl font-bold transition flex items-center gap-3">
+                                            <i class="fa-solid fa-chart-pie w-4"></i> ወደ ዳሽቦርድ (Dashboard)
+                                        </button>
+                                        <button onclick="window.logoutUser()" class="w-full text-left px-4 py-2.5 text-sm text-danger hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl font-bold transition flex items-center gap-3">
+                                            <i class="fa-solid fa-arrow-right-from-bracket w-4"></i> መውጫ (Logout)
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         `;
                     }
+                    await fetchUserEnrollments(user.uid);
                 } else {
-                    if (heroWelcome) heroWelcome.innerHTML = `ክህሎትዎን ያሳድጉ፣ <br> <span class="text-gradient">ቢዝነስዎን ይጀምሩ።</span>`;
-
-                    if (heroBtns) {
-                        heroBtns.innerHTML = `
-                            <button onclick="document.getElementById('courses').scrollIntoView({behavior: 'smooth'})" class="bg-primary text-dark px-6 py-3.5 rounded-xl font-extrabold transition btn-glow flex items-center justify-center gap-3 text-base">
-                                ኮርሶችን ያስሱ <i class="fa-solid fa-arrow-right"></i>
-                            </button>
-                            <button onclick="document.getElementById('features').scrollIntoView({behavior: 'smooth'})" class="bg-white/10 hover:bg-white/20 border border-white/30 text-white backdrop-blur-md px-6 py-3.5 rounded-xl font-bold transition flex items-center justify-center gap-3 text-base">
-                                <i class="fa-solid fa-circle-play text-lg"></i> እንዴት እንደሚሰራ ይመልከቱ
-                            </button>
-                        `;
-                    }
+                    window.currentUser = null;
+                    window.userEnrollments = [];
                     if (navAuthBtns) {
                         navAuthBtns.innerHTML = `
-                            <button onclick="window.toggleTheme()" class="w-10 h-10 rounded-full bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-slate-700 transition shadow-sm ${themeColor}">
+                            <button onclick="window.toggleTheme()" class="w-10 h-10 rounded-full bg-gray-100 dark:bg-slate-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-slate-700 transition shadow-sm shrink-0 ${themeColor}">
                                 <i id="theme-icon" class="fa-solid ${themeIcon}"></i>
                             </button>
-                            <a href="#ai-feature" onclick="document.getElementById('ai-feature').scrollIntoView({behavior: 'smooth'})" class="text-gray-700 dark:text-gray-300 hover:text-secondary dark:hover:text-primary font-bold transition flex items-center gap-1.5 lg:gap-2 px-1 lg:px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 whitespace-nowrap">
-                                <i class="fa-solid fa-wand-magic-sparkles text-primary animate-pulse"></i> <span class="hidden lg:inline">Tsehay AI</span>
-                            </a>
-                            <div class="h-5 w-px bg-gray-300 dark:bg-slate-700 mx-0.5 lg:mx-1"></div>
-                            <button onclick="window.openAuthModal(false)" class="text-dark dark:text-white font-bold hover:text-secondary dark:hover:text-primary transition px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 whitespace-nowrap">ግባ (Login)</button>
-                            <button onclick="window.openAuthModal(true)" class="bg-dark dark:bg-primary text-white dark:text-dark px-4 lg:px-6 py-2 lg:py-2.5 rounded-lg font-bold hover:bg-secondary dark:hover:bg-yellow-400 transition shadow-md btn-glow whitespace-nowrap">አዲስ ይመዝገቡ</button>
+                            <div class="h-5 w-px bg-gray-300 dark:bg-slate-700 mx-1 hidden sm:block"></div>
+                            <button onclick="window.openAuthModal(false)" class="text-dark dark:text-white font-bold hover:text-secondary dark:hover:text-primary transition px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 whitespace-nowrap text-sm shrink-0">ግባ (Login)</button>
+                            <button onclick="window.openAuthModal(true)" class="bg-dark dark:bg-primary text-white dark:text-dark px-3 md:px-5 py-2 md:py-2.5 rounded-lg font-bold hover:bg-secondary dark:hover:bg-yellow-400 transition shadow-md btn-glow whitespace-nowrap text-sm shrink-0">አዲስ ይመዝገቡ</button>
                         `;
                     }
+                }
+                
+                await fetchAllCourses();
+
+            } catch (err) {
+                console.error(err);
+            } finally {
+                // Loader unconditionally removed
+                const loader = document.getElementById('screen-loader');
+                if(loader) {
+                    loader.style.opacity = '0';
+                    setTimeout(() => {
+                        loader.style.display = 'none';
+                        loader.classList.add('hidden');
+                    }, 300);
+                }
+            }
+        });
+
+        window.logoutUser = async () => {
+            await signOut(auth);
+            window.location.reload();
+        };
+
+        async function fetchUserEnrollments(uid) {
+            try {
+                const enrollRef = collection(db, 'artifacts', appId, 'users', uid, 'enrollments');
+                const snap = await getDocs(enrollRef);
+                window.userEnrollments = snap.docs.map(d => d.id); 
+            } catch(e) {
+                console.error("Enrollment Fetch Error:", e);
+                window.userEnrollments = [];
+            }
+        }
+
+        async function fetchAllCourses() {
+            try {
+                const coursesRef = collection(db, 'artifacts', appId, 'public', 'data', 'courses');
+                const snap = await getDocs(coursesRef);
+                window.allCourses = [];
+                snap.forEach(d => {
+                    const data = d.data();
+                    if(data.status === 'Active') {
+                        window.allCourses.push({ id: d.id, ...data });
+                    }
+                });
+                renderCourses(window.allCourses);
+            } catch (e) {
+                document.getElementById('courseGrid').innerHTML = `<p class="col-span-full text-center text-danger font-bold">ዳታቤዙን ማምጣት አልተቻለም።</p>`;
+            }
+        }
+
+        function renderCourses(courses) {
+            const grid = document.getElementById('courseGrid');
+            const empty = document.getElementById('emptyState');
+            grid.innerHTML = '';
+
+            if (courses.length === 0) {
+                empty.classList.remove('hidden');
+                return;
+            }
+            empty.classList.add('hidden');
+
+            courses.forEach(c => {
+                const isFree = !c.price || c.price == 0;
+                const priceText = isFree ? 'ነፃ (Free)' : `${Number(c.price).toLocaleString()} ብር`;
+                const isEnrolled = window.userEnrollments.includes(c.id);
+                
+                // Smart Category Detection
+                let displayCat = c.category;
+                if (!displayCat) {
+                    const t = (c.title || '').toLowerCase();
+                    if (t.includes('shein') || t.includes('ገቢ') || t.includes('ኢ-ኮሜርስ') || t.includes('ecommerce')) displayCat = 'Ecommerce';
+                    else if (t.includes('marketing') || t.includes('ማርኬቲንግ') || t.includes('digital') || t.includes('ዲጂታል')) displayCat = 'Marketing';
+                    else if (t.includes('crypto') || t.includes('ክሪፕቶ') || t.includes('trading')) displayCat = 'Crypto';
+                    else if (t.includes('web') || t.includes('ዌብ') || t.includes('tech') || t.includes('ዴቨሎፕመንት')) displayCat = 'Tech';
+                    else displayCat = 'General';
+                }
+                
+                let btnHtml = '';
+                let badgeHtml = '';
+
+                if (isEnrolled) {
+                    badgeHtml = `<div class="absolute top-4 right-4 bg-primary text-dark text-[10px] font-black uppercase px-3 py-1.5 rounded-lg shadow-lg z-10"><i class="fa-solid fa-check-circle"></i> የኔ ኮርስ</div>`;
+                    btnHtml = `<button onclick="window.safeRedirect('dashboard.html')" class="w-full bg-gray-200 dark:bg-slate-600 hover:bg-primary dark:hover:bg-primary text-gray-800 dark:text-white hover:text-dark dark:hover:text-dark py-3.5 rounded-xl font-black transition flex items-center justify-center gap-2 shadow-sm border border-gray-300 dark:border-slate-500">ወደ መማሪያ ክፍል (Dashboard) <i class="fa-solid fa-arrow-right"></i></button>`;
+                } else if (isFree) {
+                    badgeHtml = `<div class="absolute top-3 right-3 bg-success text-white text-[10px] font-black uppercase px-3 py-1.5 rounded-lg shadow-md z-10 animate-pulse"><i class="fa-solid fa-gift mr-1"></i> ነፃ ኮርስ</div>`;
+                    btnHtml = `<button onclick="window.enrollFreeCourse('${c.id}')" class="w-full bg-success hover:bg-green-600 text-white py-3.5 rounded-xl font-black transition shadow-md flex items-center justify-center gap-2">በነፃ ጀምር <i class="fa-solid fa-unlock"></i></button>`;
+                } else {
+                    badgeHtml = `<div class="absolute top-3 right-3 bg-primary text-dark text-[10px] font-black uppercase px-3 py-1.5 rounded-lg shadow-md z-10"><i class="fa-solid fa-star mr-1"></i> ፕሪሚየም</div>`;
+                    btnHtml = `<button onclick="window.openPaymentModal('${c.id}')" class="w-full bg-secondary hover:bg-blue-800 text-white py-3.5 rounded-xl font-black transition shadow-md flex items-center justify-center gap-2">ኮርሱን ግዛ <i class="fa-solid fa-cart-shopping"></i></button>`;
+                }
+
+                let oldPriceHtml = (!isFree && c.oldPrice) ? `<span class="text-xs text-gray-400 line-through font-bold ml-2">${Number(c.oldPrice).toLocaleString()} ብር</span>` : '';
+                let levelText = c.level || 'ጀማሪ';
+                let shortDesc = c.desc ? c.desc : 'ስለዚህ ኮርስ ተጨማሪ ማብራሪያ ለማግኘት ይመልከቱ...';
+                let durationInfo = c.duration || '00:00:00';
+                let lessonsCount = c.lessons ? c.lessons.length : 0;
+
+                grid.innerHTML += `
+                    <div class="course-card bg-white dark:bg-slate-800 rounded-[2rem] overflow-hidden shadow-sm border border-gray-100 dark:border-slate-700 flex flex-col h-full">
+                        <div class="relative h-56 bg-gray-100 dark:bg-slate-700 overflow-hidden group">
+                            ${badgeHtml}
+                            <img src="${c.image}" class="w-full h-full object-cover group-hover:scale-110 transition duration-700" onerror="this.src='https://placehold.co/600x400?text=Course'">
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+                            <div class="absolute bottom-4 left-4 text-white">
+                                <span class="bg-black/70 backdrop-blur-md px-3 py-1.5 rounded-lg text-[10px] font-black text-white uppercase tracking-wider border border-white/20">${displayCat}</span>
+                            </div>
+                        </div>
+                        <div class="p-6 flex flex-col flex-grow">
+                            <h3 class="font-black text-xl mb-2 text-gray-900 dark:text-white leading-snug line-clamp-2">${c.title}</h3>
+                            <p class="text-xs text-gray-600 dark:text-gray-400 font-bold mb-4 flex items-center gap-2"><i class="fa-solid fa-chalkboard-user text-secondary dark:text-primary"></i> ${c.instructor || 'Tsehay Campus'}</p>
+                            
+                            <p class="text-[14px] text-gray-700 dark:text-gray-300 mb-6 line-clamp-3 leading-relaxed">${shortDesc}</p>
+                            
+                            <div class="flex flex-wrap items-center gap-2 mb-5 mt-auto">
+                                <span class="bg-gray-100 dark:bg-slate-700 border border-gray-200 dark:border-slate-500 text-gray-800 dark:text-gray-100 text-[11px] font-bold px-2.5 py-1.5 rounded-md flex items-center gap-1.5"><i class="fa-regular fa-clock text-secondary dark:text-primary"></i> ${durationInfo}</span>
+                                <span class="bg-gray-100 dark:bg-slate-700 border border-gray-200 dark:border-slate-500 text-gray-800 dark:text-gray-100 text-[11px] font-bold px-2.5 py-1.5 rounded-md flex items-center gap-1.5"><i class="fa-solid fa-list-ul text-primary"></i> ${lessonsCount} ክፍሎች</span>
+                                <span class="bg-gray-100 dark:bg-slate-700 border border-gray-200 dark:border-slate-500 text-gray-800 dark:text-gray-100 text-[11px] font-bold px-2.5 py-1.5 rounded-md flex items-center gap-1.5"><i class="fa-solid fa-signal text-warning"></i> ${levelText}</span>
+                            </div>
+
+                            <div class="pt-4 border-t border-gray-100 dark:border-slate-700 flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <span class="font-black text-xl ${isFree ? 'text-success' : 'text-dark dark:text-white'}">${priceText}</span>
+                                    ${oldPriceHtml}
+                                </div>
+                                ${btnHtml}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        window.filterCourses = () => {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = window.allCourses.filter(c => {
+                const titleLower = (c.title || '').toLowerCase();
+                const descLower = (c.desc || '').toLowerCase();
+                const matchesSearch = titleLower.includes(query) || descLower.includes(query);
+                let isFree = c.price == 0 || !c.price;
+                let matchesCategory = false;
+                
+                if (window.currentCategory === 'All') {
+                    matchesCategory = true;
+                } else if (window.currentCategory === 'Free') {
+                    matchesCategory = isFree;
+                } else if (window.currentCategory === 'Paid') {
+                    matchesCategory = !isFree;
+                } else {
+                    const cat = window.currentCategory;
+                    if (c.category && c.category.includes(cat)) {
+                        matchesCategory = true;
+                    } else {
+                        if (cat === 'Ecommerce' && (titleLower.includes('ecommerce') || titleLower.includes('shein') || titleLower.includes('ገቢ ንግድ') || titleLower.includes('ኢ-ኮሜርስ'))) matchesCategory = true;
+                        if (cat === 'Marketing' && (titleLower.includes('marketing') || titleLower.includes('digital') || titleLower.includes('ማርኬቲንግ') || titleLower.includes('ዲጂታል'))) matchesCategory = true;
+                        if (cat === 'Crypto' && (titleLower.includes('crypto') || titleLower.includes('bitcoin') || titleLower.includes('ክሪፕቶ') || titleLower.includes('ትሬዲንግ'))) matchesCategory = true;
+                        if (cat === 'Tech' && (titleLower.includes('tech') || titleLower.includes('web') || titleLower.includes('ዌብ') || titleLower.includes('ቴክኖሎጂ') || titleLower.includes('ዴቨሎፕመንት'))) matchesCategory = true;
+                    }
+                }
+                return matchesSearch && matchesCategory;
+            });
+            renderCourses(filtered);
+        };
+
+        window.setCategory = (cat) => {
+            window.currentCategory = cat;
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                btn.classList.remove('active', 'bg-secondary', 'text-white', 'shadow-md');
+                if(btn.innerText.includes('ነፃ')) {
+                    btn.className = "cat-btn px-6 py-2.5 rounded-full font-bold text-sm transition bg-success/10 text-success hover:bg-success hover:text-white border border-success/30";
+                } else if(btn.innerText.includes('ፕሪሚየም')) {
+                    btn.className = "cat-btn px-6 py-2.5 rounded-full font-bold text-sm transition bg-orange-50 dark:bg-orange-900/20 text-primary hover:bg-primary hover:text-dark border border-primary/30";
+                } else {
+                    btn.className = "cat-btn px-6 py-2.5 rounded-full font-bold text-sm transition bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600 border border-gray-200 dark:border-slate-600";
                 }
             });
+            if(event && event.target) {
+                if(cat === 'Free') {
+                    event.target.className = "cat-btn active px-6 py-2.5 rounded-full font-bold text-sm transition bg-success text-white shadow-md";
+                } else if(cat === 'Paid') {
+                    event.target.className = "cat-btn active px-6 py-2.5 rounded-full font-bold text-sm transition bg-primary text-dark shadow-md";
+                } else {
+                    event.target.className = "cat-btn active px-6 py-2.5 rounded-full font-bold text-sm transition bg-secondary text-white shadow-md";
+                }
+            }
+            window.filterCourses();
+        };
 
-            window.loginWithGoogle = async function() {
-                const errorDiv = document.getElementById('auth-error');
-                const provider = new GoogleAuthProvider();
-                try {
-                    await signInWithPopup(auth, provider);
-                    window.goToDashboard();
-                } catch (error) {
-                    let errorMsg = "ስህተት: " + error.message;
-                    if (error.code === 'auth/operation-not-allowed') errorMsg = "እባክዎ Firebase ላይ Google Login ያብሩ!";
-                    if (error.code === 'auth/popup-closed-by-user') return; 
+        window.loginWithGoogle = async function() {
+            const errorDiv = document.getElementById('auth-error');
+            const provider = new GoogleAuthProvider();
+            try {
+                await signInWithPopup(auth, provider);
+                window.goToDashboard();
+            } catch (error) {
+                if(errorDiv) {
+                    errorDiv.innerText = "ስህተት: " + error.message;
+                    errorDiv.classList.remove('hidden');
+                }
+            }
+        };
+
+        window.handleAuthSubmit = async function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('auth-submit-btn');
+            const errorDiv = document.getElementById('auth-error');
+            const email = document.getElementById('auth-email').value;
+            const password = document.getElementById('auth-password').value;
+            
+            const phone = document.getElementById('auth-phone') ? document.getElementById('auth-phone').value.trim() : '';
+            const city = document.getElementById('auth-city') ? document.getElementById('auth-city').value.trim() : '';
+            const source = document.getElementById('auth-source') ? document.getElementById('auth-source').value : '';
+            const nameElem = document.getElementById('auth-name');
+            const name = nameElem ? nameElem.value.trim() : '';
+
+            if (window.isSignupMode) {
+                const termsBox = document.getElementById('auth-terms');
+                if (termsBox && !termsBox.checked) {
                     if(errorDiv) {
-                        errorDiv.innerText = errorMsg;
-                        errorDiv.classList.remove('hidden');
-                    }
-                }
-            };
-
-            window.handleAuthSubmit = async function(e) {
-                e.preventDefault();
-                const btn = document.getElementById('auth-submit-btn');
-                const errorDiv = document.getElementById('auth-error');
-                const email = document.getElementById('auth-email').value;
-                const password = document.getElementById('auth-password').value;
-                
-                // Get extra fields
-                const phone = document.getElementById('auth-phone') ? document.getElementById('auth-phone').value.trim() : '';
-                const city = document.getElementById('auth-city') ? document.getElementById('auth-city').value.trim() : '';
-                const source = document.getElementById('auth-source') ? document.getElementById('auth-source').value : '';
-                const nameElem = document.getElementById('auth-name');
-                const name = nameElem ? nameElem.value.trim() : '';
-
-                if (window.isSignupMode) {
-                    const termsBox = document.getElementById('auth-terms');
-                    if (termsBox && !termsBox.checked) {
-                        if(errorDiv) {
-                            errorDiv.innerText = "እባክዎ ለመመዝገብ መጀመሪያ 'የአጠቃቀም ህግ' የሚለውን ነክተው በማንበብ ይስማሙ!";
-                            errorDiv.classList.remove('hidden');
-                            errorDiv.className = "bg-red-50 dark:bg-red-900/30 text-danger border border-red-200 dark:border-red-800 text-sm p-3 rounded-lg mb-5 font-bold text-center";
-                        }
-                        return;
-                    }
-
-                    if(!name || !phone || !city || !source) {
-                        if(errorDiv) {
-                            errorDiv.innerText = "እባክዎ ሁሉንም መረጃዎች (ስም፣ ስልክ፣ ከተማ...) በትክክል ይሙሉ!";
-                            errorDiv.classList.remove('hidden');
-                            errorDiv.className = "bg-red-50 dark:bg-red-900/30 text-danger border border-red-200 dark:border-red-800 text-sm p-3 rounded-lg mb-5 font-bold text-center";
-                        }
-                        return;
-                    }
-                }
-
-                if(btn) {
-                    btn.disabled = true;
-                    btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> ይጠብቁ...';
-                }
-
-                try {
-                    if (window.isSignupMode) {
-                        const cred = await createUserWithEmailAndPassword(auth, email, password);
-                        await updateProfile(cred.user, { displayName: name });
-
-                        // Save extra fields to Real Database (Firestore)
-                        const currentAppId = typeof __app_id !== 'undefined' ? __app_id : 'tsehaycampus-e1a6d';
-                        await setDoc(doc(db, 'artifacts', currentAppId, 'users', cred.user.uid, 'profile', 'info'), {
-                            displayName: name,
-                            email: email,
-                            phone: phone,
-                            city: city,
-                            heardFrom: source,
-                            registeredAt: new Date().toISOString()
-                        }, { merge: true });
-
-                    } else {
-                        await signInWithEmailAndPassword(auth, email, password);
-                    }
-                    window.goToDashboard();
-                } catch (error) {
-                    let errorMsg = "ስህተት: " + error.message;
-                    
-                    if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.message.includes('identity-toolkit-api') || error.code === 'auth/operation-not-allowed') {
-                        errorDiv.className = "bg-warning/20 text-warning border border-warning/50 text-sm p-4 rounded-xl mb-6 font-bold text-center";
-                        errorDiv.innerHTML = 'ማሳሰቢያ፡ የ Canvas የሙከራ ገፅ ላይ ስለሆኑ በቀጥታ ወደ ዳሽቦርዱ እያስገባንዎት ነው...';
-                        errorDiv.classList.remove('hidden');
-                        
-                        setTimeout(() => {
-                            window.goToDashboard();
-                        }, 2500);
-                        return;
-                    }
-
-                    if (error.code === 'auth/email-already-in-use') errorMsg = "ይህ ኢሜል ከዚህ በፊት ተመዝግቧል።";
-                    if (error.code === 'auth/weak-password') errorMsg = "የይለፍ ቃሉ ቢያንስ 6 ፊደል/ቁጥር መሆን አለበት።";
-                    
-                    if(errorDiv) {
-                        errorDiv.innerText = errorMsg;
+                        errorDiv.innerText = "እባክዎ ለመመዝገብ መጀመሪያ 'የአጠቃቀም ህግ' የሚለውን ነክተው በማንበብ ይስማሙ!";
                         errorDiv.classList.remove('hidden');
                         errorDiv.className = "bg-red-50 dark:bg-red-900/30 text-danger border border-red-200 dark:border-red-800 text-sm p-3 rounded-lg mb-5 font-bold text-center";
                     }
-                    if(btn) {
-                        btn.disabled = false;
-                        btn.innerHTML = window.isSignupMode ? '<span>አዲስ ይመዝገቡ</span> <i class="fa-solid fa-arrow-right"></i>' : '<span>ግባ (Login)</span> <i class="fa-solid fa-arrow-right"></i>';
-                    }
-                }
-            };
-
-            window.resetPassword = async function() {
-                const email = document.getElementById('auth-email').value.trim();
-                const errorDiv = document.getElementById('auth-error');
-                
-                if (!email) {
-                    errorDiv.innerText = "እባክዎ መጀመሪያ ኢሜልዎን ከላይ ባለው ሳጥን ያስገቡ!";
-                    errorDiv.className = "bg-red-50 dark:bg-red-900/30 text-danger border border-red-200 dark:border-red-800 text-sm p-3 rounded-lg mb-5 font-bold text-center";
-                    errorDiv.classList.remove('hidden');
                     return;
                 }
-                
-                try {
-                    await sendPasswordResetEmail(auth, email);
-                    errorDiv.innerText = "የይለፍ ቃል መቀየሪያ ሊንክ ወደ ኢሜልዎ ተልኳል! እባክዎ ኢሜልዎን ይፈትሹ።";
-                    errorDiv.className = "bg-green-50 dark:bg-green-900/30 text-success border border-green-200 dark:border-green-800 text-sm p-3 rounded-lg mb-5 font-bold text-center";
-                    errorDiv.classList.remove('hidden');
-                } catch (error) {
-                    let errorMsg = "ስህተት: " + error.message;
-                    if (error.message.includes('identity-toolkit-api') || error.code === 'auth/operation-not-allowed') {
-                        errorMsg = "በ Canvas ማሳያ ላይ ኢሜል መላክ አይቻልም። ወደ Vercel ጭነው ይሞክሩ።";
+                if(!name || !phone || !city || !source) {
+                    if(errorDiv) {
+                        errorDiv.innerText = "እባክዎ ሁሉንም መረጃዎች (ስም፣ ስልክ፣ ከተማ...) በትክክል ይሙሉ!";
+                        errorDiv.classList.remove('hidden');
+                        errorDiv.className = "bg-red-50 dark:bg-red-900/30 text-danger border border-red-200 dark:border-red-800 text-sm p-3 rounded-lg mb-5 font-bold text-center";
                     }
-                    if (error.code === 'auth/user-not-found') errorMsg = "በዚህ ኢሜል የተመዘገበ አካውንት የለም!";
-                    
-                    errorDiv.innerText = errorMsg;
-                    errorDiv.className = "bg-red-50 dark:bg-red-900/30 text-danger border border-red-200 dark:border-red-800 text-sm p-3 rounded-lg mb-5 font-bold text-center";
-                    errorDiv.classList.remove('hidden');
+                    return;
                 }
-            };
+            }
+
+            if(btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> ይጠብቁ...'; }
+
+            try {
+                if (window.isSignupMode) {
+                    const cred = await createUserWithEmailAndPassword(auth, email, password);
+                    await updateProfile(cred.user, { displayName: name });
+                    const currentAppId = typeof __app_id !== 'undefined' ? __app_id : 'tsehaycampus-e1a6d';
+                    await setDoc(doc(db, 'artifacts', currentAppId, 'users', cred.user.uid, 'profile', 'info'), {
+                        displayName: name, email: email, phone: phone, city: city, heardFrom: source, registeredAt: new Date().toISOString()
+                    }, { merge: true });
+                } else {
+                    await signInWithEmailAndPassword(auth, email, password);
+                }
+                window.goToDashboard();
+            } catch (error) {
+                if(errorDiv) {
+                    errorDiv.innerText = "የይለፍ ቃል ስህተት ነው ወይም ኢሜሉ የለም።";
+                    errorDiv.classList.remove('hidden');
+                    errorDiv.className = "bg-red-50 dark:bg-red-900/30 text-danger border border-red-200 dark:border-red-800 text-sm p-3 rounded-lg mb-5 font-bold text-center";
+                }
+                if(btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = window.isSignupMode ? '<span>አዲስ ይመዝገቡ</span> <i class="fa-solid fa-arrow-right"></i>' : '<span>ግባ (Login)</span> <i class="fa-solid fa-arrow-right"></i>';
+                }
+            }
+        };
+
+        window.resetPassword = async function() {
+            const email = document.getElementById('auth-email').value.trim();
+            const errorDiv = document.getElementById('auth-error');
+            if (!email) {
+                errorDiv.innerText = "እባክዎ መጀመሪያ ኢሜልዎን ከላይ ባለው ሳጥን ያስገቡ!";
+                errorDiv.className = "bg-red-50 dark:bg-red-900/30 text-danger border border-red-200 dark:border-red-800 text-sm p-3 rounded-lg mb-5 font-bold text-center";
+                errorDiv.classList.remove('hidden');
+                return;
+            }
+            try {
+                await sendPasswordResetEmail(auth, email);
+                errorDiv.innerText = "የይለፍ ቃል መቀየሪያ ሊንክ ወደ ኢሜልዎ ተልኳል! እባክዎ ኢሜልዎን ይፈትሹ።";
+                errorDiv.className = "bg-green-50 dark:bg-green-900/30 text-success border border-green-200 dark:border-green-800 text-sm p-3 rounded-lg mb-5 font-bold text-center";
+                errorDiv.classList.remove('hidden');
+            } catch (error) {
+                errorDiv.innerText = "በዚህ ኢሜል የተመዘገበ አካውንት የለም!";
+                errorDiv.className = "bg-red-50 dark:bg-red-900/30 text-danger border border-red-200 dark:border-red-800 text-sm p-3 rounded-lg mb-5 font-bold text-center";
+                errorDiv.classList.remove('hidden');
+            }
+        };
+
+        window.enrollFreeCourse = async (courseId) => {
+            if (!window.currentUser || window.currentUser.isAnonymous) {
+                window.openAuthModal(false); return;
+            }
+            const course = window.allCourses.find(c => c.id === courseId);
+            if(!course) return;
+
+            const loader = document.getElementById('payment-processing-loader');
+            loader.querySelector('h2').innerText = "በነፃ ኮርስ እየመዘገብንዎት ነው...";
+            loader.classList.remove('hidden'); loader.classList.add('flex');
+
+            try {
+                const enrollmentRef = doc(db, 'artifacts', appId, 'users', window.currentUser.uid, 'enrollments', course.id);
+                await setDoc(enrollmentRef, {
+                    courseId: course.id, title: course.title, enrolledAt: new Date().toISOString(), progress: 0, status: 'active', paymentType: 'Free'
+                });
+                window.safeRedirect('dashboard.html');
+            } catch(e) {
+                alert("ምዝገባው አልተሳካም። እባክዎ እንደገና ይሞክሩ።");
+                loader.classList.add('hidden'); loader.classList.remove('flex');
+            }
+        };
+
+        window.openPaymentModal = (courseId) => {
+            if (!window.currentUser || window.currentUser.isAnonymous) {
+                window.openAuthModal(false); return;
+            }
+            const course = window.allCourses.find(c => c.id === courseId);
+            if(!course) return;
+            window.selectedCourseToPay = course;
             
-        } catch (err) {
-            console.error("Firebase module error:", err);
-        }
+            document.getElementById('pay-course-img').src = course.image;
+            document.getElementById('pay-course-title').innerText = course.title;
+            document.getElementById('pay-course-price').innerText = Number(course.price).toLocaleString() + ' ብር';
+            document.getElementById('payment-error').classList.add('hidden');
+            
+            const modal = document.getElementById('payment-modal');
+            modal.classList.remove('hidden'); modal.classList.add('flex');
+        };
+
+        window.closePaymentModal = () => {
+            const modal = document.getElementById('payment-modal');
+            modal.classList.add('hidden'); modal.classList.remove('flex');
+            window.selectedCourseToPay = null;
+        };
+
+        document.querySelectorAll('input[name="paymethod"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                document.querySelectorAll('.payment-option').forEach(el => el.classList.remove('selected'));
+                this.closest('.payment-option').classList.add('selected');
+            });
+        });
+
+        window.processRealPayment = async () => {
+            const errDiv = document.getElementById('payment-error');
+            const method = document.querySelector('input[name="paymethod"]:checked').value;
+            const course = window.selectedCourseToPay;
+            if(!course) return;
+
+            window.closePaymentModal();
+            const loader = document.getElementById('payment-processing-loader');
+            loader.querySelector('h2').innerText = "ወደ ቻፓ/ቴሌብር በማቅናት ላይ...";
+            loader.classList.remove('hidden'); loader.classList.add('flex');
+            
+            try {
+                let domain = window.location.hostname ? (window.location.protocol + '//' + window.location.host) : 'https://tsehay-campus-web.vercel.app';
+                let callbackUrl = domain + '/dashboard.html';
+
+                const response = await fetch('/api/initiate-payment', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        courseId: course.id, title: course.title, amount: course.price, method: method,
+                        userId: window.currentUser.uid, email: window.currentUser.email,
+                        name: window.currentUser.displayName || "Student", callbackUrl: callbackUrl 
+                    })
+                });
+
+                if (!response.ok) throw new Error("የክፍያ አገልጋዩ አልተገኘም።");
+                const data = await response.json();
+                if (data.checkout_url) { window.location.href = data.checkout_url; } 
+                else { throw new Error("የክፍያ ሊንክ ማመንጨት አልተቻለም።"); }
+            } catch (e) {
+                loader.classList.add('hidden'); loader.classList.remove('flex');
+                window.openPaymentModal(course.id);
+                errDiv.innerText = "ስህተት፡ " + e.message;
+                errDiv.classList.remove('hidden');
+            }
+        };
+
     </script>
 </body>
 </html>
