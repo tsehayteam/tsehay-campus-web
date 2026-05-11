@@ -63,6 +63,8 @@
             background-color: #f1f5f9; color: #334155; border: 1px solid #e2e8f0; border-radius: 0.5rem;
             padding: 0.4rem 0.8rem; font-family: 'Montserrat', sans-serif; font-size: 0.8rem; font-weight: 700;
             outline: none; cursor: pointer;
+            max-width: 130px; /* Constrains width so it doesn't break layout */
+            text-overflow: ellipsis; white-space: nowrap; overflow: hidden;
         }
         .dark #google_translate_element select, .dark #google_translate_element_footer select {
             background-color: #1e293b; color: #cbd5e1; border-color: #334155;
@@ -70,11 +72,17 @@
         #google_translate_element select:hover, #google_translate_element_footer select:hover { border-color: #3268BA; }
         .goog-logo-link { display: none !important; }
         .goog-te-gadget { color: transparent !important; }
+        
+        /* Custom scrollbar for modal */
+        .custom-modal-scroll::-webkit-scrollbar { width: 6px; }
+        .custom-modal-scroll::-webkit-scrollbar-track { background: transparent; }
+        .custom-modal-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .dark .custom-modal-scroll::-webkit-scrollbar-thumb { background: #475569; }
     </style>
 </head>
 <body class="bg-bodyBg dark:bg-slate-900 text-dark dark:text-gray-100 antialiased pt-24 min-h-screen flex flex-col hidden" id="main-body">
 
-    <!-- Screen Loader (Updated for Public Access) -->
+    <!-- Screen Loader -->
     <div id="screen-loader" class="fixed inset-0 bg-white dark:bg-slate-900 z-[10000] flex flex-col items-center justify-center transition-opacity duration-300">
         <i class="fa-solid fa-spinner fa-spin text-5xl text-secondary dark:text-primary mb-5"></i>
         <p class="text-gray-600 dark:text-gray-300 font-black tracking-widest uppercase text-sm">ኮርሶችን በማዘጋጀት ላይ...</p>
@@ -83,21 +91,21 @@
     <!-- Navigation -->
     <nav class="glass-nav fixed w-full top-0 z-50 transition-all duration-300">
         <div class="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-20 gap-4">
+            <div class="flex justify-between items-center h-20 gap-2 md:gap-4">
                 <!-- Logo -->
-                <div class="flex items-center cursor-pointer group" onclick="window.safeRedirect('index.html')">
-                    <img src="Campus Logo.jpg" alt="Logo" class="h-12 w-auto mr-3 rounded-xl shadow-md group-hover:scale-105 transition" onerror="this.src='https://ui-avatars.com/api/?name=TC&background=3268BA&color=fff'">
-                    <span class="font-heading font-black text-2xl text-dark dark:text-white hidden md:block">Tsehay<span class="text-secondary dark:text-primary">Campus</span></span>
+                <div class="flex items-center cursor-pointer group shrink-0" onclick="window.safeRedirect('index.html')">
+                    <img src="Campus Logo.jpg" alt="Logo" class="h-10 md:h-12 w-auto mr-2 md:mr-3 rounded-xl shadow-md group-hover:scale-105 transition" onerror="this.src='https://ui-avatars.com/api/?name=TC&background=3268BA&color=fff'">
+                    <span class="font-heading font-black text-xl lg:text-2xl text-dark dark:text-white hidden lg:block tracking-tight">Tsehay<span class="text-secondary dark:text-primary">Campus</span></span>
                 </div>
 
                 <!-- Profile & Links -->
-                <div class="flex items-center space-x-4 lg:space-x-6">
-                    <a href="javascript:void(0)" onclick="window.safeRedirect('index.html')" class="hidden md:block text-gray-600 dark:text-gray-300 hover:text-secondary dark:hover:text-primary font-bold transition text-sm">ዋና ገፅ</a>
+                <div class="flex items-center space-x-2 md:space-x-4 lg:space-x-6 shrink-0">
+                    <a href="javascript:void(0)" onclick="window.safeRedirect('index.html')" class="hidden lg:block text-gray-600 dark:text-gray-300 hover:text-secondary dark:hover:text-primary font-bold transition text-sm whitespace-nowrap">ዋና ገፅ</a>
                     
                     <!-- Google Translate Dropdown -->
-                    <div id="google_translate_element" class="hidden sm:block mt-1 mr-2"></div>
+                    <div id="google_translate_element" class="hidden sm:block mt-1 w-24 md:w-32 overflow-hidden shrink-0"></div>
                     
-                    <div class="flex items-center gap-2 lg:gap-4 font-heading text-sm" id="nav-auth-buttons">
+                    <div class="flex items-center gap-2 lg:gap-4 font-heading text-sm shrink-0" id="nav-auth-buttons">
                         <!-- Navigation Auth Buttons (Will be populated by JS) -->
                     </div>
                 </div>
@@ -149,6 +157,154 @@
         </div>
     </main>
 
+    <!-- Auth Modal -->
+    <div id="auth-modal" class="hidden fixed inset-0 bg-black/60 z-[9999] items-center justify-center backdrop-blur-sm p-4" onclick="if(event.target === this) window.closeAuthModal()">
+        <div class="bg-white dark:bg-slate-800 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden flex flex-col relative modal-animate border border-gray-100 dark:border-slate-700 max-h-[95vh]">
+            <div class="bg-secondary dark:bg-slate-900 p-6 text-white text-center relative border-b border-secondary/50 dark:border-slate-700 shrink-0">
+                <button type="button" onclick="window.closeAuthModal()" class="absolute top-4 right-4 text-white/70 hover:text-white transition text-2xl z-50 p-2"><i class="fa-solid fa-xmark"></i></button>
+                
+                <div class="w-16 h-16 sm:w-20 sm:h-20 bg-white rounded-2xl mx-auto flex items-center justify-center mb-3 shadow-lg p-1.5 border border-white/20">
+                    <img src="Campus Logo.jpg" alt="Tsehay Campus Logo" class="w-full h-full object-contain rounded-xl" onerror="this.src='https://ui-avatars.com/api/?name=TC&background=3268BA&color=fff'">
+                </div>
+
+                <h2 id="auth-title" class="font-black font-heading text-xl sm:text-2xl">ወደ ካምፓስ ይግቡ</h2>
+                <p id="auth-subtitle" class="text-blue-100 dark:text-gray-400 text-xs sm:text-sm mt-1">መረጃዎን አስገብተው ትምህርትዎን ይቀጥሉ</p>
+            </div>
+            
+            <div class="p-6 md:p-8 overflow-y-auto custom-modal-scroll flex-1">
+                <div id="auth-error" class="hidden bg-red-50 dark:bg-red-900/30 text-danger border border-red-200 dark:border-red-800 text-sm p-3 rounded-lg mb-5 font-bold text-center"></div>
+                
+                <button type="button" onclick="window.loginWithGoogle()" class="w-full bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 text-dark dark:text-white font-bold py-3.5 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-600 transition shadow-sm flex items-center justify-center gap-3 mb-4">
+                    <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" class="w-5 h-5">
+                    በ Google (Gmail) ይግቡ
+                </button>
+
+                <div class="flex items-center my-4">
+                    <hr class="flex-1 border-gray-200 dark:border-slate-700">
+                    <span class="px-3 text-xs text-gray-400 dark:text-gray-500 font-bold uppercase">ወይም</span>
+                    <hr class="flex-1 border-gray-200 dark:border-slate-700">
+                </div>
+
+                <form id="auth-form" onsubmit="window.handleAuthSubmit(event)" class="space-y-4 px-1">
+                    <!-- SIGNUP FIELDS -->
+                    <div class="signup-only hidden">
+                        <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">ሙሉ ስም (Full Name) <span class="text-danger">*</span></label>
+                        <div class="relative">
+                            <i class="fa-regular fa-user absolute left-4 top-3.5 text-gray-400"></i>
+                            <input type="text" id="auth-name" placeholder="ሙሉ ስምዎን ያስገቡ" class="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-600 rounded-xl py-3 pl-11 pr-4 text-sm outline-none focus:border-secondary dark:focus:border-primary dark:text-white transition">
+                        </div>
+                    </div>
+
+                    <div class="signup-only hidden">
+                        <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">ስልክ ቁጥር (Phone Number) <span class="text-danger">*</span></label>
+                        <div class="relative">
+                            <i class="fa-solid fa-phone absolute left-4 top-3.5 text-gray-400"></i>
+                            <input type="tel" id="auth-phone" placeholder="ለምሳሌ፡ +251911..." class="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-600 rounded-xl py-3 pl-11 pr-4 text-sm outline-none focus:border-secondary dark:focus:border-primary dark:text-white transition">
+                        </div>
+                    </div>
+
+                    <div class="signup-only hidden">
+                        <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">ከተማ / ሀገር (City/Country) <span class="text-danger">*</span></label>
+                        <div class="relative">
+                            <i class="fa-solid fa-location-dot absolute left-4 top-3.5 text-gray-400"></i>
+                            <input type="text" id="auth-city" placeholder="አዲስ አበባ, ኢትዮጵያ" class="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-600 rounded-xl py-3 pl-11 pr-4 text-sm outline-none focus:border-secondary dark:focus:border-primary dark:text-white transition">
+                        </div>
+                    </div>
+
+                    <div class="signup-only hidden">
+                        <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">ስለ እኛ ከየት ሰሙ? <span class="text-danger">*</span></label>
+                        <div class="relative">
+                            <i class="fa-solid fa-bullhorn absolute left-4 top-3.5 text-gray-400 z-10"></i>
+                            <select id="auth-source" class="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-600 rounded-xl py-3 pl-11 pr-10 text-sm outline-none focus:border-secondary dark:focus:border-primary dark:text-white transition appearance-none cursor-pointer relative z-0">
+                                <option value="" disabled selected>እባክዎ ይምረጡ...</option>
+                                <option value="Telegram">ቴሌግራም (Telegram)</option>
+                                <option value="TikTok">ቲክቶክ (TikTok)</option>
+                                <option value="Facebook">ፌስቡክ (Facebook)</option>
+                                <option value="Friend">ከጓደኛ (Friend/Referral)</option>
+                                <option value="Other">ሌላ (Other)</option>
+                            </select>
+                            <i class="fa-solid fa-chevron-down absolute right-4 top-4 text-gray-400 text-[10px] pointer-events-none z-10"></i>
+                        </div>
+                    </div>
+                    
+                    <!-- ALWAYS VISIBLE FIELDS (Email & Password) -->
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">ኢሜል (Email) <span class="text-danger">*</span></label>
+                        <div class="relative">
+                            <i class="fa-regular fa-envelope absolute left-4 top-3.5 text-gray-400"></i>
+                            <input type="email" id="auth-email" required placeholder="email@example.com" class="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-600 rounded-xl py-3 pl-11 pr-4 text-sm outline-none focus:border-secondary dark:focus:border-primary dark:text-white transition">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">የይለፍ ቃል (Password) <span class="text-danger">*</span></label>
+                        <div class="relative">
+                            <i class="fa-solid fa-lock absolute left-4 top-3.5 text-gray-400"></i>
+                            <input type="password" id="auth-password" required placeholder="••••••••" minlength="6" class="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-600 rounded-xl py-3 pl-11 pr-4 text-sm outline-none focus:border-secondary dark:focus:border-primary dark:text-white transition">
+                        </div>
+                    </div>
+
+                    <div id="terms-field" class="hidden mt-4 flex items-start gap-2 bg-gray-50 dark:bg-slate-900/50 p-3 rounded-xl border border-gray-200 dark:border-slate-700">
+                        <input type="checkbox" id="auth-terms" class="mt-1 w-4 h-4 text-primary bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-600 rounded focus:ring-secondary cursor-pointer shrink-0">
+                        <label for="auth-terms" class="text-xs text-gray-600 dark:text-gray-400 leading-tight cursor-pointer">
+                            በካምፓሱ <button type="button" onclick="window.openTermsModal()" class="text-secondary dark:text-primary font-bold hover:underline">የአጠቃቀም ህግ (Terms and Conditions)</button> አንብቤ ተስማምቻለሁ። <span class="text-danger">*</span>
+                        </label>
+                    </div>
+                    
+                    <button type="submit" id="auth-submit-btn" class="w-full bg-primary text-dark font-black py-3.5 rounded-xl hover:bg-yellow-400 transition shadow-md mt-4 flex items-center justify-center gap-2">
+                        <span>ግባ (Login)</span> <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </form>
+                
+                <div class="mt-6 pt-4 border-t border-gray-100 dark:border-slate-700 flex flex-col items-center gap-3 text-sm text-gray-600 dark:text-gray-400 shrink-0">
+                    <div>
+                        <span id="auth-switch-text">አካውንት የለዎትም?</span> 
+                        <button type="button" onclick="window.toggleAuthMode()" id="auth-switch-btn" class="text-secondary dark:text-primary font-bold hover:underline ml-1">አዲስ ይመዝገቡ (Sign Up)</button>
+                    </div>
+                    <button type="button" onclick="window.resetPassword()" id="forgot-pwd-btn" class="text-primary font-bold hover:underline transition">የይለፍ ቃል ረሱ? (Forgot Password)</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Terms Modal -->
+    <div id="terms-modal" class="hidden fixed inset-0 bg-black/60 z-[10000] items-center justify-center backdrop-blur-sm p-4" onclick="if(event.target === this) window.closeTermsModal()">
+        <div class="bg-white dark:bg-slate-800 w-full max-w-3xl rounded-3xl shadow-2xl overflow-hidden flex flex-col relative max-h-[90vh] modal-animate border border-gray-100 dark:border-slate-700">
+            <div class="bg-secondary dark:bg-slate-900 p-5 md:p-6 text-white flex justify-between items-center shrink-0">
+                <h2 class="font-black text-lg md:text-xl font-heading">የአጠቃቀም ህግ እና ግዴታዎች (Terms & Conditions)</h2>
+                <button type="button" onclick="window.closeTermsModal()" class="text-white hover:text-gray-200 text-2xl transition z-50 p-2"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="p-6 md:p-8 overflow-y-auto text-sm md:text-base text-gray-700 dark:text-gray-300 leading-relaxed space-y-6 font-body">
+                <p class="font-bold text-dark dark:text-white border-b border-gray-100 dark:border-slate-700 pb-4">ወደ Tsehay Campus ፕላትፎርም እንኳን በደህና መጡ! ይህንን ዌብሳይት ሲጠቀሙ፣ ሲመዘገቡ ወይም ኮርሶችን ሲገዙ ከዚህ በታች የተዘረዘሩትን ህጎች እና ግዴታዎች ሙሉ በሙሉ ማክበር ግዴታዎ ነው።</p>
+                
+                <div>
+                    <h3 class="font-black text-dark dark:text-white text-base border-b border-gray-100 dark:border-slate-700 pb-2 mb-3"><i class="fa-solid fa-shield-halved text-primary mr-2"></i> 1. የአካውንት ደህንነት እና አጠቃቀም</h3>
+                    <ul class="list-disc ml-5 space-y-2">
+                        <li>ሲመዘገቡ ትክክለኛ ስም እና የኢሜል አድራሻ ማስገባት አለብዎት።</li>
+                        <li>የእርስዎን የይለፍ ቃል (Password) በሚስጥር የመጠበቅ ሀላፊነት የእርስዎ ነው። በማንኛውም ሁኔታ አካውንትዎ ቢጠለፍ ድርጅቱ ሀላፊነት አይወስድም።</li>
+                        <li><strong class="text-danger">አካውንት ማጋራት የተከለከለ ነው፡</strong> አንድን አካውንት ከሌላ ሰው ጋር አጋርቶ (Share አድርጎ) መጠቀም በጥብቅ የተከለከለ ነው። ሲስተማችን ይህንን ካገኘ አካውንትዎ ያለ ምንም ማስጠንቀቂያ በዘላቂነት ይዘጋል፣ ክፍያም አይመለስም።</li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h3 class="font-black text-dark dark:text-white text-base border-b border-gray-100 dark:border-slate-700 pb-2 mb-3"><i class="fa-solid fa-copyright text-primary mr-2"></i> 2. የአዕምሯዊ ንብረት መብት (Copyright)</h3>
+                    <ul class="list-disc ml-5 space-y-2">
+                        <li>በዚህ ፕላትፎርም ላይ ያሉ ሁሉም ኮርሶች፣ ቪዲዮዎች፣ ፒዲኤፍ ማቴሪያሎች፣ የ AI ትዕዛዞች እና ዲዛይኖች የ <strong>Tsehay Campus</strong> ህጋዊ ንብረቶች ናቸው።</li>
+                        <li><strong class="text-danger">ህገወጥ ስርጭት፡</strong> ኮርሶችን ስክሪን ሪከርድ ማድረግ (Screen record)፣ ማውረድ (Download)፣ በቴሌግራም፣ በዩቲዩብ ወይም በሌላ በማንኛውም ሚዲያ ማሰራጨት፣ አሊያም ለሶስተኛ ወገን መሸጥ (Piracy) ህገወጥ እና በወንጀል የሚያስጠይቅ ድርጊት ነው። ይህን በሚያደርጉ አካላት ላይ ካምፓኒው ህጋዊ እርምጃ ይወስዳል።</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="p-5 md:p-6 border-t border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 flex flex-col shrink-0">
+                <div class="flex flex-col sm:flex-row justify-end items-center gap-4 w-full">
+                    <button onclick="window.closeTermsModal()" class="w-full sm:w-auto bg-primary text-dark font-black px-8 py-3.5 rounded-xl hover:bg-yellow-400 transition shadow-md flex items-center justify-center gap-2 whitespace-nowrap">
+                        አንብቤያለሁ <i class="fa-solid fa-check-circle"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Real Payment Modal -->
     <div id="payment-modal" class="hidden fixed inset-0 bg-black/80 z-[9999] items-center justify-center backdrop-blur-sm p-4" onclick="if(event.target === this) window.closePaymentModal()">
         <div class="bg-white dark:bg-slate-800 w-full max-w-lg rounded-[2rem] shadow-2xl overflow-hidden flex flex-col relative modal-animate border border-gray-100 dark:border-slate-700">
@@ -179,14 +335,14 @@
                     <label class="payment-option selected flex items-center justify-between p-4 rounded-xl border border-gray-200 dark:border-slate-600 cursor-pointer transition">
                         <div class="flex items-center gap-3">
                             <input type="radio" name="paymethod" value="chapa" checked class="w-4 h-4 text-secondary focus:ring-secondary">
-                            <span class="font-black dark:text-white">Chapa (በባንክ ካርድ / ሞባይል ባንኪንግ)</span>
+                            <span class="font-black dark:text-white text-sm md:text-base">Chapa (በባንክ ካርድ / ሞባይል ባንኪንግ)</span>
                         </div>
-                        <img src="https://chapa.co/images/logo.png" class="h-5 object-contain opacity-70" alt="Chapa" onerror="this.style.display='none'">
+                        <img src="https://chapa.co/images/logo.png" class="h-4 md:h-5 object-contain opacity-70" alt="Chapa" onerror="this.style.display='none'">
                     </label>
                     <label class="payment-option flex items-center justify-between p-4 rounded-xl border border-gray-200 dark:border-slate-600 cursor-pointer transition">
                         <div class="flex items-center gap-3">
                             <input type="radio" name="paymethod" value="telebirr" class="w-4 h-4 text-secondary focus:ring-secondary">
-                            <span class="font-black dark:text-white">Telebirr (ቴሌብር)</span>
+                            <span class="font-black dark:text-white text-sm md:text-base">Telebirr (ቴሌብር)</span>
                         </div>
                         <i class="fa-solid fa-mobile-screen-button text-gray-400 text-xl"></i>
                     </label>
@@ -209,7 +365,7 @@
     <!-- Full Screen Loader for Payments -->
     <div id="payment-processing-loader" class="hidden fixed inset-0 bg-white/90 dark:bg-slate-900/90 z-[10000] flex-col items-center justify-center backdrop-blur-md">
         <div class="w-16 h-16 border-4 border-gray-200 border-t-secondary rounded-full animate-spin mb-4"></div>
-        <h2 class="text-2xl font-black font-heading text-dark dark:text-white mb-2">ወደ ክፍያ ስርዓት በማቅናት ላይ...</h2>
+        <h2 class="text-2xl font-black font-heading text-dark dark:text-white mb-2" id="payment-loader-text">ወደ ክፍያ ስርዓት በማቅናት ላይ...</h2>
         <p class="text-gray-500 font-bold">እባክዎ ይህን ገፅ አይዝጉት!</p>
     </div>
 
@@ -264,15 +420,15 @@
                     </div>
                 </div>
 
-                <!-- Google Translate Dropdown in Footer (For Mobile mostly) -->
+                <!-- Google Translate Dropdown in Footer -->
                 <div class="mt-4 md:mt-0 flex flex-col items-center md:items-end sm:hidden">
-                    <div id="google_translate_element_footer" class="bg-dark rounded-lg p-1.5 border border-slate-700 hover:border-slate-500 transition overflow-hidden"></div>
+                    <div id="google_translate_element_footer" class="bg-dark rounded-lg p-1.5 border border-slate-700 hover:border-slate-500 transition overflow-hidden max-w-[130px]"></div>
                 </div>
             </div>
         </div>
     </footer>
 
-    <!-- Google Translate Script (For global persistence) -->
+    <!-- Google Translate Script -->
     <script>
         function googleTranslateElementInit() {
             new google.translate.TranslateElement({
@@ -295,8 +451,8 @@
     <!-- Firebase & Application Logic -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, getDocs, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged, signOut, createUserWithEmailAndPassword, updateProfile, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, getDocs, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // ✅ Firebase Key
         const firebaseConfig = { apiKey: "AIzaSyDCxLwfYAS_I0D7c-8e-iB-Y-Rh2ZZoHZw", authDomain: "tsehaycampus-e1a6d.firebaseapp.com", projectId: "tsehaycampus-e1a6d", storageBucket: "tsehaycampus-e1a6d.firebasestorage.app", messagingSenderId: "1043616909865", appId: "1:1043616909865:web:9ecca7d9a14deef0f5ea38" };
@@ -346,30 +502,28 @@
             }
         };
 
-        // 💡 100% የተስተካከለው የ Auth Logic (ያለ Redirect)
+        // 💡 100% የጠራ የ Auth Logic (ያለ Anonymous Overwrite)
         onAuthStateChanged(auth, async (user) => {
-            window.currentUser = user;
             document.getElementById('main-body').classList.remove('hidden');
-            
             const navAuthBtns = document.getElementById('nav-auth-buttons');
-            const mobileAuthContainer = document.getElementById('mobile-auth-container'); // Need to wrap mobile buttons
             const isDark = document.documentElement.classList.contains('dark');
             const themeIcon = isDark ? 'fa-sun' : 'fa-moon';
             const themeColor = isDark ? 'text-yellow-400' : 'text-gray-600';
 
             if (user && !user.isAnonymous) {
+                window.currentUser = user;
                 const name = user.displayName || (user.email ? user.email.split('@')[0] : "ተማሪ");
                 const photo = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=3268BA&color=fff`;
                 
                 if (navAuthBtns) {
                     navAuthBtns.innerHTML = `
-                        <button onclick="window.toggleTheme()" class="w-10 h-10 rounded-full bg-gray-100 dark:bg-slate-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-slate-700 transition shadow-sm ${themeColor}">
+                        <button onclick="window.toggleTheme()" class="w-10 h-10 rounded-full bg-gray-100 dark:bg-slate-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-slate-700 transition shadow-sm shrink-0 ${themeColor}">
                             <i id="theme-icon" class="fa-solid ${themeIcon}"></i>
                         </button>
-                        <div class="relative ml-2" id="profile-menu-container">
-                            <div onclick="document.getElementById('profile-dropdown').classList.toggle('hidden')" class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700 p-1.5 pr-3 rounded-full border border-gray-200 dark:border-slate-700 shadow-sm transition bg-white dark:bg-slate-800">
-                                <img src="${photo}" class="w-8 h-8 rounded-full object-cover">
-                                <span class="text-sm font-bold text-dark dark:text-white">${name}</span>
+                        <div class="relative ml-1 md:ml-2 shrink-0" id="profile-menu-container">
+                            <div onclick="document.getElementById('profile-dropdown').classList.toggle('hidden')" class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700 p-1.5 pr-2 md:pr-3 rounded-full border border-gray-200 dark:border-slate-700 shadow-sm transition bg-white dark:bg-slate-800">
+                                <img src="${photo}" class="w-7 h-7 md:w-8 md:h-8 rounded-full object-cover">
+                                <span class="text-xs md:text-sm font-bold text-dark dark:text-white truncate max-w-[80px] md:max-w-[120px]">${name}</span>
                                 <i class="fa-solid fa-chevron-down text-[10px] text-gray-400 ml-1"></i>
                             </div>
                             <div id="profile-dropdown" class="hidden absolute top-full right-0 mt-2 w-56 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 overflow-hidden z-[60]">
@@ -385,70 +539,20 @@
                         </div>
                     `;
                 }
-                
-                // Dashboard for mobile
-                let mobileMenuAuth = document.getElementById('mobile-auth-container');
-                if(!mobileMenuAuth) {
-                    const mobileContainer = document.querySelector('#mobile-menu .px-4.pt-2.pb-6');
-                    if(mobileContainer) {
-                        const hr = mobileContainer.querySelector('hr:last-of-type');
-                        if (hr) {
-                            const newDiv = document.createElement('div');
-                            newDiv.id = 'mobile-auth-container';
-                            hr.after(newDiv);
-                            mobileMenuAuth = newDiv;
-                            // Remove old hardcoded buttons
-                            const btns = mobileContainer.querySelectorAll('button:not([onclick*="Theme"]):not([onclick*="AuthMode"])');
-                            btns.forEach(b => { if(b.innerText.includes('ግባ') || b.innerText.includes('አዲስ')) b.remove(); });
-                        }
-                    }
-                }
-                
-                if (mobileMenuAuth) {
-                    mobileMenuAuth.innerHTML = `
-                        <button onclick="window.safeRedirect('dashboard.html')" class="w-full bg-primary text-dark font-bold py-2.5 rounded-lg mt-2 shadow-md hover:bg-yellow-400 transition flex items-center justify-center gap-2"><i class="fa-solid fa-chart-pie"></i> ዳሽቦርድ (Dashboard)</button>
-                        <button onclick="window.logoutUser()" class="w-full text-danger font-bold py-2.5 hover:bg-red-50 dark:hover:bg-slate-800 rounded-lg border border-danger/30 transition mt-2 flex items-center justify-center gap-2"><i class="fa-solid fa-power-off"></i> መውጫ (Logout)</button>
-                    `;
-                }
-
                 await fetchUserEnrollments(user.uid);
             } else {
+                window.currentUser = null;
+                window.userEnrollments = [];
                 if (navAuthBtns) {
                     navAuthBtns.innerHTML = `
-                        <button onclick="window.toggleTheme()" class="w-10 h-10 rounded-full bg-gray-100 dark:bg-slate-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-slate-700 transition shadow-sm ${themeColor}">
+                        <button onclick="window.toggleTheme()" class="w-10 h-10 rounded-full bg-gray-100 dark:bg-slate-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-slate-700 transition shadow-sm shrink-0 ${themeColor}">
                             <i id="theme-icon" class="fa-solid ${themeIcon}"></i>
                         </button>
-                        <div class="h-5 w-px bg-gray-300 dark:bg-slate-700 mx-1"></div>
-                        <button onclick="window.openAuthModal(false)" class="text-dark dark:text-white font-bold hover:text-secondary dark:hover:text-primary transition px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 whitespace-nowrap">ግባ (Login)</button>
-                        <button onclick="window.openAuthModal(true)" class="bg-dark dark:bg-primary text-white dark:text-dark px-4 lg:px-6 py-2 lg:py-2.5 rounded-lg font-bold hover:bg-secondary dark:hover:bg-yellow-400 transition shadow-md btn-glow whitespace-nowrap">አዲስ ይመዝገቡ</button>
+                        <div class="h-5 w-px bg-gray-300 dark:bg-slate-700 mx-1 hidden sm:block"></div>
+                        <button onclick="window.openAuthModal(false)" class="text-dark dark:text-white font-bold hover:text-secondary dark:hover:text-primary transition px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 whitespace-nowrap text-sm shrink-0">ግባ (Login)</button>
+                        <button onclick="window.openAuthModal(true)" class="bg-dark dark:bg-primary text-white dark:text-dark px-3 md:px-5 py-2 md:py-2.5 rounded-lg font-bold hover:bg-secondary dark:hover:bg-yellow-400 transition shadow-md btn-glow whitespace-nowrap text-sm shrink-0">አዲስ ይመዝገቡ</button>
                     `;
                 }
-                
-                // Mobile buttons for logged out
-                let mobileMenuAuth = document.getElementById('mobile-auth-container');
-                if(!mobileMenuAuth) {
-                    const mobileContainer = document.querySelector('#mobile-menu .px-4.pt-2.pb-6');
-                    if(mobileContainer) {
-                        const hr = mobileContainer.querySelector('hr:last-of-type');
-                        if (hr) {
-                            const newDiv = document.createElement('div');
-                            newDiv.id = 'mobile-auth-container';
-                            hr.after(newDiv);
-                            mobileMenuAuth = newDiv;
-                            const btns = mobileContainer.querySelectorAll('button:not([onclick*="Theme"]):not([onclick*="AuthMode"])');
-                            btns.forEach(b => { if(b.innerText.includes('ግባ') || b.innerText.includes('አዲስ')) b.remove(); });
-                        }
-                    }
-                }
-                
-                if (mobileMenuAuth) {
-                    mobileMenuAuth.innerHTML = `
-                        <button onclick="window.openAuthModal(false)" class="w-full text-secondary dark:text-primary font-bold py-2.5 hover:bg-gray-50 dark:hover:bg-slate-800 rounded-lg border border-secondary dark:border-primary transition mt-2">ግባ (Login)</button>
-                        <button onclick="window.openAuthModal(true)" class="w-full bg-primary text-dark font-bold py-2.5 rounded-lg mt-2 shadow-md hover:bg-yellow-400 transition">አዲስ ይመዝገቡ</button>
-                    `;
-                }
-                
-                window.userEnrollments = [];
             }
             
             await fetchAllCourses();
@@ -462,7 +566,7 @@
 
         window.logoutUser = async () => {
             await signOut(auth);
-            window.safeRedirect('index.html');
+            window.location.reload();
         };
 
         async function fetchUserEnrollments(uid) {
@@ -509,7 +613,7 @@
                 const priceText = isFree ? 'ነፃ (Free)' : `${Number(c.price).toLocaleString()} ብር`;
                 const isEnrolled = window.userEnrollments.includes(c.id);
                 
-                // Smart Category Detection for UI display
+                // Smart Category Detection
                 let displayCat = c.category;
                 if (!displayCat) {
                     const t = (c.title || '').toLowerCase();
@@ -534,10 +638,7 @@
                     btnHtml = `<button onclick="window.openPaymentModal('${c.id}')" class="w-full bg-secondary hover:bg-blue-800 text-white py-3.5 rounded-xl font-black transition shadow-md flex items-center justify-center gap-2">ኮርሱን ግዛ <i class="fa-solid fa-cart-shopping"></i></button>`;
                 }
 
-                // NEW OLD PRICE LOGIC
                 let oldPriceHtml = (!isFree && c.oldPrice) ? `<span class="text-xs text-gray-400 line-through font-bold ml-2">${Number(c.oldPrice).toLocaleString()} ብር</span>` : '';
-                
-                // NEW LEVEL LOGIC
                 let levelText = c.level || 'ጀማሪ';
                 let shortDesc = c.desc ? c.desc : 'ስለዚህ ኮርስ ተጨማሪ ማብራሪያ ለማግኘት ይመልከቱ...';
                 let durationInfo = c.duration || '00:00:00';
@@ -580,13 +681,10 @@
 
         window.filterCourses = () => {
             const query = document.getElementById('searchInput').value.toLowerCase();
-            
             const filtered = window.allCourses.filter(c => {
                 const titleLower = (c.title || '').toLowerCase();
                 const descLower = (c.desc || '').toLowerCase();
-                
                 const matchesSearch = titleLower.includes(query) || descLower.includes(query);
-                
                 let isFree = c.price == 0 || !c.price;
                 let matchesCategory = false;
                 
@@ -601,14 +699,12 @@
                     if (c.category && c.category.includes(cat)) {
                         matchesCategory = true;
                     } else {
-                        // Smart keyword matching for categories (Smart Filter Fallback)
                         if (cat === 'Ecommerce' && (titleLower.includes('ecommerce') || titleLower.includes('shein') || titleLower.includes('ገቢ ንግድ') || titleLower.includes('ኢ-ኮሜርስ'))) matchesCategory = true;
                         if (cat === 'Marketing' && (titleLower.includes('marketing') || titleLower.includes('digital') || titleLower.includes('ማርኬቲንግ') || titleLower.includes('ዲጂታል'))) matchesCategory = true;
                         if (cat === 'Crypto' && (titleLower.includes('crypto') || titleLower.includes('bitcoin') || titleLower.includes('ክሪፕቶ') || titleLower.includes('ትሬዲንግ'))) matchesCategory = true;
                         if (cat === 'Tech' && (titleLower.includes('tech') || titleLower.includes('web') || titleLower.includes('ዌብ') || titleLower.includes('ቴክኖሎጂ') || titleLower.includes('ዴቨሎፕመንት'))) matchesCategory = true;
                     }
                 }
-
                 return matchesSearch && matchesCategory;
             });
             renderCourses(filtered);
@@ -616,10 +712,8 @@
 
         window.setCategory = (cat) => {
             window.currentCategory = cat;
-            
             document.querySelectorAll('.cat-btn').forEach(btn => {
                 btn.classList.remove('active', 'bg-secondary', 'text-white', 'shadow-md');
-                
                 if(btn.innerText.includes('ነፃ')) {
                     btn.className = "cat-btn px-6 py-2.5 rounded-full font-bold text-sm transition bg-success/10 text-success hover:bg-success hover:text-white border border-success/30";
                 } else if(btn.innerText.includes('ፕሪሚየም')) {
@@ -628,7 +722,6 @@
                     btn.className = "cat-btn px-6 py-2.5 rounded-full font-bold text-sm transition bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600 border border-gray-200 dark:border-slate-600";
                 }
             });
-            
             if(event && event.target) {
                 if(cat === 'Free') {
                     event.target.className = "cat-btn active px-6 py-2.5 rounded-full font-bold text-sm transition bg-success text-white shadow-md";
@@ -638,49 +731,177 @@
                     event.target.className = "cat-btn active px-6 py-2.5 rounded-full font-bold text-sm transition bg-secondary text-white shadow-md";
                 }
             }
-            
             window.filterCourses();
+        };
+
+        // --- Auth Modal & Payment Functions ---
+        window.openAuthModal = function(signup) {
+            window.isSignupMode = signup;
+            const authModal = document.getElementById('auth-modal');
+            if (authModal) {
+                authModal.classList.remove('hidden');
+                authModal.classList.add('flex');
+            }
+            
+            const errDiv = document.getElementById('auth-error');
+            if (errDiv) errDiv.classList.add('hidden');
+            
+            const titleElem = document.getElementById('auth-title');
+            if (titleElem) titleElem.innerText = signup ? "አካውንት ይፍጠሩ" : "ወደ ካምፓስ ይግቡ";
+            
+            const submitBtn = document.getElementById('auth-submit-btn');
+            if (submitBtn) submitBtn.innerHTML = signup ? '<span>አዲስ ይመዝገቡ</span> <i class="fa-solid fa-arrow-right"></i>' : '<span>ግባ (Login)</span> <i class="fa-solid fa-arrow-right"></i>';
+            
+            const switchText = document.getElementById('auth-switch-text');
+            if (switchText) switchText.innerText = signup ? "አካውንት አለዎት?" : "አካውንት የለዎትም?";
+            
+            const switchBtn = document.getElementById('auth-switch-btn');
+            if (switchBtn) switchBtn.innerText = signup ? "ግባ (Login)" : "አዲስ ይመዝገቡ (Sign Up)";
+
+            const forgotBtn = document.getElementById('forgot-pwd-btn');
+            if (forgotBtn) forgotBtn.style.display = signup ? 'none' : 'block';
+
+            document.querySelectorAll('.signup-only').forEach(el => { el.classList.toggle('hidden', !signup); });
+            const termsField = document.getElementById('terms-field');
+            if (termsField) termsField.classList.toggle('hidden', !signup);
+            const termsBox = document.getElementById('auth-terms');
+            if(termsBox && signup) termsBox.checked = false;
+        };
+
+        window.closeAuthModal = function() {
+            const modal = document.getElementById('auth-modal');
+            if (modal) { modal.classList.add('hidden'); modal.classList.remove('flex'); }
+        };
+
+        window.toggleAuthMode = function() { window.openAuthModal(!window.isSignupMode); };
+
+        window.goToDashboard = function() {
+            window.closeAuthModal();
+            window.location.reload(); // Login አድርገው ሲጨርሱ ፔጁ ሪፍሬሽ ሆኖ ኮርሱ እንዲከፈት ያደርጋል
+        };
+
+        window.loginWithGoogle = async function() {
+            const errorDiv = document.getElementById('auth-error');
+            const provider = new GoogleAuthProvider();
+            try {
+                await signInWithPopup(auth, provider);
+                window.goToDashboard();
+            } catch (error) {
+                if(errorDiv) {
+                    errorDiv.innerText = "ስህተት: " + error.message;
+                    errorDiv.classList.remove('hidden');
+                }
+            }
+        };
+
+        window.handleAuthSubmit = async function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('auth-submit-btn');
+            const errorDiv = document.getElementById('auth-error');
+            const email = document.getElementById('auth-email').value;
+            const password = document.getElementById('auth-password').value;
+            
+            const phone = document.getElementById('auth-phone') ? document.getElementById('auth-phone').value.trim() : '';
+            const city = document.getElementById('auth-city') ? document.getElementById('auth-city').value.trim() : '';
+            const source = document.getElementById('auth-source') ? document.getElementById('auth-source').value : '';
+            const nameElem = document.getElementById('auth-name');
+            const name = nameElem ? nameElem.value.trim() : '';
+
+            if (window.isSignupMode) {
+                const termsBox = document.getElementById('auth-terms');
+                if (termsBox && !termsBox.checked) {
+                    if(errorDiv) {
+                        errorDiv.innerText = "እባክዎ ለመመዝገብ መጀመሪያ 'የአጠቃቀም ህግ' የሚለውን ነክተው በማንበብ ይስማሙ!";
+                        errorDiv.classList.remove('hidden');
+                        errorDiv.className = "bg-red-50 dark:bg-red-900/30 text-danger border border-red-200 dark:border-red-800 text-sm p-3 rounded-lg mb-5 font-bold text-center";
+                    }
+                    return;
+                }
+                if(!name || !phone || !city || !source) {
+                    if(errorDiv) {
+                        errorDiv.innerText = "እባክዎ ሁሉንም መረጃዎች (ስም፣ ስልክ፣ ከተማ...) በትክክል ይሙሉ!";
+                        errorDiv.classList.remove('hidden');
+                        errorDiv.className = "bg-red-50 dark:bg-red-900/30 text-danger border border-red-200 dark:border-red-800 text-sm p-3 rounded-lg mb-5 font-bold text-center";
+                    }
+                    return;
+                }
+            }
+
+            if(btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> ይጠብቁ...'; }
+
+            try {
+                if (window.isSignupMode) {
+                    const cred = await createUserWithEmailAndPassword(auth, email, password);
+                    await updateProfile(cred.user, { displayName: name });
+                    const currentAppId = typeof __app_id !== 'undefined' ? __app_id : 'tsehaycampus-e1a6d';
+                    await setDoc(doc(db, 'artifacts', currentAppId, 'users', cred.user.uid, 'profile', 'info'), {
+                        displayName: name, email: email, phone: phone, city: city, heardFrom: source, registeredAt: new Date().toISOString()
+                    }, { merge: true });
+                } else {
+                    await signInWithEmailAndPassword(auth, email, password);
+                }
+                window.goToDashboard();
+            } catch (error) {
+                if(errorDiv) {
+                    errorDiv.innerText = "የይለፍ ቃል ስህተት ነው ወይም ኢሜሉ የለም።";
+                    errorDiv.classList.remove('hidden');
+                    errorDiv.className = "bg-red-50 dark:bg-red-900/30 text-danger border border-red-200 dark:border-red-800 text-sm p-3 rounded-lg mb-5 font-bold text-center";
+                }
+                if(btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = window.isSignupMode ? '<span>አዲስ ይመዝገቡ</span> <i class="fa-solid fa-arrow-right"></i>' : '<span>ግባ (Login)</span> <i class="fa-solid fa-arrow-right"></i>';
+                }
+            }
+        };
+
+        window.resetPassword = async function() {
+            const email = document.getElementById('auth-email').value.trim();
+            const errorDiv = document.getElementById('auth-error');
+            if (!email) {
+                errorDiv.innerText = "እባክዎ መጀመሪያ ኢሜልዎን ከላይ ባለው ሳጥን ያስገቡ!";
+                errorDiv.className = "bg-red-50 dark:bg-red-900/30 text-danger border border-red-200 dark:border-red-800 text-sm p-3 rounded-lg mb-5 font-bold text-center";
+                errorDiv.classList.remove('hidden');
+                return;
+            }
+            try {
+                await sendPasswordResetEmail(auth, email);
+                errorDiv.innerText = "የይለፍ ቃል መቀየሪያ ሊንክ ወደ ኢሜልዎ ተልኳል! እባክዎ ኢሜልዎን ይፈትሹ።";
+                errorDiv.className = "bg-green-50 dark:bg-green-900/30 text-success border border-green-200 dark:border-green-800 text-sm p-3 rounded-lg mb-5 font-bold text-center";
+                errorDiv.classList.remove('hidden');
+            } catch (error) {
+                errorDiv.innerText = "በዚህ ኢሜል የተመዘገበ አካውንት የለም!";
+                errorDiv.className = "bg-red-50 dark:bg-red-900/30 text-danger border border-red-200 dark:border-red-800 text-sm p-3 rounded-lg mb-5 font-bold text-center";
+                errorDiv.classList.remove('hidden');
+            }
         };
 
         window.enrollFreeCourse = async (courseId) => {
             if (!window.currentUser || window.currentUser.isAnonymous) {
-                window.openAuthModal(false);
-                return;
+                window.openAuthModal(false); return;
             }
-
             const course = window.allCourses.find(c => c.id === courseId);
             if(!course) return;
 
             const loader = document.getElementById('payment-processing-loader');
             loader.querySelector('h2').innerText = "በነፃ ኮርስ እየመዘገብንዎት ነው...";
-            loader.classList.remove('hidden');
-            loader.classList.add('flex');
+            loader.classList.remove('hidden'); loader.classList.add('flex');
 
             try {
                 const enrollmentRef = doc(db, 'artifacts', appId, 'users', window.currentUser.uid, 'enrollments', course.id);
                 await setDoc(enrollmentRef, {
-                    courseId: course.id,
-                    title: course.title,
-                    enrolledAt: new Date().toISOString(),
-                    progress: 0,
-                    status: 'active',
-                    paymentType: 'Free'
+                    courseId: course.id, title: course.title, enrolledAt: new Date().toISOString(), progress: 0, status: 'active', paymentType: 'Free'
                 });
-                
                 window.safeRedirect('dashboard.html');
             } catch(e) {
                 alert("ምዝገባው አልተሳካም። እባክዎ እንደገና ይሞክሩ።");
-                loader.classList.add('hidden');
-                loader.classList.remove('flex');
+                loader.classList.add('hidden'); loader.classList.remove('flex');
             }
         };
 
         window.openPaymentModal = (courseId) => {
             if (!window.currentUser || window.currentUser.isAnonymous) {
-                window.openAuthModal(false);
-                return;
+                window.openAuthModal(false); return;
             }
-
             const course = window.allCourses.find(c => c.id === courseId);
             if(!course) return;
             window.selectedCourseToPay = course;
@@ -691,14 +912,12 @@
             document.getElementById('payment-error').classList.add('hidden');
             
             const modal = document.getElementById('payment-modal');
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
+            modal.classList.remove('hidden'); modal.classList.add('flex');
         };
 
         window.closePaymentModal = () => {
             const modal = document.getElementById('payment-modal');
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
+            modal.classList.add('hidden'); modal.classList.remove('flex');
             window.selectedCourseToPay = null;
         };
 
@@ -713,64 +932,36 @@
             const errDiv = document.getElementById('payment-error');
             const method = document.querySelector('input[name="paymethod"]:checked').value;
             const course = window.selectedCourseToPay;
-
             if(!course) return;
 
             window.closePaymentModal();
             const loader = document.getElementById('payment-processing-loader');
             loader.querySelector('h2').innerText = "ወደ ቻፓ/ቴሌብር በማቅናት ላይ...";
-            loader.classList.remove('hidden');
-            loader.classList.add('flex');
+            loader.classList.remove('hidden'); loader.classList.add('flex');
             
             try {
                 let domain = window.location.hostname ? (window.location.protocol + '//' + window.location.host) : 'https://tsehay-campus-web.vercel.app';
                 let callbackUrl = domain + '/dashboard.html';
 
                 const response = await fetch('/api/initiate-payment', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        courseId: course.id,
-                        title: course.title,
-                        amount: course.price,
-                        method: method,
-                        userId: window.currentUser.uid,
-                        email: window.currentUser.email,
-                        name: window.currentUser.displayName || "Student",
-                        callbackUrl: callbackUrl 
+                        courseId: course.id, title: course.title, amount: course.price, method: method,
+                        userId: window.currentUser.uid, email: window.currentUser.email,
+                        name: window.currentUser.displayName || "Student", callbackUrl: callbackUrl 
                     })
                 });
 
-                if (!response.ok) {
-                    throw new Error("የክፍያ አገልጋዩ አልተገኘም። (Backend API Needed)");
-                }
-
+                if (!response.ok) throw new Error("የክፍያ አገልጋዩ አልተገኘም።");
                 const data = await response.json();
-                
-                if (data.checkout_url) {
-                    try {
-                        window.location.href = data.checkout_url; 
-                    } catch(e) {
-                        console.error("Redirect blocked by environment.", e);
-                    }
-                } else {
-                    throw new Error("የክፍያ ሊንክ ማመንጨት አልተቻለም።");
-                }
-
+                if (data.checkout_url) { window.location.href = data.checkout_url; } 
+                else { throw new Error("የክፍያ ሊንክ ማመንጨት አልተቻለም።"); }
             } catch (e) {
-                console.error("Payment API Error:", e);
-                loader.classList.add('hidden');
-                loader.classList.remove('flex');
-                
+                loader.classList.add('hidden'); loader.classList.remove('flex');
                 window.openPaymentModal(course.id);
-                errDiv.innerText = "ትክክለኛ የክፍያ ሲስተም (Chapa/Telebirr) ለማስጀመር Vercel ላይ የ Backend API መያያዝ አለበት። " + e.message;
+                errDiv.innerText = "ስህተት፡ " + e.message;
                 errDiv.classList.remove('hidden');
             }
-        };
-
-        // 💡 This guarantees the modal closes seamlessly on successful login
-        window.goToDashboard = function() {
-            window.closeAuthModal();
         };
 
     </script>
