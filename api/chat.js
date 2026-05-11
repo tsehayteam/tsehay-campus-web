@@ -69,7 +69,7 @@ module.exports = async function(req, res) {
       } catch (e) {}
     }
 
-    return sendFriendly('ሁለቱም AI አልተገኙም። እባክዎ ቆይተው ይሞክሩ።');
+    return sendFriendly('ውድ ተማሪ፣ የ AI አገልግሎታችን በመሻሻል ላይ ነው። እባክዎ ቆይተው ይሞክሩ። አሊያም በ tsehayteam@gmail.com ያግኙን።');
   } catch (err) {
     return sendFriendly('Backend Crash: ' + err.message);
   }
