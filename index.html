@@ -1275,45 +1275,5 @@
             console.error("Firebase module error:", err);
         }
     </script>
-    <!-- AI Chat Section - ከ </body> በፊት አስገባ -->
-<div style="position:fixed; bottom:20px; right:20px; width:350px; background:#fff; border-radius:15px; box-shadow:0 10px 30px rgba(0,0,0,0.3); overflow:hidden; font-family:Arial; z-index:9999;">
-  <div style="background:#667eea; color:#fff; padding:12px; font-size:16px; font-weight:bold;">
-    🎓 Tsehay AI Tutor
-  </div>
-  <div id="chat-box" style="height:250px; overflow-y:auto; padding:10px; background:#f9f9f9; font-size:14px;">
-    <p><b>AI:</b> ሰላም! ማንኛውም ጥያቄ ይጠይቁ።</p>
-  </div>
-  <div style="display:flex; padding:8px; background:#eee;">
-    <input type="text" id="user-input" placeholder="ጥያቄዎን ያስገቡ..." style="flex:1; padding:8px; border:1px solid #ccc; border-radius:5px;">
-    <button onclick="askAI()" style="margin-left:8px; padding:8px 15px; background:#667eea; color:#fff; border:none; border-radius:5px; cursor:pointer;">ላክ</button>
-  </div>
-</div>
-
-<script>
-async function askAI() {
-  const input = document.getElementById('user-input');
-  const msg = input.value.trim();
-  if (!msg) return;
-  
-  const chatBox = document.getElementById('chat-box');
-  chatBox.innerHTML += '<p><b>እርስዎ:</b> ' + msg + '</p>';
-  
-  try {
-    const res = await fetch('/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt: msg })
-    });
-    const data = await res.json();
-    const reply = data.candidates[0].content.parts[0].text;
-    chatBox.innerHTML += '<p><b>AI:</b> ' + reply + '</p>';
-  } catch (e) {
-    chatBox.innerHTML += '<p><b>AI:</b> ⚠️ አልተገኘም። ቆይተው ይሞክሩ።</p>';
-  }
-  
-  input.value = '';
-  chatBox.scrollTop = chatBox.scrollHeight;
-}
-</script>
 </body>
 </html>
