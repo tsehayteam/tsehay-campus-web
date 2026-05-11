@@ -74,13 +74,13 @@
 </head>
 <body class="bg-bodyBg dark:bg-slate-900 text-dark dark:text-gray-100 antialiased pt-24 min-h-screen flex flex-col hidden" id="main-body">
 
-    <!-- Screen Loader (Strict Auth Verification) -->
+    <!-- Screen Loader (Updated for Public Access) -->
     <div id="screen-loader" class="fixed inset-0 bg-white dark:bg-slate-900 z-[10000] flex flex-col items-center justify-center transition-opacity duration-300">
-        <i class="fa-solid fa-shield-halved text-5xl text-secondary dark:text-primary mb-5 animate-pulse"></i>
-        <p class="text-gray-600 dark:text-gray-300 font-black tracking-widest uppercase text-sm">ማንነትዎን በማረጋገጥ ላይ...</p>
+        <i class="fa-solid fa-spinner fa-spin text-5xl text-secondary dark:text-primary mb-5"></i>
+        <p class="text-gray-600 dark:text-gray-300 font-black tracking-widest uppercase text-sm">ኮርሶችን በማዘጋጀት ላይ...</p>
     </div>
 
-    <!-- Navigation (Strictly for Logged In Users) -->
+    <!-- Navigation -->
     <nav class="glass-nav fixed w-full top-0 z-50 transition-all duration-300">
         <div class="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-20 gap-4">
@@ -97,45 +97,8 @@
                     <!-- Google Translate Dropdown -->
                     <div id="google_translate_element" class="hidden sm:block mt-1 mr-2"></div>
                     
-                    <button onclick="window.toggleTheme()" class="w-10 h-10 rounded-full bg-gray-100 dark:bg-slate-800 flex items-center justify-center text-gray-600 dark:text-yellow-400 hover:scale-110 transition shadow-sm"><i id="theme-icon" class="fa-solid fa-moon"></i></button>
-                    
-                    <div class="flex items-center gap-2 lg:gap-3 bg-white dark:bg-slate-800 px-3 py-1.5 rounded-2xl border border-gray-200 dark:border-slate-700 shadow-sm">
-                        
-                        <!-- Profile Dropdown Container -->
-                        <div class="relative" id="profile-menu-container">
-                            <div onclick="document.getElementById('profile-dropdown').classList.toggle('hidden')" class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700 p-1.5 rounded-xl transition" title="ፕሮፋይል (Profile)">
-                                <img id="nav-user-avatar" src="https://ui-avatars.com/api/?name=User" class="w-8 h-8 rounded-full border border-gray-200 dark:border-slate-600 object-cover shadow-sm">
-                                <span id="nav-user-name" class="text-sm font-black dark:text-white tracking-tight hidden sm:block pr-1">ተማሪ</span>
-                                <i class="fa-solid fa-chevron-down text-[10px] text-gray-400"></i>
-                            </div>
-                            
-                            <!-- Dropdown Menu -->
-                            <div id="profile-dropdown" class="hidden absolute top-full right-0 mt-2 w-60 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 overflow-hidden z-[60]">
-                                <div class="p-4 border-b border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50">
-                                    <p class="text-sm font-black text-dark dark:text-white truncate" id="dropdown-user-name">ተማሪ</p>
-                                    <p class="text-xs text-gray-500 dark:text-gray-400 truncate" id="dropdown-user-email">user@email.com</p>
-                                </div>
-                                <div class="p-2 space-y-1">
-                                    <button id="dropdown-dashboard-btn" onclick="window.safeRedirect('dashboard.html')" class="hidden w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-slate-700 hover:text-secondary dark:hover:text-primary rounded-xl font-bold transition items-center gap-3">
-                                        <i class="fa-solid fa-chart-pie w-4"></i> የመማሪያ ክፍል
-                                    </button>
-                                    <button onclick="window.safeRedirect('dashboard.html?tab=settings-tab')" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-slate-700 hover:text-secondary dark:hover:text-primary rounded-xl font-bold transition flex items-center gap-3">
-                                        <i class="fa-solid fa-user-gear w-4"></i> መቼት (Settings)
-                                    </button>
-                                    <button onclick="window.logoutUser()" class="w-full text-left px-4 py-2.5 text-sm text-danger hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl font-bold transition flex items-center gap-3">
-                                        <i class="fa-solid fa-arrow-right-from-bracket w-4"></i> መውጫ (Logout)
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div id="nav-dashboard-divider" class="hidden h-6 w-px bg-gray-200 dark:bg-slate-700 mx-0.5"></div>
-                        
-                        <!-- Smart Dashboard Button -->
-                        <button id="nav-dashboard-btn" onclick="window.safeRedirect('dashboard.html')" class="hidden bg-primary text-dark px-4 py-2 rounded-xl font-black text-xs hover:bg-yellow-400 transition shadow-md items-center gap-2">
-                            <i class="fa-solid fa-chart-pie"></i> <span class="hidden sm:inline">ዳሽቦርድ</span>
-                        </button>
-                        
+                    <div class="flex items-center gap-2 lg:gap-4 font-heading text-sm" id="nav-auth-buttons">
+                        <!-- Navigation Auth Buttons (Will be populated by JS) -->
                     </div>
                 </div>
             </div>
@@ -335,7 +298,7 @@
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, getDocs, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // ✅ Firebase Key (በትልቁ L የተስተካከለ)
+        // ✅ Firebase Key
         const firebaseConfig = { apiKey: "AIzaSyDCxLwfYAS_I0D7c-8e-iB-Y-Rh2ZZoHZw", authDomain: "tsehaycampus-e1a6d.firebaseapp.com", projectId: "tsehaycampus-e1a6d", storageBucket: "tsehaycampus-e1a6d.firebasestorage.app", messagingSenderId: "1043616909865", appId: "1:1043616909865:web:9ecca7d9a14deef0f5ea38" };
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
@@ -383,34 +346,118 @@
             }
         };
 
+        // 💡 100% የተስተካከለው የ Auth Logic (ያለ Redirect)
         onAuthStateChanged(auth, async (user) => {
-            if (!user || user.isAnonymous) {
-                window.safeRedirect('index.html');
-                return;
-            }
-            
             window.currentUser = user;
             document.getElementById('main-body').classList.remove('hidden');
             
-            const name = user.displayName || (user.email ? user.email.split('@')[0] : "ተማሪ");
-            const photo = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=3268BA&color=fff`;
+            const navAuthBtns = document.getElementById('nav-auth-buttons');
+            const mobileAuthContainer = document.getElementById('mobile-auth-container'); // Need to wrap mobile buttons
+            const isDark = document.documentElement.classList.contains('dark');
+            const themeIcon = isDark ? 'fa-sun' : 'fa-moon';
+            const themeColor = isDark ? 'text-yellow-400' : 'text-gray-600';
+
+            if (user && !user.isAnonymous) {
+                const name = user.displayName || (user.email ? user.email.split('@')[0] : "ተማሪ");
+                const photo = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=3268BA&color=fff`;
+                
+                if (navAuthBtns) {
+                    navAuthBtns.innerHTML = `
+                        <button onclick="window.toggleTheme()" class="w-10 h-10 rounded-full bg-gray-100 dark:bg-slate-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-slate-700 transition shadow-sm ${themeColor}">
+                            <i id="theme-icon" class="fa-solid ${themeIcon}"></i>
+                        </button>
+                        <div class="relative ml-2" id="profile-menu-container">
+                            <div onclick="document.getElementById('profile-dropdown').classList.toggle('hidden')" class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700 p-1.5 pr-3 rounded-full border border-gray-200 dark:border-slate-700 shadow-sm transition bg-white dark:bg-slate-800">
+                                <img src="${photo}" class="w-8 h-8 rounded-full object-cover">
+                                <span class="text-sm font-bold text-dark dark:text-white">${name}</span>
+                                <i class="fa-solid fa-chevron-down text-[10px] text-gray-400 ml-1"></i>
+                            </div>
+                            <div id="profile-dropdown" class="hidden absolute top-full right-0 mt-2 w-56 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 overflow-hidden z-[60]">
+                                <div class="p-2 space-y-1">
+                                    <button onclick="window.safeRedirect('dashboard.html')" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-slate-700 hover:text-secondary dark:hover:text-primary rounded-xl font-bold transition flex items-center gap-3">
+                                        <i class="fa-solid fa-chart-pie w-4"></i> ወደ ዳሽቦርድ (Dashboard)
+                                    </button>
+                                    <button onclick="window.logoutUser()" class="w-full text-left px-4 py-2.5 text-sm text-danger hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl font-bold transition flex items-center gap-3">
+                                        <i class="fa-solid fa-arrow-right-from-bracket w-4"></i> መውጫ (Logout)
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                // Dashboard for mobile
+                let mobileMenuAuth = document.getElementById('mobile-auth-container');
+                if(!mobileMenuAuth) {
+                    const mobileContainer = document.querySelector('#mobile-menu .px-4.pt-2.pb-6');
+                    if(mobileContainer) {
+                        const hr = mobileContainer.querySelector('hr:last-of-type');
+                        if (hr) {
+                            const newDiv = document.createElement('div');
+                            newDiv.id = 'mobile-auth-container';
+                            hr.after(newDiv);
+                            mobileMenuAuth = newDiv;
+                            // Remove old hardcoded buttons
+                            const btns = mobileContainer.querySelectorAll('button:not([onclick*="Theme"]):not([onclick*="AuthMode"])');
+                            btns.forEach(b => { if(b.innerText.includes('ግባ') || b.innerText.includes('አዲስ')) b.remove(); });
+                        }
+                    }
+                }
+                
+                if (mobileMenuAuth) {
+                    mobileMenuAuth.innerHTML = `
+                        <button onclick="window.safeRedirect('dashboard.html')" class="w-full bg-primary text-dark font-bold py-2.5 rounded-lg mt-2 shadow-md hover:bg-yellow-400 transition flex items-center justify-center gap-2"><i class="fa-solid fa-chart-pie"></i> ዳሽቦርድ (Dashboard)</button>
+                        <button onclick="window.logoutUser()" class="w-full text-danger font-bold py-2.5 hover:bg-red-50 dark:hover:bg-slate-800 rounded-lg border border-danger/30 transition mt-2 flex items-center justify-center gap-2"><i class="fa-solid fa-power-off"></i> መውጫ (Logout)</button>
+                    `;
+                }
+
+                await fetchUserEnrollments(user.uid);
+            } else {
+                if (navAuthBtns) {
+                    navAuthBtns.innerHTML = `
+                        <button onclick="window.toggleTheme()" class="w-10 h-10 rounded-full bg-gray-100 dark:bg-slate-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-slate-700 transition shadow-sm ${themeColor}">
+                            <i id="theme-icon" class="fa-solid ${themeIcon}"></i>
+                        </button>
+                        <div class="h-5 w-px bg-gray-300 dark:bg-slate-700 mx-1"></div>
+                        <button onclick="window.openAuthModal(false)" class="text-dark dark:text-white font-bold hover:text-secondary dark:hover:text-primary transition px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 whitespace-nowrap">ግባ (Login)</button>
+                        <button onclick="window.openAuthModal(true)" class="bg-dark dark:bg-primary text-white dark:text-dark px-4 lg:px-6 py-2 lg:py-2.5 rounded-lg font-bold hover:bg-secondary dark:hover:bg-yellow-400 transition shadow-md btn-glow whitespace-nowrap">አዲስ ይመዝገቡ</button>
+                    `;
+                }
+                
+                // Mobile buttons for logged out
+                let mobileMenuAuth = document.getElementById('mobile-auth-container');
+                if(!mobileMenuAuth) {
+                    const mobileContainer = document.querySelector('#mobile-menu .px-4.pt-2.pb-6');
+                    if(mobileContainer) {
+                        const hr = mobileContainer.querySelector('hr:last-of-type');
+                        if (hr) {
+                            const newDiv = document.createElement('div');
+                            newDiv.id = 'mobile-auth-container';
+                            hr.after(newDiv);
+                            mobileMenuAuth = newDiv;
+                            const btns = mobileContainer.querySelectorAll('button:not([onclick*="Theme"]):not([onclick*="AuthMode"])');
+                            btns.forEach(b => { if(b.innerText.includes('ግባ') || b.innerText.includes('አዲስ')) b.remove(); });
+                        }
+                    }
+                }
+                
+                if (mobileMenuAuth) {
+                    mobileMenuAuth.innerHTML = `
+                        <button onclick="window.openAuthModal(false)" class="w-full text-secondary dark:text-primary font-bold py-2.5 hover:bg-gray-50 dark:hover:bg-slate-800 rounded-lg border border-secondary dark:border-primary transition mt-2">ግባ (Login)</button>
+                        <button onclick="window.openAuthModal(true)" class="w-full bg-primary text-dark font-bold py-2.5 rounded-lg mt-2 shadow-md hover:bg-yellow-400 transition">አዲስ ይመዝገቡ</button>
+                    `;
+                }
+                
+                window.userEnrollments = [];
+            }
             
-            const nameDisplay = document.getElementById('nav-user-name');
-            const dropNameDisplay = document.getElementById('dropdown-user-name');
-            const dropEmailDisplay = document.getElementById('dropdown-user-email');
-            
-            if(nameDisplay) nameDisplay.innerText = name;
-            if(dropNameDisplay) dropNameDisplay.innerText = name;
-            if(dropEmailDisplay) dropEmailDisplay.innerText = user.email || "";
-            
-            const avatarDisplay = document.getElementById('nav-user-avatar');
-            if(avatarDisplay) avatarDisplay.src = photo;
-            
-            await fetchUserEnrollments(user.uid);
             await fetchAllCourses();
             
-            document.getElementById('screen-loader').style.opacity = '0';
-            setTimeout(() => document.getElementById('screen-loader').style.display = 'none', 300);
+            const loader = document.getElementById('screen-loader');
+            if(loader) {
+                loader.style.opacity = '0';
+                setTimeout(() => loader.style.display = 'none', 300);
+            }
         });
 
         window.logoutUser = async () => {
@@ -423,21 +470,6 @@
                 const enrollRef = collection(db, 'artifacts', appId, 'users', uid, 'enrollments');
                 const snap = await getDocs(enrollRef);
                 window.userEnrollments = snap.docs.map(d => d.id); 
-                
-                // Show/Hide Dashboard buttons based on enrollment
-                const dashBtn = document.getElementById('nav-dashboard-btn');
-                const dashDiv = document.getElementById('nav-dashboard-divider');
-                const dropDashBtn = document.getElementById('dropdown-dashboard-btn');
-                
-                if (window.userEnrollments.length > 0) {
-                    if(dashBtn) { dashBtn.classList.remove('hidden'); dashBtn.classList.add('flex'); }
-                    if(dashDiv) { dashDiv.classList.remove('hidden'); dashDiv.classList.add('block'); }
-                    if(dropDashBtn) { dropDashBtn.classList.remove('hidden'); dropDashBtn.classList.add('flex'); }
-                } else {
-                    if(dashBtn) { dashBtn.classList.add('hidden'); dashBtn.classList.remove('flex'); }
-                    if(dashDiv) { dashDiv.classList.add('hidden'); dashDiv.classList.remove('block'); }
-                    if(dropDashBtn) { dropDashBtn.classList.add('hidden'); dropDashBtn.classList.remove('flex'); }
-                }
             } catch(e) {
                 console.error("Enrollment Fetch Error:", e);
                 window.userEnrollments = [];
@@ -611,6 +643,11 @@
         };
 
         window.enrollFreeCourse = async (courseId) => {
+            if (!window.currentUser || window.currentUser.isAnonymous) {
+                window.openAuthModal(false);
+                return;
+            }
+
             const course = window.allCourses.find(c => c.id === courseId);
             if(!course) return;
 
@@ -639,6 +676,11 @@
         };
 
         window.openPaymentModal = (courseId) => {
+            if (!window.currentUser || window.currentUser.isAnonymous) {
+                window.openAuthModal(false);
+                return;
+            }
+
             const course = window.allCourses.find(c => c.id === courseId);
             if(!course) return;
             window.selectedCourseToPay = course;
@@ -726,11 +768,11 @@
             }
         };
 
-        window.toggleTheme = () => {
-            const isDark = document.documentElement.classList.toggle('dark');
-            localStorage.setItem('theme', isDark ? 'dark' : 'light');
-            document.getElementById('theme-icon').className = isDark ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+        // 💡 This guarantees the modal closes seamlessly on successful login
+        window.goToDashboard = function() {
+            window.closeAuthModal();
         };
+
     </script>
 </body>
 </html>
