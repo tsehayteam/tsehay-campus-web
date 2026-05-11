@@ -54,24 +54,10 @@
         .payment-option.selected { border-color: #3268BA; background-color: rgba(50, 104, 186, 0.05); }
         .dark .payment-option.selected { border-color: #F9B03C; background-color: rgba(249, 176, 60, 0.1); }
         
-        /* Google Translate Fixed Styling */
-        .goog-te-banner-frame { display: none !important; }
-        .VIpgJd-ZVi9od-ORHb-OEVmcd { display: none !important; }
+        /* Google Translate Hiden (በጥያቄዎ መሰረት የተደበቀ) */
+        #google_translate_element, #google_translate_element_footer, .goog-te-banner-frame, .VIpgJd-ZVi9od-ORHb-OEVmcd { display: none !important; }
         body { top: 0px !important; position: static !important; }
         html { top: 0 !important; height: 100%; }
-        #google_translate_element select, #google_translate_element_footer select {
-            background-color: #f1f5f9; color: #334155; border: 1px solid #e2e8f0; border-radius: 0.5rem;
-            padding: 0.4rem 0.8rem; font-family: 'Montserrat', sans-serif; font-size: 0.8rem; font-weight: 700;
-            outline: none; cursor: pointer;
-            max-width: 130px; /* Constrains width so it doesn't break layout */
-            text-overflow: ellipsis; white-space: nowrap; overflow: hidden;
-        }
-        .dark #google_translate_element select, .dark #google_translate_element_footer select {
-            background-color: #1e293b; color: #cbd5e1; border-color: #334155;
-        }
-        #google_translate_element select:hover, #google_translate_element_footer select:hover { border-color: #3268BA; }
-        .goog-logo-link { display: none !important; }
-        .goog-te-gadget { color: transparent !important; }
         
         /* Custom scrollbar for modal */
         .custom-modal-scroll::-webkit-scrollbar { width: 6px; }
@@ -82,56 +68,45 @@
 </head>
 <body class="bg-bodyBg dark:bg-slate-900 text-dark dark:text-gray-100 antialiased pt-24 min-h-screen flex flex-col hidden" id="main-body">
 
-    <!-- Screen Loader -->
     <div id="screen-loader" class="fixed inset-0 bg-white dark:bg-slate-900 z-[10000] flex flex-col items-center justify-center transition-opacity duration-300">
         <i class="fa-solid fa-spinner fa-spin text-5xl text-secondary dark:text-primary mb-5"></i>
         <p class="text-gray-600 dark:text-gray-300 font-black tracking-widest uppercase text-sm">ኮርሶችን በማዘጋጀት ላይ...</p>
     </div>
 
-    <!-- Navigation -->
     <nav class="glass-nav fixed w-full top-0 z-50 transition-all duration-300">
         <div class="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-20 gap-2 md:gap-4">
-                <!-- Logo -->
                 <div class="flex items-center cursor-pointer group shrink-0" onclick="window.safeRedirect('index.html')">
                     <img src="Campus Logo.jpg" alt="Logo" class="h-10 md:h-12 w-auto mr-2 md:mr-3 rounded-xl shadow-md group-hover:scale-105 transition" onerror="this.src='https://ui-avatars.com/api/?name=TC&background=3268BA&color=fff'">
                     <span class="font-heading font-black text-xl lg:text-2xl text-dark dark:text-white hidden lg:block tracking-tight">Tsehay<span class="text-secondary dark:text-primary">Campus</span></span>
                 </div>
 
-                <!-- Profile & Links -->
                 <div class="flex items-center space-x-2 md:space-x-4 lg:space-x-6 shrink-0">
                     <a href="javascript:void(0)" onclick="window.safeRedirect('index.html')" class="hidden lg:block text-gray-600 dark:text-gray-300 hover:text-secondary dark:hover:text-primary font-bold transition text-sm whitespace-nowrap">ዋና ገፅ</a>
                     
-                    <!-- Google Translate Dropdown -->
-                    <div id="google_translate_element" class="hidden sm:block mt-1 w-24 md:w-32 overflow-hidden shrink-0"></div>
-                    
                     <div class="flex items-center gap-2 lg:gap-4 font-heading text-sm shrink-0" id="nav-auth-buttons">
-                        <!-- Navigation Auth Buttons (Will be populated by JS) -->
-                    </div>
+                        </div>
                 </div>
             </div>
         </div>
     </nav>
 
-    <!-- Page Header & Search -->
-    <section class="relative bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 py-16 lg:py-20 hero-pattern">
+    <section class="relative bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 pt-10 pb-8 lg:pt-12 lg:pb-10 hero-pattern">
         <div class="max-w-7xl mx-auto px-4 text-center relative z-10">
-            <div class="inline-flex items-center gap-2 bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-800 text-secondary dark:text-blue-400 font-bold px-4 py-1.5 rounded-full text-xs sm:text-sm mb-6 shadow-sm">
+            <div class="inline-flex items-center gap-2 bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-800 text-secondary dark:text-blue-400 font-bold px-4 py-1.5 rounded-full text-xs sm:text-sm mb-4 shadow-sm">
                 <i class="fa-solid fa-graduation-cap"></i> ለርስዎ ስኬት የተዘጋጀ መድረክ
             </div>
             
-            <h1 class="text-4xl md:text-5xl lg:text-6xl font-black font-heading mb-6 dark:text-white">አቅምዎን ያሳድጉ፣ <span class="text-secondary dark:text-primary">ህይወትዎን ይቀይሩ</span></h1>
-            <p class="text-gray-600 dark:text-gray-300 font-body text-base md:text-lg max-w-3xl mx-auto mb-10 leading-relaxed">
+            <h1 class="text-4xl md:text-5xl lg:text-6xl font-black font-heading mb-4 dark:text-white">አቅምዎን ያሳድጉ፣ <span class="text-secondary dark:text-primary">ህይወትዎን ይቀይሩ</span></h1>
+            <p class="text-gray-600 dark:text-gray-300 font-body text-base md:text-lg max-w-3xl mx-auto mb-6 leading-relaxed">
                 የርስዎን እምቅ አቅም ወደ ተጨባጭ ውጤት የሚቀይሩበት ትክክለኛው ቦታ ላይ ነዎት። ከጀማሪ እስከ ፕሮፌሽናል ደረጃ በጥንቃቄ ከተዘጋጁት <b>ነፃ</b> እና <b>ፕሪሚየም</b> ስልጠናዎች በመምረጥ ዛሬውኑ መማር ይጀምሩ።
             </p>
             
-            <!-- Standard Course Filter Search Bar -->
-            <div class="max-w-2xl mx-auto relative mb-10 shadow-xl rounded-full group">
+            <div class="max-w-2xl mx-auto relative mb-8 shadow-xl rounded-full group">
                 <i class="fa-solid fa-search absolute left-6 top-1/2 -translate-y-1/2 text-gray-400 text-lg group-focus-within:text-secondary dark:group-focus-within:text-primary transition-colors"></i>
                 <input type="text" id="searchInput" oninput="window.filterCourses()" placeholder="የኮርስ ስም ወይም ቁልፍ ቃል ይፈልጉ..." class="w-full bg-white dark:bg-slate-900 border-2 border-gray-200 dark:border-slate-600 rounded-full py-4.5 pl-14 pr-6 text-dark dark:text-white font-bold outline-none focus:border-secondary dark:focus:border-primary transition shadow-inner text-base lg:text-lg">
             </div>
 
-            <!-- Enhanced Categories including Free and Paid -->
             <div class="flex flex-wrap justify-center gap-3" id="categoryFilters">
                 <button onclick="window.setCategory('All')" class="cat-btn active px-6 py-2.5 rounded-full font-bold text-sm bg-secondary text-white shadow-md transition">ሁሉም</button>
                 <button onclick="window.setCategory('Free')" class="cat-btn px-6 py-2.5 rounded-full font-bold text-sm bg-success/10 text-success hover:bg-success hover:text-white transition border border-success/30">ነፃ ኮርሶች</button>
@@ -145,11 +120,9 @@
         </div>
     </section>
 
-    <!-- Main Course Grid -->
-    <main class="flex-grow max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8 py-16 w-full">
+    <main class="flex-grow max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-16 w-full">
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8" id="courseGrid">
-            <!-- Courses will be injected here -->
-        </div>
+            </div>
         
         <div id="emptyState" class="hidden text-center py-20">
             <i class="fa-solid fa-box-open text-6xl text-gray-300 dark:text-slate-700 mb-4"></i>
@@ -157,7 +130,6 @@
         </div>
     </main>
 
-    <!-- Auth Modal -->
     <div id="auth-modal" class="hidden fixed inset-0 bg-black/60 z-[9999] items-center justify-center backdrop-blur-sm p-4" onclick="if(event.target === this) window.closeAuthModal()">
         <div class="bg-white dark:bg-slate-800 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden flex flex-col relative modal-animate border border-gray-100 dark:border-slate-700 max-h-[95vh]">
             <div class="bg-secondary dark:bg-slate-900 p-6 text-white text-center relative border-b border-secondary/50 dark:border-slate-700 shrink-0">
@@ -186,7 +158,7 @@
                 </div>
 
                 <form id="auth-form" onsubmit="window.handleAuthSubmit(event)" class="space-y-4 px-1">
-                    <!-- SIGNUP FIELDS -->
+                    
                     <div class="signup-only hidden">
                         <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">ሙሉ ስም (Full Name) <span class="text-danger">*</span></label>
                         <div class="relative">
@@ -227,7 +199,6 @@
                         </div>
                     </div>
                     
-                    <!-- ALWAYS VISIBLE FIELDS (Email & Password) -->
                     <div>
                         <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">ኢሜል (Email) <span class="text-danger">*</span></label>
                         <div class="relative">
@@ -267,7 +238,6 @@
         </div>
     </div>
 
-    <!-- Terms Modal -->
     <div id="terms-modal" class="hidden fixed inset-0 bg-black/60 z-[10000] items-center justify-center backdrop-blur-sm p-4" onclick="if(event.target === this) window.closeTermsModal()">
         <div class="bg-white dark:bg-slate-800 w-full max-w-3xl rounded-3xl shadow-2xl overflow-hidden flex flex-col relative max-h-[90vh] modal-animate border border-gray-100 dark:border-slate-700">
             <div class="bg-secondary dark:bg-slate-900 p-5 md:p-6 text-white flex justify-between items-center shrink-0">
@@ -305,7 +275,6 @@
         </div>
     </div>
 
-    <!-- Real Payment Modal -->
     <div id="payment-modal" class="hidden fixed inset-0 bg-black/80 z-[9999] items-center justify-center backdrop-blur-sm p-4" onclick="if(event.target === this) window.closePaymentModal()">
         <div class="bg-white dark:bg-slate-800 w-full max-w-lg rounded-[2rem] shadow-2xl overflow-hidden flex flex-col relative modal-animate border border-gray-100 dark:border-slate-700">
             
@@ -315,7 +284,6 @@
             </div>
             
             <div class="p-6">
-                <!-- Course Summary -->
                 <div class="flex items-center gap-4 bg-gray-50 dark:bg-slate-900 p-4 rounded-2xl border border-gray-100 dark:border-slate-700 mb-6">
                     <img id="pay-course-img" src="" class="w-16 h-16 rounded-xl object-cover shadow-sm">
                     <div class="flex-1">
@@ -329,7 +297,6 @@
                     <span id="pay-course-price" class="text-3xl font-black text-dark dark:text-white tracking-tighter">0 ብር</span>
                 </div>
 
-                <!-- Payment Methods -->
                 <h4 class="font-bold text-sm text-gray-500 mb-3 uppercase tracking-wider">የክፍያ አማራጭ ይምረጡ</h4>
                 <div class="space-y-3 mb-8">
                     <label class="payment-option selected flex items-center justify-between p-4 rounded-xl border border-gray-200 dark:border-slate-600 cursor-pointer transition">
@@ -362,14 +329,12 @@
         </div>
     </div>
 
-    <!-- Full Screen Loader for Payments -->
     <div id="payment-processing-loader" class="hidden fixed inset-0 bg-white/90 dark:bg-slate-900/90 z-[10000] flex-col items-center justify-center backdrop-blur-md">
         <div class="w-16 h-16 border-4 border-gray-200 border-t-secondary rounded-full animate-spin mb-4"></div>
         <h2 class="text-2xl font-black font-heading text-dark dark:text-white mb-2" id="payment-loader-text">ወደ ክፍያ ስርዓት በማቅናት ላይ...</h2>
         <p class="text-gray-500 font-bold">እባክዎ ይህን ገፅ አይዝጉት!</p>
     </div>
 
-    <!-- Full Professional Footer -->
     <footer id="footer" class="bg-dark text-gray-300 pt-16 pb-8 font-body border-t-[6px] border-primary mt-auto">
         <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8 mb-12">
@@ -419,40 +384,200 @@
                         <span class="text-primary">Tsehay Digital</span>
                     </div>
                 </div>
-
-                <!-- Google Translate Dropdown in Footer -->
-                <div class="mt-4 md:mt-0 flex flex-col items-center md:items-end sm:hidden">
-                    <div id="google_translate_element_footer" class="bg-dark rounded-lg p-1.5 border border-slate-700 hover:border-slate-500 transition overflow-hidden max-w-[130px]"></div>
-                </div>
             </div>
         </div>
     </footer>
 
-    <!-- Google Translate Script -->
-    <script>
-        function googleTranslateElementInit() {
-            new google.translate.TranslateElement({
-                pageLanguage: 'am',
-                includedLanguages: 'am,en,om,ti,ar,zh-CN,so,fr,es',
-                autoDisplay: false
-            }, 'google_translate_element');
-            
-            setTimeout(function() {
-                new google.translate.TranslateElement({
-                    pageLanguage: 'am',
-                    includedLanguages: 'am,en,om,ti,ar,zh-CN,so,fr,es',
-                    autoDisplay: false
-                }, 'google_translate_element_footer');
-            }, 1000);
-        }
-    </script>
-    <script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+    <div class="fixed bottom-6 right-6 z-[9999] flex flex-col gap-4">
+        <a href="https://t.me/TsehayTeam" target="_blank" class="w-[52px] h-[52px] bg-[#2CA5E0] text-white rounded-full flex items-center justify-center text-[22px] shadow-[0_0_20px_rgba(44,165,224,0.5)] hover:scale-110 transition-all duration-300 relative group border-2 border-white/10">
+            <i class="fa-regular fa-paper-plane"></i>
+            <span class="absolute right-full mr-4 bg-dark dark:bg-slate-800 text-white text-xs font-bold px-3 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap pointer-events-none border border-gray-700 shadow-xl">በቴሌግራም ያግኙን</span>
+        </a>
+        <a href="tel:0980209090" class="w-[52px] h-[52px] bg-[#10B981] text-white rounded-full flex items-center justify-center text-[22px] shadow-[0_0_20px_rgba(16,185,129,0.5)] hover:scale-110 transition-all duration-300 relative group border-2 border-white/10">
+            <i class="fa-solid fa-phone"></i>
+            <span class="absolute right-full mr-4 bg-dark dark:bg-slate-800 text-white text-xs font-bold px-3 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap pointer-events-none border border-gray-700 shadow-xl">ስልክ ይደውሉ</span>
+        </a>
+    </div>
 
-    <!-- Firebase & Application Logic -->
+    <script>
+        window.isSignupMode = false;
+        window.allFetchedCourses = []; 
+        window.hasAgreedTerms = false;
+        window.currentUser = null;
+
+        window.requireAuthAndNavigate = function(url) {
+            if (window.currentUser && !window.currentUser.isAnonymous) {
+                window.location.href = url;
+            } else {
+                window.openAuthModal(false);
+                const errDiv = document.getElementById('auth-error');
+                if (errDiv) {
+                    errDiv.innerHTML = "<b>ማሳሰቢያ፡</b> ኮርሶችን ለማየት እና ለመግዛት መጀመሪያ ይግቡ ወይም አዲስ ይመዝገቡ!";
+                    errDiv.className = "bg-warning/20 text-warning border border-warning/50 text-sm p-3 rounded-lg mb-5 font-bold text-center";
+                    errDiv.classList.remove('hidden');
+                }
+            }
+        };
+
+        window.openAuthModal = function(signup) {
+            window.isSignupMode = signup;
+            const authModal = document.getElementById('auth-modal');
+            if (authModal) {
+                authModal.classList.remove('hidden');
+                authModal.classList.add('flex');
+            }
+            
+            const errDiv = document.getElementById('auth-error');
+            if (errDiv) errDiv.classList.add('hidden');
+            
+            const titleElem = document.getElementById('auth-title');
+            if (titleElem) titleElem.innerText = signup ? "አካውንት ይፍጠሩ" : "ወደ ካምፓስ ይግቡ";
+            
+            const submitBtn = document.getElementById('auth-submit-btn');
+            if (submitBtn) submitBtn.innerHTML = signup ? '<span>አዲስ ይመዝገቡ</span> <i class="fa-solid fa-arrow-right"></i>' : '<span>ግባ (Login)</span> <i class="fa-solid fa-arrow-right"></i>';
+            
+            const switchText = document.getElementById('auth-switch-text');
+            if (switchText) switchText.innerText = signup ? "አካውንት አለዎት?" : "አካውንት የለዎትም?";
+            
+            const switchBtn = document.getElementById('auth-switch-btn');
+            if (switchBtn) switchBtn.innerText = signup ? "ግባ (Login)" : "አዲስ ይመዝገቡ (Sign Up)";
+
+            const forgotBtn = document.getElementById('forgot-pwd-btn');
+            if (forgotBtn) forgotBtn.style.display = signup ? 'none' : 'block';
+
+            document.querySelectorAll('.signup-only').forEach(el => { el.classList.toggle('hidden', !signup); });
+            const termsField = document.getElementById('terms-field');
+            if (termsField) termsField.classList.toggle('hidden', !signup);
+            const termsBox = document.getElementById('auth-terms');
+            if(termsBox && signup) termsBox.checked = false;
+        };
+
+        window.closeAuthModal = function() {
+            const modal = document.getElementById('auth-modal');
+            if (modal) { modal.classList.add('hidden'); modal.classList.remove('flex'); }
+        };
+
+        window.toggleAuthMode = function() { window.openAuthModal(!window.isSignupMode); };
+
+        window.goToDashboard = function() {
+            window.closeAuthModal();
+            // ፎርሙ ሲዘጋ ኮርሶቹን አውቶማቲክ እንዲያድስ (Refresh) ፔጁን ደግመን እንጭነዋለን
+            window.location.reload(); 
+        };
+
+        window.openTermsModal = function() {
+            const tModal = document.getElementById('terms-modal');
+            if (tModal) {
+                tModal.classList.remove('hidden');
+                tModal.classList.add('flex');
+            }
+        };
+
+        window.closeTermsModal = function() {
+            const tModal = document.getElementById('terms-modal');
+            if (tModal) {
+                tModal.classList.add('hidden');
+                tModal.classList.remove('flex');
+            }
+        };
+
+        window.searchCourses = function(e, isMobile) {
+            const query = e.target.value.toLowerCase().trim();
+            const resultsContainer = isMobile ? document.getElementById('mobile-search-results') : document.getElementById('desktop-search-results');
+            if (!resultsContainer) return;
+
+            if (!query) {
+                resultsContainer.classList.add('hidden');
+                resultsContainer.classList.remove('flex');
+                return;
+            }
+
+            const filtered = window.allFetchedCourses.filter(c => c.title.toLowerCase().includes(query) && c.status === 'Active');
+            
+            resultsContainer.innerHTML = '';
+            if (filtered.length === 0) {
+                resultsContainer.innerHTML = '<div class="p-4 text-center text-sm text-gray-500 font-bold">ምንም ኮርስ አልተገኘም</div>';
+            } else {
+                filtered.forEach(c => {
+                    let isFree = c.price == 0 || !c.price;
+                    let priceText = isFree ? 'ነፃ (Free)' : `${Number(c.price).toLocaleString()} ብር`;
+                    let oldPriceHtml = (!isFree && c.oldPrice) ? `<span class="text-[10px] text-gray-400 line-through font-bold ml-1">${Number(c.oldPrice).toLocaleString()}</span>` : '';
+                    
+                    resultsContainer.innerHTML += `
+                        <div onclick="window.requireAuthAndNavigate('courses.html')" class="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-slate-700 cursor-pointer border-b border-gray-50 dark:border-slate-700 transition">
+                            <img src="${c.image}" class="w-12 h-12 rounded-lg object-cover" onerror="this.src='https://placehold.co/100x100'">
+                            <div class="flex-1 min-w-0 text-left">
+                                <h4 class="text-[13px] font-bold text-dark dark:text-white truncate">${c.title}</h4>
+                                <p class="text-[11px] text-gray-500 truncate"><i class="fa-solid fa-chalkboard-user"></i> ${c.instructor}</p>
+                            </div>
+                            <div class="text-[11px] font-black ${isFree ? 'text-success' : 'text-secondary dark:text-primary'} bg-gray-50 dark:bg-slate-800 px-2 py-1 rounded shadow-sm flex items-center">
+                                ${priceText} ${oldPriceHtml}
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+            resultsContainer.classList.remove('hidden');
+            resultsContainer.classList.add('flex');
+        };
+
+        window.handleSearchEnter = function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                window.requireAuthAndNavigate('courses.html');
+            }
+        };
+
+        window.toggleTheme = function() {
+            document.documentElement.classList.toggle('dark');
+            const isDark = document.documentElement.classList.contains('dark');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            
+            const icon1 = document.getElementById('theme-icon');
+            if (icon1) icon1.className = isDark ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const isDark = document.documentElement.classList.contains('dark');
+            const icon1 = document.getElementById('theme-icon');
+            if (icon1) icon1.className = isDark ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+        });
+
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.search-bar') && !e.target.closest('#desktop-search-results')) {
+                const d = document.getElementById('desktop-search-results');
+                if(d) { d.classList.add('hidden'); d.classList.remove('flex'); }
+            }
+        });
+
+        window.agreeToTermsFromModal = function() {
+            const modalCheck = document.getElementById('modal-terms-check');
+            const termsErr = document.getElementById('terms-error');
+            
+            if (modalCheck && !modalCheck.checked) {
+                if(termsErr) {
+                    termsErr.innerText = "እባክዎ 'በሁሉም የአጠቃቀም ህጎች... ተስማምቻለሁ' የሚለውን ሳጥን (Checkbox) ቲክ ያድርጉ!";
+                    termsErr.classList.remove('hidden');
+                }
+                return;
+            }
+            if(termsErr) termsErr.classList.add('hidden');
+            
+            window.hasAgreedTerms = true;
+            window.closeTermsModal();
+            window.openAuthModal(true);
+            
+            const authTerms = document.getElementById('auth-terms');
+            if (authTerms) {
+                authTerms.checked = true;
+            }
+        };
+    </script>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut, createUserWithEmailAndPassword, updateProfile, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, getDocs, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, getDocs, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // ✅ Firebase Key
         const firebaseConfig = { apiKey: "AIzaSyDCxLwfYAS_I0D7c-8e-iB-Y-Rh2ZZoHZw", authDomain: "tsehaycampus-e1a6d.firebaseapp.com", projectId: "tsehaycampus-e1a6d", storageBucket: "tsehaycampus-e1a6d.firebasestorage.app", messagingSenderId: "1043616909865", appId: "1:1043616909865:web:9ecca7d9a14deef0f5ea38" };
@@ -485,20 +610,7 @@
                 const url = new URL(target, window.location.href);
                 window.location.href = url.href;
             } catch (e) {
-                const loader = document.getElementById('screen-loader');
-                if(loader) {
-                    loader.innerHTML = `
-                        <i class="fa-solid fa-lock text-5xl text-danger mb-5"></i>
-                        <p class="text-danger font-black tracking-widest uppercase text-sm mb-4">መግቢያ ያስፈልጋል!</p>
-                        <p class="text-gray-500 text-xs text-center px-6 max-w-sm leading-relaxed">
-                            በ Canvas የሙከራ ገፅ ላይ ስለሆኑ ወደ ማረፊያ ገፅ መመለስ አልተቻለም። <br><br>
-                            እባክዎ መጀመሪያ <b>index.html</b> ፋይልን ከፍተው Login ያድርጉና ከዚያ ይህን ገፅ ይመልከቱ።
-                        </p>
-                    `;
-                    loader.classList.remove('hidden');
-                    loader.style.display = 'flex';
-                    loader.style.opacity = '1';
-                }
+                console.log(e);
             }
         };
 
@@ -510,57 +622,66 @@
             const themeIcon = isDark ? 'fa-sun' : 'fa-moon';
             const themeColor = isDark ? 'text-yellow-400' : 'text-gray-600';
 
-            if (user && !user.isAnonymous) {
-                window.currentUser = user;
-                const name = user.displayName || (user.email ? user.email.split('@')[0] : "ተማሪ");
-                const photo = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=3268BA&color=fff`;
-                
-                if (navAuthBtns) {
-                    navAuthBtns.innerHTML = `
-                        <button onclick="window.toggleTheme()" class="w-10 h-10 rounded-full bg-gray-100 dark:bg-slate-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-slate-700 transition shadow-sm shrink-0 ${themeColor}">
-                            <i id="theme-icon" class="fa-solid ${themeIcon}"></i>
-                        </button>
-                        <div class="relative ml-1 md:ml-2 shrink-0" id="profile-menu-container">
-                            <div onclick="document.getElementById('profile-dropdown').classList.toggle('hidden')" class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700 p-1.5 pr-2 md:pr-3 rounded-full border border-gray-200 dark:border-slate-700 shadow-sm transition bg-white dark:bg-slate-800">
-                                <img src="${photo}" class="w-7 h-7 md:w-8 md:h-8 rounded-full object-cover">
-                                <span class="text-xs md:text-sm font-bold text-dark dark:text-white truncate max-w-[80px] md:max-w-[120px]">${name}</span>
-                                <i class="fa-solid fa-chevron-down text-[10px] text-gray-400 ml-1"></i>
-                            </div>
-                            <div id="profile-dropdown" class="hidden absolute top-full right-0 mt-2 w-56 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 overflow-hidden z-[60]">
-                                <div class="p-2 space-y-1">
-                                    <button onclick="window.safeRedirect('dashboard.html')" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-slate-700 hover:text-secondary dark:hover:text-primary rounded-xl font-bold transition flex items-center gap-3">
-                                        <i class="fa-solid fa-chart-pie w-4"></i> ወደ ዳሽቦርድ (Dashboard)
-                                    </button>
-                                    <button onclick="window.logoutUser()" class="w-full text-left px-4 py-2.5 text-sm text-danger hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl font-bold transition flex items-center gap-3">
-                                        <i class="fa-solid fa-arrow-right-from-bracket w-4"></i> መውጫ (Logout)
-                                    </button>
+            try {
+                if (user && !user.isAnonymous) {
+                    window.currentUser = user;
+                    const name = user.displayName || (user.email ? user.email.split('@')[0] : "ተማሪ");
+                    const photo = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=3268BA&color=fff`;
+                    
+                    if (navAuthBtns) {
+                        navAuthBtns.innerHTML = `
+                            <button onclick="window.toggleTheme()" class="w-10 h-10 rounded-full bg-gray-100 dark:bg-slate-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-slate-700 transition shadow-sm shrink-0 ${themeColor}">
+                                <i id="theme-icon" class="fa-solid ${themeIcon}"></i>
+                            </button>
+                            <div class="relative ml-1 md:ml-2 shrink-0" id="profile-menu-container">
+                                <div onclick="document.getElementById('profile-dropdown').classList.toggle('hidden')" class="flex items-center gap-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700 p-1.5 pr-2 md:pr-3 rounded-full border border-gray-200 dark:border-slate-700 shadow-sm transition bg-white dark:bg-slate-800">
+                                    <img src="${photo}" class="w-7 h-7 md:w-8 md:h-8 rounded-full object-cover">
+                                    <span class="text-xs md:text-sm font-bold text-dark dark:text-white truncate max-w-[80px] md:max-w-[120px]">${name}</span>
+                                    <i class="fa-solid fa-chevron-down text-[10px] text-gray-400 ml-1"></i>
+                                </div>
+                                <div id="profile-dropdown" class="hidden absolute top-full right-0 mt-2 w-56 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 overflow-hidden z-[60]">
+                                    <div class="p-2 space-y-1">
+                                        <button onclick="window.safeRedirect('dashboard.html')" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-slate-700 hover:text-secondary dark:hover:text-primary rounded-xl font-bold transition flex items-center gap-3">
+                                            <i class="fa-solid fa-chart-pie w-4"></i> ወደ ዳሽቦርድ (Dashboard)
+                                        </button>
+                                        <button onclick="window.logoutUser()" class="w-full text-left px-4 py-2.5 text-sm text-danger hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl font-bold transition flex items-center gap-3">
+                                            <i class="fa-solid fa-arrow-right-from-bracket w-4"></i> መውጫ (Logout)
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    `;
+                        `;
+                    }
+                    await fetchUserEnrollments(user.uid);
+                } else {
+                    window.currentUser = null;
+                    window.userEnrollments = [];
+                    if (navAuthBtns) {
+                        navAuthBtns.innerHTML = `
+                            <button onclick="window.toggleTheme()" class="w-10 h-10 rounded-full bg-gray-100 dark:bg-slate-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-slate-700 transition shadow-sm shrink-0 ${themeColor}">
+                                <i id="theme-icon" class="fa-solid ${themeIcon}"></i>
+                            </button>
+                            <div class="h-5 w-px bg-gray-300 dark:bg-slate-700 mx-1 hidden sm:block"></div>
+                            <button onclick="window.openAuthModal(false)" class="text-dark dark:text-white font-bold hover:text-secondary dark:hover:text-primary transition px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 whitespace-nowrap text-sm shrink-0">ግባ (Login)</button>
+                            <button onclick="window.openAuthModal(true)" class="bg-dark dark:bg-primary text-white dark:text-dark px-3 md:px-5 py-2 md:py-2.5 rounded-lg font-bold hover:bg-secondary dark:hover:bg-yellow-400 transition shadow-md btn-glow whitespace-nowrap text-sm shrink-0">አዲስ ይመዝገቡ</button>
+                        `;
+                    }
                 }
-                await fetchUserEnrollments(user.uid);
-            } else {
-                window.currentUser = null;
-                window.userEnrollments = [];
-                if (navAuthBtns) {
-                    navAuthBtns.innerHTML = `
-                        <button onclick="window.toggleTheme()" class="w-10 h-10 rounded-full bg-gray-100 dark:bg-slate-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-slate-700 transition shadow-sm shrink-0 ${themeColor}">
-                            <i id="theme-icon" class="fa-solid ${themeIcon}"></i>
-                        </button>
-                        <div class="h-5 w-px bg-gray-300 dark:bg-slate-700 mx-1 hidden sm:block"></div>
-                        <button onclick="window.openAuthModal(false)" class="text-dark dark:text-white font-bold hover:text-secondary dark:hover:text-primary transition px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 whitespace-nowrap text-sm shrink-0">ግባ (Login)</button>
-                        <button onclick="window.openAuthModal(true)" class="bg-dark dark:bg-primary text-white dark:text-dark px-3 md:px-5 py-2 md:py-2.5 rounded-lg font-bold hover:bg-secondary dark:hover:bg-yellow-400 transition shadow-md btn-glow whitespace-nowrap text-sm shrink-0">አዲስ ይመዝገቡ</button>
-                    `;
+                
+                await fetchAllCourses();
+
+            } catch (err) {
+                console.error(err);
+            } finally {
+                // 💡 This unconditionally removes the invisible shield that caused unclickability!
+                const loader = document.getElementById('screen-loader');
+                if(loader) {
+                    loader.style.opacity = '0';
+                    setTimeout(() => {
+                        loader.style.display = 'none';
+                        loader.classList.add('hidden');
+                    }, 300);
                 }
-            }
-            
-            await fetchAllCourses();
-            
-            const loader = document.getElementById('screen-loader');
-            if(loader) {
-                loader.style.opacity = '0';
-                setTimeout(() => loader.style.display = 'none', 300);
             }
         });
 
@@ -735,51 +856,6 @@
         };
 
         // --- Auth Modal & Payment Functions ---
-        window.openAuthModal = function(signup) {
-            window.isSignupMode = signup;
-            const authModal = document.getElementById('auth-modal');
-            if (authModal) {
-                authModal.classList.remove('hidden');
-                authModal.classList.add('flex');
-            }
-            
-            const errDiv = document.getElementById('auth-error');
-            if (errDiv) errDiv.classList.add('hidden');
-            
-            const titleElem = document.getElementById('auth-title');
-            if (titleElem) titleElem.innerText = signup ? "አካውንት ይፍጠሩ" : "ወደ ካምፓስ ይግቡ";
-            
-            const submitBtn = document.getElementById('auth-submit-btn');
-            if (submitBtn) submitBtn.innerHTML = signup ? '<span>አዲስ ይመዝገቡ</span> <i class="fa-solid fa-arrow-right"></i>' : '<span>ግባ (Login)</span> <i class="fa-solid fa-arrow-right"></i>';
-            
-            const switchText = document.getElementById('auth-switch-text');
-            if (switchText) switchText.innerText = signup ? "አካውንት አለዎት?" : "አካውንት የለዎትም?";
-            
-            const switchBtn = document.getElementById('auth-switch-btn');
-            if (switchBtn) switchBtn.innerText = signup ? "ግባ (Login)" : "አዲስ ይመዝገቡ (Sign Up)";
-
-            const forgotBtn = document.getElementById('forgot-pwd-btn');
-            if (forgotBtn) forgotBtn.style.display = signup ? 'none' : 'block';
-
-            document.querySelectorAll('.signup-only').forEach(el => { el.classList.toggle('hidden', !signup); });
-            const termsField = document.getElementById('terms-field');
-            if (termsField) termsField.classList.toggle('hidden', !signup);
-            const termsBox = document.getElementById('auth-terms');
-            if(termsBox && signup) termsBox.checked = false;
-        };
-
-        window.closeAuthModal = function() {
-            const modal = document.getElementById('auth-modal');
-            if (modal) { modal.classList.add('hidden'); modal.classList.remove('flex'); }
-        };
-
-        window.toggleAuthMode = function() { window.openAuthModal(!window.isSignupMode); };
-
-        window.goToDashboard = function() {
-            window.closeAuthModal();
-            window.location.reload(); // Login አድርገው ሲጨርሱ ፔጁ ሪፍሬሽ ሆኖ ኮርሱ እንዲከፈት ያደርጋል
-        };
-
         window.loginWithGoogle = async function() {
             const errorDiv = document.getElementById('auth-error');
             const provider = new GoogleAuthProvider();
