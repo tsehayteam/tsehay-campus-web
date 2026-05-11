@@ -54,24 +54,26 @@
         .payment-option.selected { border-color: #3268BA; background-color: rgba(50, 104, 186, 0.05); }
         .dark .payment-option.selected { border-color: #F9B03C; background-color: rgba(249, 176, 60, 0.1); }
         
+        /* Toast Alert CSS */
+        #toast { pointer-events: none; }
+        #toast.show { transform: translateX(0) !important; opacity: 1 !important; }
+
         /* Google Translate Custom Styling - Hide top bar and logos */
         .goog-te-banner-frame, .VIpgJd-ZVi9od-ORHb-OEVmcd { display: none !important; }
         body { top: 0px !important; position: static !important; }
         html { top: 0 !important; height: 100%; }
         
-        /* Hide from Header only */
-        #google_translate_element { display: none !important; } 
-        
-        /* Style for Footer Element */
-        #google_translate_element_footer select {
+        /* Style for Translate Elements (Header & Footer) */
+        #google_translate_element select, #google_translate_element_footer select {
             background-color: #f1f5f9; color: #334155; border: 1px solid #e2e8f0; border-radius: 0.5rem;
             padding: 0.4rem 0.8rem; font-family: 'Montserrat', sans-serif; font-size: 0.8rem; font-weight: 700;
-            outline: none; cursor: pointer; max-width: 150px;
+            outline: none; cursor: pointer; max-width: 130px;
+            text-overflow: ellipsis; white-space: nowrap; overflow: hidden;
         }
-        .dark #google_translate_element_footer select {
+        .dark #google_translate_element select, .dark #google_translate_element_footer select {
             background-color: #1e293b; color: #cbd5e1; border-color: #334155;
         }
-        #google_translate_element_footer select:hover { border-color: #3268BA; }
+        #google_translate_element select:hover, #google_translate_element_footer select:hover { border-color: #3268BA; }
         .goog-logo-link { display: none !important; }
         .goog-te-gadget { color: transparent !important; font-size: 0px !important; }
         
@@ -83,6 +85,9 @@
     </style>
 </head>
 <body class="bg-bodyBg dark:bg-slate-900 text-dark dark:text-gray-100 antialiased pt-24 min-h-screen flex flex-col hidden" id="main-body">
+
+    <!-- Toast Notification System -->
+    <div id="toast" class="fixed top-5 right-5 z-[99999] px-6 py-4 rounded-xl font-bold text-sm shadow-2xl transition-all duration-300 transform translate-x-[150%] opacity-0 flex items-center gap-3"></div>
 
     <!-- Screen Loader -->
     <div id="screen-loader" class="fixed inset-0 bg-white dark:bg-slate-900 z-[10000] flex flex-col items-center justify-center transition-opacity duration-300">
@@ -104,8 +109,8 @@
                 <div class="flex items-center space-x-2 md:space-x-4 lg:space-x-6 shrink-0">
                     <a href="javascript:void(0)" onclick="window.safeRedirect('index.html')" class="hidden lg:block text-gray-600 dark:text-gray-300 hover:text-secondary dark:hover:text-primary font-bold transition text-sm whitespace-nowrap">ዋና ገፅ</a>
                     
-                    <!-- Hidden in header intentionally -->
-                    <div id="google_translate_element"></div>
+                    <!-- Google Translate Dropdown - Restored! -->
+                    <div id="google_translate_element" class="hidden sm:block mt-1 w-24 md:w-32 overflow-hidden shrink-0"></div>
                     
                     <div class="flex items-center gap-2 lg:gap-4 font-heading text-sm shrink-0" id="nav-auth-buttons">
                         <!-- Navigation Auth Buttons (Will be populated by JS) -->
@@ -115,7 +120,7 @@
         </div>
     </nav>
 
-    <!-- Page Header & Search (ክፍተቱ ያጠረ እና የተስተካከለ) -->
+    <!-- Page Header & Search -->
     <section class="relative bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 py-6 lg:py-8 hero-pattern">
         <div class="max-w-7xl mx-auto px-4 text-center relative z-10">
             <div class="inline-flex items-center gap-2 bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-800 text-secondary dark:text-blue-400 font-bold px-4 py-1.5 rounded-full text-xs sm:text-sm mb-4 shadow-sm">
@@ -423,7 +428,7 @@
                 </div>
 
                 <!-- Google Translate Dropdown in Footer -->
-                <div class="mt-4 md:mt-0 flex flex-col items-center md:items-end sm:hidden">
+                <div class="mt-4 md:mt-0 flex flex-col items-center md:items-end">
                     <div id="google_translate_element_footer" class="bg-dark rounded-lg p-1.5 border border-slate-700 hover:border-slate-500 transition overflow-hidden max-w-[150px]"></div>
                 </div>
             </div>
@@ -441,20 +446,26 @@
         </a>
     </div>
 
+    <!-- UI Functions and Event Listeners -->
     <script>
+        // Global Variables
         window.isSignupMode = false;
         window.allFetchedCourses = []; 
         window.currentUser = null;
 
+        // Make theme toggle function globally available immediately
         window.toggleTheme = function() {
             const isDark = document.documentElement.classList.toggle('dark');
             localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            
+            // Update all theme icons on the page
             const icons = document.querySelectorAll('#theme-icon');
             icons.forEach(icon => {
                 icon.className = isDark ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
             });
         };
 
+        // Initialize Theme Icons on load
         document.addEventListener('DOMContentLoaded', () => {
             const isDark = document.documentElement.classList.contains('dark');
             const icons = document.querySelectorAll('#theme-icon');
@@ -463,7 +474,16 @@
             });
         });
 
+        // Setup Google Translate
         function googleTranslateElementInit() {
+            // For Header (Desktop)
+            new google.translate.TranslateElement({
+                pageLanguage: 'am',
+                includedLanguages: 'am,en,om,ti,ar,zh-CN,so,fr,es',
+                autoDisplay: false
+            }, 'google_translate_element');
+
+            // For Footer (Mobile/Backup)
             setTimeout(function() {
                 new google.translate.TranslateElement({
                     pageLanguage: 'am',
@@ -473,11 +493,17 @@
             }, 500);
         }
 
+        // Global Toast Notification Function
         window.showToast = function(msg, isError = false) {
             const toast = document.getElementById("toast");
             if(!toast) return;
+            
             toast.innerHTML = `<i class="fa-solid ${isError ? 'fa-triangle-exclamation' : 'fa-circle-check'} text-xl"></i> <span>${msg}</span>`;
+            
+            // Apply Tailwind classes dynamically based on error status
             toast.className = `fixed top-5 right-5 z-[99999] px-6 py-4 rounded-xl font-bold text-sm shadow-2xl transition-all duration-300 transform flex items-center gap-3 show ${isError ? 'bg-danger text-white border border-red-400' : 'bg-success text-white border border-green-400'}`;
+            
+            // Auto hide after 4 seconds
             setTimeout(() => { 
                 toast.classList.remove("show"); 
                 toast.classList.add("translate-x-[150%]", "opacity-0"); 
@@ -557,13 +583,16 @@
         };
     </script>
 
+    <!-- Load Google Translate API -->
     <script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
 
+    <!-- Firebase & Main Business Logic -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut, createUserWithEmailAndPassword, updateProfile, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, getDocs, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+        // ✅ Firebase Key
         const firebaseConfig = { apiKey: "AIzaSyDCxlwfYAS_I0D7c-8e-iB-Y-Rh2ZZoHZw", authDomain: "tsehaycampus-e1a6d.firebaseapp.com", projectId: "tsehaycampus-e1a6d", storageBucket: "tsehaycampus-e1a6d.firebasestorage.app", messagingSenderId: "1043616909865", appId: "1:1043616909865:web:9ecca7d9a14deef0f5ea38" };
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
@@ -573,10 +602,11 @@
         window.currentUser = null;
         window.allCourses = [];
         window.userEnrollments = [];
-        window.userEnrollmentsData = []; 
+        window.userEnrollmentsData = []; // To store full enrollment documents
         window.currentCategory = 'All';
         window.selectedCourseToPay = null;
 
+        // Close profile dropdown when clicking outside
         document.addEventListener('click', function(e) {
             if (!e.target.closest('#profile-menu-container')) {
                 const dropdown = document.getElementById('profile-dropdown');
@@ -586,7 +616,7 @@
             }
         });
 
-        // 💡 THE UPDATED AUTH LOGIC (Dashboard button removed from dropdown, replaced by Email)
+        // 💡 100% የጠራ የ Auth Logic
         onAuthStateChanged(auth, async (user) => {
             document.getElementById('main-body').classList.remove('hidden');
             const navAuthBtns = document.getElementById('nav-auth-buttons');
@@ -624,30 +654,6 @@
                             </div>
                         `;
                     }
-                    
-                    // Handle Mobile Auth Menu safely
-                    let mobileMenuAuth = document.getElementById('mobile-auth-container');
-                    if(!mobileMenuAuth) {
-                        const mobileContainer = document.querySelector('#mobile-menu .px-4.pt-2.pb-6');
-                        if(mobileContainer) {
-                            const hr = mobileContainer.querySelector('hr:last-of-type');
-                            if (hr) {
-                                const newDiv = document.createElement('div');
-                                newDiv.id = 'mobile-auth-container';
-                                hr.after(newDiv);
-                                mobileMenuAuth = newDiv;
-                                const btns = mobileContainer.querySelectorAll('button:not([onclick*="Theme"]):not([onclick*="AuthMode"])');
-                                btns.forEach(b => { if(b.innerText.includes('ግባ') || b.innerText.includes('አዲስ')) b.remove(); });
-                            }
-                        }
-                    }
-                    if (mobileMenuAuth) {
-                        mobileMenuAuth.innerHTML = `
-                            <div class="w-full bg-gray-50 dark:bg-slate-800 text-gray-500 dark:text-gray-400 font-bold text-xs py-3 rounded-lg mt-2 shadow-sm border border-gray-200 dark:border-slate-700 flex items-center justify-center gap-2 truncate px-4"><i class="fa-solid fa-envelope text-secondary dark:text-primary"></i> ${user.email}</div>
-                            <button onclick="window.logoutUser()" class="w-full text-danger font-bold py-2.5 hover:bg-red-50 dark:hover:bg-slate-800 rounded-lg border border-danger/30 transition mt-2 flex items-center justify-center gap-2"><i class="fa-solid fa-power-off"></i> መውጫ (Logout)</button>
-                        `;
-                    }
-
                     await fetchUserEnrollments(user.uid);
                 } else {
                     window.currentUser = null;
@@ -663,28 +669,6 @@
                             <button onclick="window.openAuthModal(true)" class="bg-primary text-dark px-3 md:px-5 py-2 md:py-2.5 rounded-lg font-bold hover:bg-yellow-400 transition shadow-md btn-glow whitespace-nowrap text-sm shrink-0">አዲስ ይመዝገቡ</button>
                         `;
                     }
-                    
-                    let mobileMenuAuth = document.getElementById('mobile-auth-container');
-                    if(!mobileMenuAuth) {
-                        const mobileContainer = document.querySelector('#mobile-menu .px-4.pt-2.pb-6');
-                        if(mobileContainer) {
-                            const hr = mobileContainer.querySelector('hr:last-of-type');
-                            if (hr) {
-                                const newDiv = document.createElement('div');
-                                newDiv.id = 'mobile-auth-container';
-                                hr.after(newDiv);
-                                mobileMenuAuth = newDiv;
-                                const btns = mobileContainer.querySelectorAll('button:not([onclick*="Theme"]):not([onclick*="AuthMode"])');
-                                btns.forEach(b => { if(b.innerText.includes('ግባ') || b.innerText.includes('አዲስ')) b.remove(); });
-                            }
-                        }
-                    }
-                    if (mobileMenuAuth) {
-                        mobileMenuAuth.innerHTML = `
-                            <button onclick="window.openAuthModal(false)" class="w-full text-secondary dark:text-primary font-bold py-2.5 hover:bg-gray-50 dark:hover:bg-slate-800 rounded-lg border border-secondary dark:border-primary transition mt-2">ግባ (Login)</button>
-                            <button onclick="window.openAuthModal(true)" class="w-full bg-primary text-dark font-bold py-2.5 rounded-lg mt-2 shadow-md hover:bg-yellow-400 transition">አዲስ ይመዝገቡ</button>
-                        `;
-                    }
                 }
                 
                 await fetchAllCourses();
@@ -692,6 +676,7 @@
             } catch (err) {
                 console.error(err);
             } finally {
+                // Loader unconditionally removed to fix UI freezing
                 const loader = document.getElementById('screen-loader');
                 if(loader) {
                     loader.style.display = 'none';
@@ -751,6 +736,7 @@
                 const priceText = isFree ? 'ነፃ (Free)' : `${Number(c.price).toLocaleString()} ብር`;
                 const isEnrolled = window.userEnrollments.includes(c.id);
                 
+                // Smart Category Detection
                 let displayCat = c.category;
                 if (!displayCat) {
                     const t = (c.title || '').toLowerCase();
@@ -764,6 +750,7 @@
                 let btnHtml = '';
                 let badgeHtml = '';
 
+                // Course Card Logic Based on User Enrollments
                 if (isEnrolled) {
                     badgeHtml = `<div class="absolute top-4 right-4 bg-primary text-dark text-[10px] font-black uppercase px-3 py-1.5 rounded-lg shadow-lg z-10"><i class="fa-solid fa-check-circle"></i> የኔ ኮርስ</div>`;
                     btnHtml = `<button onclick="window.safeRedirect('dashboard.html')" class="w-full bg-gray-200 dark:bg-slate-600 hover:bg-primary dark:hover:bg-primary text-gray-800 dark:text-white hover:text-dark dark:hover:text-dark py-3.5 rounded-xl font-black transition flex items-center justify-center gap-2 shadow-sm border border-gray-300 dark:border-slate-500">ወደ መማሪያ ክፍል (Dashboard) <i class="fa-solid fa-arrow-right"></i></button>`;
@@ -772,6 +759,7 @@
                     btnHtml = `<button onclick="window.enrollFreeCourse('${c.id}')" class="w-full bg-success hover:bg-green-600 text-white py-3.5 rounded-xl font-black transition shadow-md flex items-center justify-center gap-2">በነፃ ጀምር <i class="fa-solid fa-unlock"></i></button>`;
                 } else {
                     badgeHtml = `<div class="absolute top-3 right-3 bg-primary text-dark text-[10px] font-black uppercase px-3 py-1.5 rounded-lg shadow-md z-10"><i class="fa-solid fa-star mr-1"></i> ፕሪሚየም</div>`;
+                    // Updated Paid Button Color to Primary (Gold)
                     btnHtml = `<button onclick="window.openPaymentModal('${c.id}')" class="w-full bg-primary hover:bg-yellow-400 text-dark py-3.5 rounded-xl font-black transition shadow-md flex items-center justify-center gap-2">ኮርሱን ግዛ <i class="fa-solid fa-cart-shopping"></i></button>`;
                 }
 
