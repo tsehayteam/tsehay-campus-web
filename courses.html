@@ -336,7 +336,7 @@
         import { getFirestore, collection, getDocs, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // ✅ Firebase Key (በትልቁ L የተስተካከለ)
-        const firebaseConfig = { apiKey: "AIzaSyDCxlwfYAS_I0D7c-8e-iB-Y-Rh2ZZoHZw", authDomain: "tsehaycampus-e1a6d.firebaseapp.com", projectId: "tsehaycampus-e1a6d", storageBucket: "tsehaycampus-e1a6d.firebasestorage.app", messagingSenderId: "1043616909865", appId: "1:1043616909865:web:9ecca7d9a14deef0f5ea38" };
+        const firebaseConfig = { apiKey: "AIzaSyDCxLwfYAS_I0D7c-8e-iB-Y-Rh2ZZoHZw", authDomain: "tsehaycampus-e1a6d.firebaseapp.com", projectId: "tsehaycampus-e1a6d", storageBucket: "tsehaycampus-e1a6d.firebasestorage.app", messagingSenderId: "1043616909865", appId: "1:1043616909865:web:9ecca7d9a14deef0f5ea38" };
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
@@ -495,12 +495,21 @@
                     badgeHtml = `<div class="absolute top-4 right-4 bg-primary text-dark text-[10px] font-black uppercase px-3 py-1.5 rounded-lg shadow-lg z-10"><i class="fa-solid fa-check-circle"></i> የኔ ኮርስ</div>`;
                     btnHtml = `<button onclick="window.safeRedirect('dashboard.html')" class="w-full bg-gray-100 dark:bg-slate-700 hover:bg-primary dark:hover:bg-primary hover:text-dark text-gray-700 dark:text-gray-300 py-3.5 rounded-xl font-black transition flex items-center justify-center gap-2">ወደ መማሪያ ክፍል (Dashboard) <i class="fa-solid fa-arrow-right"></i></button>`;
                 } else if (isFree) {
-                    badgeHtml = `<div class="absolute top-4 right-4 bg-success text-white text-[10px] font-black uppercase px-3 py-1.5 rounded-lg shadow-lg z-10 animate-pulse">ነፃ ኮርስ (Free)</div>`;
+                    badgeHtml = `<div class="absolute top-3 right-3 bg-success text-white text-[10px] font-black uppercase px-3 py-1.5 rounded-lg shadow-md z-10 animate-pulse"><i class="fa-solid fa-gift mr-1"></i> ነፃ ኮርስ</div>`;
                     btnHtml = `<button onclick="window.enrollFreeCourse('${c.id}')" class="w-full bg-success hover:bg-green-600 text-white py-3.5 rounded-xl font-black transition shadow-md flex items-center justify-center gap-2">በነፃ ጀምር <i class="fa-solid fa-unlock"></i></button>`;
                 } else {
-                    badgeHtml = `<div class="absolute top-4 right-4 bg-primary text-dark text-[10px] font-black uppercase px-3 py-1.5 rounded-lg shadow-lg z-10">Premium (ክፍያ)</div>`;
+                    badgeHtml = `<div class="absolute top-3 right-3 bg-primary text-dark text-[10px] font-black uppercase px-3 py-1.5 rounded-lg shadow-md z-10"><i class="fa-solid fa-star mr-1"></i> ፕሪሚየም</div>`;
                     btnHtml = `<button onclick="window.openPaymentModal('${c.id}')" class="w-full bg-secondary hover:bg-blue-800 text-white py-3.5 rounded-xl font-black transition shadow-md flex items-center justify-center gap-2">ኮርሱን ግዛ <i class="fa-solid fa-cart-shopping"></i></button>`;
                 }
+
+                // NEW OLD PRICE LOGIC
+                let oldPriceHtml = (!isFree && c.oldPrice) ? `<span class="text-xs text-gray-400 line-through font-bold ml-2">${Number(c.oldPrice).toLocaleString()} ብር</span>` : '';
+                
+                // NEW LEVEL LOGIC
+                let levelText = c.level || 'ጀማሪ';
+                let shortDesc = c.desc ? c.desc : 'ስለዚህ ኮርስ ተጨማሪ ማብራሪያ ለማግኘት ይመልከቱ...';
+                let durationInfo = c.duration || '00:00:00';
+                let lessonsCount = c.lessons ? c.lessons.length : 0;
 
                 grid.innerHTML += `
                     <div class="course-card bg-white dark:bg-slate-800 rounded-[2rem] overflow-hidden shadow-sm border border-gray-100 dark:border-slate-700 flex flex-col h-full">
@@ -515,15 +524,19 @@
                         <div class="p-6 flex flex-col flex-grow">
                             <h3 class="font-black text-xl mb-2 text-dark dark:text-white leading-snug line-clamp-2">${c.title}</h3>
                             <p class="text-xs text-gray-500 font-bold mb-4 flex items-center gap-2"><i class="fa-solid fa-chalkboard-user text-secondary dark:text-primary"></i> ${c.instructor || 'Tsehay Campus'}</p>
-                            <p class="text-[14px] text-gray-600 dark:text-gray-400 mb-6 line-clamp-3 leading-relaxed">${c.desc || 'ምንም ማብራሪያ አልተጻፈም።'}</p>
                             
-                            <div class="mt-auto pt-5 border-t border-gray-100 dark:border-slate-700">
-                                <div class="flex justify-between items-center mb-5">
-                                    <span class="font-black text-2xl ${isFree ? 'text-success' : 'text-dark dark:text-white'}">${priceText}</span>
-                                    <div class="flex gap-3 text-xs font-bold text-gray-400">
-                                        <span title="የኮርሱ ርዝመት" class="bg-gray-50 dark:bg-slate-900 px-2.5 py-1.5 rounded-md border border-gray-200 dark:border-slate-700 flex items-center gap-1.5"><i class="fa-regular fa-clock text-secondary dark:text-primary"></i> ${c.duration || '00:00'}</span>
-                                        <span title="ክፍሎች" class="bg-gray-50 dark:bg-slate-900 px-2.5 py-1.5 rounded-md border border-gray-200 dark:border-slate-700 flex items-center gap-1.5"><i class="fa-solid fa-list-ul text-primary"></i> ${c.lessons ? c.lessons.length : 0} ክፍሎች</span>
-                                    </div>
+                            <p class="text-[14px] text-gray-600 dark:text-gray-400 mb-6 line-clamp-3 leading-relaxed">${shortDesc}</p>
+                            
+                            <div class="flex flex-wrap items-center gap-2 mb-5 mt-auto">
+                                <span class="bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-300 text-[11px] font-bold px-2.5 py-1.5 rounded-md flex items-center gap-1.5"><i class="fa-regular fa-clock text-secondary dark:text-primary"></i> ${durationInfo}</span>
+                                <span class="bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-300 text-[11px] font-bold px-2.5 py-1.5 rounded-md flex items-center gap-1.5"><i class="fa-solid fa-list-ul text-primary"></i> ${lessonsCount} ክፍሎች</span>
+                                <span class="bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-gray-300 text-[11px] font-bold px-2.5 py-1.5 rounded-md flex items-center gap-1.5"><i class="fa-solid fa-signal text-warning"></i> ${levelText}</span>
+                            </div>
+
+                            <div class="pt-4 border-t border-gray-100 dark:border-slate-700 flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <span class="font-black text-xl ${isFree ? 'text-success' : 'text-dark dark:text-white'}">${priceText}</span>
+                                    ${oldPriceHtml}
                                 </div>
                                 ${btnHtml}
                             </div>
