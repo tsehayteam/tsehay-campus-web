@@ -1,6 +1,6 @@
 /**
- * TSEHAY CAMPUS - Dual-Free AI Backend
- * Gemini (free tier) + Groq (always free) – የትኛውም ከሰራ ያመጣል
+ * TSEHAY CAMPUS - Gemini Free-Tier ONLY
+ * ምንም ቢሊንግ አያስፈልግም፤ ነፃ የጂሚኒ ሞዴሎች ብቻ
  */
 module.exports = async function(req, res) {
   res.setHeader('Access-Control-Allow-Credentials', true);
@@ -25,64 +25,43 @@ module.exports = async function(req, res) {
       ? `System Instruction: ${systemInstruction}\n\nUser Question: ${prompt}` 
       : prompt;
 
-    const geminiKey = (process.env.GEMINI_API_KEY || '').trim();
-    const groqKey = (process.env.GROQ_API_KEY || '').trim();
+    const apiKey = (process.env.GEMINI_API_KEY || '').trim();
+    if (!apiKey) return sendFriendly('የ Gemini API Key አልተገኘም።');
 
-    // 1. Gemini (ነፃ ሞዴሎች ብቻ)
-    if (geminiKey) {
-      const freeModels = [
-        "gemini-1.5-flash-latest",    // ምርጡ ነፃ
-        "gemini-2.0-flash-lite",      // አዲስ ፈጣን
-        "gemini-1.5-flash"            // ለስላሳ
-      ];
-      for (const model of freeModels) {
-        try {
-          const url = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${geminiKey}`;
-          const resp = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts: [{ text: combinedText }] }] })
-          });
-          const data = await resp.json();
-          if (resp.ok && data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
-            let aiText = data.candidates[0].content.parts[0].text;
-            // ባዶ ወይም ያልተለመደ ጽሑፍ ካልሆነ
-            if (aiText.trim().length > 20 && !aiText.includes("Всё тело:")) {
-              data.candidates[0].content.parts[0].text = "✨ [Gemini]\n\n" + aiText;
-              return res.status(200).json(data);
-            }
+    // ✅ ነፃ የጂሚኒ ሞዴሎች (free tier) – ሁሌም በ v1 ስሪት ይጠቀሙ
+    const freeModels = [
+      "gemini-1.5-flash-latest",   // ምርጥ ነፃ
+      "gemini-2.0-flash-lite",     // አዲስ ፈጣን
+      "gemini-1.5-flash"           // ተጠባባቂ
+    ];
+
+    for (const model of freeModels) {
+      try {
+        const url = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${apiKey}`;
+        const resp = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents: [{ parts: [{ text: combinedText }] }] })
+        });
+
+        const data = await resp.json();
+
+        // Google ስህተት ከሆነ (quota, not found...) → ቀጣዩን ሞዴል ሞክር
+        if (resp.ok && data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
+          const aiText = data.candidates[0].content.parts[0].text;
+          if (aiText.trim().length > 5) { // ትርጉም ያለው ምላሽ
+            data.candidates[0].content.parts[0].text = "✨ [Gemini]\n\n" + aiText;
+            return res.status(200).json(data);
           }
-        } catch (e) { continue; }
+        }
+      } catch (e) {
+        continue;
       }
     }
 
-    // 2. Groq (100% ነፃ ሞዴል)
-    if (groqKey) {
-      try {
-        const groqResp = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Authorization": "Bearer " + groqKey,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            model: "llama-3.3-70b-versatile",
-            messages: [{ role: "user", content: combinedText }]
-          })
-        });
-        const groqData = await groqResp.json();
-        if (groqData.choices && groqData.choices[0]?.message?.content) {
-          return res.status(200).json({
-            candidates: [{ content: { parts: [{ text: "⚡ [Groq AI]\n\n" + groqData.choices[0].message.content }] } }]
-          });
-        }
-      } catch (e) {}
-    }
-
-    // ሁለቱም ካልቻሉ
+    // ሁሉም ሞዴሎች ከሳሳቱ
     return sendFriendly(
-      "የ AI አገልግሎቱን ለጊዜው ማግኘት አልተቻለም። " +
-      "እባክዎ ቆይተው ይሞክሩ ወይም በ info@tsehaycampus.com ያግኙን።"
+      "ለጊዜው AI ማግኘት አልተቻለም። እባክዎ ቆይተው ይሞክሩ (ነፃ ኮታ በየ24 ሰዓቱ ይታደሳል)።"
     );
 
   } catch (err) {
