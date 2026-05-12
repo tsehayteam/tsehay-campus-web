@@ -8,49 +8,63 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
 
   try {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) return res.status(500).json({ error: "Vercel ላይ API Key አልገባም!" });
+    // 1. API Key ን ከ Vercel አምጥተን እናጸዳዋለን (Space ወይም Quote ካለው ያጠፋዋል)
+    let apiKey = process.env.GEMINI_API_KEY || "";
+    apiKey = apiKey.trim().replace(/^["']|["']$/g, '');
+
+    if (!apiKey) {
+        return res.status(500).json({ error: "Vercel ላይ API Key አልገባም!" });
+    }
 
     const { prompt, systemInstruction } = req.body;
     
-    // 💡 ጓደኛህ በቴሌግራም የላከልህ የ "Payload አወቃቀር" መፍትሄ ይሄ ነው!
-    // አንዳንዴ Google የ systemInstruction አወቃቀርን አይቀበልም። ስለዚህ ጥያቄውን እና መመሪያውን እናዋህደዋለን።
+    // 2. መመሪያውን እና ጥያቄውን በአንድ ላይ እናዋህዳለን (Payload Fix)
     const combinedPrompt = systemInstruction 
         ? `መመሪያ: ${systemInstruction}\n\nጥያቄ: ${prompt}`
         : prompt;
 
     const payload = {
-        contents: [{ parts: [{ text: combinedPrompt }] }]
+        contents: [{ 
+            role: "user", 
+            parts: [{ text: combinedPrompt }] 
+        }]
     };
 
-    // 1. መጀመሪያ በ "gemini-1.5-flash" እንሞክራለን
-    let apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-    
-    let response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
+    // 3. እምቢ ካለ የሚሞክራቸው የተለያዩ የ API Endpoints (v1beta እና v1 ን ያካትታል)
+    const endpointsToTry = [
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=${apiKey}`
+    ];
 
-    let data = await response.json();
+    let lastError = "ያልታወቀ ስህተት";
 
-    // 2. እምቢ ካለ (Error ካመጣ) ወደ አስተማማኙ "gemini-pro" አውቶማቲክ ይቀይራል
-    if (!response.ok) {
-        apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`;
-        response = await fetch(apiUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        data = await response.json();
+    // 4. የሚሰራውን ሞዴል እና ቨርዥን እስኪያገኝ አንድ በአንድ ይሞክራል
+    for (const apiUrl of endpointsToTry) {
+        try {
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.candidates) {
+                return res.status(200).json(data); // 🟢 በትክክል ሰርቷል፣ መልሱን ለዌብሳይቱ ይሰጣል
+            } else {
+                lastError = data.error?.message || "ሞዴሉ አልተገኘም";
+            }
+        } catch (err) {
+            lastError = err.message;
+        }
     }
-    
-    // 3. ሁለቱም እምቢ ካሉ ብቻ ስህተቱን ለተጠቃሚው ያሳውቃል
-    if (!response.ok) {
-        return res.status(500).json({ error: data.error?.message || "የ Gemini API ስህተት አጋጥሟል" });
-    }
 
-    return res.status(200).json(data);
+    // 🔴 ሁሉም Endpoints እምቢ ካሉ ብቻ ስህተቱን ያሳውቃል
+    return res.status(500).json({ error: `ሁሉም ሞዴሎች እምቢ ብለዋል! የመጨረሻ ስህተት: ${lastError}` });
+
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }
