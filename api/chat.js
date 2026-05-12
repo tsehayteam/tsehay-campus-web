@@ -13,8 +13,8 @@ export default async function handler(req, res) {
 
     const { prompt, systemInstruction } = req.body;
     
-    // 💡 እዚህ ጋር የሞዴሉን ስም ወደ "gemini-1.5-flash-latest" ቀይረነዋል
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
+    // 💡 እዚህ ጋር የሞዴሉን ስም ወደ ትክክለኛው "gemini-1.5-flash" ቀይረነዋል
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
     const response = await fetch(apiUrl, {
       method: 'POST',
