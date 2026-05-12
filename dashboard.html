@@ -195,6 +195,7 @@
         .goog-logo-link { display: none !important; }
         .goog-te-gadget { color: transparent !important; font-size: 0px !important; }
     </style>
+    <!-- Northern Sotho UI Guard: E netefatsa gore dikarolo tša khoutu di latela melao (Language compliance check) -->
 </head>
 <body class="text-dark dark:text-gray-100 antialiased h-screen flex overflow-hidden relative bg-bodyBg dark:bg-slate-900 transition-colors duration-300 hidden" id="main-body">
 
@@ -232,7 +233,7 @@
             <a href="#" onclick="document.getElementById('ai-widget').classList.remove('translate-y-full', 'opacity-0'); return false;" class="sidebar-link flex items-center gap-3 px-4 py-3 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 hover:text-dark dark:hover:text-white rounded-lg font-semibold transition">
                 <i class="fa-solid fa-wand-magic-sparkles text-lg w-5 text-center text-primary"></i> Tsehay AI
             </a>
-            <a href="#" onclick="window.switchMainView('course-view', document.querySelector('.sidebar-link')); window.switchTab(null, 'certificate'); return false;" class="sidebar-link flex items-center gap-3 px-4 py-3 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 hover:text-dark dark:hover:text-white rounded-lg font-semibold transition">
+            <a href="#" onclick="window.switchMainView('course-view', document.querySelector('.sidebar-link')); window.switchTab(event, 'certificate'); return false;" class="sidebar-link flex items-center gap-3 px-4 py-3 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 hover:text-dark dark:hover:text-white rounded-lg font-semibold transition">
                 <i class="fa-solid fa-certificate text-lg w-5 text-center"></i> ሰርተፍኬቶች
             </a>
             <a href="#" onclick="window.switchMainView('settings-view', this); return false;" class="sidebar-link flex items-center gap-3 px-4 py-3 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 hover:text-dark dark:hover:text-white rounded-lg font-semibold transition">
@@ -376,13 +377,8 @@
                                         
                                         <div class="mt-6 border-t border-gray-100 dark:border-slate-700 pt-6">
                                             <h3 class="font-black text-lg text-dark dark:text-white mb-4 font-heading">ዳውንሎድ የሚደረጉ ማቴሪያሎች</h3>
-                                            <div class="flex flex-wrap gap-4">
-                                                <button class="flex items-center gap-3 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 px-4 py-2.5 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-600 transition shadow-sm font-bold text-sm text-gray-700 dark:text-gray-300">
-                                                    <i class="fa-solid fa-file-excel text-success text-lg"></i> የዋጋ ማስያ ፎርማት
-                                                </button>
-                                                <button class="flex items-center gap-3 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 px-4 py-2.5 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-600 transition shadow-sm font-bold text-sm text-gray-700 dark:text-gray-300">
-                                                    <i class="fa-solid fa-file-pdf text-danger text-lg"></i> ማርኬቲንግ PDF
-                                                </button>
+                                            <div class="flex flex-wrap gap-4" id="dynamic-course-materials">
+                                                <!-- Dynamic Content Based on Course -->
                                             </div>
                                         </div>
                                     </div>
@@ -479,7 +475,7 @@
                                                 <i class="fa-solid fa-robot text-5xl text-primary animate-pulse"></i>
                                             </div>
                                             <h4 class="text-xl font-black text-dark dark:text-white mb-2 font-heading">ለ <span id="quiz-course-name" class="text-secondary dark:text-primary">ኮርሱ</span> ፈተና ይውሰዱ</h4>
-                                            <p class="text-gray-500 dark:text-gray-400 text-sm mb-8 max-w-md mx-auto">Tsehay AI የዚህን ኮርስ ይዘት በማንበብ አሁን አዳዲስ ጥያቄዎችን ያዘጋጅልዎታል።</p>
+                                            <p class="text-gray-500 dark:text-gray-400 text-sm mb-8 max-w-md mx-auto">Tsehay AI የዚህን ኮርስ ይዘት በማንበብ አሁን 15 አዳዲስ ጥያቄዎችን ያዘጋጅልዎታል።</p>
                                             
                                             <button onclick="window.generateAndStartQuiz()" id="start-quiz-btn" class="bg-primary text-dark px-10 py-3.5 rounded-xl font-black shadow-lg hover:bg-yellow-400 hover:shadow-xl hover:-translate-y-1 transition-all flex items-center justify-center gap-3 mx-auto">
                                                 ፈተናውን ጀምር <i class="fa-solid fa-play"></i>
@@ -582,7 +578,7 @@
                                                                 
                                                                 <div class="text-center z-20">
                                                                     <p class="font-script text-4xl text-dark border-b border-black pb-1 px-4">Habtamu A.</p>
-                                                                    <p class="text-xs text-gray-500 font-bold uppercase mt-2 tracking-widest">CEO & Lead Instructor</p>
+                                                                    <p class="text-xs text-gray-500 font-bold uppercase mt-2 tracking-widest">Co-Founder</p>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -854,7 +850,7 @@
             const file = event.target.files[0];
             if(!file) return;
             if(!file.type.match('image.*')) {
-                window.showCloudSaveToast("እባክዎ ፎቶ ብቻ ያስገቡ!"); return;
+                window.showCloudSaveToast("እባክዎ ፎቶ ብቻ ያስገቡ!", true); return;
             }
 
             const reader = new FileReader();
@@ -898,7 +894,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut, updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential, sendPasswordResetEmail, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, deleteDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'tsehaycampus-e1a6d';
         
@@ -1007,8 +1003,8 @@
             const toast = document.getElementById("toast");
             if(!toast) return;
             toast.innerHTML = `<i class="fa-solid ${isError ? 'fa-triangle-exclamation' : 'fa-cloud-arrow-up'} mr-2"></i> ${msg}`;
-            toast.className = isError ? "show bg-danger" : "show";
-            setTimeout(() => { toast.className = toast.className.replace("show", "").replace("bg-danger", ""); }, 3000);
+            toast.className = isError ? "show bg-danger border-red-500" : "show";
+            setTimeout(() => { toast.className = toast.className.replace("show", "").replace("bg-danger", "").replace("border-red-500", ""); }, 3000);
         }
 
         function createNotification(title, desc) {
@@ -1032,7 +1028,7 @@
                 list.innerHTML = '<div class="text-center py-10 text-gray-400">ምንም ማሳወቂያ የለም</div>'; return;
             }
             list.innerHTML = systemNotifications.map(n => `
-                <div class="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-secondary dark:border-primary p-4 rounded-r-xl flex gap-4 items-start shadow-sm">
+                <div class="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-secondary dark:border-primary p-4 rounded-r-xl flex gap-4 items-start shadow-sm mb-2">
                     <div class="w-10 h-10 rounded-full bg-secondary/10 dark:bg-primary/10 flex items-center justify-center text-secondary dark:text-primary shrink-0"><i class="fa-solid fa-bell text-lg"></i></div>
                     <div>
                         <h4 class="font-bold text-dark dark:text-white">${n.title}</h4>
@@ -1087,15 +1083,8 @@
             if(settingsPhotoBase64) settingsPhotoBase64.value = user.photoURL || '';
             
             loadUserData();
-            
-            const loader = document.getElementById('screen-loader');
-            if(loader) {
-                loader.style.opacity = '0';
-                setTimeout(() => loader.style.display = 'none', 300);
-            }
         });
 
-        // UPDATE PROFILE & SETTINGS
         window.saveProfile = async function() {
             if(!userId) return;
             const newName = document.getElementById('settings-name').value.trim();
@@ -1163,10 +1152,14 @@
             }
         };
 
-        // 💡 ሎድ የሚደረገው ኮርስ (Specific Course Loading Logic)
         window.loadCourse = function(courseId) {
             const c = allCourses.find(course => course.id === courseId);
-            if (!c) return;
+            const videoContainer = document.getElementById('video-container');
+            
+            if (!c) {
+                if(videoContainer) videoContainer.innerHTML = `<div class="video-wrapper"><div class="absolute inset-0 flex items-center justify-center bg-gray-900 text-white"><p>ኮርሱ አልተገኘም ወይም አይገኝም</p></div></div>`;
+                return;
+            }
 
             currentCourseId = c.id;
             if(c.aiPrompt) currentCourseAiPrompt = c.aiPrompt;
@@ -1178,7 +1171,16 @@
             document.getElementById('dynamic-course-desc').innerText = c.desc || "ማብራሪያ የለም።";
             document.getElementById('dynamic-instructor-name').innerText = c.instructor || "Tsehay Campus";
             
-            const videoContainer = document.getElementById('video-container');
+            // Dynamic Downloads
+            const materialsContainer = document.getElementById('dynamic-course-materials');
+            if(materialsContainer) {
+                materialsContainer.innerHTML = `
+                    <button onclick="window.showCloudSaveToast('ፋይሉን ዳውንሎድ በማድረግ ላይ...')" class="flex items-center gap-3 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 px-4 py-2.5 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-600 transition shadow-sm font-bold text-sm text-gray-700 dark:text-gray-300">
+                        <i class="fa-solid fa-file-pdf text-danger text-lg"></i> የ ${c.title} ማጠቃለያ (Syllabus)
+                    </button>
+                `;
+            }
+            
             let finalVideoUrl = c.video;
             if(finalVideoUrl && finalVideoUrl.includes('drive.google.com')) finalVideoUrl = window.getDriveEmbedLink(finalVideoUrl);
             
@@ -1293,6 +1295,19 @@
             window.updateProgressUI();
         }
 
+        function showEmptyCourseState() {
+            document.getElementById('dynamic-course-title').innerText = "ኮርስ አልመረጡም";
+            document.getElementById('dynamic-course-subtitle').innerText = "እባክዎ 'ተጨማሪ ኮርሶች' የሚለውን ተጭነው ኮርስ ይምረጡ።";
+            const vc = document.getElementById('video-container');
+            if(vc) vc.innerHTML = `<div class="video-wrapper"><div class="absolute inset-0 flex flex-col items-center justify-center bg-gray-900 text-white"><i class="fa-solid fa-folder-open text-4xl mb-3 text-gray-600"></i><p class="font-bold">ምንም ኮርስ አልተመዘገቡም</p></div></div>`;
+            
+            const loader = document.getElementById('screen-loader');
+            if(loader) {
+                loader.style.opacity = '0';
+                setTimeout(() => loader.style.display = 'none', 300);
+            }
+        }
+
         function loadUserData() {
             if (!userId) return;
 
@@ -1320,6 +1335,7 @@
                 if(snap.exists()) { totalPoints = snap.data().totalPoints || 0; window.updateProgressUI(); }
             }).catch(e => console.error(e));
 
+            // Load Courses first, THEN match enrollments to stop infinite loaders
             onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'courses'), (snapshot) => {
                 allCourses = [];
                 snapshot.forEach(docSnap => {
@@ -1327,23 +1343,30 @@
                     if (c.status === 'Active') allCourses.push(c);
                 });
                 
-                // Get Enrollments First
                 getDocs(collection(db, 'artifacts', appId, 'users', userId, 'enrollments')).then(snap => {
                     window.userEnrollmentsData = snap.docs.map(d => ({id: d.id, ...d.data()})); 
                     window.userEnrollments = window.userEnrollmentsData.map(d => d.id);
                     
                     window.renderMyCoursesGrid();
                     
-                    // Auto load course logic
-                    if (!currentCourseId && window.userEnrollments.length > 0) {
-                        window.loadCourse(window.userEnrollments[0]);
-                    } else if (currentCourseId) {
+                    // Auto load specific logic to prevent stuck loading
+                    if (currentCourseId) {
                         window.loadCourse(currentCourseId);
-                    } else if (allCourses.length > 0 && window.userEnrollments.length === 0) {
-                        document.getElementById('dynamic-course-title').innerText = "ኮርስ አልመረጡም";
-                        document.getElementById('dynamic-course-subtitle').innerText = "እባክዎ 'ተጨማሪ ኮርሶች' የሚለውን ተጭነው ኮርስ ይምረጡ።";
-                        const vc = document.getElementById('video-container');
-                        if(vc) vc.innerHTML = `<div class="video-wrapper"><div class="absolute inset-0 flex items-center justify-center bg-gray-900 text-white"><p>ምንም ኮርስ የለዎትም</p></div></div>`;
+                    } else if (window.userEnrollments.length > 0) {
+                        const firstValidCourse = window.userEnrollments.find(eId => allCourses.some(ac => ac.id === eId));
+                        if (firstValidCourse) {
+                            window.loadCourse(firstValidCourse);
+                        } else {
+                            showEmptyCourseState();
+                        }
+                    } else {
+                        showEmptyCourseState();
+                    }
+
+                    const loader = document.getElementById('screen-loader');
+                    if(loader) {
+                        loader.style.opacity = '0';
+                        setTimeout(() => loader.style.display = 'none', 300);
                     }
                 });
             }, (error) => console.error(error));
@@ -1361,15 +1384,19 @@
                 } else {
                     notesArray.forEach(note => {
                         let timeStr = new Date(note.timestamp).toLocaleTimeString('am-ET', { hour: '2-digit', minute: '2-digit' });
+                        const safeText = note.text.replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/\n/g, '\\n');
                         list.innerHTML += `
                             <div class="bg-white dark:bg-slate-800 p-5 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm transition group mb-3">
                                 <div class="flex justify-between items-start mb-3">
                                     <button class="bg-secondary/10 dark:bg-primary/10 text-secondary dark:text-primary text-xs font-bold px-2.5 py-1 rounded">
                                         <i class="fa-solid fa-clock"></i> ${timeStr}
                                     </button>
-                                    <button onclick="window.deleteNote('${note.id}')" class="text-gray-400 hover:text-danger" title="አጥፋ"><i class="fa-solid fa-trash"></i></button>
+                                    <div>
+                                        <button onclick="window.editNote('${note.id}', '${safeText}')" class="text-gray-400 hover:text-secondary mr-3" title="አስተካክል"><i class="fa-solid fa-pen"></i></button>
+                                        <button onclick="window.deleteNote('${note.id}')" class="text-gray-400 hover:text-danger" title="አጥፋ"><i class="fa-solid fa-trash"></i></button>
+                                    </div>
                                 </div>
-                                <p class="text-[14px] text-gray-700 dark:text-gray-300 font-body leading-relaxed">${note.text}</p>
+                                <p class="text-[14px] text-gray-700 dark:text-gray-300 font-body leading-relaxed whitespace-pre-wrap">${note.text}</p>
                             </div>`;
                     });
                 }
@@ -1379,6 +1406,15 @@
                 const list = document.getElementById('qa-list');
                 if(!list) return;
                 let qaArray = [];
+                
+                snapshot.docChanges().forEach(change => {
+                    const data = change.doc.data();
+                    if (change.type === 'modified' && data.userId === userId && data.adminReply && !isInitialQALoad) {
+                        createNotification("የአድሚን ምላሽ", `ለጥያቄዎ አድሚን ምላሽ ሰጥቷል!`);
+                    }
+                });
+                isInitialQALoad = false;
+
                 snapshot.forEach(doc => qaArray.push({ id: doc.id, ...doc.data() }));
                 qaArray.sort((a, b) => b.timestamp - a.timestamp);
                 
@@ -1388,6 +1424,13 @@
                 } else {
                     qaArray.forEach(q => {
                         let timeStr = new Date(q.timestamp).toLocaleTimeString('am-ET', { hour: '2-digit', minute: '2-digit' });
+                        let adminReplyHtml = q.adminReply ? `
+                            <div class="mt-3 bg-blue-50 dark:bg-slate-700/50 p-3 rounded-lg border-l-2 border-secondary">
+                                <p class="text-[12px] font-bold text-secondary dark:text-primary mb-1"><i class="fa-solid fa-user-shield"></i> የአድሚን መልስ:</p>
+                                <p class="text-[13px] text-gray-700 dark:text-gray-300 font-body">${q.adminReply}</p>
+                            </div>
+                        ` : '';
+
                         list.innerHTML += `
                             <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-gray-200 dark:border-slate-600 shadow-sm mb-4">
                                 <div class="flex justify-between items-start mb-2">
@@ -1395,13 +1438,14 @@
                                     <span class="text-xs text-gray-400">${timeStr}</span>
                                 </div>
                                 <p class="text-[14px] text-gray-700 dark:text-gray-300 font-body">${q.text}</p>
+                                ${adminReplyHtml}
                             </div>`;
                     });
                 }
             });
         }
+        let isInitialQALoad = true;
 
-        // 💡 100% Correct Filtering for My Courses Tab
         window.renderMyCoursesGrid = function() {
             const container = document.getElementById('my-courses-container');
             if(!container) return;
@@ -1456,8 +1500,14 @@
                     text: input, userId: userId, userName: userName, timestamp: Date.now()
                 });
                 window.showCloudSaveToast('ጥያቄዎ ተልኳል!');
-                createNotification("ጥያቄ ተልኳል", "ጥያቄዎ ወደ አድሚን ተልኳል፣ በቅርቡ ምላሽ ያገኛሉ።");
             } catch(e) { console.error(e); }
+        };
+
+        window.editNoteId = null;
+        window.editNote = function(id, text) {
+            document.getElementById('noteInput').value = text;
+            window.editNoteId = id;
+            document.getElementById('noteInput').focus();
         };
 
         window.saveNote = async function() {
@@ -1466,10 +1516,15 @@
             if(!input.trim()) return;
             document.getElementById('noteInput').value = '';
             
+            const noteId = window.editNoteId || Date.now().toString();
+            window.editNoteId = null;
+
             try {
-                await setDoc(doc(db, 'artifacts', appId, 'users', userId, 'notes', Date.now().toString()), { text: input, timestamp: Date.now() });
+                await setDoc(doc(db, 'artifacts', appId, 'users', userId, 'notes', noteId), { 
+                    text: input, 
+                    timestamp: Date.now() 
+                }, { merge: true });
                 window.showCloudSaveToast();
-                createNotification("ማስታወሻ", "አዲስ የግል ማስታወሻ በተሳካ ሁኔታ አስቀምጠዋል!");
             } catch(e) { console.error(e); }
         };
 
@@ -1479,12 +1534,12 @@
         };
 
         // ========================================================
-        // DYNAMIC AI QUIZ GENERATOR (Fully Connected)
+        // DYNAMIC AI QUIZ GENERATOR
         // ========================================================
         let dynamicQuizData = [];
         let currentQ = 0;
         let userAnswers = {};
-        let quizTotalQuestions = 5;
+        let quizTotalQuestions = 15;
 
         window.generateAndStartQuiz = async function() {
             const btn = document.getElementById('start-quiz-btn');
@@ -1494,9 +1549,9 @@
             loading.classList.remove('hidden');
             loading.classList.add('flex');
 
-            const prompt = `ለ "${currentCourseTitle}" የሚሆን 5 ጥያቄዎች ያሉት (Multiple Choice) ፈተና በአማርኛ አዘጋጅ። 
+            const prompt = `ለ "${currentCourseTitle}" ኮርስ 15 ጥያቄዎች ያሉት (Multiple Choice) ፈተና በአማርኛ አዘጋጅ። ኮርሱ የሚያተኩረው በዚህ ላይ ነው፦ ${currentCourseAiPrompt}።
 እባክህ ምላሽህን በ JSON ፎርማት ብቻ ስጥ። ቅርፁ ይህን መምሰል አለበት፡
-[{"q": "ጥያቄ?","options": ["ሀ", "ለ", "ሐ"],"correct": 1}] (ማሳሰቢያ: correct 0, 1 ወይ 2 ነው)`;
+[{"q": "ጥያቄ?","options": ["ሀ", "ለ", "ሐ", "መ"],"correct": 1}] (ማሳሰቢያ: correct 0, 1, 2 ወይ 3 ነው)`;
             
             try {
                 let response = await callGemini(prompt, "ፕሮፌሽናል ፈተና አዘጋጅ ነህ። ንፁህ JSON ብቻ መልስ።");
@@ -1512,7 +1567,7 @@
                 document.getElementById('quiz-container').classList.remove('hidden');
                 renderDynamicQuestion();
             } catch (error) {
-                alert("የ AI ስህተት አጋጥሟል። እባክዎ API Keyዎን እና ኢንተርኔትዎን ያረጋግጡ።");
+                alert("የ AI ስህተት አጋጥሟል። እባክዎ እንደገና ይሞክሩ።");
                 btn.classList.remove('hidden'); loading.classList.add('hidden'); loading.classList.remove('flex');
             }
         };
@@ -1594,7 +1649,7 @@
                 icon.innerHTML = '<i class="fa-solid fa-xmark"></i>';
                 title.innerText = `ውጤት: ${score}/${quizTotalQuestions}`;
                 title.className = "text-3xl font-black font-heading mb-3 text-danger";
-                desc.innerHTML = `ሰርተፍኬት ለማግኘት ቢያንስ 80% ማምጣት አለብዎት። እባክዎ እንደገና ይሞክሩ።`;
+                desc.innerHTML = `ሰርተፍኬት ለማግኘት ቢያንስ 80% (12 ጥያቄዎችን) ማምጣት አለብዎት። እባክዎ እንደገና ይሞክሩ።`;
                 btns.innerHTML = `<button onclick="window.resetQuiz()" class="bg-dark dark:bg-primary text-white dark:text-dark px-10 py-3.5 rounded-xl font-bold shadow-lg hover:bg-secondary dark:hover:bg-yellow-400 transition hover:-translate-y-1"><i class="fa-solid fa-rotate-right mr-2"></i> ደግመህ ፈተና ውሰድ</button>`;
             }
         };
