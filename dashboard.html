@@ -812,7 +812,11 @@
             let tabToActivate = document.getElementById(tabName);
             if(tabToActivate) tabToActivate.classList.add("active");
             
-            if(evt && evt.currentTarget) evt.currentTarget.classList.add("active");
+            if(evt && evt.currentTarget) {
+                evt.currentTarget.classList.add("active");
+            } else if (tb.length > 0) {
+                tb[0].classList.add("active");
+            }
         };
 
         window.toggleSidebar = function() {
@@ -829,13 +833,14 @@
 
         window.switchMainView = function(viewId, btnElement) {
             document.querySelectorAll('.main-view').forEach(el => el.classList.remove('active'));
-            document.getElementById(viewId).classList.add('active');
+            const targetView = document.getElementById(viewId);
+            if(targetView) targetView.classList.add('active');
 
             document.querySelectorAll('.sidebar-link').forEach(btn => btn.classList.remove('nav-item-active', 'dark:bg-slate-700'));
             if(btnElement) btnElement.classList.add('nav-item-active');
 
             const sidebar = document.getElementById('mobile-sidebar');
-            if(window.innerWidth < 1024 && !sidebar.classList.contains('-translate-x-full')) {
+            if(window.innerWidth < 1024 && sidebar && !sidebar.classList.contains('-translate-x-full')) {
                 window.toggleSidebar();
             }
         };
@@ -849,7 +854,7 @@
             const file = event.target.files[0];
             if(!file) return;
             if(!file.type.match('image.*')) {
-                alert("እባክዎ ፎቶ ብቻ ያስገቡ!"); return;
+                window.showCloudSaveToast("እባክዎ ፎቶ ብቻ ያስገቡ!"); return;
             }
 
             const reader = new FileReader();
@@ -869,7 +874,6 @@
                     
                     const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
                     document.getElementById('settings-avatar').src = dataUrl;
-                    document.getElementById('user-avatar-img').src = dataUrl;
                     document.getElementById('settings-photo-base64').value = dataUrl;
                 };
                 img.src = e.target.result;
@@ -878,7 +882,7 @@
         };
     </script>
     
-    <!-- Google Translate Script (For global persistence) -->
+    <!-- Google Translate Script -->
     <script>
         function googleTranslateElementInit() {
             new google.translate.TranslateElement({
@@ -911,7 +915,6 @@
         window.auth = getAuth(app); 
         const db = getFirestore(app);
 
-        // Safe Redirect Wrapper
         window.safeRedirect = function(target) {
             try {
                 if (window.location.protocol === 'blob:' || window.location.origin === 'null') {
@@ -929,7 +932,6 @@
             }
         };
 
-        // Strict Auth Init
         const initAuth = async () => {
             try {
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
@@ -939,7 +941,6 @@
         };
         initAuth();
 
-        // Global State Variables
         let totalPoints = 0; 
         let currentCourseId = null;
         let courseCompletedLessons = 0;
@@ -951,7 +952,6 @@
         let allCourses = [];
         let systemNotifications = [];
 
-        // Google Drive Video Formatter
         window.getDriveEmbedLink = function(url) {
             if(!url) return null;
             const driveRegex = /https:\/\/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/;
@@ -962,7 +962,6 @@
             return url;
         }
 
-        // Gemini AI Call (Robust with Backoff) - Secured Backend Integration
         async function callGemini(prompt, systemInstruction) {
             const delays = [1000, 2000, 4000, 8000, 16000];
             for (let i = 0; i < 5; i++) {
@@ -977,7 +976,6 @@
                         });
                         if (!response.ok) throw new Error('Vercel API Failed');
                     } catch (e) {
-                        // Fallback API if backend fails
                         const apiKey = ""; 
                         response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
                             method: 'POST',
@@ -992,15 +990,10 @@
                     if (!response.ok) throw new Error('API Error');
                     const data = await response.json();
                     
-                    if (data.error) {
-                        return "የ API ስህተት: " + (data.error.message || data.error);
-                    }
+                    if (data.error) return "የ API ስህተት: " + (data.error.message || data.error);
 
                     let cleanResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
-                    
-                    if (cleanResponse) {
-                        return cleanResponse.replace(/[\`]{3}[a-zA-Z]*\n?/gi, '').replace(/[\`]{3}/g, '').trim();
-                    }
+                    if (cleanResponse) return cleanResponse.replace(/[\`]{3}[a-zA-Z]*\n?/gi, '').replace(/[\`]{3}/g, '').trim();
                     return "ምላሽ የለም";
                 } catch (err) { 
                     if (i === 4) return "የቴክኒክ ችግር አጋጥሟል! (Backend API አልተገኘም)። እባክዎ Vercel ላይ ይፈትሹ።";
@@ -1010,11 +1003,12 @@
         }
 
         // --- Toasts & Notifications ---
-        window.showCloudSaveToast = function(msg = 'ወደ ዳታቤዝ ሴቭ ተደርጓል!') {
+        window.showCloudSaveToast = function(msg = 'ወደ ዳታቤዝ ሴቭ ተደርጓል!', isError = false) {
             const toast = document.getElementById("toast");
-            toast.innerHTML = `<i class="fa-solid fa-cloud-arrow-up mr-2"></i> ${msg}`;
-            toast.className = "show";
-            setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 3000);
+            if(!toast) return;
+            toast.innerHTML = `<i class="fa-solid ${isError ? 'fa-triangle-exclamation' : 'fa-cloud-arrow-up'} mr-2"></i> ${msg}`;
+            toast.className = isError ? "show bg-danger" : "show";
+            setTimeout(() => { toast.className = toast.className.replace("show", "").replace("bg-danger", ""); }, 3000);
         }
 
         function createNotification(title, desc) {
@@ -1061,7 +1055,7 @@
             window.clearMessageBadge();
         }
 
-        // Firebase Auth State (Strict Guard)
+        // Firebase Auth State
         onAuthStateChanged(window.auth, (user) => {
             if (!user || user.isAnonymous) {
                 window.safeRedirect('index.html');
@@ -1076,6 +1070,8 @@
             
             const userNameDisplay = document.getElementById('user-name-display');
             if(userNameDisplay) userNameDisplay.innerText = userName;
+            const navUserName = document.getElementById('nav-user-name');
+            if(navUserName) navUserName.innerText = userName;
             const userRoleDisplay = document.getElementById('user-role-display');
             if(userRoleDisplay) userRoleDisplay.innerText = "Pro Member";
             const userAvatarImg = document.getElementById('user-avatar-img');
@@ -1092,7 +1088,6 @@
             
             loadUserData();
             
-            // Disable loader gracefully
             const loader = document.getElementById('screen-loader');
             if(loader) {
                 loader.style.opacity = '0';
@@ -1121,22 +1116,24 @@
 
                 userName = newName;
                 document.getElementById('user-name-display').innerText = newName;
+                document.getElementById('nav-user-name').innerText = newName;
                 
                 const displayPhoto = newPhotoBase64 || `https://ui-avatars.com/api/?name=${encodeURIComponent(newName)}&background=0f172a&color=fff`;
                 document.getElementById('user-avatar-img').src = displayPhoto;
+                document.getElementById('settings-avatar').src = displayPhoto;
                 
                 window.showCloudSaveToast('የግል መረጃዎ በተሳካ ሁኔታ ተስተካክሏል!');
                 createNotification('ፕሮፋይል ማስተካከያ', 'የግል መረጃዎ በተሳካ ሁኔታ ታድሷል።');
-            } catch(e) { alert('ስህተት: ' + e.message); }
+            } catch(e) { window.showCloudSaveToast('ስህተት: ' + e.message, true); }
         };
 
         window.changeUserPassword = async function() {
-            if(!window.auth.currentUser || window.auth.currentUser.isAnonymous) return window.showCloudSaveToast('ይህ አካውንት አኖኒመስ ነው።');
+            if(!window.auth.currentUser || window.auth.currentUser.isAnonymous) return window.showCloudSaveToast('ይህ አካውንት አኖኒመስ ነው።', true);
             const currentPwd = document.getElementById('settings-current-pwd').value;
             const newPwd = document.getElementById('settings-new-pwd').value;
             
-            if(!currentPwd || !newPwd) return window.showCloudSaveToast('እባክዎ ፓስወርዶቹን ያስገቡ');
-            if(newPwd.length < 6) return window.showCloudSaveToast('አዲሱ ፓስወርድ ቢያንስ 6 ፊደል መሆን አለበት');
+            if(!currentPwd || !newPwd) return window.showCloudSaveToast('እባክዎ ፓስወርዶቹን ያስገቡ', true);
+            if(newPwd.length < 6) return window.showCloudSaveToast('አዲሱ ፓስወርድ ቢያንስ 6 ፊደል መሆን አለበት', true);
 
             try {
                 const credential = EmailAuthProvider.credential(window.auth.currentUser.email, currentPwd);
@@ -1144,9 +1141,10 @@
                 await updatePassword(window.auth.currentUser, newPwd);
                 
                 window.showCloudSaveToast('ፓስወርድዎ በተሳካ ሁኔታ ተቀይሯል!');
+                createNotification("የደህንነት ማሳወቂያ", "የይለፍ ቃልዎ በተሳካ ሁኔታ ተቀይሯል።");
                 document.getElementById('settings-current-pwd').value = '';
                 document.getElementById('settings-new-pwd').value = '';
-            } catch(e) { window.showCloudSaveToast('ያስገቡት የድሮ ፓስወርድ ትክክል አይደለም።'); }
+            } catch(e) { window.showCloudSaveToast('ያስገቡት የድሮ ፓስወርድ ትክክል አይደለም።', true); }
         };
 
         window.sendPasswordReset = async function() {
@@ -1154,7 +1152,8 @@
             try {
                 await sendPasswordResetEmail(window.auth, window.auth.currentUser.email);
                 window.showCloudSaveToast("የይለፍ ቃል መቀየሪያ ሊንክ ወደ ኢሜልዎ ተልኳል!");
-            } catch(e) { alert('ስህተት: ' + e.message); }
+                createNotification("የደህንነት ማሳወቂያ", "የይለፍ ቃል መቀየሪያ ሊንክ ወደ ኢሜልዎ ተልኳል።");
+            } catch(e) { window.showCloudSaveToast('ስህተት: ' + e.message, true); }
         }
 
         window.handleLogout = async function() {
@@ -1164,34 +1163,67 @@
             }
         };
 
+        // 💡 ሎድ የሚደረገው ኮርስ (Specific Course Loading Logic)
+        window.loadCourse = function(courseId) {
+            const c = allCourses.find(course => course.id === courseId);
+            if (!c) return;
+
+            currentCourseId = c.id;
+            if(c.aiPrompt) currentCourseAiPrompt = c.aiPrompt;
+            currentCourseTitle = c.title;
+            
+            document.getElementById('dynamic-course-title').innerText = c.title;
+            document.getElementById('dynamic-nav-title').innerText = c.title;
+            document.getElementById('quiz-course-name').innerText = c.title;
+            document.getElementById('dynamic-course-desc').innerText = c.desc || "ማብራሪያ የለም።";
+            document.getElementById('dynamic-instructor-name').innerText = c.instructor || "Tsehay Campus";
+            
+            const videoContainer = document.getElementById('video-container');
+            let finalVideoUrl = c.video;
+            if(finalVideoUrl && finalVideoUrl.includes('drive.google.com')) finalVideoUrl = window.getDriveEmbedLink(finalVideoUrl);
+            
+            if(finalVideoUrl) {
+                videoContainer.innerHTML = `
+                <div class="video-wrapper relative" oncontextmenu="return false;">
+                    <iframe src="${finalVideoUrl}" allowfullscreen class="w-full h-full pointer-events-auto"></iframe>
+                    <div class="absolute top-0 left-0 w-full h-20 z-[50] bg-transparent cursor-default" onmousedown="return false;" onclick="return false;" title="Protected Content"></div>
+                </div>`;
+            } else {
+                videoContainer.innerHTML = `<div class="video-wrapper"><div class="absolute inset-0 flex items-center justify-center bg-gray-900 text-white"><p>ቪዲዮ አልተገኘም</p></div></div>`;
+            }
+
+            getDoc(doc(db, 'artifacts', appId, 'users', userId, 'progress', currentCourseId)).then(snap => {
+                courseCompletedLessons = snap.exists() ? (snap.data().completedLessons || 0) : 0;
+                renderCourseLessons(c);
+            });
+
+            window.switchMainView('course-view', document.querySelectorAll('.sidebar-link')[0]);
+            window.switchTab(null, 'overview');
+        };
+
         window.playLesson = async function(element, pointsToAdd, lessonIndex, videoUrl) {
             if(!userId || !currentCourseId) return;
             
-            // Switch video if url exists
             if(videoUrl) {
                 const videoContainer = document.getElementById('video-container');
                 let finalVideoUrl = videoUrl;
                 if(finalVideoUrl.includes('drive.google.com')) finalVideoUrl = window.getDriveEmbedLink(finalVideoUrl);
                 
-                // 💡 INVISIBLE SHIELD AND RIGHT-CLICK PREVENTION FOR GOOGLE DRIVE (Increased height to h-20 & added stricter click blocking)
                 videoContainer.innerHTML = `
                 <div class="video-wrapper relative" oncontextmenu="return false;">
                     <iframe src="${finalVideoUrl}" allowfullscreen class="w-full h-full pointer-events-auto"></iframe>
-                    <!-- Anti-Download & Anti-Popout Shield -->
                     <div class="absolute top-0 left-0 w-full h-20 z-[50] bg-transparent cursor-default" onmousedown="return false;" onclick="return false;" title="Protected Content"></div>
                 </div>`;
             }
 
-            // Update UI active state
             document.querySelectorAll('#dynamic-lessons-container .lesson-row').forEach(row => {
                 row.classList.remove('lesson-active', 'bg-blue-50', 'dark:bg-slate-700');
             });
             element.closest('.lesson-row').classList.add('lesson-active', 'bg-blue-50', 'dark:bg-slate-700');
 
             const icon = element.querySelector('.status-icon i');
-            if (icon && icon.classList.contains('fa-circle-check')) return; // Already completed
+            if (icon && icon.classList.contains('fa-circle-check')) return; 
 
-            // Mark as completed
             if(icon) icon.className = "fa-solid fa-circle-check text-success text-sm";
             
             const titleP = element.querySelector('.lesson-title-text');
@@ -1205,6 +1237,7 @@
             
             window.updateProgressUI();
             window.showCloudSaveToast();
+            createNotification("ክፍል ተጠናቋል", `የ ${currentCourseTitle} ኮርስ ትምህርት አጠናቀዋል፣ +${pointsToAdd} ነጥብ አግኝተዋል!`);
             
             try { 
                 await setDoc(doc(db, 'artifacts', appId, 'users', userId, 'progress', 'main'), { totalPoints: totalPoints }, {merge:true}); 
@@ -1235,7 +1268,6 @@
                 const activeClass = isCompleted ? "" : "group";
                 const textStyle = isCompleted ? "text-dark dark:text-white font-bold" : "text-gray-600 dark:text-gray-300 font-medium";
                 
-                // If it's the very first lesson, we make it look active by default if no other is selected
                 const rowActive = index === 0 ? 'lesson-active bg-blue-50 dark:bg-slate-700' : '';
 
                 container.innerHTML += `
@@ -1264,7 +1296,16 @@
         function loadUserData() {
             if (!userId) return;
 
-            // Load Profile settings
+            // Load User Notifications Listener
+            onSnapshot(collection(db, 'artifacts', appId, 'users', userId, 'notifications'), (snapshot) => {
+                snapshot.docChanges().forEach(change => {
+                    if (change.type === 'added') {
+                        const data = change.doc.data();
+                        createNotification(data.title || "ማሳወቂያ", data.message || data.desc || "አዲስ መልዕክት አለዎት");
+                    }
+                });
+            });
+
             getDoc(doc(db, 'artifacts', appId, 'users', userId, 'profile', 'info')).then(snap => {
                 if(snap.exists()) {
                     const data = snap.data();
@@ -1275,62 +1316,38 @@
                 }
             }).catch(e => console.error(e));
 
-            // Load Global Points
             getDoc(doc(db, 'artifacts', appId, 'users', userId, 'progress', 'main')).then(snap => {
                 if(snap.exists()) { totalPoints = snap.data().totalPoints || 0; window.updateProgressUI(); }
             }).catch(e => console.error(e));
 
-            // Fetch All Courses
             onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'courses'), (snapshot) => {
                 allCourses = [];
-                let activeCourseFound = false;
-                
                 snapshot.forEach(docSnap => {
                     const c = { id: docSnap.id, ...docSnap.data() };
-                    if (c.status === 'Active') {
-                        allCourses.push(c);
-                        if (!activeCourseFound) { // Set first active course to player
-                            activeCourseFound = true;
-                            currentCourseId = c.id;
-                            if(c.aiPrompt) currentCourseAiPrompt = c.aiPrompt;
-                            currentCourseTitle = c.title;
-                            
-                            document.getElementById('dynamic-course-title').innerText = c.title;
-                            document.getElementById('dynamic-nav-title').innerText = c.title;
-                            document.getElementById('quiz-course-name').innerText = c.title;
-                            document.getElementById('dynamic-course-desc').innerText = c.desc || "ማብራሪያ የለም።";
-                            document.getElementById('dynamic-instructor-name').innerText = c.instructor || "Tsehay Campus";
-                            
-                            const videoContainer = document.getElementById('video-container');
-                            let finalVideoUrl = c.video;
-                            if(finalVideoUrl && finalVideoUrl.includes('drive.google.com')) finalVideoUrl = window.getDriveEmbedLink(finalVideoUrl);
-                            
-                            if(finalVideoUrl) {
-                                // 💡 INVISIBLE SHIELD AND RIGHT-CLICK PREVENTION FOR INITIAL LOAD
-                                videoContainer.innerHTML = `
-                                <div class="video-wrapper relative" oncontextmenu="return false;">
-                                    <iframe src="${finalVideoUrl}" allowfullscreen class="w-full h-full pointer-events-auto"></iframe>
-                                    <!-- Anti-Download & Anti-Popout Shield -->
-                                    <div class="absolute top-0 left-0 w-full h-20 z-[50] bg-transparent cursor-default" onmousedown="return false;" onclick="return false;" title="Protected Content"></div>
-                                </div>`;
-                            } else {
-                                videoContainer.innerHTML = `<div class="video-wrapper"><div class="absolute inset-0 flex items-center justify-center bg-gray-900 text-white"><p>ቪዲዮ አልተገኘም</p></div></div>`;
-                            }
-
-                            // Load Progress for this course
-                            getDoc(doc(db, 'artifacts', appId, 'users', userId, 'progress', currentCourseId)).then(snap => {
-                                courseCompletedLessons = snap.exists() ? (snap.data().completedLessons || 0) : 0;
-                                renderCourseLessons(c);
-                            });
-                        }
-                    }
+                    if (c.status === 'Active') allCourses.push(c);
                 });
                 
-                renderMyCoursesGrid();
-                
+                // Get Enrollments First
+                getDocs(collection(db, 'artifacts', appId, 'users', userId, 'enrollments')).then(snap => {
+                    window.userEnrollmentsData = snap.docs.map(d => ({id: d.id, ...d.data()})); 
+                    window.userEnrollments = window.userEnrollmentsData.map(d => d.id);
+                    
+                    window.renderMyCoursesGrid();
+                    
+                    // Auto load course logic
+                    if (!currentCourseId && window.userEnrollments.length > 0) {
+                        window.loadCourse(window.userEnrollments[0]);
+                    } else if (currentCourseId) {
+                        window.loadCourse(currentCourseId);
+                    } else if (allCourses.length > 0 && window.userEnrollments.length === 0) {
+                        document.getElementById('dynamic-course-title').innerText = "ኮርስ አልመረጡም";
+                        document.getElementById('dynamic-course-subtitle').innerText = "እባክዎ 'ተጨማሪ ኮርሶች' የሚለውን ተጭነው ኮርስ ይምረጡ።";
+                        const vc = document.getElementById('video-container');
+                        if(vc) vc.innerHTML = `<div class="video-wrapper"><div class="absolute inset-0 flex items-center justify-center bg-gray-900 text-white"><p>ምንም ኮርስ የለዎትም</p></div></div>`;
+                    }
+                });
             }, (error) => console.error(error));
 
-            // Load Notes
             onSnapshot(collection(db, 'artifacts', appId, 'users', userId, 'notes'), (snapshot) => {
                 const list = document.getElementById('saved-notes-list');
                 if(!list) return;
@@ -1358,7 +1375,6 @@
                 }
             });
 
-            // Load Q&A
             onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'qa'), (snapshot) => {
                 const list = document.getElementById('qa-list');
                 if(!list) return;
@@ -1383,23 +1399,32 @@
                     });
                 }
             });
-            
-            createNotification("እንኳን ደህና መጡ!", "ወደ መማሪያ ክፍልዎ ገብተዋል። መልካም ትምህርት!");
         }
 
-        function renderMyCoursesGrid() {
+        // 💡 100% Correct Filtering for My Courses Tab
+        window.renderMyCoursesGrid = function() {
             const container = document.getElementById('my-courses-container');
             if(!container) return;
-            if(allCourses.length === 0) {
-                container.innerHTML = '<div class="col-span-full py-10 text-center text-gray-400 font-bold">ምንም ኮርስ አልተገኘም</div>'; return;
+            
+            const myEnrolledCourses = allCourses.filter(c => window.userEnrollments.includes(c.id));
+            
+            if(myEnrolledCourses.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full py-10 text-center text-gray-400 font-bold">
+                        <i class="fa-solid fa-box-open text-4xl mb-3 text-gray-300 dark:text-gray-600"></i><br>
+                        እስካሁን የተመዘገቡበት ኮርስ የለም።<br><br>
+                        <button onclick="window.safeRedirect('courses.html')" class="bg-primary text-dark px-6 py-2.5 rounded-xl mt-2 font-bold shadow-md hover:bg-yellow-400 transition">ወደ ኮርሶች ገበያ ሂድ</button>
+                    </div>`; 
+                return;
             }
-            container.innerHTML = allCourses.map(c => `
-                <div class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-slate-700 p-4 shadow-sm hover:shadow-md transition cursor-pointer" onclick="window.switchMainView('course-view', document.querySelectorAll('.sidebar-link')[0])">
+            
+            container.innerHTML = myEnrolledCourses.map(c => `
+                <div class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-slate-700 p-4 shadow-sm hover:shadow-md transition cursor-pointer transform hover:-translate-y-1" onclick="window.loadCourse('${c.id}')">
                     <div class="relative overflow-hidden h-40 bg-gray-100 dark:bg-slate-700 rounded-xl mb-4 group">
                         <img src="${c.image || 'Campus Logo.jpg'}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500" onerror="this.src='https://placehold.co/400x250?text=Course'">
                         <div class="absolute inset-0 bg-black/20 group-hover:bg-transparent transition duration-500"></div>
                         <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-300">
-                            <div class="w-12 h-12 bg-white/30 backdrop-blur-md rounded-full flex items-center justify-center text-white"><i class="fa-solid fa-play"></i></div>
+                            <div class="w-12 h-12 bg-white/30 backdrop-blur-md rounded-full flex items-center justify-center text-white"><i class="fa-solid fa-play ml-1"></i></div>
                         </div>
                     </div>
                     <h3 class="font-bold text-dark dark:text-white text-lg font-heading line-clamp-1 mb-1">${c.title}</h3>
@@ -1430,7 +1455,8 @@
                 await setDoc(doc(collection(db, 'artifacts', appId, 'public', 'data', 'qa'), Date.now().toString()), {
                     text: input, userId: userId, userName: userName, timestamp: Date.now()
                 });
-                window.showCloudSaveToast();
+                window.showCloudSaveToast('ጥያቄዎ ተልኳል!');
+                createNotification("ጥያቄ ተልኳል", "ጥያቄዎ ወደ አድሚን ተልኳል፣ በቅርቡ ምላሽ ያገኛሉ።");
             } catch(e) { console.error(e); }
         };
 
@@ -1443,12 +1469,13 @@
             try {
                 await setDoc(doc(db, 'artifacts', appId, 'users', userId, 'notes', Date.now().toString()), { text: input, timestamp: Date.now() });
                 window.showCloudSaveToast();
+                createNotification("ማስታወሻ", "አዲስ የግል ማስታወሻ በተሳካ ሁኔታ አስቀምጠዋል!");
             } catch(e) { console.error(e); }
         };
 
         window.deleteNote = async function(noteId) {
             if(!userId) return;
-            try { await deleteDoc(doc(db, 'artifacts', appId, 'users', userId, 'notes', noteId)); } catch(e) {}
+            try { await deleteDoc(doc(db, 'artifacts', appId, 'users', userId, 'notes', noteId)); window.showCloudSaveToast('ማስታወሻው ጠፍቷል!'); } catch(e) {}
         };
 
         // ========================================================
@@ -1559,7 +1586,7 @@
                 document.getElementById('cert-date').innerText = today;
                 
                 confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
-                createNotification('የምስክር ወረቀት', 'ኮርሱን ስላጠናቀቁ ሰርተፍኬት አግኝተዋል!');
+                createNotification('የምስክር ወረቀት', `የ ${currentCourseTitle} ኮርሱን አጠናቀው ሰርተፍኬት አግኝተዋል!`);
                 
                 if (userId) setDoc(doc(db, 'artifacts', appId, 'users', userId, 'progress', 'main'), { totalPoints: totalPoints }, {merge:true}).catch(e=>{});
             } else {
