@@ -109,9 +109,6 @@
                 <div class="flex items-center space-x-2 md:space-x-4 lg:space-x-6 shrink-0">
                     <a href="javascript:void(0)" onclick="window.safeRedirect('index.html')" class="hidden lg:block text-gray-600 dark:text-gray-300 hover:text-secondary dark:hover:text-primary font-bold transition text-sm whitespace-nowrap">ዋና ገፅ</a>
                     
-                    <!-- Google Translate Dropdown - Restored! -->
-                    <div id="google_translate_element" class="hidden sm:block mt-1 w-24 md:w-32 overflow-hidden shrink-0"></div>
-                    
                     <div class="flex items-center gap-2 lg:gap-4 font-heading text-sm shrink-0" id="nav-auth-buttons">
                         <!-- Navigation Auth Buttons (Will be populated by JS) -->
                     </div>
@@ -179,6 +176,7 @@
             </div>
             
             <div class="p-6 md:p-8 overflow-y-auto custom-modal-scroll flex-1">
+                <div id="auth-error" class="hidden bg-red-50 dark:bg-red-900/30 text-danger border border-red-200 dark:border-red-800 text-sm p-3 rounded-lg mb-5 font-bold text-center"></div>
                 
                 <button type="button" onclick="window.loginWithGoogle()" class="w-full bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 text-dark dark:text-white font-bold py-3.5 rounded-xl hover:bg-gray-50 dark:hover:bg-slate-600 transition shadow-sm flex items-center justify-center gap-3 mb-4">
                     <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" class="w-5 h-5">
@@ -476,14 +474,6 @@
 
         // Setup Google Translate
         function googleTranslateElementInit() {
-            // For Header (Desktop)
-            new google.translate.TranslateElement({
-                pageLanguage: 'am',
-                includedLanguages: 'am,en,om,ti,ar,zh-CN,so,fr,es',
-                autoDisplay: false
-            }, 'google_translate_element');
-
-            // For Footer (Mobile/Backup)
             setTimeout(function() {
                 new google.translate.TranslateElement({
                     pageLanguage: 'am',
@@ -676,7 +666,6 @@
             } catch (err) {
                 console.error(err);
             } finally {
-                // Loader unconditionally removed to fix UI freezing
                 const loader = document.getElementById('screen-loader');
                 if(loader) {
                     loader.style.display = 'none';
@@ -736,7 +725,6 @@
                 const priceText = isFree ? 'ነፃ (Free)' : `${Number(c.price).toLocaleString()} ብር`;
                 const isEnrolled = window.userEnrollments.includes(c.id);
                 
-                // Smart Category Detection
                 let displayCat = c.category;
                 if (!displayCat) {
                     const t = (c.title || '').toLowerCase();
@@ -759,7 +747,6 @@
                     btnHtml = `<button onclick="window.enrollFreeCourse('${c.id}')" class="w-full bg-success hover:bg-green-600 text-white py-3.5 rounded-xl font-black transition shadow-md flex items-center justify-center gap-2">በነፃ ጀምር <i class="fa-solid fa-unlock"></i></button>`;
                 } else {
                     badgeHtml = `<div class="absolute top-3 right-3 bg-primary text-dark text-[10px] font-black uppercase px-3 py-1.5 rounded-lg shadow-md z-10"><i class="fa-solid fa-star mr-1"></i> ፕሪሚየም</div>`;
-                    // Updated Paid Button Color to Primary (Gold)
                     btnHtml = `<button onclick="window.openPaymentModal('${c.id}')" class="w-full bg-primary hover:bg-yellow-400 text-dark py-3.5 rounded-xl font-black transition shadow-md flex items-center justify-center gap-2">ኮርሱን ግዛ <i class="fa-solid fa-cart-shopping"></i></button>`;
                 }
 
