@@ -195,7 +195,6 @@
         .goog-logo-link { display: none !important; }
         .goog-te-gadget { color: transparent !important; font-size: 0px !important; }
     </style>
-    <!-- Northern Sotho UI Guard: E netefatsa gore dikarolo tša khoutu di latela melao (Language compliance check) -->
 </head>
 <body class="text-dark dark:text-gray-100 antialiased h-screen flex overflow-hidden relative bg-bodyBg dark:bg-slate-900 transition-colors duration-300 hidden" id="main-body">
 
@@ -246,7 +245,7 @@
                 <img id="user-avatar-img" src="https://ui-avatars.com/api/?name=Loading&background=0f172a&color=fff" alt="User" class="h-10 w-10 rounded-full border border-gray-200 dark:border-slate-600 object-cover">
                 <div class="flex-1 min-w-0">
                     <p id="user-name-display" class="text-[13px] font-bold text-dark dark:text-white truncate font-heading">በመጫን ላይ...</p>
-                    <p id="user-role-display" class="text-[11px] text-gray-500 dark:text-gray-400 font-semibold truncate">እያረጋገጠ ነው...</p>
+                    <p id="user-role-display" class="text-[11px] text-gray-500 dark:text-gray-400 font-semibold truncate"><i class="fa-solid fa-spinner fa-spin"></i> ማረጋገጥ...</p>
                 </div>
             </div>
             
@@ -841,6 +840,43 @@
             }
         };
 
+        // Real Download Logic for Course Syllabus/Materials
+        window.downloadSyllabus = function(title, desc) {
+            window.showCloudSaveToast('ፋይሉን ዳውንሎድ በማድረግ ላይ...');
+            
+            const cleanTitle = decodeURIComponent(title);
+            const cleanDesc = decodeURIComponent(desc);
+            
+            // Generate a simple professional PDF-like text blob
+            const content = `============================================\n`
+                          + `               TSEHAY CAMPUS                \n`
+                          + `============================================\n\n`
+                          + `የኮርስ ርዕስ (Course Title): \n${cleanTitle}\n\n`
+                          + `--------------------------------------------\n`
+                          + `ማብራሪያ (Course Description):\n`
+                          + `${cleanDesc}\n\n`
+                          + `--------------------------------------------\n`
+                          + `Tsehay Campus - Empowering Through Education\n`
+                          + `© ${new Date().getFullYear()} Tsehay Campus\n`;
+
+            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${cleanTitle.replace(/\s+/g, '_')}_Syllabus.txt`;
+            document.body.appendChild(a);
+            a.click();
+            
+            // Clean up
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            setTimeout(() => {
+                window.showCloudSaveToast('ዳውንሎድ ተጠናቋል!');
+            }, 1000);
+        };
+
         // Profile Image Real Upload (Base64 Compression)
         window.triggerImageUpload = function() {
             document.getElementById('profile-upload-input').click();
@@ -1068,8 +1104,11 @@
             if(userNameDisplay) userNameDisplay.innerText = userName;
             const navUserName = document.getElementById('nav-user-name');
             if(navUserName) navUserName.innerText = userName;
+            
+            // 💡 1. ሪሶልቭ የተደረገው User Role መጀመሪያ ባዶ ወይ "ማረጋገጥ" እናደርገዋለን
             const userRoleDisplay = document.getElementById('user-role-display');
-            if(userRoleDisplay) userRoleDisplay.innerText = "Pro Member";
+            if(userRoleDisplay) userRoleDisplay.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ማረጋገጥ...';
+            
             const userAvatarImg = document.getElementById('user-avatar-img');
             if(userAvatarImg) userAvatarImg.src = photo;
 
@@ -1171,12 +1210,14 @@
             document.getElementById('dynamic-course-desc').innerText = c.desc || "ማብራሪያ የለም።";
             document.getElementById('dynamic-instructor-name').innerText = c.instructor || "Tsehay Campus";
             
-            // Dynamic Downloads
+            // 💡 2. Dynamic Downloads (በተንቀሳቃሽ መንገድ የ Download Button)
             const materialsContainer = document.getElementById('dynamic-course-materials');
             if(materialsContainer) {
+                const encTitle = encodeURIComponent(c.title);
+                const encDesc = encodeURIComponent(c.desc || "ማብራሪያ የለም");
                 materialsContainer.innerHTML = `
-                    <button onclick="window.showCloudSaveToast('ፋይሉን ዳውንሎድ በማድረግ ላይ...')" class="flex items-center gap-3 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 px-4 py-2.5 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-600 transition shadow-sm font-bold text-sm text-gray-700 dark:text-gray-300">
-                        <i class="fa-solid fa-file-pdf text-danger text-lg"></i> የ ${c.title} ማጠቃለያ (Syllabus)
+                    <button onclick="window.downloadSyllabus(decodeURIComponent('${encTitle}'), decodeURIComponent('${encDesc}'))" class="flex items-center gap-3 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 px-4 py-2.5 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-600 transition shadow-sm font-bold text-sm text-gray-700 dark:text-gray-300">
+                        <i class="fa-solid fa-file-arrow-down text-danger text-lg"></i> የ ${c.title} ማጠቃለያ (Syllabus) ዳውንሎድ
                     </button>
                 `;
             }
@@ -1238,7 +1279,7 @@
             courseCompletedLessons = Math.max(courseCompletedLessons, lessonIndex + 1);
             
             window.updateProgressUI();
-            window.showCloudSaveToast();
+            window.showCloudSaveToast('ወደ ዳታቤዝ ሴቭ ተደርጓል!');
             createNotification("ክፍል ተጠናቋል", `የ ${currentCourseTitle} ኮርስ ትምህርት አጠናቀዋል፣ +${pointsToAdd} ነጥብ አግኝተዋል!`);
             
             try { 
@@ -1346,6 +1387,19 @@
                 getDocs(collection(db, 'artifacts', appId, 'users', userId, 'enrollments')).then(snap => {
                     window.userEnrollmentsData = snap.docs.map(d => ({id: d.id, ...d.data()})); 
                     window.userEnrollments = window.userEnrollmentsData.map(d => d.id);
+                    
+                    // 💡 3. PRO MEMBER vs STUDENT LOGIC
+                    const isPro = window.userEnrollmentsData.some(e => e.paymentType && e.paymentType !== 'Free');
+                    const roleDisplay = document.getElementById('user-role-display');
+                    if(roleDisplay) {
+                        if(isPro) {
+                            roleDisplay.innerHTML = '<i class="fa-solid fa-crown text-primary mr-1"></i> Pro Student';
+                            roleDisplay.className = "text-[11px] text-primary font-black truncate";
+                        } else {
+                            roleDisplay.innerHTML = 'Normal Student';
+                            roleDisplay.className = "text-[11px] text-gray-500 dark:text-gray-400 font-bold truncate";
+                        }
+                    }
                     
                     window.renderMyCoursesGrid();
                     
