@@ -1,5 +1,5 @@
 /**
- * TSEHAY CAMPUS - Gemini + Groq (Always Free Fallback)
+ * TSEHAY CAMPUS - Gemini + Groq (with Amharic system prompt)
  */
 module.exports = async function(req, res) {
   res.setHeader('Access-Control-Allow-Credentials', true);
@@ -50,7 +50,7 @@ module.exports = async function(req, res) {
       }
     }
 
-    // 2. Groq (100% free, no credit card)
+    // 2. Groq (free, with Amharic system prompt)
     if (groqKey) {
       try {
         const groqResp = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -61,7 +61,13 @@ module.exports = async function(req, res) {
           },
           body: JSON.stringify({
             model: "llama-3.3-70b-versatile",
-            messages: [{ role: "user", content: combinedText }]
+            messages: [
+              {
+                role: "system",
+                content: "አንተ ተግባቢ፣ ታጋሽ እና እውቀት ያለህ የኢ-ለርኒንግ አስተማሪ ነህ። ሁልጊዜ በአማርኛ ቋንቋ መልስ ስጥ። ቀላልና ግልጽ አገላለጽ ተጠቀም። ተማሪውን አበረታታ፤ አስፈላጊ ሆኖ ሲገኝ ምሳሌዎችን ጨምረህ አስረዳ። ለትምህርት የሚጠቅሙ ተግባራዊ ልምምዶችን ጠቁም።"
+              },
+              { role: "user", content: combinedText }
+            ]
           })
         });
         const groqData = await groqResp.json();
