@@ -994,7 +994,7 @@
             return url;
         }
 
-       async function callGemini(prompt, systemInstruction) {
+        async function callGemini(prompt, systemInstruction) {
             try {
                 const response = await fetch('/api/chat', { 
                     method: 'POST', 
@@ -1016,32 +1016,6 @@
 
             } catch (err) { 
                 return "የቴክኒክ ችግር: " + err.message;
-            }
-        }
-             catch (e) {
-                        const apiKey = ""; 
-                        response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                contents: [{ parts: [{ text: prompt }] }],
-                                systemInstruction: { parts: [{ text: systemInstruction }] }
-                            })
-                        });
-                    }
-
-                    if (!response.ok) throw new Error('API Error');
-                    const data = await response.json();
-                    
-                    if (data.error) return "የ API ስህተት: " + (data.error.message || data.error);
-
-                    let cleanResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
-                    if (cleanResponse) return cleanResponse.replace(/[\`]{3}[a-zA-Z]*\n?/gi, '').replace(/[\`]{3}/g, '').trim();
-                    return "ምላሽ የለም";
-                } catch (err) { 
-                    if (i === 4) return "የቴክኒክ ችግር አጋጥሟል! (Backend API አልተገኘም)። እባክዎ Vercel ላይ ይፈትሹ።";
-                    await new Promise(r => setTimeout(r, delays[i]));
-                }
             }
         }
 
@@ -1346,18 +1320,29 @@
             window.updateProgressUI();
         }
 
-        function showEmptyCourseState() {
-            document.getElementById('dynamic-course-title').innerText = "ኮርስ አልመረጡም";
-            document.getElementById('dynamic-course-subtitle').innerText = "እባክዎ 'ተጨማሪ ኮርሶች' የሚለውን ተጭነው ኮርስ ይምረጡ።";
-            const vc = document.getElementById('video-container');
-            if(vc) vc.innerHTML = `<div class="video-wrapper"><div class="absolute inset-0 flex flex-col items-center justify-center bg-gray-900 text-white"><i class="fa-solid fa-folder-open text-4xl mb-3 text-gray-600"></i><p class="font-bold">ምንም ኮርስ አልተመዘገቡም</p></div></div>`;
+        window.showEmptyCourseState = function(titleText = "ኮርስ አልመረጡም", subtitleText = "እባክዎ 'ተጨማሪ ኮርሶች' የሚለውን ተጭነው ኮርስ ይምረጡ።") {
+            const titleEl = document.getElementById('dynamic-course-title');
+            const subEl = document.getElementById('dynamic-course-subtitle');
+            if(titleEl) titleEl.innerText = titleText;
+            if(subEl) subEl.innerText = subtitleText;
             
+            const vc = document.getElementById('video-container');
+            if(vc) vc.innerHTML = `<div class="video-wrapper"><div class="absolute inset-0 flex flex-col items-center justify-center bg-gray-900 text-white"><i class="fa-solid fa-folder-open text-4xl mb-3 text-gray-600"></i><p class="font-bold text-gray-400">${titleText}</p></div></div>`;
+            
+            const lc = document.getElementById('dynamic-lessons-container');
+            if(lc) lc.innerHTML = `<div class="p-6 text-center text-gray-400 font-bold">ምንም የትምህርት ክፍል የለም</div>`;
+            
+            const pPercentEl = document.getElementById('progress-percent');
+            if(pPercentEl) pPercentEl.innerText = '0%';
+            const pBarInner = document.getElementById('progress-bar-inner');
+            if(pBarInner) pBarInner.style.width = '0%';
+
             const loader = document.getElementById('screen-loader');
             if(loader) {
                 loader.style.opacity = '0';
                 setTimeout(() => loader.style.display = 'none', 300);
             }
-        }
+        };
 
         function loadUserData() {
             if (!userId) return;
@@ -1412,17 +1397,18 @@
                     
                     window.renderMyCoursesGrid();
                     
-                    if (currentCourseId) {
+                    // 💡 ROCK-SOLID COURSE LOADER LOGIC
+                    if (window.userEnrollments.length === 0) {
+                        window.showEmptyCourseState("እስካሁን የተመዘገቡበት ኮርስ የለም", "እባክዎ 'ተጨማሪ ኮርሶች' የሚለውን ተጭነው ኮርስ ይምረጡ።");
+                    } else if (currentCourseId) {
                         window.loadCourse(currentCourseId);
-                    } else if (window.userEnrollments.length > 0) {
+                    } else {
                         const firstValidCourse = window.userEnrollments.find(eId => allCourses.some(ac => ac.id === eId));
                         if (firstValidCourse) {
                             window.loadCourse(firstValidCourse);
                         } else {
-                            showEmptyCourseState();
+                            window.showEmptyCourseState("ኮርሱ አይገኝም", "የተመዘገቡበት ኮርስ በአሁኑ ሰዓት አይገኝም (ተደብቆ ሊሆን ይችላል)።");
                         }
-                    } else {
-                        showEmptyCourseState();
                     }
 
                     const loader = document.getElementById('screen-loader');
@@ -1430,8 +1416,14 @@
                         loader.style.opacity = '0';
                         setTimeout(() => loader.style.display = 'none', 300);
                     }
+                }).catch(err => {
+                    console.error("Enrollment fetch error", err);
+                    window.showEmptyCourseState("የዳታቤዝ ስህተት", "የኮርስ መረጃ ማምጣት አልተቻለም።");
                 });
-            }, (error) => console.error(error));
+            }, (error) => {
+                console.error("Courses fetch error", error);
+                window.showEmptyCourseState("የኮርስ ስህተት", "ኮርሶችን ማምጣት አልተቻለም።");
+            });
 
             onSnapshot(collection(db, 'artifacts', appId, 'users', userId, 'notes'), (snapshot) => {
                 const list = document.getElementById('saved-notes-list');
