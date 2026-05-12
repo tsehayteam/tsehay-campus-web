@@ -12,7 +12,9 @@ export default async function handler(req, res) {
     if (!apiKey) return res.status(500).json({ error: "Vercel ላይ API Key አልገባም!" });
 
     const { prompt, systemInstruction } = req.body;
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    
+    // 💡 እዚህ ጋር የሞዴሉን ስም ወደ "gemini-1.5-flash-latest" ቀይረነዋል
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
 
     const response = await fetch(apiUrl, {
       method: 'POST',
@@ -27,7 +29,7 @@ export default async function handler(req, res) {
     
     // ስህተት ካለ በግልፅ እንዲመልስ
     if (!response.ok) {
-        return res.status(500).json({ error: data.error?.message || "የ Gemini API ስህተት" });
+        return res.status(500).json({ error: data.error?.message || "የ Gemini API ስህተት አጋጥሟል" });
     }
 
     return res.status(200).json(data);
