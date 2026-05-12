@@ -13,21 +13,39 @@ export default async function handler(req, res) {
 
     const { prompt, systemInstruction } = req.body;
     
-    // 💡 እዚህ ጋር የሞዴሉን ስም ወደ ትክክለኛው "gemini-1.5-flash" ቀይረነዋል
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    // 💡 ጓደኛህ በቴሌግራም የላከልህ የ "Payload አወቃቀር" መፍትሄ ይሄ ነው!
+    // አንዳንዴ Google የ systemInstruction አወቃቀርን አይቀበልም። ስለዚህ ጥያቄውን እና መመሪያውን እናዋህደዋለን።
+    const combinedPrompt = systemInstruction 
+        ? `መመሪያ: ${systemInstruction}\n\nጥያቄ: ${prompt}`
+        : prompt;
 
-    const response = await fetch(apiUrl, {
+    const payload = {
+        contents: [{ parts: [{ text: combinedPrompt }] }]
+    };
+
+    // 1. መጀመሪያ በ "gemini-1.5-flash" እንሞክራለን
+    let apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    
+    let response = await fetch(apiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        systemInstruction: systemInstruction ? { parts: [{ text: systemInstruction }] } : undefined
-      })
+      body: JSON.stringify(payload)
     });
 
-    const data = await response.json();
+    let data = await response.json();
+
+    // 2. እምቢ ካለ (Error ካመጣ) ወደ አስተማማኙ "gemini-pro" አውቶማቲክ ይቀይራል
+    if (!response.ok) {
+        apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`;
+        response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        data = await response.json();
+    }
     
-    // ስህተት ካለ በግልፅ እንዲመልስ
+    // 3. ሁለቱም እምቢ ካሉ ብቻ ስህተቱን ለተጠቃሚው ያሳውቃል
     if (!response.ok) {
         return res.status(500).json({ error: data.error?.message || "የ Gemini API ስህተት አጋጥሟል" });
     }
