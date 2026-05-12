@@ -1,32 +1,32 @@
-// Vercel Edge Runtime - የ 10 ሰከንዱን ገደብ (Timeout) እንዳያቋርጥብን ይረዳል
-export const config = {
-  runtime: 'edge', 
-};
+export default async function handler(req, res) {
+  // 1. የ CORS ፍቃዶችን መጨመር (CORS Fix - ዌብሳይቱ Block እንዳይደረግ)
+  res.setHeader('Access-Control-Allow-Credentials', true);
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+  res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
 
-export default async function handler(req) {
-  // POST Request ብቻ እንዲቀበል መገደብ (Security)
+  // የ OPTIONS ሪኮዌስት (Preflight) ሲመጣ ማሳለፍ
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
+  // POST Request ብቻ እንዲቀበል መገደብ
   if (req.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'Method Not Allowed' }), {
-      status: 405,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
   try {
     // ከተማሪው የሚመጣውን ጥያቄ መቀበል
-    const { prompt, systemInstruction } = await req.json();
+    const { prompt, systemInstruction } = req.body;
     
     // ከ Vercel Environment Variables ላይ ሚስጥራዊውን ቁልፍ ማንበብ
     const apiKey = process.env.GEMINI_API_KEY;
 
     if (!apiKey) {
-      return new Response(JSON.stringify({ error: "API Key is missing in Vercel. እባክዎ Vercel Settings ላይ GEMINI_API_KEY ያስገቡ።" }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' }
-      });
+      return res.status(500).json({ error: "API Key is missing in Vercel. እባክዎ Vercel Settings ላይ GEMINI_API_KEY ያስገቡ።" });
     }
 
-    // 💡 ትክክለኛው እና ፈጣኑ ሞዴል (gemini-1.5-flash) - "Model not found" የሚለውን ስህተት ያስቀራል
+    // ትክክለኛው እና ፈጣኑ ሞዴል (Gemini 1.5 Flash)
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
     // ወደ Google Gemini በቀጥታ መላክ
@@ -42,16 +42,10 @@ export default async function handler(req) {
     const data = await googleResponse.json();
 
     // መልሱን ወደ ዌብሳይታችን መመለስ
-    return new Response(JSON.stringify(data), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    return res.status(200).json(data);
 
   } catch (error) {
     // ኮዱ ላይ ስህተት ካጋጠመ ለዌብሳይቱ ማሳወቅ
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    return res.status(500).json({ error: error.message });
   }
 }
