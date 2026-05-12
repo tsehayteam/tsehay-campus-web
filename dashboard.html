@@ -994,20 +994,31 @@
             return url;
         }
 
-        async function callGemini(prompt, systemInstruction) {
-            const delays = [1000, 2000, 4000, 8000, 16000];
-            for (let i = 0; i < 5; i++) {
-                try {
-                    let response;
-                    try {
-                        const url = window.location.hostname.includes('google') || window.location.hostname === '' ? 'https://tsehay-campus-web.vercel.app/api/chat' : '/api/chat';
-                        response = await fetch(url, { 
-                            method: 'POST', 
-                            headers: { 'Content-Type': 'application/json' }, 
-                            body: JSON.stringify({ prompt, systemInstruction }) 
-                        });
-                        if (!response.ok) throw new Error('Vercel API Failed');
-                    } catch (e) {
+       async function callGemini(prompt, systemInstruction) {
+            try {
+                const response = await fetch('/api/chat', { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify({ prompt, systemInstruction }) 
+                });
+
+                const data = await response.json();
+
+                // 💡 ስህተቱን በግልፅ ፅሁፍ (String) እንዲያወጣው ማስተካከያ
+                if (!response.ok || data.error) {
+                    let errMsg = typeof data.error === 'object' ? (data.error.message || JSON.stringify(data.error)) : data.error;
+                    return "የ API ስህተት: " + (errMsg || "ያልታወቀ ስህተት");
+                }
+
+                let cleanResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (cleanResponse) return cleanResponse.replace(/```json/gi, '').replace(/```/g, '').trim();
+                return "ምላሽ የለም";
+
+            } catch (err) { 
+                return "የቴክኒክ ችግር: " + err.message;
+            }
+        }
+             catch (e) {
                         const apiKey = ""; 
                         response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
                             method: 'POST',

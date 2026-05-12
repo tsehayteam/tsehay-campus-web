@@ -106,24 +106,17 @@
         body { top: 0px !important; position: static !important; }
         html { top: 0 !important; height: 100%; }
         
-        #google_translate_element select {
-            background-color: #1e293b;
-            color: #ffffff;
-            border: 1px solid #334155;
-            border-radius: 0.5rem;
-            padding: 0.6rem 1rem;
-            font-family: 'Montserrat', sans-serif;
-            font-size: 0.875rem;
-            font-weight: 600;
-            outline: none;
-            cursor: pointer;
-            min-width: 150px;
+        #google_translate_element_footer select {
+            background-color: #f1f5f9; color: #334155; border: 1px solid #e2e8f0; border-radius: 0.5rem;
+            padding: 0.4rem 0.8rem; font-family: 'Montserrat', sans-serif; font-size: 0.8rem; font-weight: 700;
+            outline: none; cursor: pointer; max-width: 150px;
         }
-        #google_translate_element select:hover {
-            border-color: #3268BA;
+        .dark #google_translate_element_footer select {
+            background-color: #1e293b; color: #cbd5e1; border-color: #334155;
         }
+        #google_translate_element_footer select:hover { border-color: #3268BA; }
         .goog-logo-link { display: none !important; }
-        .goog-te-gadget { color: transparent !important; }
+        .goog-te-gadget { color: transparent !important; font-size: 0px !important; }
 
         @keyframes modalPop {
             0% { opacity: 0; transform: scale(0.95); }
@@ -552,7 +545,7 @@
         </div>
     </section>
 
-    <!-- Courses List (Updated matching courses.html style) -->
+    <!-- Courses List -->
     <section id="courses" class="py-20 bg-gray-50 dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 transition-colors duration-300">
         <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex flex-col items-center text-center mb-12 gap-4">
@@ -592,7 +585,7 @@
                     <h3 class="font-black text-base dark:text-white">Tsehay AI ረዳት (ማሳያ)</h3>
                 </div>
                 <div class="space-y-4 mb-6 text-sm font-body h-64 overflow-y-auto pr-2" id="ai-landing-chat">
-                    <div class="bg-blue-50 dark:bg-slate-700 p-4 rounded-2xl max-w-[85%] border-l-4 border-primary shadow-sm leading-relaxed text-gray-800 dark:text-gray-200 font-medium">ሰላም! 👋 ስለ Shein ቢዝነስ ወይም ስለ ኮርሶቻችን የፈለጉትን ይጠይቁኝ።</div>
+                    <div class="bg-blue-50 dark:bg-slate-700 p-4 rounded-2xl max-w-[85%] border-l-4 border-primary shadow-sm leading-relaxed text-gray-800 dark:text-gray-200 font-medium">ሰላም! 👋 ስለ Shein ቢዝነስ ወይም ስለ ኮርሶቻችን ማወቅ የሚፈልጉትን ይጠይቁኝ።</div>
                 </div>
                 <div class="flex gap-2">
                     <input type="text" id="ai-landing-input" placeholder="ጥያቄዎን እዚህ ያስገቡ..." class="flex-1 bg-gray-100 dark:bg-slate-700 dark:text-white border-none rounded-full px-5 py-3 text-sm focus:ring-2 focus:ring-secondary/30 outline-none transition" onkeypress="if(event.key === 'Enter') window.askAiLanding()">
@@ -727,9 +720,9 @@
                     </div>
                 </div>
 
-                <!-- Google Translate Dropdown in Footer (For Mobile mostly) -->
-                <div class="mt-4 md:mt-0 flex flex-col items-center md:items-end sm:hidden">
-                    <div id="google_translate_element_footer" class="bg-dark rounded-lg p-1.5 border border-slate-700 hover:border-slate-500 transition overflow-hidden"></div>
+                <!-- Google Translate Dropdown in Footer -->
+                <div class="mt-4 md:mt-0 flex flex-col items-center md:items-end">
+                    <div id="google_translate_element_footer" class="bg-dark rounded-lg p-1.5 border border-slate-700 hover:border-slate-500 transition overflow-hidden max-w-[150px]"></div>
                 </div>
             </div>
         </div>
@@ -971,14 +964,16 @@
         };
     </script>
 
-    <!-- Google Translate Script (ቋንቋው አንዴ ከተቀየረ ዳሽቦርድ ላይም እንዳይጠፋ ያደርጋል) -->
+    <!-- Google Translate Script (For global persistence, only in Footer) -->
     <script>
         function googleTranslateElementInit() {
-            new google.translate.TranslateElement({
-                pageLanguage: 'am',
-                includedLanguages: 'am,en,om,ti,ar,zh-CN,so,fr,es',
-                autoDisplay: false
-            }, 'google_translate_element');
+            setTimeout(function() {
+                new google.translate.TranslateElement({
+                    pageLanguage: 'am',
+                    includedLanguages: 'am,en,om,ti,ar,zh-CN,so,fr,es',
+                    autoDisplay: false
+                }, 'google_translate_element_footer');
+            }, 500);
         }
     </script>
     <script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
@@ -986,12 +981,37 @@
     <!-- Firebase Integration & AI Functions -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, onSnapshot, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // ==========================================
         // 1. AI Functions (API Backend Integration)
         // ==========================================
+        
+        async function callGemini(prompt, systemInstruction) {
+            try {
+                const response = await fetch('/api/chat', { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify({ prompt, systemInstruction }) 
+                });
+
+                const data = await response.json();
+
+                if (!response.ok || data.error) {
+                    let errMsg = typeof data.error === 'object' ? (data.error.message || JSON.stringify(data.error)) : data.error;
+                    return "የ API ስህተት: " + (errMsg || "ያልታወቀ ስህተት አጋጥሟል (Vercel Backend Error)");
+                }
+
+                let cleanResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (cleanResponse) return cleanResponse.replace(/```json/gi, '').replace(/```/g, '').trim();
+                return "ምላሽ የለም";
+
+            } catch (err) { 
+                return "የቴክኒክ ችግር (Network Error): እባክዎ ኢንተርኔትዎን ያረጋግጡ።";
+            }
+        }
+
         window.processAiChat = async function(inputId, chatContainerId) {
             const inputElem = document.getElementById(inputId);
             if(!inputElem) return;
@@ -1009,38 +1029,17 @@
                 chat.innerHTML += `<div id="${loadingId}" class="self-start max-w-[85%] bg-gray-100 dark:bg-slate-700 p-3 rounded-2xl border-l-4 border-primary leading-relaxed text-gray-800 dark:text-gray-200 text-sm shadow-sm"><i class="fa-solid fa-spinner fa-spin text-secondary"></i> Tsehay AI በማሰብ ላይ ነው...</div>`;
                 chat.scrollTop = chat.scrollHeight;
 
-                const url = `/api/chat`; // Vercel API Backend
                 const systemInst = "አንተ 'Tsehay AI' የተባልክ የ Tsehay Campus (የኢትዮጵያ ምርጡ የኦንላይን መማሪያ ፕላትፎርም) የደንበኞች አገልጋይ ነህ። ለጎብኚዎች እና አዲስ ተማሪዎች ትህትና በተሞላበት፣ ሳቢ እና አበረታች በሆነ የአማርኛ ቋንቋ ምላሽ ስጥ። ጥያቄዎችን አጠር እና ግልፅ አድርገህ መልስ።";
-                const payload = { prompt: input, systemInstruction: systemInst };
                 
-                const delays = [1000, 2000, 4000, 8000, 16000];
-                for(let i=0; i<5; i++) {
-                    try {
-                        const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                        if (!response.ok) throw new Error("API Error");
-                        const data = await response.json();
-                        const loadingElem = document.getElementById(loadingId);
-                        if(loadingElem) {
-                            let cleanResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
-                            if(cleanResponse) {
-                                cleanResponse = cleanResponse.replace(/[\`]{3}[a-zA-Z]*\n?/gi, '').replace(/[\`]{3}/g, '').trim();
-                                loadingElem.innerHTML = cleanResponse.replace(/\n/g, '<br>');
-                            } else if (data.error) {
-                                loadingElem.innerHTML = "የ API ስህተት: " + data.error;
-                                loadingElem.className = "self-start max-w-[85%] bg-red-50 dark:bg-red-900/30 text-danger p-4 rounded-2xl border-l-4 border-danger leading-relaxed text-sm font-bold shadow-sm";
-                            }
-                        }
-                        break;
-                    } catch (e) { 
-                        if(i === 4) {
-                            const loadingElem = document.getElementById(loadingId);
-                            if(loadingElem) {
-                                loadingElem.className = "self-start max-w-[85%] bg-red-50 dark:bg-red-900/30 text-danger p-4 rounded-2xl border-l-4 border-danger leading-relaxed text-sm font-bold shadow-sm";
-                                loadingElem.innerText = "የቴክኒክ ችግር አጋጥሟል! (Backend API አልተገኘም) እባክዎ Vercel ላይ ይፈትሹ።";
-                            }
-                        } else {
-                            await new Promise(r => setTimeout(r, delays[i]));
-                        }
+                const responseText = await callGemini(input, systemInst);
+                const loadEl = document.getElementById(loadingId);
+                
+                if(loadEl) {
+                    if(responseText.includes("የ API ስህተት:") || responseText.includes("የቴክኒክ ችግር")) {
+                         loadEl.innerHTML = `<span class="text-danger font-bold text-[13px] leading-relaxed"><i class="fa-solid fa-triangle-exclamation"></i> ${responseText}</span>`;
+                         loadEl.className = "bg-red-50 dark:bg-red-900/30 p-3.5 rounded-2xl rounded-tl-none shadow-sm max-w-[85%] self-start text-danger";
+                    } else {
+                         loadEl.innerHTML = responseText.replace(/\n/g, '<br>');
                     }
                 }
                 chat.scrollTop = chat.scrollHeight;
@@ -1048,7 +1047,6 @@
         };
 
         window.askAiLanding = function() { window.processAiChat('ai-landing-input', 'ai-landing-chat'); };
-        window.sendChatMessage = function() { window.processAiChat('chat-input', 'chat-messages'); };
 
         // ==========================================
         // 2. Firebase App Initialization 
@@ -1056,7 +1054,6 @@
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'tsehaycampus-e1a6d';
 
         try {
-            // For Firebase JS SDK v7.20.0 and later, measurementId is optional
             const firebaseConfig = {
                 apiKey: "AIzaSyDCxlwfYAS_I0D7c-8e-iB-Y-Rh2ZZoHZw",
                 authDomain: "tsehaycampus-e1a6d.firebaseapp.com",
@@ -1254,7 +1251,6 @@
                 const email = document.getElementById('auth-email').value;
                 const password = document.getElementById('auth-password').value;
                 
-                // Get extra fields
                 const phone = document.getElementById('auth-phone') ? document.getElementById('auth-phone').value.trim() : '';
                 const city = document.getElementById('auth-city') ? document.getElementById('auth-city').value.trim() : '';
                 const source = document.getElementById('auth-source') ? document.getElementById('auth-source').value : '';
@@ -1292,7 +1288,6 @@
                         const cred = await createUserWithEmailAndPassword(auth, email, password);
                         await updateProfile(cred.user, { displayName: name });
 
-                        // Save extra fields to Real Database (Firestore)
                         const currentAppId = typeof __app_id !== 'undefined' ? __app_id : 'tsehaycampus-e1a6d';
                         await setDoc(doc(db, 'artifacts', currentAppId, 'users', cred.user.uid, 'profile', 'info'), {
                             displayName: name,
