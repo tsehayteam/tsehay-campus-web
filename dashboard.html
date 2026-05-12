@@ -454,7 +454,7 @@
                                         </div>
                                         
                                         <div class="mt-8 pt-6 border-t border-gray-100 dark:border-slate-700">
-                                            <h4 class="font-bold text-gray-400 dark:text-gray-500 text-sm uppercase tracking-wide mb-4">የተማሪዎች ጥያቄዎች እና ውይይቶች</h4>
+                                            <h4 class="font-bold text-gray-400 dark:text-gray-500 text-sm uppercase tracking-wide mb-4">የእርስዎ ጥያቄዎች እና የአድሚን ምላሾች</h4>
                                             <div id="qa-list" class="space-y-4">
                                                 <div class="text-center py-6"><i class="fa-solid fa-spinner fa-spin text-gray-300 dark:text-slate-600 text-2xl"></i></div>
                                             </div>
@@ -1105,7 +1105,6 @@
             const navUserName = document.getElementById('nav-user-name');
             if(navUserName) navUserName.innerText = userName;
             
-            // 💡 1. ሪሶልቭ የተደረገው User Role መጀመሪያ ባዶ ወይ "ማረጋገጥ" እናደርገዋለን
             const userRoleDisplay = document.getElementById('user-role-display');
             if(userRoleDisplay) userRoleDisplay.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ማረጋገጥ...';
             
@@ -1210,7 +1209,7 @@
             document.getElementById('dynamic-course-desc').innerText = c.desc || "ማብራሪያ የለም።";
             document.getElementById('dynamic-instructor-name').innerText = c.instructor || "Tsehay Campus";
             
-            // 💡 2. Dynamic Downloads (በተንቀሳቃሽ መንገድ የ Download Button)
+            // Dynamic Downloads
             const materialsContainer = document.getElementById('dynamic-course-materials');
             if(materialsContainer) {
                 const encTitle = encodeURIComponent(c.title);
@@ -1388,7 +1387,6 @@
                     window.userEnrollmentsData = snap.docs.map(d => ({id: d.id, ...d.data()})); 
                     window.userEnrollments = window.userEnrollmentsData.map(d => d.id);
                     
-                    // 💡 3. PRO MEMBER vs STUDENT LOGIC
                     const isPro = window.userEnrollmentsData.some(e => e.paymentType && e.paymentType !== 'Free');
                     const roleDisplay = document.getElementById('user-role-display');
                     if(roleDisplay) {
@@ -1403,7 +1401,6 @@
                     
                     window.renderMyCoursesGrid();
                     
-                    // Auto load specific logic to prevent stuck loading
                     if (currentCourseId) {
                         window.loadCourse(currentCourseId);
                     } else if (window.userEnrollments.length > 0) {
@@ -1434,7 +1431,7 @@
                 
                 list.innerHTML = '';
                 if(notesArray.length === 0) {
-                    list.innerHTML = '<p class="text-sm text-gray-400 font-bold text-center py-4">ምንም ማስታወሻ የለም።</p>';
+                    list.innerHTML = '<p class="text-sm text-gray-400 font-bold text-center py-4">እስካሁን ምንም ማስታወሻ አላስቀመጡም።</p>';
                 } else {
                     notesArray.forEach(note => {
                         let timeStr = new Date(note.timestamp).toLocaleTimeString('am-ET', { hour: '2-digit', minute: '2-digit' });
@@ -1456,6 +1453,7 @@
                 }
             });
 
+            // 💡 STRICT Q&A FILTERING FOR STUDENTS (Private Database View)
             onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'qa'), (snapshot) => {
                 const list = document.getElementById('qa-list');
                 if(!list) return;
@@ -1469,18 +1467,24 @@
                 });
                 isInitialQALoad = false;
 
-                snapshot.forEach(doc => qaArray.push({ id: doc.id, ...doc.data() }));
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    // 💡 እዚህ ጋር ነው ሚስጥሩ! ተማሪው የራሱን ጥያቄ ብቻ እንዲያይ ተደርጓል!
+                    if(data.userId === userId) {
+                        qaArray.push({ id: doc.id, ...data });
+                    }
+                });
                 qaArray.sort((a, b) => b.timestamp - a.timestamp);
                 
                 list.innerHTML = '';
                 if(qaArray.length === 0) {
-                    list.innerHTML = '<p class="text-center py-6 text-gray-400 font-bold">እስካሁን ምንም ጥያቄ የለም።</p>';
+                    list.innerHTML = '<p class="text-center py-6 text-gray-400 font-bold">እስካሁን ምንም ጥያቄ አልጠየቁም።</p>';
                 } else {
                     qaArray.forEach(q => {
                         let timeStr = new Date(q.timestamp).toLocaleTimeString('am-ET', { hour: '2-digit', minute: '2-digit' });
                         let adminReplyHtml = q.adminReply ? `
                             <div class="mt-3 bg-blue-50 dark:bg-slate-700/50 p-3 rounded-lg border-l-2 border-secondary">
-                                <p class="text-[12px] font-bold text-secondary dark:text-primary mb-1"><i class="fa-solid fa-user-shield"></i> የአድሚን መልስ:</p>
+                                <p class="text-[12px] font-bold text-secondary dark:text-primary mb-1"><i class="fa-solid fa-user-shield"></i> የአድሚን (Tsehay Campus) ምላሽ:</p>
                                 <p class="text-[13px] text-gray-700 dark:text-gray-300 font-body">${q.adminReply}</p>
                             </div>
                         ` : '';
@@ -1488,7 +1492,7 @@
                         list.innerHTML += `
                             <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-gray-200 dark:border-slate-600 shadow-sm mb-4">
                                 <div class="flex justify-between items-start mb-2">
-                                    <span class="font-bold text-dark dark:text-white text-sm"><i class="fa-solid fa-user text-gray-400 mr-1"></i> ${q.userName || 'ተማሪ'}</span>
+                                    <span class="font-bold text-dark dark:text-white text-sm"><i class="fa-solid fa-user text-gray-400 mr-1"></i> የእርስዎ ጥያቄ</span>
                                     <span class="text-xs text-gray-400">${timeStr}</span>
                                 </div>
                                 <p class="text-[14px] text-gray-700 dark:text-gray-300 font-body">${q.text}</p>
@@ -1554,6 +1558,7 @@
                     text: input, userId: userId, userName: userName, timestamp: Date.now()
                 });
                 window.showCloudSaveToast('ጥያቄዎ ተልኳል!');
+                createNotification("ጥያቄ ተልኳል", "ጥያቄዎ ወደ አድሚን ተልኳል፣ በቅርቡ ምላሽ ያገኛሉ።");
             } catch(e) { console.error(e); }
         };
 
@@ -1579,6 +1584,7 @@
                     timestamp: Date.now() 
                 }, { merge: true });
                 window.showCloudSaveToast();
+                createNotification("ማስታወሻ", "አዲስ የግል ማስታወሻ በተሳካ ሁኔታ አስቀምጠዋል!");
             } catch(e) { console.error(e); }
         };
 
