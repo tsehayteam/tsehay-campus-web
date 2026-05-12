@@ -1,76 +1,57 @@
-/**
- * TSEHAY CAMPUS - AI Backend
- * Gemini (primary) + Hugging Face (free fallback)
- */
-module.exports = async function(req, res) {
-  res.setHeader('Access-Control-Allow-Credentials', true);
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
-  res.setHeader('Access-Control-Allow-Headers', '*');
-  if (req.method === 'OPTIONS') return res.status(200).end();
+// Vercel Edge Runtime - የ 10 ሰከንዱን ገደብ (Timeout) እንዳያቋርጥብን ይረዳል
+export const config = {
+  runtime: 'edge', 
+};
 
-  const sendFriendly = (msg) => {
-    return res.status(200).json({
-      candidates: [{ content: { parts: [{ text: "📚 " + msg }] } }]
+export default async function handler(req) {
+  // POST Request ብቻ እንዲቀበል መገደብ (Security)
+  if (req.method !== 'POST') {
+    return new Response(JSON.stringify({ error: 'Method Not Allowed' }), {
+      status: 405,
+      headers: { 'Content-Type': 'application/json' }
     });
-  };
+  }
 
   try {
-    if (req.method !== 'POST') return sendFriendly('POST ብቻ ይፈቀዳል።');
+    // ከተማሪው የሚመጣውን ጥያቄ መቀበል
+    const { prompt, systemInstruction } = await req.json();
+    
+    // ከ Vercel Environment Variables ላይ ሚስጥራዊውን ቁልፍ ማንበብ
+    const apiKey = process.env.GEMINI_API_KEY;
 
-    const { prompt, systemInstruction } = req.body;
-    if (!prompt) return sendFriendly('ጥያቄ አልተላከም።');
-
-    const combinedText = systemInstruction 
-      ? `System Instruction: ${systemInstruction}\n\nUser Question: ${prompt}` 
-      : prompt;
-
-    const geminiKey = (process.env.GEMINI_API_KEY || '').trim();
-    const hfToken = (process.env.HF_API_TOKEN || '').trim();
-
-    // 1. Gemini ሞከር
-    if (geminiKey) {
-      const models = [
-        { model: "gemini-1.5-flash-latest", version: "v1" },
-        { model: "gemini-2.0-flash", version: "v1beta" },
-        { model: "gemini-1.5-flash", version: "v1" }
-      ];
-      for (const m of models) {
-        try {
-          const url = `https://generativelanguage.googleapis.com/${m.version}/models/${m.model}:generateContent?key=${geminiKey}`;
-          const resp = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts: [{ text: combinedText }] }] })
-          });
-          const data = await resp.json();
-          if (resp.ok && data.candidates) {
-            data.candidates[0].content.parts[0].text = "✨ [Gemini]\n\n" + data.candidates[0].content.parts[0].text;
-            return res.status(200).json(data);
-          }
-        } catch (e) { continue; }
-      }
+    if (!apiKey) {
+      return new Response(JSON.stringify({ error: "API Key is missing in Vercel. እባክዎ Vercel Settings ላይ GEMINI_API_KEY ያስገቡ።" }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
 
-    // 2. Hugging Face fallback
-    if (hfToken) {
-      try {
-        const hfResp = await fetch("https://api-inference.huggingface.co/models/google/flan-t5-large", {
-          method: 'POST',
-          headers: { 'Authorization': 'Bearer ' + hfToken, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ inputs: combinedText })
-        });
-        const hfData = await hfResp.json();
-        if (hfData && Array.isArray(hfData) && hfData[0]?.generated_text) {
-          return res.status(200).json({
-            candidates: [{ content: { parts: [{ text: "🧠 [ጊዜያዊ AI]\n\n" + hfData[0].generated_text }] } }]
-          });
-        }
-      } catch (e) {}
-    }
+    // 💡 ትክክለኛው እና ፈጣኑ ሞዴል (gemini-1.5-flash) - "Model not found" የሚለውን ስህተት ያስቀራል
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
-    return sendFriendly('ውድ ተማሪ፣ የ AI አገልግሎታችን በመሻሻል ላይ ነው። እባክዎ ቆይተው ይሞክሩ። አሊያም በ tsehayteam@gmail.com ያግኙን።');
-  } catch (err) {
-    return sendFriendly('Backend Crash: ' + err.message);
+    // ወደ Google Gemini በቀጥታ መላክ
+    const googleResponse = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        systemInstruction: systemInstruction ? { parts: [{ text: systemInstruction }] } : undefined
+      })
+    });
+
+    const data = await googleResponse.json();
+
+    // መልሱን ወደ ዌብሳይታችን መመለስ
+    return new Response(JSON.stringify(data), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
+    });
+
+  } catch (error) {
+    // ኮዱ ላይ ስህተት ካጋጠመ ለዌብሳይቱ ማሳወቅ
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
   }
 }
