@@ -1,71 +1,91 @@
-export default async function handler(req, res) {
-  // CORS መፍቀጃ
+/**
+ * TSEHAY CAMPUS - Dual-Free AI Backend
+ * Gemini (free tier) + Groq (always free) – የትኛውም ከሰራ ያመጣል
+ */
+module.exports = async function(req, res) {
+  res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+  res.setHeader('Access-Control-Allow-Headers', '*');
   if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
+
+  const sendFriendly = (msg) => {
+    return res.status(200).json({
+      candidates: [{ content: { parts: [{ text: "📚 " + msg }] } }]
+    });
+  };
 
   try {
-    // 1. API Key ን ከ Vercel አምጥተን እናጸዳዋለን (Space ወይም Quote ካለው ያጠፋዋል)
-    let apiKey = process.env.GEMINI_API_KEY || "";
-    apiKey = apiKey.trim().replace(/^["']|["']$/g, '');
-
-    if (!apiKey) {
-        return res.status(500).json({ error: "Vercel ላይ API Key አልገባም!" });
-    }
+    if (req.method !== 'POST') return sendFriendly('POST ብቻ ይፈቀዳል።');
 
     const { prompt, systemInstruction } = req.body;
-    
-    // 2. መመሪያውን እና ጥያቄውን በአንድ ላይ እናዋህዳለን (Payload Fix)
-    const combinedPrompt = systemInstruction 
-        ? `መመሪያ: ${systemInstruction}\n\nጥያቄ: ${prompt}`
-        : prompt;
+    if (!prompt) return sendFriendly('ጥያቄ አልተላከም።');
 
-    const payload = {
-        contents: [{ 
-            role: "user", 
-            parts: [{ text: combinedPrompt }] 
-        }]
-    };
+    const combinedText = systemInstruction 
+      ? `System Instruction: ${systemInstruction}\n\nUser Question: ${prompt}` 
+      : prompt;
 
-    // 3. እምቢ ካለ የሚሞክራቸው የተለያዩ የ API Endpoints (v1beta እና v1 ን ያካትታል)
-    const endpointsToTry = [
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-        `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`,
-        `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${apiKey}`,
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=${apiKey}`
-    ];
+    const geminiKey = (process.env.GEMINI_API_KEY || '').trim();
+    const groqKey = (process.env.GROQ_API_KEY || '').trim();
 
-    let lastError = "ያልታወቀ ስህተት";
-
-    // 4. የሚሰራውን ሞዴል እና ቨርዥን እስኪያገኝ አንድ በአንድ ይሞክራል
-    for (const apiUrl of endpointsToTry) {
+    // 1. Gemini (ነፃ ሞዴሎች ብቻ)
+    if (geminiKey) {
+      const freeModels = [
+        "gemini-1.5-flash-latest",    // ምርጡ ነፃ
+        "gemini-2.0-flash-lite",      // አዲስ ፈጣን
+        "gemini-1.5-flash"            // ለስላሳ
+      ];
+      for (const model of freeModels) {
         try {
-            const response = await fetch(apiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            const data = await response.json();
-
-            if (response.ok && data.candidates) {
-                return res.status(200).json(data); // 🟢 በትክክል ሰርቷል፣ መልሱን ለዌብሳይቱ ይሰጣል
-            } else {
-                lastError = data.error?.message || "ሞዴሉ አልተገኘም";
+          const url = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${geminiKey}`;
+          const resp = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: combinedText }] }] })
+          });
+          const data = await resp.json();
+          if (resp.ok && data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
+            let aiText = data.candidates[0].content.parts[0].text;
+            // ባዶ ወይም ያልተለመደ ጽሑፍ ካልሆነ
+            if (aiText.trim().length > 20 && !aiText.includes("Всё тело:")) {
+              data.candidates[0].content.parts[0].text = "✨ [Gemini]\n\n" + aiText;
+              return res.status(200).json(data);
             }
-        } catch (err) {
-            lastError = err.message;
-        }
+          }
+        } catch (e) { continue; }
+      }
     }
 
-    // 🔴 ሁሉም Endpoints እምቢ ካሉ ብቻ ስህተቱን ያሳውቃል
-    return res.status(500).json({ error: `ሁሉም ሞዴሎች እምቢ ብለዋል! የመጨረሻ ስህተት: ${lastError}` });
+    // 2. Groq (100% ነፃ ሞዴል)
+    if (groqKey) {
+      try {
+        const groqResp = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": "Bearer " + groqKey,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            model: "llama-3.3-70b-versatile",
+            messages: [{ role: "user", content: combinedText }]
+          })
+        });
+        const groqData = await groqResp.json();
+        if (groqData.choices && groqData.choices[0]?.message?.content) {
+          return res.status(200).json({
+            candidates: [{ content: { parts: [{ text: "⚡ [Groq AI]\n\n" + groqData.choices[0].message.content }] } }]
+          });
+        }
+      } catch (e) {}
+    }
 
-  } catch (error) {
-    return res.status(500).json({ error: error.message });
+    // ሁለቱም ካልቻሉ
+    return sendFriendly(
+      "የ AI አገልግሎቱን ለጊዜው ማግኘት አልተቻለም። " +
+      "እባክዎ ቆይተው ይሞክሩ ወይም በ info@tsehaycampus.com ያግኙን።"
+    );
+
+  } catch (err) {
+    return sendFriendly('Backend Crash: ' + err.message);
   }
 }
