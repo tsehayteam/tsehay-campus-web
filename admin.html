@@ -121,11 +121,28 @@
         .toggle-checkbox:checked { right: 0; border-color: var(--secondary); }
         .toggle-checkbox:checked + .toggle-label { background-color: var(--secondary); }
         .dark .toggle-checkbox:checked + .toggle-label { background-color: var(--primary); }
+
+        /* Google Translate Fixed Styling for Footer */
+        .goog-te-banner-frame { display: none !important; }
+        .VIpgJd-ZVi9od-ORHb-OEVmcd { display: none !important; }
+        body { top: 0px !important; position: static !important; }
+        html { top: 0 !important; height: 100%; }
+        #google_translate_element_footer select {
+            background-color: #f1f5f9; color: #334155; border: 1px solid #e2e8f0; border-radius: 0.5rem;
+            padding: 0.4rem 0.8rem; font-family: 'Montserrat', sans-serif; font-size: 0.8rem; font-weight: 700;
+            outline: none; cursor: pointer; max-width: 150px;
+        }
+        .dark #google_translate_element_footer select {
+            background-color: #1e293b; color: #cbd5e1; border-color: #334155;
+        }
+        #google_translate_element_footer select:hover { border-color: #3268BA; }
+        .goog-logo-link { display: none !important; }
+        .goog-te-gadget { color: transparent !important; font-size: 0px !important; }
     </style>
 </head>
 <body class="text-dark dark:text-gray-100 antialiased h-screen overflow-hidden flex bg-bodyBg dark:bg-slate-900 transition-colors duration-300">
 
-    <!-- Notification Sound (Optional hidden audio element) -->
+    <!-- Notification Sound -->
     <audio id="notif-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
 
     <!-- Notification Container for Real-time alerts -->
@@ -330,7 +347,7 @@
                             <div class="w-12 h-12 sm:w-16 sm:h-16 bg-purple-50/50 dark:bg-purple-900/20 text-purple-500 rounded-2xl flex items-center justify-center text-xl sm:text-2xl border border-purple-100 dark:border-purple-800/50 shrink-0"><i class="fa-solid fa-server"></i></div>
                             <div class="flex-1">
                                 <p class="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 font-bold mb-1 uppercase tracking-wider">የሲስተም ሁኔታ</p>
-                                <p class="text-base sm:text-lg font-black font-heading text-success">Online</p>
+                                <p class="text-base sm:text-lg font-black font-heading text-success" id="system-status-indicator">Online</p>
                             </div>
                         </div>
                     </div>
@@ -386,7 +403,7 @@
                         <div class="p-6 md:p-8 border-b border-gray-100 dark:border-slate-700 flex flex-col md:flex-row justify-between items-center gap-4">
                             <div>
                                 <h3 class="font-black text-2xl text-dark dark:text-white font-heading mb-1">የተማሪዎች ማስተዳደሪያ</h3>
-                                <p class="text-sm text-gray-500 dark:text-gray-400 font-medium">በካምፓሱ ኮርስ የገዙ እና ንቁ የሆኑ ተማሪዎችን ይቆጣጠሩ</p>
+                                <p class="text-sm text-gray-500 dark:text-gray-400 font-medium">በካምፓሱ ኮርስ የገዙ እና ነፃ የተመዘገቡ ተማሪዎችን ይቆጣጠሩ</p>
                             </div>
                         </div>
                         
@@ -396,9 +413,9 @@
                                     <tr>
                                         <th class="w-20">ተ.ቁ</th>
                                         <th>ስም / ኢሜል</th>
-                                        <th>የተመዘገበበት ኮርስ</th>
+                                        <th>የተመዘገበበት ኮርስ / ደረጃ</th>
                                         <th>የተመዘገበበት ቀን</th>
-                                        <th>ሁኔታ</th>
+                                        <th>የክፍያ ሁኔታ</th>
                                         <th class="text-right">ድርጊት</th>
                                     </tr>
                                 </thead>
@@ -462,12 +479,13 @@
                                         <th>ተማሪ</th>
                                         <th>ኮርስ</th>
                                         <th>መጠን (ብር)</th>
+                                        <th>የክፍያ መንገድ</th>
                                         <th>ቀን</th>
                                         <th>ሁኔታ</th>
                                     </tr>
                                 </thead>
                                 <tbody id="payments-table-body" class="text-sm divide-y divide-gray-50 dark:divide-slate-700 bg-white dark:bg-slate-800">
-                                    <tr><td colspan="6" class="p-16 text-center text-gray-400 font-bold"><i class="fa-solid fa-spinner fa-spin mr-2"></i> የክፍያ መረጃ በመጫን ላይ...</td></tr>
+                                    <tr><td colspan="7" class="p-16 text-center text-gray-400 font-bold"><i class="fa-solid fa-spinner fa-spin mr-2"></i> የክፍያ መረጃ በመጫን ላይ...</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -477,9 +495,14 @@
                 <!-- 5. የተማሪዎች ጥያቄ (Q&A Tab) -->
                 <div id="qa-tab" class="tab-content">
                     <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden">
-                        <div class="p-6 md:p-8 border-b border-gray-100 dark:border-slate-700">
-                            <h3 class="font-black text-2xl text-dark dark:text-white font-heading mb-1">የተማሪዎች ጥያቄዎች</h3>
-                            <p class="text-sm text-gray-500 dark:text-gray-400 font-medium">በዳሽቦርዱ ላይ የተጠየቁ የጋራ ጥያቄዎች እና ውይይቶች</p>
+                        <div class="p-6 md:p-8 border-b border-gray-100 dark:border-slate-700 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                            <div>
+                                <h3 class="font-black text-2xl text-dark dark:text-white font-heading mb-1">የተማሪዎች ጥያቄዎች</h3>
+                                <p class="text-sm text-gray-500 dark:text-gray-400 font-medium">በዳሽቦርዱ ላይ የተጠየቁ የጋራ ጥያቄዎች እና ውይይቶች</p>
+                            </div>
+                            <button onclick="window.openBroadcastModal()" class="w-full md:w-auto bg-primary text-dark px-5 py-2.5 rounded-xl font-bold shadow hover:bg-yellow-400 transition flex items-center justify-center gap-2 text-sm transform hover:-translate-y-1">
+                                <i class="fa-solid fa-bullhorn"></i> ማሳወቂያ ላክ (Broadcast)
+                            </button>
                         </div>
                         <div class="p-6 md:p-8 bg-gray-50/50 dark:bg-slate-900/50 min-h-[400px]">
                             <div id="admin-qa-list" class="space-y-4 max-w-4xl mx-auto">
@@ -588,6 +611,12 @@
                 </div>
 
             </div>
+            
+            <!-- Footer with Translate widget inside main content -->
+            <footer class="mt-12 p-4 border-t border-gray-200 dark:border-slate-700 flex justify-between items-center bg-transparent shrink-0">
+                <p class="text-xs text-gray-500 font-bold">&copy; 2026 Tsehay Campus Admin</p>
+                <div id="google_translate_element_footer" class="overflow-hidden rounded-lg border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 shadow-sm"></div>
+            </footer>
         </main>
     </div>
 
@@ -657,9 +686,20 @@
                                 </select>
                             </div>
                         </div>
-                        <div class="mt-6">
-                            <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">የኮርሱ ቆይታ (Duration) <span class="text-danger">*</span></label>
-                            <input type="text" id="c-duration" placeholder="ለምሳሌ: 5 ሰዓት 30 ደቂቃ ወይም 12 ክፍሎች" class="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-600 rounded-xl p-3.5 outline-none focus:border-secondary dark:focus:border-primary focus:bg-white dark:focus:bg-slate-800 transition text-dark dark:text-white">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">የኮርሱ ቆይታ (Duration) <span class="text-danger">*</span></label>
+                                <input type="text" id="c-duration" placeholder="ለምሳሌ: 5 ሰዓት 30 ደቂቃ ወይም 12 ክፍሎች" class="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-600 rounded-xl p-3.5 outline-none focus:border-secondary dark:focus:border-primary focus:bg-white dark:focus:bg-slate-800 transition text-dark dark:text-white">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">የኮርሱ ደረጃ (Level) <span class="text-danger">*</span></label>
+                                <select id="c-level" class="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-600 rounded-xl p-3.5 outline-none focus:border-secondary dark:focus:border-primary focus:bg-white dark:focus:bg-slate-800 transition font-bold text-dark dark:text-white cursor-pointer">
+                                    <option value="ጀማሪ">ጀማሪ (Beginner)</option>
+                                    <option value="መካከለኛ">መካከለኛ (Intermediate)</option>
+                                    <option value="ከፍተኛ">ከፍተኛ (Advanced)</option>
+                                    <option value="ለሁሉም">ለሁሉም (All Levels)</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
 
@@ -715,119 +755,80 @@
         </div>
     </div>
 
-    <!-- Firebase Integration -->
+    <!-- Q&A Reply Modal -->
+    <div id="qa-modal" class="fixed inset-0 bg-black/60 z-[9999] hidden items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white dark:bg-slate-800 w-full max-w-lg rounded-3xl shadow-2xl p-6 border border-gray-100 dark:border-slate-700">
+            <div class="flex justify-between items-start mb-4 border-b border-gray-100 dark:border-slate-700 pb-4">
+                <div>
+                    <h3 class="font-black text-dark dark:text-white">ለተማሪ ጥያቄ ምላሽ መስጫ</h3>
+                    <p class="text-sm text-gray-500" id="qa-modal-user">ተማሪ...</p>
+                </div>
+                <button onclick="document.getElementById('qa-modal').classList.replace('flex', 'hidden')" class="text-gray-400 hover:text-danger"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            
+            <div class="bg-gray-50 dark:bg-slate-900 p-4 rounded-xl mb-4 text-sm text-dark dark:text-gray-200 border border-gray-200 dark:border-slate-700" id="qa-modal-question"></div>
+            
+            <textarea id="qa-modal-reply" rows="4" class="w-full p-3 rounded-xl border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-dark dark:text-white outline-none focus:border-secondary transition mb-4 text-sm" placeholder="ምላሽዎን እዚህ ይፃፉ..."></textarea>
+            
+            <input type="hidden" id="qa-modal-id">
+            
+            <button onclick="window.submitQaReply()" class="w-full bg-secondary text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition shadow-md">ምላሹን ላክ (Send Reply)</button>
+        </div>
+    </div>
+
+    <!-- Broadcast Notification Modal -->
+    <div id="broadcast-modal" class="fixed inset-0 bg-black/60 z-[9999] hidden items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white dark:bg-slate-800 w-full max-w-lg rounded-3xl shadow-2xl p-6 border border-gray-100 dark:border-slate-700">
+            <div class="flex justify-between items-start mb-4 border-b border-gray-100 dark:border-slate-700 pb-4">
+                <div>
+                    <h3 class="font-black text-dark dark:text-white text-lg"><i class="fa-solid fa-bullhorn text-primary mr-2"></i> ማሳወቂያ ላክ</h3>
+                    <p class="text-sm text-gray-500">በቀጥታ ወደ ተማሪዎች ዳሽቦርድ ይደርሳል</p>
+                </div>
+                <button onclick="document.getElementById('broadcast-modal').classList.replace('flex', 'hidden')" class="text-gray-400 hover:text-danger transition"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">ለማን ይላክ? <span class="text-danger">*</span></label>
+                <select id="broadcast-target" class="w-full p-3.5 rounded-xl border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-900 text-dark dark:text-white outline-none focus:border-secondary dark:focus:border-primary transition font-bold text-sm">
+                    <option value="ALL">ለሁሉም ተማሪዎች (All Students)</option>
+                    <!-- Students will be loaded here dynamically -->
+                </select>
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">የመልዕክቱ ርዕስ (Title) <span class="text-danger">*</span></label>
+                <input type="text" id="broadcast-title" class="w-full p-3.5 rounded-xl border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-900 text-dark dark:text-white outline-none focus:border-secondary dark:focus:border-primary transition text-sm" placeholder="ለምሳሌ፡ አዲስ ኮርስ ተለቋል!">
+            </div>
+            <div class="mb-6">
+                <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">መልዕክት (Message) <span class="text-danger">*</span></label>
+                <textarea id="broadcast-message" rows="4" class="w-full p-3.5 rounded-xl border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-dark dark:text-white outline-none focus:border-secondary dark:focus:border-primary transition text-sm resize-none" placeholder="ማሳወቂያዎን እዚህ ይፃፉ..."></textarea>
+            </div>
+            <button onclick="window.sendBroadcast()" id="btn-send-broadcast" class="w-full bg-primary text-dark font-black py-3.5 rounded-xl hover:bg-yellow-400 transition shadow-lg flex items-center justify-center gap-2 transform hover:-translate-y-1">
+                <i class="fa-solid fa-paper-plane"></i> ማሳወቂያውን ላክ (Send)
+            </button>
+        </div>
+    </div>
+
+    <!-- UI Logic & Firebase Setup -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, onAuthStateChanged, signOut, updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, collection, onSnapshot, deleteDoc, getDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, getDocs, collection, onSnapshot, deleteDoc, collectionGroup } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // አስተካክለነዋል! DCxLwf (በትልቁ L)
+        // Firebase Setup
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'tsehaycampus-e1a6d';
         const firebaseConfig = {
-            apiKey: "AIzaSyDCxlwfYAS_I0D7c-8e-iB-Y-Rh2ZZoHZw",
+            apiKey:"AIzaSyDCxlwfYAS_I0D7c-8e-iB-Y-Rh2ZZoHZw",
             authDomain: "tsehaycampus-e1a6d.firebaseapp.com",
             projectId: "tsehaycampus-e1a6d",
             storageBucket: "tsehaycampus-e1a6d.firebasestorage.app",
             messagingSenderId: "1043616909865",
             appId: "1:1043616909865:web:9ecca7d9a14deef0f5ea38"
         };
-        
+
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'tsehaycampus-e1a6d';
-
-        // --- Safe Redirect for Canvas ---
-        window.safeRedirect = function(target) {
-            try {
-                if (window.location.protocol === 'blob:' || window.location.origin === 'null') {
-                    throw new Error("Canvas Environment Redirect Blocked");
-                }
-                const url = new URL(target, window.location.href);
-                window.location.href = url.href;
-            } catch (e) {
-                document.body.innerHTML = `
-                    <div style="height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0f172a;color:white;font-family:sans-serif;text-align:center;padding:20px;">
-                        <i class="fa-solid fa-shield-halved" style="font-size:4rem;color:#ef4444;margin-bottom:1rem;"></i>
-                        <h2 style="font-weight:900;font-size:1.8rem;margin-bottom:0.5rem;font-family: 'Montserrat', sans-serif;">መግቢያ ተከልክሏል!</h2>
-                        <p style="color:#94a3b8;max-width:450px;line-height:1.6;font-family: 'Roboto', sans-serif;">ወደ ማረፊያ ገፅ መመለስ አልተቻለም (Canvas Mode)። እባክዎ <b>index.html</b>ን በተለመደው መንገድ ይክፈቱ።</p>
-                    </div>`;
-            }
-        };
-
-        // --- Make Functions Global ---
-        window.loginAdmin = async function() {
-            const email = document.getElementById('admin-email').value.trim();
-            const pwd = document.getElementById('admin-pwd').value;
-            const name = document.getElementById('admin-name').value.trim();
-            const btn = document.getElementById('login-btn');
-            const err = document.getElementById('login-error');
-
-            if(!email || !pwd || (window.isAdminSignup && !name)) {
-                err.innerHTML = '<i class="fa-solid fa-triangle-exclamation mr-1"></i> እባክዎ ሁሉንም መረጃዎች ያስገቡ!';
-                err.classList.remove('hidden'); return;
-            }
-
-            const originalBtn = btn.innerHTML;
-            btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> በመግባት ላይ...';
-
-            try {
-                if (window.isAdminSignup) {
-                    const cred = await createUserWithEmailAndPassword(auth, email, pwd);
-                    await updateProfile(cred.user, { displayName: name });
-                } else {
-                    await signInWithEmailAndPassword(auth, email, pwd);
-                }
-            } catch(e) {
-                err.classList.remove('hidden');
-                
-                if (e.code === 'auth/invalid-credential' || e.code === 'auth/user-not-found' || e.code === 'auth/wrong-password') {
-                    err.innerHTML = '<i class="fa-solid fa-triangle-exclamation mr-1"></i> ኢሜል ወይም የይለፍ ቃል ትክክል አይደለም።';
-                } else if (e.code === 'auth/email-already-in-use') {
-                    err.innerHTML = '<i class="fa-solid fa-triangle-exclamation mr-1"></i> ይህ ኢሜል ከዚህ በፊት ተመዝግቧል! እባክዎ "ግባ (Login)" የሚለውን ይጫኑ።';
-                } else if (e.code === 'auth/weak-password') {
-                    err.innerHTML = '<i class="fa-solid fa-triangle-exclamation mr-1"></i> የይለፍ ቃሉ ቢያንስ 6 ፊደል መሆን አለበት!';
-                } else {
-                    err.innerHTML = '<i class="fa-solid fa-triangle-exclamation mr-1"></i> ስህተት: ' + e.message;
-                }
-                
-                err.className = "bg-danger/20 text-white border border-danger/50 text-sm p-4 rounded-xl mb-6 font-bold text-left";
-                btn.disabled = false; btn.innerHTML = originalBtn;
-            }
-        };
-
-        window.toggleAdminAuthMode = function() {
-            window.isAdminSignup = !window.isAdminSignup;
-            const btn = document.getElementById('login-btn');
-            const switchBtn = document.getElementById('admin-switch-btn');
-            const nameField = document.getElementById('admin-name-field');
-            if (window.isAdminSignup) {
-                btn.innerHTML = 'አዲስ አድሚን መዝግብ <i class="fa-solid fa-user-plus"></i>';
-                switchBtn.innerHTML = '<i class="fa-solid fa-arrow-left"></i> ወደ መግቢያ ተመለስ';
-                nameField.classList.remove('hidden');
-            } else {
-                btn.innerHTML = 'ግባ (Log in) <i class="fa-solid fa-arrow-right-to-bracket"></i>';
-                switchBtn.innerHTML = '<i class="fa-solid fa-user-plus"></i> አዲስ አድሚን';
-                nameField.classList.add('hidden');
-            }
-        };
-
-        window.resetAdminPassword = async function() {
-            let email = document.getElementById('admin-email')?.value.trim() || document.getElementById('setting-admin-email')?.value.trim();
-            if(!email && auth.currentUser) email = auth.currentUser.email;
-            
-            if(!email) {
-                window.showToast("እባክዎ መጀመሪያ ኢሜልዎን ያስገቡ።", true);
-                return;
-            }
-            try {
-                await sendPasswordResetEmail(auth, email);
-                window.showToast(`የይለፍ ቃል መቀየሪያ ሊንክ ወደ ${email} ተልኳል! ኢሜልዎን ይፈትሹ።`);
-            } catch(e) {
-                window.showToast('ስህተት: ' + e.message, true);
-            }
-        };
-
+        let adminCourses = [];
         let globalCourses = [];
         let isLoggedIn = false;
 
@@ -837,144 +838,35 @@
         let isInitialWaitlistLoad = true;
         let isInitialPaymentsLoad = true;
         let isInitialQALoad = true;
+        let isInitialStudentsLoad = true; 
+        let allStudentsData = []; 
+        let allPaymentsData = []; 
 
-        function playNotifSound() {
-            const soundEnabled = document.getElementById('toggle-sound-notif')?.checked;
-            if (soundEnabled) {
-                const audio = document.getElementById('notif-sound');
-                if(audio) { audio.currentTime = 0; audio.play().catch(e=>{}); }
-            }
-        }
-
-        function createLiveToast(message, iconClass = 'fa-bell', iconColorClass = 'text-primary') {
-            const container = document.getElementById('notification-container');
-            const toast = document.createElement('div');
-            toast.className = `live-toast animate-slide-left`;
-            toast.innerHTML = `
-                <div class="w-10 h-10 rounded-full bg-gray-100 dark:bg-slate-700 flex items-center justify-center shrink-0">
-                    <i class="fa-solid ${iconClass} ${iconColorClass} text-lg"></i>
-                </div>
-                <div class="flex-1 min-w-0 pr-4">
-                    <p class="truncate">${message}</p>
-                </div>
-                <button onclick="this.parentElement.remove()" class="text-gray-400 hover:text-dark dark:hover:text-white ml-auto"><i class="fa-solid fa-xmark"></i></button>
-            `;
-            container.appendChild(toast);
-            playNotifSound();
-            
-            setTimeout(() => {
-                toast.style.opacity = '0';
-                toast.style.transform = 'translateX(100%)';
-                toast.style.transition = 'all 0.3s ease';
-                setTimeout(() => toast.remove(), 300);
-            }, 5000);
-        }
-
-        function addNotificationToDropdown(title, desc, iconClass, iconColorClass) {
-            unreadCount++;
-            updateNotifBadge();
-            
-            const notif = { title, desc, iconClass, iconColorClass, time: new Date().toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'}) };
-            notifications.unshift(notif);
-            renderDropdownList();
-            createLiveToast(title + ": " + desc, iconClass, iconColorClass);
-        }
-
-        function renderDropdownList() {
-            const list = document.getElementById('notif-dropdown-list');
-            if(notifications.length === 0) {
-                list.innerHTML = '<div class="p-6 text-center text-gray-400 dark:text-gray-500 text-sm">ምንም አዲስ ማሳወቂያ የለም</div>';
-                return;
-            }
-            list.innerHTML = '';
-            notifications.forEach(n => {
-                list.innerHTML += `
-                    <div class="p-4 flex gap-3 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition cursor-pointer">
-                        <div class="w-8 h-8 rounded-full bg-gray-100 dark:bg-slate-700 flex items-center justify-center shrink-0 mt-0.5">
-                            <i class="fa-solid ${n.iconClass} ${n.iconColorClass} text-sm"></i>
-                        </div>
-                        <div>
-                            <p class="text-sm font-bold text-dark dark:text-white">${n.title}</p>
-                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">${n.desc}</p>
-                            <p class="text-[10px] font-bold text-gray-400 mt-1">${n.time}</p>
-                        </div>
-                    </div>
-                `;
-            });
-        }
-
-        function updateNotifBadge() {
-            const badge = document.getElementById('header-notif-badge');
-            if (unreadCount > 0) {
-                badge.classList.remove('hidden');
-            } else {
-                badge.classList.add('hidden');
-            }
-        }
-
-        window.toggleNotifications = function() {
-            const dropdown = document.getElementById('notif-dropdown');
-            dropdown.classList.toggle('hidden');
-            if(!dropdown.classList.contains('hidden')) {
-                unreadCount = 0;
-                updateNotifBadge();
-            }
-        };
-
-        window.closeNotificationDropdown = function() {
-            const dropdown = document.getElementById('notif-dropdown');
-            if(dropdown && !dropdown.classList.contains('hidden')) {
-                dropdown.classList.add('hidden');
-            }
-        };
-
-        window.clearNotifications = function() {
-            notifications = [];
-            unreadCount = 0;
-            updateNotifBadge();
-            renderDropdownList();
-            window.toggleNotifications();
-        };
-
-        function updateClock() {
-            const now = new Date();
-            const timeEl = document.getElementById('current-time');
-            const dateEl = document.getElementById('current-date');
-            if(timeEl) timeEl.innerText = now.toLocaleTimeString('en-US', { hour: '2-digit', minute:'2-digit', hour12: true });
-            if(dateEl) dateEl.innerText = now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-        }
-        setInterval(updateClock, 1000); updateClock();
-
-        window.toggleTheme = function() {
-            document.documentElement.classList.toggle('dark');
-            const isDark = document.documentElement.classList.contains('dark');
-            localStorage.setItem('theme', isDark ? 'dark' : 'light');
-            const icon = document.getElementById('theme-icon');
-            if(icon) icon.className = isDark ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
-        };
-
+        // UI Helpers
         window.switchTab = function(tabId, btnElement) {
-            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-            document.querySelectorAll('.sidebar-link').forEach(btn => btn.classList.remove('active', 'dark:bg-slate-700'));
-            const targetTab = document.getElementById(tabId);
-            if(targetTab) targetTab.classList.add('active');
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
             
-            if(btnElement) {
-                btnElement.classList.add('active');
-                const tabHeading = document.getElementById('tab-heading');
-                if(tabHeading) tabHeading.innerText = btnElement.innerText.trim();
-            }
+            document.querySelectorAll('.sidebar-link').forEach(btn => btn.classList.remove('active'));
+            if(btnElement) btnElement.classList.add('active');
+            
+            document.getElementById('tab-heading').innerText = btnElement.innerText.trim();
+            
             if(window.innerWidth < 768) {
-                const sidebar = document.getElementById('admin-sidebar');
-                if(sidebar && !sidebar.classList.contains('-translate-x-full')) window.toggleSidebar();
+                document.getElementById('sidebar').classList.add('hidden');
+                document.getElementById('sidebar-overlay').classList.add('hidden');
             }
         };
 
         window.toggleSidebar = function() {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('sidebar-overlay');
-            if(sidebar) sidebar.classList.toggle('-translate-x-full');
-            if(overlay) overlay.classList.toggle('hidden');
+            document.getElementById('sidebar').classList.toggle('hidden');
+            document.getElementById('sidebar-overlay').classList.toggle('hidden');
+        };
+
+        window.toggleTheme = function() {
+            const isDark = document.documentElement.classList.toggle('dark');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            document.getElementById('theme-icon').className = isDark ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
         };
 
         window.showToast = function(msg, isError = false) {
@@ -1008,7 +900,130 @@
                     window.closeConfirmModal();
                 });
             }
+
+            // Sound Toggle persistence logic
+            const soundToggle = document.getElementById('toggle-sound-notif');
+            if(soundToggle) {
+                soundToggle.checked = localStorage.getItem('sound_notif') !== 'false';
+                soundToggle.addEventListener('change', (e) => {
+                    localStorage.setItem('sound_notif', e.target.checked);
+                });
+            }
         });
+
+        window.toggleNotifications = function() {
+            const dropdown = document.getElementById('notif-dropdown');
+            if (dropdown) dropdown.classList.toggle('hidden');
+        };
+
+        window.closeNotificationDropdown = function() {
+            const dropdown = document.getElementById('notif-dropdown');
+            if (dropdown && !dropdown.classList.contains('hidden')) {
+                dropdown.classList.add('hidden');
+            }
+        };
+
+        window.clearNotifications = function() {
+            const list = document.getElementById('notif-dropdown-list');
+            if (list) list.innerHTML = '<div class="p-6 text-center text-gray-400 dark:text-gray-500 text-sm">ምንም አዲስ ማሳወቂያ የለም</div>';
+            const badge = document.getElementById('header-notif-badge');
+            if (badge) badge.classList.add('hidden');
+            notifications = [];
+            unreadCount = 0;
+        };
+
+        function addNotificationToDropdown(title, msg, iconClass, colorClass) {
+            const list = document.getElementById('notif-dropdown-list');
+            const badge = document.getElementById('header-notif-badge');
+            if (!list) return;
+
+            if (notifications.length === 0) list.innerHTML = '';
+
+            const notifHtml = `
+                <div class="p-4 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition cursor-pointer flex gap-3 items-start border-l-2 border-transparent hover:border-${colorClass.replace('text-', '')}">
+                    <div class="w-8 h-8 rounded-full bg-gray-100 dark:bg-slate-700 flex items-center justify-center shrink-0 ${colorClass}">
+                        <i class="fa-solid ${iconClass}"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-bold text-dark dark:text-white">${title}</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">${msg}</p>
+                        <p class="text-[10px] text-gray-400 mt-1">${new Date().toLocaleTimeString()}</p>
+                    </div>
+                </div>
+            `;
+            list.insertAdjacentHTML('afterbegin', notifHtml);
+            notifications.unshift({title, msg});
+            unreadCount++;
+            
+            if (badge) badge.classList.remove('hidden');
+
+            const container = document.getElementById('notification-container');
+            if (container) {
+                const toast = document.createElement('div');
+                toast.className = 'live-toast';
+                toast.innerHTML = `<i class="fa-solid ${iconClass} ${colorClass} text-xl"></i> <div><p class="text-sm font-bold">${title}</p><p class="text-xs font-normal">${msg}</p></div>`;
+                container.appendChild(toast);
+                
+                const soundEnabled = localStorage.getItem('sound_notif') !== 'false';
+                if(soundEnabled) {
+                    const audio = document.getElementById('notif-sound');
+                    if(audio) audio.play().catch(e => {}); 
+                }
+
+                setTimeout(() => {
+                    toast.style.opacity = '0';
+                    toast.style.transform = 'translateY(-10px)';
+                    toast.style.transition = 'all 0.3s ease';
+                    setTimeout(() => toast.remove(), 300);
+                }, 4000);
+            }
+        }
+
+        window.loginAdmin = async function() {
+            const email = document.getElementById('admin-email').value;
+            const pwd = document.getElementById('admin-pwd').value;
+            const errDiv = document.getElementById('login-error');
+            const btn = document.getElementById('login-btn');
+            
+            if(!email || !pwd) { 
+                errDiv.innerText = "እባክዎ መረጃዎችን በትክክል ያስገቡ!"; 
+                errDiv.classList.remove('hidden'); 
+                return; 
+            }
+            
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> እየገባ ነው...';
+            btn.disabled = true;
+            
+            try {
+                await signInWithEmailAndPassword(auth, email, pwd);
+                const loginScreen = document.getElementById('admin-login-screen');
+                if (loginScreen) loginScreen.style.display = 'none';
+            } catch(error) {
+                errDiv.innerText = "ስህተት: ኢሜል ወይም ፓስወርድ ትክክል አይደለም!";
+                errDiv.classList.remove('hidden');
+            } finally {
+                btn.innerHTML = 'ግባ (Log in) <i class="fa-solid fa-arrow-right-to-bracket ml-2"></i>';
+                btn.disabled = false;
+            }
+        };
+
+        window.toggleAdminAuthMode = function() {
+            window.showToast("አዲስ አድሚን መጨመር የሚቻለው በዋናው አድሚን ብቻ ነው።", true);
+        };
+
+        window.resetAdminPassword = async function() {
+            const email = document.getElementById('admin-email')?.value || auth?.currentUser?.email || document.getElementById('setting-admin-email')?.value;
+            if (!email) {
+                window.showToast("እባክዎ በመጀመሪያ ኢሜልዎን ያስገቡ", true);
+                return;
+            }
+            try {
+                await sendPasswordResetEmail(auth, email);
+                window.showToast("የይለፍ ቃል መቀየሪያ ሊንክ ተልኳል!");
+            } catch (error) {
+                window.showToast("ስህተት ተከስቷል: " + error.message, true);
+            }
+        };
 
         // የተፈቀዱ አድሚኖች ኢሜል (Admin Whitelist Guard)
         const ADMIN_EMAILS = ['habte@gmail.com', 'cryptomaster758@gmail.com', 'admin@tsehaycampus.com'];
@@ -1066,7 +1081,8 @@
 
                 window.renderCourses();
                 loadWaitlist();
-                loadPayments(); // This also loads Active Students
+                loadPayments();
+                loadStudents(); 
                 loadQA();
                 loadSettings();
             } else {
@@ -1075,6 +1091,80 @@
                 if(loginScreen) loginScreen.style.display = 'flex';
             }
         });
+
+        // 💡 Live Students Loader 💡
+        function loadStudents() {
+            try {
+                onSnapshot(collectionGroup(db, 'profile'), (snap) => {
+                    allStudentsData = [];
+                    snap.forEach(doc => {
+                        if (doc.id === 'info' && doc.ref.path.includes(appId)) {
+                            allStudentsData.push({ uid: doc.ref.parent.parent.id, ...doc.data() });
+                        }
+                    });
+                    
+                    if(!isInitialStudentsLoad) {
+                        snap.docChanges().forEach(change => {
+                            if (change.type === 'added' && change.doc.id === 'info' && change.doc.ref.path.includes(appId)) {
+                                const d = change.doc.data();
+                                addNotificationToDropdown("አዲስ ተማሪ", `${d.displayName || 'አዲስ ተማሪ'} ተመዝግቧል!`, "fa-user-graduate", "text-primary");
+                            }
+                        });
+                    }
+                    isInitialStudentsLoad = false;
+                    if (typeof window.renderStudentsTable === 'function') window.renderStudentsTable();
+                }, (error) => {
+                    console.error("CollectionGroup error:", error);
+                });
+            } catch(e) {
+                console.error(e);
+            }
+        }
+
+        window.renderStudentsTable = function() {
+            const stdBody = document.getElementById('students-table-body');
+            if(!stdBody) return;
+            stdBody.innerHTML = '';
+            
+            if(allStudentsData.length === 0) {
+                stdBody.innerHTML = '<tr><td colspan="6" class="p-16 text-center text-gray-400 font-bold"><i class="fa-solid fa-users-slash text-3xl mb-3 block text-gray-300"></i> ምንም ተማሪ አልተገኘም</td></tr>';
+                const stat = document.getElementById('stat-students');
+                if(stat) stat.innerText = 0;
+                return;
+            }
+
+            allStudentsData.sort((a,b) => new Date(b.registeredAt || 0) - new Date(a.registeredAt || 0));
+            const stat = document.getElementById('stat-students');
+            if(stat) stat.innerText = allStudentsData.length;
+
+            allStudentsData.forEach((std, idx) => {
+                const payment = allPaymentsData.find(p => p.userEmail === std.email && p.status === 'Completed');
+                const isPaid = !!payment;
+                
+                const dateStr = std.registeredAt ? new Date(std.registeredAt).toLocaleDateString('en-US') : 'N/A';
+                const statusBadge = isPaid 
+                    ? `<span class="bg-green-100 dark:bg-green-900/30 text-success text-[10px] font-black uppercase px-2.5 py-1 rounded border border-green-200 dark:border-green-800">Paid (Premium)</span>`
+                    : `<span class="bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-gray-400 text-[10px] font-black uppercase px-2.5 py-1 rounded border border-gray-200 dark:border-slate-600">Free Account</span>`;
+
+                const courseName = isPaid ? (payment.courseName || 'Premium Course') : 'ገና አልገዛም';
+                
+                stdBody.innerHTML += `
+                    <tr class="hover:bg-gray-50/50 dark:hover:bg-slate-700/50 transition">
+                        <td class="font-bold text-gray-400">${idx + 1}</td>
+                        <td>
+                            <p class="font-bold text-dark dark:text-white">${std.displayName || 'ተማሪ'}</p>
+                            <p class="text-xs text-gray-500">${std.email || ''}</p>
+                        </td>
+                        <td class="font-bold text-secondary dark:text-primary">${courseName}</td>
+                        <td class="text-xs text-gray-500 font-bold">${dateStr}</td>
+                        <td>${statusBadge}</td>
+                        <td class="text-right">
+                            <button onclick="window.showToast('የተማሪው መረጃ በቅርቡ የሚከፈት ይሆናል')" class="text-secondary hover:text-primary transition font-bold text-xs bg-blue-50 dark:bg-slate-700 px-3 py-1.5 rounded-lg border border-blue-100 dark:border-slate-600">ዝርዝር እይ</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
 
         window.logoutAdmin = () => {
             window.openConfirmModal("መውጣት ይፈልጋሉ?", "ከአድሚን ዳሽቦርዱ ይወጣሉ።", async () => {
@@ -1148,14 +1238,10 @@
                     displayName: newName, photoURL: newPhoto
                 }, { merge: true });
 
-                const hAvatar = document.getElementById('admin-avatar-header');
                 const sAvatar = document.getElementById('admin-avatar-img');
-                const hName = document.getElementById('admin-name-header');
                 const sName = document.getElementById('admin-user-display');
-                if(hName) hName.innerText = newName;
                 if(sName) sName.innerText = newName;
                 if(newPhoto) {
-                    if(hAvatar) hAvatar.src = newPhoto;
                     if(sAvatar) sAvatar.src = newPhoto;
                 }
 
@@ -1241,16 +1327,14 @@
             link.download = "TsehayCampus_Waitlist.csv"; link.click();
         };
 
+        // 💡 Live Payments Loader 💡
         function loadPayments() {
             onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'payments'), (snap) => {
+                allPaymentsData = [];
                 let total = 0; let count = 0;
-                let stdCount = 0;
                 
                 const tbody = document.getElementById('payments-table-body');
-                const stdBody = document.getElementById('students-table-body');
-                
                 if(tbody) tbody.innerHTML = '';
-                if(stdBody) stdBody.innerHTML = '';
                 
                 if(!isInitialPaymentsLoad) {
                     snap.docChanges().forEach(change => {
@@ -1262,52 +1346,38 @@
                 isInitialPaymentsLoad = false;
 
                 if (snap.empty) {
-                    if(tbody) tbody.innerHTML = '<tr><td colspan="6" class="p-16 text-center text-gray-400 font-bold"><i class="fa-solid fa-receipt text-3xl mb-3 block text-gray-300"></i> ምንም የክፍያ መረጃ አልተገኘም</td></tr>';
-                    if(stdBody) stdBody.innerHTML = '<tr><td colspan="6" class="p-16 text-center text-gray-400 font-bold"><i class="fa-solid fa-users-slash text-3xl mb-3 block text-gray-300"></i> ምንም ተማሪ አልተገኘም</td></tr>';
+                    if(tbody) tbody.innerHTML = '<tr><td colspan="7" class="p-16 text-center text-gray-400 font-bold"><i class="fa-solid fa-receipt text-3xl mb-3 block text-gray-300"></i> ምንም የክፍያ መረጃ አልተገኘም</td></tr>';
                 } else {
                     snap.forEach(doc => {
                         const data = doc.data();
+                        allPaymentsData.push({ id: doc.id, ...data });
                         total += Number(data.amount || 0); count++;
+                        
                         const dateStr = data.timestamp ? new Date(data.timestamp).toLocaleDateString('en-US') : 'N/A';
                         const statusBadge = data.status === 'Completed' ? `<span class="bg-green-100 text-success text-[10px] font-black uppercase px-2 py-1 rounded border border-green-200">ተከፍሏል</span>` : `<span class="bg-yellow-100 text-warning text-[10px] font-black uppercase px-2 py-1 rounded border border-yellow-200">በሂደት ላይ</span>`;
                         
-                        if(tbody) tbody.innerHTML += `<tr class="hover:bg-gray-50/50 dark:hover:bg-slate-700/50 transition"><td class="font-bold text-gray-400">${count}</td><td class="font-bold text-dark dark:text-white">${data.userName || data.userEmail || 'Unknown'}</td><td class="text-gray-600 dark:text-gray-400 font-medium">${data.courseName || 'Course'}</td><td class="font-black text-success">${Number(data.amount || 0).toLocaleString()}</td><td class="text-xs text-gray-500 font-bold">${dateStr}</td><td>${statusBadge}</td></tr>`;
-                        
-                        // Populate Students Tab based on payments
-                        if(data.status === 'Completed') {
-                            stdCount++;
-                            if(stdBody) {
-                                stdBody.innerHTML += `
-                                    <tr class="hover:bg-gray-50/50 dark:hover:bg-slate-700/50 transition">
-                                        <td class="font-bold text-gray-400">${stdCount}</td>
-                                        <td>
-                                            <p class="font-bold text-dark dark:text-white">${data.userName || 'ተማሪ'}</p>
-                                            <p class="text-xs text-gray-500">${data.userEmail || ''}</p>
-                                        </td>
-                                        <td class="font-bold text-secondary dark:text-primary">${data.courseName || 'Course'}</td>
-                                        <td class="text-xs text-gray-500 font-bold">${dateStr}</td>
-                                        <td><span class="bg-green-100 dark:bg-green-900/30 text-success text-[10px] font-black uppercase px-2.5 py-1 rounded border border-green-200 dark:border-green-800">Active</span></td>
-                                        <td class="text-right">
-                                            <button onclick="window.showToast('የተማሪው መረጃ በቅርቡ የሚከፈት ይሆናል')" class="text-secondary hover:text-primary transition font-bold text-xs bg-blue-50 dark:bg-slate-700 px-3 py-1.5 rounded-lg border border-blue-100 dark:border-slate-600">ዝርዝር እይ</button>
-                                        </td>
-                                    </tr>
-                                `;
-                            }
-                        }
+                        // Payment Method Logic (Bank, Telebirr, Crypto, PayPal, Card, Chapa)
+                        const pMethod = data.paymentMethod || data.method || 'Chapa/Bank';
+                        const methodBadge = `<span class="bg-blue-50 dark:bg-slate-700 text-secondary dark:text-primary text-[10px] font-bold px-2.5 py-1 rounded border border-blue-100 dark:border-slate-600">${pMethod}</span>`;
+
+                        if(tbody) tbody.innerHTML += `<tr class="hover:bg-gray-50/50 dark:hover:bg-slate-700/50 transition"><td class="font-bold text-gray-400">${count}</td><td class="font-bold text-dark dark:text-white">${data.userName || data.userEmail || 'Unknown'}</td><td class="text-gray-600 dark:text-gray-400 font-medium">${data.courseName || 'Course'}</td><td class="font-black text-success">${Number(data.amount || 0).toLocaleString()}</td><td>${methodBadge}</td><td class="text-xs text-gray-500 font-bold">${dateStr}</td><td>${statusBadge}</td></tr>`;
                     });
-                    
-                    if(stdCount === 0 && stdBody) {
-                        stdBody.innerHTML = '<tr><td colspan="6" class="p-16 text-center text-gray-400 font-bold"><i class="fa-solid fa-users-slash text-3xl mb-3 block text-gray-300"></i> ምንም ንቁ ተማሪ አልተገኘም</td></tr>';
-                    }
                 }
+                
                 const totalStr = total.toLocaleString();
                 const mainRevEl = document.getElementById('main-total-revenue');
                 const topRevEl = document.getElementById('top-total-revenue');
                 if(mainRevEl) mainRevEl.innerHTML = `${totalStr} <span class="text-sm text-gray-500 font-bold">ETB</span>`;
                 if(topRevEl) topRevEl.innerHTML = `${totalStr} ብር`;
+
+                // Update students table since payment status affects free/paid display
+                if (typeof window.renderStudentsTable === 'function') {
+                    window.renderStudentsTable();
+                }
             });
         }
 
+        // 💡 Live Q&A Loader with Identify Feature 💡
         function loadQA() {
             onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'qa'), (snapshot) => {
                 const list = document.getElementById('admin-qa-list');
@@ -1338,19 +1408,110 @@
                 } else {
                     qaArray.forEach(q => {
                         let timeStr = new Date(q.timestamp).toLocaleTimeString('am-ET', { hour: '2-digit', minute: '2-digit', month: 'short', day: 'numeric' });
+                        
+                        const replyStatus = q.adminReply 
+                            ? `<div class="mt-3 bg-blue-50 dark:bg-slate-700/50 p-3 rounded-lg border-l-2 border-success text-[13px] text-gray-700 dark:text-gray-300"><span class="font-bold text-success"><i class="fa-solid fa-check-double"></i> ምላሽ ተሰጥቷል:</span> ${q.adminReply}</div>`
+                            : `<button onclick="window.openQaModal('${q.id}', '${(q.userName || 'ተማሪ').replace(/'/g, "\\'")}', '${q.text.replace(/'/g, "\\'")}')" class="mt-3 bg-primary text-dark text-xs font-bold px-4 py-2 rounded-lg hover:bg-yellow-400 transition shadow-sm">ለዚህ ተማሪ ምላሽ ስጥ (Reply)</button>`;
+
+                        // 💡 Show Course Info if available
+                        let courseInfo = q.courseName ? `<span class="bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 text-[10px] font-bold px-2.5 py-1 rounded-md ml-2 border border-gray-200 dark:border-slate-600">${q.courseName}</span>` : '';
+
                         list.innerHTML += `
                             <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-gray-200 dark:border-slate-700 shadow-sm hover:shadow-md transition">
                                 <div class="flex justify-between items-start mb-3 border-b border-gray-100 dark:border-slate-700 pb-3">
-                                    <span class="font-bold text-dark dark:text-white"><i class="fa-solid fa-user-graduate text-secondary dark:text-primary mr-2"></i> ${q.userName || 'ተማሪ'}</span>
-                                    <span class="text-xs text-gray-400 font-bold flex items-center gap-1"><i class="fa-solid fa-clock"></i> ${timeStr}</span>
+                                    <div class="flex items-center flex-wrap gap-2">
+                                        <span class="font-black text-dark dark:text-white"><i class="fa-solid fa-user-graduate text-secondary dark:text-primary mr-1"></i> ${q.userName || 'ተማሪ'}</span>
+                                        ${courseInfo}
+                                    </div>
+                                    <span class="text-xs text-gray-400 font-bold flex items-center gap-1 shrink-0"><i class="fa-solid fa-clock"></i> ${timeStr}</span>
                                 </div>
-                                <p class="text-[15px] text-gray-700 dark:text-gray-300 font-body leading-relaxed">${q.text}</p>
+                                <p class="text-[15px] text-gray-700 dark:text-gray-300 font-body leading-relaxed border-l-4 border-gray-200 dark:border-slate-600 pl-3">${q.text}</p>
+                                ${replyStatus}
                             </div>
                         `;
                     });
                 }
             });
         }
+
+        window.openQaModal = function(id, user, text) {
+            document.getElementById('qa-modal-id').value = id;
+            document.getElementById('qa-modal-user').innerText = 'ለ ' + user + ' የሚሰጥ ምላሽ፦';
+            document.getElementById('qa-modal-question').innerText = text;
+            document.getElementById('qa-modal-reply').value = '';
+            document.getElementById('qa-modal').classList.replace('hidden', 'flex');
+        };
+
+        window.submitQaReply = async function() {
+            const id = document.getElementById('qa-modal-id').value;
+            const reply = document.getElementById('qa-modal-reply').value.trim();
+            if(!reply) return window.showToast("እባክዎ ምላሽ ያስገቡ!", true);
+
+            try {
+                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'qa', id), { adminReply: reply }, { merge: true });
+                window.showToast("ምላሹ በቀጥታ ለተማሪው ደርሷል!");
+                document.getElementById('qa-modal').classList.replace('flex', 'hidden');
+            } catch(e) { window.showToast("Error: " + e.message, true); }
+        };
+
+        // 💡 BROADCAST NOTIFICATIONS LOGIC 💡
+        window.openBroadcastModal = function() {
+            const select = document.getElementById('broadcast-target');
+            if(select) {
+                select.innerHTML = '<option value="ALL">ለሁሉም ተማሪዎች (All Students)</option>';
+                // Populate distinct students
+                allStudentsData.forEach(std => {
+                    select.innerHTML += `<option value="${std.uid}">${std.displayName || 'ተማሪ'} (${std.email || 'No email'})</option>`;
+                });
+            }
+            document.getElementById('broadcast-title').value = '';
+            document.getElementById('broadcast-message').value = '';
+            document.getElementById('broadcast-modal').classList.replace('hidden', 'flex');
+        };
+
+        window.sendBroadcast = async function() {
+            const targetUid = document.getElementById('broadcast-target').value;
+            const title = document.getElementById('broadcast-title').value.trim();
+            const message = document.getElementById('broadcast-message').value.trim();
+
+            if(!title || !message) return window.showToast("እባክዎ ርዕስ እና መልዕክት ያስገቡ!", true);
+
+            const btn = document.getElementById('btn-send-broadcast');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> በመላክ ላይ...';
+            btn.disabled = true;
+
+            try {
+                const notifId = Date.now().toString();
+                if(targetUid === 'ALL') {
+                    const promises = allStudentsData.map(std => {
+                        return setDoc(doc(db, 'artifacts', appId, 'users', std.uid, 'notifications', notifId + std.uid.substring(0,5)), {
+                            title: title,
+                            message: message,
+                            desc: message, // for compatibility
+                            timestamp: Date.now(),
+                            type: 'broadcast'
+                        });
+                    });
+                    await Promise.all(promises);
+                } else {
+                    await setDoc(doc(db, 'artifacts', appId, 'users', targetUid, 'notifications', notifId), {
+                        title: title,
+                        message: message,
+                        desc: message, // for compatibility
+                        timestamp: Date.now(),
+                        type: 'direct'
+                    });
+                }
+                window.showToast("ማሳወቂያው ለተማሪው(ቹ) ዳሽቦርድ ላይ ደርሷል!");
+                document.getElementById('broadcast-modal').classList.replace('flex', 'hidden');
+            } catch(e) {
+                window.showToast("ስህተት: " + e.message, true);
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        };
 
         window.renderCourses = function() {
             const tbody = document.getElementById('course-table-body');
@@ -1407,6 +1568,7 @@
             document.getElementById('c-price').value = '';
             document.getElementById('c-oldprice').value = '';
             document.getElementById('c-duration').value = '';
+            document.getElementById('c-level').value = 'ጀማሪ';
             document.getElementById('c-image').value = '';
             document.getElementById('c-video').value = '';
             document.getElementById('c-desc').value = '';
@@ -1459,6 +1621,7 @@
             const price = priceInput === "" ? 0 : parseFloat(priceInput);
             const oldPrice = document.getElementById('c-oldprice').value.trim();
             const duration = document.getElementById('c-duration').value.trim();
+            const level = document.getElementById('c-level').value;
             let image = document.getElementById('c-image').value.trim();
             let video = document.getElementById('c-video').value.trim();
             const desc = document.getElementById('c-desc').value.trim();
@@ -1504,7 +1667,7 @@
 
             try {
                 await setDoc(doc(db, 'artifacts', currentAppId, 'public', 'data', 'courses', id), {
-                    title, category, instructor, instructorImage, price, oldPrice, duration, status, image, video, desc, aiPrompt,
+                    title, category, instructor, instructorImage, price, oldPrice, duration, level, status, image, video, desc, aiPrompt,
                     lessons: lessonsArr, timestamp: Date.now()
                 }, { merge: true });
                 
@@ -1537,6 +1700,7 @@
                     document.getElementById('c-price').value = c.price !== undefined ? c.price : 0;
                     document.getElementById('c-oldprice').value = c.oldPrice || '';
                     document.getElementById('c-duration').value = c.duration || '';
+                    document.getElementById('c-level').value = c.level || 'ጀማሪ';
                     document.getElementById('c-status').value = c.status || 'Active';
                     document.getElementById('c-image').value = c.image || '';
                     document.getElementById('c-video').value = c.video || '';
@@ -1597,6 +1761,16 @@
             }
         };
 
+        // System Status (Live connection status)
+        window.addEventListener('online', () => {
+            const st = document.getElementById('system-status-indicator');
+            if(st) { st.innerText = 'Online'; st.className = 'text-base sm:text-lg font-black font-heading text-success'; }
+        });
+        window.addEventListener('offline', () => {
+            const st = document.getElementById('system-status-indicator');
+            if(st) { st.innerText = 'Offline'; st.className = 'text-base sm:text-lg font-black font-heading text-danger'; }
+        });
+
         // Failsafe loader hider
         setTimeout(() => {
             const l = document.getElementById('global-loader');
@@ -1607,5 +1781,20 @@
         }, 3000);
 
     </script>
+    
+    <!-- Google Translate Script for Admin Footer -->
+    <script>
+        function googleTranslateElementInit() {
+            setTimeout(function() {
+                new google.translate.TranslateElement({
+                    pageLanguage: 'am',
+                    includedLanguages: 'am,en,om,ti,ar,zh-CN,so,fr,es',
+                    autoDisplay: false
+                }, 'google_translate_element_footer');
+            }, 500);
+        }
+    </script>
+    <script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+
 </body>
 </html>

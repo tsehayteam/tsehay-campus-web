@@ -969,10 +969,7 @@
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                     await signInWithCustomToken(window.auth, __initial_auth_token);
                 } 
-            } catch (err) { console.error("Auth init error:", err); }
-        };
-        initAuth();
-
+        // Global State Variables
         let totalPoints = 0; 
         let currentCourseId = null;
         let courseCompletedLessons = 0;
@@ -980,7 +977,10 @@
         let userId = null;
         let userName = "ተማሪ";
         let currentCourseTitle = "ኮርስ";
-        let currentCourseAiPrompt = "አንተ 'Tsehay Ai' የተባልክ የቢዝነስ ረዳት ነህ። አጠር እና ግልፅ አድርገህ በአማርኛ መልስ ስጥ።";
+        
+        // 💡 የተስተካከለ የ AI መመሪያ (System Prompt)
+        let currentCourseAiPrompt = "አንተ 'Tsehay AI' የተባልክ የቢዝነስ እና የትምህርት ረዳት ነህ። አጭር፣ ግልፅ እና አበረታች በሆነ አማርኛ መልስ ስጥ። አሰልቺ የሆነ ረጅም ፅሁፍ አታቅርብ። ነጥቦችን ለመዘርዘር የ (*) ወይም (**) ምልክት ፈፅሞ አትጠቀም፤ በምትኩ አሪፍ ኢሞጂዎችን (ለምሳሌ፡ 👉, ✅, 💡) ተጠቀም። ማሳሰቢያ፡ ተማሪዎች የፈተና (Quiz) ጥያቄዎችን ካመጡልህ የፈተናውን መልስ ፈፅሞ እንዳትነግራቸው! 'ይህ የፈተና ጥያቄ ስለሆነ እራስዎ ቢሞክሩት የተሻለ ነው' በማለት በትህትና መልስ።";
+        
         let allCourses = [];
         let systemNotifications = [];
 
@@ -1752,7 +1752,10 @@
             c.innerHTML += `<div id="${typingId}" class="self-start max-w-[85%] bg-white dark:bg-slate-800 p-3 rounded-2xl rounded-tl-none shadow-sm text-gray-800 dark:text-gray-200 text-[13px] leading-relaxed"><i class="fa-solid fa-spinner fa-spin"></i> Tsehay AI በማሰብ ላይ ነው...</div>`;
             c.scrollTop = c.scrollHeight;
 
-            let response = await callGemini(m, currentCourseAiPrompt);
+            // 💡 የተጨመረ ጥብቅ ህግ፡ ፅሁፉ አጭር እንዲሆን፣ የኮከብ (*) ምልክት እንዳይጠቀም፣ እና የፈተና ጥያቄ እንዳይሰራ የሚያግድ!
+            let strictRules = " ማሳሰቢያ፡ አጭር፣ ግልፅ እና ማራኪ አድርገህ መልስ። አሰልቺ ፅሁፍ አታብዛ። ነጥቦችን ለመዘርዘር የኮከብ (*) ምልክት ፈፅሞ አትጠቀም፤ በምትኩ ኢሞጂ (👉, ✅, 💡) ተጠቀም። ተማሪዎች የፈተና ጥያቄ ካመጡልህ 'ይህ የፈተና ጥያቄ ስለሆነ እራስዎ ቢሞክሩት የተሻለ ነው' ብለህ በትህትና መልስ እንጂ ፈፅሞ መልሱን አትስጣቸው።";
+
+            let response = await callGemini(m, currentCourseAiPrompt + strictRules);
             const typingEl = document.getElementById(typingId); if(typingEl) typingEl.remove();
             
             c.innerHTML += `<div class="self-start max-w-[85%] bg-white dark:bg-slate-800 p-3 rounded-2xl rounded-tl-none shadow-sm text-gray-800 dark:text-gray-200 text-[13px] leading-relaxed">${response}</div>`;
@@ -1760,5 +1763,6 @@
         };
 
     </script>
-</body>
-</html>
+
+    <!-- Google Translate (To keep translation working across pages) -->
+    <div id="google_translate_element"></div>
