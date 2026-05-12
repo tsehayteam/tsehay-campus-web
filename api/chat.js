@@ -1,87 +1,49 @@
-/**
- * TSEHAY CAMPUS - Gemini + Groq (with Amharic system prompt)
- */
-module.exports = async function(req, res) {
-  res.setHeader('Access-Control-Allow-Credentials', true);
+export default async function handler(req, res) {
+  // CORS መፍቀጃ (ዌብሳይትህ ከ Vercel ጋር እንዲነጋገር)
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
-  res.setHeader('Access-Control-Allow-Headers', '*');
-  if (req.method === 'OPTIONS') return res.status(200).end();
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  const sendFriendly = (msg) => {
-    return res.status(200).json({
-      candidates: [{ content: { parts: [{ text: "📚 " + msg }] } }]
-    });
-  };
+  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
 
   try {
-    if (req.method !== 'POST') return sendFriendly('POST ብቻ ይፈቀዳል።');
+    let apiKey = process.env.GEMINI_API_KEY || "";
+    apiKey = apiKey.trim().replace(/^["']|["']$/g, '');
+
+    if (!apiKey) {
+        return res.status(500).json({ error: "Vercel ላይ API Key አልገባም!" });
+    }
 
     const { prompt, systemInstruction } = req.body;
-    if (!prompt) return sendFriendly('ጥያቄ አልተላከም።');
+    
+    // 💡 ሚስጥር 1፡ ልክ በ Static ዌብሳይትህ ላይ እንደሰራው፣ መመሪያውን እና ጥያቄውን በአንድ Text እናዋህደዋለን!
+    const combinedMessage = `[ጥብቅ መመሪያ: ${systemInstruction || 'አንተ የ Tsehay Campus ረዳት ነህ።'}]\n\nየተጠቃሚ ጥያቄ: ${prompt}`;
 
-    const combinedText = systemInstruction 
-      ? `System Instruction: ${systemInstruction}\n\nUser Question: ${prompt}` 
-      : prompt;
+    const payload = { 
+        contents: [{ parts: [{ text: combinedMessage }] }]
+    };
 
-    const geminiKey = (process.env.GEMINI_API_KEY || '').trim();
-    const groqKey = (process.env.GROQ_API_KEY || '').trim();
+    // 💡 ሚስጥር 2፡ የሞዴሉን ስም ልክ በ Static ዌብሳይትህ ላይ ወደሰራው "gemini-flash-latest" ቀይረነዋል!
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`;
 
-    // 1. Gemini (free models)
-    if (geminiKey) {
-      const models = ["gemini-1.5-flash-latest", "gemini-2.0-flash-lite", "gemini-1.5-flash"];
-      for (const model of models) {
-        try {
-          const url = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${geminiKey}`;
-          const resp = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts: [{ text: combinedText }] }] })
-          });
-          const data = await resp.json();
-          if (resp.ok && data.candidates?.[0]?.content?.parts?.[0]?.text) {
-            const text = data.candidates[0].content.parts[0].text;
-            if (text.trim().length > 5) {
-              data.candidates[0].content.parts[0].text = "✨ [Gemini]\n\n" + text;
-              return res.status(200).json(data);
-            }
-          }
-        } catch (e) { continue; }
-      }
-    }
+    const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
 
-    // 2. Groq (free, with Amharic system prompt)
-    if (groqKey) {
-      try {
-        const groqResp = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Authorization": "Bearer " + groqKey,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            model: "llama-3.3-70b-versatile",
-            messages: [
-              {
-                role: "system",
-                content: "አንተ ተግባቢ፣ ታጋሽ እና እውቀት ያለህ የኢ-ለርኒንግ አስተማሪ ነህ። ሁልጊዜ በአማርኛ ቋንቋ መልስ ስጥ። ቀላልና ግልጽ አገላለጽ ተጠቀም። ተማሪውን አበረታታ፤ አስፈላጊ ሆኖ ሲገኝ ምሳሌዎችን ጨምረህ አስረዳ። ለትምህርት የሚጠቅሙ ተግባራዊ ልምምዶችን ጠቁም።"
-              },
-              { role: "user", content: combinedText }
-            ]
-          })
+    const data = await response.json();
+
+    if (!response.ok) {
+        return res.status(500).json({ 
+            error: data.error?.message || JSON.stringify(data.error) || "የ Gemini API ስህተት አጋጥሟል" 
         });
-        const groqData = await groqResp.json();
-        if (groqData.choices?.[0]?.message?.content) {
-          return res.status(200).json({
-            candidates: [{ content: { parts: [{ text: "⚡ [Groq AI]\n\n" + groqData.choices[0].message.content }] } }]
-          });
-        }
-      } catch (e) {}
     }
 
-    // ሁለቱም ካልቻሉ
-    return sendFriendly("AI is temporarily unavailable. Please try again later (free quotas renew daily).");
-  } catch (err) {
-    return sendFriendly('Backend Crash: ' + err.message);
+    return res.status(200).json(data);
+
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
   }
 }
