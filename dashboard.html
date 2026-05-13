@@ -245,7 +245,7 @@
                 <img id="user-avatar-img" src="https://ui-avatars.com/api/?name=Loading&background=0f172a&color=fff" alt="User" class="h-10 w-10 rounded-full border border-gray-200 dark:border-slate-600 object-cover">
                 <div class="flex-1 min-w-0">
                     <p id="user-name-display" class="text-[13px] font-bold text-dark dark:text-white truncate font-heading">በመጫን ላይ...</p>
-                    <p id="user-role-display" class="text-[11px] text-gray-500 dark:text-gray-400 font-semibold truncate"><i class="fa-solid fa-spinner fa-spin"></i> ማረጋገጥ...</p>
+                    <p id="user-role-display" class="text-[11px] text-gray-500 dark:text-gray-400 font-semibold truncate">እያረጋገጠ ነው...</p>
                 </div>
             </div>
             
@@ -272,26 +272,20 @@
                 </nav>
             </div>
 
-            <div class="flex items-center gap-3 sm:gap-5 shrink-0">
-                <!-- Additional Courses Button -->
-                <button onclick="window.safeRedirect('courses.html')" class="hidden md:flex text-sm font-bold text-secondary dark:text-primary bg-blue-50 dark:bg-slate-800 px-4 py-2 rounded-xl hover:bg-blue-100 dark:hover:bg-slate-700 transition items-center gap-2">
-                    <i class="fa-solid fa-cart-shopping"></i> ተጨማሪ ኮርሶች
-                </button>
-
+            <div class="flex items-center gap-4 sm:gap-5">
                 <!-- Google Translate Dropdown -->
-               <div id="google_translate_element" class="hidden sm:block mt-1"></div>
-               
+               <div id="google_translate_element" class="hidden sm:block mt-1 mr-3"></div>
                 <!-- Theme Switcher Button -->
-                <button onclick="window.toggleTheme()" class="w-9 h-9 rounded-full bg-gray-100 dark:bg-slate-700 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-slate-600 transition shadow-sm shrink-0">
+                <button onclick="window.toggleTheme()" class="w-9 h-9 rounded-full bg-gray-100 dark:bg-slate-700 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-slate-600 transition shadow-sm">
                     <i id="theme-icon" class="fa-solid fa-moon text-slate-600 dark:text-yellow-400 text-sm"></i>
                 </button>
 
-                <div class="hidden sm:flex items-center gap-2 bg-gradient-to-r from-orange-50 to-yellow-50 dark:from-orange-500/10 dark:to-yellow-500/10 border border-primary/30 px-3 py-1.5 rounded-full shadow-sm cursor-help hover:scale-105 transition" title="Campus Points">
+                <div class="flex items-center gap-2 bg-gradient-to-r from-orange-50 to-yellow-50 dark:from-orange-500/10 dark:to-yellow-500/10 border border-primary/30 px-3 py-1.5 rounded-full shadow-sm cursor-help hover:scale-105 transition" title="Campus Points">
                     <div class="bg-primary/20 p-1 rounded-full"><i class="fa-solid fa-bolt text-primary text-xs"></i></div>
                     <span class="font-black text-dark dark:text-white text-sm font-heading" id="top-points">0</span>
                 </div>
                 
-                <button onclick="window.switchMainView('messages-view', document.querySelectorAll('.sidebar-link')[2]); window.clearMessageBadge();" class="relative text-gray-400 dark:text-gray-300 hover:text-dark dark:hover:text-white transition text-xl shrink-0">
+                <button onclick="window.switchMainView('messages-view', document.querySelectorAll('.sidebar-link')[2]); window.clearMessageBadge();" class="relative text-gray-400 dark:text-gray-300 hover:text-dark dark:hover:text-white transition text-xl">
                     <i class="fa-regular fa-bell"></i>
                     <span id="header-notif-badge" class="hidden absolute top-0 right-0 w-2.5 h-2.5 bg-danger rounded-full border-2 border-white dark:border-slate-800"></span>
                 </button>
@@ -577,7 +571,7 @@
                                                                 
                                                                 <div class="text-center z-20">
                                                                     <p class="font-script text-4xl text-dark border-b border-black pb-1 px-4">Habtamu A.</p>
-                                                                    <p class="text-xs text-gray-500 font-bold uppercase mt-2 tracking-widest">Co-Founder</p>
+                                                                    <p class="text-xs text-gray-500 font-bold uppercase mt-2 tracking-widest">CEO & Lead Instructor</p>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -798,83 +792,18 @@
 
     <!-- UI Logic Scripts -->
     <script>
-        window.switchTab = function(evt, tabName) {
-            let tc = document.getElementsByClassName("tab-content");
-            for (let i = 0; i < tc.length; i++) tc[i].classList.remove("active");
-            let tb = document.getElementsByClassName("tab-btn");
-            for (let i = 0; i < tb.length; i++) tb[i].classList.remove("active");
-            
-            let tabToActivate = document.getElementById(tabName);
-            if(tabToActivate) tabToActivate.classList.add("active");
-            
-            if(evt && evt.currentTarget) {
-                evt.currentTarget.classList.add("active");
-            } else if (tb.length > 0) {
-                tb[0].classList.add("active");
-            }
-        };
-
-        window.toggleSidebar = function() {
-            document.getElementById('mobile-sidebar').classList.toggle('-translate-x-full');
-            document.getElementById('sidebar-overlay').classList.toggle('hidden');
-        };
-
-        window.toggleTheme = function() {
-            document.documentElement.classList.toggle('dark');
-            const isDark = document.documentElement.classList.contains('dark');
-            localStorage.setItem('theme', isDark ? 'dark' : 'light');
-            document.getElementById('theme-icon').className = isDark ? 'fa-solid fa-sun text-yellow-400 text-sm' : 'fa-solid fa-moon text-slate-600 text-sm';
-        };
-
+        // Main View Switcher
         window.switchMainView = function(viewId, btnElement) {
             document.querySelectorAll('.main-view').forEach(el => el.classList.remove('active'));
-            const targetView = document.getElementById(viewId);
-            if(targetView) targetView.classList.add('active');
+            document.getElementById(viewId).classList.add('active');
 
             document.querySelectorAll('.sidebar-link').forEach(btn => btn.classList.remove('nav-item-active', 'dark:bg-slate-700'));
             if(btnElement) btnElement.classList.add('nav-item-active');
 
             const sidebar = document.getElementById('mobile-sidebar');
-            if(window.innerWidth < 1024 && sidebar && !sidebar.classList.contains('-translate-x-full')) {
+            if(window.innerWidth < 1024 && !sidebar.classList.contains('-translate-x-full')) {
                 window.toggleSidebar();
             }
-        };
-
-        // Real Download Logic for Course Syllabus/Materials
-        window.downloadSyllabus = function(title, desc) {
-            window.showCloudSaveToast('ፋይሉን ዳውንሎድ በማድረግ ላይ...');
-            
-            const cleanTitle = decodeURIComponent(title);
-            const cleanDesc = decodeURIComponent(desc);
-            
-            // Generate a simple professional PDF-like text blob
-            const content = `============================================\n`
-                          + `               TSEHAY CAMPUS                \n`
-                          + `============================================\n\n`
-                          + `የኮርስ ርዕስ (Course Title): \n${cleanTitle}\n\n`
-                          + `--------------------------------------------\n`
-                          + `ማብራሪያ (Course Description):\n`
-                          + `${cleanDesc}\n\n`
-                          + `--------------------------------------------\n`
-                          + `Tsehay Campus - Empowering Through Education\n`
-                          + `© ${new Date().getFullYear()} Tsehay Campus\n`;
-
-            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `${cleanTitle.replace(/\s+/g, '_')}_Syllabus.txt`;
-            document.body.appendChild(a);
-            a.click();
-            
-            // Clean up
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            
-            setTimeout(() => {
-                window.showCloudSaveToast('ዳውንሎድ ተጠናቋል!');
-            }, 1000);
         };
 
         // Profile Image Real Upload (Base64 Compression)
@@ -886,7 +815,7 @@
             const file = event.target.files[0];
             if(!file) return;
             if(!file.type.match('image.*')) {
-                window.showCloudSaveToast("እባክዎ ፎቶ ብቻ ያስገቡ!", true); return;
+                alert("እባክዎ ፎቶ ብቻ ያስገቡ!"); return;
             }
 
             const reader = new FileReader();
@@ -906,15 +835,39 @@
                     
                     const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
                     document.getElementById('settings-avatar').src = dataUrl;
+                    document.getElementById('user-avatar-img').src = dataUrl;
                     document.getElementById('settings-photo-base64').value = dataUrl;
                 };
                 img.src = e.target.result;
             };
             reader.readAsDataURL(file);
         };
+        
+        window.switchTab = function(evt, tabName) {
+            let tc = document.getElementsByClassName("tab-content");
+            for (let i = 0; i < tc.length; i++) tc[i].classList.remove("active");
+            let tb = document.getElementsByClassName("tab-btn");
+            for (let i = 0; i < tb.length; i++) tb[i].classList.remove("active");
+            
+            let tabToActivate = document.getElementById(tabName);
+            if(tabToActivate) tabToActivate.classList.add("active");
+            
+            if(evt && evt.currentTarget) evt.currentTarget.classList.add("active");
+        };
+
+        window.toggleSidebar = function() {
+            document.getElementById('mobile-sidebar').classList.toggle('-translate-x-full');
+            document.getElementById('sidebar-overlay').classList.toggle('hidden');
+        };
+
+        window.toggleTheme = function() {
+            document.documentElement.classList.toggle('dark');
+            const isDark = document.documentElement.classList.contains('dark');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            document.getElementById('theme-icon').className = isDark ? 'fa-solid fa-sun text-yellow-400 text-sm' : 'fa-solid fa-moon text-slate-600 text-sm';
+        };
     </script>
-    
-    <!-- Google Translate Script -->
+    <!-- Google Translate Script (For global persistence) -->
     <script>
         function googleTranslateElementInit() {
             new google.translate.TranslateElement({
@@ -947,6 +900,7 @@
         window.auth = getAuth(app); 
         const db = getFirestore(app);
 
+        // Safe Redirect Wrapper
         window.safeRedirect = function(target) {
             try {
                 if (window.location.protocol === 'blob:' || window.location.origin === 'null') {
@@ -964,11 +918,16 @@
             }
         };
 
+        // Strict Auth Init
         const initAuth = async () => {
             try {
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                     await signInWithCustomToken(window.auth, __initial_auth_token);
                 } 
+            } catch (err) { console.error("Auth init error:", err); }
+        };
+        initAuth();
+
         // Global State Variables
         let totalPoints = 0; 
         let currentCourseId = null;
@@ -977,13 +936,11 @@
         let userId = null;
         let userName = "ተማሪ";
         let currentCourseTitle = "ኮርስ";
-        
-        // 💡 የተስተካከለ የ AI መመሪያ (System Prompt)
-        let currentCourseAiPrompt = "አንተ 'Tsehay AI' የተባልክ የቢዝነስ እና የትምህርት ረዳት ነህ። አጭር፣ ግልፅ እና አበረታች በሆነ አማርኛ መልስ ስጥ። አሰልቺ የሆነ ረጅም ፅሁፍ አታቅርብ። ነጥቦችን ለመዘርዘር የ (*) ወይም (**) ምልክት ፈፅሞ አትጠቀም፤ በምትኩ አሪፍ ኢሞጂዎችን (ለምሳሌ፡ 👉, ✅, 💡) ተጠቀም። ማሳሰቢያ፡ ተማሪዎች የፈተና (Quiz) ጥያቄዎችን ካመጡልህ የፈተናውን መልስ ፈፅሞ እንዳትነግራቸው! 'ይህ የፈተና ጥያቄ ስለሆነ እራስዎ ቢሞክሩት የተሻለ ነው' በማለት በትህትና መልስ።";
-        
+        let currentCourseAiPrompt = "አንተ 'Tsehay Ai' የተባልክ የቢዝነስ ረዳት ነህ። አጠር እና ግልፅ አድርገህ በአማርኛ መልስ ስጥ።";
         let allCourses = [];
         let systemNotifications = [];
 
+        // Google Drive Video Formatter
         window.getDriveEmbedLink = function(url) {
             if(!url) return null;
             const driveRegex = /https:\/\/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/;
@@ -994,6 +951,7 @@
             return url;
         }
 
+        // Gemini AI Call (Robust with Backoff) - Secured Backend Integration
         async function callGemini(prompt, systemInstruction) {
             try {
                 const response = await fetch('/api/chat', { 
@@ -1004,10 +962,9 @@
 
                 const data = await response.json();
 
-                // 💡 ስህተቱን በግልፅ ፅሁፍ (String) እንዲያወጣው ማስተካከያ
                 if (!response.ok || data.error) {
                     let errMsg = typeof data.error === 'object' ? (data.error.message || JSON.stringify(data.error)) : data.error;
-                    return "የ API ስህተት: " + (errMsg || "ያልታወቀ ስህተት");
+                    return "የ API ስህተት: " + (errMsg || "ያልታወቀ ስህተት አጋጥሟል (Vercel Backend Error)");
                 }
 
                 let cleanResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -1015,17 +972,16 @@
                 return "ምላሽ የለም";
 
             } catch (err) { 
-                return "የቴክኒክ ችግር: " + err.message;
+                return "የቴክኒክ ችግር (Network Error): እባክዎ ኢንተርኔትዎን ያረጋግጡ።";
             }
         }
 
         // --- Toasts & Notifications ---
-        window.showCloudSaveToast = function(msg = 'ወደ ዳታቤዝ ሴቭ ተደርጓል!', isError = false) {
+        window.showCloudSaveToast = function(msg = 'ወደ ዳታቤዝ ሴቭ ተደርጓል!') {
             const toast = document.getElementById("toast");
-            if(!toast) return;
-            toast.innerHTML = `<i class="fa-solid ${isError ? 'fa-triangle-exclamation' : 'fa-cloud-arrow-up'} mr-2"></i> ${msg}`;
-            toast.className = isError ? "show bg-danger border-red-500" : "show";
-            setTimeout(() => { toast.className = toast.className.replace("show", "").replace("bg-danger", "").replace("border-red-500", ""); }, 3000);
+            toast.innerHTML = `<i class="fa-solid fa-cloud-arrow-up mr-2"></i> ${msg}`;
+            toast.className = "show";
+            setTimeout(() => { toast.className = toast.className.replace("show", ""); }, 3000);
         }
 
         function createNotification(title, desc) {
@@ -1049,7 +1005,7 @@
                 list.innerHTML = '<div class="text-center py-10 text-gray-400">ምንም ማሳወቂያ የለም</div>'; return;
             }
             list.innerHTML = systemNotifications.map(n => `
-                <div class="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-secondary dark:border-primary p-4 rounded-r-xl flex gap-4 items-start shadow-sm mb-2">
+                <div class="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-secondary dark:border-primary p-4 rounded-r-xl flex gap-4 items-start shadow-sm">
                     <div class="w-10 h-10 rounded-full bg-secondary/10 dark:bg-primary/10 flex items-center justify-center text-secondary dark:text-primary shrink-0"><i class="fa-solid fa-bell text-lg"></i></div>
                     <div>
                         <h4 class="font-bold text-dark dark:text-white">${n.title}</h4>
@@ -1072,7 +1028,7 @@
             window.clearMessageBadge();
         }
 
-        // Firebase Auth State
+        // Firebase Auth State (Strict Guard)
         onAuthStateChanged(window.auth, (user) => {
             if (!user || user.isAnonymous) {
                 window.safeRedirect('index.html');
@@ -1089,13 +1045,11 @@
             if(userNameDisplay) userNameDisplay.innerText = userName;
             const navUserName = document.getElementById('nav-user-name');
             if(navUserName) navUserName.innerText = userName;
-            
             const userRoleDisplay = document.getElementById('user-role-display');
-            if(userRoleDisplay) userRoleDisplay.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ማረጋገጥ...';
-            
+            if(userRoleDisplay) userRoleDisplay.innerText = "Pro Member";
             const userAvatarImg = document.getElementById('user-avatar-img');
             if(userAvatarImg) userAvatarImg.src = photo;
-
+            
             const settingsName = document.getElementById('settings-name');
             if(settingsName) settingsName.value = userName;
             const settingsEmail = document.getElementById('settings-email');
@@ -1108,6 +1062,7 @@
             loadUserData();
         });
 
+        // UPDATE PROFILE & SETTINGS
         window.saveProfile = async function() {
             if(!userId) return;
             const newName = document.getElementById('settings-name').value.trim();
@@ -1132,20 +1087,19 @@
                 
                 const displayPhoto = newPhotoBase64 || `https://ui-avatars.com/api/?name=${encodeURIComponent(newName)}&background=0f172a&color=fff`;
                 document.getElementById('user-avatar-img').src = displayPhoto;
-                document.getElementById('settings-avatar').src = displayPhoto;
                 
                 window.showCloudSaveToast('የግል መረጃዎ በተሳካ ሁኔታ ተስተካክሏል!');
                 createNotification('ፕሮፋይል ማስተካከያ', 'የግል መረጃዎ በተሳካ ሁኔታ ታድሷል።');
-            } catch(e) { window.showCloudSaveToast('ስህተት: ' + e.message, true); }
+            } catch(e) { alert('ስህተት: ' + e.message); }
         };
 
         window.changeUserPassword = async function() {
-            if(!window.auth.currentUser || window.auth.currentUser.isAnonymous) return window.showCloudSaveToast('ይህ አካውንት አኖኒመስ ነው።', true);
+            if(!window.auth.currentUser || window.auth.currentUser.isAnonymous) return window.showCloudSaveToast('ይህ አካውንት አኖኒመስ ነው።');
             const currentPwd = document.getElementById('settings-current-pwd').value;
             const newPwd = document.getElementById('settings-new-pwd').value;
             
-            if(!currentPwd || !newPwd) return window.showCloudSaveToast('እባክዎ ፓስወርዶቹን ያስገቡ', true);
-            if(newPwd.length < 6) return window.showCloudSaveToast('አዲሱ ፓስወርድ ቢያንስ 6 ፊደል መሆን አለበት', true);
+            if(!currentPwd || !newPwd) return window.showCloudSaveToast('እባክዎ ፓስወርዶቹን ያስገቡ');
+            if(newPwd.length < 6) return window.showCloudSaveToast('አዲሱ ፓስወርድ ቢያንስ 6 ፊደል መሆን አለበት');
 
             try {
                 const credential = EmailAuthProvider.credential(window.auth.currentUser.email, currentPwd);
@@ -1153,10 +1107,9 @@
                 await updatePassword(window.auth.currentUser, newPwd);
                 
                 window.showCloudSaveToast('ፓስወርድዎ በተሳካ ሁኔታ ተቀይሯል!');
-                createNotification("የደህንነት ማሳወቂያ", "የይለፍ ቃልዎ በተሳካ ሁኔታ ተቀይሯል።");
                 document.getElementById('settings-current-pwd').value = '';
                 document.getElementById('settings-new-pwd').value = '';
-            } catch(e) { window.showCloudSaveToast('ያስገቡት የድሮ ፓስወርድ ትክክል አይደለም።', true); }
+            } catch(e) { window.showCloudSaveToast('ያስገቡት የድሮ ፓስወርድ ትክክል አይደለም።'); }
         };
 
         window.sendPasswordReset = async function() {
@@ -1164,8 +1117,7 @@
             try {
                 await sendPasswordResetEmail(window.auth, window.auth.currentUser.email);
                 window.showCloudSaveToast("የይለፍ ቃል መቀየሪያ ሊንክ ወደ ኢሜልዎ ተልኳል!");
-                createNotification("የደህንነት ማሳወቂያ", "የይለፍ ቃል መቀየሪያ ሊንክ ወደ ኢሜልዎ ተልኳል።");
-            } catch(e) { window.showCloudSaveToast('ስህተት: ' + e.message, true); }
+            } catch(e) { alert('ስህተት: ' + e.message); }
         }
 
         window.handleLogout = async function() {
@@ -1175,82 +1127,28 @@
             }
         };
 
-        window.loadCourse = function(courseId) {
-            const c = allCourses.find(course => course.id === courseId);
-            const videoContainer = document.getElementById('video-container');
-            
-            if (!c) {
-                if(videoContainer) videoContainer.innerHTML = `<div class="video-wrapper"><div class="absolute inset-0 flex items-center justify-center bg-gray-900 text-white"><p>ኮርሱ አልተገኘም ወይም አይገኝም</p></div></div>`;
-                return;
-            }
-
-            currentCourseId = c.id;
-            if(c.aiPrompt) currentCourseAiPrompt = c.aiPrompt;
-            currentCourseTitle = c.title;
-            
-            document.getElementById('dynamic-course-title').innerText = c.title;
-            document.getElementById('dynamic-nav-title').innerText = c.title;
-            document.getElementById('quiz-course-name').innerText = c.title;
-            document.getElementById('dynamic-course-desc').innerText = c.desc || "ማብራሪያ የለም።";
-            document.getElementById('dynamic-instructor-name').innerText = c.instructor || "Tsehay Campus";
-            
-            // Dynamic Downloads
-            const materialsContainer = document.getElementById('dynamic-course-materials');
-            if(materialsContainer) {
-                const encTitle = encodeURIComponent(c.title);
-                const encDesc = encodeURIComponent(c.desc || "ማብራሪያ የለም");
-                materialsContainer.innerHTML = `
-                    <button onclick="window.downloadSyllabus(decodeURIComponent('${encTitle}'), decodeURIComponent('${encDesc}'))" class="flex items-center gap-3 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 px-4 py-2.5 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-600 transition shadow-sm font-bold text-sm text-gray-700 dark:text-gray-300">
-                        <i class="fa-solid fa-file-arrow-down text-danger text-lg"></i> የ ${c.title} ማጠቃለያ (Syllabus) ዳውንሎድ
-                    </button>
-                `;
-            }
-            
-            let finalVideoUrl = c.video;
-            if(finalVideoUrl && finalVideoUrl.includes('drive.google.com')) finalVideoUrl = window.getDriveEmbedLink(finalVideoUrl);
-            
-            if(finalVideoUrl) {
-                videoContainer.innerHTML = `
-                <div class="video-wrapper relative" oncontextmenu="return false;">
-                    <iframe src="${finalVideoUrl}" allowfullscreen class="w-full h-full pointer-events-auto"></iframe>
-                    <div class="absolute top-0 left-0 w-full h-20 z-[50] bg-transparent cursor-default" onmousedown="return false;" onclick="return false;" title="Protected Content"></div>
-                </div>`;
-            } else {
-                videoContainer.innerHTML = `<div class="video-wrapper"><div class="absolute inset-0 flex items-center justify-center bg-gray-900 text-white"><p>ቪዲዮ አልተገኘም</p></div></div>`;
-            }
-
-            getDoc(doc(db, 'artifacts', appId, 'users', userId, 'progress', currentCourseId)).then(snap => {
-                courseCompletedLessons = snap.exists() ? (snap.data().completedLessons || 0) : 0;
-                renderCourseLessons(c);
-            });
-
-            window.switchMainView('course-view', document.querySelectorAll('.sidebar-link')[0]);
-            window.switchTab(null, 'overview');
-        };
-
         window.playLesson = async function(element, pointsToAdd, lessonIndex, videoUrl) {
             if(!userId || !currentCourseId) return;
             
+            // Switch video if url exists
             if(videoUrl) {
                 const videoContainer = document.getElementById('video-container');
                 let finalVideoUrl = videoUrl;
                 if(finalVideoUrl.includes('drive.google.com')) finalVideoUrl = window.getDriveEmbedLink(finalVideoUrl);
                 
-                videoContainer.innerHTML = `
-                <div class="video-wrapper relative" oncontextmenu="return false;">
-                    <iframe src="${finalVideoUrl}" allowfullscreen class="w-full h-full pointer-events-auto"></iframe>
-                    <div class="absolute top-0 left-0 w-full h-20 z-[50] bg-transparent cursor-default" onmousedown="return false;" onclick="return false;" title="Protected Content"></div>
-                </div>`;
+                videoContainer.innerHTML = `<div class="video-wrapper"><iframe src="${finalVideoUrl}" allowfullscreen></iframe></div>`;
             }
 
+            // Update UI active state
             document.querySelectorAll('#dynamic-lessons-container .lesson-row').forEach(row => {
                 row.classList.remove('lesson-active', 'bg-blue-50', 'dark:bg-slate-700');
             });
             element.closest('.lesson-row').classList.add('lesson-active', 'bg-blue-50', 'dark:bg-slate-700');
 
             const icon = element.querySelector('.status-icon i');
-            if (icon && icon.classList.contains('fa-circle-check')) return; 
+            if (icon && icon.classList.contains('fa-circle-check')) return; // Already completed
 
+            // Mark as completed
             if(icon) icon.className = "fa-solid fa-circle-check text-success text-sm";
             
             const titleP = element.querySelector('.lesson-title-text');
@@ -1263,8 +1161,7 @@
             courseCompletedLessons = Math.max(courseCompletedLessons, lessonIndex + 1);
             
             window.updateProgressUI();
-            window.showCloudSaveToast('ወደ ዳታቤዝ ሴቭ ተደርጓል!');
-            createNotification("ክፍል ተጠናቋል", `የ ${currentCourseTitle} ኮርስ ትምህርት አጠናቀዋል፣ +${pointsToAdd} ነጥብ አግኝተዋል!`);
+            window.showCloudSaveToast();
             
             try { 
                 await setDoc(doc(db, 'artifacts', appId, 'users', userId, 'progress', 'main'), { totalPoints: totalPoints }, {merge:true}); 
@@ -1295,6 +1192,7 @@
                 const activeClass = isCompleted ? "" : "group";
                 const textStyle = isCompleted ? "text-dark dark:text-white font-bold" : "text-gray-600 dark:text-gray-300 font-medium";
                 
+                // If it's the very first lesson, we make it look active by default if no other is selected
                 const rowActive = index === 0 ? 'lesson-active bg-blue-50 dark:bg-slate-700' : '';
 
                 container.innerHTML += `
@@ -1320,43 +1218,10 @@
             window.updateProgressUI();
         }
 
-        window.showEmptyCourseState = function(titleText = "ኮርስ አልመረጡም", subtitleText = "እባክዎ 'ተጨማሪ ኮርሶች' የሚለውን ተጭነው ኮርስ ይምረጡ።") {
-            const titleEl = document.getElementById('dynamic-course-title');
-            const subEl = document.getElementById('dynamic-course-subtitle');
-            if(titleEl) titleEl.innerText = titleText;
-            if(subEl) subEl.innerText = subtitleText;
-            
-            const vc = document.getElementById('video-container');
-            if(vc) vc.innerHTML = `<div class="video-wrapper"><div class="absolute inset-0 flex flex-col items-center justify-center bg-gray-900 text-white"><i class="fa-solid fa-folder-open text-4xl mb-3 text-gray-600"></i><p class="font-bold text-gray-400">${titleText}</p></div></div>`;
-            
-            const lc = document.getElementById('dynamic-lessons-container');
-            if(lc) lc.innerHTML = `<div class="p-6 text-center text-gray-400 font-bold">ምንም የትምህርት ክፍል የለም</div>`;
-            
-            const pPercentEl = document.getElementById('progress-percent');
-            if(pPercentEl) pPercentEl.innerText = '0%';
-            const pBarInner = document.getElementById('progress-bar-inner');
-            if(pBarInner) pBarInner.style.width = '0%';
-
-            const loader = document.getElementById('screen-loader');
-            if(loader) {
-                loader.style.opacity = '0';
-                setTimeout(() => loader.style.display = 'none', 300);
-            }
-        };
-
         function loadUserData() {
             if (!userId) return;
 
-            // Load User Notifications Listener
-            onSnapshot(collection(db, 'artifacts', appId, 'users', userId, 'notifications'), (snapshot) => {
-                snapshot.docChanges().forEach(change => {
-                    if (change.type === 'added') {
-                        const data = change.doc.data();
-                        createNotification(data.title || "ማሳወቂያ", data.message || data.desc || "አዲስ መልዕክት አለዎት");
-                    }
-                });
-            });
-
+            // Load Profile settings
             getDoc(doc(db, 'artifacts', appId, 'users', userId, 'profile', 'info')).then(snap => {
                 if(snap.exists()) {
                     const data = snap.data();
@@ -1367,64 +1232,56 @@
                 }
             }).catch(e => console.error(e));
 
+            // Load Global Points
             getDoc(doc(db, 'artifacts', appId, 'users', userId, 'progress', 'main')).then(snap => {
                 if(snap.exists()) { totalPoints = snap.data().totalPoints || 0; window.updateProgressUI(); }
             }).catch(e => console.error(e));
 
-            // Load Courses first, THEN match enrollments to stop infinite loaders
+            // Fetch All Courses
             onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'courses'), (snapshot) => {
                 allCourses = [];
+                let activeCourseFound = false;
+                
                 snapshot.forEach(docSnap => {
                     const c = { id: docSnap.id, ...docSnap.data() };
-                    if (c.status === 'Active') allCourses.push(c);
+                    if (c.status === 'Active') {
+                        allCourses.push(c);
+                        if (!activeCourseFound) { // Set first active course to player
+                            activeCourseFound = true;
+                            currentCourseId = c.id;
+                            if(c.aiPrompt) currentCourseAiPrompt = c.aiPrompt;
+                            currentCourseTitle = c.title;
+                            
+                            document.getElementById('dynamic-course-title').innerText = c.title;
+                            document.getElementById('dynamic-nav-title').innerText = c.title;
+                            document.getElementById('quiz-course-name').innerText = c.title;
+                            document.getElementById('dynamic-course-desc').innerText = c.desc || "ማብራሪያ የለም።";
+                            document.getElementById('dynamic-instructor-name').innerText = c.instructor || "Tsehay Campus";
+                            
+                            const videoContainer = document.getElementById('video-container');
+                            let finalVideoUrl = c.video;
+                            if(finalVideoUrl && finalVideoUrl.includes('drive.google.com')) finalVideoUrl = window.getDriveEmbedLink(finalVideoUrl);
+                            
+                            if(finalVideoUrl) {
+                                videoContainer.innerHTML = `<div class="video-wrapper"><iframe src="${finalVideoUrl}" allowfullscreen></iframe></div>`;
+                            } else {
+                                videoContainer.innerHTML = `<div class="video-wrapper"><div class="absolute inset-0 flex items-center justify-center bg-gray-900 text-white"><p>ቪዲዮ አልተገኘም</p></div></div>`;
+                            }
+
+                            // Load Progress for this course
+                            getDoc(doc(db, 'artifacts', appId, 'users', userId, 'progress', currentCourseId)).then(snap => {
+                                courseCompletedLessons = snap.exists() ? (snap.data().completedLessons || 0) : 0;
+                                renderCourseLessons(c);
+                            });
+                        }
+                    }
                 });
                 
-                getDocs(collection(db, 'artifacts', appId, 'users', userId, 'enrollments')).then(snap => {
-                    window.userEnrollmentsData = snap.docs.map(d => ({id: d.id, ...d.data()})); 
-                    window.userEnrollments = window.userEnrollmentsData.map(d => d.id);
-                    
-                    const isPro = window.userEnrollmentsData.some(e => e.paymentType && e.paymentType !== 'Free');
-                    const roleDisplay = document.getElementById('user-role-display');
-                    if(roleDisplay) {
-                        if(isPro) {
-                            roleDisplay.innerHTML = '<i class="fa-solid fa-crown text-primary mr-1"></i> Pro Student';
-                            roleDisplay.className = "text-[11px] text-primary font-black truncate";
-                        } else {
-                            roleDisplay.innerHTML = 'Normal Student';
-                            roleDisplay.className = "text-[11px] text-gray-500 dark:text-gray-400 font-bold truncate";
-                        }
-                    }
-                    
-                    window.renderMyCoursesGrid();
-                    
-                    // 💡 ROCK-SOLID COURSE LOADER LOGIC
-                    if (window.userEnrollments.length === 0) {
-                        window.showEmptyCourseState("እስካሁን የተመዘገቡበት ኮርስ የለም", "እባክዎ 'ተጨማሪ ኮርሶች' የሚለውን ተጭነው ኮርስ ይምረጡ።");
-                    } else if (currentCourseId) {
-                        window.loadCourse(currentCourseId);
-                    } else {
-                        const firstValidCourse = window.userEnrollments.find(eId => allCourses.some(ac => ac.id === eId));
-                        if (firstValidCourse) {
-                            window.loadCourse(firstValidCourse);
-                        } else {
-                            window.showEmptyCourseState("ኮርሱ አይገኝም", "የተመዘገቡበት ኮርስ በአሁኑ ሰዓት አይገኝም (ተደብቆ ሊሆን ይችላል)።");
-                        }
-                    }
+                renderMyCoursesGrid();
+                
+            }, (error) => console.error(error));
 
-                    const loader = document.getElementById('screen-loader');
-                    if(loader) {
-                        loader.style.opacity = '0';
-                        setTimeout(() => loader.style.display = 'none', 300);
-                    }
-                }).catch(err => {
-                    console.error("Enrollment fetch error", err);
-                    window.showEmptyCourseState("የዳታቤዝ ስህተት", "የኮርስ መረጃ ማምጣት አልተቻለም።");
-                });
-            }, (error) => {
-                console.error("Courses fetch error", error);
-                window.showEmptyCourseState("የኮርስ ስህተት", "ኮርሶችን ማምጣት አልተቻለም።");
-            });
-
+            // Load Notes
             onSnapshot(collection(db, 'artifacts', appId, 'users', userId, 'notes'), (snapshot) => {
                 const list = document.getElementById('saved-notes-list');
                 if(!list) return;
@@ -1434,102 +1291,66 @@
                 
                 list.innerHTML = '';
                 if(notesArray.length === 0) {
-                    list.innerHTML = '<p class="text-sm text-gray-400 font-bold text-center py-4">እስካሁን ምንም ማስታወሻ አላስቀመጡም።</p>';
+                    list.innerHTML = '<p class="text-sm text-gray-400 font-bold text-center py-4">ምንም ማስታወሻ የለም።</p>';
                 } else {
                     notesArray.forEach(note => {
                         let timeStr = new Date(note.timestamp).toLocaleTimeString('am-ET', { hour: '2-digit', minute: '2-digit' });
-                        const safeText = note.text.replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/\n/g, '\\n');
                         list.innerHTML += `
                             <div class="bg-white dark:bg-slate-800 p-5 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm transition group mb-3">
                                 <div class="flex justify-between items-start mb-3">
                                     <button class="bg-secondary/10 dark:bg-primary/10 text-secondary dark:text-primary text-xs font-bold px-2.5 py-1 rounded">
                                         <i class="fa-solid fa-clock"></i> ${timeStr}
                                     </button>
-                                    <div>
-                                        <button onclick="window.editNote('${note.id}', '${safeText}')" class="text-gray-400 hover:text-secondary mr-3" title="አስተካክል"><i class="fa-solid fa-pen"></i></button>
-                                        <button onclick="window.deleteNote('${note.id}')" class="text-gray-400 hover:text-danger" title="አጥፋ"><i class="fa-solid fa-trash"></i></button>
-                                    </div>
+                                    <button onclick="window.deleteNote('${note.id}')" class="text-gray-400 hover:text-danger" title="አጥፋ"><i class="fa-solid fa-trash"></i></button>
                                 </div>
-                                <p class="text-[14px] text-gray-700 dark:text-gray-300 font-body leading-relaxed whitespace-pre-wrap">${note.text}</p>
+                                <p class="text-[14px] text-gray-700 dark:text-gray-300 font-body leading-relaxed">${note.text}</p>
                             </div>`;
                     });
                 }
             });
 
-            // 💡 STRICT Q&A FILTERING FOR STUDENTS (Private Database View)
+            // Load Q&A
             onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'qa'), (snapshot) => {
                 const list = document.getElementById('qa-list');
                 if(!list) return;
                 let qaArray = [];
-                
-                snapshot.docChanges().forEach(change => {
-                    const data = change.doc.data();
-                    if (change.type === 'modified' && data.userId === userId && data.adminReply && !isInitialQALoad) {
-                        createNotification("የአድሚን ምላሽ", `ለጥያቄዎ አድሚን ምላሽ ሰጥቷል!`);
-                    }
-                });
-                isInitialQALoad = false;
-
-                snapshot.forEach(doc => {
-                    const data = doc.data();
-                    // 💡 እዚህ ጋር ነው ሚስጥሩ! ተማሪው የራሱን ጥያቄ ብቻ እንዲያይ ተደርጓል!
-                    if(data.userId === userId) {
-                        qaArray.push({ id: doc.id, ...data });
-                    }
-                });
+                snapshot.forEach(doc => qaArray.push({ id: doc.id, ...doc.data() }));
                 qaArray.sort((a, b) => b.timestamp - a.timestamp);
                 
                 list.innerHTML = '';
                 if(qaArray.length === 0) {
-                    list.innerHTML = '<p class="text-center py-6 text-gray-400 font-bold">እስካሁን ምንም ጥያቄ አልጠየቁም።</p>';
+                    list.innerHTML = '<p class="text-center py-6 text-gray-400 font-bold">እስካሁን ምንም ጥያቄ የለም።</p>';
                 } else {
                     qaArray.forEach(q => {
                         let timeStr = new Date(q.timestamp).toLocaleTimeString('am-ET', { hour: '2-digit', minute: '2-digit' });
-                        let adminReplyHtml = q.adminReply ? `
-                            <div class="mt-3 bg-blue-50 dark:bg-slate-700/50 p-3 rounded-lg border-l-2 border-secondary">
-                                <p class="text-[12px] font-bold text-secondary dark:text-primary mb-1"><i class="fa-solid fa-user-shield"></i> የአድሚን (Tsehay Campus) ምላሽ:</p>
-                                <p class="text-[13px] text-gray-700 dark:text-gray-300 font-body">${q.adminReply}</p>
-                            </div>
-                        ` : '';
-
                         list.innerHTML += `
                             <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-gray-200 dark:border-slate-600 shadow-sm mb-4">
                                 <div class="flex justify-between items-start mb-2">
-                                    <span class="font-bold text-dark dark:text-white text-sm"><i class="fa-solid fa-user text-gray-400 mr-1"></i> የእርስዎ ጥያቄ</span>
+                                    <span class="font-bold text-dark dark:text-white text-sm"><i class="fa-solid fa-user text-gray-400 mr-1"></i> ${q.userName || 'ተማሪ'}</span>
                                     <span class="text-xs text-gray-400">${timeStr}</span>
                                 </div>
                                 <p class="text-[14px] text-gray-700 dark:text-gray-300 font-body">${q.text}</p>
-                                ${adminReplyHtml}
                             </div>`;
                     });
                 }
             });
+            
+            createNotification("እንኳን ደህና መጡ!", "ወደ መማሪያ ክፍልዎ ገብተዋል። መልካም ትምህርት!");
         }
-        let isInitialQALoad = true;
 
-        window.renderMyCoursesGrid = function() {
+        function renderMyCoursesGrid() {
             const container = document.getElementById('my-courses-container');
             if(!container) return;
-            
-            const myEnrolledCourses = allCourses.filter(c => window.userEnrollments.includes(c.id));
-            
-            if(myEnrolledCourses.length === 0) {
-                container.innerHTML = `
-                    <div class="col-span-full py-10 text-center text-gray-400 font-bold">
-                        <i class="fa-solid fa-box-open text-4xl mb-3 text-gray-300 dark:text-gray-600"></i><br>
-                        እስካሁን የተመዘገቡበት ኮርስ የለም።<br><br>
-                        <button onclick="window.safeRedirect('courses.html')" class="bg-primary text-dark px-6 py-2.5 rounded-xl mt-2 font-bold shadow-md hover:bg-yellow-400 transition">ወደ ኮርሶች ገበያ ሂድ</button>
-                    </div>`; 
-                return;
+            if(allCourses.length === 0) {
+                container.innerHTML = '<div class="col-span-full py-10 text-center text-gray-400 font-bold">ምንም ኮርስ አልተገኘም</div>'; return;
             }
-            
-            container.innerHTML = myEnrolledCourses.map(c => `
-                <div class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-slate-700 p-4 shadow-sm hover:shadow-md transition cursor-pointer transform hover:-translate-y-1" onclick="window.loadCourse('${c.id}')">
+            container.innerHTML = allCourses.map(c => `
+                <div class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-slate-700 p-4 shadow-sm hover:shadow-md transition cursor-pointer" onclick="window.switchMainView('course-view', document.querySelectorAll('.sidebar-link')[0])">
                     <div class="relative overflow-hidden h-40 bg-gray-100 dark:bg-slate-700 rounded-xl mb-4 group">
                         <img src="${c.image || 'Campus Logo.jpg'}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500" onerror="this.src='https://placehold.co/400x250?text=Course'">
                         <div class="absolute inset-0 bg-black/20 group-hover:bg-transparent transition duration-500"></div>
                         <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-300">
-                            <div class="w-12 h-12 bg-white/30 backdrop-blur-md rounded-full flex items-center justify-center text-white"><i class="fa-solid fa-play ml-1"></i></div>
+                            <div class="w-12 h-12 bg-white/30 backdrop-blur-md rounded-full flex items-center justify-center text-white"><i class="fa-solid fa-play"></i></div>
                         </div>
                     </div>
                     <h3 class="font-bold text-dark dark:text-white text-lg font-heading line-clamp-1 mb-1">${c.title}</h3>
@@ -1560,16 +1381,8 @@
                 await setDoc(doc(collection(db, 'artifacts', appId, 'public', 'data', 'qa'), Date.now().toString()), {
                     text: input, userId: userId, userName: userName, timestamp: Date.now()
                 });
-                window.showCloudSaveToast('ጥያቄዎ ተልኳል!');
-                createNotification("ጥያቄ ተልኳል", "ጥያቄዎ ወደ አድሚን ተልኳል፣ በቅርቡ ምላሽ ያገኛሉ።");
+                window.showCloudSaveToast();
             } catch(e) { console.error(e); }
-        };
-
-        window.editNoteId = null;
-        window.editNote = function(id, text) {
-            document.getElementById('noteInput').value = text;
-            window.editNoteId = id;
-            document.getElementById('noteInput').focus();
         };
 
         window.saveNote = async function() {
@@ -1578,31 +1391,24 @@
             if(!input.trim()) return;
             document.getElementById('noteInput').value = '';
             
-            const noteId = window.editNoteId || Date.now().toString();
-            window.editNoteId = null;
-
             try {
-                await setDoc(doc(db, 'artifacts', appId, 'users', userId, 'notes', noteId), { 
-                    text: input, 
-                    timestamp: Date.now() 
-                }, { merge: true });
+                await setDoc(doc(db, 'artifacts', appId, 'users', userId, 'notes', Date.now().toString()), { text: input, timestamp: Date.now() });
                 window.showCloudSaveToast();
-                createNotification("ማስታወሻ", "አዲስ የግል ማስታወሻ በተሳካ ሁኔታ አስቀምጠዋል!");
             } catch(e) { console.error(e); }
         };
 
         window.deleteNote = async function(noteId) {
             if(!userId) return;
-            try { await deleteDoc(doc(db, 'artifacts', appId, 'users', userId, 'notes', noteId)); window.showCloudSaveToast('ማስታወሻው ጠፍቷል!'); } catch(e) {}
+            try { await deleteDoc(doc(db, 'artifacts', appId, 'users', userId, 'notes', noteId)); } catch(e) {}
         };
 
         // ========================================================
-        // DYNAMIC AI QUIZ GENERATOR
+        // DYNAMIC AI QUIZ GENERATOR (Fully Connected)
         // ========================================================
         let dynamicQuizData = [];
         let currentQ = 0;
         let userAnswers = {};
-        let quizTotalQuestions = 15;
+        let quizTotalQuestions = 5;
 
         window.generateAndStartQuiz = async function() {
             const btn = document.getElementById('start-quiz-btn');
@@ -1612,9 +1418,9 @@
             loading.classList.remove('hidden');
             loading.classList.add('flex');
 
-            const prompt = `ለ "${currentCourseTitle}" ኮርስ 15 ጥያቄዎች ያሉት (Multiple Choice) ፈተና በአማርኛ አዘጋጅ። ኮርሱ የሚያተኩረው በዚህ ላይ ነው፦ ${currentCourseAiPrompt}።
+            const prompt = `ለ "${currentCourseTitle}" የሚሆን 5 ጥያቄዎች ያሉት (Multiple Choice) ፈተና በአማርኛ አዘጋጅ። 
 እባክህ ምላሽህን በ JSON ፎርማት ብቻ ስጥ። ቅርፁ ይህን መምሰል አለበት፡
-[{"q": "ጥያቄ?","options": ["ሀ", "ለ", "ሐ", "መ"],"correct": 1}] (ማሳሰቢያ: correct 0, 1, 2 ወይ 3 ነው)`;
+[{"q": "ጥያቄ?","options": ["ሀ", "ለ", "ሐ"],"correct": 1}] (ማሳሰቢያ: correct 0, 1 ወይ 2 ነው)`;
             
             try {
                 let response = await callGemini(prompt, "ፕሮፌሽናል ፈተና አዘጋጅ ነህ። ንፁህ JSON ብቻ መልስ።");
@@ -1630,7 +1436,7 @@
                 document.getElementById('quiz-container').classList.remove('hidden');
                 renderDynamicQuestion();
             } catch (error) {
-                alert("የ AI ስህተት አጋጥሟል። እባክዎ እንደገና ይሞክሩ።");
+                alert("የ AI ስህተት አጋጥሟል። እባክዎ API Keyዎን እና ኢንተርኔትዎን ያረጋግጡ።");
                 btn.classList.remove('hidden'); loading.classList.add('hidden'); loading.classList.remove('flex');
             }
         };
@@ -1704,7 +1510,7 @@
                 document.getElementById('cert-date').innerText = today;
                 
                 confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
-                createNotification('የምስክር ወረቀት', `የ ${currentCourseTitle} ኮርሱን አጠናቀው ሰርተፍኬት አግኝተዋል!`);
+                createNotification('የምስክር ወረቀት', 'ኮርሱን ስላጠናቀቁ ሰርተፍኬት አግኝተዋል!');
                 
                 if (userId) setDoc(doc(db, 'artifacts', appId, 'users', userId, 'progress', 'main'), { totalPoints: totalPoints }, {merge:true}).catch(e=>{});
             } else {
@@ -1712,7 +1518,7 @@
                 icon.innerHTML = '<i class="fa-solid fa-xmark"></i>';
                 title.innerText = `ውጤት: ${score}/${quizTotalQuestions}`;
                 title.className = "text-3xl font-black font-heading mb-3 text-danger";
-                desc.innerHTML = `ሰርተፍኬት ለማግኘት ቢያንስ 80% (12 ጥያቄዎችን) ማምጣት አለብዎት። እባክዎ እንደገና ይሞክሩ።`;
+                desc.innerHTML = `ሰርተፍኬት ለማግኘት ቢያንስ 80% ማምጣት አለብዎት። እባክዎ እንደገና ይሞክሩ።`;
                 btns.innerHTML = `<button onclick="window.resetQuiz()" class="bg-dark dark:bg-primary text-white dark:text-dark px-10 py-3.5 rounded-xl font-bold shadow-lg hover:bg-secondary dark:hover:bg-yellow-400 transition hover:-translate-y-1"><i class="fa-solid fa-rotate-right mr-2"></i> ደግመህ ፈተና ውሰድ</button>`;
             }
         };
@@ -1752,10 +1558,7 @@
             c.innerHTML += `<div id="${typingId}" class="self-start max-w-[85%] bg-white dark:bg-slate-800 p-3 rounded-2xl rounded-tl-none shadow-sm text-gray-800 dark:text-gray-200 text-[13px] leading-relaxed"><i class="fa-solid fa-spinner fa-spin"></i> Tsehay AI በማሰብ ላይ ነው...</div>`;
             c.scrollTop = c.scrollHeight;
 
-            // 💡 የተጨመረ ጥብቅ ህግ፡ ፅሁፉ አጭር እንዲሆን፣ የኮከብ (*) ምልክት እንዳይጠቀም፣ እና የፈተና ጥያቄ እንዳይሰራ የሚያግድ!
-            let strictRules = " ማሳሰቢያ፡ አጭር፣ ግልፅ እና ማራኪ አድርገህ መልስ። አሰልቺ ፅሁፍ አታብዛ። ነጥቦችን ለመዘርዘር የኮከብ (*) ምልክት ፈፅሞ አትጠቀም፤ በምትኩ ኢሞጂ (👉, ✅, 💡) ተጠቀም። ተማሪዎች የፈተና ጥያቄ ካመጡልህ 'ይህ የፈተና ጥያቄ ስለሆነ እራስዎ ቢሞክሩት የተሻለ ነው' ብለህ በትህትና መልስ እንጂ ፈፅሞ መልሱን አትስጣቸው።";
-
-            let response = await callGemini(m, currentCourseAiPrompt + strictRules);
+            let response = await callGemini(m, currentCourseAiPrompt);
             const typingEl = document.getElementById(typingId); if(typingEl) typingEl.remove();
             
             c.innerHTML += `<div class="self-start max-w-[85%] bg-white dark:bg-slate-800 p-3 rounded-2xl rounded-tl-none shadow-sm text-gray-800 dark:text-gray-200 text-[13px] leading-relaxed">${response}</div>`;
@@ -1766,3 +1569,16 @@
 
     <!-- Google Translate (To keep translation working across pages) -->
     <div id="google_translate_element"></div>
+    <script>
+        window.googleTranslateElementInit = function() {
+            new google.translate.TranslateElement({
+                pageLanguage: 'am',
+                includedLanguages: 'am,en,om,ti,ar,zh-CN,so,fr,es',
+                autoDisplay: false
+            }, 'google_translate_element');
+        };
+    </script>
+    <script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit">
+    </script>
+</body>
+</html>
