@@ -298,6 +298,29 @@
                         <li><strong class="text-danger">ህገወጥ ስርጭት፡</strong> ኮርሶችን ስክሪን ሪከርድ ማድረግ (Screen record)፣ ማውረድ (Download)፣ በቴሌግራም፣ በዩቲዩብ ወይም በሌላ በማንኛውም ሚዲያ ማሰራጨት፣ አሊያም ለሶስተኛ ወገን መሸጥ (Piracy) ህገወጥ እና በወንጀል የሚያስጠይቅ ድርጊት ነው። ይህን በሚያደርጉ አካላት ላይ ካምፓኒው ህጋዊ እርምጃ ይወስዳል።</li>
                     </ul>
                 </div>
+                
+                <div>
+                    <h3 class="font-black text-dark dark:text-white text-base border-b border-gray-100 dark:border-slate-700 pb-2 mb-3"><i class="fa-solid fa-money-bill-transfer text-primary mr-2"></i> 3. የክፍያ እና ተመላሽ ፖሊሲ (Refund Policy)</h3>
+                    <ul class="list-disc ml-5 space-y-2">
+                        <li>ለማንኛውም ኮርስ የሚፈጸሙ ክፍያዎች በሙሉ የመጨረሻ ናቸው (Non-refundable)።</li>
+                        <li>ክፍያ ከተፈጸመ እና ኮርሱ ለእርስዎ ከተከፈተ በኋላ፣ በምንም አይነት ምክንያት (ሀሳብ በመቀየር ወይም ጊዜ በማጣት) ገንዘብ ተመላሽ አይደረግም። እባክዎ ከመግዛትዎ በፊት ስለ ኮርሱ የተሰጠውን ማብራሪያ በደንብ ያንብቡ።</li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h3 class="font-black text-dark dark:text-white text-base border-b border-gray-100 dark:border-slate-700 pb-2 mb-3"><i class="fa-solid fa-handshake text-primary mr-2"></i> 4. የተማሪዎች ስነ-ምግባር</h3>
+                    <ul class="list-disc ml-5 space-y-2">
+                        <li>በተማሪዎች ፎረም፣ የድጋፍ ቻት (Support Chat) እና ግሩፖች ላይ ጸያፍ ቃላትን መጠቀም፣ ሰዎችን መስደብ ወይም ማዋረድ የተከለከለ ነው።</li>
+                        <li>ያለ አድሚን ፈቃድ የራስን ቢዝነስ፣ ሊንክ ወይም ሌላ ምርት ፎረሙ ላይ ማስተዋወቅ (Spamming) አካውንትን ያሳግዳል።</li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h3 class="font-black text-dark dark:text-white text-base border-b border-gray-100 dark:border-slate-700 pb-2 mb-3"><i class="fa-solid fa-robot text-primary mr-2"></i> 5. የ AI መሳሪያዎች አጠቃቀም</h3>
+                    <ul class="list-disc ml-5 space-y-2">
+                        <li>በካምፓሱ ውስጥ ያሉት የ AI መሳሪያዎች ለትምህርት እና ለንግድ እገዛ ብቻ የተዘጋጁ ናቸው። ሆን ብሎ ሲስተሙን ለማጣበብ ብዛት ያላቸውን ጥያቄዎች መላክ (Spamming API) አይፈቀድም።</li>
+                    </ul>
+                </div>
             </div>
             
             <div class="p-5 md:p-6 border-t border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 flex flex-col shrink-0">
@@ -350,6 +373,20 @@
                             <span class="font-black dark:text-white text-sm md:text-base">Telebirr (ቴሌብር)</span>
                         </div>
                         <i class="fa-solid fa-mobile-screen-button text-gray-400 text-xl"></i>
+                    </label>
+                    <label class="payment-option flex items-center justify-between p-4 rounded-xl border border-gray-200 dark:border-slate-600 cursor-pointer transition">
+                        <div class="flex items-center gap-3">
+                            <input type="radio" name="paymethod" value="paypal" class="w-4 h-4 text-secondary focus:ring-secondary">
+                            <span class="font-black dark:text-white text-sm md:text-base">PayPal / Visa / Mastercard</span>
+                        </div>
+                        <i class="fa-brands fa-paypal text-[#003087] dark:text-[#0079C1] text-2xl"></i>
+                    </label>
+                    <label class="payment-option flex items-center justify-between p-4 rounded-xl border border-gray-200 dark:border-slate-600 cursor-pointer transition">
+                        <div class="flex items-center gap-3">
+                            <input type="radio" name="paymethod" value="crypto" class="w-4 h-4 text-secondary focus:ring-secondary">
+                            <span class="font-black dark:text-white text-sm md:text-base">Crypto (USDT / BTC)</span>
+                        </div>
+                        <i class="fa-brands fa-bitcoin text-[#F3BA2F] text-2xl"></i>
                     </label>
                 </div>
 
@@ -433,14 +470,15 @@
         </div>
     </footer>
 
+    <!-- 💡 የቴሌግራም እና ስልክ አይከኖች ወርቃማ እና ትልቅ ሆነው ተስተካክለዋል -->
     <div class="fixed bottom-6 right-6 z-[9999] flex flex-col gap-4">
-        <a href="https://t.me/TsehayTeam" target="_blank" class="w-[52px] h-[52px] bg-[#2CA5E0] text-white rounded-full flex items-center justify-center text-[22px] shadow-[0_0_20px_rgba(44,165,224,0.5)] hover:scale-110 transition-all duration-300 relative group border-2 border-white/10">
-            <i class="fa-regular fa-paper-plane"></i>
-            <span class="absolute right-full mr-4 bg-dark dark:bg-slate-800 text-white text-xs font-bold px-3 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap pointer-events-none border border-gray-700 shadow-xl">በቴሌግራም ያግኙን</span>
+        <a href="https://t.me/TsehayTeam" target="_blank" class="w-16 h-16 bg-primary text-dark rounded-full flex items-center justify-center text-3xl shadow-[0_0_20px_rgba(249,176,60,0.5)] hover:scale-110 transition-all duration-300 relative group border-2 border-white/20">
+            <i class="fa-brands fa-telegram"></i>
+            <span class="absolute right-full mr-4 bg-dark dark:bg-slate-800 text-white text-sm font-bold px-4 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap pointer-events-none border border-gray-700 shadow-xl">በቴሌግራም ያግኙን</span>
         </a>
-        <a href="tel:0980209090" class="w-[52px] h-[52px] bg-[#10B981] text-white rounded-full flex items-center justify-center text-[22px] shadow-[0_0_20px_rgba(16,185,129,0.5)] hover:scale-110 transition-all duration-300 relative group border-2 border-white/10">
+        <a href="tel:0980209090" class="w-16 h-16 bg-primary text-dark rounded-full flex items-center justify-center text-3xl shadow-[0_0_20px_rgba(249,176,60,0.5)] hover:scale-110 transition-all duration-300 relative group border-2 border-white/20">
             <i class="fa-solid fa-phone"></i>
-            <span class="absolute right-full mr-4 bg-dark dark:bg-slate-800 text-white text-xs font-bold px-3 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap pointer-events-none border border-gray-700 shadow-xl">ስልክ ይደውሉ</span>
+            <span class="absolute right-full mr-4 bg-dark dark:bg-slate-800 text-white text-sm font-bold px-4 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap pointer-events-none border border-gray-700 shadow-xl">ስልክ ይደውሉ</span>
         </a>
     </div>
 
@@ -738,16 +776,16 @@
                 let btnHtml = '';
                 let badgeHtml = '';
 
-                // Course Card Logic Based on User Enrollments
+                // 💡 የተስተካከለው የዳሽቦርድ መግቢያ ቁልፍ (አጠር ያለ እና ወርቃማ)
                 if (isEnrolled) {
                     badgeHtml = `<div class="absolute top-4 right-4 bg-primary text-dark text-[10px] font-black uppercase px-3 py-1.5 rounded-lg shadow-lg z-10"><i class="fa-solid fa-check-circle"></i> የኔ ኮርስ</div>`;
-                    btnHtml = `<button onclick="window.safeRedirect('dashboard.html')" class="w-full bg-primary hover:bg-yellow-400 text-dark py-3.5 rounded-xl font-black transition shadow-md flex items-center justify-center gap-2">ወደ መማሪያ ክፍል (Dashboard) <i class="fa-solid fa-arrow-right"></i></button>`;
+                    btnHtml = `<button onclick="window.safeRedirect('dashboard.html')" class="bg-primary text-dark px-4 sm:px-5 py-2.5 rounded-xl font-bold text-sm sm:text-base shadow-md hover:bg-yellow-400 transition flex items-center gap-2 shrink-0 whitespace-nowrap">ወደ ክፍል ሂድ <i class="fa-solid fa-arrow-right"></i></button>`;
                 } else if (isFree) {
                     badgeHtml = `<div class="absolute top-3 right-3 bg-success text-white text-[10px] font-black uppercase px-3 py-1.5 rounded-lg shadow-md z-10 animate-pulse"><i class="fa-solid fa-gift mr-1"></i> ነፃ ኮርስ</div>`;
-                    btnHtml = `<button onclick="window.enrollFreeCourse('${c.id}')" class="w-full bg-success hover:bg-green-600 text-white py-3.5 rounded-xl font-black transition shadow-md flex items-center justify-center gap-2">በነፃ ጀምር <i class="fa-solid fa-unlock"></i></button>`;
+                    btnHtml = `<button onclick="window.enrollFreeCourse('${c.id}')" class="bg-success hover:bg-green-600 text-white px-4 sm:px-5 py-2.5 rounded-xl font-bold text-sm sm:text-base transition shadow-md flex items-center justify-center gap-2 shrink-0 whitespace-nowrap">በነፃ ጀምር <i class="fa-solid fa-unlock"></i></button>`;
                 } else {
                     badgeHtml = `<div class="absolute top-3 right-3 bg-primary text-dark text-[10px] font-black uppercase px-3 py-1.5 rounded-lg shadow-md z-10"><i class="fa-solid fa-star mr-1"></i> ፕሪሚየም</div>`;
-                    btnHtml = `<button onclick="window.openPaymentModal('${c.id}')" class="w-full bg-primary hover:bg-yellow-400 text-dark py-3.5 rounded-xl font-black transition shadow-md flex items-center justify-center gap-2">ኮርሱን ግዛ <i class="fa-solid fa-cart-shopping"></i></button>`;
+                    btnHtml = `<button onclick="window.openPaymentModal('${c.id}')" class="bg-primary hover:bg-yellow-400 text-dark px-4 sm:px-5 py-2.5 rounded-xl font-bold text-sm sm:text-base transition shadow-md flex items-center justify-center gap-2 shrink-0 whitespace-nowrap">ኮርሱን ግዛ <i class="fa-solid fa-cart-shopping"></i></button>`;
                 }
 
                 let oldPriceHtml = (!isFree && c.oldPrice) ? `<span class="text-xs text-gray-400 line-through font-bold ml-2">${Number(c.oldPrice).toLocaleString()} ብር</span>` : '';
@@ -778,9 +816,9 @@
                                 <span class="bg-gray-100 dark:bg-slate-700 border border-gray-200 dark:border-slate-500 text-gray-800 dark:text-gray-100 text-[11px] font-bold px-2.5 py-1.5 rounded-md flex items-center gap-1.5"><i class="fa-solid fa-signal text-warning"></i> ${levelText}</span>
                             </div>
 
-                            <div class="pt-4 border-t border-gray-100 dark:border-slate-700 flex items-center justify-between">
-                                <div class="flex items-center">
-                                    <span class="font-black text-xl ${isFree ? 'text-success' : 'text-dark dark:text-white'}">${priceText}</span>
+                            <div class="pt-4 border-t border-gray-100 dark:border-slate-700 flex items-center justify-between gap-2">
+                                <div class="flex items-center shrink-0">
+                                    <span class="font-black text-lg sm:text-xl ${isFree ? 'text-success' : 'text-dark dark:text-white'}">${priceText}</span>
                                     ${oldPriceHtml}
                                 </div>
                                 ${btnHtml}
