@@ -1049,7 +1049,7 @@
 
             window.closePaymentModal();
             const loader = document.getElementById('payment-processing-loader');
-            loader.querySelector('h2').innerText = "ወደ ቻፓ/ቴሌብር በማቅናት ላይ...";
+            loader.querySelector('h2').innerText = "ወደ ክፍያ በማቅናት ላይ...";
             loader.classList.remove('hidden'); loader.classList.add('flex');
             
             try {
@@ -1065,10 +1065,17 @@
                     })
                 });
 
-                if (!response.ok) throw new Error("የክፍያ አገልጋዩ አልተገኘም።");
-                const data = await response.json();
-                if (data.checkout_url) { window.location.href = data.checkout_url; } 
-                else { throw new Error("የክፍያ ሊንክ ማመንጨት አልተቻለም።"); }
+                const data = await response.json().catch(() => null);
+                
+                if (!response.ok) {
+                    throw new Error(data?.error || "የክፍያ አገልጋዩ (API) አልተገኘም።");
+                }
+                
+                if (data && data.checkout_url) { 
+                    window.location.href = data.checkout_url; 
+                } else { 
+                    throw new Error("የክፍያ ሊንክ ማመንጨት አልተቻለም።"); 
+                }
             } catch (e) {
                 loader.classList.add('hidden'); loader.classList.remove('flex');
                 window.openPaymentModal(course.id);
