@@ -26,27 +26,27 @@ export default async function handler(req, res) {
             }
         }
 
-        // 2. PAYPAL & CARDS (🌍) - 💡 ወደ Sandbox (የሙከራ) አገልጋይ ተቀይሯል!
+        // 2. PAYPAL & CARDS (🌍) - 💡 እውነተኛ (Live) ክፍያ!
         else if (method === 'paypal') {
             const CLIENT_ID = process.env.PAYPAL_CLIENT_ID;
             const CLIENT_SECRET = process.env.PAYPAL_CLIENT_SECRET;
             
             if (!CLIENT_ID || !CLIENT_SECRET) throw new Error("የ PayPal ቁልፎች (Keys) Vercel ላይ አልገቡም!");
             
-            // ሀ. Access Token ማምጣት (Sandbox)
+            // ሀ. Access Token ማምጣት (Live API)
             const auth = Buffer.from(`${CLIENT_ID}:${CLIENT_SECRET}`).toString('base64');
-            const tokenResponse = await fetch('https://api-m.sandbox.paypal.com/v1/oauth2/token', {
+            const tokenResponse = await fetch('https://api-m.paypal.com/v1/oauth2/token', {
                 method: 'POST',
                 body: 'grant_type=client_credentials',
                 headers: { 'Authorization': `Basic ${auth}`, 'Content-Type': 'application/x-www-form-urlencoded' }
             });
             const tokenData = await tokenResponse.json();
             
-            if (!tokenData.access_token) throw new Error("PayPal Authentication Failed! የሙከራ ቁልፎችዎን ያረጋግጡ። Space አብሮ አለመግባቱን ቼክ ያድርጉ።");
+            if (!tokenData.access_token) throw new Error("PayPal Authentication Failed! እባክዎ እውነተኛ (Live) ቁልፎችዎን Vercel ላይ ያስገቡ።");
 
-            // ለ. የፔፓል ትዕዛዝ መፍጠር (Sandbox)
+            // ለ. የፔፓል ትዕዛዝ መፍጠር (Live API)
             const usdAmount = (parseFloat(amount) / 115).toFixed(2); // ብር ወደ ዶላር
-            const orderResponse = await fetch('https://api-m.sandbox.paypal.com/v2/checkout/orders', {
+            const orderResponse = await fetch('https://api-m.paypal.com/v2/checkout/orders', {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${tokenData.access_token}`, 'Content-Type': 'application/json' },
                 body: JSON.stringify({
