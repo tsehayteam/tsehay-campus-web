@@ -1,107 +1,88 @@
+/**
+ * Baara in ye PayPal dambɛ ni Chapa integration de ye.
+ * (ይህ ፋይል ለፔፓል እና ለቻፓ ክፍያ አስጀማሪ ነው)
+ */
 export default async function handler(req, res) {
-    // 1. የደህንነት ማረጋገጫ፡ POST ሪኮዌስት ብቻ ነው የምንቀበለው
-    if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Method not allowed' });
-    }
+    if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
     try {
-        // 2. ከተማሪው ዌብሳይት የመጣውን ዳታ መቀበል
         const { courseId, title, amount, method, userId, email, name, callbackUrl } = req.body;
-
-        // 3. ልዩ የክፍያ መለዮ (Transaction ID) መፍጠር
         const tx_ref = `tsehay-${courseId}-${userId}-${Date.now()}`;
 
-        // ==========================================
-        // ሎጂክ ሀ፡ Chapa ወይም Telebirr ከተመረጠ
-        // ==========================================
+        // 1. CHAPA & TELEBIRR (🇪🇹)
         if (method === 'chapa' || method === 'telebirr') {
             const CHAPA_SECRET = process.env.CHAPA_SECRET_KEY;
-            
-            if (!CHAPA_SECRET) throw new Error("የ ቻፓ ሚስጥራዊ ቁልፍ (Secret Key) አልተገኘም!");
-
-            const payload = {
-                amount: amount.toString(),
-                currency: 'ETB',
-                email: email || 'student@tsehaycampus.com',
-                first_name: name || 'Tsehay',
-                last_name: 'Student',
-                tx_ref: tx_ref,
-                return_url: callbackUrl,
-                customization: {
-                    title: "Tsehay Campus",
-                    description: `${title} - የኮርስ ክፍያ`
-                }
-            };
-
-            const chapaResponse = await fetch('https://api.chapa.co/v1/transaction/initialize', {
+            const response = await fetch('https://api.chapa.co/v1/transaction/initialize', {
                 method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${CHAPA_SECRET}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(payload)
+                headers: { 'Authorization': `Bearer ${CHAPA_SECRET}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    amount: amount.toString(), currency: 'ETB', email: email || 'student@tsehay.com',
+                    first_name: name || 'Student', tx_ref: tx_ref, return_url: callbackUrl
+                })
             });
+            const data = await response.json();
+            return res.status(200).json({ checkout_url: data.data.checkout_url });
+        }
 
-            const data = await chapaResponse.json();
+        // 2. PAYPAL & CARDS (🌍) - 💡 ይሄ ነው የተስተካከለው!
+        else if (method === 'paypal') {
+            const CLIENT_ID = process.env.PAYPAL_CLIENT_ID;
+            const CLIENT_SECRET = process.env.PAYPAL_CLIENT_SECRET;
             
-            if (data.status === 'success') {
-                return res.status(200).json({ checkout_url: data.data.checkout_url });
+            // Access Token in bɛ bɔ PayPal fɛ
+            const auth = Buffer.from(`${CLIENT_ID}:${CLIENT_SECRET}`).toString('base64');
+            const tokenResponse = await fetch('https://api-m.paypal.com/v1/oauth2/token', {
+                method: 'POST',
+                body: 'grant_type=client_credentials',
+                headers: { 'Authorization': `Basic ${auth}`, 'Content-Type': 'application/x-www-form-urlencoded' }
+            });
+            const { access_token } = await tokenResponse.json();
+
+            // Order in bɛ dila (ትዕዛዝ መፍጠሪያ)
+            const usdAmount = (parseFloat(amount) / 115).toFixed(2); // ብር ወደ ዶላር
+            const orderResponse = await fetch('https://api-m.paypal.com/v2/checkout/orders', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${access_token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    intent: 'CAPTURE',
+                    purchase_units: [{
+                        amount: { currency_code: 'USD', value: usdAmount },
+                        description: title,
+                        custom_id: tx_ref // 💡 ለ Webhook ማሳወቂያ በጣም ወሳኝ ነው
+                    }],
+                    application_context: { 
+                        return_url: callbackUrl, 
+                        cancel_url: callbackUrl,
+                        brand_name: "Tsehay Campus",
+                        user_action: "PAY_NOW"
+                    }
+                })
+            });
+            const orderData = await orderResponse.json();
+            
+            if (orderData.links) {
+                const approveLink = orderData.links.find(link => link.rel === 'approve').href;
+                return res.status(200).json({ checkout_url: approveLink });
             } else {
-                throw new Error(data.message || "ከቻፓ ጋር መገናኘት አልተቻለም።");
+                throw new Error("PayPal order failed: " + JSON.stringify(orderData));
             }
         }
-        
-        // ==========================================
-        // ሎጂክ ለ፡ PayPal ከተመረጠ
-        // ==========================================
-        else if (method === 'paypal') {
-            return res.status(400).json({ error: "PayPal ክፍያ በአሁኑ ሰዓት በዝግጅት ላይ ነው። እባክዎ በቻፓ ወይም በክሪፕቶ ይሞክሩ።" });
-        }
 
-        // ==========================================
-        // ሎጂክ ሐ፡ Crypto ከተመረጠ (NowPayments)
-        // ==========================================
+        // 3. CRYPTO (🪙)
         else if (method === 'crypto') {
             const CRYPTO_API_KEY = process.env.NOWPAYMENTS_API_KEY;
-            
-            if (!CRYPTO_API_KEY) throw new Error("የ ክሪፕቶ API ቁልፍ (NOWPAYMENTS_API_KEY) አልተገኘም!");
-
-            // ዶላር ወደ ብር የምንመነዝርበት ሎጂክ (ግምታዊ፡ 1 USD = 115 ETB)
             const usdAmount = (parseFloat(amount) / 115).toFixed(2);
-
-            // 💡 ማሳሰቢያ፡ ተማሪው የሚመቸውን እንዲመርጥ `pay_currency` የሚለው ትዕዛዝ ሙሉ በሙሉ ጠፍቷል!
-            const payload = {
-                price_amount: usdAmount,
-                price_currency: "usd",
-                order_id: tx_ref,
-                order_description: title,
-                success_url: callbackUrl
-            };
-
-            const cryptoResponse = await fetch('https://api.nowpayments.io/v1/invoice', {
+            const response = await fetch('https://api.nowpayments.io/v1/invoice', {
                 method: 'POST',
-                headers: {
-                    'x-api-key': CRYPTO_API_KEY,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(payload)
+                headers: { 'x-api-key': CRYPTO_API_KEY, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ price_amount: usdAmount, price_currency: "usd", order_id: tx_ref, success_url: callbackUrl })
             });
-
-            const data = await cryptoResponse.json();
-            
-            if (data.invoice_url) {
-                return res.status(200).json({ checkout_url: data.invoice_url });
-            } else {
-                throw new Error("የክሪፕቶ ክፍያ ሊንክ ማመንጨት አልተቻለም። NowPayments Wallet ማስገባትዎን ያረጋግጡ።");
-            }
-        }
-
-        else {
-            return res.status(400).json({ error: "ያልታወቀ የክፍያ መንገድ!" });
+            const data = await response.json();
+            return res.status(200).json({ checkout_url: data.invoice_url });
         }
 
     } catch (error) {
-        console.error("Payment API Error:", error);
-        return res.status(500).json({ error: error.message || 'ከክፍያ ሰርቨር ጋር መገናኘት አልተቻለም' });
+        console.error("Server Logic Error:", error);
+        return res.status(500).json({ error: "አገልጋዩ ላይ ስህተት ተፈጥሯል፡ " + error.message });
     }
 }
