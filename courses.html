@@ -457,7 +457,7 @@
                     <p>&copy; 2026 Tsehay Campus, Inc. መብቱ በህግ የተጠበቀ ነው።</p>
                     <div class="mt-2.5 flex items-center justify-center md:justify-start gap-2 text-gray-400 font-bold uppercase tracking-widest text-[11px]">
                         <span>Powered By</span>
-                        <img src="TD Logo.jpg" alt="TD Logo" class="h-6 w-auto rounded-sm shadow-sm" onerror="this.src='https://ui-avatars.com/api/?name=TD&background=F9B03C&color=0f172a&rounded=true'">
+                        <img src="TD Logo.jpg" alt="TD Logo" class="h-6 w-auto rounded-sm shadow-sm" onerror="this.src='https://ui-avatars.com/api/?name=TC&background=F9B03C&color=0f172a&rounded=true'">
                         <span class="text-primary">Tsehay Digital</span>
                     </div>
                 </div>
@@ -659,6 +659,7 @@
                     const photo = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=F9B03C&color=0f172a`;
                     
                     if (navAuthBtns) {
+                        // 💡 አዲሱ የፕሮፋይል ማስተካከያ (ያለ ዳሽቦርድ መግቢያ)
                         navAuthBtns.innerHTML = `
                             <button onclick="window.toggleTheme()" class="w-10 h-10 rounded-full bg-gray-100 dark:bg-slate-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-slate-700 transition shadow-sm shrink-0 ${themeColor}">
                                 <i id="theme-icon" class="fa-solid ${themeIcon}"></i>
@@ -672,7 +673,7 @@
                                 <div id="profile-dropdown" class="hidden absolute top-full right-0 mt-2 w-56 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 overflow-hidden z-[60]">
                                     <div class="p-2 space-y-1">
                                         <div class="w-full text-left px-4 py-3 text-xs text-gray-500 dark:text-gray-400 font-bold border-b border-gray-100 dark:border-slate-700 mb-1 flex items-center gap-3 truncate">
-                                            <i class="fa-solid fa-envelope text-secondary dark:text-primary"></i> ${user.email}
+                                            <i class="fa-solid fa-envelope text-secondary dark:text-primary"></i> ${user.email || 'ተማሪ'}
                                         </div>
                                         <button onclick="window.logoutUser()" class="w-full text-left px-4 py-2.5 text-sm text-danger hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl font-bold transition flex items-center gap-3">
                                             <i class="fa-solid fa-arrow-right-from-bracket w-4"></i> መውጫ (Logout)
@@ -776,7 +777,7 @@
                 let btnHtml = '';
                 let badgeHtml = '';
 
-                // 💡 የተስተካከለው የዳሽቦርድ መግቢያ ቁልፍ (አጠር ያለ እና ወርቃማ)
+                // Course Card Logic Based on User Enrollments
                 if (isEnrolled) {
                     badgeHtml = `<div class="absolute top-4 right-4 bg-primary text-dark text-[10px] font-black uppercase px-3 py-1.5 rounded-lg shadow-lg z-10"><i class="fa-solid fa-check-circle"></i> የኔ ኮርስ</div>`;
                     btnHtml = `<button onclick="window.safeRedirect('dashboard.html')" class="bg-primary text-dark px-4 sm:px-5 py-2.5 rounded-xl font-bold text-sm sm:text-base shadow-md hover:bg-yellow-400 transition flex items-center gap-2 shrink-0 whitespace-nowrap">ወደ ክፍል ሂድ <i class="fa-solid fa-arrow-right"></i></button>`;
