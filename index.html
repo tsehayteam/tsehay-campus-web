@@ -331,7 +331,7 @@
                 <!-- Desktop Search Bar -->
                 <div class="flex-1 max-w-md hidden md:flex items-center border border-gray-200 dark:border-slate-700 rounded-full px-4 py-2 search-bar mx-2 lg:mx-4 relative">
                     <i class="fa-solid fa-magnifying-glass text-gray-500 dark:text-gray-400 text-sm lg:text-base cursor-pointer hover:text-primary transition" onclick="document.getElementById('courses').scrollIntoView({behavior: 'smooth'})"></i>
-                    <input type="text" id="courseSearchInput" oninput="window.searchCourses(event, false)" onkeypress="window.handleSearchEnter(event)" placeholder="ኮርሶችን ይፈልጉ..." class="bg-transparent border-none outline-none w-full ml-2 lg:ml-3 text-[14px] lg:text-[15px] font-body text-dark dark:text-white placeholder-gray-500">
+                    <input type="text" id="courseSearchInput" oninput="window.searchCourses(event, false)" onkeypress="window.handleSearchEnter(event)" placeholder="ኮርሶችን ይፈልጉ..." class="bg-transparent border-none outline-none w-full ml-2 lg:ml-3 text-[14px] lg:text-[15px] font-body text-dark text-white placeholder-gray-500">
                     <!-- Live Search Dropdown Desktop -->
                     <div id="desktop-search-results" class="absolute top-[110%] left-0 w-full bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-gray-100 dark:border-slate-700 overflow-hidden hidden flex-col z-[100] max-h-80 overflow-y-auto text-left"></div>
                 </div>
@@ -544,7 +544,7 @@
         </div>
     </section>
 
-    <!-- About Us Section (New Design based on Reference) -->
+    <!-- About Us Section (Optimized for User's Photos) -->
     <section id="about" class="py-24 relative overflow-hidden bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 transition-colors duration-300">
         <!-- Background Elements -->
         <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.03] dark:opacity-[0.02]"></div>
@@ -594,27 +594,19 @@
                 </div>
             </div>
 
-            <!-- Bento Box Image Gallery -->
+            <!-- Bento Box Image Gallery (Optimized 3 Images Layout, No Blue Block) -->
             <div class="mb-20">
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 auto-rows-[250px]">
-                    <!-- Main Large Image -->
-                    <div class="md:col-span-2 row-span-2 rounded-3xl overflow-hidden relative group">
-                        <!-- 💡 ፎቶ 1 (አሁን onerror ን አጥፍቼዋለሁ - እውነተኛው ፎቶ ይወጣል) -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Photo 1 -->
+                    <div class="rounded-3xl overflow-hidden shadow-xl group h-[350px]">
                         <img src="about-photo-1.jpg" class="w-full h-full object-cover group-hover:scale-105 transition duration-700" alt="Students">
-                        <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition duration-300"></div>
-                        <div class="absolute bottom-6 left-6 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition duration-300">
-                            <span class="bg-primary text-dark font-black px-3 py-1 rounded-md text-xs uppercase tracking-wider">ማህበረሰብ</span>
-                            <h4 class="text-white font-bold text-xl mt-2">የካምፓሳችን ተማሪዎች</h4>
-                        </div>
                     </div>
-                    <!-- Small Image 1 -->
-                    <div class="md:col-span-2 row-span-1 rounded-3xl overflow-hidden relative group">
-                        <!-- 💡 ፎቶ 2 -->
+                    <!-- Photo 2 -->
+                    <div class="rounded-3xl overflow-hidden shadow-xl group h-[350px]">
                         <img src="about-photo-2.jpg" class="w-full h-full object-cover group-hover:scale-105 transition duration-700" alt="Tech">
                     </div>
-                    <!-- Small Image 2 -->
-                    <div class="md:col-span-2 row-span-1 rounded-3xl overflow-hidden relative group">
-                        <!-- 💡 ፎቶ 3 -->
+                    <!-- Photo 3 -->
+                    <div class="rounded-3xl overflow-hidden shadow-xl group h-[350px]">
                         <img src="about-photo-3.jpg" class="w-full h-full object-cover group-hover:scale-105 transition duration-700" alt="Team">
                     </div>
                 </div>
@@ -1232,7 +1224,7 @@
             const db = getFirestore(app);
 
             // ==========================================
-            // 코ርሶችን በ Real-time ማምጣት (ከ Login ውጭ የሚሰራ)
+            // 코르소ችን በ Real-time ማምጣት (ከ Login ውጭ የሚሰራ)
             // ==========================================
             const fetchPublicCourses = () => {
                 const currentAppId = typeof __app_id !== 'undefined' ? __app_id : 'tsehaycampus-e1a6d';
