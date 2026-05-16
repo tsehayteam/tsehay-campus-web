@@ -491,19 +491,23 @@
                     <i class="fa-brands fa-meta text-[#0668E1]"></i> Meta
                 </div>
                 
-                <div class="flex items-center gap-3 text-2xl md:text-4xl font-black font-heading text-gray-800 dark:text-gray-200 hover:text-black dark:hover:text-white transition transform hover:scale-110 cursor-default">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/24/SHEIN_logo.svg/320px-SHEIN_logo.svg.png" alt="SHEIN" class="h-5 md:h-7 dark:invert object-contain">
-                </div>
-                
+                <!-- 💡 TikTok -->
                 <div class="flex items-center gap-3 text-2xl md:text-4xl font-black font-heading text-gray-800 dark:text-gray-200 hover:text-black dark:hover:text-white transition transform hover:scale-110 cursor-default">
                     <i class="fa-brands fa-tiktok text-black dark:text-gray-100"></i> TikTok
                 </div>
                 
-                <div class="flex items-center gap-2 text-2xl md:text-4xl font-black font-heading text-gray-800 dark:text-gray-200 hover:text-[#F7A600] transition transform hover:scale-110 cursor-default">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2500 2500" class="w-8 h-8 md:w-10 md:h-10 shrink-0">
-                       <path fill="#f6a600" d="M1250.2,0 0,1250l1250,1250 1250-1250L1250.2,0zm-271.8,629l168.3,168-301.8,301h537l167.6,168-704.6.2-302.2-301.5L978.4,629zm543.1,1242L1353,1703l301.8-301h-537L950.2,1234l704.6-.2 302.2,301.5-435.5,335.7z"/>
-                    </svg>
-                    Bybit
+                <!-- 💡 SHEIN (Diňe CSS/Logotip, Döwüljek surat ýok) -->
+                <div class="flex items-center transition transform hover:scale-110 cursor-default">
+                    <div class="bg-black dark:bg-white text-white dark:text-black px-3.5 py-1.5 md:px-4 md:py-2 rounded-lg text-lg md:text-2xl font-bold tracking-[0.15em] shadow-md dark:shadow-white/10" style="font-family: Arial, Helvetica, sans-serif;">
+                        SHEIN
+                    </div>
+                </div>
+                
+                <!-- 💡 BYBIT (Hakyky logotip CSS bilen) -->
+                <div class="flex items-center transition transform hover:scale-110 cursor-default">
+                    <div class="flex items-center text-3xl md:text-[40px] font-black text-black dark:text-white tracking-tighter" style="font-family: 'Montserrat', sans-serif;">
+                        BYB<span class="w-[0.18em] h-[0.75em] bg-[#F7A600] mx-[0.08em] inline-block rounded-[1px]"></span>T
+                    </div>
                 </div>
             </div>
         </div>
@@ -573,11 +577,11 @@
             <!-- Video & Story Container -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-20">
                 
-                <!-- 💡 ቪዲዮ እዚህ ጋር ይቀየራል (YouTube Iframe) 💡 -->
+                <!-- 💡 ቪዲዮው ሌሎች ቪዲዮዎችን እንዳያመጣ (rel=0) ተስተካክሏል -->
                 <div class="relative group w-full">
                     <div class="absolute -inset-2 bg-gradient-to-r from-secondary to-primary rounded-3xl blur-lg opacity-40 group-hover:opacity-70 transition duration-500"></div>
                     <div class="relative rounded-2xl overflow-hidden shadow-2xl border border-white/10 bg-black aspect-video flex items-center justify-center">
-                        <iframe class="w-full h-full absolute inset-0" src="https://www.youtube.com/embed/mgdOMtW6J8k?si=6Zp6IMqoVf2dswwd" title="Tsehay Campus Introduction" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                        <iframe class="w-full h-full absolute inset-0" src="https://www.youtube.com/embed/mgdOMtW6J8k?rel=0&modestbranding=1&showinfo=0" title="Tsehay Campus Introduction" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
                     </div>
                 </div>
 
@@ -672,23 +676,30 @@
                 <!-- Team -->
                 <div>
                     <h3 class="text-2xl font-black font-heading text-dark dark:text-white mb-8 text-center sm:text-left">የኛ ቡድን (Our Team)</h3>
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <!-- Eyob Sahle -->
                         <div class="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 p-6 rounded-3xl text-center shadow-sm hover:shadow-xl transition duration-300 group">
                             <div class="w-20 h-20 mx-auto rounded-full overflow-hidden border-4 border-gray-50 dark:border-slate-700 mb-4 group-hover:border-primary transition duration-300">
-                                <!-- 💡 የሀብታሙን ፎቶ ይቀይሩ 💡 (ወይም UI Avatars ይተውት) -->
-                                <img src="https://ui-avatars.com/api/?name=Habtamu+Alemu&background=0f172a&color=fff&size=128" alt="Habtamu" class="w-full h-full object-cover">
+                                <img src="ceo.jpg" alt="Eyob Sahle" class="w-full h-full object-cover" onerror="this.src='https://ui-avatars.com/api/?name=Eyob+Sahle&background=0f172a&color=fff&size=128'">
                             </div>
-                            <h4 class="font-bold text-dark dark:text-white">ሀብታሙ ዓለሙ</h4>
-                            <p class="text-xs text-secondary dark:text-primary font-semibold mt-1">Founder & Lead Instructor</p>
+                            <h4 class="font-bold text-dark dark:text-white">እዮብ ሳህሌ</h4>
+                            <p class="text-xs text-secondary dark:text-primary font-semibold mt-1">CEO & Lead Instructor</p>
                         </div>
+                        <!-- Habtamu Alemu -->
                         <div class="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 p-6 rounded-3xl text-center shadow-sm hover:shadow-xl transition duration-300 group">
                             <div class="w-20 h-20 mx-auto rounded-full overflow-hidden border-4 border-gray-50 dark:border-slate-700 mb-4 group-hover:border-secondary transition duration-300">
-                                <!-- 💡 የሌላኛውን አብሮ መስራች ፎቶ ይቀይሩ 💡 -->
-                                <img src="https://ui-avatars.com/api/?name=Co+Founder&background=3268BA&color=fff&size=128" alt="Co-Founder" class="w-full h-full object-cover">
+                                <img src="https://ui-avatars.com/api/?name=Habtamu+Alemu&background=3268BA&color=fff&size=128" alt="Habtamu Alemu" class="w-full h-full object-cover">
                             </div>
-                            <!-- 💡 ስም እዚህ ይቀይሩ 💡 -->
-                            <h4 class="font-bold text-dark dark:text-white">የአብሮ መስራች ስም</h4>
-                            <p class="text-xs text-gray-500 font-semibold mt-1">Co-Founder & COO</p>
+                            <h4 class="font-bold text-dark dark:text-white">ሀብታሙ ዓለሙ</h4>
+                            <p class="text-xs text-gray-500 font-semibold mt-1">Co-Founder</p>
+                        </div>
+                        <!-- Tsehay Team -->
+                        <div class="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 p-6 rounded-3xl text-center shadow-sm hover:shadow-xl transition duration-300 group">
+                            <div class="w-20 h-20 mx-auto rounded-full overflow-hidden border-4 border-gray-50 dark:border-slate-700 mb-4 group-hover:border-success transition duration-300">
+                                <img src="Campus Logo.jpg" alt="Tsehay Team" class="w-full h-full object-cover" onerror="this.src='https://ui-avatars.com/api/?name=Tsehay+Team&background=10b981&color=fff&size=128'">
+                            </div>
+                            <h4 class="font-bold text-dark dark:text-white">Tsehay Team</h4>
+                            <p class="text-xs text-gray-500 font-semibold mt-1">Support & Content</p>
                         </div>
                     </div>
                 </div>
