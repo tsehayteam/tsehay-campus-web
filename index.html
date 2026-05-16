@@ -106,17 +106,9 @@
         body { top: 0px !important; position: static !important; }
         html { top: 0 !important; height: 100%; }
         
-        #google_translate_element_footer select {
-            background-color: #f1f5f9; color: #334155; border: 1px solid #e2e8f0; border-radius: 0.5rem;
-            padding: 0.4rem 0.8rem; font-family: 'Montserrat', sans-serif; font-size: 0.8rem; font-weight: 700;
-            outline: none; cursor: pointer; max-width: 150px;
-        }
-        .dark #google_translate_element_footer select {
-            background-color: #1e293b; color: #cbd5e1; border-color: #334155;
-        }
-        #google_translate_element_footer select:hover { border-color: #3268BA; }
         .goog-logo-link { display: none !important; }
         .goog-te-gadget { color: transparent !important; font-size: 0px !important; }
+        #google_translate_element { display: none !important; }
 
         @keyframes modalPop {
             0% { opacity: 0; transform: scale(0.95); }
@@ -346,7 +338,6 @@
                         <span class="flex items-center h-full py-6">ተጨማሪ <i class="fa-solid fa-chevron-down ml-1 text-[10px] group-hover:rotate-180 transition-transform duration-300"></i></span>
                         <div class="absolute top-full left-0 bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 shadow-xl rounded-xl py-3 w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform origin-top-left group-hover:translate-y-0 translate-y-2 z-50">
                             <a href="#features" onclick="document.getElementById('features').scrollIntoView({behavior: 'smooth'})" class="block px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-slate-700 hover:text-secondary dark:hover:text-primary font-semibold transition"><i class="fa-solid fa-star text-primary w-5"></i> ጥቅሞች</a>
-                            <a href="#footer" onclick="document.getElementById('footer').scrollIntoView({behavior: 'smooth'})" class="block px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-slate-700 hover:text-secondary dark:hover:text-primary font-semibold transition"><i class="fa-solid fa-envelope text-gray-500 w-5"></i> ያግኙን</a>
                         </div>
                     </div>
                 </div>
@@ -360,15 +351,15 @@
                 </div>
                 
                 <div class="hidden md:flex items-center gap-2 lg:gap-3 font-heading text-sm" id="nav-auth-buttons">
+                    <!-- 💡 የቋንቋ መቀየሪያ አሁን ከብርሀን (Theme) መቀየሪያ አጠገብ በትንሹ እና በሚያምር ሁኔታ ተቀምጧል -->
+                    <div class="hidden sm:flex items-center bg-gray-100 dark:bg-slate-800 rounded-full p-1 shadow-sm shrink-0 border border-gray-200 dark:border-slate-700" id="custom-lang-toggle">
+                        <button onclick="window.changeLanguage('am')" id="btn-lang-am" class="px-2 py-0.5 rounded-full bg-white dark:bg-slate-600 text-dark dark:text-white text-[10px] font-bold shadow-sm transition">AM</button>
+                        <button onclick="window.changeLanguage('en')" id="btn-lang-en" class="px-2 py-0.5 rounded-full text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white text-[10px] font-bold transition">EN</button>
+                    </div>
+
                     <button onclick="window.toggleTheme()" class="w-9 h-9 rounded-full bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-slate-700 transition shadow-sm text-gray-600 dark:text-yellow-400">
                         <i id="theme-icon" class="fa-solid fa-moon"></i>
                     </button>
-                    
-                    <!-- 💡 Language Toggle -->
-                    <div class="hidden sm:flex items-center bg-gray-100 dark:bg-slate-800 rounded-full p-1 shadow-sm shrink-0 border border-gray-200 dark:border-slate-700">
-                        <button class="px-2 py-0.5 rounded-full bg-white dark:bg-slate-600 text-dark dark:text-white text-[10px] font-bold shadow-sm transition">AM</button>
-                        <button class="px-2 py-0.5 rounded-full text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white text-[10px] font-bold transition">EN</button>
-                    </div>
 
                     <a href="#ai-feature" onclick="document.getElementById('ai-feature').scrollIntoView({behavior: 'smooth'})" class="text-gray-700 dark:text-gray-300 hover:text-secondary dark:hover:text-primary font-bold transition flex items-center gap-1.5 lg:gap-2 px-1 lg:px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 whitespace-nowrap ml-1">
                         <i class="fa-solid fa-wand-magic-sparkles text-primary animate-pulse"></i> <span class="hidden lg:inline">Tsehay AI</span>
@@ -622,8 +613,8 @@
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 auto-rows-[200px]">
                     <!-- Main Large Image -->
                     <div class="col-span-2 row-span-2 rounded-3xl overflow-hidden relative group">
-                        <!-- 💡 ፎቶ 1 -->
-                        <img src="about-photo-1.jpg" class="w-full h-full object-cover group-hover:scale-105 transition duration-700" alt="Students" onerror="this.src='https://placehold.co/800x600?text=Photo+1'">
+                        <!-- 💡 ፎቶ 1 (አሁን onerror ን አጥፍቼዋለሁ - ካልመጣ ፎልደርህ ውስጥ ያለውን ትክክለኛ ስም ቼክ አድርግ) -->
+                        <img src="about-photo-1.jpg" class="w-full h-full object-cover group-hover:scale-105 transition duration-700" alt="Students">
                         <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition duration-300"></div>
                         <div class="absolute bottom-6 left-6 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition duration-300">
                             <span class="bg-primary text-dark font-black px-3 py-1 rounded-md text-xs uppercase tracking-wider">ማህበረሰብ</span>
@@ -633,12 +624,12 @@
                     <!-- Small Image 1 -->
                     <div class="col-span-1 row-span-1 rounded-3xl overflow-hidden relative group">
                         <!-- 💡 ፎቶ 2 -->
-                        <img src="about-photo-2.jpg" class="w-full h-full object-cover group-hover:scale-105 transition duration-700" alt="Tech" onerror="this.src='https://placehold.co/400x400?text=Photo+2'">
+                        <img src="about-photo-2.jpg" class="w-full h-full object-cover group-hover:scale-105 transition duration-700" alt="Tech">
                     </div>
                     <!-- Small Image 2 -->
                     <div class="col-span-1 row-span-1 rounded-3xl overflow-hidden relative group">
                         <!-- 💡 ፎቶ 3 -->
-                        <img src="about-photo-3.jpg" class="w-full h-full object-cover group-hover:scale-105 transition duration-700" alt="Team" onerror="this.src='https://placehold.co/400x400?text=Photo+3'">
+                        <img src="about-photo-3.jpg" class="w-full h-full object-cover group-hover:scale-105 transition duration-700" alt="Team">
                     </div>
                     <!-- Wide Block -->
                     <div class="col-span-2 row-span-1 rounded-3xl overflow-hidden relative group bg-secondary text-white flex flex-col items-center justify-center p-6 text-center border border-white/10 shadow-inner">
@@ -682,32 +673,23 @@
                 <!-- Team -->
                 <div>
                     <h3 class="text-2xl font-black font-heading text-dark dark:text-white mb-8 text-center sm:text-left">የኛ ቡድን (Our Team)</h3>
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <!-- Eyob Sahle -->
+                    <!-- 💡 የቡድን ክፍሉ ወደ 2 ካርዶች ተቀይሯል -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-8 max-w-2xl mx-auto">
+                        <!-- ኢዮብ ሳህሌ -->
                         <div class="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 p-6 rounded-3xl text-center shadow-sm hover:shadow-xl transition duration-300 group">
-                            <div class="w-20 h-20 mx-auto rounded-full overflow-hidden border-4 border-gray-50 dark:border-slate-700 mb-4 group-hover:border-primary transition duration-300">
-                                <!-- 💡 Ceo.jpg (Capital C) -->
+                            <div class="w-24 h-24 mx-auto rounded-full overflow-hidden border-4 border-gray-50 dark:border-slate-700 mb-4 group-hover:border-primary transition duration-300">
                                 <img src="Ceo.jpg" alt="Eyob Sahle" class="w-full h-full object-cover" onerror="this.src='https://ui-avatars.com/api/?name=Eyob+Sahle&background=0f172a&color=fff&size=128'">
                             </div>
-                            <h4 class="font-bold text-dark dark:text-white">እዮብ ሳህሌ</h4>
-                            <p class="text-xs text-secondary dark:text-primary font-semibold mt-1">CEO & Lead Instructor</p>
+                            <h4 class="font-bold text-dark dark:text-white text-lg">ኢዮብ ሳህሌ</h4>
+                            <p class="text-sm text-secondary dark:text-primary font-semibold mt-1">Founder & Lead Instructor</p>
                         </div>
-                        <!-- Habtamu Alemu -->
+                        <!-- ሀብታሙ ዓለሙ -->
                         <div class="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 p-6 rounded-3xl text-center shadow-sm hover:shadow-xl transition duration-300 group">
-                            <div class="w-20 h-20 mx-auto rounded-full overflow-hidden border-4 border-gray-50 dark:border-slate-700 mb-4 group-hover:border-secondary transition duration-300">
+                            <div class="w-24 h-24 mx-auto rounded-full overflow-hidden border-4 border-gray-50 dark:border-slate-700 mb-4 group-hover:border-secondary transition duration-300">
                                 <img src="https://ui-avatars.com/api/?name=Habtamu+Alemu&background=3268BA&color=fff&size=128" alt="Habtamu Alemu" class="w-full h-full object-cover">
                             </div>
-                            <h4 class="font-bold text-dark dark:text-white">ሀብታሙ ዓለሙ</h4>
-                            <!-- 💡 Manager ተብሎ ተስተካክሏል -->
-                            <p class="text-xs text-gray-500 font-semibold mt-1">Manager</p>
-                        </div>
-                        <!-- Tsehay Team -->
-                        <div class="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 p-6 rounded-3xl text-center shadow-sm hover:shadow-xl transition duration-300 group">
-                            <div class="w-20 h-20 mx-auto rounded-full overflow-hidden border-4 border-gray-50 dark:border-slate-700 mb-4 group-hover:border-success transition duration-300">
-                                <img src="Campus Logo.jpg" alt="Tsehay Team" class="w-full h-full object-cover" onerror="this.src='https://ui-avatars.com/api/?name=Tsehay+Team&background=10b981&color=fff&size=128'">
-                            </div>
-                            <h4 class="font-bold text-dark dark:text-white">Tsehay Team</h4>
-                            <p class="text-xs text-gray-500 font-semibold mt-1">Support & Content</p>
+                            <h4 class="font-bold text-dark dark:text-white text-lg">ሀብታሙ ዓለሙ</h4>
+                            <p class="text-sm text-gray-500 font-semibold mt-1">Manager</p>
                         </div>
                     </div>
                 </div>
@@ -890,11 +872,6 @@
                         <span class="text-primary">Tsehay Digital</span>
                     </div>
                 </div>
-
-                <!-- Google Translate Dropdown in Footer -->
-                <div class="mt-4 md:mt-0 flex flex-col items-center md:items-end">
-                    <div id="google_translate_element_footer" class="bg-dark rounded-lg p-1.5 border border-slate-700 hover:border-slate-500 transition overflow-hidden max-w-[150px]"></div>
-                </div>
             </div>
         </div>
     </footer>
@@ -919,6 +896,29 @@
         window.allFetchedCourses = []; 
         window.hasAgreedTerms = false;
         window.currentUser = null;
+
+        // JS Logic for Language Toggle Buttons
+        window.changeLanguage = function(lang) {
+            const btnAm = document.getElementById('btn-lang-am');
+            const btnEn = document.getElementById('btn-lang-en');
+            
+            if(lang === 'am') {
+                if(btnAm) btnAm.className = "px-2 py-0.5 rounded-full bg-white dark:bg-slate-600 text-dark dark:text-white text-[10px] font-bold shadow-sm transition";
+                if(btnEn) btnEn.className = "px-2 py-0.5 rounded-full text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white text-[10px] font-bold transition";
+            } else {
+                if(btnEn) btnEn.className = "px-2 py-0.5 rounded-full bg-white dark:bg-slate-600 text-dark dark:text-white text-[10px] font-bold shadow-sm transition";
+                if(btnAm) btnAm.className = "px-2 py-0.5 rounded-full text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white text-[10px] font-bold transition";
+            }
+
+            const selectField = document.querySelector(".goog-te-combo");
+            if (selectField) {
+                selectField.value = lang;
+                selectField.dispatchEvent(new Event("change"));
+            } else {
+                document.cookie = "googtrans=/am/" + lang + "; path=/";
+                window.location.reload();
+            }
+        };
 
         window.requireAuthAndNavigate = function(url) {
             if (window.currentUser && !window.currentUser.isAnonymous) {
@@ -1135,15 +1135,17 @@
         };
     </script>
 
-    <!-- Google Translate Script (For global persistence, only in Footer) -->
+    <!-- Hidden Google Translate Element -->
+    <div id="google_translate_element"></div>
     <script>
         function googleTranslateElementInit() {
             setTimeout(function() {
                 new google.translate.TranslateElement({
                     pageLanguage: 'am',
-                    includedLanguages: 'am,en,om,ti,ar,zh-CN,so,fr,es',
+                    includedLanguages: 'am,en',
+                    layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
                     autoDisplay: false
-                }, 'google_translate_element_footer');
+                }, 'google_translate_element');
             }, 500);
         }
     </script>
@@ -1357,20 +1359,20 @@
                     }
                     if (navAuthBtns) {
                         navAuthBtns.innerHTML = `
-                            <button onclick="window.toggleTheme()" class="w-9 h-9 rounded-full bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-slate-700 transition shadow-sm text-gray-600 dark:text-yellow-400">
+                            <!-- Language Toggle -->
+                            <div class="hidden sm:flex items-center bg-gray-100 dark:bg-slate-800 rounded-full p-1 shadow-sm shrink-0 border border-gray-200 dark:border-slate-700" id="custom-lang-toggle">
+                                <button onclick="window.changeLanguage('am')" id="btn-lang-am" class="px-2 py-0.5 rounded-full bg-white dark:bg-slate-600 text-dark dark:text-white text-[10px] font-bold shadow-sm transition">AM</button>
+                                <button onclick="window.changeLanguage('en')" id="btn-lang-en" class="px-2 py-0.5 rounded-full text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white text-[10px] font-bold transition">EN</button>
+                            </div>
+
+                            <button onclick="window.toggleTheme()" class="w-9 h-9 rounded-full bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-slate-700 transition shadow-sm ${themeColor}">
                                 <i id="theme-icon" class="fa-solid ${themeIcon}"></i>
                             </button>
-                            
-                            <!-- Language Toggle -->
-                            <div class="hidden sm:flex items-center bg-gray-100 dark:bg-slate-800 rounded-full p-1 shadow-sm shrink-0 border border-gray-200 dark:border-slate-700">
-                                <button class="px-2 py-0.5 rounded-full bg-white dark:bg-slate-600 text-dark dark:text-white text-[10px] font-bold shadow-sm transition">AM</button>
-                                <button class="px-2 py-0.5 rounded-full text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white text-[10px] font-bold transition">EN</button>
-                            </div>
                             
                             <a href="#ai-feature" onclick="document.getElementById('ai-feature').scrollIntoView({behavior: 'smooth'})" class="text-gray-700 dark:text-gray-300 hover:text-secondary dark:hover:text-primary font-bold transition flex items-center gap-1.5 lg:gap-2 px-1 lg:px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 whitespace-nowrap ml-1">
                                 <i class="fa-solid fa-wand-magic-sparkles text-primary animate-pulse"></i> <span class="hidden lg:inline">Tsehay AI</span>
                             </a>
-                            <div class="h-5 w-px bg-gray-300 dark:bg-slate-700 mx-0.5"></div>
+                            <div class="h-5 w-px bg-gray-300 dark:bg-slate-700 mx-0.5 lg:mx-1"></div>
                             <span class="text-dark dark:text-white font-bold text-sm hidden lg:inline mx-2">${name}</span>
                             <button onclick="window.goToDashboard()" class="bg-primary text-dark px-4 lg:px-6 py-2 lg:py-2.5 rounded-lg font-bold hover:bg-secondary dark:hover:bg-yellow-400 transition shadow-md btn-glow whitespace-nowrap">ወደ ኮርሶች ገበያ</button>
                             <button onclick="window.logoutUser()" class="text-gray-400 hover:text-danger transition ml-2"><i class="fa-solid fa-power-off"></i></button>
@@ -1391,20 +1393,20 @@
                     }
                     if (navAuthBtns) {
                         navAuthBtns.innerHTML = `
-                            <button onclick="window.toggleTheme()" class="w-9 h-9 rounded-full bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-slate-700 transition shadow-sm text-gray-600 dark:text-yellow-400">
+                            <!-- Language Toggle -->
+                            <div class="hidden sm:flex items-center bg-gray-100 dark:bg-slate-800 rounded-full p-1 shadow-sm shrink-0 border border-gray-200 dark:border-slate-700" id="custom-lang-toggle">
+                                <button onclick="window.changeLanguage('am')" id="btn-lang-am" class="px-2 py-0.5 rounded-full bg-white dark:bg-slate-600 text-dark dark:text-white text-[10px] font-bold shadow-sm transition">AM</button>
+                                <button onclick="window.changeLanguage('en')" id="btn-lang-en" class="px-2 py-0.5 rounded-full text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white text-[10px] font-bold transition">EN</button>
+                            </div>
+
+                            <button onclick="window.toggleTheme()" class="w-9 h-9 rounded-full bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-slate-700 transition shadow-sm ${themeColor}">
                                 <i id="theme-icon" class="fa-solid ${themeIcon}"></i>
                             </button>
-                            
-                            <!-- Language Toggle -->
-                            <div class="hidden sm:flex items-center bg-gray-100 dark:bg-slate-800 rounded-full p-1 shadow-sm shrink-0 border border-gray-200 dark:border-slate-700">
-                                <button class="px-2 py-0.5 rounded-full bg-white dark:bg-slate-600 text-dark dark:text-white text-[10px] font-bold shadow-sm transition">AM</button>
-                                <button class="px-2 py-0.5 rounded-full text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white text-[10px] font-bold transition">EN</button>
-                            </div>
                             
                             <a href="#ai-feature" onclick="document.getElementById('ai-feature').scrollIntoView({behavior: 'smooth'})" class="text-gray-700 dark:text-gray-300 hover:text-secondary dark:hover:text-primary font-bold transition flex items-center gap-1.5 lg:gap-2 px-1 lg:px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 whitespace-nowrap ml-1">
                                 <i class="fa-solid fa-wand-magic-sparkles text-primary animate-pulse"></i> <span class="hidden lg:inline">Tsehay AI</span>
                             </a>
-                            <div class="h-5 w-px bg-gray-300 dark:bg-slate-700 mx-0.5"></div>
+                            <div class="h-5 w-px bg-gray-300 dark:bg-slate-700 mx-0.5 lg:mx-1"></div>
                             <button onclick="window.openAuthModal(false)" class="text-dark dark:text-white font-bold hover:text-secondary dark:hover:text-primary transition px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 whitespace-nowrap">ግባ (Login)</button>
                             <button onclick="window.openAuthModal(true)" class="bg-dark dark:bg-primary text-white dark:text-dark px-4 py-2 rounded-lg font-bold hover:bg-secondary dark:hover:bg-yellow-400 transition shadow-md btn-glow whitespace-nowrap">አዲስ ይመዝገቡ</button>
                         `;
