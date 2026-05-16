@@ -359,17 +359,23 @@
                     <div id="desktop-search-results" class="absolute top-[110%] left-0 w-full bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-gray-100 dark:border-slate-700 overflow-hidden hidden flex-col z-[100] max-h-80 overflow-y-auto text-left"></div>
                 </div>
                 
-                <div class="hidden md:flex items-center gap-2 lg:gap-4 font-heading text-sm" id="nav-auth-buttons">
-                    <button onclick="window.toggleTheme()" class="w-10 h-10 rounded-full bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-slate-700 transition shadow-sm text-gray-600 dark:text-yellow-400">
+                <div class="hidden md:flex items-center gap-2 lg:gap-3 font-heading text-sm" id="nav-auth-buttons">
+                    <button onclick="window.toggleTheme()" class="w-9 h-9 rounded-full bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-slate-700 transition shadow-sm text-gray-600 dark:text-yellow-400">
                         <i id="theme-icon" class="fa-solid fa-moon"></i>
                     </button>
                     
-                    <a href="#ai-feature" onclick="document.getElementById('ai-feature').scrollIntoView({behavior: 'smooth'})" class="text-gray-700 dark:text-gray-300 hover:text-secondary dark:hover:text-primary font-bold transition flex items-center gap-1.5 lg:gap-2 px-1 lg:px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 whitespace-nowrap">
+                    <!-- 💡 Language Toggle -->
+                    <div class="hidden sm:flex items-center bg-gray-100 dark:bg-slate-800 rounded-full p-1 shadow-sm shrink-0 border border-gray-200 dark:border-slate-700">
+                        <button class="px-2 py-0.5 rounded-full bg-white dark:bg-slate-600 text-dark dark:text-white text-[10px] font-bold shadow-sm transition">AM</button>
+                        <button class="px-2 py-0.5 rounded-full text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white text-[10px] font-bold transition">EN</button>
+                    </div>
+
+                    <a href="#ai-feature" onclick="document.getElementById('ai-feature').scrollIntoView({behavior: 'smooth'})" class="text-gray-700 dark:text-gray-300 hover:text-secondary dark:hover:text-primary font-bold transition flex items-center gap-1.5 lg:gap-2 px-1 lg:px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 whitespace-nowrap ml-1">
                         <i class="fa-solid fa-wand-magic-sparkles text-primary animate-pulse"></i> <span class="hidden lg:inline">Tsehay AI</span>
                     </a>
-                    <div class="h-5 w-px bg-gray-300 dark:bg-slate-700 mx-0.5 lg:mx-1"></div>
+                    <div class="h-5 w-px bg-gray-300 dark:bg-slate-700 mx-0.5"></div>
                     <button onclick="window.openAuthModal(false)" class="text-dark dark:text-white font-bold hover:text-secondary dark:hover:text-primary transition px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 whitespace-nowrap">ግባ (Login)</button>
-                    <button onclick="window.openAuthModal(true)" class="bg-dark dark:bg-primary text-white dark:text-dark px-4 lg:px-6 py-2 lg:py-2.5 rounded-lg font-bold hover:bg-secondary dark:hover:bg-yellow-400 transition shadow-md btn-glow whitespace-nowrap">አዲስ ይመዝገቡ</button>
+                    <button onclick="window.openAuthModal(true)" class="bg-dark dark:bg-primary text-white dark:text-dark px-4 py-2 rounded-lg font-bold hover:bg-secondary dark:hover:bg-yellow-400 transition shadow-md btn-glow whitespace-nowrap">አዲስ ይመዝገቡ</button>
                 </div>
 
                 <div class="md:hidden flex items-center gap-5">
@@ -503,11 +509,11 @@
                     </div>
                 </div>
                 
-                <!-- 💡 BYBIT (Pure SVG/Logo Only, No Image to break) -->
+                <!-- 💡 BYBIT (Pure exact design) -->
                 <div class="flex items-center transition transform hover:scale-110 cursor-default">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2500 2500" class="w-10 h-10 md:w-12 md:h-12 shrink-0">
-                       <path fill="#f6a600" d="M1250.2,0 0,1250l1250,1250 1250-1250L1250.2,0zm-271.8,629l168.3,168-301.8,301h537l167.6,168-704.6.2-302.2-301.5L978.4,629zm543.1,1242L1353,1703l301.8-301h-537L950.2,1234l704.6-.2 302.2,301.5-435.5,335.7z"/>
-                    </svg>
+                    <div class="flex items-end text-3xl md:text-[40px] font-black text-black dark:text-white tracking-tighter leading-none" style="font-family: 'Montserrat', sans-serif;">
+                        BYB<span class="w-[4px] md:w-[6px] h-[22px] md:h-[28px] bg-[#F7A600] mx-[2px] md:mx-[3px] inline-block relative bottom-[2px] md:bottom-[3px]"></span>T
+                    </div>
                 </div>
             </div>
         </div>
@@ -616,7 +622,7 @@
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 auto-rows-[200px]">
                     <!-- Main Large Image -->
                     <div class="col-span-2 row-span-2 rounded-3xl overflow-hidden relative group">
-                        <!-- 💡 ፎቶ 1 ይቀይሩ 💡 -->
+                        <!-- 💡 ፎቶ 1 -->
                         <img src="about-photo-1.jpg" class="w-full h-full object-cover group-hover:scale-105 transition duration-700" alt="Students" onerror="this.src='https://placehold.co/800x600?text=Photo+1'">
                         <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition duration-300"></div>
                         <div class="absolute bottom-6 left-6 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition duration-300">
@@ -626,12 +632,12 @@
                     </div>
                     <!-- Small Image 1 -->
                     <div class="col-span-1 row-span-1 rounded-3xl overflow-hidden relative group">
-                        <!-- 💡 ፎቶ 2 ይቀይሩ 💡 -->
+                        <!-- 💡 ፎቶ 2 -->
                         <img src="about-photo-2.jpg" class="w-full h-full object-cover group-hover:scale-105 transition duration-700" alt="Tech" onerror="this.src='https://placehold.co/400x400?text=Photo+2'">
                     </div>
                     <!-- Small Image 2 -->
                     <div class="col-span-1 row-span-1 rounded-3xl overflow-hidden relative group">
-                        <!-- 💡 ፎቶ 3 ይቀይሩ 💡 -->
+                        <!-- 💡 ፎቶ 3 -->
                         <img src="about-photo-3.jpg" class="w-full h-full object-cover group-hover:scale-105 transition duration-700" alt="Team" onerror="this.src='https://placehold.co/400x400?text=Photo+3'">
                     </div>
                     <!-- Wide Block -->
@@ -680,7 +686,8 @@
                         <!-- Eyob Sahle -->
                         <div class="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 p-6 rounded-3xl text-center shadow-sm hover:shadow-xl transition duration-300 group">
                             <div class="w-20 h-20 mx-auto rounded-full overflow-hidden border-4 border-gray-50 dark:border-slate-700 mb-4 group-hover:border-primary transition duration-300">
-                                <img src="ceo.jpg" alt="Eyob Sahle" class="w-full h-full object-cover" onerror="this.src='https://ui-avatars.com/api/?name=Eyob+Sahle&background=0f172a&color=fff&size=128'">
+                                <!-- 💡 Ceo.jpg (Capital C) -->
+                                <img src="Ceo.jpg" alt="Eyob Sahle" class="w-full h-full object-cover" onerror="this.src='https://ui-avatars.com/api/?name=Eyob+Sahle&background=0f172a&color=fff&size=128'">
                             </div>
                             <h4 class="font-bold text-dark dark:text-white">እዮብ ሳህሌ</h4>
                             <p class="text-xs text-secondary dark:text-primary font-semibold mt-1">CEO & Lead Instructor</p>
@@ -691,7 +698,8 @@
                                 <img src="https://ui-avatars.com/api/?name=Habtamu+Alemu&background=3268BA&color=fff&size=128" alt="Habtamu Alemu" class="w-full h-full object-cover">
                             </div>
                             <h4 class="font-bold text-dark dark:text-white">ሀብታሙ ዓለሙ</h4>
-                            <p class="text-xs text-gray-500 font-semibold mt-1">Co-Founder</p>
+                            <!-- 💡 Manager ተብሎ ተስተካክሏል -->
+                            <p class="text-xs text-gray-500 font-semibold mt-1">Manager</p>
                         </div>
                         <!-- Tsehay Team -->
                         <div class="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 p-6 rounded-3xl text-center shadow-sm hover:shadow-xl transition duration-300 group">
@@ -1349,13 +1357,20 @@
                     }
                     if (navAuthBtns) {
                         navAuthBtns.innerHTML = `
-                            <button onclick="window.toggleTheme()" class="w-10 h-10 rounded-full bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-slate-700 transition shadow-sm ${themeColor}">
+                            <button onclick="window.toggleTheme()" class="w-9 h-9 rounded-full bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-slate-700 transition shadow-sm text-gray-600 dark:text-yellow-400">
                                 <i id="theme-icon" class="fa-solid ${themeIcon}"></i>
                             </button>
-                            <a href="#ai-feature" onclick="document.getElementById('ai-feature').scrollIntoView({behavior: 'smooth'})" class="text-gray-700 dark:text-gray-300 hover:text-secondary dark:hover:text-primary font-bold transition flex items-center gap-1.5 lg:gap-2 px-1 lg:px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 whitespace-nowrap">
+                            
+                            <!-- Language Toggle -->
+                            <div class="hidden sm:flex items-center bg-gray-100 dark:bg-slate-800 rounded-full p-1 shadow-sm shrink-0 border border-gray-200 dark:border-slate-700">
+                                <button class="px-2 py-0.5 rounded-full bg-white dark:bg-slate-600 text-dark dark:text-white text-[10px] font-bold shadow-sm transition">AM</button>
+                                <button class="px-2 py-0.5 rounded-full text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white text-[10px] font-bold transition">EN</button>
+                            </div>
+                            
+                            <a href="#ai-feature" onclick="document.getElementById('ai-feature').scrollIntoView({behavior: 'smooth'})" class="text-gray-700 dark:text-gray-300 hover:text-secondary dark:hover:text-primary font-bold transition flex items-center gap-1.5 lg:gap-2 px-1 lg:px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 whitespace-nowrap ml-1">
                                 <i class="fa-solid fa-wand-magic-sparkles text-primary animate-pulse"></i> <span class="hidden lg:inline">Tsehay AI</span>
                             </a>
-                            <div class="h-5 w-px bg-gray-300 dark:bg-slate-700 mx-0.5 lg:mx-1"></div>
+                            <div class="h-5 w-px bg-gray-300 dark:bg-slate-700 mx-0.5"></div>
                             <span class="text-dark dark:text-white font-bold text-sm hidden lg:inline mx-2">${name}</span>
                             <button onclick="window.goToDashboard()" class="bg-primary text-dark px-4 lg:px-6 py-2 lg:py-2.5 rounded-lg font-bold hover:bg-secondary dark:hover:bg-yellow-400 transition shadow-md btn-glow whitespace-nowrap">ወደ ኮርሶች ገበያ</button>
                             <button onclick="window.logoutUser()" class="text-gray-400 hover:text-danger transition ml-2"><i class="fa-solid fa-power-off"></i></button>
@@ -1376,15 +1391,22 @@
                     }
                     if (navAuthBtns) {
                         navAuthBtns.innerHTML = `
-                            <button onclick="window.toggleTheme()" class="w-10 h-10 rounded-full bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-slate-700 transition shadow-sm ${themeColor}">
+                            <button onclick="window.toggleTheme()" class="w-9 h-9 rounded-full bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-slate-700 transition shadow-sm text-gray-600 dark:text-yellow-400">
                                 <i id="theme-icon" class="fa-solid ${themeIcon}"></i>
                             </button>
-                            <a href="#ai-feature" onclick="document.getElementById('ai-feature').scrollIntoView({behavior: 'smooth'})" class="text-gray-700 dark:text-gray-300 hover:text-secondary dark:hover:text-primary font-bold transition flex items-center gap-1.5 lg:gap-2 px-1 lg:px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 whitespace-nowrap">
+                            
+                            <!-- Language Toggle -->
+                            <div class="hidden sm:flex items-center bg-gray-100 dark:bg-slate-800 rounded-full p-1 shadow-sm shrink-0 border border-gray-200 dark:border-slate-700">
+                                <button class="px-2 py-0.5 rounded-full bg-white dark:bg-slate-600 text-dark dark:text-white text-[10px] font-bold shadow-sm transition">AM</button>
+                                <button class="px-2 py-0.5 rounded-full text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white text-[10px] font-bold transition">EN</button>
+                            </div>
+                            
+                            <a href="#ai-feature" onclick="document.getElementById('ai-feature').scrollIntoView({behavior: 'smooth'})" class="text-gray-700 dark:text-gray-300 hover:text-secondary dark:hover:text-primary font-bold transition flex items-center gap-1.5 lg:gap-2 px-1 lg:px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 whitespace-nowrap ml-1">
                                 <i class="fa-solid fa-wand-magic-sparkles text-primary animate-pulse"></i> <span class="hidden lg:inline">Tsehay AI</span>
                             </a>
-                            <div class="h-5 w-px bg-gray-300 dark:bg-slate-700 mx-0.5 lg:mx-1"></div>
+                            <div class="h-5 w-px bg-gray-300 dark:bg-slate-700 mx-0.5"></div>
                             <button onclick="window.openAuthModal(false)" class="text-dark dark:text-white font-bold hover:text-secondary dark:hover:text-primary transition px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 whitespace-nowrap">ግባ (Login)</button>
-                            <button onclick="window.openAuthModal(true)" class="bg-dark dark:bg-primary text-white dark:text-dark px-4 lg:px-6 py-2 lg:py-2.5 rounded-lg font-bold hover:bg-secondary dark:hover:bg-yellow-400 transition shadow-md btn-glow whitespace-nowrap">አዲስ ይመዝገቡ</button>
+                            <button onclick="window.openAuthModal(true)" class="bg-dark dark:bg-primary text-white dark:text-dark px-4 py-2 rounded-lg font-bold hover:bg-secondary dark:hover:bg-yellow-400 transition shadow-md btn-glow whitespace-nowrap">አዲስ ይመዝገቡ</button>
                         `;
                     }
                 }
