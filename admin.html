@@ -621,6 +621,22 @@
         </main>
     </div>
 
+    <!-- Student Details Modal -->
+    <div id="student-modal" class="fixed inset-0 bg-black/60 z-[9999] hidden items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white dark:bg-slate-800 w-full max-w-lg rounded-3xl shadow-2xl p-6 border border-gray-100 dark:border-slate-700">
+            <div class="flex justify-between items-start mb-4 border-b border-gray-100 dark:border-slate-700 pb-4">
+                <h3 class="font-black text-dark dark:text-white text-lg"><i class="fa-solid fa-user-graduate text-secondary mr-2"></i> የተማሪ መረጃ ዝርዝር</h3>
+                <button onclick="document.getElementById('student-modal').classList.replace('flex', 'hidden')" class="text-gray-400 hover:text-danger transition"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <div id="student-modal-content" class="space-y-4 text-sm text-dark dark:text-gray-200 font-body">
+                <!-- Dynamic Content Load -->
+            </div>
+            <div class="mt-6 border-t border-gray-100 dark:border-slate-700 pt-4 flex justify-end">
+                <button onclick="document.getElementById('student-modal').classList.replace('flex', 'hidden')" class="bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 px-6 py-2.5 rounded-xl font-bold hover:bg-gray-200 dark:hover:bg-slate-600 transition">ዝጋ</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Course Modal -->
     <div id="course-modal" class="modal hide fixed inset-0 bg-dark/80 z-[9999] flex items-center justify-center p-4 md:p-8 backdrop-blur-md overflow-y-auto">
         <div class="bg-white dark:bg-slate-800 w-full max-w-4xl rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col transform transition-transform scale-95 my-auto border border-white/10 dark:border-slate-700" id="course-modal-content">
@@ -673,7 +689,7 @@
                             <div>
                                 <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">ዋጋ (ብር) <span class="text-danger">*</span></label>
                                 <input type="number" id="c-price" placeholder="0" class="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-600 rounded-xl p-3.5 outline-none focus:border-secondary dark:focus:border-primary transition font-black text-secondary dark:text-primary">
-                                <p class="text-[10px] text-gray-500 mt-1">ነፃ ኮርስ ከሆነ 0 ብለው ይፃፉ።</p>
+                                <p class="text-[10px] text-gray-500 mt-1">ነፃ ኮርስ ከሆነ 0 ብለው ይፃፉ。</p>
                             </div>
                             <div>
                                 <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">የድሮ ዋጋ <span class="text-gray-400 font-normal">(አማራጭ)</span></label>
@@ -843,6 +859,7 @@
         let isInitialStudentsLoad = true; 
         let allStudentsData = []; 
         let allPaymentsData = []; 
+        const ADMIN_EMAILS = ['habte@gmail.com', 'cryptomaster758@gmail.com', 'admin@tsehaycampus.com'];
 
         // UI Helpers
         window.switchTab = function(tabId, btnElement) {
@@ -1061,23 +1078,27 @@
             }
         };
 
+        // 💡 1. ፐርፌክት የተደረገ የይለፍ ቃል መርሻ ሎጂክ
         window.resetAdminPassword = async function() {
-            const email = document.getElementById('admin-email')?.value || window.auth?.currentUser?.email || document.getElementById('setting-admin-email')?.value;
+            let email = document.getElementById('admin-email')?.value || window.auth?.currentUser?.email || document.getElementById('setting-admin-email')?.value;
+            
             if (!email) {
-                window.showToast("እባክዎ በመጀመሪያ የመግቢያ ኢሜልዎን ያስገቡ", true);
-                return;
+                email = prompt("እባክዎ የይለፍ ቃል መቀየሪያ ሊንክ እንዲላክሎት የተመዘገቡበትን ኢሜል ያስገቡ፡");
+                if (!email) {
+                    window.showToast("ኢሜል አላስገቡም!", true);
+                    return;
+                }
             }
+
             try {
                 await sendPasswordResetEmail(window.auth, email);
                 window.showToast("የይለፍ ቃል መቀየሪያ ሊንክ ወደ ኢሜልዎ ተልኳል!");
             } catch (error) {
                 let errorMsg = "ስህተት ተከስቷል: " + error.message;
-                if (error.code === 'auth/user-not-found') errorMsg = "በዚህ ኢሜል የተመዘገበ አድሚን የለም!";
+                if (error.code === 'auth/user-not-found') errorMsg = "በዚህ ኢሜል የተመዘገበ አካውንት የለም!";
                 window.showToast(errorMsg, true);
             }
         };
-
-        const ADMIN_EMAILS = ['habte@gmail.com', 'cryptomaster758@gmail.com', 'admin@tsehaycampus.com'];
 
         // --- Authentication ---
         onAuthStateChanged(window.auth, async (user) => {
@@ -1151,22 +1172,28 @@
             }
         });
 
-        // 💡 Live Students Loader 💡
+        // 💡 2. አድሚን ከተማሪ ጋር እንዳይቀላቀል የተደረገበት ሎጂክ
         function loadStudents() {
             try {
                 onSnapshot(collectionGroup(db, 'profile'), (snap) => {
                     allStudentsData = [];
                     snap.forEach(doc => {
-                        if (doc.id === 'info' && doc.ref.path.includes(appId)) {
-                            allStudentsData.push({ uid: doc.ref.parent.parent.id, ...doc.data() });
+                        const data = doc.data();
+                        const email = data.email ? data.email.toLowerCase() : '';
+                        
+                        // የአድሚን ኢሜል ከሌለው ብቻ እንደ ተማሪ ይመዘገባል!
+                        if (doc.id === 'info' && doc.ref.path.includes(appId) && !ADMIN_EMAILS.includes(email)) {
+                            allStudentsData.push({ uid: doc.ref.parent.parent.id, ...data });
                         }
                     });
                     
                     if(!isInitialStudentsLoad) {
                         snap.docChanges().forEach(change => {
-                            if (change.type === 'added' && change.doc.id === 'info' && change.doc.ref.path.includes(appId)) {
-                                const d = change.doc.data();
-                                addNotificationToDropdown("አዲስ ተማሪ", `${d.displayName || 'አዲስ ተማሪ'} ተመዝግቧል!`, "fa-user-graduate", "text-primary");
+                            const data = change.doc.data();
+                            const email = data.email ? data.email.toLowerCase() : '';
+                            
+                            if (change.type === 'added' && change.doc.id === 'info' && change.doc.ref.path.includes(appId) && !ADMIN_EMAILS.includes(email)) {
+                                addNotificationToDropdown("አዲስ ተማሪ", `${data.displayName || 'አዲስ ተማሪ'} ተመዝግቧል!`, "fa-user-graduate", "text-primary");
                             }
                         });
                     }
@@ -1179,6 +1206,44 @@
                 console.error(e);
             }
         }
+
+        // 💡 3. የተማሪን መረጃ ዝርዝር ለማየት (Modal Pop-up)
+        window.viewStudentDetails = function(uid) {
+            const std = allStudentsData.find(s => s.uid === uid);
+            if (!std) return;
+            
+            const payment = allPaymentsData.find(p => p.userEmail === std.email && p.status === 'Completed');
+            const isPaid = !!payment;
+            
+            const dateStr = std.registeredAt ? new Date(std.registeredAt).toLocaleDateString('en-US') : 'N/A';
+            const courseName = isPaid ? (payment.courseName || 'Premium Course') : 'ገና አልገዛም';
+            const phone = std.phone || 'አልገባም';
+            const city = std.city || 'አልገባም';
+            const heardFrom = std.heardFrom || 'አልገባም';
+            
+            const content = document.getElementById('student-modal-content');
+            content.innerHTML = `
+                <div class="flex items-center gap-4 mb-4">
+                    <img src="${std.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(std.displayName || 'ተማሪ')}&background=3268BA&color=fff`}" class="w-16 h-16 rounded-full border-2 border-gray-200 dark:border-slate-600 object-cover">
+                    <div>
+                        <h4 class="font-black text-lg">${std.displayName || 'ስም የለም'}</h4>
+                        <p class="text-xs text-gray-500">${std.email || ''}</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4 bg-gray-50 dark:bg-slate-900 p-4 rounded-xl border border-gray-100 dark:border-slate-700">
+                    <div><p class="text-xs text-gray-500 mb-1">ስልክ ቁጥር</p><p class="font-bold">${phone}</p></div>
+                    <div><p class="text-xs text-gray-500 mb-1">ከተማ / ሀገር</p><p class="font-bold">${city}</p></div>
+                    <div><p class="text-xs text-gray-500 mb-1">መረጃ ያገኘው ከ</p><p class="font-bold">${heardFrom}</p></div>
+                    <div><p class="text-xs text-gray-500 mb-1">የተመዘገበበት ቀን</p><p class="font-bold">${dateStr}</p></div>
+                </div>
+                <div class="mt-4 bg-${isPaid ? 'green' : 'gray'}-50 dark:bg-${isPaid ? 'green' : 'slate'}-900/30 p-4 rounded-xl border border-${isPaid ? 'green' : 'gray'}-200 dark:border-${isPaid ? 'green' : 'slate'}-700">
+                    <p class="text-xs text-gray-500 mb-1">የክፍያ እና ኮርስ ሁኔታ</p>
+                    <p class="font-bold text-${isPaid ? 'success' : 'gray-600 dark:text-gray-400'}">${isPaid ? '<i class="fa-solid fa-check-circle mr-1"></i> ተከፍሏል - ' + courseName : '<i class="fa-solid fa-clock mr-1"></i> ነፃ አካውንት (ክፍያ አልተፈፀመም)'}</p>
+                </div>
+            `;
+            
+            document.getElementById('student-modal').classList.replace('hidden', 'flex');
+        };
 
         window.renderStudentsTable = function() {
             const stdBody = document.getElementById('students-table-body');
@@ -1218,7 +1283,8 @@
                         <td class="text-xs text-gray-500 font-bold">${dateStr}</td>
                         <td>${statusBadge}</td>
                         <td class="text-right">
-                            <button onclick="window.showToast('የተማሪው መረጃ በቅርቡ የሚከፈት ይሆናል')" class="text-secondary hover:text-primary transition font-bold text-xs bg-blue-50 dark:bg-slate-700 px-3 py-1.5 rounded-lg border border-blue-100 dark:border-slate-600">ዝርዝር እይ</button>
+                            <!-- 💡 'ዝርዝር እይ' የሚለው አዝራር አሁን ይሰራል! -->
+                            <button onclick="window.viewStudentDetails('${std.uid}')" class="text-secondary hover:text-primary transition font-bold text-xs bg-blue-50 dark:bg-slate-700 px-3 py-1.5 rounded-lg border border-blue-100 dark:border-slate-600 shadow-sm">ዝርዝር እይ <i class="fa-solid fa-eye ml-1"></i></button>
                         </td>
                     </tr>
                 `;
@@ -1293,7 +1359,8 @@
             try {
                 await updateProfile(auth.currentUser, { displayName: newName, photoURL: newPhoto });
                 
-                await setDoc(doc(db, 'artifacts', appId, 'users', auth.currentUser.uid, 'profile', 'info'), {
+                // 💡 ዳታው ወደ Admins እንጂ ወደ Users ፎልደር እንዳይገባ ተስተካክሏል
+                await setDoc(doc(db, 'artifacts', appId, 'admins', auth.currentUser.uid), {
                     displayName: newName, photoURL: newPhoto
                 }, { merge: true });
 
@@ -1338,21 +1405,30 @@
             if(isLoggedIn) window.renderCourses();
         });
 
+        // 💡 4. የተጠባባቂዎች ዝርዝር ላይ አድሚኖች እንዳይገቡ ተደርጓል
         function loadWaitlist() {
             onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'waitlist'), (snapshot) => {
                 let waitlistData = [];
-                snapshot.forEach(docSnap => waitlistData.push(docSnap.data()));
+                snapshot.forEach(docSnap => {
+                    const data = docSnap.data();
+                    const email = data.email ? data.email.toLowerCase() : '';
+                    if (!ADMIN_EMAILS.includes(email)) {
+                        waitlistData.push(data);
+                    }
+                });
                 
                 const totalWaitlistEl = document.getElementById('total-waitlist-count');
                 const sidebarBadgeEl = document.getElementById('sidebar-waitlist-badge');
                 
-                if(totalWaitlistEl) totalWaitlistEl.innerText = snapshot.size;
-                if(sidebarBadgeEl) sidebarBadgeEl.innerText = snapshot.size;
+                if(totalWaitlistEl) totalWaitlistEl.innerText = waitlistData.length;
+                if(sidebarBadgeEl) sidebarBadgeEl.innerText = waitlistData.length;
                 
                 if(!isInitialWaitlistLoad) {
                     snapshot.docChanges().forEach(change => {
-                        if (change.type === 'added') {
-                            addNotificationToDropdown("አዲስ ተጠባባቂ", change.doc.data().email, "fa-user-plus", "text-primary");
+                        const data = change.doc.data();
+                        const email = data.email ? data.email.toLowerCase() : '';
+                        if (change.type === 'added' && !ADMIN_EMAILS.includes(email)) {
+                            addNotificationToDropdown("አዲስ ተጠባባቂ", data.email, "fa-user-plus", "text-primary");
                         }
                     });
                 }
@@ -1644,8 +1720,8 @@
                     ? `<span class="bg-green-100 dark:bg-green-900/30 text-success text-[10px] font-black uppercase px-2.5 py-1 rounded border border-green-200 dark:border-green-800">Active</span>`
                     : `<span class="bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-gray-400 text-[10px] font-black uppercase px-2.5 py-1 rounded border border-gray-200 dark:border-slate-600">Draft</span>`;
 
-                // 💡 የ Edit አዝራር ችግር እዚህ ጋር 100% ተፈቷል!
-                // መረጃውን ሁሉ ከማሳለፍ ይልቅ፣ መታወቂያውን (ID) ብቻ እናሳልፋለን።
+                const safeDataStr = encodeURIComponent(JSON.stringify(c));
+
                 tr.innerHTML = `
                     <td><img src="${c.image}" class="w-16 h-12 object-cover rounded-xl shadow-sm border border-gray-200 dark:border-slate-600" onerror="this.src='https://placehold.co/100x80?text=No+Img'"></td>
                     <td class="font-black text-dark dark:text-white course-title-cell text-[15px]">${c.title}</td>
@@ -1653,7 +1729,6 @@
                     <td class="font-black text-secondary dark:text-primary">${priceDisplay}</td>
                     <td>${statusBadge}</td>
                     <td class="text-right">
-                        <!-- 💡 Edit አዝራር አሁን መቶ ፐርሰንት ይሰራል -->
                         <button onclick="window.openCourseModal('${c.id}')" class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-secondary dark:text-primary hover:bg-secondary dark:hover:bg-primary hover:text-white dark:hover:text-dark transition shadow-sm border border-blue-100 dark:border-blue-800/50 mr-2"><i class="fa-solid fa-pen text-sm"></i></button>
                         <button onclick="window.deleteCourse('${c.id}')" class="w-10 h-10 rounded-xl bg-red-50 dark:bg-red-500/10 text-danger hover:bg-danger hover:text-white transition shadow-sm border border-red-100 dark:border-red-500/20"><i class="fa-solid fa-trash text-sm"></i></button>
                     </td>
