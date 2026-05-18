@@ -811,7 +811,7 @@
     <!-- UI Logic & Firebase Setup -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential, sendPasswordResetEmail, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, getDocs, collection, onSnapshot, deleteDoc, collectionGroup } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // Firebase Setup
@@ -826,12 +826,13 @@
         };
 
         const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
+        window.auth = getAuth(app);
         const db = getFirestore(app);
 
         let adminCourses = [];
         let globalCourses = [];
         let isLoggedIn = false;
+        let isSignupMode = false;
 
         // --- Real-time Notification Logic ---
         let notifications = [];
@@ -871,11 +872,16 @@
         };
 
         window.showToast = function(msg, isError = false) {
-            const toast = document.getElementById("toast");
-            if(!toast) return;
-            toast.innerHTML = `<i class="fa-solid ${isError ? 'fa-triangle-exclamation' : 'fa-circle-check'} mr-2"></i> ${msg}`;
-            toast.className = isError ? "show error" : "show";
-            setTimeout(() => { toast.className = toast.className.replace("show", "").replace("error", ""); }, 3000);
+            const toast = document.createElement("div");
+            toast.className = `fixed bottom-6 right-6 z-[10000] flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl font-bold text-sm transform transition-all duration-300 translate-y-20 opacity-0 ${isError ? 'bg-red-50 text-danger border-l-4 border-danger' : 'bg-green-50 text-success border-l-4 border-success'}`;
+            toast.innerHTML = `<i class="fa-solid ${isError ? 'fa-triangle-exclamation' : 'fa-circle-check'} text-xl"></i> <span>${msg}</span>`;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => { toast.classList.remove('translate-y-20', 'opacity-0'); }, 10);
+            setTimeout(() => { 
+                toast.classList.add('translate-y-20', 'opacity-0'); 
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
         };
 
         let confirmAction = null;
@@ -902,7 +908,6 @@
                 });
             }
 
-            // Sound Toggle persistence logic
             const soundToggle = document.getElementById('toggle-sound-notif');
             if(soundToggle) {
                 soundToggle.checked = localStorage.getItem('sound_notif') !== 'false';
@@ -991,51 +996,104 @@
                 errDiv.classList.remove('hidden'); 
                 return; 
             }
+
+            if(isSignupMode) {
+                const name = document.getElementById('admin-name').value;
+                if(!name) {
+                    errDiv.innerText = "እባክዎ ሙሉ ስምዎን ያስገቡ!"; 
+                    errDiv.classList.remove('hidden'); 
+                    return;
+                }
+            }
             
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> እየገባ ነው...';
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ይጠብቁ...';
             btn.disabled = true;
             
             try {
-                await signInWithEmailAndPassword(auth, email, pwd);
+                if (isSignupMode) {
+                    const name = document.getElementById('admin-name').value;
+                    const cred = await createUserWithEmailAndPassword(window.auth, email, pwd);
+                    await updateProfile(cred.user, { displayName: name });
+                    
+                    await setDoc(doc(db, 'artifacts', appId, 'admins', cred.user.uid), {
+                        displayName: name,
+                        email: email,
+                        role: 'admin',
+                        createdAt: new Date().toISOString()
+                    });
+
+                    window.showToast("አዲስ አድሚን በተሳካ ሁኔታ ተጨምሯል!");
+                } else {
+                    await signInWithEmailAndPassword(window.auth, email, pwd);
+                }
                 const loginScreen = document.getElementById('admin-login-screen');
                 if (loginScreen) loginScreen.style.display = 'none';
             } catch(error) {
-                errDiv.innerText = "ስህተት: ኢሜል ወይም ፓስወርድ ትክክል አይደለም!";
+                let errorMsg = "ስህተት: ኢሜል ወይም ፓስወርድ ትክክል አይደለም!";
+                if (error.code === 'auth/email-already-in-use') errorMsg = "ይህ ኢሜል ከዚህ በፊት ተመዝግቧል።";
+                if (error.code === 'auth/weak-password') errorMsg = "የይለፍ ቃሉ ቢያንስ 6 ፊደል/ቁጥር መሆን አለበት።";
+                
+                errDiv.innerText = errorMsg;
                 errDiv.classList.remove('hidden');
             } finally {
-                btn.innerHTML = 'ግባ (Log in) <i class="fa-solid fa-arrow-right-to-bracket ml-2"></i>';
+                btn.innerHTML = isSignupMode ? '<i class="fa-solid fa-user-plus"></i> መዝግብ (Register)' : 'ግባ (Log in) <i class="fa-solid fa-arrow-right-to-bracket ml-2"></i>';
                 btn.disabled = false;
             }
         };
 
         window.toggleAdminAuthMode = function() {
-            window.showToast("አዲስ አድሚን መጨመር የሚቻለው በዋናው አድሚን ብቻ ነው።", true);
+            isSignupMode = !isSignupMode;
+            const nameField = document.getElementById('admin-name-field');
+            const loginBtn = document.getElementById('login-btn');
+            const switchBtn = document.getElementById('admin-switch-btn');
+            const errDiv = document.getElementById('login-error');
+            
+            if(errDiv) errDiv.classList.add('hidden');
+            
+            if(isSignupMode) {
+                nameField.classList.remove('hidden');
+                loginBtn.innerHTML = '<i class="fa-solid fa-user-plus"></i> መዝግብ (Register)';
+                switchBtn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> ወደ መግቢያ ተመለስ';
+            } else {
+                nameField.classList.add('hidden');
+                loginBtn.innerHTML = 'ግባ (Log in) <i class="fa-solid fa-arrow-right-to-bracket ml-2"></i>';
+                switchBtn.innerHTML = '<i class="fa-solid fa-user-plus"></i> አዲስ አድሚን';
+            }
         };
 
         window.resetAdminPassword = async function() {
-            const email = document.getElementById('admin-email')?.value || auth?.currentUser?.email || document.getElementById('setting-admin-email')?.value;
+            const email = document.getElementById('admin-email')?.value || window.auth?.currentUser?.email || document.getElementById('setting-admin-email')?.value;
             if (!email) {
-                window.showToast("እባክዎ በመጀመሪያ ኢሜልዎን ያስገቡ", true);
+                window.showToast("እባክዎ በመጀመሪያ የመግቢያ ኢሜልዎን ያስገቡ", true);
                 return;
             }
             try {
-                await sendPasswordResetEmail(auth, email);
-                window.showToast("የይለፍ ቃል መቀየሪያ ሊንክ ተልኳል!");
+                await sendPasswordResetEmail(window.auth, email);
+                window.showToast("የይለፍ ቃል መቀየሪያ ሊንክ ወደ ኢሜልዎ ተልኳል!");
             } catch (error) {
-                window.showToast("ስህተት ተከስቷል: " + error.message, true);
+                let errorMsg = "ስህተት ተከስቷል: " + error.message;
+                if (error.code === 'auth/user-not-found') errorMsg = "በዚህ ኢሜል የተመዘገበ አድሚን የለም!";
+                window.showToast(errorMsg, true);
             }
         };
 
-        // የተፈቀዱ አድሚኖች ኢሜል (Admin Whitelist Guard)
         const ADMIN_EMAILS = ['habte@gmail.com', 'cryptomaster758@gmail.com', 'admin@tsehaycampus.com'];
 
         // --- Authentication ---
-        onAuthStateChanged(auth, (user) => {
+        onAuthStateChanged(window.auth, async (user) => {
             if (user && !user.isAnonymous) {
                 const userEmail = user.email ? user.email.toLowerCase() : '';
                 
-                if (!ADMIN_EMAILS.includes(userEmail)) {
-                    signOut(auth).then(() => {
+                let isAdmin = ADMIN_EMAILS.includes(userEmail);
+                if (!isAdmin) {
+                    try {
+                        const adminSnap = await getDoc(doc(db, 'artifacts', appId, 'admins', user.uid));
+                        if(adminSnap.exists()) isAdmin = true;
+                    } catch(e) { console.error("Admin check error", e); }
+                }
+
+                if (!isAdmin) {
+                    signOut(window.auth).then(() => {
                         window.showToast("ይቅርታ! ይህ ገፅ ለአስተዳዳሪዎች (Admins) ብቻ የተፈቀደ ነው።", true);
                         isLoggedIn = false;
                         const loginScreen = document.getElementById('admin-login-screen');
@@ -1586,8 +1644,8 @@
                     ? `<span class="bg-green-100 dark:bg-green-900/30 text-success text-[10px] font-black uppercase px-2.5 py-1 rounded border border-green-200 dark:border-green-800">Active</span>`
                     : `<span class="bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-gray-400 text-[10px] font-black uppercase px-2.5 py-1 rounded border border-gray-200 dark:border-slate-600">Draft</span>`;
 
-                const safeDataStr = encodeURIComponent(JSON.stringify(c));
-
+                // 💡 የ Edit አዝራር ችግር እዚህ ጋር 100% ተፈቷል!
+                // መረጃውን ሁሉ ከማሳለፍ ይልቅ፣ መታወቂያውን (ID) ብቻ እናሳልፋለን።
                 tr.innerHTML = `
                     <td><img src="${c.image}" class="w-16 h-12 object-cover rounded-xl shadow-sm border border-gray-200 dark:border-slate-600" onerror="this.src='https://placehold.co/100x80?text=No+Img'"></td>
                     <td class="font-black text-dark dark:text-white course-title-cell text-[15px]">${c.title}</td>
@@ -1595,7 +1653,8 @@
                     <td class="font-black text-secondary dark:text-primary">${priceDisplay}</td>
                     <td>${statusBadge}</td>
                     <td class="text-right">
-                        <button onclick="window.openCourseModal('${safeDataStr}')" class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-secondary dark:text-primary hover:bg-secondary dark:hover:bg-primary hover:text-white dark:hover:text-dark transition shadow-sm border border-blue-100 dark:border-blue-800/50 mr-2"><i class="fa-solid fa-pen text-sm"></i></button>
+                        <!-- 💡 Edit አዝራር አሁን መቶ ፐርሰንት ይሰራል -->
+                        <button onclick="window.openCourseModal('${c.id}')" class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-secondary dark:text-primary hover:bg-secondary dark:hover:bg-primary hover:text-white dark:hover:text-dark transition shadow-sm border border-blue-100 dark:border-blue-800/50 mr-2"><i class="fa-solid fa-pen text-sm"></i></button>
                         <button onclick="window.deleteCourse('${c.id}')" class="w-10 h-10 rounded-xl bg-red-50 dark:bg-red-500/10 text-danger hover:bg-danger hover:text-white transition shadow-sm border border-red-100 dark:border-red-500/20"><i class="fa-solid fa-trash text-sm"></i></button>
                     </td>
                 `;
@@ -1604,29 +1663,7 @@
         };
 
         window.addNewCourse = () => { 
-            document.getElementById('course-id').value = '';
-            document.getElementById('c-title').value = '';
-            document.getElementById('c-category').value = 'General';
-            document.getElementById('c-instructor').value = '';
-            document.getElementById('c-instructor-image').value = '';
-            document.getElementById('c-price').value = '';
-            document.getElementById('c-oldprice').value = '';
-            document.getElementById('c-duration').value = '';
-            document.getElementById('c-level').value = 'ጀማሪ';
-            document.getElementById('c-image').value = '';
-            document.getElementById('c-video').value = '';
-            document.getElementById('c-desc').value = '';
-            document.getElementById('c-ai-prompt').value = '';
-            
-            document.getElementById('modal-title').innerText = 'አዲስ ኮርስ ጨምር';
-            const lessonsContainer = document.getElementById('lessons-container');
-            if(lessonsContainer) lessonsContainer.innerHTML = '';
-            window.addLessonRow();
-            
-            const modal = document.getElementById('course-modal');
-            const content = document.getElementById('course-modal-content');
-            if(modal) { modal.classList.remove('hide'); modal.classList.add('show'); }
-            if(content) { setTimeout(() => { content.classList.remove('scale-95'); content.classList.add('scale-100'); }, 10); }
+            window.openCourseModal(null);
         };
 
         window.addLessonRow = function(l = {title: '', video: '', duration: '', points: 100}) {
@@ -1727,39 +1764,44 @@
             }
         };
 
-        window.openCourseModal = (dataStr) => { 
+        // 💡 Edit Bug Fixed Logic 💡
+        window.openCourseModal = (courseId) => { 
             const form = document.getElementById('course-form');
             if(form) form.reset();
             const lessonsContainer = document.getElementById('lessons-container');
             if(lessonsContainer) lessonsContainer.innerHTML = ''; 
             
-            if(dataStr) {
+            if(courseId) {
                 try {
-                    const c = JSON.parse(decodeURIComponent(dataStr));
-                    document.getElementById('course-id').value = c.id;
-                    document.getElementById('c-title').value = c.title || '';
-                    document.getElementById('c-category').value = c.category || 'General';
-                    document.getElementById('c-instructor').value = c.instructor || '';
-                    document.getElementById('c-instructor-image').value = c.instructorImage || '';
-                    document.getElementById('c-price').value = c.price !== undefined ? c.price : 0;
-                    document.getElementById('c-oldprice').value = c.oldPrice || '';
-                    document.getElementById('c-duration').value = c.duration || '';
-                    document.getElementById('c-level').value = c.level || 'ጀማሪ';
-                    document.getElementById('c-status').value = c.status || 'Active';
-                    document.getElementById('c-image').value = c.image || '';
-                    document.getElementById('c-video').value = c.video || '';
-                    document.getElementById('c-desc').value = c.desc || '';
-                    document.getElementById('c-ai-prompt').value = c.aiPrompt || '';
+                    // መረጃውን ከ Global Array ላይ ፈልገን እናመጣለን
+                    const c = globalCourses.find(x => x.id === courseId);
                     
-                    const modalTitle = document.getElementById('modal-title');
-                    if(modalTitle) modalTitle.innerText = 'ኮርስ አስተካክል (Edit)';
+                    if (c) {
+                        document.getElementById('course-id').value = c.id;
+                        document.getElementById('c-title').value = c.title || '';
+                        document.getElementById('c-category').value = c.category || 'General';
+                        document.getElementById('c-instructor').value = c.instructor || '';
+                        document.getElementById('c-instructor-image').value = c.instructorImage || '';
+                        document.getElementById('c-price').value = c.price !== undefined ? c.price : 0;
+                        document.getElementById('c-oldprice').value = c.oldPrice || '';
+                        document.getElementById('c-duration').value = c.duration || '';
+                        document.getElementById('c-level').value = c.level || 'ጀማሪ';
+                        document.getElementById('c-status').value = c.status || 'Active';
+                        document.getElementById('c-image').value = c.image || '';
+                        document.getElementById('c-video').value = c.video || '';
+                        document.getElementById('c-desc').value = c.desc || '';
+                        document.getElementById('c-ai-prompt').value = c.aiPrompt || '';
+                        
+                        const modalTitle = document.getElementById('modal-title');
+                        if(modalTitle) modalTitle.innerText = 'ኮርስ አስተካክል (Edit)';
 
-                    if(c.lessons && Array.isArray(c.lessons) && c.lessons.length > 0) {
-                        c.lessons.forEach(l => window.addLessonRow(l));
-                    } else {
-                        window.addLessonRow();
+                        if(c.lessons && Array.isArray(c.lessons) && c.lessons.length > 0) {
+                            c.lessons.forEach(l => window.addLessonRow(l));
+                        } else {
+                            window.addLessonRow();
+                        }
                     }
-                } catch(e) { console.error("Error parsing course data", e); window.addLessonRow(); }
+                } catch(e) { console.error("Error loading course data", e); window.addLessonRow(); }
             } else {
                 document.getElementById('course-id').value = '';
                 document.getElementById('c-category').value = 'General';
@@ -1814,15 +1856,6 @@
             const st = document.getElementById('system-status-indicator');
             if(st) { st.innerText = 'Offline'; st.className = 'text-base sm:text-lg font-black font-heading text-danger'; }
         });
-
-        // Failsafe loader hider
-        setTimeout(() => {
-            const l = document.getElementById('global-loader');
-            if(l && l.style.display !== 'none') {
-                l.style.opacity = '0';
-                setTimeout(()=>l.style.display='none', 500);
-            }
-        }, 3000);
 
     </script>
     
