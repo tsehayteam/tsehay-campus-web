@@ -15,7 +15,7 @@
 
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Tailwind Configuration -->
+    <!-- Tailwind Labɛncogo -->
     <script>
         window.tailwind = window.tailwind || {};
         window.tailwind.config = {
@@ -65,7 +65,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&family=Noto+Sans+Ethiopic:wght@400;500;700;900&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     
-    <!-- Custom Styles -->
+    <!-- Kɛcogo Kɛrɛnkɛrɛnnenw -->
     <style>
         body { font-family: 'Roboto', 'Noto Sans Ethiopic', sans-serif; scroll-behavior: smooth; background-color: var(--bodyBg); transition: background-color 0.3s ease; }
         .dark body { background-color: #0f172a; }
@@ -130,7 +130,7 @@
 </head>
 <body class="text-dark dark:text-gray-100 antialiased relative">
 
-    <!-- Auth Modal -->
+    <!-- Donni Modal -->
     <div id="auth-modal" class="hidden fixed inset-0 bg-black/60 z-[9999] items-center justify-center backdrop-blur-sm p-4" onclick="if(event.target === this) window.closeAuthModal()">
         <div class="bg-white dark:bg-slate-800 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden flex flex-col relative modal-animate border border-gray-100 dark:border-slate-700 max-h-[95vh]">
             <div class="bg-secondary dark:bg-slate-900 p-6 text-white text-center relative border-b border-secondary/50 dark:border-slate-700 shrink-0">
@@ -239,7 +239,7 @@
         </div>
     </div>
 
-    <!-- Terms Modal -->
+    <!-- Sariyaw Modal -->
     <div id="terms-modal" class="hidden fixed inset-0 bg-black/60 z-[10000] items-center justify-center backdrop-blur-sm p-4" onclick="if(event.target === this) window.closeTermsModal()">
         <div class="bg-white dark:bg-slate-800 w-full max-w-3xl rounded-3xl shadow-2xl overflow-hidden flex flex-col relative max-h-[90vh] modal-animate border border-gray-100 dark:border-slate-700">
             <div class="bg-secondary dark:bg-slate-900 p-5 md:p-6 text-white flex justify-between items-center shrink-0">
@@ -309,7 +309,7 @@
         </div>
     </div>
 
-    <!-- Navigation -->
+    <!-- Ɲɛmɔgɔya -->
     <nav class="glass-nav fixed w-full top-0 z-50 transition-all duration-300">
         <div class="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-20 gap-4 lg:gap-6">
@@ -324,20 +324,16 @@
                     <a href="#about" onclick="document.getElementById('about').scrollIntoView({behavior: 'smooth'})" class="text-gray-700 dark:text-gray-300 hover:text-secondary dark:hover:text-primary font-bold transition text-[14px] lg:text-[15px] px-2 lg:px-3">ስለ እኛ</a>
                     <a href="javascript:void(0)" onclick="document.getElementById('courses').scrollIntoView({behavior: 'smooth'})" class="text-gray-700 dark:text-gray-300 hover:text-secondary dark:hover:text-primary font-bold transition text-[14px] lg:text-[15px] px-2 lg:px-3">ሁሉም ኮርሶች</a>
                     
-                    <!-- 💡 የ 'ተጨማሪ' ማውጫ ሙሉ በሙሉ ጠፍቶ በ 'ጥቅሞች' ተተክቷል -->
                     <a href="#features" onclick="document.getElementById('features').scrollIntoView({behavior: 'smooth'})" class="text-gray-700 dark:text-gray-300 hover:text-secondary dark:hover:text-primary font-bold transition text-[14px] lg:text-[15px] px-2 lg:px-3">ጥቅሞች</a>
                 </div>
                 
-                <!-- Desktop Search Bar -->
                 <div class="flex-1 max-w-md hidden md:flex items-center border border-gray-200 dark:border-slate-700 rounded-full px-4 py-2 search-bar mx-2 lg:mx-4 relative">
                     <i class="fa-solid fa-magnifying-glass text-gray-500 dark:text-gray-400 text-sm lg:text-base cursor-pointer hover:text-primary transition" onclick="document.getElementById('courses').scrollIntoView({behavior: 'smooth'})"></i>
                     <input type="text" id="courseSearchInput" oninput="window.searchCourses(event, false)" onkeypress="window.handleSearchEnter(event)" placeholder="ኮርሶችን ይፈልጉ..." class="bg-transparent border-none outline-none w-full ml-2 lg:ml-3 text-[14px] lg:text-[15px] font-body text-dark text-white placeholder-gray-500">
-                    <!-- Live Search Dropdown Desktop -->
                     <div id="desktop-search-results" class="absolute top-[110%] left-0 w-full bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-gray-100 dark:border-slate-700 overflow-hidden hidden flex-col z-[100] max-h-80 overflow-y-auto text-left"></div>
                 </div>
                 
                 <div class="hidden md:flex items-center gap-2 lg:gap-3 font-heading text-sm" id="nav-auth-buttons">
-                    <!-- 💡 የቋንቋ መቀየሪያ አሁን ከብርሀን (Theme) መቀየሪያ አጠገብ በትንሹ እና በሚያምር ሁኔታ ተቀምጧል -->
                     <div class="hidden sm:flex items-center bg-gray-100 dark:bg-slate-800 rounded-full p-1 shadow-sm shrink-0 border border-gray-200 dark:border-slate-700" id="custom-lang-toggle">
                         <button onclick="window.changeLanguage('am')" id="btn-lang-am" class="px-2 py-0.5 rounded-full bg-white dark:bg-slate-600 text-dark dark:text-white text-[10px] font-bold shadow-sm transition">AM</button>
                         <button onclick="window.changeLanguage('en')" id="btn-lang-en" class="px-2 py-0.5 rounded-full text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white text-[10px] font-bold transition">EN</button>
@@ -363,17 +359,14 @@
             </div>
         </div>
         
-        <!-- Mobile Menu -->
         <div id="mobile-menu" class="md:hidden bg-light dark:bg-slate-900 border-t border-gray-100 dark:border-slate-800 shadow-xl overflow-hidden transition-all duration-300" style="max-height: 0;">
             <div class="px-4 pt-2 pb-6 space-y-2 text-center flex flex-col h-[70vh] overflow-y-auto">
                 
-                <!-- Search Bar (Mobile) -->
                 <div class="mb-4 mt-2 px-2 relative">
                     <div class="flex items-center border border-gray-200 dark:border-slate-700 rounded-full px-4 py-2 bg-gray-50 dark:bg-slate-800">
                         <i class="fa-solid fa-magnifying-glass text-gray-500 text-sm cursor-pointer" onclick="document.getElementById('courses').scrollIntoView({behavior: 'smooth'}); document.getElementById('mobile-menu').classList.remove('open');"></i>
                         <input type="text" oninput="window.searchCourses(event, true)" onkeypress="window.handleSearchEnter(event)" placeholder="ኮርሶችን ይፈልጉ..." class="bg-transparent border-none outline-none w-full ml-2 text-sm font-body text-dark dark:text-white">
                     </div>
-                    <!-- Live Search Dropdown Mobile -->
                     <div id="mobile-search-results" class="absolute top-full mt-2 left-2 right-2 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-gray-100 dark:border-slate-700 overflow-hidden hidden flex-col z-[100] max-h-72 overflow-y-auto text-left"></div>
                 </div>
                 
@@ -398,7 +391,7 @@
         </div>
     </nav>
 
-    <!-- Hero Section -->
+    <!-- Hero Fan -->
     <section class="relative pt-28 pb-16 lg:pt-36 lg:pb-24 overflow-hidden hero-mesh" id="home">
         <div class="absolute inset-0 opacity-20 mix-blend-overlay" style="background-image: url('https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=2071&auto=format&fit=crop'); background-size: cover; background-position: center;"></div>
         
@@ -455,14 +448,13 @@
         </div>
     </section>
 
-    <!-- Trust Badges -->
+    <!-- Laya Tɔgɔw -->
     <section class="py-12 bg-white dark:bg-slate-800 border-b border-gray-100 dark:border-slate-700 relative z-20 shadow-sm transition-colors duration-300">
         <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <div class="inline-block bg-blue-50 dark:bg-slate-900 border border-blue-100 dark:border-slate-700 rounded-full px-6 py-2.5 mb-8 shadow-sm">
                 <p class="font-accent text-secondary dark:text-primary font-extrabold tracking-widest text-[13px] sm:text-sm uppercase">ከ 500+ በላይ ተማሪዎች እና አለምአቀፍ ፕላትፎርሞች የታመነ</p>
             </div>
             <div class="flex justify-center items-center gap-8 sm:gap-12 md:gap-20 flex-wrap">
-                <!-- 💡 Google -->
                 <div class="flex items-center gap-3 text-2xl md:text-4xl font-black font-heading text-gray-800 dark:text-gray-200 hover:text-[#EA4335] transition transform hover:scale-110 cursor-default">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" class="w-8 h-8 md:w-10 md:h-10">
                         <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
@@ -472,24 +464,20 @@
                     </svg> Google
                 </div>
                 
-                <!-- 💡 Meta -->
                 <div class="flex items-center gap-3 text-2xl md:text-4xl font-black font-heading text-gray-800 dark:text-gray-200 hover:text-[#0668E1] transition transform hover:scale-110 cursor-default">
                     <i class="fa-brands fa-meta text-[#0668E1]"></i> Meta
                 </div>
 
-                <!-- 💡 SHEIN (Pure CSS/Logo Only, No Image to break) -->
                 <div class="flex items-center transition transform hover:scale-110 cursor-default">
                     <div class="bg-black dark:bg-white text-white dark:text-black px-3.5 py-1.5 md:px-4 md:py-2 rounded-lg text-lg md:text-2xl font-bold tracking-[0.15em] shadow-md dark:shadow-white/10 uppercase" style="font-family: Arial, Helvetica, sans-serif;">
                         SHEIN
                     </div>
                 </div>
                 
-                <!-- 💡 TikTok -->
                 <div class="flex items-center gap-3 text-2xl md:text-4xl font-black font-heading text-gray-800 dark:text-gray-200 hover:text-black dark:hover:text-white transition transform hover:scale-110 cursor-default">
                     <i class="fa-brands fa-tiktok text-black dark:text-gray-100"></i> TikTok
                 </div>
                 
-                <!-- 💡 BYBIT (Pure exact design) -->
                 <div class="flex items-center transition transform hover:scale-110 cursor-default">
                     <div class="flex items-end text-3xl md:text-[40px] font-black text-black dark:text-white tracking-tighter leading-none" style="font-family: 'Montserrat', sans-serif;">
                         BYB<span class="w-[4px] md:w-[6px] h-[22px] md:h-[28px] bg-[#F7A600] mx-[2px] md:mx-[3px] inline-block relative bottom-[2px] md:bottom-[3px]"></span>T
@@ -499,7 +487,7 @@
         </div>
     </section>
 
-    <!-- Features -->
+    <!-- Nafa -->
     <section id="features" class="py-24 relative overflow-hidden bg-gradient-to-b from-slate-50 to-white dark:from-slate-900 dark:to-slate-800 border-b border-gray-200 dark:border-slate-700 transition-colors duration-300">
         <div class="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
             <div class="absolute -top-32 -left-32 w-[500px] h-[500px] bg-primary/5 rounded-full blur-3xl"></div>
@@ -544,9 +532,8 @@
         </div>
     </section>
 
-    <!-- About Us Section (Optimized for User's Photos) -->
+    <!-- An Ko Fan (A labɛnna ni URL jɛlenw ɲumanba ye) -->
     <section id="about" class="py-24 relative overflow-hidden bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 transition-colors duration-300">
-        <!-- Background Elements -->
         <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.03] dark:opacity-[0.02]"></div>
         <div class="absolute top-0 right-0 w-[600px] h-[600px] bg-primary/5 rounded-full blur-[120px] pointer-events-none"></div>
 
@@ -557,10 +544,9 @@
                 <div class="w-20 h-1.5 bg-primary mx-auto rounded-full mb-6"></div>
             </div>
 
-            <!-- Video & Story Container -->
+            <!-- Wideo ni Maana Kɛyɔrɔ -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-20">
                 
-                <!-- 💡 ቪዲዮው ሌሎች ቪዲዮዎችን እንዳያመጣ (rel=0) ተስተካክሏል -->
                 <div class="relative group w-full">
                     <div class="absolute -inset-2 bg-gradient-to-r from-secondary to-primary rounded-3xl blur-lg opacity-40 group-hover:opacity-70 transition duration-500"></div>
                     <div class="relative rounded-2xl overflow-hidden shadow-2xl border border-white/10 bg-black aspect-video flex items-center justify-center">
@@ -568,7 +554,6 @@
                     </div>
                 </div>
 
-                <!-- Story Text -->
                 <div>
                     <h3 class="text-2xl sm:text-3xl font-black font-heading text-dark dark:text-white mb-6">የእኛ ታሪክ (Our Story)</h3>
                     <p class="text-gray-600 dark:text-gray-300 font-body leading-relaxed text-base sm:text-lg mb-6">
@@ -594,27 +579,24 @@
                 </div>
             </div>
 
-            <!-- Bento Box Image Gallery (Optimized 3 Images Layout, No Blue Block) -->
+            <!-- Bento Box Jaw Kɛyɔrɔ (Ja 3 labɛn, kulu blö tɛ yen) -->
             <div class="mb-20">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <!-- Photo 1 -->
                     <div class="rounded-3xl overflow-hidden shadow-xl group h-[350px]">
-                        <img src="about-photo-1.jpg" class="w-full h-full object-cover group-hover:scale-105 transition duration-700" alt="Students">
+                        <img src="https://i.postimg.cc/CK0NBpHx/about-photo-3.jpg" class="w-full h-full object-cover group-hover:scale-105 transition duration-700" alt="Students">
                     </div>
-                    <!-- Photo 2 -->
                     <div class="rounded-3xl overflow-hidden shadow-xl group h-[350px]">
-                        <img src="about-photo-2.jpg" class="w-full h-full object-cover group-hover:scale-105 transition duration-700" alt="Tech">
+                        <img src="https://i.postimg.cc/Zq1yB8hw/about-photo-2.jpg" class="w-full h-full object-cover group-hover:scale-105 transition duration-700" alt="Tech">
                     </div>
-                    <!-- Photo 3 -->
                     <div class="rounded-3xl overflow-hidden shadow-xl group h-[350px]">
-                        <img src="about-photo-3.jpg" class="w-full h-full object-cover group-hover:scale-105 transition duration-700" alt="Team">
+                        <img src="https://i.postimg.cc/qvqt1bJK/about-photo-1.jpg" class="w-full h-full object-cover group-hover:scale-105 transition duration-700" alt="Team">
                     </div>
                 </div>
             </div>
 
-            <!-- What We Do / Mission & Team -->
+            <!-- An Bɛ Min Kɛ / Ɲɛnabɔya ni Jɛkulu -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
-                <!-- Mission Cards -->
+                <!-- Ɲɛnabɔya Kartiw -->
                 <div>
                     <h3 class="text-2xl font-black font-heading text-dark dark:text-white mb-8 text-center sm:text-left">ተልዕኳችን (What We Do)</h3>
                     <div class="space-y-4">
@@ -642,27 +624,22 @@
                     </div>
                 </div>
 
-                <!-- Team -->
+                <!-- Jɛkulu -->
                 <div>
                     <h3 class="text-2xl font-black font-heading text-dark dark:text-white mb-8 text-center sm:text-left">የኛ ቡድን (Our Team)</h3>
-                    <!-- 💡 የቡድን ክፍሉ ወደ 2 ካርዶች ተቀይሯል -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-8 max-w-2xl mx-auto">
-                        <!-- ኢዮብ ሳህሌ -->
                         <div class="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 p-6 rounded-3xl text-center shadow-sm hover:shadow-xl transition duration-300 group">
                             <div class="w-24 h-24 mx-auto rounded-full overflow-hidden border-4 border-gray-50 dark:border-slate-700 mb-4 group-hover:border-primary transition duration-300">
-                                <!-- 💡 Ceo.jpg (Capital C) አሁን ይሰራል -->
                                 <img src="Ceo.jpg" alt="Eyob Sahle" class="w-full h-full object-cover" onerror="this.src='https://ui-avatars.com/api/?name=Eyob+Sahle&background=0f172a&color=fff&size=128'">
                             </div>
                             <h4 class="font-bold text-dark dark:text-white text-lg">ኢዮብ ሳህሌ</h4>
                             <p class="text-sm text-secondary dark:text-primary font-semibold mt-1">Founder & Lead Instructor</p>
                         </div>
-                        <!-- ሀብታሙ ዓለሙ -->
                         <div class="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 p-6 rounded-3xl text-center shadow-sm hover:shadow-xl transition duration-300 group">
                             <div class="w-24 h-24 mx-auto rounded-full overflow-hidden border-4 border-gray-50 dark:border-slate-700 mb-4 group-hover:border-secondary transition duration-300">
                                 <img src="https://ui-avatars.com/api/?name=Habtamu+Alemu&background=3268BA&color=fff&size=128" alt="Habtamu Alemu" class="w-full h-full object-cover">
                             </div>
                             <h4 class="font-bold text-dark dark:text-white text-lg">ሀብታሙ ዓለሙ</h4>
-                            <!-- 💡 ሀብታሙ ወደ Manager ተቀይሯል -->
                             <p class="text-sm text-gray-500 font-semibold mt-1">Manager</p>
                         </div>
                     </div>
@@ -672,7 +649,7 @@
         </div>
     </section>
 
-    <!-- Courses List -->
+    <!-- Kalanw Sɛbɛn -->
     <section id="courses" class="py-20 bg-gray-50 dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 transition-colors duration-300">
         <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex flex-col items-center text-center mb-12 gap-4">
@@ -682,14 +659,14 @@
                 </div>
             </div>
 
-            <!-- Courses Container -->
+            <!-- Kalanw Kɛyɔrɔ -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8" id="courseList">
                 <div class="p-10 text-center col-span-full text-gray-400 dark:text-gray-500 font-bold w-full">
                     <i class="fa-solid fa-circle-notch fa-spin text-4xl mb-4 text-secondary dark:text-primary"></i><br>ኮርሶችን በማምጣት ላይ...
                 </div>
             </div>
             
-            <!-- No Results Message -->
+            <!-- Nafa Tɛ Bataki -->
             <div id="noCourseMessage" class="hidden text-center py-10">
                 <i class="fa-solid fa-box-open text-5xl text-gray-300 dark:text-slate-600 mb-4"></i>
                 <p class="text-gray-500 dark:text-gray-400 font-bold text-lg">ይቅርታ፣ ኮርስ አልተገኘም።</p>
@@ -697,7 +674,7 @@
         </div>
     </section>
 
-    <!-- AI Demo Section -->
+    <!-- AI Yirali Fan -->
     <section id="ai-feature" class="relative py-24 lg:py-32 overflow-hidden hero-mesh text-white border-y border-white/10">
         <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20 mix-blend-overlay"></div>
         <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col lg:flex-row items-center gap-12 relative z-10">
@@ -724,7 +701,7 @@
         </div>
     </section>
 
-    <!-- FAQ -->
+    <!-- Ɲininkaliw (FAQ) -->
     <section id="faq" class="py-16 bg-blue-50/50 dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 transition-colors duration-300">
         <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-10">
@@ -764,7 +741,7 @@
         </div>
     </section>
 
-    <!-- Call to Action -->
+    <!-- Kɛwalew weleli -->
     <section class="py-24 relative overflow-hidden bg-white dark:bg-slate-900 transition-colors duration-300">
         <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
             <div class="relative bg-dark rounded-[3rem] overflow-hidden shadow-2xl border border-gray-800 p-10 md:p-20 text-center">
@@ -796,7 +773,7 @@
         </div>
     </section>
 
-    <!-- Footer -->
+    <!-- Sen Fan -->
     <footer id="footer" class="bg-dark text-gray-300 pt-16 pb-8 font-body border-t-[6px] border-primary mt-auto">
         <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8 mb-12">
@@ -850,28 +827,26 @@
         </div>
     </footer>
 
-    <!-- Floating Contact Buttons -->
+    <!-- Panpan Ɲɔgɔnyeko Butɔnw -->
     <div class="fixed bottom-6 right-6 z-[9999] flex flex-col gap-4">
-        <!-- Telegram Button -->
         <a href="https://t.me/TsehayTeam" target="_blank" class="w-[64px] h-[64px] bg-primary text-dark rounded-full flex items-center justify-center text-[28px] shadow-[0_0_20px_rgba(249,176,60,0.5)] hover:scale-110 transition-all duration-300 relative group border-2 border-white/20">
             <i class="fa-regular fa-paper-plane"></i>
             <span class="absolute right-full mr-4 bg-dark dark:bg-slate-800 text-white text-sm font-bold px-4 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap pointer-events-none border border-gray-700 shadow-xl">በቴሌግራም ያግኙን</span>
         </a>
-        <!-- Phone Button -->
         <a href="tel:0980209090" class="w-[64px] h-[64px] bg-primary text-dark rounded-full flex items-center justify-center text-[28px] shadow-[0_0_20px_rgba(249,176,60,0.5)] hover:scale-110 transition-all duration-300 relative group border-2 border-white/20">
             <i class="fa-solid fa-phone"></i>
             <span class="absolute right-full mr-4 bg-dark dark:bg-slate-800 text-white text-sm font-bold px-4 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap pointer-events-none border border-gray-700 shadow-xl">ስልክ ይደውሉ</span>
         </a>
     </div>
 
-    <!-- UI Logic Scripts -->
+    <!-- UI Hakili Scripts -->
     <script>
         window.isSignupMode = false;
         window.allFetchedCourses = []; 
         window.hasAgreedTerms = false;
         window.currentUser = null;
 
-        // 💡 ቋንቋ መቀየሪያ ሎጂክ (በሚገባ ተስተካክሏል)
+        // 💡 Kan Yɛlɛma Hakili (A labɛnna ka ɲɛ)
         window.updateLangButtons = function(lang) {
             const btnAm = document.getElementById('btn-lang-am');
             const btnEn = document.getElementById('btn-lang-en');
@@ -954,7 +929,6 @@
             const forgotBtn = document.getElementById('forgot-pwd-btn');
             if (forgotBtn) forgotBtn.style.display = signup ? 'none' : 'block';
 
-            // Toggle ALL signup fields based on the mode
             document.querySelectorAll('.signup-only').forEach(el => {
                 el.classList.toggle('hidden', !signup);
             });
@@ -1077,7 +1051,7 @@
                 });
             }
             
-            // 💡 Load Saved Language on Start
+            // 💡 Kan maralen lase daminɛ la
             const savedLang = localStorage.getItem('siteLang') || 'am';
             window.updateLangButtons(savedLang);
         });
@@ -1117,7 +1091,7 @@
         };
     </script>
 
-    <!-- Hidden Google Translate Element -->
+    <!-- Google Translate Yɔrɔ Dogolen -->
     <div id="google_translate_element"></div>
     <script>
         function googleTranslateElementInit() {
@@ -1133,14 +1107,14 @@
     </script>
     <script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
 
-    <!-- Firebase Integration & AI Functions -->
+    <!-- Firebase Farafɛn ni AI Baaraw -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, onSnapshot, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // ==========================================
-        // 1. AI Functions (API Backend Integration)
+        // 1. AI Baaraw (API Backend Farafɛn)
         // ==========================================
         
         async function callGemini(prompt, systemInstruction) {
@@ -1204,7 +1178,7 @@
         window.askAiLanding = function() { window.processAiChat('ai-landing-input', 'ai-landing-chat'); };
 
         // ==========================================
-        // 2. Firebase App Initialization 
+        // 2. Firebase App Daminɛ
         // ==========================================
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'tsehaycampus-e1a6d';
 
@@ -1224,7 +1198,7 @@
             const db = getFirestore(app);
 
             // ==========================================
-            // 코르소ችን በ Real-time ማምጣት (ከ Login ውጭ የሚሰራ)
+            // Kalanw lase tuma sɔbɛ la (A bɛ baara kɛ kɔkan donni la)
             // ==========================================
             const fetchPublicCourses = () => {
                 const currentAppId = typeof __app_id !== 'undefined' ? __app_id : 'tsehaycampus-e1a6d';
@@ -1247,7 +1221,7 @@
                         
                         if (window.allFetchedCourses !== undefined) window.allFetchedCourses.push(c);
                         
-                        if (!listUi || count >= 8) return; // ማረፊያ ገፅ ላይ እስከ 8 ኮርስ ብቻ ያሳያል
+                        if (!listUi || count >= 8) return; 
                         count++;
 
                         let isFree = c.price == 0 || !c.price;
@@ -1258,15 +1232,15 @@
                         let durationInfo = c.duration || '00:00:00';
                         let lessonsCount = c.lessons ? c.lessons.length : 0;
                         
-                        // NEW BADGE LOGIC
+                        // BADGE KURA HAKILI
                         let badgeHTML = isFree 
                             ? `<div class="absolute top-3 right-3 bg-success text-white text-[10px] font-black uppercase px-3 py-1.5 rounded-lg shadow-md z-10 animate-pulse"><i class="fa-solid fa-gift mr-1"></i> ነፃ ኮርስ</div>` 
                             : `<div class="absolute top-3 right-3 bg-primary text-dark text-[10px] font-black uppercase px-3 py-1.5 rounded-lg shadow-md z-10"><i class="fa-solid fa-star mr-1"></i> ፕሪሚየም</div>`;
                             
-                        // NEW OLD PRICE LOGIC
+                        // SƆNGƆ KƆRƆ KURA HAKILI
                         let oldPriceHtml = (!isFree && c.oldPrice) ? `<span class="text-xs text-gray-400 line-through font-bold ml-2">${Number(c.oldPrice).toLocaleString()} ብር</span>` : '';
                         
-                        // NEW LEVEL LOGIC
+                        // HAKƐ KURA HAKILI
                         let levelText = c.level || 'ጀማሪ';
 
                         listUi.innerHTML += `
@@ -1301,7 +1275,7 @@
                 }, (error) => console.error(error));
             };
 
-            // ማንኛውም ጎብኚ እንደከፈተ ወዲያውኑ ኮርሶቹን ያመጣል
+            // A bɛ kalanw lase joona bɔnnanikɛla bɛɛ ye a da wuli
             fetchPublicCourses();
 
             const initAuth = async () => {
@@ -1341,7 +1315,7 @@
                     }
                     if (navAuthBtns) {
                         navAuthBtns.innerHTML = `
-                            <!-- Language Toggle -->
+                            <!-- Kan Yɛlɛma Hakili -->
                             <div class="hidden sm:flex items-center bg-gray-100 dark:bg-slate-800 rounded-full p-1 shadow-sm shrink-0 border border-gray-200 dark:border-slate-700" id="custom-lang-toggle">
                                 <button onclick="window.changeLanguage('am')" id="btn-lang-am" class="px-2 py-0.5 rounded-full bg-white dark:bg-slate-600 text-dark dark:text-white text-[10px] font-bold shadow-sm transition">AM</button>
                                 <button onclick="window.changeLanguage('en')" id="btn-lang-en" class="px-2 py-0.5 rounded-full text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white text-[10px] font-bold transition">EN</button>
@@ -1375,7 +1349,7 @@
                     }
                     if (navAuthBtns) {
                         navAuthBtns.innerHTML = `
-                            <!-- Language Toggle -->
+                            <!-- Kan Yɛlɛma Hakili -->
                             <div class="hidden sm:flex items-center bg-gray-100 dark:bg-slate-800 rounded-full p-1 shadow-sm shrink-0 border border-gray-200 dark:border-slate-700" id="custom-lang-toggle">
                                 <button onclick="window.changeLanguage('am')" id="btn-lang-am" class="px-2 py-0.5 rounded-full bg-white dark:bg-slate-600 text-dark dark:text-white text-[10px] font-bold shadow-sm transition">AM</button>
                                 <button onclick="window.changeLanguage('en')" id="btn-lang-en" class="px-2 py-0.5 rounded-full text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white text-[10px] font-bold transition">EN</button>
@@ -1395,7 +1369,7 @@
                     }
                 }
                 
-                // 💡 Load Saved Language State for Auth Buttons Update
+                // 💡 Kan maralen kɛcogo lase Auth butɔnw yɛlɛmali kama
                 const savedLang = localStorage.getItem('siteLang') || 'am';
                 window.updateLangButtons(savedLang);
             });
