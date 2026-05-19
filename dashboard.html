@@ -140,13 +140,6 @@
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             opacity: 0.04; width: 60%; pointer-events: none; z-index: 0;
         }
-        .cert-seal {
-            position: absolute; bottom: 40px; left: 60px; width: 120px; height: 120px;
-            background: var(--primary) !important; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            border: 4px dashed #fff !important; box-shadow: 0 0 0 6px var(--primary) !important, 0 10px 20px rgba(0,0,0,0.2) !important;
-            color: #fff !important; font-family: 'Montserrat', sans-serif; font-weight: 900; font-size: 11px; text-align: center;
-            line-height: 1.2; text-transform: uppercase; transform: rotate(-15deg); z-index: 10;
-        }
         .cert-content { position: relative; z-index: 1; }
 
         @media print {
@@ -482,7 +475,8 @@
 
                                         <div class="bg-gray-50 dark:bg-slate-700 p-6 sm:p-8 rounded-2xl border border-gray-200 dark:border-slate-600 hidden shadow-inner" id="quiz-container">
                                             <div id="dynamic-quiz-content" class="min-h-[200px]">
-                                                </div>
+                                                <!-- Quiz Content Generated Here -->
+                                            </div>
                                             
                                             <div class="flex justify-between items-center mt-8 border-t border-gray-200 dark:border-slate-600 pt-6">
                                                 <p id="quiz-status-text" class="text-sm font-bold text-gray-500 dark:text-gray-400">ጥያቄ 1</p>
@@ -503,6 +497,7 @@
                                         </div>
                                     </div>
 
+                                    <!-- 💡 እዚህ ጋር ነው ሰርተፍኬቱ የተስተካከለው (እውነተኛ ፊርማ እና ማህተም ተገጥሟል) -->
                                     <div id="certificate" class="tab-content">
                                         
                                         <div id="cert-locked" class="text-center py-16 bg-gray-50 dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-slate-700">
@@ -553,21 +548,28 @@
                                                                 Has demonstrated outstanding proficiency and dedication in understanding the core concepts and practical applications of this course.
                                                             </p>
                                                             
-                                                            <div class="flex justify-between items-end px-12 mt-8">
-                                                                <div class="text-center">
-                                                                    <p id="cert-date" class="font-bold text-dark font-serif text-lg border-b border-black pb-1 px-4">April 26, 2026</p>
+                                                            <!-- 💡 አዲስ የተገጠመው እውነተኛ ማህተም እና ፊርማ -->
+                                                            <div class="flex justify-between items-end px-12 mt-8 relative">
+                                                                <div class="text-center z-20">
+                                                                    <p id="cert-date" class="font-bold text-dark font-serif text-lg border-b border-black pb-1 px-4 inline-block">April 26, 2026</p>
                                                                     <p class="text-xs text-gray-500 font-bold uppercase mt-2 tracking-widest">Date of Issue</p>
                                                                 </div>
                                                                 
-                                                                <div class="cert-seal">
-                                                                    Tsehay<br>Campus<br><span style="font-size:8px;">★ Verified ★</span>
+                                                                <!-- Authentic Stamp -->
+                                                                <div class="absolute left-1/2 bottom-0 transform -translate-x-1/2 z-10 flex flex-col items-center">
+                                                                    <img src="https://i.postimg.cc/yxQS66wY/stamp.png" alt="Tsehay Campus Stamp" class="w-32 h-32 object-contain opacity-95 mix-blend-multiply" style="transform: rotate(-5deg);">
                                                                 </div>
                                                                 
-                                                                <div class="text-center z-20">
-                                                                    <p class="font-script text-4xl text-dark border-b border-black pb-1 px-4">Habtamu A.</p>
-                                                                    <p class="text-xs text-gray-500 font-bold uppercase mt-2 tracking-widest">Co-Founder</p>
+                                                                <div class="text-center z-20 flex flex-col items-center">
+                                                                    <div class="border-b border-black pb-1 px-6 w-48 h-16 flex justify-center items-end relative">
+                                                                        <!-- Authentic Signature -->
+                                                                        <img src="https://i.postimg.cc/TwvVBw68/Signature-(2).png" alt="Eyob Sahle Signature" class="h-20 max-w-[180px] object-contain absolute -bottom-2 mix-blend-multiply">
+                                                                    </div>
+                                                                    <p class="font-bold text-dark text-sm mt-2 font-heading">Eyob Sahle</p>
+                                                                    <p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Founder & Lead Instructor</p>
                                                                 </div>
                                                             </div>
+
                                                         </div>
                                                     </div>
                                                 </div>
@@ -887,15 +889,16 @@
     </script>
     
     <script>
-        function googleTranslateElementInit() {
+        window.googleTranslateElementInit = function() {
             new google.translate.TranslateElement({
                 pageLanguage: 'am',
                 includedLanguages: 'am,en,om,ti,ar,zh-CN,so,fr,es',
                 autoDisplay: false
             }, 'google_translate_element');
-        }
+        };
     </script>
-    <script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+    <script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit">
+    </script>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
@@ -1443,7 +1446,6 @@
 
                 snapshot.forEach(doc => {
                     const data = doc.data();
-                    // 💡 እዚህ ጋር ነው ሚስጥሩ! ተማሪው የራሱን ጥያቄ ብቻ እንዲያይ ተደርጓል!
                     if(data.userId === userId) {
                         qaArray.push({ id: doc.id, ...data });
                     }
@@ -1572,7 +1574,7 @@
         let dynamicQuizData = [];
         let currentQ = 0;
         let userAnswers = {};
-        let quizTotalQuestions = 15; // 💡 ጥያቄው 15 ሆኗል
+        let quizTotalQuestions = 15;
 
         window.generateAndStartQuiz = async function() {
             const btn = document.getElementById('start-quiz-btn');
@@ -1582,7 +1584,6 @@
             loading.classList.remove('hidden');
             loading.classList.add('flex');
 
-            // 💡 ተማሪው ፈተና መጀመሩን ለ AIው መንገሪያ (Anti-Cheat Lock ይበራል)
             window.isQuizActive = true;
 
             const prompt = `ለ "${currentCourseTitle}" ኮርስ 15 ጥያቄዎች ያሉት (Multiple Choice) ፈተና በአማርኛ አዘጋጅ። ኮርሱ የሚያተኩረው በዚህ ላይ ነው፦ ${currentCourseAiPrompt}።
@@ -1603,7 +1604,6 @@
                 document.getElementById('quiz-container').classList.remove('hidden');
                 renderDynamicQuestion();
             } catch (error) {
-                // 💡 ፈተናው ካልተጀመረ AIው ይከፈታል
                 window.isQuizActive = false;
                 alert("የ AI ስህተት አጋጥሟል። እባክዎ እንደገና ይሞክሩ።");
                 btn.classList.remove('hidden'); loading.classList.add('hidden'); loading.classList.remove('flex');
@@ -1646,7 +1646,6 @@
         };
 
         window.submitQuiz = function() {
-            // 💡 ተማሪው ፈተና መጨረሱን ለ AIው መንገሪያ (Anti-Cheat ይከፈታል)
             window.isQuizActive = false;
 
             let score = 0;
@@ -1660,7 +1659,7 @@
             const title = document.getElementById('quiz-score-title');
             const desc = document.getElementById('quiz-score-desc');
             const btns = document.getElementById('quiz-action-buttons');
-            const passMark = Math.ceil(quizTotalQuestions * 0.8); // 💡 80% ማለፊያ
+            const passMark = Math.ceil(quizTotalQuestions * 0.8); 
 
             if(score >= passMark) {
                 icon.className = "w-24 h-24 rounded-full flex items-center justify-center text-4xl mx-auto mb-6 bg-green-100 dark:bg-green-500/20 text-success";
@@ -1706,7 +1705,6 @@
 
         // Dynamic AI Tool & Chat
         window.runDashboardTool = async function(taskInstruction) {
-            // 💡 ፈተና ላይ ከሆነ AI-ው ይቆለፋል
             if (window.isQuizActive) {
                 alert("ይቅርታ፣ ፈተና እየተፈተኑ ስለሆነ የ AI ረዳቱ ለጊዜው ተዘግቷል። ፈተናዎን ሲጨርሱ ይከፈታል።");
                 return;
@@ -1733,7 +1731,6 @@
             c.innerHTML += `<div class="self-end max-w-[85%] bg-primary text-dark font-medium p-3 rounded-2xl rounded-tr-none shadow-sm">${m}</div>`;
             i.value = ''; c.scrollTop = c.scrollHeight;
             
-            // 💡 ፈተና ላይ ከሆነ AI-ው መልስ ከመስጠት ይቆለፋል!
             if (window.isQuizActive) {
                 let typingId = 'typing-' + Date.now();
                 c.innerHTML += `<div id="${typingId}" class="self-start max-w-[85%] bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 p-3 rounded-2xl rounded-tl-none shadow-sm text-danger text-[13px] leading-relaxed font-bold"><i class="fa-solid fa-lock mr-1"></i> ይቅርታ፣ አሁን ፈተና እየተፈተኑ ስለሆነ የ AI ረዳቱ ለጊዜው ተዘግቷል። የፈተና መልስ መስጠት አልችልም!</div>`;
@@ -1752,19 +1749,6 @@
             c.scrollTop = c.scrollHeight;
         };
 
-    </script>
-
-    <div id="google_translate_element"></div>
-    <script>
-        window.googleTranslateElementInit = function() {
-            new google.translate.TranslateElement({
-                pageLanguage: 'am',
-                includedLanguages: 'am,en,om,ti,ar,zh-CN,so,fr,es',
-                autoDisplay: false
-            }, 'google_translate_element');
-        };
-    </script>
-    <script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit">
     </script>
 </body>
 </html>
