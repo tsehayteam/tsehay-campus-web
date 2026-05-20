@@ -5,12 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tsehay Campus - የኢትዮጵያ ምርጡ የኦንላይን መማሪያ ፕላትፎርም</title>
     
-    <!-- 💡 Default Theme is now explicitly DARK -->
+    <!-- 💡 Default Theme is explicitly DARK -->
     <script>
         if (localStorage.theme === 'light') {
             document.documentElement.classList.remove('dark');
         } else {
             document.documentElement.classList.add('dark');
+            localStorage.setItem('theme', 'dark'); // Force dark default
         }
     </script>
 
@@ -27,9 +28,9 @@
                         primary: '#F9B03C',      // Orange - Bold, energetic
                         secondary: '#3268BA',    // Blue - Professional, trustworthy
                         dark: '#000000',         // Pure Black - High contrast
-                        darkCard: '#111111',     // Slightly lighter black for dark mode cards
+                        darkCard: '#111111',     // Slightly lighter black for cards
                         light: '#FFFFFF',        // White - Clean, minimal
-                        bodyBg: '#f4f7fb',       // Subtle blue-tinted white for light mode background
+                        bodyBg: '#f8fafc',       // Soft off-white for light mode
                         success: '#10b981',
                         danger: '#ef4444',
                         warning: '#f59e0b'
@@ -88,8 +89,9 @@
         .text-gradient { background: linear-gradient(135deg, #3268BA 0%, #F9B03C 100%, #3268BA 200%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-size: 200% auto; animation: textShine 4s linear infinite; }
         @keyframes textShine { to { background-position: 200% center; } }
 
-        /* 💡 Light Mode Hero is now Blue, Dark mode Hero is Pure Black */
-        .hero-mesh { background-color: #3268BA; background-image: radial-gradient(at 0% 0%, rgba(249, 176, 60, 0.4) 0px, transparent 50%), radial-gradient(at 100% 0%, rgba(255, 255, 255, 0.1) 0px, transparent 50%), radial-gradient(at 100% 100%, rgba(249, 176, 60, 0.2) 0px, transparent 50%), radial-gradient(at 0% 100%, rgba(0, 0, 0, 0.2) 0px, transparent 50%); animation: gradient-x 15s ease infinite; }
+        /* 💡 Original Beautiful Dark Mesh for BOTH Light and Dark mode */
+        .hero-mesh { background-color: #0f172a; background-image: radial-gradient(at 0% 0%, rgba(50, 104, 186, 0.4) 0px, transparent 50%), radial-gradient(at 100% 0%, rgba(249, 176, 60, 0.3) 0px, transparent 50%), radial-gradient(at 100% 100%, rgba(50, 104, 186, 0.4) 0px, transparent 50%), radial-gradient(at 0% 100%, rgba(249, 176, 60, 0.3) 0px, transparent 50%); animation: gradient-x 15s ease infinite; }
+        /* Make it pure black in dark mode */
         .dark .hero-mesh { background-color: #000000; background-image: radial-gradient(at 0% 0%, rgba(50, 104, 186, 0.3) 0px, transparent 50%), radial-gradient(at 100% 0%, rgba(249, 176, 60, 0.2) 0px, transparent 50%), radial-gradient(at 100% 100%, rgba(50, 104, 186, 0.3) 0px, transparent 50%), radial-gradient(at 0% 100%, rgba(249, 176, 60, 0.1) 0px, transparent 50%); }
 
         .btn-glow { transition: all 0.3s ease; }
@@ -160,7 +162,6 @@
                 </div>
 
                 <form id="auth-form" onsubmit="window.handleAuthSubmit(event)" class="space-y-4 px-1">
-                    
                     <div class="signup-only hidden">
                         <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">ሙሉ ስም (Full Name) <span class="text-danger">*</span></label>
                         <div class="relative">
@@ -324,7 +325,6 @@
                     <a href="#home" onclick="document.getElementById('home').scrollIntoView({behavior: 'smooth'})" class="text-gray-700 dark:text-gray-300 hover:text-secondary dark:hover:text-primary font-bold transition text-[14px] lg:text-[15px] px-2 lg:px-3">ዋና ገፅ</a>
                     <a href="#about" onclick="document.getElementById('about').scrollIntoView({behavior: 'smooth'})" class="text-gray-700 dark:text-gray-300 hover:text-secondary dark:hover:text-primary font-bold transition text-[14px] lg:text-[15px] px-2 lg:px-3">ስለ እኛ</a>
                     <a href="javascript:void(0)" onclick="document.getElementById('courses').scrollIntoView({behavior: 'smooth'})" class="text-gray-700 dark:text-gray-300 hover:text-secondary dark:hover:text-primary font-bold transition text-[14px] lg:text-[15px] px-2 lg:px-3">ሁሉም ኮርሶች</a>
-                    
                     <a href="#features" onclick="document.getElementById('features').scrollIntoView({behavior: 'smooth'})" class="text-gray-700 dark:text-gray-300 hover:text-secondary dark:hover:text-primary font-bold transition text-[14px] lg:text-[15px] px-2 lg:px-3">ጥቅሞች</a>
                 </div>
                 
@@ -397,8 +397,7 @@
         </div>
     </nav>
 
-    <!-- Hero Section -->
-    <!-- 💡 Light theme now beautifully uses the brand Blue (#3268BA), Dark theme uses pure Black (#000000) -->
+    <!-- Hero Section 💡 Original Dark Mesh Style restored for both modes -->
     <section class="relative pt-28 pb-16 lg:pt-36 lg:pb-24 overflow-hidden hero-mesh" id="home">
         <div class="absolute inset-0 opacity-20 mix-blend-overlay" style="background-image: url('https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=2071&auto=format&fit=crop'); background-size: cover; background-position: center;"></div>
         
@@ -418,14 +417,14 @@
                     <span class="text-gradient">ቢዝነስዎን ይጀምሩ።</span>
                 </h1>
                 <p class="text-base sm:text-lg text-gray-200 mb-8 font-body leading-relaxed">
-                    <span class="notranslate">Tsehay Campus</span> በ <strong class="text-white notranslate">Tsehay Digital</strong> ስር የሚተዳደር ሲሆን፣ በኢትዮጵያ የኦንላይን ክህሎት ስልጠና ቀዳሚው ፕላትፎርም ነው። በተግባር እና በ AI የታገዘ ስልጠና ወስደው ቢዝነስዎን ዛሬውኑ ይጀምሩ።
+                    <span class="notranslate font-bold">Tsehay Campus</span> በ <strong class="text-white notranslate">Tsehay Digital</strong> ስር የሚተዳደር ሲሆን፣ በኢትዮጵያ የኦንላይን ክህሎት ስልጠና ቀዳሚው ፕላትፎርም ነው። በተግባር እና በ AI የታገዘ ስልጠና ወስደው ቢዝነስዎን ዛሬውኑ ይጀምሩ።
                 </p>
                 
                 <div class="flex flex-col sm:flex-row gap-4" id="hero-action-buttons">
-                    <button onclick="document.getElementById('courses').scrollIntoView({behavior: 'smooth'})" class="bg-primary text-dark px-6 py-3.5 rounded-xl font-extrabold transition btn-glow flex items-center justify-center gap-3 text-base">
+                    <button onclick="document.getElementById('courses').scrollIntoView({behavior: 'smooth'})" class="bg-primary text-dark px-6 py-3.5 rounded-xl font-extrabold transition btn-glow flex items-center justify-center gap-3 text-base shadow-md">
                         ኮርሶችን ያስሱ <i class="fa-solid fa-arrow-right"></i>
                     </button>
-                    <button onclick="document.getElementById('about').scrollIntoView({behavior: 'smooth'})" class="bg-white/10 hover:bg-white/20 border border-white/30 text-white backdrop-blur-md px-6 py-3.5 rounded-xl font-bold transition flex items-center justify-center gap-3 text-base">
+                    <button onclick="document.getElementById('about').scrollIntoView({behavior: 'smooth'})" class="bg-white/10 hover:bg-white/20 border border-white/30 text-white backdrop-blur-md px-6 py-3.5 rounded-xl font-bold transition flex items-center justify-center gap-3 text-base shadow-sm">
                         <i class="fa-solid fa-circle-play text-lg"></i> ስለ እኛ ይመልከቱ
                     </button>
                 </div>
@@ -433,14 +432,14 @@
 
             <div class="lg:w-1/2 hidden lg:flex justify-center relative animate-float">
                 <div class="relative w-full max-w-[450px]">
-                    <div class="absolute inset-0 bg-secondary rounded-full blur-[100px] opacity-50"></div>
+                    <div class="absolute inset-0 bg-secondary rounded-full blur-[100px] opacity-50 dark:opacity-30"></div>
                     <img src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=2070&auto=format&fit=crop" alt="Students Learning" class="relative z-10 w-full h-[350px] object-cover rounded-2xl shadow-2xl border-4 border-white/10">
                     
                     <div class="absolute -bottom-5 -left-8 bg-white dark:bg-darkCard p-3 rounded-xl shadow-xl z-20 flex items-center gap-3 animate-float border border-gray-100 dark:border-gray-800" style="animation-delay: 1s;">
                         <div class="bg-green-100 dark:bg-green-900/30 text-success p-2.5 rounded-full text-xl"><i class="fa-solid fa-check-double"></i></div>
                         <div>
                             <p class="text-[10px] text-gray-500 dark:text-gray-400 font-bold uppercase leading-none">እውቅና ያለው ሰርተፍኬት</p>
-                            <p class="text-dark dark:text-white font-black text-sm">Recognized</p>
+                            <p class="text-dark dark:text-white font-black text-sm notranslate">Recognized</p>
                         </div>
                     </div>
                     <div class="absolute -top-6 -right-6 bg-white dark:bg-darkCard p-3 rounded-xl shadow-xl z-20 flex items-center gap-3 animate-float border border-gray-100 dark:border-gray-800" style="animation-delay: 2s;">
@@ -458,7 +457,7 @@
     <!-- Trust Badges -->
     <section class="py-12 bg-white dark:bg-dark border-b border-gray-100 dark:border-gray-800 relative z-20 shadow-sm transition-colors duration-300">
         <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <div class="inline-block bg-blue-50 dark:bg-darkCard border border-blue-100 dark:border-gray-800 rounded-full px-6 py-2.5 mb-8 shadow-sm">
+            <div class="inline-block bg-blue-50/50 dark:bg-darkCard border border-blue-100 dark:border-gray-800 rounded-full px-6 py-2.5 mb-8 shadow-sm">
                 <p class="font-accent text-secondary dark:text-primary font-extrabold tracking-widest text-[13px] sm:text-sm uppercase">ከ 500+ በላይ ተማሪዎች እና አለምአቀፍ ፕላትፎርሞች የታመነ</p>
             </div>
             <div class="flex justify-center items-center gap-8 sm:gap-12 md:gap-20 flex-wrap">
@@ -469,10 +468,9 @@
                         <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
                         <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
                         <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-                    </svg> Google
+                    </svg> <span class="notranslate">Google</span>
                 </div>
                 
-                <!-- 💡 notranslate classes added to brands -->
                 <div class="flex items-center gap-3 text-2xl md:text-4xl font-black font-heading text-gray-800 dark:text-gray-200 hover:text-[#0668E1] transition transform hover:scale-110 cursor-default">
                     <i class="fa-brands fa-meta text-[#0668E1]"></i> <span class="notranslate">Meta</span>
                 </div>
@@ -497,7 +495,7 @@
     </section>
 
     <!-- Features -->
-    <section id="features" class="py-24 relative overflow-hidden bg-gradient-to-b from-blue-50/50 to-white dark:from-darkCard dark:to-dark border-b border-gray-200 dark:border-gray-800 transition-colors duration-300">
+    <section id="features" class="py-24 relative overflow-hidden bg-gradient-to-b from-blue-50/60 to-white dark:from-darkCard dark:to-dark border-b border-gray-200 dark:border-gray-800 transition-colors duration-300">
         <div class="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
             <div class="absolute -top-32 -left-32 w-[500px] h-[500px] bg-primary/5 rounded-full blur-3xl"></div>
             <div class="absolute top-1/2 -right-32 w-[500px] h-[500px] bg-secondary/5 rounded-full blur-3xl"></div>
@@ -542,7 +540,7 @@
     </section>
 
     <!-- About Us Section -->
-    <section id="about" class="py-24 relative overflow-hidden bg-blue-50/40 dark:bg-dark border-b border-gray-200 dark:border-gray-800 transition-colors duration-300">
+    <section id="about" class="py-24 relative overflow-hidden bg-gradient-to-b from-white to-slate-50 dark:from-dark dark:to-darkCard border-b border-gray-200 dark:border-gray-800 transition-colors duration-300">
         <!-- Background Elements -->
         <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.03] dark:opacity-[0.02]"></div>
         <div class="absolute top-0 right-0 w-[600px] h-[600px] bg-primary/5 rounded-full blur-[120px] pointer-events-none"></div>
@@ -567,10 +565,10 @@
                 <div>
                     <h3 class="text-2xl sm:text-3xl font-black font-heading text-dark dark:text-white mb-6">የእኛ ታሪክ (Our Story)</h3>
                     <p class="text-gray-600 dark:text-gray-300 font-body leading-relaxed text-base sm:text-lg mb-6">
-                        <span class="notranslate">Tsehay Campus</span> በ <strong class="notranslate">Tsehay Digital</strong> ስር የተመሰረተ ሲሆን፣ ዓላማችን ወጣቶችን አዳዲስ እና ተፈላጊ በሆኑ የዲጂታል ክህሎቶች በማብቃት የፋይናንስ ነፃነት እንዲያገኙ ማስቻል ነው።
+                        <span class="notranslate font-bold">Tsehay Campus</span> በ <strong class="notranslate text-dark dark:text-white">Tsehay Digital</strong> ስር የተመሰረተ ሲሆን፣ ዓላማችን ወጣቶችን አዳዲስ እና ተፈላጊ በሆኑ የዲጂታል ክህሎቶች በማብቃት የፋይናንስ ነፃነት እንዲያገኙ ማስቻል ነው።
                     </p>
                     <p class="text-gray-600 dark:text-gray-300 font-body leading-relaxed text-base sm:text-lg mb-8">
-                        <strong>"We do it, we teach it"</strong> በሚለው መርሀችን መሰረት፣ እኛ ራሳችን የምንሰራውን የኢ-ኮሜርስ፣ የማርኬቲንግ እና የክሪፕቶ ስራዎችን ነው በተግባር የምናስተምረው። በተጨማሪም ኮርሶቻችን ሙሉ በሙሉ በ <strong class="notranslate">Tsehay AI</strong> የታገዙ ናቸው።
+                        <strong>"We do it, we teach it"</strong> በሚለው መርሀችን መሰረት፣ እኛ ራሳችን የምንሰራውን የኢ-ኮሜርስ፣ የማርኬቲንግ እና የክሪፕቶ ስራዎችን ነው በተግባር የምናስተምረው። በተጨማሪም ኮርሶቻችን ሙሉ በሙሉ በ <strong class="notranslate text-dark dark:text-white">Tsehay AI</strong> የታገዙ ናቸው።
                     </p>
                     <div class="grid grid-cols-3 gap-4">
                         <div class="border-l-4 border-primary pl-4">
@@ -589,17 +587,17 @@
                 </div>
             </div>
 
-            <!-- Bento Box Image Gallery -->
+            <!-- Bento Box Image Gallery - 💡 Direct Custom Links applied -->
             <div class="mb-20">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div class="rounded-3xl overflow-hidden shadow-xl group h-[350px]">
-                        <img src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=800&auto=format&fit=crop" class="w-full h-full object-cover group-hover:scale-105 transition duration-700" alt="Students">
+                        <img src="https://i.postimg.cc/CK0NBpHx/about-photo-3.jpg" class="w-full h-full object-cover group-hover:scale-105 transition duration-700" alt="Students" onerror="this.src='https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=800&auto=format&fit=crop'">
                     </div>
                     <div class="rounded-3xl overflow-hidden shadow-xl group h-[350px]">
-                        <img src="https://images.unsplash.com/photo-1517694712202-14dd9538aa97?q=80&w=800&auto=format&fit=crop" class="w-full h-full object-cover group-hover:scale-105 transition duration-700" alt="Tech">
+                        <img src="https://i.postimg.cc/Zq1yB8hw/about-photo-2.jpg" class="w-full h-full object-cover group-hover:scale-105 transition duration-700" alt="Tech" onerror="this.src='https://images.unsplash.com/photo-1517694712202-14dd9538aa97?q=80&w=800&auto=format&fit=crop'">
                     </div>
                     <div class="rounded-3xl overflow-hidden shadow-xl group h-[350px]">
-                        <img src="https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=800&auto=format&fit=crop" class="w-full h-full object-cover group-hover:scale-105 transition duration-700" alt="Team">
+                        <img src="https://i.postimg.cc/qvqt1bJK/about-photo-1.jpg" class="w-full h-full object-cover group-hover:scale-105 transition duration-700" alt="Team" onerror="this.src='https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=800&auto=format&fit=crop'">
                     </div>
                 </div>
             </div>
@@ -663,7 +661,7 @@
     </section>
 
     <!-- Courses List -->
-    <section id="courses" class="py-20 bg-gray-50 dark:bg-dark border-b border-gray-200 dark:border-gray-800 transition-colors duration-300">
+    <section id="courses" class="py-20 bg-gradient-to-b from-slate-50 to-blue-50/30 dark:from-darkCard dark:to-dark border-b border-gray-200 dark:border-gray-800 transition-colors duration-300">
         <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex flex-col items-center text-center mb-12 gap-4">
                 <div>
@@ -715,7 +713,7 @@
     </section>
 
     <!-- FAQ -->
-    <section id="faq" class="py-16 bg-blue-50/50 dark:bg-darkCard border-b border-gray-200 dark:border-gray-800 transition-colors duration-300">
+    <section id="faq" class="py-16 bg-slate-50 dark:bg-darkCard border-b border-gray-200 dark:border-gray-800 transition-colors duration-300">
         <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-10">
                 <h2 class="font-heading font-black text-3xl sm:text-4xl text-dark dark:text-white mb-3">ተደጋጋሚ ጥያቄዎች (FAQ)</h2>
@@ -798,7 +796,7 @@
                         <span class="font-heading font-black text-2xl text-white tracking-tight notranslate">Tsehay<span class="text-primary">Campus</span></span>
                     </div>
                     <p class="text-gray-400 text-sm leading-relaxed mb-6 max-w-sm">
-                        <span class="notranslate">Tsehay Campus</span> በ <b>Tsehay Digital</b> ስር የተመሰረተ ሲሆን በኢትዮጵያ ውስጥ በ AI የተደገፈ የመጀመሪያው የኦንላይን መማሪያ ፕላትፎርም ነው። አላማችን ወጣቶችን በተግባራዊ የቢዝነስ ክህሎት ማብቃት ነው።
+                        <span class="notranslate font-bold">Tsehay Campus</span> በ <b class="notranslate">Tsehay Digital</b> ስር የተመሰረተ ሲሆን በኢትዮጵያ ውስጥ በ AI የተደገፈ የመጀመሪያው የኦንላይን መማሪያ ፕላትፎርም ነው። አላማችን ወጣቶችን በተግባራዊ የቢዝነስ ክህሎት ማብቃት ነው።
                     </p>
                     <div class="flex gap-3">
                         <a href="https://t.me/tsehaycampus" target="_blank" class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-primary hover:text-dark transition-all transform hover:-translate-y-1"><i class="fa-brands fa-telegram text-lg"></i></a>
@@ -871,15 +869,16 @@
             }
         };
 
-        // 💡 ቋንቋ መቀየሪያ ሎጂክ 100% ተስተካክሏል (Google Translate Bug Fix)
+        // 💡 Google Translate Bug Fix - Instant reload with pure Amharic
         window.changeLanguage = function(lang) {
             localStorage.setItem('siteLang', lang);
             window.updateLangButtons(lang);
 
             if (lang === 'am') {
-                // Remove Google Translate cookie to strictly restore Amharic original DOM
+                // Remove Google Translate cookies to strictly restore Amharic original DOM
                 document.cookie = "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
                 document.cookie = "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=" + location.hostname + ";";
+                document.cookie = "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=." + location.hostname + ";";
                 window.location.reload();
             } else {
                 const selectField = document.querySelector(".goog-te-combo");
@@ -888,6 +887,7 @@
                     selectField.dispatchEvent(new Event("change"));
                 } else {
                     document.cookie = "googtrans=/am/" + lang + "; path=/";
+                    document.cookie = "googtrans=/am/" + lang + "; domain=." + location.hostname + "; path=/";
                     window.location.reload();
                 }
             }
@@ -1052,6 +1052,12 @@
         };
 
         document.addEventListener('DOMContentLoaded', () => {
+            // 💡 Default Dark Mode logic
+            if (!localStorage.theme) {
+                localStorage.theme = 'dark';
+                document.documentElement.classList.add('dark');
+            }
+            
             const isDark = document.documentElement.classList.contains('dark');
             const icon1 = document.getElementById('theme-icon');
             const icon2 = document.getElementById('mobile-theme-icon');
@@ -1306,21 +1312,20 @@
 
                 if (user && !user.isAnonymous) {
                     const name = user.displayName || "የካምፓስ ተማሪ";
-                    if (heroWelcome) heroWelcome.innerHTML = `ሰላም ${name}! 👋 <br> <span class="text-gradient">ትምህርትዎን ይቀጥሉ።</span>`;
+                    if (heroWelcome) heroWelcome.innerHTML = `ሰላም <span class="notranslate">${name}</span>! 👋 <br> <span class="text-gradient">ትምህርትዎን ይቀጥሉ።</span>`;
 
                     if (heroBtns) {
                         heroBtns.innerHTML = `
-                            <button onclick="document.getElementById('courses').scrollIntoView({behavior: 'smooth'})" class="bg-primary text-dark px-6 py-3.5 rounded-xl font-extrabold transition btn-glow flex items-center justify-center gap-3 text-base">
+                            <button onclick="document.getElementById('courses').scrollIntoView({behavior: 'smooth'})" class="bg-primary text-dark px-6 py-3.5 rounded-xl font-extrabold transition btn-glow flex items-center justify-center gap-3 text-base shadow-md">
                                 ወደ ሁሉም ኮርሶች <i class="fa-solid fa-arrow-right"></i>
                             </button>
-                            <button onclick="document.getElementById('about').scrollIntoView({behavior: 'smooth'})" class="bg-white/10 hover:bg-white/20 border border-white/30 text-white backdrop-blur-md px-6 py-3.5 rounded-xl font-bold transition flex items-center justify-center gap-3 text-base">
+                            <button onclick="document.getElementById('about').scrollIntoView({behavior: 'smooth'})" class="bg-white/10 hover:bg-white/20 border border-white/30 text-white backdrop-blur-md px-6 py-3.5 rounded-xl font-bold transition flex items-center justify-center gap-3 text-base shadow-sm">
                                 <i class="fa-solid fa-circle-play text-lg"></i> ስለ እኛ ይመልከቱ
                             </button>
                         `;
                     }
                     if (navAuthBtns) {
                         navAuthBtns.innerHTML = `
-                            <!-- Kan Yɛlɛma Hakili -->
                             <div class="hidden sm:flex items-center bg-gray-100 dark:bg-dark rounded-full p-1 shadow-sm shrink-0 border border-gray-200 dark:border-gray-800" id="custom-lang-toggle">
                                 <button onclick="window.changeLanguage('am')" id="btn-lang-am" class="px-2 py-0.5 rounded-full bg-white dark:bg-darkCard text-dark dark:text-white text-[10px] font-bold shadow-sm transition">AM</button>
                                 <button onclick="window.changeLanguage('en')" id="btn-lang-en" class="px-2 py-0.5 rounded-full text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white text-[10px] font-bold transition">EN</button>
@@ -1334,7 +1339,7 @@
                                 <i class="fa-solid fa-wand-magic-sparkles text-primary animate-pulse"></i> <span class="hidden lg:inline">Tsehay AI</span>
                             </a>
                             <div class="h-5 w-px bg-gray-300 dark:bg-gray-800 mx-0.5 lg:mx-1"></div>
-                            <span class="text-dark dark:text-white font-bold text-sm hidden lg:inline mx-2">${name}</span>
+                            <span class="text-dark dark:text-white font-bold text-sm hidden lg:inline mx-2 notranslate">${name}</span>
                             <button onclick="window.goToDashboard()" class="bg-primary text-dark px-4 lg:px-6 py-2 lg:py-2.5 rounded-lg font-bold hover:bg-secondary dark:hover:bg-yellow-400 transition shadow-md btn-glow whitespace-nowrap">ወደ ኮርሶች ገበያ</button>
                             <button onclick="window.logoutUser()" class="text-gray-400 hover:text-danger transition ml-2"><i class="fa-solid fa-power-off"></i></button>
                         `;
@@ -1344,17 +1349,16 @@
 
                     if (heroBtns) {
                         heroBtns.innerHTML = `
-                            <button onclick="document.getElementById('courses').scrollIntoView({behavior: 'smooth'})" class="bg-primary text-dark px-6 py-3.5 rounded-xl font-extrabold transition btn-glow flex items-center justify-center gap-3 text-base">
+                            <button onclick="document.getElementById('courses').scrollIntoView({behavior: 'smooth'})" class="bg-primary text-dark px-6 py-3.5 rounded-xl font-extrabold transition btn-glow flex items-center justify-center gap-3 text-base shadow-md">
                                 ኮርሶችን ያስሱ <i class="fa-solid fa-arrow-right"></i>
                             </button>
-                            <button onclick="document.getElementById('about').scrollIntoView({behavior: 'smooth'})" class="bg-white/10 hover:bg-white/20 border border-white/30 text-white backdrop-blur-md px-6 py-3.5 rounded-xl font-bold transition flex items-center justify-center gap-3 text-base">
+                            <button onclick="document.getElementById('about').scrollIntoView({behavior: 'smooth'})" class="bg-white/10 hover:bg-white/20 border border-white/30 text-white backdrop-blur-md px-6 py-3.5 rounded-xl font-bold transition flex items-center justify-center gap-3 text-base shadow-sm">
                                 <i class="fa-solid fa-circle-play text-lg"></i> ስለ እኛ ይመልከቱ
                             </button>
                         `;
                     }
                     if (navAuthBtns) {
                         navAuthBtns.innerHTML = `
-                            <!-- Kan Yɛlɛma Hakili -->
                             <div class="hidden sm:flex items-center bg-gray-100 dark:bg-dark rounded-full p-1 shadow-sm shrink-0 border border-gray-200 dark:border-gray-800" id="custom-lang-toggle">
                                 <button onclick="window.changeLanguage('am')" id="btn-lang-am" class="px-2 py-0.5 rounded-full bg-white dark:bg-darkCard text-dark dark:text-white text-[10px] font-bold shadow-sm transition">AM</button>
                                 <button onclick="window.changeLanguage('en')" id="btn-lang-en" class="px-2 py-0.5 rounded-full text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white text-[10px] font-bold transition">EN</button>
