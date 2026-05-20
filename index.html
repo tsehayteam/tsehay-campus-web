@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="am">
+<html lang="am" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,7 +12,7 @@
         } else {
             document.documentElement.classList.add('dark');
             localStorage.setItem('theme', 'dark'); // Force dark default
-        }
+        }a
     </script>
 
     <script src="https://cdn.tailwindcss.com"></script>
@@ -877,36 +877,35 @@
             window.updateLangButtons(lang);
 
             if (lang === 'am') {
-                // Ku sula tikhukhisi hinkwato ta Google Translate ku vuyisela ririmi ra Amharic ra ntiyiso
-                const domains = [location.hostname, '.' + location.hostname];
-                domains.forEach(d => {
-                    document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${d};`;
-                });
-                document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+                // Clear googtrans cookies vigorously
+                document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+                document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${location.hostname};`;
+                document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.${location.hostname};`;
                 
+                // Clear hash if present
                 if (window.location.hash.includes('#googtrans')) {
                     history.replaceState(null, null, window.location.pathname + window.location.search);
                 }
 
-                const selectField = document.querySelector(".goog-te-combo");
-                if (selectField) {
-                    selectField.value = '';
-                    selectField.dispatchEvent(new Event("change"));
-                }
-                
+                // Try to trigger Google Translate's built-in reset if the iframe exists
+                try {
+                    const iframe = document.querySelector('.goog-te-banner-frame');
+                    if (iframe) {
+                        const innerDoc = iframe.contentDocument || iframe.contentWindow.document;
+                        const restoreBtn = innerDoc.querySelector('button[id*="restore"]');
+                        if (restoreBtn) restoreBtn.click();
+                    }
+                } catch (e) {}
+
+                // Force page redirect to clear translation state completely
                 setTimeout(() => {
-                    window.location.reload();
-                }, 50);
+                    window.location.assign(window.location.pathname + window.location.search);
+                }, 100);
+                
             } else {
-                const selectField = document.querySelector(".goog-te-combo");
-                if (selectField) {
-                    selectField.value = lang;
-                    selectField.dispatchEvent(new Event("change"));
-                } else {
-                    document.cookie = `googtrans=/am/${lang}; path=/`;
-                    document.cookie = `googtrans=/am/${lang}; domain=.${location.hostname}; path=/`;
-                    window.location.reload();
-                }
+                document.cookie = `googtrans=/am/${lang}; path=/`;
+                document.cookie = `googtrans=/am/${lang}; domain=.${location.hostname}; path=/`;
+                window.location.reload();
             }
         };
 
