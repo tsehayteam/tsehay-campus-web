@@ -3,12 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<<<<<<< HEAD
     <title>ጥገና ላይ ነን - Tsehay Campus</title>
-=======
-    <title>Maintenance - Tsehay Campus</title>
+    
     <link rel="icon" type="image/jpeg" href="Campus Logo.jpg">
->>>>>>> d3cf810 (Added beautiful maintenance page with logo)
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
@@ -35,14 +33,11 @@
 </head>
 <body class="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
     
-    <!-- Background Glow Effects -->
     <div class="glow-effect top-[-10%] left-[-10%] animate-pulse" style="animation-duration: 4s;"></div>
     <div class="glow-effect glow-blue bottom-[-10%] right-[-10%] animate-pulse" style="animation-duration: 5s;"></div>
 
-    <!-- Main Card -->
     <div class="max-w-lg w-full bg-[#1e293b]/60 backdrop-blur-2xl border border-slate-700/50 p-8 md:p-12 rounded-[2.5rem] shadow-2xl text-center z-10 relative">
         
-        <!-- 💡 Icon/Logo Area (ተስተካክሏል) -->
         <div class="w-28 h-28 bg-white rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-[0_0_30px_rgba(255,255,255,0.1)] border border-slate-600 p-2 relative overflow-hidden group">
             <img src="Campus Logo.jpg" alt="Tsehay Campus Logo" class="w-full h-full object-contain rounded-2xl relative z-10" onerror="this.src='https://ui-avatars.com/api/?name=TC&background=0f172a&color=fff'">
         </div>
@@ -55,7 +50,6 @@
             Tsehay Campus ይበልጥ የተሻለ እና ፈጣን አገልግሎት እንዲሰጥዎ የማሻሻያ ስራዎች እየተከናወኑ ነው። በቅርቡ እንመለሳለን!
         </p>
 
-        <!-- Interactive Notify Form -->
         <div id="notify-section" class="space-y-4">
             <input type="text" id="userName" placeholder="ስምዎን ያስገቡ..." class="w-full bg-slate-900/80 border border-slate-700 rounded-xl p-4 text-white focus:outline-none focus:border-[#F9B03C] transition shadow-inner">
             
@@ -64,7 +58,6 @@
             </button>
         </div>
 
-        <!-- Success Message (Hidden by default) -->
         <div id="success-msg" class="hidden py-6 animate-[fadeIn_0.5s_ease-out]">
             <div class="w-16 h-16 bg-green-500/20 text-green-500 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
                 <i class="fa-solid fa-check-circle"></i>
@@ -73,7 +66,6 @@
             <p class="text-green-400 font-bold" id="thankYouText"></p>
         </div>
 
-        <!-- Contact Support Line -->
         <div class="mt-10 pt-8 border-t border-slate-700/50">
             <p class="text-xs text-slate-500 uppercase tracking-widest font-bold mb-3">ለድጋፍ እና ጥያቄ</p>
             <a href="tel:+251980209090" class="inline-block text-2xl md:text-3xl font-black text-white hover:text-[#F9B03C] transition-colors">
@@ -83,7 +75,6 @@
         </div>
     </div>
 
-    <!-- Logic Script -->
     <script>
         function handleNotify() {
             const nameInput = document.getElementById('userName');
@@ -95,7 +86,6 @@
                 return;
             }
             
-            // Hide form and show success message
             document.getElementById('notify-section').style.display = 'none';
             const successMsg = document.getElementById('success-msg');
             successMsg.classList.remove('hidden');
