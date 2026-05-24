@@ -1105,6 +1105,68 @@
             if(settingsPhotoBase64) settingsPhotoBase64.value = user.photoURL || '';
             
             loadUserData();
+            
+            getDoc(doc(db, 'artifacts', appId, 'users', userId, 'progress', 'main')).then(snap => {
+                if(snap.exists()) { totalPoints = snap.data().totalPoints || 0; window.updateProgressUI(); }
+            }).catch(e => console.error(e));
+
+            getDoc(doc(db, 'artifacts', appId, 'users', userId, 'chat_history', 'main')).then(snap => {
+                if(snap.exists()) {
+                    aiChatHistory = snap.data().messages || [];
+                    window.renderChatHistory();
+                }
+            }).catch(e => console.error(e));
+
+            // Load Courses first, THEN match enrollments to stop infinite loaders
+            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'courses'), async (snapshot) => {
+                allCourses = [];
+                snapshot.forEach(docSnap => {
+                    const c = { id: docSnap.id, ...docSnap.data() };
+                    if (c.status === 'Active') allCourses.push(c);
+                });
+                
+                try {
+                    const snap = await getDocs(collection(db, 'artifacts', appId, 'users', userId, 'enrollments'));
+                    window.userEnrollmentsData = snap.docs.map(d => ({id: d.id, ...d.data()})); 
+                    window.userEnrollments = window.userEnrollmentsData.map(d => d.id);
+                    
+                    const isPro = window.userEnrollmentsData.some(e => e.paymentType && e.paymentType !== 'Free');
+                    const roleDisplay = document.getElementById('user-role-display');
+                    if(roleDisplay) {
+                        if(isPro) {
+                            roleDisplay.innerHTML = '<i class="fa-solid fa-crown text-primary mr-1"></i> Pro Student';
+                            roleDisplay.className = "text-[11px] text-primary font-black truncate";
+                        } else {
+                            roleDisplay.innerHTML = 'Normal Student';
+                            roleDisplay.className = "text-[11px] text-gray-500 dark:text-gray-400 font-bold truncate";
+                        }
+                    }
+                    
+                    window.renderMyCoursesGrid();
+                    
+                    if (currentCourseId) {
+                        window.loadCourse(currentCourseId);
+                    } else if (window.userEnrollments.length > 0) {
+                        const firstValidCourse = window.userEnrollments.find(eId => allCourses.some(ac => ac.id === eId));
+                        if (firstValidCourse) {
+                            window.loadCourse(firstValidCourse);
+                        } else {
+                            window.showEmptyCourseState("ኮርሱ አይገኝም", "የተመዘገቡበት ኮርስ በአሁኑ ሰዓት አይገኝም (ተደብቆ ሊሆን ይችላል)።");
+                        }
+                    } else {
+                        window.showEmptyCourseState("እስካሁን የተመዘገቡበት ኮርስ የለም", "እባክዎ 'ተጨማሪ ኮርሶች' የሚለውን ተጭነው ኮርስ ይምረጡ።");
+                    }
+                } catch(err) {
+                    console.error("Enrollment fetch error", err);
+                    window.showEmptyCourseState("የዳታቤዝ ስህተት", "የኮርስ መረጃ ማምጣት አልተቻለም።");
+                } finally {
+                    hideLoader();
+                }
+            }, (error) => {
+                console.error("Courses fetch error", error);
+                window.showEmptyCourseState("የኮርስ ስህተት", "ኮርሶችን ማምጣት አልተቻለም።");
+                hideLoader();
+            });
         });
 
         window.saveProfile = async function() {
@@ -1359,68 +1421,6 @@
                     if(data.courseNotif !== undefined) document.getElementById('toggle-course-notif').checked = data.courseNotif;
                 }
             }).catch(e => console.error(e));
-
-            getDoc(doc(db, 'artifacts', appId, 'users', userId, 'progress', 'main')).then(snap => {
-                if(snap.exists()) { totalPoints = snap.data().totalPoints || 0; window.updateProgressUI(); }
-            }).catch(e => console.error(e));
-
-            getDoc(doc(db, 'artifacts', appId, 'users', userId, 'chat_history', 'main')).then(snap => {
-                if(snap.exists()) {
-                    aiChatHistory = snap.data().messages || [];
-                    window.renderChatHistory();
-                }
-            }).catch(e => console.error(e));
-
-            // Load Courses first, THEN match enrollments to stop infinite loaders
-            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'courses'), async (snapshot) => {
-                allCourses = [];
-                snapshot.forEach(docSnap => {
-                    const c = { id: docSnap.id, ...docSnap.data() };
-                    if (c.status === 'Active') allCourses.push(c);
-                });
-                
-                try {
-                    const snap = await getDocs(collection(db, 'artifacts', appId, 'users', userId, 'enrollments'));
-                    window.userEnrollmentsData = snap.docs.map(d => ({id: d.id, ...d.data()})); 
-                    window.userEnrollments = window.userEnrollmentsData.map(d => d.id);
-                    
-                    const isPro = window.userEnrollmentsData.some(e => e.paymentType && e.paymentType !== 'Free');
-                    const roleDisplay = document.getElementById('user-role-display');
-                    if(roleDisplay) {
-                        if(isPro) {
-                            roleDisplay.innerHTML = '<i class="fa-solid fa-crown text-primary mr-1"></i> Pro Student';
-                            roleDisplay.className = "text-[11px] text-primary font-black truncate";
-                        } else {
-                            roleDisplay.innerHTML = 'Normal Student';
-                            roleDisplay.className = "text-[11px] text-gray-500 dark:text-gray-400 font-bold truncate";
-                        }
-                    }
-                    
-                    window.renderMyCoursesGrid();
-                    
-                    if (currentCourseId) {
-                        window.loadCourse(currentCourseId);
-                    } else if (window.userEnrollments.length > 0) {
-                        const firstValidCourse = window.userEnrollments.find(eId => allCourses.some(ac => ac.id === eId));
-                        if (firstValidCourse) {
-                            window.loadCourse(firstValidCourse);
-                        } else {
-                            window.showEmptyCourseState("ኮርሱ አይገኝም", "የተመዘገቡበት ኮርስ በአሁኑ ሰዓት አይገኝም (ተደብቆ ሊሆን ይችላል)።");
-                        }
-                    } else {
-                        window.showEmptyCourseState("እስካሁን የተመዘገቡበት ኮርስ የለም", "እባክዎ 'ተጨማሪ ኮርሶች' የሚለውን ተጭነው ኮርስ ይምረጡ።");
-                    }
-                } catch(err) {
-                    console.error("Enrollment fetch error", err);
-                    window.showEmptyCourseState("የዳታቤዝ ስህተት", "የኮርስ መረጃ ማምጣት አልተቻለም።");
-                } finally {
-                    hideLoader();
-                }
-            }, (error) => {
-                console.error("Courses fetch error", error);
-                window.showEmptyCourseState("የኮርስ ስህተት", "ኮርሶችን ማምጣት አልተቻለም።");
-                hideLoader();
-            });
 
             onSnapshot(collection(db, 'artifacts', appId, 'users', userId, 'notes'), (snapshot) => {
                 const list = document.getElementById('saved-notes-list');
