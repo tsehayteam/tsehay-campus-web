@@ -958,6 +958,7 @@
         
         let allCourses = [];
         let systemNotifications = [];
+        let aiChatHistory = [];
 
         window.isQuizActive = false;
 
@@ -1054,6 +1055,22 @@
             renderNotifications();
             window.clearMessageBadge();
         }
+
+        window.renderChatHistory = function() {
+            let c = document.getElementById('chat-messages');
+            if(!c) return;
+            c.innerHTML = `<div class="self-start max-w-[85%] bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 p-3 rounded-2xl rounded-tl-none shadow-sm text-gray-700 dark:text-gray-200">
+                ሰላም! 👋 የ Tsehay Campus የ AI ረዳት ነኝ። ስለ አሁኑ ትምህርት ማንኛውም ጥያቄ ካለዎት ይጠይቁኝ!
+            </div>`;
+            aiChatHistory.forEach(msg => {
+                if (msg.role === 'user') {
+                    c.innerHTML += `<div class="self-end max-w-[85%] bg-primary text-dark font-medium p-3 rounded-2xl rounded-tr-none shadow-sm">${msg.text}</div>`;
+                } else {
+                    c.innerHTML += `<div class="self-start max-w-[85%] bg-white dark:bg-slate-800 p-3 rounded-2xl rounded-tl-none shadow-sm text-gray-800 dark:text-gray-200 text-[13px] leading-relaxed">${msg.text}</div>`;
+                }
+            });
+            c.scrollTop = c.scrollHeight;
+        };
 
         onAuthStateChanged(window.auth, (user) => {
             if (!user || user.isAnonymous) {
@@ -1347,6 +1364,13 @@
                 if(snap.exists()) { totalPoints = snap.data().totalPoints || 0; window.updateProgressUI(); }
             }).catch(e => console.error(e));
 
+            getDoc(doc(db, 'artifacts', appId, 'users', userId, 'chat_history', 'main')).then(snap => {
+                if(snap.exists()) {
+                    aiChatHistory = snap.data().messages || [];
+                    window.renderChatHistory();
+                }
+            }).catch(e => console.error(e));
+
             // Load Courses first, THEN match enrollments to stop infinite loaders
             onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'courses'), async (snapshot) => {
                 allCourses = [];
@@ -1587,8 +1611,10 @@
             window.isQuizActive = true;
 
             const prompt = `ለ "${currentCourseTitle}" ኮርስ 15 ጥያቄዎች ያሉት (Multiple Choice) ፈተና በአማርኛ አዘጋጅ። ኮርሱ የሚያተኩረው በዚህ ላይ ነው፦ ${currentCourseAiPrompt}።
+ጥያቄዎቹ በጣም ከባድ፣ ትክክለኛ እውቀትን የሚፈትኑ እና ከኮርሱ ዋና ይዘት ጋር ብቻ የተገናኙ መሆን አለባቸው። ስለ 'Tsehay Campus'፣ ስለ ድርጅቱ፣ ወይም ስለ አሰልጣኙ ምንም አይነት ጥያቄ እንዳታወጣ (Strict Rule)።
+እንዲሁም ትክክለኛው መልስ የሚገኝበት ቦታ (0, 1, 2 ወይ 3) በየጥያቄው የተለያየ እና ያልተጠበቀ መሆን አለበት (ምርጫዎቹን አዘበራርቃቸው)።
 እባክህ ምላሽህን በ JSON ፎርማት ብቻ ስጥ። ቅርፁ ይህን መምሰል አለበት፡
-[{"q": "ጥያቄ?","options": ["ሀ", "ለ", "ሐ", "መ"],"correct": 1}] (ማሳሰቢያ: correct 0, 1, 2 ወይ 3 ነው)`;
+[{"q": "ጥያቄ?","options": ["ምርጫ 1", "ምርጫ 2", "ምርጫ 3", "ምርጫ 4"],"correct": 1}] (ማሳሰቢያ: correct 0, 1, 2 ወይ 3 ነው)`;
             
             try {
                 let response = await callGemini(prompt, "ፕሮፌሽናል ፈተና አዘጋጅ ነህ። ንፁህ JSON ብቻ መልስ።");
@@ -1742,11 +1768,20 @@
             c.innerHTML += `<div id="${typingId}" class="self-start max-w-[85%] bg-white dark:bg-slate-800 p-3 rounded-2xl rounded-tl-none shadow-sm text-gray-800 dark:text-gray-200 text-[13px] leading-relaxed"><i class="fa-solid fa-spinner fa-spin"></i> Tsehay AI በማሰብ ላይ ነው...</div>`;
             c.scrollTop = c.scrollHeight;
 
-            let response = await callGemini(m, currentCourseAiPrompt);
+            aiChatHistory.push({ role: 'user', text: m });
+            let historyContext = aiChatHistory.slice(-8).map(x => (x.role === 'user' ? 'ተማሪ: ' : 'AI: ') + x.text).join('\n');
+            let fullPrompt = `ያለፈው የውይይት ታሪክ (Context):\n${historyContext}\n\nአሁን የተማሪው አዲስ ጥያቄ: ${m}\n\nከላይ ባለው ታሪክ መሰረት ለተማሪው አዲስ ጥያቄ ቀጥተኛ እና አጭር ምላሽ ስጥ።`;
+
+            let response = await callGemini(fullPrompt, currentCourseAiPrompt);
             const typingEl = document.getElementById(typingId); if(typingEl) typingEl.remove();
             
             c.innerHTML += `<div class="self-start max-w-[85%] bg-white dark:bg-slate-800 p-3 rounded-2xl rounded-tl-none shadow-sm text-gray-800 dark:text-gray-200 text-[13px] leading-relaxed">${response}</div>`;
             c.scrollTop = c.scrollHeight;
+
+            aiChatHistory.push({ role: 'ai', text: response });
+            if (userId) {
+                setDoc(doc(db, 'artifacts', appId, 'users', userId, 'chat_history', 'main'), { messages: aiChatHistory }, { merge: true }).catch(e => console.error(e));
+            }
         };
 
     </script>
