@@ -1349,11 +1349,12 @@ Primary language: Amharic (using Ethiopic script). Use English terms for technic
             };
 
             fetchPublicCourses();
-
             const initAuth = async () => {
                 try {
-                    await signInAnonymously(auth).catch(e=>{});
-                } catch (e) { console.error("Auth Error", e); }
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } 
+                } catch (err) { console.error("Auth init error:", err); }
             };
             initAuth();
 
