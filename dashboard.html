@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>የመማሪያ ክፍል - Tsehay Campus</title> 
-    <link rel="icon" type="image/jpeg" href="Campus Logo.jpg">
+    <title>የመማሪያ ክፍል - Tsehay Campus</title>
     
     <!-- Theme Check Script (To prevent screen flashing) -->
     <script>
@@ -273,12 +272,15 @@
             </div>
 
             <div class="flex items-center gap-3 sm:gap-5 shrink-0">
+                <!-- Additional Courses Button -->
                 <button onclick="window.safeRedirect('courses.html')" class="hidden md:flex text-sm font-bold text-secondary dark:text-primary bg-blue-50 dark:bg-slate-800 px-4 py-2 rounded-xl hover:bg-blue-100 dark:hover:bg-slate-700 transition items-center gap-2">
                     <i class="fa-solid fa-cart-shopping"></i> ተጨማሪ ኮርሶች
                 </button>
 
-                <div id="google_translate_element" class="hidden sm:block mt-1"></div>
-                
+                <!-- Google Translate Dropdown -->
+               <div id="google_translate_element" class="hidden sm:block mt-1"></div>
+               
+                <!-- Theme Switcher Button -->
                 <button onclick="window.toggleTheme()" class="w-9 h-9 rounded-full bg-gray-100 dark:bg-slate-700 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-slate-600 transition shadow-sm shrink-0">
                     <i id="theme-icon" class="fa-solid fa-moon text-slate-600 dark:text-yellow-400 text-sm"></i>
                 </button>
@@ -311,11 +313,13 @@
                         </div>
                     </div>
 
+                    <!-- MAIN GRID: Left Video/Tabs | Right Sidebar Progress -->
                     <div class="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-6 lg:gap-8">
                         
+                        <!-- Left Section -->
                         <div class="lg:col-span-2 xl:col-span-3 flex flex-col gap-6">
                             
-                            <!-- Cinematic Video Player (Secured Against Download & Right Click) -->
+                            <!-- Cinematic Video Player (Secured) -->
                             <div class="bg-dark rounded-2xl overflow-hidden shadow-2xl relative border border-gray-800" id="video-container">
                                 <div class="video-wrapper">
                                     <div class="absolute inset-0 flex flex-col items-center justify-center bg-gray-900 text-white z-0">
@@ -325,6 +329,7 @@
                                 </div>
                             </div>
 
+                            <!-- TABS CONTENT -->
                             <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden transition-colors duration-300">
                                 <div class="flex overflow-x-auto border-b border-gray-200 dark:border-slate-700 no-scrollbar bg-gray-50/50 dark:bg-slate-800/50 px-2 pt-2">
                                     <button class="tab-btn active px-6 py-4 font-heading text-[15px] text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white whitespace-nowrap transition-colors" onclick="window.switchTab(event, 'overview')">አጠቃላይ እይታ</button>
@@ -346,6 +351,7 @@
                                 
                                 <div class="p-6 sm:p-8">
                                     
+                                    <!-- Tab 1: Overview -->
                                     <div id="overview" class="tab-content active">
                                         <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8 pb-8 border-b border-gray-100 dark:border-slate-700">
                                             <div class="flex items-center gap-4">
@@ -375,63 +381,84 @@
                                         </div>
                                     </div>
 
+                                    <!-- Tab 2: Notes -->
                                     <div id="notes" class="tab-content">
-                                        <div class="flex justify-between items-center mb-6">
-                                            <h3 class="font-black text-xl text-dark dark:text-white font-heading">የግል ማስታወሻዎች</h3>
-                                        </div>
-                                        
-                                        <div class="border border-gray-200 dark:border-slate-600 rounded-xl overflow-hidden mb-6 shadow-sm focus-within:border-secondary dark:focus-within:border-primary transition">
-                                            <div class="bg-gray-50 dark:bg-slate-800 border-b border-gray-200 dark:border-slate-600 px-4 py-3 flex gap-4 text-gray-500 dark:text-gray-400 text-sm">
-                                                <button class="hover:text-dark dark:hover:text-white transition" title="Bold"><i class="fa-solid fa-bold"></i></button>
-                                                <button class="hover:text-dark dark:hover:text-white transition" title="Italic"><i class="fa-solid fa-italic"></i></button>
+                                        <!-- 💡 Added Wrapper for Locking -->
+                                        <div id="notes-main-area">
+                                            <div class="flex justify-between items-center mb-6">
+                                                <h3 class="font-black text-xl text-dark dark:text-white font-heading">የግል ማስታወሻዎች</h3>
                                             </div>
-                                            <textarea id="noteInput" class="w-full p-4 h-32 outline-none resize-none font-body text-[15px] text-dark dark:text-white placeholder-gray-400 bg-white dark:bg-slate-900" placeholder="በዚህ ቪዲዮ ላይ ያገኙትን ወሳኝ ነጥብ እዚህ ይመዝግቡ..."></textarea>
-                                        </div>
-                                        <div class="flex justify-end">
-                                            <button onclick="window.saveNote()" class="bg-dark dark:bg-primary text-white dark:text-dark px-8 py-2.5 rounded-lg font-bold shadow hover:bg-secondary dark:hover:bg-yellow-400 transition flex items-center gap-2">
-                                                <i class="fa-solid fa-cloud-arrow-up"></i> ሴቭ አድርግ
-                                            </button>
-                                        </div>
-                                        
-                                        <div class="mt-10 border-t border-gray-100 dark:border-slate-700 pt-8 space-y-4">
-                                            <h4 class="font-bold text-gray-400 dark:text-gray-500 text-sm uppercase tracking-wide mb-4">ከዚህ በፊት የተመዘገቡ ማስታወሻዎች</h4>
-                                            <div id="saved-notes-list" class="space-y-4">
-                                                <div class="text-center py-6"><i class="fa-solid fa-spinner fa-spin text-gray-300 dark:text-slate-600 text-2xl"></i></div>
+                                            
+                                            <div class="border border-gray-200 dark:border-slate-600 rounded-xl overflow-hidden mb-6 shadow-sm focus-within:border-secondary dark:focus-within:border-primary transition">
+                                                <div class="bg-gray-50 dark:bg-slate-800 border-b border-gray-200 dark:border-slate-600 px-4 py-3 flex gap-4 text-gray-500 dark:text-gray-400 text-sm">
+                                                    <button class="hover:text-dark dark:hover:text-white transition" title="Bold"><i class="fa-solid fa-bold"></i></button>
+                                                    <button class="hover:text-dark dark:hover:text-white transition" title="Italic"><i class="fa-solid fa-italic"></i></button>
+                                                </div>
+                                                <textarea id="noteInput" class="w-full p-4 h-32 outline-none resize-none font-body text-[15px] text-dark dark:text-white placeholder-gray-400 bg-white dark:bg-slate-900" placeholder="በዚህ ቪዲዮ ላይ ያገኙትን ወሳኝ ነጥብ እዚህ ይመዝግቡ..."></textarea>
                                             </div>
+                                            <div class="flex justify-end">
+                                                <button onclick="window.saveNote()" class="bg-dark dark:bg-primary text-white dark:text-dark px-8 py-2.5 rounded-lg font-bold shadow hover:bg-secondary dark:hover:bg-yellow-400 transition flex items-center gap-2">
+                                                    <i class="fa-solid fa-cloud-arrow-up"></i> ሴቭ አድርግ
+                                                </button>
+                                            </div>
+                                            
+                                            <div class="mt-10 border-t border-gray-100 dark:border-slate-700 pt-8 space-y-4">
+                                                <h4 class="font-bold text-gray-400 dark:text-gray-500 text-sm uppercase tracking-wide mb-4">ከዚህ በፊት የተመዘገቡ ማስታወሻዎች</h4>
+                                                <div id="saved-notes-list" class="space-y-4">
+                                                    <div class="text-center py-6"><i class="fa-solid fa-spinner fa-spin text-gray-300 dark:text-slate-600 text-2xl"></i></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <!-- 💡 Lock Screen for Notes -->
+                                        <div id="notes-lock-message" class="hidden flex-col items-center justify-center py-20 bg-red-50/50 dark:bg-red-900/10 rounded-2xl border border-red-100 dark:border-red-900/30">
+                                            <i class="fa-solid fa-lock text-6xl text-danger mb-4"></i>
+                                            <h3 class="text-xl font-black text-dark dark:text-white font-heading mb-2">ማስታወሻ ተቆልፏል!</h3>
+                                            <p class="text-gray-500 dark:text-gray-400 font-body text-center max-w-md">ፈተና ላይ ስለሆኑ ማስታወሻዎን ማየትም ሆነ አዲስ መፃፍ አይችሉም። እባክዎ መጀመሪያ ፈተናዎን ያጠናቅቁ።</p>
                                         </div>
                                     </div>
 
+                                    <!-- Tab 3: AI Assistant -->
                                     <div id="ai" class="tab-content">
-                                        <div class="bg-gradient-to-br from-blue-900 to-slate-900 dark:from-slate-800 dark:to-slate-900 rounded-2xl p-6 text-white mb-6 shadow-lg border border-blue-800/50">
-                                            <div class="flex items-center gap-4 mb-4">
-                                                <div class="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center border border-white/20">
-                                                    <i class="fa-solid fa-wand-magic-sparkles text-primary text-xl"></i>
+                                        <!-- 💡 Added Wrapper for Locking -->
+                                        <div id="ai-main-area">
+                                            <div class="bg-gradient-to-br from-blue-900 to-slate-900 dark:from-slate-800 dark:to-slate-900 rounded-2xl p-6 text-white mb-6 shadow-lg border border-blue-800/50">
+                                                <div class="flex items-center gap-4 mb-4">
+                                                    <div class="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center border border-white/20">
+                                                        <i class="fa-solid fa-wand-magic-sparkles text-primary text-xl"></i>
+                                                    </div>
+                                                    <div>
+                                                        <h3 class="font-black text-xl font-heading">Tsehay AI የኮርስ ረዳት</h3>
+                                                        <p class="text-sm text-blue-200">በሚማሩት ኮርስ ላይ ተመስርቶ ተግባራዊ ስራዎችን ለ AI ይስጡ!</p>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <h3 class="font-black text-xl font-heading">Tsehay AI የኮርስ ረዳት</h3>
-                                                    <p class="text-sm text-blue-200">በሚማሩት ኮርስ ላይ ተመስርቶ ተግባራዊ ስራዎችን ለ AI ይስጡ!</p>
+                                                
+                                                <div class="bg-white/10 border border-white/20 rounded-xl p-4 mt-4 backdrop-blur-sm">
+                                                    <label class="block font-bold text-white mb-2 text-sm">ምን እንዲሰራሎት ይፈልጋሉ?</label>
+                                                    <textarea id="ai-tool-input" class="w-full bg-white/95 dark:bg-slate-800 dark:text-white text-dark border-none rounded-lg p-3 outline-none focus:ring-2 focus:ring-primary mb-3" rows="2" placeholder="ለምሳሌ: በዚህ ኮርስ መሰረት ተግባራዊ እቅድ አውጣልኝ..."></textarea>
+                                                    <div class="flex flex-wrap gap-3">
+                                                        <button onclick="window.runDashboardTool('ይህንን መረጃ ተንትነህ ትክክለኛ ምላሽ ስጥ።')" class="bg-primary text-dark px-4 py-2.5 rounded-lg font-bold shadow hover:bg-yellow-400 transition text-sm flex items-center gap-2 w-full sm:w-auto justify-center">
+                                                            <i class="fa-solid fa-wand-magic-sparkles"></i> የ AI ትንታኔ አግኝ
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div id="ai-tool-result-container" class="mt-4 p-5 bg-white dark:bg-slate-800 text-dark dark:text-white rounded-xl hidden shadow-inner border-l-4 border-primary">
+                                                    <div id="ai-tool-spinner" class="hidden text-secondary dark:text-primary font-bold text-sm mb-2">
+                                                        <div class="ai-spinner border-secondary border-t-primary mr-2"></div> Tsehay AI በማሰብ ላይ ነው...
+                                                    </div>
+                                                    <div id="ai-tool-output" class="text-sm leading-relaxed font-body"></div>
                                                 </div>
                                             </div>
-                                            
-                                            <div class="bg-white/10 border border-white/20 rounded-xl p-4 mt-4 backdrop-blur-sm">
-                                                <label class="block font-bold text-white mb-2 text-sm">ምን እንዲሰራሎት ይፈልጋሉ?</label>
-                                                <textarea id="ai-tool-input" class="w-full bg-white/95 dark:bg-slate-800 dark:text-white text-dark border-none rounded-lg p-3 outline-none focus:ring-2 focus:ring-primary mb-3" rows="2" placeholder="ለምሳሌ: በዚህ ኮርስ መሰረት ተግባራዊ እቅድ አውጣልኝ..."></textarea>
-                                                <div class="flex flex-wrap gap-3">
-                                                    <button onclick="window.runDashboardTool('ይህንን መረጃ ተንትነህ ትክክለኛ ምላሽ ስጥ።')" class="bg-primary text-dark px-4 py-2.5 rounded-lg font-bold shadow hover:bg-yellow-400 transition text-sm flex items-center gap-2 w-full sm:w-auto justify-center">
-                                                        <i class="fa-solid fa-wand-magic-sparkles"></i> የ AI ትንታኔ አግኝ
-                                                    </button>
-                                                </div>
-                                            </div>
-                                            
-                                            <div id="ai-tool-result-container" class="mt-4 p-5 bg-white dark:bg-slate-800 text-dark dark:text-white rounded-xl hidden shadow-inner border-l-4 border-primary">
-                                                <div id="ai-tool-spinner" class="hidden text-secondary dark:text-primary font-bold text-sm mb-2">
-                                                    <div class="ai-spinner border-secondary border-t-primary mr-2"></div> Tsehay AI በማሰብ ላይ ነው...
-                                                </div>
-                                                <div id="ai-tool-output" class="text-sm leading-relaxed font-body"></div>
-                                            </div>
+                                        </div>
+                                        <!-- 💡 Lock Screen for AI Tab -->
+                                        <div id="ai-lock-message" class="hidden flex-col items-center justify-center py-20 bg-red-50/50 dark:bg-red-900/10 rounded-2xl border border-red-100 dark:border-red-900/30">
+                                            <i class="fa-solid fa-user-lock text-6xl text-danger mb-4"></i>
+                                            <h3 class="text-xl font-black text-dark dark:text-white font-heading mb-2">AI ረዳት ተቆልፏል!</h3>
+                                            <p class="text-gray-500 dark:text-gray-400 font-body text-center max-w-md">ፈተናዎን በራስዎ አቅም እንዲሰሩ የ AI ረዳቱ ለጊዜው ተዘግቷል። ፈተናውን ሲጨርሱ ይከፈታል።</p>
                                         </div>
                                     </div>
 
+                                    <!-- Tab 4: Q&A -->
                                     <div id="qa" class="tab-content">
                                         <div class="mb-6 bg-gray-50 dark:bg-slate-700 p-4 rounded-xl border border-gray-200 dark:border-slate-600">
                                             <h3 class="font-bold text-dark dark:text-white mb-3 text-sm"><i class="fa-solid fa-circle-question text-primary"></i> አዲስ ጥያቄ ይጠይቁ</h3>
@@ -451,12 +478,14 @@
                                         </div>
                                     </div>
 
+                                    <!-- Tab 5: QUIZ (AI GENERATED) -->
                                     <div id="quiz" class="tab-content">
                                         <div class="mb-6 border-b border-gray-100 dark:border-slate-700 pb-4">
                                             <h3 class="font-black text-2xl text-dark dark:text-white font-heading mb-2">የማጠቃለያ ፈተና (AI Generated)</h3>
-                                            <p class="text-gray-500 dark:text-gray-400 text-sm font-body">ሰርተፍኬትዎን ለመቀበል ቢያንስ 80% (12 ጥያቄዎችን) ማምጣት አለብዎት። ይህ ፈተና በ AI ነው የሚዘጋጀው።</p>
+                                            <p class="text-gray-500 dark:text-gray-400 text-sm font-body">ሰርተፍኬትዎን ለመቀበል ቢያንስ 80% ማምጣት አለብዎት። ይህ ፈተና በ AI ነው የሚዘጋጀው።</p>
                                         </div>
 
+                                        <!-- Setup / Start Area -->
                                         <div id="quiz-setup-area" class="text-center py-16 bg-gray-50 dark:bg-slate-700/50 rounded-2xl border border-gray-200 dark:border-slate-600">
                                             <div class="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
                                                 <i class="fa-solid fa-robot text-5xl text-primary animate-pulse"></i>
@@ -470,13 +499,14 @@
                                             
                                             <div id="quiz-loading" class="hidden flex-col items-center mt-4">
                                                 <div class="ai-spinner border-secondary border-t-primary mb-3 w-10 h-10 border-4"></div>
-                                                <p class="text-sm font-bold text-secondary dark:text-primary animate-pulse">15 ጥያቄዎችን በማዘጋጀት ላይ... (እባክዎ ይጠብቁ)</p>
+                                                <p class="text-sm font-bold text-secondary dark:text-primary animate-pulse">ጥያቄዎችን በማዘጋጀት ላይ... (እባክዎ ይጠብቁ)</p>
                                             </div>
                                         </div>
 
+                                        <!-- Quiz Question Container -->
                                         <div class="bg-gray-50 dark:bg-slate-700 p-6 sm:p-8 rounded-2xl border border-gray-200 dark:border-slate-600 hidden shadow-inner" id="quiz-container">
                                             <div id="dynamic-quiz-content" class="min-h-[200px]">
-                                                <!-- Quiz Content Generated Here -->
+                                                <!-- Dynamic Question Goes Here -->
                                             </div>
                                             
                                             <div class="flex justify-between items-center mt-8 border-t border-gray-200 dark:border-slate-600 pt-6">
@@ -490,6 +520,7 @@
                                             </div>
                                         </div>
                                         
+                                        <!-- Quiz Result Screen -->
                                         <div id="quiz-result-screen" class="hidden text-center p-8 border border-gray-200 dark:border-slate-700 rounded-2xl bg-white dark:bg-slate-800 shadow-sm">
                                             <div id="quiz-icon-result" class="w-24 h-24 rounded-full flex items-center justify-center text-4xl mx-auto mb-6"></div>
                                             <h3 id="quiz-score-title" class="text-3xl font-black font-heading mb-3 dark:text-white"></h3>
@@ -498,7 +529,7 @@
                                         </div>
                                     </div>
 
-                                    <!-- 💡 እዚህ ጋር ነው ሰርተፍኬቱ የተስተካከለው (እውነተኛ ፊርማ እና ማህተም ተገጥሟል) -->
+                                    <!-- Tab 6: CERTIFICATE -->
                                     <div id="certificate" class="tab-content">
                                         
                                         <div id="cert-locked" class="text-center py-16 bg-gray-50 dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-slate-700">
@@ -518,6 +549,7 @@
                                                 </button>
                                             </div>
 
+                                            <!-- The Actual Certificate Design -->
                                             <div id="certificate-print-area" class="w-full overflow-hidden flex justify-center bg-white p-4">
                                                 <div class="cert-container">
                                                     <div class="cert-inner">
@@ -549,7 +581,6 @@
                                                                 Has demonstrated outstanding proficiency and dedication in understanding the core concepts and practical applications of this course.
                                                             </p>
                                                             
-                                                            <!-- 💡 አዲስ የተገጠመው እውነተኛ ማህተም እና ፊርማ -->
                                                             <div class="flex justify-between items-end px-12 mt-8 relative">
                                                                 <div class="text-center z-20">
                                                                     <p id="cert-date" class="font-bold text-dark font-serif text-lg border-b border-black pb-1 px-4 inline-block">April 26, 2026</p>
@@ -570,7 +601,6 @@
                                                                     <p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Founder & Lead Instructor</p>
                                                                 </div>
                                                             </div>
-
                                                         </div>
                                                     </div>
                                                 </div>
@@ -582,6 +612,7 @@
                             </div>
                         </div>
 
+                        <!-- RIGHT SIDEBAR (PROGRESS & LESSONS) -->
                         <div class="lg:col-span-1 xl:col-span-1">
                             <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-200 dark:border-slate-700 flex flex-col h-full lg:h-[calc(100vh-160px)] lg:sticky lg:top-4 overflow-hidden transition-colors duration-300">
                                 
@@ -596,6 +627,7 @@
                                     </div>
                                 </div>
 
+                                <!-- Dynamic Lessons will be injected here -->
                                 <div class="flex-1 overflow-y-auto no-scrollbar pb-4" id="dynamic-lessons-container">
                                     <div class="p-6 text-center text-gray-400">
                                         <i class="fa-solid fa-spinner fa-spin"></i> ትምህርቶችን በማምጣት ላይ...
@@ -607,6 +639,7 @@
                     </div>
                 </div>
 
+                <!-- VIEW 2: MY COURSES VIEW -->
                 <div id="my-courses-view" class="main-view hidden w-full">
                     <h2 class="text-2xl font-black mb-6 text-dark dark:text-white font-heading">የኔ ኮርሶች</h2>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="my-courses-container">
@@ -614,6 +647,7 @@
                     </div>
                 </div>
 
+                <!-- VIEW 3: MESSAGES VIEW -->
                 <div id="messages-view" class="main-view hidden w-full max-w-4xl mx-auto">
                     <div class="flex justify-between items-center mb-6">
                         <h2 class="text-2xl font-black text-dark dark:text-white font-heading">መልዕክቶች (Notifications)</h2>
@@ -624,10 +658,12 @@
                     </div>
                 </div>
 
+                <!-- VIEW 4: SETTINGS VIEW -->
                 <div id="settings-view" class="main-view hidden w-full max-w-4xl mx-auto">
                     <h2 class="text-2xl font-black mb-6 text-dark dark:text-white font-heading">መቼት (Settings)</h2>
                     
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <!-- Profile Settings -->
                         <div class="md:col-span-2 space-y-6">
                             <div class="bg-white dark:bg-slate-800 rounded-3xl p-6 md:p-8 shadow-sm border border-gray-200 dark:border-slate-700">
                                 <h3 class="text-lg font-bold mb-6 text-dark dark:text-white border-b border-gray-100 dark:border-slate-700 pb-3"><i class="fa-solid fa-user-pen text-secondary dark:text-primary mr-2"></i> የግል መረጃ ማስተካከያ</h3>
@@ -639,6 +675,7 @@
                                             <i class="fa-solid fa-camera"></i> ቀይር
                                         </div>
                                     </div>
+                                    <!-- Hidden File Input for Real Upload -->
                                     <input type="file" id="profile-upload-input" accept="image/*" class="hidden" onchange="window.handleImageUpload(event)">
                                     <input type="hidden" id="settings-photo-base64" value="">
                                     
@@ -677,6 +714,7 @@
                                 </div>
                             </div>
                             
+                            <!-- Password Change -->
                             <div class="bg-white dark:bg-slate-800 rounded-3xl p-6 md:p-8 shadow-sm border border-gray-200 dark:border-slate-700">
                                 <h3 class="text-lg font-bold mb-6 text-danger border-b border-gray-100 dark:border-slate-700 pb-3"><i class="fa-solid fa-shield-halved mr-2"></i> የይለፍ ቃል (Password) መለወጫ</h3>
                                 
@@ -701,6 +739,7 @@
                             </div>
                         </div>
                         
+                        <!-- Side Settings (Preferences) -->
                         <div class="space-y-6">
                             <div class="bg-white dark:bg-slate-800 rounded-3xl p-6 shadow-sm border border-gray-200 dark:border-slate-700">
                                 <h3 class="text-base font-bold mb-4 text-dark dark:text-white border-b border-gray-100 dark:border-slate-700 pb-2"><i class="fa-solid fa-envelope-open-text text-secondary dark:text-primary mr-2"></i> አካውንት መረጃ</h3>
@@ -744,6 +783,7 @@
         </main>
     </div>
 
+    <!-- AI Chatbot Button & Widget (Bottom Right) -->
     <div id="ai-widget" class="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 w-[calc(100vw-2rem)] sm:w-96 max-h-[85vh] bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-slate-700 flex flex-col overflow-hidden z-[9999] transform translate-y-full opacity-0 transition-all duration-500 ease-out">
         <div class="bg-gradient-to-r from-secondary to-blue-800 p-4 text-white flex justify-between items-center shadow-md shrink-0">
             <div class="flex items-center gap-3">
@@ -756,27 +796,74 @@
             <button onclick="document.getElementById('ai-widget').classList.add('translate-y-full', 'opacity-0');" class="text-white/70 hover:text-white transition"><i class="fa-solid fa-xmark text-lg"></i></button>
         </div>
         
-        <div id="chat-messages" class="flex-1 h-[60vh] sm:h-80 overflow-y-auto p-4 bg-gray-50 dark:bg-slate-900 flex flex-col gap-3 font-body text-sm">
-            <div class="self-start max-w-[85%] bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 p-3 rounded-2xl rounded-tl-none shadow-sm text-gray-700 dark:text-gray-200">
-                ሰላም! 👋 የ Tsehay Campus የ AI ረዳት ነኝ። ስለ አሁኑ ትምህርት ማንኛውም ጥያቄ ካለዎት ይጠይቁኝ!
+        <!-- 💡 Added Lock Feature Wrapper inside AI Widget -->
+        <div id="ai-widget-main-area" class="flex-1 flex flex-col min-h-0">
+            <div id="chat-messages" class="flex-1 h-[60vh] sm:h-80 overflow-y-auto p-4 bg-gray-50 dark:bg-slate-900 flex flex-col gap-3 font-body text-sm">
+                <div class="self-start max-w-[85%] bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 p-3 rounded-2xl rounded-tl-none shadow-sm text-gray-700 dark:text-gray-200">
+                    ሰላም! 👋 የ Tsehay Campus የ AI ረዳት ነኝ። ስለ አሁኑ ትምህርት ማንኛውም ጥያቄ ካለዎት ይጠይቁኝ!
+                </div>
+            </div>
+            
+            <div id="chat-input-area" class="p-3 bg-white dark:bg-slate-800 border-t border-gray-100 dark:border-slate-700 shrink-0">
+                <div class="relative flex items-center">
+                    <input type="text" id="chat-input" placeholder="ጥያቄዎን ይፃፉ..." class="w-full bg-gray-100 dark:bg-slate-700 dark:text-white border-none rounded-full py-3 pl-4 pr-12 text-sm focus:ring-2 focus:ring-secondary/30 outline-none transition" onkeypress="if(event.key === 'Enter') window.sendChatMessage()">
+                    <button onclick="window.sendChatMessage()" class="absolute right-1 w-9 h-9 bg-secondary text-white rounded-full flex items-center justify-center hover:bg-primary transition shadow-md">
+                        <i class="fa-solid fa-paper-plane text-xs"></i>
+                    </button>
+                </div>
             </div>
         </div>
-        
-        <div class="p-3 bg-white dark:bg-slate-800 border-t border-gray-100 dark:border-slate-700 shrink-0">
-            <div class="relative flex items-center">
-                <input type="text" id="chat-input" placeholder="ጥያቄዎን ይፃፉ..." class="w-full bg-gray-100 dark:bg-slate-700 dark:text-white border-none rounded-full py-3 pl-4 pr-12 text-sm focus:ring-2 focus:ring-secondary/30 outline-none transition" onkeypress="if(event.key === 'Enter') window.sendChatMessage()">
-                <button onclick="window.sendChatMessage()" class="absolute right-1 w-9 h-9 bg-secondary text-white rounded-full flex items-center justify-center hover:bg-primary transition shadow-md">
-                    <i class="fa-solid fa-paper-plane text-xs"></i>
-                </button>
-            </div>
+
+        <!-- 💡 AI Widget Lock Message -->
+        <div id="ai-widget-lock" class="hidden flex-1 flex-col items-center justify-center p-6 text-center bg-gray-50 dark:bg-slate-900">
+             <i class="fa-solid fa-lock text-5xl text-danger mb-4"></i>
+             <h3 class="text-lg font-black text-dark dark:text-white mb-2">AI ተቆልፏል!</h3>
+             <p class="text-xs text-gray-500 mt-2 leading-relaxed">ፈተናዎን እስኪጨርሱ ድረስ AI መጠቀምም ሆነ ያለፉ ንግግሮችን ማየት አይችሉም።</p>
         </div>
     </div>
 
+    <!-- Chatbot trigger button -->
     <button onclick="document.getElementById('ai-widget').classList.remove('translate-y-full', 'opacity-0');" class="fixed bottom-6 right-6 w-14 h-14 bg-primary text-dark rounded-full shadow-[0_10px_25px_rgba(249,176,60,0.5)] flex items-center justify-center text-2xl hover:scale-110 transition duration-300 z-40 border-2 border-white dark:border-slate-800">
         <i class="fa-solid fa-robot animate-pulse"></i>
     </button>
 
+    <!-- UI Logic Scripts -->
     <script>
+        // 💡 Cheat Lock Function added here
+        window.toggleCheatLock = function(isLocked) {
+            if (isLocked) {
+                // Lock Notes
+                document.getElementById('notes-main-area').classList.add('hidden');
+                document.getElementById('notes-lock-message').classList.remove('hidden');
+                document.getElementById('notes-lock-message').classList.add('flex');
+                
+                // Lock AI Tab
+                document.getElementById('ai-main-area').classList.add('hidden');
+                document.getElementById('ai-lock-message').classList.remove('hidden');
+                document.getElementById('ai-lock-message').classList.add('flex');
+                
+                // Lock AI Widget
+                document.getElementById('ai-widget-main-area').classList.add('hidden');
+                document.getElementById('ai-widget-lock').classList.remove('hidden');
+                document.getElementById('ai-widget-lock').classList.add('flex');
+            } else {
+                // Unlock Notes
+                document.getElementById('notes-main-area').classList.remove('hidden');
+                document.getElementById('notes-lock-message').classList.add('hidden');
+                document.getElementById('notes-lock-message').classList.remove('flex');
+                
+                // Unlock AI Tab
+                document.getElementById('ai-main-area').classList.remove('hidden');
+                document.getElementById('ai-lock-message').classList.add('hidden');
+                document.getElementById('ai-lock-message').classList.remove('flex');
+                
+                // Unlock AI Widget
+                document.getElementById('ai-widget-main-area').classList.remove('hidden');
+                document.getElementById('ai-widget-lock').classList.add('hidden');
+                document.getElementById('ai-widget-lock').classList.remove('flex');
+            }
+        };
+
         window.switchTab = function(evt, tabName) {
             let tc = document.getElementsByClassName("tab-content");
             for (let i = 0; i < tc.length; i++) tc[i].classList.remove("active");
@@ -819,12 +906,14 @@
             }
         };
 
+        // Real Download Logic for Course Syllabus/Materials
         window.downloadSyllabus = function(title, desc) {
             window.showCloudSaveToast('ፋይሉን ዳውንሎድ በማድረግ ላይ...');
             
             const cleanTitle = decodeURIComponent(title);
             const cleanDesc = decodeURIComponent(desc);
             
+            // Generate a simple professional PDF-like text blob
             const content = `============================================\n`
                           + `               TSEHAY CAMPUS                \n`
                           + `============================================\n\n`
@@ -845,6 +934,7 @@
             document.body.appendChild(a);
             a.click();
             
+            // Clean up
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
             
@@ -853,6 +943,7 @@
             }, 1000);
         };
 
+        // Profile Image Real Upload (Base64 Compression)
         window.triggerImageUpload = function() {
             document.getElementById('profile-upload-input').click();
         };
@@ -889,18 +980,19 @@
         };
     </script>
     
+    <!-- Google Translate Script -->
     <script>
-        window.googleTranslateElementInit = function() {
+        function googleTranslateElementInit() {
             new google.translate.TranslateElement({
                 pageLanguage: 'am',
                 includedLanguages: 'am,en,om,ti,ar,zh-CN,so,fr,es',
                 autoDisplay: false
             }, 'google_translate_element');
-        };
+        }
     </script>
-    <script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit">
-    </script>
+    <script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
 
+    <!-- Firebase & Application Integration -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut, updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential, sendPasswordResetEmail, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -954,12 +1046,9 @@
         let userId = null;
         let userName = "ተማሪ";
         let currentCourseTitle = "ኮርስ";
-        
-        let currentCourseAiPrompt = "አንተ 'Tsehay AI' የተባልክ የቢዝነስ እና የትምህርት ረዳት ነህ። አጭር፣ ግልፅ እና አበረታች በሆነ አማርኛ መልስ ስጥ። አሰልቺ የሆነ ረጅም ፅሁፍ አታቅርብ። ነጥቦችን ለመዘርዘር የኮከብ (*) ምልክት ፈፅሞ አትጠቀም፤ በምትኩ አሪፍ ኢሞጂዎችን (ለምሳሌ፡ 👉, ✅, 💡) ተጠቀም። ማሳሰቢያ፡ ተማሪዎች የፈተና (Quiz) ጥያቄዎችን ካመጡልህ የፈተናውን መልስ ፈፅሞ እንዳትነግራቸው! 'ይህ የፈተና ጥያቄ ስለሆነ እራስዎ ቢሞክሩት የተሻለ ነው' በማለት በትህትና መልስ።";
-        
+        let currentCourseAiPrompt = "አንተ 'Tsehay Ai' የተባልክ የቢዝነስ ረዳት ነህ። አጠር እና ግልፅ አድርገህ በአማርኛ መልስ ስጥ።";
         let allCourses = [];
         let systemNotifications = [];
-        let aiChatHistory = [];
 
         window.isQuizActive = false;
 
@@ -981,7 +1070,7 @@
             return url;
         }
 
-        async function callGemini(prompt, systemInstruction) {
+       async function callGemini(prompt, systemInstruction) {
             try {
                 const response = await fetch('/api/chat', { 
                     method: 'POST', 
@@ -1005,6 +1094,7 @@
             }
         }
 
+        // --- Toasts & Notifications ---
         window.showCloudSaveToast = function(msg = 'ወደ ዳታቤዝ ሴቭ ተደርጓል!', isError = false) {
             const toast = document.getElementById("toast");
             if(!toast) return;
@@ -1057,22 +1147,7 @@
             window.clearMessageBadge();
         }
 
-        window.renderChatHistory = function() {
-            let c = document.getElementById('chat-messages');
-            if(!c) return;
-            c.innerHTML = `<div class="self-start max-w-[85%] bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 p-3 rounded-2xl rounded-tl-none shadow-sm text-gray-700 dark:text-gray-200">
-                ሰላም! 👋 የ Tsehay Campus የ AI ረዳት ነኝ። ስለ አሁኑ ትምህርት ማንኛውም ጥያቄ ካለዎት ይጠይቁኝ!
-            </div>`;
-            aiChatHistory.forEach(msg => {
-                if (msg.role === 'user') {
-                    c.innerHTML += `<div class="self-end max-w-[85%] bg-primary text-dark font-medium p-3 rounded-2xl rounded-tr-none shadow-sm">${msg.text}</div>`;
-                } else {
-                    c.innerHTML += `<div class="self-start max-w-[85%] bg-white dark:bg-slate-800 p-3 rounded-2xl rounded-tl-none shadow-sm text-gray-800 dark:text-gray-200 text-[13px] leading-relaxed">${msg.text}</div>`;
-                }
-            });
-            c.scrollTop = c.scrollHeight;
-        };
-
+        // Firebase Auth State
         onAuthStateChanged(window.auth, (user) => {
             if (!user || user.isAnonymous) {
                 window.safeRedirect('index.html');
@@ -1106,68 +1181,6 @@
             if(settingsPhotoBase64) settingsPhotoBase64.value = user.photoURL || '';
             
             loadUserData();
-            
-            getDoc(doc(db, 'artifacts', appId, 'users', userId, 'progress', 'main')).then(snap => {
-                if(snap.exists()) { totalPoints = snap.data().totalPoints || 0; window.updateProgressUI(); }
-            }).catch(e => console.error(e));
-
-            getDoc(doc(db, 'artifacts', appId, 'users', userId, 'chat_history', 'main')).then(snap => {
-                if(snap.exists()) {
-                    aiChatHistory = snap.data().messages || [];
-                    window.renderChatHistory();
-                }
-            }).catch(e => console.error(e));
-
-            // Load Courses first, THEN match enrollments to stop infinite loaders
-            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'courses'), async (snapshot) => {
-                allCourses = [];
-                snapshot.forEach(docSnap => {
-                    const c = { id: docSnap.id, ...docSnap.data() };
-                    if (c.status === 'Active') allCourses.push(c);
-                });
-                
-                try {
-                    const snap = await getDocs(collection(db, 'artifacts', appId, 'users', userId, 'enrollments'));
-                    window.userEnrollmentsData = snap.docs.map(d => ({id: d.id, ...d.data()})); 
-                    window.userEnrollments = window.userEnrollmentsData.map(d => d.id);
-                    
-                    const isPro = window.userEnrollmentsData.some(e => e.paymentType && e.paymentType !== 'Free');
-                    const roleDisplay = document.getElementById('user-role-display');
-                    if(roleDisplay) {
-                        if(isPro) {
-                            roleDisplay.innerHTML = '<i class="fa-solid fa-crown text-primary mr-1"></i> Pro Student';
-                            roleDisplay.className = "text-[11px] text-primary font-black truncate";
-                        } else {
-                            roleDisplay.innerHTML = 'Normal Student';
-                            roleDisplay.className = "text-[11px] text-gray-500 dark:text-gray-400 font-bold truncate";
-                        }
-                    }
-                    
-                    window.renderMyCoursesGrid();
-                    
-                    if (currentCourseId) {
-                        window.loadCourse(currentCourseId);
-                    } else if (window.userEnrollments.length > 0) {
-                        const firstValidCourse = window.userEnrollments.find(eId => allCourses.some(ac => ac.id === eId));
-                        if (firstValidCourse) {
-                            window.loadCourse(firstValidCourse);
-                        } else {
-                            window.showEmptyCourseState("ኮርሱ አይገኝም", "የተመዘገቡበት ኮርስ በአሁኑ ሰዓት አይገኝም (ተደብቆ ሊሆን ይችላል)።");
-                        }
-                    } else {
-                        window.showEmptyCourseState("እስካሁን የተመዘገቡበት ኮርስ የለም", "እባክዎ 'ተጨማሪ ኮርሶች' የሚለውን ተጭነው ኮርስ ይምረጡ።");
-                    }
-                } catch(err) {
-                    console.error("Enrollment fetch error", err);
-                    window.showEmptyCourseState("የዳታቤዝ ስህተት", "የኮርስ መረጃ ማምጣት አልተቻለም።");
-                } finally {
-                    hideLoader();
-                }
-            }, (error) => {
-                console.error("Courses fetch error", error);
-                window.showEmptyCourseState("የኮርስ ስህተት", "ኮርሶችን ማምጣት አልተቻለም።");
-                hideLoader();
-            });
         });
 
         window.saveProfile = async function() {
@@ -1273,7 +1286,7 @@
             if(finalVideoUrl) {
                 videoContainer.innerHTML = `
                 <div class="video-wrapper relative" oncontextmenu="return false;">
-                    <iframe src="${finalVideoUrl}" allowfullscreen class="w-full h-full pointer-events-auto border-none"></iframe>
+                    <iframe src="${finalVideoUrl}" allowfullscreen class="w-full h-full pointer-events-auto"></iframe>
                     <div class="absolute top-0 left-0 w-full h-20 z-[50] bg-transparent cursor-default" onmousedown="return false;" onclick="return false;" title="Protected Content"></div>
                 </div>`;
             } else {
@@ -1299,7 +1312,7 @@
                 
                 videoContainer.innerHTML = `
                 <div class="video-wrapper relative" oncontextmenu="return false;">
-                    <iframe src="${finalVideoUrl}" allowfullscreen class="w-full h-full pointer-events-auto border-none"></iframe>
+                    <iframe src="${finalVideoUrl}" allowfullscreen class="w-full h-full pointer-events-auto"></iframe>
                     <div class="absolute top-0 left-0 w-full h-20 z-[50] bg-transparent cursor-default" onmousedown="return false;" onclick="return false;" title="Protected Content"></div>
                 </div>`;
             }
@@ -1381,25 +1394,18 @@
             window.updateProgressUI();
         }
 
-        window.showEmptyCourseState = function(titleText = "ኮርስ አልመረጡም", subtitleText = "እባክዎ 'ተጨማሪ ኮርሶች' የሚለውን ተጭነው ኮርስ ይምረጡ።") {
-            const titleEl = document.getElementById('dynamic-course-title');
-            const subEl = document.getElementById('dynamic-course-subtitle');
-            if(titleEl) titleEl.innerText = titleText;
-            if(subEl) subEl.innerText = subtitleText;
-            
+        function showEmptyCourseState() {
+            document.getElementById('dynamic-course-title').innerText = "ኮርስ አልመረጡም";
+            document.getElementById('dynamic-course-subtitle').innerText = "እባክዎ 'ተጨማሪ ኮርሶች' የሚለውን ተጭነው ኮርስ ይምረጡ።";
             const vc = document.getElementById('video-container');
-            if(vc) vc.innerHTML = `<div class="video-wrapper"><div class="absolute inset-0 flex flex-col items-center justify-center bg-gray-900 text-white"><i class="fa-solid fa-folder-open text-4xl mb-3 text-gray-600"></i><p class="font-bold text-gray-400">${titleText}</p></div></div>`;
+            if(vc) vc.innerHTML = `<div class="video-wrapper"><div class="absolute inset-0 flex flex-col items-center justify-center bg-gray-900 text-white"><i class="fa-solid fa-folder-open text-4xl mb-3 text-gray-600"></i><p class="font-bold">ምንም ኮርስ አልተመዘገቡም</p></div></div>`;
             
-            const lc = document.getElementById('dynamic-lessons-container');
-            if(lc) lc.innerHTML = `<div class="p-6 text-center text-gray-400 font-bold">ምንም የትምህርት ክፍል የለም</div>`;
-            
-            const pPercentEl = document.getElementById('progress-percent');
-            if(pPercentEl) pPercentEl.innerText = '0%';
-            const pBarInner = document.getElementById('progress-bar-inner');
-            if(pBarInner) pBarInner.style.width = '0%';
-
-            hideLoader();
-        };
+            const loader = document.getElementById('screen-loader');
+            if(loader) {
+                loader.style.opacity = '0';
+                setTimeout(() => loader.style.display = 'none', 300);
+            }
+        }
 
         function loadUserData() {
             if (!userId) return;
@@ -1422,6 +1428,56 @@
                     if(data.courseNotif !== undefined) document.getElementById('toggle-course-notif').checked = data.courseNotif;
                 }
             }).catch(e => console.error(e));
+
+            getDoc(doc(db, 'artifacts', appId, 'users', userId, 'progress', 'main')).then(snap => {
+                if(snap.exists()) { totalPoints = snap.data().totalPoints || 0; window.updateProgressUI(); }
+            }).catch(e => console.error(e));
+
+            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'courses'), (snapshot) => {
+                allCourses = [];
+                snapshot.forEach(docSnap => {
+                    const c = { id: docSnap.id, ...docSnap.data() };
+                    if (c.status === 'Active') allCourses.push(c);
+                });
+                
+                getDocs(collection(db, 'artifacts', appId, 'users', userId, 'enrollments')).then(snap => {
+                    window.userEnrollmentsData = snap.docs.map(d => ({id: d.id, ...d.data()})); 
+                    window.userEnrollments = window.userEnrollmentsData.map(d => d.id);
+                    
+                    const isPro = window.userEnrollmentsData.some(e => e.paymentType && e.paymentType !== 'Free');
+                    const roleDisplay = document.getElementById('user-role-display');
+                    if(roleDisplay) {
+                        if(isPro) {
+                            roleDisplay.innerHTML = '<i class="fa-solid fa-crown text-primary mr-1"></i> Pro Student';
+                            roleDisplay.className = "text-[11px] text-primary font-black truncate";
+                        } else {
+                            roleDisplay.innerHTML = 'Normal Student';
+                            roleDisplay.className = "text-[11px] text-gray-500 dark:text-gray-400 font-bold truncate";
+                        }
+                    }
+                    
+                    window.renderMyCoursesGrid();
+                    
+                    if (currentCourseId) {
+                        window.loadCourse(currentCourseId);
+                    } else if (window.userEnrollments.length > 0) {
+                        const firstValidCourse = window.userEnrollments.find(eId => allCourses.some(ac => ac.id === eId));
+                        if (firstValidCourse) {
+                            window.loadCourse(firstValidCourse);
+                        } else {
+                            showEmptyCourseState();
+                        }
+                    } else {
+                        showEmptyCourseState();
+                    }
+
+                    const loader = document.getElementById('screen-loader');
+                    if(loader) {
+                        loader.style.opacity = '0';
+                        setTimeout(() => loader.style.display = 'none', 300);
+                    }
+                });
+            }, (error) => console.error(error));
 
             onSnapshot(collection(db, 'artifacts', appId, 'users', userId, 'notes'), (snapshot) => {
                 const list = document.getElementById('saved-notes-list');
@@ -1454,7 +1510,6 @@
                 }
             });
 
-            // 💡 STRICT Q&A FILTERING FOR STUDENTS (Private Database View)
             let isInitialQALoad = true;
             onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'qa'), (snapshot) => {
                 const list = document.getElementById('qa-list');
@@ -1610,12 +1665,11 @@
             loading.classList.add('flex');
 
             window.isQuizActive = true;
+            if(window.toggleCheatLock) window.toggleCheatLock(true);
 
             const prompt = `ለ "${currentCourseTitle}" ኮርስ 15 ጥያቄዎች ያሉት (Multiple Choice) ፈተና በአማርኛ አዘጋጅ። ኮርሱ የሚያተኩረው በዚህ ላይ ነው፦ ${currentCourseAiPrompt}።
-ጥያቄዎቹ በጣም ከባድ፣ ትክክለኛ እውቀትን የሚፈትኑ እና ከኮርሱ ዋና ይዘት ጋር ብቻ የተገናኙ መሆን አለባቸው። ስለ 'Tsehay Campus'፣ ስለ ድርጅቱ፣ ወይም ስለ አሰልጣኙ ምንም አይነት ጥያቄ እንዳታወጣ (Strict Rule)።
-እንዲሁም ትክክለኛው መልስ የሚገኝበት ቦታ (0, 1, 2 ወይ 3) በየጥያቄው የተለያየ እና ያልተጠበቀ መሆን አለበት (ምርጫዎቹን አዘበራርቃቸው)።
 እባክህ ምላሽህን በ JSON ፎርማት ብቻ ስጥ። ቅርፁ ይህን መምሰል አለበት፡
-[{"q": "ጥያቄ?","options": ["ምርጫ 1", "ምርጫ 2", "ምርጫ 3", "ምርጫ 4"],"correct": 1}] (ማሳሰቢያ: correct 0, 1, 2 ወይ 3 ነው)`;
+[{"q": "ጥያቄ?","options": ["ሀ", "ለ", "ሐ", "መ"],"correct": 1}] (ማሳሰቢያ: correct 0, 1, 2 ወይ 3 ነው)`;
             
             try {
                 let response = await callGemini(prompt, "ፕሮፌሽናል ፈተና አዘጋጅ ነህ። ንፁህ JSON ብቻ መልስ።");
@@ -1632,6 +1686,7 @@
                 renderDynamicQuestion();
             } catch (error) {
                 window.isQuizActive = false;
+                if(window.toggleCheatLock) window.toggleCheatLock(false);
                 alert("የ AI ስህተት አጋጥሟል። እባክዎ እንደገና ይሞክሩ።");
                 btn.classList.remove('hidden'); loading.classList.add('hidden'); loading.classList.remove('flex');
             }
@@ -1674,6 +1729,7 @@
 
         window.submitQuiz = function() {
             window.isQuizActive = false;
+            if(window.toggleCheatLock) window.toggleCheatLock(false);
 
             let score = 0;
             for(let i=0; i<quizTotalQuestions; i++) if(userAnswers[i] === dynamicQuizData[i].correct) score++;
@@ -1723,6 +1779,8 @@
 
         window.resetQuiz = function() {
             window.isQuizActive = false;
+            if(window.toggleCheatLock) window.toggleCheatLock(false);
+            
             document.getElementById('quiz-result-screen').classList.add('hidden');
             document.getElementById('quiz-setup-area').classList.remove('hidden');
             document.getElementById('start-quiz-btn').classList.remove('hidden');
@@ -1769,20 +1827,11 @@
             c.innerHTML += `<div id="${typingId}" class="self-start max-w-[85%] bg-white dark:bg-slate-800 p-3 rounded-2xl rounded-tl-none shadow-sm text-gray-800 dark:text-gray-200 text-[13px] leading-relaxed"><i class="fa-solid fa-spinner fa-spin"></i> Tsehay AI በማሰብ ላይ ነው...</div>`;
             c.scrollTop = c.scrollHeight;
 
-            aiChatHistory.push({ role: 'user', text: m });
-            let historyContext = aiChatHistory.slice(-8).map(x => (x.role === 'user' ? 'ተማሪ: ' : 'AI: ') + x.text).join('\n');
-            let fullPrompt = `ያለፈው የውይይት ታሪክ (Context):\n${historyContext}\n\nአሁን የተማሪው አዲስ ጥያቄ: ${m}\n\nከላይ ባለው ታሪክ መሰረት ለተማሪው አዲስ ጥያቄ ቀጥተኛ እና አጭር ምላሽ ስጥ።`;
-
-            let response = await callGemini(fullPrompt, currentCourseAiPrompt);
+            let response = await callGemini(m, currentCourseAiPrompt);
             const typingEl = document.getElementById(typingId); if(typingEl) typingEl.remove();
             
             c.innerHTML += `<div class="self-start max-w-[85%] bg-white dark:bg-slate-800 p-3 rounded-2xl rounded-tl-none shadow-sm text-gray-800 dark:text-gray-200 text-[13px] leading-relaxed">${response}</div>`;
             c.scrollTop = c.scrollHeight;
-
-            aiChatHistory.push({ role: 'ai', text: response });
-            if (userId) {
-                setDoc(doc(db, 'artifacts', appId, 'users', userId, 'chat_history', 'main'), { messages: aiChatHistory }, { merge: true }).catch(e => console.error(e));
-            }
         };
 
     </script>
