@@ -7,12 +7,14 @@
     <link rel="icon" type="image/jpeg" href="Campus Logo.jpg">
     <!-- 💡 Default Theme is explicitly DARK -->
     <script>
+        if (!localStorage.getItem('theme')) {
+            localStorage.setItem('theme', 'dark');
+        }
         if (localStorage.theme === 'light') {
             document.documentElement.classList.remove('dark');
         } else {
             document.documentElement.classList.add('dark');
-            localStorage.setItem('theme', 'dark'); // Force dark default
-        }
+        } 
     </script>
 
     <script src="https://cdn.tailwindcss.com"></script>
