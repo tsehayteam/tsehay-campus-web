@@ -820,7 +820,7 @@
 
                 <div class="flex flex-col items-end text-right">
                     <h4 class="text-white font-black mb-5 font-heading tracking-wide text-base border-b-2 border-primary pb-2 inline-block">ድጋፍ እና ህግ</h4>
-                    <ul class="space-y-3 text-sm text-gray-500">
+                    <ul class="space-y-3 text-sm text-gray-200">
                         <li><a href="javascript:void(0)" onclick="document.getElementById('faq').scrollIntoView({behavior: 'smooth'})" class="hover:text-primary transition flex items-center gap-2">ተደጋጋሚ ጥያቄዎች (FAQ)</a></li>
                         <li><a href="javascript:void(0)" onclick="window.openTermsModal()" class="hover:text-primary transition flex items-center gap-2">የአጠቃቀም ህግ (Terms)</a></li>
                         <li><a href="javascript:void(0)" onclick="window.openTermsModal()" class="hover:text-primary transition flex items-center gap-2">የግላዊነት ፖሊሲ (Privacy)</a></li>
@@ -910,9 +910,16 @@
         };
 
         document.addEventListener('DOMContentLoaded', () => {
+            // Theme initialization
+            if (!localStorage.getItem('theme')) {
+                localStorage.setItem('theme', 'dark');
+                document.documentElement.classList.add('dark');
+            }
             const isDark = document.documentElement.classList.contains('dark');
-            const icons = document.querySelectorAll('#theme-icon');
+            const icons = document.querySelectorAll('#theme-icon, #mobile-theme-icon');
             icons.forEach(icon => { icon.className = isDark ? 'fa-solid fa-sun text-yellow-400' : 'fa-solid fa-moon text-gray-600'; });
+
+            // Language initialization
             const savedLang = localStorage.getItem('siteLang') || 'am';
             if (savedLang === 'am') {
                 const domains = [location.hostname, '.' + location.hostname];
@@ -956,6 +963,85 @@
                 authTerms.checked = true;
             }
         };
+
+        window.openTermsModal = function() {
+            const modal = document.getElementById('terms-modal');
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            }
+        };
+
+        window.closeTermsModal = function() {
+            const modal = document.getElementById('terms-modal');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+        };
+
+        window.openAuthModal = function(signup) {
+            const mobileMenu = document.getElementById('mobile-menu');
+            if (mobileMenu && mobileMenu.classList.contains('open')) {
+                mobileMenu.classList.remove('open');
+            }
+
+            if (signup && !window.hasAgreedTerms) {
+                window.openTermsModal();
+                return;
+            }
+
+            window.isSignupMode = signup;
+            const authModal = document.getElementById('auth-modal');
+            if (authModal) {
+                authModal.classList.remove('hidden');
+                authModal.classList.add('flex');
+            }
+            
+            const errDiv = document.getElementById('auth-error');
+            if (errDiv) errDiv.classList.add('hidden');
+            
+            const titleElem = document.getElementById('auth-title');
+            if (titleElem) titleElem.innerText = signup ? "አካውንት ይፍጠሩ" : "ወደ ካምፓስ ይግቡ";
+            
+            const submitBtn = document.getElementById('auth-submit-btn');
+            if (submitBtn) submitBtn.innerHTML = signup ? '<span>አዲስ ይመዝገቡ</span> <i class="fa-solid fa-arrow-right"></i>' : '<span>ግባ (Login)</span> <i class="fa-solid fa-arrow-right"></i>';
+            
+            const switchText = document.getElementById('auth-switch-text');
+            if (switchText) switchText.innerText = signup ? "አካውንት አለዎት?" : "አካውንት የለዎትም?";
+            
+            const switchBtn = document.getElementById('auth-switch-btn');
+            if (switchBtn) switchBtn.innerText = signup ? "ግባ (Login)" : "አዲስ ይመዝገቡ (Sign Up)";
+
+            const forgotBtn = document.getElementById('forgot-pwd-btn');
+            if (forgotBtn) forgotBtn.style.display = signup ? 'none' : 'block';
+
+            document.querySelectorAll('.signup-only').forEach(el => {
+                el.classList.toggle('hidden', !signup);
+            });
+
+            const termsField = document.getElementById('terms-field');
+            if (termsField) termsField.classList.toggle('hidden', !signup);
+            
+            const termsBox = document.getElementById('auth-terms');
+            if(termsBox && signup) termsBox.checked = false;
+        };
+
+        window.closeAuthModal = function() {
+            const modal = document.getElementById('auth-modal');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+        };
+
+        window.toggleAuthMode = function() { 
+            window.openAuthModal(!window.isSignupMode); 
+        };
+
+        window.goToDashboard = function() {
+            window.location.href = 'courses.html';
+        };
     </script>
 
     <!-- Hidden Google Translate Element -->
@@ -977,7 +1063,7 @@
     <!-- Firebase Integration -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, onSnapshot, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
         async function callGemini(prompt, systemInstruction) {
@@ -1162,9 +1248,13 @@ Primary language: Amharic (using Ethiopic script). Use English terms for technic
             };
 
             fetchPublicCourses();
+            
             const initAuth = async () => {
-                // Anonymous login removed to fix logout issue
-                console.log("Auth initialized perfectly without anonymous login");
+                try {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } 
+                } catch (err) { console.error("Auth init error:", err); }
             };
             initAuth();
 
@@ -1178,9 +1268,6 @@ Primary language: Amharic (using Ethiopic script). Use English terms for technic
                 const heroBtns = document.getElementById('hero-action-buttons');
                 const navAuthBtns = document.getElementById('nav-auth-buttons');
                 const heroWelcome = document.getElementById('hero-welcome');
-                const isDark = document.documentElement.classList.contains('dark');
-                const themeIcon = isDark ? 'fa-sun' : 'fa-moon';
-                const themeColor = isDark ? 'text-yellow-400' : 'text-gray-600';
 
                 if (user && !user.isAnonymous) {
                     const name = user.displayName || "የካምፓስ ተማሪ";
@@ -1198,12 +1285,12 @@ Primary language: Amharic (using Ethiopic script). Use English terms for technic
                     }
                     if (navAuthBtns) {
                         navAuthBtns.innerHTML = `
-                            <button onclick="window.toggleLanguage()" id="lang-toggle-btn" class="hidden sm:flex items-center justify-center bg-gray-100 dark:bg-darkCard border border-gray-200 dark:border-gray-800 hover:bg-gray-200 dark:hover:bg-gray-800 transition shadow-sm shrink-0 font-bold text-[12px] text-dark dark:text-white px-4 py-1.5 rounded-full notranslate" translate="no">
+                            <button onclick="window.toggleLanguage()" id="lang-toggle-btn" class="hidden sm:flex items-center justify-center bg-gray-100 dark:bg-dark border border-gray-200 dark:border-gray-800 hover:bg-gray-200 dark:hover:bg-gray-800 transition shadow-sm shrink-0 font-bold text-[12px] text-dark dark:text-white px-4 py-1.5 rounded-full notranslate" translate="no">
                                 ${localStorage.getItem('siteLang') === 'en' ? 'EN' : 'አማ'}
                             </button>
 
-                            <button onclick="window.toggleTheme()" class="w-9 h-9 rounded-full bg-gray-100 dark:bg-dark border border-gray-200 dark:border-gray-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-darkCard transition shadow-sm ${themeColor}">
-                                <i id="theme-icon" class="fa-solid ${themeIcon}"></i>
+                            <button onclick="window.toggleTheme()" class="w-9 h-9 rounded-full bg-gray-100 dark:bg-dark border border-gray-200 dark:border-gray-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-darkCard transition shadow-sm text-gray-600 dark:text-yellow-400">
+                                <i id="theme-icon" class="fa-solid ${document.documentElement.classList.contains('dark') ? 'fa-sun' : 'fa-moon'}"></i>
                             </button>
                             
                             <a href="#ai-feature" onclick="document.getElementById('ai-feature').scrollIntoView({behavior: 'smooth'})" class="text-gray-700 dark:text-gray-300 hover:text-secondary dark:hover:text-primary font-bold transition flex items-center gap-1.5 lg:gap-2 px-1 lg:px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-darkCard whitespace-nowrap ml-1 notranslate">
@@ -1230,12 +1317,12 @@ Primary language: Amharic (using Ethiopic script). Use English terms for technic
                     }
                     if (navAuthBtns) {
                         navAuthBtns.innerHTML = `
-                            <button onclick="window.toggleLanguage()" id="lang-toggle-btn" class="hidden sm:flex items-center justify-center bg-gray-100 dark:bg-darkCard border border-gray-200 dark:border-gray-800 hover:bg-gray-200 dark:hover:bg-gray-800 transition shadow-sm shrink-0 font-bold text-[12px] text-dark dark:text-white px-4 py-1.5 rounded-full notranslate" translate="no">
+                            <button onclick="window.toggleLanguage()" id="lang-toggle-btn" class="hidden sm:flex items-center justify-center bg-gray-100 dark:bg-dark border border-gray-200 dark:border-gray-800 hover:bg-gray-200 dark:hover:bg-gray-800 transition shadow-sm shrink-0 font-bold text-[12px] text-dark dark:text-white px-4 py-1.5 rounded-full notranslate" translate="no">
                                 ${localStorage.getItem('siteLang') === 'en' ? 'EN' : 'አማ'}
                             </button>
 
-                            <button onclick="window.toggleTheme()" class="w-9 h-9 rounded-full bg-gray-100 dark:bg-dark border border-gray-200 dark:border-gray-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-darkCard transition shadow-sm ${themeColor}">
-                                <i id="theme-icon" class="fa-solid ${themeIcon}"></i>
+                            <button onclick="window.toggleTheme()" class="w-9 h-9 rounded-full bg-gray-100 dark:bg-dark border border-gray-200 dark:border-gray-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-darkCard transition shadow-sm text-gray-600 dark:text-yellow-400">
+                                <i id="theme-icon" class="fa-solid ${document.documentElement.classList.contains('dark') ? 'fa-sun' : 'fa-moon'}"></i>
                             </button>
                             
                             <a href="#ai-feature" onclick="document.getElementById('ai-feature').scrollIntoView({behavior: 'smooth'})" class="text-gray-700 dark:text-gray-300 hover:text-secondary dark:hover:text-primary font-bold transition flex items-center gap-1.5 lg:gap-2 px-1 lg:px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-darkCard whitespace-nowrap ml-1 notranslate">
