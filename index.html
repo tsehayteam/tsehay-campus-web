@@ -1289,10 +1289,9 @@ Primary language: Amharic (using Ethiopic script). Use English terms for technic
                     }
                     if (navAuthBtns) {
                         navAuthBtns.innerHTML = `
-                            <div class="hidden sm:flex items-center bg-gray-100 dark:bg-dark rounded-full p-1 shadow-sm shrink-0 border border-gray-200 dark:border-gray-800" id="custom-lang-toggle">
-                                <button onclick="window.changeLanguage('am')" id="btn-lang-am" class="px-2 py-0.5 rounded-full bg-white dark:bg-darkCard text-dark dark:text-white text-[10px] font-bold shadow-sm transition">AM</button>
-                                <button onclick="window.changeLanguage('en')" id="btn-lang-en" class="px-2 py-0.5 rounded-full text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white text-[10px] font-bold transition">EN</button>
-                            </div>
+                            <button onclick="window.toggleLanguage()" id="lang-toggle-btn" class="hidden sm:flex items-center justify-center bg-gray-100 dark:bg-dark border border-gray-200 dark:border-gray-800 hover:bg-gray-200 dark:hover:bg-gray-800 transition shadow-sm shrink-0 font-bold text-[12px] text-dark dark:text-white px-4 py-1.5 rounded-full notranslate" translate="no">
+                                ${localStorage.getItem('siteLang') === 'en' ? 'EN' : 'አማ'}
+                            </button>
 
                             <button onclick="window.toggleTheme()" class="w-9 h-9 rounded-full bg-gray-100 dark:bg-dark border border-gray-200 dark:border-gray-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-darkCard transition shadow-sm ${themeColor}">
                                 <i id="theme-icon" class="fa-solid ${themeIcon}"></i>
@@ -1319,7 +1318,7 @@ Primary language: Amharic (using Ethiopic script). Use English terms for technic
                                     </div>
                                     <div class="p-2 flex flex-col gap-1">
                                         <button onclick="window.goToDashboard()" class="text-left px-4 py-3 text-sm font-bold text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-secondary dark:hover:text-primary rounded-xl transition flex items-center gap-3">
-                                            <i class="fa-solid fa-border-all w-4 text-center"></i> ወደ ዳሽቦርድ ሂድ
+                                            <i class="fa-solid fa-border-all w-4 text-center"></i> ወደ ኮርሶች ገበያ
                                         </button>
                                         <button onclick="window.logoutUser()" class="text-left px-4 py-3 text-sm font-bold text-danger hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition flex items-center gap-3">
                                             <i class="fa-solid fa-power-off w-4 text-center"></i> ውጣ (Logout)
@@ -1348,8 +1347,8 @@ Primary language: Amharic (using Ethiopic script). Use English terms for technic
                                 ${localStorage.getItem('siteLang') === 'en' ? 'EN' : 'አማ'}
                             </button>
 
-                            <button onclick="window.toggleTheme()" class="w-9 h-9 rounded-full bg-gray-100 dark:bg-dark border border-gray-200 dark:border-gray-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-darkCard transition shadow-sm text-gray-600 dark:text-yellow-400">
-                                <i id="theme-icon" class="fa-solid ${document.documentElement.classList.contains('dark') ? 'fa-sun' : 'fa-moon'}"></i>
+                            <button onclick="window.toggleTheme()" class="w-9 h-9 rounded-full bg-gray-100 dark:bg-dark border border-gray-200 dark:border-gray-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-darkCard transition shadow-sm ${themeColor}">
+                                <i id="theme-icon" class="fa-solid ${themeIcon}"></i>
                             </button>
                             
                             <a href="#ai-feature" onclick="document.getElementById('ai-feature').scrollIntoView({behavior: 'smooth'})" class="text-gray-700 dark:text-gray-300 hover:text-secondary dark:hover:text-primary font-bold transition flex items-center gap-1.5 lg:gap-2 px-1 lg:px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-darkCard whitespace-nowrap ml-1 notranslate">
