@@ -1381,7 +1381,7 @@ Primary language: Amharic (using Ethiopic script). Use English terms for technic
                         registeredAt: new Date().toISOString()
                     }, { merge: true });
                     
-                    window.closeAuthModal(); 
+                    window.goToDashboard();
                 } 
                 catch (error) { 
                     if(errorDiv) { 
@@ -1449,7 +1449,7 @@ Primary language: Amharic (using Ethiopic script). Use English terms for technic
                     } else {
                         await signInWithEmailAndPassword(auth, email, password);
                     }
-                    window.closeAuthModal(); // Close modal cleanly, let onAuthStateChanged handle UI
+                    window.goToDashboard();
                 } catch (error) {
                     let errorMsg = "ስህተት: " + error.message;
                     
@@ -1465,7 +1465,7 @@ Primary language: Amharic (using Ethiopic script). Use English terms for technic
                         errorDiv.className = "bg-warning/20 text-warning border border-warning/50 text-sm p-4 rounded-xl mb-6 font-bold text-center";
                         errorDiv.innerHTML = 'ማሳሰቢያ፡ የ Canvas የሙከራ ገፅ ላይ ስለሆኑ በቀጥታ እያስገባንዎት ነው...';
                         errorDiv.classList.remove('hidden');
-                        setTimeout(() => { window.closeAuthModal(); }, 2000);
+                        setTimeout(() => { window.goToDashboard(); }, 2000);
                         return;
                     }
                     
