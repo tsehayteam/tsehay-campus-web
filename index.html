@@ -7,14 +7,12 @@
     <link rel="icon" type="image/jpeg" href="Campus Logo.jpg">
     <!-- 💡 Default Theme is explicitly DARK -->
     <script>
-        if (!localStorage.getItem('theme')) {
-            localStorage.setItem('theme', 'dark');
-        }
         if (localStorage.theme === 'light') {
             document.documentElement.classList.remove('dark');
         } else {
             document.documentElement.classList.add('dark');
-        } 
+            localStorage.setItem('theme', 'dark'); // Force dark default
+        }
     </script>
 
     <script src="https://cdn.tailwindcss.com"></script>
@@ -352,7 +350,7 @@
                     <a href="#ai-feature" onclick="document.getElementById('ai-feature').scrollIntoView({behavior: 'smooth'})" class="text-gray-700 dark:text-gray-300 hover:text-secondary dark:hover:text-primary font-bold transition flex items-center gap-1.5 lg:gap-2 px-1 lg:px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-darkCard whitespace-nowrap ml-1 notranslate">
                         <i class="fa-solid fa-wand-magic-sparkles text-primary animate-pulse"></i> <span class="hidden lg:inline">Tsehay AI</span>
                     </a>
-                    <div class="h-5 w-px bg-gray-300 dark:bg-gray-800 mx-0.5"></div>
+                    <div class="h-5 w-px bg-gray-300 dark:bg-gray-800 mx-0.5 lg:mx-1"></div>
                     <button onclick="window.openAuthModal(false)" class="text-dark dark:text-white font-bold hover:text-secondary dark:hover:text-primary transition px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-darkCard whitespace-nowrap">ግባ (Login)</button>
                     <button onclick="window.openAuthModal(true)" class="bg-dark dark:bg-primary text-white dark:text-dark px-4 py-2 rounded-lg font-bold hover:bg-secondary dark:hover:bg-yellow-400 transition shadow-md btn-glow whitespace-nowrap">አዲስ ይመዝገቡ</button>
                 </div>
