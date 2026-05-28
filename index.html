@@ -1257,22 +1257,83 @@ Primary language: Amharic (using Ethiopic script). Use English terms for technic
             initAuth();
 
             window.logoutUser = async () => {
-                await auth.signOut();
-                window.location.reload();
-            };
+            await auth.signOut();
+            window.location.reload();
+        };
 
-            onAuthStateChanged(auth, (user) => {
-                window.currentUser = user;
-                const heroBtns = document.getElementById('hero-action-buttons');
-                const navAuthBtns = document.getElementById('nav-auth-buttons');
-                const heroWelcome = document.getElementById('hero-welcome');
+        onAuthStateChanged(auth, (user) => {
+            window.currentUser = user;
+            const heroBtns = document.getElementById('hero-action-buttons');
+            const navAuthBtns = document.getElementById('nav-auth-buttons');
+            const heroWelcome = document.getElementById('hero-welcome');
+            const isDark = document.documentElement.classList.contains('dark');
+            const themeIcon = isDark ? 'fa-sun' : 'fa-moon';
+            const themeColor = isDark ? 'text-yellow-400' : 'text-gray-600';
 
-                if (user && !user.isAnonymous) {
-                    const name = user.displayName || "የካምፓስ ተማሪ";
-                    if (heroWelcome) heroWelcome.innerHTML = `ሰላም <span class="notranslate">${name}</span>! 👋 <br> <span class="text-gradient">ትምህርትዎን ይቀጥሉ።</span>`;
+            if (user && !user.isAnonymous) {
+                const name = user.displayName || "የካምፓስ ተማሪ";
+                const email = user.email || 'No Email';
+                const photo = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=3268BA&color=fff`;
 
-                    if (heroBtns) {
-                        heroBtns.innerHTML = `
+                if (heroWelcome) heroWelcome.innerHTML = `ሰላም <span class="notranslate">${name}</span>! 👋 <br> <span class="text-gradient">ትምህርትዎን ይቀጥሉ።</span>`;
+
+                if (heroBtns) {
+                    heroBtns.innerHTML = `
+                        <button onclick="document.getElementById('courses').scrollIntoView({behavior: 'smooth'})" class="bg-primary text-dark px-6 py-3.5 rounded-xl font-extrabold transition btn-glow flex items-center justify-center gap-3 text-base shadow-md">
+                            ኮርሶችን ያስሱ <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                        <button onclick="document.getElementById('about').scrollIntoView({behavior: 'smooth'})" class="bg-white dark:bg-white/10 hover:bg-gray-50 dark:hover:bg-white/20 border border-white/30 text-dark dark:text-white backdrop-blur-md px-6 py-3.5 rounded-xl font-bold transition flex items-center justify-center gap-3 text-base shadow-sm">
+                            <i class="fa-solid fa-circle-play text-lg"></i> ስለ እኛ ይመልከቱ
+                        </button>
+                    `;
+                }
+                if (navAuthBtns) {
+                    navAuthBtns.innerHTML = `
+                        <div class="hidden sm:flex items-center bg-gray-100 dark:bg-dark rounded-full p-1 shadow-sm shrink-0 border border-gray-200 dark:border-gray-800" id="custom-lang-toggle">
+                            <button onclick="window.changeLanguage('am')" id="btn-lang-am" class="px-2 py-0.5 rounded-full bg-white dark:bg-darkCard text-dark dark:text-white text-[10px] font-bold shadow-sm transition">AM</button>
+                            <button onclick="window.changeLanguage('en')" id="btn-lang-en" class="px-2 py-0.5 rounded-full text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white text-[10px] font-bold transition">EN</button>
+                        </div>
+
+                        <button onclick="window.toggleTheme()" class="w-9 h-9 rounded-full bg-gray-100 dark:bg-dark border border-gray-200 dark:border-gray-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-darkCard transition shadow-sm ${themeColor}">
+                            <i id="theme-icon" class="fa-solid ${themeIcon}"></i>
+                        </button>
+                        
+                        <a href="#ai-feature" onclick="document.getElementById('ai-feature').scrollIntoView({behavior: 'smooth'})" class="text-gray-700 dark:text-gray-300 hover:text-secondary dark:hover:text-primary font-bold transition flex items-center gap-1.5 lg:gap-2 px-1 lg:px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-darkCard whitespace-nowrap ml-1 notranslate">
+                            <i class="fa-solid fa-wand-magic-sparkles text-primary animate-pulse"></i> <span class="hidden lg:inline">Tsehay AI</span>
+                        </a>
+                        <div class="h-5 w-px bg-gray-300 dark:bg-gray-800 mx-0.5 lg:mx-1"></div>
+                        
+                        <!-- 💡 Profile Dropdown Container -->
+                        <div class="relative group z-50">
+                            <button class="flex items-center gap-2 hover:bg-gray-100 dark:hover:bg-gray-800 p-1.5 rounded-xl transition cursor-pointer">
+                                <img src="${photo}" alt="Profile" class="w-8 h-8 rounded-full border border-gray-200 dark:border-gray-700 object-cover shadow-sm">
+                                <span class="text-dark dark:text-white font-bold text-sm hidden sm:block notranslate" translate="no">${name}</span>
+                                <i class="fa-solid fa-chevron-down text-[10px] text-gray-400 hidden sm:block"></i>
+                            </button>
+                            
+                            <!-- Dropdown Menu -->
+                            <div class="absolute right-0 mt-2 w-60 bg-white dark:bg-darkCard rounded-2xl shadow-xl border border-gray-100 dark:border-gray-800 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 overflow-hidden">
+                                <div class="p-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-black/30">
+                                    <p class="text-sm font-black text-dark dark:text-white truncate notranslate" translate="no">${name}</p>
+                                    <p class="text-xs text-gray-500 truncate mt-1 font-medium">${email}</p>
+                                </div>
+                                <div class="p-2 flex flex-col gap-1">
+                                    <button onclick="window.goToDashboard()" class="text-left px-4 py-3 text-sm font-bold text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-secondary dark:hover:text-primary rounded-xl transition flex items-center gap-3">
+                                        <i class="fa-solid fa-border-all w-4 text-center"></i> ወደ ዳሽቦርድ ሂድ
+                                    </button>
+                                    <button onclick="window.logoutUser()" class="text-left px-4 py-3 text-sm font-bold text-danger hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition flex items-center gap-3">
+                                        <i class="fa-solid fa-power-off w-4 text-center"></i> ውጣ (Logout)
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            } else {
+                if (heroWelcome) heroWelcome.innerHTML = `ክህሎትዎን ያሳድጉ፣ <br> <span class="text-gradient">ቢዝነስዎን ይጀምሩ።</span>`;
+
+                if (heroBtns) {
+                    heroBtns.innerHTML = `
                             <button onclick="document.getElementById('courses').scrollIntoView({behavior: 'smooth'})" class="bg-primary text-dark px-6 py-3.5 rounded-xl font-extrabold transition btn-glow flex items-center justify-center gap-3 text-base shadow-md">
                                 ወደ ሁሉም ኮርሶች <i class="fa-solid fa-arrow-right"></i>
                             </button>
