@@ -1383,6 +1383,35 @@ Primary language: Amharic (using Ethiopic script). Use English terms for technic
                 }
             };
 
+            window.resetPassword = async function() {
+                const errorDiv = document.getElementById('auth-error');
+                const emailInput = document.getElementById('auth-email');
+                if (!emailInput || !emailInput.value.trim()) {
+                    if (errorDiv) {
+                        errorDiv.innerText = "እባክዎ መጀመሪያ ኢሜልዎን ከላይ ባለው ሳጥን ውስጥ ያስገቡ።";
+                        errorDiv.classList.remove('hidden');
+                        errorDiv.className = "bg-warning/20 text-warning border border-warning/50 text-sm p-3 rounded-lg mb-5 font-bold text-center";
+                    }
+                    return;
+                }
+                const email = emailInput.value.trim();
+                
+                try {
+                    await sendPasswordResetEmail(auth, email);
+                    if (errorDiv) {
+                        errorDiv.innerHTML = `<i class="fa-solid fa-circle-check"></i> የይለፍ ቃል መቀየሪያ ሊንክ ወደ <b>${email}</b> ተልኳል! እባክዎ ኢሜልዎን ይክፈቱ።`;
+                        errorDiv.classList.remove('hidden');
+                        errorDiv.className = "bg-success/20 text-success border border-success/50 text-sm p-3 rounded-lg mb-5 font-bold text-center";
+                    }
+                } catch (error) {
+                    if (errorDiv) {
+                        errorDiv.innerText = "ስህተት: " + (error.code === 'auth/user-not-found' ? "ይህ ኢሜል አልተመዘገበም።" : error.message);
+                        errorDiv.classList.remove('hidden');
+                        errorDiv.className = "bg-red-50 dark:bg-red-900/30 text-danger border border-red-200 dark:border-red-800 text-sm p-3 rounded-lg mb-5 font-bold text-center";
+                    }
+                }
+            };
+
             window.handleAuthSubmit = async function(e) {
                 e.preventDefault();
                 const btn = document.getElementById('auth-submit-btn');

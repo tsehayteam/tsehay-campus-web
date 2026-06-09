@@ -684,7 +684,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signOut, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail, signInWithCustomToken, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, getDocs, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyDCxlwfYAS_I0D7c-8e-iB-Y-Rh2ZZoHZw", authDomain: "tsehaycampus-e1a6d.firebaseapp.com", projectId: "tsehaycampus-e1a6d", storageBucket: "tsehaycampus-e1a6d.firebasestorage.app", messagingSenderId: "1043616909865", appId: "1:1043616909865:web:9ecca7d9a14deef0f5ea38" };
@@ -721,6 +721,143 @@
         };
 
         window.fetchPublicCourses();
+
+        window.loginWithGoogle = async function() {
+            const errorDiv = document.getElementById('auth-error');
+            if (errorDiv) errorDiv.classList.add('hidden');
+            const provider = new GoogleAuthProvider();
+            try { 
+                const result = await signInWithPopup(auth, provider);
+                const currentAppId = typeof __app_id !== 'undefined' ? __app_id : 'tsehaycampus-e1a6d';
+                await setDoc(doc(db, 'artifacts', currentAppId, 'users', result.user.uid, 'profile', 'info'), {
+                    displayName: result.user.displayName || 'ተማሪ',
+                    email: result.user.email,
+                    photoURL: result.user.photoURL || '',
+                    registeredAt: new Date().toISOString()
+                }, { merge: true });
+                
+                window.location.reload();
+            } 
+            catch (error) { 
+                if(errorDiv) { 
+                    errorDiv.innerText = "ስህተት: " + error.message; 
+                    errorDiv.classList.remove('hidden'); 
+                    errorDiv.className = "bg-red-50 dark:bg-red-900/30 text-danger border border-red-200 dark:border-red-800 text-sm p-3 rounded-lg mb-5 font-bold text-center";
+                } 
+            }
+        };
+
+        window.resetPassword = async function() {
+            const errorDiv = document.getElementById('auth-error');
+            const emailInput = document.getElementById('auth-email');
+            if (!emailInput || !emailInput.value.trim()) {
+                if (errorDiv) {
+                    errorDiv.innerText = "እባክዎ መጀመሪያ ኢሜልዎን ከላይ ባለው ሳጥን ውስጥ ያስገቡ።";
+                    errorDiv.classList.remove('hidden');
+                    errorDiv.className = "bg-warning/20 text-warning border border-warning/50 text-sm p-3 rounded-lg mb-5 font-bold text-center";
+                }
+                return;
+            }
+            const email = emailInput.value.trim();
+            
+            try {
+                await sendPasswordResetEmail(auth, email);
+                if (errorDiv) {
+                    errorDiv.innerHTML = `<i class="fa-solid fa-circle-check"></i> የይለፍ ቃል መቀየሪያ ሊንክ ወደ <b>${email}</b> ተልኳል! እባክዎ ኢሜልዎን ይክፈቱ።`;
+                    errorDiv.classList.remove('hidden');
+                    errorDiv.className = "bg-success/20 text-success border border-success/50 text-sm p-3 rounded-lg mb-5 font-bold text-center";
+                }
+            } catch (error) {
+                if (errorDiv) {
+                    errorDiv.innerText = "ስህተት: " + (error.code === 'auth/user-not-found' ? "ይህ ኢሜል አልተመዘገበም።" : error.message);
+                    errorDiv.classList.remove('hidden');
+                    errorDiv.className = "bg-red-50 dark:bg-red-900/30 text-danger border border-red-200 dark:border-red-800 text-sm p-3 rounded-lg mb-5 font-bold text-center";
+                }
+            }
+        };
+
+        window.handleAuthSubmit = async function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('auth-submit-btn');
+            const errorDiv = document.getElementById('auth-error');
+            const email = document.getElementById('auth-email').value.trim();
+            const password = document.getElementById('auth-password').value;
+            
+            const phone = document.getElementById('auth-phone') ? document.getElementById('auth-phone').value.trim() : '';
+            const city = document.getElementById('auth-city') ? document.getElementById('auth-city').value.trim() : '';
+            const source = document.getElementById('auth-source') ? document.getElementById('auth-source').value : '';
+            const nameElem = document.getElementById('auth-name');
+            const name = nameElem ? nameElem.value.trim() : '';
+
+            if (window.isSignupMode) {
+                const termsBox = document.getElementById('auth-terms');
+                if (termsBox && !termsBox.checked) {
+                    if(errorDiv) {
+                        errorDiv.innerText = "እባክዎ ለመመዝገብ መጀመሪያ 'የአጠቃቀም ህግ' የሚለውን ነክተው በማንበብ ይስማሙ!";
+                        errorDiv.classList.remove('hidden');
+                        errorDiv.className = "bg-red-50 dark:bg-red-900/30 text-danger border border-red-200 dark:border-red-800 text-sm p-3 rounded-lg mb-5 font-bold text-center";
+                    }
+                    return;
+                }
+                if(!name || !phone || !city || !source) {
+                    if(errorDiv) {
+                        errorDiv.innerText = "እባክዎ ሁሉንም መረጃዎች (ስም፣ ስልክ፣ ከተማ...) በትክክል ይሙሉ!";
+                        errorDiv.classList.remove('hidden');
+                        errorDiv.className = "bg-red-50 dark:bg-red-900/30 text-danger border border-red-200 dark:border-red-800 text-sm p-3 rounded-lg mb-5 font-bold text-center";
+                    }
+                    return;
+                }
+            }
+
+            if(btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> ይጠብቁ...';
+            }
+
+            try {
+                if (window.isSignupMode) {
+                    const cred = await createUserWithEmailAndPassword(auth, email, password);
+                    await updateProfile(cred.user, { displayName: name });
+
+                    const currentAppId = typeof __app_id !== 'undefined' ? __app_id : 'tsehaycampus-e1a6d';
+                    await setDoc(doc(db, 'artifacts', currentAppId, 'users', cred.user.uid, 'profile', 'info'), {
+                        displayName: name,
+                        email: email,
+                        phone: phone,
+                        city: city,
+                        heardFrom: source,
+                        registeredAt: new Date().toISOString()
+                    }, { merge: true });
+
+                } else {
+                    await signInWithEmailAndPassword(auth, email, password);
+                }
+                window.closeAuthModal();
+                window.location.reload();
+            } catch (error) {
+                let errorMsg = "ስህተት: " + error.message;
+                
+                if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+                    errorMsg = "ኢሜል ወይም የይለፍ ቃል ትክክል አይደለም!";
+                } else if (error.code === 'auth/email-already-in-use') {
+                    errorMsg = "ይህ ኢሜል ከዚህ በፊት ተመዝግቧል።";
+                } else if (error.code === 'auth/weak-password') {
+                    errorMsg = "የይለፍ ቃሉ ቢያንስ 6 ፊደል/ቁጥር መሆን አለበት።";
+                }
+                
+                if(errorDiv) {
+                    errorDiv.innerText = errorMsg;
+                    errorDiv.classList.remove('hidden');
+                    errorDiv.className = "bg-red-50 dark:bg-red-900/30 text-danger border border-red-200 dark:border-red-800 text-sm p-3 rounded-lg mb-5 font-bold text-center";
+                }
+            } finally {
+                if(btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = window.isSignupMode ? '<span>አዲስ ይመዝገቡ</span> <i class="fa-solid fa-arrow-right"></i>' : '<span>ግባ (Login)</span> <i class="fa-solid fa-arrow-right"></i>';
+                }
+            }
+        };
+
 
         // 💡 ዋናው የ Auth ሪሲቨር - Profile Dropdown Design Here 💡
         onAuthStateChanged(auth, async (user) => {
