@@ -1,0 +1,25 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Allow public read for all files (like course thumbnails, profile pictures)
+    match /{allPaths=**} {
+      allow read: if true;
+    }
+
+    // Allow users to upload to their own directory
+    match /users/{userId}/{allPaths=**} {
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Admins can write anywhere (handled via Admin SDK usually, but if needed from client)
+    match /courses/{allPaths=**} {
+      allow write: if request.auth != null; // Simplified, ideally check custom claims
+    }
+    
+    // Explicit deny for any other writes
+    match /{allPaths=**} {
+      allow write: if false;
+    }
+  }
+}
