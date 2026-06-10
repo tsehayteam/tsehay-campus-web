@@ -831,11 +831,11 @@
 
     <!-- Floating Contact Buttons -->
     <div class="fixed bottom-6 right-6 z-[9999] flex flex-col gap-4">
-        <a href="https://t.me/TsehayTeam" target="_blank" class="w-16 h-16 bg-primary text-dark rounded-full flex items-center justify-center text-3xl shadow-[0_0_20px_rgba(249,176,60,0.5)] hover:scale-110 transition-all duration-300 relative group border-2 border-white/20">
+        <a href="https://t.me/TsehayTeam" target="_blank" class="w-16 h-16 bg-primary text-dark rounded-full flex items-center justify-center text-3xl shadow-[0_0_20px_rgba(249,176,60,0.5)] transition-all duration-300 hover:scale-110 relative group border-2 border-white/20">
             <i class="fa-brands fa-telegram"></i>
             <span class="absolute right-full mr-4 bg-dark dark:bg-slate-800 text-white text-sm font-bold px-4 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap pointer-events-none border border-gray-700 shadow-xl">በቴሌግራም ያግኙን</span>
         </a>
-        <a href="tel:0980209090" class="w-16 h-16 bg-primary text-dark rounded-full flex items-center justify-center text-3xl shadow-[0_0_20px_rgba(249,176,60,0.5)] hover:scale-110 transition-all duration-300 relative group border-2 border-white/20">
+        <a href="tel:0980209090" class="w-16 h-16 bg-primary text-dark rounded-full flex items-center justify-center text-3xl shadow-[0_0_20px_rgba(249,176,60,0.5)] transition-all duration-300 hover:scale-110 relative group border-2 border-white/20">
             <i class="fa-solid fa-phone"></i>
             <span class="absolute right-full mr-4 bg-dark dark:bg-slate-800 text-white text-sm font-bold px-4 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap pointer-events-none border border-gray-700 shadow-xl">ስልክ ይደውሉ</span>
         </a>
@@ -847,6 +847,63 @@
         window.allFetchedCourses = []; 
         window.hasAgreedTerms = false;
         window.currentUser = null;
+
+        window.searchCourses = function(event, isMobile) {
+            const query = event.target.value.toLowerCase().trim();
+            const resultsContainer = document.getElementById(isMobile ? 'mobile-search-results' : 'desktop-search-results');
+            
+            if (!resultsContainer) return;
+
+            if (!query) {
+                resultsContainer.classList.add('hidden');
+                resultsContainer.classList.remove('flex');
+                return;
+            }
+
+            const filtered = (window.allFetchedCourses || []).filter(c => {
+                return (c.title || '').toLowerCase().includes(query) || (c.desc || '').toLowerCase().includes(query);
+            });
+
+            resultsContainer.innerHTML = '';
+            
+            if (filtered.length === 0) {
+                resultsContainer.innerHTML = '<div class="p-4 text-center text-sm text-gray-500 font-bold">ምንም ኮርስ አልተገኘም!</div>';
+            } else {
+                filtered.slice(0, 5).forEach(c => {
+                    const isFree = c.price == 0 || !c.price;
+                    const priceText = isFree ? 'ነፃ' : `${Number(c.price).toLocaleString()} ብር`;
+                    
+                    resultsContainer.innerHTML += `
+                        <div class="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-800 border-b border-gray-100 dark:border-gray-800 cursor-pointer transition" onclick="window.requireAuthAndNavigate('courses.html')">
+                            <img src="${c.image || 'https://placehold.co/100x100?text=Course'}" class="w-12 h-12 object-cover rounded-lg shrink-0">
+                            <div class="flex-1 min-w-0">
+                                <h4 class="font-bold text-sm text-dark dark:text-white truncate">${c.title}</h4>
+                                <p class="text-xs text-gray-500 truncate">${c.instructor || 'Tsehay Campus'}</p>
+                            </div>
+                            <div class="shrink-0 font-black text-xs ${isFree ? 'text-success' : 'text-primary'}">${priceText}</div>
+                        </div>
+                    `;
+                });
+            }
+
+            resultsContainer.classList.remove('hidden');
+            resultsContainer.classList.add('flex');
+        };
+
+        window.handleSearchEnter = function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                const coursesSection = document.getElementById('courses');
+                if (coursesSection) {
+                    coursesSection.scrollIntoView({behavior: 'smooth'});
+                } else {
+                    window.location.href = 'courses.html';
+                }
+                const searchResults = document.querySelectorAll('#desktop-search-results, #mobile-search-results');
+                searchResults.forEach(el => { el.classList.add('hidden'); el.classList.remove('flex'); });
+            }
+        };
+
 
         window.toggleLanguage = function() {
             const currentLang = localStorage.getItem('siteLang') || 'am';
@@ -1029,6 +1086,14 @@
 
         window.goToDashboard = function() {
             window.location.href = 'courses.html';
+        };
+
+        window.requireAuthAndNavigate = function(url) {
+            if (window.currentUser && !window.currentUser.isAnonymous) {
+                window.location.href = url;
+            } else {
+                window.openAuthModal(false);
+            }
         };
     </script>
 
@@ -1385,16 +1450,15 @@ Primary language: Amharic (using Ethiopic script). Use English terms for technic
 
             window.resetPassword = async function() {
                 const errorDiv = document.getElementById('auth-error');
-                const emailInput = document.getElementById('auth-email');
-                if (!emailInput || !emailInput.value.trim()) {
-                    if (errorDiv) {
-                        errorDiv.innerText = "እባክዎ መጀመሪያ ኢሜልዎን ከላይ ባለው ሳጥን ውስጥ ያስገቡ።";
-                        errorDiv.classList.remove('hidden');
-                        errorDiv.className = "bg-warning/20 text-warning border border-warning/50 text-sm p-3 rounded-lg mb-5 font-bold text-center";
-                    }
-                    return;
+                let emailInput = document.getElementById('auth-email');
+                let email = emailInput ? emailInput.value.trim() : '';
+                
+                if (!email) {
+                    email = prompt("እባክዎ የተመዘገቡበትን ኢሜል ያስገቡ (Enter your registered email):");
+                    if (!email || !email.trim()) return;
+                    email = email.trim();
+                    if(emailInput) emailInput.value = email;
                 }
-                const email = emailInput.value.trim();
                 
                 try {
                     await sendPasswordResetEmail(auth, email);
