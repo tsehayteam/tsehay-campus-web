@@ -12,9 +12,12 @@ service firebase.storage {
       allow write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // Admins can write anywhere (handled via Admin SDK usually, but if needed from client)
+    // Only admins should write to courses. To enforce this securely via client, 
+    // ideally use custom claims. Since we can't easily check Firestore from Storage 
+    // without custom claims, we should either block client writes entirely
+    // or rely on Admin SDK (which bypasses these rules).
     match /courses/{allPaths=**} {
-      allow write: if request.auth != null; // Simplified, ideally check custom claims
+      allow write: if false; // All course uploads MUST go through Admin SDK or Firebase Console
     }
     
     // Explicit deny for any other writes

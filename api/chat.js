@@ -1,11 +1,77 @@
+import admin from 'firebase-admin';
+
+if (!admin.apps.length) {
+    try {
+        if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+            const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+            admin.initializeApp({
+                credential: admin.credential.cert(serviceAccount)
+            });
+        } else {
+            // Fallback initialization with Project ID for token verification
+            admin.initializeApp({
+                projectId: 'tsehaycampus-e1a6d'
+            });
+        }
+    } catch(e) {
+        console.error("Firebase admin init error", e);
+    }
+}
+
+// In-memory rate limiting map (per Vercel instance)
+const rateLimitMap = new Map();
+const RATE_LIMIT_WINDOW_MS = 60000; // 1 minute
+const MAX_REQUESTS_PER_WINDOW = 10; // 10 requests per minute per user
+
 export default async function handler(req, res) {
-  // CORS መፍቀጃ (ዌብሳይትህ ከ Vercel ጋር እንዲነጋገር)
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  // CORS validation
+  const allowedOrigins = ['https://tsehaycampus.com', 'https://www.tsehaycampus.com', 'http://localhost:8080', 'http://localhost:3000', 'http://127.0.0.1:8080'];
+  const origin = req.headers.origin;
+  
+  if (allowedOrigins.includes(origin)) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+  } else if (!origin) {
+      res.setHeader('Access-Control-Allow-Origin', '*'); 
+  } else {
+      res.setHeader('Access-Control-Allow-Origin', allowedOrigins[0]);
+  }
+  
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
+
+  // Security: Token Verification
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: "Unauthorized: Missing or invalid token." });
+  }
+
+  const idToken = authHeader.split('Bearer ')[1];
+  let userId;
+  try {
+      const decodedToken = await admin.auth().verifyIdToken(idToken);
+      userId = decodedToken.uid;
+  } catch (error) {
+      return res.status(401).json({ error: "Unauthorized: Token verification failed." });
+  }
+
+  // Security: Rate Limiting
+  const now = Date.now();
+  if (!rateLimitMap.has(userId)) {
+      rateLimitMap.set(userId, { count: 1, startTime: now });
+  } else {
+      const rateData = rateLimitMap.get(userId);
+      if (now - rateData.startTime > RATE_LIMIT_WINDOW_MS) {
+          rateLimitMap.set(userId, { count: 1, startTime: now });
+      } else {
+          rateData.count++;
+          if (rateData.count > MAX_REQUESTS_PER_WINDOW) {
+              return res.status(429).json({ error: "Too many requests. Please wait a minute before sending another message." });
+          }
+      }
+  }
 
   try {
     let apiKey = process.env.GEMINI_API_KEY || "";

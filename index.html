@@ -1121,9 +1121,17 @@
         
         async function callGemini(prompt, systemInstruction) {
             try {
+                let token = "";
+                if (window.auth && window.auth.currentUser) {
+                    token = await window.auth.currentUser.getIdToken();
+                }
+
                 const response = await fetch('/api/chat', { 
                     method: 'POST', 
-                    headers: { 'Content-Type': 'application/json' }, 
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': token ? `Bearer ${token}` : ''
+                    }, 
                     body: JSON.stringify({ prompt, systemInstruction }) 
                 });
 

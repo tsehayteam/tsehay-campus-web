@@ -1074,9 +1074,17 @@
 
         async function callGemini(prompt, systemInstruction) {
             try {
+                let token = "";
+                if (window.auth && window.auth.currentUser) {
+                    token = await window.auth.currentUser.getIdToken();
+                }
+
                 const response = await fetch('/api/chat', { 
                     method: 'POST', 
-                    headers: { 'Content-Type': 'application/json' }, 
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': token ? `Bearer ${token}` : ''
+                    }, 
                     body: JSON.stringify({ prompt, systemInstruction }) 
                 });
 
@@ -1309,33 +1317,9 @@
             window.switchTab(null, 'overview');
         };
 
-        window.playLesson = async function(element, pointsToAdd, lessonIndex, videoUrl) {
-            if(!userId || !currentCourseId) return;
-            
-            if(videoUrl) {
-                const videoContainer = document.getElementById('video-container');
-                let finalVideoUrl = videoUrl;
-                if(finalVideoUrl.includes('drive.google.com')) finalVideoUrl = window.getDriveEmbedLink(finalVideoUrl);
-                
-                if (finalVideoUrl.toLowerCase().endsWith('.mp4') || finalVideoUrl.toLowerCase().includes('.mp4?')) {
-                    videoContainer.innerHTML = `
-                    <div class="video-wrapper relative" oncontextmenu="return false;">
-                        <video src="${finalVideoUrl}" controls controlsList="nodownload" class="w-full h-full object-cover outline-none bg-black" style="accent-color: #F9B03C;"></video>
-                    </div>`;
-                } else {
-                    videoContainer.innerHTML = `
-                    <div class="video-wrapper relative" oncontextmenu="return false;">
-                        <iframe src="${finalVideoUrl}" allowfullscreen class="w-full h-full pointer-events-auto border-none"></iframe>
-                        <div class="absolute top-0 left-0 w-full h-20 z-[50] bg-transparent cursor-default" onmousedown="return false;" onclick="return false;" title="Protected Content"></div>
-                    </div>`;
-                }
-            }
+        let activeLessonTimer = null;
 
-            document.querySelectorAll('#dynamic-lessons-container .lesson-row').forEach(row => {
-                row.classList.remove('lesson-active', 'bg-blue-50', 'dark:bg-slate-700');
-            });
-            element.closest('.lesson-row').classList.add('lesson-active', 'bg-blue-50', 'dark:bg-slate-700');
-
+        window.completeLesson = async function(element, pointsToAdd, lessonIndex) {
             const icon = element.querySelector('.status-icon i');
             if (icon && icon.classList.contains('fa-circle-check')) return; 
 
@@ -1362,6 +1346,64 @@
             try { confetti({ particleCount: 80, spread: 60, origin: { y: 0.7, x: 0.8 }, colors: ['#f9b03c', '#22c55e', '#3268ba'] }); } catch(e) {}
         };
 
+        window.playLesson = async function(element, pointsToAdd, lessonIndex, videoUrl, durationStr) {
+            if(!userId || !currentCourseId) return;
+
+            if(activeLessonTimer) {
+                clearTimeout(activeLessonTimer);
+                activeLessonTimer = null;
+            }
+            
+            if(videoUrl) {
+                const videoContainer = document.getElementById('video-container');
+                let finalVideoUrl = videoUrl;
+                if(finalVideoUrl.includes('drive.google.com')) finalVideoUrl = window.getDriveEmbedLink(finalVideoUrl);
+                
+                if (finalVideoUrl.toLowerCase().endsWith('.mp4') || finalVideoUrl.toLowerCase().includes('.mp4?')) {
+                    videoContainer.innerHTML = `
+                    <div class="video-wrapper relative" oncontextmenu="return false;">
+                        <video id="course-video-player" src="${finalVideoUrl}" controls controlsList="nodownload" class="w-full h-full object-cover outline-none bg-black" style="accent-color: #F9B03C;"></video>
+                    </div>`;
+
+                    const videoEl = document.getElementById('course-video-player');
+                    videoEl.addEventListener('timeupdate', () => {
+                        if(videoEl.duration > 0) {
+                            const progress = videoEl.currentTime / videoEl.duration;
+                            if(progress >= 0.9) {
+                                window.completeLesson(element, pointsToAdd, lessonIndex);
+                            }
+                        }
+                    });
+                } else {
+                    videoContainer.innerHTML = `
+                    <div class="video-wrapper relative" oncontextmenu="return false;">
+                        <iframe src="${finalVideoUrl}" allowfullscreen class="w-full h-full pointer-events-auto border-none"></iframe>
+                        <div class="absolute top-0 left-0 w-full h-20 z-[50] bg-transparent cursor-default" onmousedown="return false;" onclick="return false;" title="Protected Content"></div>
+                    </div>`;
+
+                    let durationMs = 600000; 
+                    if(durationStr) {
+                        const parts = String(durationStr).split(':');
+                        if(parts.length === 2) {
+                            durationMs = (parseInt(parts[0]) * 60 + parseInt(parts[1])) * 1000;
+                        } else if(parts.length === 1) {
+                            durationMs = parseInt(parts[0]) * 60 * 1000;
+                        }
+                    }
+                    
+                    const triggerTime = durationMs * 0.9;
+                    activeLessonTimer = setTimeout(() => {
+                        window.completeLesson(element, pointsToAdd, lessonIndex);
+                    }, triggerTime);
+                }
+            }
+
+            document.querySelectorAll('#dynamic-lessons-container .lesson-row').forEach(row => {
+                row.classList.remove('lesson-active', 'bg-blue-50', 'dark:bg-slate-700');
+            });
+            element.closest('.lesson-row').classList.add('lesson-active', 'bg-blue-50', 'dark:bg-slate-700');
+        };
+
         function renderCourseLessons(courseObj) {
             const container = document.getElementById('dynamic-lessons-container');
             if(!container) return;
@@ -1379,11 +1421,15 @@
 
             lessons.forEach((lesson, index) => {
                 const isCompleted = index < courseCompletedLessons;
-                const iconClass = isCompleted ? "fa-solid fa-circle-check text-success text-sm" : "fa-regular fa-circle text-gray-300 dark:text-gray-500 text-sm group-hover:text-primary transition";
-                const activeClass = isCompleted ? "" : "group";
+                const isLocked = index > courseCompletedLessons;
+                const iconClass = isCompleted ? "fa-solid fa-circle-check text-success text-sm" : 
+                                 isLocked ? "fa-solid fa-lock text-gray-300 dark:text-gray-600 text-sm" : 
+                                 "fa-regular fa-circle text-gray-300 dark:text-gray-500 text-sm group-hover:text-primary transition";
+                const activeClass = isLocked ? "opacity-50 cursor-not-allowed" : (isCompleted ? "" : "group cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700 transition");
                 const textStyle = isCompleted ? "text-dark dark:text-white font-bold" : "text-gray-600 dark:text-gray-300 font-medium";
                 
                 const rowActive = index === 0 ? 'lesson-active bg-blue-50 dark:bg-slate-700' : '';
+                const onclickAttr = isLocked ? `onclick="alert('እባክዎ መጀመሪያ ያለፈውን ትምህርት ያጠናቅቁ!')"` : `onclick="window.playLesson(this, ${lesson.points || 100}, ${index}, '${lesson.video || ''}', '${lesson.duration || '10:00'}')"`;
 
                 container.innerHTML += `
                 <div class="border-b border-gray-100 dark:border-slate-700">
@@ -1391,7 +1437,7 @@
                         <h4 class="font-bold text-dark dark:text-white text-[13px] font-heading">ክፍል ${index + 1}: ${lesson.title}</h4>
                     </div>
                     <div class="bg-white dark:bg-slate-800 py-1 lesson-row ${rowActive}">
-                        <div class="flex gap-3 px-5 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 cursor-pointer transition ${activeClass}" onclick="window.playLesson(this, ${lesson.points || 100}, ${index}, '${lesson.video || ''}')">
+                        <div class="flex gap-3 px-5 py-3 ${activeClass}" ${onclickAttr}>
                             <div class="mt-0.5 status-icon"><i class="${iconClass}"></i></div>
                             <div class="flex-1 min-w-0">
                                 <p class="lesson-title-text text-[13px] ${textStyle} truncate transition">${lesson.title}</p>

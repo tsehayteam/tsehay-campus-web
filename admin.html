@@ -206,10 +206,7 @@
                 ግባ (Log in) <i class="fa-solid fa-arrow-right-to-bracket"></i>
             </button>
 
-            <div class="mt-8 flex justify-between items-center text-sm">
-                <button type="button" onclick="window.toggleAdminAuthMode()" id="admin-switch-btn" class="bg-white/10 hover:bg-white/20 border border-white/20 text-white px-4 py-2.5 rounded-lg font-bold transition flex items-center gap-2">
-                    <i class="fa-solid fa-user-plus"></i> አዲስ አድሚን
-                </button>
+            <div class="mt-8 flex justify-center items-center text-sm">
                 <button type="button" onclick="window.resetAdminPassword()" class="text-primary font-bold hover:text-white transition hover:underline underline-offset-4">
                     ፓስወርድ ረሱ?
                 </button>
@@ -998,47 +995,22 @@
                 errDiv.classList.remove('hidden'); 
                 return; 
             }
-
-            if(isSignupMode) {
-                const name = document.getElementById('admin-name').value;
-                if(!name) {
-                    errDiv.innerText = "እባክዎ ሙሉ ስምዎን ያስገቡ!"; 
-                    errDiv.classList.remove('hidden'); 
-                    return;
-                }
-            }
             
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ይጠብቁ...';
             btn.disabled = true;
             
             try {
-                if (isSignupMode) {
-                    const name = document.getElementById('admin-name').value;
-                    const cred = await createUserWithEmailAndPassword(window.auth, email, pwd);
-                    await updateProfile(cred.user, { displayName: name });
-                    
-                    await setDoc(doc(db, 'artifacts', appId, 'admins', cred.user.uid), {
-                        displayName: name,
-                        email: email,
-                        role: 'admin',
-                        createdAt: new Date().toISOString()
-                    });
-
-                    window.showToast("አዲስ አድሚን በተሳካ ሁኔታ ተጨምሯል!");
-                } else {
-                    await signInWithEmailAndPassword(window.auth, email, pwd);
-                }
+                await signInWithEmailAndPassword(window.auth, email, pwd);
                 const loginScreen = document.getElementById('admin-login-screen');
                 if (loginScreen) loginScreen.style.display = 'none';
             } catch(error) {
                 let errorMsg = "ስህተት: ኢሜል ወይም ፓስወርድ ትክክል አይደለም!";
-                if (error.code === 'auth/email-already-in-use') errorMsg = "ይህ ኢሜል ከዚህ በፊት ተመዝግቧል።";
-                if (error.code === 'auth/weak-password') errorMsg = "የይለፍ ቃሉ ቢያንስ 6 ፊደል/ቁጥር መሆን አለበት።";
+                if (error.code === 'auth/user-not-found') errorMsg = "በዚህ ኢሜል የተመዘገበ አድሚን የለም።";
                 
                 errDiv.innerText = errorMsg;
                 errDiv.classList.remove('hidden');
             } finally {
-                btn.innerHTML = isSignupMode ? '<i class="fa-solid fa-user-plus"></i> መዝግብ (Register)' : 'ግባ (Log in) <i class="fa-solid fa-arrow-right-to-bracket ml-2"></i>';
+                btn.innerHTML = 'ግባ (Log in) <i class="fa-solid fa-arrow-right-to-bracket ml-2"></i>';
                 btn.disabled = false;
             }
         };
