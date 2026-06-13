@@ -1895,7 +1895,9 @@
             response = response.replace(/\*/g, '');
             
             document.getElementById('ai-tool-spinner').classList.add('hidden');
-            document.getElementById('ai-tool-output').innerHTML = response;
+            const outputEl = document.getElementById('ai-tool-output');
+            outputEl.innerHTML = "";
+            outputEl.textContent = response;
         };
 
         // 💡 UPDATED AI CHAT LOGIC (Context Memory & Firebase History Save)

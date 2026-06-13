@@ -4,6 +4,7 @@
   "description": "Tsehay Campus Web App",
   "type": "module",
   "dependencies": {
+    "@paypal/paypal-server-sdk": "^2.4.0",
     "firebase-admin": "^12.0.0"
   }
 }

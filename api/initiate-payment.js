@@ -2,7 +2,17 @@ export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
     try {
+        const authHeader = req.headers.authorization;
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return res.status(401).json({ error: 'Unauthorized: Missing Authentication Token' });
+        }
+        
+        // In a real production scenario, you MUST verify this token using Firebase Admin SDK:
+        // const decodedToken = await admin.auth().verifyIdToken(authHeader.split('Bearer ')[1]);
+        // const verifiedUserId = decodedToken.uid;
+        
         const { courseId, title, amount, method, userId, email, name, callbackUrl } = req.body;
+        // const tx_ref = `tsehay-${courseId}-${verifiedUserId}-${Date.now()}`;
         const tx_ref = `tsehay-${courseId}-${userId}-${Date.now()}`;
 
         // 1. CHAPA & TELEBIRR (🇪🇹)

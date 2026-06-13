@@ -61,10 +61,37 @@ export default async function handler(req, res) {
             // ማሳሰቢያ፡ የ PayPal ፊርማ ማረጋገጫ የ PayPal API Certificate ማውረድ ስለሚጠይቅ ትንሽ ይረዝማል።
             // ለአሁን ግን ትክክለኛው የ Order Approved መልዕክት መምጣቱን ቼክ እናደርጋለን።
             if (body.event_type === 'CHECKOUT.ORDER.APPROVED' || body.event_type === 'PAYMENT.CAPTURE.COMPLETED') {
-                // PayPal ሲጀመር የተላከውን የኛን Transaction ID (tx_ref) እንወስዳለን
                 const tx_ref = body.resource.custom_id; 
-                if (tx_ref) {
-                    return await unlockCourse(tx_ref, res, "PayPal/Card");
+                const orderId = body.resource.id;
+                
+                if (tx_ref && orderId) {
+                    try {
+                        const CLIENT_ID = process.env.PAYPAL_CLIENT_ID;
+                        const CLIENT_SECRET = process.env.PAYPAL_CLIENT_SECRET;
+                        const auth = Buffer.from(`${CLIENT_ID}:${CLIENT_SECRET}`).toString('base64');
+                        
+                        const tokenResponse = await fetch('https://api-m.paypal.com/v1/oauth2/token', {
+                            method: 'POST',
+                            body: 'grant_type=client_credentials',
+                            headers: { 'Authorization': `Basic ${auth}`, 'Content-Type': 'application/x-www-form-urlencoded' }
+                        });
+                        const tokenData = await tokenResponse.json();
+                        
+                        if (tokenData.access_token) {
+                            const verifyResponse = await fetch(`https://api-m.paypal.com/v2/checkout/orders/${orderId}`, {
+                                headers: { 'Authorization': `Bearer ${tokenData.access_token}` }
+                            });
+                            const verifyData = await verifyResponse.json();
+
+                            if (verifyData.status === 'COMPLETED' || verifyData.status === 'APPROVED') {
+                                return await unlockCourse(tx_ref, res, "PayPal/Card");
+                            } else {
+                                console.error("🚨 SECURITY ALERT: PayPal Order not completed. Status:", verifyData.status);
+                            }
+                        }
+                    } catch (err) {
+                        console.error("PayPal Verification Failed:", err);
+                    }
                 }
             }
             return res.status(200).json({ message: "PayPal event ignored." });
@@ -80,7 +107,7 @@ export default async function handler(req, res) {
 
     } catch (error) {
         console.error("Webhook Processing Error:", error);
-        return res.status(500).json({ error: 'Webhook processing failed: ' + error.message });
+        return res.status(500).json({ error: 'Webhook processing failed.' });
     }
 }
 
