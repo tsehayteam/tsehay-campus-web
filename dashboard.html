@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>የመማሪያ ክፍል - Tsehay Campus</title>
-    <link rel="icon" type="image/jpeg" href="Campus Logo.jpg">
+    <link rel="icon" type="image/jpeg" href="logo.png">
     
     <!-- Theme Check Script (To prevent screen flashing) -->
     <script>
@@ -220,7 +220,7 @@
     <!-- Sidebar -->
     <aside id="mobile-sidebar" class="w-[280px] bg-white dark:bg-slate-800 border-r border-gray-200 dark:border-slate-700 flex flex-col shadow-sm z-50 shrink-0 absolute lg:relative h-full transition-transform duration-300 -translate-x-full lg:translate-x-0">
         <div class="h-[72px] flex items-center px-6 border-b border-gray-100 dark:border-slate-700">
-            <img src="Campus Logo.jpg" alt="Logo" class="h-10 w-auto rounded shadow-sm mr-3" onerror="this.src='https://ui-avatars.com/api/?name=TC&background=3268BA&color=fff'">
+            <img src="logo.png" alt="Logo" class="h-10 w-auto rounded shadow-sm mr-3" onerror="this.src='https://ui-avatars.com/api/?name=TC&background=3268BA&color=fff'">
             <span class="font-heading font-black text-xl text-dark dark:text-white tracking-tight">Tsehay<span class="text-secondary dark:text-primary">Campus</span></span>
             <button onclick="window.toggleSidebar()" class="lg:hidden ml-auto text-gray-500 dark:text-gray-400 text-xl"><i class="fa-solid fa-xmark"></i></button>
         </div>
@@ -561,12 +561,12 @@
                                             <div id="certificate-print-area" class="w-full overflow-hidden flex justify-center bg-white p-4">
                                                 <div class="cert-container">
                                                     <div class="cert-inner">
-                                                        <img src="Campus Logo.jpg" class="cert-watermark" onerror="this.style.display='none'">
+                                                        <img src="logo.png" class="cert-watermark" onerror="this.style.display='none'">
                                                         
                                                         <div class="cert-content">
                                                             <div class="flex justify-center mb-6">
                                                                 <div class="w-20 h-20 bg-white rounded-xl shadow-md border border-gray-100 p-1 flex items-center justify-center">
-                                                                    <img src="Campus Logo.jpg" alt="Logo" class="max-w-full max-h-full rounded-lg" onerror="this.src='https://ui-avatars.com/api/?name=TC&background=3268BA&color=fff'">
+                                                                    <img src="logo.png" alt="Logo" class="max-w-full max-h-full rounded-lg" onerror="this.src='https://ui-avatars.com/api/?name=TC&background=3268BA&color=fff'">
                                                                 </div>
                                                             </div>
                                                             
@@ -1672,7 +1672,7 @@
             container.innerHTML = myEnrolledCourses.map(c => `
                 <div class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-slate-700 p-4 shadow-sm hover:shadow-md transition cursor-pointer transform hover:-translate-y-1" onclick="window.loadCourse('${c.id}')">
                     <div class="relative overflow-hidden h-40 bg-gray-100 dark:bg-slate-700 rounded-xl mb-4 group">
-                        <img src="${c.image || 'Campus Logo.jpg'}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500" onerror="this.src='https://placehold.co/400x250?text=Course'">
+                        <img src="${c.image || 'logo.png'}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500" onerror="this.src='https://placehold.co/400x250?text=Course'">
                         <div class="absolute inset-0 bg-black/20 group-hover:bg-transparent transition duration-500"></div>
                         <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-300">
                             <div class="w-12 h-12 bg-white/30 backdrop-blur-md rounded-full flex items-center justify-center text-white"><i class="fa-solid fa-play ml-1"></i></div>

@@ -44,17 +44,19 @@ export default async function handler(req, res) {
 
   // Security: Token Verification
   const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ error: "Unauthorized: Missing or invalid token." });
-  }
-
-  const idToken = authHeader.split('Bearer ')[1];
   let userId;
-  try {
-      const decodedToken = await admin.auth().verifyIdToken(idToken);
-      userId = decodedToken.uid;
-  } catch (error) {
-      return res.status(401).json({ error: "Unauthorized: Token verification failed." });
+
+  if (authHeader && authHeader.startsWith('Bearer ') && authHeader !== 'Bearer ') {
+      const idToken = authHeader.split('Bearer ')[1];
+      try {
+          const decodedToken = await admin.auth().verifyIdToken(idToken);
+          userId = decodedToken.uid;
+      } catch (error) {
+          return res.status(401).json({ error: "Unauthorized: Token verification failed." });
+      }
+  } else {
+      // Fallback to IP address for anonymous users
+      userId = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'anonymous_user';
   }
 
   // Security: Rate Limiting
