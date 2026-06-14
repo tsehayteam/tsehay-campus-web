@@ -18,6 +18,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <!-- HTML2PDF for Certificate Generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -49,6 +52,19 @@
                 }
             }
         }
+
+        // PDF Generation Function
+        window.downloadPDF = function() {
+            const element = document.getElementById('certificate-print-area');
+            const opt = {
+                margin: 0,
+                filename: 'Tsehay-Certificate.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'in', format: 'letter', orientation: 'landscape' }
+            };
+            html2pdf().set(opt).from(element).save();
+        };
     </script>
 
     <style>
@@ -1319,6 +1335,18 @@
 
         let activeLessonTimer = null;
 
+        window.downloadPDF = function() {
+            const element = document.getElementById('certificate-print-area');
+            const opt = {
+                margin:       0,
+                filename:     'Tsehay_Campus_Certificate.pdf',
+                image:        { type: 'jpeg', quality: 1.0 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'in', format: 'letter', orientation: 'landscape' }
+            };
+            html2pdf().set(opt).from(element).save();
+        };
+
         window.completeLesson = async function(element, pointsToAdd, lessonIndex) {
             const icon = element.querySelector('.status-icon i');
             if (icon && icon.classList.contains('fa-circle-check')) return; 
@@ -1354,6 +1382,12 @@
                 activeLessonTimer = null;
             }
             
+            // Set the global active video title for the AI Context
+            const activeTitleEl = element.querySelector('.lesson-title-text');
+            if (activeTitleEl) {
+                window.activeVideoTitle = activeTitleEl.innerText;
+            }
+            
             if(videoUrl) {
                 const videoContainer = document.getElementById('video-container');
                 let finalVideoUrl = videoUrl;
@@ -1366,8 +1400,27 @@
                     </div>`;
 
                     const videoEl = document.getElementById('course-video-player');
+                    
+                    // --- VIDEO PROGRESS TRACKING LOGIC ---
+                    const progressRef = doc(db, 'artifacts', appId, 'users', userId, 'videoProgress', `${currentCourseId}_${lessonIndex}`);
+                    try {
+                        const snap = await getDoc(progressRef);
+                        if (snap.exists() && snap.data().currentTime) {
+                            videoEl.currentTime = snap.data().currentTime;
+                        }
+                    } catch(e) { console.error("Error loading progress", e); }
+                    
+                    let lastSaveTime = 0;
+                    // -------------------------------------
+
                     videoEl.addEventListener('timeupdate', () => {
                         if(videoEl.duration > 0) {
+                            // Save progress every 5 seconds
+                            if (videoEl.currentTime - lastSaveTime > 5) {
+                                lastSaveTime = videoEl.currentTime;
+                                setDoc(progressRef, { currentTime: videoEl.currentTime, duration: videoEl.duration }, { merge: true }).catch(e=>console.error(e));
+                            }
+
                             const progress = videoEl.currentTime / videoEl.duration;
                             if(progress >= 0.9) {
                                 window.completeLesson(element, pointsToAdd, lessonIndex);
