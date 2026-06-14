@@ -217,7 +217,16 @@
         #google_translate_element select:hover { border-color: #3268BA; }
         .goog-logo-link { display: none !important; }
         .goog-te-gadget { color: transparent !important; font-size: 0px !important; }
+
+        /* Plyr.js Custom Gold Branding */
+        :root {
+            --plyr-color-main: #f9b03c;
+            --plyr-video-control-color: #f1f5f9;
+            --plyr-video-control-background-hover: #f9b03c;
+        }
     </style>
+    <!-- Plyr.js CSS -->
+    <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
 </head>
 <body class="text-dark dark:text-gray-100 antialiased h-screen flex overflow-hidden relative bg-bodyBg dark:bg-slate-900 transition-colors duration-300 hidden" id="main-body">
 
@@ -1413,61 +1422,117 @@
                 let finalVideoUrl = videoUrl;
                 if(finalVideoUrl.includes('drive.google.com')) finalVideoUrl = window.getDriveEmbedLink(finalVideoUrl);
                 
+                // Destroy previous player instance if it exists
+                if(window.coursePlayer) {
+                    window.coursePlayer.destroy();
+                    window.coursePlayer = null;
+                }
+                
                 if (finalVideoUrl.toLowerCase().endsWith('.mp4') || finalVideoUrl.toLowerCase().includes('.mp4?')) {
                     videoContainer.innerHTML = `
                     <div class="video-wrapper relative" oncontextmenu="return false;">
-                        <video id="course-video-player" src="${finalVideoUrl}" controls controlsList="nodownload" class="w-full h-full object-cover outline-none bg-black" style="accent-color: #F9B03C;"></video>
+                        <video id="course-video-player" playsinline controls class="w-full h-full object-cover outline-none bg-black">
+                            <source src="${finalVideoUrl}" type="video/mp4" />
+                        </video>
                     </div>`;
 
-                    const videoEl = document.getElementById('course-video-player');
+                    window.coursePlayer = new Plyr('#course-video-player', {
+                        controls: ['play-large', 'play', 'progress', 'current-time', 'duration', 'mute', 'volume', 'captions', 'settings', 'pip', 'airplay', 'fullscreen'],
+                        settings: ['captions', 'quality', 'speed']
+                    });
                     
                     // --- VIDEO PROGRESS TRACKING LOGIC ---
                     const progressRef = doc(db, 'artifacts', appId, 'users', userId, 'videoProgress', `${currentCourseId}_${lessonIndex}`);
                     try {
                         const snap = await getDoc(progressRef);
                         if (snap.exists() && snap.data().currentTime) {
-                            videoEl.currentTime = snap.data().currentTime;
+                            window.coursePlayer.once('canplay', () => {
+                                window.coursePlayer.currentTime = snap.data().currentTime;
+                            });
                         }
                     } catch(e) { console.error("Error loading progress", e); }
                     
                     let lastSaveTime = 0;
-                    // -------------------------------------
-
-                    videoEl.addEventListener('timeupdate', () => {
-                        if(videoEl.duration > 0) {
-                            // Save progress every 5 seconds
-                            if (videoEl.currentTime - lastSaveTime > 5) {
-                                lastSaveTime = videoEl.currentTime;
-                                setDoc(progressRef, { currentTime: videoEl.currentTime, duration: videoEl.duration }, { merge: true }).catch(e=>console.error(e));
+                    window.coursePlayer.on('timeupdate', (event) => {
+                        const instance = event.detail.plyr;
+                        if(instance.duration > 0) {
+                            if (instance.currentTime - lastSaveTime > 5) {
+                                lastSaveTime = instance.currentTime;
+                                setDoc(progressRef, { currentTime: instance.currentTime, duration: instance.duration }, { merge: true }).catch(e=>console.error(e));
                             }
-
-                            const progress = videoEl.currentTime / videoEl.duration;
-                            if(progress >= 0.9) {
+                            if((instance.currentTime / instance.duration) >= 0.9) {
                                 window.completeLesson(element, pointsToAdd, lessonIndex);
                             }
                         }
                     });
                 } else {
-                    videoContainer.innerHTML = `
-                    <div class="video-wrapper relative" oncontextmenu="return false;">
-                        <iframe src="${finalVideoUrl}" allowfullscreen class="w-full h-full pointer-events-auto border-none"></iframe>
-                        <div class="absolute top-0 left-0 w-full h-20 z-[50] bg-transparent cursor-default" onmousedown="return false;" onclick="return false;" title="Protected Content"></div>
-                    </div>`;
-
-                    let durationMs = 600000; 
-                    if(durationStr) {
-                        const parts = String(durationStr).split(':');
-                        if(parts.length === 2) {
-                            durationMs = (parseInt(parts[0]) * 60 + parseInt(parts[1])) * 1000;
-                        } else if(parts.length === 1) {
-                            durationMs = parseInt(parts[0]) * 60 * 1000;
-                        }
+                    // YouTube Embed using Plyr
+                    // Determine YouTube ID
+                    let youtubeId = '';
+                    if(finalVideoUrl.includes('youtube.com/watch?v=')) {
+                        youtubeId = finalVideoUrl.split('v=')[1].split('&')[0];
+                    } else if(finalVideoUrl.includes('youtu.be/')) {
+                        youtubeId = finalVideoUrl.split('youtu.be/')[1].split('?')[0];
+                    } else if(finalVideoUrl.includes('youtube.com/embed/')) {
+                        youtubeId = finalVideoUrl.split('embed/')[1].split('?')[0];
                     }
-                    
-                    const triggerTime = durationMs * 0.9;
-                    activeLessonTimer = setTimeout(() => {
-                        window.completeLesson(element, pointsToAdd, lessonIndex);
-                    }, triggerTime);
+
+                    if(youtubeId) {
+                        videoContainer.innerHTML = `
+                        <div class="video-wrapper relative w-full h-full" oncontextmenu="return false;">
+                            <div id="course-video-player" data-plyr-provider="youtube" data-plyr-embed-id="${youtubeId}"></div>
+                            <div class="absolute top-0 left-0 w-full h-20 z-[50] bg-transparent cursor-default" onmousedown="return false;" onclick="return false;" title="Protected Content"></div>
+                        </div>`;
+                        
+                        window.coursePlayer = new Plyr('#course-video-player');
+                        
+                        let lastSaveTime = 0;
+                        const progressRef = doc(db, 'artifacts', appId, 'users', userId, 'videoProgress', `${currentCourseId}_${lessonIndex}`);
+                        
+                        try {
+                            const snap = await getDoc(progressRef);
+                            if (snap.exists() && snap.data().currentTime) {
+                                window.coursePlayer.once('ready', () => {
+                                    window.coursePlayer.currentTime = snap.data().currentTime;
+                                });
+                            }
+                        } catch(e) { console.error("Error loading progress", e); }
+
+                        window.coursePlayer.on('timeupdate', (event) => {
+                            const instance = event.detail.plyr;
+                            if(instance.duration > 0) {
+                                if (instance.currentTime - lastSaveTime > 5) {
+                                    lastSaveTime = instance.currentTime;
+                                    setDoc(progressRef, { currentTime: instance.currentTime, duration: instance.duration }, { merge: true }).catch(e=>console.error(e));
+                                }
+                                if((instance.currentTime / instance.duration) >= 0.9) {
+                                    window.completeLesson(element, pointsToAdd, lessonIndex);
+                                }
+                            }
+                        });
+                    } else {
+                        // Fallback generic iframe
+                        videoContainer.innerHTML = `
+                        <div class="video-wrapper relative" oncontextmenu="return false;">
+                            <iframe src="${finalVideoUrl}" allowfullscreen class="w-full h-full pointer-events-auto border-none"></iframe>
+                            <div class="absolute top-0 left-0 w-full h-20 z-[50] bg-transparent cursor-default" onmousedown="return false;" onclick="return false;" title="Protected Content"></div>
+                        </div>`;
+
+                        let durationMs = 600000; 
+                        if(durationStr) {
+                            const parts = String(durationStr).split(':');
+                            if(parts.length === 2) {
+                                durationMs = (parseInt(parts[0]) * 60 + parseInt(parts[1])) * 1000;
+                            } else if(parts.length === 1) {
+                                durationMs = parseInt(parts[0]) * 60 * 1000;
+                            }
+                        }
+                        
+                        const triggerTime = durationMs * 0.9;
+                        activeLessonTimer = setTimeout(() => {
+                            window.completeLesson(element, pointsToAdd, lessonIndex);
+                        }, triggerTime);
+                    }
                 }
             }
 
@@ -2039,5 +2104,7 @@
         };
 
     </script>
+    <!-- Plyr.js Library -->
+    <script src="https://cdn.plyr.io/3.7.8/plyr.js"></script>
 </body>
 </html>
