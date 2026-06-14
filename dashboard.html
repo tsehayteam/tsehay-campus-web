@@ -245,7 +245,7 @@
             <p class="px-4 text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">ዋና ማውጫ</p>
             
             <a href="#" onclick="window.switchMainView('course-view', this); return false;" class="sidebar-link flex items-center gap-3 px-4 py-3 nav-item-active rounded-lg transition text-gray-600 dark:text-gray-300 font-semibold">
-                <i class="fa-solid fa-play-circle text-lg w-5 text-center"></i> የመማሪያ ክፍል
+                <i class="fa-solid fa-play-circle text-primary text-lg w-5 text-center"></i> የመማሪያ ክፍል
             </a>
             <a href="#" onclick="window.switchMainView('my-courses-view', this); return false;" class="sidebar-link flex items-center gap-3 px-4 py-3 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 hover:text-dark dark:hover:text-white rounded-lg font-semibold transition">
                 <i class="fa-solid fa-layer-group text-lg w-5 text-center"></i> የኔ ኮርሶች
@@ -1515,7 +1515,7 @@
                             <div class="flex-1 min-w-0">
                                 <p class="lesson-title-text text-[13px] ${textStyle} truncate transition">${lesson.title}</p>
                                 <div class="flex items-center gap-2 mt-1 text-[11px] text-gray-400 dark:text-gray-500">
-                                    <i class="fa-solid fa-video"></i> <span>${lesson.duration || '10:00'}</span>
+                                    <i class="fa-solid fa-video text-primary"></i> <span>${lesson.duration || '10:00'}</span>
                                     <span class="text-primary font-bold ml-2">+${lesson.points || 100} ነጥብ</span>
                                 </div>
                             </div>
@@ -1748,7 +1748,7 @@
                         <img src="${c.image || 'logo.png'}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500" onerror="this.src='https://placehold.co/400x250?text=Course'">
                         <div class="absolute inset-0 bg-black/20 group-hover:bg-transparent transition duration-500"></div>
                         <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-300">
-                            <div class="w-12 h-12 bg-white/30 backdrop-blur-md rounded-full flex items-center justify-center text-white"><i class="fa-solid fa-play ml-1"></i></div>
+                            <div class="w-14 h-14 bg-primary text-dark shadow-[0_0_20px_rgba(249,176,60,0.6)] backdrop-blur-md rounded-full flex items-center justify-center transition hover:scale-110"><i class="fa-solid fa-play ml-1 text-xl"></i></div>
                         </div>
                     </div>
                     <h3 class="font-bold text-dark dark:text-white text-lg font-heading line-clamp-1 mb-1">${c.title}</h3>
