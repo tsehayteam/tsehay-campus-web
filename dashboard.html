@@ -884,6 +884,10 @@
         };
 
         window.switchTab = function(evt, tabName) {
+            if (tabName === 'quiz' && courseTotalLessons > 0 && courseCompletedLessons < courseTotalLessons) {
+                showCloudSaveToast("እባክዎ ፈተናውን ከመውሰድዎ በፊት ሁሉንም ትምህርቶች ያጠናቅቁ!");
+                return;
+            }
             let tc = document.getElementsByClassName("tab-content");
             for (let i = 0; i < tc.length; i++) tc[i].classList.remove("active");
             let tb = document.getElementsByClassName("tab-btn");
@@ -1325,7 +1329,23 @@
             }
 
             getDoc(doc(db, 'artifacts', appId, 'users', userId, 'progress', currentCourseId)).then(snap => {
-                courseCompletedLessons = snap.exists() ? (snap.data().completedLessons || 0) : 0;
+                if (snap.exists()) {
+                    courseCompletedLessons = snap.data().completedLessons || 0;
+                    if (snap.data().passedQuiz) {
+                        document.getElementById('cert-locked').classList.add('hidden');
+                        document.getElementById('cert-unlocked').classList.remove('hidden');
+                        document.getElementById('cert-student-name').innerText = userName;
+                        document.getElementById('cert-course-name').innerText = currentCourseTitle;
+                        document.getElementById('cert-date').innerText = snap.data().passedDate || new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+                    } else {
+                        document.getElementById('cert-locked').classList.remove('hidden');
+                        document.getElementById('cert-unlocked').classList.add('hidden');
+                    }
+                } else {
+                    courseCompletedLessons = 0;
+                    document.getElementById('cert-locked').classList.remove('hidden');
+                    document.getElementById('cert-unlocked').classList.add('hidden');
+                }
                 renderCourseLessons(c);
             });
 
@@ -1909,7 +1929,10 @@
                 confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
                 createNotification('የምስክር ወረቀት', `የ ${currentCourseTitle} ኮርሱን አጠናቀው ሰርተፍኬት አግኝተዋል!`);
                 
-                if (userId) setDoc(doc(db, 'artifacts', appId, 'users', userId, 'progress', 'main'), { totalPoints: totalPoints }, {merge:true}).catch(e=>{});
+                if (userId) {
+                    setDoc(doc(db, 'artifacts', appId, 'users', userId, 'progress', 'main'), { totalPoints: totalPoints }, {merge:true}).catch(e=>{});
+                    setDoc(doc(db, 'artifacts', appId, 'users', userId, 'progress', currentCourseId), { passedQuiz: true, passedDate: today }, {merge:true}).catch(e=>{});
+                }
             } else {
                 icon.className = "w-24 h-24 rounded-full flex items-center justify-center text-4xl mx-auto mb-6 bg-red-100 dark:bg-red-500/20 text-danger";
                 icon.innerHTML = '<i class="fa-solid fa-xmark"></i>';
