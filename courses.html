@@ -966,9 +966,14 @@
             try {
                 let domain = window.location.hostname ? (window.location.protocol + '//' + window.location.host) : 'https://tsehay-campus-web.vercel.app';
                 let callbackUrl = domain + '/dashboard.html';
+                const token = await window.currentUser.getIdToken();
 
                 const response = await fetch('/api/initiate-payment', {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    method: 'POST', 
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
                     body: JSON.stringify({
                         courseId: course.id, title: course.title, amount: course.price, method: method,
                         userId: window.currentUser.uid, email: window.currentUser.email,

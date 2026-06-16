@@ -253,6 +253,10 @@
         <nav class="flex-1 overflow-y-auto py-6 px-3 space-y-1.5 font-body">
             <p class="px-4 text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">ዋና ማውጫ</p>
             
+            <a href="index.html" class="sidebar-link flex items-center gap-3 px-4 py-3 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 hover:text-dark dark:hover:text-white rounded-lg font-semibold transition">
+                <i class="fa-solid fa-house text-lg w-5 text-center"></i> ወደ ዋናው ገፅ
+            </a>
+            
             <a href="#" onclick="window.switchMainView('course-view', this); return false;" class="sidebar-link flex items-center gap-3 px-4 py-3 nav-item-active rounded-lg transition text-gray-600 dark:text-gray-300 font-semibold">
                 <i class="fa-solid fa-play-circle text-primary text-lg w-5 text-center"></i> የመማሪያ ክፍል
             </a>
@@ -368,9 +372,6 @@
                                     <button class="tab-btn active px-6 py-4 font-heading text-[15px] text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white whitespace-nowrap transition-colors" onclick="window.switchTab(event, 'overview')">አጠቃላይ እይታ</button>
                                     <button class="tab-btn px-6 py-4 font-heading text-[15px] text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white whitespace-nowrap flex items-center gap-2 transition-colors" onclick="window.switchTab(event, 'notes')">
                                         <i class="fa-regular fa-pen-to-square"></i> ማስታወሻ
-                                    </button>
-                                    <button class="tab-btn px-6 py-4 font-heading text-[15px] text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white whitespace-nowrap flex items-center gap-2 transition-colors" onclick="window.switchTab(event, 'ai')">
-                                        <i class="fa-solid fa-wand-magic-sparkles text-primary"></i> AI ረዳት
                                     </button>
                                     <button class="tab-btn px-6 py-4 font-heading text-[15px] text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white whitespace-nowrap transition-colors" onclick="window.switchTab(event, 'qa')">ጥያቄ እና መልስ <i class="fa-regular fa-comments ml-1"></i></button>
                                     
@@ -893,10 +894,6 @@
         };
 
         window.switchTab = function(evt, tabName) {
-            if (tabName === 'quiz' && courseTotalLessons > 0 && courseCompletedLessons < courseTotalLessons) {
-                showCloudSaveToast("እባክዎ ፈተናውን ከመውሰድዎ በፊት ሁሉንም ትምህርቶች ያጠናቅቁ!");
-                return;
-            }
             let tc = document.getElementsByClassName("tab-content");
             for (let i = 0; i < tc.length; i++) tc[i].classList.remove("active");
             let tb = document.getElementsByClassName("tab-btn");
