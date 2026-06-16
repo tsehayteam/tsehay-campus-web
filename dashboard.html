@@ -1320,18 +1320,48 @@
             let finalVideoUrl = c.video;
             if(finalVideoUrl && finalVideoUrl.includes('drive.google.com')) finalVideoUrl = window.getDriveEmbedLink(finalVideoUrl);
             
+            if(window.coursePlayer) {
+                window.coursePlayer.destroy();
+                window.coursePlayer = null;
+            }
+
             if(finalVideoUrl) {
                 if (finalVideoUrl.toLowerCase().endsWith('.mp4') || finalVideoUrl.toLowerCase().includes('.mp4?')) {
                     videoContainer.innerHTML = `
                     <div class="video-wrapper relative" oncontextmenu="return false;">
-                        <video src="${finalVideoUrl}" controls controlsList="nodownload" class="w-full h-full object-cover outline-none bg-black" style="accent-color: #F9B03C;"></video>
+                        <video id="course-video-player" playsinline controls class="w-full h-full object-cover outline-none bg-black">
+                            <source src="${finalVideoUrl}" type="video/mp4" />
+                        </video>
                     </div>`;
+                    
+                    window.coursePlayer = new Plyr('#course-video-player', {
+                        controls: ['play-large', 'play', 'progress', 'current-time', 'duration', 'mute', 'volume', 'captions', 'settings', 'pip', 'airplay', 'fullscreen'],
+                        settings: ['captions', 'quality', 'speed']
+                    });
                 } else {
-                    videoContainer.innerHTML = `
-                    <div class="video-wrapper relative" oncontextmenu="return false;">
-                        <iframe src="${finalVideoUrl}" allowfullscreen class="w-full h-full pointer-events-auto border-none"></iframe>
-                        <div class="absolute top-0 left-0 w-full h-20 z-[50] bg-transparent cursor-default" onmousedown="return false;" onclick="return false;" title="Protected Content"></div>
-                    </div>`;
+                    let youtubeId = '';
+                    if(finalVideoUrl.includes('youtube.com/watch?v=')) {
+                        youtubeId = finalVideoUrl.split('v=')[1].split('&')[0];
+                    } else if(finalVideoUrl.includes('youtu.be/')) {
+                        youtubeId = finalVideoUrl.split('youtu.be/')[1].split('?')[0];
+                    } else if(finalVideoUrl.includes('youtube.com/embed/')) {
+                        youtubeId = finalVideoUrl.split('embed/')[1].split('?')[0];
+                    }
+
+                    if(youtubeId) {
+                        videoContainer.innerHTML = `
+                        <div class="video-wrapper relative w-full h-full" oncontextmenu="return false;">
+                            <div id="course-video-player" data-plyr-provider="youtube" data-plyr-embed-id="${youtubeId}"></div>
+                            <div class="absolute top-0 left-0 w-full h-20 z-[50] bg-transparent cursor-default" onmousedown="return false;" onclick="return false;" title="Protected Content"></div>
+                        </div>`;
+                        window.coursePlayer = new Plyr('#course-video-player');
+                    } else {
+                        videoContainer.innerHTML = `
+                        <div class="video-wrapper relative" oncontextmenu="return false;">
+                            <iframe src="${finalVideoUrl}" allowfullscreen class="w-full h-full pointer-events-auto border-none"></iframe>
+                            <div class="absolute top-0 left-0 w-full h-20 z-[50] bg-transparent cursor-default" onmousedown="return false;" onclick="return false;" title="Protected Content"></div>
+                        </div>`;
+                    }
                 }
             } else {
                 videoContainer.innerHTML = `<div class="video-wrapper"><div class="absolute inset-0 flex items-center justify-center bg-gray-900 text-white"><p>ቪዲዮ አልተገኘም</p></div></div>`;
