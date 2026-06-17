@@ -712,7 +712,7 @@
                 window.filterCourses(); 
             }, (error) => {
                 const grid = document.getElementById('courseGrid');
-                if(grid) grid.innerHTML = `<p class="col-span-full text-center text-danger font-bold">ዳታቤዙን ማምጣት አልተቻለም።</p>`;
+                if(grid) grid.innerHTML = `<p class="col-span-full text-center text-danger font-bold">ዳታቤዙን ማምጣት አልተቻለም። ስህተት: ${error.message || 'Unknown error'}</p>`;
             });
         };
 

@@ -1260,7 +1260,9 @@ Primary language: Amharic (using Ethiopic script). Use English terms for technic
                     snapshot.forEach(docSnap => {
                         const c = docSnap.data();
                         c.id = docSnap.id;
-                        if (c.status !== 'Active') return;
+                        
+                        const cStatus = c.status ? c.status.trim().toLowerCase() : 'active';
+                        if (cStatus === 'draft') return;
                         
                         if (window.allFetchedCourses !== undefined) window.allFetchedCourses.push(c);
                         
@@ -1326,7 +1328,7 @@ Primary language: Amharic (using Ethiopic script). Use English terms for technic
                 }, (error) => {
                     console.error("Courses fetch error:", error);
                     const listUi = document.getElementById('courseList');
-                    if(listUi) listUi.innerHTML = `<p class="col-span-full text-center text-danger font-bold">ኮርሶችን ማምጣት አልተቻለም። እባክዎ ኢንተርኔትዎን ያረጋግጡ።</p>`;
+                    if(listUi) listUi.innerHTML = `<p class="col-span-full text-center text-danger font-bold">ኮርሶችን ማምጣት አልተቻለም። ስህተት: ${error.message || 'Unknown error'}</p>`;
                 });
             };
 
