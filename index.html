@@ -1247,16 +1247,19 @@ Primary language: Amharic (using Ethiopic script). Use English terms for technic
                 onSnapshot(coursesCol, (snapshot) => {
                     if (window.allFetchedCourses !== undefined) window.allFetchedCourses = [];
                     const listUi = document.getElementById('courseList');
+                    const noCourseMsg = document.getElementById('noCourseMessage');
                     if (listUi) listUi.innerHTML = '';
                     
                     if (snapshot.empty) {
                         if(listUi) listUi.innerHTML = '<p class="col-span-full text-center text-gray-400 font-bold">እስካሁን ምንም ኮርስ አልተጨመረም!</p>';
+                        if(noCourseMsg) noCourseMsg.classList.add('hidden');
                         return;
                     }
                     
                     let count = 0;
                     snapshot.forEach(docSnap => {
                         const c = docSnap.data();
+                        c.id = docSnap.id;
                         if (c.status !== 'Active') return;
                         
                         if (window.allFetchedCourses !== undefined) window.allFetchedCourses.push(c);
@@ -1309,7 +1312,22 @@ Primary language: Amharic (using Ethiopic script). Use English terms for technic
                                 </div>
                             </div>`;
                     });
-                }, (error) => console.error(error));
+                    
+                    if(count === 0) {
+                        if(listUi) listUi.innerHTML = '';
+                        if(noCourseMsg) {
+                            noCourseMsg.classList.remove('hidden');
+                        } else if(listUi) {
+                            listUi.innerHTML = '<p class="col-span-full text-center text-gray-400 font-bold">እስካሁን ምንም ኮርስ አልተጨመረም!</p>';
+                        }
+                    } else {
+                        if(noCourseMsg) noCourseMsg.classList.add('hidden');
+                    }
+                }, (error) => {
+                    console.error("Courses fetch error:", error);
+                    const listUi = document.getElementById('courseList');
+                    if(listUi) listUi.innerHTML = `<p class="col-span-full text-center text-danger font-bold">ኮርሶችን ማምጣት አልተቻለም። እባክዎ ኢንተርኔትዎን ያረጋግጡ።</p>`;
+                });
             };
 
             fetchPublicCourses();
