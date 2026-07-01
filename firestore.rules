@@ -59,10 +59,15 @@ service cloud.firestore {
         // Gamification Progress
         match /progress/{document=**} {
           allow read: if request.auth != null && request.auth.uid == userId;
-          allow create: if request.auth != null && request.auth.uid == userId;
+          // When creating, points must not exceed 50 (or omit points entirely)
+          allow create: if request.auth != null && request.auth.uid == userId
+                        && (!request.resource.data.keys().hasAny(['points']) 
+                            || (request.resource.data.points is number && request.resource.data.points <= 50));
+          // When updating, points must not increment by more than 50 at a time
           allow update: if request.auth != null && request.auth.uid == userId
                         && (!request.resource.data.keys().hasAny(['points']) 
-                            || request.resource.data.points is number);
+                            || (request.resource.data.points is number 
+                                && request.resource.data.points <= resource.data.points + 50));
         }
 
         // Enrollments - The Critical Security Lock

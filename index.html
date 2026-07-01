@@ -93,15 +93,15 @@
         ::-webkit-scrollbar-thumb:hover { background: #3268BA; }
         .dark ::-webkit-scrollbar-thumb { background: #333333; }
         
-        /* Google Translate Fixed Styling */
-        .goog-te-banner-frame { display: none !important; }
-        .VIpgJd-ZVi9od-ORHb-OEVmcd { display: none !important; }
+        
+
+
         body { top: 0px !important; position: static !important; }
         html { top: 0 !important; height: 100%; }
         
-        .goog-logo-link { display: none !important; }
-        .goog-te-gadget { color: transparent !important; font-size: 0px !important; }
-        #google_translate_element { display: none !important; }
+
+
+
 
         @keyframes modalPop {
             0% { opacity: 0; transform: scale(0.95); }
@@ -818,7 +818,7 @@
             
             <div class="border-t border-white/10 pt-6 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-gray-500">
                 <div class="text-center md:text-left">
-                    <p>&copy; 2026 <span class="notranslate" translate="no">Tsehay Campus</span>, Inc. መብቱ በህግ የተጠበቀ ነው።</p>
+                    <p>&copy; 2026 <span class="notranslate" translate="no">Tsehay Campus</span> መብቱ በህግ የተጠበቀ ነው።</p>
                     <div class="mt-2.5 flex items-center justify-center md:justify-start gap-2 text-gray-400 font-bold uppercase tracking-widest text-[11px]">
                         <span>Powered By</span>
                         <img src="TD Logo.jpg" alt="TD Logo" class="h-6 w-auto rounded-sm shadow-sm" onerror="this.src='https://ui-avatars.com/api/?name=TD&background=F9B03C&color=0f172a&rounded=true'">
@@ -879,7 +879,7 @@
                     
                     resultsContainer.innerHTML += `
                         <div class="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-800 border-b border-gray-100 dark:border-gray-800 cursor-pointer transition" onclick="window.requireAuthAndNavigate('courses.html')">
-                            <img src="${c.image || 'https://placehold.co/100x100?text=Course'}" class="w-12 h-12 object-cover rounded-lg shrink-0">
+                            <img src="${c.image || 'logo.png'}" class="w-12 h-12 object-cover rounded-lg shrink-0">
                             <div class="flex-1 min-w-0">
                                 <h4 class="font-bold text-sm text-dark dark:text-white truncate">${c.title}</h4>
                                 <p class="text-xs text-gray-500 truncate">${c.instructor || 'Tsehay Campus'}</p>
@@ -1102,7 +1102,7 @@
     </script>
 
     <!-- Hidden Google Translate Element -->
-    <div id="google_translate_element"></div>
+    
     <script>
         function googleTranslateElementInit() {
             setTimeout(function() {
@@ -1115,7 +1115,7 @@
             }, 500);
         }
     </script>
-    <script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+    
 
     <!-- Firebase Integration -->
     <script type="module">
@@ -1289,7 +1289,7 @@ Primary language: Amharic (using Ethiopic script). Use English terms for technic
                             <div class="course-card rounded-2xl overflow-hidden flex flex-col group cursor-pointer shadow-sm border border-gray-100 dark:border-gray-800 bg-white dark:bg-darkCard" onclick="window.requireAuthAndNavigate('courses.html')">
                                 <div class="relative overflow-hidden h-48 bg-gray-100 dark:bg-dark">
                                     ${badgeHTML}
-                                    <img src="${c.image}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500" onerror="this.src='https://placehold.co/400x250?text=Course'">
+                                    <img src="${window.getSafeImageUrl ? window.getSafeImageUrl(c.image) : c.image}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500" onerror="this.src='logo.png'">
                                     <div class="absolute inset-0 bg-black/20 group-hover:bg-transparent transition duration-500"></div>
                                 </div>
                                 <div class="p-6 flex flex-col flex-1">
@@ -1473,7 +1473,7 @@ Primary language: Amharic (using Ethiopic script). Use English terms for technic
                 } 
                 catch (error) { 
                     if(errorDiv) { 
-                        errorDiv.innerText = "ስህተት: " + error.message; 
+                        errorDiv.innerText = "ስህተት: " + 'የቴክኒክ ችግር አጋጥሟል! እባክዎ ትንሽ ቆይተው እንደገና ይሞክሩ።'; 
                         errorDiv.classList.remove('hidden'); 
                         errorDiv.className = "bg-red-50 dark:bg-red-900/30 text-danger border border-red-200 dark:border-red-800 text-sm p-3 rounded-lg mb-5 font-bold text-center";
                     } 
@@ -1501,7 +1501,7 @@ Primary language: Amharic (using Ethiopic script). Use English terms for technic
                     }
                 } catch (error) {
                     if (errorDiv) {
-                        errorDiv.innerText = "ስህተት: " + (error.code === 'auth/user-not-found' ? "ይህ ኢሜል አልተመዘገበም።" : error.message);
+                        errorDiv.innerText = "ስህተት: " + (error.code === 'auth/user-not-found' ? "ይህ ኢሜል አልተመዘገበም።" : 'የቴክኒክ ችግር አጋጥሟል! እባክዎ ትንሽ ቆይተው እንደገና ይሞክሩ።');
                         errorDiv.classList.remove('hidden');
                         errorDiv.className = "bg-red-50 dark:bg-red-900/30 text-danger border border-red-200 dark:border-red-800 text-sm p-3 rounded-lg mb-5 font-bold text-center";
                     }
@@ -1567,7 +1567,7 @@ Primary language: Amharic (using Ethiopic script). Use English terms for technic
                     }
                     window.goToDashboard();
                 } catch (error) {
-                    let errorMsg = "ስህተት: " + error.message;
+                    let errorMsg = "ስህተት: " + 'የቴክኒክ ችግር አጋጥሟል! እባክዎ ትንሽ ቆይተው እንደገና ይሞክሩ።';
                     
                     if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
                         errorMsg = "ኢሜል ወይም የይለፍ ቃል ትክክል አይደለም!";
@@ -1602,5 +1602,6 @@ Primary language: Amharic (using Ethiopic script). Use English terms for technic
             console.error("Firebase module error:", err);
         }
     </script>
+    <script src="translations.js"></script>
 </body>
 </html>

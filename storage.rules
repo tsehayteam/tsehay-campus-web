@@ -2,30 +2,31 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
     
-    // Allow public read for all files (like course thumbnails, profile pictures)
-    match /{allPaths=**} {
+    // Public files (e.g. logos, public thumbnails)
+    match /public/{allPaths=**} {
       allow read: if true;
     }
 
-    // Allow users to upload to their own directory, restricted to images under 5MB
+    // User's own directory (Private files, profile pics)
     match /users/{userId}/{allPaths=**} {
+      allow read: if request.auth != null && request.auth.uid == userId;
       allow write: if request.auth != null 
                    && request.auth.uid == userId
                    && request.resource.size < 5 * 1024 * 1024
                    && request.resource.contentType.matches('image/.*');
     }
 
-    // Only admins should write to courses. To enforce this securely via client, 
-    // ideally use custom claims. Since we can't easily check Firestore from Storage 
-    // without custom claims, we should either block client writes entirely
-    // or rely on Admin SDK (which bypasses these rules).
+    // Courses directory
+    // NOTE: Ideally, use Custom Claims or Signed URLs to restrict by enrollment. 
+    // For now, restrict to authenticated users only (prevents public scraping).
     match /courses/{allPaths=**} {
-      allow write: if false; // All course uploads MUST go through Admin SDK or Firebase Console
+      allow read: if request.auth != null;
+      allow write: if false; // Only Admin SDK or Firebase Console can upload courses
     }
     
-    // Explicit deny for any other writes
+    // Default deny for everything else
     match /{allPaths=**} {
-      allow write: if false;
+      allow read, write: if false;
     }
   }
 }

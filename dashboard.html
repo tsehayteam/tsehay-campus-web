@@ -196,27 +196,27 @@
         .dark .toggle-checkbox:checked + .toggle-label { background-color: var(--primary); }
 
         /* Google Translate Hidden Rules */
-        #google_translate_element { opacity: 0; position: absolute; z-index: -1; pointer-events: none; }
-        .goog-te-banner-frame { display: none !important; }
-        .VIpgJd-ZVi9od-ORHb-OEVmcd { display: none !important; }
+
+
+
         body { top: 0px !important; position: static !important; }
         html { top: 0 !important; height: 100%; }
-        /* Google Translate Fixed Styling */
-        .goog-te-banner-frame { display: none !important; }
-        .VIpgJd-ZVi9od-ORHb-OEVmcd { display: none !important; }
+        
+
+
         body { top: 0px !important; position: static !important; }
         html { top: 0 !important; height: 100%; }
-        #google_translate_element select {
+
             background-color: #f1f5f9; color: #334155; border: 1px solid #e2e8f0; border-radius: 0.5rem;
             padding: 0.4rem 0.8rem; font-family: 'Montserrat', sans-serif; font-size: 0.8rem; font-weight: 700;
             outline: none; cursor: pointer;
         }
-        .dark #google_translate_element select {
+
             background-color: #1e293b; color: #cbd5e1; border-color: #334155;
         }
-        #google_translate_element select:hover { border-color: #3268BA; }
-        .goog-logo-link { display: none !important; }
-        .goog-te-gadget { color: transparent !important; font-size: 0px !important; }
+
+
+
 
         /* Plyr.js Custom Gold Branding */
         :root {
@@ -319,7 +319,7 @@
                     <i class="fa-solid fa-cart-shopping"></i> ተጨማሪ ኮርሶች
                 </button>
 
-                <div id="google_translate_element" class="hidden sm:block mt-1"></div>
+                
                 
                 <button onclick="window.toggleTheme()" class="w-9 h-9 rounded-full bg-gray-100 dark:bg-slate-700 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-slate-600 transition shadow-sm shrink-0">
                     <i id="theme-icon" class="fa-solid fa-moon text-slate-600 dark:text-yellow-400 text-sm"></i>
@@ -1245,7 +1245,7 @@
                 
                 window.showCloudSaveToast('የግል መረጃዎ በተሳካ ሁኔታ ተስተካክሏል!');
                 createNotification('ፕሮፋይል ማስተካከያ', 'የግል መረጃዎ በተሳካ ሁኔታ ታድሷል።');
-            } catch(e) { window.showCloudSaveToast('ስህተት: ' + e.message, true); }
+            } catch(e) { window.showCloudSaveToast('ስህተት: ' + 'የቴክኒክ ችግር አጋጥሟል! እባክዎ ትንሽ ቆይተው እንደገና ይሞክሩ።', true); }
         };
 
         window.changeUserPassword = async function() {
@@ -1274,7 +1274,7 @@
                 await sendPasswordResetEmail(window.auth, window.auth.currentUser.email);
                 window.showCloudSaveToast("የይለፍ ቃል መቀየሪያ ሊንክ ወደ ኢሜልዎ ተልኳል!");
                 createNotification("የደህንነት ማሳወቂያ", "የይለፍ ቃል መቀየሪያ ሊንክ ወደ ኢሜልዎ ተልኳል።");
-            } catch(e) { window.showCloudSaveToast('ስህተት: ' + e.message, true); }
+            } catch(e) { window.showCloudSaveToast('ስህተት: ' + 'የቴክኒክ ችግር አጋጥሟል! እባክዎ ትንሽ ቆይተው እንደገና ይሞክሩ።', true); }
         }
 
         window.handleLogout = async function() {
@@ -1837,7 +1837,7 @@
             container.innerHTML = myEnrolledCourses.map(c => `
                 <div class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-slate-700 p-4 shadow-sm hover:shadow-md transition cursor-pointer transform hover:-translate-y-1" onclick="window.loadCourse('${c.id}')">
                     <div class="relative overflow-hidden h-40 bg-gray-100 dark:bg-slate-700 rounded-xl mb-4 group">
-                        <img src="${c.image || 'logo.png'}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500" onerror="this.src='https://placehold.co/400x250?text=Course'">
+                        <img src="${window.getSafeImageUrl ? window.getSafeImageUrl(c.image) : (c.image || 'logo.png')}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500" onerror="this.src='logo.png'">
                         <div class="absolute inset-0 bg-black/20 group-hover:bg-transparent transition duration-500"></div>
                         <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-300">
                             <div class="w-14 h-14 bg-primary text-dark shadow-[0_0_20px_rgba(249,176,60,0.6)] backdrop-blur-md rounded-full flex items-center justify-center transition hover:scale-110"><i class="fa-solid fa-play ml-1 text-xl"></i></div>
@@ -2133,5 +2133,6 @@
     </script>
     <!-- Plyr.js Library -->
     <script src="https://cdn.plyr.io/3.7.8/plyr.js"></script>
+    <script src="translations.js"></script>
 </body>
 </html>

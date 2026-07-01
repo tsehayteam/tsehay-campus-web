@@ -123,22 +123,22 @@
         .toggle-checkbox:checked + .toggle-label { background-color: var(--secondary); }
         .dark .toggle-checkbox:checked + .toggle-label { background-color: var(--primary); }
 
-        /* Google Translate Fixed Styling for Footer */
-        .goog-te-banner-frame { display: none !important; }
-        .VIpgJd-ZVi9od-ORHb-OEVmcd { display: none !important; }
+        
+
+
         body { top: 0px !important; position: static !important; }
         html { top: 0 !important; height: 100%; }
-        #google_translate_element_footer select {
+
             background-color: #f1f5f9; color: #334155; border: 1px solid #e2e8f0; border-radius: 0.5rem;
             padding: 0.4rem 0.8rem; font-family: 'Montserrat', sans-serif; font-size: 0.8rem; font-weight: 700;
             outline: none; cursor: pointer; max-width: 150px;
         }
-        .dark #google_translate_element_footer select {
+
             background-color: #1e293b; color: #cbd5e1; border-color: #334155;
         }
-        #google_translate_element_footer select:hover { border-color: #3268BA; }
-        .goog-logo-link { display: none !important; }
-        .goog-te-gadget { color: transparent !important; font-size: 0px !important; }
+
+
+
     </style>
 </head>
 <body class="text-dark dark:text-gray-100 antialiased h-screen overflow-hidden flex bg-bodyBg dark:bg-slate-900 transition-colors duration-300">
@@ -614,7 +614,7 @@
             <!-- Footer with Translate widget inside main content -->
             <footer class="mt-12 p-4 border-t border-gray-200 dark:border-slate-700 flex justify-between items-center bg-transparent shrink-0">
                 <p class="text-xs text-gray-500 font-bold">&copy; 2026 Tsehay Campus Admin</p>
-                <div id="google_translate_element_footer" class="overflow-hidden rounded-lg border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 shadow-sm"></div>
+                
             </footer>
         </main>
     </div>
@@ -1324,7 +1324,7 @@
                 }
 
                 window.showToast('ፕሮፋይልዎ በተሳካ ሁኔታ ተስተካክሏል!');
-            } catch(e) { window.showToast('ስህተት: ' + e.message, true); }
+            } catch(e) { window.showToast('ስህተት: ' + 'የቴክኒክ ችግር አጋጥሟል! እባክዎ ትንሽ ቆይተው እንደገና ይሞክሩ።', true); }
         };
 
         function loadSettings() {
@@ -1348,7 +1348,7 @@
             try {
                 await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'general'), { siteName, telegramLink }, { merge: true });
                 window.showToast('የሲስተም ቅንብሮቹ ሴቭ ተደርገዋል!');
-            } catch(e) { window.showToast('ስህተት: ' + e.message, true); }
+            } catch(e) { window.showToast('ስህተት: ' + 'የቴክኒክ ችግር አጋጥሟል! እባክዎ ትንሽ ቆይተው እንደገና ይሞክሩ።', true); }
         };
 
         onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'courses'), (snapshot) => {
@@ -1581,7 +1581,7 @@
                 await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'qa', id), { adminReply: reply }, { merge: true });
                 window.showToast("ምላሹ በቀጥታ ለተማሪው ደርሷል!");
                 document.getElementById('qa-modal').classList.replace('flex', 'hidden');
-            } catch(e) { window.showToast("Error: " + e.message, true); }
+            } catch(e) { window.showToast("ስህተት: " + 'የቴክኒክ ችግር አጋጥሟል! እባክዎ ትንሽ ቆይተው እንደገና ይሞክሩ።', true); }
         };
 
         // 💡 BROADCAST NOTIFICATIONS LOGIC 💡
@@ -1675,7 +1675,7 @@
                 const safeDataStr = encodeURIComponent(JSON.stringify(c));
 
                 tr.innerHTML = `
-                    <td><img src="${c.image}" class="w-16 h-12 object-cover rounded-xl shadow-sm border border-gray-200 dark:border-slate-600" onerror="this.src='https://placehold.co/100x80?text=No+Img'"></td>
+                    <td><img src="${window.getSafeImageUrl ? window.getSafeImageUrl(c.image) : c.image}" class="w-16 h-12 object-cover rounded-xl shadow-sm border border-gray-200 dark:border-slate-600" onerror="this.src='logo.png'"></td>
                     <td class="font-black text-dark dark:text-white course-title-cell text-[15px]">${c.title}</td>
                     <td class="font-bold text-gray-500 text-xs">${c.category || 'General'}</td>
                     <td class="font-black text-secondary dark:text-primary">${priceDisplay}</td>
@@ -1886,7 +1886,7 @@
 
     </script>
     
-    <!-- Google Translate Script for Admin Footer -->
+    
     <script>
         function googleTranslateElementInit() {
             setTimeout(function() {
@@ -1898,7 +1898,8 @@
             }, 500);
         }
     </script>
-    <script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+    
 
+    <script src="translations.js"></script>
 </body>
 </html>

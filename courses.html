@@ -66,10 +66,10 @@
         #toast { pointer-events: none; }
         #toast.show { transform: translateX(0) !important; opacity: 1 !important; }
 
-        .goog-te-banner-frame, .VIpgJd-ZVi9od-ORHb-OEVmcd { display: none !important; }
+
         body { top: 0px !important; position: static !important; }
         html { top: 0 !important; height: 100%; }
-        #google_translate_element { display: none !important; }
+
         
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: transparent; }
@@ -447,7 +447,7 @@
             
             <div class="border-t border-white/10 pt-6 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-gray-500">
                 <div class="text-center md:text-left">
-                    <p>&copy; 2026 <span class="notranslate" translate="no">Tsehay Campus</span>, Inc. መብቱ በህግ የተጠበቀ ነው።</p>
+                    <p>&copy; 2026 <span class="notranslate" translate="no">Tsehay Campus</span> መብቱ በህግ የተጠበቀ ነው።</p>
                     <div class="mt-2.5 flex items-center justify-center md:justify-start gap-2 text-gray-400 font-bold uppercase tracking-widest text-[11px]">
                         <span>Powered By</span>
                         <img src="TD Logo.jpg" alt="TD Logo" class="h-6 w-auto rounded-sm shadow-sm" onerror="this.src='https://ui-avatars.com/api/?name=TD&background=F9B03C&color=0f172a&rounded=true'">
@@ -633,7 +633,7 @@
                     <div class="course-card bg-white dark:bg-darkCard rounded-[2rem] overflow-hidden shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col h-full">
                         <div class="relative h-56 bg-gray-100 dark:bg-dark overflow-hidden group">
                             ${badgeHtml}
-                            <img src="${c.image}" class="w-full h-full object-cover group-hover:scale-110 transition duration-700" onerror="this.src='https://placehold.co/600x400?text=Course'">
+                            <img src="${window.getSafeImageUrl ? window.getSafeImageUrl(c.image) : c.image}" class="w-full h-full object-cover group-hover:scale-110 transition duration-700" onerror="this.src='logo.png'">
                             <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
                             <div class="absolute bottom-4 left-4 text-white">
                                 <span class="bg-black/70 backdrop-blur-md px-3 py-1.5 rounded-lg text-[10px] font-black text-white uppercase tracking-wider border border-white/20 notranslate">${displayCat}</span>
@@ -676,7 +676,7 @@
         });
     </script>
 
-    <div id="google_translate_element" style="display:none;"></div>
+    
     <script>
         function googleTranslateElementInit() {
             setTimeout(function() {
@@ -684,7 +684,7 @@
             }, 500);
         }
     </script>
-    <script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+    
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
@@ -744,7 +744,7 @@
             } 
             catch (error) { 
                 if(errorDiv) { 
-                    errorDiv.innerText = "ስህተት: " + error.message; 
+                    errorDiv.innerText = "ስህተት: " + 'የቴክኒክ ችግር አጋጥሟል! እባክዎ ትንሽ ቆይተው እንደገና ይሞክሩ።'; 
                     errorDiv.classList.remove('hidden'); 
                     errorDiv.className = "bg-red-50 dark:bg-red-900/30 text-danger border border-red-200 dark:border-red-800 text-sm p-3 rounded-lg mb-5 font-bold text-center";
                 } 
@@ -772,7 +772,7 @@
                 }
             } catch (error) {
                 if (errorDiv) {
-                    errorDiv.innerText = "ስህተት: " + (error.code === 'auth/user-not-found' ? "ይህ ኢሜል አልተመዘገበም።" : error.message);
+                    errorDiv.innerText = "ስህተት: " + (error.code === 'auth/user-not-found' ? "ይህ ኢሜል አልተመዘገበም።" : 'የቴክኒክ ችግር አጋጥሟል! እባክዎ ትንሽ ቆይተው እንደገና ይሞክሩ።');
                     errorDiv.classList.remove('hidden');
                     errorDiv.className = "bg-red-50 dark:bg-red-900/30 text-danger border border-red-200 dark:border-red-800 text-sm p-3 rounded-lg mb-5 font-bold text-center";
                 }
@@ -838,7 +838,7 @@
                 window.closeAuthModal();
                 window.location.reload();
             } catch (error) {
-                let errorMsg = "ስህተት: " + error.message;
+                let errorMsg = "ስህተት: " + 'የቴክኒክ ችግር አጋጥሟል! እባክዎ ትንሽ ቆይተው እንደገና ይሞክሩ።';
                 
                 if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
                     errorMsg = "ኢሜል ወይም የይለፍ ቃል ትክክል አይደለም!";
@@ -1003,5 +1003,6 @@
         }, 4000);
 
     </script>
+    <script src="translations.js"></script>
 </body>
 </html>
