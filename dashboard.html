@@ -721,27 +721,12 @@
                                 </div>
                             </div>
                             
-                            <div class="bg-white dark:bg-slate-800 rounded-3xl p-6 md:p-8 shadow-sm border border-gray-200 dark:border-slate-700">
-                                <h3 class="text-lg font-bold mb-6 text-danger border-b border-gray-100 dark:border-slate-700 pb-3"><i class="fa-solid fa-shield-halved mr-2"></i> የይለፍ ቃል (Password) መለወጫ</h3>
-                                
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                                    <div>
-                                        <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">የድሮ ፓስወርድ (Current)</label>
-                                        <input id="settings-current-pwd" type="password" class="w-full p-3.5 rounded-xl border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-900 text-dark dark:text-white outline-none focus:border-danger transition text-sm" placeholder="••••••••">
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">አዲስ ፓስወርድ (New)</label>
-                                        <input id="settings-new-pwd" type="password" class="w-full p-3.5 rounded-xl border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-900 text-dark dark:text-white outline-none focus:border-danger transition text-sm" placeholder="ቢያንስ 6 ፊደል/ቁጥር">
-                                    </div>
-                                </div>
-                                <div class="flex flex-col sm:flex-row items-center gap-4 justify-between mt-2">
-                                    <button onclick="window.sendPasswordReset()" class="text-sm font-bold text-secondary dark:text-primary hover:underline flex items-center gap-1 mx-auto sm:mx-0">
-                                        <i class="fa-solid fa-envelope"></i> የድሮው ከጠፋብኝ
-                                    </button>
-                                    <button onclick="window.changeUserPassword()" class="w-full sm:w-auto bg-danger text-white px-8 py-3 rounded-xl font-bold shadow hover:bg-red-600 transition">
-                                        ፓስወርድ ቀይር
-                                    </button>
-                                </div>
+                            <div class="bg-white dark:bg-slate-800 rounded-3xl p-6 md:p-8 shadow-sm border border-gray-200 dark:border-slate-700 text-center">
+                                <h3 class="text-lg font-bold mb-4 text-danger border-b border-gray-100 dark:border-slate-700 pb-3 text-left"><i class="fa-solid fa-shield-halved mr-2"></i> የይለፍ ቃል (Password) መለወጫ</h3>
+                                <p class="text-sm text-gray-500 dark:text-gray-400 mb-6 font-body">የይለፍ ቃል መቀየር ከፈለጉ፣ እባክዎ ከታች ያለውን ቁልፍ ይጫኑ። ደህንነቱ የተጠበቀ የይለፍ ቃል መቀየሪያ ሊንክ ወደ ኢሜልዎ እንልካለን።</p>
+                                <button onclick="window.sendPasswordReset()" class="bg-dark dark:bg-primary text-white dark:text-dark px-8 py-3.5 rounded-xl font-bold shadow-lg hover:bg-secondary dark:hover:bg-yellow-400 transition inline-flex items-center gap-2">
+                                    የይለፍ ቃል ቀይር (Reset Password) <i class="fa-solid fa-envelope-circle-check"></i>
+                                </button>
                             </div>
                         </div>
                         
@@ -1137,19 +1122,39 @@
             const list = document.getElementById('notifications-list');
             if(!list) return;
             if(systemNotifications.length === 0) {
-                list.innerHTML = '<div class="text-center py-10 text-gray-400">ምንም ማሳወቂያ የለም</div>'; return;
+                list.innerHTML = '<div class="text-center py-10 text-gray-400 font-body">ምንም ማሳወቂያ የለም</div>'; return;
             }
-            list.innerHTML = systemNotifications.map(n => `
-                <div class="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-secondary dark:border-primary p-4 rounded-r-xl flex gap-4 items-start shadow-sm mb-2">
+            list.innerHTML = systemNotifications.map(n => {
+                const isRead = n.read;
+                const borderClass = isRead ? 'border-gray-200 dark:border-slate-700' : 'border-secondary dark:border-primary';
+                const bgClass = isRead ? 'bg-gray-50 dark:bg-slate-800/50' : 'bg-blue-50 dark:bg-blue-900/20';
+                const opacityClass = isRead ? 'opacity-60' : 'opacity-100';
+                
+                return `<div class="${bgClass} border-l-4 ${borderClass} p-4 rounded-r-xl flex gap-4 items-start shadow-sm mb-2 relative group transition-all ${opacityClass}">
                     <div class="w-10 h-10 rounded-full bg-secondary/10 dark:bg-primary/10 flex items-center justify-center text-secondary dark:text-primary shrink-0"><i class="fa-solid fa-bell text-lg"></i></div>
-                    <div>
-                        <h4 class="font-bold text-dark dark:text-white">${n.title}</h4>
-                        <p class="text-sm text-gray-600 dark:text-gray-300 mt-1 leading-relaxed font-body">${n.desc}</p>
-                        <p class="text-xs text-gray-400 font-bold mt-2">${n.time}</p>
+                    <div class="flex-1 pr-12">
+                        <h4 class="font-bold text-dark dark:text-white">${n.title || 'ማሳወቂያ'}</h4>
+                        <p class="text-sm text-gray-600 dark:text-gray-300 mt-1 leading-relaxed font-body">${n.desc || n.message}</p>
+                        <p class="text-xs text-gray-400 font-bold mt-2">${n.time || ''}</p>
                     </div>
-                </div>
-            `).join('');
+                    <div class="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        ${!isRead ? `<button onclick="window.markNotifRead('${n.id}')" class="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 text-secondary hover:bg-secondary hover:text-white transition flex items-center justify-center" title="አንብቤዋለሁ"><i class="fa-solid fa-check"></i></button>` : ''}
+                        <button onclick="window.deleteNotif('${n.id}')" class="w-8 h-8 rounded-full bg-red-100 dark:bg-red-900 text-danger hover:bg-danger hover:text-white transition flex items-center justify-center" title="አጥፋ"><i class="fa-solid fa-trash-can text-sm"></i></button>
+                    </div>
+                </div>`;
+            }).join('');
         }
+
+        window.markNotifRead = async function(id) {
+            if(!userId) return;
+            try { await setDoc(doc(db, 'artifacts', appId, 'users', userId, 'notifications', id), { read: true }, {merge: true}); } catch(e) {}
+        };
+
+        window.deleteNotif = async function(id) {
+            if(!userId) return;
+            if(!confirm("እርግጠኛ ነዎት ይህን ማሳወቂያ ማጥፋት ይፈልጋሉ?")) return;
+            try { await deleteDoc(doc(db, 'artifacts', appId, 'users', userId, 'notifications', id)); } catch(e) {}
+        };
 
         window.clearMessageBadge = function() {
             document.getElementById('header-notif-badge')?.classList.add('hidden');
@@ -1209,7 +1214,7 @@
 
             try {
                 if(window.auth.currentUser && !window.auth.currentUser.isAnonymous) {
-                    await updateProfile(window.auth.currentUser, { displayName: newName, photoURL: newPhotoBase64 });
+                    await updateProfile(window.auth.currentUser, { displayName: newName });
                 }
                 
                 await setDoc(doc(db, 'artifacts', appId, 'users', userId, 'profile', 'info'), {
@@ -1226,28 +1231,10 @@
                 
                 window.showCloudSaveToast('የግል መረጃዎ በተሳካ ሁኔታ ተስተካክሏል!');
                 createNotification('ፕሮፋይል ማስተካከያ', 'የግል መረጃዎ በተሳካ ሁኔታ ታድሷል።');
-            } catch(e) { window.showCloudSaveToast('ስህተት: ' + 'የቴክኒክ ችግር አጋጥሟል! እባክዎ ትንሽ ቆይተው እንደገና ይሞክሩ።', true); }
+            } catch(e) { window.showCloudSaveToast('ስህተት: መረጃውን ማደስ አልተቻለም። እባክዎ እንደገና ይሞክሩ።', true); console.error(e); }
         };
 
-        window.changeUserPassword = async function() {
-            if(!window.auth.currentUser || window.auth.currentUser.isAnonymous) return window.showCloudSaveToast('ይህ አካውንት አኖኒመስ ነው።', true);
-            const currentPwd = document.getElementById('settings-current-pwd').value;
-            const newPwd = document.getElementById('settings-new-pwd').value;
-            
-            if(!currentPwd || !newPwd) return window.showCloudSaveToast('እባክዎ ፓስወርዶቹን ያስገቡ', true);
-            if(newPwd.length < 6) return window.showCloudSaveToast('አዲሱ ፓስወርድ ቢያንስ 6 ፊደል መሆን አለበት', true);
 
-            try {
-                const credential = EmailAuthProvider.credential(window.auth.currentUser.email, currentPwd);
-                await reauthenticateWithCredential(window.auth.currentUser, credential);
-                await updatePassword(window.auth.currentUser, newPwd);
-                
-                window.showCloudSaveToast('ፓስወርድዎ በተሳካ ሁኔታ ተቀይሯል!');
-                createNotification("የደህንነት ማሳወቂያ", "የይለፍ ቃልዎ በተሳካ ሁኔታ ተቀይሯል።");
-                document.getElementById('settings-current-pwd').value = '';
-                document.getElementById('settings-new-pwd').value = '';
-            } catch(e) { window.showCloudSaveToast('ያስገቡት የድሮ ፓስወርድ ትክክል አይደለም።', true); }
-        };
 
         window.sendPasswordReset = async function() {
             if(!window.auth.currentUser || window.auth.currentUser.isAnonymous) return;
@@ -1255,7 +1242,7 @@
                 await sendPasswordResetEmail(window.auth, window.auth.currentUser.email);
                 window.showCloudSaveToast("የይለፍ ቃል መቀየሪያ ሊንክ ወደ ኢሜልዎ ተልኳል!");
                 createNotification("የደህንነት ማሳወቂያ", "የይለፍ ቃል መቀየሪያ ሊንክ ወደ ኢሜልዎ ተልኳል።");
-            } catch(e) { window.showCloudSaveToast('ስህተት: ' + 'የቴክኒክ ችግር አጋጥሟል! እባክዎ ትንሽ ቆይተው እንደገና ይሞክሩ።', true); }
+            } catch(e) { window.showCloudSaveToast('ስህተት: ማገናኛውን መላክ አልተቻለም። እባክዎ እንደገና ይሞክሩ።', true); console.error(e); }
         }
 
         window.handleLogout = async function() {
