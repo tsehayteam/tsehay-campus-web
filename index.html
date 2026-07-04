@@ -323,7 +323,9 @@
                 <div class="relative w-full max-w-[450px]">
                     <div class="absolute inset-0 bg-secondary rounded-full blur-[100px] opacity-50 dark:opacity-30"></div>
                     <div class="relative w-full h-[350px] rounded-2xl shadow-2xl border-4 border-white/10 overflow-hidden group z-10">
-                        <video id="hero-video" src="assets/for_landing_page_first.mp4" autoplay loop muted playsinline class="w-full h-full object-cover"></video>
+                        <video id="hero-video" autoplay loop muted playsinline preload="auto" class="w-full h-full object-cover">
+                            <source src="assets/for_landing_page_first.mp4" type="video/mp4">
+                        </video>
                         
                         <!-- Custom Video Controls in Brand Color -->
                         <div class="absolute bottom-4 left-1/2 -translate-x-1/2 w-[90%] max-w-[400px] bg-black/80 backdrop-blur-md px-8 py-3 rounded-xl flex items-center justify-center gap-12 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-30 shadow-2xl border border-primary/50">
@@ -1036,8 +1038,18 @@
             if(video && playPauseBtn && muteUnmuteBtn) {
                 playPauseBtn.addEventListener('click', () => {
                     if (video.paused) {
-                        video.play();
-                        playPauseBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+                        const playPromise = video.play();
+                        if (playPromise !== undefined) {
+                            playPromise.then(() => {
+                                playPauseBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+                            }).catch(error => {
+                                console.error("Auto-play was prevented:", error);
+                                // Revert icon if play fails
+                                playPauseBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
+                            });
+                        } else {
+                            playPauseBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+                        }
                     } else {
                         video.pause();
                         playPauseBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
