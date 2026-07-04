@@ -669,7 +669,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail, signInWithCustomToken, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, getDocs, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, doc, setDoc, getDocs, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyDCxlwfYAS_I0D7c-8e-iB-Y-Rh2ZZoHZw", authDomain: "tsehaycampus-e1a6d.firebaseapp.com", projectId: "tsehaycampus-e1a6d", storageBucket: "tsehaycampus-e1a6d.firebasestorage.app", messagingSenderId: "1043616909865", appId: "1:1043616909865:web:9ecca7d9a14deef0f5ea38" };
         const app = initializeApp(firebaseConfig);
@@ -713,14 +713,22 @@
             try { 
                 const result = await signInWithPopup(auth, provider);
                 const currentAppId = typeof __app_id !== 'undefined' ? __app_id : 'tsehaycampus-e1a6d';
-                await setDoc(doc(db, 'artifacts', currentAppId, 'users', result.user.uid, 'profile', 'info'), {
-                    displayName: result.user.displayName || 'ተማሪ',
-                    email: result.user.email,
-                    photoURL: result.user.photoURL || '',
-                    registeredAt: new Date().toISOString()
-                }, { merge: true });
+                const userRef = doc(db, 'artifacts', currentAppId, 'users', result.user.uid, 'profile', 'info');
+                const docSnap = await getDoc(userRef);
                 
-                window.location.reload();
+                if (docSnap.exists() && docSnap.data().phone) {
+                    await setDoc(userRef, { lastLoginAt: new Date().toISOString() }, { merge: true });
+                    if(window.goToDashboard) window.goToDashboard();
+                    else window.location.reload();
+                } else {
+                    await signOut(auth);
+                    if (errorDiv) {
+                        errorDiv.innerHTML = "በዚህ አካውንት የተመዘገበ መረጃ የለም! እባክዎ መጀመሪያ መረጃዎን ሞልተው አዲስ ይመዝገቡ (Sign Up)።";
+                        errorDiv.classList.remove('hidden');
+                        errorDiv.className = "bg-warning/20 text-warning border border-warning text-sm p-3 rounded-lg mb-5 font-bold text-center";
+                    }
+                    if(window.openAuthModal) window.openAuthModal(true);
+                }
             } 
             catch (error) { 
                 if(errorDiv) { 
