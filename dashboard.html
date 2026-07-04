@@ -798,7 +798,10 @@
                     <p class="text-[10px] text-blue-200 font-semibold">24/7 የግል ሞግዚት</p>
                 </div>
             </div>
-            <button onclick="document.getElementById('ai-widget').classList.add('translate-y-full', 'opacity-0');" class="text-white/70 hover:text-white transition"><i class="fa-solid fa-xmark text-lg"></i></button>
+            <div class="flex items-center gap-3">
+                <button onclick="window.clearAiChatHistory()" class="text-white/70 hover:text-red-400 transition" title="ታሪክ አጥፋ (Clear History)"><i class="fa-solid fa-trash-can text-sm"></i></button>
+                <button onclick="document.getElementById('ai-widget').classList.add('translate-y-full', 'opacity-0');" class="text-white/70 hover:text-white transition"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
         </div>
         
         <div id="ai-widget-main-area" class="flex-1 flex flex-col min-h-0">
@@ -1716,6 +1719,34 @@
                 hideLoader();
             });
 
+            window.loadAiChatHistory = async function() {
+                const snap = await getDocs(collection(db, 'artifacts', appId, 'users', userId, 'aichat'));
+                const chatContainer = document.getElementById('chat-messages');
+                if (!chatContainer) return;
+                window.aiChatHistory = [];
+                snap.forEach(doc => {
+                    window.aiChatHistory.push({ id: doc.id, ...doc.data() });
+                });
+                window.aiChatHistory.sort((a, b) => a.timestamp - b.timestamp);
+                
+                chatContainer.innerHTML = '';
+                window.aiChatHistory.forEach(msg => {
+                    if(msg.sender === 'user') {
+                        chatContainer.innerHTML += `<div class="self-end max-w-[85%] bg-primary text-dark font-medium p-3 rounded-2xl rounded-tr-none shadow-sm">${msg.text}</div>`;
+                    } else {
+                        const encodedText = encodeURIComponent(msg.text);
+                        chatContainer.innerHTML += `<div class="self-start max-w-[85%] bg-white dark:bg-slate-800 p-3 rounded-2xl rounded-tl-none shadow-sm text-gray-800 dark:text-gray-200 text-[13px] leading-relaxed group relative">
+                            ${msg.text}
+                            <button onclick="window.saveAiToNotes(decodeURIComponent('${encodedText}'))" class="absolute -bottom-3 -right-2 bg-secondary text-white text-[10px] px-2 py-1 rounded shadow-md opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 hover:bg-blue-600" title="ወደ ማስታወሻ አስቀምጥ">
+                                <i class="fa-solid fa-thumbtack"></i> አቆይ
+                            </button>
+                        </div>`;
+                    }
+                });
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            };
+            window.loadAiChatHistory();
+
             onSnapshot(collection(db, 'artifacts', appId, 'users', userId, 'notes'), (snapshot) => {
                 const list = document.getElementById('saved-notes-list');
                 if(!list) return;
@@ -1883,6 +1914,35 @@
         window.deleteNote = async function(noteId) {
             if(!userId) return;
             try { await deleteDoc(doc(db, 'artifacts', appId, 'users', userId, 'notes', noteId)); window.showCloudSaveToast('ማስታወሻው ጠፍቷል!'); } catch(e) {}
+        };
+
+        window.saveAiToNotes = async function(text) {
+            if(!userId) return;
+            const noteId = Date.now().toString();
+            try {
+                await setDoc(doc(db, 'artifacts', appId, 'users', userId, 'notes', noteId), { 
+                    text: text, 
+                    timestamp: Date.now() 
+                }, { merge: true });
+                window.showCloudSaveToast();
+                createNotification("ማስታወሻ", "የ AI መልስ ወደ ማስታወሻዎ ተቀምጧል!");
+            } catch(e) { console.error(e); }
+        };
+
+        window.clearAiChatHistory = async function() {
+            if(!userId) return;
+            if(!confirm("እርግጠኛ ነዎት የ AI ውይይት ታሪክ ማጥፋት ይፈልጋሉ?")) return;
+            try {
+                const snap = await getDocs(collection(db, 'artifacts', appId, 'users', userId, 'aichat'));
+                const deletePromises = [];
+                snap.forEach(d => {
+                    deletePromises.push(deleteDoc(doc(db, 'artifacts', appId, 'users', userId, 'aichat', d.id)));
+                });
+                await Promise.all(deletePromises);
+                window.aiChatHistory = [];
+                document.getElementById('chat-messages').innerHTML = '';
+                createNotification("ታሪክ", "የ AI ውይይት ታሪክ ጠፍቷል!");
+            } catch(e) { console.error(e); }
         };
 
         let dynamicQuizData = [];
@@ -2096,7 +2156,13 @@
             
             const typingEl = document.getElementById(typingId); if(typingEl) typingEl.remove();
             
-            c.innerHTML += `<div class="self-start max-w-[85%] bg-white dark:bg-slate-800 p-3 rounded-2xl rounded-tl-none shadow-sm text-gray-800 dark:text-gray-200 text-[13px] leading-relaxed">${response}</div>`;
+            const encodedResp = encodeURIComponent(response);
+            c.innerHTML += `<div class="self-start max-w-[85%] bg-white dark:bg-slate-800 p-3 rounded-2xl rounded-tl-none shadow-sm text-gray-800 dark:text-gray-200 text-[13px] leading-relaxed group relative">
+                ${response}
+                <button onclick="window.saveAiToNotes(decodeURIComponent('${encodedResp}'))" class="absolute -bottom-3 -right-2 bg-secondary text-white text-[10px] px-2 py-1 rounded shadow-md opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 hover:bg-blue-600" title="ወደ ማስታወሻ አስቀምጥ">
+                    <i class="fa-solid fa-thumbtack"></i> አቆይ
+                </button>
+            </div>`;
             c.scrollTop = c.scrollHeight;
 
             // Save AI Message to History
