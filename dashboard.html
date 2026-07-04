@@ -1111,7 +1111,7 @@
             }
         }
 
-        window.showCloudSaveToast = function(msg = 'ወደ ዳታቤዝ ሴቭ ተደርጓል!', isError = false) {
+        window.showCloudSaveToast = function(msg = 'በተሳካ ሁኔታ ተቀምጧል!', isError = false) {
             const toast = document.getElementById("toast");
             if(!toast) return;
             toast.innerHTML = `<i class="fa-solid ${isError ? 'fa-triangle-exclamation' : 'fa-cloud-arrow-up'} mr-2"></i> ${msg}`;
@@ -1400,7 +1400,7 @@
             courseCompletedLessons = Math.max(courseCompletedLessons, lessonIndex + 1);
             
             window.updateProgressUI();
-            window.showCloudSaveToast('ወደ ዳታቤዝ ሴቭ ተደርጓል!');
+            window.showCloudSaveToast('በተሳካ ሁኔታ ተቀምጧል!');
             createNotification("ክፍል ተጠናቋል", `የ ${currentCourseTitle} ኮርስ ትምህርት አጠናቀዋል፣ +${pointsToAdd} ነጥብ አግኝተዋል!`);
             
             try { 
