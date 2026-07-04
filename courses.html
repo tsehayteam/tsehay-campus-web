@@ -20,31 +20,8 @@
 
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <script>
-        window.tailwind = window.tailwind || {};
-        window.tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#F9B03C',
-                        secondary: '#3268BA',
-                        dark: '#000000',
-                        darkCard: '#111111',
-                        light: '#FFFFFF',
-                        bodyBg: '#f4f7fb',
-                        success: '#10b981',
-                        danger: '#ef4444',
-                        warning: '#f59e0b'
-                    },
-                    fontFamily: {
-                        heading: ['Montserrat', 'Noto Sans Ethiopic', 'sans-serif'],
-                        body: ['Roboto', 'Noto Sans Ethiopic', 'sans-serif'],
-                    }
-                }
-            }
-        }
-    </script>
+    <!-- Tailwind Configuration -->
+    <script src="assets/js/tailwind-config.js"></script>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&family=Noto+Sans+Ethiopic:wght@400;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
@@ -309,30 +286,33 @@
                 <h4 class="font-bold text-sm text-gray-500 mb-3 uppercase tracking-wider">የክፍያ አማራጭ ይምረጡ</h4>
                 <div class="space-y-3 mb-8">
                     <!-- Chapa (Includes Telebirr/Banks) -->
-                    <label class="payment-option selected flex items-center justify-between p-4 rounded-xl border border-gray-200 dark:border-gray-800 cursor-pointer transition">
+                    <label class="payment-option selected flex items-center justify-between p-4 rounded-xl border border-gray-200 dark:border-gray-800 cursor-pointer transition bg-white dark:bg-darkCard hover:bg-gray-50 dark:hover:bg-gray-900">
                         <div class="flex items-center gap-3">
                             <input type="radio" name="paymethod" value="chapa" checked class="w-4 h-4 text-secondary focus:ring-secondary">
-                            <span class="font-black dark:text-white text-sm md:text-base">Chapa (Banks፣ Telebirr፣ Cards)</span>
+                            <span class="font-black dark:text-white text-sm md:text-base">Banks, Cards and Wallets</span>
                         </div>
-                        <img src="https://chapa.co/images/logo.png" class="h-4 md:h-5 object-contain opacity-70" alt="Chapa" onerror="this.style.display='none'">
+                        <img src="https://chapa.co/assets/logo.png" class="h-6 md:h-7 object-contain drop-shadow-sm" alt="Chapa" onerror="this.src='https://avatars.githubusercontent.com/u/84102941?s=200&v=4'">
                     </label>
                     
                     <!-- PayPal -->
-                    <label class="payment-option flex items-center justify-between p-4 rounded-xl border border-gray-200 dark:border-gray-800 cursor-pointer transition">
+                    <label class="payment-option flex items-center justify-between p-4 rounded-xl border border-gray-200 dark:border-gray-800 cursor-pointer transition bg-white dark:bg-darkCard hover:bg-gray-50 dark:hover:bg-gray-900">
                         <div class="flex items-center gap-3">
                             <input type="radio" name="paymethod" value="paypal" class="w-4 h-4 text-secondary focus:ring-secondary">
                             <span class="font-black dark:text-white text-sm md:text-base notranslate" translate="no">PayPal / Visa / Mastercard</span>
                         </div>
-                        <i class="fa-brands fa-paypal text-[#003087] dark:text-[#0079C1] text-2xl"></i>
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/b/b5/PayPal.svg" class="h-5 md:h-6 object-contain" alt="PayPal">
                     </label>
                     
                     <!-- Crypto -->
-                    <label class="payment-option flex items-center justify-between p-4 rounded-xl border border-gray-200 dark:border-gray-800 cursor-pointer transition">
+                    <label class="payment-option flex items-center justify-between p-4 rounded-xl border border-gray-200 dark:border-gray-800 cursor-pointer transition bg-white dark:bg-darkCard hover:bg-gray-50 dark:hover:bg-gray-900">
                         <div class="flex items-center gap-3">
                             <input type="radio" name="paymethod" value="crypto" class="w-4 h-4 text-secondary focus:ring-secondary">
                             <span class="font-black dark:text-white text-sm md:text-base notranslate" translate="no">Crypto (USDT / BTC)</span>
                         </div>
-                        <i class="fa-brands fa-bitcoin text-[#F3BA2F] text-2xl"></i>
+                        <div class="flex items-center gap-1.5">
+                            <img src="https://cryptologos.cc/logos/tether-usdt-logo.svg?v=025" class="h-5 md:h-6 object-contain" alt="USDT">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/4/46/Bitcoin.svg" class="h-5 md:h-6 object-contain" alt="Bitcoin">
+                        </div>
                     </label>
                 </div>
 
