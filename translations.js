@@ -65,7 +65,7 @@ const amharicToEnglish = {
     "ምላሹን ላክ (Send Reply)": "Send Reply",
     "ምን እንዲሰራሎት ይፈልጋሉ?": "What would you like to do?",
     "ምንም ማሳወቂያ የለም": "No notifications",
-    "ምንም አይነት የክሬዲት ካርድ አያስፈልግም": "No credit card required",
+
     "ምንም አዲስ ማሳወቂያ የለም": "No new notifications",
     "ምንም ኮርስ አልተገኘም": "No courses found",
     "ሰላም! 👋 ስለ Shein ቢዝነስ ወይም ስለ ኮርሶቻችን ማወቅ የሚፈልጉትን ይጠይቁኝ።": "Hello! 👋 Ask me anything about the Shein business or our courses.",
