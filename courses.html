@@ -714,21 +714,16 @@
                 const result = await signInWithPopup(auth, provider);
                 const currentAppId = typeof __app_id !== 'undefined' ? __app_id : 'tsehaycampus-e1a6d';
                 const userRef = doc(db, 'artifacts', currentAppId, 'users', result.user.uid, 'profile', 'info');
-                const docSnap = await getDoc(userRef);
                 
-                if (docSnap.exists() && docSnap.data().phone) {
-                    await setDoc(userRef, { lastLoginAt: new Date().toISOString() }, { merge: true });
-                    if(window.goToDashboard) window.goToDashboard();
-                    else window.location.reload();
-                } else {
-                    await signOut(auth);
-                    if (errorDiv) {
-                        errorDiv.innerHTML = "በዚህ አካውንት የተመዘገበ መረጃ የለም! እባክዎ መጀመሪያ መረጃዎን ሞልተው አዲስ ይመዝገቡ (Sign Up)።";
-                        errorDiv.classList.remove('hidden');
-                        errorDiv.className = "bg-warning/20 text-warning border border-warning text-sm p-3 rounded-lg mb-5 font-bold text-center";
-                    }
-                    if(window.openAuthModal) window.openAuthModal(true);
-                }
+                // Always allow Google login, and save their profile info
+                await setDoc(userRef, { 
+                    displayName: result.user.displayName,
+                    email: result.user.email,
+                    lastLoginAt: new Date().toISOString() 
+                }, { merge: true });
+
+                if(window.goToDashboard) window.goToDashboard();
+                else window.location.reload();
             } 
             catch (error) { 
                 if(errorDiv) { 
