@@ -190,7 +190,7 @@ const amharicToEnglish = {
     "እኛ": "We",
     "እውቅና ያለው ሰርተፍኬት": "Accredited Certificate",
     "ከ \"Coming Soon\" ገፅ ኢሜላቸውን ያስገቡ ተማሪዎች": "Students who entered their emails on the 'Coming Soon' page",
-    "ከ 500 በላይ ተማሪዎችን በመቀላቀል ቢዝነስዎን ይጀምሩ። የምዝገባው ሂደት ከ1 ደቂቃ በታች ነው የሚፈጀው。": "Join over 500 students and start your business. Registration takes less than 1 minute.",
+    "ከ 500 በላይ ተማሪዎችን በመቀላቀል ቢዝነስዎን ይጀምሩ። የምዝገባው ሂደት ከ1 ደቂቃ በታች ነው የሚፈጀው.": "Join over 500 students and start your business. Registration takes less than 1 minute.",
     "ከ 500+ በላይ ተማሪዎች እና አለምአቀፍ ፕላትፎርሞች የታመነ": "Trusted by over 500+ students and international platforms",
     "ከሌሎች የኦንላይን ስልጠናዎች በምን እንለያለን?": "How do we differ from other online trainings?",
     "ከተማ / ሀገር (City/Country)": "City/Country",

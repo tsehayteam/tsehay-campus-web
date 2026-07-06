@@ -327,15 +327,7 @@
                             <source src="assets/for_landing_page_first.mp4" type="video/mp4">
                         </video>
                         
-                        <!-- Custom Video Controls in Brand Color -->
-                        <div class="absolute bottom-4 left-1/2 -translate-x-1/2 w-[90%] max-w-[400px] bg-black/80 backdrop-blur-md px-8 py-3 rounded-xl flex items-center justify-center gap-12 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-30 shadow-2xl border border-primary/50">
-                            <button id="hero-play-pause" class="text-primary hover:text-white transition-colors text-2xl w-12 h-12 flex items-center justify-center focus:outline-none">
-                                <i class="fa-solid fa-pause"></i>
-                            </button>
-                            <button id="hero-mute-unmute" class="text-primary hover:text-white transition-colors text-2xl w-12 h-12 flex items-center justify-center focus:outline-none">
-                                <i class="fa-solid fa-volume-xmark"></i>
-                            </button>
-                        </div>
+
                     </div>
                     
                     <div class="absolute -bottom-5 -left-8 bg-white dark:bg-darkCard p-3 rounded-xl shadow-xl z-20 flex items-center gap-3 animate-float border border-gray-100 dark:border-gray-800" style="animation-delay: 1s;">
@@ -676,7 +668,7 @@
                     
                     <h2 class="text-4xl sm:text-5xl md:text-6xl font-black font-heading text-white mb-6 leading-tight">የስኬት ጉዞዎን <br><span class="text-primary">ዛሬውኑ ይጀምሩ</span></h2>
                     
-                    <p class="text-lg sm:text-xl text-gray-300 font-body mb-10 leading-relaxed max-w-2xl mx-auto">ከ 500 በላይ ተማሪዎችን በመቀላቀል ቢዝነስዎን ይጀምሩ። የምዝገባው ሂደት ከ1 ደቂቃ በታች ነው የሚፈጀው。</p>
+                    <p class="text-base sm:text-lg text-gray-300 font-body mb-10 leading-relaxed max-w-2xl mx-auto">ከ 500 በላይ ተማሪዎችን በመቀላቀል ቢዝነስዎን ይጀምሩ። የምዝገባው ሂደት ከ1 ደቂቃ በታች ነው የሚፈጀው.</p>
                     
                     <div class="flex flex-col sm:flex-row justify-center items-center gap-5">
                         <button onclick="window.openAuthModal(true)" class="bg-primary text-dark px-10 py-5 rounded-2xl font-black text-lg sm:text-xl hover:bg-yellow-400 transition-all duration-300 shadow-[0_0_40px_rgba(249,176,60,0.4)] hover:shadow-[0_0_60px_rgba(249,176,60,0.6)] transform hover:-translate-y-2 flex items-center gap-3">
@@ -706,7 +698,7 @@
                     </p>
                     <div class="mt-4">
                         <a href="https://linktr.ee/tsehaydigital" target="_blank" class="inline-flex items-center gap-2 px-6 py-2.5 bg-primary hover:bg-secondary text-dark hover:text-white font-bold rounded-full shadow-lg transition-all transform hover:-translate-y-1">
-                            <i class="fa-solid fa-headset text-lg"></i> Contact Us
+                            <i class="fa-solid fa-headset text-lg"></i> Connect with us
                         </a>
                     </div>
                 </div>
@@ -1033,43 +1025,6 @@
     
 
     <!-- Video Controls Script -->
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const video = document.getElementById('hero-video');
-            const playPauseBtn = document.getElementById('hero-play-pause');
-            const muteUnmuteBtn = document.getElementById('hero-mute-unmute');
-
-            if(video && playPauseBtn && muteUnmuteBtn) {
-                playPauseBtn.addEventListener('click', () => {
-                    if (video.paused) {
-                        const playPromise = video.play();
-                        if (playPromise !== undefined) {
-                            playPromise.then(() => {
-                                playPauseBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
-                            }).catch(error => {
-                                console.error("Auto-play was prevented:", error);
-                                // Revert icon if play fails
-                                playPauseBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
-                            });
-                        } else {
-                            playPauseBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
-                        }
-                    } else {
-                        video.pause();
-                        playPauseBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
-                    }
-                });
-
-                muteUnmuteBtn.addEventListener('click', () => {
-                    if (video.muted) {
-                        video.muted = false;
-                        muteUnmuteBtn.innerHTML = '<i class="fa-solid fa-volume-high"></i>';
-                    } else {
-                        video.muted = true;
-                        muteUnmuteBtn.innerHTML = '<i class="fa-solid fa-volume-xmark"></i>';
-                    }
-                });
-            }
         });
     </script>
 
