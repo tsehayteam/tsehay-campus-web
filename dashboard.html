@@ -1222,12 +1222,20 @@
                 }, {merge: true});
 
                 userName = newName;
-                document.getElementById('user-name-display').innerText = newName;
-                document.getElementById('nav-user-name').innerText = newName;
+                if (document.getElementById('user-name-display')) {
+                    document.getElementById('user-name-display').innerText = newName;
+                }
+                if (document.getElementById('nav-user-name')) {
+                    document.getElementById('nav-user-name').innerText = newName;
+                }
                 
                 const displayPhoto = newPhotoBase64 || `https://ui-avatars.com/api/?name=${encodeURIComponent(newName)}&background=0f172a&color=fff`;
-                document.getElementById('user-avatar-img').src = displayPhoto;
-                document.getElementById('settings-avatar').src = displayPhoto;
+                if (document.getElementById('user-avatar-img')) {
+                    document.getElementById('user-avatar-img').src = displayPhoto;
+                }
+                if (document.getElementById('settings-avatar')) {
+                    document.getElementById('settings-avatar').src = displayPhoto;
+                }
                 
                 window.showCloudSaveToast('የግል መረጃዎ በተሳካ ሁኔታ ተስተካክሏል!');
                 createNotification('ፕሮፋይል ማስተካከያ', 'የግል መረጃዎ በተሳካ ሁኔታ ታድሷል።');
