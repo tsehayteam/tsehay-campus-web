@@ -210,8 +210,8 @@
                 </div>
 
                 <div class="hidden lg:flex items-center h-full">
-                    <a href="#home" onclick="document.getElementById('home').scrollIntoView({behavior: 'smooth'})" class="text-gray-700 dark:text-gray-300 hover:text-secondary dark:hover:text-primary font-bold transition text-[14px] lg:text-[15px] px-2 lg:px-3">ዋና ገፅ</a>
-                    <a href="about.html" class="text-gray-700 dark:text-gray-300 hover:text-secondary dark:hover:text-primary font-bold transition text-[14px] lg:text-[15px] px-2 lg:px-3">ስለ እኛ</a>
+                    <a href="index.html" class="text-gray-700 dark:text-gray-300 hover:text-secondary dark:hover:text-primary font-bold transition text-[14px] lg:text-[15px] px-2 lg:px-3">ዋና ገፅ</a>
+                    <a href="#" class="text-gray-700 dark:text-gray-300 hover:text-secondary dark:hover:text-primary font-bold transition text-[14px] lg:text-[15px] px-2 lg:px-3">ስለ እኛ</a>
                     <a href="javascript:void(0)" onclick="document.getElementById('courses').scrollIntoView({behavior: 'smooth'})" class="text-gray-700 dark:text-gray-300 hover:text-secondary dark:hover:text-primary font-bold transition text-[14px] lg:text-[15px] px-2 lg:px-3">ሁሉም ኮርሶች</a>
                     
                     <a href="#features" onclick="document.getElementById('features').scrollIntoView({behavior: 'smooth'})" class="text-gray-700 dark:text-gray-300 hover:text-secondary dark:hover:text-primary font-bold transition text-[14px] lg:text-[15px] px-2 lg:px-3">ጥቅሞች</a>
@@ -266,8 +266,8 @@
                 </div>
                 
                 <div class="grid grid-cols-2 gap-2 mb-2 px-2">
-                    <a href="#home" onclick="document.getElementById('home').scrollIntoView({behavior: 'smooth'}); document.getElementById('mobile-menu').classList.remove('open');" class="block px-3 py-2 text-secondary dark:text-primary font-bold rounded-md hover:bg-gray-50 dark:hover:bg-darkCard border border-gray-100 dark:border-gray-800">ዋና ገፅ</a>
-                    <a href="about.html" class="block px-3 py-2 text-gray-700 dark:text-gray-300 font-bold rounded-md hover:bg-gray-50 dark:hover:bg-darkCard border border-gray-100 dark:border-gray-800">ስለ እኛ</a>
+                    <a href="index.html" class="block px-3 py-2 text-secondary dark:text-primary font-bold rounded-md hover:bg-gray-50 dark:hover:bg-darkCard border border-gray-100 dark:border-gray-800">ዋና ገፅ</a>
+                    <a href="#" class="block px-3 py-2 text-gray-700 dark:text-gray-300 font-bold rounded-md hover:bg-gray-50 dark:hover:bg-darkCard border border-gray-100 dark:border-gray-800">ስለ እኛ</a>
                     <a href="javascript:void(0)" onclick="document.getElementById('courses').scrollIntoView({behavior: 'smooth'}); document.getElementById('mobile-menu').classList.remove('open');" class="block px-3 py-2 text-gray-700 dark:text-gray-300 font-bold rounded-md hover:bg-gray-50 dark:hover:bg-darkCard border border-gray-100 dark:border-gray-800">ሁሉም ኮርሶች</a>
                     <a href="#features" onclick="document.getElementById('features').scrollIntoView({behavior: 'smooth'}); document.getElementById('mobile-menu').classList.remove('open');" class="block px-3 py-2 text-gray-700 dark:text-gray-300 font-bold rounded-md hover:bg-gray-50 dark:hover:bg-darkCard border border-gray-100 dark:border-gray-800">ጥቅሞች</a>
                 </div>
@@ -286,275 +286,123 @@
         </div>
     </nav>
 
-    <!-- Hero Section -->
-    <section class="relative pt-28 pb-16 lg:pt-36 lg:pb-24 overflow-hidden hero-mesh" id="home">
-        <div class="absolute inset-0 opacity-20 mix-blend-overlay" style="background-image: url('https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=2071&auto=format&fit=crop'); background-size: cover; background-position: center;"></div>
-        
-        <div class="absolute bottom-0 left-0 w-full overflow-hidden leading-[0]">
-            <svg viewBox="0 0 1200 120" preserveAspectRatio="none" class="w-full h-[40px] md:h-[80px] block" style="transform: rotate(180deg);">
-                <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V120H0V95.8C59.71,118.08,130.83,123.82,200,111.4,241.9,103.95,281.87,83.47,321.39,56.44Z" fill="var(--bodyBg)"></path>
-            </svg>
-        </div>
+    <!-- About Us Section -->
+    <section id="about" class="py-24 relative overflow-hidden bg-gradient-to-b from-white to-slate-50 dark:from-dark dark:to-darkCard border-b border-gray-200 dark:border-gray-800 transition-colors duration-300">
 
-        <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 w-full relative z-10 flex flex-col lg:flex-row items-center gap-10 lg:gap-16">
-            <div class="max-w-2xl lg:w-1/2">
-                <div class="inline-flex items-center gap-2 bg-white/10 border border-white/20 text-white font-bold px-4 py-1.5 rounded-full text-xs sm:text-sm mb-6 backdrop-blur-md shadow-sm">
-                    <i class="fa-solid fa-medal text-primary"></i> የኢትዮጵያ #1 የኦንላይን መማሪያ ፕላትፎርም
-                </div>
-                <h1 id="hero-welcome" class="text-4xl sm:text-5xl lg:text-6xl font-black mb-5 leading-[1.15] text-white">
-                    ክህሎትዎን ያሳድጉ፣ <br> 
-                    <span class="text-gradient">ቢዝነስዎን ይጀምሩ።</span>
-                </h1>
-                <p class="text-base sm:text-lg text-gray-200 mb-8 font-body leading-relaxed">
-                    <span class="notranslate font-bold">Tsehay Campus</span> በ <strong class="text-white notranslate">Tsehay Digital</strong> ስር የሚተዳደር ሲሆን፣ በኢትዮጵያ የኦንላይን ክህሎት ስልጠና ቀዳሚው ፕላትፎርም ነው። በተግባር እና በ AI የታገዘ ስልጠና ወስደው ቢዝነስዎን ዛሬውኑ ይጀምሩ።
-                </p>
-                
-                <div class="flex flex-col sm:flex-row gap-4" id="hero-action-buttons">
-                    <button onclick="document.getElementById('courses').scrollIntoView({behavior: 'smooth'})" class="bg-primary text-dark px-6 py-3.5 rounded-xl font-extrabold transition btn-glow flex items-center justify-center gap-3 text-base shadow-md">
-                        ኮርሶችን ያስሱ <i class="fa-solid fa-arrow-right"></i>
-                    </button>
-                    <button onclick="window.location.href='about.html'" class="bg-white/10 hover:bg-white/20 border border-white/30 text-white backdrop-blur-md px-6 py-3.5 rounded-xl font-bold transition flex items-center justify-center gap-3 text-base shadow-sm">
-                        <i class="fa-solid fa-circle-play text-lg"></i> ስለ እኛ ይመልከቱ
-                    </button>
-                </div>
-            </div>
-
-            <div class="lg:w-1/2 hidden lg:flex justify-center relative animate-float">
-                <div class="relative w-full max-w-[450px]">
-                    <div class="absolute inset-0 bg-secondary rounded-full blur-[100px] opacity-50 dark:opacity-30"></div>
-                    <div class="relative w-full h-[350px] rounded-2xl shadow-2xl border-4 border-white/10 overflow-hidden group z-10">
-                        <video id="hero-video" autoplay loop muted playsinline preload="auto" class="w-full h-full object-cover">
-                            <source src="assets/for_landing_page_first.mp4" type="video/mp4">
-                        </video>
-                        
-
-                    </div>
-                    
-                    <div class="absolute -bottom-5 -left-8 bg-white dark:bg-darkCard p-3 rounded-xl shadow-xl z-20 flex items-center gap-3 animate-float border border-gray-100 dark:border-gray-800" style="animation-delay: 1s;">
-                        <div class="bg-green-100 dark:bg-green-900/30 text-success p-2.5 rounded-full text-xl"><i class="fa-solid fa-check-double"></i></div>
-                        <div>
-                            <p class="text-[10px] text-gray-500 dark:text-gray-400 font-bold uppercase leading-none">እውቅና ያለው ሰርተፍኬት</p>
-                            <p class="text-dark dark:text-white font-black text-sm notranslate">Recognized</p>
-                        </div>
-                    </div>
-                    <div class="absolute -top-6 -right-6 bg-white dark:bg-darkCard p-3 rounded-xl shadow-xl z-20 flex items-center gap-3 animate-float border border-gray-100 dark:border-gray-800" style="animation-delay: 2s;">
-                        <div class="bg-blue-100 dark:bg-blue-900/30 text-secondary dark:text-primary p-2.5 rounded-full text-xl"><i class="fa-solid fa-users"></i></div>
-                        <div>
-                            <p class="text-[10px] text-gray-500 dark:text-gray-400 font-bold uppercase leading-none">ተማሪዎች</p>
-                            <p class="text-dark dark:text-white font-black text-sm">500+</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Trust Badges -->
-    <section class="py-12 bg-white dark:bg-dark border-b border-gray-100 dark:border-gray-800 relative z-20 shadow-sm transition-colors duration-300">
-        <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <div class="inline-block bg-blue-50/50 dark:bg-darkCard border border-blue-100 dark:border-gray-800 rounded-full px-6 py-2.5 mb-8 shadow-sm">
-                <p class="font-accent text-secondary dark:text-primary font-extrabold tracking-widest text-[13px] sm:text-sm uppercase">ከ 500+ በላይ ተማሪዎች እና አለምአቀፍ ፕላትፎርሞች የታመነ</p>
-            </div>
-            <div class="flex justify-center items-center gap-8 sm:gap-12 md:gap-20 flex-wrap">
-                <!-- Google -->
-                <div class="flex items-center gap-3 text-2xl md:text-4xl font-black font-heading text-gray-800 dark:text-gray-200 hover:text-[#EA4335] transition transform hover:scale-110 cursor-default">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" class="w-8 h-8 md:w-10 md:h-10">
-                        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-                        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-                        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-                        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-                    </svg> <span class="notranslate">Google</span>
-                </div>
-                
-                <div class="flex items-center gap-3 text-2xl md:text-4xl font-black font-heading text-gray-800 dark:text-gray-200 hover:text-[#0668E1] transition transform hover:scale-110 cursor-default">
-                    <i class="fa-brands fa-meta text-[#0668E1]"></i> <span class="notranslate">Meta</span>
-                </div>
-
-                <div class="flex items-center transition transform hover:scale-110 cursor-default">
-                    <div class="bg-black dark:bg-white text-white dark:text-black px-3.5 py-1.5 md:px-4 md:py-2 rounded-lg text-lg md:text-2xl font-bold tracking-[0.15em] shadow-md dark:shadow-white/10 uppercase notranslate" style="font-family: Arial, Helvetica, sans-serif;">
-                        SHEIN
-                    </div>
-                </div>
-                
-                <div class="flex items-center gap-3 text-2xl md:text-4xl font-black font-heading text-gray-800 dark:text-gray-200 hover:text-black dark:hover:text-white transition transform hover:scale-110 cursor-default">
-                    <i class="fa-brands fa-tiktok text-black dark:text-gray-100"></i> <span class="notranslate">TikTok</span>
-                </div>
-                
-                <div class="flex items-center transition transform hover:scale-110 cursor-default">
-                    <div class="flex items-end text-3xl md:text-[40px] font-black text-black dark:text-white tracking-tighter leading-none notranslate" style="font-family: 'Montserrat', sans-serif;">
-                        BYB<span class="w-[4px] md:w-[6px] h-[22px] md:h-[28px] bg-[#F7A600] mx-[2px] md:mx-[3px] inline-block relative bottom-[2px] md:bottom-[3px]"></span>T
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Features -->
-    <section id="features" class="py-24 relative overflow-hidden bg-gradient-to-b from-blue-50/60 to-white dark:from-darkCard dark:to-dark border-b border-gray-200 dark:border-gray-800 transition-colors duration-300">
-        <div class="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
-            <div class="absolute -top-32 -left-32 w-[500px] h-[500px] bg-primary/5 rounded-full blur-3xl"></div>
-            <div class="absolute top-1/2 -right-32 w-[500px] h-[500px] bg-secondary/5 rounded-full blur-3xl"></div>
-            <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.03] dark:opacity-[0.01]"></div>
-        </div>
-
-        <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-            <div class="text-center max-w-2xl mx-auto mb-16">
-                <h2 class="font-heading font-black text-3xl sm:text-5xl text-dark dark:text-white mb-4">የእኛ <span class="text-secondary dark:text-primary">ልዩነት</span></h2>
+        <div class="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div class="text-center mb-16">
+                <h2 class="font-heading font-black text-4xl sm:text-5xl text-dark dark:text-white mb-4">About Us</h2>
                 <div class="w-20 h-1.5 bg-primary mx-auto rounded-full"></div>
-                <p class="mt-5 text-gray-500 dark:text-gray-400 font-body text-lg">ከሌሎች የኦንላይን ስልጠናዎች በምን እንለያለን?</p>
             </div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-10">
-                <div class="bg-white dark:bg-darkCard p-10 rounded-[2rem] shadow-sm border border-gray-100 dark:border-gray-800 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 group">
-                    <div class="w-20 h-20 bg-blue-50 dark:bg-blue-900/30 text-secondary dark:text-primary rounded-2xl flex items-center justify-center text-4xl mb-8 group-hover:bg-secondary dark:group-hover:bg-primary group-hover:text-white dark:group-hover:text-dark transition-colors duration-300 shadow-inner">
-                        <i class="fa-solid fa-chalkboard-user"></i>
-                    </div>
-                    <h3 class="font-black text-2xl text-dark dark:text-white mb-4 font-heading">የተግባር ኮርሶች</h3>
-                    <p class="text-gray-600 dark:text-gray-300 font-body leading-relaxed text-[15px]">ወቅታዊ፣ በተግባር ላይ ያተኮሩ እና ልምድ ባላቸው ባለሙያዎች የተዘጋጁ ኮርሶች።</p>
-                </div>
-                
-                <div class="bg-white dark:bg-darkCard p-10 rounded-[2rem] shadow-xl border border-primary/30 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 group relative overflow-hidden transform md:-translate-y-6">
-                    <div class="absolute -right-10 -top-10 bg-gradient-to-br from-primary/20 to-transparent w-40 h-40 rounded-full -z-10 group-hover:scale-150 transition-transform duration-700"></div>
-                    <div class="w-20 h-20 bg-orange-50 dark:bg-orange-900/30 text-primary rounded-2xl flex items-center justify-center text-4xl mb-8 group-hover:bg-primary group-hover:text-white transition-colors duration-300 shadow-inner relative z-10">
-                        <i class="fa-solid fa-robot"></i>
-                    </div>
-                    <h3 class="font-black text-2xl text-dark dark:text-white mb-4 font-heading relative z-10"><span class="notranslate">Tsehay AI</span> ትስስር</h3>
-                    <p class="text-gray-600 dark:text-gray-300 font-body leading-relaxed text-[15px] relative z-10">በእያንዳንዱ ኮርስ ውስጥ የተካተተ፣ ጥያቄ የሚመልስ እና የቢዝነስ ትንታኔ የሚሰጥ AI።</p>
-                    <div class="absolute top-5 right-5 bg-primary text-dark text-xs font-black px-3 py-1 rounded-md shadow-sm animate-pulse">አዲስ</div>
-                </div>
 
-                <div class="bg-white dark:bg-darkCard p-10 rounded-[2rem] shadow-sm border border-gray-100 dark:border-gray-800 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 group">
-                    <div class="w-20 h-20 bg-green-50 dark:bg-green-900/30 text-success rounded-2xl flex items-center justify-center text-4xl mb-8 group-hover:bg-success group-hover:text-white transition-colors duration-300 shadow-inner">
-                        <i class="fa-solid fa-certificate"></i>
-                    </div>
-                    <h3 class="font-black text-2xl text-dark dark:text-white mb-4 font-heading">እውቅና ያለው ሰርተፍኬት</h3>
-                    <p class="text-gray-600 dark:text-gray-300 font-body leading-relaxed text-[15px]">ትምህርትዎን እንዳጠናቀቁ፣ ክህሎትዎን የሚያረጋግጥ ዲጂታል ሰርተፍኬት ወዲያውኑ ያገኛሉ።</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Courses List -->
-    <section id="courses" class="py-20 bg-gradient-to-b from-slate-50 to-blue-50/30 dark:from-darkCard dark:to-dark border-b border-gray-200 dark:border-gray-800 transition-colors duration-300">
-        <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex flex-col items-center text-center mb-12 gap-4">
-                <div>
-                    <h2 class="font-heading font-black text-3xl sm:text-4xl text-dark dark:text-white mb-3">በብዛት የሚፈለጉ ኮርሶች</h2>
-                    <p class="text-gray-600 dark:text-gray-400 font-body text-lg">ተማሪዎቻችን በአሁኑ ጊዜ በስፋት እየተከታተሉ ያሉ ስልጠናዎች</p>
+            <!-- Main Video -->
+            <div class="max-w-4xl mx-auto mb-16">
+                <div class="relative rounded-[2rem] overflow-hidden shadow-2xl border border-white/10 bg-black aspect-video flex items-center justify-center group">
+                    <div class="absolute -inset-2 bg-gradient-to-r from-secondary to-primary rounded-[2.5rem] blur-xl opacity-20 group-hover:opacity-40 transition duration-500"></div>
+                    <iframe id="about-youtube-player" class="w-full h-full relative z-10 rounded-[2rem]" src="https://www.youtube.com/embed/mgdOMtW6J8k?rel=0&modestbranding=1&showinfo=0&autoplay=1&mute=1&vq=hd1080" title="Tsehay Campus Introduction" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
                 </div>
             </div>
 
-            <!-- Courses Container -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8" id="courseList">
-                <div class="p-10 text-center col-span-full text-gray-400 dark:text-gray-500 font-bold w-full">
-                    <i class="fa-solid fa-circle-notch fa-spin text-4xl mb-4 text-secondary dark:text-primary"></i><br>ኮርሶችን በማምጣት ላይ...
-                </div>
-            </div>
-            
-            <!-- No Results Message -->
-            <div id="noCourseMessage" class="hidden text-center py-10">
-                <i class="fa-solid fa-box-open text-5xl text-gray-300 dark:text-slate-600 mb-4"></i>
-                <p class="text-gray-500 dark:text-gray-400 font-bold text-lg">ይቅርታ፣ ኮርስ አልተገኘም።</p>
-            </div>
-        </div>
-    </section>
-
-    <!-- AI Demo Section -->
-    <section id="ai-feature" class="relative py-24 lg:py-32 overflow-hidden hero-mesh text-white border-y border-white/10">
-        <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20 mix-blend-overlay"></div>
-        <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col lg:flex-row items-center gap-12 relative z-10">
-            <div class="flex-1 text-center lg:text-left animate-float" style="animation-duration: 6s;">
-                <h2 class="text-3xl sm:text-5xl font-black font-heading mb-6 leading-tight"><span class="text-gradient notranslate">Tsehay AI</span> በመጠቀም ትምህርትዎን ስማርት ያድርጉ</h2>
-                <p class="text-lg text-blue-100 font-body mb-8 leading-relaxed">የእኛ ፕላትፎርም ቪዲዮ በማየት ብቻ አያበቃም። የ AI ረዳቱ በእያንዳንዱ ኮርስ ውስጥ ተካቷል፤ እቃዎችን ይተነትናል፣ ማስታወቂያ ይፅፋል፣ እና 24/7 ከጎንዎ ቆሞ ያግዝዎታል።</p>
-                <button onclick="document.getElementById('ai-landing-input').focus()" class="bg-white text-secondary font-black px-8 py-3.5 rounded-xl hover:bg-primary hover:text-dark transition shadow-[0_0_20px_rgba(249,176,60,0.5)] transform hover:-translate-y-1">የ AI መምህርዎን ይጠይቁ</button>
-            </div>
-            <div class="flex-1 w-full max-w-lg bg-white/95 dark:bg-darkCard/95 backdrop-blur-md p-8 rounded-[3rem] shadow-2xl text-dark border border-white/20">
-                <div class="flex items-center gap-3 border-b border-gray-100 dark:border-gray-800 pb-4 mb-5">
-                    <div class="bg-secondary text-white p-2.5 rounded-xl shadow-inner"><i class="fa-solid fa-robot animate-pulse"></i></div>
-                    <h3 class="font-black text-base dark:text-white notranslate">Tsehay AI ረዳት (ማሳያ)</h3>
-                </div>
-                <div class="space-y-4 mb-6 text-sm font-body h-64 overflow-y-auto pr-2" id="ai-landing-chat">
-                    <div class="bg-blue-50 dark:bg-dark p-4 rounded-2xl max-w-[85%] border-l-4 border-primary shadow-sm leading-relaxed text-gray-800 dark:text-gray-200 font-medium">ሰላም! 👋 ስለ Shein ቢዝነስ ወይም ስለ ኮርሶቻችን ማወቅ የሚፈልጉትን ይጠይቁኝ።</div>
-                </div>
-                <div class="flex gap-2">
-                    <input type="text" id="ai-landing-input" placeholder="ጥያቄዎን እዚህ ያስገቡ..." class="flex-1 bg-gray-100 dark:bg-dark dark:text-white border-none rounded-full px-5 py-3 text-sm focus:ring-2 focus:ring-secondary/30 outline-none transition" onkeypress="if(event.key === 'Enter') window.askAiLanding()">
-                    <button onclick="window.askAiLanding()" class="bg-secondary text-white w-12 h-12 rounded-full flex items-center justify-center hover:bg-dark dark:hover:bg-primary transition shadow-md">
-                        <i class="fa-solid fa-paper-plane"></i>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- FAQ -->
-    <section id="faq" class="py-16 bg-slate-50 dark:bg-darkCard border-b border-gray-200 dark:border-gray-800 transition-colors duration-300">
-        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center mb-10">
-                <h2 class="font-heading font-black text-3xl sm:text-4xl text-dark dark:text-white mb-3">ተደጋጋሚ ጥያቄዎች (FAQ)</h2>
-                <div class="w-16 h-1.5 bg-primary mx-auto rounded-full"></div>
-            </div>
-            
-            <div class="space-y-4">
-                <div class="bg-white dark:bg-dark border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden shadow-sm">
-                    <button class="w-full text-left p-5 font-bold flex justify-between items-center hover:bg-gray-50 dark:hover:bg-gray-900 transition" onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('i.fa-chevron-down').classList.toggle('rotate-180')">
-                        <span class="text-dark dark:text-white text-lg flex items-center gap-3"><i class="fa-solid fa-circle-question text-primary"></i> ይህንን ስልጠና ለመውሰድ ምን ያስፈልገኛል?</span>
-                        <i class="fa-solid fa-chevron-down text-gray-400 transition duration-300"></i>
-                    </button>
-                    <div class="hidden px-5 pb-5 text-gray-700 dark:text-gray-300 border-t border-gray-100 dark:border-gray-800 pt-4 font-body text-[15px]">
-                        <p class="ml-7">ስማርት ስልክ፣ የኢንተርኔት ግንኙነት እና የቴሌግራም አካውንት ብቻ በቂ ነው። ለኮምፒውተርም ምቹ ነው።</p>
+            <!-- Our Story -->
+            <div class="max-w-4xl mx-auto mb-24">
+                <h3 class="text-2xl font-bold font-heading text-primary mb-4">Our Story</h3>
+                <p class="text-gray-600 dark:text-gray-300 font-body leading-relaxed text-base mb-4">
+                    <span class="notranslate font-bold">Tsehay Campus</span> በ <strong class="notranslate text-dark dark:text-white">Tsehay Digital</strong> ስር የተመሰረተ ሲሆን፣ ዓላማችን ወጣቶችን አዳዲስ እና ተፈላጊ በሆኑ የዲጂታል ክህሎቶች በማብቃት የፋይናንስ ነፃነት እንዲያገኙ ማስቻል ነው።
+                </p>
+                <p class="text-gray-600 dark:text-gray-300 font-body leading-relaxed text-base mb-8">
+                    <strong>"We do it, we teach it"</strong> በሚለው መርሀችን መሰረት፣ እኛ ራሳችን የምንሰራውን የኢ-ኮሜርስ፣ የማርኬቲንግ እና የክሪፕቶ ስራዎችን ነው በተግባር የምናስተምረው። በተጨማሪም ኮርሶቻችን ሙሉ በሙሉ በ <strong class="notranslate text-dark dark:text-white">Tsehay AI</strong> የታገዙ ናቸው።
+                </p>
+                <div class="flex flex-wrap gap-8">
+                    <div>
+                        <h4 class="text-3xl font-black text-dark dark:text-white">500+</h4>
+                        <p class="text-xs text-gray-500 font-bold uppercase tracking-wider mt-1 border-l-2 border-primary pl-2">ተማሪዎች</p>
+                    </div>
+                    <div>
+                        <h4 class="text-3xl font-black text-dark dark:text-white">100%</h4>
+                        <p class="text-xs text-gray-500 font-bold uppercase tracking-wider mt-1 border-l-2 border-secondary pl-2">የተግባር ስራ</p>
+                    </div>
+                    <div>
+                        <h4 class="text-3xl font-black text-dark dark:text-white">24/7</h4>
+                        <p class="text-xs text-gray-500 font-bold uppercase tracking-wider mt-1 border-l-2 border-success pl-2">የ AI ድጋፍ</p>
                     </div>
                 </div>
-                <div class="bg-white dark:bg-dark border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden shadow-sm">
-                    <button class="w-full text-left p-5 font-bold flex justify-between items-center hover:bg-gray-50 dark:hover:bg-gray-900 transition" onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('i.fa-chevron-down').classList.toggle('rotate-180')">
-                        <span class="text-dark dark:text-white text-lg flex items-center gap-3"><i class="fa-solid fa-circle-question text-primary"></i> የ AI ረዳቱን ለመጠቀም ተጨማሪ ክፍያ አለው?</span>
-                        <i class="fa-solid fa-chevron-down text-gray-400 transition duration-300"></i>
-                    </button>
-                    <div class="hidden px-5 pb-5 text-gray-700 dark:text-gray-300 border-t border-gray-100 dark:border-gray-800 pt-4 font-body text-[15px]">
-                        <p class="ml-7">አይ፣ የለውም። የ AI ረዳቱ (የዕቃ ተንታኝ፣ ማስታወቂያ ፀሐፊ፣ ወዘተ) ከኮርሱ ክፍያ ጋር የተካተተ እና በነፃ የሚሰጥ ነው።</p>
+            </div>
+
+            <!-- Our Mission -->
+            <div class="max-w-3xl mx-auto mb-24 text-center">
+                <h3 class="text-2xl font-bold font-heading text-primary mb-4">Our Mission</h3>
+                <p class="text-xl sm:text-2xl font-bold text-dark dark:text-white leading-relaxed">
+                    ወጣቶችን አዳዲስ እና ተፈላጊ በሆኑ የዲጂታል ክህሎቶች በማብቃት የፋይናንስ ነፃነት እንዲያገኙ ማስቻል።
+                </p>
+            </div>
+
+            <!-- What We Do -->
+            <div class="mb-24">
+                <h3 class="text-2xl font-bold font-heading text-dark dark:text-white mb-8 text-center">What We Do</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-white dark:bg-dark border border-gray-100 dark:border-gray-800 p-8 rounded-2xl text-center hover:-translate-y-1 transition duration-300 shadow-sm hover:shadow-md">
+                        <div class="w-16 h-16 mx-auto bg-blue-50 dark:bg-blue-900/20 text-secondary dark:text-blue-400 rounded-2xl flex items-center justify-center text-2xl mb-6"><i class="fa-solid fa-laptop-code"></i></div>
+                        <h4 class="font-bold text-dark dark:text-white text-lg mb-2">ዲጂታል ክህሎት ማስተማር</h4>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">በተግባር የተፈተኑ 100% የቢዝነስ ኮርሶች</p>
+                    </div>
+                    <div class="bg-white dark:bg-dark border border-gray-100 dark:border-gray-800 p-8 rounded-2xl text-center hover:-translate-y-1 transition duration-300 shadow-sm hover:shadow-md">
+                        <div class="w-16 h-16 mx-auto bg-orange-50 dark:bg-orange-900/20 text-primary rounded-2xl flex items-center justify-center text-2xl mb-6"><i class="fa-solid fa-users-rays"></i></div>
+                        <h4 class="font-bold text-dark dark:text-white text-lg mb-2">ማህበረሰብ መገንባት</h4>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">ጠንካራ እና እርስበርስ የሚደጋገፍ የትምህርት ማህበረሰብ</p>
+                    </div>
+                    <div class="bg-white dark:bg-dark border border-gray-100 dark:border-gray-800 p-8 rounded-2xl text-center hover:-translate-y-1 transition duration-300 shadow-sm hover:shadow-md">
+                        <div class="w-16 h-16 mx-auto bg-green-50 dark:bg-green-900/20 text-success rounded-2xl flex items-center justify-center text-2xl mb-6"><i class="fa-solid fa-robot"></i></div>
+                        <h4 class="font-bold text-dark dark:text-white text-lg mb-2">AI Integration</h4>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">በ AI የታገዘ የ 24 ሰዓት የግል ሞግዚት (Tutor)</p>
                     </div>
                 </div>
-                <div class="bg-white dark:bg-dark border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden shadow-sm">
-                    <button class="w-full text-left p-5 font-bold flex justify-between items-center hover:bg-gray-50 dark:hover:bg-gray-900 transition" onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('i.fa-chevron-down').classList.toggle('rotate-180')">
-                        <span class="text-dark dark:text-white text-lg flex items-center gap-3"><i class="fa-solid fa-circle-question text-primary"></i> ትምህርቱን ስጨርስ ሰርተፍኬት አገኛለሁ?</span>
-                        <i class="fa-solid fa-chevron-down text-gray-400 transition duration-300"></i>
-                    </button>
-                    <div class="hidden px-5 pb-5 text-gray-700 dark:text-gray-300 border-t border-gray-100 dark:border-gray-800 pt-4 font-body text-[15px]">
-                        <p class="ml-7">አዎ! ሁሉንም የትምህርት ክፍሎች እና ጥያቄዎች (Quiz) እንዳጠናቀቁ፣ ሲስተሙ ራሱ በስምዎ የተዘጋጀ ዲጂታል ሰርተፍኬት ያመነጭልዎታል።</p>
+            </div>
+
+            <!-- Our Team -->
+            <div class="mb-24">
+                <h3 class="text-2xl font-bold font-heading text-dark dark:text-white mb-8 text-center">Our Team</h3>
+                <div class="flex flex-wrap justify-center gap-6">
+                    <!-- Eyob Sahle -->
+                    <div class="bg-white dark:bg-dark border border-gray-100 dark:border-gray-800 p-8 rounded-2xl text-center shadow-sm hover:shadow-xl transition duration-300 w-full sm:w-64">
+                        <div class="w-24 h-24 mx-auto rounded-full overflow-hidden mb-4 bg-gray-100 dark:bg-gray-800">
+                            <img src="Ceo.jpg" alt="Eyob Sahle" class="w-full h-full object-cover" onerror="this.src='https://ui-avatars.com/api/?name=Eyob+Sahle&background=000000&color=fff&size=128'">
+                        </div>
+                        <h4 class="font-bold text-dark dark:text-white text-lg notranslate">ኢዮብ ሳህሌ</h4>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 font-medium mt-1">Founder & Lead Instructor</p>
+                    </div>
+                    <!-- Habtamu Alemu -->
+                    <div class="bg-white dark:bg-dark border border-gray-100 dark:border-gray-800 p-8 rounded-2xl text-center shadow-sm hover:shadow-xl transition duration-300 w-full sm:w-64">
+                        <div class="w-24 h-24 mx-auto rounded-full overflow-hidden mb-4 bg-gray-100 dark:bg-gray-800 text-3xl flex items-center justify-center text-white font-bold" style="background-color: #3268BA;">
+                            H
+                        </div>
+                        <h4 class="font-bold text-dark dark:text-white text-lg notranslate">ሀብታሙ ዓለሙ</h4>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 font-medium mt-1">Manager</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Media / Reels Gallery -->
+            <div>
+                <h3 class="text-2xl font-bold font-heading text-dark dark:text-white mb-8 text-center">Gallery</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="rounded-3xl overflow-hidden shadow-xl group aspect-[9/16] bg-black">
+                        <video loop muted playsinline class="w-full h-full object-cover group-hover:scale-105 transition duration-700" onmouseover="this.play(); this.muted=false;" onmouseout="this.pause(); this.muted=true;">
+                            <source src="assets/videos/Tsehay.mp4" type="video/mp4">
+                        </video>
+                    </div>
+                    <div class="rounded-3xl overflow-hidden shadow-xl group aspect-[9/16] bg-black">
+                        <video loop muted playsinline class="w-full h-full object-cover group-hover:scale-105 transition duration-700" onmouseover="this.play(); this.muted=false;" onmouseout="this.pause(); this.muted=true;">
+                            <source src="assets/videos/Marketing%20and%20psyco.mp4" type="video/mp4">
+                        </video>
+                    </div>
+                    <div class="rounded-3xl overflow-hidden shadow-xl group aspect-[9/16] bg-black">
+                        <img src="https://i.postimg.cc/qvqt1bJK/about-photo-1.jpg" class="w-full h-full object-cover group-hover:scale-105 transition duration-700" alt="Team" onerror="this.src='https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=800&auto=format&fit=crop'">
                     </div>
                 </div>
             </div>
         </div>
-    </section>
 
-    <!-- Call to Action -->
-    <section class="py-24 relative overflow-hidden bg-white dark:bg-dark transition-colors duration-300">
-        <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-            <div class="relative bg-dark rounded-[3rem] overflow-hidden shadow-2xl border border-gray-800 p-10 md:p-20 text-center">
-                
-                <div class="absolute -top-32 -right-32 w-80 h-80 bg-primary rounded-full mix-blend-screen filter blur-[100px] opacity-50 animate-pulse"></div>
-                <div class="absolute -bottom-32 -left-32 w-80 h-80 bg-secondary rounded-full mix-blend-screen filter blur-[100px] opacity-40 animate-pulse" style="animation-delay: 2s;"></div>
-                <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20 mix-blend-overlay"></div>
-
-                <div class="relative z-10 max-w-3xl mx-auto">
-                    <div class="inline-flex items-center justify-center w-24 h-24 rounded-full bg-white/5 backdrop-blur-xl mb-8 border border-white/10 shadow-[0_0_30px_rgba(255,255,255,0.1)]">
-                        <i class="fa-solid fa-rocket text-5xl text-primary transform -rotate-12 animate-float" style="animation-duration: 3s;"></i>
-                    </div>
-                    
-                    <h2 class="text-4xl sm:text-5xl md:text-6xl font-black font-heading text-white mb-6 leading-tight">የስኬት ጉዞዎን <br><span class="text-primary">ዛሬውኑ ይጀምሩ</span></h2>
-                    
-                    <p class="text-base sm:text-lg text-gray-300 font-body mb-10 leading-relaxed max-w-2xl mx-auto">ከ 500 በላይ ተማሪዎችን በመቀላቀል ቢዝነስዎን ይጀምሩ። የምዝገባው ሂደት ከ1 ደቂቃ በታች ነው የሚፈጀው.</p>
-                    
-                    <div class="flex flex-col sm:flex-row justify-center items-center gap-5">
-                        <button onclick="window.openAuthModal(true)" class="bg-primary text-dark px-10 py-5 rounded-2xl font-black text-lg sm:text-xl hover:bg-yellow-400 transition-all duration-300 shadow-[0_0_40px_rgba(249,176,60,0.4)] hover:shadow-[0_0_60px_rgba(249,176,60,0.6)] transform hover:-translate-y-2 flex items-center gap-3">
-                            <span>በነፃ አካውንት ይክፈቱ (Sign Up)</span> <i class="fa-solid fa-arrow-right"></i>
-                        </button>
-                    </div>
-                    
-
-                </div>
-            </div>
-        </div>
-    </section>
+</section>
 
     <!-- Footer -->
     <footer id="footer" class="bg-dark text-gray-300 pt-16 pb-8 font-body border-t-[6px] border-primary mt-auto z-10 relative">
