@@ -246,7 +246,7 @@
                     <button onclick="window.toggleLanguage()" id="mobile-lang-toggle-btn" class="bg-gray-100 dark:bg-dark border border-gray-200 dark:border-gray-800 px-3 py-1.5 rounded-full font-bold text-[11px] text-dark dark:text-white transition shadow-sm notranslate" translate="no">አማ</button>
                     <button onclick="window.toggleTheme()" class="text-gray-600 dark:text-yellow-400 text-xl"><i id="mobile-theme-icon" class="fa-solid fa-moon"></i></button>
                     <i class="fa-solid fa-magnifying-glass text-dark dark:text-white text-xl cursor-pointer" onclick="document.getElementById('mobile-menu').classList.toggle('open');"></i>
-                    <button id="mobile-btn" class="text-dark dark:text-white text-2xl focus:outline-none"><i class="fa-solid fa-bars"></i></button>
+                    <button id="mobile-btn" onclick="document.getElementById('mobile-menu').classList.toggle('open');" class="text-dark dark:text-white text-2xl focus:outline-none"><i class="fa-solid fa-bars"></i></button>
                 </div>
             </div>
         </div>
@@ -551,6 +551,130 @@
                     </div>
                     
 
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Us Section -->
+    <section id="about" class="py-24 relative overflow-hidden bg-gradient-to-b from-white to-slate-50 dark:from-dark dark:to-darkCard border-b border-gray-200 dark:border-gray-800 transition-colors duration-300">
+        <div class="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div class="text-center mb-16">
+                <h2 class="font-heading font-black text-4xl sm:text-5xl text-dark dark:text-white mb-4">About Us</h2>
+                <div class="w-20 h-1.5 bg-primary mx-auto rounded-full"></div>
+            </div>
+
+            <!-- Main Video -->
+            <div class="max-w-4xl mx-auto mb-16">
+                <div class="relative rounded-[2rem] overflow-hidden shadow-2xl border border-white/10 bg-black aspect-video flex items-center justify-center group">
+                    <div class="absolute -inset-2 bg-gradient-to-r from-secondary to-primary rounded-[2.5rem] blur-xl opacity-20 group-hover:opacity-40 transition duration-500"></div>
+                    <iframe id="about-youtube-player" class="w-full h-full relative z-10 rounded-[2rem]" src="https://www.youtube.com/embed/mgdOMtW6J8k?rel=0&modestbranding=1&showinfo=0&autoplay=1&mute=1&vq=hd1080" title="Tsehay Campus Introduction" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                </div>
+            </div>
+
+            <!-- Our Story -->
+            <div class="max-w-4xl mx-auto mb-24">
+                <h3 class="text-2xl font-bold font-heading text-primary mb-4">Our Story</h3>
+                <p class="text-gray-600 dark:text-gray-300 font-body leading-relaxed text-base mb-4">
+                    <span class="notranslate font-bold">Tsehay Campus</span> በ <strong class="notranslate text-dark dark:text-white">Tsehay Digital</strong> ስር የተመሰረተ ሲሆን፣ ዓላማችን ወጣቶችን አዳዲስ እና ተፈላጊ በሆኑ የዲጂታል ክህሎቶች በማብቃት የፋይናንስ ነፃነት እንዲያገኙ ማስቻል ነው።
+                </p>
+                <p class="text-gray-600 dark:text-gray-300 font-body leading-relaxed text-base mb-8">
+                    <strong>"We do it, we teach it"</strong> በሚለው መርሀችን መሰረት፣ እኛ ራሳችን የምንሰራውን የኢ-ኮሜርስ፣ የማርኬቲንግ እና የክሪፕቶ ስራዎችን ነው በተግባር የምናስተምረው። በተጨማሪም ኮርሶቻችን ሙሉ በሙሉ በ <strong class="notranslate text-dark dark:text-white">Tsehay AI</strong> የታገዙ ናቸው።
+                </p>
+                <div class="flex flex-wrap gap-8">
+                    <div>
+                        <h4 class="text-3xl font-black text-dark dark:text-white">500+</h4>
+                        <p class="text-xs text-gray-500 font-bold uppercase tracking-wider mt-1 border-l-2 border-primary pl-2">ተማሪዎች</p>
+                    </div>
+                    <div>
+                        <h4 class="text-3xl font-black text-dark dark:text-white">100%</h4>
+                        <p class="text-xs text-gray-500 font-bold uppercase tracking-wider mt-1 border-l-2 border-secondary pl-2">የተግባር ስራ</p>
+                    </div>
+                    <div>
+                        <h4 class="text-3xl font-black text-dark dark:text-white">24/7</h4>
+                        <p class="text-xs text-gray-500 font-bold uppercase tracking-wider mt-1 border-l-2 border-success pl-2">የ AI ድጋፍ</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Our Mission -->
+            <div class="max-w-3xl mx-auto mb-24 text-center">
+                <h3 class="text-2xl font-bold font-heading text-primary mb-4">Our Mission</h3>
+                <p class="text-xl sm:text-2xl font-bold text-dark dark:text-white leading-relaxed">
+                    ወጣቶችን አዳዲስ እና ተፈላጊ በሆኑ የዲጂታል ክህሎቶች በማብቃት የፋይናንስ ነፃነት እንዲያገኙ ማስቻል።
+                </p>
+            </div>
+
+            <!-- What We Do -->
+            <div class="mb-24">
+                <h3 class="text-2xl font-bold font-heading text-dark dark:text-white mb-8 text-center">What We Do</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-white dark:bg-dark border border-gray-100 dark:border-gray-800 p-8 rounded-2xl text-center hover:-translate-y-1 transition duration-300 shadow-sm hover:shadow-md">
+                        <div class="w-16 h-16 mx-auto bg-blue-50 dark:bg-blue-900/20 text-secondary dark:text-blue-400 rounded-2xl flex items-center justify-center text-2xl mb-6"><i class="fa-solid fa-laptop-code"></i></div>
+                        <h4 class="font-bold text-dark dark:text-white text-lg mb-2">ዲጂታል ክህሎት ማስተማር</h4>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">በተግባር የተፈተኑ 100% የቢዝነስ ኮርሶች</p>
+                    </div>
+                    <div class="bg-white dark:bg-dark border border-gray-100 dark:border-gray-800 p-8 rounded-2xl text-center hover:-translate-y-1 transition duration-300 shadow-sm hover:shadow-md">
+                        <div class="w-16 h-16 mx-auto bg-orange-50 dark:bg-orange-900/20 text-primary rounded-2xl flex items-center justify-center text-2xl mb-6"><i class="fa-solid fa-users-rays"></i></div>
+                        <h4 class="font-bold text-dark dark:text-white text-lg mb-2">ማህበረሰብ መገንባት</h4>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">ጠንካራ እና እርስበርስ የሚደጋገፍ የትምህርት ማህበረሰብ</p>
+                    </div>
+                    <div class="bg-white dark:bg-dark border border-gray-100 dark:border-gray-800 p-8 rounded-2xl text-center hover:-translate-y-1 transition duration-300 shadow-sm hover:shadow-md">
+                        <div class="w-16 h-16 mx-auto bg-green-50 dark:bg-green-900/20 text-success rounded-2xl flex items-center justify-center text-2xl mb-6"><i class="fa-solid fa-robot"></i></div>
+                        <h4 class="font-bold text-dark dark:text-white text-lg mb-2">AI Integration</h4>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">በ AI የታገዘ የ 24 ሰዓት የግል ሞግዚት (Tutor)</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Our Team -->
+            <div class="mb-24">
+                <h3 class="text-2xl font-bold font-heading text-dark dark:text-white mb-8 text-center">Our Team</h3>
+                <div class="flex flex-wrap justify-center gap-6">
+                    <!-- Eyob Sahle -->
+                    <div class="bg-white dark:bg-dark border border-gray-100 dark:border-gray-800 p-8 rounded-2xl text-center shadow-sm hover:shadow-xl transition duration-300 w-full sm:w-64">
+                        <div class="w-24 h-24 mx-auto rounded-full overflow-hidden mb-4 bg-gray-100 dark:bg-gray-800">
+                            <img src="Ceo.jpg" alt="Eyob Sahle" class="w-full h-full object-cover" onerror="this.src='https://ui-avatars.com/api/?name=Eyob+Sahle&background=000000&color=fff&size=128'">
+                        </div>
+                        <h4 class="font-bold text-dark dark:text-white text-lg notranslate">ኢዮብ ሳህሌ</h4>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 font-medium mt-1">Founder & Lead Instructor</p>
+                    </div>
+                    <!-- Habtamu Alemu -->
+                    <div class="bg-white dark:bg-dark border border-gray-100 dark:border-gray-800 p-8 rounded-2xl text-center shadow-sm hover:shadow-xl transition duration-300 w-full sm:w-64">
+                        <div class="w-24 h-24 mx-auto rounded-full overflow-hidden mb-4 bg-gray-100 dark:bg-gray-800 text-3xl flex items-center justify-center text-white font-bold" style="background-color: #3268BA;">
+                            H
+                        </div>
+                        <h4 class="font-bold text-dark dark:text-white text-lg notranslate">ሀብታሙ ዓለሙ</h4>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 font-medium mt-1">Manager</p>
+                    </div>
+                    <!-- Afomia -->
+                    <div class="bg-white dark:bg-dark border border-gray-100 dark:border-gray-800 p-8 rounded-2xl text-center shadow-sm hover:shadow-xl transition duration-300 w-full sm:w-64">
+                        <div class="w-24 h-24 mx-auto rounded-full overflow-hidden mb-4 bg-gray-100 dark:bg-gray-800 text-3xl flex items-center justify-center text-white font-bold" style="background-color: #f43f5e;">
+                            <img src="assets/afomia.jpg" alt="Afomia" class="w-full h-full object-cover" onerror="this.src='https://ui-avatars.com/api/?name=Afomia&background=f43f5e&color=fff&size=128'">
+                        </div>
+                        <h4 class="font-bold text-dark dark:text-white text-lg notranslate">አፎሚያ</h4>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 font-medium mt-1">Course Designer</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Media / Reels Gallery -->
+            <div>
+                <h3 class="text-2xl font-bold font-heading text-dark dark:text-white mb-8 text-center">Gallery</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="rounded-3xl overflow-hidden shadow-xl group aspect-[9/16] bg-black">
+                        <video loop muted playsinline class="w-full h-full object-cover group-hover:scale-105 transition duration-700" onmouseover="this.play(); this.muted=false;" onmouseout="this.pause(); this.muted=true;">
+                            <source src="assets/videos/Tsehay.mp4" type="video/mp4">
+                        </video>
+                    </div>
+                    <div class="rounded-3xl overflow-hidden shadow-xl group aspect-[9/16] bg-black">
+                        <video loop muted playsinline class="w-full h-full object-cover group-hover:scale-105 transition duration-700" onmouseover="this.play(); this.muted=false;" onmouseout="this.pause(); this.muted=true;">
+                            <source src="assets/videos/Marketing%20and%20psyco.mp4" type="video/mp4">
+                        </video>
+                    </div>
+                    <div class="rounded-3xl overflow-hidden shadow-xl group aspect-[9/16] bg-black">
+                        <img src="https://i.postimg.cc/qvqt1bJK/about-photo-1.jpg" class="w-full h-full object-cover group-hover:scale-105 transition duration-700" alt="Team" onerror="this.src='https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=800&auto=format&fit=crop'">
+                    </div>
                 </div>
             </div>
         </div>
