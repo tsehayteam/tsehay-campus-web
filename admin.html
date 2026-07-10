@@ -791,6 +791,7 @@
 
         let adminCourses = [];
         let globalCourses = [];
+        let dynamicAdmins = [];
         let isLoggedIn = false;
         let isSignupMode = false;
 
@@ -1083,6 +1084,7 @@
                 loadStudents(); 
                 loadQA();
                 loadSettings();
+                loadAdmins();
             } else {
                 isLoggedIn = false;
                 const loginScreen = document.getElementById('admin-login-screen');
