@@ -1009,7 +1009,8 @@
                 await setDoc(doc(db, 'artifacts', appId, 'admins', user.uid), {
                     email: email,
                     addedBy: 'Direct Registration',
-                    timestamp: Date.now()
+                    timestamp: Date.now(),
+                    secretKey: secret // Required by Firestore rules for self-registration
                 });
 
                 window.showToast('አዲስ አድሚን በተሳካ ሁኔታ ተመዝግቧል! ወደ ሲስተሙ እየገባ ነው...');

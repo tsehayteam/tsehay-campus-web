@@ -21,7 +21,9 @@ service cloud.firestore {
 
       // 1. Admins Collection
       match /admins/{userId} {
-        allow read, write: if isAdmin();
+        allow read: if isAdmin() || request.auth.uid == userId;
+        allow create: if isAdmin() || (request.auth != null && request.auth.uid == userId && request.resource.data.secretKey == 'TsehayAdmin');
+        allow update, delete: if isAdmin();
       }
 
       // 2. Public Data
