@@ -33,3 +33,5 @@ h1, h2, h3, h4, h5, h6 { font-family: 'Montserrat', 'Noto Sans Ethiopic', sans-s
 
 body { top: 0px !important; position: static !important; }
 html { top: 0 !important; height: 100%; }
+
+#mobile-menu.open { max-height: 500px !important; }
