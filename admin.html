@@ -148,6 +148,7 @@
                 </div>
             </div>
 
+            <div id="admin-login-wrapper">
             <div class="relative mb-5 text-left">
                 <label class="block text-sm font-bold text-gray-300 mb-2">ኢሜል (Email)</label>
                 <div class="relative group">
@@ -167,11 +168,46 @@
             <button id="login-btn" onclick="window.loginAdmin()" class="w-full bg-primary text-dark font-black py-4 rounded-xl hover:bg-yellow-400 transition-all shadow-[0_0_20px_rgba(249,176,60,0.3)] hover:shadow-[0_0_30px_rgba(249,176,60,0.5)] flex justify-center items-center gap-2 transform hover:-translate-y-1">
                 ግባ (Log in) <i class="fa-solid fa-arrow-right-to-bracket"></i>
             </button>
+            </div> <!-- end admin-login-wrapper -->
+            
+            <div id="admin-register-wrapper" class="hidden space-y-5 text-left">
+                <div class="space-y-1.5">
+                    <label class="text-xs font-black text-gray-400">አዲስ ኢሜይል (Email)</label>
+                    <div class="relative">
+                        <i class="fa-regular fa-envelope absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"></i>
+                        <input type="email" id="reg-email" required class="w-full bg-dark/50 border border-slate-700 rounded-xl py-3 pl-11 pr-4 text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition" placeholder="admin@example.com">
+                    </div>
+                </div>
 
-            <div class="mt-8 flex justify-center items-center text-sm">
+                <div class="space-y-1.5">
+                    <label class="text-xs font-black text-gray-400">የይለፍ ቃል (Password)</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"></i>
+                        <input type="password" id="reg-password" required minlength="6" class="w-full bg-dark/50 border border-slate-700 rounded-xl py-3 pl-11 pr-4 text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition" placeholder="••••••••">
+                    </div>
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="text-xs font-black text-primary">ሚስጥራዊ ኮድ (Secret Key)</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-key absolute left-4 top-1/2 -translate-y-1/2 text-primary"></i>
+                        <input type="password" id="reg-secret" required class="w-full bg-primary/10 border border-primary/30 rounded-xl py-3 pl-11 pr-4 text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition" placeholder="ሚስጥራዊ ኮዱን ያስገቡ">
+                    </div>
+                </div>
+
+                <button id="register-btn" onclick="window.registerAdmin()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-black py-4 rounded-xl transition shadow-[0_0_20px_rgba(37,99,235,0.3)] hover:shadow-[0_0_30px_rgba(37,99,235,0.5)] flex justify-center items-center gap-2 transform hover:-translate-y-1 mt-4">
+                    ተመዝገብ (Register) <i class="fa-solid fa-user-plus"></i>
+                </button>
+                <p class="text-center mt-4 text-gray-400 font-bold text-xs cursor-pointer hover:text-white transition" onclick="document.getElementById('admin-login-wrapper').classList.toggle('hidden'); document.getElementById('admin-register-wrapper').classList.toggle('hidden');">ወደ ሎጊን ተመለስ</p>
+            </div>
+
+            <div id="admin-login-links" class="mt-8 flex flex-col justify-center items-center text-sm gap-4">
                 <button type="button" onclick="window.resetAdminPassword()" class="text-primary font-bold hover:text-white transition hover:underline underline-offset-4">
                     ፓስወርድ ረሱ?
                 </button>
+                <p class="text-center text-primary font-black text-sm opacity-50 cursor-pointer hover:opacity-100 transition" onclick="document.getElementById('admin-login-wrapper').classList.toggle('hidden'); document.getElementById('admin-register-wrapper').classList.toggle('hidden');">
+                    አዲስ አድሚን መጨመር ይፈልጋሉ?
+                </p>
             </div>
         </div>
     </div>
@@ -946,6 +982,45 @@
                 }, 4000);
             }
         }
+
+                window.registerAdmin = async function() {
+            const email = document.getElementById('reg-email').value;
+            const password = document.getElementById('reg-password').value;
+            const secret = document.getElementById('reg-secret').value;
+            const btn = document.getElementById('register-btn');
+
+            if (!email || !password) {
+                return window.showToast('እባክዎ ኢሜይል እና ፓስወርድ ያስገቡ!', true);
+            }
+
+            if (secret !== 'TsehayAdmin') {
+                return window.showToast('የተሳሳተ ሚስጥራዊ ኮድ! (Invalid Secret Key)', true);
+            }
+
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+            btn.disabled = true;
+
+            try {
+                // Using standard createUserWithEmailAndPassword
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+
+                // Add to admins collection
+                await setDoc(doc(db, 'artifacts', appId, 'admins', user.uid), {
+                    email: email,
+                    addedBy: 'Direct Registration',
+                    timestamp: Date.now()
+                });
+
+                window.showToast('አዲስ አድሚን በተሳካ ሁኔታ ተመዝግቧል! ወደ ሲስተሙ እየገባ ነው...');
+                // It will automatically trigger onAuthStateChanged and log them in!
+            } catch (error) {
+                console.error("Registration error:", error);
+                window.showToast(error.message, true);
+                btn.innerHTML = 'ተመዝገብ (Register) <i class="fa-solid fa-user-plus"></i>';
+                btn.disabled = false;
+            }
+        };
 
         window.loginAdmin = async function() {
             const email = document.getElementById('admin-email').value;
