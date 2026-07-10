@@ -1001,6 +1001,7 @@
             btn.disabled = true;
 
             try {
+                window.isRegisteringAdmin = true; // Prevent onAuthStateChanged from kicking out the user
                 // Using standard createUserWithEmailAndPassword
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
                 const user = userCredential.user;
@@ -1014,8 +1015,14 @@
                 });
 
                 window.showToast('አዲስ አድሚን በተሳካ ሁኔታ ተመዝግቧል! ወደ ሲስተሙ እየገባ ነው...');
-                // It will automatically trigger onAuthStateChanged and log them in!
+                
+                // Now reload the page so the normal onAuthStateChanged can verify and log them in
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+
             } catch (error) {
+                window.isRegisteringAdmin = false;
                 console.error("Registration error:", error);
                 window.showToast(error.message, true);
                 btn.innerHTML = 'ተመዝገብ (Register) <i class="fa-solid fa-user-plus"></i>';
@@ -1100,6 +1107,10 @@
             if (user && !user.isAnonymous) {
                 const userEmail = user.email ? user.email.toLowerCase() : '';
                 
+                if (window.isRegisteringAdmin) {
+                    return; // Skip admin check during the registration flow to prevent race conditions
+                }
+
                 let isAdmin = ADMIN_EMAILS.includes(userEmail);
                 if (!isAdmin) {
                     try {
