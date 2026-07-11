@@ -806,6 +806,11 @@
 
     <!-- UI Logic & Firebase Setup -->
     <script type="module">
+        window.getSafeImageUrl = function(url) {
+            if (!url) return url;
+            return url.replace('lh3.googleusercontent.com/d/', 'drive.google.com/uc?export=view&id=');
+        };
+
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential, sendPasswordResetEmail, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, getDocs, collection, onSnapshot, deleteDoc, collectionGroup } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
@@ -1765,7 +1770,7 @@
             if (!url.includes('drive.google.com')) return url;
             const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
             if (match && match[1]) {
-                return type === 'image' ? `https://lh3.googleusercontent.com/d/${match[1]}` : `https://drive.google.com/file/d/${match[1]}/preview`; 
+                return type === 'image' ? `https://drive.google.com/uc?export=view&id=` : `https://drive.google.com/file/d/${match[1]}/preview`; 
             }
             return url;
         }

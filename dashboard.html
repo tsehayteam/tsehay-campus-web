@@ -984,6 +984,11 @@
     </script>
 
     <script type="module">
+        window.getSafeImageUrl = function(url) {
+            if (!url) return url;
+            return url.replace('lh3.googleusercontent.com/d/', 'drive.google.com/uc?export=view&id=');
+        };
+
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut, updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential, sendPasswordResetEmail, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, deleteDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
