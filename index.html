@@ -211,7 +211,16 @@
 
                 <div class="hidden lg:flex items-center h-full">
                     <a href="#home" onclick="document.getElementById('home').scrollIntoView({behavior: 'smooth'})" class="text-gray-700 dark:text-gray-300 hover:text-secondary dark:hover:text-primary font-bold transition text-[14px] lg:text-[15px] px-2 lg:px-3">ዋና ገፅ</a>
-                    <a href="#about" onclick="document.getElementById('about').scrollIntoView({behavior: 'smooth'});" class="text-gray-700 dark:text-gray-300 hover:text-secondary dark:hover:text-primary font-bold transition text-[14px] lg:text-[15px] px-2 lg:px-3">ስለ እኛ</a>
+                    <div class="relative group flex items-center h-full">
+                        <button class="text-gray-700 dark:text-gray-300 group-hover:text-secondary dark:group-hover:text-primary font-bold transition text-[14px] lg:text-[15px] px-2 lg:px-3 flex items-center gap-1 h-full cursor-pointer">
+                            ስለ እኛ <i class="fa-solid fa-chevron-down text-[10px] transition-transform duration-300 group-hover:rotate-180"></i>
+                        </button>
+                        <div class="absolute top-[100%] left-0 w-48 bg-white dark:bg-darkCard rounded-xl shadow-xl border border-gray-100 dark:border-gray-800 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 flex flex-col overflow-hidden z-[100]">
+                            <a href="about.html" class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:text-primary hover:bg-gray-50 dark:hover:bg-dark border-b border-gray-100 dark:border-gray-800 transition">ስለ ካምፓሱ (Our Story)</a>
+                            <a href="about.html#mission" class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:text-primary hover:bg-gray-50 dark:hover:bg-dark border-b border-gray-100 dark:border-gray-800 transition">ተልዕኮ (Our Mission)</a>
+                            <a href="about.html#team" class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:text-primary hover:bg-gray-50 dark:hover:bg-dark transition">ምን እንሰራለን? (What We Do)</a>
+                        </div>
+                    </div>
                     <a href="javascript:void(0)" onclick="document.getElementById('courses').scrollIntoView({behavior: 'smooth'})" class="text-gray-700 dark:text-gray-300 hover:text-secondary dark:hover:text-primary font-bold transition text-[14px] lg:text-[15px] px-2 lg:px-3">ሁሉም ኮርሶች</a>
                     
                     <a href="#features" onclick="document.getElementById('features').scrollIntoView({behavior: 'smooth'})" class="text-gray-700 dark:text-gray-300 hover:text-secondary dark:hover:text-primary font-bold transition text-[14px] lg:text-[15px] px-2 lg:px-3">ጥቅሞች</a>
@@ -267,7 +276,16 @@
                 
                 <div class="grid grid-cols-2 gap-2 mb-2 px-2">
                     <a href="#home" onclick="document.getElementById('home').scrollIntoView({behavior: 'smooth'}); document.getElementById('mobile-menu').classList.remove('open');" class="block px-3 py-2 text-secondary dark:text-primary font-bold rounded-md hover:bg-gray-50 dark:hover:bg-darkCard border border-gray-100 dark:border-gray-800">ዋና ገፅ</a>
-                    <a href="#about" onclick="document.getElementById('about').scrollIntoView({behavior: 'smooth'});" class="block px-3 py-2 text-gray-700 dark:text-gray-300 font-bold rounded-md hover:bg-gray-50 dark:hover:bg-darkCard border border-gray-100 dark:border-gray-800">ስለ እኛ</a>
+                    <div class="w-full">
+                        <button onclick="document.getElementById('mobile-about-dropdown').classList.toggle('hidden')" class="w-full text-left flex justify-between items-center px-3 py-2 text-gray-700 dark:text-gray-300 font-bold rounded-md hover:bg-gray-50 dark:hover:bg-darkCard border border-gray-100 dark:border-gray-800">
+                            ስለ እኛ <i class="fa-solid fa-chevron-down text-xs"></i>
+                        </button>
+                        <div id="mobile-about-dropdown" class="hidden flex-col pl-4 pr-2 mt-1 space-y-1 mb-2">
+                            <a href="about.html" class="block px-3 py-2 text-sm text-gray-600 dark:text-gray-400 font-medium rounded-md hover:text-primary hover:bg-gray-50 dark:hover:bg-darkCard">ስለ ካምፓሱ (Our Story)</a>
+                            <a href="about.html#mission" class="block px-3 py-2 text-sm text-gray-600 dark:text-gray-400 font-medium rounded-md hover:text-primary hover:bg-gray-50 dark:hover:bg-darkCard">ተልዕኮ (Our Mission)</a>
+                            <a href="about.html#team" class="block px-3 py-2 text-sm text-gray-600 dark:text-gray-400 font-medium rounded-md hover:text-primary hover:bg-gray-50 dark:hover:bg-darkCard">ምን እንሰራለን? (What We Do)</a>
+                        </div>
+                    </div>
                     <a href="javascript:void(0)" onclick="document.getElementById('courses').scrollIntoView({behavior: 'smooth'}); document.getElementById('mobile-menu').classList.remove('open');" class="block px-3 py-2 text-gray-700 dark:text-gray-300 font-bold rounded-md hover:bg-gray-50 dark:hover:bg-darkCard border border-gray-100 dark:border-gray-800">ሁሉም ኮርሶች</a>
                     <a href="#features" onclick="document.getElementById('features').scrollIntoView({behavior: 'smooth'}); document.getElementById('mobile-menu').classList.remove('open');" class="block px-3 py-2 text-gray-700 dark:text-gray-300 font-bold rounded-md hover:bg-gray-50 dark:hover:bg-darkCard border border-gray-100 dark:border-gray-800">ጥቅሞች</a>
                 </div>
@@ -389,147 +407,6 @@
         </div>
     </section>
 
-    <!-- Features -->
-    <section id="about" class="py-24 relative overflow-hidden bg-gradient-to-b from-white to-slate-50 dark:from-dark dark:to-darkCard border-b border-gray-200 dark:border-gray-800 transition-colors duration-300">
-        <div class="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-<details class="group cursor-pointer max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-<summary class="list-none flex justify-between items-center bg-white dark:bg-darkCard p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 hover:shadow-md transition">
-    <h2 class="font-heading font-black text-2xl sm:text-3xl text-dark dark:text-white">ስለ እኛ (About Us)</h2>
-    <div class="bg-secondary/10 dark:bg-primary/10 w-12 h-12 rounded-full flex items-center justify-center">
-        <i class="fa-solid fa-chevron-down text-xl text-secondary dark:text-primary group-open:rotate-180 transition-transform duration-300"></i>
-    </div>
-</summary>
-<div class="mt-12 animate-fade-in-down cursor-default" onclick="event.stopPropagation()">
-            <div class="text-center mb-16">
-                <h2 class="font-heading font-black text-4xl sm:text-5xl text-dark dark:text-white mb-4">About Us</h2>
-                <div class="w-20 h-1.5 bg-primary mx-auto rounded-full"></div>
-            </div>
-
-            <!-- Main Video -->
-            <div class="max-w-4xl mx-auto mb-16">
-                <div class="relative rounded-[2rem] overflow-hidden shadow-2xl border border-white/10 bg-black aspect-video flex items-center justify-center group">
-                    <div class="absolute -inset-2 bg-gradient-to-r from-secondary to-primary rounded-[2.5rem] blur-xl opacity-20 group-hover:opacity-40 transition duration-500"></div>
-                    <iframe id="about-youtube-player" class="w-full h-full relative z-10 rounded-[2rem]" src="https://www.youtube.com/embed/mgdOMtW6J8k?rel=0&modestbranding=1&showinfo=0&autoplay=1&mute=1&vq=hd1080" title="Tsehay Campus Introduction" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-                </div>
-            </div>
-
-            <!-- Our Story -->
-            <div class="max-w-4xl mx-auto mb-24">
-                <h3 class="text-2xl font-bold font-heading text-primary mb-4">Our Story</h3>
-                <p class="text-gray-600 dark:text-gray-300 font-body leading-relaxed text-base mb-4">
-                    <span class="notranslate font-bold">Tsehay Campus</span> በ <strong class="notranslate text-dark dark:text-white">Tsehay Digital</strong> ስር የተመሰረተ ሲሆን፣ ዓላማችን ወጣቶችን አዳዲስ እና ተፈላጊ በሆኑ የዲጂታል ክህሎቶች በማብቃት የፋይናንስ ነፃነት እንዲያገኙ ማስቻል ነው።
-                </p>
-                <p class="text-gray-600 dark:text-gray-300 font-body leading-relaxed text-base mb-8">
-                    <strong>"We do it, we teach it"</strong> በሚለው መርሀችን መሰረት፣ እኛ ራሳችን የምንሰራውን የኢ-ኮሜርስ፣ የማርኬቲንግ እና የክሪፕቶ ስራዎችን ነው በተግባር የምናስተምረው። በተጨማሪም ኮርሶቻችን ሙሉ በሙሉ በ <strong class="notranslate text-dark dark:text-white">Tsehay AI</strong> የታገዙ ናቸው።
-                </p>
-                <div class="flex flex-wrap gap-8">
-                    <div>
-                        <h4 class="text-3xl font-black text-dark dark:text-white">500+</h4>
-                        <p class="text-xs text-gray-500 font-bold uppercase tracking-wider mt-1 border-l-2 border-primary pl-2">ተማሪዎች</p>
-                    </div>
-                    <div>
-                        <h4 class="text-3xl font-black text-dark dark:text-white">100%</h4>
-                        <p class="text-xs text-gray-500 font-bold uppercase tracking-wider mt-1 border-l-2 border-secondary pl-2">የተግባር ስራ</p>
-                    </div>
-                    <div>
-                        <h4 class="text-3xl font-black text-dark dark:text-white">24/7</h4>
-                        <p class="text-xs text-gray-500 font-bold uppercase tracking-wider mt-1 border-l-2 border-success pl-2">የ AI ድጋፍ</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Our Mission -->
-            <div class="max-w-3xl mx-auto mb-24 text-center">
-                <h3 class="text-2xl font-bold font-heading text-primary mb-4">Our Mission</h3>
-                <p class="text-xl sm:text-2xl font-bold text-dark dark:text-white leading-relaxed">
-                    ወጣቶችን አዳዲስ እና ተፈላጊ በሆኑ የዲጂታል ክህሎቶች በማብቃት የፋይናንስ ነፃነት እንዲያገኙ ማስቻል።
-                </p>
-            </div>
-
-            <!-- What We Do -->
-            <div class="mb-24">
-                <h3 class="text-2xl font-bold font-heading text-dark dark:text-white mb-8 text-center">What We Do</h3>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="bg-white dark:bg-dark border border-gray-100 dark:border-gray-800 p-8 rounded-2xl text-center hover:-translate-y-1 transition duration-300 shadow-sm hover:shadow-md">
-                        <div class="w-16 h-16 mx-auto bg-blue-50 dark:bg-blue-900/20 text-secondary dark:text-blue-400 rounded-2xl flex items-center justify-center text-2xl mb-6"><i class="fa-solid fa-laptop-code"></i></div>
-                        <h4 class="font-bold text-dark dark:text-white text-lg mb-2">ዲጂታል ክህሎት ማስተማር</h4>
-                        <p class="text-sm text-gray-500 dark:text-gray-400">በተግባር የተፈተኑ 100% የቢዝነስ ኮርሶች</p>
-                    </div>
-                    <div class="bg-white dark:bg-dark border border-gray-100 dark:border-gray-800 p-8 rounded-2xl text-center hover:-translate-y-1 transition duration-300 shadow-sm hover:shadow-md">
-                        <div class="w-16 h-16 mx-auto bg-orange-50 dark:bg-orange-900/20 text-primary rounded-2xl flex items-center justify-center text-2xl mb-6"><i class="fa-solid fa-users-rays"></i></div>
-                        <h4 class="font-bold text-dark dark:text-white text-lg mb-2">ማህበረሰብ መገንባት</h4>
-                        <p class="text-sm text-gray-500 dark:text-gray-400">ጠንካራ እና እርስበርስ የሚደጋገፍ የትምህርት ማህበረሰብ</p>
-                    </div>
-                    <div class="bg-white dark:bg-dark border border-gray-100 dark:border-gray-800 p-8 rounded-2xl text-center hover:-translate-y-1 transition duration-300 shadow-sm hover:shadow-md">
-                        <div class="w-16 h-16 mx-auto bg-green-50 dark:bg-green-900/20 text-success rounded-2xl flex items-center justify-center text-2xl mb-6"><i class="fa-solid fa-robot"></i></div>
-                        <h4 class="font-bold text-dark dark:text-white text-lg mb-2">AI Integration</h4>
-                        <p class="text-sm text-gray-500 dark:text-gray-400">በ AI የታገዘ የ 24 ሰዓት የግል ሞግዚት (Tutor)</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Our Team -->
-            <div class="mb-24">
-                <h3 class="text-2xl font-bold font-heading text-dark dark:text-white mb-8 text-center">Our Team</h3>
-                <div class="flex flex-wrap justify-center gap-6">
-                    <!-- Eyob Sahle -->
-                    <div class="bg-white dark:bg-dark border border-gray-100 dark:border-gray-800 p-8 rounded-2xl text-center shadow-sm hover:shadow-2xl hover:-translate-y-3 transition-all duration-300 w-full sm:w-64 group">
-                        <div class="w-24 h-24 mx-auto rounded-full overflow-hidden mb-4 bg-gray-100 dark:bg-gray-800">
-                            <img src="assets/eyob_new2.png" alt="Eyob Sahle" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" onerror="this.src='https://ui-avatars.com/api/?name=Eyob+Sahle&background=000000&color=fff&size=128'">
-                        </div>
-                        <h4 class="font-bold text-dark dark:text-white text-lg notranslate">ኢዮብ ሳህሌ</h4>
-                        <p class="text-sm text-gray-500 dark:text-gray-400 font-medium mt-1">Founder & Lead Instructor</p>
-                    </div>
-                    <!-- Afomia -->
-                    <div class="bg-white dark:bg-dark border border-gray-100 dark:border-gray-800 p-8 rounded-2xl text-center shadow-sm hover:shadow-2xl hover:-translate-y-3 transition-all duration-300 w-full sm:w-64 group">
-                        <div class="w-24 h-24 mx-auto rounded-full overflow-hidden mb-4 bg-gray-100 dark:bg-gray-800 text-3xl flex items-center justify-center text-white font-bold" style="background-color: #f43f5e;">
-                            <img src="assets/afomia.jpg" alt="Afomia Mekuria" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" onerror="this.src='https://ui-avatars.com/api/?name=Afomia+Mekuria&background=f43f5e&color=fff&size=128'">
-                        </div>
-                        <h4 class="font-bold text-dark dark:text-white text-lg notranslate">አፎሚያ መኩሪያ</h4>
-                        <p class="text-sm text-gray-500 dark:text-gray-400 font-medium mt-1">General Manager</p>
-                    </div>
-                    <!-- Habtamu Alemu -->
-                    <div class="bg-white dark:bg-dark border border-gray-100 dark:border-gray-800 p-8 rounded-2xl text-center shadow-sm hover:shadow-2xl hover:-translate-y-3 transition-all duration-300 w-full sm:w-64 group">
-                        <div class="w-24 h-24 mx-auto rounded-full overflow-hidden mb-4 bg-gray-100 dark:bg-gray-800 text-3xl flex items-center justify-center text-white font-bold" style="background-color: #3268BA;">
-                            H
-                        </div>
-                        <h4 class="font-bold text-dark dark:text-white text-lg notranslate">ሀብታሙ ዓለሙ</h4>
-                        <p class="text-sm text-gray-500 dark:text-gray-400 font-medium mt-1">Course Designer</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Media / Reels Gallery -->
-            <div>
-                <h3 class="text-2xl font-bold font-heading text-dark dark:text-white mb-8 text-center">Gallery</h3>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="rounded-3xl overflow-hidden shadow-xl group aspect-[9/16] bg-black relative">
-                        <div class="absolute inset-0 z-20 flex flex-col items-center justify-center pointer-events-none transition-opacity duration-300 group-hover:opacity-0 bg-black/40">
-                            <i class="fa-solid fa-hand-pointer text-primary text-4xl mb-3 animate-bounce"></i>
-                            <span class="text-white font-bold text-lg drop-shadow-md">Tap To Unmute</span>
-                        </div>
-                        <video loop muted playsinline class="w-full h-full object-cover group-hover:scale-105 transition duration-700 relative z-10" onmouseover="this.play(); this.muted=false;" onmouseout="this.pause(); this.muted=true;">
-                            <source src="assets/videos/Tsehay.mp4" type="video/mp4">
-                        </video>
-                    </div>
-                    <div class="rounded-3xl overflow-hidden shadow-xl group aspect-[9/16] bg-black relative">
-                        <div class="absolute inset-0 z-20 flex flex-col items-center justify-center pointer-events-none transition-opacity duration-300 group-hover:opacity-0 bg-black/40">
-                            <i class="fa-solid fa-hand-pointer text-primary text-4xl mb-3 animate-bounce"></i>
-                            <span class="text-white font-bold text-lg drop-shadow-md">Tap To Unmute</span>
-                        </div>
-                        <video loop muted playsinline class="w-full h-full object-cover group-hover:scale-105 transition duration-700 relative z-10" onmouseover="this.play(); this.muted=false;" onmouseout="this.pause(); this.muted=true;">
-                            <source src="assets/videos/Marketing%20and%20psyco.mp4" type="video/mp4">
-                        </video>
-                    </div>
-                    <div class="rounded-3xl overflow-hidden shadow-xl group aspect-[9/16] bg-black">
-                        <img src="https://i.postimg.cc/qvqt1bJK/about-photo-1.jpg" class="w-full h-full object-cover group-hover:scale-105 transition duration-700" alt="Team" onerror="this.src='https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=800&auto=format&fit=crop'">
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-</div>
-</details>
     <section id="features" class="py-24 relative overflow-hidden bg-gradient-to-b from-blue-50/60 to-white dark:from-darkCard dark:to-dark border-b border-gray-200 dark:border-gray-800 transition-colors duration-300">
         <div class="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
             <div class="absolute -top-32 -left-32 w-[500px] h-[500px] bg-primary/5 rounded-full blur-3xl"></div>
