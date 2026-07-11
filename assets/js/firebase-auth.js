@@ -1,3 +1,20 @@
+
+window.getSafeImageUrl = function(url) {
+    if (!url) return url;
+    if (url.includes('drive.google.com')) {
+        const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+        if (match && match[1]) {
+            return `https://drive.google.com/uc?export=view&id=${match[1]}`;
+        }
+    } else if (url.includes('lh3.googleusercontent.com/d/')) {
+        const parts = url.split('/d/');
+        if (parts[1]) {
+            return `https://drive.google.com/uc?export=view&id=${parts[1]}`;
+        }
+    }
+    return url;
+};
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail, signInWithCustomToken, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, onSnapshot, doc, setDoc, getDocs, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";

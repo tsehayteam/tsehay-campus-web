@@ -984,10 +984,7 @@
     </script>
 
     <script type="module">
-        window.getSafeImageUrl = function(url) {
-            if (!url) return url;
-            return url.replace('lh3.googleusercontent.com/d/', 'drive.google.com/uc?export=view&id=');
-        };
+
 
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut, updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential, sendPasswordResetEmail, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -2178,5 +2175,22 @@
     <!-- Plyr.js Library -->
     <script src="https://cdn.plyr.io/3.7.8/plyr.js"></script>
     <script src="translations.js"></script>
+<script>
+window.getSafeImageUrl = function(url) {
+    if (!url) return url;
+    if (url.includes('drive.google.com')) {
+        const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+        if (match && match[1]) {
+            return `https://drive.google.com/uc?export=view&id=${match[1]}`;
+        }
+    } else if (url.includes('lh3.googleusercontent.com/d/')) {
+        const parts = url.split('/d/');
+        if (parts[1]) {
+            return `https://drive.google.com/uc?export=view&id=${parts[1]}`;
+        }
+    }
+    return url;
+};
+</script>
 </body>
 </html>
