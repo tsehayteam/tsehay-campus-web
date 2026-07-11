@@ -497,7 +497,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div class="rounded-3xl overflow-hidden shadow-xl group aspect-[9/16] bg-black relative">
                         <div class="absolute inset-0 z-20 flex flex-col items-center justify-center pointer-events-none transition-opacity duration-300 group-hover:opacity-0 bg-black/40">
-                            <i class="fa-solid fa-hand-pointer text-secondary text-4xl mb-3 animate-bounce"></i>
+                            <i class="fa-solid fa-hand-pointer text-primary text-4xl mb-3 animate-bounce"></i>
                             <span class="text-white font-bold text-lg drop-shadow-md">Tap To Unmute</span>
                         </div>
                         <video loop muted playsinline class="w-full h-full object-cover group-hover:scale-105 transition duration-700 relative z-10" onmouseover="this.play(); this.muted=false;" onmouseout="this.pause(); this.muted=true;">
@@ -506,7 +506,7 @@
                     </div>
                     <div class="rounded-3xl overflow-hidden shadow-xl group aspect-[9/16] bg-black relative">
                         <div class="absolute inset-0 z-20 flex flex-col items-center justify-center pointer-events-none transition-opacity duration-300 group-hover:opacity-0 bg-black/40">
-                            <i class="fa-solid fa-hand-pointer text-secondary text-4xl mb-3 animate-bounce"></i>
+                            <i class="fa-solid fa-hand-pointer text-primary text-4xl mb-3 animate-bounce"></i>
                             <span class="text-white font-bold text-lg drop-shadow-md">Tap To Unmute</span>
                         </div>
                         <video loop muted playsinline class="w-full h-full object-cover group-hover:scale-105 transition duration-700 relative z-10" onmouseover="this.play(); this.muted=false;" onmouseout="this.pause(); this.muted=true;">
@@ -1040,16 +1040,19 @@
 <script>
 window.getSafeImageUrl = function(url) {
     if (!url) return url;
+    let id = null;
     if (url.includes('drive.google.com')) {
         const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
-        if (match && match[1]) {
-            return `https://drive.google.com/uc?export=view&id=${match[1]}`;
+        if (match && match[1]) id = match[1];
+        else {
+            const match2 = url.match(/id=([a-zA-Z0-9_-]+)/);
+            if (match2 && match2[1]) id = match2[1];
         }
     } else if (url.includes('lh3.googleusercontent.com/d/')) {
-        const parts = url.split('/d/');
-        if (parts[1]) {
-            return `https://drive.google.com/uc?export=view&id=${parts[1]}`;
-        }
+        id = url.split('/d/')[1].split('/')[0].split('?')[0];
+    }
+    if (id) {
+        return `https://drive.google.com/thumbnail?id=${id}&sz=w1000`;
     }
     return url;
 };
