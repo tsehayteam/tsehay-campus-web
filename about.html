@@ -376,7 +376,7 @@
                             H
                         </div>
                         <h4 class="font-bold text-dark dark:text-white text-lg notranslate">ሀብታሙ ዓለሙ</h4>
-                        <p class="text-sm text-gray-500 dark:text-gray-400 font-medium mt-1">Manager</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 font-medium mt-1">General Manager</p>
                     </div>
                 </div>
             </div>
@@ -384,20 +384,28 @@
             <!-- Media / Reels Gallery -->
             <div>
                 <h3 class="text-2xl font-bold font-heading text-dark dark:text-white mb-8 text-center">Gallery</h3>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="rounded-3xl overflow-hidden shadow-xl group aspect-[9/16] bg-black">
-                        <video loop muted playsinline class="w-full h-full object-cover group-hover:scale-105 transition duration-700" onmouseover="this.play(); this.muted=false;" onmouseout="this.pause(); this.muted=true;">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div class="rounded-3xl overflow-hidden shadow-xl group aspect-[9/16] bg-black relative">
+                        <div class="absolute inset-0 z-20 flex flex-col items-center justify-center pointer-events-none transition-opacity duration-300 group-hover:opacity-0 bg-black/40">
+                            <i class="fa-solid fa-hand-pointer text-primary text-4xl mb-3 animate-bounce"></i>
+                            <span class="text-white font-bold text-lg drop-shadow-md">Tap To Unmute</span>
+                        </div>
+                        <video loop muted playsinline class="w-full h-full object-cover group-hover:scale-105 transition duration-700 relative z-10" onmouseover="this.play(); this.muted=false;" onmouseout="this.pause(); this.muted=true;">
                             <source src="assets/videos/Tsehay.mp4" type="video/mp4">
                         </video>
                     </div>
-                    <div class="rounded-3xl overflow-hidden shadow-xl group aspect-[9/16] bg-black">
-                        <video loop muted playsinline class="w-full h-full object-cover group-hover:scale-105 transition duration-700" onmouseover="this.play(); this.muted=false;" onmouseout="this.pause(); this.muted=true;">
+                    <div class="rounded-3xl overflow-hidden shadow-xl group aspect-[9/16] bg-black relative">
+                        <div class="absolute inset-0 z-20 flex flex-col items-center justify-center pointer-events-none transition-opacity duration-300 group-hover:opacity-0 bg-black/40">
+                            <i class="fa-solid fa-hand-pointer text-primary text-4xl mb-3 animate-bounce"></i>
+                            <span class="text-white font-bold text-lg drop-shadow-md">Tap To Unmute</span>
+                        </div>
+                        <video loop muted playsinline class="w-full h-full object-cover group-hover:scale-105 transition duration-700 relative z-10" onmouseover="this.play(); this.muted=false;" onmouseout="this.pause(); this.muted=true;">
                             <source src="assets/videos/Marketing%20and%20psyco.mp4" type="video/mp4">
                         </video>
                     </div>
-                    <div class="rounded-3xl overflow-hidden shadow-xl group aspect-[9/16] bg-black">
-                        <img src="https://i.postimg.cc/qvqt1bJK/about-photo-1.jpg" class="w-full h-full object-cover group-hover:scale-105 transition duration-700" alt="Team" onerror="this.src='https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=800&auto=format&fit=crop'">
-                    </div>
+                </div>
+                <div class="rounded-3xl overflow-hidden shadow-xl group w-full h-64 md:h-96 bg-black relative">
+                    <img src="https://i.postimg.cc/qvqt1bJK/about-photo-1.jpg" class="w-full h-full object-cover group-hover:scale-105 transition duration-700" alt="Team" onerror="this.src='https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=800&auto=format&fit=crop'">
                 </div>
             </div>
         </div>
@@ -419,7 +427,7 @@
                         <span class="notranslate" translate="no">Tsehay Campus</span> በ <b class="notranslate" translate="no">Tsehay Digital</b> ስር የተመሰረተ ሲሆን በኢትዮጵያ ውስጥ በ AI የተደገፈ የመጀመሪያው የኦንላይን መማሪያ ፕላትፎርም ነው። አላማችን ወጣቶችን በተግባራዊ የቢዝነስ ክህሎት ማብቃት ነው።
                     </p>
                     <div class="mt-4">
-                        <a href="https://linktr.ee/tsehaydigital" target="_blank" class="inline-flex items-center gap-2 px-6 py-2.5 bg-primary hover:bg-secondary text-dark hover:text-white font-bold rounded-full shadow-lg transition-all transform hover:-translate-y-1">
+                        <a href="https://youtube.com/@eyoubsahle?si=p29sAFFmLagXd52X" target="_blank" class="inline-flex items-center gap-2 px-6 py-2.5 bg-primary hover:bg-secondary text-dark hover:text-white font-bold rounded-full shadow-lg transition-all transform hover:-translate-y-1">
                             <i class="fa-solid fa-headset text-lg"></i> Connect with us
                         </a>
                     </div>
