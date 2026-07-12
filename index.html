@@ -200,14 +200,13 @@
         <div class="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-20 gap-4 lg:gap-6">
                 
-                <div class="flex-shrink-0 flex items-center cursor-pointer group" onclick="window.location.reload()">
+                <a href="index.html" class="flex-shrink-0 flex items-center cursor-pointer group">
                     <img src="logo.png" alt="Tsehay Campus Logo" class="h-14 w-auto object-contain mr-2 lg:mr-3 rounded-md shadow-sm group-hover:shadow-md transition duration-300" onerror="this.src='https://ui-avatars.com/api/?name=TC&background=3268BA&color=fff'">
                     <span class="font-heading font-black text-xl lg:text-2xl text-dark dark:text-white hidden lg:block tracking-tight notranslate">Tsehay<span class="text-secondary dark:text-primary">Campus</span></span>
-                </div>
+                </a>
 
                 <div class="hidden lg:flex items-center h-full">
-                    <a href="#home" onclick="document.getElementById('home').scrollIntoView({behavior: 'smooth'})" class="text-gray-700 dark:text-gray-300 hover:text-secondary dark:hover:text-primary font-bold transition text-[14px] lg:text-[15px] px-2 lg:px-3">ዋና ገፅ</a>
-                    <a href="about.html" class="text-gray-700 dark:text-gray-300 hover:text-secondary dark:hover:text-primary font-bold transition text-[14px] lg:text-[15px] px-2 lg:px-3">ስለ እኛ</a>
+                                        <a href="about.html" class="text-gray-700 dark:text-gray-300 hover:text-secondary dark:hover:text-primary font-bold transition text-[14px] lg:text-[15px] px-2 lg:px-3">ስለ እኛ</a>
                     <a href="javascript:void(0)" onclick="document.getElementById('courses').scrollIntoView({behavior: 'smooth'})" class="text-gray-700 dark:text-gray-300 hover:text-secondary dark:hover:text-primary font-bold transition text-[14px] lg:text-[15px] px-2 lg:px-3">ሁሉም ኮርሶች</a>
 
                 </div>
@@ -221,6 +220,9 @@
                 </div>
                 
                 <div class="hidden md:flex items-center gap-2 lg:gap-3 font-heading text-sm" id="nav-auth-buttons">
+                                        <a href="#ai-feature" onclick="document.getElementById('ai-feature').scrollIntoView({behavior: 'smooth'})" class="text-gray-700 dark:text-white hover:text-secondary dark:hover:text-primary font-black transition flex items-center gap-1.5 lg:gap-2 px-1 lg:px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-darkCard whitespace-nowrap ml-1 notranslate">
+                        <i class="fa-solid fa-wand-magic-sparkles text-primary animate-pulse text-lg"></i> <span class="hidden lg:inline text-lg">Tsehay AI</span>
+                    </a>
                     <button onclick="window.toggleLanguage()" id="lang-toggle-btn" class="hidden sm:flex items-center justify-center bg-gray-100 dark:bg-dark border border-gray-200 dark:border-gray-800 hover:bg-gray-200 dark:hover:bg-gray-800 transition shadow-sm shrink-0 font-bold text-[12px] text-dark dark:text-white px-4 py-1.5 rounded-full notranslate" translate="no">
                         አማ
                     </button>
@@ -229,9 +231,7 @@
                         <i id="theme-icon" class="fa-solid fa-moon"></i>
                     </button>
 
-                    <a href="#ai-feature" onclick="document.getElementById('ai-feature').scrollIntoView({behavior: 'smooth'})" class="text-gray-700 dark:text-gray-300 hover:text-secondary dark:hover:text-primary font-bold transition flex items-center gap-1.5 lg:gap-2 px-1 lg:px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-darkCard whitespace-nowrap ml-1 notranslate">
-                        <i class="fa-solid fa-wand-magic-sparkles text-primary animate-pulse"></i> <span class="hidden lg:inline">Tsehay AI</span>
-                    </a>
+
                     <div class="h-5 w-px bg-gray-300 dark:bg-gray-800 mx-0.5 lg:mx-1"></div>
                     <button onclick="window.openAuthModal(false)" class="text-dark dark:text-white font-bold hover:text-secondary dark:hover:text-primary transition px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-darkCard whitespace-nowrap">ግባ (Login)</button>
                     <button onclick="window.openAuthModal(true)" class="bg-dark dark:bg-primary text-white dark:text-dark px-4 py-2 rounded-lg font-bold hover:bg-secondary dark:hover:bg-yellow-400 transition shadow-md btn-glow whitespace-nowrap">አዲስ ይመዝገቡ</button>
@@ -261,8 +261,7 @@
                 </div>
                 
                 <div class="grid grid-cols-2 gap-2 mb-2 px-2">
-                    <a href="#home" onclick="document.getElementById('home').scrollIntoView({behavior: 'smooth'}); document.getElementById('mobile-menu').classList.remove('open');" class="block px-3 py-2 text-secondary dark:text-primary font-bold rounded-md hover:bg-gray-50 dark:hover:bg-darkCard border border-gray-100 dark:border-gray-800">ዋና ገፅ</a>
-                    <a href="about.html" class="block px-3 py-2 text-gray-700 dark:text-gray-300 font-bold rounded-md hover:bg-gray-50 dark:hover:bg-darkCard border border-gray-100 dark:border-gray-800">ስለ እኛ</a>
+                                        <a href="about.html" class="block px-3 py-2 text-gray-700 dark:text-gray-300 font-bold rounded-md hover:bg-gray-50 dark:hover:bg-darkCard border border-gray-100 dark:border-gray-800">ስለ እኛ</a>
                     <a href="javascript:void(0)" onclick="document.getElementById('courses').scrollIntoView({behavior: 'smooth'}); document.getElementById('mobile-menu').classList.remove('open');" class="block px-3 py-2 text-gray-700 dark:text-gray-300 font-bold rounded-md hover:bg-gray-50 dark:hover:bg-darkCard border border-gray-100 dark:border-gray-800">ሁሉም ኮርሶች</a>
 
                 </div>
@@ -308,9 +307,9 @@
                     <button onclick="document.getElementById('courses').scrollIntoView({behavior: 'smooth'})" class="bg-primary text-dark px-6 py-3.5 rounded-xl font-extrabold transition btn-glow flex items-center justify-center gap-3 text-base shadow-md">
                         ኮርሶችን ያስሱ <i class="fa-solid fa-arrow-right"></i>
                     </button>
-                    <button onclick="window.location.href='about.html'" class="bg-white/10 hover:bg-white/20 border border-white/30 text-white backdrop-blur-md px-6 py-3.5 rounded-xl font-bold transition flex items-center justify-center gap-3 text-base shadow-sm">
+                    <a href="about.html" class="bg-white/10 hover:bg-white/20 border border-white/30 text-white backdrop-blur-md px-6 py-3.5 rounded-xl font-bold transition flex items-center justify-center gap-3 text-base shadow-sm">
                         <i class="fa-solid fa-circle-play text-lg"></i> ስለ እኛ ይመልከቱ
-                    </button>
+                    </a>
                 </div>
             </div>
 
@@ -800,6 +799,12 @@
         };
 
         window.openAuthModal = function(signup) {
+            if (window.currentUser && !window.currentUser.isAnonymous) {
+                if (window.goToDashboard) window.goToDashboard();
+                else window.location.href = 'courses.html';
+                return;
+            }
+
             const mobileMenu = document.getElementById('mobile-menu');
             if (mobileMenu && mobileMenu.classList.contains('open')) {
                 mobileMenu.classList.remove('open');

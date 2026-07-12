@@ -369,6 +369,7 @@ Primary language: Amharic (using Ethiopic script). Use English terms for technic
                         lastLoginAt: new Date().toISOString() 
                     }, { merge: true });
 
+                    if (window.closeAuthModal) window.closeAuthModal();
                     if(window.goToDashboard) window.goToDashboard();
                     else window.location.reload();
                 } 
@@ -466,6 +467,7 @@ Primary language: Amharic (using Ethiopic script). Use English terms for technic
                     } else {
                         await signInWithEmailAndPassword(auth, email, password);
                     }
+                    if (window.closeAuthModal) window.closeAuthModal();
                     window.goToDashboard();
                 } catch (error) {
                     let errorMsg = "ስህተት: " + 'የቴክኒክ ችግር አጋጥሟል! እባክዎ ትንሽ ቆይተው እንደገና ይሞክሩ።';
