@@ -1035,6 +1035,18 @@
         let currentCourseId = null;
         let courseCompletedLessons = 0;
         let courseTotalLessons = 4;
+        
+        // Security Fix: XSS Prevention
+        window.escapeHTML = function(str) {
+            if (!str) return '';
+            return str.toString()
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        };
+
         let userId = null;
         let userName = "ተማሪ";
         let currentCourseTitle = "ኮርስ";
@@ -1287,7 +1299,7 @@
                 const encDesc = encodeURIComponent(c.desc || "ማብራሪያ የለም");
                 materialsContainer.innerHTML = `
                     <button onclick="window.downloadSyllabus(decodeURIComponent('${encTitle}'), decodeURIComponent('${encDesc}'))" class="flex items-center gap-3 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 px-4 py-2.5 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-600 transition shadow-sm font-bold text-sm text-gray-700 dark:text-gray-300">
-                        <i class="fa-solid fa-file-arrow-down text-danger text-lg"></i> የ ${c.title} ማጠቃለያ (Syllabus) ዳውንሎድ
+                        <i class="fa-solid fa-file-arrow-down text-danger text-lg"></i> የ ${window.escapeHTML(c.title)} ማጠቃለያ (Syllabus) ዳውንሎድ
                     </button>
                 `;
             }
@@ -1729,11 +1741,11 @@
                 chatContainer.innerHTML = '';
                 window.aiChatHistory.forEach(msg => {
                     if(msg.sender === 'user') {
-                        chatContainer.innerHTML += `<div class="self-end max-w-[85%] bg-primary text-dark font-medium p-3 rounded-2xl rounded-tr-none shadow-sm">${msg.text}</div>`;
+                        chatContainer.innerHTML += `<div class="self-end max-w-[85%] bg-primary text-dark font-medium p-3 rounded-2xl rounded-tr-none shadow-sm">${window.escapeHTML(msg.text)}</div>`;
                     } else {
                         const encodedText = encodeURIComponent(msg.text);
                         chatContainer.innerHTML += `<div class="self-start max-w-[85%] bg-white dark:bg-slate-800 p-3 rounded-2xl rounded-tl-none shadow-sm text-gray-800 dark:text-gray-200 text-[13px] leading-relaxed group relative">
-                            ${msg.text}
+                            ${window.escapeHTML(msg.text)}
                             <button onclick="window.saveAiToNotes(decodeURIComponent('${encodedText}'))" class="absolute -bottom-3 -right-2 bg-secondary text-white text-[10px] px-2 py-1 rounded shadow-md opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 hover:bg-blue-600" title="ወደ ማስታወሻ አስቀምጥ">
                                 <i class="fa-solid fa-thumbtack"></i> አቆይ
                             </button>
@@ -1769,7 +1781,7 @@
                                         <button onclick="window.deleteNote('${note.id}')" class="text-gray-400 hover:text-danger" title="አጥፋ"><i class="fa-solid fa-trash"></i></button>
                                     </div>
                                 </div>
-                                <p class="text-[14px] text-gray-700 dark:text-gray-300 font-body leading-relaxed whitespace-pre-wrap">${note.text}</p>
+                                <p class="text-[14px] text-gray-700 dark:text-gray-300 font-body leading-relaxed whitespace-pre-wrap">${window.escapeHTML(note.text)}</p>
                             </div>`;
                     });
                 }
@@ -1806,7 +1818,7 @@
                         let adminReplyHtml = q.adminReply ? `
                             <div class="mt-3 bg-blue-50 dark:bg-slate-700/50 p-3 rounded-lg border-l-2 border-secondary">
                                 <p class="text-[12px] font-bold text-secondary dark:text-primary mb-1"><i class="fa-solid fa-user-shield"></i> የአድሚን (Tsehay Campus) ምላሽ:</p>
-                                <p class="text-[13px] text-gray-700 dark:text-gray-300 font-body">${q.adminReply}</p>
+                                <p class="text-[13px] text-gray-700 dark:text-gray-300 font-body">${window.escapeHTML(q.adminReply)}</p>
                             </div>
                         ` : '';
 
@@ -1816,7 +1828,7 @@
                                     <span class="font-bold text-dark dark:text-white text-sm"><i class="fa-solid fa-user text-gray-400 mr-1"></i> የእርስዎ ጥያቄ</span>
                                     <span class="text-xs text-gray-400">${timeStr}</span>
                                 </div>
-                                <p class="text-[14px] text-gray-700 dark:text-gray-300 font-body">${q.text}</p>
+                                <p class="text-[14px] text-gray-700 dark:text-gray-300 font-body">${window.escapeHTML(q.text)}</p>
                                 ${adminReplyHtml}
                             </div>`;
                     });
@@ -1849,8 +1861,8 @@
                             <div class="w-14 h-14 bg-primary text-dark shadow-[0_0_20px_rgba(249,176,60,0.6)] backdrop-blur-md rounded-full flex items-center justify-center transition hover:scale-110"><i class="fa-solid fa-play ml-1 text-xl"></i></div>
                         </div>
                     </div>
-                    <h3 class="font-bold text-dark dark:text-white text-lg font-heading line-clamp-1 mb-1">${c.title}</h3>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 font-bold mb-4 flex items-center gap-1.5"><i class="fa-solid fa-chalkboard-user text-secondary dark:text-primary"></i> ${c.instructor || 'Tsehay Campus'}</p>
+                    <h3 class="font-bold text-dark dark:text-white text-lg font-heading line-clamp-1 mb-1">${window.escapeHTML(c.title)}</h3>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 font-bold mb-4 flex items-center gap-1.5"><i class="fa-solid fa-chalkboard-user text-secondary dark:text-primary"></i> ${window.escapeHTML(c.instructor || 'Tsehay Campus')}</p>
                 </div>
             `).join('');
         }
@@ -2140,7 +2152,7 @@
                 let recent = window.aiChatHistory.slice(-5); // last 5 to keep context small
                 recent.forEach(msg => {
                     if(msg.text !== m) { // don't repeat the current message
-                        contextPrompt += `[${msg.sender === 'user' ? 'ተማሪ' : 'አንተ'}]: ${msg.text}\n`;
+                        contextPrompt += `[${msg.sender === 'user' ? 'ተማሪ' : 'አንተ'}]: ${window.escapeHTML(msg.text)}\n`;
                     }
                 });
                 contextPrompt += `\nየአሁኑ አዲስ ጥያቄ: ${m}`;

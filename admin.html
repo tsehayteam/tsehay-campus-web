@@ -1558,6 +1558,18 @@
         };
 
         // 💡 Live Q&A Loader with Global Store 💡
+        
+        // Security Fix: XSS Prevention
+        window.escapeHTML = function(str) {
+            if (!str) return '';
+            return str.toString()
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        };
+
         window.globalQaList = [];
         
         function loadQA() {
@@ -1566,7 +1578,19 @@
                 const badge = document.getElementById('sidebar-qa-badge');
                 if(!list) return;
                 
-                window.globalQaList = [];
+                
+        // Security Fix: XSS Prevention
+        window.escapeHTML = function(str) {
+            if (!str) return '';
+            return str.toString()
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        };
+
+        window.globalQaList = [];
                 snapshot.forEach(doc => window.globalQaList.push({ id: doc.id, ...doc.data() }));
                 window.globalQaList.sort((a, b) => b.timestamp - a.timestamp);
                 
@@ -1595,18 +1619,18 @@
                             ? `<div class="mt-3 bg-blue-50 dark:bg-slate-700/50 p-3 rounded-lg border-l-2 border-success text-[13px] text-gray-700 dark:text-gray-300"><span class="font-bold text-success"><i class="fa-solid fa-check-double"></i> ምላሽ ተሰጥቷል:</span> ${q.adminReply}</div>`
                             : `<button onclick="window.openQaModal('${q.id}')" class="mt-3 bg-primary text-dark text-xs font-bold px-4 py-2 rounded-lg hover:bg-yellow-400 transition shadow-sm">ለዚህ ተማሪ ምላሽ ስጥ (Reply)</button>`;
 
-                        let courseInfo = q.courseName ? `<span class="bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 text-[10px] font-bold px-2.5 py-1 rounded-md ml-2 border border-gray-200 dark:border-slate-600">${q.courseName}</span>` : '';
+                        let courseInfo = q.courseName ? `<span class="bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 text-[10px] font-bold px-2.5 py-1 rounded-md ml-2 border border-gray-200 dark:border-slate-600">${window.escapeHTML(q.courseName)}</span>` : '';
 
                         list.innerHTML += `
                             <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-gray-200 dark:border-slate-700 shadow-sm hover:shadow-md transition">
                                 <div class="flex justify-between items-start mb-3 border-b border-gray-100 dark:border-slate-700 pb-3">
                                     <div class="flex items-center flex-wrap gap-2">
-                                        <span class="font-black text-dark dark:text-white"><i class="fa-solid fa-user-graduate text-secondary dark:text-primary mr-1"></i> ${q.userName || 'ተማሪ'}</span>
+                                        <span class="font-black text-dark dark:text-white"><i class="fa-solid fa-user-graduate text-secondary dark:text-primary mr-1"></i> ${window.escapeHTML(q.userName || 'ተማሪ')}</span>
                                         ${courseInfo}
                                     </div>
                                     <span class="text-xs text-gray-400 font-bold flex items-center gap-1 shrink-0"><i class="fa-solid fa-clock"></i> ${timeStr}</span>
                                 </div>
-                                <p class="text-[15px] text-gray-700 dark:text-gray-300 font-body leading-relaxed border-l-4 border-gray-200 dark:border-slate-600 pl-3">${q.text}</p>
+                                <p class="text-[15px] text-gray-700 dark:text-gray-300 font-body leading-relaxed border-l-4 border-gray-200 dark:border-slate-600 pl-3">${window.escapeHTML(q.text)}</p>
                                 ${replyStatus}
                             </div>
                         `;
@@ -1619,7 +1643,7 @@
             const q = window.globalQaList.find(x => x.id === id);
             if (!q) return;
             document.getElementById('qa-modal-id').value = id;
-            document.getElementById('qa-modal-user').innerText = 'ለ ' + (q.userName || 'ተማሪ') + ' የሚሰጥ ምላሽ፦';
+            document.getElementById('qa-modal-user').innerText = 'ለ ' + (window.escapeHTML(q.userName || 'ተማሪ')) + ' የሚሰጥ ምላሽ፦';
             document.getElementById('qa-modal-question').innerText = q.text;
             document.getElementById('qa-modal-reply').value = '';
             document.getElementById('qa-modal').classList.replace('hidden', 'flex');
@@ -1729,7 +1753,7 @@
 
                 tr.innerHTML = `
                     <td><img src="${window.getSafeImageUrl ? window.getSafeImageUrl(c.image) : c.image}" class="w-16 h-12 object-cover rounded-xl shadow-sm border border-gray-200 dark:border-slate-600" onerror="this.src='logo.png'"></td>
-                    <td class="font-black text-dark dark:text-white course-title-cell text-[15px]">${c.title}</td>
+                    <td class="font-black text-dark dark:text-white course-title-cell text-[15px]">${window.escapeHTML(c.title)}</td>
                     <td class="font-bold text-gray-500 text-xs">${c.category || 'General'}</td>
                     <td class="font-black text-secondary dark:text-primary">${priceDisplay}</td>
                     <td>${statusBadge}</td>

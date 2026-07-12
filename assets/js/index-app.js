@@ -1,3 +1,15 @@
+
+// Security Fix: XSS Prevention
+window.escapeHTML = function(str) {
+    if (!str) return '';
+    return str.toString()
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+};
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail, signInWithCustomToken, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, collection, onSnapshot, doc, setDoc, getDocs, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
@@ -172,10 +184,10 @@ try {
                             <div class="absolute inset-0 bg-black/20 group-hover:bg-transparent transition duration-500"></div>
                         </div>
                         <div class="p-6 flex flex-col flex-1">
-                            <h3 class="font-black text-dark dark:text-white text-lg leading-snug mb-1 font-heading line-clamp-2">${c.title}</h3>
-                            <p class="text-xs text-gray-500 dark:text-gray-400 font-bold mb-3"><i class="fa-solid fa-user-tie text-secondary dark:text-primary"></i> <span class="notranslate">${c.instructor || 'Tsehay Campus'}</span></p>
+                            <h3 class="font-black text-dark dark:text-white text-lg leading-snug mb-1 font-heading line-clamp-2">${window.escapeHTML(c.title)}</h3>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 font-bold mb-3"><i class="fa-solid fa-user-tie text-secondary dark:text-primary"></i> <span class="notranslate">${window.escapeHTML(c.instructor || 'Tsehay Campus')}</span></p>
                             
-                            <p class="text-[14px] text-gray-600 dark:text-gray-300 font-body mb-5 line-clamp-3 leading-relaxed">${shortDesc}</p>
+                            <p class="text-[14px] text-gray-600 dark:text-gray-300 font-body mb-5 line-clamp-3 leading-relaxed">${window.escapeHTML(shortDesc)}</p>
                             
                             <div class="flex flex-wrap items-center gap-2 mb-5 mt-auto">
                                 <span class="bg-gray-50 dark:bg-dark border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300 text-[11px] font-bold px-2.5 py-1.5 rounded-md flex items-center gap-1.5"><i class="fa-regular fa-clock text-secondary dark:text-primary"></i> ${durationInfo}</span>
