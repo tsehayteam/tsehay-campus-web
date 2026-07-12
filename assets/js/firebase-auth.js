@@ -370,8 +370,6 @@ Primary language: Amharic (using Ethiopic script). Use English terms for technic
                     }, { merge: true });
 
                     if (window.closeAuthModal) window.closeAuthModal();
-                    if(window.goToDashboard) window.goToDashboard();
-                    else window.location.reload();
                 } 
                 catch (error) { 
                     if(errorDiv) { 
@@ -468,7 +466,6 @@ Primary language: Amharic (using Ethiopic script). Use English terms for technic
                         await signInWithEmailAndPassword(auth, email, password);
                     }
                     if (window.closeAuthModal) window.closeAuthModal();
-                    window.goToDashboard();
                 } catch (error) {
                     let errorMsg = "ስህተት: " + 'የቴክኒክ ችግር አጋጥሟል! እባክዎ ትንሽ ቆይተው እንደገና ይሞክሩ።';
                     
