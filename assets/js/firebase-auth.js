@@ -268,13 +268,16 @@ Primary language: Amharic (using Ethiopic script). Use English terms for technic
                             <button onclick="document.getElementById('courses').scrollIntoView({behavior: 'smooth'})" class="bg-primary text-dark px-6 py-3.5 rounded-xl font-extrabold transition btn-glow flex items-center justify-center gap-3 text-base shadow-md">
                                 ኮርሶችን ያስሱ <i class="fa-solid fa-arrow-right"></i>
                             </button>
-                            <button onclick="document.getElementById('about').scrollIntoView({behavior: 'smooth'})" class="bg-white dark:bg-white/10 hover:bg-gray-50 dark:hover:bg-white/20 border border-white/30 text-dark dark:text-white backdrop-blur-md px-6 py-3.5 rounded-xl font-bold transition flex items-center justify-center gap-3 text-base shadow-sm">
+                            <a href="about.html" class="bg-white/10 hover:bg-white/20 border border-white/30 text-white backdrop-blur-md px-6 py-3.5 rounded-xl font-bold transition flex items-center justify-center gap-3 text-base shadow-sm">
                                 <i class="fa-solid fa-circle-play text-lg"></i> ስለ እኛ ይመልከቱ
-                            </button>
+                            </a>
                         `;
                     }
                     if (navAuthBtns) {
                         navAuthBtns.innerHTML = `
+                            <a href="#ai-feature" onclick="document.getElementById('ai-feature').scrollIntoView({behavior: 'smooth'})" class="text-gray-700 dark:text-white hover:text-secondary dark:hover:text-primary font-black transition flex items-center gap-1.5 lg:gap-2 px-1 lg:px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-darkCard whitespace-nowrap ml-1 notranslate">
+                                <i class="fa-solid fa-wand-magic-sparkles text-primary animate-pulse text-lg"></i> <span class="hidden lg:inline text-lg">Tsehay AI</span>
+                            </a>
                             <button onclick="window.toggleLanguage()" id="lang-toggle-btn" class="hidden sm:flex items-center justify-center bg-gray-100 dark:bg-dark border border-gray-200 dark:border-gray-800 hover:bg-gray-200 dark:hover:bg-gray-800 transition shadow-sm shrink-0 font-bold text-[12px] text-dark dark:text-white px-4 py-1.5 rounded-full notranslate" translate="no">
                                 ${localStorage.getItem('siteLang') === 'en' ? 'EN' : 'አማ'}
                             </button>
@@ -282,10 +285,7 @@ Primary language: Amharic (using Ethiopic script). Use English terms for technic
                             <button onclick="window.toggleTheme()" class="w-9 h-9 rounded-full bg-gray-100 dark:bg-dark border border-gray-200 dark:border-gray-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-darkCard transition shadow-sm ${themeColor}">
                                 <i id="theme-icon" class="fa-solid ${themeIcon}"></i>
                             </button>
-                            
-                            <a href="#ai-feature" onclick="document.getElementById('ai-feature').scrollIntoView({behavior: 'smooth'})" class="text-gray-700 dark:text-gray-300 hover:text-secondary dark:hover:text-primary font-bold transition flex items-center gap-1.5 lg:gap-2 px-1 lg:px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-darkCard whitespace-nowrap ml-1 notranslate">
-                                <i class="fa-solid fa-wand-magic-sparkles text-primary animate-pulse"></i> <span class="hidden lg:inline">Tsehay AI</span>
-                            </a>
+
                             <div class="h-5 w-px bg-gray-300 dark:bg-gray-800 mx-0.5 lg:mx-1"></div>
                             
                             <!-- 💡 Profile Dropdown Container -->
