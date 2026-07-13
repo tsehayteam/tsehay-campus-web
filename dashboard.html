@@ -66,7 +66,9 @@
         }
         .video-wrapper video, .video-wrapper iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; border: none; }
         
-        /* 💡 Brand Colors for Native Video Player (Works for direct MP4 links) */
+        /* 💡 Brand Colors for Native Video Player and Plyr (YouTube) */
+        :root { --plyr-color-main: #3268BA; }
+        .dark { --plyr-color-main: #F9B03C; }
         video {
             accent-color: #F9B03C !important;
             outline: none;
@@ -784,17 +786,29 @@
                 </div>
             </div>
             <div class="flex items-center gap-3">
-                <button onclick="window.clearAiChatHistory()" class="text-white/70 hover:text-red-400 transition" title="ታሪክ አጥፋ (Clear History)"><i class="fa-solid fa-trash-can text-sm"></i></button>
+                <button onclick="window.startNewAiChat()" class="text-white/70 hover:text-green-300 transition" title="አዲስ ቻት (New Chat)"><i class="fa-solid fa-plus text-sm"></i></button>
+                <button onclick="window.toggleAiHistory()" class="text-white/70 hover:text-blue-300 transition" title="ያለፉት ቻቶች (History)"><i class="fa-solid fa-clock-rotate-left text-sm"></i></button>
+                <button onclick="window.clearAiChatHistory()" class="text-white/70 hover:text-red-400 transition" title="ቻት አጥፋ (Delete Current Chat)"><i class="fa-solid fa-trash-can text-sm"></i></button>
                 <button onclick="document.getElementById('ai-widget').classList.add('translate-y-full', 'opacity-0');" class="text-white/70 hover:text-white transition"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
         </div>
         
-        <div id="ai-widget-main-area" class="flex-1 flex flex-col min-h-0">
+        <div id="ai-widget-main-area" class="flex-1 flex flex-col min-h-0 relative">
+            <div id="chat-history-list" class="absolute inset-0 bg-white dark:bg-slate-800 z-10 flex flex-col hidden overflow-y-auto">
+                <div class="p-3 border-b border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 sticky top-0 flex justify-between items-center">
+                    <h4 class="font-bold text-sm text-dark dark:text-white"><i class="fa-solid fa-clock-rotate-left mr-1"></i> ያለፉት ቻቶች (History)</h4>
+                    <button onclick="window.toggleAiHistory()" class="text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white"><i class="fa-solid fa-times"></i></button>
+                </div>
+                <div id="history-items-container" class="flex-1 p-2 flex flex-col gap-2">
+                    <!-- History items injected here -->
+                </div>
+            </div>
+            
             <div id="chat-messages" class="flex-1 h-[60vh] sm:h-80 overflow-y-auto p-4 bg-gray-50 dark:bg-slate-900 flex flex-col gap-3 font-body text-sm">
                 <!-- Chat History gets injected here -->
             </div>
             
-            <div id="chat-input-area" class="p-3 bg-white dark:bg-slate-800 border-t border-gray-100 dark:border-slate-700 shrink-0">
+            <div id="chat-input-area" class="p-3 bg-white dark:bg-slate-800 border-t border-gray-100 dark:border-slate-700 shrink-0 relative z-[5]">
                 <div class="relative flex items-center">
                     <input type="text" id="chat-input" placeholder="ጥያቄዎን ይፃፉ..." class="w-full bg-gray-100 dark:bg-slate-700 dark:text-white border-none rounded-full py-3 pl-4 pr-12 text-sm focus:ring-2 focus:ring-secondary/30 outline-none transition" onkeypress="if(event.key === 'Enter') window.sendChatMessage()">
                     <button onclick="window.sendChatMessage()" class="absolute right-1 w-9 h-9 bg-secondary text-white rounded-full flex items-center justify-center hover:bg-primary transition shadow-md">
@@ -1286,6 +1300,7 @@
             currentCourseId = c.id;
             if(c.aiPrompt) currentCourseAiPrompt = c.aiPrompt;
             currentCourseTitle = c.title;
+            window.currentCourseVideo = c.video;
             
             document.getElementById('dynamic-course-title').innerText = c.title;
             document.getElementById('dynamic-nav-title').innerText = c.title;
@@ -1434,9 +1449,9 @@
                 window.activeVideoTitle = activeTitleEl.innerText;
             }
             
-            if(videoUrl) {
+            let finalVideoUrl = videoUrl || window.currentCourseVideo;
+            if(finalVideoUrl) {
                 const videoContainer = document.getElementById('video-container');
-                let finalVideoUrl = videoUrl;
                 if(finalVideoUrl.includes('drive.google.com')) finalVideoUrl = window.getDriveEmbedLink(finalVideoUrl);
                 
                 // Destroy previous player instance if it exists
@@ -1728,17 +1743,49 @@
                 hideLoader();
             });
 
+            window.currentAiSessionId = Date.now().toString();
+            window.allAiSessions = {};
+
             window.loadAiChatHistory = async function() {
                 const snap = await getDocs(collection(db, 'artifacts', appId, 'users', userId, 'aichat'));
                 const chatContainer = document.getElementById('chat-messages');
                 if (!chatContainer) return;
-                window.aiChatHistory = [];
+                
+                window.allAiSessions = {};
+                
                 snap.forEach(doc => {
-                    window.aiChatHistory.push({ id: doc.id, ...doc.data() });
+                    let msg = { id: doc.id, ...doc.data() };
+                    let sid = msg.sessionId || 'old_chat';
+                    if (!window.allAiSessions[sid]) window.allAiSessions[sid] = { id: sid, messages: [], timestamp: msg.timestamp };
+                    window.allAiSessions[sid].messages.push(msg);
+                    if (msg.timestamp > window.allAiSessions[sid].timestamp) window.allAiSessions[sid].timestamp = msg.timestamp;
                 });
+                
+                const sortedSessions = Object.values(window.allAiSessions).sort((a, b) => b.timestamp - a.timestamp);
+                
+                if (sortedSessions.length > 0) {
+                    window.currentAiSessionId = sortedSessions[0].id;
+                } else {
+                    window.startNewAiChat(false);
+                }
+                
+                window.renderAiHistoryList();
+                window.renderAiChatMessages();
+            };
+
+            window.renderAiChatMessages = function() {
+                const chatContainer = document.getElementById('chat-messages');
+                if(!chatContainer) return;
+                chatContainer.innerHTML = '';
+                
+                window.aiChatHistory = window.allAiSessions[window.currentAiSessionId]?.messages || [];
                 window.aiChatHistory.sort((a, b) => a.timestamp - b.timestamp);
                 
-                chatContainer.innerHTML = '';
+                if(window.aiChatHistory.length === 0) {
+                    chatContainer.innerHTML = `<div class="text-center text-gray-400 mt-10 text-[12px]"><i class="fa-regular fa-comments text-2xl mb-2 opacity-50 block"></i> አዲስ ውይይት ይጀምሩ...</div>`;
+                    return;
+                }
+                
                 window.aiChatHistory.forEach(msg => {
                     if(msg.sender === 'user') {
                         chatContainer.innerHTML += `<div class="self-end max-w-[85%] bg-primary text-dark font-medium p-3 rounded-2xl rounded-tr-none shadow-sm">${window.escapeHTML(msg.text)}</div>`;
@@ -1753,6 +1800,61 @@
                     }
                 });
                 chatContainer.scrollTop = chatContainer.scrollHeight;
+            };
+
+            window.renderAiHistoryList = function() {
+                const listContainer = document.getElementById('history-items-container');
+                if (!listContainer) return;
+                listContainer.innerHTML = '';
+                
+                const sortedSessions = Object.values(window.allAiSessions).sort((a, b) => b.timestamp - a.timestamp);
+                
+                sortedSessions.forEach(session => {
+                    if(session.messages.length === 0) return;
+                    const firstMsg = session.messages.find(m => m.sender === 'user')?.text || "የ AI ውይይት";
+                    const title = firstMsg.length > 30 ? firstMsg.substring(0, 30) + '...' : firstMsg;
+                    const dateStr = new Date(session.timestamp).toLocaleDateString();
+                    const isCurrent = session.id === window.currentAiSessionId;
+                    const activeClass = isCurrent ? 'bg-primary/20 border-primary' : 'bg-white dark:bg-slate-800 border-gray-100 dark:border-slate-700 hover:border-secondary hover:bg-gray-50';
+                    
+                    listContainer.innerHTML += `
+                        <div onclick="window.switchAiSession('${session.id}')" class="p-3 rounded-xl border ${activeClass} cursor-pointer transition shadow-sm flex flex-col gap-1">
+                            <span class="font-bold text-sm text-dark dark:text-white leading-tight">${window.escapeHTML(title)}</span>
+                            <span class="text-[10px] text-gray-500 font-bold"><i class="fa-regular fa-calendar mr-1"></i> ${dateStr}</span>
+                        </div>
+                    `;
+                });
+                
+                if(listContainer.innerHTML === '') {
+                    listContainer.innerHTML = `<div class="text-center text-gray-400 mt-10 text-[12px]">ታሪክ አልተገኘም።</div>`;
+                }
+            };
+
+            window.switchAiSession = function(sid) {
+                window.currentAiSessionId = sid;
+                window.renderAiHistoryList();
+                window.renderAiChatMessages();
+                window.toggleAiHistory(false);
+            };
+
+            window.startNewAiChat = function(render = true) {
+                window.currentAiSessionId = Date.now().toString();
+                window.allAiSessions[window.currentAiSessionId] = { id: window.currentAiSessionId, messages: [], timestamp: Date.now() };
+                if(render) {
+                    window.renderAiHistoryList();
+                    window.renderAiChatMessages();
+                    window.toggleAiHistory(false);
+                }
+            };
+
+            window.toggleAiHistory = function(forceShow = null) {
+                const list = document.getElementById('chat-history-list');
+                if(forceShow === null) {
+                    list.classList.toggle('hidden');
+                } else {
+                    if(forceShow) list.classList.remove('hidden');
+                    else list.classList.add('hidden');
+                }
             };
             window.loadAiChatHistory();
 
@@ -2133,9 +2235,9 @@
             i.value = ''; c.scrollTop = c.scrollHeight;
 
             // Save User Message to History
-            const userMsgObj = { sender: 'user', text: m, timestamp: Date.now() };
+            const userMsgObj = { sender: 'user', text: m, timestamp: Date.now(), sessionId: window.currentAiSessionId, id: Date.now().toString() };
             if (!window.aiChatHistory) window.aiChatHistory = [];
-            window.aiChatHistory.push(userMsgObj);
+            window.aiChatHistory.push(userMsgObj); if(window.allAiSessions[window.currentAiSessionId]) { window.allAiSessions[window.currentAiSessionId].messages.push(userMsgObj); window.allAiSessions[window.currentAiSessionId].timestamp = userMsgObj.timestamp; }
             
             if(userId) {
                 setDoc(doc(collection(db, 'artifacts', appId, 'users', userId, 'aichat'), Date.now().toString()), userMsgObj).catch(e=>{});
@@ -2175,8 +2277,8 @@
             c.scrollTop = c.scrollHeight;
 
             // Save AI Message to History
-            const aiMsgObj = { sender: 'ai', text: response, timestamp: Date.now() };
-            window.aiChatHistory.push(aiMsgObj);
+            const aiMsgObj = { sender: 'ai', text: response, timestamp: Date.now(), sessionId: window.currentAiSessionId, id: Date.now().toString() };
+            window.aiChatHistory.push(aiMsgObj); if(window.allAiSessions[window.currentAiSessionId]) { window.allAiSessions[window.currentAiSessionId].messages.push(aiMsgObj); window.allAiSessions[window.currentAiSessionId].timestamp = aiMsgObj.timestamp; }
 
             if(userId) {
                 setDoc(doc(collection(db, 'artifacts', appId, 'users', userId, 'aichat'), Date.now().toString()), aiMsgObj).catch(e=>{});
