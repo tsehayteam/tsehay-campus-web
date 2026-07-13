@@ -1,4 +1,20 @@
 import crypto from 'crypto';
+import admin from 'firebase-admin';
+
+if (!admin.apps.length) {
+    try {
+        if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+            const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+            admin.initializeApp({
+                credential: admin.credential.cert(serviceAccount)
+            });
+        } else {
+            admin.initializeApp({ projectId: 'tsehaycampus-e1a6d' });
+        }
+    } catch(e) {
+        console.error("Firebase admin init error", e);
+    }
+}
 
 export default async function handler(req, res) {
     // 1. የደህንነት ማረጋገጫ፡ POST ሪኮዌስት ብቻ (GET request ብሎክ ይደረጋል)
@@ -119,25 +135,42 @@ async function unlockCourse(tx_ref, res, providerName) {
     
     const parts = tx_ref.split('-');
     
-    // የኛ ትክክለኛ መለዮ (tsehay-courseId-userId-timestamp) መሆኑን ማረጋገጥ
     if (parts[0] === 'tsehay' && parts.length >= 4) {
         const courseId = parts[1];
         const userId = parts[2];
         
         console.log(`✅ SUCCESS: User ${userId} paid for Course ${courseId} via ${providerName}. Opening course...`);
         
-        // =========================================================================
-        // ዳታቤዝ ውስጥ መመዝገብ (Firebase Admin SDK)
-        // =========================================================================
-        // TODO: Initialize Firebase Admin and Set Document
-        // const db = admin.firestore();
-        // await db.collection('artifacts').doc('tsehaycampus-e1a6d').collection('users').doc(userId).collection('enrollments').doc(courseId).set({
-        //    courseId: courseId,
-        //    enrolledAt: new Date().toISOString(),
-        //    paymentType: providerName,
-        //    status: 'active',
-        //    transactionId: tx_ref
-        // });
+        const db = admin.firestore();
+        
+        // 🔒 Replay Protection
+        const txRefDoc = db.collection('artifacts').doc('tsehaycampus-e1a6d').collection('transactions').doc(tx_ref);
+        const txDoc = await txRefDoc.get();
+        if (txDoc.exists) {
+            console.log(`⚠️ Webhook replay detected for ${tx_ref}. Ignoring.`);
+            return res.status(200).json({ message: "Transaction already processed." });
+        }
+        
+        const courseDoc = await db.collection('artifacts').doc('tsehaycampus-e1a6d').collection('public').doc('data').collection('courses').doc(courseId).get();
+        
+        let courseTitle = 'Premium Course';
+        if(courseDoc.exists) {
+            courseTitle = courseDoc.data().title || courseTitle;
+        }
+
+        // Write transaction to prevent replay
+        await txRefDoc.set({ processedAt: new Date().toISOString(), provider: providerName, courseId, userId });
+
+        // Enroll user
+        await db.collection('artifacts').doc('tsehaycampus-e1a6d').collection('users').doc(userId).collection('enrollments').doc(courseId).set({
+           courseId: courseId,
+           title: courseTitle,
+           enrolledAt: new Date().toISOString(),
+           paymentType: providerName,
+           status: 'active',
+           progress: 0,
+           transactionId: tx_ref
+        });
 
         return res.status(200).json({ message: `Successfully unlocked course for student via ${providerName}!` });
     } else {

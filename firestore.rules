@@ -22,7 +22,7 @@ service cloud.firestore {
       // 1. Admins Collection
       match /admins/{userId} {
         allow read: if isAdmin() || request.auth.uid == userId;
-        allow create: if isAdmin() || (request.auth != null && request.auth.uid == userId && request.resource.data.secretKey == 'TsehayAdmin');
+        allow create: if isAdmin();
         allow update, delete: if isAdmin();
       }
 
@@ -45,17 +45,22 @@ service cloud.firestore {
 
         // Profile
         match /profile/{document=**} {
-          allow read, write: if isAdmin() || (request.auth != null && request.auth.uid == userId);
+          allow read: if isAdmin() || (request.auth != null && request.auth.uid == userId);
+          allow create: if isAdmin() || (request.auth != null && request.auth.uid == userId && !('role' in request.resource.data) && !('points' in request.resource.data));
+          allow update: if isAdmin() || (request.auth != null && request.auth.uid == userId && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'points'])));
+          allow delete: if isAdmin() || (request.auth != null && request.auth.uid == userId);
         }
         
         // Notes
         match /notes/{document=**} {
-          allow read, write: if isAdmin() || (request.auth != null && request.auth.uid == userId);
+          allow read: if isAdmin() || (request.auth != null && request.auth.uid == userId);
+          allow write: if isAdmin() || (request.auth != null && request.auth.uid == userId && (!('text' in request.resource.data) || request.resource.data.text.size() < 50000));
         }
 
         // Chat History
         match /chat/{document=**} {
-          allow read, write: if isAdmin() || (request.auth != null && request.auth.uid == userId);
+          allow read: if isAdmin() || (request.auth != null && request.auth.uid == userId);
+          allow write: if isAdmin() || (request.auth != null && request.auth.uid == userId && (!('text' in request.resource.data) || request.resource.data.text.size() < 10000));
         }
 
         // Gamification Progress
@@ -74,8 +79,6 @@ service cloud.firestore {
             && (
               get(/databases/$(database)/documents/artifacts/$(appId)/public/data/courses/$(courseId)).data.price == 0
               || get(/databases/$(database)/documents/artifacts/$(appId)/public/data/courses/$(courseId)).data.price == "0"
-              || get(/databases/$(database)/documents/artifacts/$(appId)/public/data/courses/$(courseId)).data.price == ""
-              || !('price' in get(/databases/$(database)/documents/artifacts/$(appId)/public/data/courses/$(courseId)).data)
             );
 
           // Allow users to update metadata like last accessed time

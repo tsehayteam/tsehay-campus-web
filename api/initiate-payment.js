@@ -1,4 +1,32 @@
+import admin from 'firebase-admin';
+
+if (!admin.apps.length) {
+    try {
+        if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+            const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+            admin.initializeApp({
+                credential: admin.credential.cert(serviceAccount)
+            });
+        } else {
+            admin.initializeApp({ projectId: 'tsehaycampus-e1a6d' });
+        }
+    } catch(e) {
+        console.error("Firebase admin init error", e);
+    }
+}
+
 export default async function handler(req, res) {
+    // 🔒 Strict CORS
+    const allowedOrigins = ['https://tsehaycampus.com', 'https://www.tsehaycampus.com', 'http://localhost:8080', 'http://localhost:3000', 'http://127.0.0.1:8080'];
+    const origin = req.headers.origin;
+    if (origin && !allowedOrigins.includes(origin)) {
+        return res.status(403).json({ error: 'Forbidden Origin' });
+    }
+    if (origin) res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    if (req.method === 'OPTIONS') return res.status(200).end();
+
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
     try {
@@ -7,13 +35,34 @@ export default async function handler(req, res) {
             return res.status(401).json({ error: 'Unauthorized: Missing Authentication Token' });
         }
         
-        // In a real production scenario, you MUST verify this token using Firebase Admin SDK:
-        // const decodedToken = await admin.auth().verifyIdToken(authHeader.split('Bearer ')[1]);
-        // const verifiedUserId = decodedToken.uid;
+
+        // 🔒 1. Verify Authentication Token Securely
+        const decodedToken = await admin.auth().verifyIdToken(authHeader.split('Bearer ')[1]);
+        const verifiedUserId = decodedToken.uid;
         
-        const { courseId, title, amount, method, userId, email, name, callbackUrl } = req.body;
-        // const tx_ref = `tsehay-${courseId}-${verifiedUserId}-${Date.now()}`;
-        const tx_ref = `tsehay-${courseId}-${userId}-${Date.now()}`;
+        const { courseId, title, method, email, name, callbackUrl } = req.body;
+        
+        // 🔒 Input Validation
+        if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'Invalid email' });
+        if (!name || name.length < 2 || name.length > 50) return res.status(400).json({ error: 'Invalid name' });
+        if (!courseId || typeof courseId !== 'string') return res.status(400).json({ error: 'Invalid course ID' });
+        
+        // 🔒 2. Fetch Actual Price from Database (Prevent Price Manipulation)
+        const db = admin.firestore();
+        const courseDoc = await db.collection('artifacts').doc('tsehaycampus-e1a6d').collection('public').doc('data').collection('courses').doc(courseId).get();
+        
+        if (!courseDoc.exists) {
+            return res.status(404).json({ error: 'Course not found in database.' });
+        }
+        
+        const actualPrice = courseDoc.data().price;
+        if (!actualPrice || parseFloat(actualPrice) <= 0) {
+            return res.status(400).json({ error: 'Invalid course price for payment.' });
+        }
+        
+        const amount = parseFloat(actualPrice);
+        const tx_ref = `tsehay-${courseId}-${verifiedUserId}-${Date.now()}`;
+
 
         // 1. CHAPA & TELEBIRR (🇪🇹)
         if (method === 'chapa' || method === 'telebirr') {
@@ -55,7 +104,8 @@ export default async function handler(req, res) {
             if (!tokenData.access_token) throw new Error("PayPal Authentication Failed! እባክዎ እውነተኛ (Live) ቁልፎችዎን Vercel ላይ ያስገቡ።");
 
             // ለ. የፔፓል ትዕዛዝ መፍጠር (Live API)
-            const usdAmount = (parseFloat(amount) / 115).toFixed(2); // ብር ወደ ዶላር
+            const EXCHANGE_RATE = parseFloat(process.env.EXCHANGE_RATE || '115');
+            const usdAmount = (parseFloat(amount) / EXCHANGE_RATE).toFixed(2); // ብር ወደ ዶላር
             const orderResponse = await fetch('https://api-m.paypal.com/v2/checkout/orders', {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${tokenData.access_token}`, 'Content-Type': 'application/json' },
@@ -89,7 +139,8 @@ export default async function handler(req, res) {
             const CRYPTO_API_KEY = process.env.NOWPAYMENTS_API_KEY;
             if (!CRYPTO_API_KEY) throw new Error("የ ክሪፕቶ API ቁልፍ አልተገኘም!");
 
-            const usdAmount = (parseFloat(amount) / 115).toFixed(2);
+            const EXCHANGE_RATE = parseFloat(process.env.EXCHANGE_RATE || '115');
+            const usdAmount = (parseFloat(amount) / EXCHANGE_RATE).toFixed(2);
             const response = await fetch('https://api.nowpayments.io/v1/invoice', {
                 method: 'POST',
                 headers: { 'x-api-key': CRYPTO_API_KEY, 'Content-Type': 'application/json' },

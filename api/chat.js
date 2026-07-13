@@ -3,36 +3,35 @@ import admin from 'firebase-admin';
 if (!admin.apps.length) {
     try {
         if (process.env.FIREBASE_SERVICE_ACCOUNT) {
-            const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-            admin.initializeApp({
-                credential: admin.credential.cert(serviceAccount)
-            });
+            try {
+                const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+                admin.initializeApp({
+                    credential: admin.credential.cert(serviceAccount)
+                });
+            } catch(e) {
+                console.error("Failed to parse Service Account, falling back to Project ID");
+                admin.initializeApp({ projectId: 'tsehaycampus-e1a6d' });
+            }
         } else {
-            // Fallback initialization with Project ID for token verification
-            admin.initializeApp({
-                projectId: 'tsehaycampus-e1a6d'
-            });
+            admin.initializeApp({ projectId: 'tsehaycampus-e1a6d' });
         }
     } catch(e) {
         console.error("Firebase admin init error", e);
     }
 }
 
-// In-memory rate limiting map (per Vercel instance)
-const rateLimitMap = new Map();
-const RATE_LIMIT_WINDOW_MS = 60000; // 1 minute
-const MAX_REQUESTS_PER_WINDOW = 10; // 10 requests per minute per user
+const RATE_LIMIT_WINDOW_MS = 60000;
+const MAX_REQUESTS_PER_WINDOW = 10;
 
 export default async function handler(req, res) {
-  // CORS validation
-  const allowedOrigins = ['https://tsehaycampus.com', 'https://www.tsehaycampus.com', 'http://localhost:8080', 'http://localhost:3000', 'http://127.0.0.1:8080'];
+  // 🔒 Strict CORS validation
+  const allowedOrigins = ['https://tsehaycampus.com', 'https://www.tsehaycampus.com'];
   const origin = req.headers.origin;
   
-  if (allowedOrigins.includes(origin)) {
-      res.setHeader('Access-Control-Allow-Origin', origin);
-  } else {
-      res.setHeader('Access-Control-Allow-Origin', allowedOrigins[0]);
+  if (origin && !allowedOrigins.includes(origin) && !origin.includes('localhost')) {
+      return res.status(403).json({ error: 'Forbidden Origin' });
   }
+  if (origin) res.setHeader('Access-Control-Allow-Origin', origin);
   
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -53,24 +52,32 @@ export default async function handler(req, res) {
           return res.status(401).json({ error: "Unauthorized: Token verification failed." });
       }
   } else {
-      // Fallback to IP address for anonymous users
       userId = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'anonymous_user';
   }
 
-  // Security: Rate Limiting
-  const now = Date.now();
-  if (!rateLimitMap.has(userId)) {
-      rateLimitMap.set(userId, { count: 1, startTime: now });
-  } else {
-      const rateData = rateLimitMap.get(userId);
-      if (now - rateData.startTime > RATE_LIMIT_WINDOW_MS) {
-          rateLimitMap.set(userId, { count: 1, startTime: now });
-      } else {
-          rateData.count++;
-          if (rateData.count > MAX_REQUESTS_PER_WINDOW) {
-              return res.status(429).json({ error: "Too many requests. Please wait a minute before sending another message." });
+  // 🔒 Firestore-backed Rate Limiting
+  try {
+      const db = admin.firestore();
+      const rateLimitRef = db.collection('artifacts').doc('tsehaycampus-e1a6d').collection('rate_limits').doc(userId);
+      const rateDoc = await rateLimitRef.get();
+      const now = Date.now();
+      
+      if (rateDoc.exists) {
+          const data = rateDoc.data();
+          if (now - data.startTime < RATE_LIMIT_WINDOW_MS) {
+              if (data.count >= MAX_REQUESTS_PER_WINDOW) {
+                  return res.status(429).json({ error: "Too many requests. Please wait a minute." });
+              }
+              await rateLimitRef.update({ count: admin.firestore.FieldValue.increment(1) });
+          } else {
+              await rateLimitRef.set({ count: 1, startTime: now });
           }
+      } else {
+          await rateLimitRef.set({ count: 1, startTime: now });
       }
+  } catch (err) {
+      console.error("Rate limiting error:", err);
+      // Fail open if rate limit DB fails
   }
 
   try {

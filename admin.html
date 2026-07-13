@@ -1788,10 +1788,23 @@
 
         function formatDriveLink(url, type) {
             if (!url) return url;
-            if (!url.includes('drive.google.com')) return url;
-            const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
-            if (match && match[1]) {
-                return type === 'image' ? `https://drive.google.com/uc?export=view&id=` : `https://drive.google.com/file/d/${match[1]}/preview`; 
+            
+            // 1. YouTube Handling
+            const ytMatch = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i);
+            if (ytMatch && ytMatch[1]) {
+                const ytId = ytMatch[1];
+                if (type === 'image') return `https://img.youtube.com/vi/${ytId}/maxresdefault.jpg`;
+                if (type === 'video') return `https://www.youtube.com/embed/${ytId}`;
+            }
+
+            // 2. Google Drive Handling
+            if (url.includes('drive.google.com')) {
+                const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/);
+                if (match && match[1]) {
+                    return type === 'image' 
+                        ? `https://drive.google.com/thumbnail?id=${match[1]}&sz=w1000` 
+                        : `https://drive.google.com/file/d/${match[1]}/preview`; 
+                }
             }
             return url;
         }
