@@ -25,7 +25,7 @@ export default function StudentDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
   const [modules, setModules] = useState<any[]>([]);
   const router = useRouter();
-
+  const [progress, setProgress] = useState<any[]>([]);
   // Settings State
   const [settingsName, setSettingsName] = useState("");
   const [settingsPhotoUrl, setSettingsPhotoUrl] = useState("");
