@@ -98,7 +98,7 @@ export default function StudentDashboard() {
         try {
             const q = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses', activeCourse.id, 'modules'), orderBy('order', 'asc'));
             const snap = await getDocs(q);
-            const fetchedModules = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const fetchedModules = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any[];
             setModules(fetchedModules);
             // Default to first lesson of first module if exists
             if (fetchedModules.length > 0 && fetchedModules[0].lessons && fetchedModules[0].lessons.length > 0) {
