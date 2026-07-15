@@ -1,0 +1,35 @@
+<header class="h-[72px] bg-white/80 dark:bg-slate-800/80 backdrop-blur-md border-b border-gray-200 dark:border-slate-700 flex items-center justify-between px-4 sm:px-6 lg:px-8 z-10 shrink-0">
+            <div class="flex items-center gap-4">
+                <button onclick="window.toggleSidebar()" class="lg:hidden text-gray-600 dark:text-gray-300 text-2xl hover:text-secondary dark:hover:text-primary"><i class="fa-solid fa-bars"></i></button>
+                
+                <nav class="hidden md:flex text-sm font-semibold text-gray-500 dark:text-gray-400 items-center gap-2 font-body">
+                    <a href="#" onclick="window.switchMainView('my-courses-view', document.querySelectorAll('.sidebar-link')[1]); return false;" class="hover:text-secondary dark:hover:text-primary transition">ኮርሶች</a>
+                    <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                    <a href="#" onclick="window.switchMainView('my-courses-view', document.querySelectorAll('.sidebar-link')[1]); return false;" class="hover:text-secondary dark:hover:text-primary transition">የኔ ኮርሶች</a>
+                    <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                    <span class="text-dark dark:text-white font-bold truncate max-w-[200px]" id="dynamic-nav-title">በመጫን ላይ...</span>
+                </nav>
+            </div>
+
+            <div class="flex items-center gap-3 sm:gap-5 shrink-0">
+                <button onclick="window.safeRedirect('courses.html')" class="hidden md:flex text-sm font-bold text-secondary dark:text-primary bg-blue-50 dark:bg-slate-800 px-4 py-2 rounded-xl hover:bg-blue-100 dark:hover:bg-slate-700 transition items-center gap-2">
+                    <i class="fa-solid fa-cart-shopping"></i> ተጨማሪ ኮርሶች
+                </button>
+
+                
+                
+                <button onclick="window.toggleTheme()" class="w-9 h-9 rounded-full bg-gray-100 dark:bg-slate-700 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-slate-600 transition shadow-sm shrink-0">
+                    <i id="theme-icon" class="fa-solid fa-moon text-slate-600 dark:text-yellow-400 text-sm"></i>
+                </button>
+
+                <div class="hidden sm:flex items-center gap-2 bg-gradient-to-r from-orange-50 to-yellow-50 dark:from-orange-500/10 dark:to-yellow-500/10 border border-primary/30 px-3 py-1.5 rounded-full shadow-sm cursor-help hover:scale-105 transition" title="Campus Points">
+                    <div class="bg-primary/20 p-1 rounded-full"><i class="fa-solid fa-bolt text-primary text-xs"></i></div>
+                    <span class="font-black text-dark dark:text-white text-sm font-heading" id="top-points">0</span>
+                </div>
+                
+                <button onclick="window.switchMainView('messages-view', document.querySelectorAll('.sidebar-link')[2]); window.clearMessageBadge();" class="relative text-gray-400 dark:text-gray-300 hover:text-dark dark:hover:text-white transition text-xl shrink-0">
+                    <i class="fa-regular fa-bell"></i>
+                    <span id="header-notif-badge" class="hidden absolute top-0 right-0 w-2.5 h-2.5 bg-danger rounded-full border-2 border-white dark:border-slate-800"></span>
+                </button>
+            </div>
+        </header>

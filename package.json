@@ -1,16 +1,28 @@
 {
-  "name": "tsehay-campus",
-  "version": "1.0.0",
-  "description": "Tsehay Campus Web App",
-  "type": "module",
+  "name": "tsehay-nextjs",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
   "dependencies": {
-    "@paypal/paypal-server-sdk": "^2.4.0",
-    "firebase-admin": "^12.0.0"
+    "firebase": "^12.16.0",
+    "firebase-admin": "^14.1.0",
+    "next": "16.2.10",
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
   },
   "devDependencies": {
-    "@tailwindcss/cli": "^4.3.2",
-    "autoprefixer": "^10.5.2",
-    "postcss": "^8.5.16",
-    "tailwindcss": "^4.3.2"
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.10",
+    "tailwindcss": "^4",
+    "typescript": "^5"
   }
 }
