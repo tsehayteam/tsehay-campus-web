@@ -7,6 +7,7 @@ import { updateProfile } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageContext';
 import FloatingAIButton from '@/components/FloatingAIButton';
+import AssessmentModal from '@/components/AssessmentModal';
 
 export default function StudentDashboard() {
   const { user } = useAuth();
@@ -33,6 +34,7 @@ export default function StudentDashboard() {
   const [settingsCity, setSettingsCity] = useState("");
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const [settingsEmail, setSettingsEmail] = useState("");
+  const [showAssessment, setShowAssessment] = useState(false);
   
   // Notification State
   const [showNotifications, setShowNotifications] = useState(false);
@@ -667,7 +669,13 @@ export default function StudentDashboard() {
 
         {currentView === 'courses' && (
           <div className="max-w-7xl mx-auto py-10">
-            <h2 className="text-2xl font-bold mb-6">የእኔ ኮርሶች (My Courses)</h2>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold">የእኔ ኮርሶች (My Courses)</h2>
+              <button onClick={() => setShowAssessment(true)} className="bg-primary text-dark font-bold px-4 py-2 rounded-xl hover:bg-yellow-400 transition flex gap-2 items-center text-sm shadow-sm">
+                 <i className="fa-solid fa-wand-magic-sparkles"></i>
+                 AI ኮርስ አስመራጭ (AI Assessment)
+              </button>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {courses.length === 0 ? (
                 <div className="col-span-full text-center py-20">
@@ -752,6 +760,15 @@ export default function StudentDashboard() {
       </main>
       </div>
       <FloatingAIButton />
+      {showAssessment && (
+        <AssessmentModal 
+           onClose={() => setShowAssessment(false)} 
+           onRecommend={(courseId) => {
+              setShowAssessment(false);
+              router.push(`/courses/${courseId}`);
+           }} 
+        />
+      )}
     </div>
   );
 }
