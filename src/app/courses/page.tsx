@@ -277,7 +277,7 @@ export default function Courses() {
                       <p>&copy; {new Date().getFullYear()} <span className="notranslate" translate="no">Tsehay Campus</span> {t('all_rights_reserved')}</p>
                       <div className="mt-2.5 flex items-center justify-center md:justify-start gap-2 text-gray-400 font-bold uppercase tracking-widest text-[11px]">
                           <span>Powered By</span>
-                          <img src="TD Logo.jpg" alt="TD Logo" className="h-6 w-auto rounded-sm shadow-sm" onError={(e) => { e.currentTarget.src='https://ui-avatars.com/api/?name=TD&background=F9B03C&color=0f172a&rounded=true' }} />
+                          <img src="https://ui-avatars.com/api/?name=TD&background=F9B03C&color=0f172a&rounded=true&bold=true" alt="Tsehay Digital Logo" className="h-6 w-auto rounded-sm shadow-sm" />
                           <span className="text-primary notranslate" translate="no">Tsehay Digital</span>
                       </div>
                   </div>
