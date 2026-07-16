@@ -65,6 +65,11 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
         if (!currentUser) {
             const cred = await createUserWithEmailAndPassword(auth, email, password);
             await updateProfile(cred.user, { displayName: name });
+            
+            const { sendEmailVerification } = await import('firebase/auth');
+            await sendEmailVerification(cred.user);
+            alert('እባክዎ ኢሜልዎን ቼክ ያድርጉ። የኢሜል ማረጋገጫ (Verification link) ልከንልዎታል።');
+            
             currentUser = cred.user;
         }
         

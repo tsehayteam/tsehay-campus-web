@@ -63,7 +63,7 @@ service cloud.firestore {
       // 2. Public Data
       match /public/data/{document=**} {
         allow read: if true;
-        allow write: if true; // TEMPORARY ALLOW FOR SEEDING
+        allow write: if isAdmin();
       }
 
       match /public/data/qa/{qaId} {

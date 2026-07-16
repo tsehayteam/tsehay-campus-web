@@ -29,6 +29,8 @@ export default function StudentDashboard() {
   // Settings State
   const [settingsName, setSettingsName] = useState("");
   const [settingsPhotoUrl, setSettingsPhotoUrl] = useState("");
+  const [settingsPhone, setSettingsPhone] = useState("");
+  const [settingsCity, setSettingsCity] = useState("");
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const [settingsEmail, setSettingsEmail] = useState("");
   
@@ -83,6 +85,15 @@ export default function StudentDashboard() {
         setSettingsName(user.displayName || '');
         setSettingsPhotoUrl(user.photoURL || '');
         setSettingsEmail(user.email || '');
+        
+        // Fetch extra profile info
+        const profileRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'profile', 'info');
+        const profileSnap = await getDoc(profileRef);
+        if (profileSnap.exists()) {
+            const data = profileSnap.data();
+            if (data.phone) setSettingsPhone(data.phone);
+            if (data.city) setSettingsCity(data.city);
+        }
       } catch (error) {
         console.error("Error fetching courses", error);
       } finally {
@@ -152,6 +163,14 @@ export default function StudentDashboard() {
          displayName: settingsName,
          photoURL: settingsPhotoUrl || user.photoURL
       });
+      
+      const profileRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'profile', 'info');
+      await setDoc(profileRef, {
+          name: settingsName,
+          phone: settingsPhone,
+          city: settingsCity
+      }, { merge: true });
+
       alert('Profile updated successfully!');
       // Force reload to update context or just let Next.js handle it
       window.location.reload();
@@ -648,6 +667,14 @@ export default function StudentDashboard() {
               <div>
                 <label className="block text-sm font-bold mb-1">ስም (Name)</label>
                 <input type="text" value={settingsName} onChange={(e) => setSettingsName(e.target.value)} className="w-full p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700" />
+              </div>
+              <div>
+                <label className="block text-sm font-bold mb-1">ስልክ (Phone)</label>
+                <input type="tel" value={settingsPhone} onChange={(e) => setSettingsPhone(e.target.value)} className="w-full p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700" />
+              </div>
+              <div>
+                <label className="block text-sm font-bold mb-1">ከተማ (City)</label>
+                <input type="text" value={settingsCity} onChange={(e) => setSettingsCity(e.target.value)} className="w-full p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700" />
               </div>
               <div>
                 <label className="block text-sm font-bold mb-1">ኢሜይል (Email)</label>
