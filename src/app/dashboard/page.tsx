@@ -44,6 +44,7 @@ export default function StudentDashboard() {
     { role: 'ai', text: "ሰላም! እኔ Tsehay AI ነኝ። የትምህርት ጥያቄዎች ካሉዎት እባክዎ ይጠይቁኝ!" }
   ]);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const [isChatLoading, setIsChatLoading] = useState(false);
 
   useEffect(() => {
     // Fetch courses for the student
@@ -136,7 +137,7 @@ export default function StudentDashboard() {
         const response = await fetch('/api/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: `I am taking a quiz for this course. Generate a relevant quiz question or evaluate my answer: ${quizInput}` })
+            body: JSON.stringify({ prompt: `I am taking a quiz for this course. Generate a relevant quiz question or evaluate my answer: ${quizInput}` })
         });
         
         const data = await response.json();
@@ -200,14 +201,26 @@ export default function StudentDashboard() {
     if (!chatInput.trim()) return;
     
     const userMsg = chatInput.trim();
-    setChatMessages(prev => [...prev, { role: 'user', text: userMsg }]);
+    const newMessages = [...chatMessages, { role: 'user', text: userMsg }];
+    setChatMessages(newMessages);
     setChatInput("");
+    setIsChatLoading(true);
 
-    // Mock AI delay
-    setTimeout(() => {
-      setChatMessages(prev => [...prev, { role: 'ai', text: "ጥሩ ጥያቄ ነው! ይህንን በደንብ ለመረዳት እባክዎ 'ምዕራፍ 2' ላይ ያለውን የቪዲዮ ትምህርት በድጋሚ ይከታተሉ።" }]);
-      chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, 1500);
+    try {
+        const response = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt: `I am taking the course "${activeCourse?.title}". The lesson is "${activeLesson?.title}". Answer my question: ${userMsg}`, systemInstruction: "You are Tsehay AI Tutor. You are helping a student taking a course on the Tsehay Campus platform. Provide clear, concise, and educational answers in Amharic." })
+        });
+        const data = await response.json();
+        const aiReply = data.candidates?.[0]?.content?.parts?.[0]?.text || "ይቅርታ፣ ማስተናገድ አልቻልኩም።";
+        setChatMessages([...newMessages, { role: 'ai', text: aiReply }]);
+        setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+    } catch (error) {
+        setChatMessages([...newMessages, { role: 'ai', text: "የኢንተርኔት ችግር አጋጥሟል።" }]);
+    } finally {
+        setIsChatLoading(false);
+    }
   };
 
   if (loading) {
@@ -461,9 +474,49 @@ export default function StudentDashboard() {
                             )}
 
                             {activeTab === 'qa' && (
-                                <div className="text-center py-10">
-                                    <i className="fa-solid fa-comments text-4xl text-gray-300 dark:text-gray-600 mb-4"></i>
-                                    <h3 className="text-lg font-bold text-gray-500">ጥያቄ እና መልስ በቅርቡ ይከፈታል (Q&A coming soon)</h3>
+                                <div className="p-4">
+                                    <div className="flex flex-col h-[400px] bg-gray-50 dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 overflow-hidden relative">
+                                        <div className="bg-primary text-dark p-3 font-bold flex items-center justify-between shadow-sm z-10">
+                                            <div className="flex items-center gap-2">
+                                                <i className="fa-solid fa-robot text-xl"></i>
+                                                <span>Tsehay AI - ጥያቄ እና መልስ</span>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                                            {chatMessages.map((msg, idx) => (
+                                                <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                                    <div className={`max-w-[80%] rounded-2xl p-4 text-sm ${msg.role === 'user' ? 'bg-secondary text-white rounded-tr-sm' : 'bg-white dark:bg-slate-700 dark:text-white border border-gray-100 dark:border-slate-600 rounded-tl-sm shadow-sm'}`}>
+                                                        {msg.text}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                            {isChatLoading && (
+                                                <div className="flex justify-start">
+                                                    <div className="bg-white dark:bg-slate-700 border border-gray-100 dark:border-slate-600 rounded-2xl rounded-tl-sm p-4 shadow-sm flex gap-2 items-center">
+                                                        <div className="w-2 h-2 rounded-full bg-primary animate-bounce"></div>
+                                                        <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                                                        <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{animationDelay: '0.4s'}}></div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            <div ref={chatEndRef} />
+                                        </div>
+
+                                        <div className="p-3 bg-white dark:bg-slate-800 border-t border-gray-100 dark:border-slate-700 flex gap-2">
+                                            <input 
+                                                type="text" 
+                                                value={chatInput}
+                                                onChange={e => setChatInput(e.target.value)}
+                                                onKeyDown={e => e.key === 'Enter' && handleSendMessage(e as any)}
+                                                placeholder="ጥያቄዎን እዚህ ይፃፉ..." 
+                                                className="flex-1 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2 text-sm outline-none focus:border-primary"
+                                            />
+                                            <button onClick={handleSendMessage as any} className="w-10 h-10 bg-primary text-dark rounded-xl flex items-center justify-center font-bold hover:bg-secondary hover:text-white transition shadow-sm shrink-0">
+                                                <i className="fa-solid fa-paper-plane"></i>
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             )}
 
