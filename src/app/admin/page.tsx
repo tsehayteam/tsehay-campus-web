@@ -98,6 +98,15 @@ export default function AdminDashboard() {
     setIsAuthenticated(false);
   };
 
+  const formatDriveLink = (url: string) => {
+    if (!url) return url;
+    const match = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+    if (match && match[1]) {
+      return `https://drive.google.com/uc?export=view&id=${match[1]}`;
+    }
+    return url;
+  };
+
   const openForm = (course = null) => {
     if (course) {
       setEditingCourse(course);
@@ -123,9 +132,11 @@ export default function AdminDashboard() {
 
       await setDoc(courseRef, {
         ...formData,
+        image: formatDriveLink(formData.image),
+        instructorImage: formatDriveLink(formData.instructorImage),
         price: priceNum,
         isFree: isFreeCourse,
-        createdAt: editingCourse ? editingCourse.createdAt : serverTimestamp()
+        createdAt: (editingCourse && editingCourse.createdAt) ? editingCourse.createdAt : serverTimestamp()
       }, { merge: true });
       
       setIsModalOpen(false);

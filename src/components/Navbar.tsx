@@ -69,7 +69,7 @@ export default function Navbar() {
 
                 <div className="hidden lg:flex items-center h-full">
                     <Link href="/about" className="text-gray-700 dark:text-gray-300 hover:text-secondary dark:hover:text-primary font-bold transition text-[14px] lg:text-[15px] px-2 lg:px-3">{t('about_us')}</Link>
-                    <Link href="/courses" className="text-gray-700 dark:text-gray-300 hover:text-secondary dark:hover:text-primary font-bold transition text-[14px] lg:text-[15px] px-2 lg:px-3">{t('all_courses')}</Link>
+                    <Link href="/#courses" className="text-gray-700 dark:text-gray-300 hover:text-secondary dark:hover:text-primary font-bold transition text-[14px] lg:text-[15px] px-2 lg:px-3">{t('all_courses')}</Link>
                 </div>
                 
                 <div className="flex-1 max-w-md hidden md:flex items-center border border-gray-200 dark:border-gray-800 rounded-full px-4 py-2 search-bar mx-2 lg:mx-4 relative">
@@ -126,7 +126,7 @@ export default function Navbar() {
         <div className={`md:hidden bg-[#0d0d0d] border-t border-gray-800 shadow-xl overflow-hidden transition-all duration-300 ${isMobileMenuOpen ? 'max-h-[70vh]' : 'max-h-0'}`}>
             <div className="px-4 pt-2 pb-6 space-y-2 text-center flex flex-col overflow-y-auto">
                 <Link href="/about" className="block px-3 py-2 text-white font-bold rounded-md hover:bg-white/5 border border-white/10">ስለ እኛ</Link>
-                <Link href="/courses" className="block px-3 py-2 text-white font-bold rounded-md hover:bg-white/5 border border-white/10">ሁሉም ኮርሶች</Link>
+                <Link href="/#courses" className="block px-3 py-2 text-white font-bold rounded-md hover:bg-white/5 border border-white/10">ሁሉም ኮርሶች</Link>
                 <hr className="my-2 border-gray-200 dark:border-gray-800" />
                 {!user ? (
                   <>

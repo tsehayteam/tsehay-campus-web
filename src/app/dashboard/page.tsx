@@ -1,13 +1,16 @@
 'use client';
 import React, { useEffect, useState, useRef } from 'react';
 import { db } from '@/lib/firebase/config';
-import { collection, getDocs, query, orderBy, doc, getDoc, updateDoc } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, doc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
 import { useAuth } from '@/context/AuthContext';
 import { updateProfile } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageContext';
+import dynamic from 'next/dynamic';
 import FloatingAIButton from '@/components/FloatingAIButton';
 import AssessmentModal from '@/components/AssessmentModal';
+
+const ReactPlayer = dynamic(() => import('react-player'), { ssr: false });
 
 export default function StudentDashboard() {
   const { user } = useAuth();
@@ -126,6 +129,70 @@ export default function StudentDashboard() {
     };
     fetchModules();
   }, [activeCourse]);
+
+  const handleVideoEnd = async () => {
+    if (!activeLesson || !activeCourse || !user) return;
+    
+    // 1. Award points
+    const pointsToAward = activeLesson.points || 100;
+    
+    try {
+        const userRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'purchased_courses', activeCourse.id);
+        const userDoc = await getDoc(userRef);
+        
+        let newCompletedLessons = [activeLesson.title];
+        let totalPoints = pointsToAward;
+        
+        if (userDoc.exists()) {
+            const data = userDoc.data();
+            const currentCompleted = data.completedLessons || [];
+            if (!currentCompleted.includes(activeLesson.title)) {
+                newCompletedLessons = [...currentCompleted, activeLesson.title];
+                totalPoints = (data.points || 0) + pointsToAward;
+                
+                await updateDoc(userRef, {
+                    completedLessons: newCompletedLessons,
+                    points: totalPoints,
+                    lastPlayedAt: new Date()
+                });
+                
+                // Update local points state to refresh UI
+                setProgress(newCompletedLessons);
+            }
+        } else {
+            await setDoc(userRef, {
+                courseId: activeCourse.id,
+                completedLessons: newCompletedLessons,
+                points: totalPoints,
+                enrolledAt: new Date(),
+                lastPlayedAt: new Date()
+            }, { merge: true });
+            setProgress(newCompletedLessons);
+        }
+    } catch (e) {
+        console.error("Error updating points:", e);
+    }
+    
+    // 2. Play next video automatically
+    const currentModule = modules[activeLesson.moduleIndex];
+    if (currentModule && currentModule.lessons) {
+        const nextLessonIndex = activeLesson.lessonIndex + 1;
+        if (nextLessonIndex < currentModule.lessons.length) {
+            setActiveLesson({ ...currentModule.lessons[nextLessonIndex], moduleIndex: activeLesson.moduleIndex, lessonIndex: nextLessonIndex });
+        } else {
+            // Check next module
+            const nextModuleIndex = activeLesson.moduleIndex + 1;
+            if (nextModuleIndex < modules.length) {
+                const nextModule = modules[nextModuleIndex];
+                if (nextModule && nextModule.lessons && nextModule.lessons.length > 0) {
+                    setActiveLesson({ ...nextModule.lessons[0], moduleIndex: nextModuleIndex, lessonIndex: 0 });
+                }
+            } else {
+                setIsCourseCompleted(true);
+            }
+        }
+    }
+  };
 
   const handleQuizSubmit = async () => {
     if (!quizInput.trim()) return;
@@ -391,13 +458,16 @@ export default function StudentDashboard() {
                     {/* Cinematic Video Player */}
                     <div className="bg-dark rounded-2xl overflow-hidden shadow-2xl relative border border-gray-800 aspect-video flex items-center justify-center">
                         {activeLesson && activeLesson.videoUrl ? (
-                            <iframe 
-                                src={activeLesson.videoUrl.includes('youtube') || activeLesson.videoUrl.includes('youtu.be') ? activeLesson.videoUrl.replace('watch?v=', 'embed/') : activeLesson.videoUrl}
-                                className="absolute inset-0 w-full h-full"
-                                frameBorder="0"
-                                allow="autoplay; fullscreen; picture-in-picture"
-                                allowFullScreen
-                            ></iframe>
+                            <ReactPlayer
+                                key={activeLesson.videoUrl}
+                                url={activeLesson.videoUrl}
+                                width="100%"
+                                height="100%"
+                                controls={true}
+                                playing={true}
+                                onEnded={handleVideoEnd}
+                                className="absolute inset-0"
+                            />
                         ) : (
                             <>
                                 <img src={activeCourse?.image || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1200'} className="absolute inset-0 w-full h-full object-cover opacity-60" alt="Video cover" />

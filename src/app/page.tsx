@@ -6,6 +6,7 @@ import { collection, onSnapshot, query, getDocs } from 'firebase/firestore';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
+import Footer from '@/components/Footer';
 
 export default function Home() {
   const { user } = useAuth();
@@ -248,7 +249,7 @@ export default function Home() {
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8" id="courseList">
                     {courses.slice(0, 4).map(course => (
-                        <div key={course.id} className="bg-white dark:bg-[#111111] rounded-3xl overflow-hidden flex flex-col transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_20px_40px_rgba(0,0,0,0.1)] dark:hover:shadow-[0_20px_40px_rgba(0,0,0,0.5)] group relative border border-gray-200 dark:border-gray-800 cursor-pointer" onClick={() => window.location.href='/courses'}>
+                        <div key={course.id} className="bg-white dark:bg-[#111111] rounded-3xl overflow-hidden flex flex-col transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_20px_40px_rgba(0,0,0,0.1)] dark:hover:shadow-[0_20px_40px_rgba(0,0,0,0.5)] group relative border border-gray-200 dark:border-gray-800 cursor-pointer" onClick={() => window.location.href=`/courses/${course.id}`}>
                             <div className="relative h-48 overflow-hidden bg-white">
                                 <img src={course.image || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1000&auto=format&fit=crop'} alt={course.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" onError={(e) => { e.currentTarget.src='https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1000&auto=format&fit=crop' }} />
                                 {(!course.isFree && course.price !== 0 && course.price !== '0' && course.price !== 'Free') ? (
@@ -435,61 +436,8 @@ export default function Home() {
 
     
 
-    
-    <footer id="footer" className="bg-dark text-gray-300 pt-16 pb-8 font-body border-t-[6px] border-primary mt-auto z-10 relative">
-        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8 mb-12">
-                <div className="lg:col-span-2 pr-4">
-                    <div className="flex items-center gap-3 cursor-pointer mb-6 group" onClick={() => { window.scrollTo({ top: 0, behavior: 'smooth' }) }}>
-                        <div className="bg-white p-1 rounded-md">
-                            <img src="logo.png" alt="Logo" className="h-10 w-auto object-contain rounded-sm" onError={(e) => { e.currentTarget.src='https://ui-avatars.com/api/?name=TC&background=fff&color=0f172a' }} />
-                        </div>
-                        <span className="font-heading font-black text-2xl text-white tracking-tight notranslate" translate="no">Tsehay<span className="text-primary">Campus</span></span>
-                    </div>
-                    <p className="text-gray-400 text-sm leading-relaxed mb-6 max-w-sm">
-                        <span className="notranslate" translate="no">Tsehay Campus</span> {t('footer_desc')}
-                    </p>
-                    <div className="mt-4">
-                        <a href="https://youtube.com/@eyoubsahle?si=p29sAFFmLagXd52X" target="_blank" className="inline-flex items-center gap-2 px-6 py-2.5 bg-secondary hover:bg-primary text-white hover:text-dark font-bold rounded-full shadow-lg transition-all transform hover:-translate-y-1">
-                            {t('footer_secret_btn')}
-                        </a>
-                    </div>
-                </div>
-                
-                <div className="flex flex-col items-center text-center">
-                    <h4 className="text-white font-black mb-5 font-heading tracking-wide text-base border-b-2 border-primary pb-2 inline-block">{t('quick_links')}</h4>
-                    <ul className="space-y-3 text-sm">
-                        <li><button onClick={() => { document.getElementById('courses')?.scrollIntoView({behavior: 'smooth'}) }} className="hover:text-primary transition flex items-center gap-2 cursor-pointer">{t('link_shein')}</button></li>
-                        <li><button onClick={() => { document.getElementById('courses')?.scrollIntoView({behavior: 'smooth'}) }} className="hover:text-primary transition flex items-center gap-2 cursor-pointer">{t('link_digital')}</button></li>
-                        <li><button onClick={() => { document.getElementById('courses')?.scrollIntoView({behavior: 'smooth'}) }} className="hover:text-primary transition flex items-center gap-2 cursor-pointer">{t('link_web')}</button></li>
-                        <li><button onClick={() => { document.getElementById('courses')?.scrollIntoView({behavior: 'smooth'}) }} className="hover:text-primary transition flex items-center gap-2 cursor-pointer">{t('link_crypto')}</button></li>
-                    </ul>
-                </div>
+    <Footer />
 
-                <div className="flex flex-col items-end text-right">
-                    <h4 className="text-white font-black mb-5 font-heading tracking-wide text-base border-b-2 border-primary pb-2 inline-block">{t('contact_us')}</h4>
-                    <ul className="space-y-3 text-sm text-gray-200">
-                        <li><a href="javascript:void(0)" onClick={() => { document.getElementById('faq')?.scrollIntoView({behavior: 'smooth'}) }} className="hover:text-primary transition flex items-center gap-2">{t('link_faq')}</a></li>
-                        <li><a href="javascript:void(0)" onClick={() => { window.dispatchEvent(new Event('open-terms-modal')) }} className="hover:text-primary transition flex items-center gap-2">{t('link_terms')}</a></li>
-                        <li><a href="javascript:void(0)" onClick={() => { window.dispatchEvent(new Event('open-terms-modal')) }} className="hover:text-primary transition flex items-center gap-2">{t('link_privacy')}</a></li>
-                    </ul>
-                </div>
-            </div>
-            
-            <div className="border-t border-white/10 pt-6 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-gray-500">
-                <div className="text-center md:text-left">
-                    <p>&copy; 2026 <span className="notranslate" translate="no">Tsehay Campus</span>. {t('all_rights_reserved')}</p>
-                    <div className="mt-2.5 flex items-center justify-center md:justify-start gap-2 text-gray-400 font-bold uppercase tracking-widest text-[11px]">
-                        <span>Powered By</span>
-                        <img src="https://ui-avatars.com/api/?name=TD&background=F9B03C&color=0f172a&rounded=true&bold=true" alt="Tsehay Digital Logo" className="h-6 w-auto rounded-sm shadow-sm" />
-                        <span className="text-primary notranslate" translate="no">Tsehay Digital</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </footer>
-
-    
     <div className="fixed bottom-6 right-6 z-[9999] flex flex-col gap-4">
         <a href="https://t.me/TsehayTeam" target="_blank" className="w-16 h-16 bg-primary text-dark rounded-full flex items-center justify-center text-3xl shadow-[0_0_20px_rgba(249,176,60,0.5)] transition-all duration-300 hover:scale-110 relative group border-2 border-white/20">
             <i className="fa-brands fa-telegram"></i>

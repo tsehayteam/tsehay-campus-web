@@ -11,9 +11,17 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
 };
 
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+let app;
+let db;
+
+if (!getApps().length) {
+  app = initializeApp(firebaseConfig);
+  db = initializeFirestore(app, { experimentalForceLongPolling: true });
+} else {
+  app = getApp();
+  db = getFirestore(app);
+}
+
 const auth = getAuth(app);
-// Use initializeFirestore with experimentalForceLongPolling to fix connection timeouts on localhost Next.js
-const db = !getApps().length ? initializeFirestore(app, { experimentalForceLongPolling: true }) : getFirestore(app);
 
 export { app, auth, db };
