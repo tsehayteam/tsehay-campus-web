@@ -11,8 +11,11 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
 };
 
-let app;
-let db;
+import { FirebaseApp } from "firebase/app";
+import { Firestore } from "firebase/firestore";
+
+let app: FirebaseApp;
+let db: Firestore;
 
 if (!getApps().length) {
   app = initializeApp(firebaseConfig);
