@@ -10,7 +10,7 @@ import dynamic from 'next/dynamic';
 import FloatingAIButton from '@/components/FloatingAIButton';
 import AssessmentModal from '@/components/AssessmentModal';
 
-const ReactPlayer = dynamic(() => import('react-player'), { ssr: false });
+const ReactPlayer: any = dynamic(() => import('react-player'), { ssr: false });
 
 export default function StudentDashboard() {
   const { user } = useAuth();
