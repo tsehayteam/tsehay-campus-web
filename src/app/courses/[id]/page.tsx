@@ -31,6 +31,7 @@ export default function CoursePreviewPage({ params }: { params: Promise<{ id: st
   const [isEnrolling, setIsEnrolling] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [activeVideoUrl, setActiveVideoUrl] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchCourseData = async () => {
@@ -130,14 +131,15 @@ export default function CoursePreviewPage({ params }: { params: Promise<{ id: st
     );
   }
 
-  const previewVideoUrl = course?.videoUrl || (modules.length > 0 && modules[0].lessons?.length > 0 ? modules[0].lessons[0].videoUrl : null);
+  const defaultVideoUrl = course?.videoUrl || (modules.length > 0 && modules[0].lessons?.length > 0 ? modules[0].lessons[0].videoUrl : null);
+  const currentVideoUrl = activeVideoUrl || defaultVideoUrl;
 
   return (
     <div className="min-h-screen bg-white dark:bg-[#0a0a0a]">
       {/* Dark Header Section (Udemy Style) */}
-      <div className="bg-primary text-dark pt-24 md:pt-28 pb-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+      <div className="hero-mesh text-white pt-24 md:pt-28 pb-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
         {/* Subtle Background Pattern */}
-        <div className="absolute right-0 top-0 bottom-0 w-1/3 opacity-10 pointer-events-none hidden md:block" style={{ backgroundImage: 'url("https://www.transparenttextures.com/patterns/cubes.png")' }}></div>
+        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20 mix-blend-overlay"></div>
         {course?.instructorImage && (
           <div className="absolute right-10 bottom-0 opacity-20 pointer-events-none hidden lg:block">
             <img src={course.instructorImage} alt="" className="h-64 object-cover object-bottom" />
@@ -148,43 +150,43 @@ export default function CoursePreviewPage({ params }: { params: Promise<{ id: st
           
           <div className="w-full md:w-2/3 pr-0 md:pr-12 lg:pr-24">
             {/* Breadcrumb */}
-            <div className="text-dark/80 text-sm font-bold flex gap-2 items-center mb-6">
-              <span className="cursor-pointer hover:text-dark transition">{course?.category || 'Tech'}</span>
+            <div className="text-blue-100 text-sm font-bold flex gap-2 items-center mb-6">
+              <span className="cursor-pointer hover:text-white transition">{course?.category || 'Tech'}</span>
               {course?.title && (
                 <>
                   <i className="fa-solid fa-chevron-right text-[10px]"></i>
-                  <span className="cursor-pointer hover:text-dark transition">{course.title}</span>
+                  <span className="cursor-pointer hover:text-white transition">{course.title}</span>
                 </>
               )}
             </div>
 
-            <h1 className="text-3xl md:text-5xl font-black font-heading mb-4 leading-tight">
+            <h1 className="text-3xl md:text-5xl font-black font-heading mb-4 leading-tight animate-float" style={{animationDuration: "6s"}}>
               {course.title}
             </h1>
-            <p className="text-lg md:text-xl mb-6 text-dark/80 line-clamp-3">
+            <p className="text-lg md:text-xl mb-6 text-white/90 line-clamp-3">
               {course?.description || "No description provided for this course."}
             </p>
             
             <div className="flex flex-wrap items-center gap-4 mb-4 text-sm">
               {!isFreeCourse && (
-                <div className="bg-[#eceb98] text-[#3d3c0a] font-black px-2 py-1 text-xs">
+                <div className="bg-primary text-dark font-black px-2 py-1 text-xs rounded-sm shadow-sm">
                   Bestseller
                 </div>
               )}
-              <div className="flex items-center gap-1 text-dark font-bold">
+              <div className="flex items-center gap-1 text-primary font-bold">
                 <span>{course?.rating || 0}</span>
-                <i className="fa-solid fa-star text-xs"></i>
-                <i className="fa-solid fa-star text-xs"></i>
-                <i className="fa-solid fa-star text-xs"></i>
-                <i className="fa-solid fa-star text-xs"></i>
-                <i className="fa-solid fa-star-half-stroke text-xs"></i>
+                <i className="fa-solid fa-star text-xs text-primary"></i>
+                <i className="fa-solid fa-star text-xs text-primary"></i>
+                <i className="fa-solid fa-star text-xs text-primary"></i>
+                <i className="fa-solid fa-star text-xs text-primary"></i>
+                <i className="fa-solid fa-star-half-stroke text-xs text-primary"></i>
               </div>
-              <span className="text-dark/80 underline font-semibold">({course?.reviewsCount || 0} ratings)</span>
+              <span className="text-blue-100 underline font-semibold">({course?.reviewsCount || 0} ratings)</span>
               <span>{(course?.studentsCount || 0).toLocaleString()} students</span>
             </div>
 
             <div className="text-sm mb-4">
-              Created by <span className="text-dark/80 underline font-bold">{course?.instructor || course?.instructorName || 'Instructor'}</span>
+              Created by <span className="text-primary underline font-bold">{course?.instructor || course?.instructorName || 'Instructor'}</span>
             </div>
 
             <div className="flex flex-wrap gap-4 text-sm">
@@ -276,7 +278,7 @@ export default function CoursePreviewPage({ params }: { params: Promise<{ id: st
                         </div>
                         <div className="text-xs text-gray-500 flex items-center gap-4">
                           {(i === 0 && index === 0) && (
-                            <span className="text-primary font-bold underline cursor-pointer">Preview</span>
+                            <span onClick={() => { if(lesson.videoUrl) { setActiveVideoUrl(lesson.videoUrl); setIsPlaying(true); window.scrollTo({top: 0, behavior: 'smooth'}); } }} className="text-primary font-bold underline cursor-pointer hover:text-secondary">Preview</span>
                           )}
                           <span>10:00</span>
                         </div>
@@ -318,9 +320,9 @@ export default function CoursePreviewPage({ params }: { params: Promise<{ id: st
 
             <div className="flex flex-col sm:flex-row gap-6 mb-4">
               <img 
-                src={course?.instructorImage || 'https://ui-avatars.com/api/?name=I&background=0D8ABC&color=fff&size=128'} 
+                src={course?.instructorImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(course?.instructorName || course?.instructor || 'Instructor')}&background=F9B03C&color=fff&size=128`} 
                 alt="Instructor" 
-                className="w-28 h-28 rounded-full object-cover shrink-0 border-2 border-gray-100 dark:border-gray-800" 
+                className="w-28 h-28 rounded-full object-cover shrink-0 border-2 border-gray-100 dark:border-gray-800 shadow-md" 
               />
               <div className="flex flex-col justify-center space-y-2 text-sm text-gray-800 dark:text-gray-200">
                 <div className="flex items-center gap-3">
@@ -357,22 +359,24 @@ export default function CoursePreviewPage({ params }: { params: Promise<{ id: st
             
             {/* Video Preview Thumbnail */}
             <div className="relative group border-b border-gray-200 dark:border-gray-800">
-              {isPlaying && previewVideoUrl ? (
-                <ReactPlayer
-                  key={previewVideoUrl}
-                  url={previewVideoUrl}
-                  width="100%"
-                  height="200px"
-                  controls={true}
-                  playing={true}
-                  className="w-full h-[200px] object-cover"
-                />
+              {isPlaying && currentVideoUrl ? (
+                <div className="w-full h-[250px] bg-black">
+                  <ReactPlayer
+                    key={currentVideoUrl}
+                    url={currentVideoUrl}
+                    width="100%"
+                    height="100%"
+                    controls={true}
+                    playing={true}
+                    className="w-full h-full object-contain"
+                  />
+                </div>
               ) : (
-                <div className="cursor-pointer" onClick={() => { if (previewVideoUrl) setIsPlaying(true); }}>
-                  <img src={course.image || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1000&auto=format&fit=crop'} alt={course.title} className="w-full h-[200px] object-cover" />
-                  {previewVideoUrl && (
+                <div className="cursor-pointer" onClick={() => { if (currentVideoUrl) setIsPlaying(true); }}>
+                  <img src={course.image || `https://placehold.co/600x400/3268BA/FFFFFF?text=${encodeURIComponent(course.title || 'Tsehay Campus')}&font=Montserrat`} alt={course.title} className="w-full h-[250px] object-cover" />
+                  {currentVideoUrl && (
                     <div className="absolute inset-0 bg-black/40 flex flex-col justify-center items-center group-hover:bg-black/20 transition-colors">
-                      <div className="w-16 h-16 bg-white rounded-full flex justify-center items-center text-dark text-2xl shadow-lg">
+                      <div className="w-16 h-16 bg-white rounded-full flex justify-center items-center text-dark text-2xl shadow-lg transform group-hover:scale-110 transition-transform">
                         <i className="fa-solid fa-play ml-1 text-primary"></i>
                       </div>
                       <span className="text-white font-bold mt-4 shadow-sm">Preview this course</span>
@@ -404,14 +408,14 @@ export default function CoursePreviewPage({ params }: { params: Promise<{ id: st
                   <button 
                     onClick={handleEnroll} 
                     disabled={isEnrolling}
-                    className="w-full bg-[#a435f0] hover:bg-[#8710d8] text-white font-bold py-3.5 rounded-sm transition-colors text-lg"
+                    className="w-full bg-secondary hover:bg-primary hover:text-dark text-white font-bold py-3.5 rounded-xl transition-all duration-300 text-lg shadow-md transform hover:-translate-y-1"
                   >
                     {isEnrolling ? 'Processing...' : 'Enroll Now'}
                   </button>
                 ) : (
                   <button 
                     onClick={handleEnroll} 
-                    className="w-full bg-[#a435f0] hover:bg-[#8710d8] text-white font-bold py-3.5 rounded-sm transition-colors text-lg"
+                    className="w-full bg-secondary hover:bg-primary hover:text-dark text-white font-bold py-3.5 rounded-xl transition-all duration-300 text-lg shadow-md transform hover:-translate-y-1"
                   >
                     Buy now
                   </button>

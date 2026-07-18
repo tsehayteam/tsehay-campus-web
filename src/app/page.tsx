@@ -63,7 +63,7 @@ export default function Home() {
         const response = await fetch('/api/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: question })
+            body: JSON.stringify({ prompt: question })
         });
         
         const data = await response.json();
@@ -251,7 +251,7 @@ export default function Home() {
                     {courses.slice(0, 4).map(course => (
                         <div key={course.id} className="bg-white dark:bg-[#111111] rounded-3xl overflow-hidden flex flex-col transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_20px_40px_rgba(0,0,0,0.1)] dark:hover:shadow-[0_20px_40px_rgba(0,0,0,0.5)] group relative border border-gray-200 dark:border-gray-800 cursor-pointer" onClick={() => window.location.href=`/courses/${course.id}`}>
                             <div className="relative h-48 overflow-hidden bg-white">
-                                <img src={course.image || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1000&auto=format&fit=crop'} alt={course.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" onError={(e) => { e.currentTarget.src='https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1000&auto=format&fit=crop' }} />
+                                <img src={course.image || `https://placehold.co/600x400/3268BA/FFFFFF?text=${encodeURIComponent(course.title || 'Tsehay Campus')}&font=Montserrat`} alt={course.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" onError={(e) => { e.currentTarget.src='https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1000&auto=format&fit=crop' }} />
                                 {(!course.isFree && course.price !== 0 && course.price !== '0' && course.price !== 'Free') ? (
                                     <div className="absolute top-4 right-4 bg-primary text-dark text-[11px] font-black px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg">
                                         <i className="fa-solid fa-star"></i> PREMIUM

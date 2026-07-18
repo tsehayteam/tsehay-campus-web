@@ -26,16 +26,26 @@ export default function FloatingAIButton() {
         localStorage.setItem('tsehay-ai-chat', JSON.stringify(messages));
     }, [messages]);
 
-    const sendMessage = (e: React.FormEvent) => {
+    const sendMessage = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!input.trim()) return;
         
-        setMessages(prev => [...prev, { role: 'user', text: input }]);
+        const userMsg = input;
+        setMessages(prev => [...prev, { role: 'user', text: userMsg }]);
         setInput('');
         
-        setTimeout(() => {
-            setMessages(prev => [...prev, { role: 'system', text: 'አሁን ላይ በ AI መልስ ለመስጠት አልተዘጋጀሁም። በቅርቡ እመለሳለሁ!' }]);
-        }, 1000);
+        try {
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt: userMsg })
+            });
+            const data = await response.json();
+            const reply = data.reply || "ይቅርታ፣ አሁን ላይ መመለስ አልቻልኩም።";
+            setMessages(prev => [...prev, { role: 'system', text: reply }]);
+        } catch (error) {
+            setMessages(prev => [...prev, { role: 'system', text: "ይቅርታ፣ አሁን ላይ መመለስ አልቻልኩም።" }]);
+        }
     };
 
     if (pathname !== '/dashboard') {

@@ -97,8 +97,8 @@ ${systemInstruction || 'አንተ የ Tsehay Campus ረዳት ነህ።'}
         contents: [{ parts: [{ text: prompt }] }]
     };
 
-    // 💡 ሚስጥር 2፡ የሞዴሉን ስም ልክ በ Static ዌብሳይትህ ላይ ወደሰራው "gemini-flash-latest" ቀይረነዋል!
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`;
+    // 💡 ሚስጥር 2፡ የሞዴሉን ስም ልክ በ Static ዌብሳይትህ ላይ ወደሰራው "gemini-1.5-flash" ቀይረነዋል!
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
     const response = await fetch(apiUrl, {
         method: 'POST',
@@ -109,13 +109,13 @@ ${systemInstruction || 'አንተ የ Tsehay Campus ረዳት ነህ።'}
     const data = await response.json();
 
     if (!response.ok) {
-        return res.status(500).json({ 
+        return NextResponse.json({ 
             error: data.error?.message || JSON.stringify(data.error) || "የ Gemini API ስህተት አጋጥሟል" 
-        });
+        }, { status: 500 });
     }
 
-    return NextResponse.json(data, { status: 200 });
-
+    const replyText = data.candidates?.[0]?.content?.parts?.[0]?.text || "ይቅርታ፣ አሁን ላይ መመለስ አልቻልኩም።";
+    return NextResponse.json({ reply: replyText }, { status: 200 });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
