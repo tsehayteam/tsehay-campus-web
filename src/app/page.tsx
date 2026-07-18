@@ -6,6 +6,7 @@ import { collection, onSnapshot, query, getDocs } from 'firebase/firestore';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import Footer from '@/components/Footer';
 
 export default function Home() {
@@ -109,9 +110,9 @@ export default function Home() {
                     <button onClick={() => { document.getElementById('courses')?.scrollIntoView({behavior: 'smooth'}) }} className="bg-primary text-dark px-6 py-3.5 rounded-xl font-extrabold transition btn-glow flex items-center justify-center gap-3 text-base shadow-md">
                         {t('explore_courses')} <i className="fa-solid fa-arrow-right"></i>
                     </button>
-                    <a href="#about" className="bg-white/10 hover:bg-white/20 border border-white/30 text-white backdrop-blur-md px-6 py-3.5 rounded-xl font-bold transition flex items-center justify-center gap-3 text-base shadow-sm">
-                        <i className="fa-solid fa-circle-play text-lg"></i> {t('learn_about_us')}
-                    </a>
+                    <Link href="/about" className="group bg-white/10 hover:bg-white/20 border border-white/30 text-white backdrop-blur-md px-6 py-3.5 rounded-xl font-bold transition-all duration-300 hover:scale-105 active:scale-95 hover:shadow-[0_0_20px_rgba(255,255,255,0.4)] flex items-center justify-center gap-3 text-base shadow-sm">
+                        <i className="fa-solid fa-circle-play text-lg group-hover:scale-110 group-hover:text-primary transition-transform duration-300"></i> {t('learn_about_us')}
+                    </Link>
                 </div>
             </div>
 

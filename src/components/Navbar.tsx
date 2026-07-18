@@ -63,8 +63,7 @@ export default function Navbar() {
             <div className="flex justify-between items-center h-20 gap-4 lg:gap-6">
                 
                 <a href="/" className="flex-shrink-0 flex items-center cursor-pointer group">
-                    <img src="/tc-logo.jpg" alt="Tsehay Campus Logo" className="h-14 w-auto object-contain mr-2 lg:mr-3 rounded-md shadow-sm group-hover:shadow-md transition duration-300" onError={(e) => { e.currentTarget.src='https://ui-avatars.com/api/?name=TC&background=3268BA&color=fff' }} />
-                    <span className="font-heading font-black text-xl lg:text-2xl text-dark dark:text-white tracking-tight notranslate">Tsehay<span className="text-secondary dark:text-primary">Campus</span></span>
+                    <img src="/tc-logo.jpg" alt="Tsehay Campus Logo" className="h-14 w-auto object-contain rounded-md shadow-sm group-hover:shadow-md group-hover:scale-105 transition-all duration-300" onError={(e) => { e.currentTarget.src='https://ui-avatars.com/api/?name=TC&background=3268BA&color=fff' }} />
                 </a>
 
                 <div className="hidden lg:flex items-center h-full">
