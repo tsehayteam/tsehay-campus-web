@@ -128,11 +128,15 @@ export default function AdminDashboard() {
       setEditingCourse(course);
       setFormData(course);
       
-      // Fetch modules for this course
-      const q = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses', course.id, 'modules'), orderBy('order', 'asc'));
-      onSnapshot(q, (snapshot) => {
-        setCourseModules(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
-      });
+      // Load modules from course document or fallback to subcollection
+      if (course.modules && course.modules.length > 0) {
+        setCourseModules(course.modules);
+      } else {
+        const q = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses', course.id, 'modules'), orderBy('order', 'asc'));
+        onSnapshot(q, (snapshot) => {
+            setCourseModules(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+        });
+      }
     } else {
       setEditingCourse(null);
       setFormData({ 
@@ -155,6 +159,7 @@ export default function AdminDashboard() {
 
       await setDoc(courseRef, {
         ...formData,
+        modules: courseModules,
         image: formatDriveLink(formData.image),
         instructorImage: formatDriveLink(formData.instructorImage),
         price: priceNum,
@@ -169,52 +174,46 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleAddModule = async () => {
-    if (!newModuleTitle.trim() || !editingCourse) return;
-    try {
-      const modId = `module_${Date.now()}`;
-      const modRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses', editingCourse.id, 'modules', modId);
-      await setDoc(modRef, {
-        title: newModuleTitle,
-        order: courseModules.length + 1,
-        lessons: [],
-        updatedAt: serverTimestamp()
-      });
-      setNewModuleTitle('');
-    } catch (err: any) {
-      alert(`Error adding module: ${err.message}`);
+  const handleAddModule = () => {
+    if (!newModuleTitle.trim()) return;
+    const modId = `module_${Date.now()}`;
+    setCourseModules([...courseModules, {
+      id: modId,
+      title: newModuleTitle,
+      order: courseModules.length + 1,
+      lessons: []
+    }]);
+    setNewModuleTitle('');
+  };
+
+  const handleDeleteModule = (modId: string) => {
+    if (window.confirm("እርግጠኛ ነዎት ይህን ሞጁል ማጥፋት ይፈልጋሉ? (Delete module?)")) {
+      setCourseModules(courseModules.filter(m => m.id !== modId));
+      if (activeModuleId === modId) setActiveModuleId(null);
     }
   };
 
-  const handleDeleteModule = async (modId: string) => {
-    if (window.confirm("እርግጠኛ ነዎት ይህን ሞጁል ማጥፋት ይፈልጋሉ? (Delete module?)") && editingCourse) {
-      await deleteDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses', editingCourse.id, 'modules', modId));
-    }
-  };
-
-  const handleAddLesson = async (e: React.FormEvent) => {
+  const handleAddLesson = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!activeModuleId || !editingCourse) return;
-    try {
-      const mod = courseModules.find(m => m.id === activeModuleId);
-      if (!mod) return;
-      const updatedLessons = [...(mod.lessons || []), lessonForm];
-      const modRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses', editingCourse.id, 'modules', activeModuleId);
-      await setDoc(modRef, { lessons: updatedLessons }, { merge: true });
-      setActiveModuleId(null);
-      setLessonForm({ title: '', duration: '', videoUrl: '', points: 100 });
-    } catch (err: any) {
-      alert(`Error adding lesson: ${err.message}`);
-    }
+    if (!activeModuleId) return;
+    setCourseModules(courseModules.map(mod => {
+      if (mod.id === activeModuleId) {
+        return { ...mod, lessons: [...(mod.lessons || []), lessonForm] };
+      }
+      return mod;
+    }));
+    setActiveModuleId(null);
+    setLessonForm({ title: '', duration: '', videoUrl: '', points: 100 });
   };
 
-  const handleDeleteLesson = async (modId: string, lessonIdx: number) => {
-    if (window.confirm("ትምህርቱን ማጥፋት ይፈልጋሉ? (Delete lesson?)") && editingCourse) {
-      const mod = courseModules.find(m => m.id === modId);
-      if (!mod) return;
-      const updatedLessons = mod.lessons.filter((_: any, idx: number) => idx !== lessonIdx);
-      const modRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses', editingCourse.id, 'modules', modId);
-      await setDoc(modRef, { lessons: updatedLessons }, { merge: true });
+  const handleDeleteLesson = (modId: string, lessonIdx: number) => {
+    if (window.confirm("ትምህርቱን ማጥፋት ይፈልጋሉ? (Delete lesson?)")) {
+      setCourseModules(courseModules.map(mod => {
+        if (mod.id === modId) {
+          return { ...mod, lessons: mod.lessons.filter((_: any, idx: number) => idx !== lessonIdx) };
+        }
+        return mod;
+      }));
     }
   };
 
@@ -441,9 +440,6 @@ export default function AdminDashboard() {
                       </td>
                       <td className="p-4 text-right">
                         <div className="flex items-center justify-end gap-2">
-                          <button onClick={() => router.push(`/admin/courses/${course.id}`)} className="w-8 h-8 rounded-lg bg-green-50 dark:bg-slate-700 text-green-600 dark:text-green-400 hover:bg-green-500 hover:text-white transition flex items-center justify-center" title="ሞጁሎችን አስተዳድር (Manage Modules)">
-                            <i className="fa-solid fa-list-ul"></i>
-                          </button>
                           <button onClick={() => openForm(course)} className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-slate-700 text-secondary dark:text-blue-400 hover:bg-secondary hover:text-white transition flex items-center justify-center" title="ኮርሱን አስተካክል (Edit Course)">
                             <i className="fa-solid fa-pen"></i>
                           </button>
@@ -671,7 +667,6 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              {editingCourse && (
                 <div className="mt-8 border-t border-gray-200 dark:border-slate-700 pt-6">
                   <h3 className="font-bold text-xl mb-4 text-dark dark:text-white">የኮርስ ክፍሎች (Modules & Lessons)</h3>
                   
@@ -730,7 +725,6 @@ export default function AdminDashboard() {
                     </button>
                   </div>
                 </div>
-              )}
 
               <div className="mt-8 flex gap-4 pt-4 border-t border-gray-100 dark:border-slate-700">
                 <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 font-bold py-4 rounded-xl hover:bg-gray-200 dark:hover:bg-slate-600 transition">ሰርዝ (Cancel)</button>

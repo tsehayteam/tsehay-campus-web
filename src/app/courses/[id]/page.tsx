@@ -39,21 +39,27 @@ export default function CoursePreviewPage({ params }: { params: Promise<{ id: st
         const courseSnap = await getDoc(courseRef);
         
         if (courseSnap.exists()) {
-          setCourse({ id: courseSnap.id, ...courseSnap.data() });
-        }
-
-        const modulesQuery = query(
-          collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses', id, 'modules'),
-          orderBy('order', 'asc')
-        );
-        const modulesSnap = await getDocs(modulesQuery);
-        const modulesList = modulesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        
-        setModules(modulesList);
-        
-        // Expand first module by default
-        if (modulesList.length > 0) {
-          setExpandedModules({ [modulesList[0].id]: true });
+          const courseData = courseSnap.data();
+          setCourse({ id: courseSnap.id, ...courseData });
+          
+          let modulesList = courseData.modules || [];
+          
+          // Fallback for older courses that used the subcollection
+          if (modulesList.length === 0) {
+            const modulesQuery = query(
+              collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses', id, 'modules'),
+              orderBy('order', 'asc')
+            );
+            const modulesSnap = await getDocs(modulesQuery);
+            modulesList = modulesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          }
+          
+          setModules(modulesList);
+          
+          // Expand first module by default
+          if (modulesList.length > 0) {
+            setExpandedModules({ [modulesList[0].id || '0']: true });
+          }
         }
       } catch (error) {
         console.error("Error fetching course data:", error);
