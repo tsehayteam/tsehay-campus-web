@@ -22,6 +22,13 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Tsehay Campus - The Future of Learning",
   description: "Learn tech in Amharic.",
+  icons: {
+    icon: [
+      { url: '/tsehay-digital-logo.jpg', type: 'image/jpeg' }
+    ],
+    shortcut: '/tsehay-digital-logo.jpg',
+    apple: '/tsehay-digital-logo.jpg',
+  }
 };
 
 export default function RootLayout({
