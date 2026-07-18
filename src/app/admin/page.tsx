@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { db, auth } from '@/lib/firebase/config';
 import { collection, onSnapshot, doc, setDoc, deleteDoc, serverTimestamp, query } from 'firebase/firestore';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 
 export default function AdminDashboard() {
@@ -35,16 +35,31 @@ export default function AdminDashboard() {
     duration: '',
     level: 'Beginner',
     videoUrl: '',
+    videoUrl: '',
     aiPrompt: '',
     isFree: false,
     isPopular: false
   });
 
+  const [courseModules, setCourseModules] = useState<any[]>([]);
+  const [newModuleTitle, setNewModuleTitle] = useState('');
+  const [activeModuleId, setActiveModuleId] = useState<string | null>(null);
+  const [lessonForm, setLessonForm] = useState({ title: '', duration: '', videoUrl: '', points: 100 });
+
+
   useEffect(() => {
-    // Check simple local storage auth for now (Can be upgraded to Firebase Auth)
-    if (localStorage.getItem('adminAuth') === 'true') {
-      setIsAuthenticated(true);
-    }
+    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+      if (user && (user.email === 'admin@tsehaycampus.com' || user.email === 'habte@gmail.com' || user.email === 'cryptomaster758@gmail.com')) {
+        setIsAuthenticated(true);
+        localStorage.setItem('adminAuth', 'true');
+      } else {
+        // If not logged in Firebase but localStorage is true, clear it to force real login
+        if (localStorage.getItem('adminAuth') === 'true') {
+            setIsAuthenticated(false);
+            localStorage.removeItem('adminAuth');
+        }
+      }
+    });
     
     const q = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -58,6 +73,7 @@ export default function AdminDashboard() {
     });
 
     return () => {
+        unsubscribeAuth();
         unsubscribe();
         unsubscribeStudents();
     };
@@ -107,10 +123,16 @@ export default function AdminDashboard() {
     return url;
   };
 
-  const openForm = (course = null) => {
+  const openForm = async (course = null) => {
     if (course) {
       setEditingCourse(course);
       setFormData(course);
+      
+      // Fetch modules for this course
+      const q = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses', course.id, 'modules'), orderBy('order', 'asc'));
+      onSnapshot(q, (snapshot) => {
+        setCourseModules(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+      });
     } else {
       setEditingCourse(null);
       setFormData({ 
@@ -118,6 +140,7 @@ export default function AdminDashboard() {
         instructor: '', instructorImage: '', status: 'Active', duration: '', 
         level: 'Beginner', videoUrl: '', aiPrompt: '', isFree: false, isPopular: false 
       });
+      setCourseModules([]);
     }
     setIsModalOpen(true);
   };
@@ -143,6 +166,55 @@ export default function AdminDashboard() {
     } catch (err: any) {
       console.error(err);
       alert(`Error saving course: ${err.message}`);
+    }
+  };
+
+  const handleAddModule = async () => {
+    if (!newModuleTitle.trim() || !editingCourse) return;
+    try {
+      const modId = `module_${Date.now()}`;
+      const modRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses', editingCourse.id, 'modules', modId);
+      await setDoc(modRef, {
+        title: newModuleTitle,
+        order: courseModules.length + 1,
+        lessons: [],
+        updatedAt: serverTimestamp()
+      });
+      setNewModuleTitle('');
+    } catch (err: any) {
+      alert(`Error adding module: ${err.message}`);
+    }
+  };
+
+  const handleDeleteModule = async (modId: string) => {
+    if (window.confirm("እርግጠኛ ነዎት ይህን ሞጁል ማጥፋት ይፈልጋሉ? (Delete module?)") && editingCourse) {
+      await deleteDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses', editingCourse.id, 'modules', modId));
+    }
+  };
+
+  const handleAddLesson = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeModuleId || !editingCourse) return;
+    try {
+      const mod = courseModules.find(m => m.id === activeModuleId);
+      if (!mod) return;
+      const updatedLessons = [...(mod.lessons || []), lessonForm];
+      const modRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses', editingCourse.id, 'modules', activeModuleId);
+      await setDoc(modRef, { lessons: updatedLessons }, { merge: true });
+      setActiveModuleId(null);
+      setLessonForm({ title: '', duration: '', videoUrl: '', points: 100 });
+    } catch (err: any) {
+      alert(`Error adding lesson: ${err.message}`);
+    }
+  };
+
+  const handleDeleteLesson = async (modId: string, lessonIdx: number) => {
+    if (window.confirm("ትምህርቱን ማጥፋት ይፈልጋሉ? (Delete lesson?)") && editingCourse) {
+      const mod = courseModules.find(m => m.id === modId);
+      if (!mod) return;
+      const updatedLessons = mod.lessons.filter((_: any, idx: number) => idx !== lessonIdx);
+      const modRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses', editingCourse.id, 'modules', modId);
+      await setDoc(modRef, { lessons: updatedLessons }, { merge: true });
     }
   };
 
@@ -599,9 +671,70 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              <div className="flex gap-4 pt-6 border-t border-gray-100 dark:border-slate-700">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 font-bold py-3.5 rounded-xl hover:bg-gray-200 dark:hover:bg-slate-600 transition">ሰርዝ</button>
-                <button type="submit" className="flex-1 bg-dark dark:bg-primary text-white dark:text-dark font-black py-3.5 rounded-xl hover:bg-secondary dark:hover:bg-yellow-400 transition shadow-lg">ሴቭ አድርግ</button>
+              {editingCourse && (
+                <div className="mt-8 border-t border-gray-200 dark:border-slate-700 pt-6">
+                  <h3 className="font-bold text-xl mb-4 text-dark dark:text-white">የኮርስ ክፍሎች (Modules & Lessons)</h3>
+                  
+                  <div className="space-y-4 mb-6">
+                    {courseModules.map((mod, idx) => (
+                      <div key={mod.id} className="border border-gray-200 dark:border-slate-700 rounded-xl p-4 bg-gray-50 dark:bg-slate-900/50">
+                        <div className="flex justify-between items-center mb-3">
+                          <h4 className="font-bold text-lg text-primary">ክፍል {mod.order}: {mod.title}</h4>
+                          <div className="flex gap-2">
+                            <button type="button" onClick={() => setActiveModuleId(mod.id)} className="text-xs bg-blue-100 text-blue-600 px-3 py-1.5 rounded-lg font-bold hover:bg-blue-200 transition">ትምህርት ጨምር (Add Lesson)</button>
+                            <button type="button" onClick={() => handleDeleteModule(mod.id)} className="text-xs bg-red-100 text-red-600 px-3 py-1.5 rounded-lg font-bold hover:bg-red-200 transition">አጥፋ (Delete)</button>
+                          </div>
+                        </div>
+
+                        {activeModuleId === mod.id && (
+                          <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-blue-100 dark:border-slate-600 mb-4 shadow-sm">
+                            <h5 className="text-sm font-bold mb-3">አዲስ ትምህርት ወደ "{mod.title}"</h5>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                              <input placeholder="የርዕስ ስም (Title)" value={lessonForm.title} onChange={e => setLessonForm({...lessonForm, title: e.target.value})} className="border rounded-lg px-3 py-2 text-sm bg-gray-50 dark:bg-slate-900" />
+                              <input placeholder="የቪዲዮ ርዝመት (00:00)" value={lessonForm.duration} onChange={e => setLessonForm({...lessonForm, duration: e.target.value})} className="border rounded-lg px-3 py-2 text-sm bg-gray-50 dark:bg-slate-900" />
+                              <input placeholder="የቪዲዮ ሊንክ (Video URL)" value={lessonForm.videoUrl} onChange={e => setLessonForm({...lessonForm, videoUrl: e.target.value})} className="border rounded-lg px-3 py-2 text-sm bg-gray-50 dark:bg-slate-900" />
+                              <input type="number" placeholder="ነጥብ (Points)" value={lessonForm.points} onChange={e => setLessonForm({...lessonForm, points: Number(e.target.value)})} className="border rounded-lg px-3 py-2 text-sm bg-gray-50 dark:bg-slate-900" />
+                            </div>
+                            <div className="flex gap-2">
+                              <button type="button" onClick={handleAddLesson} className="bg-primary text-dark px-4 py-1.5 rounded-lg text-sm font-bold hover:bg-yellow-400">ሴቭ አድርግ</button>
+                              <button type="button" onClick={() => setActiveModuleId(null)} className="bg-gray-200 text-dark px-4 py-1.5 rounded-lg text-sm font-bold hover:bg-gray-300">ሰርዝ</button>
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="space-y-2">
+                          {(mod.lessons || []).map((lesson: any, lidx: number) => (
+                            <div key={lidx} className="flex justify-between items-center bg-white dark:bg-slate-800 p-3 rounded-lg border border-gray-100 dark:border-slate-700">
+                              <div>
+                                <p className="font-bold text-sm text-dark dark:text-white">{lesson.title}</p>
+                                <p className="text-xs text-gray-500 mt-1"><i className="fa-solid fa-video mr-1"></i> {lesson.duration} | <span className="text-primary">+{lesson.points || 100} ነጥብ</span></p>
+                              </div>
+                              <button type="button" onClick={() => handleDeleteLesson(mod.id, lidx)} className="text-danger hover:text-red-700"><i className="fa-solid fa-trash text-sm"></i></button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex gap-3 items-center bg-gray-50 dark:bg-slate-900 p-4 rounded-xl border border-gray-200 dark:border-slate-700">
+                    <input 
+                      type="text" 
+                      placeholder="አዲስ ሞጁል ርዕስ ይፃፉ..." 
+                      value={newModuleTitle} 
+                      onChange={e => setNewModuleTitle(e.target.value)} 
+                      className="flex-1 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-lg px-4 py-2 outline-none focus:border-primary"
+                    />
+                    <button type="button" onClick={handleAddModule} disabled={!newModuleTitle.trim()} className="bg-dark dark:bg-white text-white dark:text-dark px-4 py-2 rounded-lg font-bold disabled:opacity-50 hover:bg-gray-800 dark:hover:bg-gray-200 transition whitespace-nowrap">
+                      ሞጁል ጨምር
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div className="mt-8 flex gap-4 pt-4 border-t border-gray-100 dark:border-slate-700">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 font-bold py-4 rounded-xl hover:bg-gray-200 dark:hover:bg-slate-600 transition">ሰርዝ (Cancel)</button>
+                <button type="submit" className="flex-1 bg-primary text-dark font-black py-4 rounded-xl hover:bg-yellow-400 transition shadow-lg">ኮርሱን ሴቭ አድርግ (Save Course)</button>
               </div>
             </form>
           </div>
