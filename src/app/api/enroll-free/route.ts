@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase/admin';
 
 export async function POST(request: Request) {
   try {
@@ -7,6 +6,11 @@ export async function POST(request: Request) {
 
     if (!courseId || !userId) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    }
+
+    const { adminDb } = await import('@/lib/firebase/admin');
+    if (!adminDb) {
+        return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
     }
 
     const courseDocRef = adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('public').doc('data').collection('courses').doc(courseId);

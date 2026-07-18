@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
-import { adminDb } from '@/lib/firebase/admin';
 
 export async function POST(request: Request) {
   try {
+    const { adminDb } = await import('@/lib/firebase/admin');
     const rawBody = await request.text();
     const signature = request.headers.get('chapa-signature');
     const secret = process.env.CHAPA_WEBHOOK_SECRET || 'CHAPA_WEBHOOK_SECRET_PLACEHOLDER';

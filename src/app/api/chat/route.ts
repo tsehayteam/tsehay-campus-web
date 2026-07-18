@@ -1,7 +1,5 @@
 // @ts-nocheck
 import { NextResponse } from 'next/server';
-import { adminAuth, adminDb } from '@/lib/firebase/admin';
-import { FieldValue } from 'firebase-admin/firestore';
 import crypto from 'crypto';
 
 
@@ -19,10 +17,6 @@ export async function POST(req: Request) {
   if (origin && !allowedOrigins.includes(origin) && !origin.includes('localhost')) {
       return NextResponse.json({ error: 'Forbidden Origin' }, { status: 403 });
   }
-  if (origin) // res.setHeader removed (Next.js config handles CORS or return headers)
-  
-  // res.setHeader removed (Next.js config handles CORS or return headers)
-  // res.setHeader removed (Next.js config handles CORS or return headers)
 
   if (req.method === 'OPTIONS') return new NextResponse(null, { status: 200 });
   if (req.method !== 'POST') return NextResponse.json({ error: 'Method Not Allowed' }, { status: 405 });
@@ -31,41 +25,51 @@ export async function POST(req: Request) {
   const authHeader = req.headers.get('authorization');
   let userId;
 
-  if (authHeader && authHeader.startsWith('Bearer ') && authHeader !== 'Bearer ') {
-      const idToken = authHeader.split('Bearer ')[1];
-      try {
-          const decodedToken = await adminAuth.verifyIdToken(idToken);
-          userId = decodedToken.uid;
-      } catch (error) {
-          return NextResponse.json({ error: "Unauthorized: Token verification failed." }, { status: 401 });
-      }
-  } else {
-      userId = req.headers.get('x-forwarded-for') || req.socket?.remoteAddress || 'anonymous_user';
-  }
-
-  // 🔒 Firestore-backed Rate Limiting
   try {
-      const db = adminDb;
-      const rateLimitRef = db.collection('artifacts').doc('tsehaycampus-e1a6d').collection('rate_limits').doc(userId);
-      const rateDoc = await rateLimitRef.get();
-      const now = Date.now();
+      const { adminAuth, adminDb } = await import('@/lib/firebase/admin');
       
-      if (rateDoc.exists) {
-          const data = rateDoc.data();
-          if (now - data.startTime < RATE_LIMIT_WINDOW_MS) {
-              if (data.count >= MAX_REQUESTS_PER_WINDOW) {
-                  return NextResponse.json({ error: "Too many requests. Please wait a minute." }, { status: 429 });
+      if (authHeader && authHeader.startsWith('Bearer ') && authHeader !== 'Bearer ') {
+          const idToken = authHeader.split('Bearer ')[1];
+          try {
+              if (adminAuth) {
+                 const decodedToken = await adminAuth.verifyIdToken(idToken);
+                 userId = decodedToken.uid;
+              } else {
+                 userId = 'anonymous_user';
               }
-              await rateLimitRef.update({ count: FieldValue.increment(1) });
+          } catch (error) {
+              return NextResponse.json({ error: "Unauthorized: Token verification failed." }, { status: 401 });
+          }
+      } else {
+          userId = req.headers.get('x-forwarded-for') || 'anonymous_user';
+      }
+
+      // 🔒 Firestore-backed Rate Limiting
+      if (adminDb) {
+          const db = adminDb;
+          const { FieldValue } = await import('firebase-admin/firestore');
+          const rateLimitRef = db.collection('artifacts').doc('tsehaycampus-e1a6d').collection('rate_limits').doc(userId);
+          const rateDoc = await rateLimitRef.get();
+          const now = Date.now();
+          
+          if (rateDoc.exists) {
+              const data = rateDoc.data();
+              if (now - data.startTime < RATE_LIMIT_WINDOW_MS) {
+                  if (data.count >= MAX_REQUESTS_PER_WINDOW) {
+                      return NextResponse.json({ error: "Too many requests. Please wait a minute." }, { status: 429 });
+                  }
+                  await rateLimitRef.update({ count: FieldValue.increment(1) });
+              } else {
+                  await rateLimitRef.set({ count: 1, startTime: now });
+              }
           } else {
               await rateLimitRef.set({ count: 1, startTime: now });
           }
-      } else {
-          await rateLimitRef.set({ count: 1, startTime: now });
       }
   } catch (err) {
-      console.error("Rate limiting error:", err);
+      console.error("Rate limiting / Auth error:", err);
       // Fail open if rate limit DB fails
+      userId = userId || 'anonymous_user';
   }
 
   try {
