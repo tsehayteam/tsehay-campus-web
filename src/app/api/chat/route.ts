@@ -94,7 +94,7 @@ ${systemInstruction || 'አንተ የ Tsehay Campus ረዳት ነህ።'}
         system_instruction: {
             parts: [{ text: ENFORCED_SYSTEM_INSTRUCTION }]
         },
-        contents: [{ parts: [{ text: prompt }] }]
+        contents: [{ role: "user", parts: [{ text: prompt }] }]
     };
 
     // 💡 ሚስጥር 2፡ የሞዴሉን ስም ልክ በ Static ዌብሳይትህ ላይ ወደሰራው "gemini-1.5-flash" ቀይረነዋል!
@@ -114,7 +114,10 @@ ${systemInstruction || 'አንተ የ Tsehay Campus ረዳት ነህ።'}
         }, { status: 500 });
     }
 
-    const replyText = data.candidates?.[0]?.content?.parts?.[0]?.text || "ይቅርታ፣ አሁን ላይ መመለስ አልቻልኩም።";
+    const replyText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!replyText) {
+        return NextResponse.json({ reply: `DEBUG: ${JSON.stringify(data)}` }, { status: 200 });
+    }
     return NextResponse.json({ reply: replyText }, { status: 200 });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

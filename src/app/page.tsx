@@ -69,8 +69,8 @@ export default function Home() {
         const data = await response.json();
         const reply = data.reply || data.error || "ይቅርታ፣ አሁን ላይ መመለስ አልቻልኩም።";
         setAiMessages([...newMessages, { role: 'ai', text: reply }]);
-    } catch (e) {
-        setAiMessages([...newMessages, { role: 'ai', text: "ይቅርታ፣ አሁን ላይ መመለስ አልቻልኩም።" }]);
+    } catch (e: any) {
+        setAiMessages([...newMessages, { role: 'ai', text: `ስህተት: ${e?.message || e || "ያልታወቀ ስህተት"}` }]);
     } finally {
         setIsAiLoading(false);
     }

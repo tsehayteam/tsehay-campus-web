@@ -43,8 +43,8 @@ export default function FloatingAIButton() {
             const data = await response.json();
             const reply = data.reply || data.error || "ይቅርታ፣ አሁን ላይ መመለስ አልቻልኩም።";
             setMessages(prev => [...prev, { role: 'system', text: reply }]);
-        } catch (error) {
-            setMessages(prev => [...prev, { role: 'system', text: "ይቅርታ፣ አሁን ላይ መመለስ አልቻልኩም።" }]);
+        } catch (error: any) {
+            setMessages(prev => [...prev, { role: 'system', text: `ስህተት: ${error?.message || error || "ያልታወቀ ስህተት"}` }]);
         }
     };
 
