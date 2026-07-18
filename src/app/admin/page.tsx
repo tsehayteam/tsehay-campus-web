@@ -35,7 +35,6 @@ export default function AdminDashboard() {
     duration: '',
     level: 'Beginner',
     videoUrl: '',
-    videoUrl: '',
     aiPrompt: '',
     isFree: false,
     isPopular: false
