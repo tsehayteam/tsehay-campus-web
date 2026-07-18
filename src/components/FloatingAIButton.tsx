@@ -41,7 +41,7 @@ export default function FloatingAIButton() {
                 body: JSON.stringify({ prompt: userMsg })
             });
             const data = await response.json();
-            const reply = data.reply || "ይቅርታ፣ አሁን ላይ መመለስ አልቻልኩም።";
+            const reply = data.reply || data.error || "ይቅርታ፣ አሁን ላይ መመለስ አልቻልኩም።";
             setMessages(prev => [...prev, { role: 'system', text: reply }]);
         } catch (error) {
             setMessages(prev => [...prev, { role: 'system', text: "ይቅርታ፣ አሁን ላይ መመለስ አልቻልኩም።" }]);
