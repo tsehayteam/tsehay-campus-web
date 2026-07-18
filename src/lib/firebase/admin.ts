@@ -18,8 +18,18 @@ if (!getApps().length) {
 }
 
 
-import { getFirestore } from 'firebase-admin/firestore';
-import { getAuth } from 'firebase-admin/auth';
+import { getFirestore, Firestore } from 'firebase-admin/firestore';
+import { getAuth, Auth } from 'firebase-admin/auth';
 
-export const adminDb = getFirestore();
-export const adminAuth = getAuth();
+let db: Firestore | null = null;
+let auth: Auth | null = null;
+
+try {
+    db = getFirestore();
+    auth = getAuth();
+} catch (error) {
+    console.error('Firebase Admin services failed to initialize:', error);
+}
+
+export const adminDb = db as Firestore;
+export const adminAuth = auth as Auth;
