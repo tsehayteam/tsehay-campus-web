@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { db, auth } from '@/lib/firebase/config';
-import { collection, onSnapshot, doc, setDoc, deleteDoc, serverTimestamp, query } from 'firebase/firestore';
+import { collection, onSnapshot, doc, setDoc, deleteDoc, serverTimestamp, query, orderBy } from 'firebase/firestore';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 
@@ -122,7 +122,7 @@ export default function AdminDashboard() {
     return url;
   };
 
-  const openForm = async (course = null) => {
+  const openForm = async (course: any = null) => {
     if (course) {
       setEditingCourse(course);
       setFormData(course);
