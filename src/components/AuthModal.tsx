@@ -28,6 +28,26 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
       }
   }, [isOpen]);
 
+  const getFriendlyErrorMessage = (error: any) => {
+    const errorCode = error?.code || '';
+    if (errorCode === 'auth/wrong-password' || errorCode === 'auth/user-not-found' || errorCode === 'auth/invalid-credential') {
+        return 'የተሳሳተ ኢሜል ወይም የይለፍ ቃል አስገብተዋል። እባክዎ በድጋሚ ይሞክሩ።';
+    }
+    if (errorCode === 'auth/email-already-in-use') {
+        return 'ይህ ኢሜል አስቀድሞ ተመዝግቧል። እባክዎ በሌላ ኢሜል ይሞክሩ።';
+    }
+    if (errorCode === 'auth/weak-password') {
+        return 'የይለፍ ቃሉ በጣም ደካማ ነው። እባክዎ ጠንከር ያለ የይለፍ ቃል ይጠቀሙ።';
+    }
+    if (errorCode === 'auth/invalid-email') {
+        return 'እባክዎ ትክክለኛ የኢሜል አድራሻ ያስገቡ።';
+    }
+    if (errorCode === 'auth/network-request-failed') {
+        return 'የኢንተርኔት ግንኙነት ችግር አጋጥሟል። እባክዎ የኢንተርኔትዎን ሁኔታ አረጋግጠው በድጋሚ ይሞክሩ።';
+    }
+    return 'የሆነ ችግር አጋጥሟል። እባክዎ በድጋሚ ይሞክሩ።';
+  };
+
   if (!isOpen) return null;
 
   const handlePasswordReset = async (e: React.FormEvent) => {
@@ -42,7 +62,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
         setIsResetMode(false);
     } catch (err: any) {
         console.error(err);
-        setError(err.message || 'Error sending password reset email.');
+        setError(getFriendlyErrorMessage(err));
     } finally {
         setLoading(false);
     }
@@ -86,7 +106,6 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
         }, { merge: true });
         
         onClose();
-        router.push("/dashboard");
       } else {
         await signInWithEmailAndPassword(auth, email, password);
         
@@ -97,7 +116,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
         onClose();
       }
     } catch (err: any) {
-      setError(err.message || "An error occurred");
+      setError(getFriendlyErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -118,7 +137,6 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
           }, { merge: true });
           
           onClose();
-          router.push("/dashboard");
       } else {
           // New user or missing profile - Force sign up
           setIsSignupMode(true);
@@ -128,7 +146,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
           setError("እባክዎ ምዝገባዎን ለማጠናቀቅ ቀሪ መረጃዎችን ይሙሉ (Please complete your profile to register).");
       }
     } catch (err: any) {
-        setError(err.message || "An error occurred");
+        setError(getFriendlyErrorMessage(err));
     }
   }
 
