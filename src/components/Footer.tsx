@@ -12,7 +12,7 @@ export default function Footer() {
                     <div className="lg:col-span-2 pr-4">
                         <div className="flex items-center gap-3 cursor-pointer mb-6 group" onClick={() => { window.scrollTo({ top: 0, behavior: 'smooth' }) }}>
                             <div className="bg-white p-1 rounded-md">
-                                <img src="/logo.png" alt="Logo" className="h-10 w-auto object-contain rounded-sm" onError={(e) => { e.currentTarget.src='https://ui-avatars.com/api/?name=TC&background=fff&color=0f172a' }} />
+                                <img src="/tc-logo.jpg" alt="Logo" className="h-10 w-auto object-contain rounded-sm" onError={(e) => { e.currentTarget.src='https://ui-avatars.com/api/?name=TC&background=fff&color=0f172a' }} />
                             </div>
                             <span className="font-heading font-black text-2xl text-white tracking-tight notranslate" translate="no">Tsehay<span className="text-primary">Campus</span></span>
                         </div>

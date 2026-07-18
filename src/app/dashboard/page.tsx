@@ -308,7 +308,7 @@ export default function StudentDashboard() {
         <div className="h-16 md:h-20 w-full flex items-center justify-between md:justify-center lg:justify-start px-4 lg:px-6 border-b border-slate-100 dark:border-slate-700">
           <a href="/" className="flex items-center cursor-pointer group">
             <div className="w-8 h-8 md:w-10 md:h-10 bg-white rounded-xl mx-auto flex items-center justify-center shadow-lg p-0.5 border border-white/20 group-hover:scale-105 transition">
-              <img src="/logo.png" alt="Tsehay Campus Logo" className="w-full h-full object-contain rounded-xl" />
+              <img src="/tc-logo.jpg" alt="Tsehay Campus Logo" className="w-full h-full object-contain rounded-xl" />
             </div>
             <span className="ml-3 font-heading font-black text-lg md:text-xl tracking-tight dark:text-white">
               Tsehay<span className="text-primary hidden sm:inline">Campus</span>

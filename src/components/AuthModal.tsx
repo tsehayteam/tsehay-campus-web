@@ -157,7 +157,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
                 <button type="button" onClick={onClose} className="absolute top-4 right-4 text-white/70 hover:text-white transition text-2xl z-50 p-2"><i className="fa-solid fa-xmark"></i></button>
                 
                 <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white rounded-2xl mx-auto flex items-center justify-center mb-3 shadow-lg p-1.5 border border-white/20">
-                    <img src="/logo.png" alt="Logo" className="w-full h-full object-contain rounded-xl" />
+                    <img src="/tc-logo.jpg" alt="Logo" className="w-full h-full object-contain rounded-xl" />
                 </div>
 
                 <h2 className="font-black font-heading text-xl sm:text-2xl">{isSignupMode ? 'ወደ ካምፓስ ይቀላቀሉ' : 'ወደ ካምፓስ ይግቡ'}</h2>

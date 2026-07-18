@@ -23,7 +23,7 @@ export async function POST(request: Request) {
       customization: {
         title: "Tsehay Campus",
         description: `Payment for ${title}`,
-        logo: "https://tsehaycampus.com/logo.png"
+        logo: "https://tsehaycampus.com/tc-logo.jpg"
       }
     };
 

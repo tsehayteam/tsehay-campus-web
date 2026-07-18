@@ -236,7 +236,7 @@ export default function AdminDashboard() {
 
         <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-10 rounded-[2rem] w-full max-w-md relative z-10 shadow-2xl">
           <div className="text-center mb-8 flex flex-col items-center">
-            <img src="/logo.png" alt="Tsehay Campus Logo" className="h-16 w-auto object-contain mb-6 bg-white p-2 rounded-xl" />
+            <img src="/tc-logo.jpg" alt="Tsehay Campus Logo" className="h-16 w-auto object-contain mb-6 bg-white p-2 rounded-xl" />
             <h1 className="text-4xl font-black text-white mb-2 font-heading tracking-tight">Tsehay <span className="text-primary">Admin</span></h1>
             <p className="text-gray-400">ወደ መቆጣጠሪያ ዳሽቦርድ ይግቡ</p>
           </div>
@@ -285,7 +285,7 @@ export default function AdminDashboard() {
       <aside className="w-[280px] bg-white dark:bg-[#1E293B] border-r border-gray-200 dark:border-slate-700 hidden lg:flex flex-col">
         <div className="h-16 flex items-center px-6 border-b border-gray-100 dark:border-slate-700">
           <div className="flex items-center gap-3">
-            <img src="/logo.png" alt="AdminPanel Logo" className="h-8 w-auto rounded-lg bg-white p-1" />
+            <img src="/tc-logo.jpg" alt="AdminPanel Logo" className="h-8 w-auto rounded-lg bg-white p-1" />
             <h2 className="text-xl font-black font-heading text-dark dark:text-white tracking-tighter">Admin<span className="text-primary">Panel</span></h2>
           </div>
         </div>
