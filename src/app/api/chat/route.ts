@@ -95,11 +95,14 @@ ${systemInstruction || 'አንተ የ Tsehay Campus ረዳት ነህ።'}
 [END DYNAMIC CONTEXT]`;
 
     const payload = { 
+        system_instruction: {
+            parts: [{ text: ENFORCED_SYSTEM_INSTRUCTION }]
+        },
         contents: [{ role: "user", parts: [{ text: prompt }] }]
     };
 
-    // 💡 ሚስጥር 2፡ የሞዴሉን ስም ልክ በ Static ዌብሳይትህ ላይ ወደሰራው "gemini-pro" ቀይረነዋል!
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`;
+    // 💡 ሚስጥር 2፡ የሞዴሉን ስም ልክ በ Static ዌብሳይትህ ላይ ወደሰራው "gemini-flash-latest" ቀይረነዋል!
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`;
 
     const response = await fetch(apiUrl, {
         method: 'POST',
