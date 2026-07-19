@@ -487,9 +487,19 @@ export default function StudentDashboard() {
                     {/* Cinematic Video Player */}
                     <div className="bg-dark rounded-2xl overflow-hidden shadow-2xl relative border border-gray-800 aspect-video flex items-center justify-center">
                         {activeLesson && (activeLesson.video || activeLesson.videoUrl) ? (
-                            (activeLesson.video || activeLesson.videoUrl).includes('mediadelivery.net') ? (
+                            (() => {
+                            const rawUrl = activeLesson?.video || activeLesson?.videoUrl;
+                            if (!rawUrl) return null;
+                            
+                            let cleanUrl = rawUrl;
+                            if (rawUrl.includes('<iframe') && rawUrl.includes('src="')) {
+                                const match = rawUrl.match(/src="([^"]+)"/);
+                                if (match) cleanUrl = match[1];
+                            }
+                            
+                            return cleanUrl.includes('mediadelivery.net') ? (
                                 <iframe
-                                    src={`${activeLesson.video || activeLesson.videoUrl}${(activeLesson.video || activeLesson.videoUrl).includes('?') ? '&' : '?'}primaryColor=%23FFD700&autoplay=true`}
+                                    src={`${cleanUrl}${cleanUrl.includes('?') ? '&' : '?'}primaryColor=%23F9B03C&autoplay=true`}
                                     loading="lazy"
                                     className="absolute inset-0 w-full h-full border-none"
                                     allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;"
@@ -497,8 +507,8 @@ export default function StudentDashboard() {
                                 ></iframe>
                             ) : (
                                 <ReactPlayer
-                                    key={activeLesson.video || activeLesson.videoUrl}
-                                    url={activeLesson.video || activeLesson.videoUrl}
+                                    key={cleanUrl}
+                                    url={cleanUrl}
                                     width="100%"
                                     height="100%"
                                     controls={true}
@@ -506,7 +516,7 @@ export default function StudentDashboard() {
                                     onEnded={handleVideoEnd}
                                     className="absolute inset-0"
                                 />
-                            )
+                        })()
                         ) : (
                             <>
                                 <img src={activeCourse?.image || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1200'} className="absolute inset-0 w-full h-full object-cover opacity-60" alt="Video cover" />

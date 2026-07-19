@@ -135,8 +135,18 @@ export default function CoursePreviewPage({ params }: { params: Promise<{ id: st
     );
   }
 
-  const defaultVideoUrl = course?.video || course?.videoUrl || (modules.length > 0 && modules[0].lessons?.length > 0 ? modules[0].lessons[0].videoUrl : null);
-  const currentVideoUrl = activeVideoUrl || defaultVideoUrl;
+  const extractIframeSrc = (url: string) => {
+    if (!url) return url;
+    if (url.includes('<iframe') && url.includes('src="')) {
+      const match = url.match(/src="([^"]+)"/);
+      if (match) return match[1];
+    }
+    return url;
+  };
+
+  const previewVideoUrl = extractIframeSrc(course?.video);
+  const defaultVideoUrl = previewVideoUrl || extractIframeSrc(course?.videoUrl) || (modules.length > 0 && modules[0].lessons?.length > 0 ? extractIframeSrc(modules[0].lessons[0].videoUrl) : null);
+  const currentVideoUrl = activeVideoUrl ? extractIframeSrc(activeVideoUrl) : defaultVideoUrl;
 
   const fixDriveLink = (url: string) => {
     if (!url) return url;
