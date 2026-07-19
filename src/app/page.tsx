@@ -84,8 +84,9 @@ export default function Home() {
     
 
     
-    <section className="relative pt-28 pb-16 lg:pt-36 lg:pb-24 overflow-hidden hero-mesh" id="home">
-        <div className="absolute inset-0 opacity-20 mix-blend-overlay" style={{backgroundImage: "url('assets/hero-bg-new.jpg')", backgroundSize: "cover", backgroundPosition: "center"}}></div>
+    <section className="relative pt-28 pb-16 lg:pt-36 lg:pb-24 overflow-hidden bg-dark" id="home">
+        <div className="absolute inset-0 z-0" style={{backgroundImage: "url('assets/hero-bg-new.jpg')", backgroundSize: "cover", backgroundPosition: "center"}}></div>
+        <div className="absolute inset-0 bg-dark/70 dark:bg-black/80 z-0"></div>
         
         <div className="absolute bottom-0 left-0 w-full overflow-hidden leading-[0]">
             <svg viewBox="0 0 1200 120" preserveAspectRatio="none" className="w-full h-[40px] md:h-[80px] block" style={{transform: "rotate(180deg)"}}>
