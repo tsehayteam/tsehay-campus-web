@@ -14,6 +14,7 @@ export default function Home() {
   const router = useRouter();
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [hasPurchasedCourses, setHasPurchasedCourses] = useState<boolean | null>(null);
   
   // AI Chat state
   const [aiMessages, setAiMessages] = useState([
@@ -33,6 +34,24 @@ export default function Home() {
       chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [aiMessages, isAiLoading]);
+
+  useEffect(() => {
+    if (user) {
+      const fetchPurchasedCourses = async () => {
+        try {
+          const purchasesRef = collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'purchased_courses');
+          const purchasesSnap = await getDocs(purchasesRef);
+          setHasPurchasedCourses(!purchasesSnap.empty);
+        } catch (error) {
+          console.error("Error fetching user purchases:", error);
+          setHasPurchasedCourses(false);
+        }
+      };
+      fetchPurchasedCourses();
+    } else {
+      setHasPurchasedCourses(null);
+    }
+  }, [user]);
 
   useEffect(() => {
     // Fetch courses for landing page
@@ -151,7 +170,7 @@ export default function Home() {
             </div>
             <div className="flex justify-center items-center gap-8 sm:gap-12 md:gap-20 flex-wrap">
                 
-                <div className="flex items-center gap-3 text-2xl md:text-4xl font-black font-heading text-gray-800 dark:text-gray-200 hover:text-[#EA4335] transition transform hover:scale-110 cursor-default">
+                <div className="flex items-center gap-3 text-2xl md:text-4xl font-black font-heading text-gray-800 dark:text-gray-200 hover:text-[#EA4335] transition transform hover:scale-110 cursor-default animate-float" style={{animationDelay: "0s"}}>
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className="w-8 h-8 md:w-10 md:h-10">
                         <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
                         <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
@@ -160,21 +179,21 @@ export default function Home() {
                     </svg> <span className="notranslate">Google</span>
                 </div>
                 
-                <div className="flex items-center gap-3 text-2xl md:text-4xl font-black font-heading text-gray-800 dark:text-gray-200 hover:text-[#0668E1] transition transform hover:scale-110 cursor-default">
+                <div className="flex items-center gap-3 text-2xl md:text-4xl font-black font-heading text-gray-800 dark:text-gray-200 hover:text-[#0668E1] transition transform hover:scale-110 cursor-default animate-float" style={{animationDelay: "0.2s"}}>
                     <i className="fa-brands fa-meta text-[#0668E1]"></i> <span className="notranslate">Meta</span>
                 </div>
 
-                <div className="flex items-center transition transform hover:scale-110 cursor-default">
+                <div className="flex items-center transition transform hover:scale-110 cursor-default animate-float" style={{animationDelay: "0.4s"}}>
                     <div className="bg-black dark:bg-white text-white dark:text-black px-3.5 py-1.5 md:px-4 md:py-2 rounded-lg text-lg md:text-2xl font-bold tracking-[0.15em] shadow-md dark:shadow-white/10 uppercase notranslate" style={{fontFamily: "Arial, Helvetica, sans-serif"}}>
                         SHEIN
                     </div>
                 </div>
                 
-                <div className="flex items-center gap-3 text-2xl md:text-4xl font-black font-heading text-gray-800 dark:text-gray-200 hover:text-black dark:hover:text-white transition transform hover:scale-110 cursor-default">
+                <div className="flex items-center gap-3 text-2xl md:text-4xl font-black font-heading text-gray-800 dark:text-gray-200 hover:text-black dark:hover:text-white transition transform hover:scale-110 cursor-default animate-float" style={{animationDelay: "0.6s"}}>
                     <i className="fa-brands fa-tiktok text-black dark:text-gray-100"></i> <span className="notranslate">TikTok</span>
                 </div>
                 
-                <div className="flex items-center transition transform hover:scale-110 cursor-default">
+                <div className="flex items-center transition transform hover:scale-110 cursor-default animate-float" style={{animationDelay: "0.8s"}}>
                     <div className="flex items-end text-3xl md:text-[40px] font-black text-black dark:text-white tracking-tighter leading-none notranslate" style={{fontFamily: "'Montserrat', sans-serif"}}>
                         BYB<span className="w-[4px] md:w-[6px] h-[22px] md:h-[28px] bg-[#F7A600] mx-[2px] md:mx-[3px] inline-block relative bottom-[2px] md:bottom-[3px]"></span>T
                     </div>
@@ -199,7 +218,7 @@ export default function Home() {
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-10">
                 <div className="bg-white dark:bg-darkCard p-10 rounded-[2rem] shadow-sm border border-gray-100 dark:border-gray-800 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 group cursor-pointer active:scale-95" onClick={() => document.getElementById('courses')?.scrollIntoView({behavior: 'smooth'})}>
-                    <div className="w-20 h-20 bg-blue-50 dark:bg-blue-900/30 text-secondary dark:text-primary rounded-2xl flex items-center justify-center text-4xl mb-8 group-hover:bg-secondary dark:group-hover:bg-primary group-hover:text-white dark:group-hover:text-dark transition-colors duration-300 shadow-inner">
+                    <div className="w-20 h-20 bg-blue-50 dark:bg-blue-900/30 text-secondary dark:text-primary rounded-2xl flex items-center justify-center text-4xl mb-8 group-hover:bg-secondary dark:group-hover:bg-primary group-hover:text-white dark:group-hover:text-dark transition-colors duration-300 shadow-inner animate-float" style={{animationDelay: "0s"}}>
                         <i className="fa-solid fa-chalkboard-user"></i>
                     </div>
                     <h3 className="font-black text-2xl text-dark dark:text-white mb-4 font-heading">{t('practical_courses')}</h3>
@@ -208,7 +227,7 @@ export default function Home() {
                 
                 <div className="bg-white dark:bg-darkCard p-10 rounded-[2rem] shadow-xl border border-primary/30 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 group relative overflow-hidden transform md:-translate-y-6 cursor-pointer active:scale-95" onClick={() => document.getElementById('ai-feature')?.scrollIntoView({behavior: 'smooth'})}>
                     <div className="absolute -right-10 -top-10 bg-gradient-to-br from-primary/20 to-transparent w-40 h-40 rounded-full -z-10 group-hover:scale-150 transition-transform duration-700"></div>
-                    <div className="w-20 h-20 bg-orange-50 dark:bg-orange-900/30 text-primary rounded-2xl flex items-center justify-center text-4xl mb-8 group-hover:bg-primary group-hover:text-white transition-colors duration-300 shadow-inner relative z-10">
+                    <div className="w-20 h-20 bg-orange-50 dark:bg-orange-900/30 text-primary rounded-2xl flex items-center justify-center text-4xl mb-8 group-hover:bg-primary group-hover:text-white transition-colors duration-300 shadow-inner relative z-10 animate-float" style={{animationDelay: "0.2s"}}>
                         <i className="fa-solid fa-robot"></i>
                     </div>
                     <h3 className="font-black text-2xl text-dark dark:text-white mb-4 font-heading relative z-10"><span className="notranslate">Tsehay AI</span> {t('ai_integration')}</h3>
@@ -217,7 +236,7 @@ export default function Home() {
                 </div>
 
                 <div className="bg-white dark:bg-darkCard p-10 rounded-[2rem] shadow-sm border border-gray-100 dark:border-gray-800 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 group cursor-pointer active:scale-95">
-                    <div className="w-20 h-20 bg-green-50 dark:bg-green-900/30 text-success rounded-2xl flex items-center justify-center text-4xl mb-8 group-hover:bg-success group-hover:text-white transition-colors duration-300 shadow-inner">
+                    <div className="w-20 h-20 bg-green-50 dark:bg-green-900/30 text-success rounded-2xl flex items-center justify-center text-4xl mb-8 group-hover:bg-success group-hover:text-white transition-colors duration-300 shadow-inner animate-float" style={{animationDelay: "0.4s"}}>
                         <i className="fa-solid fa-certificate"></i>
                     </div>
                     <h3 className="font-black text-2xl text-dark dark:text-white mb-4 font-heading">{t('cert_title')}</h3>
@@ -420,8 +439,14 @@ export default function Home() {
                     <p className="text-base sm:text-lg text-gray-300 font-body mb-10 leading-relaxed max-w-2xl mx-auto">{t('cta_desc')}</p>
                     <div className="flex flex-col sm:flex-row justify-center items-center gap-5">
                         {user ? (
-                            <button onClick={() => { router.push('/dashboard') }} className="bg-primary text-dark px-10 py-5 rounded-2xl font-black text-lg sm:text-xl hover:bg-yellow-400 transition-all duration-300 shadow-[0_0_40px_rgba(249,176,60,0.4)] hover:shadow-[0_0_60px_rgba(249,176,60,0.6)] transform hover:-translate-y-2 flex items-center gap-3">
-                                <span>ወደ መማሪያ ክፍል</span> <i className="fa-solid fa-arrow-right"></i>
+                            <button onClick={() => { 
+                                if (hasPurchasedCourses) {
+                                    router.push('/dashboard');
+                                } else {
+                                    document.getElementById('courses')?.scrollIntoView({behavior: 'smooth'});
+                                }
+                            }} className="bg-primary text-dark px-10 py-5 rounded-2xl font-black text-lg sm:text-xl hover:bg-yellow-400 transition-all duration-300 shadow-[0_0_40px_rgba(249,176,60,0.4)] hover:shadow-[0_0_60px_rgba(249,176,60,0.6)] transform hover:-translate-y-2 flex items-center gap-3">
+                                <span>{hasPurchasedCourses ? 'ወደ መማሪያ ክፍል' : 'ኮርሶችን ይመልከቱ'}</span> <i className={`fa-solid ${hasPurchasedCourses ? 'fa-arrow-right' : 'fa-book-open'}`}></i>
                             </button>
                         ) : (
                             <button onClick={() => { window.dispatchEvent(new CustomEvent('open-auth-modal', { detail: { isSignupMode: true } })) }} className="bg-primary text-dark px-10 py-5 rounded-2xl font-black text-lg sm:text-xl hover:bg-yellow-400 transition-all duration-300 shadow-[0_0_40px_rgba(249,176,60,0.4)] hover:shadow-[0_0_60px_rgba(249,176,60,0.6)] transform hover:-translate-y-2 flex items-center gap-3">
