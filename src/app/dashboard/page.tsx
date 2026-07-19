@@ -269,7 +269,7 @@ export default function StudentDashboard() {
           alert('Password reset email sent! Check your inbox.');
       } catch (error: any) {
           console.error("Error sending reset email:", error);
-          alert(error.message);
+          alert('የይለፍ ቃል መቀየሪያ ኢሜል መላክ አልተቻለም። እባክዎ በድጋሚ ይሞክሩ።');
       }
   };
 

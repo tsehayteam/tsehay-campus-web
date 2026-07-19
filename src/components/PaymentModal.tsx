@@ -75,7 +75,7 @@ export default function PaymentModal({ course, onClose }: any) {
         }, 2000);
       }
     } catch (err: any) {
-      setError(err.message || "የክፍያ ስህተት አጋጥሟል");
+      setError("የክፍያ ስህተት አጋጥሟል! እባክዎ በድጋሚ ይሞክሩ።");
       setIsPaying(false);
     }
   };

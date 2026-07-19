@@ -44,7 +44,7 @@ export default function FloatingAIButton() {
             const reply = data.reply || data.error || "ይቅርታ፣ አሁን ላይ መመለስ አልቻልኩም።";
             setMessages(prev => [...prev, { role: 'system', text: reply }]);
         } catch (error: any) {
-            setMessages(prev => [...prev, { role: 'system', text: `ስህተት: ${error?.message || error || "ያልታወቀ ስህተት"}` }]);
+            setMessages(prev => [...prev, { role: 'system', text: "ይቅርታ፣ የሲስተም ችግር አጋጥሟል! እባክዎ ትንሽ ቆይተው እንደገና ይሞክሩ።" }]);
         }
     };
 

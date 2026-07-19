@@ -107,7 +107,7 @@ export default function AdminDashboard() {
         setIsAuthenticated(true);
         setLoginError('');
       } catch (error) {
-        setLoginError('የሲስተም ስህተት ተፈጥሯል (Firebase Auth Error)');
+        setLoginError('የሲስተም ስህተት ተፈጥሯል! እባክዎ በድጋሚ ይሞክሩ።');
       }
     } else {
       setLoginError('የተሳሳተ ኢሜል ወይም የይለፍ ቃል');

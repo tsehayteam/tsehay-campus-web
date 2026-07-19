@@ -82,7 +82,7 @@ export async function POST(req: Request) {
     ].filter(Boolean) as string[];
 
     if (apiKeys.length === 0) {
-        return NextResponse.json({ error: "Vercel ላይ API Key አልገባም!" }, { status: 500 });
+        return NextResponse.json({ error: "የሲስተም ችግር አጋጥሟል! እባክዎ አስተዳዳሪዎችን ያነጋግሩ።" }, { status: 500 });
     }
 
     const { prompt, systemInstruction } = reqBody;
@@ -138,16 +138,16 @@ ${systemInstruction || 'አንተ የ Tsehay Campus ረዳት ነህ።'}
 
     if (!success || !response?.ok) {
         return NextResponse.json({ 
-            error: data?.error?.message || JSON.stringify(data?.error) || "የ Gemini API ስህተት አጋጥሟል ወይም የሁሉም API Keys ሊሚት አልቋል።" 
+            error: "ይቅርታ፣ አሁን ላይ የሲስተም መጨናነቅ አለ። እባክዎ ትንሽ ቆይተው እንደገና ይሞክሩ።" 
         }, { status: 500 });
     }
 
     const replyText = data.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!replyText) {
-        return NextResponse.json({ reply: `DEBUG: ${JSON.stringify(data)}` }, { status: 200 });
+        return NextResponse.json({ error: "ይቅርታ፣ ትክክለኛ ምላሽ ማግኘት አልተቻለም።" }, { status: 500 });
     }
     return NextResponse.json({ reply: replyText }, { status: 200 });
   } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: "የሲስተም ችግር አጋጥሟል! እባክዎ ትንሽ ቆይተው ይሞክሩ።" }, { status: 500 });
   }
 }
