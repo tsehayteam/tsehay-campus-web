@@ -85,7 +85,7 @@ export default function Home() {
 
     
     <section className="relative pt-28 pb-16 lg:pt-36 lg:pb-24 overflow-hidden bg-dark" id="home">
-        <div className="absolute inset-0 z-0" style={{backgroundImage: "url('assets/hero-bg-new.jpg')", backgroundSize: "cover", backgroundPosition: "top center"}}></div>
+        <div className="absolute inset-0 z-0" style={{backgroundImage: "url('assets/hero-bg-new.jpg')", backgroundSize: "cover", backgroundPosition: "center"}}></div>
         <div className="absolute inset-0 bg-gradient-to-r from-dark/70 via-dark/40 to-dark/40 dark:from-black/80 dark:via-black/50 dark:to-black/50 z-0"></div>
         
         <div className="absolute bottom-0 left-0 w-full overflow-hidden leading-[0]">
