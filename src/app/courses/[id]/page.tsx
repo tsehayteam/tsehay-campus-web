@@ -43,10 +43,14 @@ export default function CoursePreviewPage({ params }: { params: Promise<{ id: st
           const courseData = courseSnap.data();
           setCourse({ id: courseSnap.id, ...courseData });
           
-          let modulesList = courseData.modules || [];
+          let modulesList = [];
           
-          // Fallback for older courses that used the subcollection
-          if (modulesList.length === 0) {
+          if (courseData.lessons && courseData.lessons.length > 0) {
+            modulesList = [{ id: 'main', title: 'Course Content', lessons: courseData.lessons }];
+          } else if (courseData.modules && courseData.modules.length > 0) {
+            modulesList = courseData.modules;
+          } else {
+            // Fallback for older courses that used the subcollection
             const modulesQuery = query(
               collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses', id, 'modules'),
               orderBy('order', 'asc')
@@ -59,7 +63,7 @@ export default function CoursePreviewPage({ params }: { params: Promise<{ id: st
           
           // Expand first module by default
           if (modulesList.length > 0) {
-            setExpandedModules({ [modulesList[0].id || '0']: true });
+            setExpandedModules({ [modulesList[0].id || 'main']: true });
           }
         }
       } catch (error) {
@@ -164,11 +168,11 @@ export default function CoursePreviewPage({ params }: { params: Promise<{ id: st
               {course.title}
             </h1>
             <p className="text-lg md:text-xl mb-6 text-white/90 line-clamp-3">
-              {course?.description || "No description provided for this course."}
+              {course?.desc || "No description provided for this course."}
             </p>
             
             <div className="flex flex-wrap items-center gap-4 mb-4 text-sm">
-              {!isFreeCourse && (
+              {course?.isPopular && (
                 <div className="bg-primary text-dark font-black px-2 py-1 text-xs rounded-sm shadow-sm">
                   Bestseller
                 </div>
@@ -197,6 +201,10 @@ export default function CoursePreviewPage({ params }: { params: Promise<{ id: st
               <div className="flex items-center gap-2">
                 <i className="fa-solid fa-globe"></i>
                 <span>{course.language || 'English / Amharic'}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <i className="fa-solid fa-signal"></i>
+                <span>{course.level || 'ጀማሪ (Beginner)'}</span>
               </div>
             </div>
           </div>
@@ -278,9 +286,9 @@ export default function CoursePreviewPage({ params }: { params: Promise<{ id: st
                         </div>
                         <div className="text-xs text-gray-500 flex items-center gap-4">
                           {(i === 0 && index === 0) && (
-                            <span onClick={() => { if(lesson.videoUrl) { setActiveVideoUrl(lesson.videoUrl); setIsPlaying(true); window.scrollTo({top: 0, behavior: 'smooth'}); } }} className="text-primary font-bold underline cursor-pointer hover:text-secondary">Preview</span>
+                            <span onClick={() => { const vid = lesson.video || lesson.videoUrl; if(vid) { setActiveVideoUrl(vid); setIsPlaying(true); window.scrollTo({top: 0, behavior: 'smooth'}); } }} className="text-primary font-bold underline cursor-pointer hover:text-secondary">Preview</span>
                           )}
-                          <span>10:00</span>
+                          <span>{lesson.duration || '10:00'}</span>
                         </div>
                       </div>
                     ))}
@@ -436,7 +444,7 @@ export default function CoursePreviewPage({ params }: { params: Promise<{ id: st
                   </div>
                   <div className="flex items-center gap-3">
                     <i className="fa-regular fa-file-lines w-4"></i>
-                    <span>{course?.lessonsCount || 0} assignments</span>
+                    <span>{course?.lessons?.length || 0} assignments</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <i className="fa-solid fa-mobile-screen-button w-4"></i>

@@ -291,14 +291,14 @@ export default function Home() {
                                     <i className="fa-solid fa-folder-open text-primary"></i>
                                     <span className="text-gray-400 text-sm font-bold">{course.instructor || 'Eyoub Sahle'}</span>
                                 </div>
-                                <p className="text-gray-400 text-sm mb-6 line-clamp-3 leading-relaxed">{course.description || t('course_desc_placeholder')}</p>
+                                <p className="text-gray-400 text-sm mb-6 line-clamp-3 leading-relaxed">{course.desc || t('course_desc_placeholder')}</p>
                                 
                                 <div className="flex flex-wrap gap-2 mb-6">
                                     <div className="flex items-center gap-2 bg-gray-100 dark:bg-black/40 text-gray-700 dark:text-gray-300 text-xs font-bold px-3 py-1.5 rounded-md border border-gray-200 dark:border-gray-800">
                                         <i className="fa-regular fa-clock text-primary"></i> {course.duration || '00:50:00'}
                                     </div>
                                     <div className="flex items-center gap-2 bg-gray-100 dark:bg-black/40 text-gray-700 dark:text-gray-300 text-xs font-bold px-3 py-1.5 rounded-md border border-gray-200 dark:border-gray-800">
-                                        <i className="fa-solid fa-list text-primary"></i> {course.lessonsCount || '5'} {t('course_lessons')}
+                                        <i className="fa-solid fa-list text-primary"></i> {course.lessons?.length || 0} {t('course_lessons')}
                                     </div>
                                     <div className="flex items-center gap-2 bg-gray-100 dark:bg-black/40 text-gray-700 dark:text-gray-300 text-xs font-bold px-3 py-1.5 rounded-md border border-gray-200 dark:border-gray-800">
                                         <i className="fa-solid fa-signal text-primary"></i> {course.level || 'ጀማሪ'}

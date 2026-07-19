@@ -75,7 +75,7 @@ export default function Courses() {
 
   const filteredCourses = courses.filter(course => {
     const matchesSearch = course.title?.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          course.description?.toLowerCase().includes(searchQuery.toLowerCase());
+                          course.desc?.toLowerCase().includes(searchQuery.toLowerCase());
     
     if (selectedCategory === "All") return matchesSearch;
     if (selectedCategory === "Free") return matchesSearch && (course.price === "Free" || course.price === "0" || course.price === 0 || course.isFree);
@@ -180,7 +180,7 @@ export default function Courses() {
                       </div>
                       
                       <p className="text-gray-400 text-sm mb-6 line-clamp-3 leading-relaxed">
-                        {course.description || t('course_desc_placeholder')}
+                        {course.desc || t('course_desc_placeholder')}
                       </p>
                       
                       {/* Metadata Pills */}
@@ -189,10 +189,10 @@ export default function Courses() {
                           <i className="fa-regular fa-clock text-primary"></i> {course.duration || '00:50:00'}
                         </div>
                         <div className="flex items-center gap-2 bg-gray-100 dark:bg-black/40 text-gray-700 dark:text-gray-300 text-xs font-bold px-3 py-1.5 rounded-md border border-gray-200 dark:border-gray-800">
-                          <i className="fa-solid fa-list text-primary"></i> {course.lessonsCount || '5'} {t('course_lessons')}
+                          <i className="fa-solid fa-list text-primary"></i> {course.lessons?.length || 0} {t('course_lessons')}
                         </div>
                         <div className="flex items-center gap-2 bg-gray-100 dark:bg-black/40 text-gray-700 dark:text-gray-300 text-xs font-bold px-3 py-1.5 rounded-md border border-gray-200 dark:border-gray-800">
-                          <i className="fa-solid fa-signal text-primary"></i> {course.level || 'ጀማሪ'}
+                          <i className="fa-solid fa-signal text-primary"></i> {course.level || 'ጀማሪ (Beginner)'}
                         </div>
                         <div className="flex items-center gap-2 bg-gray-100 dark:bg-black/40 text-gray-700 dark:text-gray-300 text-xs font-bold px-3 py-1.5 rounded-md border border-gray-200 dark:border-gray-800">
                           <i className="fa-solid fa-language text-primary"></i> {t('course_language')}

@@ -113,9 +113,17 @@ export default function StudentDashboard() {
     if (!activeCourse) return;
     const fetchModules = async () => {
         try {
-            const q = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses', activeCourse.id, 'modules'), orderBy('order', 'asc'));
-            const snap = await getDocs(q);
-            const fetchedModules = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any[];
+            let fetchedModules = [];
+            if (activeCourse.lessons && activeCourse.lessons.length > 0) {
+                fetchedModules = [{ id: 'main', title: 'Course Content', order: 1, lessons: activeCourse.lessons }];
+            } else if (activeCourse.modules && activeCourse.modules.length > 0) {
+                fetchedModules = activeCourse.modules;
+            } else {
+                const q = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses', activeCourse.id, 'modules'), orderBy('order', 'asc'));
+                const snap = await getDocs(q);
+                fetchedModules = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any[];
+            }
+            
             setModules(fetchedModules);
             // Default to first lesson of first module if exists
             if (fetchedModules.length > 0 && fetchedModules[0].lessons && fetchedModules[0].lessons.length > 0) {
@@ -457,10 +465,10 @@ export default function StudentDashboard() {
                     
                     {/* Cinematic Video Player */}
                     <div className="bg-dark rounded-2xl overflow-hidden shadow-2xl relative border border-gray-800 aspect-video flex items-center justify-center">
-                        {activeLesson && activeLesson.videoUrl ? (
+                        {activeLesson && (activeLesson.video || activeLesson.videoUrl) ? (
                             <ReactPlayer
-                                key={activeLesson.videoUrl}
-                                url={activeLesson.videoUrl}
+                                key={activeLesson.video || activeLesson.videoUrl}
+                                url={activeLesson.video || activeLesson.videoUrl}
                                 width="100%"
                                 height="100%"
                                 controls={true}
@@ -521,9 +529,18 @@ export default function StudentDashboard() {
                                         </div>
                                     </div>
 
+                                    {activeLesson?.desc && (
+                                        <>
+                                            <h3 className="font-black text-xl text-dark dark:text-white mb-4 font-heading">የዚህ ትምህርት ({activeLesson.title}) ማብራሪያ፦</h3>
+                                            <p className="text-gray-600 dark:text-gray-300 font-body leading-relaxed text-base mb-8">
+                                                {activeLesson.desc}
+                                            </p>
+                                        </>
+                                    )}
+
                                     <h3 className="font-black text-xl text-dark dark:text-white mb-4 font-heading">ስለዚህ ኮርስ ማብራሪያ፦</h3>
                                     <p className="text-gray-600 dark:text-gray-300 font-body leading-relaxed text-base mb-6">
-                                        {activeCourse?.description || "ስለዚህ ኮርስ ዝርዝር መረጃ የለም።"}
+                                        {activeCourse?.desc || "ስለዚህ ኮርስ ዝርዝር መረጃ የለም።"}
                                     </p>
                                     
                                     <div className="mt-6 border-t border-gray-100 dark:border-slate-700 pt-6">

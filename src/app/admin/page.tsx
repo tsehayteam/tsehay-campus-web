@@ -24,26 +24,23 @@ export default function AdminDashboard() {
   
   const [formData, setFormData] = useState({
     title: '',
-    description: '',
-    category: '',
-    price: '',
-    oldPrice: '',
-    image: '',
+    category: 'General',
     instructor: '',
     instructorImage: '',
-    status: 'Active',
+    price: '',
+    oldPrice: '',
     duration: '',
-    level: 'Beginner',
-    videoUrl: '',
+    status: 'Active',
+    image: '',
+    video: '',
+    desc: '',
     aiPrompt: '',
-    isFree: false,
+    level: 'ጀማሪ (Beginner)',
     isPopular: false
   });
 
-  const [courseModules, setCourseModules] = useState<any[]>([]);
-  const [newModuleTitle, setNewModuleTitle] = useState('');
-  const [activeModuleId, setActiveModuleId] = useState<string | null>(null);
-  const [lessonForm, setLessonForm] = useState({ title: '', duration: '', videoUrl: '', points: 100 });
+  const [lessons, setLessons] = useState<any[]>([]);
+  const [lessonForm, setLessonForm] = useState({ title: '', duration: '', video: '', desc: '', points: 0 });
 
 
   useEffect(() => {
@@ -127,23 +124,19 @@ export default function AdminDashboard() {
       setEditingCourse(course);
       setFormData(course);
       
-      // Load modules from course document or fallback to subcollection
-      if (course.modules && course.modules.length > 0) {
-        setCourseModules(course.modules);
+      // Load lessons from course document
+      if (course.lessons && Array.isArray(course.lessons) && course.lessons.length > 0) {
+        setLessons(course.lessons);
       } else {
-        const q = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses', course.id, 'modules'), orderBy('order', 'asc'));
-        onSnapshot(q, (snapshot) => {
-            setCourseModules(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
-        });
+        setLessons([{ title: '', duration: '', video: '', points: 0 }]);
       }
     } else {
       setEditingCourse(null);
       setFormData({ 
-        title: '', description: '', category: '', price: '', oldPrice: '', image: '', 
-        instructor: '', instructorImage: '', status: 'Active', duration: '', 
-        level: 'Beginner', videoUrl: '', aiPrompt: '', isFree: false, isPopular: false 
+        title: '', category: 'General', instructor: '', instructorImage: '', price: '', oldPrice: '', 
+        duration: '', status: 'Active', image: '', video: '', desc: '', aiPrompt: '', level: 'ጀማሪ (Beginner)', isPopular: false 
       });
-      setCourseModules([]);
+      setLessons([{ title: '', duration: '', video: '', desc: '', points: 0 }]);
     }
     setIsModalOpen(true);
   };
@@ -153,17 +146,21 @@ export default function AdminDashboard() {
     try {
       const docId = editingCourse ? editingCourse.id : `course_${Date.now()}`;
       const courseRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses', docId);
-      const priceNum = Number(formData.price);
-      const isFreeCourse = priceNum === 0 || formData.price === '0' || formData.price === 'Free';
+      const priceNum = formData.price === "" ? 0 : parseFloat(formData.price.toString());
+
+      const formattedLessons = lessons.map(lesson => ({
+        ...lesson,
+        video: lesson.video // Video URL is NOT from drive (e.g., mediadelivery)
+      }));
 
       await setDoc(courseRef, {
         ...formData,
-        modules: courseModules,
+        lessons: formattedLessons,
         image: formatDriveLink(formData.image),
+        video: formData.video, // Main promo video is NOT from drive
         instructorImage: formatDriveLink(formData.instructorImage),
         price: priceNum,
-        isFree: isFreeCourse,
-        createdAt: (editingCourse && editingCourse.createdAt) ? editingCourse.createdAt : serverTimestamp()
+        timestamp: (editingCourse && editingCourse.timestamp) ? editingCourse.timestamp : Date.now()
       }, { merge: true });
       
       setIsModalOpen(false);
@@ -173,46 +170,15 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleAddModule = () => {
-    if (!newModuleTitle.trim()) return;
-    const modId = `module_${Date.now()}`;
-    setCourseModules([...courseModules, {
-      id: modId,
-      title: newModuleTitle,
-      order: courseModules.length + 1,
-      lessons: []
-    }]);
-    setNewModuleTitle('');
-  };
-
-  const handleDeleteModule = (modId: string) => {
-    if (window.confirm("እርግጠኛ ነዎት ይህን ሞጁል ማጥፋት ይፈልጋሉ? (Delete module?)")) {
-      setCourseModules(courseModules.filter(m => m.id !== modId));
-      if (activeModuleId === modId) setActiveModuleId(null);
-    }
-  };
-
   const handleAddLesson = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!activeModuleId) return;
-    setCourseModules(courseModules.map(mod => {
-      if (mod.id === activeModuleId) {
-        return { ...mod, lessons: [...(mod.lessons || []), lessonForm] };
-      }
-      return mod;
-    }));
-    setActiveModuleId(null);
-    setLessonForm({ title: '', duration: '', videoUrl: '', points: 100 });
+    setLessons([...lessons, lessonForm]);
+    setLessonForm({ title: '', duration: '', video: '', desc: '', points: 0 });
   };
 
-  const handleDeleteLesson = (modId: string, lessonIdx: number) => {
+  const handleDeleteLesson = (lessonIdx: number) => {
     if (window.confirm("ትምህርቱን ማጥፋት ይፈልጋሉ? (Delete lesson?)")) {
-      setCourseModules(courseModules.map(mod => {
-        if (mod.id === modId) {
-          return { ...mod, lessons: mod.lessons.filter((_: any, idx: number) => idx !== lessonIdx) };
-        }
-        return mod;
-      }));
+      setLessons(lessons.filter((_, idx) => idx !== lessonIdx));
     }
   };
 
@@ -620,7 +586,7 @@ export default function AdminDashboard() {
                   <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">የኮርሱ ቆይታ (Duration) *</label>
                   <input required type="text" placeholder="00:50:00" value={formData.duration} onChange={e => setFormData({...formData, duration: e.target.value})} className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-dark dark:text-white outline-none focus:border-primary transition" />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">የኮርሱ ደረጃ (Level) *</label>
                   <select required value={formData.level} onChange={e => setFormData({...formData, level: e.target.value})} className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-dark dark:text-white outline-none focus:border-primary transition">
@@ -630,13 +596,11 @@ export default function AdminDashboard() {
                   </select>
                 </div>
                 
-                <div className="flex flex-col justify-center gap-4">
-                  <label className="flex items-center gap-3 cursor-pointer h-full">
-                    <input type="checkbox" checked={formData.isPopular} onChange={e => setFormData({...formData, isPopular: e.target.checked})} className="w-5 h-5 accent-primary" />
-                    <span className="font-bold text-dark dark:text-white">Best Seller ምልክት ይኑረው?</span>
-                  </label>
+                <div className="flex items-center gap-3 mt-8">
+                  <input type="checkbox" id="isPopular" checked={formData.isPopular} onChange={e => setFormData({...formData, isPopular: e.target.checked})} className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary" />
+                  <label htmlFor="isPopular" className="text-sm font-bold text-gray-700 dark:text-gray-300">Best Seller ምልክት ይኑረው?</label>
                 </div>
-
+                
                 <div className="md:col-span-2 mt-4">
                   <h3 className="font-bold text-lg border-b border-gray-100 dark:border-slate-700 pb-2 mb-4 text-primary">ሚዲያ ፋይሎች</h3>
                 </div>
@@ -648,7 +612,7 @@ export default function AdminDashboard() {
 
                 <div>
                   <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">የዋና ቪዲዮ ሊንክ (Video URL) *</label>
-                  <input required type="text" value={formData.videoUrl} onChange={e => setFormData({...formData, videoUrl: e.target.value})} className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-dark dark:text-white outline-none focus:border-primary transition" />
+                  <input required type="text" value={formData.video} onChange={e => setFormData({...formData, video: e.target.value})} className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-dark dark:text-white outline-none focus:border-primary transition" />
                 </div>
 
                 <div className="md:col-span-2 mt-4">
@@ -657,7 +621,7 @@ export default function AdminDashboard() {
                 
                 <div className="md:col-span-2">
                   <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">ስለ ኮርሱ አጭር ማብራሪያ (Description) *</label>
-                  <textarea required rows={4} value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-dark dark:text-white outline-none focus:border-primary transition"></textarea>
+                  <textarea required rows={4} value={formData.desc} onChange={e => setFormData({...formData, desc: e.target.value})} className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-dark dark:text-white outline-none focus:border-primary transition"></textarea>
                 </div>
 
                 <div className="md:col-span-2">
@@ -670,58 +634,32 @@ export default function AdminDashboard() {
                   <h3 className="font-bold text-xl mb-4 text-dark dark:text-white">የኮርስ ክፍሎች (Modules & Lessons)</h3>
                   
                   <div className="space-y-4 mb-6">
-                    {courseModules.map((mod, idx) => (
-                      <div key={mod.id} className="border border-gray-200 dark:border-slate-700 rounded-xl p-4 bg-gray-50 dark:bg-slate-900/50">
-                        <div className="flex justify-between items-center mb-3">
-                          <h4 className="font-bold text-lg text-primary">ክፍል {mod.order}: {mod.title}</h4>
-                          <div className="flex gap-2">
-                            <button type="button" onClick={() => setActiveModuleId(mod.id)} className="text-xs bg-blue-100 text-blue-600 px-3 py-1.5 rounded-lg font-bold hover:bg-blue-200 transition">ትምህርት ጨምር (Add Lesson)</button>
-                            <button type="button" onClick={() => handleDeleteModule(mod.id)} className="text-xs bg-red-100 text-red-600 px-3 py-1.5 rounded-lg font-bold hover:bg-red-200 transition">አጥፋ (Delete)</button>
-                          </div>
-                        </div>
-
-                        {activeModuleId === mod.id && (
-                          <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-blue-100 dark:border-slate-600 mb-4 shadow-sm">
-                            <h5 className="text-sm font-bold mb-3">አዲስ ትምህርት ወደ "{mod.title}"</h5>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-                              <input placeholder="የርዕስ ስም (Title)" value={lessonForm.title} onChange={e => setLessonForm({...lessonForm, title: e.target.value})} className="border rounded-lg px-3 py-2 text-sm bg-gray-50 dark:bg-slate-900" />
-                              <input placeholder="የቪዲዮ ርዝመት (00:00)" value={lessonForm.duration} onChange={e => setLessonForm({...lessonForm, duration: e.target.value})} className="border rounded-lg px-3 py-2 text-sm bg-gray-50 dark:bg-slate-900" />
-                              <input placeholder="የቪዲዮ ሊንክ (Video URL)" value={lessonForm.videoUrl} onChange={e => setLessonForm({...lessonForm, videoUrl: e.target.value})} className="border rounded-lg px-3 py-2 text-sm bg-gray-50 dark:bg-slate-900" />
-                              <input type="number" placeholder="ነጥብ (Points)" value={lessonForm.points} onChange={e => setLessonForm({...lessonForm, points: Number(e.target.value)})} className="border rounded-lg px-3 py-2 text-sm bg-gray-50 dark:bg-slate-900" />
-                            </div>
-                            <div className="flex gap-2">
-                              <button type="button" onClick={handleAddLesson} className="bg-primary text-dark px-4 py-1.5 rounded-lg text-sm font-bold hover:bg-yellow-400">ሴቭ አድርግ</button>
-                              <button type="button" onClick={() => setActiveModuleId(null)} className="bg-gray-200 text-dark px-4 py-1.5 rounded-lg text-sm font-bold hover:bg-gray-300">ሰርዝ</button>
-                            </div>
-                          </div>
-                        )}
-
-                        <div className="space-y-2">
-                          {(mod.lessons || []).map((lesson: any, lidx: number) => (
-                            <div key={lidx} className="flex justify-between items-center bg-white dark:bg-slate-800 p-3 rounded-lg border border-gray-100 dark:border-slate-700">
-                              <div>
-                                <p className="font-bold text-sm text-dark dark:text-white">{lesson.title}</p>
-                                <p className="text-xs text-gray-500 mt-1"><i className="fa-solid fa-video mr-1"></i> {lesson.duration} | <span className="text-primary">+{lesson.points || 100} ነጥብ</span></p>
-                              </div>
-                              <button type="button" onClick={() => handleDeleteLesson(mod.id, lidx)} className="text-danger hover:text-red-700"><i className="fa-solid fa-trash text-sm"></i></button>
-                            </div>
-                          ))}
-                        </div>
+                    <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-blue-100 dark:border-slate-600 mb-4 shadow-sm">
+                      <h5 className="text-sm font-bold mb-3">አዲስ ትምህርት ጨምር (Add Lesson)</h5>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                        <input placeholder="የርዕስ ስም (Title)" value={lessonForm.title} onChange={e => setLessonForm({...lessonForm, title: e.target.value})} className="border rounded-lg px-3 py-2 text-sm bg-gray-50 dark:bg-slate-900" />
+                        <input placeholder="የቪዲዮ ርዝመት (00:00)" value={lessonForm.duration} onChange={e => setLessonForm({...lessonForm, duration: e.target.value})} className="border rounded-lg px-3 py-2 text-sm bg-gray-50 dark:bg-slate-900" />
+                        <input placeholder="የቪዲዮ ሊንክ (Video URL)" value={lessonForm.video} onChange={e => setLessonForm({...lessonForm, video: e.target.value})} className="border rounded-lg px-3 py-2 text-sm bg-gray-50 dark:bg-slate-900" />
+                        <input type="number" placeholder="ነጥብ (Points)" value={lessonForm.points || ''} onChange={e => setLessonForm({...lessonForm, points: Number(e.target.value)})} className="border rounded-lg px-3 py-2 text-sm bg-gray-50 dark:bg-slate-900" />
+                        <input placeholder="የቪዲዮ ማብራሪያ (Description)" value={lessonForm.desc} onChange={e => setLessonForm({...lessonForm, desc: e.target.value})} className="border rounded-lg px-3 py-2 text-sm bg-gray-50 dark:bg-slate-900 sm:col-span-2" />
                       </div>
-                    ))}
-                  </div>
+                      <div className="flex gap-2">
+                        <button type="button" onClick={handleAddLesson} disabled={!lessonForm.title} className="bg-primary text-dark px-4 py-1.5 rounded-lg text-sm font-bold hover:bg-yellow-400 disabled:opacity-50">ትምህርቱን ሴቭ አድርግ</button>
+                      </div>
+                    </div>
 
-                  <div className="flex gap-3 items-center bg-gray-50 dark:bg-slate-900 p-4 rounded-xl border border-gray-200 dark:border-slate-700">
-                    <input 
-                      type="text" 
-                      placeholder="አዲስ ሞጁል ርዕስ ይፃፉ..." 
-                      value={newModuleTitle} 
-                      onChange={e => setNewModuleTitle(e.target.value)} 
-                      className="flex-1 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-lg px-4 py-2 outline-none focus:border-primary"
-                    />
-                    <button type="button" onClick={handleAddModule} disabled={!newModuleTitle.trim()} className="bg-dark dark:bg-white text-white dark:text-dark px-4 py-2 rounded-lg font-bold disabled:opacity-50 hover:bg-gray-800 dark:hover:bg-gray-200 transition whitespace-nowrap">
-                      ሞጁል ጨምር
-                    </button>
+                    <div className="space-y-2">
+                      {lessons.map((lesson: any, lidx: number) => (
+                        <div key={lidx} className="flex justify-between items-center bg-white dark:bg-slate-800 p-3 rounded-lg border border-gray-100 dark:border-slate-700">
+                          <div>
+                            <p className="font-bold text-sm text-dark dark:text-white">{lesson.title}</p>
+                            {lesson.desc && <p className="text-xs text-gray-500 mt-0.5 truncate max-w-sm">{lesson.desc}</p>}
+                            <p className="text-xs text-gray-500 mt-1"><i className="fa-solid fa-video mr-1"></i> {lesson.duration} | <span className="text-primary">+{lesson.points || 100} ነጥብ</span></p>
+                          </div>
+                          <button type="button" onClick={() => handleDeleteLesson(lidx)} className="text-danger hover:text-red-700"><i className="fa-solid fa-trash text-sm"></i></button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
 
