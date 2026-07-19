@@ -547,8 +547,17 @@ export default function StudentDashboard() {
                                 <>
                                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8 pb-8 border-b border-gray-100 dark:border-slate-700">
                                         <div className="flex items-center gap-4">
-                                            <div className="w-16 h-16 rounded-full border-2 border-gray-200 dark:border-slate-600 shadow-md bg-blue-50 flex items-center justify-center text-secondary text-2xl">
-                                                <i className="fa-solid fa-user-tie"></i>
+                                            <div className="w-16 h-16 rounded-full border-2 border-gray-200 dark:border-slate-600 shadow-md bg-blue-50 flex items-center justify-center text-secondary text-2xl overflow-hidden shrink-0">
+                                                {activeCourse?.instructorImage ? (
+                                                    <img 
+                                                        src={activeCourse.instructorImage.includes('drive.google.com/uc?export=view&id=') ? `https://drive.google.com/thumbnail?id=${activeCourse.instructorImage.split('id=')[1]}&sz=w1000` : activeCourse.instructorImage} 
+                                                        onError={(e) => { e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(activeCourse?.instructor || 'Instructor')}&background=F9B03C&color=fff&size=128`; }}
+                                                        alt="Instructor" 
+                                                        className="w-full h-full object-cover" 
+                                                    />
+                                                ) : (
+                                                    <i className="fa-solid fa-user-tie"></i>
+                                                )}
                                             </div>
                                             <div>
                                                 <p className="font-black text-dark dark:text-white text-lg font-heading">{activeCourse?.instructor || 'Eyoub Sahle'}</p>

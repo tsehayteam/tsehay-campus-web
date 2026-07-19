@@ -138,15 +138,27 @@ export default function CoursePreviewPage({ params }: { params: Promise<{ id: st
   const defaultVideoUrl = course?.videoUrl || (modules.length > 0 && modules[0].lessons?.length > 0 ? modules[0].lessons[0].videoUrl : null);
   const currentVideoUrl = activeVideoUrl || defaultVideoUrl;
 
+  const fixDriveLink = (url: string) => {
+    if (!url) return url;
+    if (url.includes('drive.google.com/uc?export=view&id=')) {
+      const id = url.split('id=')[1];
+      return `https://drive.google.com/thumbnail?id=${id}&sz=w1000`;
+    }
+    return url;
+  };
+  
+  const displayImage = fixDriveLink(course?.image);
+  const displayInstructorImage = fixDriveLink(course?.instructorImage);
+
   return (
     <div className="min-h-screen bg-white dark:bg-[#0a0a0a]">
       {/* Dark Header Section (Udemy Style) */}
       <div className="hero-mesh text-white pt-24 md:pt-28 pb-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
         {/* Subtle Background Pattern */}
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20 mix-blend-overlay"></div>
-        {course?.instructorImage && (
+        {displayInstructorImage && (
           <div className="absolute right-10 bottom-0 opacity-20 pointer-events-none hidden lg:block">
-            <img src={course.instructorImage} alt="" className="h-64 object-cover object-bottom" />
+            <img src={displayInstructorImage} alt="" className="h-64 object-cover object-bottom" />
           </div>
         )}
         
@@ -328,7 +340,8 @@ export default function CoursePreviewPage({ params }: { params: Promise<{ id: st
 
             <div className="flex flex-col sm:flex-row gap-6 mb-4">
               <img 
-                src={course?.instructorImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(course?.instructorName || course?.instructor || 'Instructor')}&background=F9B03C&color=fff&size=128`} 
+                src={displayInstructorImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(course?.instructorName || course?.instructor || 'Instructor')}&background=F9B03C&color=fff&size=128`} 
+                onError={(e) => { e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(course?.instructorName || course?.instructor || 'Instructor')}&background=F9B03C&color=fff&size=128`; }}
                 alt="Instructor" 
                 className="w-28 h-28 rounded-full object-cover shrink-0 border-2 border-gray-100 dark:border-gray-800 shadow-md" 
               />
@@ -391,7 +404,7 @@ export default function CoursePreviewPage({ params }: { params: Promise<{ id: st
                 </div>
               ) : (
                 <div className="cursor-pointer" onClick={() => { if (currentVideoUrl) setIsPlaying(true); }}>
-                  <img src={course.image || `https://placehold.co/600x400/3268BA/FFFFFF?text=${encodeURIComponent(course.title || 'Tsehay Campus')}&font=Montserrat`} alt={course.title} className="w-full h-[250px] object-cover" />
+                  <img src={displayImage || `https://placehold.co/600x400/3268BA/FFFFFF?text=${encodeURIComponent(course.title || 'Tsehay Campus')}&font=Montserrat`} alt={course.title} className="w-full h-[250px] object-cover" onError={(e) => { e.currentTarget.src='https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1000&auto=format&fit=crop' }} />
                   {currentVideoUrl && (
                     <div className="absolute inset-0 bg-black/40 flex flex-col justify-center items-center group-hover:bg-black/20 transition-colors">
                       <div className="w-16 h-16 bg-white rounded-full flex justify-center items-center text-dark text-2xl shadow-lg transform group-hover:scale-110 transition-transform">
@@ -426,14 +439,14 @@ export default function CoursePreviewPage({ params }: { params: Promise<{ id: st
                   <button 
                     onClick={handleEnroll} 
                     disabled={isEnrolling}
-                    className="w-full bg-secondary hover:bg-primary hover:text-dark text-white font-bold py-3.5 rounded-xl transition-all duration-300 text-lg shadow-md transform hover:-translate-y-1"
+                    className="w-full bg-primary hover:bg-yellow-400 text-dark font-black py-3.5 rounded-xl transition-all duration-300 text-lg shadow-[0_0_20px_rgba(249,176,60,0.3)] hover:shadow-[0_0_30px_rgba(249,176,60,0.5)] transform hover:-translate-y-1"
                   >
                     {isEnrolling ? 'Processing...' : 'Enroll Now'}
                   </button>
                 ) : (
                   <button 
                     onClick={handleEnroll} 
-                    className="w-full bg-secondary hover:bg-primary hover:text-dark text-white font-bold py-3.5 rounded-xl transition-all duration-300 text-lg shadow-md transform hover:-translate-y-1"
+                    className="w-full bg-primary hover:bg-yellow-400 text-dark font-black py-3.5 rounded-xl transition-all duration-300 text-lg shadow-[0_0_20px_rgba(249,176,60,0.3)] hover:shadow-[0_0_30px_rgba(249,176,60,0.5)] transform hover:-translate-y-1"
                   >
                     Buy now
                   </button>
