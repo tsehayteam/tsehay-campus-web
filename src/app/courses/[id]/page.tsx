@@ -395,7 +395,10 @@ export default function CoursePreviewPage({ params }: { params: Promise<{ id: st
                   {(() => {
                       let finalUrl = currentVideoUrl;
                       if (finalUrl.includes('mediadelivery.net')) {
-                          finalUrl = finalUrl.split('?')[0].replace('/play/', '/embed/');
+                          finalUrl = finalUrl.split('?')[0];
+                          finalUrl = finalUrl.replace('player.mediadelivery.net/play/', 'iframe.mediadelivery.net/embed/');
+                          finalUrl = finalUrl.replace('iframe.mediadelivery.net/play/', 'iframe.mediadelivery.net/embed/');
+                          finalUrl = finalUrl.replace('player.mediadelivery.net/embed/', 'iframe.mediadelivery.net/embed/');
                           return (
                               <iframe
                                   src={`${finalUrl}?primaryColor=%23F9B03C&autoplay=true`}

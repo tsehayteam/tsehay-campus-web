@@ -498,7 +498,10 @@ export default function StudentDashboard() {
                             }
                             
                                                         if (cleanUrl.includes('mediadelivery.net')) {
-                                cleanUrl = cleanUrl.split('?')[0].replace('/play/', '/embed/');
+                                cleanUrl = cleanUrl.split('?')[0];
+                                cleanUrl = cleanUrl.replace('player.mediadelivery.net/play/', 'iframe.mediadelivery.net/embed/');
+                                cleanUrl = cleanUrl.replace('iframe.mediadelivery.net/play/', 'iframe.mediadelivery.net/embed/');
+                                cleanUrl = cleanUrl.replace('player.mediadelivery.net/embed/', 'iframe.mediadelivery.net/embed/');
                                 return (
                                     <iframe
                                         src={`${cleanUrl}?primaryColor=%23F9B03C&autoplay=true`}
