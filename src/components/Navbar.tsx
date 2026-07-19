@@ -62,8 +62,9 @@ export default function Navbar() {
         <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-20 gap-4 lg:gap-6">
                 
-                <Link href="/" onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})} className="flex-shrink-0 flex items-center cursor-pointer group">
+                <Link href="/" onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})} className="flex-shrink-0 flex items-center cursor-pointer group gap-2">
                     <img src="/tc-logo.jpg" alt="Tsehay Campus Logo" className="h-14 w-auto object-contain rounded-md shadow-sm group-hover:shadow-md group-hover:scale-105 transition-all duration-300" onError={(e) => { e.currentTarget.src='https://ui-avatars.com/api/?name=TC&background=3268BA&color=fff' }} />
+                    <span className="font-black text-2xl tracking-tight hidden sm:block notranslate"><span className="text-primary">Tsehay</span> <span className="text-secondary">Campus</span></span>
                 </Link>
 
                 <div className="hidden lg:flex items-center h-full">
