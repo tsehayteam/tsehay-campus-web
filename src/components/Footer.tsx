@@ -15,8 +15,9 @@ export default function Footer() {
                             <div className="bg-white p-1 rounded-md">
                                 <img src="/tc-logo.jpg" alt="Logo" className="h-10 w-auto object-contain rounded-sm" onError={(e) => { e.currentTarget.src='https://ui-avatars.com/api/?name=TC&background=fff&color=0f172a' }} />
                             </div>
-                            <span className="font-heading tracking-tight notranslate" translate="no">
-                                <span className="text-primary font-black text-3xl">Tsehay</span> <span className="text-secondary font-black text-3xl">Campus</span>
+                            <span className="font-heading tracking-tight notranslate flex gap-1.5" translate="no">
+                                <span className="text-primary font-black text-3xl">Tsehay</span>
+                                <span className="text-secondary font-black text-3xl">Campus</span>
                             </span>
                         </Link>
                         <p className="text-gray-400 text-sm leading-relaxed mb-6 max-w-sm">

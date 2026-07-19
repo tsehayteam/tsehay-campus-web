@@ -120,9 +120,7 @@ export default function Home() {
                 <div className="relative w-full max-w-[450px]">
                     <div className="absolute inset-0 bg-secondary rounded-full blur-[100px] opacity-50 dark:opacity-30"></div>
                     <div className="relative w-full h-[350px] rounded-2xl shadow-2xl border-4 border-white/10 overflow-hidden group z-10">
-                        <video id="hero-video" autoPlay loop muted playsInline preload="auto" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
-                            <source src="assets/for_landing_page_first.mp4" type="video/mp4" />
-                        </video>
+                        <img id="hero-image" src="assets/hero-bg-new.jpg" alt="Tsehay Campus" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
     
                     </div>
                     <div className="absolute -bottom-5 -left-8 bg-white dark:bg-darkCard p-3 rounded-xl shadow-xl z-20 flex items-center gap-3 animate-float border border-gray-100 dark:border-gray-800" style={{animationDelay: "1s"}}>
