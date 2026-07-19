@@ -118,7 +118,7 @@ export default function Navbar() {
                         </button>
                         {showProfileDropdown && (
                           <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-darkCard rounded-xl shadow-xl border border-gray-100 dark:border-gray-800 py-2 z-50">
-                              <Link href="/dashboard" className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-dark hover:text-secondary dark:hover:text-primary"><i className="fa-solid fa-user mr-2 w-4 text-center"></i> ወደ መማሪያ ክፍል</Link>
+                              <div className="block px-4 py-3 text-sm text-gray-700 dark:text-gray-300 border-b border-gray-100 dark:border-gray-800 break-all font-bold bg-gray-50/50 dark:bg-darkCard/50"><i className="fa-solid fa-envelope mr-2 w-4 text-center text-primary"></i> {user.email}</div>
                               {isAdmin && (
                                 <Link href="/admin" className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-dark hover:text-secondary dark:hover:text-primary"><i className="fa-solid fa-shield-halved mr-2 w-4 text-center"></i> አድሚን</Link>
                               )}
@@ -171,7 +171,7 @@ export default function Navbar() {
                   </>
                 ) : (
                   <>
-                    <Link href="/dashboard" className="block px-3 py-2 text-gray-700 dark:text-gray-300 font-bold rounded-md hover:bg-gray-50 dark:hover:bg-darkCard border border-gray-100 dark:border-gray-800">ወደ መማሪያ ክፍል</Link>
+                    <div className="block px-3 py-2 text-white font-bold rounded-md hover:bg-white/5 border border-white/10 break-all"><i className="fa-solid fa-envelope mr-2"></i> {user.email}</div>
                     {isAdmin && <Link href="/admin" className="block px-3 py-2 text-gray-700 dark:text-gray-300 font-bold rounded-md hover:bg-gray-50 dark:hover:bg-darkCard border border-gray-100 dark:border-gray-800">አድሚን</Link>}
                     <button onClick={handleSignOut} className="w-full text-danger font-bold py-2.5 hover:bg-red-50 rounded-lg border border-danger transition mt-2">ዘግተህ ውጣ (Logout)</button>
                   </>
