@@ -88,9 +88,14 @@ export default function Navbar() {
                 </div>
                 
                 <div className="hidden md:flex items-center gap-2 lg:gap-3 font-heading text-sm">
-                    <Link href="/#ai-feature" className="text-gray-700 dark:text-white hover:text-secondary dark:hover:text-primary font-black transition flex items-center gap-1.5 lg:gap-2 px-1 lg:px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-darkCard whitespace-nowrap ml-1 notranslate">
+                    <a href="/#ai-feature" onClick={(e) => {
+                        if (pathname === '/') {
+                            e.preventDefault();
+                            document.getElementById('ai-feature')?.scrollIntoView({ behavior: 'smooth' });
+                        }
+                    }} className="text-gray-700 dark:text-white hover:text-secondary dark:hover:text-primary font-black transition flex items-center gap-1.5 lg:gap-2 px-1 lg:px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-darkCard whitespace-nowrap ml-1 notranslate cursor-pointer">
                         <i className="fa-solid fa-wand-magic-sparkles text-primary animate-pulse text-lg"></i> <span className="hidden lg:inline text-lg">Tsehay AI</span>
-                    </Link>
+                    </a>
                     <button onClick={toggleLanguage} className="hidden sm:flex items-center justify-center bg-gray-100 dark:bg-dark border border-gray-200 dark:border-gray-800 hover:bg-gray-200 dark:hover:bg-gray-800 transition shadow-sm shrink-0 font-bold text-[12px] text-dark dark:text-white px-4 py-1.5 rounded-full notranslate" translate="no">
                         {lang === 'am' ? 'EN' : 'አማ'}
                     </button>
@@ -136,6 +141,15 @@ export default function Navbar() {
         <div className={`md:hidden bg-[#0d0d0d] border-t border-gray-800 shadow-xl overflow-hidden transition-all duration-300 ${isMobileMenuOpen ? 'max-h-[70vh]' : 'max-h-0'}`}>
             <div className="px-4 pt-2 pb-6 space-y-2 text-center flex flex-col overflow-y-auto">
                 <Link href="/about" className="block px-3 py-2 text-white font-bold rounded-md hover:bg-white/5 border border-white/10">ስለ እኛ</Link>
+                <a href="/#ai-feature" onClick={(e) => {
+                    setIsMobileMenuOpen(false);
+                    if (pathname === '/') {
+                        e.preventDefault();
+                        document.getElementById('ai-feature')?.scrollIntoView({ behavior: 'smooth' });
+                    }
+                }} className="block px-3 py-2 text-white font-bold rounded-md hover:bg-white/5 border border-white/10 flex items-center justify-center gap-2">
+                    <i className="fa-solid fa-wand-magic-sparkles text-primary"></i> <span className="notranslate">Tsehay AI</span>
+                </a>
                 <Link href="/#courses" onClick={(e) => {
                     setIsMobileMenuOpen(false);
                     if (pathname === '/') {

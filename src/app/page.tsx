@@ -198,7 +198,7 @@ export default function Home() {
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-10">
-                <div className="bg-white dark:bg-darkCard p-10 rounded-[2rem] shadow-sm border border-gray-100 dark:border-gray-800 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 group">
+                <div className="bg-white dark:bg-darkCard p-10 rounded-[2rem] shadow-sm border border-gray-100 dark:border-gray-800 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 group cursor-pointer active:scale-95" onClick={() => document.getElementById('courses')?.scrollIntoView({behavior: 'smooth'})}>
                     <div className="w-20 h-20 bg-blue-50 dark:bg-blue-900/30 text-secondary dark:text-primary rounded-2xl flex items-center justify-center text-4xl mb-8 group-hover:bg-secondary dark:group-hover:bg-primary group-hover:text-white dark:group-hover:text-dark transition-colors duration-300 shadow-inner">
                         <i className="fa-solid fa-chalkboard-user"></i>
                     </div>
@@ -206,7 +206,7 @@ export default function Home() {
                     <p className="text-gray-600 dark:text-gray-300 font-body leading-relaxed text-[15px]">{t('practical_courses_desc')}</p>
                 </div>
                 
-                <div className="bg-white dark:bg-darkCard p-10 rounded-[2rem] shadow-xl border border-primary/30 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 group relative overflow-hidden transform md:-translate-y-6">
+                <div className="bg-white dark:bg-darkCard p-10 rounded-[2rem] shadow-xl border border-primary/30 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 group relative overflow-hidden transform md:-translate-y-6 cursor-pointer active:scale-95" onClick={() => document.getElementById('ai-feature')?.scrollIntoView({behavior: 'smooth'})}>
                     <div className="absolute -right-10 -top-10 bg-gradient-to-br from-primary/20 to-transparent w-40 h-40 rounded-full -z-10 group-hover:scale-150 transition-transform duration-700"></div>
                     <div className="w-20 h-20 bg-orange-50 dark:bg-orange-900/30 text-primary rounded-2xl flex items-center justify-center text-4xl mb-8 group-hover:bg-primary group-hover:text-white transition-colors duration-300 shadow-inner relative z-10">
                         <i className="fa-solid fa-robot"></i>
@@ -216,7 +216,7 @@ export default function Home() {
                     <div className="absolute top-5 right-5 bg-primary text-dark text-xs font-black px-3 py-1 rounded-md shadow-sm animate-pulse">{t('new_badge')}</div>
                 </div>
 
-                <div className="bg-white dark:bg-darkCard p-10 rounded-[2rem] shadow-sm border border-gray-100 dark:border-gray-800 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 group">
+                <div className="bg-white dark:bg-darkCard p-10 rounded-[2rem] shadow-sm border border-gray-100 dark:border-gray-800 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 group cursor-pointer active:scale-95">
                     <div className="w-20 h-20 bg-green-50 dark:bg-green-900/30 text-success rounded-2xl flex items-center justify-center text-4xl mb-8 group-hover:bg-success group-hover:text-white transition-colors duration-300 shadow-inner">
                         <i className="fa-solid fa-certificate"></i>
                     </div>
