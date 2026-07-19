@@ -77,7 +77,7 @@ const translations: Record<string, Record<Language, string>> = {
   'cta_btn': { am: 'በነፃ አካውንት ይክፈቱ (Sign Up)', en: 'Create a free account (Sign Up)' },
 
   // Footer
-  'footer_desc': { am: 'በ ኢትዮጵያ የኦንላይን ክህሎት ስልጠና ቀዳሚው ፕላትፎርም', en: 'The leading online skills training platform in Ethiopia' },
+  'footer_desc': { am: 'በ AI የታገዘ የኦንላይን ክህሎት ስልጠና በመስጠት ቀዳሚ ፕላትፎርም', en: 'The leading AI-powered online skills training platform in Ethiopia' },
   'quick_links': { am: 'ፈጣን ማውጫ', en: 'Quick Links' },
   'contact_us': { am: 'ድጋፍ እና ህግ', en: 'Support & Legal' },
   'all_rights_reserved': { am: 'መብቱ በህግ የተጠበቀ ነው።', en: 'All rights reserved.' },

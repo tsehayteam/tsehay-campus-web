@@ -1,5 +1,6 @@
 'use client';
 import React from 'react';
+import Link from 'next/link';
 import { useLanguage } from '@/context/LanguageContext';
 
 export default function Footer() {
@@ -10,12 +11,14 @@ export default function Footer() {
             <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8 mb-12">
                     <div className="lg:col-span-2 pr-4">
-                        <div className="flex items-center gap-3 cursor-pointer mb-6 group" onClick={() => { window.scrollTo({ top: 0, behavior: 'smooth' }) }}>
+                        <Link href="/" onClick={() => { window.scrollTo({ top: 0, behavior: 'smooth' }) }} className="flex items-center gap-3 cursor-pointer mb-6 group">
                             <div className="bg-white p-1 rounded-md">
                                 <img src="/tc-logo.jpg" alt="Logo" className="h-10 w-auto object-contain rounded-sm" onError={(e) => { e.currentTarget.src='https://ui-avatars.com/api/?name=TC&background=fff&color=0f172a' }} />
                             </div>
-                            <span className="font-heading font-black text-2xl text-white tracking-tight notranslate" translate="no">Tsehay<span className="text-primary">Campus</span></span>
-                        </div>
+                            <span className="font-heading tracking-tight notranslate" translate="no">
+                                <span className="text-primary font-black text-3xl">Tsehay</span> <span className="text-secondary font-black text-3xl">Campus</span>
+                            </span>
+                        </Link>
                         <p className="text-gray-400 text-sm leading-relaxed mb-6 max-w-sm">
                             <span className="notranslate" translate="no">Tsehay Campus</span> {t('footer_desc')}
                         </p>
