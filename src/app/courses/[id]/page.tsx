@@ -135,7 +135,7 @@ export default function CoursePreviewPage({ params }: { params: Promise<{ id: st
     );
   }
 
-  const defaultVideoUrl = course?.videoUrl || (modules.length > 0 && modules[0].lessons?.length > 0 ? modules[0].lessons[0].videoUrl : null);
+  const defaultVideoUrl = course?.video || course?.videoUrl || (modules.length > 0 && modules[0].lessons?.length > 0 ? modules[0].lessons[0].videoUrl : null);
   const currentVideoUrl = activeVideoUrl || defaultVideoUrl;
 
   const fixDriveLink = (url: string) => {
@@ -176,10 +176,10 @@ export default function CoursePreviewPage({ params }: { params: Promise<{ id: st
               )}
             </div>
 
-            <h1 className="text-3xl md:text-5xl font-black font-heading mb-4 leading-tight animate-float" style={{animationDuration: "6s"}}>
+            <h1 className="text-3xl md:text-5xl font-black font-heading mb-4 leading-tight text-primary animate-float" style={{animationDuration: "6s"}}>
               {course.title}
             </h1>
-            <p className="text-lg md:text-xl mb-6 text-white/90 line-clamp-3">
+            <p className="text-lg md:text-xl mb-6 text-blue-100 line-clamp-3">
               {course?.desc || "No description provided for this course."}
             </p>
             
@@ -232,7 +232,7 @@ export default function CoursePreviewPage({ params }: { params: Promise<{ id: st
           
           {/* What you'll learn */}
           <div className="border border-gray-300 dark:border-gray-700 p-6 rounded-sm mb-10">
-            <h2 className="text-2xl font-bold text-dark dark:text-white mb-6">What you&apos;ll learn</h2>
+            <h2 className="text-2xl font-black font-heading text-secondary dark:text-primary mb-6">What you&apos;ll learn</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700 dark:text-gray-300">
               {course.whatYouWillLearn && Array.isArray(course.whatYouWillLearn) && course.whatYouWillLearn.length > 0 ? (
                 course.whatYouWillLearn.map((item: string, idx: number) => (
@@ -248,7 +248,7 @@ export default function CoursePreviewPage({ params }: { params: Promise<{ id: st
           </div>
 
           {/* Course Content */}
-          <h2 className="text-2xl font-bold text-dark dark:text-white mb-4">Course content</h2>
+          <h2 className="text-2xl font-black font-heading text-secondary dark:text-primary mb-4">Course content</h2>
           <div className="flex justify-between items-center text-sm text-gray-600 dark:text-gray-400 mb-2">
             <div>
               <span>{modules.length} sections</span> • <span>{totalLessons} lectures</span> • <span>{course.duration || '22h 45m'} total length</span>
@@ -314,7 +314,7 @@ export default function CoursePreviewPage({ params }: { params: Promise<{ id: st
           </div>
 
           {/* Requirements */}
-          <h2 className="text-2xl font-bold text-dark dark:text-white mb-4">Requirements</h2>
+          <h2 className="text-2xl font-black font-heading text-secondary dark:text-primary mb-4">Requirements</h2>
           <ul className="list-disc pl-5 text-gray-700 dark:text-gray-300 mb-10 space-y-2">
             {course.requirements && Array.isArray(course.requirements) && course.requirements.length > 0 ? (
               course.requirements.map((req: string, idx: number) => (
@@ -327,7 +327,7 @@ export default function CoursePreviewPage({ params }: { params: Promise<{ id: st
 
           {/* Instructor Section */}
           <div className="mb-10 border-t border-gray-200 dark:border-gray-800 pt-8">
-            <h2 className="text-2xl font-bold text-dark dark:text-white mb-6">Instructor</h2>
+            <h2 className="text-2xl font-black font-heading text-secondary dark:text-primary mb-6">Instructor</h2>
             
             <div className="mb-4">
               <a href="#" className="text-xl font-bold text-secondary hover:text-[#254b8a] underline font-heading">
@@ -384,7 +384,7 @@ export default function CoursePreviewPage({ params }: { params: Promise<{ id: st
                 <div className="w-full h-[250px] bg-black">
                   {currentVideoUrl.includes('mediadelivery.net') ? (
                       <iframe
-                          src={`${currentVideoUrl}${currentVideoUrl.includes('?') ? '&' : '?'}primaryColor=%23FFD700&autoplay=true`}
+                          src={`${currentVideoUrl}${currentVideoUrl.includes('?') ? '&' : '?'}primaryColor=%23F9B03C&autoplay=true`}
                           loading="lazy"
                           className="w-full h-full border-none"
                           allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;"

@@ -795,7 +795,7 @@ export default function AdminDashboard() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">የዋና ቪዲዮ ሊንክ (Video URL) *</label>
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">የፕሪቪው ቪዲዮ ሊንክ (Preview Video URL) *</label>
                   <input required type="text" value={formData.video} onChange={e => setFormData({...formData, video: e.target.value})} className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-dark dark:text-white outline-none focus:border-primary transition" />
                 </div>
 
