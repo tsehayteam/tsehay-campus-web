@@ -85,7 +85,7 @@ export default function Home() {
 
     
     <section className="relative pt-28 pb-16 lg:pt-36 lg:pb-24 overflow-hidden hero-mesh" id="home">
-        <div className="absolute inset-0 opacity-20 mix-blend-overlay" style={{backgroundImage: "url('https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=2071&auto=format&fit=crop')", backgroundSize: "cover", backgroundPosition: "center"}}></div>
+        <div className="absolute inset-0 opacity-20 mix-blend-overlay" style={{backgroundImage: "url('assets/hero-bg-new.jpg')", backgroundSize: "cover", backgroundPosition: "center"}}></div>
         
         <div className="absolute bottom-0 left-0 w-full overflow-hidden leading-[0]">
             <svg viewBox="0 0 1200 120" preserveAspectRatio="none" className="w-full h-[40px] md:h-[80px] block" style={{transform: "rotate(180deg)"}}>
@@ -120,8 +120,9 @@ export default function Home() {
                 <div className="relative w-full max-w-[450px]">
                     <div className="absolute inset-0 bg-secondary rounded-full blur-[100px] opacity-50 dark:opacity-30"></div>
                     <div className="relative w-full h-[350px] rounded-2xl shadow-2xl border-4 border-white/10 overflow-hidden group z-10">
-                        <img id="hero-image" src="assets/hero-bg-new.jpg" alt="Tsehay Campus" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-    
+                        <video id="hero-video" autoPlay loop muted playsInline preload="auto" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
+                            <source src="assets/for_landing_page_first.mp4" type="video/mp4" />
+                        </video>
                     </div>
                     <div className="absolute -bottom-5 -left-8 bg-white dark:bg-darkCard p-3 rounded-xl shadow-xl z-20 flex items-center gap-3 animate-float border border-gray-100 dark:border-gray-800" style={{animationDelay: "1s"}}>
                         <div className="bg-green-100 dark:bg-green-900/30 text-success p-2.5 rounded-full text-xl"><i className="fa-solid fa-check-double"></i></div>
