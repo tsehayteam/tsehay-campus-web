@@ -369,15 +369,25 @@ export default function CoursePreviewPage({ params }: { params: Promise<{ id: st
             <div className="relative group border-b border-gray-200 dark:border-gray-800">
               {isPlaying && currentVideoUrl ? (
                 <div className="w-full h-[250px] bg-black">
-                  <ReactPlayer
-                    key={currentVideoUrl}
-                    url={currentVideoUrl}
-                    width="100%"
-                    height="100%"
-                    controls={true}
-                    playing={true}
-                    className="w-full h-full object-contain"
-                  />
+                  {currentVideoUrl.includes('mediadelivery.net') ? (
+                      <iframe
+                          src={`${currentVideoUrl}${currentVideoUrl.includes('?') ? '&' : '?'}primaryColor=%23FFD700&autoplay=true`}
+                          loading="lazy"
+                          className="w-full h-full border-none"
+                          allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;"
+                          allowFullScreen
+                      ></iframe>
+                  ) : (
+                      <ReactPlayer
+                        key={currentVideoUrl}
+                        url={currentVideoUrl}
+                        width="100%"
+                        height="100%"
+                        controls={true}
+                        playing={true}
+                        className="w-full h-full object-contain"
+                      />
+                  )}
                 </div>
               ) : (
                 <div className="cursor-pointer" onClick={() => { if (currentVideoUrl) setIsPlaying(true); }}>

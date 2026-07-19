@@ -550,7 +550,14 @@ export default function AdminDashboard() {
                 
                 <div>
                   <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">የኮርሱ ዘርፍ (Category) *</label>
-                  <input required type="text" value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-dark dark:text-white outline-none focus:border-primary transition" />
+                  <select required value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-dark dark:text-white outline-none focus:border-primary transition">
+                    <option value="General">General</option>
+                    <option value="Ecommerce">Ecommerce</option>
+                    <option value="Marketing">Marketing</option>
+                    <option value="Crypto">Crypto</option>
+                    <option value="Tech">Tech</option>
+                    <option value="Free">Free</option>
+                  </select>
                 </div>
 
                 <div>
@@ -643,8 +650,9 @@ export default function AdminDashboard() {
                         <input type="number" placeholder="ነጥብ (Points)" value={lessonForm.points || ''} onChange={e => setLessonForm({...lessonForm, points: Number(e.target.value)})} className="border rounded-lg px-3 py-2 text-sm bg-gray-50 dark:bg-slate-900" />
                         <input placeholder="የቪዲዮ ማብራሪያ (Description)" value={lessonForm.desc} onChange={e => setLessonForm({...lessonForm, desc: e.target.value})} className="border rounded-lg px-3 py-2 text-sm bg-gray-50 dark:bg-slate-900 sm:col-span-2" />
                       </div>
-                      <div className="flex gap-2">
-                        <button type="button" onClick={handleAddLesson} disabled={!lessonForm.title} className="bg-primary text-dark px-4 py-1.5 rounded-lg text-sm font-bold hover:bg-yellow-400 disabled:opacity-50">ትምህርቱን ሴቭ አድርግ</button>
+                      <p className="text-xs text-gray-500 mb-2 mt-2">መረጃውን ሞልተው ሲጨርሱ ከታች ያለውን አዝራር ተጭነው ወደ ኮርሱ ክፍሎች ዝርዝር ይጨምሩት።</p>
+                      <div className="flex gap-2 mt-2">
+                        <button type="button" onClick={handleAddLesson} disabled={!lessonForm.title} className="bg-primary text-dark px-4 py-2 rounded-lg text-sm font-bold hover:bg-yellow-400 disabled:opacity-50"><i className="fa-solid fa-plus mr-2"></i>ወደ ክፍሎች ዝርዝር ጨምር (Add to List)</button>
                       </div>
                     </div>
 
