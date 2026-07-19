@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { db, auth } from '@/lib/firebase/config';
 import { collection, onSnapshot, doc, setDoc, deleteDoc, serverTimestamp, query, orderBy, collectionGroup } from 'firebase/firestore';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile, sendPasswordResetEmail } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 
 export default function AdminDashboard() {
@@ -19,6 +19,11 @@ export default function AdminDashboard() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
+
+  // Settings State
+  const [settingsName, setSettingsName] = useState('');
+  const [settingsPhotoUrl, setSettingsPhotoUrl] = useState('');
+  const [isUpdatingSettings, setIsUpdatingSettings] = useState(false);
 
   // Course Form State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -122,6 +127,35 @@ export default function AdminDashboard() {
     }
     localStorage.removeItem('adminAuth');
     setIsAuthenticated(false);
+  };
+
+  const handleUpdateAdminProfile = async () => {
+    if (!auth.currentUser) return;
+    setIsUpdatingSettings(true);
+    try {
+      await updateProfile(auth.currentUser, {
+        displayName: settingsName || auth.currentUser.displayName,
+        photoURL: settingsPhotoUrl || auth.currentUser.photoURL
+      });
+      alert('የአድሚን መረጃ በተሳካ ሁኔታ ተስተካክሏል! (Profile updated!)');
+      window.location.reload();
+    } catch (error) {
+      console.error("Error updating admin profile", error);
+      alert('መረጃውን ማስተካከል አልተቻለም። እባክዎ በድጋሚ ይሞክሩ።');
+    } finally {
+      setIsUpdatingSettings(false);
+    }
+  };
+
+  const handleAdminPasswordReset = async () => {
+    if (!auth.currentUser?.email) return;
+    try {
+      await sendPasswordResetEmail(auth, auth.currentUser.email);
+      alert('የይለፍ ቃል መቀየሪያ ኢሜል ተልኳል! እባክዎ ኢሜልዎን ይክፈቱ።');
+    } catch (error) {
+      console.error("Error sending reset email:", error);
+      alert('የይለፍ ቃል መቀየሪያ ኢሜል መላክ አልተቻለም። እባክዎ በድጋሚ ይሞክሩ።');
+    }
   };
 
   const formatDriveLink = (url: string) => {
@@ -499,17 +533,35 @@ export default function AdminDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    <tr className="border-b border-gray-50 dark:border-slate-700/50 hover:bg-gray-50 dark:hover:bg-slate-700/20 transition">
-                      <td className="p-4 font-bold text-dark dark:text-white flex items-center gap-3">
-                         <img src="https://firebasestorage.googleapis.com/v0/b/tsehaycampus-e1a6d.appspot.com/o/images%2Feyob_sahle.jpg?alt=media" onError={(e) => { e.currentTarget.src = "https://ui-avatars.com/api/?name=Eyoub+Sahle&background=F9B03C&color=fff"; }} alt="Eyoub Sahle" className="w-10 h-10 rounded-full object-cover border border-gray-200" />
-                         Eyoub Sahle
-                      </td>
-                      <td className="p-4 text-sm text-gray-500">Digital Marketing</td>
-                      <td className="p-4 text-sm text-gray-500">3</td>
-                      <td className="p-4 text-right space-x-2">
-                         <button className="text-sm bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 px-3 py-1.5 rounded-lg font-bold">አስተካክል</button>
-                      </td>
-                    </tr>
+                    {(() => {
+                      const uniqueTeachers = Array.from(new Set(courses.map(c => c.instructor))).filter(Boolean).map(instructorName => {
+                        const teacherCourses = courses.filter(c => c.instructor === instructorName);
+                        return {
+                          name: instructorName,
+                          image: teacherCourses.find(c => c.instructorImage)?.instructorImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(instructorName)}&background=F9B03C&color=fff`,
+                          specialty: teacherCourses[0]?.category || 'General',
+                          courseCount: teacherCourses.length
+                        };
+                      });
+                      
+                      if (uniqueTeachers.length === 0) {
+                        return <tr><td colSpan={4} className="p-8 text-center text-gray-500">ምንም አስተማሪ የለም</td></tr>;
+                      }
+                      
+                      return uniqueTeachers.map((teacher, idx) => (
+                        <tr key={idx} className="border-b border-gray-50 dark:border-slate-700/50 hover:bg-gray-50 dark:hover:bg-slate-700/20 transition">
+                          <td className="p-4 font-bold text-dark dark:text-white flex items-center gap-3">
+                            <img src={teacher.image} onError={(e) => { e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(teacher.name)}&background=F9B03C&color=fff`; }} alt={teacher.name} className="w-10 h-10 rounded-full object-cover border border-gray-200" />
+                            {teacher.name}
+                          </td>
+                          <td className="p-4 text-sm text-gray-500">{teacher.specialty}</td>
+                          <td className="p-4 text-sm text-gray-500">{teacher.courseCount}</td>
+                          <td className="p-4 text-right space-x-2">
+                             <button className="text-sm bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 px-3 py-1.5 rounded-lg font-bold hover:bg-gray-200 dark:hover:bg-slate-600 transition">አስተካክል</button>
+                          </td>
+                        </tr>
+                      ));
+                    })()}
                   </tbody>
                 </table>
             </div>
@@ -616,14 +668,35 @@ export default function AdminDashboard() {
                 <div className="space-y-4">
                    <div>
                        <label className="block text-sm font-bold mb-2">የአድሚን ስም</label>
-                       <input type="text" className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3" value={auth.currentUser?.displayName || 'Admin'} disabled />
-                       <p className="text-xs text-gray-500 mt-1">ስምዎን ለመቀየር ወደ ዳሽቦርድ በመሄድ ፕሮፋይልዎን ያስተካክሉ።</p>
+                       <input 
+                         type="text" 
+                         className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 outline-none focus:border-primary" 
+                         defaultValue={auth.currentUser?.displayName || 'Admin'} 
+                         onChange={(e) => setSettingsName(e.target.value)}
+                       />
+                   </div>
+                   <div>
+                       <label className="block text-sm font-bold mb-2">የአድሚን ፎቶ (Image URL)</label>
+                       <input 
+                         type="text" 
+                         className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 outline-none focus:border-primary" 
+                         defaultValue={auth.currentUser?.photoURL || ''}
+                         placeholder="https://..."
+                         onChange={(e) => setSettingsPhotoUrl(e.target.value)}
+                       />
                    </div>
                    <div>
                        <label className="block text-sm font-bold mb-2">የቴሌግራም ቻናል ሊንክ (Support Link)</label>
-                       <input type="text" className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3" defaultValue="https://t.me/tsehaycampus" />
+                       <input type="text" className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 outline-none focus:border-primary" defaultValue="https://t.me/tsehaycampus" />
                    </div>
-                   <button className="w-full bg-dark dark:bg-primary text-white dark:text-dark font-bold py-3 rounded-xl mt-4 hover:opacity-90 transition">አዘምን (Save Settings)</button>
+                   <div className="pt-4 flex flex-col gap-3">
+                     <button onClick={handleUpdateAdminProfile} disabled={isUpdatingSettings} className="w-full bg-dark dark:bg-primary text-white dark:text-dark font-bold py-3 rounded-xl hover:opacity-90 transition">
+                       {isUpdatingSettings ? 'እያስተካከለ ነው...' : 'አዘምን (Save Settings)'}
+                     </button>
+                     <button onClick={handleAdminPasswordReset} className="w-full bg-gray-200 dark:bg-slate-700 text-dark dark:text-white font-bold py-3 rounded-xl hover:bg-gray-300 dark:hover:bg-slate-600 transition">
+                       የይለፍ ቃል ቀይር (Reset Password)
+                     </button>
+                   </div>
                 </div>
             </div>
           )}
