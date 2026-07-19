@@ -73,10 +73,15 @@ export async function POST(req: Request) {
   }
 
   try {
-    let apiKey = process.env.GEMINI_API_KEY || "";
-    apiKey = apiKey.trim().replace(/^["']|["']$/g, '');
+    // 💡 ሚስጥር 3: አውቶማቲክ API Key መቀየሪያ (Fallback)
+    // ብዙ API keys ካሉህ Vercel Environment Variables ላይ GEMINI_API_KEY_2, GEMINI_API_KEY_3 እያልክ መጨመር ትችላለህ
+    const apiKeys = [
+        process.env.GEMINI_API_KEY,
+        process.env.GEMINI_API_KEY_2,
+        process.env.GEMINI_API_KEY_3
+    ].filter(Boolean) as string[];
 
-    if (!apiKey) {
+    if (apiKeys.length === 0) {
         return NextResponse.json({ error: "Vercel ላይ API Key አልገባም!" }, { status: 500 });
     }
 
@@ -101,20 +106,39 @@ ${systemInstruction || 'አንተ የ Tsehay Campus ረዳት ነህ።'}
         contents: [{ role: "user", parts: [{ text: prompt }] }]
     };
 
-    // 💡 ሚስጥር 2፡ የሞዴሉን ስም ልክ በ Static ዌብሳይትህ ላይ ወደሰራው "gemini-flash-latest" ቀይረነዋል!
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`;
+    let response;
+    let data;
+    let success = false;
 
-    const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-    });
+    // Loop through available API keys until one succeeds
+    for (const key of apiKeys) {
+        const cleanedKey = key.trim().replace(/^["']|["']$/g, '');
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${cleanedKey}`;
 
-    const data = await response.json();
+        response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
 
-    if (!response.ok) {
+        data = await response.json();
+
+        if (response.ok) {
+            success = true;
+            break; // Success! Exit the loop.
+        } else if (response.status === 429) {
+            // 429 is "Too Many Requests" (Rate Limit Exceeded)
+            console.warn("API Key rate limit reached, trying the next key...");
+            continue; // Try the next API key in the list
+        } else {
+            // For other errors (like 400 Bad Request, 403 Forbidden), don't try other keys
+            break;
+        }
+    }
+
+    if (!success || !response?.ok) {
         return NextResponse.json({ 
-            error: data.error?.message || JSON.stringify(data.error) || "የ Gemini API ስህተት አጋጥሟል" 
+            error: data?.error?.message || JSON.stringify(data?.error) || "የ Gemini API ስህተት አጋጥሟል ወይም የሁሉም API Keys ሊሚት አልቋል።" 
         }, { status: 500 });
     }
 
