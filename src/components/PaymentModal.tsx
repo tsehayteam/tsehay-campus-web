@@ -5,7 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 export default function PaymentModal({ course, onClose }: any) {
   const [paymethod, setPaymethod] = useState('chapa');
   const [isPaying, setIsPaying] = useState(false);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
 
   if (!course) return null;
