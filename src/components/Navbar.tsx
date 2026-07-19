@@ -18,6 +18,11 @@ export default function Navbar() {
   const [theme, setTheme] = useState('dark');
   const { lang, toggleLanguage, t } = useLanguage();
 
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [allCourses, setAllCourses] = useState<any[]>([]);
+  const searchRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     // Initial sync of theme
     setTheme(document.documentElement.classList.contains('dark') ? 'dark' : 'light');
@@ -27,8 +32,41 @@ export default function Navbar() {
         setIsAuthModalOpen(true);
     };
     window.addEventListener('open-auth-modal', handleOpenAuth);
-    return () => window.removeEventListener('open-auth-modal', handleOpenAuth);
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setSearchResults([]);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+
+    const fetchCourses = async () => {
+       try {
+         const { collection, getDocs } = await import('firebase/firestore');
+         const { db } = await import('@/lib/firebase/config');
+         const querySnapshot = await getDocs(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses'));
+         setAllCourses(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+       } catch (e) {
+         console.error('Failed to fetch courses for search');
+       }
+    };
+    fetchCourses();
+
+    return () => {
+      window.removeEventListener('open-auth-modal', handleOpenAuth);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
   }, []);
+
+  const handleSearch = (val: string) => {
+     setSearchQuery(val);
+     if (!val.trim()) {
+       setSearchResults([]);
+       return;
+     }
+     const filtered = allCourses.filter(c => c.title?.toLowerCase().includes(val.toLowerCase()) || c.category?.toLowerCase().includes(val.toLowerCase()));
+     setSearchResults(filtered);
+  };
 
   const toggleTheme = () => {
     const newTheme = theme === 'dark' ? 'light' : 'dark';
@@ -83,9 +121,23 @@ export default function Navbar() {
                     }} className="text-gray-700 dark:text-gray-300 hover:text-secondary dark:hover:text-primary font-bold transition text-[14px] lg:text-[15px] px-2 lg:px-3">{t('all_courses')}</a>
                 </div>
                 
-                <div className="flex-1 max-w-md hidden md:flex items-center border border-gray-200 dark:border-gray-800 rounded-full px-4 py-2 search-bar mx-2 lg:mx-4 relative">
-                    <i className="fa-solid fa-magnifying-glass text-gray-500 dark:text-gray-400 text-sm lg:text-base cursor-pointer hover:text-primary transition"></i>
-                    <input type="text" id="courseSearchInput" placeholder={t('search_placeholder')} className="bg-transparent border-none outline-none w-full ml-2 lg:ml-3 text-[14px] lg:text-[15px] font-body text-dark dark:text-white placeholder-gray-500" />
+                <div ref={searchRef} className="flex-1 max-w-md hidden md:flex items-center border border-gray-200 dark:border-gray-800 rounded-full px-4 py-2 search-bar mx-2 lg:mx-4 relative z-[60] bg-white/50 dark:bg-black/50 backdrop-blur-sm">
+                    <input type="text" id="courseSearchInput" placeholder={t('search_placeholder')} className="bg-transparent border-none outline-none w-full text-[14px] lg:text-[15px] font-bold text-dark dark:text-white placeholder-gray-500 mr-2 lg:mr-3" value={searchQuery} onChange={(e) => handleSearch(e.target.value)} autoComplete="off" />
+                    <i className="fa-solid fa-magnifying-glass text-gray-500 dark:text-gray-400 text-sm lg:text-base cursor-pointer hover:text-primary transition" onClick={() => {}}></i>
+                    
+                    {searchResults.length > 0 && (
+                      <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-gray-100 dark:border-slate-800 overflow-hidden max-h-96 overflow-y-auto">
+                        {searchResults.map(course => (
+                           <Link href={`/dashboard?courseId=${course.id}`} key={course.id} onClick={() => { setSearchResults([]); setSearchQuery(''); }} className="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-slate-800 border-b border-gray-100 dark:border-slate-800 last:border-0 transition group">
+                             <img src={course.image || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=100'} className="w-12 h-12 rounded-lg object-cover" />
+                             <div>
+                                <p className="text-sm font-bold text-dark dark:text-white group-hover:text-primary transition">{course.title}</p>
+                                <p className="text-xs text-gray-500">{course.category}</p>
+                             </div>
+                           </Link>
+                        ))}
+                      </div>
+                    )}
                 </div>
                 
                 <div className="hidden md:flex items-center gap-2 lg:gap-3 font-heading text-sm">
@@ -108,10 +160,7 @@ export default function Navbar() {
                     <div className="h-5 w-px bg-gray-300 dark:bg-gray-800 mx-0.5 lg:mx-1"></div>
                     
                     {!user ? (
-                      <>
-                        <button onClick={() => openAuthModal(false)} className="text-gray-700 dark:text-white font-bold hover:text-secondary dark:hover:text-primary transition px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-darkCard whitespace-nowrap">{t('login')}</button>
-                        <button onClick={() => openAuthModal(true)} className="bg-primary text-dark px-4 py-2 rounded-lg font-bold hover:bg-yellow-400 transition shadow-md btn-glow whitespace-nowrap">{t('register')}</button>
-                      </>
+                      <button onClick={() => openAuthModal(false)} className="bg-primary text-dark px-6 py-2.5 rounded-lg font-black hover:bg-yellow-400 transition shadow-lg hover:shadow-xl btn-glow whitespace-nowrap text-[15px] lg:text-base">{t('login')}</button>
                     ) : (
                       <div className="relative">
                         <button onClick={() => setShowProfileDropdown(!showProfileDropdown)} className="flex items-center gap-2 focus:outline-none">
