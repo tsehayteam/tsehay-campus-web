@@ -392,25 +392,43 @@ export default function CoursePreviewPage({ params }: { params: Promise<{ id: st
             <div className="relative group border-b border-gray-200 dark:border-gray-800">
               {isPlaying && currentVideoUrl ? (
                 <div className="w-full h-[250px] bg-black">
-                  {currentVideoUrl.includes('mediadelivery.net') ? (
-                      <iframe
-                          src={`${currentVideoUrl}${currentVideoUrl.includes('?') ? '&' : '?'}primaryColor=%23F9B03C&autoplay=true`}
-                          loading="lazy"
-                          className="w-full h-full border-none"
-                          allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;"
-                          allowFullScreen
-                      ></iframe>
-                  ) : (
-                      <ReactPlayer
-                        key={currentVideoUrl}
-                        url={currentVideoUrl}
-                        width="100%"
-                        height="100%"
-                        controls={true}
-                        playing={true}
-                        className="w-full h-full object-contain"
-                      />
-                  )}
+                  {(() => {
+                      let finalUrl = currentVideoUrl;
+                      if (finalUrl.includes('mediadelivery.net')) {
+                          finalUrl = finalUrl.split('?')[0].replace('/play/', '/embed/');
+                          return (
+                              <iframe
+                                  src={`${finalUrl}?primaryColor=%23F9B03C&autoplay=true`}
+                                  loading="lazy"
+                                  className="w-full h-full border-none"
+                                  allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;"
+                                  allowFullScreen
+                              ></iframe>
+                          );
+                      } else if (finalUrl.includes('drive.google.com')) {
+                          return (
+                              <iframe
+                                  src={finalUrl.replace(/\/view.*$/, '/preview').replace(/\/edit.*$/, '/preview')}
+                                  loading="lazy"
+                                  className="w-full h-full border-none"
+                                  allow="autoplay; encrypted-media"
+                                  allowFullScreen
+                              ></iframe>
+                          );
+                      } else {
+                          return (
+                              <ReactPlayer
+                                key={finalUrl}
+                                url={finalUrl}
+                                width="100%"
+                                height="100%"
+                                controls={true}
+                                playing={true}
+                                className="w-full h-full object-contain"
+                              />
+                          );
+                      }
+                  })()}
                 </div>
               ) : (
                 <div className="cursor-pointer" onClick={() => { if (currentVideoUrl) setIsPlaying(true); }}>

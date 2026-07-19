@@ -497,25 +497,41 @@ export default function StudentDashboard() {
                                 if (match) cleanUrl = match[1];
                             }
                             
-                            return cleanUrl.includes('mediadelivery.net') ? (
-                                <iframe
-                                    src={`${cleanUrl}${cleanUrl.includes('?') ? '&' : '?'}primaryColor=%23F9B03C&autoplay=true`}
-                                    loading="lazy"
-                                    className="absolute inset-0 w-full h-full border-none"
-                                    allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;"
-                                    allowFullScreen
-                                ></iframe>
-                            ) : (
-                                <ReactPlayer
-                                    key={cleanUrl}
-                                    url={cleanUrl}
-                                    width="100%"
-                                    height="100%"
-                                    controls={true}
-                                    playing={true}
-                                    onEnded={handleVideoEnd}
-                                    className="absolute inset-0"
-                                />
+                                                        if (cleanUrl.includes('mediadelivery.net')) {
+                                cleanUrl = cleanUrl.split('?')[0].replace('/play/', '/embed/');
+                                return (
+                                    <iframe
+                                        src={`${cleanUrl}?primaryColor=%23F9B03C&autoplay=true`}
+                                        loading="lazy"
+                                        className="absolute inset-0 w-full h-full border-none"
+                                        allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;"
+                                        allowFullScreen
+                                    ></iframe>
+                                );
+                            } else if (cleanUrl.includes('drive.google.com')) {
+                                return (
+                                    <iframe
+                                        src={cleanUrl.replace(/\/view.*$/, '/preview').replace(/\/edit.*$/, '/preview')}
+                                        loading="lazy"
+                                        className="absolute inset-0 w-full h-full border-none"
+                                        allow="autoplay; encrypted-media"
+                                        allowFullScreen
+                                    ></iframe>
+                                );
+                            } else {
+                                return (
+                                    <ReactPlayer
+                                        key={cleanUrl}
+                                        url={cleanUrl}
+                                        width="100%"
+                                        height="100%"
+                                        controls={true}
+                                        playing={true}
+                                        onEnded={handleVideoEnd}
+                                        className="absolute inset-0"
+                                    />
+                                );
+                            }
                         })()
                         ) : (
                             <>
