@@ -125,9 +125,10 @@ export default function Navbar() {
                     <input type="text" id="courseSearchInput" placeholder={t('search_placeholder')} className="bg-transparent border-none outline-none w-full text-[14px] lg:text-[15px] font-bold text-dark dark:text-white placeholder-gray-500 mr-2 lg:mr-3" value={searchQuery} onChange={(e) => handleSearch(e.target.value)} autoComplete="off" />
                     <i className="fa-solid fa-magnifying-glass text-gray-500 dark:text-gray-400 text-sm lg:text-base cursor-pointer hover:text-primary transition" onClick={() => {}}></i>
                     
-                    {searchResults.length > 0 && (
+                    {searchQuery.trim() !== '' && (
                       <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-gray-100 dark:border-slate-800 overflow-hidden max-h-96 overflow-y-auto">
-                        {searchResults.map(course => (
+                        {searchResults.length > 0 ? (
+                          searchResults.map(course => (
                            <Link href={`/dashboard?courseId=${course.id}`} key={course.id} onClick={() => { setSearchResults([]); setSearchQuery(''); }} className="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-slate-800 border-b border-gray-100 dark:border-slate-800 last:border-0 transition group">
                              <img src={course.image || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=100'} className="w-12 h-12 rounded-lg object-cover" />
                              <div>
@@ -135,7 +136,10 @@ export default function Navbar() {
                                 <p className="text-xs text-gray-500">{course.category}</p>
                              </div>
                            </Link>
-                        ))}
+                          ))
+                        ) : (
+                          <div className="p-4 text-center text-sm font-bold text-gray-500 dark:text-gray-400">ምንም ኮርስ አልተገኘም</div>
+                        )}
                       </div>
                     )}
                 </div>
