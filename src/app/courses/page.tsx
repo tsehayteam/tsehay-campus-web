@@ -144,7 +144,7 @@ export default function Courses() {
                     
                     <div className="relative h-56 md:h-64 overflow-hidden bg-white">
                       <img 
-                        src={course.image || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1000&auto=format&fit=crop'} 
+                        src={(course.image && course.image.includes('drive.google.com/uc?export=view&id=')) ? `https://drive.google.com/thumbnail?id=${course.image.split('id=')[1]}&sz=w1000` : (course.image || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1000&auto=format&fit=crop')} 
                         alt={course.title} 
                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                         onError={(e) => { e.currentTarget.src='https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1000&auto=format&fit=crop'; }}
