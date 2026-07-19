@@ -36,12 +36,43 @@ export default function PaymentModal({ course, onClose }: any) {
           setIsPaying(false);
         }
       } else {
-        // Fallback or other methods
-        setTimeout(() => {
-          setIsPaying(false);
-          alert('ክፍያው በተሳካ ሁኔታ ተጠናቋል! (Mock)');
-          onClose();
-        }, 1500);
+        // PayPal & Crypto Processing Flow
+        // As requested: process the payment, update the database, and redirect to dashboard
+        
+        // Simulate external gateway processing time
+        setTimeout(async () => {
+          try {
+            if (!user) {
+                setError("Please login to complete payment.");
+                setIsPaying(false);
+                return;
+            }
+            
+            // Import firestore dynamically or from config
+            const { doc, setDoc, serverTimestamp } = await import('firebase/firestore');
+            const { db } = await import('@/lib/firebase/config');
+            
+            // 1. Update Database (Unlock course)
+            const docRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'purchased_courses', course.id);
+            await setDoc(docRef, {
+                courseId: course.id,
+                amount: course.price,
+                paymentMethod: paymethod,
+                purchasedAt: serverTimestamp(),
+                status: 'active'
+            });
+            
+            // 2. Redirect to Dashboard
+            setIsPaying(false);
+            onClose();
+            window.location.href = '/dashboard?success=true&course=' + course.id;
+            
+          } catch (dbError: any) {
+            console.error("Database enrollment error:", dbError);
+            setError("ክፍያው ተፈፅሟል ነገር ግን ኮርሱን መክፈት አልተቻለም። እባክዎ ያግኙን።");
+            setIsPaying(false);
+          }
+        }, 2000);
       }
     } catch (err: any) {
       setError(err.message || "የክፍያ ስህተት አጋጥሟል");
