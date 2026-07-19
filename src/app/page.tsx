@@ -422,45 +422,7 @@ export default function Home() {
         </div>
     </section>
 
-    
-    <section className="py-24 relative overflow-hidden bg-white dark:bg-dark transition-colors duration-300">
-        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-            <div className="relative bg-dark rounded-[3rem] overflow-hidden shadow-2xl border border-gray-800 p-10 md:p-20 text-center">
-                
-                <div className="absolute -top-32 -right-32 w-80 h-80 bg-primary rounded-full mix-blend-screen filter blur-[100px] opacity-50 animate-pulse"></div>
-                <div className="absolute -bottom-32 -left-32 w-80 h-80 bg-secondary rounded-full mix-blend-screen filter blur-[100px] opacity-40 animate-pulse" style={{animationDelay: "2s"}}></div>
-                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20 mix-blend-overlay"></div>
 
-                <div className="relative z-10 max-w-3xl mx-auto">
-                    <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-white/5 backdrop-blur-xl mb-8 border border-white/10 shadow-[0_0_30px_rgba(255,255,255,0.1)]">
-                        <i className="fa-solid fa-rocket text-5xl text-primary transform -rotate-12 animate-float" ></i>
-                    </div>
-                    <h2 className="text-4xl sm:text-5xl md:text-6xl font-black font-heading text-white mb-6 leading-tight">{t('cta_title_1')} <br /><span className="text-primary">{t('cta_title_2')}</span></h2>
-                    <p className="text-base sm:text-lg text-gray-300 font-body mb-10 leading-relaxed max-w-2xl mx-auto">{t('cta_desc')}</p>
-                    <div className="flex flex-col sm:flex-row justify-center items-center gap-5">
-                        {user ? (
-                            <button onClick={() => { 
-                                if (hasPurchasedCourses) {
-                                    router.push('/dashboard');
-                                } else {
-                                    document.getElementById('courses')?.scrollIntoView({behavior: 'smooth'});
-                                }
-                            }} className="bg-primary text-dark px-10 py-5 rounded-2xl font-black text-lg sm:text-xl hover:bg-yellow-400 transition-all duration-300 shadow-[0_0_40px_rgba(249,176,60,0.4)] hover:shadow-[0_0_60px_rgba(249,176,60,0.6)] transform hover:-translate-y-2 flex items-center gap-3">
-                                <span>{hasPurchasedCourses ? 'ወደ መማሪያ ክፍል' : 'ኮርሶችን ይመልከቱ'}</span> <i className={`fa-solid ${hasPurchasedCourses ? 'fa-arrow-right' : 'fa-book-open'}`}></i>
-                            </button>
-                        ) : (
-                            <button onClick={() => { window.dispatchEvent(new CustomEvent('open-auth-modal', { detail: { isSignupMode: true } })) }} className="bg-primary text-dark px-10 py-5 rounded-2xl font-black text-lg sm:text-xl hover:bg-yellow-400 transition-all duration-300 shadow-[0_0_40px_rgba(249,176,60,0.4)] hover:shadow-[0_0_60px_rgba(249,176,60,0.6)] transform hover:-translate-y-2 flex items-center gap-3">
-                                <span>{t('cta_btn')}</span> <i className="fa-solid fa-arrow-right"></i>
-                            </button>
-                        )}
-                    </div>
-
-                </div>
-            </div>
-        </div>
-    </section>
-
-    
 
     <Footer />
 
