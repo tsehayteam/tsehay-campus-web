@@ -93,7 +93,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
             currentUser = cred.user;
         }
         
-        await setDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', currentUser.uid, 'profile', 'info'), {
+        const userData = {
             name: name,
             email: email,
             phone: phone,
@@ -103,7 +103,10 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
             lastLogin: serverTimestamp(),
             isAdmin: false,
             photoURL: currentUser.photoURL || null
-        }, { merge: true });
+        };
+        
+        await setDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', currentUser.uid, 'profile', 'info'), userData, { merge: true });
+        await setDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'users', currentUser.uid), userData, { merge: true });
         
         onClose();
       } else {

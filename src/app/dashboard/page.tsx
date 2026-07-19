@@ -273,6 +273,27 @@ export default function StudentDashboard() {
       }
   };
 
+  const handleAskAdmin = async () => {
+    if (!chatInput.trim() || !user) return;
+    try {
+        await setDoc(doc(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'support', 'messages', 'tickets')), {
+            userId: user.uid,
+            userName: user.displayName || user.email || 'Unknown',
+            userEmail: user.email,
+            message: chatInput,
+            courseId: activeCourse?.id || 'General',
+            courseName: activeCourse?.title || 'General',
+            createdAt: serverTimestamp(),
+            status: 'pending',
+            replies: []
+        });
+        setChatMessages(prev => [...prev, { role: 'user', text: chatInput }, { role: 'ai', text: 'ጥያቄዎ ለአስተማሪው ተልኳል! በቅርቡ ምላሽ ያገኛሉ። (Your question has been sent to the instructor!)' }]);
+        setChatInput('');
+    } catch (e) {
+        console.error("Error sending to admin", e);
+    }
+  };
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!chatInput.trim()) return;
@@ -611,8 +632,11 @@ export default function StudentDashboard() {
                                                 placeholder="ጥያቄዎን እዚህ ይፃፉ..." 
                                                 className="flex-1 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2 text-sm outline-none focus:border-primary"
                                             />
-                                            <button onClick={handleSendMessage as any} className="w-10 h-10 bg-primary text-dark rounded-xl flex items-center justify-center font-bold hover:bg-secondary hover:text-white transition shadow-sm shrink-0">
-                                                <i className="fa-solid fa-paper-plane"></i>
+                                            <button onClick={handleAskAdmin} title="ለአስተማሪ ላክ (Ask Instructor)" className="px-4 h-10 bg-gray-200 dark:bg-slate-700 text-dark dark:text-white rounded-xl flex items-center justify-center font-bold hover:bg-gray-300 dark:hover:bg-slate-600 transition shadow-sm shrink-0 text-sm whitespace-nowrap">
+                                                ለአስተማሪ ላክ
+                                            </button>
+                                            <button onClick={handleSendMessage as any} title="Tsehay AI ጠይቅ" className="w-10 h-10 bg-primary text-dark rounded-xl flex items-center justify-center font-bold hover:bg-secondary hover:text-white transition shadow-sm shrink-0">
+                                                <i className="fa-solid fa-robot"></i>
                                             </button>
                                         </div>
                                     </div>

@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { db, auth } from '@/lib/firebase/config';
-import { collection, onSnapshot, doc, setDoc, deleteDoc, serverTimestamp, query, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot, doc, setDoc, deleteDoc, serverTimestamp, query, orderBy, collectionGroup } from 'firebase/firestore';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 
@@ -11,6 +11,8 @@ export default function AdminDashboard() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [students, setStudents] = useState<any[]>([]);
+  const [payments, setPayments] = useState<any[]>([]);
+  const [tickets, setTickets] = useState<any[]>([]);
   const router = useRouter();
   
   // Login State
@@ -68,10 +70,22 @@ export default function AdminDashboard() {
       setStudents(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
 
+    const pq = query(collectionGroup(db, 'purchased_courses'));
+    const unsubscribePayments = onSnapshot(pq, (snapshot) => {
+      setPayments(snapshot.docs.map(doc => ({ id: doc.id, userId: doc.ref.parent.parent?.id, ...doc.data() })));
+    });
+
+    const tq = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'support', 'messages', 'tickets'), orderBy('createdAt', 'desc'));
+    const unsubscribeTickets = onSnapshot(tq, (snapshot) => {
+      setTickets(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+
     return () => {
         unsubscribeAuth();
         unsubscribe();
         unsubscribeStudents();
+        unsubscribePayments();
+        unsubscribeTickets();
     };
   }, []);
 
@@ -280,11 +294,15 @@ export default function AdminDashboard() {
         </nav>
         <div className="p-4 border-t border-gray-200 dark:border-slate-700 bg-white dark:bg-[#1E293B]">
           <div className="flex items-center gap-3 mb-4 px-2">
-            <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-sm shrink-0">
-              MA
+            <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-sm shrink-0 overflow-hidden">
+              {auth.currentUser?.photoURL ? (
+                <img src={auth.currentUser.photoURL} className="w-full h-full object-cover" />
+              ) : (
+                (auth.currentUser?.displayName || auth.currentUser?.email || 'Admin').substring(0, 2).toUpperCase()
+              )}
             </div>
-            <div>
-              <p className="text-sm font-bold text-dark dark:text-white leading-tight">marts</p>
+            <div className="overflow-hidden">
+              <p className="text-sm font-bold text-dark dark:text-white leading-tight truncate">{auth.currentUser?.displayName || auth.currentUser?.email?.split('@')[0] || 'Admin'}</p>
               <div className="flex items-center gap-1.5 mt-0.5">
                 <div className="w-2 h-2 rounded-full bg-green-500"></div>
                 <p className="text-[10px] text-green-500 font-bold uppercase tracking-wider">Online</p>
@@ -436,16 +454,33 @@ export default function AdminDashboard() {
                     {students.length === 0 ? (
                       <tr><td colSpan={4} className="p-8 text-center text-gray-500">ምንም ተማሪ የለም</td></tr>
                     ) : (
-                      students.map(student => (
-                        <tr key={student.id} className="border-b border-gray-50 dark:border-slate-700/50 hover:bg-gray-50 dark:hover:bg-slate-700/20 transition group">
-                          <td className="p-4 font-bold text-dark dark:text-white">{student.name || 'Unknown'}</td>
-                          <td className="p-4 text-sm text-gray-500">{student.email}</td>
-                          <td className="p-4"><span className="bg-green-50 text-success px-3 py-1 rounded-full text-xs font-bold">Active</span></td>
-                          <td className="p-4 text-right space-x-2">
-                             <a href={`mailto:${student.email}`} className="text-sm bg-blue-50 dark:bg-slate-700 text-secondary dark:text-primary px-3 py-1.5 rounded-lg font-bold hover:bg-secondary hover:text-white transition">መልዕክት ላክ</a>
-                          </td>
-                        </tr>
-                      ))
+                      students.map(student => {
+                        const studentPayments = payments.filter(p => p.userId === student.id);
+                        const isPaid = studentPayments.some(p => p.amount > 0);
+                        const isFree = studentPayments.length > 0 && !isPaid;
+                        
+                        return (
+                          <tr key={student.id} className="border-b border-gray-50 dark:border-slate-700/50 hover:bg-gray-50 dark:hover:bg-slate-700/20 transition group">
+                            <td className="p-4 font-bold text-dark dark:text-white">
+                                {student.name || 'Unknown'}
+                                <div className="text-[10px] text-gray-400 font-normal mt-1">Joined: {student.createdAt ? new Date(student.createdAt.toDate()).toLocaleDateString() : 'Unknown'}</div>
+                            </td>
+                            <td className="p-4 text-sm text-gray-500">{student.email}</td>
+                            <td className="p-4">
+                                {isPaid ? (
+                                    <span className="bg-primary/20 text-primary px-3 py-1 rounded-full text-xs font-bold">Paid</span>
+                                ) : isFree ? (
+                                    <span className="bg-blue-50 text-secondary px-3 py-1 rounded-full text-xs font-bold">Free</span>
+                                ) : (
+                                    <span className="bg-gray-100 text-gray-500 px-3 py-1 rounded-full text-xs font-bold">Registered</span>
+                                )}
+                            </td>
+                            <td className="p-4 text-right space-x-2">
+                               <a href={`mailto:${student.email}`} className="text-sm bg-blue-50 dark:bg-slate-700 text-secondary dark:text-primary px-3 py-1.5 rounded-lg font-bold hover:bg-secondary hover:text-white transition">መልዕክት ላክ</a>
+                            </td>
+                          </tr>
+                        );
+                      })
                     )}
                   </tbody>
                 </table>
@@ -466,7 +501,7 @@ export default function AdminDashboard() {
                   <tbody>
                     <tr className="border-b border-gray-50 dark:border-slate-700/50 hover:bg-gray-50 dark:hover:bg-slate-700/20 transition">
                       <td className="p-4 font-bold text-dark dark:text-white flex items-center gap-3">
-                         <div className="w-10 h-10 rounded-full bg-gray-200"></div>
+                         <img src="https://firebasestorage.googleapis.com/v0/b/tsehaycampus-e1a6d.appspot.com/o/images%2Feyob_sahle.jpg?alt=media" onError={(e) => { e.currentTarget.src = "https://ui-avatars.com/api/?name=Eyoub+Sahle&background=F9B03C&color=fff"; }} alt="Eyoub Sahle" className="w-10 h-10 rounded-full object-cover border border-gray-200" />
                          Eyoub Sahle
                       </td>
                       <td className="p-4 text-sm text-gray-500">Digital Marketing</td>
@@ -493,17 +528,85 @@ export default function AdminDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    <tr><td colSpan={5} className="p-8 text-center text-gray-500">ምንም ክፍያ የለም</td></tr>
+                    {payments.filter(p => Number(p.amount) > 0).length === 0 ? (
+                        <tr><td colSpan={5} className="p-8 text-center text-gray-500">ምንም ክፍያ የለም</td></tr>
+                    ) : (
+                        payments.filter(p => Number(p.amount) > 0).sort((a, b) => b.purchasedAt?.toMillis() - a.purchasedAt?.toMillis()).map(payment => {
+                            const student = students.find(s => s.id === payment.userId);
+                            const course = courses.find(c => c.id === payment.courseId);
+                            return (
+                                <tr key={payment.id} className="border-b border-gray-50 dark:border-slate-700/50 hover:bg-gray-50 dark:hover:bg-slate-700/20 transition">
+                                    <td className="p-4 font-bold text-dark dark:text-white">
+                                        {student?.name || 'Unknown Student'}
+                                        <div className="text-xs text-gray-500 font-normal mt-0.5">{student?.email || 'No email'}</div>
+                                    </td>
+                                    <td className="p-4 text-sm text-gray-700 dark:text-gray-300">{course?.title || payment.courseId}</td>
+                                    <td className="p-4 font-bold text-success">{Number(payment.amount).toLocaleString()} ብር</td>
+                                    <td className="p-4 text-sm text-gray-500 uppercase">{payment.paymentMethod || 'Chapa'}</td>
+                                    <td className="p-4">
+                                        <span className="bg-green-50 text-success px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 w-max">
+                                            <i className="fa-solid fa-check-circle"></i> Successful
+                                        </span>
+                                        <div className="text-[10px] text-gray-400 mt-1">{payment.purchasedAt ? new Date(payment.purchasedAt.toDate()).toLocaleString() : ''}</div>
+                                    </td>
+                                </tr>
+                            );
+                        })
+                    )}
                   </tbody>
                 </table>
             </div>
           )}
 
           {activeTab === 'questions' && (
-            <div className="bg-white dark:bg-slate-800 rounded-3xl p-8 border border-gray-100 dark:border-slate-700 text-center text-gray-500 shadow-sm">
-                <i className="fa-solid fa-circle-question text-4xl mb-4 opacity-50"></i>
-                <h3 className="text-xl font-bold">የተማሪዎች ጥያቄ</h3>
-                <p>በቅርቡ የተማሪዎች ጥያቄዎች እዚህ ጋር ይታያሉ።</p>
+            <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 border border-gray-100 dark:border-slate-700 shadow-sm min-h-[400px]">
+                <h3 className="text-xl font-bold mb-6 border-b border-gray-100 dark:border-slate-700 pb-4 flex items-center gap-2"><i className="fa-solid fa-circle-question text-primary"></i> የተማሪዎች ጥያቄ</h3>
+                <div className="space-y-4">
+                    {tickets.length === 0 ? (
+                        <div className="text-center py-10 text-gray-500">ምንም ጥያቄዎች የሉም (No questions)</div>
+                    ) : (
+                        tickets.map(ticket => (
+                            <div key={ticket.id} className="p-4 border border-gray-100 dark:border-slate-700 rounded-xl bg-gray-50 dark:bg-slate-900/50">
+                                <div className="flex justify-between items-start mb-2">
+                                    <div>
+                                        <h4 className="font-bold text-dark dark:text-white">{ticket.userName} <span className="text-xs text-gray-500 font-normal">({ticket.userEmail})</span></h4>
+                                        <p className="text-xs text-primary font-bold">{ticket.courseName}</p>
+                                    </div>
+                                    <div className="text-[10px] text-gray-400">{ticket.createdAt ? new Date(ticket.createdAt.toDate()).toLocaleString() : ''}</div>
+                                </div>
+                                <p className="text-sm text-gray-700 dark:text-gray-300 mb-3 bg-white dark:bg-slate-800 p-3 rounded-lg shadow-sm border border-gray-100 dark:border-slate-700">{ticket.message}</p>
+                                
+                                {ticket.replies && ticket.replies.length > 0 && (
+                                    <div className="mb-3 pl-4 border-l-2 border-green-500 space-y-2">
+                                        {ticket.replies.map((reply: any, i: number) => (
+                                            <div key={i} className="text-sm">
+                                                <span className="font-bold text-green-600 dark:text-green-400">እርስዎ: </span>
+                                                <span className="text-gray-600 dark:text-gray-400">{reply.message}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                                
+                                <div className="flex gap-2">
+                                    <input type="text" placeholder="ምላሽዎን ይፃፉ (Write a reply)..." id={`reply-${ticket.id}`} className="flex-1 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm outline-none focus:border-primary" />
+                                    <button onClick={async () => {
+                                        const input = document.getElementById(`reply-${ticket.id}`) as HTMLInputElement;
+                                        if(!input.value.trim()) return;
+                                        try {
+                                            await setDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'support', 'messages', 'tickets', ticket.id), {
+                                                replies: [...(ticket.replies || []), { message: input.value, createdAt: new Date() }],
+                                                status: 'replied'
+                                            }, { merge: true });
+                                            input.value = '';
+                                        } catch (e) {
+                                            console.error(e);
+                                        }
+                                    }} className="bg-primary text-dark px-4 py-2 rounded-lg text-sm font-bold hover:bg-yellow-400 transition">ላክ</button>
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
             </div>
           )}
 
@@ -513,13 +616,14 @@ export default function AdminDashboard() {
                 <div className="space-y-4">
                    <div>
                        <label className="block text-sm font-bold mb-2">የአድሚን ስም</label>
-                       <input type="text" className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3" defaultValue="Admin User" />
+                       <input type="text" className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3" value={auth.currentUser?.displayName || 'Admin'} disabled />
+                       <p className="text-xs text-gray-500 mt-1">ስምዎን ለመቀየር ወደ ዳሽቦርድ በመሄድ ፕሮፋይልዎን ያስተካክሉ።</p>
                    </div>
                    <div>
                        <label className="block text-sm font-bold mb-2">የቴሌግራም ቻናል ሊንክ (Support Link)</label>
                        <input type="text" className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3" defaultValue="https://t.me/tsehaycampus" />
                    </div>
-                   <button className="w-full bg-dark dark:bg-primary text-white dark:text-dark font-bold py-3 rounded-xl mt-4">አዘምን (Save Settings)</button>
+                   <button className="w-full bg-dark dark:bg-primary text-white dark:text-dark font-bold py-3 rounded-xl mt-4 hover:opacity-90 transition">አዘምን (Save Settings)</button>
                 </div>
             </div>
           )}
