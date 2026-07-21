@@ -491,13 +491,14 @@ export default function StudentDashboard() {
                             const rawUrl = activeLesson?.video || activeLesson?.videoUrl;
                             if (!rawUrl) return null;
                             
-                            let cleanUrl = rawUrl;
-                            if (rawUrl.includes('<iframe') && rawUrl.includes('src="')) {
-                                const match = rawUrl.match(/src="([^"]+)"/);
+                            let cleanUrl = rawUrl.trim();
+                            if (cleanUrl.includes('<iframe') && cleanUrl.includes('src="')) {
+                                const match = cleanUrl.match(/src="([^"]+)"/);
                                 if (match) cleanUrl = match[1];
                             }
+                            cleanUrl = cleanUrl.replace(/&amp;/g, '&');
                             
-                                                        if (cleanUrl.includes('mediadelivery.net')) {
+                            if (cleanUrl.includes('mediadelivery.net')) {
                                 const embedUrl = cleanUrl.replace('/play/', '/embed/').replace('video.mediadelivery.net', 'iframe.mediadelivery.net');
                                 return (
                                     <iframe
@@ -506,7 +507,7 @@ export default function StudentDashboard() {
                                         className="absolute inset-0 w-full h-full border-none"
                                         allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;"
                                         allowFullScreen
-                                        referrerPolicy="origin"
+                                        referrerPolicy="no-referrer-when-downgrade"
                                     ></iframe>
                                 );
                             } else if (cleanUrl.includes('drive.google.com')) {
