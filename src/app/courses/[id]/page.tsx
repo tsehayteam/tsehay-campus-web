@@ -136,12 +136,15 @@ export default function CoursePreviewPage({ params }: { params: Promise<{ id: st
   }
 
   const extractIframeSrc = (url: string) => {
-    if (!url) return url;
-    if (url.includes('<iframe') && url.includes('src="')) {
-      const match = url.match(/src="([^"]+)"/);
-      if (match) return match[1];
+    if (!url) return null;
+    let clean = url.trim();
+    if (clean.includes('<iframe') && clean.includes('src="')) {
+      const match = clean.match(/src="([^"]+)"/);
+      if (match) clean = match[1];
     }
-    return url;
+    // Decode HTML entities like &amp;
+    clean = clean.replace(/&amp;/g, '&');
+    return clean;
   };
 
   const previewVideoUrl = extractIframeSrc(course?.video);
@@ -418,7 +421,7 @@ export default function CoursePreviewPage({ params }: { params: Promise<{ id: st
                                   className="w-full h-full border-none"
                                   allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;"
                                   allowFullScreen
-                                  referrerPolicy="origin"
+                                  referrerPolicy="no-referrer-when-downgrade"
                               ></iframe>
                           );
                       } else if (finalUrl.includes('drive.google.com')) {
