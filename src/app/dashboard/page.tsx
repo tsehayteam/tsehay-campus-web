@@ -575,8 +575,7 @@ export default function StudentDashboard() {
                                             <div className="w-16 h-16 rounded-full border-2 border-gray-200 dark:border-slate-600 shadow-md bg-blue-50 flex items-center justify-center text-secondary text-2xl overflow-hidden shrink-0">
                                                 {activeCourse?.instructorImage ? (
                                                     <img 
-                                                        src={activeCourse.instructorImage.includes('drive.google.com/uc?export=view&id=') ? `https://drive.google.com/thumbnail?id=${activeCourse.instructorImage.split('id=')[1]}&sz=w1000` : activeCourse.instructorImage} 
-                                                        onError={(e) => { e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(activeCourse?.instructor || 'Instructor')}&background=F9B03C&color=fff&size=128`; }}
+                                                        src={activeCourse.instructorImage} 
                                                         alt="Instructor" 
                                                         className="w-full h-full object-cover" 
                                                     />

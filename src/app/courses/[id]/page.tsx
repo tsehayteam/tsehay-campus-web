@@ -148,18 +148,9 @@ export default function CoursePreviewPage({ params }: { params: Promise<{ id: st
   const defaultVideoUrl = previewVideoUrl || extractIframeSrc(course?.videoUrl) || (modules.length > 0 && modules[0].lessons?.length > 0 ? extractIframeSrc(modules[0].lessons[0].videoUrl) : null);
   const currentVideoUrl = activeVideoUrl ? extractIframeSrc(activeVideoUrl) : defaultVideoUrl;
 
-  const fixDriveLink = (url: string) => {
-    if (!url) return url;
-    if (url.includes('drive.google.com/uc?export=view&id=')) {
-      const id = url.split('id=')[1];
-      return `https://drive.google.com/thumbnail?id=${id}&sz=w1000`;
-    }
-    return url;
-  };
-  
-  const displayImage = fixDriveLink(course?.image);
-  const displayInstructorImage = fixDriveLink(course?.instructorImage);
-  const displayBanner = fixDriveLink(course?.banner);
+  const displayImage = course?.image;
+  const displayInstructorImage = course?.instructorImage;
+  const displayBanner = course?.banner;
 
   return (
     <div className="min-h-screen bg-white dark:bg-[#0a0a0a]">
@@ -358,7 +349,6 @@ export default function CoursePreviewPage({ params }: { params: Promise<{ id: st
             <div className="flex flex-col sm:flex-row gap-6 mb-4">
               <img 
                 src={displayInstructorImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(course?.instructorName || course?.instructor || 'Instructor')}&background=F9B03C&color=fff&size=128`} 
-                onError={(e) => { e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(course?.instructorName || course?.instructor || 'Instructor')}&background=F9B03C&color=fff&size=128`; }}
                 alt="Instructor" 
                 className="w-28 h-28 rounded-full object-cover shrink-0 border-2 border-gray-100 dark:border-gray-800 shadow-md" 
               />
@@ -438,7 +428,7 @@ export default function CoursePreviewPage({ params }: { params: Promise<{ id: st
                 </div>
               ) : (
                 <div className="cursor-pointer" onClick={() => { if (currentVideoUrl) setIsPlaying(true); }}>
-                  <img src={displayImage || `https://placehold.co/600x400/3268BA/FFFFFF?text=${encodeURIComponent(course.title || 'Tsehay Campus')}&font=Montserrat`} alt={course.title} className="w-full h-[250px] object-cover" onError={(e) => { e.currentTarget.src='https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1000&auto=format&fit=crop' }} />
+                  <img src={displayImage || `https://placehold.co/600x400/3268BA/FFFFFF?text=${encodeURIComponent(course.title || 'Tsehay Campus')}&font=Montserrat`} alt={course.title} className="w-full h-[250px] object-cover" />
                   {currentVideoUrl && (
                     <div className="absolute inset-0 bg-black/40 flex flex-col justify-center items-center group-hover:bg-black/20 transition-colors">
                       <div className="w-16 h-16 bg-white rounded-full flex justify-center items-center text-dark text-2xl shadow-lg transform group-hover:scale-110 transition-transform">
