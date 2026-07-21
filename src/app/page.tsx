@@ -30,7 +30,12 @@ export default function Home() {
   const { t } = useLanguage();
 
   useEffect(() => {
-    if (chatEndRef.current && (aiMessages.length > 1 || isAiLoading)) {
+    // Force scroll to top on initial load to prevent browser from restoring scroll position to the AI section
+    window.scrollTo(0, 0);
+  }, []);
+
+  useEffect(() => {
+    if (chatEndRef.current && isAiLoading) {
       chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [aiMessages, isAiLoading]);
