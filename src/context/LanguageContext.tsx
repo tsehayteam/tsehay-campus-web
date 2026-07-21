@@ -53,9 +53,9 @@ const translations: Record<string, Record<Language, string>> = {
   'no_course_found': { am: 'ይቅርታ፣ ኮርስ አልተገኘም።', en: 'Sorry, no courses found.' },
 
   // AI section
-  'make_smart': { am: 'በመጠቀም ትምህርትዎን ስማርት ያድርጉ', en: 'Make your learning smart with' },
-  'ai_section_desc': { am: 'የእኛ ፕላትፎርም ቪዲዮ በማየት ብቻ አያበቃም። የ AI ረዳቱ በእያንዳንዱ ኮርስ ውስጥ ተካቷል፤ እቃዎችን ይተነትናል፣ ማስታወቂያ ይፅፋል፣ እና 24/7 ከጎንዎ ቆሞ ያግዝዎታል።', en: 'Our platform doesn\'t end with watching videos. The AI assistant is included in every course; analyzes items, writes ads, and helps you 24/7.' },
-  'ask_ai_tutor': { am: 'የ AI መምህርዎን ይጠይቁ', en: 'Ask your AI tutor' },
+  'make_smart': { am: 'የካምፓስ ቆይታዎን የተሟላ ያድርጉ!', en: 'Make your campus stay complete!' },
+  'ai_section_desc': { am: 'በፀሐይ ካምፓስ (Tsehay Campus) መማር ቪዲዮ ከማየትም በላይ ነው! ዘመናዊው የ AI ረዳታችን 24/7 ከጎንዎ ሆኖ ያገለግልዎታል። ስለ ኮርሶቻችን (ከዲጂታል ማርኬቲንግ እስከ ዌብሳይት ዴቨሎፕመንት)፣ ስለ ዌብሳይታችን አጠቃቀም፣ ስለ ክፍያ መንገዶች እና አጠቃላይ የካምፓስ መረጃዎች የፈለጉትን ይጠይቁት፤ ፈጣን ምላሽ ያገኛሉ!', en: 'Learning at Tsehay Campus is more than just watching videos! Our modern AI assistant is by your side 24/7. Ask anything about our courses (from digital marketing to website development), how to use our website, payment methods, and general campus information; you will get a quick response!' },
+  'ask_ai_tutor': { am: 'Tsehay AI ን አሁኑኑ ይጠይቁ', en: 'Ask Tsehay AI right now' },
   'ai_assistant_demo': { am: 'ረዳት (ማሳያ)', en: 'Assistant (Demo)' },
   'ask_anything': { am: 'የፈለጉትን ይጠይቁ...', en: 'Ask anything...' },
   'send_btn': { am: 'ላክ', en: 'Send' },
