@@ -148,9 +148,32 @@ export default function CoursePreviewPage({ params }: { params: Promise<{ id: st
   const defaultVideoUrl = previewVideoUrl || extractIframeSrc(course?.videoUrl) || (modules.length > 0 && modules[0].lessons?.length > 0 ? extractIframeSrc(modules[0].lessons[0].videoUrl) : null);
   const currentVideoUrl = activeVideoUrl ? extractIframeSrc(activeVideoUrl) : defaultVideoUrl;
 
-  const displayImage = course?.image;
-  const displayInstructorImage = course?.instructorImage;
-  const displayBanner = course?.banner;
+  const fixDriveLink = (url: string) => {
+    if (!url) return url;
+    
+    // If it's a file/d/... link
+    let match = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+    if (match && match[1]) {
+      return `https://drive.google.com/uc?export=view&id=${match[1]}`;
+    }
+    
+    // If it's already a uc link but with different params or just uc?id=
+    if (url.includes('drive.google.com/uc')) {
+      return url; // Keep it as is
+    }
+
+    // If it's a thumbnail link (from previous formatDriveLink)
+    match = url.match(/thumbnail\?id=([a-zA-Z0-9_-]+)/);
+    if (match && match[1]) {
+      return `https://drive.google.com/uc?export=view&id=${match[1]}`;
+    }
+
+    return url;
+  };
+  
+  const displayImage = fixDriveLink(course?.image);
+  const displayInstructorImage = fixDriveLink(course?.instructorImage);
+  const displayBanner = fixDriveLink(course?.banner);
 
   return (
     <div className="min-h-screen bg-white dark:bg-[#0a0a0a]">
@@ -349,6 +372,12 @@ export default function CoursePreviewPage({ params }: { params: Promise<{ id: st
             <div className="flex flex-col sm:flex-row gap-6 mb-4">
               <img 
                 src={displayInstructorImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(course?.instructorName || course?.instructor || 'Instructor')}&background=F9B03C&color=fff&size=128`} 
+                onError={(e) => { 
+                  const fallback = `https://ui-avatars.com/api/?name=${encodeURIComponent(course?.instructorName || course?.instructor || 'Instructor')}&background=F9B03C&color=fff&size=128`;
+                  if (e.currentTarget.src !== fallback) {
+                    e.currentTarget.src = fallback;
+                  }
+                }}
                 alt="Instructor" 
                 className="w-28 h-28 rounded-full object-cover shrink-0 border-2 border-gray-100 dark:border-gray-800 shadow-md" 
               />
@@ -428,7 +457,12 @@ export default function CoursePreviewPage({ params }: { params: Promise<{ id: st
                 </div>
               ) : (
                 <div className="cursor-pointer" onClick={() => { if (currentVideoUrl) setIsPlaying(true); }}>
-                  <img src={displayImage || `https://placehold.co/600x400/3268BA/FFFFFF?text=${encodeURIComponent(course.title || 'Tsehay Campus')}&font=Montserrat`} alt={course.title} className="w-full h-[250px] object-cover" />
+                  <img src={displayImage || `https://placehold.co/600x400/3268BA/FFFFFF?text=${encodeURIComponent(course.title || 'Tsehay Campus')}&font=Montserrat`} alt={course.title} className="w-full h-[250px] object-cover" onError={(e) => { 
+                    const fallback = 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1000&auto=format&fit=crop';
+                    if (e.currentTarget.src !== fallback) {
+                      e.currentTarget.src = fallback;
+                    }
+                  }} />
                   {currentVideoUrl && (
                     <div className="absolute inset-0 bg-black/40 flex flex-col justify-center items-center group-hover:bg-black/20 transition-colors">
                       <div className="w-16 h-16 bg-white rounded-full flex justify-center items-center text-dark text-2xl shadow-lg transform group-hover:scale-110 transition-transform">

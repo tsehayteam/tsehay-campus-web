@@ -164,7 +164,7 @@ export default function AdminDashboard() {
     if (!url) return url;
     const match = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
     if (match && match[1]) {
-      return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w1000`;
+      return `https://drive.google.com/uc?export=view&id=${match[1]}`;
     }
     return url;
   };
