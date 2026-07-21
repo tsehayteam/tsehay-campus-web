@@ -305,13 +305,36 @@ export default function StudentDashboard() {
     setIsChatLoading(true);
 
     try {
+        const customAdminPrompt = activeCourse?.aiPrompt ? `\n[ADMIN CUSTOM INSTRUCTION FOR THIS COURSE]\n${activeCourse.aiPrompt}\n` : '';
+        const courseObjectives = Array.isArray(activeCourse?.whatYouWillLearn) ? activeCourse.whatYouWillLearn.join(', ') : '';
+
+        const systemInstruction = `You are "Tsehay AI Tutor", the official AI guide and tutor for "Tsehay Campus" (tsehaycampus.com).
+
+[CURRENT COURSE CONTEXT]
+Active Course: "${activeCourse?.title || 'General'}"
+Active Lesson: "${activeLesson?.title || 'General'}"
+Course Description: "${activeCourse?.desc || ''}"
+Objectives: ${courseObjectives}
+${customAdminPrompt}
+[STUDENT GUIDANCE & COURSE RECOMMENDATIONS]
+1. Answer student questions about this course, lesson, or related skills in clear, polite, and encouraging Amharic (or English if requested).
+2. Understand student interests and recommend relevant Tsehay Campus courses when appropriate:
+   - Digital Marketing Course (FREE) for marketing, social media, SEO, FB ads.
+   - Shein Import Business Course (4,500 ETB) for e-commerce, importing winning products, dollar payment.
+   - YouTube Secrets Masterclass / Book (600 ETB) for content creation, channel growth.
+   - Web Development / Coding (Coming Soon).
+3. Support students patiently and encourage their learning journey.`;
+
         const response = await fetch('/api/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt: `I am taking the course "${activeCourse?.title}". The lesson is "${activeLesson?.title}". Answer my question: ${userMsg}`, systemInstruction: "You are Tsehay AI Tutor. You are helping a student taking a course on the Tsehay Campus platform. Provide clear, concise, and educational answers in Amharic." })
+            body: JSON.stringify({ 
+                prompt: `I am currently studying the lesson "${activeLesson?.title || 'Intro'}" in course "${activeCourse?.title || 'General'}". My question is: ${userMsg}`, 
+                systemInstruction 
+            })
         });
         const data = await response.json();
-        const aiReply = data.candidates?.[0]?.content?.parts?.[0]?.text || "ይቅርታ፣ ማስተናገድ አልቻልኩም።";
+        const aiReply = data.reply || data.candidates?.[0]?.content?.parts?.[0]?.text || "ይቅርታ፣ ማስተናገድ አልቻልኩም።";
         setChatMessages([...newMessages, { role: 'ai', text: aiReply }]);
         setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
     } catch (error) {
