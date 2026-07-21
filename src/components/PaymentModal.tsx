@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 
 export default function PaymentModal({ course, onClose }: any) {
-  const [paymethod, setPaymethod] = useState('chapa');
+  const [paymethod, setPaymethod] = useState('addispay');
   const [isPaying, setIsPaying] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
@@ -14,7 +14,7 @@ export default function PaymentModal({ course, onClose }: any) {
     setIsPaying(true);
     setError(null);
     try {
-      if (paymethod === 'chapa') {
+      if (paymethod === 'addispay') {
         const res = await fetch('/api/initiate-payment', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -114,13 +114,16 @@ export default function PaymentModal({ course, onClose }: any) {
                     <>
                         <h4 className="font-bold text-sm text-gray-500 mb-3 uppercase tracking-wider">የክፍያ አማራጭ ይምረጡ</h4>
                         <div className="space-y-3 mb-8">
-                            <label className={`payment-option flex items-center justify-between p-4 rounded-xl border cursor-pointer transition ${paymethod === 'chapa' ? 'border-secondary bg-blue-50/50 dark:border-primary dark:bg-primary/10' : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-darkCard hover:bg-gray-50 dark:hover:bg-gray-900'}`}>
+                            <label className={`payment-option flex items-center justify-between p-4 rounded-xl border cursor-pointer transition ${paymethod === 'addispay' ? 'border-secondary bg-blue-50/50 dark:border-primary dark:bg-primary/10' : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-darkCard hover:bg-gray-50 dark:hover:bg-gray-900'}`}>
                                 <div className="flex items-center gap-3">
-                                    <input type="radio" name="paymethod" value="chapa" checked={paymethod === 'chapa'} onChange={(e) => setPaymethod(e.target.value)} className="w-4 h-4 text-secondary focus:ring-secondary" />
-                                    <span className="font-black dark:text-white text-sm md:text-base">Banks, Cards and Wallets</span>
+                                    <input type="radio" name="paymethod" value="addispay" checked={paymethod === 'addispay'} onChange={(e) => setPaymethod(e.target.value)} className="w-4 h-4 text-secondary focus:ring-secondary" />
+                                    <div>
+                                        <span className="font-black dark:text-white text-sm md:text-base block">AddisPay (አዲስ ፔይ)</span>
+                                        <span className="text-[11px] text-gray-500 font-semibold">Telebirr, CBE Birr & Bank Transfers</span>
+                                    </div>
                                 </div>
-                                <div className="flex items-center gap-1.5 opacity-80">
-                                    <img src="/assets/chapa-logo.png" className="h-10 md:h-12 object-contain drop-shadow-sm" alt="Chapa" />
+                                <div className="flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-900/30 px-3 py-1.5 rounded-lg border border-emerald-200 dark:border-emerald-700">
+                                    <span className="font-black text-emerald-600 dark:text-emerald-400 text-sm tracking-tight">addis<span className="text-amber-500">pay</span></span>
                                 </div>
                             </label>
 

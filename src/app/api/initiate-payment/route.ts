@@ -12,15 +12,15 @@ export async function POST(request: Request) {
     const { adminDb } = await import('@/lib/firebase/admin');
     const tx_ref = `tsehay_tx_${courseId}_${userId}_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
 
-    const chapaPayload = {
-      amount: price.toString(),
+    const addisPayPayload = {
+      total_amount: price.toString(),
       currency: "ETB",
       email: userEmail,
       first_name: firstName || "Student",
       last_name: lastName || "Tsehay",
       tx_ref: tx_ref,
-      callback_url: `https://tsehaycampus.com/api/webhook`, // Will be pinged by Chapa
-      return_url: `https://tsehaycampus.com/dashboard?success=true&course=${courseId}`, // Where user goes after payment
+      callback_url: `https://tsehaycampus.com/api/webhook`,
+      return_url: `https://tsehaycampus.com/dashboard?success=true&course=${courseId}`,
       customization: {
         title: "Tsehay Campus",
         description: `Payment for ${title}`,
@@ -28,24 +28,26 @@ export async function POST(request: Request) {
       }
     };
 
-    const CHAPA_SECRET = process.env.CHAPA_SECRET_KEY || 'CHASECK_TEST_placeholder';
+    const ADDISPAY_APP_ID = process.env.ADDISPAY_APP_ID || process.env.ADDISPAY_MERCHANT_ID || 'ADDISPAY_APP_ID_placeholder';
+    const ADDISPAY_SECRET = process.env.ADDISPAY_SECRET_KEY || process.env.ADDISPAY_API_KEY || 'ADDISPAY_SECRET_placeholder';
 
-    const response = await fetch('https://api.chapa.co/v1/transaction/initialize', {
+    const response = await fetch(process.env.ADDISPAY_CHECKOUT_URL || 'https://api.addispay.et/checkout/payment/initialize', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${CHAPA_SECRET}`,
+        'Authorization': `Bearer ${ADDISPAY_SECRET}`,
+        'X-App-Id': ADDISPAY_APP_ID,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(chapaPayload)
+      body: JSON.stringify(addisPayPayload)
     });
 
     const data = await response.json();
 
-    if (data.status === 'success') {
-      return NextResponse.json({ checkoutUrl: data.data.checkout_url, tx_ref });
+    if (data.status === 'success' || data.checkout_url || data.checkoutUrl) {
+      return NextResponse.json({ checkoutUrl: data.checkout_url || data.checkoutUrl || data.data?.checkout_url, tx_ref });
     } else {
-      console.error("Chapa Error:", data);
-      return NextResponse.json({ error: 'Failed to initialize payment with Chapa' }, { status: 500 });
+      console.error("AddisPay Error:", data);
+      return NextResponse.json({ error: 'Failed to initialize payment with AddisPay' }, { status: 500 });
     }
 
   } catch (error: any) {
