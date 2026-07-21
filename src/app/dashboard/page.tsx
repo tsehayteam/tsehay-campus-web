@@ -339,8 +339,8 @@ export default function StudentDashboard() {
             <div className="w-8 h-8 md:w-10 md:h-10 bg-white rounded-xl mx-auto flex items-center justify-center shadow-lg p-0.5 border border-white/20 group-hover:scale-105 transition">
               <img src="/tc-logo.jpg" alt="Tsehay Campus Logo" className="w-full h-full object-contain rounded-xl" />
             </div>
-            <span className="ml-3 font-heading font-black text-lg md:text-xl tracking-tight dark:text-white">
-              Tsehay<span className="text-primary hidden sm:inline">Campus</span>
+            <span className="ml-3 font-heading font-black text-lg md:text-xl tracking-tight notranslate">
+              <span className="text-primary">Tsehay</span> <span className="text-secondary dark:text-white">Campus</span>
             </span>
           </a>
           
@@ -487,7 +487,7 @@ export default function StudentDashboard() {
                     {/* Cinematic Video Player */}
                     <div className="bg-dark rounded-2xl overflow-hidden shadow-2xl relative border border-gray-800 aspect-video flex items-center justify-center">
                         {(() => {
-                            const rawUrl = activeLesson?.video || activeLesson?.videoUrl || activeCourse?.video || activeCourse?.videoUrl;
+                            const rawUrl = activeLesson?.video || activeLesson?.videoUrl || activeLesson?.url || activeCourse?.video || activeCourse?.videoUrl || activeCourse?.promoVideo || activeCourse?.previewVideo;
                             if (!rawUrl) return null;
                             
                             let cleanUrl = rawUrl.trim();
