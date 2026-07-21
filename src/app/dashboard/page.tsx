@@ -498,13 +498,15 @@ export default function StudentDashboard() {
                             }
                             
                                                         if (cleanUrl.includes('mediadelivery.net')) {
-                                cleanUrl = cleanUrl.split('?')[0];
                                 cleanUrl = cleanUrl.replace('player.mediadelivery.net/play/', 'iframe.mediadelivery.net/embed/');
                                 cleanUrl = cleanUrl.replace('iframe.mediadelivery.net/play/', 'iframe.mediadelivery.net/embed/');
                                 cleanUrl = cleanUrl.replace('player.mediadelivery.net/embed/', 'iframe.mediadelivery.net/embed/');
+                                
+                                const hasParams = cleanUrl.includes('?');
+                                const srcUrl = `${cleanUrl}${hasParams ? '&' : '?'}primaryColor=%23F9B03C&autoplay=true`;
                                 return (
                                     <iframe
-                                        src={`${cleanUrl}?primaryColor=%23F9B03C&autoplay=true`}
+                                        src={srcUrl}
                                         loading="lazy"
                                         className="absolute inset-0 w-full h-full border-none"
                                         allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;"
