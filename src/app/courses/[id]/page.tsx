@@ -151,10 +151,10 @@ export default function CoursePreviewPage({ params }: { params: Promise<{ id: st
   const fixDriveLink = (url: string) => {
     if (!url) return url;
     
-    // Match any Google Drive ID (file/d/ID, thumbnail?id=ID, uc?id=ID)
-    const driveIdMatch = url.match(/\/(?:file\/d\/|uc\?.*id=|thumbnail\?id=)([a-zA-Z0-9_-]+)/);
-    if (driveIdMatch && driveIdMatch[1]) {
-      return `https://drive.google.com/uc?id=${driveIdMatch[1]}`;
+    // Match any Google Drive ID (file/d/ID, thumbnail?id=ID, uc?id=ID, lh3.../d/ID)
+    const match = url.match(/(?:file\/d\/|id=|thumbnail\?id=|\/d\/)([a-zA-Z0-9_-]{20,})/);
+    if (match && match[1]) {
+      return `https://lh3.googleusercontent.com/d/${match[1]}`;
     }
 
     return url;
