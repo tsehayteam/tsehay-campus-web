@@ -159,15 +159,22 @@ export default function CoursePreviewPage({ params }: { params: Promise<{ id: st
   
   const displayImage = fixDriveLink(course?.image);
   const displayInstructorImage = fixDriveLink(course?.instructorImage);
+  const displayBanner = fixDriveLink(course?.banner);
 
   return (
     <div className="min-h-screen bg-white dark:bg-[#0a0a0a]">
       {/* Dark Header Section (Udemy Style) */}
       <div className="hero-mesh text-white pt-24 md:pt-28 pb-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+        {displayBanner && (
+          <div className="absolute inset-0 z-0">
+            <img src={displayBanner} alt="Course Banner" className="w-full h-full object-cover opacity-20 mix-blend-overlay" />
+            <div className="absolute inset-0 bg-gradient-to-r from-[#1E293B]/90 to-transparent"></div>
+          </div>
+        )}
         {/* Subtle Background Pattern */}
-        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20 mix-blend-overlay"></div>
+        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20 mix-blend-overlay z-0"></div>
         {displayInstructorImage && (
-          <div className="absolute right-10 bottom-0 opacity-20 pointer-events-none hidden lg:block">
+          <div className="absolute right-10 bottom-0 opacity-20 pointer-events-none hidden lg:block z-0">
             <img src={displayInstructorImage} alt="" className="h-64 object-cover object-bottom" />
           </div>
         )}
