@@ -151,21 +151,10 @@ export default function CoursePreviewPage({ params }: { params: Promise<{ id: st
   const fixDriveLink = (url: string) => {
     if (!url) return url;
     
-    // If it's a file/d/... link
-    let match = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-    if (match && match[1]) {
-      return `https://drive.google.com/uc?export=view&id=${match[1]}`;
-    }
-    
-    // If it's already a uc link but with different params or just uc?id=
-    if (url.includes('drive.google.com/uc')) {
-      return url; // Keep it as is
-    }
-
-    // If it's a thumbnail link (from previous formatDriveLink)
-    match = url.match(/thumbnail\?id=([a-zA-Z0-9_-]+)/);
-    if (match && match[1]) {
-      return `https://drive.google.com/uc?export=view&id=${match[1]}`;
+    // Match any Google Drive ID (file/d/ID, thumbnail?id=ID, uc?id=ID)
+    const driveIdMatch = url.match(/\/(?:file\/d\/|uc\?.*id=|thumbnail\?id=)([a-zA-Z0-9_-]+)/);
+    if (driveIdMatch && driveIdMatch[1]) {
+      return `https://drive.google.com/uc?id=${driveIdMatch[1]}`;
     }
 
     return url;

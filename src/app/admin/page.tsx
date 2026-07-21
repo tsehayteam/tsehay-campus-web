@@ -162,9 +162,9 @@ export default function AdminDashboard() {
 
   const formatDriveLink = (url: string) => {
     if (!url) return url;
-    const match = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-    if (match && match[1]) {
-      return `https://drive.google.com/uc?export=view&id=${match[1]}`;
+    const driveIdMatch = url.match(/\/(?:file\/d\/|uc\?.*id=|thumbnail\?id=)([a-zA-Z0-9_-]+)/);
+    if (driveIdMatch && driveIdMatch[1]) {
+      return `https://drive.google.com/uc?id=${driveIdMatch[1]}`;
     }
     return url;
   };

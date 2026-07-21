@@ -575,7 +575,15 @@ export default function StudentDashboard() {
                                             <div className="w-16 h-16 rounded-full border-2 border-gray-200 dark:border-slate-600 shadow-md bg-blue-50 flex items-center justify-center text-secondary text-2xl overflow-hidden shrink-0">
                                                 {activeCourse?.instructorImage ? (
                                                     <img 
-                                                        src={activeCourse.instructorImage.includes('drive.google.com/thumbnail?id=') ? `https://drive.google.com/uc?export=view&id=${activeCourse.instructorImage.split('id=')[1].split('&')[0]}` : activeCourse.instructorImage.includes('drive.google.com/file/d/') ? `https://drive.google.com/uc?export=view&id=${activeCourse.instructorImage.match(/\/file\/d\/([a-zA-Z0-9_-]+)/)?.[1]}` : activeCourse.instructorImage} 
+                                                        src={(() => {
+                                                            const url = activeCourse.instructorImage;
+                                                            if (!url) return url;
+                                                            const driveIdMatch = url.match(/\/(?:file\/d\/|uc\?.*id=|thumbnail\?id=)([a-zA-Z0-9_-]+)/);
+                                                            if (driveIdMatch && driveIdMatch[1]) {
+                                                              return `https://drive.google.com/uc?id=${driveIdMatch[1]}`;
+                                                            }
+                                                            return url;
+                                                        })()} 
                                                         onError={(e) => { 
                                                           const fallback = `https://ui-avatars.com/api/?name=${encodeURIComponent(activeCourse?.instructor || 'Instructor')}&background=F9B03C&color=fff&size=128`;
                                                           if (e.currentTarget.src !== fallback) {
