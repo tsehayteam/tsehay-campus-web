@@ -30,7 +30,7 @@ export default function Home() {
   const { t } = useLanguage();
 
   useEffect(() => {
-    if (chatEndRef.current) {
+    if (chatEndRef.current && (aiMessages.length > 1 || isAiLoading)) {
       chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [aiMessages, isAiLoading]);
