@@ -413,7 +413,8 @@ export default function CoursePreviewPage({ params }: { params: Promise<{ id: st
                   {(() => {
                       let finalUrl = currentVideoUrl;
                       if (finalUrl.includes('mediadelivery.net')) {
-                          const embedUrl = finalUrl.replace('/play/', '/embed/').replace('video.mediadelivery.net', 'iframe.mediadelivery.net');
+                          const baseUrl = finalUrl.replace('/play/', '/embed/').replace('video.mediadelivery.net', 'iframe.mediadelivery.net');
+                          const embedUrl = baseUrl.includes('?') ? `${baseUrl}&autoplay=true` : `${baseUrl}?autoplay=true`;
                           return (
                               <iframe
                                   src={embedUrl}
@@ -443,6 +444,9 @@ export default function CoursePreviewPage({ params }: { params: Promise<{ id: st
                                 height="100%"
                                 controls={true}
                                 playing={true}
+                                config={{
+                                  youtube: { playerVars: { autoplay: 1 } }
+                                }}
                                 className="w-full h-full object-contain"
                               />
                           );
