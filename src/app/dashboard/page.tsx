@@ -486,9 +486,8 @@ export default function StudentDashboard() {
                     
                     {/* Cinematic Video Player */}
                     <div className="bg-dark rounded-2xl overflow-hidden shadow-2xl relative border border-gray-800 aspect-video flex items-center justify-center">
-                        {activeLesson && (activeLesson.video || activeLesson.videoUrl) ? (
-                            (() => {
-                            const rawUrl = activeLesson?.video || activeLesson?.videoUrl;
+                        {(() => {
+                            const rawUrl = activeLesson?.video || activeLesson?.videoUrl || activeCourse?.video || activeCourse?.videoUrl;
                             if (!rawUrl) return null;
                             
                             let cleanUrl = rawUrl.trim();
@@ -534,10 +533,17 @@ export default function StudentDashboard() {
                                     />
                                 );
                             }
-                        })()
-                        ) : (
+                        })() || (
                             <>
-                                <img src={activeCourse?.image || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1200'} className="absolute inset-0 w-full h-full object-cover opacity-60" alt="Video cover" />
+                                <img src={(() => {
+                                    const url = activeCourse?.image;
+                                    if (!url) return 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1200';
+                                    const match = url.match(/(?:file\/d\/|id=|thumbnail\?id=|\/d\/)([a-zA-Z0-9_-]{20,})/);
+                                    if (match && match[1]) return `https://lh3.googleusercontent.com/d/${match[1]}`;
+                                    return url;
+                                })()} className="absolute inset-0 w-full h-full object-cover opacity-60" alt="Video cover" onError={(e) => {
+                                    e.currentTarget.src = 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1200';
+                                }} />
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20 flex flex-col justify-between p-6 lg:p-8">
                                     <div className="self-end bg-black/40 backdrop-blur-md text-white text-xs font-bold px-3 py-1.5 rounded-lg border border-white/10">
                                         No Video Available
