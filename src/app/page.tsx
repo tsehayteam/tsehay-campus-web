@@ -173,35 +173,26 @@ export default function Home() {
             <div className="inline-block bg-blue-50/50 dark:bg-darkCard border border-blue-100 dark:border-gray-800 rounded-full px-6 py-2.5 mb-8 shadow-sm">
                 <p className="font-accent text-secondary dark:text-primary font-extrabold tracking-widest text-[13px] sm:text-sm uppercase">{t('trusted_by')}</p>
             </div>
-            <div className="flex justify-center items-center gap-8 sm:gap-12 md:gap-20 flex-wrap">
-                
-                <div className="flex items-center gap-3 text-2xl md:text-4xl font-black font-heading text-gray-800 dark:text-gray-200 hover:text-[#EA4335] transition transform hover:scale-110 cursor-default animate-float" style={{animationDelay: "0s"}}>
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className="w-8 h-8 md:w-10 md:h-10">
-                        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-                        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-                        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-                        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-                    </svg> <span className="notranslate">Google</span>
+            <div className="flex justify-center items-center gap-4 sm:gap-6 md:gap-8 flex-wrap">
+                <div className="flex items-center gap-2 bg-blue-50 dark:bg-slate-800 border border-blue-100 dark:border-slate-700 px-4 py-2 rounded-xl shadow-sm">
+                    <i className="fa-solid fa-bullhorn text-secondary dark:text-primary"></i>
+                    <span className="font-bold text-sm text-dark dark:text-white">ዲጂታል ማርኬቲንግ</span>
                 </div>
-                
-                <div className="flex items-center gap-3 text-2xl md:text-4xl font-black font-heading text-gray-800 dark:text-gray-200 hover:text-[#0668E1] transition transform hover:scale-110 cursor-default animate-float" style={{animationDelay: "0.2s"}}>
-                    <i className="fa-brands fa-meta text-[#0668E1]"></i> <span className="notranslate">Meta</span>
+                <div className="flex items-center gap-2 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-800 px-4 py-2 rounded-xl shadow-sm">
+                    <i className="fa-solid fa-bag-shopping text-emerald-600 dark:text-emerald-400"></i>
+                    <span className="font-bold text-sm text-dark dark:text-white">ኢ-ኮሜርስ & ኢምፖርት</span>
                 </div>
-
-                <div className="flex items-center transition transform hover:scale-110 cursor-default animate-float" style={{animationDelay: "0.4s"}}>
-                    <div className="bg-black dark:bg-white text-white dark:text-black px-3.5 py-1.5 md:px-4 md:py-2 rounded-lg text-lg md:text-2xl font-bold tracking-[0.15em] shadow-md dark:shadow-white/10 uppercase notranslate" style={{fontFamily: "Arial, Helvetica, sans-serif"}}>
-                        SHEIN
-                    </div>
+                <div className="flex items-center gap-2 bg-red-50 dark:bg-red-950/40 border border-red-100 dark:border-red-800 px-4 py-2 rounded-xl shadow-sm">
+                    <i className="fa-brands fa-youtube text-red-600"></i>
+                    <span className="font-bold text-sm text-dark dark:text-white">የዩቲዩብ ስኬት</span>
                 </div>
-                
-                <div className="flex items-center gap-3 text-2xl md:text-4xl font-black font-heading text-gray-800 dark:text-gray-200 hover:text-black dark:hover:text-white transition transform hover:scale-110 cursor-default animate-float" style={{animationDelay: "0.6s"}}>
-                    <i className="fa-brands fa-tiktok text-black dark:text-gray-100"></i> <span className="notranslate">TikTok</span>
+                <div className="flex items-center gap-2 bg-amber-50 dark:bg-amber-950/40 border border-amber-100 dark:border-amber-800 px-4 py-2 rounded-xl shadow-sm">
+                    <i className="fa-solid fa-chart-line text-amber-500"></i>
+                    <span className="font-bold text-sm text-dark dark:text-white">ክሪፕቶ ትሬዲንግ</span>
                 </div>
-                
-                <div className="flex items-center transition transform hover:scale-110 cursor-default animate-float" style={{animationDelay: "0.8s"}}>
-                    <div className="flex items-end text-3xl md:text-[40px] font-black text-black dark:text-white tracking-tighter leading-none notranslate" style={{fontFamily: "'Montserrat', sans-serif"}}>
-                        BYB<span className="w-[4px] md:w-[6px] h-[22px] md:h-[28px] bg-[#F7A600] mx-[2px] md:mx-[3px] inline-block relative bottom-[2px] md:bottom-[3px]"></span>T
-                    </div>
+                <div className="flex items-center gap-2 bg-purple-50 dark:bg-purple-950/40 border border-purple-100 dark:border-purple-800 px-4 py-2 rounded-xl shadow-sm">
+                    <i className="fa-solid fa-code text-purple-600 dark:text-purple-400"></i>
+                    <span className="font-bold text-sm text-dark dark:text-white">ዌብ ደቨሎፕመንት</span>
                 </div>
             </div>
         </div>
