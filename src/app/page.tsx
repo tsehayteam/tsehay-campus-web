@@ -18,7 +18,7 @@ export default function Home() {
   
   // AI Chat state
   const [aiMessages, setAiMessages] = useState([
-    { role: 'ai', text: 'ሰላም! 👋 ስለ ኮርሶቻችን ማወቅ የሚፈልጉትን ይጠይቁኝ።' }
+    { role: 'ai', text: 'ሰላም! 👋 እኔ የ Tsehay Campus አጠቃላይ የ AI ረዳት ነኝ። ስለ ኮርሶቻችን፣ ስለ ዌብሳይቱ አጠቃቀም፣ ስለ ክፍያ እና ስለ መስራቾቻችን ማንኛውንም መረጃ ሊጠይቁኝ ይችላሉ። ዛሬ በምን ልርዳዎ?' }
   ]);
   const [aiInput, setAiInput] = useState('');
   const [isAiLoading, setIsAiLoading] = useState(false);
@@ -348,7 +348,7 @@ export default function Home() {
             <div className="flex-1 w-full max-w-lg bg-white/95 dark:bg-darkCard/95 backdrop-blur-md p-8 rounded-[3rem] shadow-2xl text-dark border border-white/20">
                 <div className="flex items-center gap-3 border-b border-gray-100 dark:border-gray-800 pb-4 mb-5">
                     <div className="bg-secondary text-white p-2.5 rounded-xl shadow-inner"><i className="fa-solid fa-robot animate-pulse"></i></div>
-                    <h3 className="font-black text-base dark:text-white notranslate">Tsehay AI {t('ai_assistant_demo')}</h3>
+                    <h3 className="font-black text-base dark:text-white notranslate">Tsehay AI (የካምፓስ ረዳትዎ)</h3>
                 </div>
                 <div className="space-y-4 mb-6 text-sm font-body h-64 overflow-y-auto pr-2 custom-modal-scroll" id="ai-landing-chat">
                     {aiMessages.map((msg, index) => (
@@ -372,7 +372,7 @@ export default function Home() {
                     <div ref={chatEndRef} />
                 </div>
                 <div className="flex gap-2">
-                    <input id="ai-landing-input" type="text" value={aiInput} onChange={(e) => setAiInput(e.target.value)} placeholder={t('ask_anything')} className="flex-1 bg-gray-100 dark:bg-dark dark:text-white border-none rounded-full px-5 py-3 text-sm focus:ring-2 focus:ring-secondary/30 outline-none transition" onKeyPress={(event) => { if(event.key === 'Enter') handleAiSubmit() }} />
+                    <input id="ai-landing-input" type="text" value={aiInput} onChange={(e) => setAiInput(e.target.value)} placeholder="ጥያቄዎን እዚህ ይጻፉ..." className="flex-1 bg-gray-100 dark:bg-dark dark:text-white border-none rounded-full px-5 py-3 text-sm focus:ring-2 focus:ring-secondary/30 outline-none transition" onKeyPress={(event) => { if(event.key === 'Enter') handleAiSubmit() }} />
                     <button onClick={handleAiSubmit} disabled={isAiLoading || !aiInput.trim()} className="bg-secondary text-white w-12 h-12 rounded-full flex items-center justify-center hover:bg-dark dark:hover:bg-primary transition shadow-md disabled:opacity-50">
                         <i className="fa-solid fa-paper-plane"></i>
                     </button>
