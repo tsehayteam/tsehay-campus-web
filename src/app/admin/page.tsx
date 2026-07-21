@@ -42,10 +42,10 @@ export default function AdminDashboard() {
     banner: '',
     video: '',
     desc: '',
+    whatYouWillLearn: '',
     aiPrompt: '',
     level: 'ጀማሪ (Beginner)',
-    isPopular: false,
-    whatYouWillLearnText: ''
+    isPopular: false
   });
 
   const [lessons, setLessons] = useState<any[]>([]);
@@ -172,9 +172,9 @@ export default function AdminDashboard() {
   const openForm = async (course: any = null) => {
     if (course) {
       setEditingCourse(course);
-      setFormData({
+      setFormData({ 
         ...course,
-        whatYouWillLearnText: Array.isArray(course.whatYouWillLearn) ? course.whatYouWillLearn.join('\n') : ''
+        whatYouWillLearn: course.whatYouWillLearn ? course.whatYouWillLearn.join('\n') : ''
       });
       
       // Load lessons from course document
@@ -187,8 +187,7 @@ export default function AdminDashboard() {
       setEditingCourse(null);
       setFormData({ 
         title: '', category: 'General', instructor: '', instructorImage: '', price: '', oldPrice: '', 
-        duration: '', status: 'Active', image: '', banner: '', video: '', desc: '', aiPrompt: '', level: 'ጀማሪ (Beginner)', isPopular: false,
-        whatYouWillLearnText: '' 
+        duration: '', status: 'Active', image: '', banner: '', video: '', desc: '', whatYouWillLearn: '', aiPrompt: '', level: 'ጀማሪ (Beginner)', isPopular: false 
       });
       setLessons([{ title: '', duration: '', video: '', desc: '', points: 0 }]);
     }
@@ -207,11 +206,13 @@ export default function AdminDashboard() {
         video: lesson.video // Video URL is NOT from drive (e.g., mediadelivery)
       }));
 
-      const whatYouWillLearn = formData.whatYouWillLearnText ? formData.whatYouWillLearnText.split('\n').filter((l: string) => l.trim() !== '') : [];
+      const whatYouWillLearnArray = formData.whatYouWillLearn 
+        ? formData.whatYouWillLearn.split('\n').map((item: string) => item.trim()).filter((item: string) => item.length > 0)
+        : [];
 
       await setDoc(courseRef, {
         ...formData,
-        whatYouWillLearn,
+        whatYouWillLearn: whatYouWillLearnArray,
         lessons: formattedLessons,
         image: formatDriveLink(formData.image),
         banner: formatDriveLink(formData.banner),
@@ -824,9 +825,9 @@ export default function AdminDashboard() {
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">ምን ይማሩበታል (What You Will Learn)</label>
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">ምን ይማራሉ? (What you will learn)</label>
                   <p className="text-xs text-gray-500 mb-2">እያንዳንዱን ነጥብ በአዲስ መስመር (Enter እየነኩ) ይጻፉ።</p>
-                  <textarea rows={5} value={formData.whatYouWillLearnText} onChange={e => setFormData({...formData, whatYouWillLearnText: e.target.value})} className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-dark dark:text-white outline-none focus:border-primary transition" placeholder="ለምሳሌ:&#10;የዲጂታል ማርኬቲንግ መሰረታዊ እውቀት&#10;ማስታወቂያዎችን በፌስቡክ ማውጣት"></textarea>
+                  <textarea rows={5} value={formData.whatYouWillLearn || ''} onChange={e => setFormData({...formData, whatYouWillLearn: e.target.value})} className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-dark dark:text-white outline-none focus:border-primary transition" placeholder="ዲጂታል ማርኬቲንግ ምን እንደሆነ ይረዱበታል...&#10;የሶሻል ሚዲያ ማስታወቂያዎችን መስራት..."></textarea>
                 </div>
 
                 <div className="md:col-span-2">
