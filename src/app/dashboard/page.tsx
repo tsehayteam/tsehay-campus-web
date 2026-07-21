@@ -498,13 +498,15 @@ export default function StudentDashboard() {
                             }
                             
                                                         if (cleanUrl.includes('mediadelivery.net')) {
+                                const embedUrl = cleanUrl.replace('/play/', '/embed/').replace('video.mediadelivery.net', 'iframe.mediadelivery.net');
                                 return (
                                     <iframe
-                                        src={cleanUrl}
+                                        src={embedUrl}
                                         loading="lazy"
                                         className="absolute inset-0 w-full h-full border-none"
                                         allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;"
                                         allowFullScreen
+                                        referrerPolicy="origin"
                                     ></iframe>
                                 );
                             } else if (cleanUrl.includes('drive.google.com')) {

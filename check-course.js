@@ -25,8 +25,11 @@ async function checkCourse() {
     const data = doc.data();
     console.log('Course ID:', doc.id);
     console.log('Title:', data.title);
-    console.log('Video:', data.video);
-    console.log('VideoUrl:', data.videoUrl);
+    console.log('Image:', data.image);
+    console.log('Banner:', data.banner);
+    console.log('Instructor:', data.instructor);
+    console.log('InstructorName:', data.instructorName);
+    console.log('InstructorImage:', data.instructorImage);
     
     // Also check lessons for this course
     const modulesSnapshot = await db.collection(`courses/${courseId}/modules`).get();

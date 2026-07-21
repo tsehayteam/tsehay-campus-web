@@ -410,13 +410,15 @@ export default function CoursePreviewPage({ params }: { params: Promise<{ id: st
                   {(() => {
                       let finalUrl = currentVideoUrl;
                       if (finalUrl.includes('mediadelivery.net')) {
+                          const embedUrl = finalUrl.replace('/play/', '/embed/').replace('video.mediadelivery.net', 'iframe.mediadelivery.net');
                           return (
                               <iframe
-                                  src={finalUrl}
+                                  src={embedUrl}
                                   loading="lazy"
                                   className="w-full h-full border-none"
                                   allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;"
                                   allowFullScreen
+                                  referrerPolicy="origin"
                               ></iframe>
                           );
                       } else if (finalUrl.includes('drive.google.com')) {
