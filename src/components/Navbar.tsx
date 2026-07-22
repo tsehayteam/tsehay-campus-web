@@ -171,13 +171,19 @@ export default function Navbar() {
                             <img src={user.photoURL || 'https://ui-avatars.com/api/?name=User&background=3268BA&color=fff'} alt="Profile" className="w-10 h-10 rounded-full border-2 border-primary object-cover" />
                         </button>
                         {showProfileDropdown && (
-                          <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-darkCard rounded-xl shadow-xl border border-gray-100 dark:border-gray-800 py-2 z-50">
-                              <div className="block px-4 py-3 text-sm text-gray-700 dark:text-gray-300 border-b border-gray-100 dark:border-gray-800 break-all font-bold bg-gray-50/50 dark:bg-darkCard/50"><i className="fa-solid fa-envelope mr-2 w-4 text-center text-primary"></i> {user.email}</div>
+                          <div className="absolute right-0 mt-2 w-52 bg-white dark:bg-darkCard rounded-xl shadow-xl border border-gray-100 dark:border-gray-800 py-2 z-50 animate-in fade-in slide-in-from-top-2">
+                              <Link href="/dashboard" onClick={() => setShowProfileDropdown(false)} className="flex items-center gap-2.5 px-4 py-3 text-sm font-bold text-dark dark:text-white hover:bg-blue-50 dark:hover:bg-dark hover:text-secondary dark:hover:text-primary transition border-b border-gray-100 dark:border-gray-800">
+                                  <i className="fa-solid fa-graduation-cap text-primary text-base"></i> ወደ መማሪያ ክፍል
+                              </Link>
                               {isAdmin && (
-                                <Link href="/admin" className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-dark hover:text-secondary dark:hover:text-primary"><i className="fa-solid fa-shield-halved mr-2 w-4 text-center"></i> አድሚን</Link>
+                                <Link href="/admin" onClick={() => setShowProfileDropdown(false)} className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-dark hover:text-secondary dark:hover:text-primary transition">
+                                    <i className="fa-solid fa-shield-halved text-primary"></i> አድሚን
+                                </Link>
                               )}
                               <hr className="my-1 border-gray-100 dark:border-gray-800" />
-                              <button onClick={handleSignOut} className="w-full text-left px-4 py-2 text-sm text-danger hover:bg-red-50 dark:hover:bg-red-900/10 font-bold"><i className="fa-solid fa-arrow-right-from-bracket mr-2 w-4 text-center"></i> ዘግተህ ውጣ (Logout)</button>
+                              <button onClick={() => { setShowProfileDropdown(false); handleSignOut(); }} className="w-full text-left flex items-center gap-2.5 px-4 py-2.5 text-sm text-danger hover:bg-red-50 dark:hover:bg-red-900/10 font-bold transition">
+                                  <i className="fa-solid fa-arrow-right-from-bracket"></i> ዘግተህ ውጣ (Logout)
+                              </button>
                           </div>
                         )}
                       </div>
@@ -225,8 +231,8 @@ export default function Navbar() {
                   </>
                 ) : (
                   <>
-                    <div className="block px-3 py-2 text-white font-bold rounded-md hover:bg-white/5 border border-white/10 break-all"><i className="fa-solid fa-envelope mr-2"></i> {user.email}</div>
-                    {isAdmin && <Link href="/admin" className="block px-3 py-2 text-gray-700 dark:text-gray-300 font-bold rounded-md hover:bg-gray-50 dark:hover:bg-darkCard border border-gray-100 dark:border-gray-800">አድሚን</Link>}
+                    <Link href="/dashboard" onClick={() => setIsMobileMenuOpen(false)} className="block px-3 py-2.5 bg-primary/10 border border-primary/20 text-primary font-extrabold rounded-md"><i className="fa-solid fa-graduation-cap mr-2"></i> ወደ መማሪያ ክፍል</Link>
+                    {isAdmin && <Link href="/admin" onClick={() => setIsMobileMenuOpen(false)} className="block px-3 py-2 text-gray-700 dark:text-gray-300 font-bold rounded-md hover:bg-gray-50 dark:hover:bg-darkCard border border-gray-100 dark:border-gray-800">አድሚን</Link>}
                     <button onClick={handleSignOut} className="w-full text-danger font-bold py-2.5 hover:bg-red-50 rounded-lg border border-danger transition mt-2">ዘግተህ ውጣ (Logout)</button>
                   </>
                 )}

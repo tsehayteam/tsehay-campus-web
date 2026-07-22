@@ -75,7 +75,8 @@ export default function Home() {
     return () => unsubscribe();
   }, []);
 
-  const handleAiSubmit = async () => {
+  const handleAiSubmit = async (e?: React.FormEvent | React.KeyboardEvent | React.MouseEvent) => {
+    if (e) e.preventDefault();
     if (!aiInput.trim()) return;
     
     const question = aiInput.trim();
@@ -83,6 +84,11 @@ export default function Home() {
     setAiMessages(newMessages);
     setAiInput('');
     setIsAiLoading(true);
+
+    setTimeout(() => {
+      const container = document.getElementById('ai-landing-chat');
+      if (container) container.scrollTop = container.scrollHeight;
+    }, 50);
     
     try {
         const response = await fetch('/api/chat', {
@@ -94,8 +100,12 @@ export default function Home() {
         const data = await response.json();
         const reply = data.reply || data.error || "ይቅርታ፣ አሁን ላይ መመለስ አልቻልኩም።";
         setAiMessages([...newMessages, { role: 'ai', text: reply }]);
-    } catch (e: any) {
-        setAiMessages([...newMessages, { role: 'ai', text: `ስህተት: ${e?.message || e || "ያልታወቀ ስህተት"}` }]);
+        setTimeout(() => {
+          const container = document.getElementById('ai-landing-chat');
+          if (container) container.scrollTop = container.scrollHeight;
+        }, 50);
+    } catch (err: any) {
+        setAiMessages([...newMessages, { role: 'ai', text: `ስህተት: ${err?.message || err || "ያልታወቀ ስህተት"}` }]);
     } finally {
         setIsAiLoading(false);
     }
@@ -370,12 +380,19 @@ export default function Home() {
                     )}
                     <div ref={chatEndRef} />
                 </div>
-                <div className="flex gap-2">
-                    <input id="ai-landing-input" type="text" value={aiInput} onChange={(e) => setAiInput(e.target.value)} placeholder="ጥያቄዎን እዚህ ይጻፉ..." className="flex-1 bg-gray-100 dark:bg-dark dark:text-white border-none rounded-full px-5 py-3 text-sm focus:ring-2 focus:ring-secondary/30 outline-none transition" onKeyPress={(event) => { if(event.key === 'Enter') handleAiSubmit() }} />
-                    <button onClick={handleAiSubmit} disabled={isAiLoading || !aiInput.trim()} className="bg-secondary text-white w-12 h-12 rounded-full flex items-center justify-center hover:bg-dark dark:hover:bg-primary transition shadow-md disabled:opacity-50">
+                <form onSubmit={handleAiSubmit} className="flex gap-2">
+                    <input 
+                      id="ai-landing-input" 
+                      type="text" 
+                      value={aiInput} 
+                      onChange={(e) => setAiInput(e.target.value)} 
+                      placeholder="ጥያቄዎን እዚህ ይጻፉ..." 
+                      className="flex-1 bg-gray-100 dark:bg-dark dark:text-white border-none rounded-full px-5 py-3 text-sm focus:ring-2 focus:ring-secondary/30 outline-none transition" 
+                    />
+                    <button type="submit" disabled={isAiLoading || !aiInput.trim()} className="bg-secondary text-white w-12 h-12 rounded-full flex items-center justify-center hover:bg-dark dark:hover:bg-primary transition shadow-md disabled:opacity-50">
                         <i className="fa-solid fa-paper-plane"></i>
                     </button>
-                </div>
+                </form>
             </div>
         </div>
     </section>
