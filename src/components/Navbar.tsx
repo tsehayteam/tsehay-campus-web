@@ -172,9 +172,21 @@ export default function Navbar() {
                         </button>
                         {showProfileDropdown && (
                           <div className="absolute right-0 mt-2 w-52 bg-white dark:bg-darkCard rounded-xl shadow-xl border border-gray-100 dark:border-gray-800 py-2 z-50 animate-in fade-in slide-in-from-top-2">
-                              <Link href="/dashboard" onClick={() => setShowProfileDropdown(false)} className="flex items-center gap-2.5 px-4 py-3 text-sm font-bold text-dark dark:text-white hover:bg-blue-50 dark:hover:bg-dark hover:text-secondary dark:hover:text-primary transition border-b border-gray-100 dark:border-gray-800">
+                              <a href="/#courses" onClick={(e) => {
+                                  setShowProfileDropdown(false);
+                                  if (pathname === '/') {
+                                      e.preventDefault();
+                                      const element = document.getElementById('courses');
+                                      if (element) {
+                                          const offset = 80;
+                                          const bodyRect = document.body.getBoundingClientRect().top;
+                                          const elementRect = element.getBoundingClientRect().top;
+                                          window.scrollTo({ top: elementRect - bodyRect - offset, behavior: 'smooth' });
+                                      }
+                                  }
+                              }} className="flex items-center gap-2.5 px-4 py-3 text-sm font-bold text-dark dark:text-white hover:bg-blue-50 dark:hover:bg-dark hover:text-secondary dark:hover:text-primary transition border-b border-gray-100 dark:border-gray-800">
                                   <i className="fa-solid fa-graduation-cap text-primary text-base"></i> ወደ መማሪያ ክፍል
-                              </Link>
+                              </a>
                               {isAdmin && (
                                 <Link href="/admin" onClick={() => setShowProfileDropdown(false)} className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-dark hover:text-secondary dark:hover:text-primary transition">
                                     <i className="fa-solid fa-shield-halved text-primary"></i> አድሚን
@@ -231,7 +243,19 @@ export default function Navbar() {
                   </>
                 ) : (
                   <>
-                    <Link href="/dashboard" onClick={() => setIsMobileMenuOpen(false)} className="block px-3 py-2.5 bg-primary/10 border border-primary/20 text-primary font-extrabold rounded-md"><i className="fa-solid fa-graduation-cap mr-2"></i> ወደ መማሪያ ክፍል</Link>
+                    <a href="/#courses" onClick={(e) => {
+                        setIsMobileMenuOpen(false);
+                        if (pathname === '/') {
+                            e.preventDefault();
+                            const element = document.getElementById('courses');
+                            if (element) {
+                                const offset = 80;
+                                const bodyRect = document.body.getBoundingClientRect().top;
+                                const elementRect = element.getBoundingClientRect().top;
+                                window.scrollTo({ top: elementRect - bodyRect - offset, behavior: 'smooth' });
+                            }
+                        }
+                    }} className="block px-3 py-2.5 bg-primary/10 border border-primary/20 text-primary font-extrabold rounded-md"><i className="fa-solid fa-graduation-cap mr-2"></i> ወደ መማሪያ ክፍል</a>
                     {isAdmin && <Link href="/admin" onClick={() => setIsMobileMenuOpen(false)} className="block px-3 py-2 text-gray-700 dark:text-gray-300 font-bold rounded-md hover:bg-gray-50 dark:hover:bg-darkCard border border-gray-100 dark:border-gray-800">አድሚን</Link>}
                     <button onClick={handleSignOut} className="w-full text-danger font-bold py-2.5 hover:bg-red-50 rounded-lg border border-danger transition mt-2">ዘግተህ ውጣ (Logout)</button>
                   </>
