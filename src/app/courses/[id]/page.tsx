@@ -179,11 +179,6 @@ export default function CoursePreviewPage({ params }: { params: Promise<{ id: st
         )}
         {/* Subtle Background Pattern */}
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20 mix-blend-overlay z-0"></div>
-        {displayInstructorImage && (
-          <div className="absolute right-10 bottom-0 opacity-20 pointer-events-none hidden lg:block z-0">
-            <img src={displayInstructorImage} alt="" className="h-64 object-cover object-bottom" />
-          </div>
-        )}
         
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row gap-8 relative z-10">
           
