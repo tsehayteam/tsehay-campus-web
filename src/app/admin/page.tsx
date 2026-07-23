@@ -45,6 +45,11 @@ export default function AdminDashboard() {
     pdfTitle: '',
     desc: '',
     whatYouWillLearn: '',
+    requirements: '',
+    instructorBio: '',
+    assignmentsInfo: '',
+    accessInfo: '',
+    certificateInfo: '',
     aiPrompt: '',
     level: 'ጀማሪ (Beginner)',
     isPopular: false
@@ -176,7 +181,8 @@ export default function AdminDashboard() {
       setEditingCourse(course);
       setFormData({ 
         ...course,
-        whatYouWillLearn: course.whatYouWillLearn ? course.whatYouWillLearn.join('\n') : ''
+        whatYouWillLearn: course.whatYouWillLearn ? course.whatYouWillLearn.join('\n') : '',
+        requirements: course.requirements ? course.requirements.join('\n') : ''
       });
       
       // Load lessons from course document
@@ -189,7 +195,7 @@ export default function AdminDashboard() {
       setEditingCourse(null);
       setFormData({ 
         title: '', category: 'General', instructor: '', instructorImage: '', price: '', oldPrice: '', 
-        duration: '', status: 'Active', image: '', banner: '', video: '', pdfUrl: '', pdfTitle: '', desc: '', whatYouWillLearn: '', aiPrompt: '', level: 'ጀማሪ (Beginner)', isPopular: false 
+        duration: '', status: 'Active', image: '', banner: '', video: '', pdfUrl: '', pdfTitle: '', desc: '', whatYouWillLearn: '', requirements: '', instructorBio: '', assignmentsInfo: '4 assignments', accessInfo: 'Access on mobile and TV', certificateInfo: 'Certificate of completion', aiPrompt: '', level: 'ጀማሪ (Beginner)', isPopular: false 
       });
       setLessons([{ title: '', duration: '', video: '', desc: '', points: 0 }]);
     }
@@ -212,9 +218,18 @@ export default function AdminDashboard() {
         ? formData.whatYouWillLearn.split('\n').map((item: string) => item.trim()).filter((item: string) => item.length > 0)
         : [];
 
+      const requirementsArray = formData.requirements 
+        ? formData.requirements.split('\n').map((item: string) => item.trim()).filter((item: string) => item.length > 0)
+        : [];
+
       await setDoc(courseRef, {
         ...formData,
         whatYouWillLearn: whatYouWillLearnArray,
+        requirements: requirementsArray,
+        instructorBio: formData.instructorBio || '',
+        assignmentsInfo: formData.assignmentsInfo || '',
+        accessInfo: formData.accessInfo || '',
+        certificateInfo: formData.certificateInfo || '',
         lessons: formattedLessons,
         image: formatDriveLink(formData.image),
         banner: formatDriveLink(formData.banner),
@@ -840,6 +855,36 @@ export default function AdminDashboard() {
                   <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">ምን ይማራሉ? (What you will learn)</label>
                   <p className="text-xs text-gray-500 mb-2">እያንዳንዱን ነጥብ በአዲስ መስመር (Enter እየነኩ) ይጻፉ።</p>
                   <textarea rows={5} value={formData.whatYouWillLearn || ''} onChange={e => setFormData({...formData, whatYouWillLearn: e.target.value})} className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-dark dark:text-white outline-none focus:border-primary transition" placeholder="ዲጂታል ማርኬቲንግ ምን እንደሆነ ይረዱበታል...&#10;የሶሻል ሚዲያ ማስታወቂያዎችን መስራት..."></textarea>
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">የኮርስ ቅደመ-ሁኔታዎች (Requirements)</label>
+                  <p className="text-xs text-gray-500 mb-2">እያንዳንዱን መስፈርት በአዲስ መስመር (Enter እየነኩ) ይጻፉ።</p>
+                  <textarea rows={4} value={formData.requirements || ''} onChange={e => setFormData({...formData, requirements: e.target.value})} className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-dark dark:text-white outline-none focus:border-primary transition" placeholder="መሰረታዊ የኮምፒውተር እውቀት&#10;ስማርት ስልክ ወይም ላፕቶፕ"></textarea>
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">የአሰልጣኙ ማብራሪያ / ባዮግራፊ (Instructor Bio)</label>
+                  <textarea rows={4} value={formData.instructorBio || ''} onChange={e => setFormData({...formData, instructorBio: e.target.value})} className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-dark dark:text-white outline-none focus:border-primary transition" placeholder="ስለ አሰልጣኙ አጭር ማብራሪያ ይጻፉ..."></textarea>
+                </div>
+
+                <div className="md:col-span-2 mt-4">
+                  <h3 className="font-bold text-lg border-b border-gray-100 dark:border-slate-700 pb-2 mb-4 text-primary">የኮርስ ካርድ መረጃዎች (This Course Includes)</h3>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">የአሳይመንት መረጃ (Assignments Info)</label>
+                  <input type="text" value={formData.assignmentsInfo || ''} onChange={e => setFormData({...formData, assignmentsInfo: e.target.value})} className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-dark dark:text-white outline-none focus:border-primary transition" placeholder="4 assignments" />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">የመጠቀሚያ መሳሪያዎች (Access Info)</label>
+                  <input type="text" value={formData.accessInfo || ''} onChange={e => setFormData({...formData, accessInfo: e.target.value})} className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-dark dark:text-white outline-none focus:border-primary transition" placeholder="Access on mobile and TV" />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">የሰርተፊኬት መረጃ (Certificate Info)</label>
+                  <input type="text" value={formData.certificateInfo || ''} onChange={e => setFormData({...formData, certificateInfo: e.target.value})} className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-dark dark:text-white outline-none focus:border-primary transition" placeholder="Certificate of completion" />
                 </div>
 
                 <div className="md:col-span-2">

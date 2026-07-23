@@ -518,15 +518,15 @@ export default function CoursePreviewPage({ params }: { params: Promise<{ id: st
                   </div>
                   <div className="flex items-center gap-3">
                     <i className="fa-regular fa-file-lines w-4"></i>
-                    <span>{course?.lessons?.length || 0} assignments</span>
+                    <span>{course?.assignmentsInfo || `${course?.lessons?.length || 0} assignments`}</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <i className="fa-solid fa-mobile-screen-button w-4"></i>
-                    <span>Access on mobile and TV</span>
+                    <span>{course?.accessInfo || 'Access on mobile and TV'}</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <i className="fa-solid fa-trophy w-4"></i>
-                    <span>Certificate of completion</span>
+                    <span>{course?.certificateInfo || 'Certificate of completion'}</span>
                   </div>
                 </div>
               </div>
