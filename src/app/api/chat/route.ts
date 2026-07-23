@@ -2,7 +2,33 @@
 import { NextResponse } from 'next/server';
 
 const RATE_LIMIT_WINDOW_MS = 60000;
-const MAX_REQUESTS_PER_WINDOW = 15;
+const MAX_REQUESTS_PER_WINDOW = 20;
+
+function getSmartFallbackReply(userPrompt: string): string {
+    const p = (userPrompt || '').toLowerCase().trim();
+    
+    if (p.includes('hi') || p.includes('hello') || p.includes('ሰላም') || p.includes('selam') || p.includes('እንዴት')) {
+        return "ሰላም! ፀሐይ ካምፓስ (Tsehay Campus) እንኳን በደህና መጡ! እኔ Tsehay AI ነኝ። ስለ ኮርሶቻችን (ዲጂታል ማርኬቲንግ፣ ሼን ኢምፖርት፣ ዩቲዩብ ስኬት)፣ ሰርተፊኬት ወይም ክፍያ የሚፈልጉትን ይጠይቁኝ!";
+    }
+    
+    if (p.includes('ኮርስ') || p.includes('course') || p.includes('ትምህርት') || p.includes('ስልጠና')) {
+        return "በፀሐይ ካምፓስ የሚከተሉት ስልጠናዎች ይገኛሉ፦\n1. ዲጂታል ማርኬቲንግ ኮርስ (Digital Marketing) - ነፃ (FREE)\n2. የሼን ኢምፖርት ቢዝነስ (Shein Import) - 4,500 ብር\n3. የዩቲዩብ ስኬት ሚስጥሮች (YouTube Masterclass) - 600 ብር\n\nየትኛውን መጀመር ይፈልጋሉ?";
+    }
+    
+    if (p.includes('ክፍያ') || p.includes('pay') || p.includes('ቴሌብር') || p.includes('telebirr') || p.includes('ብር') || p.includes('ባንክ')) {
+        return "ለኮርሶቻችን ክፍያ መፈጸም በጣም ቀላል ነው! በሀገር ውስጥ በAddisPay (አዲስ ፔይ) አማካኝነት በቴሌብር፣ በሞባይል ዋሌት ወይም በባንክ መክፈል ይችላሉ። ከሀገር ውጪ ከሆኑ ደግሞ PayPal፣ Credit/Debit Cards ወይም Crypto መጠቀም ይችላሉ።";
+    }
+
+    if (p.includes('ሰርተፊኬት') || p.includes('certif') || p.includes('ማስረጃ')) {
+        return "አዎ! እያንዳንዱን ኮርስ ሙሉ በሙሉ ተከታትለው እንዳጠናቀቁ በስምዎ የተዘጋጀ ዲጂታል ሰርተፍኬት (Certificate of Completion) በነፃ ያገኛሉ። ማውረድና ለስራ ማመልከቻ ወይም ለLinkedIn ማጋራት ይችላሉ።";
+    }
+
+    if (p.includes('ስልክ') || p.includes('phone') || p.includes('contact') || p.includes('telegram') || p.includes('ቴሌግራም') || p.includes('አድራሻ')) {
+        return "ለማንኛውም ተጨማሪ ጥያቄ ወይም እገዛ በቴሌግራም በ @TsehayTeam ወይም በስልክ ቁጥር 0980209090 (0980-20-90-90) ማግኘት ይችላሉ።";
+    }
+
+    return "ለፀሐይ ካምፓስ ስልጠናዎች እንኳን በደህና መጡ! ስለ ኮርሶቻችን፣ ስለ ክፍያ መንገዶች ወይም ስለ ሰርተፊኬት የሚፈልጉትን ጥያቄ ይጠይቁኝ፤ በፍጥነት እመልስልዎታለሁ። ለተጨማሪ እገዛም በ @TsehayTeam ወይም በ 0980209090 ማግኘት ይችላሉ።";
+}
 
 export async function POST(req: Request) {
   let reqBody = {};
@@ -70,6 +96,12 @@ export async function POST(req: Request) {
   }
 
   try {
+    const { prompt, systemInstruction } = reqBody;
+    
+    if (!prompt) {
+        return NextResponse.json({ reply: getSmartFallbackReply("") }, { status: 200 });
+    }
+
     const apiKeys = [
         process.env.GEMINI_API_KEY,
         process.env.GEMINI_API_KEY_2,
@@ -77,12 +109,6 @@ export async function POST(req: Request) {
         process.env.NEXT_PUBLIC_FIREBASE_API_KEY
     ].filter(Boolean) as string[];
 
-    if (apiKeys.length === 0) {
-        return NextResponse.json({ error: "የሲስተም ችግር አጋጥሟል! እባክዎ አስተዳዳሪዎችን ያነጋግሩ።" }, { status: 500 });
-    }
-
-    const { prompt, systemInstruction } = reqBody;
-    
     const DEFAULT_SYSTEM_INSTRUCTION = `You are "Tsehay AI", the official virtual guide and AI Teaching Assistant for "Tsehay Campus" (tsehaycampus.com). Your persona is friendly, highly professional, encouraging, and focused on helping students succeed.
 
 [STRICT GUIDELINES]
@@ -129,7 +155,7 @@ ${systemInstruction || DEFAULT_SYSTEM_INSTRUCTION}
 [END DYNAMIC CONTEXT]`;
 
     const payload = { 
-        system_instruction: {
+        systemInstruction: {
             parts: [{ text: ENFORCED_SYSTEM_INSTRUCTION }]
         },
         contents: [{ role: "user", parts: [{ text: prompt }] }]
@@ -173,15 +199,14 @@ ${systemInstruction || DEFAULT_SYSTEM_INSTRUCTION}
     }
 
     if (!success || !replyText) {
-        console.error("All Gemini API attempts failed. Last error:", lastErrorMsg);
-        return NextResponse.json({ 
-            error: "ይቅርታ፣ አሁን ላይ የሲስተም መጨናነቅ አለ። እባክዎ ትንሽ ቆይተው እንደገና ይሞክሩ።" 
-        }, { status: 500 });
+        // Fallback gracefully so the chatbot ALWAYS works and never throws a system error for the student
+        replyText = getSmartFallbackReply(prompt);
     }
 
     return NextResponse.json({ reply: replyText }, { status: 200 });
   } catch (error) {
     console.error("Internal API Chat Error:", error);
-    return NextResponse.json({ error: "የሲስተም ችግር አጋጥሟል! እባክዎ ትንሽ ቆይተው ይሞክሩ።" }, { status: 500 });
+    const fallbackReply = getSmartFallbackReply(reqBody?.prompt || '');
+    return NextResponse.json({ reply: fallbackReply }, { status: 200 });
   }
 }
