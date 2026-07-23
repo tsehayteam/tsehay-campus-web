@@ -86,8 +86,14 @@ export default function FloatingAIButton() {
                                     {m.text}
                                 </div>
                                 {m.role === 'system' && i > 0 && (
-                                    <button onClick={() => alert('ወደ ኖት ታክሏል! (Added to notes)')} className="text-[10px] text-slate-500 hover:text-primary mt-1 flex items-center gap-1 transition">
-                                        <i className="fa-solid fa-plus"></i> ወደ ኖት አድ አድርግ
+                                    <button 
+                                        onClick={() => {
+                                            document.dispatchEvent(new CustomEvent('add-to-notes', { detail: { text: m.text } }));
+                                            alert('ማስታወሻዎ በተሳካ ሁኔታ ተመዝግቧል! (Note saved successfully)');
+                                        }} 
+                                        className="mt-2 text-[11px] bg-amber-400/20 hover:bg-amber-400 dark:bg-amber-500/20 dark:hover:bg-amber-400 text-amber-800 dark:text-amber-300 hover:text-dark font-black px-2.5 py-1 rounded-lg border border-amber-400/40 flex items-center gap-1 transition-all shadow-xs"
+                                    >
+                                        <i className="fa-solid fa-bookmark text-[10px]"></i> ወደ ማስታወሻ አድ አድርግ
                                     </button>
                                 )}
                             </div>

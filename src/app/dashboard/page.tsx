@@ -42,6 +42,11 @@ export default function StudentDashboard() {
   // Notification State
   const [showNotifications, setShowNotifications] = useState(false);
   const [isDarkTheme, setIsDarkTheme] = useState(true);
+
+  // Notes State
+  const [studentNotes, setStudentNotes] = useState<Array<{ id: string; text: string; createdAt: string; lessonTitle?: string }>>([]);
+  const [noteInput, setNoteInput] = useState("");
+  const [noteSavedMessage, setNoteSavedMessage] = useState("");
   
   const { t } = useLanguage();
 
@@ -162,6 +167,79 @@ export default function StudentDashboard() {
     };
     fetchModules();
   }, [activeCourse]);
+
+  useEffect(() => {
+    if (!activeCourse || !user) return;
+    const fetchUserData = async () => {
+      try {
+        const userRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'purchased_courses', activeCourse.id);
+        const userDoc = await getDoc(userRef);
+        if (userDoc.exists()) {
+          const data = userDoc.data();
+          const completed = data.completedLessons || [];
+          setProgress(completed);
+          if (data.isCompleted) {
+            setIsCourseCompleted(true);
+          }
+          if (data.notes && Array.isArray(data.notes)) {
+            setStudentNotes(data.notes);
+          } else {
+            setStudentNotes([]);
+          }
+        }
+      } catch (e) {
+        console.error("Error loading user progress & notes:", e);
+      }
+    };
+    fetchUserData();
+  }, [activeCourse, user]);
+
+  const handleSaveNote = async (textToSave?: string) => {
+    const text = textToSave || noteInput;
+    if (!text || !text.trim() || !activeCourse || !user) return;
+
+    const newNote = {
+      id: Date.now().toString(),
+      text: text.trim(),
+      createdAt: new Date().toLocaleString('am-ET', { dateStyle: 'medium', timeStyle: 'short' }),
+      lessonTitle: activeLesson?.title || activeCourse.title
+    };
+
+    const updatedNotes = [newNote, ...studentNotes];
+    setStudentNotes(updatedNotes);
+    if (!textToSave) setNoteInput('');
+
+    try {
+      const userRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'purchased_courses', activeCourse.id);
+      await setDoc(userRef, { notes: updatedNotes }, { merge: true });
+      setNoteSavedMessage("ማስታወሻዎ በተሳካ ሁኔታ ተመዝግቧል!");
+      setTimeout(() => setNoteSavedMessage(""), 3000);
+    } catch (err) {
+      console.error("Error saving note:", err);
+    }
+  };
+
+  const handleDeleteNote = async (noteId: string) => {
+    if (!activeCourse || !user) return;
+    const updatedNotes = studentNotes.filter(n => n.id !== noteId);
+    setStudentNotes(updatedNotes);
+    try {
+      const userRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'purchased_courses', activeCourse.id);
+      await setDoc(userRef, { notes: updatedNotes }, { merge: true });
+    } catch (err) {
+      console.error("Error deleting note:", err);
+    }
+  };
+
+  useEffect(() => {
+    const handleGlobalAddToNotes = (e: any) => {
+      if (e.detail?.text) {
+        handleSaveNote(e.detail.text);
+      }
+    };
+    window.addEventListener('add-to-notes', handleGlobalAddToNotes);
+    return () => window.removeEventListener('add-to-notes', handleGlobalAddToNotes);
+  }, [activeCourse, user, studentNotes, activeLesson]);
 
   const handleVideoEnd = async () => {
     if (!activeLesson || !activeCourse || !user) return;
@@ -532,11 +610,7 @@ ${customAdminPrompt}
             <div className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
                 <div>
                     <h1 className="text-2xl sm:text-3xl font-black font-heading text-dark dark:text-white mb-2">{activeCourse?.title || t('course_loading')}</h1>
-                    <p className="text-gray-500 dark:text-gray-400 font-body text-sm">{t('please_wait')}</p>
-                </div>
-                <div className="flex gap-2">
-                    <button className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 font-bold text-sm shadow-sm transition"><i className="fa-regular fa-bookmark"></i> {t('save')}</button>
-                    <button className="flex items-center gap-2 px-4 py-2 bg-secondary text-white rounded-lg hover:bg-blue-700 font-bold text-sm shadow-sm transition"><i className="fa-solid fa-check"></i> {t('completed')}</button>
+                    <p className="text-gray-500 dark:text-gray-400 font-body text-sm">{activeCourse?.category || 'Tsehay Campus Course'}</p>
                 </div>
             </div>
 
@@ -728,9 +802,73 @@ ${customAdminPrompt}
                             )}
                             
                             {activeTab === 'notes' && (
-                                <div className="text-center py-10">
-                                    <i className="fa-solid fa-pen-to-square text-4xl text-gray-300 dark:text-gray-600 mb-4"></i>
-                                    <h3 className="text-lg font-bold text-gray-500">ማስታወሻዎች በቅርቡ ይመጣሉ (Notes coming soon)</h3>
+                                <div className="space-y-6">
+                                    <div className="bg-gray-50 dark:bg-slate-800/80 p-5 rounded-2xl border border-gray-200 dark:border-slate-700 shadow-sm">
+                                        <h3 className="font-heading font-black text-lg text-dark dark:text-white mb-2 flex items-center gap-2">
+                                            <i className="fa-solid fa-pen-to-square text-primary"></i>
+                                            <span>አዲስ ማስታወሻ መዝግብ (Add New Note)</span>
+                                        </h3>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">ለዚህ ሌሰን ({activeLesson?.title || 'ኮርስ'}) የሚረዱዎትን ዋና ዋና ነጥቦች እዚህ ይፃፉና ያስቀምጡ።</p>
+                                        <textarea
+                                            value={noteInput}
+                                            onChange={e => setNoteInput(e.target.value)}
+                                            placeholder="ማስታወሻዎን እዚህ ይፃፉ..."
+                                            rows={3}
+                                            className="w-full bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl p-3 text-sm text-dark dark:text-white outline-none focus:border-primary transition resize-none"
+                                        ></textarea>
+                                        <div className="flex justify-between items-center mt-3">
+                                            {noteSavedMessage && (
+                                                <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 animate-pulse">
+                                                    <i className="fa-solid fa-circle-check mr-1"></i> {noteSavedMessage}
+                                                </span>
+                                            )}
+                                            <button 
+                                                onClick={() => handleSaveNote()} 
+                                                className="ml-auto bg-primary text-dark font-black px-5 py-2 rounded-xl hover:bg-yellow-400 transition text-sm shadow-sm flex items-center gap-2"
+                                            >
+                                                <i className="fa-solid fa-floppy-disk"></i>
+                                                <span>ማስታወሻ መዝግብ</span>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <h3 className="font-heading font-black text-lg text-dark dark:text-white mb-4 flex items-center justify-between">
+                                            <span>የተመዘገቡ ማስታወሻዎች ({studentNotes.length})</span>
+                                        </h3>
+                                        {studentNotes.length === 0 ? (
+                                            <div className="text-center py-10 bg-gray-50 dark:bg-slate-800/50 rounded-2xl border border-dashed border-gray-200 dark:border-slate-700">
+                                                <i className="fa-regular fa-note-sticky text-4xl text-gray-300 dark:text-gray-600 mb-3"></i>
+                                                <p className="text-sm font-bold text-gray-500 dark:text-gray-400">እስካሁን ምንም ማስታወሻ አልተመዘገበም።</p>
+                                                <p className="text-xs text-gray-400 mt-1">በላይኛው ሳጥን ይፃፉ ወይም በ Tsehay AI መልስ ላይ "ወደ ማስታወሻ አድ አድርግ" የሚለውን ይጫኑ።</p>
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-3">
+                                                {studentNotes.map((note) => (
+                                                    <div key={note.id} className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm relative group hover:border-primary/50 transition">
+                                                        <div className="flex justify-between items-start mb-2">
+                                                            <span className="text-[11px] font-bold bg-primary/20 text-dark dark:text-primary px-2.5 py-0.5 rounded-full">
+                                                                <i className="fa-solid fa-bookmark mr-1 text-[10px]"></i> {note.lessonTitle || activeCourse?.title}
+                                                            </span>
+                                                            <div className="flex items-center gap-3">
+                                                                <span className="text-[10px] text-gray-400">{note.createdAt}</span>
+                                                                <button 
+                                                                    onClick={() => handleDeleteNote(note.id)} 
+                                                                    className="text-gray-400 hover:text-red-500 transition text-xs" 
+                                                                    title="ሰርዝ (Delete Note)"
+                                                                >
+                                                                    <i className="fa-solid fa-trash-can"></i>
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                        <p className="text-sm text-gray-700 dark:text-gray-200 font-body leading-relaxed whitespace-pre-wrap">
+                                                            {note.text}
+                                                        </p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             )}
 
@@ -747,8 +885,17 @@ ${customAdminPrompt}
                                         <div className="flex-1 overflow-y-auto p-4 space-y-4">
                                             {chatMessages.map((msg, idx) => (
                                                 <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                                    <div className={`max-w-[80%] rounded-2xl p-4 text-sm ${msg.role === 'user' ? 'bg-secondary text-white rounded-tr-sm' : 'bg-white dark:bg-slate-700 dark:text-white border border-gray-100 dark:border-slate-600 rounded-tl-sm shadow-sm'}`}>
-                                                        {msg.text}
+                                                    <div className={`max-w-[85%] rounded-2xl p-4 text-sm ${msg.role === 'user' ? 'bg-secondary text-white rounded-tr-sm' : 'bg-white dark:bg-slate-700 dark:text-white border border-gray-100 dark:border-slate-600 rounded-tl-sm shadow-sm'}`}>
+                                                        <div className="whitespace-pre-wrap">{msg.text}</div>
+                                                        {msg.role === 'ai' && (
+                                                            <button 
+                                                                onClick={() => handleSaveNote(msg.text)}
+                                                                className="mt-3 text-[11px] bg-amber-400/20 hover:bg-amber-400 dark:bg-amber-500/20 dark:hover:bg-amber-400 text-amber-800 dark:text-amber-300 hover:text-dark font-black px-3 py-1.5 rounded-lg border border-amber-400/40 flex items-center gap-1.5 transition-all shadow-xs group"
+                                                            >
+                                                                <i className="fa-solid fa-bookmark text-xs group-hover:scale-110 transition-transform"></i>
+                                                                <span>ወደ ማስታወሻ አድ አድርግ</span>
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 </div>
                                             ))}
@@ -886,38 +1033,76 @@ ${customAdminPrompt}
                                     ምንም ትምህርት አልተገኘም
                                 </div>
                             ) : (
-                                modules.map((mod: any, idx: number) => (
-                                    <div key={mod.id} className="border-b border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/80 p-4">
-                                        <h4 className="font-bold text-sm text-dark dark:text-white">ክፍል {idx + 1}: {mod.title}</h4>
-                                        <div className="mt-3 space-y-2">
-                                            {(mod.lessons || []).map((lesson: any, lidx: number) => {
-                                                const isActive = activeLesson?.title === lesson.title;
-                                                return (
-                                                <div 
-                                                    key={lidx} 
-                                                    onClick={() => setActiveLesson({...lesson, moduleIndex: idx, lessonIndex: lidx})}
-                                                    className={`flex items-center justify-between p-2 hover:bg-white dark:hover:bg-slate-700 rounded-lg cursor-pointer transition ${isActive ? 'bg-white dark:bg-slate-700 border-l-4 border-primary' : ''}`}
-                                                >
-                                                    <div className="flex items-center gap-3">
-                                                        {isActive ? (
-                                                            <i className="fa-solid fa-circle-play text-primary text-sm animate-pulse"></i>
-                                                        ) : (
-                                                            <i className="fa-solid fa-circle-play text-gray-400 text-xs"></i>
-                                                        )}
-                                                        <div>
-                                                            <p className={`text-xs font-bold ${isActive ? 'text-primary' : 'text-dark dark:text-white'}`}>{lesson.title}</p>
-                                                            <div className="flex items-center gap-2 mt-0.5 text-[10px] text-gray-500">
-                                                                <span><i className="fa-solid fa-video"></i> {lesson.duration || '00:00'}</span>
-                                                                <span className="text-primary font-bold">+{lesson.points || 100} ነጥብ</span>
+                                (() => {
+                                    const allFlatLessons: any[] = [];
+                                    modules.forEach((m: any) => {
+                                        (m.lessons || []).forEach((l: any) => allFlatLessons.push(l));
+                                    });
+
+                                    let currentGlobalIdx = 0;
+
+                                    return modules.map((mod: any, idx: number) => (
+                                        <div key={mod.id || idx} className="border-b border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/80 p-4">
+                                            <h4 className="font-bold text-sm text-dark dark:text-white">ክፍል {idx + 1}: {mod.title}</h4>
+                                            <div className="mt-3 space-y-2">
+                                                {(mod.lessons || []).map((lesson: any, lidx: number) => {
+                                                    const globalIdx = currentGlobalIdx++;
+                                                    const isActive = activeLesson?.title === lesson.title;
+                                                    const isCompleted = progress.includes(lesson.title);
+                                                    
+                                                    const prevLessonTitle = globalIdx > 0 ? allFlatLessons[globalIdx - 1]?.title : null;
+                                                    const isUnlocked = isCourseCompleted || globalIdx === 0 || (prevLessonTitle ? progress.includes(prevLessonTitle) : true);
+
+                                                    return (
+                                                    <div 
+                                                        key={lidx} 
+                                                        onClick={() => {
+                                                            if (isUnlocked) {
+                                                                setActiveLesson({...lesson, moduleIndex: idx, lessonIndex: lidx});
+                                                            } else {
+                                                                alert("እባክዎ በመጀመሪያ ቀደሞ ያሉትን ትምህርቶች አጠናቅቁ (Please complete previous lessons first)");
+                                                            }
+                                                        }}
+                                                        className={`flex items-center justify-between p-2.5 rounded-xl transition ${
+                                                            isActive 
+                                                                ? 'bg-white dark:bg-slate-700 border-l-4 border-primary shadow-sm' 
+                                                                : isUnlocked 
+                                                                    ? 'hover:bg-white dark:hover:bg-slate-700/80 cursor-pointer' 
+                                                                    : 'opacity-60 cursor-not-allowed bg-gray-100/50 dark:bg-slate-900/50'
+                                                        }`}
+                                                    >
+                                                        <div className="flex items-center gap-3">
+                                                            {isActive ? (
+                                                                <i className="fa-solid fa-circle-play text-primary text-sm animate-pulse"></i>
+                                                            ) : isCompleted ? (
+                                                                <i className="fa-solid fa-circle-check text-emerald-500 text-sm"></i>
+                                                            ) : isUnlocked ? (
+                                                                <i className="fa-solid fa-circle-play text-gray-400 text-xs"></i>
+                                                            ) : (
+                                                                <i className="fa-solid fa-lock text-gray-400 text-xs"></i>
+                                                            )}
+                                                            <div>
+                                                                <p className={`text-xs font-bold ${isActive ? 'text-primary' : isUnlocked ? 'text-dark dark:text-white' : 'text-gray-400 dark:text-gray-500'}`}>
+                                                                    {lesson.title}
+                                                                </p>
+                                                                <div className="flex items-center gap-2 mt-0.5 text-[10px] text-gray-500">
+                                                                    <span><i className="fa-solid fa-video"></i> {lesson.duration || '00:00'}</span>
+                                                                    <span className="text-primary font-bold">+{lesson.points || 100} ነጥብ</span>
+                                                                </div>
                                                             </div>
                                                         </div>
+                                                        {!isUnlocked && (
+                                                            <span className="text-[10px] bg-gray-200 dark:bg-slate-800 text-gray-500 px-2 py-0.5 rounded-md font-bold">
+                                                                Locked
+                                                            </span>
+                                                        )}
                                                     </div>
-                                                </div>
-                                                );
-                                            })}
+                                                    );
+                                                })}
+                                            </div>
                                         </div>
-                                    </div>
-                                ))
+                                    ));
+                                })()
                             )}
                         </div>
                     </div>
