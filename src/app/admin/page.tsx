@@ -41,6 +41,8 @@ export default function AdminDashboard() {
     image: '',
     banner: '',
     video: '',
+    pdfUrl: '',
+    pdfTitle: '',
     desc: '',
     whatYouWillLearn: '',
     aiPrompt: '',
@@ -187,7 +189,7 @@ export default function AdminDashboard() {
       setEditingCourse(null);
       setFormData({ 
         title: '', category: 'General', instructor: '', instructorImage: '', price: '', oldPrice: '', 
-        duration: '', status: 'Active', image: '', banner: '', video: '', desc: '', whatYouWillLearn: '', aiPrompt: '', level: 'ጀማሪ (Beginner)', isPopular: false 
+        duration: '', status: 'Active', image: '', banner: '', video: '', pdfUrl: '', pdfTitle: '', desc: '', whatYouWillLearn: '', aiPrompt: '', level: 'ጀማሪ (Beginner)', isPopular: false 
       });
       setLessons([{ title: '', duration: '', video: '', desc: '', points: 0 }]);
     }
@@ -813,6 +815,16 @@ export default function AdminDashboard() {
                 <div>
                   <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">የፕሪቪው ቪዲዮ ሊንክ (Preview Video URL) *</label>
                   <input required type="text" value={formData.video} onChange={e => setFormData({...formData, video: e.target.value})} className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-dark dark:text-white outline-none focus:border-primary transition" />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">የኮርስ ማቴሪያል PDF ሊንክ (PDF Resource URL)</label>
+                  <input type="text" value={formData.pdfUrl || ''} onChange={e => setFormData({...formData, pdfUrl: e.target.value})} className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-dark dark:text-white outline-none focus:border-primary transition" placeholder="የ Google Drive PDF ሊንክ ወይም Direct PDF URL" />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">የማቴሪያሉ ስም (PDF Title / Name)</label>
+                  <input type="text" value={formData.pdfTitle || ''} onChange={e => setFormData({...formData, pdfTitle: e.target.value})} className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-dark dark:text-white outline-none focus:border-primary transition" placeholder="ለምሳሌ፦ የኮርስ ማንዋል / Course Syllabus" />
                 </div>
 
                 <div className="md:col-span-2 mt-4">

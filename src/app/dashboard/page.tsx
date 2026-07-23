@@ -659,10 +659,34 @@ ${customAdminPrompt}
                                     <div className="mt-6 border-t border-gray-100 dark:border-slate-700 pt-6">
                                         <h3 className="font-black text-lg text-dark dark:text-white mb-4 font-heading">ዳውንሎድ የሚደረጉ ማቴሪያሎች</h3>
                                         <div className="flex flex-wrap gap-4">
-                                            <div className="flex items-center gap-3 bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 px-4 py-3 rounded-lg border border-red-100 dark:border-red-900/30 font-bold text-sm cursor-pointer hover:bg-red-100 dark:hover:bg-red-900/20 transition">
-                                                <i className="fa-solid fa-file-pdf"></i>
-                                                <span>Course Syllabus</span>
-                                            </div>
+                                            {activeCourse?.pdfUrl || activeLesson?.pdf ? (
+                                                <a 
+                                                    href={(() => {
+                                                        const url = activeCourse?.pdfUrl || activeLesson?.pdf;
+                                                        if (!url) return '#';
+                                                        const match = url.match(/(?:file\/d\/|id=|\/d\/)([a-zA-Z0-9_-]{20,})/);
+                                                        if (match && match[1]) {
+                                                          return `https://drive.google.com/file/d/${match[1]}/view?usp=sharing`;
+                                                        }
+                                                        return url;
+                                                    })()} 
+                                                    target="_blank" 
+                                                    rel="noopener noreferrer"
+                                                    className="flex items-center gap-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 px-5 py-3.5 rounded-xl border border-red-200 dark:border-red-800 font-bold text-sm hover:bg-red-100 dark:hover:bg-red-900/40 transition shadow-sm group"
+                                                >
+                                                    <i className="fa-solid fa-file-pdf text-xl group-hover:scale-110 transition-transform"></i>
+                                                    <div>
+                                                        <p className="font-bold">{activeCourse?.pdfTitle || 'የኮርስ ማቴሪያል (Course PDF)'}</p>
+                                                        <p className="text-xs opacity-75 font-normal">ለማየት / ለማውረድ እዚህ ይጫኑ (Click to View / Download)</p>
+                                                    </div>
+                                                    <i className="fa-solid fa-download ml-2 text-xs opacity-60"></i>
+                                                </a>
+                                            ) : (
+                                                <div className="text-sm text-gray-500 italic bg-gray-50 dark:bg-slate-800/50 p-4 rounded-xl border border-gray-100 dark:border-slate-700 w-full">
+                                                    <i className="fa-solid fa-folder-open mr-2 text-gray-400"></i>
+                                                    ለዚህ ኮርስ እስካሁን የተጫነ PDF ማቴሪያል የለም (No PDF materials uploaded for this course yet).
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </>
