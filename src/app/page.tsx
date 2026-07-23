@@ -35,8 +35,9 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    if (chatEndRef.current && isAiLoading) {
-      chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    const container = document.getElementById('ai-landing-chat');
+    if (container) {
+      container.scrollTop = container.scrollHeight;
     }
   }, [aiMessages, isAiLoading]);
 
@@ -350,7 +351,7 @@ export default function Home() {
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20 mix-blend-overlay"></div>
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col lg:flex-row items-center gap-12 relative z-10">
             <div className="flex-1 text-center lg:text-left animate-float" style={{animationDuration: "6s"}}>
-                <h2 className="text-3xl sm:text-5xl font-black font-heading mb-6 leading-tight"><span className="text-gradient notranslate">Tsehay AI</span> {t('make_smart')}</h2>
+                <h2 className="text-3xl sm:text-5xl font-black font-heading mb-6 leading-tight"><span className="text-gradient notranslate">በ Tsehay AI</span> {t('make_smart')}</h2>
                 <p className="text-lg text-blue-100 font-body mb-8 leading-relaxed">{t('ai_section_desc')}</p>
                 <button onClick={() => { document.getElementById('ai-landing-input')?.focus() }} className="bg-white text-secondary font-black px-8 py-3.5 rounded-xl hover:bg-primary hover:text-dark transition shadow-[0_0_20px_rgba(249,176,60,0.5)] transform hover:-translate-y-1">{t('ask_ai_tutor')}</button>
             </div>
