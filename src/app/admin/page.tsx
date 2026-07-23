@@ -5,6 +5,23 @@ import { collection, onSnapshot, doc, setDoc, deleteDoc, serverTimestamp, query,
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile, sendPasswordResetEmail } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 
+const PRESET_REQUIREMENTS = [
+  'መሰረታዊ የኮምፒውተር እውቀት (Basic Computer Skill)',
+  'ስማርት ስልክ ወይም ላፕቶፕ (Smartphone or Laptop)',
+  'የኢንተርኔት ኮኔክሽን (Internet Connection)',
+  'ምንም ቅድመ ተሞክሮ አይጠይቅም (No prior experience needed)',
+  'የመማር ፍላጎት እና ትጋት (Desire & Dedication to learn)'
+];
+
+const PRESET_INCLUDES = [
+  'በቪዲዮ የተደገፈ ትምህርት (On-demand video)',
+  'የተግባር አሳይመንቶች እና ፕሮጀክቶች (Assignments & Projects)',
+  'በስልክ እና በቲቪ መጠቀም የሚያስችል (Access on mobile and TV)',
+  'የኮርስ ማጠናቀቂያ ሰርተፊኬት (Certificate of completion)',
+  'የሁልጊዜ መዳረሻ (Full lifetime access)',
+  'የሚወርዱ የትምህርት ማቴሪያሎች (Downloadable PDF resources)'
+];
+
 export default function AdminDashboard() {
   const [courses, setCourses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,6 +63,9 @@ export default function AdminDashboard() {
     desc: '',
     whatYouWillLearn: '',
     requirements: '',
+    requirementsList: [] as string[],
+    customRequirement: '',
+    includesList: [] as string[],
     instructorBio: '',
     assignmentsInfo: '',
     accessInfo: '',
@@ -182,7 +202,13 @@ export default function AdminDashboard() {
       setFormData({ 
         ...course,
         whatYouWillLearn: course.whatYouWillLearn ? course.whatYouWillLearn.join('\n') : '',
-        requirements: course.requirements ? course.requirements.join('\n') : ''
+        requirementsList: Array.isArray(course.requirements) ? course.requirements : [],
+        includesList: Array.isArray(course.includes) ? course.includes : [
+          'የተግባር አሳይመንቶች እና ፕሮጀክቶች (Assignments & Projects)',
+          'በስልክ እና በቲቪ መጠቀም የሚያስችል (Access on mobile and TV)',
+          'የኮርስ ማጠናቀቂያ ሰርተፊኬት (Certificate of completion)'
+        ],
+        customRequirement: ''
       });
       
       // Load lessons from course document
@@ -195,7 +221,19 @@ export default function AdminDashboard() {
       setEditingCourse(null);
       setFormData({ 
         title: '', category: 'General', instructor: '', instructorImage: '', price: '', oldPrice: '', 
-        duration: '', status: 'Active', image: '', banner: '', video: '', pdfUrl: '', pdfTitle: '', desc: '', whatYouWillLearn: '', requirements: '', instructorBio: '', assignmentsInfo: '4 assignments', accessInfo: 'Access on mobile and TV', certificateInfo: 'Certificate of completion', aiPrompt: '', level: 'ጀማሪ (Beginner)', isPopular: false 
+        duration: '', status: 'Active', image: '', banner: '', video: '', pdfUrl: '', pdfTitle: '', desc: '', whatYouWillLearn: '', requirements: '', 
+        requirementsList: [
+          'መሰረታዊ የኮምፒውተር እውቀት (Basic Computer Skill)',
+          'ስማርት ስልክ ወይም ላፕቶፕ (Smartphone or Laptop)',
+          'የኢንተርኔት ኮኔክሽን (Internet Connection)'
+        ],
+        includesList: [
+          'የተግባር አሳይመንቶች እና ፕሮጀክቶች (Assignments & Projects)',
+          'በስልክ እና በቲቪ መጠቀም የሚያስችል (Access on mobile and TV)',
+          'የኮርስ ማጠናቀቂያ ሰርተፊኬት (Certificate of completion)'
+        ],
+        customRequirement: '',
+        instructorBio: '', assignmentsInfo: '4 assignments', accessInfo: 'Access on mobile and TV', certificateInfo: 'Certificate of completion', aiPrompt: '', level: 'ጀማሪ (Beginner)', isPopular: false 
       });
       setLessons([{ title: '', duration: '', video: '', desc: '', points: 0 }]);
     }
@@ -218,14 +256,16 @@ export default function AdminDashboard() {
         ? formData.whatYouWillLearn.split('\n').map((item: string) => item.trim()).filter((item: string) => item.length > 0)
         : [];
 
-      const requirementsArray = formData.requirements 
-        ? formData.requirements.split('\n').map((item: string) => item.trim()).filter((item: string) => item.length > 0)
-        : [];
+      let requirementsArray = [...(formData.requirementsList || [])];
+      if (formData.customRequirement && formData.customRequirement.trim().length > 0) {
+        requirementsArray.push(formData.customRequirement.trim());
+      }
 
       await setDoc(courseRef, {
         ...formData,
         whatYouWillLearn: whatYouWillLearnArray,
         requirements: requirementsArray,
+        includes: formData.includesList || [],
         instructorBio: formData.instructorBio || '',
         assignmentsInfo: formData.assignmentsInfo || '',
         accessInfo: formData.accessInfo || '',
@@ -859,8 +899,36 @@ export default function AdminDashboard() {
 
                 <div className="md:col-span-2">
                   <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">የኮርስ ቅደመ-ሁኔታዎች (Requirements)</label>
-                  <p className="text-xs text-gray-500 mb-2">እያንዳንዱን መስፈርት በአዲስ መስመር (Enter እየነኩ) ይጻፉ።</p>
-                  <textarea rows={4} value={formData.requirements || ''} onChange={e => setFormData({...formData, requirements: e.target.value})} className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-dark dark:text-white outline-none focus:border-primary transition" placeholder="መሰረታዊ የኮምፒውተር እውቀት&#10;ስማርት ስልክ ወይም ላፕቶፕ"></textarea>
+                  <p className="text-xs text-gray-500 mb-3">የሚፈልጉትን ቅድመ-ሁኔታዎች በምልክት (☑️) ይምረጡ፦</p>
+                  <div className="space-y-2 mb-3 bg-gray-50 dark:bg-slate-900 p-4 rounded-xl border border-gray-200 dark:border-slate-700">
+                    {PRESET_REQUIREMENTS.map((req, idx) => {
+                      const isChecked = formData.requirementsList?.includes(req);
+                      return (
+                        <label key={idx} className="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300 cursor-pointer font-medium hover:text-primary transition">
+                          <input 
+                            type="checkbox" 
+                            checked={!!isChecked} 
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setFormData({...formData, requirementsList: [...(formData.requirementsList || []), req]});
+                              } else {
+                                setFormData({...formData, requirementsList: (formData.requirementsList || []).filter(r => r !== req)});
+                              }
+                            }} 
+                            className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary" 
+                          />
+                          <span>{req}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                  <input 
+                    type="text" 
+                    placeholder="ሌላ ተጨማሪ ቅድመ-ሁኔታ ካለ እዚህ ይጻፉ (Optional custom requirement)" 
+                    value={formData.customRequirement || ''} 
+                    onChange={e => setFormData({...formData, customRequirement: e.target.value})} 
+                    className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-dark dark:text-white outline-none focus:border-primary transition text-sm" 
+                  />
                 </div>
 
                 <div className="md:col-span-2">
@@ -870,21 +938,29 @@ export default function AdminDashboard() {
 
                 <div className="md:col-span-2 mt-4">
                   <h3 className="font-bold text-lg border-b border-gray-100 dark:border-slate-700 pb-2 mb-4 text-primary">የኮርስ ካርድ መረጃዎች (This Course Includes)</h3>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">የአሳይመንት መረጃ (Assignments Info)</label>
-                  <input type="text" value={formData.assignmentsInfo || ''} onChange={e => setFormData({...formData, assignmentsInfo: e.target.value})} className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-dark dark:text-white outline-none focus:border-primary transition" placeholder="4 assignments" />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">የመጠቀሚያ መሳሪያዎች (Access Info)</label>
-                  <input type="text" value={formData.accessInfo || ''} onChange={e => setFormData({...formData, accessInfo: e.target.value})} className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-dark dark:text-white outline-none focus:border-primary transition" placeholder="Access on mobile and TV" />
-                </div>
-
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">የሰርተፊኬት መረጃ (Certificate Info)</label>
-                  <input type="text" value={formData.certificateInfo || ''} onChange={e => setFormData({...formData, certificateInfo: e.target.value})} className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-dark dark:text-white outline-none focus:border-primary transition" placeholder="Certificate of completion" />
+                  <p className="text-xs text-gray-500 mb-3">በኮርሱ ካርድ ላይ የሚካተቱትን መረጃዎች በምልክት (☑️) ይምረጡ፦</p>
+                  <div className="space-y-2 bg-gray-50 dark:bg-slate-900 p-4 rounded-xl border border-gray-200 dark:border-slate-700">
+                    {PRESET_INCLUDES.map((inc, idx) => {
+                      const isChecked = formData.includesList?.includes(inc);
+                      return (
+                        <label key={idx} className="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300 cursor-pointer font-medium hover:text-primary transition">
+                          <input 
+                            type="checkbox" 
+                            checked={!!isChecked} 
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setFormData({...formData, includesList: [...(formData.includesList || []), inc]});
+                              } else {
+                                setFormData({...formData, includesList: (formData.includesList || []).filter(i => i !== inc)});
+                              }
+                            }} 
+                            className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary" 
+                          />
+                          <span>{inc}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 <div className="md:col-span-2">

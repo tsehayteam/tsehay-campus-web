@@ -309,7 +309,7 @@ export default function CoursePreviewPage({ params }: { params: Promise<{ id: st
                     {mod.lessons?.map((lesson: any, i: number) => (
                       <div key={i} className="flex justify-between items-center py-2 group">
                         <div className="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
-                          <i className="fa-brands fa-youtube text-gray-400 group-hover:text-primary transition-colors"></i>
+                          <i className="fa-solid fa-circle-play text-secondary dark:text-primary group-hover:scale-110 transition-transform"></i>
                           <span className={i === 0 && index === 0 ? "text-primary underline cursor-pointer font-bold" : ""}>
                             {lesson.title}
                           </span>
@@ -333,13 +333,16 @@ export default function CoursePreviewPage({ params }: { params: Promise<{ id: st
 
           {/* Requirements */}
           <h2 className="text-2xl font-black font-heading text-secondary dark:text-primary mb-4">Requirements</h2>
-          <ul className="list-disc pl-5 text-gray-700 dark:text-gray-300 mb-10 space-y-2">
+          <ul className="space-y-3 text-gray-700 dark:text-gray-300 mb-10">
             {course.requirements && Array.isArray(course.requirements) && course.requirements.length > 0 ? (
               course.requirements.map((req: string, idx: number) => (
-                <li key={idx}>{req}</li>
+                <li key={idx} className="flex items-start gap-3 text-sm sm:text-base font-medium">
+                  <i className="fa-solid fa-circle-check text-green-500 mt-1 shrink-0"></i>
+                  <span>{req}</span>
+                </li>
               ))
             ) : (
-              <li className="text-gray-500 italic list-none -ml-5">No requirements specified for this course.</li>
+              <li className="text-gray-500 italic list-none">No requirements specified for this course.</li>
             )}
           </ul>
 
@@ -408,16 +411,13 @@ export default function CoursePreviewPage({ params }: { params: Promise<{ id: st
                   {(() => {
                       let finalUrl = currentVideoUrl;
                       if (finalUrl.includes('mediadelivery.net')) {
-                          const baseUrl = finalUrl.replace('/play/', '/embed/').replace('video.mediadelivery.net', 'iframe.mediadelivery.net');
-                          const embedUrl = baseUrl.includes('?') ? `${baseUrl}&autoplay=true` : `${baseUrl}?autoplay=true`;
                           return (
                               <iframe
-                                  src={embedUrl}
+                                  src={finalUrl}
                                   loading="lazy"
                                   className="w-full h-full border-none"
                                   allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;"
                                   allowFullScreen
-                                  referrerPolicy="no-referrer-when-downgrade"
                               ></iframe>
                           );
                       } else if (finalUrl.includes('drive.google.com')) {
@@ -439,9 +439,6 @@ export default function CoursePreviewPage({ params }: { params: Promise<{ id: st
                                 height="100%"
                                 controls={true}
                                 playing={true}
-                                config={{
-                                  youtube: { playerVars: { autoplay: 1 } }
-                                }}
                                 className="w-full h-full object-contain"
                               />
                           );
@@ -450,12 +447,7 @@ export default function CoursePreviewPage({ params }: { params: Promise<{ id: st
                 </div>
               ) : (
                 <div className="cursor-pointer" onClick={() => { if (currentVideoUrl) setIsPlaying(true); }}>
-                  <img src={displayImage || `https://placehold.co/600x400/3268BA/FFFFFF?text=${encodeURIComponent(course.title || 'Tsehay Campus')}&font=Montserrat`} alt={course.title} className="w-full h-[250px] object-cover" onError={(e) => { 
-                    const fallback = 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1000&auto=format&fit=crop';
-                    if (e.currentTarget.src !== fallback) {
-                      e.currentTarget.src = fallback;
-                    }
-                  }} />
+                  <img src={displayImage || `https://placehold.co/600x400/3268BA/FFFFFF?text=${encodeURIComponent(course.title || 'Tsehay Campus')}&font=Montserrat`} alt={course.title} className="w-full h-[250px] object-cover" onError={(e) => { e.currentTarget.src='https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1000&auto=format&fit=crop' }} />
                   {currentVideoUrl && (
                     <div className="absolute inset-0 bg-black/40 flex flex-col justify-center items-center group-hover:bg-black/20 transition-colors">
                       <div className="w-16 h-16 bg-white rounded-full flex justify-center items-center text-dark text-2xl shadow-lg transform group-hover:scale-110 transition-transform">
@@ -496,7 +488,7 @@ export default function CoursePreviewPage({ params }: { params: Promise<{ id: st
                   </button>
                 ) : (
                   <button 
-                    onClick={handleEnroll} 
+                    onClick={() => setShowPaymentModal(true)}
                     className="w-full bg-primary hover:bg-yellow-400 text-dark font-black py-3.5 rounded-xl transition-all duration-300 text-lg shadow-[0_0_20px_rgba(249,176,60,0.3)] hover:shadow-[0_0_30px_rgba(249,176,60,0.5)] transform hover:-translate-y-1"
                   >
                     Buy now
@@ -511,23 +503,34 @@ export default function CoursePreviewPage({ params }: { params: Promise<{ id: st
               {/* Includes */}
               <div className="mb-6">
                 <h4 className="font-bold text-dark dark:text-white mb-3">This course includes:</h4>
-                <div className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
+                <div className="space-y-2.5 text-sm text-gray-700 dark:text-gray-300">
                   <div className="flex items-center gap-3">
-                    <i className="fa-solid fa-video w-4"></i>
+                    <i className="fa-solid fa-video text-primary w-4"></i>
                     <span>{course?.duration || '0 hours'} on-demand video</span>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <i className="fa-regular fa-file-lines w-4"></i>
-                    <span>{course?.assignmentsInfo || `${course?.lessons?.length || 0} assignments`}</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <i className="fa-solid fa-mobile-screen-button w-4"></i>
-                    <span>{course?.accessInfo || 'Access on mobile and TV'}</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <i className="fa-solid fa-trophy w-4"></i>
-                    <span>{course?.certificateInfo || 'Certificate of completion'}</span>
-                  </div>
+                  {course?.includes && Array.isArray(course.includes) && course.includes.length > 0 ? (
+                    course.includes.map((inc: string, idx: number) => (
+                      <div key={idx} className="flex items-center gap-3">
+                        <i className="fa-solid fa-circle-check text-green-500 w-4"></i>
+                        <span>{inc}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <>
+                      <div className="flex items-center gap-3">
+                        <i className="fa-solid fa-circle-check text-green-500 w-4"></i>
+                        <span>{course?.assignmentsInfo || `${course?.lessons?.length || 0} assignments`}</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <i className="fa-solid fa-circle-check text-green-500 w-4"></i>
+                        <span>{course?.accessInfo || 'Access on mobile and TV'}</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <i className="fa-solid fa-circle-check text-green-500 w-4"></i>
+                        <span>{course?.certificateInfo || 'Certificate of completion'}</span>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
 
