@@ -41,8 +41,33 @@ export default function StudentDashboard() {
   
   // Notification State
   const [showNotifications, setShowNotifications] = useState(false);
+  const [isDarkTheme, setIsDarkTheme] = useState(true);
   
   const { t } = useLanguage();
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'light') {
+      document.documentElement.classList.remove('dark');
+      setIsDarkTheme(false);
+    } else {
+      document.documentElement.classList.add('dark');
+      setIsDarkTheme(true);
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    const isDark = document.documentElement.classList.contains('dark');
+    const newTheme = isDark ? 'light' : 'dark';
+    if (newTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+      setIsDarkTheme(true);
+    } else {
+      document.documentElement.classList.remove('dark');
+      setIsDarkTheme(false);
+    }
+    localStorage.setItem('theme', newTheme);
+  };
 
   const [chatInput, setChatInput] = useState("");
   const [chatMessages, setChatMessages] = useState([
@@ -373,29 +398,28 @@ ${customAdminPrompt}
         </div>
 
         <nav className="flex-1 overflow-x-auto md:overflow-y-auto py-3 md:py-6 px-3 space-y-0 md:space-y-1.5 font-body no-scrollbar w-full flex flex-row md:flex-col gap-2 md:gap-0 items-center md:items-stretch">
-          <p className="hidden lg:block px-4 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">{t('main_menu')}</p>
-          
-          <a href="/" className="flex items-center gap-2 md:gap-3 p-2.5 md:p-3 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-dark dark:hover:text-white font-bold transition flex-shrink-0 group w-auto md:w-full">
-            <i className="fa-solid fa-house text-lg w-5 text-center group-hover:scale-110 transition-transform"></i>
-            <span className="hidden lg:block">{t('back_to_home')}</span>
-          </a>
+          <p className="hidden lg:block px-4 text-sm font-black text-secondary dark:text-primary uppercase tracking-widest mb-3 border-b border-slate-100 dark:border-slate-700/60 pb-1.5 font-heading">
+            {t('main_menu')}
+          </p>
 
-          <button onClick={() => setCurrentView('classroom')} className={`flex items-center gap-2 md:gap-3 p-2.5 md:p-3 rounded-xl font-bold transition flex-shrink-0 group w-auto md:w-full text-left ${currentView === 'classroom' ? 'bg-blue-50 dark:bg-primary/10 text-secondary dark:text-primary' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-dark dark:hover:text-white'}`}>
+          <button onClick={() => setCurrentView('classroom')} className={`flex items-center gap-2 md:gap-3 p-2.5 md:p-3 rounded-xl font-bold transition flex-shrink-0 group w-auto md:w-full text-left text-sm ${currentView === 'classroom' ? 'bg-blue-50 dark:bg-primary/10 text-secondary dark:text-primary' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-dark dark:hover:text-white'}`}>
             <i className="fa-solid fa-play-circle text-lg w-5 text-center group-hover:scale-110 transition-transform"></i>
             <span className="whitespace-nowrap md:whitespace-normal md:hidden lg:block">{t('classroom')}</span>
           </button>
           
-          <button onClick={() => setCurrentView('courses')} className={`flex items-center gap-2 md:gap-3 p-2.5 md:p-3 rounded-xl font-bold transition flex-shrink-0 group w-auto md:w-full text-left ${currentView === 'courses' ? 'bg-blue-50 dark:bg-primary/10 text-secondary dark:text-primary' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-dark dark:hover:text-white'}`}>
+          <button onClick={() => setCurrentView('courses')} className={`flex items-center gap-2 md:gap-3 p-2.5 md:p-3 rounded-xl font-bold transition flex-shrink-0 group w-auto md:w-full text-left text-sm ${currentView === 'courses' ? 'bg-blue-50 dark:bg-primary/10 text-secondary dark:text-primary' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-dark dark:hover:text-white'}`}>
             <i className="fa-solid fa-layer-group text-lg w-5 text-center group-hover:scale-110 transition-transform"></i>
             <span className="whitespace-nowrap md:whitespace-normal md:hidden lg:block">{t('my_courses')}</span>
           </button>
 
-          <button onClick={() => setCurrentView('messages')} className={`flex items-center gap-2 md:gap-3 p-2.5 md:p-3 rounded-xl font-bold transition flex-shrink-0 group w-auto md:w-full text-left ${currentView === 'messages' ? 'bg-blue-50 dark:bg-primary/10 text-secondary dark:text-primary' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-dark dark:hover:text-white'}`}>
+          <button onClick={() => setCurrentView('messages')} className={`flex items-center gap-2 md:gap-3 p-2.5 md:p-3 rounded-xl font-bold transition flex-shrink-0 group w-auto md:w-full text-left text-sm ${currentView === 'messages' ? 'bg-blue-50 dark:bg-primary/10 text-secondary dark:text-primary' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-dark dark:hover:text-white'}`}>
             <i className="fa-solid fa-comments text-lg w-5 text-center group-hover:scale-110 transition-transform"></i>
             <span className="whitespace-nowrap md:whitespace-normal md:hidden lg:block">{t('messages')}</span>
           </button>
 
-          <p className="hidden lg:block px-4 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2 mt-6">{t('tools')}</p>
+          <p className="hidden lg:block px-4 text-sm font-black text-secondary dark:text-primary uppercase tracking-widest mb-3 mt-6 border-b border-slate-100 dark:border-slate-700/60 pb-1.5 font-heading">
+            {t('tools')}
+          </p>
 
           <button onClick={() => document.dispatchEvent(new CustomEvent('toggle-ai'))} className="flex items-center gap-2 md:gap-3 p-2.5 md:p-3 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-dark dark:hover:text-white font-bold transition flex-shrink-0 group w-auto md:w-full text-left">
             <i className="fa-solid fa-wand-magic-sparkles text-lg w-5 text-center group-hover:scale-110 transition-transform"></i>
@@ -452,10 +476,21 @@ ${customAdminPrompt}
                     <span className="text-dark dark:text-white font-bold truncate max-w-[200px]">{activeCourse ? activeCourse.title : t('loading')}</span>
                 </nav>
             </div>
-            <div className="flex items-center gap-3 sm:gap-5 shrink-0 relative">
+            <div className="flex items-center gap-3 sm:gap-4 shrink-0 relative">
+                <a 
+                  href="/" 
+                  className="flex items-center gap-2 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-700 dark:to-slate-800 hover:from-primary hover:to-yellow-400 text-secondary dark:text-white hover:text-dark font-black px-3.5 py-1.5 rounded-full text-xs sm:text-sm transition-all duration-300 shadow-sm border border-blue-200 dark:border-slate-600 transform hover:-translate-y-0.5 group shrink-0"
+                >
+                  <i className="fa-solid fa-house text-xs group-hover:scale-110 transition-transform text-primary group-hover:text-dark"></i>
+                  <span className="font-bold">{t('back_to_home')}</span>
+                </a>
 
-                <button onClick={() => document.documentElement.classList.toggle('dark')} className="w-9 h-9 rounded-full bg-gray-100 dark:bg-slate-700 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-slate-600 transition shadow-sm shrink-0">
-                    <i className="fa-solid fa-moon text-slate-600 dark:text-yellow-400 text-sm"></i>
+                <button 
+                  onClick={toggleTheme} 
+                  title="Toggle Dark / Light Theme"
+                  className="w-9 h-9 rounded-full bg-gradient-to-r from-amber-400/20 to-yellow-500/20 dark:bg-slate-700/80 hover:bg-primary/40 dark:hover:bg-slate-600 flex items-center justify-center transition-all duration-300 shadow-md border-2 border-primary/50 dark:border-slate-600 text-dark dark:text-yellow-400 shrink-0 group"
+                >
+                    <i className={`fa-solid ${isDarkTheme ? 'fa-sun text-yellow-400' : 'fa-moon text-secondary'} text-sm group-hover:scale-110 transition-transform`}></i>
                 </button>
                 <div className="hidden sm:flex items-center gap-2 bg-gradient-to-r from-orange-50 to-yellow-50 dark:from-orange-500/10 dark:to-yellow-500/10 border border-primary/30 px-3 py-1.5 rounded-full shadow-sm cursor-help hover:scale-105 transition">
                     <div className="bg-primary/20 p-1 rounded-full"><i className="fa-solid fa-bolt text-primary text-xs"></i></div>
