@@ -405,9 +405,9 @@ export default function CoursePreviewPage({ params }: { params: Promise<{ id: st
           <div className="md:sticky md:top-24 bg-white dark:bg-[#1c1d1f] border border-gray-200 dark:border-gray-800 shadow-xl rounded-sm overflow-hidden z-10 md:-mt-[350px]">
             
             {/* Video Preview Thumbnail */}
-            <div className="relative group border-b border-gray-200 dark:border-gray-800">
+            <div className="relative group border-b border-gray-200 dark:border-gray-800 overflow-hidden rounded-t-sm">
               {isPlaying && currentVideoUrl ? (
-                <div className="w-full h-[250px] bg-black">
+                <div className="w-full aspect-video bg-black overflow-hidden relative">
                   {(() => {
                       let finalUrl = currentVideoUrl;
                       if (finalUrl.includes('mediadelivery.net')) {
@@ -415,7 +415,7 @@ export default function CoursePreviewPage({ params }: { params: Promise<{ id: st
                               <iframe
                                   src={finalUrl}
                                   loading="lazy"
-                                  className="w-full h-full border-none"
+                                  className="w-full h-full border-none block"
                                   allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;"
                                   allowFullScreen
                               ></iframe>
@@ -425,7 +425,7 @@ export default function CoursePreviewPage({ params }: { params: Promise<{ id: st
                               <iframe
                                   src={finalUrl.replace(/\/view.*$/, '/preview').replace(/\/edit.*$/, '/preview')}
                                   loading="lazy"
-                                  className="w-full h-full border-none"
+                                  className="w-full h-full border-none block"
                                   allow="autoplay; encrypted-media"
                                   allowFullScreen
                               ></iframe>
@@ -439,15 +439,15 @@ export default function CoursePreviewPage({ params }: { params: Promise<{ id: st
                                 height="100%"
                                 controls={true}
                                 playing={true}
-                                className="w-full h-full object-contain"
+                                className="w-full h-full"
                               />
                           );
                       }
                   })()}
                 </div>
               ) : (
-                <div className="cursor-pointer" onClick={() => { if (currentVideoUrl) setIsPlaying(true); }}>
-                  <img src={displayImage || `https://placehold.co/600x400/3268BA/FFFFFF?text=${encodeURIComponent(course.title || 'Tsehay Campus')}&font=Montserrat`} alt={course.title} className="w-full h-[250px] object-cover" onError={(e) => { e.currentTarget.src='https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1000&auto=format&fit=crop' }} />
+                <div className="cursor-pointer relative w-full aspect-video bg-black overflow-hidden" onClick={() => { if (currentVideoUrl) setIsPlaying(true); }}>
+                  <img src={displayImage || `https://placehold.co/600x400/3268BA/FFFFFF?text=${encodeURIComponent(course.title || 'Tsehay Campus')}&font=Montserrat`} alt={course.title} className="w-full h-full object-cover block" onError={(e) => { e.currentTarget.src='https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1000&auto=format&fit=crop' }} />
                   {currentVideoUrl && (
                     <div className="absolute inset-0 bg-black/40 flex flex-col justify-center items-center group-hover:bg-black/20 transition-colors">
                       <div className="w-16 h-16 bg-white rounded-full flex justify-center items-center text-dark text-2xl shadow-lg transform group-hover:scale-110 transition-transform">
