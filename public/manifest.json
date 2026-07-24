@@ -1,0 +1,22 @@
+{
+  "name": "Tsehay Campus - ፀሐይ ካምፓስ",
+  "short_name": "Tsehay Campus",
+  "description": "የኦንላይን እና የተዋሃደ (Hybrid) ትምህርት ፕላትፎርም",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#F9B03C",
+  "icons": [
+    {
+      "src": "/tc-logo.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}
