@@ -6,6 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useState, useEffect, useRef } from "react";
 import AuthModal from "./AuthModal";
+import SmartSearchInput from "./SmartSearchInput";
 import { auth } from "@/lib/firebase/config";
 import { signOut } from "firebase/auth";
 
@@ -121,27 +122,11 @@ export default function Navbar() {
                     }} className="text-gray-700 dark:text-gray-300 hover:text-secondary dark:hover:text-primary font-bold transition text-[14px] lg:text-[15px] px-2 lg:px-3">{t('all_courses')}</a>
                 </div>
                 
-                <div ref={searchRef} className="flex-1 max-w-md hidden md:flex items-center border border-gray-200 dark:border-gray-800 rounded-full px-4 py-2 search-bar mx-2 lg:mx-4 relative z-[60] bg-white/50 dark:bg-black/50 backdrop-blur-sm">
-                    <input type="text" id="courseSearchInput" placeholder={t('search_placeholder')} className="bg-transparent border-none outline-none w-full text-[14px] lg:text-[15px] font-bold text-dark dark:text-white placeholder-gray-500 mr-2 lg:mr-3" value={searchQuery} onChange={(e) => handleSearch(e.target.value)} autoComplete="off" />
-                    <i className="fa-solid fa-magnifying-glass text-gray-500 dark:text-gray-400 text-sm lg:text-base cursor-pointer hover:text-primary transition" onClick={() => {}}></i>
-                    
-                    {searchQuery.trim() !== '' && (
-                      <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-gray-100 dark:border-slate-800 overflow-hidden max-h-96 overflow-y-auto">
-                        {searchResults.length > 0 ? (
-                          searchResults.map(course => (
-                           <Link href={`/dashboard?courseId=${course.id}`} key={course.id} onClick={() => { setSearchResults([]); setSearchQuery(''); }} className="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-slate-800 border-b border-gray-100 dark:border-slate-800 last:border-0 transition group">
-                             <img src={course.image || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=100'} className="w-12 h-12 rounded-lg object-cover" />
-                             <div>
-                                <p className="text-sm font-bold text-dark dark:text-white group-hover:text-primary transition">{course.title}</p>
-                                <p className="text-xs text-gray-500">{course.category}</p>
-                             </div>
-                           </Link>
-                          ))
-                        ) : (
-                          <div className="p-4 text-center text-sm font-bold text-gray-500 dark:text-gray-400">ምንም ኮርስ አልተገኘም</div>
-                        )}
-                      </div>
-                    )}
+                <div className="flex-1 max-w-md hidden md:flex items-center mx-2 lg:mx-4 relative z-[60]">
+                    <SmartSearchInput 
+                        courses={allCourses} 
+                        placeholder={t('search_placeholder') || "ኮርሶችን ይፈልጉ (Social Media, Facebook, ዌብሳይት)..."} 
+                    />
                 </div>
                 
                 <div className="hidden md:flex items-center gap-2 lg:gap-3 font-heading text-sm">

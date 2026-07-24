@@ -268,13 +268,7 @@ export default function Home() {
             <div className="flex flex-col items-center text-center mb-12 gap-4">
                 <div>
                     <h2 className="font-heading font-black text-3xl sm:text-4xl text-dark dark:text-white mb-3">{t('popular_courses')}</h2>
-                    <p className="text-gray-600 dark:text-gray-400 font-body text-lg mb-6">{t('popular_courses_desc')}</p>
-                </div>
-                <div className="w-full max-w-2xl">
-                    <SmartSearchInput 
-                      courses={courses}
-                      placeholder="ኮርሶችን ይፈልጉ (e.g. Social Media, Facebook, ዌብሳይት, Python)..."
-                    />
+                    <p className="text-gray-600 dark:text-gray-400 font-body text-lg mb-2">{t('popular_courses_desc')}</p>
                 </div>
             </div>
 
@@ -292,8 +286,8 @@ export default function Home() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8" id="courseList">
                     {courses.slice(0, 4).map(course => (
                         <div key={course.id} className="bg-white dark:bg-[#111111] rounded-3xl overflow-hidden flex flex-col transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_20px_40px_rgba(0,0,0,0.1)] dark:hover:shadow-[0_20px_40px_rgba(0,0,0,0.5)] group relative border border-gray-200 dark:border-gray-800 cursor-pointer" onClick={() => window.location.href=`/courses/${course.id}`}>
-                            <div className="relative h-48 overflow-hidden bg-white">
-                                <img src={(course.image && course.image.includes('drive.google.com/uc?export=view&id=')) ? `https://drive.google.com/thumbnail?id=${course.image.split('id=')[1]}&sz=w1000` : (course.image || `https://placehold.co/600x400/3268BA/FFFFFF?text=${encodeURIComponent(course.title || 'Tsehay Campus')}&font=Montserrat`)} alt={course.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" onError={(e) => { e.currentTarget.src='https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1000&auto=format&fit=crop' }} />
+                            <div className="relative aspect-video w-full overflow-hidden bg-slate-900 flex items-center justify-center">
+                                <img src={(course.image && course.image.includes('drive.google.com/uc?export=view&id=')) ? `https://drive.google.com/thumbnail?id=${course.image.split('id=')[1]}&sz=w1000` : (course.image || `https://placehold.co/600x400/3268BA/FFFFFF?text=${encodeURIComponent(course.title || 'Tsehay Campus')}&font=Montserrat`)} alt={course.title} className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500" onError={(e) => { e.currentTarget.src='https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1000&auto=format&fit=crop' }} />
                                 {(!course.isFree && course.price !== 0 && course.price !== '0' && course.price !== 'Free') ? (
                                     <div className="absolute top-4 right-4 bg-primary text-dark text-[11px] font-black px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg">
                                         <i className="fa-solid fa-star"></i> PREMIUM
