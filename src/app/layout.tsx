@@ -20,8 +20,39 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Tsehay Campus - The Future of Learning",
-  description: "Learn tech in Amharic."
+  title: "Tsehay Campus - ፀሐይ ካምፓስ | የኦንላይን እና የተዋሃደ (Hybrid) ትምህርት ፕላትፎርም",
+  description: "ፀሐይ ካምፓስ (Tsehay Campus) - በማንኛውም ቦታና ሰዓት በሀገራችን ቋንቋ የቴክኖሎጂ፣ የቢዝነስ እና የክህሎት ስልጠናዎችን የሚወስዱበት ዘመናዊ የኢ-ለርኒንግ ፕላትፎርም።",
+  metadataBase: new URL("https://tsehaycampus.com"),
+  icons: {
+    icon: [
+      { url: "/tc-logo.jpg", type: "image/jpeg" },
+      { url: "/favicon.ico" }
+    ],
+    shortcut: "/tc-logo.jpg",
+    apple: "/tc-logo.jpg"
+  },
+  openGraph: {
+    title: "Tsehay Campus - ፀሐይ ካምፓስ",
+    description: "በማንኛውም ቦታና ሰዓት በሀገራችን ቋንቋ የቴክኖሎጂ፣ የቢዝነስ እና የክህሎት ስልጠናዎችን የሚወስዱበት ዘመናዊ የኢ-ለርኒንግ ፕላትፎርም።",
+    url: "https://tsehaycampus.com",
+    siteName: "Tsehay Campus",
+    images: [
+      {
+        url: "https://tsehaycampus.com/tc-logo.jpg",
+        width: 800,
+        height: 800,
+        alt: "Tsehay Campus Logo"
+      }
+    ],
+    locale: "am_ET",
+    type: "website"
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Tsehay Campus - ፀሐይ ካምፓስ",
+    description: "በሀገራችን ቋንቋ የቴክኖሎጂ እና የክህሎት ስልጠናዎች",
+    images: ["https://tsehaycampus.com/tc-logo.jpg"]
+  }
 };
 
 export default function RootLayout({
@@ -32,8 +63,24 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        <link rel="icon" href="/tc-logo.jpg" type="image/jpeg" />
+        <link rel="apple-touch-icon" href="/tc-logo.jpg" />
+        <link rel="shortcut icon" href="/tc-logo.jpg" />
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
         <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&family=Inter:wght@400;500;700&family=Noto+Sans+Ethiopic:wght@400;700;900&family=Playfair+Display:ital,wght@0,700;1,700&family=Great+Vibes&display=swap" rel="stylesheet" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Organization",
+              "name": "Tsehay Campus",
+              "url": "https://tsehaycampus.com",
+              "logo": "https://tsehaycampus.com/tc-logo.jpg",
+              "sameAs": ["https://t.me/EyoubSahle"]
+            })
+          }}
+        />
         <script dangerouslySetInnerHTML={{ __html: `
           (function() {
             try {
