@@ -713,6 +713,26 @@ export default function AdminDashboard() {
                                 </div>
                                 <p className="text-sm text-gray-700 dark:text-gray-300 mb-3 bg-white dark:bg-slate-800 p-3 rounded-lg shadow-sm border border-gray-100 dark:border-slate-700">{ticket.message}</p>
                                 
+                                {ticket.attachment && (
+                                    <div className="mb-3">
+                                        {ticket.attachment.type === 'image' && (
+                                            <img src={ticket.attachment.url} alt={ticket.attachment.name} className="max-w-[280px] max-h-[200px] rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm" />
+                                        )}
+                                        {ticket.attachment.type === 'document' && (
+                                            <a href={ticket.attachment.url} download={ticket.attachment.name} className="inline-flex items-center gap-2 bg-blue-50 dark:bg-slate-800 text-blue-700 dark:text-blue-300 px-3 py-2 rounded-xl border border-blue-200 dark:border-slate-700 text-xs font-bold hover:underline">
+                                                <i className="fa-solid fa-file-pdf text-red-500 text-base"></i>
+                                                <span>{ticket.attachment.name}</span>
+                                            </a>
+                                        )}
+                                        {ticket.attachment.type === 'audio' && (
+                                            <div className="p-2 bg-slate-100 dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 inline-flex items-center gap-2">
+                                                <i className="fa-solid fa-microphone text-amber-500 text-sm"></i>
+                                                <audio controls src={ticket.attachment.url} className="h-8 max-w-[260px]"></audio>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
                                 {ticket.replies && ticket.replies.length > 0 && (
                                     <div className="mb-3 pl-4 border-l-2 border-green-500 space-y-2">
                                         {ticket.replies.map((reply: any, i: number) => (

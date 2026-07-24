@@ -281,10 +281,81 @@ export default function StudentDashboard() {
     }
   }, [user]);
 
+  const [qaAttachment, setQaAttachment] = useState<{ url: string; type: 'image' | 'document' | 'audio'; name: string } | null>(null);
+  const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
+  const [isRecordingVoice, setIsRecordingVoice] = useState(false);
+  const [mediaRecorderObj, setMediaRecorderObj] = useState<MediaRecorder | null>(null);
+
+  const handleQaFileUpload = (e: React.ChangeEvent<HTMLInputElement>, fileTypeOverride?: 'image' | 'document' | 'audio') => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const fileType = fileTypeOverride || (file.type.startsWith('image/')
+      ? 'image'
+      : file.type.startsWith('audio/')
+      ? 'audio'
+      : 'document');
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setQaAttachment({
+        url: event.target?.result as string,
+        type: fileType,
+        name: file.name
+      });
+      setShowAttachmentMenu(false);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleStartVoiceRecord = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      const chunks: Blob[] = [];
+
+      recorder.ondataavailable = (e) => chunks.push(e.data);
+      recorder.onstop = () => {
+        const blob = new Blob(chunks, { type: 'audio/webm' });
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          setQaAttachment({
+            url: event.target?.result as string,
+            type: 'audio',
+            name: `Voice_Message_${Date.now()}.webm`
+          });
+          setShowAttachmentMenu(false);
+        };
+        reader.readAsDataURL(blob);
+      };
+
+      recorder.start();
+      setMediaRecorderObj(recorder);
+      setIsRecordingVoice(true);
+    } catch (err) {
+      alert("ድምፅ ለመቅዳት የማይክሮፎን ፈቃድ ያስፈልጋል! (Microphone permission required)");
+    }
+  };
+
+  const handleStopVoiceRecord = () => {
+    if (mediaRecorderObj) {
+      mediaRecorderObj.stop();
+      mediaRecorderObj.stream.getTracks().forEach(t => t.stop());
+      setIsRecordingVoice(false);
+      setMediaRecorderObj(null);
+    }
+  };
+
   const handleAskAdmin = async () => {
-    if (!questionInput || !questionInput.trim() || !user || !activeCourse) return;
+    if ((!questionInput || !questionInput.trim()) && !qaAttachment) return;
+    if (!user || !activeCourse) return;
+    
     const qText = questionInput.trim();
+    const currentAttachment = qaAttachment;
     setQuestionInput('');
+    setQaAttachment(null);
+    setShowAttachmentMenu(false);
+
     try {
       const ticketRef = doc(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'support', 'messages', 'tickets'));
       await setDoc(ticketRef, {
@@ -294,12 +365,13 @@ export default function StudentDashboard() {
         userEmail: user.email || '',
         courseId: activeCourse.id,
         courseName: activeCourse.title,
-        message: qText,
+        message: qText || (currentAttachment ? `[${currentAttachment.type.toUpperCase()}] ${currentAttachment.name}` : ''),
+        attachment: currentAttachment || null,
         createdAt: new Date(),
         status: 'pending',
         replies: []
       });
-      setQuestionSentMessage("ጥያቄዎ ወደ መምህሩ/Admin በተሳካ ሁኔታ ተልኳል!");
+      setQuestionSentMessage("ጥያቄዎ ወደ መምህሩ በተሳካ ሁኔታ ተልኳል!");
       setTimeout(() => setQuestionSentMessage(''), 4000);
     } catch (e) {
       console.error("Error submitting Q&A ticket:", e);
@@ -961,8 +1033,8 @@ ${customAdminPrompt}
                                                     <i className="fa-solid fa-chalkboard-user text-lg"></i>
                                                 </div>
                                                 <div>
-                                                    <h3 className="font-heading font-black text-sm">ከመምህሩ/Admin ጋር ጥያቄና መልስ (Ask Instructor)</h3>
-                                                    <p className="text-[11px] text-gray-300 font-normal">ለዚህ ኮርስ ያሎትን ጥያቄ ለኮርሱ መምህር ያስገቡ</p>
+                                                    <h3 className="font-heading font-black text-sm">ከመምህሩ ጋር ጥያቄና መልስ (Ask Instructor)</h3>
+                                                    <p className="text-[11px] text-gray-300 font-normal">ለዚህ ኮርስ ያሎትን ጥያቄ፣ ፎቶ አሊያም ድምፅ ለአስተማሪው ያስገቡ</p>
                                                 </div>
                                             </div>
                                             <span className="text-[11px] bg-primary text-dark font-black px-3 py-1 rounded-full">
@@ -975,7 +1047,7 @@ ${customAdminPrompt}
                                                 <div className="text-center py-12 bg-white dark:bg-slate-900/40 rounded-xl border border-dashed border-gray-200 dark:border-slate-700">
                                                     <i className="fa-solid fa-messages text-4xl text-gray-300 dark:text-gray-600 mb-3 block"></i>
                                                     <p className="text-sm font-bold text-gray-600 dark:text-gray-300">ለዚህ ኮርስ እስካሁን ምንም ጥያቄ አልላኩም።</p>
-                                                    <p className="text-xs text-gray-400 mt-1">ያልገባዎትን ነገር ከታች ባለው ሳጥን ፅፈው ለአስተማሪው መላክ ይችላሉ።</p>
+                                                    <p className="text-xs text-gray-400 mt-1">ያልገባዎትን ነገር ፅፈው ወይም በፎቶ/በድምፅ ለአስተማሪው መላክ ይችላሉ።</p>
                                                 </div>
                                             ) : (
                                                 studentTickets.filter((t: any) => !activeCourse || t.courseId === activeCourse.id).map((ticket: any) => (
@@ -990,9 +1062,31 @@ ${customAdminPrompt}
                                                             </span>
                                                         </div>
 
-                                                        <p className="text-sm text-gray-800 dark:text-gray-200 bg-gray-50 dark:bg-slate-800/80 p-3 rounded-lg border border-gray-100 dark:border-slate-700 font-body">
-                                                            {ticket.message}
-                                                        </p>
+                                                        {ticket.message && (
+                                                            <p className="text-sm text-gray-800 dark:text-gray-200 bg-gray-50 dark:bg-slate-800/80 p-3 rounded-lg border border-gray-100 dark:border-slate-700 font-body">
+                                                                {ticket.message}
+                                                            </p>
+                                                        )}
+
+                                                        {ticket.attachment && (
+                                                            <div className="mt-2">
+                                                                {ticket.attachment.type === 'image' && (
+                                                                    <img src={ticket.attachment.url} alt={ticket.attachment.name} className="max-w-[280px] max-h-[220px] rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm cursor-pointer hover:scale-[1.02] transition" />
+                                                                )}
+                                                                {ticket.attachment.type === 'document' && (
+                                                                    <a href={ticket.attachment.url} download={ticket.attachment.name} className="inline-flex items-center gap-2 bg-blue-50 dark:bg-slate-800 text-blue-700 dark:text-blue-300 px-3 py-2 rounded-xl border border-blue-200 dark:border-slate-700 text-xs font-bold hover:underline">
+                                                                        <i className="fa-solid fa-file-pdf text-red-500 text-base"></i>
+                                                                        <span>{ticket.attachment.name}</span>
+                                                                    </a>
+                                                                )}
+                                                                {ticket.attachment.type === 'audio' && (
+                                                                    <div className="p-2 bg-slate-100 dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 inline-flex items-center gap-2">
+                                                                        <i className="fa-solid fa-microphone text-amber-500 text-sm"></i>
+                                                                        <audio controls src={ticket.attachment.url} className="h-8 max-w-[260px]"></audio>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )}
 
                                                         {ticket.replies && ticket.replies.length > 0 ? (
                                                             <div className="mt-3 pl-3 border-l-2 border-primary space-y-2">
@@ -1000,7 +1094,7 @@ ${customAdminPrompt}
                                                                     <div key={rIdx} className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/40 p-3 rounded-lg">
                                                                         <div className="flex items-center gap-2 mb-1">
                                                                             <i className="fa-solid fa-user-tie text-emerald-600 dark:text-emerald-400 text-xs"></i>
-                                                                            <span className="text-xs font-black text-emerald-700 dark:text-emerald-300">የመምህሩ / Admin መልስ፦</span>
+                                                                            <span className="text-xs font-black text-emerald-700 dark:text-emerald-300">የመምህሩ መልስ፦</span>
                                                                         </div>
                                                                         <p className="text-sm text-slate-700 dark:text-slate-200 font-body leading-relaxed">
                                                                             {reply.message}
@@ -1023,7 +1117,53 @@ ${customAdminPrompt}
                                                     <span>{questionSentMessage}</span>
                                                 </div>
                                             )}
-                                            <div className="flex gap-2">
+                                            
+                                            {qaAttachment && (
+                                                <div className="mb-2 p-2 bg-primary/10 border border-primary/30 rounded-xl flex items-center justify-between text-xs font-bold">
+                                                    <div className="flex items-center gap-2">
+                                                        <i className={`fa-solid ${qaAttachment.type === 'image' ? 'fa-image text-emerald-500' : qaAttachment.type === 'audio' ? 'fa-microphone text-amber-500' : 'fa-file-pdf text-red-500'}`}></i>
+                                                        <span className="truncate max-w-[220px] text-dark dark:text-white">{qaAttachment.name}</span>
+                                                    </div>
+                                                    <button onClick={() => setQaAttachment(null)} className="text-gray-400 hover:text-red-500 p-1">
+                                                        <i className="fa-solid fa-xmark"></i>
+                                                    </button>
+                                                </div>
+                                            )}
+
+                                            <div className="flex items-center gap-2">
+                                                <div className="relative">
+                                                    <button 
+                                                        type="button"
+                                                        onClick={() => setShowAttachmentMenu(prev => !prev)} 
+                                                        className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:bg-primary hover:text-dark flex items-center justify-center font-bold text-lg transition"
+                                                        title="ፋይል/ፎቶ/ድምፅ አያይዝ (Attach File)"
+                                                    >
+                                                        <i className="fa-solid fa-paperclip"></i>
+                                                    </button>
+
+                                                    {showAttachmentMenu && (
+                                                        <div className="absolute bottom-12 left-0 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl shadow-xl p-2 z-50 flex flex-col gap-1 w-48 animate-in slide-in-from-bottom-2">
+                                                            <label className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-xs font-bold text-dark dark:text-white">
+                                                                <i className="fa-solid fa-image text-emerald-500 text-sm"></i> ፎቶ / ስክሪንሾት
+                                                                <input type="file" accept="image/*" onChange={(e) => handleQaFileUpload(e, 'image')} className="hidden" />
+                                                            </label>
+                                                            <label className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-xs font-bold text-dark dark:text-white">
+                                                                <i className="fa-solid fa-file-pdf text-red-500 text-sm"></i> ሰነድ / PDF / ፋይል
+                                                                <input type="file" accept=".pdf,.doc,.docx,.txt,.zip" onChange={(e) => handleQaFileUpload(e, 'document')} className="hidden" />
+                                                            </label>
+                                                            {isRecordingVoice ? (
+                                                                <button onClick={handleStopVoiceRecord} className="flex items-center gap-2.5 p-2 rounded-xl bg-red-500 text-white text-xs font-bold w-full">
+                                                                    <i className="fa-solid fa-stop animate-pulse"></i> ቅዳ አቁም (Stop Voice)
+                                                                </button>
+                                                            ) : (
+                                                                <button onClick={handleStartVoiceRecord} className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700 text-xs font-bold text-dark dark:text-white w-full">
+                                                                    <i className="fa-solid fa-microphone text-amber-500 text-sm"></i> ድምፅ መቅጃ (Voice)
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+
                                                 <input 
                                                     type="text" 
                                                     value={questionInput}
