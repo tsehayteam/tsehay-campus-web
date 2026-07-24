@@ -670,11 +670,11 @@ ${customAdminPrompt}
       <aside className="w-full md:w-24 lg:w-72 bg-white dark:bg-slate-800 border-b md:border-b-0 md:border-r border-slate-200 dark:border-slate-700 flex flex-col items-center lg:items-start shadow-sm z-20 shrink-0">
         <div className="h-16 md:h-20 w-full flex items-center justify-between md:justify-center lg:justify-start px-4 lg:px-6 border-b border-slate-100 dark:border-slate-700">
           <a href="/" className="flex items-center cursor-pointer group">
-            <div className="w-8 h-8 md:w-10 md:h-10 bg-white rounded-xl mx-auto flex items-center justify-center shadow-lg p-0.5 border border-white/20 group-hover:scale-105 transition">
+            <div className="w-8 h-8 md:w-10 md:h-10 bg-white rounded-xl mx-auto flex items-center justify-center shadow-lg p-0.5 border border-white/20 animate-logo-zoom">
               <img src="/tc-logo.jpg" alt="Tsehay Campus Logo" className="w-full h-full object-contain rounded-xl" />
             </div>
-            <span className="ml-3 font-heading font-black text-lg md:text-xl tracking-tight notranslate">
-              <span className="text-primary">Tsehay</span> <span className="text-secondary dark:text-white">Campus</span>
+            <span className="ml-3 font-heading font-black text-lg md:text-xl tracking-tight notranslate select-none">
+              <span className="text-primary animate-tsehay-float">Tsehay</span> <span className="text-secondary dark:text-white animate-campus-float">Campus</span>
             </span>
           </a>
           
@@ -1576,19 +1576,28 @@ ${customAdminPrompt}
         )}
 
         {currentView === 'ai' && (
-          <div className="max-w-4xl mx-auto py-6 space-y-6">
-             <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 md:p-8 shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col h-[calc(100vh-200px)] min-h-[500px]">
+          <div className="max-w-4xl mx-auto py-4 space-y-4">
+             <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 md:p-8 shadow-md border border-slate-200 dark:border-slate-700 flex flex-col h-[calc(100vh-180px)] min-h-[500px] overflow-hidden">
+                 {/* Human AI Assistant Header */}
                  <div className="flex items-center justify-between border-b border-gray-100 dark:border-slate-700 pb-4 mb-4">
-                     <div className="flex items-center gap-3">
-                         <div className="w-12 h-12 rounded-2xl bg-primary/20 text-primary flex items-center justify-center text-2xl shadow-inner">
-                             <i className="fa-solid fa-robot"></i>
+                     <div className="flex items-center gap-3.5">
+                         <div className="relative">
+                           <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-amber-400 to-yellow-300 text-dark flex items-center justify-center text-2xl shadow-lg border-2 border-white dark:border-slate-700 animate-pulse-glow">
+                               <i className="fa-solid fa-user-astronaut text-xl text-dark"></i>
+                           </div>
+                           <span className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-2 border-white dark:border-slate-800 rounded-full"></span>
                          </div>
                          <div>
-                             <h2 className="text-xl font-black font-heading text-dark dark:text-white">Tsehay AI Assistant</h2>
-                             <p className="text-xs text-gray-500">በማንኛውም ጊዜ ትምህርታዊ ጥያቄዎችዎን የሚመልስ የመ искусственный интеллект ረዳትዎ</p>
+                             <div className="flex items-center gap-2">
+                               <h2 className="text-xl font-black font-heading text-dark dark:text-white">Tsehay AI Assistant</h2>
+                               <span className="bg-primary/20 text-amber-800 dark:text-primary text-[10px] font-black px-2.5 py-0.5 rounded-full border border-primary/30">
+                                 👋 ምን ላግዛችሁ?
+                               </span>
+                             </div>
+                             <p className="text-xs text-gray-500 font-bold mt-0.5">በማንኛውም ጊዜ ትምህርታዊ ጥያቄዎችዎን የሚመልስ የመ искусственный интеллект ረዳትዎ</p>
                          </div>
                      </div>
-                     <button onClick={() => { if(confirm('የ AI ቻት ታሪክዎን ማጥፋት እርግጠኛ ነዎት?')) { localStorage.removeItem('tsehay-ai-chat'); setChatMessages([{ role: 'system', text: 'ሰላም! እኔ Tsehay AI ነኝ። ምን ልርዳዎት?' }]); } }} className="text-xs bg-red-50 text-red-600 dark:bg-red-950/30 dark:text-red-400 font-bold px-3 py-2 rounded-xl hover:bg-red-100 transition">
+                     <button onClick={() => { if(confirm('የ AI ቻት ታሪክዎን ማጥፋት እርግጠኛ ነዎት?')) { localStorage.removeItem('tsehay-ai-chat'); setChatMessages([{ role: 'system', text: 'ሰላም! እኔ Tsehay AI ነኝ። ምን ልርዳዎት?' }]); } }} className="text-xs bg-red-50 text-red-600 dark:bg-red-950/30 dark:text-red-400 font-bold px-3 py-2 rounded-xl hover:bg-red-100 transition shrink-0">
                          <i className="fa-solid fa-trash mr-1"></i> ታሪክ አፅዳ
                      </button>
                  </div>
