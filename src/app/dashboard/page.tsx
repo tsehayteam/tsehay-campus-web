@@ -866,15 +866,6 @@ ${customAdminPrompt}
                     <h1 className="text-2xl sm:text-3xl font-black font-heading text-dark dark:text-white mb-2">{activeCourse?.title || t('course_loading')}</h1>
                     <p className="text-gray-500 dark:text-gray-400 font-body text-sm">{activeCourse?.category || 'Tsehay Campus Course'}</p>
                 </div>
-                {activeCourse && (
-                  <button 
-                    onClick={() => setShowRatingModal(true)}
-                    className="bg-amber-400/20 hover:bg-amber-400 dark:bg-amber-500/20 dark:hover:bg-amber-400 text-amber-900 dark:text-amber-300 hover:text-dark font-black px-4 py-2.5 rounded-xl border border-amber-400/40 transition flex items-center gap-2 text-sm shadow-xs shrink-0"
-                  >
-                    <i className="fa-solid fa-star text-amber-400"></i>
-                    <span>ሬቲንግ/ሪቪው ስጥ (Rate Course)</span>
-                  </button>
-                )}
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-6 lg:gap-8">
@@ -884,6 +875,22 @@ ${customAdminPrompt}
                     
                     {/* Cinematic Video Player */}
                     <div className="bg-dark rounded-2xl overflow-hidden shadow-2xl relative border border-gray-800 aspect-video flex items-center justify-center">
+                        {/* Video End Course Rating Overlay */}
+                        {isCourseCompleted && activeCourse?.id && !localStorage.getItem(`rated_course_${activeCourse.id}`) && (
+                          <div className="absolute inset-0 z-40 bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-300">
+                             <div className="w-16 h-16 bg-amber-400/20 text-primary rounded-full flex items-center justify-center text-3xl mb-4 border-2 border-primary animate-bounce">
+                                 <i className="fa-solid fa-star"></i>
+                             </div>
+                             <h3 className="text-xl md:text-2xl font-black text-white font-heading mb-2">እንኳን ደስ አሎት! ኮርሱን አጠናቀዋል።</h3>
+                             <p className="text-xs md:text-sm text-gray-300 mb-6 max-w-md">እባክዎ ለኮርሱ እና ለአስተማሪው ያለዎትን ሬቲንግ እና አስተያየት ይስጡ።</p>
+                             <button 
+                               onClick={() => setShowRatingModal(true)}
+                               className="bg-primary text-dark font-black px-6 py-3 rounded-xl hover:bg-yellow-400 transition shadow-lg text-sm transform hover:scale-105"
+                             >
+                               ⭐ ሬቲንግ/ሪቪው ስጥ (Rate Course)
+                             </button>
+                          </div>
+                        )}
                         {(() => {
                             const rawUrl = activeLesson?.video || activeLesson?.videoUrl || activeLesson?.url || activeCourse?.video || activeCourse?.videoUrl || activeCourse?.promoVideo || activeCourse?.previewVideo;
                             if (!rawUrl) return null;
