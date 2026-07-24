@@ -391,6 +391,9 @@ export default function StudentDashboard() {
 
   const handleMarkAllNotificationsRead = () => {
     setNotificationsList(prev => prev.map(n => ({ ...n, read: true })));
+    setTimeout(() => {
+      setShowNotifications(false);
+    }, 400);
   };
 
   const [savedAiNotes, setSavedAiNotes] = useState<Record<number, boolean>>({});
@@ -828,7 +831,16 @@ ${customAdminPrompt}
                 </button>
                 <div className="hidden sm:flex items-center gap-2 bg-gradient-to-r from-orange-50 to-yellow-50 dark:from-orange-500/10 dark:to-yellow-500/10 border border-primary/30 px-3 py-1.5 rounded-full shadow-sm cursor-help hover:scale-105 transition" title="የተከማቹ ፖይንቶች (Earned Points)">
                     <div className="bg-primary/20 p-1 rounded-full"><i className="fa-solid fa-bolt text-primary text-xs"></i></div>
-                    <span className="font-black text-dark dark:text-white text-sm font-heading">{(progress.length * 100) + (studentNotes.length * 20)} Pts</span>
+                    <span className="font-black text-dark dark:text-white text-sm font-heading">
+                      {(() => {
+                        let totalCount = 0;
+                        modules.forEach((m: any) => { totalCount += (m.lessons || []).length; });
+                        if (totalCount === 0) totalCount = 1;
+                        const pointsPerLesson = Math.max(1, Math.round(100 / totalCount));
+                        const earned = Math.min(100, progress.length * pointsPerLesson) + (studentNotes.length * 10);
+                        return earned;
+                      })()} Pts
+                    </span>
                 </div>
                 <div className="relative">
                   <button onClick={() => setShowNotifications(!showNotifications)} className="relative text-gray-400 dark:text-gray-300 hover:text-dark dark:hover:text-white transition text-xl shrink-0 p-1">
