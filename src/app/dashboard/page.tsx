@@ -436,6 +436,28 @@ export default function StudentDashboard() {
       }
   };
 
+  useEffect(() => {
+    if (!activeLesson || !activeCourse) return;
+    
+    setCurrentVideoPlayedFraction(0);
+
+    const interval = setInterval(() => {
+      setCurrentVideoPlayedFraction((prev) => {
+        const next = prev + 0.02;
+        if (next >= 0.50) {
+          handleVideoProgress50();
+        }
+        if (next >= 0.99) {
+          clearInterval(interval);
+          return 1;
+        }
+        return next;
+      });
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [activeLesson?.title, activeCourse?.id]);
+
   const handleVideoProgress50 = async () => {
     if (!activeLesson || !activeCourse || !user) return;
     if (progress.includes(activeLesson.title)) return;
@@ -1634,7 +1656,7 @@ ${customAdminPrompt}
                                  👋 ምን ላግዛችሁ?
                                </span>
                              </div>
-                             <p className="text-xs text-gray-500 font-bold mt-0.5">በማንኛውም ጊዜ ትምህርታዊ ጥያቄዎችዎን የሚመልስ የመ искусственный интеллект ረዳትዎ</p>
+                             <p className="text-xs text-gray-500 dark:text-gray-400 font-bold mt-0.5">ትምህርታዊ ጥያቄዎችዎን በፍጥነት የሚመልስ የእርስዎ AI ረዳት</p>
                          </div>
                      </div>
                      <button onClick={() => { if(confirm('የ AI ቻት ታሪክዎን ማጥፋት እርግጠኛ ነዎት?')) { localStorage.removeItem('tsehay-ai-chat'); setChatMessages([{ role: 'system', text: 'ሰላም! እኔ Tsehay AI ነኝ። ምን ልርዳዎት?' }]); } }} className="text-xs bg-red-50 text-red-600 dark:bg-red-950/30 dark:text-red-400 font-bold px-3 py-2 rounded-xl hover:bg-red-100 transition shrink-0">
