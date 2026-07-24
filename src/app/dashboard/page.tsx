@@ -1,7 +1,7 @@
 'use client';
 import React, { useEffect, useState, useRef } from 'react';
 import { db } from '@/lib/firebase/config';
-import { collection, getDocs, query, orderBy, doc, getDoc, updateDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, doc, getDoc, updateDoc, setDoc, serverTimestamp, where, onSnapshot } from 'firebase/firestore';
 import { useAuth } from '@/context/AuthContext';
 import { updateProfile } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
@@ -47,6 +47,22 @@ export default function StudentDashboard() {
   const [studentNotes, setStudentNotes] = useState<Array<{ id: string; text: string; createdAt: string; lessonTitle?: string }>>([]);
   const [noteInput, setNoteInput] = useState("");
   const [noteSavedMessage, setNoteSavedMessage] = useState("");
+
+  // Q&A State with Instructor
+  const [studentTickets, setStudentTickets] = useState<any[]>([]);
+  const [questionInput, setQuestionInput] = useState('');
+  const [questionSentMessage, setQuestionSentMessage] = useState('');
+
+  // Notifications State
+  const [notificationsList, setNotificationsList] = useState<any[]>([
+    {
+      id: 'welcome',
+      title: 'እንኳን በደህና መጡ!',
+      message: 'ወደ ፀሐይ ካምፓስ እንኳን በደህና መጡ። ትምህርትዎን ዛሬውኑ ይጀምሩ!',
+      read: false,
+      createdAt: 'አሁን'
+    }
+  ]);
   
   const { t } = useLanguage();
 
@@ -241,6 +257,59 @@ export default function StudentDashboard() {
     return () => window.removeEventListener('add-to-notes', handleGlobalAddToNotes);
   }, [activeCourse, user, studentNotes, activeLesson]);
 
+  // Subscribe to Student's Q&A Tickets with Instructor/Admin
+  useEffect(() => {
+    if (!user) return;
+    try {
+      const q = query(
+        collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'support', 'messages', 'tickets'),
+        where('userId', '==', user.uid)
+      );
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const list = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+        list.sort((a: any, b: any) => {
+          const tA = a.createdAt?.seconds || 0;
+          const tB = b.createdAt?.seconds || 0;
+          return tB - tA;
+        });
+        setStudentTickets(list);
+      }, (err) => console.error("Error subscribing to Q&A tickets:", err));
+
+      return () => unsubscribe();
+    } catch (e) {
+      console.error(e);
+    }
+  }, [user]);
+
+  const handleAskAdmin = async () => {
+    if (!questionInput || !questionInput.trim() || !user || !activeCourse) return;
+    const qText = questionInput.trim();
+    setQuestionInput('');
+    try {
+      const ticketRef = doc(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'support', 'messages', 'tickets'));
+      await setDoc(ticketRef, {
+        id: ticketRef.id,
+        userId: user.uid,
+        userName: user.displayName || user.email || 'Student',
+        userEmail: user.email || '',
+        courseId: activeCourse.id,
+        courseName: activeCourse.title,
+        message: qText,
+        createdAt: new Date(),
+        status: 'pending',
+        replies: []
+      });
+      setQuestionSentMessage("ጥያቄዎ ወደ መምህሩ/Admin በተሳካ ሁኔታ ተልኳል!");
+      setTimeout(() => setQuestionSentMessage(''), 4000);
+    } catch (e) {
+      console.error("Error submitting Q&A ticket:", e);
+    }
+  };
+
+  const handleMarkAllNotificationsRead = () => {
+    setNotificationsList(prev => prev.map(n => ({ ...n, read: true })));
+  };
+
   const handleVideoEnd = async () => {
     if (!activeLesson || !activeCourse || !user) return;
     
@@ -374,27 +443,6 @@ export default function StudentDashboard() {
           console.error("Error sending reset email:", error);
           alert('የይለፍ ቃል መቀየሪያ ኢሜል መላክ አልተቻለም። እባክዎ በድጋሚ ይሞክሩ።');
       }
-  };
-
-  const handleAskAdmin = async () => {
-    if (!chatInput.trim() || !user) return;
-    try {
-        await setDoc(doc(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'support', 'messages', 'tickets')), {
-            userId: user.uid,
-            userName: user.displayName || user.email || 'Unknown',
-            userEmail: user.email,
-            message: chatInput,
-            courseId: activeCourse?.id || 'General',
-            courseName: activeCourse?.title || 'General',
-            createdAt: serverTimestamp(),
-            status: 'pending',
-            replies: []
-        });
-        setChatMessages(prev => [...prev, { role: 'user', text: chatInput }, { role: 'ai', text: 'ጥያቄዎ ለአስተማሪው ተልኳል! በቅርቡ ምላሽ ያገኛሉ። (Your question has been sent to the instructor!)' }]);
-        setChatInput('');
-    } catch (e) {
-        console.error("Error sending to admin", e);
-    }
   };
 
   const handleSendMessage = async (e: React.FormEvent) => {
@@ -570,23 +618,44 @@ ${customAdminPrompt}
                 >
                     <i className={`fa-solid ${isDarkTheme ? 'fa-sun text-yellow-400' : 'fa-moon text-secondary'} text-sm group-hover:scale-110 transition-transform`}></i>
                 </button>
-                <div className="hidden sm:flex items-center gap-2 bg-gradient-to-r from-orange-50 to-yellow-50 dark:from-orange-500/10 dark:to-yellow-500/10 border border-primary/30 px-3 py-1.5 rounded-full shadow-sm cursor-help hover:scale-105 transition">
+                <div className="hidden sm:flex items-center gap-2 bg-gradient-to-r from-orange-50 to-yellow-50 dark:from-orange-500/10 dark:to-yellow-500/10 border border-primary/30 px-3 py-1.5 rounded-full shadow-sm cursor-help hover:scale-105 transition" title="የተከማቹ ፖይንቶች (Earned Points)">
                     <div className="bg-primary/20 p-1 rounded-full"><i className="fa-solid fa-bolt text-primary text-xs"></i></div>
-                    <span className="font-black text-dark dark:text-white text-sm font-heading">{progress.length * 10}</span>
+                    <span className="font-black text-dark dark:text-white text-sm font-heading">{(progress.length * 100) + (studentNotes.length * 20)} Pts</span>
                 </div>
                 <div className="relative">
-                  <button onClick={() => setShowNotifications(!showNotifications)} className="relative text-gray-400 dark:text-gray-300 hover:text-dark dark:hover:text-white transition text-xl shrink-0">
+                  <button onClick={() => setShowNotifications(!showNotifications)} className="relative text-gray-400 dark:text-gray-300 hover:text-dark dark:hover:text-white transition text-xl shrink-0 p-1">
                       <i className="fa-regular fa-bell"></i>
+                      {notificationsList.filter(n => !n.read).length > 0 && (
+                        <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-pulse">
+                          {notificationsList.filter(n => !n.read).length}
+                        </span>
+                      )}
                   </button>
                   {showNotifications && (
-                    <div className="absolute top-10 right-0 w-64 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-xl rounded-xl p-4 z-50">
-                       <p className="text-sm font-bold text-gray-700 dark:text-gray-300 border-b border-gray-100 dark:border-slate-700 pb-2 mb-2">Notifications</p>
-                       <div className="flex items-start gap-3 py-2">
-                           <div className="w-8 h-8 rounded-full bg-blue-50 dark:bg-slate-700 flex items-center justify-center text-secondary dark:text-primary shrink-0"><i className="fa-solid fa-hand-wave"></i></div>
-                           <div>
-                               <p className="text-xs font-bold text-dark dark:text-white">እንኳን በደህና መጡ!</p>
-                               <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1">ወደ ፀሐይ ካምፓስ እንኳን በደህና መጡ። ትምህርትዎን ዛሬውኑ ይጀምሩ!</p>
-                           </div>
+                    <div className="absolute top-11 right-0 w-80 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-2xl rounded-2xl p-4 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                       <div className="flex items-center justify-between border-b border-gray-100 dark:border-slate-700 pb-3 mb-3">
+                         <div className="flex items-center gap-2">
+                           <i className="fa-solid fa-bell text-primary text-sm"></i>
+                           <h4 className="text-xs font-black uppercase tracking-wider text-dark dark:text-white">አሳውቂያዎች (Notifications)</h4>
+                         </div>
+                         <button onClick={handleMarkAllNotificationsRead} className="text-[11px] font-bold text-secondary dark:text-primary hover:underline">
+                           ሁሉንም እንደተነበቡ ቁጠር
+                         </button>
+                       </div>
+
+                       <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
+                          {notificationsList.map(n => (
+                            <div key={n.id} className={`flex items-start gap-3 p-2.5 rounded-xl transition ${n.read ? 'bg-transparent opacity-75' : 'bg-blue-50/60 dark:bg-slate-700/50 border border-blue-100 dark:border-slate-600'}`}>
+                                <div className="w-8 h-8 rounded-full bg-primary/20 text-dark dark:text-primary flex items-center justify-center shrink-0 mt-0.5">
+                                  <i className="fa-solid fa-bullhorn text-xs"></i>
+                                </div>
+                                <div className="flex-1">
+                                    <p className="text-xs font-bold text-dark dark:text-white">{n.title}</p>
+                                    <p className="text-[11px] text-gray-600 dark:text-gray-300 leading-tight mt-0.5">{n.message}</p>
+                                    <span className="text-[9px] text-gray-400 mt-1 block">{n.createdAt}</span>
+                                </div>
+                            </div>
+                          ))}
                        </div>
                     </div>
                   )}
@@ -747,7 +816,18 @@ ${customAdminPrompt}
                                             </div>
                                         </div>
                                         <div className="flex gap-4">
-                                            <a href="#" className="w-12 h-12 rounded-full bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 text-[#26A5E4] flex items-center justify-center hover:bg-[#26A5E4] hover:text-white transition-all shadow-md transform hover:-translate-y-1"><i className="fa-brands fa-telegram text-2xl"></i></a>
+                                            <a 
+                                                href={(() => {
+                                                    const username = (activeCourse?.instructorTelegram || 'EyoubSahle').replace('@', '').trim();
+                                                    return `https://t.me/${username}`;
+                                                })()}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                title="የመምህሩ ቴሌግራም (Instructor Telegram)"
+                                                className="w-12 h-12 rounded-full bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 text-[#26A5E4] flex items-center justify-center hover:bg-[#26A5E4] hover:text-white transition-all shadow-md transform hover:-translate-y-1"
+                                            >
+                                                <i className="fa-brands fa-telegram text-2xl"></i>
+                                            </a>
                                         </div>
                                     </div>
 
@@ -874,58 +954,92 @@ ${customAdminPrompt}
 
                             {activeTab === 'qa' && (
                                 <div className="p-4">
-                                    <div className="flex flex-col h-[400px] bg-gray-50 dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 overflow-hidden relative">
-                                        <div className="bg-primary text-dark p-3 font-bold flex items-center justify-between shadow-sm z-10">
-                                            <div className="flex items-center gap-2">
-                                                <i className="fa-solid fa-robot text-xl"></i>
-                                                <span>Tsehay AI - ጥያቄ እና መልስ</span>
+                                    <div className="flex flex-col min-h-[420px] bg-gray-50 dark:bg-slate-800/80 rounded-2xl border border-gray-200 dark:border-slate-700 overflow-hidden relative shadow-sm">
+                                        <div className="bg-gradient-to-r from-secondary to-slate-800 text-white p-4 font-bold flex items-center justify-between shadow-sm z-10">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center text-primary">
+                                                    <i className="fa-solid fa-chalkboard-user text-lg"></i>
+                                                </div>
+                                                <div>
+                                                    <h3 className="font-heading font-black text-sm">ከመምህሩ/Admin ጋር ጥያቄና መልስ (Ask Instructor)</h3>
+                                                    <p className="text-[11px] text-gray-300 font-normal">ለዚህ ኮርስ ያሎትን ጥያቄ ለኮርሱ መምህር ያስገቡ</p>
+                                                </div>
                                             </div>
+                                            <span className="text-[11px] bg-primary text-dark font-black px-3 py-1 rounded-full">
+                                                {activeCourse?.instructor || 'Eyoub Sahle'}
+                                            </span>
                                         </div>
                                         
-                                        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                                            {chatMessages.map((msg, idx) => (
-                                                <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                                    <div className={`max-w-[85%] rounded-2xl p-4 text-sm ${msg.role === 'user' ? 'bg-secondary text-white rounded-tr-sm' : 'bg-white dark:bg-slate-700 dark:text-white border border-gray-100 dark:border-slate-600 rounded-tl-sm shadow-sm'}`}>
-                                                        <div className="whitespace-pre-wrap">{msg.text}</div>
-                                                        {msg.role === 'ai' && (
-                                                            <button 
-                                                                onClick={() => handleSaveNote(msg.text)}
-                                                                className="mt-3 text-[11px] bg-amber-400/20 hover:bg-amber-400 dark:bg-amber-500/20 dark:hover:bg-amber-400 text-amber-800 dark:text-amber-300 hover:text-dark font-black px-3 py-1.5 rounded-lg border border-amber-400/40 flex items-center gap-1.5 transition-all shadow-xs group"
-                                                            >
-                                                                <i className="fa-solid fa-bookmark text-xs group-hover:scale-110 transition-transform"></i>
-                                                                <span>ወደ ማስታወሻ አድ አድርግ</span>
-                                                            </button>
+                                        <div className="flex-1 overflow-y-auto p-4 space-y-4 max-h-[380px]">
+                                            {studentTickets.filter((t: any) => !activeCourse || t.courseId === activeCourse.id).length === 0 ? (
+                                                <div className="text-center py-12 bg-white dark:bg-slate-900/40 rounded-xl border border-dashed border-gray-200 dark:border-slate-700">
+                                                    <i className="fa-solid fa-messages text-4xl text-gray-300 dark:text-gray-600 mb-3 block"></i>
+                                                    <p className="text-sm font-bold text-gray-600 dark:text-gray-300">ለዚህ ኮርስ እስካሁን ምንም ጥያቄ አልላኩም።</p>
+                                                    <p className="text-xs text-gray-400 mt-1">ያልገባዎትን ነገር ከታች ባለው ሳጥን ፅፈው ለአስተማሪው መላክ ይችላሉ።</p>
+                                                </div>
+                                            ) : (
+                                                studentTickets.filter((t: any) => !activeCourse || t.courseId === activeCourse.id).map((ticket: any) => (
+                                                    <div key={ticket.id} className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl p-4 shadow-xs space-y-3">
+                                                        <div className="flex justify-between items-start">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                                                                <span className="text-xs font-bold text-dark dark:text-white">እርስዎ የጠየቁት ጥያቄ፦</span>
+                                                            </div>
+                                                            <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${ticket.status === 'replied' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'}`}>
+                                                                {ticket.status === 'replied' ? '✓ መልስ ተሰጥቷል' : '⏳ በመጠባበቅ ላይ'}
+                                                            </span>
+                                                        </div>
+
+                                                        <p className="text-sm text-gray-800 dark:text-gray-200 bg-gray-50 dark:bg-slate-800/80 p-3 rounded-lg border border-gray-100 dark:border-slate-700 font-body">
+                                                            {ticket.message}
+                                                        </p>
+
+                                                        {ticket.replies && ticket.replies.length > 0 ? (
+                                                            <div className="mt-3 pl-3 border-l-2 border-primary space-y-2">
+                                                                {ticket.replies.map((reply: any, rIdx: number) => (
+                                                                    <div key={rIdx} className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/40 p-3 rounded-lg">
+                                                                        <div className="flex items-center gap-2 mb-1">
+                                                                            <i className="fa-solid fa-user-tie text-emerald-600 dark:text-emerald-400 text-xs"></i>
+                                                                            <span className="text-xs font-black text-emerald-700 dark:text-emerald-300">የመምህሩ / Admin መልስ፦</span>
+                                                                        </div>
+                                                                        <p className="text-sm text-slate-700 dark:text-slate-200 font-body leading-relaxed">
+                                                                            {reply.message}
+                                                                        </p>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        ) : (
+                                                            <p className="text-[11px] text-gray-400 italic">መምህሩ ጥያቄዎን ተመልክተው በቅርቡ መልስ ይሰጡዎታል።</p>
                                                         )}
                                                     </div>
-                                                </div>
-                                            ))}
-                                            {isChatLoading && (
-                                                <div className="flex justify-start">
-                                                    <div className="bg-white dark:bg-slate-700 border border-gray-100 dark:border-slate-600 rounded-2xl rounded-tl-sm p-4 shadow-sm flex gap-2 items-center">
-                                                        <div className="w-2 h-2 rounded-full bg-primary animate-bounce"></div>
-                                                        <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{animationDelay: '0.2s'}}></div>
-                                                        <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{animationDelay: '0.4s'}}></div>
-                                                    </div>
-                                                </div>
+                                                ))
                                             )}
-                                            <div ref={chatEndRef} />
                                         </div>
 
-                                        <div className="p-3 bg-white dark:bg-slate-800 border-t border-gray-100 dark:border-slate-700 flex gap-2">
-                                            <input 
-                                                type="text" 
-                                                value={chatInput}
-                                                onChange={e => setChatInput(e.target.value)}
-                                                onKeyDown={e => e.key === 'Enter' && handleSendMessage(e as any)}
-                                                placeholder="ጥያቄዎን እዚህ ይፃፉ..." 
-                                                className="flex-1 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2 text-sm outline-none focus:border-primary"
-                                            />
-                                            <button onClick={handleAskAdmin} title="ለአስተማሪ ላክ (Ask Instructor)" className="px-4 h-10 bg-gray-200 dark:bg-slate-700 text-dark dark:text-white rounded-xl flex items-center justify-center font-bold hover:bg-gray-300 dark:hover:bg-slate-600 transition shadow-sm shrink-0 text-sm whitespace-nowrap">
-                                                ለአስተማሪ ላክ
-                                            </button>
-                                            <button onClick={handleSendMessage as any} title="Tsehay AI ጠይቅ" className="w-10 h-10 bg-primary text-dark rounded-xl flex items-center justify-center font-bold hover:bg-secondary hover:text-white transition shadow-sm shrink-0">
-                                                <i className="fa-solid fa-robot"></i>
-                                            </button>
+                                        <div className="p-3 bg-white dark:bg-slate-900 border-t border-gray-200 dark:border-slate-700">
+                                            {questionSentMessage && (
+                                                <div className="mb-2 text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 animate-bounce">
+                                                    <i className="fa-solid fa-circle-check"></i>
+                                                    <span>{questionSentMessage}</span>
+                                                </div>
+                                            )}
+                                            <div className="flex gap-2">
+                                                <input 
+                                                    type="text" 
+                                                    value={questionInput}
+                                                    onChange={e => setQuestionInput(e.target.value)}
+                                                    onKeyDown={e => e.key === 'Enter' && handleAskAdmin()}
+                                                    placeholder="ለኮርሱ መምህር የሚያስተላልፉትን ጥያቄ እዚህ ይፃፉ..." 
+                                                    className="flex-1 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary text-dark dark:text-white transition"
+                                                />
+                                                <button 
+                                                    onClick={handleAskAdmin} 
+                                                    className="px-5 h-10 bg-primary text-dark font-black rounded-xl flex items-center justify-center gap-2 hover:bg-yellow-400 transition shadow-sm shrink-0 text-sm whitespace-nowrap"
+                                                >
+                                                    <i className="fa-solid fa-paper-plane"></i>
+                                                    <span>ለአስተማሪ ላክ</span>
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

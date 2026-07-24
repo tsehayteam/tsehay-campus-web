@@ -51,6 +51,7 @@ export default function AdminDashboard() {
     category: 'General',
     instructor: '',
     instructorImage: '',
+    instructorTelegram: '@EyoubSahle',
     price: '',
     oldPrice: '',
     duration: '',
@@ -220,7 +221,7 @@ export default function AdminDashboard() {
     } else {
       setEditingCourse(null);
       setFormData({ 
-        title: '', category: 'General', instructor: '', instructorImage: '', price: '', oldPrice: '', 
+        title: '', category: 'General', instructor: '', instructorImage: '', instructorTelegram: '@EyoubSahle', price: '', oldPrice: '', 
         duration: '', status: 'Active', image: '', banner: '', video: '', pdfUrl: '', pdfTitle: '', desc: '', whatYouWillLearn: '', requirements: '', 
         requirementsList: [
           'መሰረታዊ የኮምፒውተር እውቀት (Basic Computer Skill)',
@@ -267,6 +268,7 @@ export default function AdminDashboard() {
         requirements: requirementsArray,
         includes: formData.includesList || [],
         instructorBio: formData.instructorBio || '',
+        instructorTelegram: formData.instructorTelegram || '@EyoubSahle',
         assignmentsInfo: formData.assignmentsInfo || '',
         accessInfo: formData.accessInfo || '',
         certificateInfo: formData.certificateInfo || '',
@@ -813,6 +815,11 @@ export default function AdminDashboard() {
                 <div>
                   <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">የአሰልጣኝ ፎቶ (Instructor Image URL)</label>
                   <input type="text" value={formData.instructorImage} onChange={e => setFormData({...formData, instructorImage: e.target.value})} className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-dark dark:text-white outline-none focus:border-primary transition" />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">የአሰልጣኝ ቴሌግራም ዩዘርኔም (Telegram Username)</label>
+                  <input type="text" value={formData.instructorTelegram || ''} onChange={e => setFormData({...formData, instructorTelegram: e.target.value})} placeholder="@EyoubSahle" className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-dark dark:text-white outline-none focus:border-primary transition" />
                 </div>
 
                 <div>
