@@ -99,6 +99,7 @@ export default function StudentDashboard() {
   ]);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const [isChatLoading, setIsChatLoading] = useState(false);
+  const [currentVideoPlayedFraction, setCurrentVideoPlayedFraction] = useState(0);
 
   useEffect(() => {
     // Fetch courses for the student
@@ -720,13 +721,13 @@ ${customAdminPrompt}
             onClick={() => setCurrentView('ai')} 
             className={`relative flex items-center justify-between gap-2 md:gap-3 p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-auto md:w-full text-left text-sm border ${
               currentView === 'ai' 
-                ? 'bg-gradient-to-r from-amber-400 to-yellow-500 text-dark border-amber-400 scale-[1.03] shadow-lg' 
-                : 'bg-amber-400/10 hover:bg-amber-400/20 text-amber-900 dark:text-amber-300 hover:text-dark dark:hover:text-dark border-amber-400/40 hover:scale-[1.03] shadow-sm'
+                ? 'bg-secondary text-white border-secondary scale-[1.03] shadow-lg' 
+                : 'bg-secondary/10 hover:bg-secondary/20 text-secondary dark:text-primary border-secondary/30 hover:scale-[1.03] shadow-sm'
             }`}
           >
             <div className="flex items-center gap-2.5">
               <div className="relative">
-                <i className="fa-solid fa-user-astronaut text-lg text-amber-800 dark:text-primary group-hover:text-dark transition-colors"></i>
+                <i className={`fa-solid fa-user-astronaut text-lg ${currentView === 'ai' ? 'text-primary' : 'text-secondary dark:text-primary'}`}></i>
                 <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 border-2 border-white dark:border-slate-800 rounded-full animate-ping"></span>
                 <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 border-2 border-white dark:border-slate-800 rounded-full"></span>
               </div>
@@ -934,6 +935,7 @@ ${customAdminPrompt}
                                         controls={true}
                                         playing={true}
                                         onProgress={({ played }: { played: number }) => {
+                                            setCurrentVideoPlayedFraction(played);
                                             if (played >= 0.5) {
                                                 handleVideoProgress50();
                                             }
@@ -1409,7 +1411,13 @@ ${customAdminPrompt}
                             {(() => {
                                 let totalCount = 0;
                                 modules.forEach((m: any) => { totalCount += (m.lessons || []).length; });
-                                const percent = totalCount > 0 ? Math.min(100, Math.round((progress.length / totalCount) * 100)) : 0;
+                                if (totalCount === 0) totalCount = 1;
+                                
+                                const lessonWeight = 100 / totalCount;
+                                const completedBasePercent = (progress.length / totalCount) * 100;
+                                const livePlayedAdded = currentVideoPlayedFraction * lessonWeight;
+                                const percent = Math.min(100, Math.round(completedBasePercent + livePlayedAdded));
+
                                 return (
                                     <>
                                         <div className="flex justify-between items-end mt-3 mb-1">
@@ -1417,7 +1425,7 @@ ${customAdminPrompt}
                                             <p className="text-sm text-secondary dark:text-primary font-black">{percent}%</p>
                                         </div>
                                         <div className="w-full bg-gray-100 dark:bg-slate-700 rounded-full h-2">
-                                            <div className="bg-success h-2 rounded-full transition-all duration-500" style={{ width: `${percent}%` }}></div>
+                                            <div className="bg-success h-2 rounded-full transition-all duration-300" style={{ width: `${percent}%` }}></div>
                                         </div>
                                     </>
                                 );
