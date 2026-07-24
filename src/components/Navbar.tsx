@@ -101,8 +101,8 @@ export default function Navbar() {
             <div className="flex justify-between items-center h-20 gap-4 lg:gap-6">
                 
                 <Link href="/" onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})} className="flex-shrink-0 flex items-center cursor-pointer group gap-2">
-                    <img src="/tc-logo.jpg" alt="Tsehay Campus Logo" className="h-14 w-auto object-contain rounded-md shadow-sm group-hover:shadow-md group-hover:scale-105 transition-all duration-300" onError={(e) => { e.currentTarget.src='https://ui-avatars.com/api/?name=TC&background=3268BA&color=fff' }} />
-                    <span className="font-black text-2xl tracking-tight hidden sm:block notranslate"><span className="text-primary">Tsehay</span> <span className="text-secondary">Campus</span></span>
+                    <img src="/tc-logo.jpg" alt="Tsehay Campus Logo" className="h-14 w-auto object-contain rounded-md shadow-sm group-hover:shadow-md transition-all duration-300 animate-logo-zoom" onError={(e) => { e.currentTarget.src='https://ui-avatars.com/api/?name=TC&background=3268BA&color=fff' }} />
+                    <span className="font-black text-2xl tracking-tight hidden sm:block notranslate select-none"><span className="text-primary animate-tsehay-float">Tsehay</span> <span className="text-secondary animate-campus-float">Campus</span></span>
                 </Link>
 
                 <div className="hidden lg:flex items-center h-full">
@@ -172,21 +172,9 @@ export default function Navbar() {
                         </button>
                         {showProfileDropdown && (
                           <div className="absolute right-0 mt-2 w-52 bg-white dark:bg-darkCard rounded-xl shadow-xl border border-gray-100 dark:border-gray-800 py-2 z-50 animate-in fade-in slide-in-from-top-2">
-                              <a href="/#courses" onClick={(e) => {
-                                  setShowProfileDropdown(false);
-                                  if (pathname === '/') {
-                                      e.preventDefault();
-                                      const element = document.getElementById('courses');
-                                      if (element) {
-                                          const offset = 80;
-                                          const bodyRect = document.body.getBoundingClientRect().top;
-                                          const elementRect = element.getBoundingClientRect().top;
-                                          window.scrollTo({ top: elementRect - bodyRect - offset, behavior: 'smooth' });
-                                      }
-                                  }
-                              }} className="flex items-center gap-2.5 px-4 py-3 text-sm font-bold text-dark dark:text-white hover:bg-blue-50 dark:hover:bg-dark hover:text-secondary dark:hover:text-primary transition border-b border-gray-100 dark:border-gray-800">
+                              <Link href="/dashboard" onClick={() => setShowProfileDropdown(false)} className="flex items-center gap-2.5 px-4 py-3 text-sm font-bold text-dark dark:text-white hover:bg-blue-50 dark:hover:bg-dark hover:text-secondary dark:hover:text-primary transition border-b border-gray-100 dark:border-gray-800">
                                   <i className="fa-solid fa-graduation-cap text-primary text-base"></i> ወደ መማሪያ ክፍል
-                              </a>
+                              </Link>
                               {isAdmin && (
                                 <Link href="/admin" onClick={() => setShowProfileDropdown(false)} className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-dark hover:text-secondary dark:hover:text-primary transition">
                                     <i className="fa-solid fa-shield-halved text-primary"></i> አድሚን

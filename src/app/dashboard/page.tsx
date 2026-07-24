@@ -12,11 +12,14 @@ import AssessmentModal from '@/components/AssessmentModal';
 
 const ReactPlayer: any = dynamic(() => import('react-player'), { ssr: false });
 
+import CourseRatingModal from '@/components/CourseRatingModal';
+
 export default function StudentDashboard() {
   const { user } = useAuth();
   const [currentView, setCurrentView] = useState('classroom');
   const [isCourseCompleted, setIsCourseCompleted] = useState(false);
   const [hasTakenQuiz, setHasTakenQuiz] = useState(false);
+  const [showRatingModal, setShowRatingModal] = useState(false);
   const [quizMessages, setQuizMessages] = useState([
     { role: 'ai', text: 'ሰላም! የኮርሱን ፈተና ለመውሰድ ዝግጁ ነዎት? አዎ ካሉኝ ፈተናውን እጀምራለሁ።' }
   ]);
@@ -525,6 +528,7 @@ export default function StudentDashboard() {
                 }
             } else {
                 setIsCourseCompleted(true);
+                setShowRatingModal(true);
             }
         }
     }
@@ -832,11 +836,20 @@ ${customAdminPrompt}
           </div>
         ) : (
           <div className="max-w-[1600px] mx-auto">
-            <div className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
+            <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl sm:text-3xl font-black font-heading text-dark dark:text-white mb-2">{activeCourse?.title || t('course_loading')}</h1>
                     <p className="text-gray-500 dark:text-gray-400 font-body text-sm">{activeCourse?.category || 'Tsehay Campus Course'}</p>
                 </div>
+                {activeCourse && (
+                  <button 
+                    onClick={() => setShowRatingModal(true)}
+                    className="bg-amber-400/20 hover:bg-amber-400 dark:bg-amber-500/20 dark:hover:bg-amber-400 text-amber-900 dark:text-amber-300 hover:text-dark font-black px-4 py-2.5 rounded-xl border border-amber-400/40 transition flex items-center gap-2 text-sm shadow-xs shrink-0"
+                  >
+                    <i className="fa-solid fa-star text-amber-400"></i>
+                    <span>ሬቲንግ/ሪቪው ስጥ (Rate Course)</span>
+                  </button>
+                )}
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-6 lg:gap-8">
@@ -1694,6 +1707,13 @@ ${customAdminPrompt}
            }} 
         />
       )}
+      <CourseRatingModal
+        isOpen={showRatingModal}
+        onClose={() => setShowRatingModal(false)}
+        courseId={activeCourse?.id || ''}
+        courseTitle={activeCourse?.title || ''}
+        user={user}
+      />
     </div>
   );
 }

@@ -26,6 +26,47 @@
   --animate-slide-left: slideLeft 0.3s ease-out forwards;
 }
 
+@keyframes logoZoom {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08);
+  }
+}
+
+@keyframes tsehayFloat {
+  0%, 100% {
+    transform: translateY(-2px);
+  }
+  50% {
+    transform: translateY(2px);
+  }
+}
+
+@keyframes campusFloat {
+  0%, 100% {
+    transform: translateY(2px);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+}
+
+.animate-logo-zoom {
+  animation: logoZoom 3s ease-in-out infinite;
+}
+
+.animate-tsehay-float {
+  display: inline-block;
+  animation: tsehayFloat 2.5s ease-in-out infinite;
+}
+
+.animate-campus-float {
+  display: inline-block;
+  animation: campusFloat 2.5s ease-in-out infinite;
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;

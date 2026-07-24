@@ -175,9 +175,15 @@ export default function Courses() {
                         {course.title || t('course_unknown')}
                       </h3>
                       
-                      <div className="flex items-center gap-2 mb-4">
-                        <i className="fa-solid fa-folder-open text-primary"></i>
-                        <span className="text-gray-400 text-sm font-bold">{course.instructor || 'Eyoub Sahle'}</span>
+                      <div className="flex items-center justify-between gap-2 mb-3">
+                        <div className="flex items-center gap-2">
+                          <i className="fa-solid fa-folder-open text-primary"></i>
+                          <span className="text-gray-400 text-sm font-bold">{course.instructor || 'Eyoub Sahle'}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 bg-amber-400/10 text-amber-600 dark:text-amber-400 font-black px-2.5 py-1 rounded-full text-xs border border-amber-400/20 shadow-xs">
+                          <i className="fa-solid fa-star text-amber-400 text-xs"></i>
+                          <span>{course.ratingAvg || '4.9'} (Instructor Rating)</span>
+                        </div>
                       </div>
                       
                       <p className="text-gray-400 text-sm mb-6 line-clamp-3 leading-relaxed">
