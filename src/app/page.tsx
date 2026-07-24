@@ -357,32 +357,43 @@ export default function Home() {
     <section id="ai-feature" className="relative py-24 lg:py-32 overflow-hidden hero-mesh text-white border-y border-white/10">
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20 mix-blend-overlay"></div>
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col lg:flex-row items-center gap-12 relative z-10">
-            <div className="flex-1 text-center lg:text-left animate-float" style={{animationDuration: "6s"}}>
+            <div className="flex-1 text-center lg:text-left flex flex-col items-center lg:items-start">
+                <div className="relative mb-6 group cursor-pointer">
+                    <div className="w-44 h-44 sm:w-52 sm:h-52 relative animate-float">
+                        <img 
+                          src="/tsehay-ai-mascot.png" 
+                          alt="Tsehay AI 3D Mascot" 
+                          className="w-full h-full object-contain drop-shadow-[0_20px_30px_rgba(249,176,60,0.5)] transition-transform duration-500 group-hover:scale-110" 
+                        />
+                    </div>
+                    <div className="absolute -top-3 left-1/2 lg:left-[60%] -translate-x-1/2 bg-white text-dark font-black px-4 py-2 rounded-2xl shadow-xl border-2 border-primary text-xs whitespace-nowrap animate-bounce">
+                        👋 ሰላም! እኔ Tsehay AI ነኝ።
+                    </div>
+                </div>
                 <h2 className="text-3xl sm:text-5xl font-black font-heading mb-6 leading-tight"><span className="text-gradient notranslate">በ Tsehay AI</span> {t('make_smart')}</h2>
-                <p className="text-lg text-blue-100 font-body mb-8 leading-relaxed">{t('ai_section_desc')}</p>
+                <p className="text-lg text-blue-100 font-body mb-8 leading-relaxed max-w-xl">{t('ai_section_desc')}</p>
                 <button onClick={() => { document.getElementById('ai-landing-input')?.focus() }} className="bg-white text-secondary font-black px-8 py-3.5 rounded-xl hover:bg-primary hover:text-dark transition shadow-[0_0_20px_rgba(249,176,60,0.5)] transform hover:-translate-y-1">{t('ask_ai_tutor')}</button>
             </div>
             <div className="flex-1 w-full max-w-lg bg-white/95 dark:bg-darkCard/95 backdrop-blur-md p-8 rounded-[3rem] shadow-2xl text-dark border border-white/20">
                 <div className="flex items-center gap-3 border-b border-gray-100 dark:border-gray-800 pb-4 mb-5">
-                    <div className="bg-secondary text-white p-2.5 rounded-xl shadow-inner"><i className="fa-solid fa-robot animate-pulse"></i></div>
-                    <h3 className="font-black text-base dark:text-white notranslate">Tsehay AI (የካምፓስ ረዳትዎ)</h3>
+                    <img src="/tsehay-ai-mascot.png" alt="Tsehay AI Mascot" className="w-10 h-10 rounded-full object-cover border-2 border-primary shadow-md" />
+                    <div>
+                      <h3 className="font-black text-base dark:text-white notranslate">Tsehay AI (የካምፓስ ረዳትዎ)</h3>
+                      <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">● ሪልታይም ረዳትዎ (Active Assistant)</span>
+                    </div>
                 </div>
                 <div className="space-y-4 mb-6 text-sm font-body h-64 overflow-y-auto pr-2 custom-modal-scroll" id="ai-landing-chat">
                     {aiMessages.map((msg, index) => (
                         <div key={index} className={`flex ${msg.role === 'user' ? 'justify-end' : 'gap-2'} mb-4`}>
                             {msg.role === 'ai' && (
-                                <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-dark shrink-0 shadow-md">
-                                    <i className="fa-solid fa-robot text-xs"></i>
-                                </div>
+                                <img src="/tsehay-ai-mascot.png" alt="Tsehay AI" className="w-8 h-8 rounded-full object-cover border border-primary shrink-0 shadow-md" />
                             )}
                             <div className={`${msg.role === 'user' ? 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-dark dark:text-gray-200' : 'bg-blue-50 dark:bg-dark border-primary text-gray-800 dark:text-gray-200'} p-3 rounded-2xl max-w-[85%] border-l-4 shadow-sm text-sm leading-relaxed font-medium`} dangerouslySetInnerHTML={{ __html: msg.text.replace(/\n/g, '<br>') }} />
                         </div>
                     ))}
                     {isAiLoading && (
                         <div className="flex gap-2 mb-4">
-                            <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-white shrink-0 shadow-md">
-                                <i className="fa-solid fa-robot text-xs animate-bounce"></i>
-                            </div>
+                            <img src="/tsehay-ai-mascot.png" alt="Tsehay AI" className="w-8 h-8 rounded-full object-cover border border-primary shrink-0 shadow-md animate-bounce" />
                             <div className="bg-blue-50 dark:bg-darkCard p-3 rounded-2xl max-w-[85%] border-l-4 border-secondary shadow-sm text-gray-500 dark:text-gray-400 text-sm">እያሰብኩ ነው...</div>
                         </div>
                     )}

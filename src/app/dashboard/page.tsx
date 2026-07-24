@@ -1582,10 +1582,10 @@ ${customAdminPrompt}
                  <div className="flex items-center justify-between border-b border-gray-100 dark:border-slate-700 pb-4 mb-4">
                      <div className="flex items-center gap-3.5">
                          <div className="relative">
-                           <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-amber-400 to-yellow-300 text-dark flex items-center justify-center text-2xl shadow-lg border-2 border-white dark:border-slate-700 animate-pulse-glow">
-                               <i className="fa-solid fa-user-astronaut text-xl text-dark"></i>
+                           <div className="w-12 h-12 rounded-2xl bg-amber-400/20 p-0.5 border-2 border-primary shadow-lg overflow-hidden shrink-0">
+                               <img src="/tsehay-ai-mascot.png" alt="Tsehay AI Mascot" className="w-full h-full object-cover rounded-xl" />
                            </div>
-                           <span className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-2 border-white dark:border-slate-800 rounded-full"></span>
+                           <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-emerald-500 border-2 border-white dark:border-slate-800 rounded-full"></span>
                          </div>
                          <div>
                              <div className="flex items-center gap-2">

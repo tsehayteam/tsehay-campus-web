@@ -62,12 +62,12 @@ export default function FloatingAIButton() {
                     {/* Header */}
                     <div className="bg-primary p-4 flex items-center justify-between shadow-md z-10">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-primary text-xl">
-                                <i className="fa-solid fa-robot"></i>
+                            <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center overflow-hidden border-2 border-white shadow-md">
+                                <img src="/tsehay-ai-mascot.png" alt="Tsehay AI Mascot" className="w-full h-full object-cover" />
                             </div>
                             <div>
                                 <h3 className="font-bold text-dark font-heading leading-tight">Tsehay AI</h3>
-                                <p className="text-[10px] text-dark/70 font-bold">Online</p>
+                                <p className="text-[10px] text-dark/70 font-bold">Online Assistant</p>
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
@@ -79,13 +79,18 @@ export default function FloatingAIButton() {
                             </button>
                         </div>
                     </div>
-                    
+
                     {/* Body */}
                     <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-slate-900/50">
                         {messages.map((m, i) => (
                             <div key={i} className={`flex flex-col ${m.role === 'user' ? 'items-end' : 'items-start'}`}>
-                                <div className={`max-w-[80%] p-3 rounded-2xl text-sm ${m.role === 'user' ? 'bg-secondary text-white rounded-br-none' : 'bg-white dark:bg-slate-700 dark:text-white text-dark shadow-sm rounded-bl-none border border-gray-100 dark:border-gray-600'}`}>
-                                    {m.text}
+                                <div className="flex gap-2 items-start max-w-[85%]">
+                                    {m.role === 'system' && (
+                                        <img src="/tsehay-ai-mascot.png" alt="AI" className="w-7 h-7 rounded-full object-cover shrink-0 mt-1 border border-primary" />
+                                    )}
+                                    <div className={`p-3 rounded-2xl text-sm ${m.role === 'user' ? 'bg-secondary text-white rounded-br-none' : 'bg-white dark:bg-slate-700 dark:text-white text-dark shadow-sm rounded-bl-none border border-gray-100 dark:border-gray-600'}`}>
+                                        {m.text}
+                                    </div>
                                 </div>
                                 {m.role === 'system' && i > 0 && (
                                     <button 
@@ -126,9 +131,9 @@ export default function FloatingAIButton() {
             )}
             
             {/* Floating Button */}
-            <button onClick={() => setIsOpen(!isOpen)} className="w-14 h-14 bg-primary text-dark rounded-full shadow-[0_10px_25px_rgba(249,176,60,0.5)] flex items-center justify-center text-3xl hover:scale-105 transition-transform relative">
-                <i className="fa-solid fa-robot"></i>
-                {!isOpen && <span className="absolute 1 top-1 right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white"></span>}
+            <button onClick={() => setIsOpen(!isOpen)} className="w-14 h-14 bg-primary text-dark rounded-full shadow-[0_10px_25px_rgba(249,176,60,0.5)] flex items-center justify-center hover:scale-110 transition-transform relative p-1">
+                <img src="/tsehay-ai-mascot.png" alt="Tsehay AI" className="w-full h-full object-cover rounded-full" />
+                {!isOpen && <span className="absolute top-0 right-0 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-white"></span>}
             </button>
         </div>
     );
