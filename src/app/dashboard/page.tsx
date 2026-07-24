@@ -441,24 +441,7 @@ export default function StudentDashboard() {
 
   useEffect(() => {
     if (!activeLesson || !activeCourse) return;
-    
     setCurrentVideoPlayedFraction(0);
-
-    const interval = setInterval(() => {
-      setCurrentVideoPlayedFraction((prev) => {
-        const next = prev + 0.02;
-        if (next >= 0.50) {
-          handleVideoProgress50();
-        }
-        if (next >= 0.99) {
-          clearInterval(interval);
-          return 1;
-        }
-        return next;
-      });
-    }, 2000);
-
-    return () => clearInterval(interval);
   }, [activeLesson?.title, activeCourse?.id]);
 
   const handleVideoProgress50 = async () => {
