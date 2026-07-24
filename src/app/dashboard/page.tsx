@@ -382,6 +382,90 @@ export default function StudentDashboard() {
     setNotificationsList(prev => prev.map(n => ({ ...n, read: true })));
   };
 
+  const [savedAiNotes, setSavedAiNotes] = useState<Record<number, boolean>>({});
+
+  useEffect(() => {
+      const saved = localStorage.getItem('tsehay-ai-chat');
+      if (saved) {
+          try {
+              setChatMessages(JSON.parse(saved));
+          } catch (e) {}
+      }
+  }, []);
+
+  useEffect(() => {
+      if (chatMessages.length > 0) {
+          localStorage.setItem('tsehay-ai-chat', JSON.stringify(chatMessages));
+      }
+  }, [chatMessages]);
+
+  const handleSendAiMessage = async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!chatInput.trim()) return;
+
+      const userMsg = chatInput.trim();
+      const newMsgs = [...chatMessages, { role: 'user', text: userMsg }];
+      setChatMessages(newMsgs);
+      setChatInput('');
+      setIsChatLoading(true);
+
+      try {
+          const response = await fetch('/api/chat', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ prompt: userMsg })
+          });
+          const data = await response.json();
+          const reply = data.reply || data.error || "ይቅርታ፣ አሁን ላይ መመለስ አልቻልኩም።";
+          setChatMessages([...newMsgs, { role: 'system', text: reply }]);
+      } catch (error: any) {
+          setChatMessages([...newMsgs, { role: 'system', text: "ይቅርታ፣ የሲስተም ችግር አጋጥሟል!" }]);
+      } finally {
+          setIsChatLoading(false);
+      }
+  };
+
+  const handleVideoProgress50 = async () => {
+    if (!activeLesson || !activeCourse || !user) return;
+    if (progress.includes(activeLesson.title)) return;
+
+    const pointsToAward = activeLesson.points || 100;
+    try {
+        const userRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'purchased_courses', activeCourse.id);
+        const userDoc = await getDoc(userRef);
+
+        let newCompletedLessons = [...progress, activeLesson.title];
+        let totalPoints = pointsToAward;
+
+        if (userDoc.exists()) {
+            const data = userDoc.data();
+            const currentCompleted = data.completedLessons || [];
+            if (!currentCompleted.includes(activeLesson.title)) {
+                newCompletedLessons = [...currentCompleted, activeLesson.title];
+                totalPoints = (data.points || 0) + pointsToAward;
+
+                await updateDoc(userRef, {
+                    completedLessons: newCompletedLessons,
+                    points: totalPoints,
+                    lastPlayedAt: new Date()
+                });
+                setProgress(newCompletedLessons);
+            }
+        } else {
+            await setDoc(userRef, {
+                courseId: activeCourse.id,
+                completedLessons: newCompletedLessons,
+                points: totalPoints,
+                enrolledAt: new Date(),
+                lastPlayedAt: new Date()
+            }, { merge: true });
+            setProgress(newCompletedLessons);
+        }
+    } catch (e) {
+        console.error("Error updating points on 50% watch:", e);
+    }
+  };
+
   const handleVideoEnd = async () => {
     if (!activeLesson || !activeCourse || !user) return;
     
@@ -619,7 +703,7 @@ ${customAdminPrompt}
             {t('tools')}
           </p>
 
-          <button onClick={() => document.dispatchEvent(new CustomEvent('toggle-ai'))} className="flex items-center gap-2 md:gap-3 p-2.5 md:p-3 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-dark dark:hover:text-white font-bold transition flex-shrink-0 group w-auto md:w-full text-left">
+          <button onClick={() => setCurrentView('ai')} className={`flex items-center gap-2 md:gap-3 p-2.5 md:p-3 rounded-xl font-bold transition flex-shrink-0 group w-auto md:w-full text-left text-sm ${currentView === 'ai' ? 'bg-blue-50 dark:bg-primary/10 text-secondary dark:text-primary' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-dark dark:hover:text-white'}`}>
             <i className="fa-solid fa-wand-magic-sparkles text-lg w-5 text-center group-hover:scale-110 transition-transform"></i>
             <span className="whitespace-nowrap md:whitespace-normal md:hidden lg:block">Tsehay AI</span>
           </button>
@@ -804,6 +888,11 @@ ${customAdminPrompt}
                                         height="100%"
                                         controls={true}
                                         playing={true}
+                                        onProgress={({ played }: { played: number }) => {
+                                            if (played >= 0.5) {
+                                                handleVideoProgress50();
+                                            }
+                                        }}
                                         onEnded={handleVideoEnd}
                                         className="absolute inset-0"
                                     />
@@ -1272,13 +1361,22 @@ ${customAdminPrompt}
                         
                         <div className="p-5 border-b border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 z-10 shadow-sm">
                             <h3 className="font-heading font-black text-lg text-dark dark:text-white">የኮርስ ይዘት (Course Content)</h3>
-                            <div className="flex justify-between items-end mt-3 mb-1">
-                                <p className="text-[11px] text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wide">የኮርሱ ሂደት</p>
-                                <p className="text-sm text-secondary dark:text-primary font-black">20%</p>
-                            </div>
-                            <div className="w-full bg-gray-100 dark:bg-slate-700 rounded-full h-2">
-                                <div className="bg-success h-2 rounded-full" style={{ width: '20%' }}></div>
-                            </div>
+                            {(() => {
+                                let totalCount = 0;
+                                modules.forEach((m: any) => { totalCount += (m.lessons || []).length; });
+                                const percent = totalCount > 0 ? Math.min(100, Math.round((progress.length / totalCount) * 100)) : 0;
+                                return (
+                                    <>
+                                        <div className="flex justify-between items-end mt-3 mb-1">
+                                            <p className="text-[11px] text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wide">የኮርሱ ሂደት</p>
+                                            <p className="text-sm text-secondary dark:text-primary font-black">{percent}%</p>
+                                        </div>
+                                        <div className="w-full bg-gray-100 dark:bg-slate-700 rounded-full h-2">
+                                            <div className="bg-success h-2 rounded-full transition-all duration-500" style={{ width: `${percent}%` }}></div>
+                                        </div>
+                                    </>
+                                );
+                            })()}
                         </div>
 
                         <div className="flex-1 overflow-y-auto no-scrollbar">
@@ -1460,6 +1558,78 @@ ${customAdminPrompt}
                          ))
                      )}
                  </div>
+             </div>
+          </div>
+        )}
+
+        {currentView === 'ai' && (
+          <div className="max-w-4xl mx-auto py-6 space-y-6">
+             <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 md:p-8 shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col h-[calc(100vh-200px)] min-h-[500px]">
+                 <div className="flex items-center justify-between border-b border-gray-100 dark:border-slate-700 pb-4 mb-4">
+                     <div className="flex items-center gap-3">
+                         <div className="w-12 h-12 rounded-2xl bg-primary/20 text-primary flex items-center justify-center text-2xl shadow-inner">
+                             <i className="fa-solid fa-robot"></i>
+                         </div>
+                         <div>
+                             <h2 className="text-xl font-black font-heading text-dark dark:text-white">Tsehay AI Assistant</h2>
+                             <p className="text-xs text-gray-500">በማንኛውም ጊዜ ትምህርታዊ ጥያቄዎችዎን የሚመልስ የመ искусственный интеллект ረዳትዎ</p>
+                         </div>
+                     </div>
+                     <button onClick={() => { if(confirm('የ AI ቻት ታሪክዎን ማጥፋት እርግጠኛ ነዎት?')) { localStorage.removeItem('tsehay-ai-chat'); setChatMessages([{ role: 'system', text: 'ሰላም! እኔ Tsehay AI ነኝ። ምን ልርዳዎት?' }]); } }} className="text-xs bg-red-50 text-red-600 dark:bg-red-950/30 dark:text-red-400 font-bold px-3 py-2 rounded-xl hover:bg-red-100 transition">
+                         <i className="fa-solid fa-trash mr-1"></i> ታሪክ አፅዳ
+                     </button>
+                 </div>
+
+                 {/* Chat Body */}
+                 <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-slate-900/50 rounded-2xl border border-gray-100 dark:border-slate-700">
+                     {chatMessages.map((m: any, i: number) => (
+                         <div key={i} className={`flex flex-col ${m.role === 'user' ? 'items-end' : 'items-start'}`}>
+                             <div className={`max-w-[80%] p-4 rounded-2xl text-sm leading-relaxed ${m.role === 'user' ? 'bg-secondary text-white rounded-br-none' : 'bg-white dark:bg-slate-700 dark:text-white text-dark shadow-sm rounded-bl-none border border-gray-100 dark:border-slate-600'}`}>
+                                 {m.text}
+                             </div>
+                             {m.role !== 'user' && i > 0 && (
+                                 <button 
+                                     onClick={() => {
+                                         document.dispatchEvent(new CustomEvent('add-to-notes', { detail: { text: m.text } }));
+                                         setSavedAiNotes(prev => ({ ...prev, [i]: true }));
+                                     }} 
+                                     className={`mt-2 text-[11px] font-black px-3 py-1 rounded-lg border flex items-center gap-1.5 transition-all shadow-xs ${
+                                         savedAiNotes[i]
+                                             ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/40'
+                                             : 'bg-amber-400/20 hover:bg-amber-400 dark:bg-amber-500/20 dark:hover:bg-amber-400 text-amber-800 dark:text-amber-300 hover:text-dark border-amber-400/40'
+                                     }`}
+                                 >
+                                     <i className={`fa-solid ${savedAiNotes[i] ? 'fa-circle-check text-emerald-600 dark:text-emerald-400' : 'fa-bookmark text-[10px]'}`}></i> 
+                                     <span>{savedAiNotes[i] ? '✓ ወደ ማስታወሻ ተመዝግቧል' : 'ወደ ማስታወሻ አድ አድርግ'}</span>
+                                 </button>
+                             )}
+                         </div>
+                     ))}
+                     {isChatLoading && (
+                         <div className="flex justify-start">
+                             <div className="bg-white dark:bg-slate-700 border border-gray-100 dark:border-slate-600 rounded-2xl p-4 shadow-sm flex gap-2 items-center">
+                                 <div className="w-2.5 h-2.5 rounded-full bg-primary animate-bounce"></div>
+                                 <div className="w-2.5 h-2.5 rounded-full bg-primary animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                                 <div className="w-2.5 h-2.5 rounded-full bg-primary animate-bounce" style={{animationDelay: '0.4s'}}></div>
+                             </div>
+                         </div>
+                     )}
+                 </div>
+
+                 {/* Input Bar */}
+                 <form onSubmit={handleSendAiMessage} className="mt-4 flex gap-2">
+                     <input 
+                         type="text" 
+                         value={chatInput}
+                         onChange={e => setChatInput(e.target.value)}
+                         placeholder="ለ Tsehay AI ጥያቄዎን እዚህ ይጻፉ..." 
+                         className="flex-1 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm outline-none focus:border-primary text-dark dark:text-white transition"
+                     />
+                     <button type="submit" className="px-6 bg-primary text-dark font-black rounded-xl hover:bg-yellow-400 transition shadow-sm flex items-center gap-2">
+                         <i className="fa-solid fa-paper-plane"></i>
+                         <span>ላክ</span>
+                     </button>
+                 </form>
              </div>
           </div>
         )}
