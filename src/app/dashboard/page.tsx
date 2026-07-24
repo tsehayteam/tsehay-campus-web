@@ -215,13 +215,15 @@ export default function StudentDashboard() {
 
   const handleSaveNote = async (textToSave?: string) => {
     const text = textToSave || noteInput;
-    if (!text || !text.trim() || !activeCourse || !user) return;
+    if (!text || !text.trim() || !user) return;
+
+    const targetCourse = activeCourse || (courses && courses.length > 0 ? courses[0] : { id: 'general', title: 'ፀሐይ ካምፓስ' });
 
     const newNote = {
       id: Date.now().toString(),
       text: text.trim(),
       createdAt: new Date().toLocaleString('am-ET', { dateStyle: 'medium', timeStyle: 'short' }),
-      lessonTitle: activeLesson?.title || activeCourse.title
+      lessonTitle: activeLesson?.title || targetCourse?.title || 'Tsehay AI Note'
     };
 
     const updatedNotes = [newNote, ...studentNotes];
@@ -229,8 +231,13 @@ export default function StudentDashboard() {
     if (!textToSave) setNoteInput('');
 
     try {
-      const userRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'purchased_courses', activeCourse.id);
-      await setDoc(userRef, { notes: updatedNotes }, { merge: true });
+      if (targetCourse?.id && targetCourse.id !== 'general') {
+        const userRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'purchased_courses', targetCourse.id);
+        await setDoc(userRef, { notes: updatedNotes }, { merge: true });
+      }
+      const globalNotesRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'notes', 'all_notes');
+      await setDoc(globalNotesRef, { list: updatedNotes }, { merge: true });
+
       setNoteSavedMessage("ማስታወሻዎ በተሳካ ሁኔታ ተመዝግቧል!");
       setTimeout(() => setNoteSavedMessage(""), 3000);
     } catch (err) {
@@ -528,7 +535,9 @@ export default function StudentDashboard() {
                 }
             } else {
                 setIsCourseCompleted(true);
-                setShowRatingModal(true);
+                if (activeCourse?.id && !localStorage.getItem(`rated_course_${activeCourse.id}`)) {
+                    setShowRatingModal(true);
+                }
             }
         }
     }
@@ -674,7 +683,7 @@ ${customAdminPrompt}
               <img src="/tc-logo.jpg" alt="Tsehay Campus Logo" className="w-full h-full object-contain rounded-xl" />
             </div>
             <span className="ml-3 font-heading font-black text-lg md:text-xl tracking-tight notranslate select-none">
-              <span className="text-primary animate-tsehay-float">Tsehay</span> <span className="text-secondary dark:text-white animate-campus-float">Campus</span>
+              <span className="text-primary animate-tsehay-float">Tsehay</span> <span className="text-secondary dark:text-secondary animate-campus-float">Campus</span>
             </span>
           </a>
           

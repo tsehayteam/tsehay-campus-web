@@ -50,7 +50,7 @@ export default function FloatingAIButton() {
         }
     };
 
-    if (pathname !== '/dashboard') {
+    if (pathname === '/dashboard') {
         return null;
     }
 

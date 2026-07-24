@@ -65,6 +65,7 @@ export default function CourseRatingModal({
         instructorRatingAvg: avgRating
       });
 
+      localStorage.setItem('rated_course_' + courseId, 'true');
       setIsSubmitted(true);
       if (onRatingSubmitted) onRatingSubmitted();
       setTimeout(() => {
