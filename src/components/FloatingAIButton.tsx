@@ -9,6 +9,8 @@ export default function FloatingAIButton() {
     const [input, setInput] = useState('');
 
 
+    const [savedIndices, setSavedIndices] = useState<Record<number, boolean>>({});
+
     useEffect(() => {
         const saved = localStorage.getItem('tsehay-ai-chat');
         if (saved) {
@@ -69,7 +71,7 @@ export default function FloatingAIButton() {
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
-                            <button onClick={() => { if(confirm('Are you sure you want to delete chat history?')) setMessages([{ role: 'system', text: 'ሰላም! እኔ Tsehay AI ነኝ። ምን ልርዳዎት?' }]); }} className="text-dark hover:bg-black/10 w-8 h-8 rounded-full flex items-center justify-center transition" title="Clear Chat">
+                            <button onClick={() => { if(confirm('የ AI ቻት ታሪክዎን ማጥፋት እርግጠኛ ነዎት?')) setMessages([{ role: 'system', text: 'ሰላም! እኔ Tsehay AI ነኝ። ምን ልርዳዎት?' }]); }} className="text-dark hover:bg-black/10 w-8 h-8 rounded-full flex items-center justify-center transition" title="Clear Chat">
                                 <i className="fa-solid fa-trash text-sm"></i>
                             </button>
                             <button onClick={() => setIsOpen(false)} className="text-dark hover:bg-black/10 w-8 h-8 rounded-full flex items-center justify-center transition">
@@ -89,11 +91,16 @@ export default function FloatingAIButton() {
                                     <button 
                                         onClick={() => {
                                             document.dispatchEvent(new CustomEvent('add-to-notes', { detail: { text: m.text } }));
-                                            alert('ማስታወሻዎ በተሳካ ሁኔታ ተመዝግቧል! (Note saved successfully)');
+                                            setSavedIndices(prev => ({ ...prev, [i]: true }));
                                         }} 
-                                        className="mt-2 text-[11px] bg-amber-400/20 hover:bg-amber-400 dark:bg-amber-500/20 dark:hover:bg-amber-400 text-amber-800 dark:text-amber-300 hover:text-dark font-black px-2.5 py-1 rounded-lg border border-amber-400/40 flex items-center gap-1 transition-all shadow-xs"
+                                        className={`mt-2 text-[11px] font-black px-2.5 py-1 rounded-lg border flex items-center gap-1 transition-all shadow-xs ${
+                                            savedIndices[i]
+                                                ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/40'
+                                                : 'bg-amber-400/20 hover:bg-amber-400 dark:bg-amber-500/20 dark:hover:bg-amber-400 text-amber-800 dark:text-amber-300 hover:text-dark border-amber-400/40'
+                                        }`}
                                     >
-                                        <i className="fa-solid fa-bookmark text-[10px]"></i> ወደ ማስታወሻ አድ አድርግ
+                                        <i className={`fa-solid ${savedIndices[i] ? 'fa-circle-check text-emerald-600 dark:text-emerald-400' : 'fa-bookmark text-[10px]'}`}></i> 
+                                        <span>{savedIndices[i] ? '✓ ተመዝግቧል' : 'ወደ ማስታወሻ አድ አድርግ'}</span>
                                     </button>
                                 )}
                             </div>

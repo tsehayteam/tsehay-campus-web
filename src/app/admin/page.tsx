@@ -197,6 +197,21 @@ export default function AdminDashboard() {
     return url;
   };
 
+  const handlePdfFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      setFormData(prev => ({
+        ...prev,
+        pdfUrl: dataUrl,
+        pdfTitle: prev.pdfTitle || file.name
+      }));
+    };
+    reader.readAsDataURL(file);
+  };
+
   const openForm = async (course: any = null) => {
     if (course) {
       setEditingCourse(course);
@@ -880,8 +895,20 @@ export default function AdminDashboard() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">የኮርስ ማቴሪያል PDF ሊንክ (PDF Resource URL)</label>
-                  <input type="text" value={formData.pdfUrl || ''} onChange={e => setFormData({...formData, pdfUrl: e.target.value})} className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-dark dark:text-white outline-none focus:border-primary transition" placeholder="የ Google Drive PDF ሊንክ ወይም Direct PDF URL" />
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">የኮርስ ማቴሪያል PDF (Upload File / Enter URL)</label>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <label className="bg-primary/20 hover:bg-primary text-dark dark:text-primary hover:text-dark px-4 py-2.5 rounded-xl border border-primary/40 font-bold text-xs cursor-pointer transition flex items-center gap-2 shrink-0">
+                        <i className="fa-solid fa-file-arrow-up text-sm"></i>
+                        <span>PDF ፋይል ከስልክ/ኮምፒውተር ምረጥ (Upload PDF)</span>
+                        <input type="file" accept=".pdf" onChange={handlePdfFileUpload} className="hidden" />
+                      </label>
+                      {formData.pdfUrl && formData.pdfUrl.startsWith('data:') && (
+                        <span className="text-xs text-emerald-600 dark:text-emerald-400 font-bold">✓ ፋይል ተመርጧል!</span>
+                      )}
+                    </div>
+                    <input type="text" value={formData.pdfUrl || ''} onChange={e => setFormData({...formData, pdfUrl: e.target.value})} className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-dark dark:text-white outline-none focus:border-primary transition text-xs" placeholder="ወይም የ Google Drive PDF ሊንክ ያስገቡ (e.g. drive.google.com/...)" />
+                  </div>
                 </div>
 
                 <div>

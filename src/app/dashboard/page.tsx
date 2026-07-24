@@ -1256,16 +1256,70 @@ ${customAdminPrompt}
         )}
 
         {currentView === 'messages' && (
-          <div className="max-w-4xl mx-auto py-6">
-             <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 md:p-8 shadow-sm border border-slate-100 dark:border-slate-700 text-center">
-                 <div className="w-20 h-20 bg-blue-50 dark:bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-4 text-secondary dark:text-primary text-3xl shadow-inner">
-                     <i className="fa-solid fa-robot"></i>
+          <div className="max-w-4xl mx-auto py-6 space-y-6">
+             <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 md:p-8 shadow-sm border border-slate-100 dark:border-slate-700">
+                 <div className="flex items-center justify-between border-b border-gray-100 dark:border-slate-700 pb-4 mb-6">
+                     <div className="flex items-center gap-3">
+                         <div className="w-12 h-12 rounded-2xl bg-secondary/10 dark:bg-primary/20 text-secondary dark:text-primary flex items-center justify-center text-xl">
+                             <i className="fa-solid fa-comments"></i>
+                         </div>
+                         <div>
+                             <h2 className="text-xl font-black font-heading text-dark dark:text-white">መልዕክቶች (Instructor Direct Messages)</h2>
+                             <p className="text-xs text-gray-500">ከኮርስ አስተማሪዎች ጋር የሚላላኩት ቀጥታ መልዕክቶች እና የተሰጡ ምላሾች</p>
+                         </div>
+                     </div>
+                     <button onClick={() => setCurrentView('classroom')} className="text-xs bg-primary text-dark font-black px-4 py-2 rounded-xl hover:bg-yellow-400 transition shadow-xs">
+                         <i className="fa-solid fa-plus mr-1"></i> አዲስ ጥያቄ ጠይቅ
+                     </button>
                  </div>
-                 <h2 className="text-2xl font-black font-heading text-dark dark:text-white mb-2">Tsehay AI Chat</h2>
-                 <p className="text-gray-500 mb-6">የ AI ረዳትዎ ከታች በኩል ባለው Floating Button (<i className="fa-solid fa-sparkles text-primary"></i>) ይገኛል። እባክዎ ጥያቄዎን እዛ ላይ ይጠይቁ።</p>
-                 <button onClick={() => document.dispatchEvent(new CustomEvent('toggle-ai'))} className="bg-primary text-dark font-bold px-6 py-3 rounded-xl hover:bg-yellow-400 transition shadow-sm">
-                     <i className="fa-solid fa-message mr-2"></i> ቻት ጀምር (Start Chat)
-                 </button>
+
+                 <div className="space-y-4">
+                     {studentTickets.length === 0 ? (
+                         <div className="text-center py-16 bg-gray-50 dark:bg-slate-900/40 rounded-2xl border border-dashed border-gray-200 dark:border-slate-700">
+                             <i className="fa-solid fa-envelope-open-text text-5xl text-gray-300 dark:text-gray-600 mb-3 block"></i>
+                             <h3 className="text-base font-bold text-dark dark:text-white mb-1">ምንም የተላከ መልዕክት የለም</h3>
+                             <p className="text-xs text-gray-400 max-w-sm mx-auto mb-4">በመማሪያ ክፍሉ (Classroom) ሆነው ለኮርሱ አስተማሪ የላኳቸው ጥያቄዎች እና የተሰጡ ምላሾች እዚህ ይገኛሉ።</p>
+                             <button onClick={() => setCurrentView('classroom')} className="bg-primary text-dark font-black px-5 py-2.5 rounded-xl hover:bg-yellow-400 text-xs transition">
+                                 ወደ የመማሪያ ክፍል ሂድ
+                             </button>
+                         </div>
+                     ) : (
+                         studentTickets.map(ticket => (
+                             <div key={ticket.id} className="p-5 border border-gray-200 dark:border-slate-700 rounded-2xl bg-gray-50 dark:bg-slate-900/50 shadow-xs space-y-3">
+                                 <div className="flex justify-between items-start">
+                                     <div>
+                                         <span className="text-[11px] font-bold bg-primary/20 text-dark dark:text-primary px-3 py-1 rounded-full">
+                                             📚 {ticket.courseName || 'General Course'}
+                                         </span>
+                                         <p className="text-[10px] text-gray-400 mt-1">{ticket.createdAt ? new Date(ticket.createdAt.seconds ? ticket.createdAt.seconds * 1000 : ticket.createdAt).toLocaleString() : ''}</p>
+                                     </div>
+                                     <span className={`text-[11px] font-bold px-3 py-1 rounded-full ${ticket.status === 'replied' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300'}`}>
+                                         {ticket.status === 'replied' ? '✓ መልስ ተሰጥቷል (Replied)' : '⏳ በመጠባበቅ ላይ (Pending)'}
+                                     </span>
+                                 </div>
+
+                                 <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-gray-100 dark:border-slate-700">
+                                     <span className="text-xs font-bold text-gray-400 block mb-1">የተላከው ጥያቄ፦</span>
+                                     <p className="text-sm font-body text-dark dark:text-white whitespace-pre-wrap">{ticket.message}</p>
+                                 </div>
+
+                                 {ticket.replies && ticket.replies.length > 0 && (
+                                     <div className="pl-4 border-l-3 border-emerald-500 space-y-2 mt-3">
+                                         {ticket.replies.map((reply: any, rIdx: number) => (
+                                             <div key={rIdx} className="bg-emerald-50 dark:bg-emerald-950/30 p-4 rounded-xl border border-emerald-200 dark:border-emerald-800/40">
+                                                 <div className="flex items-center gap-2 mb-1.5">
+                                                     <i className="fa-solid fa-user-tie text-emerald-600 dark:text-emerald-400"></i>
+                                                     <span className="text-xs font-black text-emerald-800 dark:text-emerald-300">የአስተማሪው/Admin መልስ፦</span>
+                                                 </div>
+                                                 <p className="text-sm font-body text-slate-800 dark:text-slate-200 leading-relaxed">{reply.message}</p>
+                                             </div>
+                                         ))}
+                                     </div>
+                                 )}
+                             </div>
+                         ))
+                     )}
+                 </div>
              </div>
           </div>
         )}
