@@ -8,6 +8,9 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 
+import SmartSearchInput from '@/components/SmartSearchInput';
+import { searchCourses } from '@/lib/smartSearch';
+
 export default function Courses() {
   const [courses, setCourses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -73,16 +76,15 @@ export default function Courses() {
     setSelectedCourse(null);
   };
 
-  const filteredCourses = courses.filter(course => {
-    const matchesSearch = course.title?.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          course.desc?.toLowerCase().includes(searchQuery.toLowerCase());
+  const filteredCourses = (() => {
+    let matched = searchQuery ? searchCourses(courses, searchQuery) : courses;
+
+    if (selectedCategory === "All") return matched;
+    if (selectedCategory === "Free") return matched.filter(course => course.price === "Free" || course.price === "0" || course.price === 0 || course.isFree);
+    if (selectedCategory === "Paid") return matched.filter(course => course.price !== "Free" && course.price !== "0" && course.price !== 0 && !course.isFree);
     
-    if (selectedCategory === "All") return matchesSearch;
-    if (selectedCategory === "Free") return matchesSearch && (course.price === "Free" || course.price === "0" || course.price === 0 || course.isFree);
-    if (selectedCategory === "Paid") return matchesSearch && (course.price !== "Free" && course.price !== "0" && course.price !== 0 && !course.isFree);
-    
-    return matchesSearch && course.category === selectedCategory;
-  });
+    return matched.filter(course => course.category === selectedCategory);
+  })();
 
   return (
     <React.Fragment>
@@ -99,15 +101,14 @@ export default function Courses() {
               {t('courses_subtitle')}
             </p>
 
-            {/* Standard Course Filter Search Bar */}
-            <div className="max-w-2xl mx-auto relative mb-8 shadow-xl rounded-full group">
-                <i className="fa-solid fa-search absolute left-6 top-1/2 -translate-y-1/2 text-gray-400 text-lg group-focus-within:text-secondary dark:group-focus-within:text-primary transition-colors"></i>
-                <input 
-                  type="text" 
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder={t('search_placeholder_2')}
-                  className="w-full bg-white dark:bg-[#111111] border-2 border-gray-200 dark:border-gray-800 rounded-full py-4 pl-14 pr-6 text-dark dark:text-white font-bold outline-none focus:border-secondary dark:focus:border-primary transition shadow-inner text-base lg:text-lg"
+            {/* Smart Semantic & Bilingual Search Bar */}
+            <div className="max-w-2xl mx-auto mb-8">
+                <SmartSearchInput 
+                  courses={courses}
+                  placeholder="ኮርሶችን ይፈልጉ (e.g. Social Media, Facebook, ዌብሳይት, Python)..."
+                  onSearchChange={(searchResults, q) => {
+                    setSearchQuery(q);
+                  }}
                 />
             </div>
 

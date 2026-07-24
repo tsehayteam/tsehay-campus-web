@@ -8,6 +8,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Footer from '@/components/Footer';
+import SmartSearchInput from '@/components/SmartSearchInput';
 
 export default function Home() {
   const { user } = useAuth();
@@ -267,7 +268,13 @@ export default function Home() {
             <div className="flex flex-col items-center text-center mb-12 gap-4">
                 <div>
                     <h2 className="font-heading font-black text-3xl sm:text-4xl text-dark dark:text-white mb-3">{t('popular_courses')}</h2>
-                    <p className="text-gray-600 dark:text-gray-400 font-body text-lg">{t('popular_courses_desc')}</p>
+                    <p className="text-gray-600 dark:text-gray-400 font-body text-lg mb-6">{t('popular_courses_desc')}</p>
+                </div>
+                <div className="w-full max-w-2xl">
+                    <SmartSearchInput 
+                      courses={courses}
+                      placeholder="ኮርሶችን ይፈልጉ (e.g. Social Media, Facebook, ዌብሳይት, Python)..."
+                    />
                 </div>
             </div>
 
