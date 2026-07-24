@@ -315,6 +315,24 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleMoveLessonUp = (index: number) => {
+    if (index <= 0) return;
+    const updated = [...lessons];
+    const temp = updated[index];
+    updated[index] = updated[index - 1];
+    updated[index - 1] = temp;
+    setLessons(updated);
+  };
+
+  const handleMoveLessonDown = (index: number) => {
+    if (index >= lessons.length - 1) return;
+    const updated = [...lessons];
+    const temp = updated[index];
+    updated[index] = updated[index + 1];
+    updated[index + 1] = temp;
+    setLessons(updated);
+  };
+
   const handleDelete = async (id: string) => {
     if (window.confirm("እርግጠኛ ነዎት ይህን ኮርስ ማጥፋት ይፈልጋሉ?")) {
       try {
@@ -1044,15 +1062,40 @@ export default function AdminDashboard() {
                       </div>
                     </div>
 
-                    <div className="space-y-2">
+                    <div className="space-y-2.5">
                       {lessons.map((lesson: any, lidx: number) => (
-                        <div key={lidx} className="flex justify-between items-center bg-white dark:bg-slate-800 p-3 rounded-lg border border-gray-100 dark:border-slate-700">
-                          <div>
-                            <p className="font-bold text-sm text-dark dark:text-white">{lesson.title}</p>
-                            {lesson.desc && <p className="text-xs text-gray-500 mt-0.5 truncate max-w-sm">{lesson.desc}</p>}
-                            <p className="text-xs text-gray-500 mt-1"><i className="fa-solid fa-video mr-1"></i> {lesson.duration} | <span className="text-primary">+{lesson.points || 100} ነጥብ</span></p>
+                        <div key={lidx} className="flex justify-between items-center bg-white dark:bg-slate-800 p-3 rounded-xl border border-gray-100 dark:border-slate-700 shadow-xs hover:border-primary/40 transition">
+                          <div className="flex items-center gap-3">
+                            <span className="w-6 h-6 rounded-full bg-primary/20 text-dark dark:text-primary font-black text-xs flex items-center justify-center shrink-0">
+                              {lidx + 1}
+                            </span>
+                            <div>
+                              <p className="font-bold text-sm text-dark dark:text-white">{lesson.title}</p>
+                              {lesson.desc && <p className="text-xs text-gray-500 mt-0.5 truncate max-w-xs">{lesson.desc}</p>}
+                              <p className="text-[11px] text-gray-500 mt-0.5"><i className="fa-solid fa-video mr-1 text-primary"></i> {lesson.duration} | <span className="text-primary font-bold">+{lesson.points || 100} ነጥብ</span></p>
+                            </div>
                           </div>
-                          <button type="button" onClick={() => handleDeleteLesson(lidx)} className="text-danger hover:text-red-700"><i className="fa-solid fa-trash text-sm"></i></button>
+                          <div className="flex items-center gap-1.5">
+                            <button 
+                              type="button" 
+                              onClick={() => handleMoveLessonUp(lidx)}
+                              disabled={lidx === 0}
+                              title="ቦታ ወደ ላይ ቀይር (Move Up)"
+                              className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-slate-700 hover:bg-primary hover:text-dark text-gray-600 dark:text-gray-300 disabled:opacity-30 disabled:hover:bg-gray-100 flex items-center justify-center transition text-xs font-black"
+                            >
+                              ▲
+                            </button>
+                            <button 
+                              type="button" 
+                              onClick={() => handleMoveLessonDown(lidx)}
+                              disabled={lidx === lessons.length - 1}
+                              title="ቦታ ወደ ታች ቀይር (Move Down)"
+                              className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-slate-700 hover:bg-primary hover:text-dark text-gray-600 dark:text-gray-300 disabled:opacity-30 disabled:hover:bg-gray-100 flex items-center justify-center transition text-xs font-black"
+                            >
+                              ▼
+                            </button>
+                            <button type="button" onClick={() => handleDeleteLesson(lidx)} className="w-8 h-8 rounded-lg bg-red-50 dark:bg-red-950/30 hover:bg-red-500 hover:text-white text-danger flex items-center justify-center transition text-xs ml-1"><i className="fa-solid fa-trash"></i></button>
+                          </div>
                         </div>
                       ))}
                     </div>
