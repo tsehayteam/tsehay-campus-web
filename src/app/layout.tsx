@@ -26,8 +26,8 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
   icons: {
     icon: [
-      { url: "/favicon.ico", sizes: "any" },
       { url: "/tc-logo.jpg", type: "image/jpeg", sizes: "512x512" },
+      { url: "/favicon.ico", sizes: "any" },
       { url: "/favicon.png", type: "image/png", sizes: "192x192" },
       { url: "/icon.png", type: "image/png", sizes: "512x512" }
     ],
@@ -66,19 +66,18 @@ export default function RootLayout({
   return (
     <html lang="am" className="dark">
       <head>
+        <link rel="icon" href="/tc-logo.jpg" type="image/jpeg" sizes="any" />
         <link rel="icon" href="/favicon.ico" sizes="any" />
-        <link rel="icon" href="/tc-logo.jpg" type="image/jpeg" />
         <link rel="icon" href="/favicon.png" type="image/png" sizes="192x192" />
         <link rel="icon" href="/icon.png" type="image/png" sizes="512x512" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="shortcut icon" href="/tc-logo.jpg" />
-        <link rel="shortcut icon" href="/favicon.ico" />
-        <link rel="icon" href="https://www.tsehaycampus.com/favicon.ico" sizes="any" />
         <link rel="icon" href="https://www.tsehaycampus.com/tc-logo.jpg" type="image/jpeg" />
+        <link rel="icon" href="https://www.tsehaycampus.com/favicon.ico" sizes="any" />
         <link rel="icon" href="https://www.tsehaycampus.com/favicon.png" type="image/png" sizes="192x192" />
         <link rel="icon" href="https://www.tsehaycampus.com/icon.png" type="image/png" sizes="512x512" />
         <link rel="apple-touch-icon" href="https://www.tsehaycampus.com/apple-touch-icon.png" />
-        <link rel="shortcut icon" href="https://www.tsehaycampus.com/favicon.ico" />
+        <link rel="shortcut icon" href="https://www.tsehaycampus.com/tc-logo.jpg" />
         <meta name="theme-color" content="#F9B03C" />
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
         <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&family=Inter:wght@400;500;700&family=Noto+Sans+Ethiopic:wght@400;700;900&family=Playfair+Display:ital,wght@0,700;1,700&family=Great+Vibes&display=swap" rel="stylesheet" />
