@@ -26,13 +26,13 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
   icons: {
     icon: [
-      { url: "https://www.tsehaycampus.com/favicon.ico", sizes: "any" },
-      { url: "https://www.tsehaycampus.com/favicon.png", type: "image/png", sizes: "192x192" },
-      { url: "https://www.tsehaycampus.com/tc-logo.jpg", type: "image/jpeg", sizes: "512x512" },
-      { url: "https://www.tsehaycampus.com/icon.png", type: "image/png", sizes: "512x512" }
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/tc-logo.jpg", type: "image/jpeg", sizes: "512x512" },
+      { url: "/favicon.png", type: "image/png", sizes: "192x192" },
+      { url: "/icon.png", type: "image/png", sizes: "512x512" }
     ],
-    shortcut: "https://www.tsehaycampus.com/favicon.ico",
-    apple: "https://www.tsehaycampus.com/apple-touch-icon.png"
+    shortcut: "/tc-logo.jpg",
+    apple: "/apple-touch-icon.png"
   },
   openGraph: {
     title: "Tsehay Campus - ፀሐይ ካምፓስ",
@@ -66,9 +66,16 @@ export default function RootLayout({
   return (
     <html lang="am" className="dark">
       <head>
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="icon" href="/tc-logo.jpg" type="image/jpeg" />
+        <link rel="icon" href="/favicon.png" type="image/png" sizes="192x192" />
+        <link rel="icon" href="/icon.png" type="image/png" sizes="512x512" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <link rel="shortcut icon" href="/tc-logo.jpg" />
+        <link rel="shortcut icon" href="/favicon.ico" />
         <link rel="icon" href="https://www.tsehaycampus.com/favicon.ico" sizes="any" />
+        <link rel="icon" href="https://www.tsehaycampus.com/tc-logo.jpg" type="image/jpeg" />
         <link rel="icon" href="https://www.tsehaycampus.com/favicon.png" type="image/png" sizes="192x192" />
-        <link rel="icon" href="https://www.tsehaycampus.com/tc-logo.jpg" type="image/jpeg" sizes="512x512" />
         <link rel="icon" href="https://www.tsehaycampus.com/icon.png" type="image/png" sizes="512x512" />
         <link rel="apple-touch-icon" href="https://www.tsehaycampus.com/apple-touch-icon.png" />
         <link rel="shortcut icon" href="https://www.tsehaycampus.com/favicon.ico" />
