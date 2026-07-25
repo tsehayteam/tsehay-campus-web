@@ -22,23 +22,26 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Tsehay Campus - ፀሐይ ካምፓስ | የኦንላይን እና የተዋሃደ (Hybrid) ትምህርት ፕላትፎርም",
   description: "ፀሐይ ካምፓስ (Tsehay Campus) - በማንኛውም ቦታና ሰዓት በሀገራችን ቋንቋ የቴክኖሎጂ፣ የቢዝነስ እና የክህሎት ስልጠናዎችን የሚወስዱበት ዘመናዊ የኢ-ለርኒንግ ፕላትፎርም።",
-  metadataBase: new URL("https://tsehaycampus.com"),
+  metadataBase: new URL("https://www.tsehaycampus.com"),
+  manifest: "/manifest.json",
   icons: {
     icon: [
-      { url: "/tc-logo.jpg", type: "image/jpeg" },
-      { url: "/favicon.ico" }
+      { url: "https://www.tsehaycampus.com/favicon.ico", sizes: "any" },
+      { url: "https://www.tsehaycampus.com/favicon.png", type: "image/png", sizes: "192x192" },
+      { url: "https://www.tsehaycampus.com/tc-logo.jpg", type: "image/jpeg", sizes: "512x512" },
+      { url: "https://www.tsehaycampus.com/icon.png", type: "image/png", sizes: "512x512" }
     ],
-    shortcut: "/tc-logo.jpg",
-    apple: "/tc-logo.jpg"
+    shortcut: "https://www.tsehaycampus.com/favicon.ico",
+    apple: "https://www.tsehaycampus.com/apple-touch-icon.png"
   },
   openGraph: {
     title: "Tsehay Campus - ፀሐይ ካምፓስ",
     description: "በማንኛውም ቦታና ሰዓት በሀገራችን ቋንቋ የቴክኖሎጂ፣ የቢዝነስ እና የክህሎት ስልጠናዎችን የሚወስዱበት ዘመናዊ የኢ-ለርኒንግ ፕላትፎርም።",
-    url: "https://tsehaycampus.com",
+    url: "https://www.tsehaycampus.com",
     siteName: "Tsehay Campus",
     images: [
       {
-        url: "https://tsehaycampus.com/tc-logo.jpg",
+        url: "https://www.tsehaycampus.com/tc-logo.jpg",
         width: 800,
         height: 800,
         alt: "Tsehay Campus Logo"
@@ -51,7 +54,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Tsehay Campus - ፀሐይ ካምፓስ",
     description: "በሀገራችን ቋንቋ የቴክኖሎጂ እና የክህሎት ስልጠናዎች",
-    images: ["https://tsehaycampus.com/tc-logo.jpg"]
+    images: ["https://www.tsehaycampus.com/tc-logo.jpg"]
   }
 };
 
@@ -63,12 +66,13 @@ export default function RootLayout({
   return (
     <html lang="am" className="dark">
       <head>
-        <link rel="icon" href="/favicon.ico" sizes="any" />
-        <link rel="icon" href="/favicon.png" type="image/png" />
-        <link rel="icon" href="/icon.png" type="image/png" />
-        <link rel="icon" href="/tc-logo.jpg" type="image/jpeg" />
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-        <link rel="shortcut icon" href="/favicon.ico" />
+        <link rel="icon" href="https://www.tsehaycampus.com/favicon.ico" sizes="any" />
+        <link rel="icon" href="https://www.tsehaycampus.com/favicon.png" type="image/png" sizes="192x192" />
+        <link rel="icon" href="https://www.tsehaycampus.com/tc-logo.jpg" type="image/jpeg" sizes="512x512" />
+        <link rel="icon" href="https://www.tsehaycampus.com/icon.png" type="image/png" sizes="512x512" />
+        <link rel="apple-touch-icon" href="https://www.tsehaycampus.com/apple-touch-icon.png" />
+        <link rel="shortcut icon" href="https://www.tsehaycampus.com/favicon.ico" />
+        <meta name="theme-color" content="#F9B03C" />
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
         <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&family=Inter:wght@400;500;700&family=Noto+Sans+Ethiopic:wght@400;700;900&family=Playfair+Display:ital,wght@0,700;1,700&family=Great+Vibes&display=swap" rel="stylesheet" />
         <script
@@ -78,8 +82,8 @@ export default function RootLayout({
               "@context": "https://schema.org",
               "@type": "Organization",
               "name": "Tsehay Campus",
-              "url": "https://tsehaycampus.com",
-              "logo": "https://tsehaycampus.com/tc-logo.jpg",
+              "url": "https://www.tsehaycampus.com",
+              "logo": "https://www.tsehaycampus.com/tc-logo.jpg",
               "sameAs": ["https://t.me/EyoubSahle"]
             })
           }}
