@@ -24,6 +24,9 @@ export const metadata: Metadata = {
   description: "ፀሐይ ካምፓስ (Tsehay Campus) - በማንኛውም ቦታና ሰዓት በሀገራችን ቋንቋ የቴክኖሎጂ፣ የቢዝነስ እና የክህሎት ስልጠናዎችን የሚወስዱበት ዘመናዊ የኢ-ለርኒንግ ፕላትፎርም።",
   metadataBase: new URL("https://www.tsehaycampus.com"),
   manifest: "/manifest.json",
+  verification: {
+    google: "sjgyVc7j64r1mVrfW1zLgxfjGQGNeE1ZUIy85yDf35o",
+  },
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "48x48", type: "image/png" },
@@ -66,6 +69,7 @@ export default function RootLayout({
   return (
     <html lang="am" className="dark">
       <head>
+        <meta name="google-site-verification" content="sjgyVc7j64r1mVrfW1zLgxfjGQGNeE1ZUIy85yDf35o" />
         <link rel="icon" href="/favicon.ico" sizes="48x48" type="image/png" />
         <link rel="icon" href="/favicon.png" type="image/png" sizes="192x192" />
         <link rel="icon" href="/icon.png" type="image/png" sizes="512x512" />
