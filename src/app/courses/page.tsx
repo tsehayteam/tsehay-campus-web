@@ -5,6 +5,7 @@ import { db } from '@/lib/firebase/config';
 import { collection, onSnapshot, query, orderBy, doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import PaymentModal from '@/components/PaymentModal';
 import { useLanguage } from '@/context/LanguageContext';
+import Footer from '@/components/Footer';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 
@@ -238,59 +239,8 @@ export default function Courses() {
         </section>
       </main>
 
-      {/* Footer from Landing Page */}
-      <footer id="footer" className="bg-dark text-gray-300 pt-16 pb-8 font-body border-t-[6px] border-primary mt-auto z-10 relative">
-          <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8 mb-12">
-                  <div className="lg:col-span-2 pr-4">
-                      <div className="flex items-center gap-3 cursor-pointer mb-6 group" onClick={() => { window.location.href = '/' }}>
-                          <div className="bg-white p-1 rounded-md">
-                              <img src="tc-logo.jpg" alt="Logo" className="h-10 w-auto object-contain rounded-sm" onError={(e) => { e.currentTarget.src='https://ui-avatars.com/api/?name=TC&background=fff&color=0f172a' }} />
-                          </div>
-                          <span className="font-heading font-black text-2xl text-white tracking-tight notranslate" translate="no">Tsehay<span className="text-primary">Campus</span></span>
-                      </div>
-                      <p className="text-gray-400 text-sm leading-relaxed mb-6 max-w-sm">
-                          {t('footer_desc')}
-                      </p>
-                      <div className="mt-4">
-                          <a href="https://youtube.com/@eyoubsahle?si=p29sAFFmLagXd52X" target="_blank" className="inline-flex items-center gap-2 px-6 py-2.5 bg-secondary hover:bg-primary text-white hover:text-dark font-bold rounded-full shadow-lg transition-all transform hover:-translate-y-1">
-                              {t('footer_secret_btn')}
-                          </a>
-                      </div>
-                  </div>
-                  
-                  <div className="flex flex-col items-center text-center">
-                      <h4 className="text-white font-black mb-5 font-heading tracking-wide text-base border-b-2 border-primary pb-2 inline-block">{t('quick_links')}</h4>
-                      <ul className="space-y-3 text-sm">
-                          <li><a href="/courses" className="hover:text-primary transition flex items-center gap-2 cursor-pointer">{t('link_shein')}</a></li>
-                          <li><a href="/courses" className="hover:text-primary transition flex items-center gap-2 cursor-pointer">{t('link_digital')}</a></li>
-                          <li><a href="/courses" className="hover:text-primary transition flex items-center gap-2 cursor-pointer">{t('link_web')}</a></li>
-                          <li><a href="/courses" className="hover:text-primary transition flex items-center gap-2 cursor-pointer">{t('link_crypto')}</a></li>
-                      </ul>
-                  </div>
-
-                  <div className="flex flex-col items-end text-right">
-                      <h4 className="text-white font-black mb-5 font-heading tracking-wide text-base border-b-2 border-primary pb-2 inline-block">{t('contact_us')}</h4>
-                      <ul className="space-y-3 text-sm text-gray-200">
-                          <li><a href="/#faq" className="hover:text-primary transition flex items-center gap-2">{t('link_faq')}</a></li>
-                          <li><a href="javascript:void(0)" onClick={() => { window.dispatchEvent(new Event('open-terms-modal')) }} className="hover:text-primary transition flex items-center gap-2">{t('link_terms')}</a></li>
-                          <li><a href="javascript:void(0)" onClick={() => { window.dispatchEvent(new Event('open-terms-modal')) }} className="hover:text-primary transition flex items-center gap-2">{t('link_privacy')}</a></li>
-                      </ul>
-                  </div>
-              </div>
-              
-              <div className="border-t border-white/10 pt-6 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-gray-500">
-                  <div className="text-center md:text-left">
-                      <p>&copy; {new Date().getFullYear()} <span className="notranslate" translate="no">Tsehay Campus</span> {t('all_rights_reserved')}</p>
-                      <div className="mt-2.5 flex items-center justify-center md:justify-start gap-2 text-gray-400 font-bold uppercase tracking-widest text-[11px]">
-                          <span>Powered By</span>
-                          <img src="https://ui-avatars.com/api/?name=TD&background=F9B03C&color=0f172a&rounded=true&bold=true" alt="Tsehay Digital Logo" className="h-6 w-auto rounded-sm shadow-sm" />
-                          <span className="text-primary notranslate" translate="no">Tsehay Digital</span>
-                      </div>
-                  </div>
-              </div>
-          </div>
-      </footer>
+      {/* Footer */}
+      <Footer />
 
       {/* Render Payment Modal if a course is selected */}
       {selectedCourse && (

@@ -55,7 +55,7 @@ export default function Footer() {
                         <p>&copy; 2026 <span className="notranslate" translate="no">Tsehay Campus</span>. {t('all_rights_reserved')}</p>
                         <div className="mt-2.5 flex items-center justify-center md:justify-start gap-2 text-gray-400 font-bold uppercase tracking-widest text-[11px]">
                             <span>Powered By</span>
-                            <img src="/tsehay-digital-logo.jpg" alt="Tsehay Digital Logo" className="h-6 w-auto shadow-sm" />
+                            <img src="/tsehay-digital-logo-new.png" alt="Tsehay Digital Logo" className="h-6 w-auto object-contain rounded-sm shadow-sm" onError={(e) => { e.currentTarget.src='/tsehay-digital-logo.jpg'; }} />
                             <span className="text-primary notranslate" translate="no">Tsehay Digital</span>
                         </div>
                     </div>
