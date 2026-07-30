@@ -8,9 +8,11 @@ const getAuthDomain = () => {
     if (host.includes('tsehaycampus.com')) {
       return 'tsehaycampus.com';
     }
-    return host;
+    if (host !== 'localhost' && host !== '127.0.0.1') {
+      return host;
+    }
   }
-  return 'tsehaycampus.com';
+  return process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || 'tsehaycampus.com';
 };
 
 const firebaseConfig = {
