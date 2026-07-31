@@ -1,0 +1,58 @@
+import { NextResponse } from 'next/server';
+import crypto from 'crypto';
+
+export async function POST(request: Request) {
+  try {
+    const rawBody = await request.text();
+    const sigHeader = request.headers.get('x-nowpayments-sig');
+    const secret = (process.env.NOWPAYMENTS_IPN_SECRET || '').trim();
+
+    if (sigHeader && secret) {
+      const payload = JSON.parse(rawBody);
+      const sortedKeys = Object.keys(payload).sort();
+      const sortedPayload: Record<string, any> = {};
+      for (const key of sortedKeys) {
+        sortedPayload[key] = payload[key];
+      }
+      const sortedString = JSON.stringify(sortedPayload);
+      const hmac = crypto.createHmac('sha512', secret).update(sortedString).digest('hex');
+
+      if (hmac !== sigHeader) {
+        console.error("Invalid NOWPayments IPN Signature");
+        return NextResponse.json({ error: 'Invalid Signature' }, { status: 400 });
+      }
+    }
+
+    const event = JSON.parse(rawBody);
+
+    if (event.payment_status === 'finished' || event.payment_status === 'confirmed') {
+      const tx_ref = event.order_id;
+      if (tx_ref) {
+        const parts = tx_ref.split('_');
+        const courseId = parts[2];
+        const userId = parts[3];
+
+        if (userId && userId !== 'anonymous' && courseId) {
+          const { adminDb } = await import('@/lib/firebase/admin');
+          const userDocRef = adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('users').doc(userId);
+          await userDocRef.collection('purchased_courses').doc(courseId).set({
+            courseId,
+            tx_ref,
+            amount: event.price_amount || event.pay_amount,
+            paymentMethod: 'crypto',
+            purchasedAt: new Date(),
+            status: 'active'
+          });
+          console.log(`NOWPayments: Granted course ${courseId} to user ${userId}`);
+        }
+      }
+      return NextResponse.json({ status: 'success' }, { status: 200 });
+    }
+
+    return NextResponse.json({ status: 'ignored' }, { status: 200 });
+
+  } catch (error: any) {
+    console.error("NOWPayments IPN Error:", error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}

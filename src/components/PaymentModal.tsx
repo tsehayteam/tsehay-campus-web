@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 
 export default function PaymentModal({ course, onClose }: any) {
-  const [paymethod, setPaymethod] = useState('addispay');
+  const [paymethod, setPaymethod] = useState('lakipay');
   const [isPaying, setIsPaying] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
@@ -14,7 +14,7 @@ export default function PaymentModal({ course, onClose }: any) {
     setIsPaying(true);
     setError(null);
     try {
-      if (paymethod === 'addispay') {
+      if (paymethod === 'lakipay' || paymethod === 'crypto') {
         const res = await fetch('/api/initiate-payment', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -22,6 +22,7 @@ export default function PaymentModal({ course, onClose }: any) {
             courseId: course.id,
             title: course.title,
             price: course.price,
+            paymethod: paymethod,
             userEmail: user?.email || 'student@example.com',
             userId: user?.uid || 'anonymous',
           })
@@ -36,10 +37,7 @@ export default function PaymentModal({ course, onClose }: any) {
           setIsPaying(false);
         }
       } else {
-        // PayPal & Crypto Processing Flow
-        // As requested: process the payment, update the database, and redirect to dashboard
-        
-        // Simulate external gateway processing time
+        // PayPal & Fallback Processing Flow
         setTimeout(async () => {
           try {
             if (!user) {
@@ -48,11 +46,9 @@ export default function PaymentModal({ course, onClose }: any) {
                 return;
             }
             
-            // Import firestore dynamically or from config
             const { doc, setDoc, serverTimestamp } = await import('firebase/firestore');
             const { db } = await import('@/lib/firebase/config');
             
-            // 1. Update Database (Unlock course)
             const docRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'purchased_courses', course.id);
             await setDoc(docRef, {
                 courseId: course.id,
@@ -62,7 +58,6 @@ export default function PaymentModal({ course, onClose }: any) {
                 status: 'active'
             });
             
-            // 2. Redirect to Dashboard
             setIsPaying(false);
             onClose();
             window.location.href = '/dashboard?success=true&course=' + course.id;
@@ -114,25 +109,28 @@ export default function PaymentModal({ course, onClose }: any) {
                     <>
                         <h4 className="font-bold text-sm text-gray-500 mb-3 uppercase tracking-wider">የክፍያ አማራጭ ይምረጡ</h4>
                         <div className="space-y-3 mb-8">
-                            <label className={`payment-option flex items-center justify-between p-4 rounded-xl border cursor-pointer transition ${paymethod === 'addispay' ? 'border-secondary bg-blue-50/50 dark:border-primary dark:bg-primary/10' : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-darkCard hover:bg-gray-50 dark:hover:bg-gray-900'}`}>
+                            <label className={`payment-option flex items-center justify-between p-4 rounded-xl border cursor-pointer transition ${paymethod === 'lakipay' ? 'border-secondary bg-blue-50/50 dark:border-primary dark:bg-primary/10' : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-darkCard hover:bg-gray-50 dark:hover:bg-gray-900'}`}>
                                 <div className="flex items-center gap-3">
-                                    <input type="radio" name="paymethod" value="addispay" checked={paymethod === 'addispay'} onChange={(e) => setPaymethod(e.target.value)} className="w-4 h-4 text-secondary focus:ring-secondary" />
+                                    <input type="radio" name="paymethod" value="lakipay" checked={paymethod === 'lakipay'} onChange={(e) => setPaymethod(e.target.value)} className="w-4 h-4 text-secondary focus:ring-secondary" />
                                     <div>
-                                        <span className="font-black dark:text-white text-sm md:text-base block">AddisPay (አዲስ ፔይ)</span>
+                                        <span className="font-black dark:text-white text-sm md:text-base block">LakiPay (ላኪ ፔይ)</span>
                                         <span className="text-[11px] text-gray-500 font-semibold">Telebirr, CBE Birr & Bank Transfers</span>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-900/30 px-3 py-1.5 rounded-lg border border-emerald-200 dark:border-emerald-700">
-                                    <span className="font-black text-emerald-600 dark:text-emerald-400 text-sm tracking-tight">addis<span className="text-amber-500">pay</span></span>
+                                <div className="flex items-center gap-1.5">
+                                    <img src="/lakipay-logo.svg" alt="LakiPay Logo" className="h-7 w-auto object-contain" />
                                 </div>
                             </label>
 
                             <label className={`payment-option flex items-center justify-between p-4 rounded-xl border cursor-pointer transition ${paymethod === 'international' ? 'border-secondary bg-blue-50/50 dark:border-primary dark:bg-primary/10' : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-darkCard hover:bg-gray-50 dark:hover:bg-gray-900'}`}>
                                 <div className="flex items-center gap-3">
                                     <input type="radio" name="paymethod" value="international" checked={paymethod === 'international'} onChange={(e) => setPaymethod(e.target.value)} className="w-4 h-4 text-secondary focus:ring-secondary" />
-                                    <span className="font-black dark:text-white text-sm md:text-base">PayPal & Cards</span>
+                                    <div>
+                                        <span className="font-black dark:text-white text-sm md:text-base block">PayPal & Cards</span>
+                                        <span className="text-[11px] text-gray-500 font-semibold">Visa, Mastercard & PayPal</span>
+                                    </div>
                                 </div>
-                                <div className="flex items-center gap-1.5">
+                                <div className="flex items-center gap-2">
                                     <i className="fa-brands fa-paypal text-[#00457C] dark:text-[#0079C1] text-xl"></i>
                                     <i className="fa-brands fa-cc-visa text-[#1A1F71] dark:text-white text-xl"></i>
                                 </div>
@@ -141,11 +139,14 @@ export default function PaymentModal({ course, onClose }: any) {
                             <label className={`payment-option flex items-center justify-between p-4 rounded-xl border cursor-pointer transition ${paymethod === 'crypto' ? 'border-secondary bg-blue-50/50 dark:border-primary dark:bg-primary/10' : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-darkCard hover:bg-gray-50 dark:hover:bg-gray-900'}`}>
                                 <div className="flex items-center gap-3">
                                     <input type="radio" name="paymethod" value="crypto" checked={paymethod === 'crypto'} onChange={(e) => setPaymethod(e.target.value)} className="w-4 h-4 text-secondary focus:ring-secondary" />
-                                    <span className="font-black dark:text-white text-sm md:text-base">Crypto (USDT / BTC)</span>
+                                    <div>
+                                        <span className="font-black dark:text-white text-sm md:text-base block">Crypto (USDT / BTC)</span>
+                                        <span className="text-[11px] text-gray-500 font-semibold">Tether & Bitcoin Payments</span>
+                                    </div>
                                 </div>
-                                <div className="flex items-center gap-1.5">
-                                    <img src="https://cryptologos.cc/logos/tether-usdt-logo.svg?v=025" className="h-5 md:h-6 object-contain" alt="USDT" />
-                                    <img src="https://upload.wikimedia.org/wikipedia/commons/4/46/Bitcoin.svg" className="h-5 md:h-6 object-contain" alt="Bitcoin" />
+                                <div className="flex items-center gap-2">
+                                    <i className="fa-brands fa-bitcoin text-amber-500 text-xl"></i>
+                                    <i className="fa-solid fa-coins text-emerald-500 text-xl"></i>
                                 </div>
                             </label>
                         </div>

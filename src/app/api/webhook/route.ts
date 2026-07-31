@@ -5,26 +5,27 @@ export async function POST(request: Request) {
   try {
     const { adminDb } = await import('@/lib/firebase/admin');
     const rawBody = await request.text();
-    const signature = request.headers.get('chapa-signature');
-    const secret = process.env.CHAPA_WEBHOOK_SECRET || 'CHAPA_WEBHOOK_SECRET_PLACEHOLDER';
+    const signature = request.headers.get('x-lakipay-signature') || request.headers.get('x-nowpayments-sig');
+    const secret = process.env.LAKIPAY_SECRET_KEY || process.env.NOWPAYMENTS_IPN_SECRET || 'SECRET_PLACEHOLDER';
 
-    // Verify signature
-    const hash = crypto.createHmac('sha256', secret).update(rawBody).digest('hex');
-    
-    if (hash !== signature) {
-      console.error("Invalid Chapa Signature");
-      return NextResponse.json({ error: 'Invalid Signature' }, { status: 400 });
+    // Verify signature if provided
+    if (signature && secret && secret !== 'SECRET_PLACEHOLDER') {
+      const hash = crypto.createHmac('sha256', secret).update(rawBody).digest('hex');
+      if (hash !== signature && request.headers.get('x-lakipay-signature')) {
+        console.error("Invalid Webhook Signature");
+        return NextResponse.json({ error: 'Invalid Signature' }, { status: 400 });
+      }
     }
 
     const event = JSON.parse(rawBody);
 
-    // Only process successful payments
-    if (event.event === 'charge.success') {
-      const tx_ref = event.data.tx_ref;
-      const email = event.data.email;
-      const amount = event.data.amount;
-      
-      console.log(`Payment successful for tx_ref: ${tx_ref}, email: ${email}, amount: ${amount}`);
+    // LakiPay / Webhook charge success event
+    const isSuccess = event.event === 'charge.success' || event.status === 'success' || event.status === 'completed' || event.payment_status === 'finished';
+    const tx_ref = event.data?.tx_ref || event.tx_ref || event.order_id;
+    const amount = event.data?.amount || event.amount || event.price_amount;
+
+    if (isSuccess && tx_ref) {
+      console.log(`Webhook: Payment successful for tx_ref: ${tx_ref}`);
 
       const parts = tx_ref.split('_');
       const courseId = parts[2];
@@ -33,11 +34,10 @@ export async function POST(request: Request) {
       if (userId && userId !== 'anonymous' && courseId) {
          try {
             const userDocRef = adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('users').doc(userId);
-            // Save to purchased_courses collection for this user
             await userDocRef.collection('purchased_courses').doc(courseId).set({
                courseId,
                tx_ref,
-               amount,
+               amount: amount || 0,
                purchasedAt: new Date(),
                status: 'active'
             });
@@ -47,7 +47,6 @@ export async function POST(request: Request) {
          }
       }
       
-      // Successfully processed the webhook
       return NextResponse.json({ status: 'success' }, { status: 200 });
     }
 

@@ -3,16 +3,52 @@ import { NextResponse } from 'next/server';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { courseId, title, price, userEmail, firstName, lastName, userId } = body;
+    const { courseId, title, price, paymethod, userEmail, firstName, lastName, userId } = body;
 
     if (!courseId || !price || !userEmail) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    const { adminDb } = await import('@/lib/firebase/admin');
     const tx_ref = `tsehay_tx_${courseId}_${userId}_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
 
-    const addisPayPayload = {
+    // 1. NOWPayments Crypto Integration
+    if (paymethod === 'crypto') {
+      const nowPaymentsApiKey = (process.env.NOWPAYMENTS_API_KEY || '').trim();
+      
+      if (nowPaymentsApiKey) {
+        const nowPaymentsPayload = {
+          price_amount: Number(price),
+          price_currency: "usd",
+          order_id: tx_ref,
+          order_description: `Tsehay Campus - ${title}`,
+          ipn_callback_url: "https://tsehaycampus.com/api/webhook/nowpayments",
+          success_url: `https://tsehaycampus.com/dashboard?success=true&course=${courseId}`,
+          cancel_url: `https://tsehaycampus.com/dashboard?canceled=true`
+        };
+
+        const cryptoRes = await fetch("https://api.nowpayments.io/v1/invoice", {
+          method: 'POST',
+          headers: {
+            'x-api-key': nowPaymentsApiKey,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(nowPaymentsPayload)
+        });
+
+        const cryptoData = await cryptoRes.json();
+        const invoiceUrl = cryptoData.invoice_url || cryptoData.url;
+
+        if (invoiceUrl) {
+          return NextResponse.json({ checkoutUrl: invoiceUrl, tx_ref });
+        } else {
+          console.error("NOWPayments Error:", cryptoData);
+          return NextResponse.json({ error: cryptoData.message || 'Failed to initialize NOWPayments crypto checkout' }, { status: 400 });
+        }
+      }
+    }
+
+    // 2. LakiPay Backend Integration
+    const lakipayPayload = {
       total_amount: price.toString(),
       currency: "ETB",
       email: userEmail,
@@ -24,34 +60,45 @@ export async function POST(request: Request) {
       customization: {
         title: "Tsehay Campus",
         description: `Payment for ${title}`,
-        logo: "https://tsehaycampus.com/tc-logo.jpg"
+        logo: "https://tsehaycampus.com/lakipay-logo.svg"
       }
     };
 
-    const ADDISPAY_APP_ID = process.env.ADDISPAY_APP_ID || process.env.ADDISPAY_MERCHANT_ID || 'ADDISPAY_APP_ID_placeholder';
-    const ADDISPAY_SECRET = process.env.ADDISPAY_SECRET_KEY || process.env.ADDISPAY_API_KEY || 'ADDISPAY_SECRET_placeholder';
+    const publicKey = (process.env.LAKIPAY_PUBLIC_KEY || '').trim();
+    const secretKey = (process.env.LAKIPAY_SECRET_KEY || '').trim();
+    const apiKeyHeader = `${publicKey}:${secretKey}`;
 
-    const response = await fetch(process.env.ADDISPAY_CHECKOUT_URL || 'https://api.addispay.et/checkout/payment/initialize', {
+    const checkoutUrl = process.env.LAKIPAY_CHECKOUT_URL || 'https://api.lakipay.co/api/v2/payment/checkout';
+
+    const response = await fetch(checkoutUrl, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${ADDISPAY_SECRET}`,
-        'X-App-Id': ADDISPAY_APP_ID,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'X-API-Key': apiKeyHeader
       },
-      body: JSON.stringify(addisPayPayload)
+      body: JSON.stringify(lakipayPayload)
     });
 
-    const data = await response.json();
+    const responseText = await response.text();
+    let data: any = {};
+    try {
+      data = JSON.parse(responseText);
+    } catch {
+      console.error("LakiPay Non-JSON Response:", responseText);
+    }
 
-    if (data.status === 'success' || data.checkout_url || data.checkoutUrl) {
-      return NextResponse.json({ checkoutUrl: data.checkout_url || data.checkoutUrl || data.data?.checkout_url, tx_ref });
+    const redirectUrl = data.checkout_url || data.checkoutUrl || data.url || data.payment_url || data.checkout_link || data.data?.checkout_url || data.data?.payment_url || data.data?.url || data.data?.checkout_link;
+
+    if (redirectUrl) {
+      return NextResponse.json({ checkoutUrl: redirectUrl, tx_ref });
     } else {
-      console.error("AddisPay Error:", data);
-      return NextResponse.json({ error: 'Failed to initialize payment with AddisPay' }, { status: 500 });
+      console.error("LakiPay Error:", data || responseText);
+      const errorMessage = data.message || data.error || data.detail || 'የክፍያ ሲስተሙን ማግኘት አልተቻለም (Failed to initialize payment with LakiPay)';
+      return NextResponse.json({ error: errorMessage }, { status: 400 });
     }
 
   } catch (error: any) {
     console.error("Payment API Error:", error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
   }
 }

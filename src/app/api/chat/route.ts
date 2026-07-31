@@ -11,8 +11,8 @@ function getSmartFallbackReply(userPrompt: string): string {
         return "የፀሐይ ካምፓስ (Tsehay Campus) መስራች እና ዋና አስተማሪ እዮብ ሳህሌ (Eyoub Sahle) ነው። እሱ የዲጂታል ማርኬቲንግ ባለሙያ እና የTsehay Digital (tsehay360.com) መስራች ነው።";
     }
     
-    if (p.includes('pay') || p.includes('ክፍያ') || p.includes('ቴሌብር') || p.includes('telebirr') || p.includes('ባንክ') || p.includes('addispay')) {
-        return "ለኮርሶቻችን ክፍያ መፈጸም በጣም ቀላል ነው። በሀገር ውስጥ ካሉ በAddisPay (አዲስ ፔይ) አማካኝነት በቴሌብር፣ በሞባይል ዋሌት ወይም በባንክ ማስተላለፍ ይችላሉ። ከሀገር ውጭ ከሆኑ ደግሞ PayPal፣ የክሬዲት/ዴቢት ካርዶች (Credit/Debit Cards) ወይም ክሪፕቶ ከረንሲ መጠቀም ይችላሉ።";
+    if (p.includes('pay') || p.includes('ክፍያ') || p.includes('ቴሌብር') || p.includes('telebirr') || p.includes('ባንክ') || p.includes('lakipay')) {
+        return "ለኮርሶቻችን ክፍያ መፈጸም በጣም ቀላል ነው። በሀገር ውስጥ ካሉ በLakiPay (ላኪ ፔይ) አማካኝነት በቴሌብር፣ በሞባይል ዋሌት ወይም በባንክ ማስተላለፍ ይችላሉ። ከሀገር ውጭ ከሆኑ ደግሞ PayPal፣ የክሬዲት/ዴቢት ካርዶች (Credit/Debit Cards) ወይም ክሪፕቶ ከረንሲ መጠቀም ይችላሉ።";
     }
     
     if (p.includes('ኮርስ') || p.includes('course') || p.includes('ትምህርት') || p.includes('ስልጠና')) {
@@ -135,7 +135,7 @@ Base your answers ONLY on the verified facts provided below. Do not invent or as
 - Private/1-on-1 Student Support: For course-specific issues or private student inquiries, instruct them to contact the support team directly at @TsehayTeam on Telegram.
 - Certificates: Students receive a free Digital Certificate of Completion after successfully finishing any course.
 - Payment Methods:
-  * For local users (Ethiopia): We support Telebirr, mobile wallets, and direct bank transfers integrated securely via AddisPay.
+  * For local users (Ethiopia): We support Telebirr, mobile wallets, and direct bank transfers integrated securely via LakiPay.
   * For international users: We accept PayPal, Credit/Debit cards, and Cryptocurrency.
 - Main Agency Website: tsehay360.com (Tsehay Digital) for advanced digital marketing services.
 
@@ -156,8 +156,8 @@ Base your answers ONLY on the verified facts provided below. Do not invent or as
   * In Amharic: "የፀሐይ ካምፓስ (Tsehay Campus) መስራች እና ዋና አስተማሪ እዮብ ሳህሌ (Eyoub Sahle) ነው። እሱ የዲጂታል ማርኬቲንግ ባለሙያ እና የTsehay Digital (tsehay360.com) መስራች ነው።"
   * In English: "The founder and main instructor of Tsehay Campus is Eyoub Sahle. He is a professional digital marketer and the founder of Tsehay Digital (tsehay360.com)."
 - If asked "How to pay?":
-  * In Amharic: "ለኮርሶቻችን ክፍያ መፈጸም በጣም ቀላል ነው። በሀገር ውስጥ ካሉ በAddisPay (አዲስ ፔይ) አማካኝነት በቴሌብር፣ በሞባይል ዋሌት ወይም በባንክ ማስተላለፍ ይችላሉ። ከሀገር ውጭ ከሆኑ ደግሞ PayPal፣ የክሬዲት/ዴቢት ካርዶች (Credit/Debit Cards) ወይም ክሪፕቶ ከረንሲ መጠቀም ይችላሉ።"
-  * In English: "Paying for our courses is very simple. If you are in Ethiopia, you can pay via AddisPay using Telebirr, mobile wallets, or bank accounts. If you are abroad, we accept PayPal, Credit/Debit Cards, and Cryptocurrency."
+  * In Amharic: "ለኮርሶቻችን ክፍያ መፈጸም በጣም ቀላል ነው። በሀገር ውስጥ ካሉ በLakiPay (ላኪ ፔይ) አማካኝነት በቴሌብር፣ በሞባይል ዋሌት ወይም በባንክ ማስተላለፍ ይችላሉ። ከሀገር ውጭ ከሆኑ ደግሞ PayPal፣ የክሬዲት/ዴቢት ካርዶች (Credit/Debit Cards) ወይም ክሪፕቶ ከረንሲ መጠቀም ይችላሉ።"
+  * In English: "Paying for our courses is very simple. If you are in Ethiopia, you can pay via LakiPay using Telebirr, mobile wallets, or bank accounts. If you are abroad, we accept PayPal, Credit/Debit Cards, and Cryptocurrency."
 - If asked about "Web Development/Coding": Mention it is coming soon and to stay updated via the Telegram chat.`;
 
     const ENFORCED_SYSTEM_INSTRUCTION = `[CRITICAL SECURITY RULES]

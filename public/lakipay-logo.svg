@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 60" width="240" height="60">
+  <rect width="240" height="60" rx="12" fill="#0f172a" />
+  <g transform="translate(15, 12)">
+    <circle cx="18" cy="18" r="16" fill="url(#lakipay-grad)" />
+    <path d="M12 11 L17 25 L25 11" fill="none" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M18 17 L24 23" fill="none" stroke="#f59e0b" stroke-width="3" stroke-linecap="round"/>
+  </g>
+  <text x="60" y="37" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="24" fill="#ffffff" letter-spacing="-0.5">Laki<tspan fill="#f59e0b">Pay</tspan></text>
+  <defs>
+    <linearGradient id="lakipay-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10b981" />
+      <stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+  </defs>
+</svg>
