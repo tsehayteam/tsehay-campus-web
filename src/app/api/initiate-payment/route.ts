@@ -72,6 +72,8 @@ export async function POST(request: Request) {
       amount: Number(price),
       currency: "ETB",
       reference: shortRef,
+      description: title || "Tsehay Campus Course",
+      title: title || "Tsehay Campus Course",
       supported_mediums: [
         "TELEBIRR",
         "CBE",
