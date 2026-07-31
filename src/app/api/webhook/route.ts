@@ -27,15 +27,32 @@ export async function POST(request: Request) {
     if (isSuccess && tx_ref) {
       console.log(`Webhook: Payment successful for reference/tx_ref: ${tx_ref}`);
 
-      const parts = tx_ref.split('_');
       let courseId = '';
       let userId = '';
-      if (parts[0] === 'REF') {
-        courseId = parts[1];
-        userId = parts[2];
-      } else {
-        courseId = parts[2];
-        userId = parts[3];
+
+      if (tx_ref.includes('_')) {
+        const parts = tx_ref.split('_');
+        if (parts[0] === 'REF') {
+          courseId = parts[1];
+          userId = parts[2];
+        } else {
+          courseId = parts[2];
+          userId = parts[3];
+        }
+      }
+
+      // If shortRef format (e.g. REF-845266), look up pending_payments in Firestore
+      if (!courseId || !userId) {
+        try {
+          const pendingDoc = await adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('pending_payments').doc(tx_ref).get();
+          if (pendingDoc.exists) {
+            const pendingData = pendingDoc.data();
+            courseId = pendingData?.courseId;
+            userId = pendingData?.userId;
+          }
+        } catch (dbLookupErr) {
+          console.error("Error looking up pending payment:", dbLookupErr);
+        }
       }
 
       if (userId && userId !== 'anonymous' && courseId) {

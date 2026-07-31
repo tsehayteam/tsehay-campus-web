@@ -13,7 +13,23 @@ export async function POST(request: Request) {
     const protocol = host.includes('localhost') ? 'http' : 'https';
     const origin = process.env.NEXT_PUBLIC_APP_URL || `${protocol}://${host}`;
 
-    const reference = `REF_${courseId}_${userId}_${Date.now()}`;
+    const shortRef = `REF-${Date.now().toString().slice(-6)}`;
+
+    // Save pending payment record to Firestore for reference lookup in webhook
+    try {
+      const { adminDb } = await import('@/lib/firebase/admin');
+      if (adminDb) {
+        await adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('pending_payments').doc(shortRef).set({
+          courseId,
+          userId,
+          price,
+          shortRef,
+          createdAt: new Date()
+        });
+      }
+    } catch (dbErr) {
+      console.error("Failed to save pending payment record:", dbErr);
+    }
 
     // 1. NOWPayments Crypto Integration
     if (paymethod === 'crypto') {
@@ -23,7 +39,7 @@ export async function POST(request: Request) {
         const nowPaymentsPayload = {
           price_amount: Number(price),
           price_currency: "usd",
-          order_id: reference,
+          order_id: shortRef,
           order_description: `Tsehay Campus - ${title}`,
           ipn_callback_url: `${origin}/api/webhook/nowpayments`,
           success_url: `${origin}/dashboard?success=true&course=${courseId}`,
@@ -43,7 +59,7 @@ export async function POST(request: Request) {
         const invoiceUrl = cryptoData.invoice_url || cryptoData.url;
 
         if (invoiceUrl) {
-          return NextResponse.json({ checkoutUrl: invoiceUrl, reference });
+          return NextResponse.json({ checkoutUrl: invoiceUrl, reference: shortRef });
         } else {
           console.error("NOWPayments Error:", cryptoData);
           return NextResponse.json({ error: cryptoData.message || 'Failed to initialize NOWPayments crypto checkout' }, { status: 400 });
@@ -55,8 +71,16 @@ export async function POST(request: Request) {
     const lakipayPayload = {
       amount: Number(price),
       currency: "ETB",
-      reference: reference,
-      supported_mediums: ["TELEBIRR", "CBE", "MPESA"],
+      reference: shortRef,
+      supported_mediums: [
+        "TELEBIRR",
+        "CBE",
+        "MPESA",
+        "ETHSWITCH",
+        "OROMIA_BANK",
+        "AWASH",
+        "CYBERSOURCE"
+      ],
       callback_url: `${origin}/api/webhook`,
       redirects: {
         success: `${origin}/dashboard?success=true&course=${courseId}`,
@@ -90,7 +114,7 @@ export async function POST(request: Request) {
     const redirectUrl = data.checkout_url || data.checkoutUrl || data.url || data.payment_url || data.redirect_url || data.checkout_link || data.data?.checkout_url || data.data?.url || data.data?.redirect_url || data.data?.checkout_link;
 
     if (redirectUrl) {
-      return NextResponse.json({ checkoutUrl: redirectUrl, reference });
+      return NextResponse.json({ checkoutUrl: redirectUrl, reference: shortRef });
     } else {
       console.error("LakiPay Error:", data || responseText);
       const errorMessage = data.message || data.error || data.detail || 'የክፍያ ሲስተሙን ማግኘት አልተቻለም (Failed to initialize payment with LakiPay)';

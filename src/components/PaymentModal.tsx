@@ -118,7 +118,7 @@ export default function PaymentModal({ course, onClose }: any) {
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-1.5">
-                                    <img src="/lakipay-logo.svg" alt="LakiPay Logo" className="h-7 w-auto object-contain" />
+                                    <img src="/lakipay-logo.svg" alt="LakiPay Logo" className="h-8 w-auto object-contain bg-white dark:bg-darkCard px-2 py-0.5 rounded-lg" onError={(e: any) => { e.currentTarget.src = '/lakipay-logo.png'; }} />
                                 </div>
                             </label>
 
