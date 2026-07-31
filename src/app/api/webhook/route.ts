@@ -21,15 +21,22 @@ export async function POST(request: Request) {
 
     // LakiPay / Webhook charge success event
     const isSuccess = event.event === 'charge.success' || event.status === 'success' || event.status === 'completed' || event.payment_status === 'finished';
-    const tx_ref = event.data?.tx_ref || event.tx_ref || event.order_id;
-    const amount = event.data?.amount || event.amount || event.price_amount;
+    const tx_ref = event.reference || event.data?.reference || event.data?.tx_ref || event.tx_ref || event.order_id;
+    const amount = event.amount || event.data?.amount || event.price_amount;
 
     if (isSuccess && tx_ref) {
-      console.log(`Webhook: Payment successful for tx_ref: ${tx_ref}`);
+      console.log(`Webhook: Payment successful for reference/tx_ref: ${tx_ref}`);
 
       const parts = tx_ref.split('_');
-      const courseId = parts[2];
-      const userId = parts[3];
+      let courseId = '';
+      let userId = '';
+      if (parts[0] === 'REF') {
+        courseId = parts[1];
+        userId = parts[2];
+      } else {
+        courseId = parts[2];
+        userId = parts[3];
+      }
 
       if (userId && userId !== 'anonymous' && courseId) {
          try {

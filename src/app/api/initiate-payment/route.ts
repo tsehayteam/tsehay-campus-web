@@ -9,7 +9,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    const tx_ref = `tsehay_tx_${courseId}_${userId}_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+    const host = request.headers.get('host') || 'tsehaycampus.com';
+    const protocol = host.includes('localhost') ? 'http' : 'https';
+    const origin = process.env.NEXT_PUBLIC_APP_URL || `${protocol}://${host}`;
+
+    const reference = `REF_${courseId}_${userId}_${Date.now()}`;
 
     // 1. NOWPayments Crypto Integration
     if (paymethod === 'crypto') {
@@ -19,11 +23,11 @@ export async function POST(request: Request) {
         const nowPaymentsPayload = {
           price_amount: Number(price),
           price_currency: "usd",
-          order_id: tx_ref,
+          order_id: reference,
           order_description: `Tsehay Campus - ${title}`,
-          ipn_callback_url: "https://tsehaycampus.com/api/webhook/nowpayments",
-          success_url: `https://tsehaycampus.com/dashboard?success=true&course=${courseId}`,
-          cancel_url: `https://tsehaycampus.com/dashboard?canceled=true`
+          ipn_callback_url: `${origin}/api/webhook/nowpayments`,
+          success_url: `${origin}/dashboard?success=true&course=${courseId}`,
+          cancel_url: `${origin}/dashboard?canceled=true`
         };
 
         const cryptoRes = await fetch("https://api.nowpayments.io/v1/invoice", {
@@ -39,7 +43,7 @@ export async function POST(request: Request) {
         const invoiceUrl = cryptoData.invoice_url || cryptoData.url;
 
         if (invoiceUrl) {
-          return NextResponse.json({ checkoutUrl: invoiceUrl, tx_ref });
+          return NextResponse.json({ checkoutUrl: invoiceUrl, reference });
         } else {
           console.error("NOWPayments Error:", cryptoData);
           return NextResponse.json({ error: cryptoData.message || 'Failed to initialize NOWPayments crypto checkout' }, { status: 400 });
@@ -49,18 +53,14 @@ export async function POST(request: Request) {
 
     // 2. LakiPay Backend Integration
     const lakipayPayload = {
-      total_amount: price.toString(),
+      amount: Number(price),
       currency: "ETB",
-      email: userEmail,
-      first_name: firstName || "Student",
-      last_name: lastName || "Tsehay",
-      tx_ref: tx_ref,
-      callback_url: `https://tsehaycampus.com/api/webhook`,
-      return_url: `https://tsehaycampus.com/dashboard?success=true&course=${courseId}`,
-      customization: {
-        title: "Tsehay Campus",
-        description: `Payment for ${title}`,
-        logo: "https://tsehaycampus.com/lakipay-logo.svg"
+      reference: reference,
+      supported_mediums: ["TELEBIRR", "CBE", "MPESA"],
+      callback_url: `${origin}/api/webhook`,
+      redirects: {
+        success: `${origin}/dashboard?success=true&course=${courseId}`,
+        failed: `${origin}/dashboard?failed=true`
       }
     };
 
@@ -87,10 +87,10 @@ export async function POST(request: Request) {
       console.error("LakiPay Non-JSON Response:", responseText);
     }
 
-    const redirectUrl = data.checkout_url || data.checkoutUrl || data.url || data.payment_url || data.checkout_link || data.data?.checkout_url || data.data?.payment_url || data.data?.url || data.data?.checkout_link;
+    const redirectUrl = data.checkout_url || data.checkoutUrl || data.url || data.payment_url || data.redirect_url || data.checkout_link || data.data?.checkout_url || data.data?.url || data.data?.redirect_url || data.data?.checkout_link;
 
     if (redirectUrl) {
-      return NextResponse.json({ checkoutUrl: redirectUrl, tx_ref });
+      return NextResponse.json({ checkoutUrl: redirectUrl, reference });
     } else {
       console.error("LakiPay Error:", data || responseText);
       const errorMessage = data.message || data.error || data.detail || 'የክፍያ ሲስተሙን ማግኘት አልተቻለም (Failed to initialize payment with LakiPay)';
