@@ -21,6 +21,7 @@ export default function PaymentModal({ course, onClose }: any) {
           body: JSON.stringify({
             courseId: course.id,
             title: course.title,
+            description: course.description,
             price: course.price,
             paymethod: paymethod,
             userEmail: user?.email || 'student@example.com',

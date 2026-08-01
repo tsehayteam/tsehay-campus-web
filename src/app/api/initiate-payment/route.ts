@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { courseId, title, price, paymethod, userEmail, firstName, lastName, userId } = body;
+    const { courseId, title, description, price, paymethod, userEmail, firstName, lastName, userId } = body;
 
     if (!courseId || !price || !userEmail) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -67,13 +67,13 @@ export async function POST(request: Request) {
       }
     }
 
-    // 2. LakiPay Backend Integration
+    // 2. LakiPay Backend Integration (Enabling Bank, Wallet & Card Tabs)
     const lakipayPayload = {
       amount: Number(price),
       currency: "ETB",
       reference: shortRef,
-      description: title || "Tsehay Campus Course",
       title: title || "Tsehay Campus Course",
+      description: description ? description.slice(0, 120) : (title ? `Full Access to ${title} on Tsehay Campus` : "Full Access to Tsehay Campus Course"),
       supported_mediums: [
         "TELEBIRR",
         "CBE",
@@ -81,7 +81,9 @@ export async function POST(request: Request) {
         "ETHSWITCH",
         "OROMIA_BANK",
         "AWASH",
-        "CYBERSOURCE"
+        "CYBERSOURCE",
+        "BANK",
+        "LAKIPAY"
       ],
       callback_url: `${origin}/api/webhook`,
       redirects: {
