@@ -49,8 +49,8 @@ export default function PaymentModal({ course, onClose }: any) {
             description: course.description,
             price: course.price,
             paymethod: paymethod === 'nowpayments' ? 'crypto' : paymethod,
-            userEmail: user.email || 'student@example.com',
-            userId: user.uid,
+            userEmail: user?.email || 'student@example.com',
+            userId: user?.uid || 'anonymous',
           })
         });
         
@@ -72,7 +72,7 @@ export default function PaymentModal({ course, onClose }: any) {
               courseId: course.id,
               title: course.title,
               price: course.price,
-              userId: user.uid,
+              userId: user?.uid || 'anonymous',
             })
           });
 
@@ -91,10 +91,10 @@ export default function PaymentModal({ course, onClose }: any) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             courseId: course.id,
-            userId: user.uid,
+            userId: user?.uid || 'anonymous',
             paymentMethod: paymethod,
             amount: course.price,
-            tx_ref: `paypal_${course.id}_${user.uid}_${Date.now()}`
+            tx_ref: `paypal_${course.id}_${user?.uid || 'anon'}_${Date.now()}`
           })
         });
 
@@ -110,7 +110,8 @@ export default function PaymentModal({ course, onClose }: any) {
         }
       }
     } catch (err: any) {
-      setError("የክፍያ ስህተት አጋጥሟል! እባክዎ በድጋሚ ይሞክሩ።");
+      console.error("Payment Error:", err);
+      setError(err?.message || "የክፍያ ስህተት አጋጥሟል! እባክዎ በድጋሚ ይሞክሩ።");
       setIsPaying(false);
     }
   };

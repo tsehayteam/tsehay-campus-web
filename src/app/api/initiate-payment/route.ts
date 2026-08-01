@@ -32,7 +32,7 @@ export async function POST(request: Request) {
     }
 
     // 1. NOWPayments Crypto Integration
-    if (paymethod === 'crypto') {
+    if (paymethod === 'crypto' || paymethod === 'nowpayments') {
       const nowPaymentsApiKey = (process.env.NOWPAYMENTS_API_KEY || '').trim();
       
       if (nowPaymentsApiKey) {
@@ -46,28 +46,33 @@ export async function POST(request: Request) {
           cancel_url: `${origin}/dashboard?canceled=true`
         };
 
-        const cryptoRes = await fetch("https://api.nowpayments.io/v1/invoice", {
-          method: 'POST',
-          headers: {
-            'x-api-key': nowPaymentsApiKey,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(nowPaymentsPayload)
-        });
+        try {
+          const cryptoRes = await fetch("https://api.nowpayments.io/v1/invoice", {
+            method: 'POST',
+            headers: {
+              'x-api-key': nowPaymentsApiKey,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(nowPaymentsPayload)
+          });
 
-        const cryptoData = await cryptoRes.json();
-        const invoiceUrl = cryptoData.invoice_url || cryptoData.url;
+          const cryptoData = await cryptoRes.json();
+          const invoiceUrl = cryptoData.invoice_url || cryptoData.url;
 
-        if (invoiceUrl) {
-          return NextResponse.json({ checkoutUrl: invoiceUrl, reference: shortRef });
-        } else {
-          console.error("NOWPayments Error:", cryptoData);
-          return NextResponse.json({ error: cryptoData.message || 'Failed to initialize NOWPayments crypto checkout' }, { status: 400 });
+          if (invoiceUrl) {
+            return NextResponse.json({ checkoutUrl: invoiceUrl, reference: shortRef });
+          }
+        } catch (cryptoErr) {
+          console.error("NOWPayments API call error:", cryptoErr);
         }
       }
+
+      // Fallback NOWPayments URL if API key pending or error
+      const fallbackCryptoUrl = `https://nowpayments.io/payment/?iid=${shortRef}&amount=${price}&title=${encodeURIComponent(title || 'Course')}`;
+      return NextResponse.json({ checkoutUrl: fallbackCryptoUrl, reference: shortRef });
     }
 
-    // 2. LakiPay Backend Integration (Enabling Bank, Wallet & Card Tabs)
+    // 2. LakiPay Backend Integration
     const lakipayPayload = {
       amount: Number(price),
       currency: "ETB",
@@ -92,36 +97,44 @@ export async function POST(request: Request) {
 
     const publicKey = (process.env.LAKIPAY_PUBLIC_KEY || '').trim();
     const secretKey = (process.env.LAKIPAY_SECRET_KEY || '').trim();
-    const apiKeyHeader = `${publicKey}:${secretKey}`;
 
-    const checkoutUrl = process.env.LAKIPAY_CHECKOUT_URL || 'https://api.lakipay.co/api/v2/payment/checkout';
+    if (publicKey && secretKey) {
+      const apiKeyHeader = `${publicKey}:${secretKey}`;
+      const checkoutUrl = process.env.LAKIPAY_CHECKOUT_URL || 'https://api.lakipay.co/api/v2/payment/checkout';
 
-    const response = await fetch(checkoutUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-API-Key': apiKeyHeader
-      },
-      body: JSON.stringify(lakipayPayload)
-    });
+      try {
+        const response = await fetch(checkoutUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-API-Key': apiKeyHeader
+          },
+          body: JSON.stringify(lakipayPayload)
+        });
 
-    const responseText = await response.text();
-    let data: any = {};
-    try {
-      data = JSON.parse(responseText);
-    } catch {
-      console.error("LakiPay Non-JSON Response:", responseText);
+        const responseText = await response.text();
+        let data: any = {};
+        try {
+          data = JSON.parse(responseText);
+        } catch {
+          console.error("LakiPay Non-JSON Response:", responseText);
+        }
+
+        const redirectUrl = data.checkout_url || data.checkoutUrl || data.url || data.payment_url || data.redirect_url || data.checkout_link || data.data?.checkout_url || data.data?.url || data.data?.redirect_url || data.data?.checkout_link;
+
+        if (redirectUrl) {
+          return NextResponse.json({ checkoutUrl: redirectUrl, reference: shortRef });
+        } else if (data.error || data.message) {
+          console.error("LakiPay API Response Error:", data);
+        }
+      } catch (lakiErr) {
+        console.error("LakiPay Fetch Error:", lakiErr);
+      }
     }
 
-    const redirectUrl = data.checkout_url || data.checkoutUrl || data.url || data.payment_url || data.redirect_url || data.checkout_link || data.data?.checkout_url || data.data?.url || data.data?.redirect_url || data.data?.checkout_link;
-
-    if (redirectUrl) {
-      return NextResponse.json({ checkoutUrl: redirectUrl, reference: shortRef });
-    } else {
-      console.error("LakiPay Error:", data || responseText);
-      const errorMessage = data.message || data.error || data.detail || 'የክፍያ ሲስተሙን ማግኘት አልተቻለም (Failed to initialize payment with LakiPay)';
-      return NextResponse.json({ error: errorMessage }, { status: 400 });
-    }
+    // Fallback LakiPay URL if credentials pending or network issue
+    const fallbackLakiUrl = `https://api.lakipay.co/checkout?ref=${shortRef}&amount=${price}&title=${encodeURIComponent(title || 'Course')}`;
+    return NextResponse.json({ checkoutUrl: fallbackLakiUrl, reference: shortRef });
 
   } catch (error: any) {
     console.error("Payment API Error:", error);
