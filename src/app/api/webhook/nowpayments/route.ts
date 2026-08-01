@@ -28,17 +28,40 @@ export async function POST(request: Request) {
     if (event.payment_status === 'finished' || event.payment_status === 'confirmed') {
       const tx_ref = event.order_id;
       if (tx_ref) {
-        const parts = tx_ref.split('_');
-        const courseId = parts[2];
-        const userId = parts[3];
+        let courseId = '';
+        let userId = '';
 
-        if (userId && userId !== 'anonymous' && courseId) {
-          const { adminDb } = await import('@/lib/firebase/admin');
+        if (tx_ref.includes('_')) {
+          const parts = tx_ref.split('_');
+          if (parts[0] === 'REF') {
+            courseId = parts[1];
+            userId = parts[2];
+          } else {
+            courseId = parts[2];
+            userId = parts[3];
+          }
+        }
+
+        const { adminDb } = await import('@/lib/firebase/admin');
+        if (adminDb && (!courseId || !userId)) {
+          try {
+            const pendingDoc = await adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('pending_payments').doc(tx_ref).get();
+            if (pendingDoc.exists) {
+              const pendingData = pendingDoc.data();
+              courseId = pendingData?.courseId;
+              userId = pendingData?.userId;
+            }
+          } catch (dbErr) {
+            console.error("Firestore lookup error in nowpayments webhook:", dbErr);
+          }
+        }
+
+        if (adminDb && userId && userId !== 'anonymous' && courseId) {
           const userDocRef = adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('users').doc(userId);
           await userDocRef.collection('purchased_courses').doc(courseId).set({
             courseId,
             tx_ref,
-            amount: event.price_amount || event.pay_amount,
+            amount: event.price_amount || event.pay_amount || 0,
             paymentMethod: 'crypto',
             purchasedAt: new Date(),
             status: 'active'
