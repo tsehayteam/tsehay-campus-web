@@ -54,7 +54,13 @@ export default function PaymentModal({ course, onClose }: any) {
           })
         });
         
-        const data = await res.json();
+        const responseText = await res.text();
+        let data: any = {};
+        try {
+          data = JSON.parse(responseText);
+        } catch {
+          console.error("Non-JSON Response from initiate-payment:", responseText);
+        }
         
         if (data.checkoutUrl) {
           window.location.href = data.checkoutUrl;
@@ -76,7 +82,12 @@ export default function PaymentModal({ course, onClose }: any) {
             })
           });
 
-          const paypalData = await paypalRes.json();
+          const paypalText = await paypalRes.text();
+          let paypalData: any = {};
+          try {
+            paypalData = JSON.parse(paypalText);
+          } catch {}
+
           if (paypalData.checkoutUrl) {
             window.location.href = paypalData.checkoutUrl;
             return;
@@ -98,7 +109,11 @@ export default function PaymentModal({ course, onClose }: any) {
           })
         });
 
-        const confirmData = await confirmRes.json();
+        const confirmText = await confirmRes.text();
+        let confirmData: any = {};
+        try {
+          confirmData = JSON.parse(confirmText);
+        } catch {}
 
         if (confirmData.success) {
           setIsPaying(false);
