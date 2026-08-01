@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 
 export default function PaymentModal({ course, onClose }: any) {
@@ -7,6 +7,15 @@ export default function PaymentModal({ course, onClose }: any) {
   const [isPaying, setIsPaying] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
+
+  // Close modal on Escape key press
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
 
   if (!course) return null;
 
@@ -34,15 +43,15 @@ export default function PaymentModal({ course, onClose }: any) {
         if (data.checkoutUrl) {
           window.location.href = data.checkoutUrl;
         } else {
-          setError(data.error || "የክፍያ ሲስተሙን ማግኘት አልተቻለም።");
+          setError(data.error || "የክፍያ ሲስተሙን ማግኘት አልተቻለም። እባክዎ በድጋሚ ይሞክሩ።");
           setIsPaying(false);
         }
       } else {
-        // PayPal & Fallback Processing Flow
+        // PayPal & Credit Cards Processing Flow
         setTimeout(async () => {
           try {
             if (!user) {
-                setError("Please login to complete payment.");
+                setError("ክፍያውን ለማጠናቀቅ እባክዎ አስቀድመው ይግቡ (Please login to complete payment).");
                 setIsPaying(false);
                 return;
             }
@@ -68,7 +77,7 @@ export default function PaymentModal({ course, onClose }: any) {
             setError("ክፍያው ተፈፅሟል ነገር ግን ኮርሱን መክፈት አልተቻለም። እባክዎ ያግኙን።");
             setIsPaying(false);
           }
-        }, 2000);
+        }, 1500);
       }
     } catch (err: any) {
       setError("የክፍያ ስህተት አጋጥሟል! እባክዎ በድጋሚ ይሞክሩ።");
@@ -77,104 +86,175 @@ export default function PaymentModal({ course, onClose }: any) {
   };
 
   return (
-    <div id="payment-modal" className="fixed inset-0 bg-black/80 z-[9999] flex items-center justify-center backdrop-blur-sm p-4" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
-        <div className="bg-white dark:bg-[#111827] w-full max-w-lg rounded-[2rem] shadow-2xl overflow-hidden flex flex-col relative animate-[modalPop_0.3s_ease-out_forwards] border border-gray-100 dark:border-gray-800">
+    <div 
+      id="payment-modal" 
+      className="fixed inset-0 bg-black/75 z-[9999] flex items-center justify-center backdrop-blur-md p-4 transition-all duration-300" 
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+        <div className="bg-white dark:bg-[#111827] w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col relative animate-[modalPop_0.3s_cubic-bezier(0.16,1,0.3,1)_forwards] border border-gray-100 dark:border-gray-800">
             
-            <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50 dark:bg-[#0f172a]">
-                <h3 className="font-black text-xl font-heading text-[#000000] dark:text-white flex items-center gap-2">
-                    <i className="fa-solid fa-shield-check text-[#3268ba]"></i> ደህንነቱ የተጠበቀ ክፍያ
-                </h3>
-                <button onClick={onClose} className="text-gray-400 hover:text-red-500 transition text-xl cursor-pointer">
-                    <i className="fa-solid fa-xmark"></i>
+            {/* Modal Header */}
+            <div className="px-8 py-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-[#0f172a]/50">
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-[#3268ba]/10 flex items-center justify-center text-[#3268ba]">
+                        <i className="fa-solid fa-shield-check text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 className="font-black text-xl font-heading text-[#000000] dark:text-white leading-tight">
+                            ደህንነቱ የተጠበቀ ክፍያ
+                        </h3>
+                        <p className="text-xs text-gray-500 font-semibold">100% Secure & Encrypted Checkout</p>
+                    </div>
+                </div>
+                <button 
+                  onClick={onClose} 
+                  className="w-9 h-9 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/50 transition-all flex items-center justify-center cursor-pointer"
+                  title="Close (ESC)"
+                >
+                    <i className="fa-solid fa-xmark text-lg"></i>
                 </button>
             </div>
             
-            <div className="p-6">
+            {/* Modal Body */}
+            <div className="p-8">
                 
+                {/* Course Details Card */}
                 <div className="flex items-center gap-4 bg-gray-50 dark:bg-[#0f172a] p-4 rounded-2xl border border-gray-100 dark:border-gray-800 mb-6">
-                    <img src={course.image || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1000&auto=format&fit=crop'} className="w-16 h-16 rounded-xl object-cover shadow-sm" />
-                    <div className="flex-1">
-                        <p className="text-[10px] text-gray-500 font-bold mb-1 uppercase tracking-widest">የሚገዙት ኮርስ</p>
-                        <h4 className="font-black text-[#000000] dark:text-white leading-tight line-clamp-2">{course.title}</h4>
+                    <img 
+                      src={course.image || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1000&auto=format&fit=crop'} 
+                      alt={course.title}
+                      className="w-16 h-16 rounded-xl object-cover shadow-sm border border-gray-200 dark:border-gray-700" 
+                    />
+                    <div className="flex-1 min-w-0">
+                        <p className="text-[10px] text-gray-500 font-extrabold mb-0.5 uppercase tracking-widest">የሚገዙት ኮርስ (Target Course)</p>
+                        <h4 className="font-black text-[#000000] dark:text-white text-base leading-tight truncate">{course.title}</h4>
                     </div>
                 </div>
 
+                {/* Total Price Banner */}
                 <div className="flex justify-between items-center mb-6 pb-6 border-b border-gray-100 dark:border-gray-800">
-                    <span className="text-gray-600 dark:text-gray-400 font-bold">ጠቅላላ ክፍያ (Total)</span>
+                    <span className="text-gray-600 dark:text-gray-400 font-extrabold text-sm uppercase tracking-wider">ጠቅላላ ክፍያ (Total)</span>
                     <span className="text-3xl font-black text-[#000000] dark:text-white tracking-tighter">
-                        {course.isFree ? "ነፃ" : `${Number(course.price).toLocaleString()} ብር`}
+                        {course.isFree ? "ነፃ (Free)" : `${Number(course.price).toLocaleString()} ብር`}
                     </span>
                 </div>
 
+                {/* Payment Option Selector */}
                 {!course.isFree && (
                     <>
-                        <h4 className="font-bold text-sm text-gray-500 mb-3 uppercase tracking-wider">የክፍያ አማራጭ ይምረጡ</h4>
+                        <h4 className="font-extrabold text-xs text-gray-400 dark:text-gray-500 mb-4 uppercase tracking-widest">የክፍያ አማራጭ ይምረጡ (Select Method)</h4>
                         <div className="space-y-3 mb-8">
-                            <label className={`payment-option flex items-center justify-between p-4 rounded-xl border cursor-pointer transition-all ${paymethod === 'lakipay' ? 'border-[#f9b03c] bg-[#f9b03c]/10 dark:border-[#f9b03c] dark:bg-[#f9b03c]/20 shadow-sm' : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-darkCard hover:border-[#f9b03c]/50 hover:bg-[#f9b03c]/5'}`}>
-                                <div className="flex items-center gap-3">
-                                    <input type="radio" name="paymethod" value="lakipay" checked={paymethod === 'lakipay'} onChange={(e) => setPaymethod(e.target.value)} className="w-4 h-4 text-[#f9b03c] focus:ring-[#f9b03c] accent-[#f9b03c]" />
+                            
+                            {/* Option 1: LakiPay */}
+                            <label className={`payment-option flex items-center justify-between p-4 rounded-2xl border cursor-pointer transition-all duration-200 ${paymethod === 'lakipay' ? 'border-[#f9b03c] bg-[#f9b03c]/10 dark:border-[#f9b03c] dark:bg-[#f9b03c]/20 shadow-md scale-[1.01]' : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-darkCard hover:border-[#f9b03c]/50 hover:bg-[#f9b03c]/5'}`}>
+                                <div className="flex items-center gap-3.5">
+                                    <input 
+                                      type="radio" 
+                                      name="paymethod" 
+                                      value="lakipay" 
+                                      checked={paymethod === 'lakipay'} 
+                                      onChange={(e) => setPaymethod(e.target.value)} 
+                                      className="w-4 h-4 text-[#f9b03c] focus:ring-[#f9b03c] accent-[#f9b03c]" 
+                                    />
                                     <div>
-                                        <span className="font-black text-[#000000] dark:text-white text-sm md:text-base block">LakiPay (ላኪ ፔይ)</span>
-                                        <span className="text-[11px] text-gray-500 font-semibold">Telebirr, CBE Birr & Bank Transfers</span>
+                                        <span className="font-black text-[#000000] dark:text-white text-base block">LakiPay</span>
+                                        <span className="text-[11px] text-gray-500 font-semibold block">Wallets, Bank Transfer & Cards (Telebirr, CBE Birr, M-Pesa, Banks)</span>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-1.5">
-                                    <img src="/lakipay-logo.svg" alt="LakiPay Logo" className="h-8 w-auto object-contain bg-white dark:bg-darkCard px-2 py-0.5 rounded-lg border border-gray-100 dark:border-gray-800" onError={(e: any) => { e.currentTarget.src = '/lakipay-logo.png'; }} />
+                                <div className="flex items-center shrink-0 ml-2">
+                                    <img 
+                                      src="/lakipay-logo.svg" 
+                                      alt="LakiPay Official Logo" 
+                                      className="h-8 w-auto object-contain bg-white dark:bg-darkCard px-2 py-0.5 rounded-lg border border-gray-100 dark:border-gray-800 shadow-2xs" 
+                                      onError={(e: any) => { e.currentTarget.src = '/lakipay-logo.png'; }} 
+                                    />
                                 </div>
                             </label>
 
-                            <label className={`payment-option flex items-center justify-between p-4 rounded-xl border cursor-pointer transition-all ${paymethod === 'international' ? 'border-[#f9b03c] bg-[#f9b03c]/10 dark:border-[#f9b03c] dark:bg-[#f9b03c]/20 shadow-sm' : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-darkCard hover:border-[#f9b03c]/50 hover:bg-[#f9b03c]/5'}`}>
-                                <div className="flex items-center gap-3">
-                                    <input type="radio" name="paymethod" value="international" checked={paymethod === 'international'} onChange={(e) => setPaymethod(e.target.value)} className="w-4 h-4 text-[#f9b03c] focus:ring-[#f9b03c] accent-[#f9b03c]" />
+                            {/* Option 2: PayPal & Cards */}
+                            <label className={`payment-option flex items-center justify-between p-4 rounded-2xl border cursor-pointer transition-all duration-200 ${paymethod === 'international' ? 'border-[#f9b03c] bg-[#f9b03c]/10 dark:border-[#f9b03c] dark:bg-[#f9b03c]/20 shadow-md scale-[1.01]' : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-darkCard hover:border-[#f9b03c]/50 hover:bg-[#f9b03c]/5'}`}>
+                                <div className="flex items-center gap-3.5">
+                                    <input 
+                                      type="radio" 
+                                      name="paymethod" 
+                                      value="international" 
+                                      checked={paymethod === 'international'} 
+                                      onChange={(e) => setPaymethod(e.target.value)} 
+                                      className="w-4 h-4 text-[#f9b03c] focus:ring-[#f9b03c] accent-[#f9b03c]" 
+                                    />
                                     <div>
-                                        <span className="font-black text-[#000000] dark:text-white text-sm md:text-base block">PayPal & Cards</span>
-                                        <span className="text-[11px] text-gray-500 font-semibold">Visa, Mastercard & PayPal</span>
+                                        <span className="font-black text-[#000000] dark:text-white text-base block">PayPal & Credit Cards</span>
+                                        <span className="text-[11px] text-gray-500 font-semibold block">Visa, Mastercard & PayPal</span>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 shrink-0 ml-2">
                                     <i className="fa-brands fa-paypal text-[#3268ba] dark:text-[#0079C1] text-xl"></i>
                                     <i className="fa-brands fa-cc-visa text-[#1A1F71] dark:text-white text-xl"></i>
+                                    <i className="fa-brands fa-cc-mastercard text-amber-600 text-xl"></i>
                                 </div>
                             </label>
 
-                            <label className={`payment-option flex items-center justify-between p-4 rounded-xl border cursor-pointer transition-all ${paymethod === 'crypto' ? 'border-[#f9b03c] bg-[#f9b03c]/10 dark:border-[#f9b03c] dark:bg-[#f9b03c]/20 shadow-sm' : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-darkCard hover:border-[#f9b03c]/50 hover:bg-[#f9b03c]/5'}`}>
-                                <div className="flex items-center gap-3">
-                                    <input type="radio" name="paymethod" value="crypto" checked={paymethod === 'crypto'} onChange={(e) => setPaymethod(e.target.value)} className="w-4 h-4 text-[#f9b03c] focus:ring-[#f9b03c] accent-[#f9b03c]" />
+                            {/* Option 3: Crypto Payments */}
+                            <label className={`payment-option flex items-center justify-between p-4 rounded-2xl border cursor-pointer transition-all duration-200 ${paymethod === 'crypto' ? 'border-[#f9b03c] bg-[#f9b03c]/10 dark:border-[#f9b03c] dark:bg-[#f9b03c]/20 shadow-md scale-[1.01]' : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-darkCard hover:border-[#f9b03c]/50 hover:bg-[#f9b03c]/5'}`}>
+                                <div className="flex items-center gap-3.5">
+                                    <input 
+                                      type="radio" 
+                                      name="paymethod" 
+                                      value="crypto" 
+                                      checked={paymethod === 'crypto'} 
+                                      onChange={(e) => setPaymethod(e.target.value)} 
+                                      className="w-4 h-4 text-[#f9b03c] focus:ring-[#f9b03c] accent-[#f9b03c]" 
+                                    />
                                     <div>
-                                        <span className="font-black text-[#000000] dark:text-white text-sm md:text-base block">Crypto (USDT / BTC)</span>
-                                        <span className="text-[11px] text-gray-500 font-semibold">Tether & Bitcoin Payments</span>
+                                        <span className="font-black text-[#000000] dark:text-white text-base block">Crypto Payments</span>
+                                        <span className="text-[11px] text-gray-500 font-semibold block">USDT, BTC & Major Cryptocurrencies</span>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 shrink-0 ml-2">
                                     <i className="fa-brands fa-bitcoin text-[#f9b03c] text-xl"></i>
                                     <i className="fa-solid fa-coins text-emerald-500 text-xl"></i>
                                 </div>
                             </label>
+
                         </div>
                     </>
                 )}
 
-                {error && <div className="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 p-3 rounded-xl mb-4 font-bold text-sm text-center">{error}</div>}
+                {/* Error Banner */}
+                {error && (
+                  <div className="bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 p-3.5 rounded-2xl mb-5 font-bold text-sm text-center animate-shake">
+                    {error}
+                  </div>
+                )}
 
-                <button onClick={handlePayment} disabled={isPaying} className="w-full bg-[#f9b03c] text-[#000000] py-4 rounded-2xl font-black text-lg hover:bg-[#e29d2f] active:scale-[0.99] transition-all shadow-lg flex items-center justify-center gap-2 group disabled:opacity-70 cursor-pointer">
+                {/* Proceed Button */}
+                <button 
+                  onClick={handlePayment} 
+                  disabled={isPaying} 
+                  className="w-full bg-[#f9b03c] text-[#000000] py-4 rounded-2xl font-black text-lg hover:bg-[#e29d2f] hover:scale-[1.01] active:scale-[0.99] transition-all shadow-xl hover:shadow-2xl flex items-center justify-center gap-2.5 group disabled:opacity-70 cursor-pointer"
+                >
                     {isPaying ? (
                         <>
                             <div className="w-5 h-5 border-2 border-[#000000] border-t-transparent rounded-full animate-spin"></div>
-                            <span>በማስኬድ ላይ...</span>
+                            <span>በማስኬድ ላይ (Processing)...</span>
                         </>
                     ) : (
                         <>
-                            <span>{course.isFree ? 'በነፃ ይጀምሩ' : 'ወደ ክፍያ ገፅ ሂድ'}</span> 
-                            <i className="fa-solid fa-arrow-up-right-from-square group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform"></i>
+                            <span>{course.isFree ? 'በነፃ ይጀምሩ (Start Free)' : 'ወደ ክፍያ ገፅ ሂድ (Proceed to Payment)'}</span> 
+                            <i className="fa-solid fa-arrow-up-right-from-square group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform text-base"></i>
                         </>
                     )}
                 </button>
             </div>
             
-            <div className="bg-gray-50 dark:bg-[#0f172a] p-4 text-center border-t border-gray-100 dark:border-gray-800 flex items-center justify-center gap-2">
-                <i className="fa-solid fa-lock text-[#3268ba]"></i>
-                <p className="text-xs text-[#000000] dark:text-gray-300 font-bold uppercase tracking-wider">ክፍያዎ 100% ደህንነቱ የተጠበቀ ነው</p>
+            {/* Modal Footer / Trust Badge */}
+            <div className="bg-gray-50/70 dark:bg-[#0f172a]/70 p-4 text-center border-t border-gray-100 dark:border-gray-800 flex items-center justify-center gap-2">
+                <i className="fa-solid fa-lock text-[#3268ba] text-sm"></i>
+                <p className="text-xs text-[#000000] dark:text-gray-300 font-extrabold uppercase tracking-wider">
+                  ክፍያዎ 100% ደህንነቱ የተጠበቀ ነው (100% Secure Checkout)
+                </p>
             </div>
+
         </div>
         <style dangerouslySetInnerHTML={{__html: `
             @keyframes modalPop {
