@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
+import { adminDb } from '@/lib/firebase/admin';
 
 export async function POST(request: Request) {
   try {
@@ -42,7 +43,6 @@ export async function POST(request: Request) {
           }
         }
 
-        const { adminDb } = await import('@/lib/firebase/admin');
         if (adminDb && (!courseId || !userId)) {
           try {
             const pendingDoc = await adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('pending_payments').doc(tx_ref).get();

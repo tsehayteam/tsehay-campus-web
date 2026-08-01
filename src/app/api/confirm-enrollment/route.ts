@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { FieldValue } from 'firebase-admin/firestore';
+import { adminDb } from '@/lib/firebase/admin';
 
 export async function POST(request: Request) {
   try {
@@ -8,7 +10,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    const { adminDb } = await import('@/lib/firebase/admin');
     if (!adminDb) {
       return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
     }
@@ -31,9 +32,8 @@ export async function POST(request: Request) {
 
     // 2. Update user root document enrolledCourses array
     try {
-      const admin = await import('firebase-admin');
       await userDocRef.set({
-        enrolledCourses: admin.default.firestore.FieldValue.arrayUnion(courseId)
+        enrolledCourses: FieldValue.arrayUnion(courseId)
       }, { merge: true });
     } catch (arrayErr) {
       console.warn("Could not update enrolledCourses array via FieldValue, proceeding:", arrayErr);

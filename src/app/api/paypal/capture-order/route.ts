@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { FieldValue } from 'firebase-admin/firestore';
+import { adminDb } from '@/lib/firebase/admin';
 
 async function getPayPalAccessToken() {
   const clientId = (process.env.PAYPAL_CLIENT_ID || '').trim();
@@ -58,30 +60,26 @@ export async function POST(request: Request) {
     const customId = unit?.payments?.captures?.[0]?.custom_id || unit?.custom_id || '';
     const [userId, courseId] = customId.split(':');
 
-    if (userId && courseId) {
-      const { adminDb } = await import('@/lib/firebase/admin');
-      if (adminDb) {
-        const userDocRef = adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('users').doc(userId);
-        
-        // 1. Save purchased_courses doc
-        await userDocRef.collection('purchased_courses').doc(courseId).set({
-          courseId,
-          amount: unit?.payments?.captures?.[0]?.amount?.value || 0,
-          paymentMethod: 'paypal',
-          tx_ref: orderID,
-          purchasedAt: new Date(),
-          status: 'active'
-        });
+    if (userId && courseId && adminDb) {
+      const userDocRef = adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('users').doc(userId);
+      
+      // 1. Save purchased_courses doc
+      await userDocRef.collection('purchased_courses').doc(courseId).set({
+        courseId,
+        amount: unit?.payments?.captures?.[0]?.amount?.value || 0,
+        paymentMethod: 'paypal',
+        tx_ref: orderID,
+        purchasedAt: new Date(),
+        status: 'active'
+      });
 
-        // 2. Add courseId to enrolledCourses array
-        try {
-          const admin = await import('firebase-admin');
-          await userDocRef.set({
-            enrolledCourses: admin.default.firestore.FieldValue.arrayUnion(courseId)
-          }, { merge: true });
-        } catch (err) {
-          console.warn("Could not update enrolledCourses array:", err);
-        }
+      // 2. Add courseId to enrolledCourses array
+      try {
+        await userDocRef.set({
+          enrolledCourses: FieldValue.arrayUnion(courseId)
+        }, { merge: true });
+      } catch (err) {
+        console.warn("Could not update enrolledCourses array:", err);
       }
     }
 

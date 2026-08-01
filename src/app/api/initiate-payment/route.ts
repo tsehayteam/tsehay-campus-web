@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { adminDb } from '@/lib/firebase/admin';
 
 export async function POST(request: Request) {
   try {
@@ -17,7 +18,6 @@ export async function POST(request: Request) {
 
     // Save pending payment record to Firestore for reference lookup in webhook
     try {
-      const { adminDb } = await import('@/lib/firebase/admin');
       if (adminDb) {
         await adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('pending_payments').doc(shortRef).set({
           courseId,
@@ -81,9 +81,7 @@ export async function POST(request: Request) {
         "ETHSWITCH",
         "OROMIA_BANK",
         "AWASH",
-        "CYBERSOURCE",
-        "BANK",
-        "LAKIPAY"
+        "CYBERSOURCE"
       ],
       callback_url: `${origin}/api/webhook`,
       redirects: {

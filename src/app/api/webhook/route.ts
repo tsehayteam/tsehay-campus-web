@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
+import { adminDb } from '@/lib/firebase/admin';
 
 export async function POST(request: Request) {
   try {
-    const { adminDb } = await import('@/lib/firebase/admin');
     const rawBody = await request.text();
     const signature = request.headers.get('x-lakipay-signature') || request.headers.get('x-nowpayments-sig');
     const secret = process.env.LAKIPAY_SECRET_KEY || process.env.NOWPAYMENTS_IPN_SECRET || 'SECRET_PLACEHOLDER';
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
       }
 
       // If shortRef format (e.g. REF-845266), look up pending_payments in Firestore
-      if (!courseId || !userId) {
+      if (adminDb && (!courseId || !userId)) {
         try {
           const pendingDoc = await adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('pending_payments').doc(tx_ref).get();
           if (pendingDoc.exists) {
@@ -55,7 +55,7 @@ export async function POST(request: Request) {
         }
       }
 
-      if (userId && userId !== 'anonymous' && courseId) {
+      if (adminDb && userId && userId !== 'anonymous' && courseId) {
          try {
             const userDocRef = adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('users').doc(userId);
             await userDocRef.collection('purchased_courses').doc(courseId).set({
