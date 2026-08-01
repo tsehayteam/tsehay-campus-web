@@ -5,6 +5,7 @@ async function getPayPalAccessToken() {
     process.env.PAYPAL_CLIENT_ID || 
     process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || 
     process.env.PAYPAL_CLIENT || 
+    process.env.PAYPAL_KEY ||
     ''
   ).trim();
   
@@ -12,6 +13,7 @@ async function getPayPalAccessToken() {
     process.env.PAYPAL_CLIENT_SECRET || 
     process.env.PAYPAL_SECRET || 
     process.env.PAYPAL_SECRET_KEY || 
+    process.env.PAYPAL_PRIVATE_KEY ||
     ''
   ).trim();
 
@@ -19,7 +21,8 @@ async function getPayPalAccessToken() {
     throw new Error('PayPal credentials not configured');
   }
 
-  const mode = process.env.PAYPAL_MODE === 'live' ? 'https://api-m.paypal.com' : 'https://api-m.sandbox.paypal.com';
+  const isLive = process.env.PAYPAL_MODE === 'live' || process.env.PAYPAL_ENV === 'live' || process.env.NEXT_PUBLIC_PAYPAL_MODE === 'live';
+  const mode = isLive ? 'https://api-m.paypal.com' : 'https://api-m.sandbox.paypal.com';
   const auth = Buffer.from(`${clientId}:${secret}`).toString('base64');
 
   const response = await fetch(`${mode}/v1/oauth2/token`, {

@@ -41,6 +41,8 @@ export async function POST(request: Request) {
         process.env.NOWPAYMENTS_API_KEY || 
         process.env.NOW_PAYMENTS_API_KEY || 
         process.env.NOWPAYMENT_API_KEY || 
+        process.env.NOWPAYMENTS_KEY ||
+        process.env.NEXT_PUBLIC_NOWPAYMENTS_API_KEY ||
         ''
       ).replace(/['"]/g, '').trim();
       
@@ -149,17 +151,23 @@ export async function POST(request: Request) {
       process.env.LAKIPAY_PUBLIC_KEY || 
       process.env.LAKI_PAY_PUBLIC_KEY || 
       process.env.NEXT_PUBLIC_LAKIPAY_PUBLIC_KEY || 
+      process.env.LAKIPAY_KEY ||
+      process.env.NEXT_PUBLIC_LAKIPAY_KEY ||
+      process.env.LAKIPAY_API_KEY ||
       ''
     ).replace(/['"]/g, '').trim();
     
     const secretKey = (
       process.env.LAKIPAY_SECRET_KEY || 
       process.env.LAKI_PAY_SECRET_KEY || 
+      process.env.LAKIPAY_SECRET ||
+      process.env.LAKI_PAY_SECRET ||
+      process.env.LAKIPAY_PRIVATE_KEY ||
       ''
     ).replace(/['"]/g, '').trim();
 
-    if (publicKey && secretKey) {
-      const apiKeyHeader = `${publicKey}:${secretKey}`;
+    if (publicKey || secretKey) {
+      const apiKeyHeader = (publicKey && secretKey) ? `${publicKey}:${secretKey}` : (secretKey || publicKey);
       const checkoutUrl = process.env.LAKIPAY_CHECKOUT_URL || 'https://api.lakipay.co/api/v2/payment/checkout';
 
       try {

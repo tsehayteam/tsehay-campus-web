@@ -227,7 +227,7 @@ export default function PaymentModal({ course, onClose }: any) {
                         <h4 className="font-extrabold text-xs text-gray-400 dark:text-gray-500 mb-4 uppercase tracking-widest">የክፍያ አማራጭ ይምረጡ (Select Method)</h4>
                         <div className="space-y-3.5 mb-8">
                             
-                            {/* Option 1: Telebirr & CBE Banks (Chapa/LakiPay/Bank) */}
+                            {/* Option 1: LakiPay */}
                             <label className={`payment-option flex items-center justify-between p-4 rounded-2xl border cursor-pointer transition-all duration-200 ${paymethod === 'lakipay' ? 'border-[#f9b03c] bg-[#f9b03c]/10 dark:border-[#f9b03c] dark:bg-[#f9b03c]/20 shadow-md scale-[1.01]' : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-darkCard hover:border-[#f9b03c]/50 hover:bg-[#f9b03c]/5'}`}>
                                 <div className="flex items-center gap-3.5">
                                     <input 
@@ -239,13 +239,9 @@ export default function PaymentModal({ course, onClose }: any) {
                                       className="w-4 h-4 text-[#f9b03c] focus:ring-[#f9b03c] accent-[#f9b03c]" 
                                     />
                                     <div>
-                                        <span className="font-black text-[#000000] dark:text-white text-base block">Telebirr, CBE & Local Banks</span>
-                                        <span className="text-[11px] text-gray-500 font-semibold block">Telebirr, CBE Birr & Bank Transfer</span>
+                                        <span className="font-black text-[#000000] dark:text-white text-base block">LakiPay</span>
+                                        <span className="text-[11px] text-gray-500 font-semibold block">Telebirr, CBE Birr & Local Banks</span>
                                     </div>
-                                </div>
-                                <div className="flex items-center gap-1 shrink-0 ml-2">
-                                    <span className="bg-blue-600 text-white text-[10px] font-black px-2 py-1 rounded">CBE</span>
-                                    <span className="bg-sky-500 text-white text-[10px] font-black px-2 py-1 rounded">Telebirr</span>
                                 </div>
                             </label>
 
@@ -261,21 +257,13 @@ export default function PaymentModal({ course, onClose }: any) {
                                       className="w-4 h-4 text-[#f9b03c] focus:ring-[#f9b03c] accent-[#f9b03c]" 
                                     />
                                     <div>
-                                        <span className="font-black text-[#000000] dark:text-white text-base block">PayPal & International Cards</span>
-                                        <span className="text-[11px] text-gray-500 font-semibold block">PayPal, Visa & MasterCard</span>
+                                        <span className="font-black text-[#000000] dark:text-white text-base block">PayPal</span>
+                                        <span className="text-[11px] text-gray-500 font-semibold block">PayPal & Credit/Debit Cards</span>
                                     </div>
-                                </div>
-                                <div className="flex items-center gap-2 shrink-0 ml-2">
-                                    <img 
-                                      src="/paypal-logo.png" 
-                                      alt="PayPal Logo" 
-                                      className="h-7 w-auto object-contain bg-white dark:bg-darkCard px-2 py-0.5 rounded border border-gray-100 dark:border-gray-800" 
-                                      onError={(e: any) => { e.currentTarget.src = '/paypal-logo.svg'; }} 
-                                    />
                                 </div>
                             </label>
 
-                            {/* Option 3: NOWPayments / Crypto */}
+                            {/* Option 3: NOWPayments */}
                             <label className={`payment-option flex items-center justify-between p-4 rounded-2xl border cursor-pointer transition-all duration-200 ${paymethod === 'crypto' || paymethod === 'nowpayments' ? 'border-[#f9b03c] bg-[#f9b03c]/10 dark:border-[#f9b03c] dark:bg-[#f9b03c]/20 shadow-md scale-[1.01]' : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-darkCard hover:border-[#f9b03c]/50 hover:bg-[#f9b03c]/5'}`}>
                                 <div className="flex items-center gap-3.5">
                                     <input 
@@ -287,13 +275,9 @@ export default function PaymentModal({ course, onClose }: any) {
                                       className="w-4 h-4 text-[#f9b03c] focus:ring-[#f9b03c] accent-[#f9b03c]" 
                                     />
                                     <div>
-                                        <span className="font-black text-[#000000] dark:text-white text-base block">NOWPayments / Crypto</span>
-                                        <span className="text-[11px] text-gray-500 font-semibold block">USDT (TRC20), BTC & Cryptos</span>
+                                        <span className="font-black text-[#000000] dark:text-white text-base block">NOWPayments</span>
+                                        <span className="text-[11px] text-gray-500 font-semibold block">USDT, BTC & Crypto Currencies</span>
                                     </div>
-                                </div>
-                                <div className="flex items-center gap-1 shrink-0 ml-2">
-                                    <span className="bg-emerald-600 text-white text-[10px] font-black px-2 py-1 rounded">USDT</span>
-                                    <span className="bg-amber-500 text-white text-[10px] font-black px-2 py-1 rounded">BTC</span>
                                 </div>
                             </label>
 
