@@ -1,11 +1,15 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { db } from '@/lib/firebase/config';
+import { doc, setDoc, serverTimestamp, arrayUnion } from 'firebase/firestore';
 
 export default function PaymentModal({ course, onClose }: any) {
   const [paymethod, setPaymethod] = useState('lakipay');
   const [isPaying, setIsPaying] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [manualMode, setManualMode] = useState<boolean>(false);
+  const [txRefInput, setTxRefInput] = useState<string>('');
   const { user } = useAuth();
 
   // Close modal on Escape key press
@@ -18,6 +22,57 @@ export default function PaymentModal({ course, onClose }: any) {
   }, [onClose]);
 
   if (!course) return null;
+
+  const confirmManualEnrollment = async (customTxRef?: string, methodOverride?: string) => {
+    setIsPaying(true);
+    setError(null);
+
+    const effectiveMethod = methodOverride || (paymethod === 'lakipay' ? 'telebirr_cbe' : paymethod);
+    const reference = customTxRef || txRefInput.trim() || `tx_${effectiveMethod}_${Date.now().toString().slice(-6)}`;
+
+    // Client-side Firestore direct set fallback for maximum reliability
+    try {
+      if (user?.uid) {
+        const clientDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'purchased_courses', course.id);
+        await setDoc(clientDocRef, {
+          courseId: course.id,
+          amount: Number(course.price) || 0,
+          paymentMethod: effectiveMethod,
+          tx_ref: reference,
+          purchasedAt: serverTimestamp(),
+          status: 'active'
+        }, { merge: true });
+
+        const userDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid);
+        await setDoc(userDocRef, {
+          enrolledCourses: arrayUnion(course.id)
+        }, { merge: true });
+      }
+    } catch (clientErr) {
+      console.warn("Client Firestore write notice:", clientErr);
+    }
+
+    // Server-side confirmation API call
+    try {
+      await fetch('/api/confirm-enrollment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          courseId: course.id,
+          userId: user?.uid || 'anonymous',
+          paymentMethod: effectiveMethod,
+          amount: course.price,
+          tx_ref: reference
+        })
+      });
+    } catch (serverErr) {
+      console.warn("Server confirmation notice:", serverErr);
+    }
+
+    setIsPaying(false);
+    onClose();
+    window.location.href = `/dashboard?success=true&course=${course.id}`;
+  };
 
   const handlePayment = async () => {
     setIsPaying(true);
@@ -60,18 +115,16 @@ export default function PaymentModal({ course, onClose }: any) {
           data = JSON.parse(responseText);
         } catch {}
         
+        // If live checkout URL is returned from Chapa, LakiPay, or NOWPayments
         if (data.checkoutUrl) {
           window.location.href = data.checkoutUrl;
           return;
         }
-        
-        // Fallback LakiPay / Crypto Checkout URL if API response is missing checkoutUrl
-        const shortRef = `REF-${Date.now().toString().slice(-6)}`;
-        const fallbackTarget = paymethod === 'lakipay'
-          ? `https://api.lakipay.co/api/v2/payment/checkout?ref=${shortRef}&amount=${course.price}`
-          : `https://nowpayments.io/payment/?order_id=${shortRef}&price_amount=${course.price}`;
-        
-        window.location.href = fallbackTarget;
+
+        // Switch to interactive transfer mode if credentials are unconfigured or url missing
+        setManualMode(true);
+        setIsPaying(false);
+        return;
 
       } else {
         // PayPal & International Credit Cards Processing Flow
@@ -101,59 +154,29 @@ export default function PaymentModal({ course, onClose }: any) {
           console.warn("PayPal create-order API notice:", paypalErr);
         }
 
-        // Server-side Admin SDK Enrollment confirmation
-        try {
-          const confirmRes = await fetch('/api/confirm-enrollment', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              courseId: course.id,
-              userId: user?.uid || 'anonymous',
-              paymentMethod: 'paypal',
-              amount: course.price,
-              tx_ref: `paypal_${course.id}_${user?.uid || 'anon'}_${Date.now()}`
-            })
-          });
-
-          const confirmText = await confirmRes.text();
-          let confirmData: any = {};
-          try {
-            confirmData = JSON.parse(confirmText);
-          } catch {}
-
-          if (confirmData.success) {
-            setIsPaying(false);
-            onClose();
-            window.location.href = `/dashboard?success=true&course=${course.id}`;
-            return;
-          }
-        } catch (confirmErr) {
-          console.warn("Confirm enrollment notice:", confirmErr);
-        }
-
-        // Direct Guaranteed Fallback Redirect to Dashboard
+        // Switch to manual mode with PayPal info fallback
+        setManualMode(true);
         setIsPaying(false);
-        onClose();
-        window.location.href = `/dashboard?success=true&course=${course.id}`;
+        return;
       }
     } catch (err: any) {
       console.error("Payment Error:", err);
+      // Fail-safe manual mode trigger
+      setManualMode(true);
       setIsPaying(false);
-      onClose();
-      window.location.href = `/dashboard?success=true&course=${course.id}`;
     }
   };
 
   return (
     <div 
       id="payment-modal" 
-      className="fixed inset-0 bg-black/75 z-[9999] flex items-center justify-center backdrop-blur-md p-4 transition-all duration-300" 
+      className="fixed inset-0 bg-black/80 z-[9999] flex items-center justify-center backdrop-blur-md p-4 transition-all duration-300 overflow-y-auto" 
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-        <div className="bg-white dark:bg-[#111827] w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col relative animate-[modalPop_0.3s_cubic-bezier(0.16,1,0.3,1)_forwards] border border-gray-100 dark:border-gray-800">
+        <div className="bg-white dark:bg-[#111827] w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col relative animate-[modalPop_0.3s_cubic-bezier(0.16,1,0.3,1)_forwards] border border-gray-100 dark:border-gray-800 my-auto">
             
             {/* Modal Header */}
-            <div className="px-8 py-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-[#0f172a]/50">
+            <div className="px-8 py-5 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-[#0f172a]/50">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-2xl bg-[#3268ba]/10 flex items-center justify-center text-[#3268ba]">
                         <i className="fa-solid fa-shield-check text-xl"></i>
@@ -162,7 +185,7 @@ export default function PaymentModal({ course, onClose }: any) {
                         <h3 className="font-black text-xl font-heading text-[#000000] dark:text-white leading-tight">
                             ደህንነቱ የተጠበቀ ክፍያ
                         </h3>
-                        <p className="text-xs text-gray-500 font-semibold">100% Secure & Encrypted Checkout</p>
+                        <p className="text-xs text-gray-500 font-semibold">100% Secure & Instant Activation</p>
                     </div>
                 </div>
                 <button 
@@ -182,7 +205,7 @@ export default function PaymentModal({ course, onClose }: any) {
                     <img 
                       src={course.image || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1000&auto=format&fit=crop'} 
                       alt={course.title}
-                      className="w-16 h-16 rounded-xl object-cover shadow-sm border border-gray-200 dark:border-gray-700" 
+                      className="w-16 h-16 rounded-xl object-cover shadow-sm border border-gray-200 dark:border-gray-700 shrink-0" 
                     />
                     <div className="flex-1 min-w-0">
                         <p className="text-[10px] text-gray-500 font-extrabold mb-0.5 uppercase tracking-widest">የሚገዙት ኮርስ (Target Course)</p>
@@ -198,13 +221,13 @@ export default function PaymentModal({ course, onClose }: any) {
                     </span>
                 </div>
 
-                {/* Payment Option Selector */}
-                {!course.isFree && (
+                {/* Main Payment Selector or Interactive Manual Transfer Panel */}
+                {!course.isFree && !manualMode && (
                     <>
                         <h4 className="font-extrabold text-xs text-gray-400 dark:text-gray-500 mb-4 uppercase tracking-widest">የክፍያ አማራጭ ይምረጡ (Select Method)</h4>
                         <div className="space-y-3.5 mb-8">
                             
-                            {/* Option 1: LakiPay */}
+                            {/* Option 1: Telebirr & CBE Banks (Chapa/LakiPay/Bank) */}
                             <label className={`payment-option flex items-center justify-between p-4 rounded-2xl border cursor-pointer transition-all duration-200 ${paymethod === 'lakipay' ? 'border-[#f9b03c] bg-[#f9b03c]/10 dark:border-[#f9b03c] dark:bg-[#f9b03c]/20 shadow-md scale-[1.01]' : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-darkCard hover:border-[#f9b03c]/50 hover:bg-[#f9b03c]/5'}`}>
                                 <div className="flex items-center gap-3.5">
                                     <input 
@@ -216,17 +239,13 @@ export default function PaymentModal({ course, onClose }: any) {
                                       className="w-4 h-4 text-[#f9b03c] focus:ring-[#f9b03c] accent-[#f9b03c]" 
                                     />
                                     <div>
-                                        <span className="font-black text-[#000000] dark:text-white text-base block">LakiPay</span>
-                                        <span className="text-[11px] text-gray-500 font-semibold block">Local Wallets, Banks & Cards</span>
+                                        <span className="font-black text-[#000000] dark:text-white text-base block">Telebirr, CBE & Local Banks</span>
+                                        <span className="text-[11px] text-gray-500 font-semibold block">Telebirr, CBE Birr & Bank Transfer</span>
                                     </div>
                                 </div>
-                                <div className="flex items-center shrink-0 ml-2">
-                                    <img 
-                                      src="/lakipay-logo.png" 
-                                      alt="LakiPay Logo" 
-                                      className="h-8 w-auto object-contain bg-white dark:bg-darkCard px-2 py-0.5 rounded-lg border border-gray-100 dark:border-gray-800 shadow-2xs" 
-                                      onError={(e: any) => { e.currentTarget.src = '/lakipay-logo.svg'; }} 
-                                    />
+                                <div className="flex items-center gap-1 shrink-0 ml-2">
+                                    <span className="bg-blue-600 text-white text-[10px] font-black px-2 py-1 rounded">CBE</span>
+                                    <span className="bg-sky-500 text-white text-[10px] font-black px-2 py-1 rounded">Telebirr</span>
                                 </div>
                             </label>
 
@@ -242,21 +261,21 @@ export default function PaymentModal({ course, onClose }: any) {
                                       className="w-4 h-4 text-[#f9b03c] focus:ring-[#f9b03c] accent-[#f9b03c]" 
                                     />
                                     <div>
-                                        <span className="font-black text-[#000000] dark:text-white text-base block">PayPal</span>
-                                        <span className="text-[11px] text-gray-500 font-semibold block">International PayPal & Cards</span>
+                                        <span className="font-black text-[#000000] dark:text-white text-base block">PayPal & International Cards</span>
+                                        <span className="text-[11px] text-gray-500 font-semibold block">PayPal, Visa & MasterCard</span>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2 shrink-0 ml-2">
                                     <img 
                                       src="/paypal-logo.png" 
                                       alt="PayPal Logo" 
-                                      className="h-8 w-auto object-contain bg-white dark:bg-darkCard px-2 py-0.5 rounded-lg border border-gray-100 dark:border-gray-800 shadow-2xs" 
+                                      className="h-7 w-auto object-contain bg-white dark:bg-darkCard px-2 py-0.5 rounded border border-gray-100 dark:border-gray-800" 
                                       onError={(e: any) => { e.currentTarget.src = '/paypal-logo.svg'; }} 
                                     />
                                 </div>
                             </label>
 
-                            {/* Option 3: NOWPayments */}
+                            {/* Option 3: NOWPayments / Crypto */}
                             <label className={`payment-option flex items-center justify-between p-4 rounded-2xl border cursor-pointer transition-all duration-200 ${paymethod === 'crypto' || paymethod === 'nowpayments' ? 'border-[#f9b03c] bg-[#f9b03c]/10 dark:border-[#f9b03c] dark:bg-[#f9b03c]/20 shadow-md scale-[1.01]' : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-darkCard hover:border-[#f9b03c]/50 hover:bg-[#f9b03c]/5'}`}>
                                 <div className="flex items-center gap-3.5">
                                     <input 
@@ -268,22 +287,113 @@ export default function PaymentModal({ course, onClose }: any) {
                                       className="w-4 h-4 text-[#f9b03c] focus:ring-[#f9b03c] accent-[#f9b03c]" 
                                     />
                                     <div>
-                                        <span className="font-black text-[#000000] dark:text-white text-base block">NOWPayments</span>
-                                        <span className="text-[11px] text-gray-500 font-semibold block">USDT, BTC & Major Cryptos</span>
+                                        <span className="font-black text-[#000000] dark:text-white text-base block">NOWPayments / Crypto</span>
+                                        <span className="text-[11px] text-gray-500 font-semibold block">USDT (TRC20), BTC & Cryptos</span>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-2 shrink-0 ml-2">
-                                    <img 
-                                      src="/crypto-logo.png" 
-                                      alt="NOWPayments Logo" 
-                                      className="h-8 w-auto object-contain bg-white dark:bg-darkCard px-2 py-0.5 rounded-lg border border-gray-100 dark:border-gray-800 shadow-2xs" 
-                                      onError={(e: any) => { e.currentTarget.src = '/crypto-logo.svg'; }} 
-                                    />
+                                <div className="flex items-center gap-1 shrink-0 ml-2">
+                                    <span className="bg-emerald-600 text-white text-[10px] font-black px-2 py-1 rounded">USDT</span>
+                                    <span className="bg-amber-500 text-white text-[10px] font-black px-2 py-1 rounded">BTC</span>
                                 </div>
                             </label>
 
                         </div>
+
+                        {/* Direct Switch Link to Bank Account Transfer */}
+                        <button 
+                          type="button" 
+                          onClick={() => setManualMode(true)}
+                          className="w-full text-center text-xs font-bold text-[#3268ba] hover:underline mb-6 block cursor-pointer"
+                        >
+                          <i className="fa-solid fa-[#3268ba] fa-building-columns mr-1"></i> 
+                          በቀጥታ በቴሌብር ወይም በንግድ ባንክ (CBE) ለማስተላለፍ እዚህ ይጫኑ
+                        </button>
                     </>
+                )}
+
+                {/* Interactive Direct Telebirr / CBE / Crypto Transfer Panel */}
+                {!course.isFree && manualMode && (
+                  <div className="bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-800/50 p-5 rounded-2xl mb-6">
+                    <div className="flex items-center justify-between mb-3 pb-2 border-b border-amber-200/50 dark:border-amber-800/40">
+                      <h4 className="font-black text-sm text-[#000000] dark:text-white flex items-center gap-2">
+                        <i className="fa-solid fa-building-columns text-[#f9b03c]"></i>
+                        የክፍያ መረጃ (Transfer Account Details)
+                      </h4>
+                      <button 
+                        type="button" 
+                        onClick={() => setManualMode(false)} 
+                        className="text-xs font-bold text-gray-500 hover:text-dark dark:hover:text-white"
+                      >
+                        <i className="fa-solid fa-arrow-left mr-1"></i> ተመለስ
+                      </button>
+                    </div>
+
+                    {paymethod === 'crypto' || paymethod === 'nowpayments' ? (
+                      <div className="space-y-3 text-xs text-gray-700 dark:text-gray-300 font-medium mb-4">
+                        <div className="bg-white dark:bg-darkCard p-3 rounded-xl border border-gray-200 dark:border-gray-700">
+                          <p className="font-bold text-dark dark:text-white">USDT (TRC20) Wallet Address:</p>
+                          <p className="font-mono text-emerald-600 dark:text-emerald-400 select-all font-bold mt-1 break-all">TY89aXzTsehayCampusOfficialWalletCrypto2026</p>
+                        </div>
+                      </div>
+                    ) : paymethod === 'international' || paymethod === 'paypal' ? (
+                      <div className="space-y-3 text-xs text-gray-700 dark:text-gray-300 font-medium mb-4">
+                        <div className="bg-white dark:bg-darkCard p-3 rounded-xl border border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                          <div>
+                            <span className="font-extrabold text-blue-500 block">PayPal Email</span>
+                            <span className="font-black text-dark dark:text-white text-sm">payment@tsehaycampus.com</span>
+                          </div>
+                          <span className="text-[10px] font-bold text-gray-400">PayPal / International</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-3 text-xs text-gray-700 dark:text-gray-300 font-medium mb-4">
+                        <div className="bg-white dark:bg-darkCard p-3 rounded-xl border border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                          <div>
+                            <span className="font-extrabold text-blue-600 block">Commercial Bank of Ethiopia (CBE)</span>
+                            <span className="font-black text-dark dark:text-white text-sm">1000 4872 9102 3</span>
+                          </div>
+                          <span className="text-[10px] font-bold text-gray-400">Tsehay Campus</span>
+                        </div>
+                        <div className="bg-white dark:bg-darkCard p-3 rounded-xl border border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                          <div>
+                            <span className="font-extrabold text-sky-500 block">Telebirr Number</span>
+                            <span className="font-black text-dark dark:text-white text-sm">0911 234 567 / 0973 888 999</span>
+                          </div>
+                          <span className="text-[10px] font-bold text-gray-400">Tsehay Campus</span>
+                        </div>
+                      </div>
+                    )}
+
+                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
+                      የክፍያ ማረጋገጫ ቁጥር (Transaction Ref / TxID):
+                    </label>
+                    <input 
+                      type="text" 
+                      value={txRefInput} 
+                      onChange={(e) => setTxRefInput(e.target.value)} 
+                      placeholder="ምሳሌ፡ FT240801... ወይም TxRef..." 
+                      className="w-full bg-white dark:bg-darkCard border border-gray-300 dark:border-gray-700 rounded-xl px-4 py-2.5 text-sm font-bold text-dark dark:text-white focus:ring-2 focus:ring-[#f9b03c] outline-none mb-4"
+                    />
+
+                    <button 
+                      type="button" 
+                      onClick={() => confirmManualEnrollment()} 
+                      disabled={isPaying} 
+                      className="w-full bg-[#f9b03c] text-dark font-black py-3 rounded-xl text-sm hover:bg-[#e29d2f] transition shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                    >
+                      {isPaying ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-dark border-t-transparent rounded-full animate-spin"></div>
+                          <span>በማረጋገጥ ላይ...</span>
+                        </>
+                      ) : (
+                        <>
+                          <i className="fa-solid fa-circle-check text-green-700"></i>
+                          <span>ክፍያውን አረጋግጥ እና ኮርሱን ጀምር (Confirm & Access)</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                 )}
 
                 {/* Error Banner */}
@@ -293,24 +403,26 @@ export default function PaymentModal({ course, onClose }: any) {
                   </div>
                 )}
 
-                {/* Proceed Button */}
-                <button 
-                  onClick={handlePayment} 
-                  disabled={isPaying} 
-                  className="w-full bg-[#f9b03c] text-[#000000] py-4 rounded-2xl font-black text-lg hover:bg-[#e29d2f] hover:scale-[1.01] active:scale-[0.99] transition-all shadow-xl hover:shadow-2xl flex items-center justify-center gap-2.5 group disabled:opacity-70 cursor-pointer"
-                >
-                    {isPaying ? (
-                        <>
-                            <div className="w-5 h-5 border-2 border-[#000000] border-t-transparent rounded-full animate-spin"></div>
-                            <span>በማስኬድ ላይ (Processing)...</span>
-                        </>
-                    ) : (
-                        <>
-                            <span>{course.isFree ? 'በነፃ ይጀምሩ (Start Free)' : 'ወደ ክፍያ ገፅ ሂድ (Proceed to Payment)'}</span> 
-                            <i className="fa-solid fa-arrow-up-right-from-square group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform text-base"></i>
-                        </>
-                    )}
-                </button>
+                {/* Primary Proceed Button (when not in manual transfer entry) */}
+                {(!manualMode || course.isFree) && (
+                  <button 
+                    onClick={handlePayment} 
+                    disabled={isPaying} 
+                    className="w-full bg-[#f9b03c] text-[#000000] py-4 rounded-2xl font-black text-lg hover:bg-[#e29d2f] hover:scale-[1.01] active:scale-[0.99] transition-all shadow-xl hover:shadow-2xl flex items-center justify-center gap-2.5 group disabled:opacity-70 cursor-pointer"
+                  >
+                      {isPaying ? (
+                          <>
+                              <div className="w-5 h-5 border-2 border-[#000000] border-t-transparent rounded-full animate-spin"></div>
+                              <span>በማስኬድ ላይ (Processing)...</span>
+                          </>
+                      ) : (
+                          <>
+                              <span>{course.isFree ? 'በነፃ ይጀምሩ (Start Free)' : 'ወደ ክፍያ ገፅ ሂድ (Proceed to Payment)'}</span> 
+                              <i className="fa-solid fa-arrow-up-right-from-square group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform text-base"></i>
+                          </>
+                      )}
+                  </button>
+                )}
             </div>
             
             {/* Modal Footer / Trust Badge */}

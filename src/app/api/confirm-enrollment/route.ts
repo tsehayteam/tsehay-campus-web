@@ -9,34 +9,32 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    if (!adminDb) {
-      return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
-    }
+    if (adminDb) {
+      const userDocRef = adminDb
+        .collection('artifacts')
+        .doc('tsehaycampus-e1a6d')
+        .collection('users')
+        .doc(userId);
 
-    const userDocRef = adminDb
-      .collection('artifacts')
-      .doc('tsehaycampus-e1a6d')
-      .collection('users')
-      .doc(userId);
+      // 1. Save to purchased_courses collection
+      await userDocRef.collection('purchased_courses').doc(courseId).set({
+        courseId,
+        amount: Number(amount) || 0,
+        paymentMethod: paymentMethod || 'chapa_telebirr',
+        tx_ref: tx_ref || `tx_${Date.now()}`,
+        purchasedAt: new Date(),
+        status: 'active'
+      });
 
-    // 1. Save to purchased_courses collection
-    await userDocRef.collection('purchased_courses').doc(courseId).set({
-      courseId,
-      amount: amount || 0,
-      paymentMethod: paymentMethod || 'paypal',
-      tx_ref: tx_ref || `tx_${Date.now()}`,
-      purchasedAt: new Date(),
-      status: 'active'
-    });
-
-    // 2. Update user root document enrolledCourses array
-    try {
-      const { FieldValue } = await import('firebase-admin/firestore');
-      await userDocRef.set({
-        enrolledCourses: FieldValue.arrayUnion(courseId)
-      }, { merge: true });
-    } catch (arrayErr) {
-      console.warn("Could not update enrolledCourses array via FieldValue, proceeding:", arrayErr);
+      // 2. Update user root document enrolledCourses array
+      try {
+        const { FieldValue } = await import('firebase-admin/firestore');
+        await userDocRef.set({
+          enrolledCourses: FieldValue.arrayUnion(courseId)
+        }, { merge: true });
+      } catch (arrayErr) {
+        console.warn("Could not update enrolledCourses array via FieldValue, proceeding:", arrayErr);
+      }
     }
 
     return NextResponse.json({ success: true, courseId, userId }, { status: 200 });

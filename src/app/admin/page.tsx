@@ -78,6 +78,7 @@ export default function AdminDashboard() {
 
   const [lessons, setLessons] = useState<any[]>([]);
   const [lessonForm, setLessonForm] = useState({ title: '', duration: '', video: '', desc: '', points: 0 });
+  const [editingLessonIdx, setEditingLessonIdx] = useState<number | null>(null);
 
 
   useEffect(() => {
@@ -213,11 +214,14 @@ export default function AdminDashboard() {
   };
 
   const openForm = async (course: any = null) => {
+    setEditingLessonIdx(null);
+    setLessonForm({ title: '', duration: '', video: '', desc: '', points: 0 });
+
     if (course) {
       setEditingCourse(course);
       setFormData({ 
         ...course,
-        whatYouWillLearn: course.whatYouWillLearn ? course.whatYouWillLearn.join('\n') : '',
+        whatYouWillLearn: course.whatYouWillLearn ? (Array.isArray(course.whatYouWillLearn) ? course.whatYouWillLearn.join('\n') : course.whatYouWillLearn) : '',
         requirementsList: Array.isArray(course.requirements) ? course.requirements : [],
         includesList: Array.isArray(course.includes) ? course.includes : [
           'የተግባር አሳይመንቶች እና ፕሮጀክቶች (Assignments & Projects)',
@@ -303,10 +307,32 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleAddLesson = (e: React.FormEvent) => {
-    e.preventDefault();
-    setLessons([...lessons, lessonForm]);
+  const handleAddOrUpdateLesson = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!lessonForm.title) return;
+
+    if (editingLessonIdx !== null) {
+      const updated = [...lessons];
+      updated[editingLessonIdx] = { ...lessonForm };
+      setLessons(updated);
+      setEditingLessonIdx(null);
+    } else {
+      setLessons([...lessons, lessonForm]);
+    }
     setLessonForm({ title: '', duration: '', video: '', desc: '', points: 0 });
+  };
+
+  const handleStartEditLesson = (index: number) => {
+    const lessonToEdit = lessons[index];
+    if (!lessonToEdit) return;
+    setLessonForm({
+      title: lessonToEdit.title || '',
+      duration: lessonToEdit.duration || '',
+      video: lessonToEdit.video || '',
+      desc: lessonToEdit.desc || '',
+      points: lessonToEdit.points || 0
+    });
+    setEditingLessonIdx(index);
   };
 
   const handleDeleteLesson = (lessonIdx: number) => {
@@ -1048,7 +1074,12 @@ export default function AdminDashboard() {
                   
                   <div className="space-y-4 mb-6">
                     <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-blue-100 dark:border-slate-600 mb-4 shadow-sm">
-                      <h5 className="text-sm font-bold mb-3">አዲስ ትምህርት ጨምር (Add Lesson)</h5>
+                      <h5 className="text-sm font-bold mb-3 text-primary flex items-center justify-between">
+                        <span>{editingLessonIdx !== null ? `ትምህርቱን አስተካክል #${editingLessonIdx + 1} (Edit Lesson)` : 'አዲስ ትምህርት ጨምር (Add Lesson)'}</span>
+                        {editingLessonIdx !== null && (
+                          <span className="text-xs bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-md font-extrabold">Editing Mode</span>
+                        )}
+                      </h5>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                         <input placeholder="የርዕስ ስም (Title)" value={lessonForm.title} onChange={e => setLessonForm({...lessonForm, title: e.target.value})} className="border rounded-lg px-3 py-2 text-sm bg-gray-50 dark:bg-slate-900" />
                         <input placeholder="የቪዲዮ ርዝመት (00:00)" value={lessonForm.duration} onChange={e => setLessonForm({...lessonForm, duration: e.target.value})} className="border rounded-lg px-3 py-2 text-sm bg-gray-50 dark:bg-slate-900" />
@@ -1056,48 +1087,123 @@ export default function AdminDashboard() {
                         <input type="number" placeholder="ነጥብ (Points)" value={lessonForm.points || ''} onChange={e => setLessonForm({...lessonForm, points: Number(e.target.value)})} className="border rounded-lg px-3 py-2 text-sm bg-gray-50 dark:bg-slate-900" />
                         <input placeholder="የቪዲዮ ማብራሪያ (Description)" value={lessonForm.desc} onChange={e => setLessonForm({...lessonForm, desc: e.target.value})} className="border rounded-lg px-3 py-2 text-sm bg-gray-50 dark:bg-slate-900 sm:col-span-2" />
                       </div>
-                      <p className="text-xs text-gray-500 mb-2 mt-2">መረጃውን ሞልተው ሲጨርሱ ከታች ያለውን አዝራር ተጭነው ወደ ኮርሱ ክፍሎች ዝርዝር ይጨምሩት።</p>
+                      <p className="text-xs text-gray-500 mb-2 mt-2">መረጃውን ሞልተው ሲጨርሱ ከታች ያለውን አዝራር ተጭነው አስቀምጡ።</p>
                       <div className="flex gap-2 mt-2">
-                        <button type="button" onClick={handleAddLesson} disabled={!lessonForm.title} className="bg-primary text-dark px-4 py-2 rounded-lg text-sm font-bold hover:bg-yellow-400 disabled:opacity-50"><i className="fa-solid fa-plus mr-2"></i>ወደ ክፍሎች ዝርዝር ጨምር (Add to List)</button>
+                        <button type="button" onClick={handleAddOrUpdateLesson} disabled={!lessonForm.title} className="bg-primary text-dark px-4 py-2 rounded-lg text-sm font-black hover:bg-yellow-400 disabled:opacity-50 flex items-center gap-1.5 cursor-pointer">
+                          <i className={`fa-solid ${editingLessonIdx !== null ? 'fa-check' : 'fa-plus'}`}></i>
+                          <span>{editingLessonIdx !== null ? 'ለወጡን አስቀምጥ (Save Edits)' : 'ወደ ክፍሎች ዝርዝር ጨምር (Add to List)'}</span>
+                        </button>
+                        {editingLessonIdx !== null && (
+                          <button type="button" onClick={() => { setEditingLessonIdx(null); setLessonForm({ title: '', duration: '', video: '', desc: '', points: 0 }); }} className="bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-300 px-3 py-2 rounded-lg text-sm font-bold hover:bg-gray-300 transition cursor-pointer">
+                            ሰርዝ (Cancel)
+                          </button>
+                        )}
                       </div>
                     </div>
 
-                    <div className="space-y-2.5">
-                      {lessons.map((lesson: any, lidx: number) => (
-                        <div key={lidx} className="flex justify-between items-center bg-white dark:bg-slate-800 p-3 rounded-xl border border-gray-100 dark:border-slate-700 shadow-xs hover:border-primary/40 transition">
-                          <div className="flex items-center gap-3">
-                            <span className="w-6 h-6 rounded-full bg-primary/20 text-dark dark:text-primary font-black text-xs flex items-center justify-center shrink-0">
-                              {lidx + 1}
-                            </span>
-                            <div>
-                              <p className="font-bold text-sm text-dark dark:text-white">{lesson.title}</p>
-                              {lesson.desc && <p className="text-xs text-gray-500 mt-0.5 truncate max-w-xs">{lesson.desc}</p>}
-                              <p className="text-[11px] text-gray-500 mt-0.5"><i className="fa-solid fa-video mr-1 text-primary"></i> {lesson.duration} | <span className="text-primary font-bold">+{lesson.points || 100} ነጥብ</span></p>
+                    <div className="space-y-3">
+                      {lessons.map((lesson: any, lidx: number) => {
+                        const isEditingThis = editingLessonIdx === lidx;
+                        return (
+                          <div key={lidx} className={`bg-white dark:bg-slate-800 rounded-2xl border transition-all overflow-hidden ${isEditingThis ? 'border-primary ring-2 ring-primary/40 shadow-xl' : 'border-gray-200 dark:border-slate-700 shadow-xs hover:border-primary/50'}`}>
+                            
+                            {/* Lesson Header Row */}
+                            <div className="p-3.5 flex justify-between items-center bg-gray-50/50 dark:bg-slate-800/80">
+                              <div 
+                                onClick={() => handleStartEditLesson(lidx)} 
+                                className="flex items-center gap-3 flex-1 cursor-pointer group"
+                              >
+                                <span className="w-7 h-7 rounded-full bg-primary/20 text-dark dark:text-primary font-black text-xs flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                                  {lidx + 1}
+                                </span>
+                                <div>
+                                  <p className="font-bold text-sm text-dark dark:text-white group-hover:text-primary transition-colors flex items-center gap-2">
+                                    <span>{lesson.title || `ትምህርት ${lidx + 1}`}</span>
+                                    <span className="text-[10px] text-blue-500 dark:text-primary font-bold underline opacity-80 group-hover:opacity-100 transition-opacity">(ለመቀየር ይጫኑ / Click to edit)</span>
+                                  </p>
+                                  {lesson.desc && <p className="text-xs text-gray-500 mt-0.5 truncate max-w-xs">{lesson.desc}</p>}
+                                  <p className="text-[11px] text-gray-500 mt-0.5 flex items-center gap-2">
+                                    <span><i className="fa-solid fa-video mr-1 text-primary"></i> {lesson.duration || '00:00'}</span>
+                                    <span>•</span>
+                                    <span className="text-primary font-bold">+{lesson.points || 100} ነጥብ</span>
+                                    {lesson.video && <span className="text-emerald-600 dark:text-emerald-400 font-bold text-[10px]">✓ Video URL Set</span>}
+                                  </p>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                                <button 
+                                  type="button" 
+                                  onClick={() => handleStartEditLesson(lidx)}
+                                  title="ትምህርቱን አስተካክል (Edit Lesson)"
+                                  className={`px-3 py-1.5 rounded-xl flex items-center gap-1.5 text-xs font-black transition cursor-pointer ${isEditingThis ? 'bg-primary text-dark shadow-sm' : 'bg-amber-400/20 dark:bg-amber-400/10 text-amber-900 dark:text-amber-300 hover:bg-primary hover:text-dark'}`}
+                                >
+                                  <i className="fa-solid fa-pen"></i>
+                                  <span>{isEditingThis ? 'እየቀየሩት ነው' : 'አስተካክል (Edit)'}</span>
+                                </button>
+                                <button 
+                                  type="button" 
+                                  onClick={() => handleMoveLessonUp(lidx)}
+                                  disabled={lidx === 0}
+                                  title="ቦታ ወደ ላይ ቀይር (Move Up)"
+                                  className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-slate-700 hover:bg-primary hover:text-dark text-gray-600 dark:text-gray-300 disabled:opacity-30 disabled:hover:bg-gray-100 flex items-center justify-center transition text-xs font-black cursor-pointer"
+                                >
+                                  ▲
+                                </button>
+                                <button 
+                                  type="button" 
+                                  onClick={() => handleMoveLessonDown(lidx)}
+                                  disabled={lidx === lessons.length - 1}
+                                  title="ቦታ ወደ ታች ቀይር (Move Down)"
+                                  className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-slate-700 hover:bg-primary hover:text-dark text-gray-600 dark:text-gray-300 disabled:opacity-30 disabled:hover:bg-gray-100 flex items-center justify-center transition text-xs font-black cursor-pointer"
+                                >
+                                  ▼
+                                </button>
+                                <button type="button" onClick={() => handleDeleteLesson(lidx)} className="w-8 h-8 rounded-lg bg-red-50 dark:bg-red-950/30 hover:bg-red-500 hover:text-white text-danger flex items-center justify-center transition text-xs ml-1 cursor-pointer"><i className="fa-solid fa-trash"></i></button>
+                              </div>
                             </div>
+
+                            {/* Expanded Inline Edit Form when editing this lesson */}
+                            {isEditingThis && (
+                              <div className="p-4 border-t border-primary/30 bg-amber-50/40 dark:bg-slate-900/80 animate-[fadeIn_0.2s_ease-in-out]">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                                  <div>
+                                    <label className="block text-[11px] font-bold text-gray-700 dark:text-gray-300 mb-1">የርዕስ ስም (Title) *</label>
+                                    <input value={lessonForm.title} onChange={e => setLessonForm({...lessonForm, title: e.target.value})} className="w-full border border-gray-300 dark:border-slate-600 rounded-xl px-3 py-2 text-sm bg-white dark:bg-slate-800 font-bold outline-none focus:ring-2 focus:ring-primary" />
+                                  </div>
+                                  <div>
+                                    <label className="block text-[11px] font-bold text-gray-700 dark:text-gray-300 mb-1">የቪዲዮ ርዝመት (Duration e.g. 00:15:00)</label>
+                                    <input value={lessonForm.duration} onChange={e => setLessonForm({...lessonForm, duration: e.target.value})} className="w-full border border-gray-300 dark:border-slate-600 rounded-xl px-3 py-2 text-sm bg-white dark:bg-slate-800 font-bold outline-none focus:ring-2 focus:ring-primary" />
+                                  </div>
+                                  <div className="sm:col-span-2">
+                                    <label className="block text-[11px] font-bold text-gray-700 dark:text-gray-300 mb-1">የቪዲዮ ሊንክ (Video URL) *</label>
+                                    <input value={lessonForm.video} onChange={e => setLessonForm({...lessonForm, video: e.target.value})} className="w-full border border-gray-300 dark:border-slate-600 rounded-xl px-3 py-2 text-sm bg-white dark:bg-slate-800 font-mono text-xs outline-none focus:ring-2 focus:ring-primary" placeholder="e.g. https://iframe.mediadelivery.net/play/..." />
+                                  </div>
+                                  <div>
+                                    <label className="block text-[11px] font-bold text-gray-700 dark:text-gray-300 mb-1">ነጥብ (Points)</label>
+                                    <input type="number" value={lessonForm.points || ''} onChange={e => setLessonForm({...lessonForm, points: Number(e.target.value)})} className="w-full border border-gray-300 dark:border-slate-600 rounded-xl px-3 py-2 text-sm bg-white dark:bg-slate-800 font-bold outline-none focus:ring-2 focus:ring-primary" />
+                                  </div>
+                                  <div>
+                                    <label className="block text-[11px] font-bold text-gray-700 dark:text-gray-300 mb-1">የቪዲዮ ማብራሪያ (Description)</label>
+                                    <input value={lessonForm.desc} onChange={e => setLessonForm({...lessonForm, desc: e.target.value})} className="w-full border border-gray-300 dark:border-slate-600 rounded-xl px-3 py-2 text-sm bg-white dark:bg-slate-800 outline-none focus:ring-2 focus:ring-primary" />
+                                  </div>
+                                </div>
+
+                                <div className="flex justify-end gap-2 pt-2 border-t border-gray-200 dark:border-slate-700">
+                                  <button type="button" onClick={() => { setEditingLessonIdx(null); setLessonForm({ title: '', duration: '', video: '', desc: '', points: 0 }); }} className="px-3.5 py-2 rounded-xl bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-300 text-xs font-bold hover:bg-gray-300 transition cursor-pointer">
+                                    ሰርዝ (Cancel)
+                                  </button>
+                                  <button type="button" onClick={handleAddOrUpdateLesson} className="px-5 py-2 rounded-xl bg-primary text-dark text-xs font-black hover:bg-yellow-400 shadow-md flex items-center gap-1.5 cursor-pointer">
+                                    <i className="fa-solid fa-circle-check text-base"></i>
+                                    <span>ለወጡን አስቀምጥ (Save Edits)</span>
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+
                           </div>
-                          <div className="flex items-center gap-1.5">
-                            <button 
-                              type="button" 
-                              onClick={() => handleMoveLessonUp(lidx)}
-                              disabled={lidx === 0}
-                              title="ቦታ ወደ ላይ ቀይር (Move Up)"
-                              className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-slate-700 hover:bg-primary hover:text-dark text-gray-600 dark:text-gray-300 disabled:opacity-30 disabled:hover:bg-gray-100 flex items-center justify-center transition text-xs font-black"
-                            >
-                              ▲
-                            </button>
-                            <button 
-                              type="button" 
-                              onClick={() => handleMoveLessonDown(lidx)}
-                              disabled={lidx === lessons.length - 1}
-                              title="ቦታ ወደ ታች ቀይር (Move Down)"
-                              className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-slate-700 hover:bg-primary hover:text-dark text-gray-600 dark:text-gray-300 disabled:opacity-30 disabled:hover:bg-gray-100 flex items-center justify-center transition text-xs font-black"
-                            >
-                              ▼
-                            </button>
-                            <button type="button" onClick={() => handleDeleteLesson(lidx)} className="w-8 h-8 rounded-lg bg-red-50 dark:bg-red-950/30 hover:bg-red-500 hover:text-white text-danger flex items-center justify-center transition text-xs ml-1"><i className="fa-solid fa-trash"></i></button>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 </div>

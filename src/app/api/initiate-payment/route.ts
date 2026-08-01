@@ -6,8 +6,11 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { courseId, title, description, price, paymethod, userEmail, userId } = body;
 
-    if (!courseId || !price || !userEmail) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    const numericPrice = typeof price === 'number' ? price : Number(String(price || '').replace(/[^0-9.]/g, '')) || 4500;
+    const email = userEmail || 'student@example.com';
+
+    if (!courseId) {
+      return NextResponse.json({ error: 'Missing courseId parameter' }, { status: 400 });
     }
 
     const host = request.headers.get('host') || 'tsehaycampus.com';
@@ -21,8 +24,9 @@ export async function POST(request: Request) {
       if (adminDb) {
         await adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('pending_payments').doc(shortRef).set({
           courseId,
-          userId,
-          price,
+          userId: userId || 'anonymous',
+          price: numericPrice,
+          userEmail: email,
           shortRef,
           createdAt: new Date()
         });
@@ -38,14 +42,14 @@ export async function POST(request: Request) {
         process.env.NOW_PAYMENTS_API_KEY || 
         process.env.NOWPAYMENT_API_KEY || 
         ''
-      ).trim();
+      ).replace(/['"]/g, '').trim();
       
       if (nowPaymentsApiKey) {
         const nowPaymentsPayload = {
-          price_amount: Number(price),
+          price_amount: Number(numericPrice) / 120 > 1 ? Number((Number(numericPrice) / 120).toFixed(2)) : 5.00,
           price_currency: "usd",
           order_id: shortRef,
-          order_description: `Tsehay Campus - ${title}`,
+          order_description: `Tsehay Campus - ${title || 'Course'}`,
           ipn_callback_url: `${origin}/api/webhook/nowpayments`,
           success_url: `${origin}/dashboard?success=true&course=${courseId}`,
           cancel_url: `${origin}/dashboard?canceled=true`
@@ -72,18 +76,59 @@ export async function POST(request: Request) {
         }
       }
 
-      // Fallback NOWPayments URL if API key pending or error
-      const fallbackCryptoUrl = `https://nowpayments.io/payment/?iid=${shortRef}&amount=${price}&title=${encodeURIComponent(title || 'Course')}`;
-      return NextResponse.json({ checkoutUrl: fallbackCryptoUrl, reference: shortRef });
+      // Return manual transfer fallback when NOWPayments API key is missing
+      return NextResponse.json({ requiresManualTransfer: true, reference: shortRef, paymethod: 'crypto' });
     }
 
-    // 2. LakiPay Backend Integration
+    // 2. Chapa & LakiPay Local Payments Integration (Telebirr, CBE, Banks)
+    const chapaSecretKey = (
+      process.env.CHAPA_SECRET_KEY || 
+      process.env.CHAPA_SECRET || 
+      ''
+    ).replace(/['"]/g, '').trim();
+
+    if (chapaSecretKey) {
+      try {
+        const chapaRes = await fetch("https://api.chapa.co/v1/transaction/initialize", {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${chapaSecretKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            amount: String(numericPrice),
+            currency: "ETB",
+            email: email,
+            first_name: email.split('@')[0] || "Student",
+            last_name: "Campus",
+            tx_ref: shortRef,
+            callback_url: `${origin}/api/webhook`,
+            return_url: `${origin}/dashboard?success=true&course=${courseId}`,
+            customization: {
+              title: title || "Tsehay Campus Course",
+              description: description ? description.slice(0, 100) : "Full Access to Tsehay Campus Course"
+            }
+          })
+        });
+
+        const chapaData = await chapaRes.json();
+        const chapaUrl = chapaData?.data?.checkout_url || chapaData?.checkout_url;
+
+        if (chapaUrl) {
+          return NextResponse.json({ checkoutUrl: chapaUrl, reference: shortRef });
+        }
+      } catch (chapaErr) {
+        console.error("Chapa API Fetch Error:", chapaErr);
+      }
+    }
+
+    // LakiPay Integration
     const lakipayPayload = {
-      amount: Number(price),
+      amount: Number(numericPrice),
       currency: "ETB",
       reference: shortRef,
       title: title || "Tsehay Campus Course",
-      description: description ? description.slice(0, 120) : (title ? `Full Access to ${title} on Tsehay Campus` : "Full Access to Tsehay Campus Course"),
+      description: description ? description.slice(0, 120) : "Full Access to Tsehay Campus Course",
       supported_mediums: [
         "TELEBIRR",
         "CBE",
@@ -105,13 +150,13 @@ export async function POST(request: Request) {
       process.env.LAKI_PAY_PUBLIC_KEY || 
       process.env.NEXT_PUBLIC_LAKIPAY_PUBLIC_KEY || 
       ''
-    ).trim();
+    ).replace(/['"]/g, '').trim();
     
     const secretKey = (
       process.env.LAKIPAY_SECRET_KEY || 
       process.env.LAKI_PAY_SECRET_KEY || 
       ''
-    ).trim();
+    ).replace(/['"]/g, '').trim();
 
     if (publicKey && secretKey) {
       const apiKeyHeader = `${publicKey}:${secretKey}`;
@@ -139,17 +184,14 @@ export async function POST(request: Request) {
 
         if (redirectUrl) {
           return NextResponse.json({ checkoutUrl: redirectUrl, reference: shortRef });
-        } else if (data.error || data.message) {
-          console.error("LakiPay API Response Error:", data);
         }
       } catch (lakiErr) {
         console.error("LakiPay Fetch Error:", lakiErr);
       }
     }
 
-    // Fallback LakiPay URL if credentials pending or network issue
-    const fallbackLakiUrl = `https://api.lakipay.co/checkout?ref=${shortRef}&amount=${price}&title=${encodeURIComponent(title || 'Course')}`;
-    return NextResponse.json({ checkoutUrl: fallbackLakiUrl, reference: shortRef });
+    // Return manual transfer fallback when live API keys are pending
+    return NextResponse.json({ requiresManualTransfer: true, reference: shortRef, paymethod: 'lakipay' });
 
   } catch (error: any) {
     console.error("Payment API Error:", error);
