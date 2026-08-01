@@ -37,6 +37,12 @@ export async function POST(request: Request) {
 
     // 1. NOWPayments Crypto Integration
     if (paymethod === 'crypto' || paymethod === 'nowpayments') {
+      // Check for direct checkout URL configured in env
+      const directUrl = process.env.NOWPAYMENTS_DIRECT_URL || process.env.NOWPAYMENTS_CHECKOUT_URL;
+      if (directUrl && directUrl.startsWith('http')) {
+        return NextResponse.json({ checkoutUrl: directUrl, reference: shortRef });
+      }
+
       const nowPaymentsApiKey = (
         process.env.NOWPAYMENTS_API_KEY || 
         process.env.NOW_PAYMENTS_API_KEY || 
@@ -78,11 +84,90 @@ export async function POST(request: Request) {
         }
       }
 
-      // Return manual transfer fallback when NOWPayments API key is missing
       return NextResponse.json({ requiresManualTransfer: true, reference: shortRef, paymethod: 'crypto' });
     }
 
-    // 2. Chapa & LakiPay Local Payments Integration (Telebirr, CBE, Banks)
+    // 2. LakiPay Integration (Telebirr, CBE & Local Banks)
+    const lakipayDirectUrl = process.env.LAKIPAY_DIRECT_URL || process.env.LAKIPAY_CHECKOUT_URL;
+    if (lakipayDirectUrl && lakipayDirectUrl.startsWith('http') && !lakipayDirectUrl.includes('api.lakipay.co/api/v2')) {
+      return NextResponse.json({ checkoutUrl: lakipayDirectUrl, reference: shortRef });
+    }
+
+    const publicKey = (
+      process.env.LAKIPAY_PUBLIC_KEY || 
+      process.env.LAKI_PAY_PUBLIC_KEY || 
+      process.env.NEXT_PUBLIC_LAKIPAY_PUBLIC_KEY || 
+      process.env.LAKIPAY_KEY ||
+      process.env.NEXT_PUBLIC_LAKIPAY_KEY ||
+      process.env.LAKIPAY_API_KEY ||
+      ''
+    ).replace(/['"]/g, '').trim();
+    
+    const secretKey = (
+      process.env.LAKIPAY_SECRET_KEY || 
+      process.env.LAKI_PAY_SECRET_KEY || 
+      process.env.LAKIPAY_SECRET ||
+      process.env.LAKI_PAY_SECRET ||
+      process.env.LAKIPAY_PRIVATE_KEY ||
+      ''
+    ).replace(/['"]/g, '').trim();
+
+    if (publicKey || secretKey) {
+      const apiKeyHeader = (publicKey && secretKey) ? `${publicKey}:${secretKey}` : (secretKey || publicKey);
+      const checkoutEndpoint = process.env.LAKIPAY_ENDPOINT || 'https://api.lakipay.co/api/v2/payment/checkout';
+
+      const lakipayPayload = {
+        amount: Number(numericPrice),
+        currency: "ETB",
+        reference: shortRef,
+        title: title || "Tsehay Campus Course",
+        description: description ? description.slice(0, 120) : "Full Access to Tsehay Campus Course",
+        supported_mediums: [
+          "TELEBIRR",
+          "CBE",
+          "MPESA",
+          "ETHSWITCH",
+          "OROMIA_BANK",
+          "AWASH",
+          "CYBERSOURCE"
+        ],
+        callback_url: `${origin}/api/webhook`,
+        redirects: {
+          success: `${origin}/dashboard?success=true&course=${courseId}`,
+          failed: `${origin}/dashboard?failed=true`
+        }
+      };
+
+      try {
+        const response = await fetch(checkoutEndpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-API-Key': apiKeyHeader,
+            'Authorization': `Bearer ${secretKey || publicKey}`
+          },
+          body: JSON.stringify(lakipayPayload)
+        });
+
+        const responseText = await response.text();
+        let data: any = {};
+        try {
+          data = JSON.parse(responseText);
+        } catch {
+          console.error("LakiPay Non-JSON Response:", responseText);
+        }
+
+        const redirectUrl = data.checkout_url || data.checkoutUrl || data.url || data.payment_url || data.redirect_url || data.checkout_link || data.data?.checkout_url || data.data?.url || data.data?.redirect_url || data.data?.checkout_link;
+
+        if (redirectUrl) {
+          return NextResponse.json({ checkoutUrl: redirectUrl, reference: shortRef });
+        }
+      } catch (lakiErr) {
+        console.error("LakiPay Fetch Error:", lakiErr);
+      }
+    }
+
+    // Chapa Fallback
     const chapaSecretKey = (
       process.env.CHAPA_SECRET_KEY || 
       process.env.CHAPA_SECRET || 
@@ -121,80 +206,6 @@ export async function POST(request: Request) {
         }
       } catch (chapaErr) {
         console.error("Chapa API Fetch Error:", chapaErr);
-      }
-    }
-
-    // LakiPay Integration
-    const lakipayPayload = {
-      amount: Number(numericPrice),
-      currency: "ETB",
-      reference: shortRef,
-      title: title || "Tsehay Campus Course",
-      description: description ? description.slice(0, 120) : "Full Access to Tsehay Campus Course",
-      supported_mediums: [
-        "TELEBIRR",
-        "CBE",
-        "MPESA",
-        "ETHSWITCH",
-        "OROMIA_BANK",
-        "AWASH",
-        "CYBERSOURCE"
-      ],
-      callback_url: `${origin}/api/webhook`,
-      redirects: {
-        success: `${origin}/dashboard?success=true&course=${courseId}`,
-        failed: `${origin}/dashboard?failed=true`
-      }
-    };
-
-    const publicKey = (
-      process.env.LAKIPAY_PUBLIC_KEY || 
-      process.env.LAKI_PAY_PUBLIC_KEY || 
-      process.env.NEXT_PUBLIC_LAKIPAY_PUBLIC_KEY || 
-      process.env.LAKIPAY_KEY ||
-      process.env.NEXT_PUBLIC_LAKIPAY_KEY ||
-      process.env.LAKIPAY_API_KEY ||
-      ''
-    ).replace(/['"]/g, '').trim();
-    
-    const secretKey = (
-      process.env.LAKIPAY_SECRET_KEY || 
-      process.env.LAKI_PAY_SECRET_KEY || 
-      process.env.LAKIPAY_SECRET ||
-      process.env.LAKI_PAY_SECRET ||
-      process.env.LAKIPAY_PRIVATE_KEY ||
-      ''
-    ).replace(/['"]/g, '').trim();
-
-    if (publicKey || secretKey) {
-      const apiKeyHeader = (publicKey && secretKey) ? `${publicKey}:${secretKey}` : (secretKey || publicKey);
-      const checkoutUrl = process.env.LAKIPAY_CHECKOUT_URL || 'https://api.lakipay.co/api/v2/payment/checkout';
-
-      try {
-        const response = await fetch(checkoutUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-API-Key': apiKeyHeader
-          },
-          body: JSON.stringify(lakipayPayload)
-        });
-
-        const responseText = await response.text();
-        let data: any = {};
-        try {
-          data = JSON.parse(responseText);
-        } catch {
-          console.error("LakiPay Non-JSON Response:", responseText);
-        }
-
-        const redirectUrl = data.checkout_url || data.checkoutUrl || data.url || data.payment_url || data.redirect_url || data.checkout_link || data.data?.checkout_url || data.data?.url || data.data?.redirect_url || data.data?.checkout_link;
-
-        if (redirectUrl) {
-          return NextResponse.json({ checkoutUrl: redirectUrl, reference: shortRef });
-        }
-      } catch (lakiErr) {
-        console.error("LakiPay Fetch Error:", lakiErr);
       }
     }
 

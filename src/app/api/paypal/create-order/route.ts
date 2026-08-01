@@ -54,6 +54,12 @@ export async function POST(request: Request) {
     const protocol = host.includes('localhost') ? 'http' : 'https';
     const origin = process.env.NEXT_PUBLIC_APP_URL || `${protocol}://${host}`;
 
+    // Check for direct PayPal link configured in env
+    const directPayPalUrl = process.env.PAYPAL_DIRECT_URL || process.env.PAYPAL_ME_URL || process.env.PAYPAL_CHECKOUT_URL;
+    if (directPayPalUrl && directPayPalUrl.startsWith('http')) {
+      return NextResponse.json({ checkoutUrl: directPayPalUrl });
+    }
+
     let accessToken = '';
     let mode = '';
     try {
