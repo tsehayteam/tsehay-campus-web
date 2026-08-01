@@ -33,7 +33,12 @@ export async function POST(request: Request) {
 
     // 1. NOWPayments Crypto Integration
     if (paymethod === 'crypto' || paymethod === 'nowpayments') {
-      const nowPaymentsApiKey = (process.env.NOWPAYMENTS_API_KEY || '').trim();
+      const nowPaymentsApiKey = (
+        process.env.NOWPAYMENTS_API_KEY || 
+        process.env.NOW_PAYMENTS_API_KEY || 
+        process.env.NOWPAYMENT_API_KEY || 
+        ''
+      ).trim();
       
       if (nowPaymentsApiKey) {
         const nowPaymentsPayload = {
@@ -95,8 +100,18 @@ export async function POST(request: Request) {
       }
     };
 
-    const publicKey = (process.env.LAKIPAY_PUBLIC_KEY || '').trim();
-    const secretKey = (process.env.LAKIPAY_SECRET_KEY || '').trim();
+    const publicKey = (
+      process.env.LAKIPAY_PUBLIC_KEY || 
+      process.env.LAKI_PAY_PUBLIC_KEY || 
+      process.env.NEXT_PUBLIC_LAKIPAY_PUBLIC_KEY || 
+      ''
+    ).trim();
+    
+    const secretKey = (
+      process.env.LAKIPAY_SECRET_KEY || 
+      process.env.LAKI_PAY_SECRET_KEY || 
+      ''
+    ).trim();
 
     if (publicKey && secretKey) {
       const apiKeyHeader = `${publicKey}:${secretKey}`;

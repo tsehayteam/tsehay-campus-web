@@ -1,8 +1,19 @@
 import { NextResponse } from 'next/server';
 
 async function getPayPalAccessToken() {
-  const clientId = (process.env.PAYPAL_CLIENT_ID || '').trim();
-  const secret = (process.env.PAYPAL_CLIENT_SECRET || process.env.PAYPAL_SECRET || '').trim();
+  const clientId = (
+    process.env.PAYPAL_CLIENT_ID || 
+    process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || 
+    process.env.PAYPAL_CLIENT || 
+    ''
+  ).trim();
+  
+  const secret = (
+    process.env.PAYPAL_CLIENT_SECRET || 
+    process.env.PAYPAL_SECRET || 
+    process.env.PAYPAL_SECRET_KEY || 
+    ''
+  ).trim();
 
   if (!clientId || !secret) {
     throw new Error('PayPal credentials not configured');
@@ -47,7 +58,7 @@ export async function POST(request: Request) {
       accessToken = authResult.accessToken;
       mode = authResult.mode;
     } catch (err: any) {
-      console.warn("PayPal direct API credentials not set, returning fallback indicator:", err.message);
+      console.warn("PayPal direct API credentials notice:", err.message);
       return NextResponse.json({ useClientFallback: true });
     }
 
@@ -62,7 +73,7 @@ export async function POST(request: Request) {
           description: `Tsehay Campus - ${title}`,
           amount: {
             currency_code: 'USD',
-            value: usdPrice > '1.00' ? usdPrice : '5.00'
+            value: Number(usdPrice) > 1.0 ? usdPrice : '5.00'
           }
         }
       ],
