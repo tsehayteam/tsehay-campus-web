@@ -22,8 +22,24 @@ export default function PaymentModal({ course, onClose }: any) {
   const handlePayment = async () => {
     setIsPaying(true);
     setError(null);
+
+    // 1. Authentication Check Before Payment
+    if (!user) {
+      setError("ክፍያውን ለማጠናቀቅ እባክዎ አስቀድመው ይግቡ (Please login to complete payment).");
+      setIsPaying(false);
+      if (typeof window !== 'undefined') {
+        const globalWin = window as any;
+        if (typeof globalWin.openAuthModal === 'function') {
+          globalWin.openAuthModal(false);
+        } else {
+          window.dispatchEvent(new CustomEvent('open-auth-modal', { detail: { isSignUp: false } }));
+        }
+      }
+      return;
+    }
+
     try {
-      if (paymethod === 'lakipay' || paymethod === 'crypto') {
+      if (paymethod === 'lakipay' || paymethod === 'crypto' || paymethod === 'nowpayments') {
         const res = await fetch('/api/initiate-payment', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -32,9 +48,9 @@ export default function PaymentModal({ course, onClose }: any) {
             title: course.title,
             description: course.description,
             price: course.price,
-            paymethod: paymethod,
-            userEmail: user?.email || 'student@example.com',
-            userId: user?.uid || 'anonymous',
+            paymethod: paymethod === 'nowpayments' ? 'crypto' : paymethod,
+            userEmail: user.email || 'student@example.com',
+            userId: user.uid,
           })
         });
         
@@ -47,15 +63,9 @@ export default function PaymentModal({ course, onClose }: any) {
           setIsPaying(false);
         }
       } else {
-        // PayPal & Credit Cards Processing Flow
+        // PayPal & International Credit Cards Processing Flow
         setTimeout(async () => {
           try {
-            if (!user) {
-                setError("ክፍያውን ለማጠናቀቅ እባክዎ አስቀድመው ይግቡ (Please login to complete payment).");
-                setIsPaying(false);
-                return;
-            }
-            
             const { doc, setDoc, serverTimestamp } = await import('firebase/firestore');
             const { db } = await import('@/lib/firebase/config');
             
@@ -118,7 +128,7 @@ export default function PaymentModal({ course, onClose }: any) {
             {/* Modal Body */}
             <div className="p-8">
                 
-                {/* Course Details Card */}
+                {/* Course Details Header Card */}
                 <div className="flex items-center gap-4 bg-gray-50 dark:bg-[#0f172a] p-4 rounded-2xl border border-gray-100 dark:border-gray-800 mb-6">
                     <img 
                       src={course.image || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1000&auto=format&fit=crop'} 
@@ -143,7 +153,7 @@ export default function PaymentModal({ course, onClose }: any) {
                 {!course.isFree && (
                     <>
                         <h4 className="font-extrabold text-xs text-gray-400 dark:text-gray-500 mb-4 uppercase tracking-widest">የክፍያ አማራጭ ይምረጡ (Select Method)</h4>
-                        <div className="space-y-3 mb-8">
+                        <div className="space-y-3.5 mb-8">
                             
                             {/* Option 1: LakiPay */}
                             <label className={`payment-option flex items-center justify-between p-4 rounded-2xl border cursor-pointer transition-all duration-200 ${paymethod === 'lakipay' ? 'border-[#f9b03c] bg-[#f9b03c]/10 dark:border-[#f9b03c] dark:bg-[#f9b03c]/20 shadow-md scale-[1.01]' : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-darkCard hover:border-[#f9b03c]/50 hover:bg-[#f9b03c]/5'}`}>
@@ -158,61 +168,68 @@ export default function PaymentModal({ course, onClose }: any) {
                                     />
                                     <div>
                                         <span className="font-black text-[#000000] dark:text-white text-base block">LakiPay</span>
-                                        <span className="text-[11px] text-gray-500 font-semibold block">Wallets, Bank Transfer & Cards (Telebirr, CBE Birr, M-Pesa, Banks)</span>
+                                        <span className="text-[11px] text-gray-500 font-semibold block">Local Wallets, Banks & Cards</span>
                                     </div>
                                 </div>
                                 <div className="flex items-center shrink-0 ml-2">
                                     <img 
-                                      src="/lakipay-logo.svg" 
-                                      alt="LakiPay Official Logo" 
+                                      src="/lakipay-logo.png" 
+                                      alt="LakiPay Logo" 
                                       className="h-8 w-auto object-contain bg-white dark:bg-darkCard px-2 py-0.5 rounded-lg border border-gray-100 dark:border-gray-800 shadow-2xs" 
-                                      onError={(e: any) => { e.currentTarget.src = '/lakipay-logo.png'; }} 
+                                      onError={(e: any) => { e.currentTarget.src = '/lakipay-logo.svg'; }} 
                                     />
                                 </div>
                             </label>
 
-                            {/* Option 2: PayPal & Cards */}
-                            <label className={`payment-option flex items-center justify-between p-4 rounded-2xl border cursor-pointer transition-all duration-200 ${paymethod === 'international' ? 'border-[#f9b03c] bg-[#f9b03c]/10 dark:border-[#f9b03c] dark:bg-[#f9b03c]/20 shadow-md scale-[1.01]' : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-darkCard hover:border-[#f9b03c]/50 hover:bg-[#f9b03c]/5'}`}>
+                            {/* Option 2: PayPal */}
+                            <label className={`payment-option flex items-center justify-between p-4 rounded-2xl border cursor-pointer transition-all duration-200 ${paymethod === 'international' || paymethod === 'paypal' ? 'border-[#f9b03c] bg-[#f9b03c]/10 dark:border-[#f9b03c] dark:bg-[#f9b03c]/20 shadow-md scale-[1.01]' : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-darkCard hover:border-[#f9b03c]/50 hover:bg-[#f9b03c]/5'}`}>
                                 <div className="flex items-center gap-3.5">
                                     <input 
                                       type="radio" 
                                       name="paymethod" 
                                       value="international" 
-                                      checked={paymethod === 'international'} 
+                                      checked={paymethod === 'international' || paymethod === 'paypal'} 
                                       onChange={(e) => setPaymethod(e.target.value)} 
                                       className="w-4 h-4 text-[#f9b03c] focus:ring-[#f9b03c] accent-[#f9b03c]" 
                                     />
                                     <div>
-                                        <span className="font-black text-[#000000] dark:text-white text-base block">PayPal & Credit Cards</span>
-                                        <span className="text-[11px] text-gray-500 font-semibold block">Visa, Mastercard & PayPal</span>
+                                        <span className="font-black text-[#000000] dark:text-white text-base block">PayPal</span>
+                                        <span className="text-[11px] text-gray-500 font-semibold block">International PayPal & Cards</span>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2 shrink-0 ml-2">
-                                    <i className="fa-brands fa-paypal text-[#3268ba] dark:text-[#0079C1] text-xl"></i>
-                                    <i className="fa-brands fa-cc-visa text-[#1A1F71] dark:text-white text-xl"></i>
-                                    <i className="fa-brands fa-cc-mastercard text-amber-600 text-xl"></i>
+                                    <img 
+                                      src="/paypal-logo.png" 
+                                      alt="PayPal Logo" 
+                                      className="h-8 w-auto object-contain bg-white dark:bg-darkCard px-2 py-0.5 rounded-lg border border-gray-100 dark:border-gray-800 shadow-2xs" 
+                                      onError={(e: any) => { e.currentTarget.src = '/paypal-logo.svg'; }} 
+                                    />
                                 </div>
                             </label>
 
-                            {/* Option 3: Crypto Payments */}
-                            <label className={`payment-option flex items-center justify-between p-4 rounded-2xl border cursor-pointer transition-all duration-200 ${paymethod === 'crypto' ? 'border-[#f9b03c] bg-[#f9b03c]/10 dark:border-[#f9b03c] dark:bg-[#f9b03c]/20 shadow-md scale-[1.01]' : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-darkCard hover:border-[#f9b03c]/50 hover:bg-[#f9b03c]/5'}`}>
+                            {/* Option 3: NOWPayments */}
+                            <label className={`payment-option flex items-center justify-between p-4 rounded-2xl border cursor-pointer transition-all duration-200 ${paymethod === 'crypto' || paymethod === 'nowpayments' ? 'border-[#f9b03c] bg-[#f9b03c]/10 dark:border-[#f9b03c] dark:bg-[#f9b03c]/20 shadow-md scale-[1.01]' : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-darkCard hover:border-[#f9b03c]/50 hover:bg-[#f9b03c]/5'}`}>
                                 <div className="flex items-center gap-3.5">
                                     <input 
                                       type="radio" 
                                       name="paymethod" 
                                       value="crypto" 
-                                      checked={paymethod === 'crypto'} 
+                                      checked={paymethod === 'crypto' || paymethod === 'nowpayments'} 
                                       onChange={(e) => setPaymethod(e.target.value)} 
                                       className="w-4 h-4 text-[#f9b03c] focus:ring-[#f9b03c] accent-[#f9b03c]" 
                                     />
                                     <div>
-                                        <span className="font-black text-[#000000] dark:text-white text-base block">Crypto Payments</span>
-                                        <span className="text-[11px] text-gray-500 font-semibold block">USDT, BTC & Major Cryptocurrencies</span>
+                                        <span className="font-black text-[#000000] dark:text-white text-base block">NOWPayments</span>
+                                        <span className="text-[11px] text-gray-500 font-semibold block">USDT, BTC & Major Cryptos</span>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2 shrink-0 ml-2">
-                                    <i className="fa-brands fa-bitcoin text-[#f9b03c] text-xl"></i>
-                                    <i className="fa-solid fa-coins text-emerald-500 text-xl"></i>
+                                    <img 
+                                      src="/crypto-logo.png" 
+                                      alt="NOWPayments Logo" 
+                                      className="h-8 w-auto object-contain bg-white dark:bg-darkCard px-2 py-0.5 rounded-lg border border-gray-100 dark:border-gray-800 shadow-2xs" 
+                                      onError={(e: any) => { e.currentTarget.src = '/crypto-logo.svg'; }} 
+                                    />
                                 </div>
                             </label>
 

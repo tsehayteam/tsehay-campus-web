@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 60" width="240" height="60">
+  <rect width="240" height="60" rx="12" fill="#0f172a" />
+  <g transform="translate(15, 10)">
+    <circle cx="20" cy="20" r="18" fill="#f9b03c" />
+    <text x="20" y="27" text-anchor="middle" font-family="system-ui, sans-serif" font-weight="900" font-size="22" fill="#000000">₿</text>
+  </g>
+  <text x="65" y="37" font-family="'Inter', 'Outfit', system-ui, sans-serif" font-weight="900" font-size="18" fill="#ffffff">NOW<tspan fill="#f9b03c">Payments</tspan></text>
+</svg>
