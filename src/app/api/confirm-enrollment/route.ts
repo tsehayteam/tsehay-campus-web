@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { FieldValue } from 'firebase-admin/firestore';
 import { adminDb } from '@/lib/firebase/admin';
 
 export async function POST(request: Request) {
@@ -32,6 +31,7 @@ export async function POST(request: Request) {
 
     // 2. Update user root document enrolledCourses array
     try {
+      const { FieldValue } = await import('firebase-admin/firestore');
       await userDocRef.set({
         enrolledCourses: FieldValue.arrayUnion(courseId)
       }, { merge: true });
