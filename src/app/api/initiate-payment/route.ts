@@ -90,7 +90,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ requiresManualTransfer: true, reference: shortRef, paymethod: 'crypto' });
     }
 
-    // 2. LakiPay Integration (Telebirr, CBE & Local Banks)
+    // 2. LakiPay V2 Integration (Telebirr, CBE & Local Banks)
     const publicKey = (
       process.env.LAKIPAY_PUBLIC_KEY || 
       process.env.LAKI_PAY_PUBLIC_KEY || 
@@ -108,7 +108,7 @@ export async function POST(request: Request) {
     ).replace(/['"]/g, '').trim();
 
     if (publicKey || secretKey) {
-      const apiKeyHeader = (publicKey && secretKey) ? `${publicKey}:${secretKey}` : (secretKey || publicKey);
+      const apiKeyHeader = `${publicKey}:${secretKey}`;
       const checkoutEndpoint = 'https://api.lakipay.co/api/v2/payment/checkout';
 
       const lakipayPayload = {
@@ -145,8 +145,9 @@ export async function POST(request: Request) {
 
         const resData = await response.json().catch(() => ({}));
 
-        if (response.ok && (resData.status === "SUCCESS" || resData.data?.checkout_url || resData.checkout_url || resData.url || resData.payment_url)) {
-          const checkoutUrl = resData.data?.checkout_url || resData.checkout_url || resData.url || resData.payment_url || resData.data?.url;
+        const checkoutUrl = resData.data?.checkout_url || resData.data?.payment_url || resData.checkout_url || resData.url || resData.payment_url;
+
+        if (response.ok && (resData.status === "SUCCESS" || checkoutUrl)) {
           return NextResponse.json({
             success: true,
             url: checkoutUrl,
@@ -154,26 +155,25 @@ export async function POST(request: Request) {
             reference: shortRef
           });
         } else {
-          console.error("LakiPay API Error:", resData);
-          const fallbackUrl = resData.data?.checkout_url || resData.checkout_url || resData.url;
-          if (fallbackUrl) {
+          console.error("LakiPay V2 Error:", resData);
+          if (checkoutUrl) {
             return NextResponse.json({
               success: true,
-              url: fallbackUrl,
-              checkoutUrl: fallbackUrl,
+              url: checkoutUrl,
+              checkoutUrl: checkoutUrl,
               reference: shortRef
             });
           }
           return NextResponse.json({
             success: false,
-            error: resData.message || resData.error || "LakiPay error"
+            error: resData.message || resData.error || "LakiPay V2 error"
           }, { status: response.status || 400 });
         }
       } catch (lakiErr: any) {
-        console.error("LakiPay API Fetch Error:", lakiErr);
+        console.error("LakiPay V2 Error:", lakiErr);
         return NextResponse.json({
           success: false,
-          error: lakiErr.message || "LakiPay request failed"
+          error: lakiErr.message || "LakiPay V2 request failed"
         }, { status: 500 });
       }
     }
