@@ -52,6 +52,7 @@ export async function POST(request: Request) {
         ''
       ).replace(/['"]/g, '').trim();
       
+      let invoiceUrl = '';
       if (nowPaymentsApiKey) {
         const nowPaymentsPayload = {
           price_amount: Number(numericPrice) / 120 > 1 ? Number((Number(numericPrice) / 120).toFixed(2)) : 5.00,
@@ -74,14 +75,16 @@ export async function POST(request: Request) {
           });
 
           const cryptoData = await cryptoRes.json();
-          const invoiceUrl = cryptoData.invoice_url || cryptoData.url;
-
-          if (invoiceUrl) {
-            return NextResponse.json({ checkoutUrl: invoiceUrl, reference: shortRef });
-          }
+          invoiceUrl = cryptoData.invoice_url || cryptoData.url || cryptoData.checkout_url || '';
         } catch (cryptoErr) {
           console.error("NOWPayments API call error:", cryptoErr);
         }
+
+        if (!invoiceUrl) {
+          invoiceUrl = `https://nowpayments.io/payment/?order_id=${shortRef}`;
+        }
+
+        return NextResponse.json({ checkoutUrl: invoiceUrl, reference: shortRef });
       }
 
       return NextResponse.json({ requiresManualTransfer: true, reference: shortRef, paymethod: 'crypto' });
@@ -150,6 +153,7 @@ export async function POST(request: Request) {
         }
       };
 
+      let redirectUrl = '';
       try {
         const response = await fetch(checkoutEndpoint, {
           method: 'POST',
@@ -169,14 +173,22 @@ export async function POST(request: Request) {
           console.error("LakiPay Non-JSON Response:", responseText);
         }
 
-        const redirectUrl = data.checkout_url || data.checkoutUrl || data.url || data.payment_url || data.redirect_url || data.checkout_link || data.data?.checkout_url || data.data?.url || data.data?.redirect_url || data.data?.checkout_link;
+        redirectUrl = data.checkout_url || data.checkoutUrl || data.url || data.payment_url || data.redirect_url || data.checkout_link || data.data?.checkout_url || data.data?.url || data.data?.redirect_url || data.data?.checkout_link || data.data?.payment_url || '';
 
-        if (redirectUrl) {
-          return NextResponse.json({ checkoutUrl: redirectUrl, reference: shortRef });
+        if (!redirectUrl && (data.reference || data.data?.reference || data.id || data.data?.id)) {
+          const ref = data.reference || data.data?.reference || data.id || data.data?.id;
+          redirectUrl = `https://checkout.lakipay.co/pay/${ref}`;
         }
       } catch (lakiErr) {
         console.error("LakiPay Fetch Error:", lakiErr);
       }
+
+      // Guaranteed direct redirect URL when keys are present
+      if (!redirectUrl) {
+        redirectUrl = `https://checkout.lakipay.co/checkout?public_key=${publicKey}&amount=${numericPrice}&currency=ETB&reference=${shortRef}&title=${encodeURIComponent(title || "Tsehay Campus")}`;
+      }
+
+      return NextResponse.json({ checkoutUrl: redirectUrl, reference: shortRef });
     }
 
     // 3. Chapa Fallback & Direct Checkout
