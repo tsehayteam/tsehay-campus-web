@@ -88,8 +88,20 @@ export async function POST(request: Request) {
     }
 
     // 2. LakiPay Integration (Telebirr, CBE & Local Banks)
-    const lakipayDirectUrl = process.env.LAKIPAY_DIRECT_URL || process.env.LAKIPAY_CHECKOUT_URL;
-    if (lakipayDirectUrl && lakipayDirectUrl.startsWith('http') && !lakipayDirectUrl.includes('api.lakipay.co/api/v2')) {
+    const lakipayDirectUrl = (
+      process.env.LAKIPAY_CHECKOUT_URL || 
+      process.env.LAKIPAY_DIRECT_URL || 
+      process.env.LAKIPAY_PAYMENT_URL ||
+      process.env.LAKIPAY_DASHBOARD_URL ||
+      process.env.LAKIPAY_PAY_URL ||
+      process.env.LAKIPAY_URL ||
+      process.env.LAKIPAY_LINK ||
+      process.env.NEXT_PUBLIC_LAKIPAY_CHECKOUT_URL ||
+      process.env.NEXT_PUBLIC_LAKIPAY_URL ||
+      ''
+    ).replace(/['"]/g, '').trim();
+
+    if (lakipayDirectUrl && lakipayDirectUrl.startsWith('http')) {
       return NextResponse.json({ checkoutUrl: lakipayDirectUrl, reference: shortRef });
     }
 
@@ -167,7 +179,19 @@ export async function POST(request: Request) {
       }
     }
 
-    // Chapa Fallback
+    // 3. Chapa Fallback & Direct Checkout
+    const chapaDirectUrl = (
+      process.env.CHAPA_CHECKOUT_URL || 
+      process.env.CHAPA_DIRECT_URL || 
+      process.env.CHAPA_URL ||
+      process.env.NEXT_PUBLIC_CHAPA_CHECKOUT_URL ||
+      ''
+    ).replace(/['"]/g, '').trim();
+
+    if (chapaDirectUrl && chapaDirectUrl.startsWith('http')) {
+      return NextResponse.json({ checkoutUrl: chapaDirectUrl, reference: shortRef });
+    }
+
     const chapaSecretKey = (
       process.env.CHAPA_SECRET_KEY || 
       process.env.CHAPA_SECRET || 

@@ -116,8 +116,9 @@ export default function PaymentModal({ course, onClose }: any) {
         } catch {}
         
         // If live checkout URL is returned from Chapa, LakiPay, or NOWPayments
-        if (data.checkoutUrl) {
-          window.location.href = data.checkoutUrl;
+        const clientDirectUrl = process.env.NEXT_PUBLIC_LAKIPAY_CHECKOUT_URL || process.env.NEXT_PUBLIC_LAKIPAY_URL;
+        if (data.checkoutUrl || (paymethod === 'lakipay' && clientDirectUrl)) {
+          window.location.href = data.checkoutUrl || clientDirectUrl;
           return;
         }
 
