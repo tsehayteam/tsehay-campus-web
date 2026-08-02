@@ -176,9 +176,25 @@ export default function PaymentModal({ course, onClose }: any) {
                                         <span className="text-xs text-cyan-400 font-bold block mt-0.5">USDT, Bitcoin, Ethereum & Solana</span>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    <div className="bg-slate-900 px-3.5 py-2 rounded-xl flex items-center shadow-md border border-cyan-500/40 h-11">
-                                        <img src="/crypto-logo.svg" alt="Crypto Payments" className="h-7 w-auto object-contain" />
+                                <div className="flex items-center gap-1.5">
+                                    {/* Bitcoin (BTC) Icon */}
+                                    <div className="w-8 h-8 rounded-full bg-[#F7931A] flex items-center justify-center text-white font-black text-sm shadow-md ring-1 ring-amber-400/40" title="Bitcoin (BTC)">
+                                      ₿
+                                    </div>
+                                    {/* Ethereum (ETH) Icon */}
+                                    <div className="w-8 h-8 rounded-full bg-[#627EEA] flex items-center justify-center text-white shadow-md ring-1 ring-indigo-400/40" title="Ethereum (ETH)">
+                                      <svg className="h-4 w-4 fill-current text-white" viewBox="0 0 784 1277">
+                                        <path d="M392.07 0L383.5 29.1v844.87l8.57 8.57 392.06-231.75z" fillOpacity="0.6"/>
+                                        <path d="M392.07 0L0 650.79l392.07 231.75V0z"/>
+                                        <path d="M392.07 956.52l-4.83 5.89v300.87l4.83 14.04 392.3-552.49z" fillOpacity="0.6"/>
+                                        <path d="M392.07 1277.32V956.52L0 724.83z"/>
+                                      </svg>
+                                    </div>
+                                    {/* Solana (SOL) Icon */}
+                                    <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#9945FF] to-[#14F195] flex items-center justify-center text-white shadow-md ring-1 ring-emerald-400/40" title="Solana (SOL)">
+                                      <svg className="h-4 w-4 fill-current text-white" viewBox="0 0 397 311">
+                                        <path d="M64.6 237.9c2.4-2.4 5.7-3.8 9.2-3.8h317.4c5.8 0 8.7 7 4.6 11.1l-62.7 62.7c-2.4 2.4-5.7 3.8-9.2 3.8H6.5c-5.8 0-8.7-7-4.6-11.1l62.7-62.7zM64.6 3.8C67 1.4 70.3 0 73.8 0h317.4c5.8 0 8.7 7 4.6 11.1l-62.7 62.7c-2.4 2.4-5.7 3.8-9.2 3.8H6.5c-5.8 0-8.7-7-4.6-11.1L64.6 3.8zM332.4 120.9c-2.4-2.4-5.7-3.8-9.2-3.8H5.8c-5.8 0-8.7 7-4.6 11.1l62.7 62.7c2.4 2.4 5.7 3.8 9.2 3.8h317.4c5.8 0 8.7-7 4.6-11.1l-62.7-62.7z"/>
+                                      </svg>
                                     </div>
                                 </div>
                             </label>
