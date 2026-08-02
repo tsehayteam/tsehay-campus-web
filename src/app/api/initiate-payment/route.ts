@@ -128,8 +128,17 @@ export async function POST(request: Request) {
     ).replace(/['"]/g, '').trim();
 
     if (publicKey || secretKey) {
-      const apiKeyHeader = (publicKey && secretKey) ? `${publicKey}:${secretKey}` : (secretKey || publicKey);
-      const checkoutEndpoint = process.env.LAKIPAY_ENDPOINT || 'https://api.lakipay.co/api/v2/payment/checkout';
+      // LakiPay official docs format: X-API-Key: publickey:secretkey
+      const apiKeyHeader = (publicKey && secretKey) 
+        ? `${publicKey}:${secretKey}` 
+        : (publicKey || secretKey);
+
+      const endpointsToTry = [
+        process.env.LAKIPAY_ENDPOINT,
+        'https://api.lakipay.co/api/v2/payment/checkout',
+        'https://api.lakipay.co/api/v2/checkout',
+        'https://api.lakipay.co/api/v2/payment/initialize'
+      ].filter(Boolean);
 
       const lakipayPayload = {
         amount: Number(numericPrice),
@@ -137,16 +146,10 @@ export async function POST(request: Request) {
         reference: shortRef,
         title: title || "Tsehay Campus Course",
         description: description ? description.slice(0, 120) : "Full Access to Tsehay Campus Course",
-        supported_mediums: [
-          "TELEBIRR",
-          "CBE",
-          "MPESA",
-          "ETHSWITCH",
-          "OROMIA_BANK",
-          "AWASH",
-          "CYBERSOURCE"
-        ],
         callback_url: `${origin}/api/webhook`,
+        return_url: `${origin}/dashboard?success=true&course=${courseId}`,
+        success_url: `${origin}/dashboard?success=true&course=${courseId}`,
+        cancel_url: `${origin}/dashboard?failed=true`,
         redirects: {
           success: `${origin}/dashboard?success=true&course=${courseId}`,
           failed: `${origin}/dashboard?failed=true`
@@ -154,33 +157,37 @@ export async function POST(request: Request) {
       };
 
       let redirectUrl = '';
-      try {
-        const response = await fetch(checkoutEndpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-API-Key': apiKeyHeader,
-            'Authorization': `Bearer ${secretKey || publicKey}`
-          },
-          body: JSON.stringify(lakipayPayload)
-        });
 
-        const responseText = await response.text();
-        let data: any = {};
+      for (const endpoint of endpointsToTry) {
         try {
-          data = JSON.parse(responseText);
-        } catch {
-          console.error("LakiPay Non-JSON Response:", responseText);
-        }
+          const response = await fetch(endpoint as string, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-API-Key': apiKeyHeader
+            },
+            body: JSON.stringify(lakipayPayload)
+          });
 
-        redirectUrl = data.checkout_url || data.checkoutUrl || data.url || data.payment_url || data.redirect_url || data.checkout_link || data.data?.checkout_url || data.data?.url || data.data?.redirect_url || data.data?.checkout_link || data.data?.payment_url || '';
+          const responseText = await response.text();
+          let data: any = {};
+          try {
+            data = JSON.parse(responseText);
+          } catch {
+            console.error("LakiPay Non-JSON Response:", responseText);
+          }
 
-        if (!redirectUrl && (data.reference || data.data?.reference || data.id || data.data?.id)) {
-          const ref = data.reference || data.data?.reference || data.id || data.data?.id;
-          redirectUrl = `https://checkout.lakipay.co/pay/${ref}`;
+          redirectUrl = data.checkout_url || data.checkoutUrl || data.url || data.payment_url || data.redirect_url || data.checkout_link || data.data?.checkout_url || data.data?.url || data.data?.redirect_url || data.data?.checkout_link || data.data?.payment_url || '';
+
+          if (!redirectUrl && (data.reference || data.data?.reference || data.id || data.data?.id)) {
+            const ref = data.reference || data.data?.reference || data.id || data.data?.id;
+            redirectUrl = `https://checkout.lakipay.co/pay/${ref}`;
+          }
+
+          if (redirectUrl) break;
+        } catch (lakiErr) {
+          console.error(`LakiPay Fetch Error on ${endpoint}:`, lakiErr);
         }
-      } catch (lakiErr) {
-        console.error("LakiPay Fetch Error:", lakiErr);
       }
 
       // Guaranteed direct redirect URL when keys are present
