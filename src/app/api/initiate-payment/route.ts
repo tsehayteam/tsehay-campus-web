@@ -91,26 +91,20 @@ export async function POST(request: Request) {
     }
 
     // 2. LakiPay V2 Integration (Telebirr, CBE & Local Banks)
-    const publicKey = (process.env.LAKIPAY_PUBLIC_KEY || process.env.NEXT_PUBLIC_LAKIPAY_PUBLIC_KEY || "").replace(/['"]/g, '').trim();
-    const secretKey = (process.env.LAKIPAY_SECRET_KEY || process.env.NEXT_PUBLIC_LAKIPAY_SECRET_KEY || "").replace(/['"]/g, '').trim();
-    const apiKey = process.env.LAKIPAY_API_KEY ? process.env.LAKIPAY_API_KEY.replace(/['"]/g, '').trim() : `${publicKey}:${secretKey}`;
+    const pubKey = (process.env.LAKIPAY_PUBLIC_KEY || process.env.NEXT_PUBLIC_LAKIPAY_PUBLIC_KEY || "").replace(/['"]/g, '').trim();
+    const secKey = (process.env.LAKIPAY_SECRET_KEY || process.env.NEXT_PUBLIC_LAKIPAY_SECRET_KEY || "").replace(/['"]/g, '').trim();
+    const apiKey = process.env.LAKIPAY_API_KEY ? process.env.LAKIPAY_API_KEY.replace(/['"]/g, '').trim() : `${pubKey}:${secKey}`;
 
-    if (publicKey || secretKey || process.env.LAKIPAY_API_KEY) {
+    if (pubKey || secKey || process.env.LAKIPAY_API_KEY) {
       const checkoutEndpoint = 'https://api.lakipay.co/api/v2/payment/checkout';
 
       const lakipayPayload = {
-        amount: Number(numericPrice || 600),
+        amount: Number(numericPrice || 4500),
         currency: "ETB",
         reference: shortRef,
         title: String(title || "Tsehay Campus Course"),
         description: String(description ? description.slice(0, 100) : `Full Access to ${title || 'Course'} on Tsehay Campus`),
-        supported_mediums: [
-          "TELEBIRR",
-          "CBE",
-          "MPESA",
-          "ETHSWITCH",
-          "CYBERSOURCE"
-        ],
+        supported_mediums: ["TELEBIRR", "CBE", "MPESA"],
         callback_url: `${origin}/api/webhook`,
         redirects: {
           success: `${origin}/dashboard?success=true`,
@@ -143,7 +137,7 @@ export async function POST(request: Request) {
           console.error("LakiPay API Error:", resData);
           return NextResponse.json({
             success: false,
-            error: resData?.message || resData?.error || "LakiPay API failed to return checkout URL"
+            error: resData?.message || (typeof resData === 'object' ? JSON.stringify(resData) : "LakiPay API error")
           }, { status: response.status || 400 });
         }
       } catch (lakiErr: any) {
