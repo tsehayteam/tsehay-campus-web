@@ -145,11 +145,12 @@ export async function POST(request: Request) {
 
         const resData = await response.json().catch(() => ({}));
 
-        const checkoutUrl = resData.data?.checkout_url || resData.data?.payment_url || resData.checkout_url || resData.url || resData.payment_url;
+        const checkoutUrl = resData.checkout_url || resData.url || resData.payment_url || resData.data?.checkout_url || resData.data?.payment_url || resData.data?.url;
 
         if (response.ok && (resData.status === "SUCCESS" || checkoutUrl)) {
           return NextResponse.json({
             success: true,
+            checkout_url: checkoutUrl,
             url: checkoutUrl,
             checkoutUrl: checkoutUrl,
             reference: shortRef
@@ -159,6 +160,7 @@ export async function POST(request: Request) {
           if (checkoutUrl) {
             return NextResponse.json({
               success: true,
+              checkout_url: checkoutUrl,
               url: checkoutUrl,
               checkoutUrl: checkoutUrl,
               reference: shortRef

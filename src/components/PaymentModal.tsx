@@ -116,9 +116,15 @@ export default function PaymentModal({ course, onClose }: any) {
         } catch {}
         
         // If live checkout URL is returned from LakiPay, NOWPayments or Chapa
-        const targetUrl = data.url || data.checkoutUrl;
+        const targetUrl = data.checkout_url || data.url || data.checkoutUrl;
         if (targetUrl) {
           window.location.href = targetUrl;
+          return;
+        }
+
+        if (paymethod === 'lakipay') {
+          setError(data.error || "የ LakiPay የክፍያ ገፅ መክፈት አልተቻለም። እባክዎ እንደገና ይሞክሩ።");
+          setIsPaying(false);
           return;
         }
 
