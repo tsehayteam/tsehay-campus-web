@@ -9,12 +9,13 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Footer from '@/components/Footer';
 import SmartSearchInput from '@/components/SmartSearchInput';
+import { getCachedCourses, saveCachedCourses } from '@/lib/courseCache';
 
 export default function Home() {
   const { user } = useAuth();
   const router = useRouter();
-  const [courses, setCourses] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [courses, setCourses] = useState(() => getCachedCourses());
+  const [loading, setLoading] = useState(false);
   const [hasPurchasedCourses, setHasPurchasedCourses] = useState<boolean | null>(null);
   
   // AI Chat state
@@ -61,14 +62,17 @@ export default function Home() {
   }, [user]);
 
   useEffect(() => {
-    // Fetch courses for landing page
+    // Fetch courses for landing page with instant cache fallback
     const q = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const coursesList = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setCourses(coursesList);
+      if (!snapshot.empty) {
+        const coursesList = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        setCourses(coursesList);
+        saveCachedCourses(coursesList);
+      }
       setLoading(false);
     }, (error) => {
       console.error("Error fetching courses:", error);

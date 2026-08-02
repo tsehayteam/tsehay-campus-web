@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation';
 import PaymentModal from '@/components/PaymentModal';
 import Footer from '@/components/Footer';
 import dynamic from 'next/dynamic';
+import { getCachedCourses } from '@/lib/courseCache';
 
 const ReactPlayer = dynamic(() => import('react-player'), { ssr: false });
 
@@ -20,9 +21,12 @@ export default function CoursePreviewPage({ params }: { params: Promise<{ id: st
   const { user } = useAuth();
   const router = useRouter();
 
-  const [course, setCourse] = useState<any>(null);
+  const [course, setCourse] = useState<any>(() => {
+    const cached = getCachedCourses();
+    return cached.find((c: any) => c.id === id) || null;
+  });
   const [modules, setModules] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!course);
   
   // Accordion state
   const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>({});

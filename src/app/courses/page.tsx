@@ -11,10 +11,11 @@ import { useRouter } from 'next/navigation';
 
 import SmartSearchInput from '@/components/SmartSearchInput';
 import { searchCourses } from '@/lib/smartSearch';
+import { getCachedCourses, saveCachedCourses } from '@/lib/courseCache';
 
 export default function Courses() {
-  const [courses, setCourses] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [courses, setCourses] = useState<any[]>(() => getCachedCourses());
+  const [loading, setLoading] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [isEnrolling, setIsEnrolling] = useState(false);
   const { t } = useLanguage();
@@ -26,14 +27,17 @@ export default function Courses() {
   const [selectedCategory, setSelectedCategory] = useState("All");
 
   useEffect(() => {
-    // Fetch courses from Firestore in real-time
+    // Fetch courses from Firestore in real-time with instant cache
     const q = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const coursesList = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setCourses(coursesList);
+      if (!snapshot.empty) {
+        const coursesList = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        setCourses(coursesList);
+        saveCachedCourses(coursesList);
+      }
       setLoading(false);
     }, (error) => {
       console.error("Error fetching courses:", error);
