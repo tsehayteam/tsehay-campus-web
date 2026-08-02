@@ -122,8 +122,6 @@ export async function POST(request: Request) {
           "CBE",
           "MPESA",
           "ETHSWITCH",
-          "OROMIA_BANK",
-          "AWASH",
           "CYBERSOURCE"
         ],
         callback_url: `${origin}/api/webhook`,
