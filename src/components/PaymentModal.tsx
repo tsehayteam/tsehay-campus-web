@@ -115,10 +115,16 @@ export default function PaymentModal({ course, onClose }: any) {
           data = JSON.parse(responseText);
         } catch {}
         
-        // If live checkout URL is returned from Chapa, LakiPay, or NOWPayments
-        const clientDirectUrl = process.env.NEXT_PUBLIC_LAKIPAY_CHECKOUT_URL || process.env.NEXT_PUBLIC_LAKIPAY_URL;
-        if (data.checkoutUrl || (paymethod === 'lakipay' && clientDirectUrl)) {
-          window.location.href = data.checkoutUrl || clientDirectUrl;
+        // If live checkout URL is returned from LakiPay, NOWPayments or Chapa
+        const targetUrl = data.url || data.checkoutUrl;
+        if (targetUrl) {
+          window.location.href = targetUrl;
+          return;
+        }
+
+        if (data.error) {
+          setError(data.error);
+          setIsPaying(false);
           return;
         }
 

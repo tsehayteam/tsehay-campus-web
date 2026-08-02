@@ -91,30 +91,11 @@ export async function POST(request: Request) {
     }
 
     // 2. LakiPay Integration (Telebirr, CBE & Local Banks)
-    const lakipayDirectUrl = (
-      process.env.LAKIPAY_CHECKOUT_URL || 
-      process.env.LAKIPAY_DIRECT_URL || 
-      process.env.LAKIPAY_PAYMENT_URL ||
-      process.env.LAKIPAY_DASHBOARD_URL ||
-      process.env.LAKIPAY_PAY_URL ||
-      process.env.LAKIPAY_URL ||
-      process.env.LAKIPAY_LINK ||
-      process.env.NEXT_PUBLIC_LAKIPAY_CHECKOUT_URL ||
-      process.env.NEXT_PUBLIC_LAKIPAY_URL ||
-      ''
-    ).replace(/['"]/g, '').trim();
-
-    if (lakipayDirectUrl && lakipayDirectUrl.startsWith('http')) {
-      return NextResponse.json({ checkoutUrl: lakipayDirectUrl, reference: shortRef });
-    }
-
     const publicKey = (
       process.env.LAKIPAY_PUBLIC_KEY || 
       process.env.LAKI_PAY_PUBLIC_KEY || 
       process.env.NEXT_PUBLIC_LAKIPAY_PUBLIC_KEY || 
       process.env.LAKIPAY_KEY ||
-      process.env.NEXT_PUBLIC_LAKIPAY_KEY ||
-      process.env.LAKIPAY_API_KEY ||
       ''
     ).replace(/['"]/g, '').trim();
     
@@ -123,79 +104,78 @@ export async function POST(request: Request) {
       process.env.LAKI_PAY_SECRET_KEY || 
       process.env.LAKIPAY_SECRET ||
       process.env.LAKI_PAY_SECRET ||
-      process.env.LAKIPAY_PRIVATE_KEY ||
       ''
     ).replace(/['"]/g, '').trim();
 
     if (publicKey || secretKey) {
-      // LakiPay official docs format: X-API-Key: publickey:secretkey
-      const apiKeyHeader = (publicKey && secretKey) 
-        ? `${publicKey}:${secretKey}` 
-        : (publicKey || secretKey);
-
-      const endpointsToTry = [
-        process.env.LAKIPAY_ENDPOINT,
-        'https://api.lakipay.co/api/v2/payment/checkout',
-        'https://api.lakipay.co/api/v2/checkout',
-        'https://api.lakipay.co/api/v2/payment/initialize'
-      ].filter(Boolean);
+      const apiKeyHeader = (publicKey && secretKey) ? `${publicKey}:${secretKey}` : (secretKey || publicKey);
+      const checkoutEndpoint = 'https://api.lakipay.co/api/v2/payment/checkout';
 
       const lakipayPayload = {
         amount: Number(numericPrice),
         currency: "ETB",
         reference: shortRef,
         title: title || "Tsehay Campus Course",
-        description: description ? description.slice(0, 120) : "Full Access to Tsehay Campus Course",
+        description: description ? description.slice(0, 120) : `Full Access to ${title || 'Course'} on Tsehay Campus`,
+        supported_mediums: [
+          "TELEBIRR",
+          "CBE",
+          "MPESA",
+          "ETHSWITCH",
+          "OROMIA_BANK",
+          "AWASH",
+          "CYBERSOURCE"
+        ],
         callback_url: `${origin}/api/webhook`,
-        return_url: `${origin}/dashboard?success=true&course=${courseId}`,
-        success_url: `${origin}/dashboard?success=true&course=${courseId}`,
-        cancel_url: `${origin}/dashboard?failed=true`,
         redirects: {
           success: `${origin}/dashboard?success=true&course=${courseId}`,
           failed: `${origin}/dashboard?failed=true`
         }
       };
 
-      let redirectUrl = '';
+      try {
+        const response = await fetch(checkoutEndpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-API-Key': apiKeyHeader
+          },
+          body: JSON.stringify(lakipayPayload)
+        });
 
-      for (const endpoint of endpointsToTry) {
-        try {
-          const response = await fetch(endpoint as string, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-API-Key': apiKeyHeader
-            },
-            body: JSON.stringify(lakipayPayload)
+        const resData = await response.json().catch(() => ({}));
+
+        if (response.ok && (resData.status === "SUCCESS" || resData.data?.checkout_url || resData.checkout_url || resData.url || resData.payment_url)) {
+          const checkoutUrl = resData.data?.checkout_url || resData.checkout_url || resData.url || resData.payment_url || resData.data?.url;
+          return NextResponse.json({
+            success: true,
+            url: checkoutUrl,
+            checkoutUrl: checkoutUrl,
+            reference: shortRef
           });
-
-          const responseText = await response.text();
-          let data: any = {};
-          try {
-            data = JSON.parse(responseText);
-          } catch {
-            console.error("LakiPay Non-JSON Response:", responseText);
+        } else {
+          console.error("LakiPay API Error:", resData);
+          const fallbackUrl = resData.data?.checkout_url || resData.checkout_url || resData.url;
+          if (fallbackUrl) {
+            return NextResponse.json({
+              success: true,
+              url: fallbackUrl,
+              checkoutUrl: fallbackUrl,
+              reference: shortRef
+            });
           }
-
-          redirectUrl = data.checkout_url || data.checkoutUrl || data.url || data.payment_url || data.redirect_url || data.checkout_link || data.data?.checkout_url || data.data?.url || data.data?.redirect_url || data.data?.checkout_link || data.data?.payment_url || '';
-
-          if (!redirectUrl && (data.reference || data.data?.reference || data.id || data.data?.id)) {
-            const ref = data.reference || data.data?.reference || data.id || data.data?.id;
-            redirectUrl = `https://checkout.lakipay.co/pay/${ref}`;
-          }
-
-          if (redirectUrl) break;
-        } catch (lakiErr) {
-          console.error(`LakiPay Fetch Error on ${endpoint}:`, lakiErr);
+          return NextResponse.json({
+            success: false,
+            error: resData.message || resData.error || "LakiPay error"
+          }, { status: response.status || 400 });
         }
+      } catch (lakiErr: any) {
+        console.error("LakiPay API Fetch Error:", lakiErr);
+        return NextResponse.json({
+          success: false,
+          error: lakiErr.message || "LakiPay request failed"
+        }, { status: 500 });
       }
-
-      // Guaranteed direct redirect URL when keys are present
-      if (!redirectUrl) {
-        redirectUrl = `https://checkout.lakipay.co/checkout?public_key=${publicKey}&amount=${numericPrice}&currency=ETB&reference=${shortRef}&title=${encodeURIComponent(title || "Tsehay Campus")}`;
-      }
-
-      return NextResponse.json({ checkoutUrl: redirectUrl, reference: shortRef });
     }
 
     // 3. Chapa Fallback & Direct Checkout
