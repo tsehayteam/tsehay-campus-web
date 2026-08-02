@@ -67,7 +67,17 @@ export default function FloatingAIButton() {
                             </div>
                             <div>
                                 <h3 className="font-bold text-dark font-heading leading-tight">Tsehay AI</h3>
-                                <p className="text-[10px] text-dark/70 font-bold">Online</p>
+                                <div className="flex items-center gap-1.5 text-[10px] text-dark/85 font-extrabold uppercase tracking-wider mt-0.5">
+                                    <span>Powered by</span>
+                                    <a href="https://tsehay360.com" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 hover:opacity-80 transition-opacity">
+                                        <img 
+                                            src="/tsehay-digital-logo.jpg" 
+                                            alt="Tsehay Digital" 
+                                            className="h-4 w-4 object-contain rounded-xs drop-shadow-xs" 
+                                        />
+                                        <span className="font-black text-amber-700 dark:text-amber-400">TSEHAY DIGITAL</span>
+                                    </a>
+                                </div>
                             </div>
                         </div>
                         <div className="flex items-center gap-2">

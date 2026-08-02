@@ -55,8 +55,20 @@ export default function Footer() {
                         <p>&copy; 2026 <span className="notranslate" translate="no">Tsehay Campus</span>. {t('all_rights_reserved')}</p>
                         <div className="mt-2.5 flex items-center justify-center md:justify-start gap-2 text-gray-400 font-bold uppercase tracking-widest text-[11px]">
                             <span>Powered By</span>
-                            <img src="/tsehay-digital-logo-new.png" alt="Tsehay Digital Logo" className="h-6 w-auto object-contain rounded-sm shadow-sm" onError={(e) => { e.currentTarget.src='/tsehay-digital-logo.jpg'; }} />
-                            <span className="text-primary notranslate" translate="no">Tsehay Digital</span>
+                            <a 
+                                href="https://tsehay360.com" 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/10 dark:bg-white/5 border border-white/20 hover:border-primary/50 hover:bg-white/15 transition-all duration-300 shadow-md hover:shadow-primary/20 hover:scale-105 group cursor-pointer"
+                                title="Tsehay Digital"
+                            >
+                                <img 
+                                    src="/tsehay-digital-logo.jpg" 
+                                    alt="Tsehay Digital" 
+                                    className="h-5 w-5 object-contain rounded-sm transition-transform duration-300 group-hover:scale-110" 
+                                />
+                                <span className="font-black text-amber-400 group-hover:text-primary transition-colors tracking-wider text-xs">TSEHAY DIGITAL</span>
+                            </a>
                         </div>
                     </div>
                 </div>

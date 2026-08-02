@@ -21,7 +21,14 @@ export default function TermsModal() {
                 <button type="button" onClick={() => setIsOpen(false)} className="text-white hover:text-gray-200 text-2xl transition z-50 p-2"><i className="fa-solid fa-xmark"></i></button>
             </div>
             <div className="p-6 md:p-8 overflow-y-auto text-sm md:text-base text-gray-700 dark:text-gray-300 leading-relaxed space-y-6 font-body">
-                <p className="font-bold text-dark dark:text-white border-b border-gray-100 dark:border-gray-800 pb-4">ወደ <span className="notranslate">Tsehay Campus</span> እንኳን በደህና መጡ። ይህ የኢ-ለርኒንግ (E-Learning) ፕላትፎርም በ <span className="notranslate">Tsehay Digital</span> የቀረበ ሲሆን፣ ይህንን ፕላትፎርም ከመጠቀምዎ፣ አካውንት ከመክፈትዎ ወይም ማንኛውንም አይነት ግብይት ከመፈጸምዎ በፊት እባክዎ ይህንን የአጠቃቀም ህግ እና የግላዊነት ፖሊሲ (Terms of Service and Privacy Policy) በጥንቃቄ ያንብቡ። ይህ ሰነድ በእርስዎ እና በፕላትፎርሙ መሃል ያለውን ህጋዊ ስምምነት ይወክላል።</p>
+                <p className="font-bold text-dark dark:text-white border-b border-gray-100 dark:border-gray-800 pb-4 leading-relaxed">
+                  ወደ <span className="notranslate">Tsehay Campus</span> እንኳን በደህና መጡ። ይህ የኢ-ለርኒንግ (E-Learning) ፕላትፎርም በ 
+                  <a href="https://tsehay360.com" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 align-middle px-2.5 py-1 mx-1 bg-amber-500/10 border border-amber-500/30 rounded-lg text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 transition-all font-black group">
+                    <img src="/tsehay-digital-logo.jpg" alt="Tsehay Digital" className="h-4.5 w-4.5 object-contain rounded-xs" />
+                    <span>Tsehay Digital</span>
+                  </a> 
+                  የቀረበ ሲሆን፣ ይህንን ፕላትፎርም ከመጠቀምዎ፣ አካውንት ከመክፈትዎ ወይም ማንኛውንም አይነት ግብይት ከመፈጸምዎ በፊት እባክዎ ይህንን የአጠቃቀም ህግ እና የግላዊነት ፖሊሲ (Terms of Service and Privacy Policy) በጥንቃቄ ያንብቡ። ይህ ሰነድ በእርስዎ እና በፕላትፎርሙ መሃል ያለውን ህጋዊ ስምምነት ይወክላል።
+                </p>
                 
                 <div>
                     <h3 className="font-black text-dark dark:text-white text-base border-b border-gray-100 dark:border-gray-800 pb-2 mb-3"><i className="fa-solid fa-file-contract text-primary mr-2"></i> 1. ስምምነትን መቀበል (Acceptance of Terms)</h3>

@@ -409,12 +409,25 @@ export default function PaymentModal({ course, onClose }: any) {
                 )}
             </div>
             
-            {/* Modal Footer / Trust Badge */}
-            <div className="bg-gray-50/70 dark:bg-[#0f172a]/70 p-4 text-center border-t border-gray-100 dark:border-gray-800 flex items-center justify-center gap-2">
-                <i className="fa-solid fa-lock text-[#3268ba] text-sm"></i>
-                <p className="text-xs text-[#000000] dark:text-gray-300 font-extrabold uppercase tracking-wider">
-                  ክፍያዎ 100% ደህንነቱ የተጠበቀ ነው (100% Secure Checkout)
-                </p>
+            {/* Modal Footer / Trust Badge & Powered By */}
+            <div className="bg-gray-50/70 dark:bg-[#0f172a]/70 p-3.5 border-t border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-3 px-6">
+                <div className="flex items-center gap-2">
+                    <i className="fa-solid fa-lock text-[#3268ba] text-sm"></i>
+                    <p className="text-xs text-[#000000] dark:text-gray-300 font-extrabold uppercase tracking-wider">
+                      ክፍያዎ 100% ደህንነቱ የተጠበቀ ነው (100% Secure Checkout)
+                    </p>
+                </div>
+                <div className="flex items-center gap-2 text-[10px] text-gray-500 dark:text-gray-400 font-bold uppercase tracking-widest">
+                    <span>Powered By</span>
+                    <a href="https://tsehay360.com" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-black/5 dark:bg-white/10 border border-black/10 dark:border-white/10 hover:scale-105 transition-transform">
+                        <img 
+                            src="/tsehay-digital-logo.jpg" 
+                            alt="Tsehay Digital Logo" 
+                            className="h-4 w-4 object-contain rounded-xs" 
+                        />
+                        <span className="font-black text-amber-600 dark:text-amber-400 text-xs">TSEHAY DIGITAL</span>
+                    </a>
+                </div>
             </div>
 
         </div>
