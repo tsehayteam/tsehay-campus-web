@@ -98,6 +98,8 @@ export async function POST(request: Request) {
         'https://api.lakipay.co/v2/payment/checkout'
       ].filter(Boolean))) as string[];
 
+      let lastLakipayError: string | null = null;
+
       if (formattedApiKey || publicKey || secretKey) {
         for (const endpoint of endpoints) {
           try {
@@ -149,7 +151,7 @@ export async function POST(request: Request) {
             if (data) {
               const returnedRef = data.reference || data.data?.reference || data.transaction_id || data.data?.transaction_id || tx_ref;
               
-              // Only extract valid full HTTP URLs returned by LakiPay API
+              // Extract valid full HTTP checkout URL returned by LakiPay API
               const rawCheckoutUrl = 
                 data.checkout_url || 
                 data.checkoutUrl || 
@@ -157,11 +159,13 @@ export async function POST(request: Request) {
                 data.url || 
                 data.redirect_url || 
                 data.link || 
+                data.checkout_link ||
                 data.data?.checkout_url || 
                 data.data?.payment_url || 
                 data.data?.url || 
                 data.data?.link || 
-                data.data?.redirect_url;
+                data.data?.redirect_url ||
+                data.data?.checkout_link;
 
               if (rawCheckoutUrl && typeof rawCheckoutUrl === 'string' && rawCheckoutUrl.startsWith('http')) {
                 let checkoutUrl = rawCheckoutUrl;
@@ -171,19 +175,73 @@ export async function POST(request: Request) {
                 }
                 return NextResponse.json({ checkoutUrl, reference: returnedRef });
               }
+
+              if (data.message || data.error || data.detail || data.data?.message) {
+                lastLakipayError = data.message || data.error || data.detail || data.data?.message;
+              }
             }
           } catch (gatewayErr: any) {
             console.error(`LakiPay Error on ${endpoint}:`, gatewayErr);
+            lastLakipayError = gatewayErr.message || 'LakiPay connection error';
           }
         }
       }
 
-      // Safe Fallback URL when LakiPay API key is not configured or pending
-      const safeLakipayFallback = (lakipayDirectUrl && lakipayDirectUrl.startsWith('http'))
-        ? lakipayDirectUrl
-        : `https://lakipay.co`;
+      // Secondary check: Chapa Integration for Telebirr/CBE if Chapa keys or direct URL are set
+      const chapaSecret = (process.env.CHAPA_SECRET_KEY || process.env.CHAPA_SECRET || '').trim();
+      const chapaDirectUrl = (process.env.CHAPA_CHECKOUT_URL || process.env.CHAPA_DIRECT_URL || '').trim();
 
-      return NextResponse.json({ checkoutUrl: safeLakipayFallback, reference: tx_ref });
+      if (chapaDirectUrl && chapaDirectUrl.startsWith('http')) {
+        const separator = chapaDirectUrl.includes('?') ? '&' : '?';
+        const finalChapaUrl = `${chapaDirectUrl}${separator}amount=${numAmount}&reference=${tx_ref}&title=${encodeURIComponent(title || 'Course')}`;
+        return NextResponse.json({ checkoutUrl: finalChapaUrl, reference: tx_ref });
+      }
+
+      if (chapaSecret) {
+        try {
+          const chapaRes = await fetch("https://api.chapa.co/v1/transaction/initialize", {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${chapaSecret}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              amount: String(numAmount),
+              currency: "ETB",
+              email: email,
+              first_name: firstName || email.split('@')[0] || "Student",
+              last_name: lastName || "Campus",
+              tx_ref: tx_ref,
+              callback_url: `${origin}/api/webhook`,
+              return_url: `${origin}/dashboard?success=true&course=${courseId}`,
+              customization: {
+                title: title || "Tsehay Campus Course",
+                description: `Payment for ${title}`
+              }
+            })
+          });
+
+          const chapaData = await chapaRes.json().catch(() => null);
+          const chapaUrl = chapaData?.data?.checkout_url || chapaData?.checkout_url;
+
+          if (chapaUrl && typeof chapaUrl === 'string' && chapaUrl.startsWith('http')) {
+            return NextResponse.json({ checkoutUrl: chapaUrl, reference: tx_ref });
+          }
+        } catch (chapaErr) {
+          console.error("Chapa API Error:", chapaErr);
+        }
+      }
+
+      // If configured direct URL exists, use that
+      if (lakipayDirectUrl && lakipayDirectUrl.startsWith('http')) {
+        const separator = lakipayDirectUrl.includes('?') ? '&' : '?';
+        const finalUrl = `${lakipayDirectUrl}${separator}amount=${numAmount}&reference=${tx_ref}&title=${encodeURIComponent(title || 'Course')}`;
+        return NextResponse.json({ checkoutUrl: finalUrl, reference: tx_ref });
+      }
+
+      return NextResponse.json({ 
+        error: lastLakipayError || 'የLakiPay ሂሳብ ቁልፎች (LAKIPAY_PUBLIC_KEY / LAKIPAY_SECRET_KEY) በ Vercel ላይ በደንብ አልተገኙም። እባክዎ Vercel ላይ Environment Variables መቀመጣቸውን እና Redeploy መደረጉን ያረጋግጡ።' 
+      }, { status: 400 });
     }
 
     // 2. PAYPAL INTEGRATION
@@ -299,18 +357,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ checkoutUrl: fallbackCryptoUrl, reference: tx_ref });
     }
 
-    // Default Fallback
     return NextResponse.json({ 
-      checkoutUrl: `https://lakipay.co`,
-      reference: tx_ref 
-    });
+      error: 'የክፍያ ሲስተሙን ማግኘት አልተቻለም። እባክዎ Vercel ላይ Environment Variables መቀመጣቸውን ያረጋግጡ።' 
+    }, { status: 400 });
 
   } catch (error: any) {
     console.error("Payment API Error:", error);
-    const fallbackRef = `tsehay_tx_${Date.now()}`;
-    return NextResponse.json({ 
-      checkoutUrl: `https://lakipay.co`,
-      reference: fallbackRef 
-    });
+    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
   }
 }

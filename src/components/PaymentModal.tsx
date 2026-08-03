@@ -71,6 +71,9 @@ export default function PaymentModal({ course, onClose }: any) {
       
       if (data && data.checkoutUrl) {
         window.location.href = data.checkoutUrl;
+      } else if (data && data.error) {
+        setError(data.error);
+        setIsPaying(false);
       } else {
         window.location.href = fallbackUrl;
       }
