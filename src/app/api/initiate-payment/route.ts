@@ -101,9 +101,14 @@ export async function POST(request: Request) {
             const lakipayPayload: Record<string, any> = {
               amount: numAmount,
               currency: "ETB",
+              email: email,
               phone_number: validEthPhone,
+              first_name: firstName || email.split('@')[0] || "Student",
+              last_name: lastName || "Campus",
+              title: title || "Tsehay Campus Course",
               description: `Payment for ${title}`,
               reference: tx_ref,
+              supported_mediums: ["TELEBIRR", "CBE", "MPESA", "AWASH", "OROMIA_BANK"],
               callback_url: `${origin}/api/webhook`,
               return_url: `${origin}/dashboard?success=true&course=${courseId}`
             };
