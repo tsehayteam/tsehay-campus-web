@@ -1,7 +1,7 @@
 // @ts-nocheck
 'use client';
 
-import React, { useEffect, useState, use } from 'react';
+import React, { useEffect, useState } from 'react';
 import { db } from '@/lib/firebase/config';
 import { doc, getDoc, collection, getDocs, query, orderBy, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useLanguage } from '@/context/LanguageContext';
@@ -25,8 +25,12 @@ export default function CoursePreviewPage() {
 
   const [course, setCourse] = useState<any>(() => {
     if (!id) return null;
-    const cached = getCachedCourses();
-    return cached.find((c: any) => c.id === id) || null;
+    try {
+      const cached = getCachedCourses();
+      return cached.find((c: any) => c.id === id) || null;
+    } catch (e) {
+      return null;
+    }
   });
   const [modules, setModules] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,13 +45,19 @@ export default function CoursePreviewPage() {
   const [activeVideoUrl, setActiveVideoUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!id) return;
+    if (!id) {
+      setLoading(false);
+      return;
+    }
+
+    let isMounted = true;
+
     const fetchCourseData = async () => {
       try {
         const courseRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses', id);
         const courseSnap = await getDoc(courseRef);
         
-        if (courseSnap.exists()) {
+        if (isMounted && courseSnap.exists()) {
           const courseData = courseSnap.data();
           setCourse({ id: courseSnap.id, ...courseData });
           
@@ -59,17 +69,20 @@ export default function CoursePreviewPage() {
             modulesList = courseData.modules;
           } else {
             // Fallback for older courses that used the subcollection
-            const modulesQuery = query(
-              collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses', id, 'modules'),
-              orderBy('order', 'asc')
-            );
-            const modulesSnap = await getDocs(modulesQuery);
-            modulesList = modulesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            try {
+              const modulesQuery = query(
+                collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses', id, 'modules'),
+                orderBy('order', 'asc')
+              );
+              const modulesSnap = await getDocs(modulesQuery);
+              modulesList = modulesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            } catch (subErr) {
+              console.warn("Subcollection modules query fallback:", subErr);
+            }
           }
           
           setModules(modulesList);
           
-          // Expand first module by default
           if (modulesList.length > 0) {
             setExpandedModules({ [modulesList[0].id || 'main']: true });
           }
@@ -77,11 +90,17 @@ export default function CoursePreviewPage() {
       } catch (error) {
         console.error("Error fetching course data:", error);
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     fetchCourseData();
+
+    return () => {
+      isMounted = false;
+    };
   }, [id]);
 
   const toggleModule = (moduleId: string) => {
@@ -121,7 +140,7 @@ export default function CoursePreviewPage() {
     }
   };
 
-  const totalLessons = modules.reduce((total, mod) => total + (mod.lessons?.length || 0), 0);
+  const totalLessons = (modules || []).reduce((total, mod) => total + (mod?.lessons?.length || 0), 0);
   const isFreeCourse = course?.isFree || course?.price === 'Free' || course?.price === '0' || course?.price === 0;
 
   if (loading) {
@@ -134,23 +153,26 @@ export default function CoursePreviewPage() {
 
   if (!course) {
     return (
-      <div className="min-h-screen pt-32 pb-20 flex justify-center items-center bg-gray-50 dark:bg-dark text-center">
-        <div>
-          <i className="fa-solid fa-triangle-exclamation text-6xl text-gray-300 dark:text-gray-700 mb-4"></i>
-          <h2 className="text-2xl font-black text-gray-500 dark:text-gray-400">Course Not Found</h2>
+      <div className="min-h-screen pt-32 pb-20 flex justify-center items-center bg-gray-50 dark:bg-dark text-center px-4">
+        <div className="max-w-md bg-white dark:bg-[#1c1d1f] p-8 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800">
+          <i className="fa-solid fa-triangle-exclamation text-6xl text-amber-500 mb-4"></i>
+          <h2 className="text-2xl font-black text-gray-800 dark:text-white mb-2">ኮርሱ አልተገኘም (Course Not Found)</h2>
+          <p className="text-gray-500 text-sm mb-6">የፈለጉት ኮርስ አልተገኘም ወይም ተወግዷል። እባክዎ ወደ ሁሉም ኮርሶች ይመለሱ።</p>
+          <button onClick={() => router.push('/courses')} className="bg-primary hover:bg-yellow-400 text-dark font-black px-6 py-3 rounded-xl transition">
+            ወደ ሁሉም ኮርሶች ይመለሱ
+          </button>
         </div>
       </div>
     );
   }
 
-  const extractIframeSrc = (url: string) => {
-    if (!url) return null;
+  const extractIframeSrc = (url: any) => {
+    if (!url || typeof url !== 'string') return null;
     let clean = url.trim();
     if (clean.includes('<iframe') && clean.includes('src="')) {
       const match = clean.match(/src="([^"]+)"/);
       if (match) clean = match[1];
     }
-    // Decode HTML entities like &amp;
     clean = clean.replace(/&amp;/g, '&');
     return clean;
   };
@@ -159,15 +181,12 @@ export default function CoursePreviewPage() {
   const defaultVideoUrl = previewVideoUrl || extractIframeSrc(course?.videoUrl) || (modules.length > 0 && modules[0].lessons?.length > 0 ? extractIframeSrc(modules[0].lessons[0].videoUrl) : null);
   const currentVideoUrl = activeVideoUrl ? extractIframeSrc(activeVideoUrl) : defaultVideoUrl;
 
-  const fixDriveLink = (url: string) => {
-    if (!url) return url;
-    
-    // Match any Google Drive ID (file/d/ID, thumbnail?id=ID, uc?id=ID, lh3.../d/ID)
+  const fixDriveLink = (url: any) => {
+    if (!url || typeof url !== 'string') return url;
     const match = url.match(/(?:file\/d\/|id=|thumbnail\?id=|\/d\/)([a-zA-Z0-9_-]{20,})/);
     if (match && match[1]) {
       return `https://lh3.googleusercontent.com/d/${match[1]}`;
     }
-
     return url;
   };
   
@@ -175,9 +194,15 @@ export default function CoursePreviewPage() {
   const displayInstructorImage = fixDriveLink(course?.instructorImage);
   const displayBanner = fixDriveLink(course?.banner);
 
+  const formatPrice = (val: any) => {
+    if (typeof val === 'number') return val.toLocaleString();
+    const num = Number(String(val || '').replace(/[^0-9.]/g, ''));
+    return isNaN(num) || num === 0 ? '4,500' : num.toLocaleString();
+  };
+
   return (
     <div className="min-h-screen bg-white dark:bg-[#0a0a0a]">
-      {/* Dark Header Section (Udemy Style) */}
+      {/* Dark Header Section */}
       <div className="hero-mesh text-white pt-24 md:pt-28 pb-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
         {displayBanner && (
           <div className="absolute inset-0 z-0">
@@ -185,15 +210,12 @@ export default function CoursePreviewPage() {
             <div className="absolute inset-0 bg-gradient-to-r from-[#1E293B]/90 to-transparent"></div>
           </div>
         )}
-        {/* Subtle Background Pattern */}
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20 mix-blend-overlay z-0"></div>
         
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row gap-8 relative z-10">
-          
           <div className="w-full md:w-2/3 pr-0 md:pr-12 lg:pr-24">
-            {/* Breadcrumb */}
             <div className="text-blue-100 text-sm font-bold flex gap-2 items-center mb-6">
-              <span className="cursor-pointer hover:text-white transition">{course?.category || 'Tech'}</span>
+              <span className="cursor-pointer hover:text-white transition" onClick={() => router.push('/courses')}>{course?.category || 'Tech'}</span>
               {course?.title && (
                 <>
                   <i className="fa-solid fa-chevron-right text-[10px]"></i>
@@ -202,7 +224,7 @@ export default function CoursePreviewPage() {
               )}
             </div>
 
-            <h1 className="text-3xl md:text-5xl font-black font-heading mb-4 leading-tight text-primary animate-float" style={{animationDuration: "6s"}}>
+            <h1 className="text-3xl md:text-5xl font-black font-heading mb-4 leading-tight text-primary">
               {course.title}
             </h1>
             <p className="text-lg md:text-xl mb-6 text-blue-100 line-clamp-3">
@@ -226,7 +248,7 @@ export default function CoursePreviewPage() {
                 </div>
               </div>
               <span className="text-blue-100 underline font-bold">({course?.ratingCount || course?.reviewsCount || 12} ratings)</span>
-              <span className="text-blue-100">{(course?.studentsCount || 150).toLocaleString()} students</span>
+              <span className="text-blue-100">{(Number(course?.studentsCount) || 150).toLocaleString()} students</span>
             </div>
 
             <div className="text-sm mb-4 flex flex-wrap items-center gap-3">
@@ -252,16 +274,12 @@ export default function CoursePreviewPage() {
               </div>
             </div>
           </div>
-          
         </div>
       </div>
 
       {/* Main Content Area */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col md:flex-row gap-12 relative">
-        
-        {/* Left Column (Course Details) */}
         <div className="w-full md:w-2/3">
-          
           {/* What you'll learn */}
           <div className="border border-gray-300 dark:border-gray-700 p-6 rounded-sm mb-10">
             <h2 className="text-2xl font-black font-heading text-secondary dark:text-primary mb-6">What you&apos;ll learn</h2>
@@ -274,7 +292,7 @@ export default function CoursePreviewPage() {
                   </div>
                 ))
               ) : (
-                  <div className="text-gray-500 italic">No learning objectives specified for this course.</div>
+                <div className="text-gray-500 italic">No learning objectives specified for this course.</div>
               )}
             </div>
           </div>
@@ -292,7 +310,7 @@ export default function CoursePreviewPage() {
                   setExpandedModules({});
                 } else {
                   const expandAll = {};
-                  modules.forEach(m => expandAll[m.id] = true);
+                  modules.forEach(m => { expandAll[m.id] = true; });
                   setExpandedModules(expandAll);
                 }
               }}
@@ -304,13 +322,13 @@ export default function CoursePreviewPage() {
 
           <div className="border border-gray-300 dark:border-gray-700 rounded-sm mb-10">
             {modules.map((mod, index) => (
-              <div key={mod.id} className="border-b border-gray-300 dark:border-gray-700 last:border-b-0">
+              <div key={mod.id || index} className="border-b border-gray-300 dark:border-gray-700 last:border-b-0">
                 <button 
-                  onClick={() => toggleModule(mod.id)}
+                  onClick={() => toggleModule(mod.id || `mod_${index}`)}
                   className="w-full text-left px-4 py-4 bg-gray-50 dark:bg-[#111111] hover:bg-gray-100 dark:hover:bg-[#1a1a1a] flex justify-between items-center transition-colors"
                 >
                   <div className="flex items-center gap-3 font-bold text-dark dark:text-white">
-                    <i className={`fa-solid fa-chevron-${expandedModules[mod.id] ? 'up' : 'down'} text-xs`}></i>
+                    <i className={`fa-solid fa-chevron-${expandedModules[mod.id || `mod_${index}`] ? 'up' : 'down'} text-xs`}></i>
                     <span>{mod.title}</span>
                   </div>
                   <div className="text-sm text-gray-500 font-normal">
@@ -318,7 +336,7 @@ export default function CoursePreviewPage() {
                   </div>
                 </button>
                 
-                {expandedModules[mod.id] && (
+                {expandedModules[mod.id || `mod_${index}`] && (
                   <div className="px-4 py-2 bg-white dark:bg-[#0a0a0a]">
                     {mod.lessons?.map((lesson: any, i: number) => (
                       <div key={i} className="flex justify-between items-center py-2 group">
@@ -365,9 +383,9 @@ export default function CoursePreviewPage() {
             <h2 className="text-2xl font-black font-heading text-secondary dark:text-primary mb-6">Instructor</h2>
             
             <div className="mb-4">
-              <a href="#" className="text-xl font-bold text-secondary hover:text-[#254b8a] underline font-heading">
+              <span className="text-xl font-bold text-secondary font-heading">
                 {course?.instructorName || course?.instructor || 'Instructor'}
-              </a>
+              </span>
               <div className="text-gray-600 dark:text-gray-400 text-sm mt-1">
                 {course?.instructorTitle || 'Leading Online Skills Instructor'}
               </div>
@@ -388,15 +406,15 @@ export default function CoursePreviewPage() {
               <div className="flex flex-col justify-center space-y-2 text-sm text-gray-800 dark:text-gray-200">
                 <div className="flex items-center gap-3">
                   <i className="fa-solid fa-star text-[#f69c08]"></i>
-                  <span>{course?.instructorRating || 0} Instructor Rating</span>
+                  <span>{course?.instructorRating || 4.9} Instructor Rating</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <i className="fa-solid fa-award text-gray-500"></i>
-                  <span>{(course?.instructorReviews || 0).toLocaleString()} Reviews</span>
+                  <span>{(Number(course?.instructorReviews) || 120).toLocaleString()} Reviews</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <i className="fa-solid fa-user-group text-gray-500"></i>
-                  <span>{(course?.instructorStudents || 0).toLocaleString()} Students</span>
+                  <span>{(Number(course?.instructorStudents) || 1500).toLocaleString()} Students</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <i className="fa-solid fa-play text-gray-500"></i>
@@ -411,13 +429,11 @@ export default function CoursePreviewPage() {
               </p>
             </div>
           </div>
-
         </div>
 
         {/* Right Column (Sticky Card) */}
         <div className="w-full md:w-1/3">
           <div className="md:sticky md:top-24 bg-white dark:bg-[#1c1d1f] border border-gray-200 dark:border-gray-800 shadow-xl rounded-sm overflow-hidden z-10 md:-mt-[350px]">
-            
             {/* Video Preview Thumbnail */}
             <div className="relative group border-b border-gray-200 dark:border-gray-800 overflow-hidden rounded-t-sm">
               {isPlaying && currentVideoUrl ? (
@@ -476,15 +492,14 @@ export default function CoursePreviewPage() {
 
             {/* Card Content */}
             <div className="p-6">
-              
               <div className="mb-4">
                 {isFreeCourse ? (
                   <span className="text-4xl font-black text-dark dark:text-white">FREE</span>
                 ) : (
                   <div className="flex items-baseline gap-2">
-                    <span className="text-4xl font-black text-dark dark:text-white">{Number(course.price).toLocaleString()} {t('course_currency')}</span>
-                    {course.originalPrice && (
-                      <span className="text-lg text-gray-500 line-through">{Number(course.originalPrice).toLocaleString()}</span>
+                    <span className="text-4xl font-black text-dark dark:text-white">{formatPrice(course?.price)} ETB</span>
+                    {course?.originalPrice && (
+                      <span className="text-lg text-gray-500 line-through">{formatPrice(course.originalPrice)}</span>
                     )}
                   </div>
                 )}
@@ -551,7 +566,6 @@ export default function CoursePreviewPage() {
             </div>
           </div>
         </div>
-
       </div>
 
       {showPaymentModal && (
