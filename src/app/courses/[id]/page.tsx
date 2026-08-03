@@ -6,7 +6,7 @@ import { db } from '@/lib/firebase/config';
 import { doc, getDoc, collection, getDocs, query, orderBy, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import PaymentModal from '@/components/PaymentModal';
 import Footer from '@/components/Footer';
 import dynamic from 'next/dynamic';
@@ -14,19 +14,18 @@ import { getCachedCourses } from '@/lib/courseCache';
 
 const ReactPlayer = dynamic(() => import('react-player'), { ssr: false });
 
-export default function CoursePreviewPage({ params }: { params: Promise<{ id: string }> }) {
-  const resolvedParams = use(params);
-  const id = resolvedParams.id;
+export default function CoursePreviewPage() {
+  const routeParams = useParams();
+  const rawId = routeParams?.id || '';
+  const id = typeof rawId === 'string' ? rawId : Array.isArray(rawId) ? rawId[0] : '';
+
   const { t } = useLanguage();
   const { user } = useAuth();
   const router = useRouter();
 
-  const [course, setCourse] = useState<any>(() => {
-    const cached = getCachedCourses();
-    return cached.find((c: any) => c.id === id) || null;
-  });
+  const [course, setCourse] = useState<any>(null);
   const [modules, setModules] = useState<any[]>([]);
-  const [loading, setLoading] = useState(!course);
+  const [loading, setLoading] = useState(true);
   
   // Accordion state
   const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>({});
