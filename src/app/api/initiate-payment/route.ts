@@ -148,14 +148,8 @@ export async function POST(request: Request) {
 
             if (data) {
               const returnedRef = data.reference || data.data?.reference || data.transaction_id || data.data?.transaction_id || tx_ref;
-              const checkoutId = 
-                data.checkout_id || 
-                data.data?.checkout_id || 
-                data.session_id || 
-                data.data?.session_id || 
-                data.id || 
-                data.data?.id;
-
+              
+              // Only extract valid full HTTP URLs returned by LakiPay API
               const rawCheckoutUrl = 
                 data.checkout_url || 
                 data.checkoutUrl || 
@@ -167,10 +161,9 @@ export async function POST(request: Request) {
                 data.data?.payment_url || 
                 data.data?.url || 
                 data.data?.link || 
-                data.data?.redirect_url ||
-                (checkoutId ? `https://checkout.lakipay.co/pay/${checkoutId}` : null);
+                data.data?.redirect_url;
 
-              if (rawCheckoutUrl && rawCheckoutUrl.startsWith('http')) {
+              if (rawCheckoutUrl && typeof rawCheckoutUrl === 'string' && rawCheckoutUrl.startsWith('http')) {
                 let checkoutUrl = rawCheckoutUrl;
                 if (!checkoutUrl.includes('amount=') && numAmount > 0) {
                   const separator = checkoutUrl.includes('?') ? '&' : '?';
@@ -185,10 +178,10 @@ export async function POST(request: Request) {
         }
       }
 
-      // Safe Fallback URL when direct checkout URL or merchant link is provided or default landing
+      // Safe Fallback URL when LakiPay API key is not configured or pending
       const safeLakipayFallback = (lakipayDirectUrl && lakipayDirectUrl.startsWith('http'))
         ? lakipayDirectUrl
-        : `https://checkout.lakipay.co/pay`;
+        : `https://lakipay.co`;
 
       return NextResponse.json({ checkoutUrl: safeLakipayFallback, reference: tx_ref });
     }
@@ -308,7 +301,7 @@ export async function POST(request: Request) {
 
     // Default Fallback
     return NextResponse.json({ 
-      checkoutUrl: `https://checkout.lakipay.co/pay`,
+      checkoutUrl: `https://lakipay.co`,
       reference: tx_ref 
     });
 
@@ -316,7 +309,7 @@ export async function POST(request: Request) {
     console.error("Payment API Error:", error);
     const fallbackRef = `tsehay_tx_${Date.now()}`;
     return NextResponse.json({ 
-      checkoutUrl: `https://checkout.lakipay.co/pay`,
+      checkoutUrl: `https://lakipay.co`,
       reference: fallbackRef 
     });
   }
