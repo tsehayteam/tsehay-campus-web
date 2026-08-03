@@ -45,7 +45,7 @@ export default function PaymentModal({ course, onClose }: any) {
     const ref = `tsehay_tx_${targetCourseId}_${user?.uid || 'anon'}_${Date.now()}`;
     
     // Default fail-safe checkout URLs for each method
-    let fallbackUrl = `https://lakipay.co`;
+    let fallbackUrl = '';
     if (paymethod === 'paypal') {
       fallbackUrl = `https://www.paypal.com/checkoutnow?reference=${ref}&amount=${(targetAmount / 125).toFixed(2)}`;
     } else if (paymethod === 'crypto' || paymethod === 'nowpayments') {
@@ -75,11 +75,21 @@ export default function PaymentModal({ course, onClose }: any) {
         setError(data.error);
         setIsPaying(false);
       } else {
-        window.location.href = fallbackUrl;
+        if (paymethod === 'lakipay') {
+          setError('የLakiPay ሂሳብ ቁልፎች በ Vercel ላይ Redeploy መደረግ አለባቸው።');
+          setIsPaying(false);
+        } else {
+          window.location.href = fallbackUrl;
+        }
       }
     } catch (err: any) {
-      console.error("Payment initiation fallback redirecting:", err);
-      window.location.href = fallbackUrl;
+      console.error("Payment initiation error:", err);
+      if (paymethod === 'lakipay') {
+        setError('የLakiPay ሂሳብ ቁልፎችን ማግኘት አልተቻለም። እባክዎ Vercel ላይ Redeploy ማድረጉን ያረጋግጡ።');
+        setIsPaying(false);
+      } else {
+        window.location.href = fallbackUrl;
+      }
     }
   };
 
