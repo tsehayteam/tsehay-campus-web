@@ -23,7 +23,11 @@ export default function CoursePreviewPage() {
   const { user } = useAuth();
   const router = useRouter();
 
-  const [course, setCourse] = useState<any>(null);
+  const [course, setCourse] = useState<any>(() => {
+    if (!id) return null;
+    const cached = getCachedCourses();
+    return cached.find((c: any) => c.id === id) || null;
+  });
   const [modules, setModules] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
@@ -37,6 +41,7 @@ export default function CoursePreviewPage() {
   const [activeVideoUrl, setActiveVideoUrl] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!id) return;
     const fetchCourseData = async () => {
       try {
         const courseRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses', id);
