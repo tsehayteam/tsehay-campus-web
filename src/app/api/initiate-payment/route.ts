@@ -58,7 +58,13 @@ export async function POST(request: Request) {
 
     // 1. LAKIPAY INTEGRATION (Telebirr, CBE, Banks, Wallets & Cards)
     if (selectedMethod === 'lakipay' || selectedMethod === 'addispay') {
-      const lakipayDirectUrl = process.env.LAKIPAY_DIRECT_URL || process.env.LAKIPAY_CHECKOUT_URL;
+      const lakipayDirectUrl = (
+        process.env.LAKIPAY_DIRECT_URL || 
+        process.env.LAKIPAY_CHECKOUT_URL || 
+        process.env.NEXT_PUBLIC_LAKIPAY_CHECKOUT_URL ||
+        ''
+      ).trim();
+
       if (lakipayDirectUrl && lakipayDirectUrl.startsWith('http') && !lakipayDirectUrl.includes('api.lakipay.co')) {
         const separator = lakipayDirectUrl.includes('?') ? '&' : '?';
         const finalDirectUrl = lakipayDirectUrl.includes('amount=') ? lakipayDirectUrl : `${lakipayDirectUrl}${separator}amount=${numAmount}&reference=${tx_ref}&phone_number=${validEthPhone}`;
@@ -77,8 +83,8 @@ export async function POST(request: Request) {
         process.env.LAKIPAY_OPERATOR || ''
       ).trim();
 
-      const secretKey = (process.env.LAKIPAY_SECRET_KEY || '').trim().replace(/^["']|["']$/g, '');
-      const publicKey = (process.env.LAKIPAY_PUBLIC_KEY || '').trim().replace(/^["']|["']$/g, '');
+      const secretKey = (process.env.LAKIPAY_SECRET_KEY || process.env.NEXT_PUBLIC_LAKIPAY_SECRET_KEY || '').trim().replace(/^["']|["']$/g, '');
+      const publicKey = (process.env.LAKIPAY_PUBLIC_KEY || process.env.NEXT_PUBLIC_LAKIPAY_PUBLIC_KEY || '').trim().replace(/^["']|["']$/g, '');
       const rawApiKey = (process.env.LAKIPAY_API_KEY || '').trim().replace(/^["']|["']$/g, '');
 
       const formattedApiKey = (publicKey && secretKey) 
@@ -87,7 +93,6 @@ export async function POST(request: Request) {
 
       const endpoints = Array.from(new Set([
         process.env.LAKIPAY_ENDPOINT,
-        process.env.LAKIPAY_CHECKOUT_URL,
         'https://api.lakipay.co/api/v2/payment/checkout',
         'https://api.lakipay.co/api/v1/payment/checkout'
       ].filter(Boolean))) as string[];
@@ -97,22 +102,17 @@ export async function POST(request: Request) {
           try {
             const lakipayPayload: Record<string, any> = {
               amount: numAmount,
-              total_amount: numAmount,
-              price: numAmount,
-              value: numAmount,
               currency: "ETB",
               reference: tx_ref,
               tx_ref: tx_ref,
               email: email,
               phone_number: validEthPhone,
-              phone: validEthPhone,
-              customer_phone: validEthPhone,
               first_name: firstName || email.split('@')[0] || "Student",
               last_name: lastName || "Campus",
               title: title || "Tsehay Campus Course",
               description: `Payment for ${title}`,
+              supported_mediums: ["TELEBIRR", "CBE", "MPESA"],
               callback_url: `${origin}/api/webhook`,
-              return_url: `${origin}/dashboard?success=true&course=${courseId}`,
               redirects: {
                 success: `${origin}/dashboard?success=true&course=${courseId}`,
                 failed: `${origin}/dashboard?failed=true`
@@ -150,7 +150,7 @@ export async function POST(request: Request) {
                 data.data?.link || 
                 data.data?.redirect_url;
 
-              if (rawCheckoutUrl) {
+              if (rawCheckoutUrl && rawCheckoutUrl.startsWith('http')) {
                 let checkoutUrl = rawCheckoutUrl;
                 if (!checkoutUrl.includes('amount=') && numAmount > 0) {
                   const separator = checkoutUrl.includes('?') ? '&' : '?';
@@ -165,9 +165,12 @@ export async function POST(request: Request) {
         }
       }
 
-      // Guaranteed Fail-safe LakiPay Redirect URL
-      const fallbackLakipayUrl = `https://checkout.lakipay.co/pay/${tx_ref}?amount=${numAmount}&title=${encodeURIComponent(title || 'Course')}`;
-      return NextResponse.json({ checkoutUrl: fallbackLakipayUrl, reference: tx_ref });
+      // Safe Fallback URL when LakiPay API key is not configured or pending
+      const safeLakipayFallback = lakipayDirectUrl && lakipayDirectUrl.startsWith('http')
+        ? lakipayDirectUrl
+        : `https://lakipay.co`;
+
+      return NextResponse.json({ checkoutUrl: safeLakipayFallback, reference: tx_ref });
     }
 
     // 2. PAYPAL INTEGRATION
@@ -285,7 +288,7 @@ export async function POST(request: Request) {
 
     // Default Fallback
     return NextResponse.json({ 
-      checkoutUrl: `https://checkout.lakipay.co/pay/${tx_ref}?amount=${numAmount}`,
+      checkoutUrl: `https://lakipay.co`,
       reference: tx_ref 
     });
 
@@ -293,7 +296,7 @@ export async function POST(request: Request) {
     console.error("Payment API Error:", error);
     const fallbackRef = `tsehay_tx_${Date.now()}`;
     return NextResponse.json({ 
-      checkoutUrl: `https://checkout.lakipay.co/pay/${fallbackRef}`,
+      checkoutUrl: `https://lakipay.co`,
       reference: fallbackRef 
     });
   }

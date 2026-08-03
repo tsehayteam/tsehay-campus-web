@@ -45,7 +45,7 @@ export default function PaymentModal({ course, onClose }: any) {
     const ref = `tsehay_tx_${targetCourseId}_${user?.uid || 'anon'}_${Date.now()}`;
     
     // Default fail-safe checkout URLs for each method
-    let fallbackUrl = `https://checkout.lakipay.co/pay/${ref}?amount=${targetAmount}&title=${encodeURIComponent(course.title || 'Course')}`;
+    let fallbackUrl = `https://lakipay.co`;
     if (paymethod === 'paypal') {
       fallbackUrl = `https://www.paypal.com/checkoutnow?reference=${ref}&amount=${(targetAmount / 125).toFixed(2)}`;
     } else if (paymethod === 'crypto' || paymethod === 'nowpayments') {
