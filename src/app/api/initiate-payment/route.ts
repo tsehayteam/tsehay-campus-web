@@ -94,25 +94,33 @@ export async function POST(request: Request) {
       const endpoints = Array.from(new Set([
         process.env.LAKIPAY_ENDPOINT,
         'https://api.lakipay.co/api/v2/payment/checkout',
-        'https://api.lakipay.co/api/v1/payment/checkout'
+        'https://api.lakipay.co/api/v1/payment/checkout',
+        'https://api.lakipay.co/v2/payment/checkout'
       ].filter(Boolean))) as string[];
 
-      if (formattedApiKey) {
+      if (formattedApiKey || publicKey || secretKey) {
         for (const endpoint of endpoints) {
           try {
             const lakipayPayload: Record<string, any> = {
               amount: numAmount,
+              total_amount: numAmount,
+              price: numAmount,
               currency: "ETB",
               reference: tx_ref,
               tx_ref: tx_ref,
               email: email,
               phone_number: validEthPhone,
+              phone: validEthPhone,
+              customer_phone: validEthPhone,
               first_name: firstName || email.split('@')[0] || "Student",
               last_name: lastName || "Campus",
               title: title || "Tsehay Campus Course",
               description: `Payment for ${title}`,
+              public_key: publicKey,
+              merchant_id: merchantId,
               supported_mediums: ["TELEBIRR", "CBE", "MPESA"],
               callback_url: `${origin}/api/webhook`,
+              return_url: `${origin}/dashboard?success=true&course=${courseId}`,
               redirects: {
                 success: `${origin}/dashboard?success=true&course=${courseId}`,
                 failed: `${origin}/dashboard?failed=true`
@@ -122,7 +130,10 @@ export async function POST(request: Request) {
             const headers: Record<string, string> = {
               'Content-Type': 'application/json',
               'X-API-Key': formattedApiKey,
-              'Authorization': `Bearer ${secretKey || formattedApiKey}`
+              'x-api-key': formattedApiKey,
+              'Authorization': `Bearer ${secretKey || formattedApiKey}`,
+              'X-Public-Key': publicKey,
+              'X-Secret-Key': secretKey
             };
             if (merchantId) headers['X-Merchant-Id'] = merchantId;
             if (operatorId) headers['X-Operator-Id'] = operatorId;
@@ -134,6 +145,7 @@ export async function POST(request: Request) {
             });
 
             const data = await response.json().catch(() => null);
+            console.log(`LakiPay Response [${endpoint}]:`, response.status, data);
 
             if (data) {
               const returnedRef = data.reference || data.data?.reference || data.transaction_id || data.data?.transaction_id || tx_ref;
