@@ -64,12 +64,7 @@ export async function POST(request: Request) {
         process.env.NEXT_PUBLIC_LAKIPAY_CHECKOUT_URL ||
         ''
       ).trim();
-
-      if (lakipayDirectUrl && lakipayDirectUrl.startsWith('http') && !lakipayDirectUrl.includes('api.lakipay.co')) {
-        const separator = lakipayDirectUrl.includes('?') ? '&' : '?';
-        const finalDirectUrl = lakipayDirectUrl.includes('amount=') ? lakipayDirectUrl : `${lakipayDirectUrl}${separator}amount=${numAmount}&reference=${tx_ref}&title=${encodeURIComponent(title || 'Course')}&phone_number=${validEthPhone}`;
-        return NextResponse.json({ checkoutUrl: finalDirectUrl, reference: tx_ref });
-      }
+      // Removed early exit so that the API call is always attempted if keys exist.
 
       const merchantId = (
         process.env.LAKIPAY_MERCHANT_ID || 
@@ -232,10 +227,15 @@ export async function POST(request: Request) {
         }
       }
 
-      // If configured direct URL exists, use that
+      // Fallback: If configured direct URL exists, format it correctly
       if (lakipayDirectUrl && lakipayDirectUrl.startsWith('http')) {
-        const separator = lakipayDirectUrl.includes('?') ? '&' : '?';
-        const finalUrl = `${lakipayDirectUrl}${separator}amount=${numAmount}&reference=${tx_ref}&title=${encodeURIComponent(title || 'Course')}`;
+        let baseCheckoutUrl = lakipayDirectUrl;
+        // If they just provided the root domain, use the proper checkout path
+        if (baseCheckoutUrl.match(/^https?:\/\/(www\.)?lakipay\.co\/?$/i)) {
+          baseCheckoutUrl = `https://checkout.lakipay.co/pay/${tx_ref}`;
+        }
+        const separator = baseCheckoutUrl.includes('?') ? '&' : '?';
+        const finalUrl = baseCheckoutUrl.includes('amount=') ? baseCheckoutUrl : `${baseCheckoutUrl}${separator}amount=${numAmount}&reference=${tx_ref}&title=${encodeURIComponent(title || 'Course')}`;
         return NextResponse.json({ checkoutUrl: finalUrl, reference: tx_ref });
       }
 
