@@ -100,40 +100,18 @@ export async function POST(request: Request) {
           try {
             const lakipayPayload: Record<string, any> = {
               amount: numAmount,
-              total_amount: numAmount,
-              price: numAmount,
               currency: "ETB",
-              reference: tx_ref,
-              tx_ref: tx_ref,
-              email: email,
               phone_number: validEthPhone,
-              phone: validEthPhone,
-              customer_phone: validEthPhone,
-              first_name: firstName || email.split('@')[0] || "Student",
-              last_name: lastName || "Campus",
-              title: title || "Tsehay Campus Course",
               description: `Payment for ${title}`,
-              public_key: publicKey,
-              merchant_id: merchantId,
-              supported_mediums: ["TELEBIRR", "CBE", "MPESA"],
+              reference: tx_ref,
               callback_url: `${origin}/api/webhook`,
-              return_url: `${origin}/dashboard?success=true&course=${courseId}`,
-              redirects: {
-                success: `${origin}/dashboard?success=true&course=${courseId}`,
-                failed: `${origin}/dashboard?failed=true`
-              }
+              return_url: `${origin}/dashboard?success=true&course=${courseId}`
             };
 
             const headers: Record<string, string> = {
               'Content-Type': 'application/json',
-              'X-API-Key': formattedApiKey,
-              'x-api-key': formattedApiKey,
-              'Authorization': `Bearer ${secretKey || formattedApiKey}`,
-              'X-Public-Key': publicKey,
-              'X-Secret-Key': secretKey
+              'X-API-Key': formattedApiKey
             };
-            if (merchantId) headers['X-Merchant-Id'] = merchantId;
-            if (operatorId) headers['X-Operator-Id'] = operatorId;
 
             const response = await fetch(endpoint, {
               method: 'POST',
