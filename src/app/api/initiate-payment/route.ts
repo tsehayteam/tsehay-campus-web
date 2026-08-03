@@ -67,7 +67,7 @@ export async function POST(request: Request) {
 
       if (lakipayDirectUrl && lakipayDirectUrl.startsWith('http') && !lakipayDirectUrl.includes('api.lakipay.co')) {
         const separator = lakipayDirectUrl.includes('?') ? '&' : '?';
-        const finalDirectUrl = lakipayDirectUrl.includes('amount=') ? lakipayDirectUrl : `${lakipayDirectUrl}${separator}amount=${numAmount}&reference=${tx_ref}&phone_number=${validEthPhone}`;
+        const finalDirectUrl = lakipayDirectUrl.includes('amount=') ? lakipayDirectUrl : `${lakipayDirectUrl}${separator}amount=${numAmount}&reference=${tx_ref}&title=${encodeURIComponent(title || 'Course')}&phone_number=${validEthPhone}`;
         return NextResponse.json({ checkoutUrl: finalDirectUrl, reference: tx_ref });
       }
 
@@ -145,10 +145,17 @@ export async function POST(request: Request) {
             });
 
             const data = await response.json().catch(() => null);
-            console.log(`LakiPay Response [${endpoint}]:`, response.status, data);
 
             if (data) {
               const returnedRef = data.reference || data.data?.reference || data.transaction_id || data.data?.transaction_id || tx_ref;
+              const checkoutId = 
+                data.checkout_id || 
+                data.data?.checkout_id || 
+                data.session_id || 
+                data.data?.session_id || 
+                data.id || 
+                data.data?.id;
+
               const rawCheckoutUrl = 
                 data.checkout_url || 
                 data.checkoutUrl || 
@@ -160,13 +167,14 @@ export async function POST(request: Request) {
                 data.data?.payment_url || 
                 data.data?.url || 
                 data.data?.link || 
-                data.data?.redirect_url;
+                data.data?.redirect_url ||
+                (checkoutId ? `https://checkout.lakipay.co/pay/${checkoutId}` : null);
 
               if (rawCheckoutUrl && rawCheckoutUrl.startsWith('http')) {
                 let checkoutUrl = rawCheckoutUrl;
                 if (!checkoutUrl.includes('amount=') && numAmount > 0) {
                   const separator = checkoutUrl.includes('?') ? '&' : '?';
-                  checkoutUrl = `${checkoutUrl}${separator}amount=${numAmount}&reference=${returnedRef}`;
+                  checkoutUrl = `${checkoutUrl}${separator}amount=${numAmount}&reference=${returnedRef}&title=${encodeURIComponent(title || 'Course')}`;
                 }
                 return NextResponse.json({ checkoutUrl, reference: returnedRef });
               }
@@ -177,10 +185,10 @@ export async function POST(request: Request) {
         }
       }
 
-      // Safe Fallback URL when LakiPay API key is not configured or pending
-      const safeLakipayFallback = lakipayDirectUrl && lakipayDirectUrl.startsWith('http')
+      // Safe Fallback URL when direct checkout URL or merchant link is provided or default landing
+      const safeLakipayFallback = (lakipayDirectUrl && lakipayDirectUrl.startsWith('http'))
         ? lakipayDirectUrl
-        : `https://lakipay.co`;
+        : `https://checkout.lakipay.co/pay`;
 
       return NextResponse.json({ checkoutUrl: safeLakipayFallback, reference: tx_ref });
     }
@@ -300,7 +308,7 @@ export async function POST(request: Request) {
 
     // Default Fallback
     return NextResponse.json({ 
-      checkoutUrl: `https://lakipay.co`,
+      checkoutUrl: `https://checkout.lakipay.co/pay`,
       reference: tx_ref 
     });
 
@@ -308,7 +316,7 @@ export async function POST(request: Request) {
     console.error("Payment API Error:", error);
     const fallbackRef = `tsehay_tx_${Date.now()}`;
     return NextResponse.json({ 
-      checkoutUrl: `https://lakipay.co`,
+      checkoutUrl: `https://checkout.lakipay.co/pay`,
       reference: fallbackRef 
     });
   }
