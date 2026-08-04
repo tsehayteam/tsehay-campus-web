@@ -48,7 +48,7 @@ export async function POST(request: Request) {
       } else if (cleaned.length === 12 && cleaned.startsWith('251')) {
         // already 251...
       } else {
-        cleaned = '251911234567';
+        cleaned = '';
       }
       return cleaned;
     };
@@ -102,16 +102,19 @@ export async function POST(request: Request) {
               amount: numAmount,
               currency: "ETB",
               email: email,
-              phone_number: validEthPhone,
               first_name: firstName || email.split('@')[0] || "Student",
               last_name: lastName || "Campus",
               title: title || "Tsehay Campus Course",
               description: `Payment for ${title}`,
               reference: tx_ref,
-              supported_mediums: ["TELEBIRR", "CBE", "MPESA", "AWASH", "OROMIA_BANK"],
+              supported_mediums: ["TELEBIRR", "CBE", "MPESA", "AWASH", "OROMIA_BANK", "ETHSWITCH", "CYBERSOURCE"],
               callback_url: `${origin}/api/webhook`,
               return_url: `${origin}/dashboard?success=true&course=${courseId}`
             };
+
+            if (validEthPhone) {
+              lakipayPayload.phone_number = validEthPhone;
+            }
 
             const headers: Record<string, string> = {
               'Content-Type': 'application/json',
