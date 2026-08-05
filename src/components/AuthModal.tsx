@@ -149,6 +149,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
           setError("እባክዎ ምዝገባዎን ለማጠናቀቅ ቀሪ መረጃዎችን ይሙሉ (Please complete your profile to register).");
       }
     } catch (err: any) {
+        console.error("Google Auth Error:", err);
         setError(getFriendlyErrorMessage(err));
     }
   }
