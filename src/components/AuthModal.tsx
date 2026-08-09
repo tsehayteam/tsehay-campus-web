@@ -126,31 +126,44 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
   };
 
   const handleGoogleAuth = async () => {
+    setError("");
+    setLoading(true);
     try {
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
+      const user = result.user;
       
-      const docRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', result.user.uid, 'profile', 'info');
+      const docRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'profile', 'info');
       const docSnap = await getDoc(docRef);
       
-      if (docSnap.exists() && docSnap.data().phone) {
-          // Existing user with a complete profile
+      if (docSnap.exists()) {
+          // Existing registered user - smoothly log in
           await setDoc(docRef, {
               lastLogin: serverTimestamp(),
+              email: user.email || docSnap.data().email || "",
+              name: docSnap.data().name || user.displayName || "",
+              photoURL: user.photoURL || docSnap.data().photoURL || null
           }, { merge: true });
           
           onClose();
-      } else {
-          // New user or missing profile - Force sign up
+      } else if (!isSignupMode) {
+          // Attempted to login with Google but account not registered yet
           setIsSignupMode(true);
-          setName(result.user.displayName || "");
-          setEmail(result.user.email || "");
-          setPendingGoogleAuth(result.user);
-          setError("እባክዎ ምዝገባዎን ለማጠናቀቅ ቀሪ መረጃዎችን ይሙሉ (Please complete your profile to register).");
+          setName(user.displayName || "");
+          setEmail(user.email || "");
+          setPendingGoogleAuth(user);
+          setError("አካውንትዎ እስካሁን አልተመዘገበም። እባክዎ ምዝገባዎን ለማጠናቀቅ ቀሪ መረጃዎችን ይሙሉ (Please complete your profile to register).");
+      } else {
+          // Already in sign up mode with Google
+          setName(user.displayName || "");
+          setEmail(user.email || "");
+          setPendingGoogleAuth(user);
       }
     } catch (err: any) {
         console.error("Google Auth Error:", err);
         setError(getFriendlyErrorMessage(err));
+    } finally {
+        setLoading(false);
     }
   }
 
