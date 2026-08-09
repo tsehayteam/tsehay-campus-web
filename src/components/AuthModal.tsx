@@ -134,38 +134,34 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
       const user = result.user;
       
       const docRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'profile', 'info');
+      const publicUserRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'users', user.uid);
       const docSnap = await getDoc(docRef);
       
-      if (docSnap.exists()) {
-          // Existing registered user - smoothly log in
-          await setDoc(docRef, {
-              lastLogin: serverTimestamp(),
-              email: user.email || docSnap.data().email || "",
-              name: docSnap.data().name || user.displayName || "",
-              photoURL: user.photoURL || docSnap.data().photoURL || null
-          }, { merge: true });
-          
-          onClose();
-      } else if (!isSignupMode) {
-          // Attempted to login with Google but account not registered yet
-          setIsSignupMode(true);
-          setName(user.displayName || "");
-          setEmail(user.email || "");
-          setPendingGoogleAuth(user);
-          setError("አካውንትዎ እስካሁን አልተመዘገበም። እባክዎ ምዝገባዎን ለማጠናቀቅ ቀሪ መረጃዎችን ይሙሉ (Please complete your profile to register).");
-      } else {
-          // Already in sign up mode with Google
-          setName(user.displayName || "");
-          setEmail(user.email || "");
-          setPendingGoogleAuth(user);
-      }
+      const userData = {
+          name: user.displayName || (docSnap.exists() ? docSnap.data()?.name : "") || "ተጠቃሚ",
+          email: user.email || (docSnap.exists() ? docSnap.data()?.email : "") || "",
+          phone: docSnap.exists() ? (docSnap.data()?.phone || "") : "",
+          city: docSnap.exists() ? (docSnap.data()?.city || "") : "",
+          source: docSnap.exists() ? (docSnap.data()?.source || "Google") : "Google",
+          photoURL: user.photoURL || (docSnap.exists() ? docSnap.data()?.photoURL : null),
+          lastLogin: serverTimestamp(),
+          isAdmin: docSnap.exists() ? (docSnap.data()?.isAdmin || false) : false,
+          createdAt: docSnap.exists() ? (docSnap.data()?.createdAt || serverTimestamp()) : serverTimestamp(),
+      };
+      
+      await setDoc(docRef, userData, { merge: true });
+      await setDoc(publicUserRef, userData, { merge: true });
+      
+      setPendingGoogleAuth(null);
+      setError("");
+      onClose();
     } catch (err: any) {
         console.error("Google Auth Error:", err);
         setError(getFriendlyErrorMessage(err));
     } finally {
         setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="fixed inset-0 bg-black/80 z-[9999] flex items-center justify-center backdrop-blur-sm p-4" onClick={(e) => { if(e.target === e.currentTarget) onClose() }}>
