@@ -140,85 +140,69 @@ export default function PaymentModal({ course, onClose }: any) {
                             
                             {/* Option 1: LakiPay */}
                             <label className={`payment-option flex items-center justify-between p-4.5 rounded-2xl border cursor-pointer transition-all ${paymethod === 'lakipay' ? 'border-amber-500 bg-amber-500/10 shadow-lg ring-2 ring-amber-500/40 scale-[1.01]' : 'border-gray-800 bg-[#121e3d] hover:bg-[#16254a]'}`}>
-                                <div className="flex items-center gap-3.5">
+                                <div className="flex items-center gap-3.5 min-w-0 pr-2">
                                     <input 
                                       type="radio" 
                                       name="paymethod" 
                                       value="lakipay" 
                                       checked={paymethod === 'lakipay'} 
                                       onChange={() => setPaymethod('lakipay')} 
-                                      className="w-5 h-5 text-amber-500 focus:ring-amber-500 accent-amber-500 cursor-pointer" 
+                                      className="w-5 h-5 text-amber-500 focus:ring-amber-500 accent-amber-500 cursor-pointer shrink-0" 
                                     />
-                                    <div>
+                                    <div className="min-w-0">
                                         <span className="font-black text-white text-lg block leading-tight">LakiPay</span>
                                         <span className="text-xs text-amber-400 font-bold block mt-0.5">For Local Payments</span>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    <div className="bg-white px-4 py-2 rounded-xl flex items-center shadow-md border border-gray-200 h-11">
-                                        <img src="/lakipay-logo.svg" alt="LakiPay" className="h-7 w-auto object-contain" />
+                                <div className="flex items-center shrink-0">
+                                    <div className="bg-white w-36 h-11 px-3 rounded-xl flex items-center justify-center shadow-md border border-gray-200">
+                                        <img src="/lakipay-logo.svg" alt="LakiPay" className="h-7 w-auto max-w-full object-contain" />
                                     </div>
                                 </div>
                             </label>
 
                             {/* Option 2: PayPal */}
                             <label className={`payment-option flex items-center justify-between p-4.5 rounded-2xl border cursor-pointer transition-all ${paymethod === 'paypal' ? 'border-blue-500 bg-blue-500/10 shadow-lg ring-2 ring-blue-500/40 scale-[1.01]' : 'border-gray-800 bg-[#121e3d] hover:bg-[#16254a]'}`}>
-                                <div className="flex items-center gap-3.5">
+                                <div className="flex items-center gap-3.5 min-w-0 pr-2">
                                     <input 
                                       type="radio" 
                                       name="paymethod" 
                                       value="paypal" 
                                       checked={paymethod === 'paypal'} 
                                       onChange={() => setPaymethod('paypal')} 
-                                      className="w-5 h-5 text-blue-500 focus:ring-blue-500 accent-blue-500 cursor-pointer" 
+                                      className="w-5 h-5 text-blue-500 focus:ring-blue-500 accent-blue-500 cursor-pointer shrink-0" 
                                     />
-                                    <div>
+                                    <div className="min-w-0">
                                         <span className="font-black text-white text-lg block leading-tight">PayPal</span>
                                         <span className="text-xs text-blue-400 font-bold block mt-0.5">For International Payments</span>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    <div className="bg-white px-4 py-2 rounded-xl flex items-center shadow-md border border-gray-200 h-11">
-                                        <img src="/paypal-logo.svg" alt="PayPal" className="h-7 w-auto object-contain" />
+                                <div className="flex items-center shrink-0">
+                                    <div className="bg-white w-36 h-11 px-3 rounded-xl flex items-center justify-center shadow-md border border-gray-200">
+                                        <img src="/paypal-logo.svg" alt="PayPal" className="h-7 w-auto max-w-full object-contain" />
                                     </div>
                                 </div>
                             </label>
 
                             {/* Option 3: NOWPayments */}
                             <label className={`payment-option flex items-center justify-between p-4.5 rounded-2xl border cursor-pointer transition-all ${paymethod === 'crypto' || paymethod === 'nowpayments' ? 'border-cyan-500 bg-cyan-500/10 shadow-lg ring-2 ring-cyan-500/40 scale-[1.01]' : 'border-gray-800 bg-[#121e3d] hover:bg-[#16254a]'}`}>
-                                <div className="flex items-center gap-3.5">
+                                <div className="flex items-center gap-3.5 min-w-0 pr-2">
                                     <input 
                                       type="radio" 
                                       name="paymethod" 
                                       value="nowpayments" 
                                       checked={paymethod === 'crypto' || paymethod === 'nowpayments'} 
                                       onChange={() => setPaymethod('nowpayments')} 
-                                      className="w-5 h-5 text-cyan-500 focus:ring-cyan-500 accent-cyan-500 cursor-pointer" 
+                                      className="w-5 h-5 text-cyan-500 focus:ring-cyan-500 accent-cyan-500 cursor-pointer shrink-0" 
                                     />
-                                    <div>
+                                    <div className="min-w-0">
                                         <span className="font-black text-white text-lg block leading-tight">NOWPayments</span>
                                         <span className="text-xs text-cyan-400 font-bold block mt-0.5">For Crypto Payments</span>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-1.5">
-                                    {/* Bitcoin (BTC) Icon */}
-                                    <div className="w-8 h-8 rounded-full bg-[#F7931A] flex items-center justify-center text-white font-black text-sm shadow-md ring-1 ring-amber-400/40" title="Bitcoin (BTC)">
-                                      ₿
-                                    </div>
-                                    {/* Ethereum (ETH) Icon */}
-                                    <div className="w-8 h-8 rounded-full bg-[#627EEA] flex items-center justify-center text-white shadow-md ring-1 ring-indigo-400/40" title="Ethereum (ETH)">
-                                      <svg className="h-4 w-4 fill-current text-white" viewBox="0 0 784 1277">
-                                        <path d="M392.07 0L383.5 29.1v844.87l8.57 8.57 392.06-231.75z" fillOpacity="0.6"/>
-                                        <path d="M392.07 0L0 650.79l392.07 231.75V0z"/>
-                                        <path d="M392.07 956.52l-4.83 5.89v300.87l4.83 14.04 392.3-552.49z" fillOpacity="0.6"/>
-                                        <path d="M392.07 1277.32V956.52L0 724.83z"/>
-                                      </svg>
-                                    </div>
-                                    {/* Solana (SOL) Icon */}
-                                    <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#9945FF] to-[#14F195] flex items-center justify-center text-white shadow-md ring-1 ring-emerald-400/40" title="Solana (SOL)">
-                                      <svg className="h-4 w-4 fill-current text-white" viewBox="0 0 397 311">
-                                        <path d="M64.6 237.9c2.4-2.4 5.7-3.8 9.2-3.8h317.4c5.8 0 8.7 7 4.6 11.1l-62.7 62.7c-2.4 2.4-5.7 3.8-9.2 3.8H6.5c-5.8 0-8.7-7-4.6-11.1l62.7-62.7zM64.6 3.8C67 1.4 70.3 0 73.8 0h317.4c5.8 0 8.7 7 4.6 11.1l-62.7 62.7c-2.4 2.4-5.7 3.8-9.2 3.8H6.5c-5.8 0-8.7-7-4.6-11.1L64.6 3.8zM332.4 120.9c-2.4-2.4-5.7-3.8-9.2-3.8H5.8c-5.8 0-8.7 7-4.6 11.1l62.7 62.7c2.4 2.4 5.7 3.8 9.2 3.8h317.4c5.8 0 8.7-7 4.6-11.1l-62.7-62.7z"/>
-                                      </svg>
+                                <div className="flex items-center shrink-0">
+                                    <div className="bg-white w-36 h-11 px-3 rounded-xl flex items-center justify-center shadow-md border border-gray-200">
+                                        <img src="/nowpayments-logo.svg" alt="NOWPayments" className="h-7 w-auto max-w-full object-contain" />
                                     </div>
                                 </div>
                             </label>

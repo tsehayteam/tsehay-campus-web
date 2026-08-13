@@ -1,8 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 60" width="240" height="60">
-  <rect width="240" height="60" rx="12" fill="#ffffff" />
-  <g transform="translate(20, 10)">
-    <path d="M12 5 L28 5 C35 5 40 10 38 17 C36 24 30 28 23 28 L16 28 L11 45 L5 45 L12 5 Z" fill="#003087" />
-    <path d="M20 12 L34 12 C40 12 45 16 43 23 C41 30 35 34 28 34 L21 34 L17 48 L12 48 L20 12 Z" fill="#0079C1" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 90" width="320" height="90">
+  <g transform="translate(18, 14)">
+    <path d="M14 6 L33 6 C41 6 47 12 45 20 C43 28 36 33 27 33 L19 33 L13 54 L6 54 L14 6 Z" fill="#003087" />
+    <path d="M23 14 L39 14 C46 14 52 19 50 27 C48 35 41 40 33 40 L25 40 L20 58 L14 58 L23 14 Z" fill="#0079C1" />
   </g>
-  <text x="80" y="38" font-family="'Inter', 'Outfit', system-ui, sans-serif" font-weight="900" font-size="24" fill="#003087">Pay<tspan fill="#0079C1">Pal</tspan></text>
+  <text x="92" y="58" font-family="'Inter', 'Outfit', system-ui, sans-serif" font-weight="900" font-size="42" fill="#003087" letter-spacing="-1">Pay<tspan fill="#0079C1">Pal</tspan></text>
 </svg>
