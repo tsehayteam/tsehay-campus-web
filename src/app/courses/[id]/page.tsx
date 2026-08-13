@@ -23,6 +23,7 @@ export default function CoursePreviewPage() {
   const { user } = useAuth();
   const router = useRouter();
 
+  const [allCourses, setAllCourses] = useState<any[]>(() => getCachedCourses());
   const [course, setCourse] = useState<any>(() => {
     if (!id) return null;
     try {
@@ -54,6 +55,7 @@ export default function CoursePreviewPage() {
 
     const fetchCourseData = async () => {
       try {
+        // 1. Fetch current course details
         const courseRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses', id);
         const courseSnap = await getDoc(courseRef);
         
@@ -86,6 +88,19 @@ export default function CoursePreviewPage() {
           if (modulesList.length > 0) {
             setExpandedModules({ [modulesList[0].id || 'main']: true });
           }
+        }
+
+        // 2. Fetch all courses dynamically to compute instructor metrics and live course count
+        try {
+          const allCoursesQuery = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses'));
+          const allCoursesSnap = await getDocs(allCoursesQuery);
+          if (isMounted && !allCoursesSnap.empty) {
+            const list = allCoursesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+            setAllCourses(list);
+            saveCachedCourses(list);
+          }
+        } catch (allErr) {
+          console.warn("All courses fetch fallback:", allErr);
         }
       } catch (error) {
         console.error("Error fetching course data:", error);
@@ -200,6 +215,78 @@ export default function CoursePreviewPage() {
     return isNaN(num) || num === 0 ? '4,500' : num.toLocaleString();
   };
 
+  const instructorName = course?.instructorName || course?.instructor || 'Eyoub Sahle';
+
+  // Find all courses taught by this instructor (case-insensitive)
+  const instructorCourses = (allCourses || []).filter(c => {
+    const inst = (c.instructor || c.instructorName || '').trim().toLowerCase();
+    const target = instructorName.trim().toLowerCase();
+    if (!inst && (target.includes('eyoub') || target.includes('ኢዮብ'))) return true;
+    return inst === target || (target.includes('eyoub') && inst.includes('eyoub')) || (target.includes('ኢዮብ') && inst.includes('ኢዮብ'));
+  });
+
+  const instructorCoursesCount = Math.max(instructorCourses.length, course?.instructorCourses || 1);
+
+  let totalReviews = 0;
+  let totalRatingsSum = 0;
+  let ratingEntries = 0;
+  let totalStudents = 0;
+
+  instructorCourses.forEach(c => {
+    const rCount = Number(c.ratingCount || c.reviewsCount) || 0;
+    totalReviews += rCount;
+    const rAvg = Number(c.ratingAvg || c.rating);
+    if (!isNaN(rAvg) && rAvg > 0) {
+      totalRatingsSum += rAvg;
+      ratingEntries++;
+    }
+    const stCount = Number(c.studentsCount || c.students) || 0;
+    totalStudents += stCount;
+  });
+
+  // Calculate synchronized instructor rating
+  const instructorRatingScore = ratingEntries > 0 
+    ? Number((totalRatingsSum / ratingEntries).toFixed(1))
+    : Number(course?.instructorRatingAvg || course?.instructorRating || course?.ratingAvg || course?.rating || 4.9);
+  const instructorRatingFormatted = instructorRatingScore.toFixed(1);
+
+  // Course rating
+  const courseRatingScore = Number(course?.ratingAvg || course?.rating || 4.9);
+  const courseRatingFormatted = courseRatingScore.toFixed(1);
+
+  // Course reviews and students
+  const courseReviewsCount = Number(course?.ratingCount || course?.reviewsCount || (totalReviews > 0 ? Math.max(1, Math.round(totalReviews / Math.max(1, instructorCoursesCount))) : 18));
+  const courseStudentsCount = Number(course?.studentsCount || course?.students || (course?.isPopular ? 185 : 120));
+
+  // Instructor total reviews (realistic count, not 120!)
+  const instructorReviewsCount = totalReviews > 0 ? totalReviews : (Number(course?.instructorReviews) && course?.instructorReviews < 60 ? course?.instructorReviews : 28);
+
+  // Instructor total students (realistic count ~420, always consistent with landing page 500+)
+  const instructorStudentsCount = totalStudents > 0 
+    ? Math.min(totalStudents, 480) 
+    : (Number(course?.instructorStudents) && course?.instructorStudents <= 500 ? course?.instructorStudents : 420);
+
+  const renderStars = (ratingNum: number) => {
+    const score = Math.max(0, Math.min(5, Number(ratingNum) || 5));
+    const fullStars = Math.floor(score);
+    const decimal = score - fullStars;
+    const hasHalfStar = decimal >= 0.3 && decimal <= 0.7;
+    const extraFull = decimal > 0.7 ? 1 : 0;
+    const emptyStars = Math.max(0, 5 - fullStars - (hasHalfStar ? 1 : 0) - extraFull);
+
+    return (
+      <div className="flex text-amber-400 text-xs items-center gap-0.5" aria-label={`Rating: ${score} out of 5`}>
+        {[...Array(fullStars + extraFull)].map((_, i) => (
+          <i key={`full-${i}`} className="fa-solid fa-star"></i>
+        ))}
+        {hasHalfStar && <i key="half" className="fa-solid fa-star-half-stroke"></i>}
+        {[...Array(emptyStars)].map((_, i) => (
+          <i key={`empty-${i}`} className="fa-regular fa-star text-gray-400/50"></i>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-white dark:bg-[#0a0a0a]">
       {/* Dark Header Section */}
@@ -237,25 +324,19 @@ export default function CoursePreviewPage() {
                   Bestseller
                 </div>
               )}
-              <div className="flex items-center gap-1.5 text-primary font-black">
-                <span className="text-base">{course?.ratingAvg || course?.rating || 4.9}</span>
-                <div className="flex text-amber-400 text-xs">
-                  <i className="fa-solid fa-star"></i>
-                  <i className="fa-solid fa-star"></i>
-                  <i className="fa-solid fa-star"></i>
-                  <i className="fa-solid fa-star"></i>
-                  <i className="fa-solid fa-star-half-stroke"></i>
-                </div>
+              <div className="flex items-center gap-2 text-primary font-black">
+                <span className="text-base">{courseRatingFormatted}</span>
+                {renderStars(courseRatingScore)}
               </div>
-              <span className="text-blue-100 underline font-bold">({course?.ratingCount || course?.reviewsCount || 12} ratings)</span>
-              <span className="text-blue-100">{(Number(course?.studentsCount) || 150).toLocaleString()} students</span>
+              <span className="text-blue-100 underline font-bold">({courseReviewsCount} ratings)</span>
+              <span className="text-blue-100">{courseStudentsCount.toLocaleString()} students</span>
             </div>
 
             <div className="text-sm mb-4 flex flex-wrap items-center gap-3">
-              <span>Created by <span className="text-primary font-black">{course?.instructor || course?.instructorName || 'Eyoub Sahle'}</span></span>
-              <span className="bg-amber-400/20 text-amber-300 font-black px-3 py-1 rounded-full text-xs border border-amber-400/40 shadow-xs flex items-center gap-1">
+              <span>Created by <span className="text-primary font-black">{instructorName}</span></span>
+              <span className="bg-amber-400/20 text-amber-300 font-black px-3 py-1 rounded-full text-xs border border-amber-400/40 shadow-xs flex items-center gap-1.5">
                 <i className="fa-solid fa-star text-amber-400"></i>
-                <span>{course?.instructorRatingAvg || course?.ratingAvg || 4.9} (Instructor Rating)</span>
+                <span>{instructorRatingFormatted} (Instructor Rating)</span>
               </span>
             </div>
 
@@ -384,18 +465,18 @@ export default function CoursePreviewPage() {
             
             <div className="mb-4">
               <span className="text-xl font-bold text-secondary font-heading">
-                {course?.instructorName || course?.instructor || 'Instructor'}
+                {instructorName}
               </span>
               <div className="text-gray-600 dark:text-gray-400 text-sm mt-1">
-                {course?.instructorTitle || 'Leading Online Skills Instructor'}
+                {course?.instructorTitle || 'Leading Online Skills & Business Instructor'}
               </div>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-6 mb-4">
               <img 
-                src={displayInstructorImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(course?.instructorName || course?.instructor || 'Instructor')}&background=F9B03C&color=fff&size=128`} 
+                src={displayInstructorImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(instructorName)}&background=F9B03C&color=fff&size=128`} 
                 onError={(e) => { 
-                  const fallback = `https://ui-avatars.com/api/?name=${encodeURIComponent(course?.instructorName || course?.instructor || 'Instructor')}&background=F9B03C&color=fff&size=128`;
+                  const fallback = `https://ui-avatars.com/api/?name=${encodeURIComponent(instructorName)}&background=F9B03C&color=fff&size=128`;
                   if (e.currentTarget.src !== fallback) {
                     e.currentTarget.src = fallback;
                   }
@@ -406,28 +487,68 @@ export default function CoursePreviewPage() {
               <div className="flex flex-col justify-center space-y-2 text-sm text-gray-800 dark:text-gray-200">
                 <div className="flex items-center gap-3">
                   <i className="fa-solid fa-star text-[#f69c08]"></i>
-                  <span>{course?.instructorRating || 4.9} Instructor Rating</span>
+                  <span className="font-bold">{instructorRatingFormatted} Instructor Rating</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <i className="fa-solid fa-award text-gray-500"></i>
-                  <span>{(Number(course?.instructorReviews) || 120).toLocaleString()} Reviews</span>
+                  <i className="fa-solid fa-award text-primary"></i>
+                  <span>{instructorReviewsCount.toLocaleString()} Reviews</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <i className="fa-solid fa-user-group text-gray-500"></i>
-                  <span>{(Number(course?.instructorStudents) || 1500).toLocaleString()} Students</span>
+                  <i className="fa-solid fa-user-group text-blue-500"></i>
+                  <span>{instructorStudentsCount.toLocaleString()} Students</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <i className="fa-solid fa-play text-gray-500"></i>
-                  <span>{course?.instructorCourses || 1} Courses</span>
+                  <i className="fa-solid fa-play text-emerald-500"></i>
+                  <span>{instructorCoursesCount} {instructorCoursesCount === 1 ? 'Course' : 'Courses'}</span>
                 </div>
               </div>
             </div>
             
             <div className="text-sm text-gray-700 dark:text-gray-300 space-y-4 leading-relaxed max-w-3xl">
               <p>
-                {course?.instructorBio || 'No biography available for this instructor.'}
+                {course?.instructorBio || 'በኢ-ኮሜርስ፣ ዲጂታል ማርኬቲንግ እና ክሪፕቶ ከረንሲ ዘርፍ የብዙ አመታት የተግባር ልምድ ያለው እና በመቶዎች የሚቆጠሩ ተማሪዎችን ወደ ስኬት ያበቃ ባለሙያ።'}
               </p>
             </div>
+
+            {/* More Courses by this Instructor */}
+            {instructorCourses.filter(c => c.id !== course.id).length > 0 && (
+              <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-800">
+                <h4 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-2">
+                  <i className="fa-solid fa-book-open text-primary"></i>
+                  <span>{instructorName} የሚያስተምሯቸው ሌሎች ኮርሶች ({instructorCourses.filter(c => c.id !== course.id).length})</span>
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {instructorCourses.filter(c => c.id !== course.id).slice(0, 4).map((otherCourse) => (
+                    <div 
+                      key={otherCourse.id} 
+                      onClick={() => router.push(`/courses/${otherCourse.id}`)}
+                      className="p-3 rounded-2xl border border-gray-200 dark:border-gray-800 hover:border-primary transition cursor-pointer flex gap-3 items-center bg-gray-50 dark:bg-[#111111] group shadow-xs hover:shadow-md"
+                    >
+                      <img 
+                        src={fixDriveLink(otherCourse.image) || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=200'} 
+                        alt={otherCourse.title} 
+                        className="w-16 h-12 object-cover rounded-xl shrink-0 group-hover:scale-105 transition-transform"
+                        onError={(e) => { e.currentTarget.src = 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=200'; }}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-gray-900 dark:text-white line-clamp-1 group-hover:text-primary transition-colors">
+                          {otherCourse.title}
+                        </p>
+                        <div className="flex items-center gap-2 text-[11px] text-gray-500 mt-1">
+                          <span className="text-amber-500 font-bold flex items-center gap-0.5">
+                            <i className="fa-solid fa-star text-[10px]"></i> {otherCourse.ratingAvg || otherCourse.rating || 4.9}
+                          </span>
+                          <span>•</span>
+                          <span className="font-bold text-primary">
+                            {(otherCourse.isFree || otherCourse.price === 0 || otherCourse.price === '0') ? 'FREE' : `${formatPrice(otherCourse.price)} ETB`}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
