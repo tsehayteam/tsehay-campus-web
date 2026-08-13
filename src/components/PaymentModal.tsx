@@ -27,7 +27,7 @@ export default function PaymentModal({ course, onClose }: any) {
 
     // Authentication Check Before Payment
     if (!user) {
-      setError("ክፍያውን ለማጠናቀቅ እባክዎ አስቀድመው ይግቡ (Please login to complete payment).");
+      setError("ክፍያውን ለመፈጸም እባክዎ አስቀድመው ይግቡ።");
       setIsPaying(false);
       if (typeof window !== 'undefined') {
         const globalWin = window as any;
@@ -94,18 +94,18 @@ export default function PaymentModal({ course, onClose }: any) {
   };
 
   return (
-    <div id="payment-modal" className="fixed inset-0 bg-black/80 z-[9999] flex items-center justify-center backdrop-blur-sm p-4" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
+    <div id="payment-modal" className="fixed inset-0 bg-black/80 z-[9999] flex items-center justify-center backdrop-blur-md p-4" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
         <div className="bg-[#0b1329] text-white w-full max-w-lg rounded-[2rem] shadow-2xl overflow-hidden flex flex-col relative animate-[modalPop_0.3s_ease-out_forwards] border border-gray-800">
             
             {/* Header */}
             <div className="p-6 border-b border-gray-800/80 flex justify-between items-center bg-[#0d1735]">
                 <div>
                   <h3 className="font-black text-xl font-heading text-white flex items-center gap-2">
-                      <i className="fa-solid fa-shield-check text-amber-400"></i> ደህንነቱ የተጠበቀ ክፍያ
+                      <i className="fa-solid fa-shield-halved text-amber-400"></i> ደህንነቱ የተጠበቀ ክፍያ
                   </h3>
-                  <p className="text-xs text-emerald-400 font-bold mt-0.5">100% Secure & Instant Activation</p>
+                  <p className="text-xs text-emerald-400 font-bold mt-0.5">100% አስተማማኝ እና ፈጣን ማረጋገጫ</p>
                 </div>
-                <button onClick={onClose} className="text-gray-400 hover:text-red-400 transition text-xl p-2 rounded-full hover:bg-gray-800/50">
+                <button onClick={onClose} className="text-gray-400 hover:text-white hover:bg-gray-800 transition text-xl p-2 rounded-full w-9 h-9 flex items-center justify-center">
                     <i className="fa-solid fa-xmark"></i>
                 </button>
             </div>
@@ -114,24 +114,28 @@ export default function PaymentModal({ course, onClose }: any) {
                 
                 {/* Course Info */}
                 <div className="flex items-center gap-4 bg-[#121e3d] p-4 rounded-2xl border border-gray-800 mb-6">
-                    <img src={course.image || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1000&auto=format&fit=crop'} className="w-16 h-16 rounded-xl object-cover shadow-sm border border-gray-700" alt={course.title} />
-                    <div className="flex-1">
-                        <p className="text-[10px] text-gray-400 font-bold mb-1 uppercase tracking-widest">የሚገዙት ኮርስ (TARGET COURSE)</p>
-                        <h4 className="font-black text-white leading-tight line-clamp-2">{course.title}</h4>
+                    <img 
+                      src={course.image || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1000&auto=format&fit=crop'} 
+                      className="w-16 h-16 rounded-xl object-cover shadow-sm border border-gray-700 shrink-0" 
+                      alt={course.title} 
+                    />
+                    <div className="flex-1 min-w-0">
+                        <p className="text-[10px] text-amber-400/90 font-black mb-1 uppercase tracking-widest">የተመረጠው ኮርስ</p>
+                        <h4 className="font-black text-white text-sm sm:text-base leading-snug line-clamp-2">{course.title}</h4>
                     </div>
                 </div>
 
                 {/* Total */}
-                <div className="flex justify-between items-center mb-6 pb-6 border-b border-gray-800">
-                    <span className="text-gray-300 font-bold">ጠቅላላ ክፍያ (TOTAL)</span>
-                    <span className="text-3xl font-black text-white tracking-tighter">
-                        {course.isFree ? "ነፃ" : `${Number(course.price).toLocaleString()} ብር`}
+                <div className="flex justify-between items-center mb-6 pb-5 border-b border-gray-800">
+                    <span className="text-gray-300 font-bold text-sm uppercase tracking-wider">ጠቅላላ ክፍያ</span>
+                    <span className="text-2xl sm:text-3xl font-black text-amber-400 tracking-tight">
+                        {course.isFree ? "ነፃ" : `${Number(course.price).toLocaleString()} ETB`}
                     </span>
                 </div>
 
                 {!course.isFree && (
                     <>
-                        <h4 className="font-bold text-xs text-gray-400 mb-3 uppercase tracking-wider">የክፍያ አማራጭ ይምረጡ (SELECT PAYMENT METHOD)</h4>
+                        <h4 className="font-bold text-xs text-gray-400 mb-3 uppercase tracking-wider">የክፍያ አማራጭ ይምረጡ</h4>
                         <div className="space-y-3.5 mb-6">
                             
                             {/* Option 1: LakiPay */}
@@ -147,7 +151,7 @@ export default function PaymentModal({ course, onClose }: any) {
                                     />
                                     <div>
                                         <span className="font-black text-white text-lg block leading-tight">LakiPay</span>
-                                        <span className="text-xs text-amber-400 font-bold block mt-0.5">Telebirr, CBE Birr & Local Banks</span>
+                                        <span className="text-xs text-amber-400 font-bold block mt-0.5">For Local Payments</span>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2">
@@ -173,7 +177,7 @@ export default function PaymentModal({ course, onClose }: any) {
                                     />
                                     <div>
                                         <span className="font-black text-white text-lg block leading-tight">PayPal</span>
-                                        <span className="text-xs text-blue-400 font-bold block mt-0.5">PayPal & International Cards</span>
+                                        <span className="text-xs text-blue-400 font-bold block mt-0.5">For International Payments</span>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2">
@@ -183,20 +187,20 @@ export default function PaymentModal({ course, onClose }: any) {
                                 </div>
                             </label>
 
-                            {/* Option 3: Crypto */}
+                            {/* Option 3: NOWPayments */}
                             <label className={`payment-option flex items-center justify-between p-4.5 rounded-2xl border cursor-pointer transition-all ${paymethod === 'crypto' || paymethod === 'nowpayments' ? 'border-cyan-500 bg-cyan-500/10 shadow-lg ring-2 ring-cyan-500/40 scale-[1.01]' : 'border-gray-800 bg-[#121e3d] hover:bg-[#16254a]'}`}>
                                 <div className="flex items-center gap-3.5">
                                     <input 
                                       type="radio" 
                                       name="paymethod" 
-                                      value="crypto" 
+                                      value="nowpayments" 
                                       checked={paymethod === 'crypto' || paymethod === 'nowpayments'} 
-                                      onChange={() => setPaymethod('crypto')} 
+                                      onChange={() => setPaymethod('nowpayments')} 
                                       className="w-5 h-5 text-cyan-500 focus:ring-cyan-500 accent-cyan-500 cursor-pointer" 
                                     />
                                     <div>
-                                        <span className="font-black text-white text-lg block leading-tight">Crypto</span>
-                                        <span className="text-xs text-cyan-400 font-bold block mt-0.5">USDT, Bitcoin, Ethereum & Solana</span>
+                                        <span className="font-black text-white text-lg block leading-tight">NOWPayments</span>
+                                        <span className="text-xs text-cyan-400 font-bold block mt-0.5">For Crypto Payments</span>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-1.5">
@@ -232,7 +236,7 @@ export default function PaymentModal({ course, onClose }: any) {
                 <button 
                   onClick={handlePayment} 
                   disabled={isPaying} 
-                  className="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 font-black py-4 rounded-2xl text-base transition-all shadow-lg hover:shadow-amber-500/25 flex items-center justify-center gap-2 group disabled:opacity-70 cursor-pointer"
+                  className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-4 rounded-2xl text-base transition-all shadow-lg hover:shadow-amber-500/25 flex items-center justify-center gap-2 group disabled:opacity-70 cursor-pointer"
                 >
                     {isPaying ? (
                         <>
@@ -241,7 +245,7 @@ export default function PaymentModal({ course, onClose }: any) {
                         </>
                     ) : (
                         <>
-                            <span>{course.isFree ? 'በነፃ ይጀምሩ' : 'ወደ ክፍያ ገፅ ሂድ (Proceed to Payment)'}</span> 
+                            <span>{course.isFree ? 'በነፃ ይመዝገቡ' : 'ወደ ክፍያ ይቀጥሉ'}</span> 
                             <i className="fa-solid fa-arrow-up-right-from-square group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform"></i>
                         </>
                     )}
