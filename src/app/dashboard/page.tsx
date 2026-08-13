@@ -470,112 +470,104 @@ export default function StudentDashboard() {
     setCurrentVideoPlayedFraction(0);
   }, [activeLesson?.title, activeCourse?.id]);
 
-  const handleVideoProgress50 = async () => {
-    if (!activeLesson || !activeCourse || !user) return;
-    if (progress.includes(activeLesson.title)) return;
+  const markLessonCompleted = async (targetLesson?: any) => {
+    const target = targetLesson || activeLesson;
+    if (!target || !activeCourse || !user) return;
+    
+    const lessonTitle = target.title;
+    if (!lessonTitle) return;
 
-    const pointsToAward = activeLesson.points || 100;
+    const alreadyDone = progress.includes(lessonTitle);
+    const newCompletedLessons = alreadyDone ? progress : [...progress, lessonTitle];
+    if (!alreadyDone) {
+      setProgress(newCompletedLessons);
+    }
+
+    let totalLessonsCount = 0;
+    modules.forEach((m: any) => { totalLessonsCount += (m.lessons || []).length; });
+    const isFinished = totalLessonsCount > 0 && newCompletedLessons.length >= totalLessonsCount;
+    if (isFinished) {
+      setIsCourseCompleted(true);
+    }
+
+    const pointsToAward = target.points || 25;
+
     try {
-        const userRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'purchased_courses', activeCourse.id);
-        const userDoc = await getDoc(userRef);
+      const userRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'purchased_courses', activeCourse.id);
+      const userDoc = await getDoc(userRef);
 
-        let newCompletedLessons = [...progress, activeLesson.title];
-        let totalPoints = pointsToAward;
+      if (userDoc.exists()) {
+        const data = userDoc.data();
+        const curPoints = data.points || 0;
+        const totalPoints = alreadyDone ? curPoints : curPoints + pointsToAward;
 
-        if (userDoc.exists()) {
-            const data = userDoc.data();
-            const currentCompleted = data.completedLessons || [];
-            if (!currentCompleted.includes(activeLesson.title)) {
-                newCompletedLessons = [...currentCompleted, activeLesson.title];
-                totalPoints = (data.points || 0) + pointsToAward;
+        await setDoc(userRef, {
+          completedLessons: newCompletedLessons,
+          points: totalPoints,
+          isCompleted: isFinished || data.isCompleted || false,
+          lastPlayedAt: new Date()
+        }, { merge: true });
+      } else {
+        await setDoc(userRef, {
+          courseId: activeCourse.id,
+          completedLessons: newCompletedLessons,
+          points: pointsToAward,
+          isCompleted: isFinished,
+          enrolledAt: new Date(),
+          lastPlayedAt: new Date()
+        }, { merge: true });
+      }
+    } catch (err) {
+      console.error("Error saving lesson completion:", err);
+    }
+  };
 
-                await updateDoc(userRef, {
-                    completedLessons: newCompletedLessons,
-                    points: totalPoints,
-                    lastPlayedAt: new Date()
-                });
-                setProgress(newCompletedLessons);
-            }
-        } else {
-            await setDoc(userRef, {
-                courseId: activeCourse.id,
-                completedLessons: newCompletedLessons,
-                points: totalPoints,
-                enrolledAt: new Date(),
-                lastPlayedAt: new Date()
-            }, { merge: true });
-            setProgress(newCompletedLessons);
-        }
-    } catch (e) {
-        console.error("Error updating points on 50% watch:", e);
+  const handleNextLesson = async () => {
+    if (activeLesson) {
+      await markLessonCompleted(activeLesson);
+    }
+
+    const allFlatLessons: any[] = [];
+    modules.forEach((m: any, mIdx: number) => {
+      (m.lessons || []).forEach((l: any, lIdx: number) => {
+        allFlatLessons.push({ ...l, moduleIndex: mIdx, lessonIndex: lIdx });
+      });
+    });
+
+    const currentIndex = allFlatLessons.findIndex(l => l.title === activeLesson?.title);
+    if (currentIndex >= 0 && currentIndex < allFlatLessons.length - 1) {
+      const nextLesson = allFlatLessons[currentIndex + 1];
+      setActiveLesson(nextLesson);
+    } else {
+      setIsCourseCompleted(true);
+      if (activeCourse?.id && !localStorage.getItem(`rated_course_${activeCourse.id}`)) {
+        setShowRatingModal(true);
+      }
+    }
+  };
+
+  const handlePrevLesson = () => {
+    const allFlatLessons: any[] = [];
+    modules.forEach((m: any, mIdx: number) => {
+      (m.lessons || []).forEach((l: any, lIdx: number) => {
+        allFlatLessons.push({ ...l, moduleIndex: mIdx, lessonIndex: lIdx });
+      });
+    });
+
+    const currentIndex = allFlatLessons.findIndex(l => l.title === activeLesson?.title);
+    if (currentIndex > 0) {
+      setActiveLesson(allFlatLessons[currentIndex - 1]);
+    }
+  };
+
+  const handleVideoProgress50 = async () => {
+    if (activeLesson) {
+      await markLessonCompleted(activeLesson);
     }
   };
 
   const handleVideoEnd = async () => {
-    if (!activeLesson || !activeCourse || !user) return;
-    
-    // 1. Award points
-    const pointsToAward = activeLesson.points || 100;
-    
-    try {
-        const userRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'purchased_courses', activeCourse.id);
-        const userDoc = await getDoc(userRef);
-        
-        let newCompletedLessons = [activeLesson.title];
-        let totalPoints = pointsToAward;
-        
-        if (userDoc.exists()) {
-            const data = userDoc.data();
-            const currentCompleted = data.completedLessons || [];
-            if (!currentCompleted.includes(activeLesson.title)) {
-                newCompletedLessons = [...currentCompleted, activeLesson.title];
-                totalPoints = (data.points || 0) + pointsToAward;
-                
-                await updateDoc(userRef, {
-                    completedLessons: newCompletedLessons,
-                    points: totalPoints,
-                    lastPlayedAt: new Date()
-                });
-                
-                // Update local points state to refresh UI
-                setProgress(newCompletedLessons);
-            }
-        } else {
-            await setDoc(userRef, {
-                courseId: activeCourse.id,
-                completedLessons: newCompletedLessons,
-                points: totalPoints,
-                enrolledAt: new Date(),
-                lastPlayedAt: new Date()
-            }, { merge: true });
-            setProgress(newCompletedLessons);
-        }
-    } catch (e) {
-        console.error("Error updating points:", e);
-    }
-    
-    // 2. Play next video automatically
-    const currentModule = modules[activeLesson.moduleIndex];
-    if (currentModule && currentModule.lessons) {
-        const nextLessonIndex = activeLesson.lessonIndex + 1;
-        if (nextLessonIndex < currentModule.lessons.length) {
-            setActiveLesson({ ...currentModule.lessons[nextLessonIndex], moduleIndex: activeLesson.moduleIndex, lessonIndex: nextLessonIndex });
-        } else {
-            // Check next module
-            const nextModuleIndex = activeLesson.moduleIndex + 1;
-            if (nextModuleIndex < modules.length) {
-                const nextModule = modules[nextModuleIndex];
-                if (nextModule && nextModule.lessons && nextModule.lessons.length > 0) {
-                    setActiveLesson({ ...nextModule.lessons[0], moduleIndex: nextModuleIndex, lessonIndex: 0 });
-                }
-            } else {
-                setIsCourseCompleted(true);
-                if (activeCourse?.id && !localStorage.getItem(`rated_course_${activeCourse.id}`)) {
-                    setShowRatingModal(true);
-                }
-            }
-        }
-    }
+    await handleNextLesson();
   };
 
   const handleQuizSubmit = async () => {
@@ -929,7 +921,7 @@ ${customAdminPrompt}
                              <p className="text-xs md:text-sm text-gray-300 mb-6 max-w-md">እባክዎ ለኮርሱ እና ለአስተማሪው ያለዎትን ሬቲንግ እና አስተያየት ይስጡ።</p>
                              <button 
                                onClick={() => setShowRatingModal(true)}
-                               className="bg-primary text-dark font-black px-6 py-3 rounded-xl hover:bg-yellow-400 transition shadow-lg text-sm transform hover:scale-105"
+                               className="bg-primary text-dark font-black px-6 py-3 rounded-xl hover:bg-yellow-400 transition shadow-lg text-sm transform hover:scale-105 cursor-pointer"
                              >
                                ⭐ ሬቲንግ/ሪቪው ስጥ (Rate Course)
                              </button>
@@ -1012,6 +1004,58 @@ ${customAdminPrompt}
                             </>
                         )}
                     </div>
+
+                    {/* Lesson Action & Navigation Bar */}
+                    {(() => {
+                        const allFlatLessons: any[] = [];
+                        modules.forEach((m: any, mIdx: number) => {
+                            (m.lessons || []).forEach((l: any, lIdx: number) => {
+                                allFlatLessons.push({ ...l, moduleIndex: mIdx, lessonIndex: lIdx });
+                            });
+                        });
+                        const currentIdx = allFlatLessons.findIndex(l => l.title === activeLesson?.title);
+                        const hasPrev = currentIdx > 0;
+                        const hasNext = currentIdx >= 0 && currentIdx < allFlatLessons.length - 1;
+                        const isCurrentCompleted = activeLesson && progress.includes(activeLesson.title);
+
+                        return (
+                            <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-gray-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-3 transition">
+                                <button 
+                                    onClick={handlePrevLesson}
+                                    disabled={!hasPrev}
+                                    className="px-4 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 text-xs font-bold text-dark dark:text-white hover:bg-gray-100 dark:hover:bg-slate-700 transition flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                                >
+                                    <i className="fa-solid fa-chevron-left"></i>
+                                    <span>የቀደመው ክፍል (Prev)</span>
+                                </button>
+
+                                <div className="flex items-center gap-2">
+                                    <button 
+                                        onClick={() => markLessonCompleted(activeLesson)}
+                                        className={`px-5 py-2.5 rounded-xl text-xs font-black transition shadow-sm flex items-center gap-2 cursor-pointer ${
+                                            isCurrentCompleted
+                                                ? 'bg-emerald-500 text-white'
+                                                : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 hover:bg-emerald-500 hover:text-white'
+                                        }`}
+                                    >
+                                        <i className={`fa-solid ${isCurrentCompleted ? 'fa-circle-check' : 'fa-check'}`}></i>
+                                        <span>{isCurrentCompleted ? 'ይህ ክፍል ተጠናቋል ✓' : 'ይህን ትምህርት ጨርሻለሁ (Complete)'}</span>
+                                        {!isCurrentCompleted && (
+                                            <span className="text-[10px] bg-primary text-dark font-black px-1.5 py-0.5 rounded-md ml-1">+{activeLesson?.points || 25} ፖይንት</span>
+                                        )}
+                                    </button>
+                                </div>
+
+                                <button 
+                                    onClick={handleNextLesson}
+                                    className="px-5 py-2.5 rounded-xl bg-primary text-dark hover:bg-yellow-400 text-xs font-black transition shadow-sm flex items-center gap-2 cursor-pointer"
+                                >
+                                    <span>{hasNext ? 'ቀጣይ ትምህርት (Next)' : 'ፈተናውን ውሰድ (Take Quiz)'}</span>
+                                    <i className="fa-solid fa-chevron-right"></i>
+                                </button>
+                            </div>
+                        );
+                    })()}
 
                     {/* Tabs */}
                     <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden min-h-[300px]">
@@ -1456,10 +1500,7 @@ ${customAdminPrompt}
                                 modules.forEach((m: any) => { totalCount += (m.lessons || []).length; });
                                 if (totalCount === 0) totalCount = 1;
                                 
-                                const lessonWeight = 100 / totalCount;
-                                const completedBasePercent = (progress.length / totalCount) * 100;
-                                const livePlayedAdded = currentVideoPlayedFraction * lessonWeight;
-                                const percent = Math.min(100, Math.round(completedBasePercent + livePlayedAdded));
+                                const percent = Math.min(100, Math.round((progress.length / totalCount) * 100));
 
                                 return (
                                     <>
@@ -1467,8 +1508,8 @@ ${customAdminPrompt}
                                             <p className="text-[11px] text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wide">የኮርሱ ሂደት</p>
                                             <p className="text-sm text-secondary dark:text-primary font-black">{percent}%</p>
                                         </div>
-                                        <div className="w-full bg-gray-100 dark:bg-slate-700 rounded-full h-2">
-                                            <div className="bg-success h-2 rounded-full transition-all duration-300" style={{ width: `${percent}%` }}></div>
+                                        <div className="w-full bg-gray-100 dark:bg-slate-700 rounded-full h-2.5 overflow-hidden">
+                                            <div className="bg-gradient-to-r from-amber-400 to-emerald-500 h-2.5 rounded-full transition-all duration-500 shadow-sm" style={{ width: `${percent}%` }}></div>
                                         </div>
                                     </>
                                 );
@@ -1505,45 +1546,41 @@ ${customAdminPrompt}
                                                     <div 
                                                         key={lidx} 
                                                         onClick={() => {
-                                                            if (isUnlocked) {
-                                                                setActiveLesson({...lesson, moduleIndex: idx, lessonIndex: lidx});
-                                                            } else {
-                                                                alert("እባክዎ በመጀመሪያ ቀደሞ ያሉትን ትምህርቶች አጠናቅቁ (Please complete previous lessons first)");
-                                                            }
+                                                            setActiveLesson({...lesson, moduleIndex: idx, lessonIndex: lidx});
                                                         }}
-                                                        className={`flex items-center justify-between p-2.5 rounded-xl transition ${
+                                                        className={`flex items-center justify-between p-2.5 rounded-xl transition cursor-pointer ${
                                                             isActive 
                                                                 ? 'bg-white dark:bg-slate-700 border-l-4 border-primary shadow-sm' 
-                                                                : isUnlocked 
-                                                                    ? 'hover:bg-white dark:hover:bg-slate-700/80 cursor-pointer' 
-                                                                    : 'opacity-60 cursor-not-allowed bg-gray-100/50 dark:bg-slate-900/50'
+                                                                : 'hover:bg-white dark:hover:bg-slate-700/80 bg-gray-100/50 dark:bg-slate-900/40'
                                                         }`}
                                                     >
-                                                        <div className="flex items-center gap-3">
+                                                        <div className="flex items-center gap-3 min-w-0 pr-2">
                                                             {isActive ? (
-                                                                <i className="fa-solid fa-circle-play text-primary text-sm animate-pulse"></i>
+                                                                <i className="fa-solid fa-circle-play text-primary text-sm animate-pulse shrink-0"></i>
                                                             ) : isCompleted ? (
-                                                                <i className="fa-solid fa-circle-check text-emerald-500 text-sm"></i>
-                                                            ) : isUnlocked ? (
-                                                                <i className="fa-solid fa-circle-play text-gray-400 text-xs"></i>
+                                                                <i className="fa-solid fa-circle-check text-emerald-500 text-sm shrink-0"></i>
                                                             ) : (
-                                                                <i className="fa-solid fa-lock text-gray-400 text-xs"></i>
+                                                                <i className="fa-solid fa-circle-play text-gray-400 text-xs shrink-0"></i>
                                                             )}
-                                                            <div>
-                                                                <p className={`text-xs font-bold ${isActive ? 'text-primary' : isUnlocked ? 'text-dark dark:text-white' : 'text-gray-400 dark:text-gray-500'}`}>
+                                                            <div className="min-w-0">
+                                                                <p className={`text-xs font-bold truncate ${isActive ? 'text-primary' : isCompleted ? 'text-emerald-600 dark:text-emerald-400' : 'text-dark dark:text-white'}`}>
                                                                     {lesson.title}
                                                                 </p>
                                                                 <div className="flex items-center gap-2 mt-0.5 text-[10px] text-gray-500">
                                                                     <span><i className="fa-solid fa-video"></i> {lesson.duration || '00:00'}</span>
-                                                                    <span className="text-primary font-bold">+{lesson.points || 100} ነጥብ</span>
+                                                                    <span className="text-primary font-bold">+{lesson.points || 25} ነጥብ</span>
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                        {!isUnlocked && (
-                                                            <span className="text-[10px] bg-gray-200 dark:bg-slate-800 text-gray-500 px-2 py-0.5 rounded-md font-bold">
-                                                                Locked
+                                                        {isCompleted ? (
+                                                            <span className="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-md font-bold shrink-0">
+                                                                ✓ ተጠናቋል
                                                             </span>
-                                                        )}
+                                                        ) : isActive ? (
+                                                            <span className="text-[10px] bg-primary/20 text-dark dark:text-primary px-2 py-0.5 rounded-md font-bold shrink-0 animate-pulse">
+                                                                እየታየ ነው
+                                                            </span>
+                                                        ) : null}
                                                     </div>
                                                     );
                                                 })}
