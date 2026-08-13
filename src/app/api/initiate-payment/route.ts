@@ -9,8 +9,8 @@ function generateCleanTxRef() {
 function formatPaymentDetails(rawTitle?: string) {
   if (!rawTitle) {
     return {
-      title: "Tsehay Campus",
-      description: "Tsehay Campus Course"
+      title: "Course",
+      description: "Course Access"
     };
   }
 
@@ -19,12 +19,19 @@ function formatPaymentDetails(rawTitle?: string) {
   const englishName = parenMatch ? parenMatch[1].trim() : '';
   const amharicName = clean.replace(/\(.*?\)/, '').trim();
 
-  const chosenName = englishName || amharicName;
-  const shortName = chosenName.length > 28 ? chosenName.substring(0, 25) + '...' : chosenName;
+  let chosenName = englishName || amharicName;
+  
+  // Keep the course name concise so it never wraps on LakiPay's summary card
+  if (chosenName.length > 22) {
+    chosenName = chosenName.replace(/\s+(Course|Masterclass|Bootcamp|Training|ስልጠና)/i, '').trim();
+  }
+  if (chosenName.length > 22) {
+    chosenName = chosenName.substring(0, 20).trim();
+  }
 
   return {
-    title: `Tsehay Campus - ${shortName}`,
-    description: `Tsehay Campus | ${shortName}`
+    title: chosenName,
+    description: chosenName
   };
 }
 
