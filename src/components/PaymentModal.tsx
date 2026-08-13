@@ -155,12 +155,9 @@ export default function PaymentModal({ course, onClose }: any) {
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <div className="bg-white px-3.5 py-2 rounded-xl flex items-center shadow-md border border-gray-200 h-11">
+                                    <div className="bg-white px-4 py-2 rounded-xl flex items-center shadow-md border border-gray-200 h-11">
                                         <img src="/lakipay-logo.svg" alt="LakiPay" className="h-7 w-auto object-contain" />
                                     </div>
-                                    <span className="flex items-center font-black text-xs bg-[#00A3E0] text-white px-3 py-2 rounded-xl shadow-md tracking-wider h-11">
-                                      telebirr
-                                    </span>
                                 </div>
                             </label>
 
@@ -250,28 +247,6 @@ export default function PaymentModal({ course, onClose }: any) {
                         </>
                     )}
                 </button>
-            </div>
-            
-            {/* Footer / Powered by Tsehay Digital */}
-            <div className="bg-[#0d1735] p-4 text-center border-t border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-3 px-6">
-                <div className="flex items-center gap-2">
-                    <i className="fa-solid fa-lock text-emerald-400 text-sm"></i>
-                    <p className="text-xs text-gray-300 font-extrabold uppercase tracking-wider">
-                      ክፍያዎ 100% ደህንነቱ የተጠበቀ ነው
-                    </p>
-                </div>
-                <div className="flex items-center gap-2 text-[11px] text-gray-400 font-bold uppercase tracking-widest">
-                    <span>POWERED BY</span>
-                    <a href="https://tsehay360.com" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white/10 border border-white/15 hover:border-amber-400/50 transition-all shadow-sm">
-                        <img 
-                          src="/tsehay-digital-logo.jpg" 
-                          alt="Tsehay Digital" 
-                          className="h-4 w-4 object-contain rounded-xs" 
-                          onError={(e) => { e.currentTarget.src = '/tsehay-digital-logo.png'; }}
-                        />
-                        <span className="font-black text-amber-400 text-xs tracking-wider">TSEHAY DIGITAL</span>
-                    </a>
-                </div>
             </div>
         </div>
         <style dangerouslySetInnerHTML={{__html: `
