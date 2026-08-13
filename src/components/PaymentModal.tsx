@@ -42,7 +42,7 @@ export default function PaymentModal({ course, onClose }: any) {
 
     const targetCourseId = course.id || 'course_default';
     const targetAmount = Number(course.price) || 4500;
-    const ref = `tsehay_tx_${targetCourseId}_${user?.uid || 'anon'}_${Date.now()}`;
+    const ref = `TC-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
     
     // Default fail-safe checkout URLs for each method
     let fallbackUrl = '';

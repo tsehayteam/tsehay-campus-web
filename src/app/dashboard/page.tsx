@@ -109,6 +109,32 @@ export default function StudentDashboard() {
           setLoading(false);
           return;
         }
+
+        // Check if returning from successful payment (LakiPay / PayPal)
+        if (typeof window !== 'undefined') {
+          const urlParams = new URLSearchParams(window.location.search);
+          const isSuccess = urlParams.get('success') === 'true';
+          const targetCourseId = urlParams.get('course');
+          const txRef = urlParams.get('reference') || urlParams.get('tx_ref') || '';
+          if (isSuccess && targetCourseId) {
+            try {
+              await fetch('/api/confirm-enrollment', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  courseId: targetCourseId,
+                  userId: user.uid,
+                  paymentMethod: 'lakipay',
+                  tx_ref: txRef
+                })
+              });
+              window.history.replaceState({}, document.title, window.location.pathname);
+            } catch (confErr) {
+              console.warn("Auto enrollment notice:", confErr);
+            }
+          }
+        }
+
         const purchasesRef = collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'purchased_courses');
         const purchasesSnap = await getDocs(purchasesRef);
         

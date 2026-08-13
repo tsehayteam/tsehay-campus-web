@@ -1,5 +1,33 @@
 import { NextResponse } from 'next/server';
 
+function generateCleanTxRef() {
+  const timeHex = Date.now().toString(36).toUpperCase();
+  const randHex = Math.random().toString(36).substring(2, 6).toUpperCase();
+  return `TC-${timeHex}-${randHex}`;
+}
+
+function formatPaymentDetails(rawTitle?: string) {
+  if (!rawTitle) {
+    return {
+      title: "Tsehay Campus",
+      description: "Tsehay Campus Course"
+    };
+  }
+
+  const clean = rawTitle.replace(/[\r\n\t]+/g, ' ').replace(/\s+/g, ' ').trim();
+  const parenMatch = clean.match(/\((.*?)\)/);
+  const englishName = parenMatch ? parenMatch[1].trim() : '';
+  const amharicName = clean.replace(/\(.*?\)/, '').trim();
+
+  const chosenName = englishName || amharicName;
+  const shortName = chosenName.length > 28 ? chosenName.substring(0, 25) + '...' : chosenName;
+
+  return {
+    title: `Tsehay Campus - ${shortName}`,
+    description: `Tsehay Campus | ${shortName}`
+  };
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -15,7 +43,8 @@ export async function POST(request: Request) {
     const host = request.headers.get('host') || 'tsehaycampus.com';
     const protocol = host.includes('localhost') ? 'http' : 'https';
     const origin = process.env.NEXT_PUBLIC_APP_URL || `${protocol}://${host}`;
-    const tx_ref = `tsehay_tx_${courseId}_${userId || 'anon'}_${Date.now()}`;
+    const tx_ref = generateCleanTxRef();
+    const payDetails = formatPaymentDetails(title);
     const selectedMethod = (paymethod || 'lakipay').toLowerCase();
 
     // Safely save pending payment record to Firestore if adminDb is available
@@ -28,6 +57,7 @@ export async function POST(request: Request) {
           price: numericPrice,
           userEmail: email,
           tx_ref,
+          title: title || 'Course',
           createdAt: new Date()
         });
       }
@@ -64,7 +94,6 @@ export async function POST(request: Request) {
         process.env.NEXT_PUBLIC_LAKIPAY_CHECKOUT_URL ||
         ''
       ).trim();
-      // Removed early exit so that the API call is always attempted if keys exist.
 
       const merchantId = (
         process.env.LAKIPAY_MERCHANT_ID || 
@@ -104,12 +133,19 @@ export async function POST(request: Request) {
               email: email,
               first_name: firstName || email.split('@')[0] || "Student",
               last_name: lastName || "Campus",
-              title: title || "Tsehay Campus Course",
-              description: `Payment for ${title}`,
+              merchant_name: "Tsehay Campus",
+              merchant: "Tsehay Campus",
+              business_name: "Tsehay Campus",
+              vendor_name: "Tsehay Campus",
+              company_name: "Tsehay Campus",
+              app_name: "Tsehay Campus",
+              name: "Tsehay Campus",
+              title: payDetails.title,
+              description: payDetails.description,
               reference: tx_ref,
               supported_mediums: ["TELEBIRR", "CBE", "MPESA", "AWASH", "OROMIA_BANK", "ETHSWITCH", "CYBERSOURCE"],
               callback_url: `${origin}/api/webhook`,
-              return_url: `${origin}/dashboard?success=true&course=${courseId}`
+              return_url: `${origin}/dashboard?success=true&course=${courseId}&reference=${tx_ref}`
             };
 
             if (validEthPhone) {
@@ -152,7 +188,7 @@ export async function POST(request: Request) {
                 let checkoutUrl = rawCheckoutUrl;
                 if (!checkoutUrl.includes('amount=') && numAmount > 0) {
                   const separator = checkoutUrl.includes('?') ? '&' : '?';
-                  checkoutUrl = `${checkoutUrl}${separator}amount=${numAmount}&reference=${returnedRef}&title=${encodeURIComponent(title || 'Course')}`;
+                  checkoutUrl = `${checkoutUrl}${separator}amount=${numAmount}&reference=${returnedRef}&title=${encodeURIComponent(payDetails.title)}`;
                 }
                 return NextResponse.json({ checkoutUrl, reference: returnedRef });
               }
@@ -174,7 +210,7 @@ export async function POST(request: Request) {
 
       if (chapaDirectUrl && chapaDirectUrl.startsWith('http')) {
         const separator = chapaDirectUrl.includes('?') ? '&' : '?';
-        const finalChapaUrl = `${chapaDirectUrl}${separator}amount=${numAmount}&reference=${tx_ref}&title=${encodeURIComponent(title || 'Course')}`;
+        const finalChapaUrl = `${chapaDirectUrl}${separator}amount=${numAmount}&reference=${tx_ref}&title=${encodeURIComponent(payDetails.title)}`;
         return NextResponse.json({ checkoutUrl: finalChapaUrl, reference: tx_ref });
       }
 
@@ -194,10 +230,10 @@ export async function POST(request: Request) {
               last_name: lastName || "Campus",
               tx_ref: tx_ref,
               callback_url: `${origin}/api/webhook`,
-              return_url: `${origin}/dashboard?success=true&course=${courseId}`,
+              return_url: `${origin}/dashboard?success=true&course=${courseId}&reference=${tx_ref}`,
               customization: {
-                title: title || "Tsehay Campus Course",
-                description: `Payment for ${title}`
+                title: "Tsehay Campus",
+                description: payDetails.description
               }
             })
           });
@@ -221,7 +257,7 @@ export async function POST(request: Request) {
           baseCheckoutUrl = `https://checkout.lakipay.co/pay/${tx_ref}`;
         }
         const separator = baseCheckoutUrl.includes('?') ? '&' : '?';
-        const finalUrl = baseCheckoutUrl.includes('amount=') ? baseCheckoutUrl : `${baseCheckoutUrl}${separator}amount=${numAmount}&reference=${tx_ref}&title=${encodeURIComponent(title || 'Course')}`;
+        const finalUrl = baseCheckoutUrl.includes('amount=') ? baseCheckoutUrl : `${baseCheckoutUrl}${separator}amount=${numAmount}&reference=${tx_ref}&title=${encodeURIComponent(payDetails.title)}&description=${encodeURIComponent(payDetails.description)}`;
         return NextResponse.json({ checkoutUrl: finalUrl, reference: tx_ref });
       }
 
