@@ -10,7 +10,7 @@ import { useRouter, useParams } from 'next/navigation';
 import PaymentModal from '@/components/PaymentModal';
 import Footer from '@/components/Footer';
 import dynamic from 'next/dynamic';
-import { getCachedCourses } from '@/lib/courseCache';
+import { getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl } from '@/lib/courseCache';
 
 const ReactPlayer = dynamic(() => import('react-player'), { ssr: false });
 
@@ -23,21 +23,13 @@ export default function CoursePreviewPage() {
   const { user } = useAuth();
   const router = useRouter();
 
-  const [allCourses, setAllCourses] = useState<any[]>(() => getCachedCourses());
-  const [course, setCourse] = useState<any>(() => {
-    if (!id) return null;
-    try {
-      const cached = getCachedCourses();
-      return cached.find((c: any) => c.id === id) || null;
-    } catch (e) {
-      return null;
-    }
-  });
+  const [allCourses, setAllCourses] = useState<any[]>([]);
+  const [course, setCourse] = useState<any>(null);
   const [modules, setModules] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
   // Accordion state
-  const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>({});
+  const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>({ main: true, 0: true });
 
   // Payment/Enrollment states
   const [isEnrolling, setIsEnrolling] = useState(false);
@@ -53,6 +45,29 @@ export default function CoursePreviewPage() {
 
     let isMounted = true;
 
+    // Load from cache immediately on client mount
+    try {
+      const cached = getCachedCourses();
+      if (cached.length > 0) {
+        setAllCourses(cached);
+        const cachedCourse = cached.find((c: any) => c.id === id);
+        if (cachedCourse && isMounted) {
+          const cleanDesc = formatCourseDesc({ id: cachedCourse.id, ...cachedCourse });
+          setCourse({
+            ...cachedCourse,
+            desc: cleanDesc,
+            description: cleanDesc
+          });
+          if (cachedCourse.lessons && cachedCourse.lessons.length > 0) {
+            setModules([{ id: 'main', title: 'Course Content', lessons: cachedCourse.lessons }]);
+          } else if (cachedCourse.modules && cachedCourse.modules.length > 0) {
+            setModules(cachedCourse.modules);
+          }
+          setLoading(false);
+        }
+      }
+    } catch (e) {}
+
     const fetchCourseData = async () => {
       try {
         // 1. Fetch current course details
@@ -61,7 +76,13 @@ export default function CoursePreviewPage() {
         
         if (isMounted && courseSnap.exists()) {
           const courseData = courseSnap.data();
-          setCourse({ id: courseSnap.id, ...courseData });
+          const cleanDesc = formatCourseDesc({ id: courseSnap.id, ...courseData });
+          setCourse({ 
+            id: courseSnap.id, 
+            ...courseData,
+            desc: cleanDesc,
+            description: cleanDesc
+          });
           
           let modulesList = [];
           
@@ -136,14 +157,21 @@ export default function CoursePreviewPage() {
     if (isFree) {
       setIsEnrolling(true);
       try {
-        const docRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'purchased_courses', course.id);
-        await setDoc(docRef, {
-            courseId: course.id,
-            amount: 0,
-            purchasedAt: serverTimestamp(),
-            status: 'active'
+        const idToken = await user.getIdToken();
+        const res = await fetch('/api/enroll-free', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${idToken}`
+          },
+          body: JSON.stringify({ courseId: course.id })
         });
-        router.push('/dashboard');
+        const data = await res.json();
+        if (res.ok && data.success) {
+          router.push('/dashboard');
+        } else {
+          alert(data.error || "Failed to enroll. Please try again.");
+        }
       } catch (error) {
         console.error("Error enrolling in free course", error);
         alert("Failed to enroll. Please try again.");
@@ -196,26 +224,19 @@ export default function CoursePreviewPage() {
   const defaultVideoUrl = previewVideoUrl || extractIframeSrc(course?.videoUrl) || (modules.length > 0 && modules[0].lessons?.length > 0 ? extractIframeSrc(modules[0].lessons[0].videoUrl) : null);
   const currentVideoUrl = activeVideoUrl ? extractIframeSrc(activeVideoUrl) : defaultVideoUrl;
 
-  const fixDriveLink = (url: any) => {
-    if (!url || typeof url !== 'string') return url;
-    const match = url.match(/(?:file\/d\/|id=|thumbnail\?id=|\/d\/)([a-zA-Z0-9_-]{20,})/);
-    if (match && match[1]) {
-      return `https://lh3.googleusercontent.com/d/${match[1]}`;
-    }
-    return url;
-  };
-  
-  const displayImage = fixDriveLink(course?.image);
-  const displayInstructorImage = fixDriveLink(course?.instructorImage);
-  const displayBanner = fixDriveLink(course?.banner);
+  const displayImage = formatDriveImageUrl(course?.image);
+  const displayBanner = course?.banner ? formatDriveImageUrl(course.banner) : null;
+
+  const instructorName = course?.instructorName || course?.instructor || 'Eyoub Sahle';
+  const isEyoub = !instructorName || instructorName.toLowerCase().includes('eyoub') || instructorName.toLowerCase().includes('eyob') || instructorName.includes('ኢዮብ');
+  const defaultInstructorPhoto = isEyoub ? '/assets/eyob_new2.png' : '/tc-logo.jpg';
+  const displayInstructorImage = course?.instructorImage ? formatDriveImageUrl(course.instructorImage) : defaultInstructorPhoto;
 
   const formatPrice = (val: any) => {
     if (typeof val === 'number') return val.toLocaleString();
     const num = Number(String(val || '').replace(/[^0-9.]/g, ''));
     return isNaN(num) || num === 0 ? '4,500' : num.toLocaleString();
   };
-
-  const instructorName = course?.instructorName || course?.instructor || 'Eyoub Sahle';
 
   // Find all courses taught by this instructor (case-insensitive)
   const instructorCourses = (allCourses || []).filter(c => {
@@ -289,15 +310,23 @@ export default function CoursePreviewPage() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-[#0a0a0a]">
-      {/* Dark Header Section */}
-      <div className="hero-mesh text-white pt-24 md:pt-28 pb-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-        {displayBanner && (
-          <div className="absolute inset-0 z-0">
-            <img src={displayBanner} alt="Course Banner" className="w-full h-full object-cover opacity-20 mix-blend-overlay" />
-            <div className="absolute inset-0 bg-gradient-to-r from-[#1E293B]/90 to-transparent"></div>
+      {/* Dark Header Section with Vivid Course Banner */}
+      <div className="relative text-white pt-24 md:pt-28 pb-14 px-4 sm:px-6 lg:px-8 overflow-hidden bg-[#0c101d]">
+        {displayBanner ? (
+          <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+            <img 
+              src={displayBanner} 
+              alt="Course Banner" 
+              className="w-full h-full object-cover opacity-75 scale-105 filter brightness-90 contrast-105" 
+            />
+            {/* Elegant gradient overlays for text readability */}
+            <div className="absolute inset-0 bg-gradient-to-r from-[#070b16]/95 via-[#070b16]/75 to-[#070b16]/35"></div>
+            <div className="absolute inset-0 bg-gradient-to-t from-[#070b16] via-transparent to-transparent"></div>
           </div>
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-br from-[#0c1424] via-[#080d1a] to-[#04060d] z-0"></div>
         )}
-        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20 mix-blend-overlay z-0"></div>
+        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20 mix-blend-overlay z-0 pointer-events-none"></div>
         
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row gap-8 relative z-10">
           <div className="w-full md:w-2/3 pr-0 md:pr-12 lg:pr-24">
@@ -315,7 +344,7 @@ export default function CoursePreviewPage() {
               {course.title}
             </h1>
             <p className="text-lg md:text-xl mb-6 text-blue-100 line-clamp-3">
-              {course?.desc || "No description provided for this course."}
+              {formatCourseDesc(course)}
             </p>
             
             <div className="flex flex-wrap items-center gap-4 mb-4 text-sm">
@@ -474,15 +503,14 @@ export default function CoursePreviewPage() {
 
             <div className="flex flex-col sm:flex-row gap-6 mb-4">
               <img 
-                src={displayInstructorImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(instructorName)}&background=F9B03C&color=fff&size=128`} 
+                src={displayInstructorImage} 
                 onError={(e) => { 
-                  const fallback = `https://ui-avatars.com/api/?name=${encodeURIComponent(instructorName)}&background=F9B03C&color=fff&size=128`;
-                  if (e.currentTarget.src !== fallback) {
-                    e.currentTarget.src = fallback;
+                  if (e.currentTarget.src !== defaultInstructorPhoto && !e.currentTarget.src.includes('eyob_new')) {
+                    e.currentTarget.src = defaultInstructorPhoto;
                   }
                 }}
-                alt="Instructor" 
-                className="w-28 h-28 rounded-full object-cover shrink-0 border-2 border-gray-100 dark:border-gray-800 shadow-md" 
+                alt={instructorName} 
+                className="w-28 h-28 rounded-full object-cover shrink-0 border-2 border-primary/40 shadow-xl" 
               />
               <div className="flex flex-col justify-center space-y-2 text-sm text-gray-800 dark:text-gray-200">
                 <div className="flex items-center gap-3">
@@ -525,10 +553,9 @@ export default function CoursePreviewPage() {
                       className="p-3 rounded-2xl border border-gray-200 dark:border-gray-800 hover:border-primary transition cursor-pointer flex gap-3 items-center bg-gray-50 dark:bg-[#111111] group shadow-xs hover:shadow-md"
                     >
                       <img 
-                        src={fixDriveLink(otherCourse.image) || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=200'} 
+                        src={formatDriveImageUrl(otherCourse.image) || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=200'} 
                         alt={otherCourse.title} 
                         className="w-16 h-12 object-cover rounded-xl shrink-0 group-hover:scale-105 transition-transform"
-                        onError={(e) => { e.currentTarget.src = 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=200'; }}
                       />
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-bold text-gray-900 dark:text-white line-clamp-1 group-hover:text-primary transition-colors">
@@ -687,6 +714,46 @@ export default function CoursePreviewPage() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Udacity-Style Mobile Sticky Enrollment Bottom Bar */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#0d0d0d]/95 backdrop-blur-xl border-t border-white/10 p-3 px-4 flex items-center justify-between shadow-[0_-4px_25px_rgba(0,0,0,0.6)]">
+        <div>
+          <span className="text-[10px] text-gray-400 font-bold block uppercase tracking-wider">የኮርስ ዋጋ</span>
+          <div className="flex items-center gap-2">
+            <span className="text-lg font-black text-white">
+              {course?.isFree || course?.price === 'Free' || course?.price === '0' || course?.price === 0 ? 'ነፃ (Free)' : `${formatPrice(course?.price)} ብር`}
+            </span>
+            {course?.oldPrice && (
+              <span className="text-xs text-gray-500 line-through">
+                {formatPrice(course.oldPrice)} ብር
+              </span>
+            )}
+          </div>
+        </div>
+
+        <button 
+          onClick={isFreeCourse ? handleEnroll : () => setShowPaymentModal(true)} 
+          disabled={isEnrolling}
+          className="bg-primary hover:bg-yellow-400 text-dark font-black px-6 py-3 rounded-xl transition shadow-lg text-sm flex items-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
+        >
+          {isEnrolling ? (
+            <>
+              <i className="fa-solid fa-spinner animate-spin"></i>
+              <span>እየተመዘገበ...</span>
+            </>
+          ) : isFreeCourse ? (
+            <>
+              <span>አሁኑኑ በነፃ ይጀምሩ</span>
+              <i className="fa-solid fa-arrow-right text-xs"></i>
+            </>
+          ) : (
+            <>
+              <span>አሁኑኑ ይመዝገቡ</span>
+              <i className="fa-solid fa-arrow-right text-xs"></i>
+            </>
+          )}
+        </button>
       </div>
 
       {showPaymentModal && (

@@ -64,7 +64,7 @@ const translations: Record<string, Record<Language, string>> = {
   'faq_title': { am: 'ብዙ ጊዜ የሚነሱ ጥያቄዎች (FAQ)', en: 'Frequently Asked Questions (FAQ)' },
   'faq_desc': { am: 'ስለ Tsehay Campus ተጨማሪ ማወቅ ይፈልጋሉ? እነዚህን ጥያቄዎች ይመልከቱ', en: 'Want to know more about Tsehay Campus? Check these questions' },
   'faq_q1': { am: 'ስልጠናዎቹን በኦንላይን ነው ወይስ በአካል የምንከታተለው?', en: 'Are the trainings online or in-person?' },
-  'faq_a1': { am: 'ስልጠናዎቻችንን በማንኛውም ሰዓት እና ቦታ መከታተል እንዲችሉ በዘመናዊ የኦንላይን ፕላትፎርማችን አዘጋጅተናል። ነገር ግን ፀሐይ ካምፓስ ከኦንላይን መድረክም በላይ ነው! ስልጠናዎቻችን የተዋሃደ (Hybrid) የመማር መንገድን ይከተላሉ። ይህም ማለት ዋናውን ትምህርት በኦንላይን ይከታተላሉ፤ በተጨማሪም የማህበረሰባችን (Community) አባል በመሆን የፊት ለፊት (Offline) ስልጠናዎችን እያገኙ፣ ልምድ እየተለዋወጡ እና የተግባር ክህሎትዎን እያዳበሩ ከእኛ ጋር አብረው ያድጋሉ!', en: 'We have designed our training on our modern online platform so you can access it anytime and anywhere. But Tsehay Campus is more than an online platform! Our courses follow a hybrid learning path. This means you follow the main course online, and by becoming part of our community, you get access to offline training sessions, experience sharing, and hands-on skill development!' },
+  'faq_a1': { am: 'ስልጠናዎቻችንን በማንኛውም ሰዓት እና ቦታ መከታተል እንዲችሉ በዘመናዊ የኦንላይን ፕላትፎርማችን አዘጋጅተናል። ነገር ግን ፀሐይ ካምፓስ ከኦንላይን መድረክም በላይ ነው! ስልጠናዎቻችን የኦንላይን እና የተግባር (Online & Practical) የመማር መንገድን ይከተላሉ። ይህም ማለት ዋናውን ትምህርት በኦንላይን ይከታተላሉ፤ በተጨማሪም የማህበረሰባችን (Community) አባል በመሆን የፊት ለፊት እና የተግባር ስልጠናዎችን እያገኙ፣ ልምድ እየተለዋወጡ እና የገቢ ክህሎትዎን እያዳበሩ ከእኛ ጋር አብረው ያድጋሉ!', en: 'We have designed our courses so you can study anytime, anywhere on our modern online platform. But Tsehay Campus is more than just online! We combine online mastery with hands-on practical learning. You follow lessons online and join our community for in-person workshops, networking, and real-world skill building!' },
   'faq_q2': { am: 'ትምህርቱን ስጨርስ ሰርተፍኬት አገኛለሁ?', en: 'Will I receive a certificate when I finish the course?' },
   'faq_a2': { am: 'አዎ፣ በእርግጥ! እያንዳንዱን ኮርስ ሙሉ በሙሉ ተከታትለው እንዳጠናቀቁ በስምዎ የተዘጋጀ ዲጂታል ሰርተፍኬት (Certificate of Completion) ወዲያውኑ ይደርስዎታል። ይህንን ሰርተፍኬት በቀላሉ በማውረድ (Download በማድረግ) ለስራ ማመልከቻ፣ ለሲቪ (CV) ማሳመሪያ ወይም በሊንክድኢን (LinkedIn) ላይ ለፕሮፌሽናል ትስስር ማጋራት ይችላሉ።', en: 'Yes, absolutely! Once you completely finish each course, a digital Certificate of Completion in your name will be delivered to you immediately. You can easily download this certificate to use for job applications, enhancing your CV, or sharing on LinkedIn for professional networking.' },
   'faq_q3': { am: 'የ "Tsehay AI" ረዳቱን ለመጠቀም ተጨማሪ ክፍያ አለው?', en: 'Is there an additional fee to use the "Tsehay AI" assistant?' },
@@ -115,8 +115,8 @@ const translations: Record<string, Record<Language, string>> = {
   'wwd_1_desc': { am: 'በተግባር የተፈተኑ 100% የቢዝነስ ኮርሶች', en: '100% practically tested business courses' },
   'wwd_2_title': { am: 'ማህበረሰብ መገንባት', en: 'Community Building' },
   'wwd_2_desc': { am: 'ጠንካራ እና እርስበርስ የሚደጋገፍ የትምህርት ማህበረሰብ', en: 'A strong and mutually supportive learning community' },
-  'wwd_3_title': { am: 'AI Integration', en: 'AI Integration' },
-  'wwd_3_desc': { am: 'በ AI የታገዘ የ 24 ሰዓት የግል ሞግዚት (Tutor)', en: '24/7 personal tutor supported by AI' },
+  'wwd_3_title': { am: 'የ AI አጋዥ ቴክኖሎጂ', en: 'AI Learning Assistant' },
+  'wwd_3_desc': { am: 'በ AI የታገዘ የ 24 ሰዓት የግል አጋዥ', en: '24/7 personal learning assistant powered by AI' },
   'our_team_title': { am: 'የእኛ ቡድን', en: 'Our Team' },
 
   // Courses Page

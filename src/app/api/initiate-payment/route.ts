@@ -40,7 +40,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { courseId, title, description, price, paymethod, userEmail, userId, firstName, lastName } = body;
 
-    const numericPrice = typeof price === 'number' ? price : Number(String(price || '').replace(/[^0-9.]/g, '')) || 4500;
+    let numericPrice = typeof price === 'number' ? price : Number(String(price || '').replace(/[^0-9.]/g, '')) || 4500;
     const email = userEmail || 'student@example.com';
 
     if (!courseId) {
@@ -54,10 +54,19 @@ export async function POST(request: Request) {
     const payDetails = formatPaymentDetails(title);
     const selectedMethod = (paymethod || 'lakipay').toLowerCase();
 
-    // Safely save pending payment record to Firestore if adminDb is available
+    // Verify authentic course price from Firestore to prevent client price tampering
     try {
       const { adminDb } = await import('@/lib/firebase/admin');
       if (adminDb) {
+        const courseDoc = await adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('public').doc('data').collection('courses').doc(courseId).get();
+        if (courseDoc.exists) {
+          const dbCourse = courseDoc.data();
+          const dbPrice = typeof dbCourse?.price === 'number' ? dbCourse.price : Number(String(dbCourse?.price || '').replace(/[^0-9.]/g, ''));
+          if (dbPrice && dbPrice > 0) {
+            numericPrice = dbPrice;
+          }
+        }
+
         await adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('pending_payments').doc(tx_ref).set({
           courseId,
           userId: userId || 'anonymous',
@@ -72,8 +81,7 @@ export async function POST(request: Request) {
       console.warn("Firestore pending payment notice:", dbErr);
     }
 
-    const cleanPriceStr = String(price || '0').replace(/[^0-9.]/g, '');
-    const numAmount = parseFloat(cleanPriceStr) || numericPrice;
+    const numAmount = numericPrice;
     const usdPrice = (Number(numAmount) / 125).toFixed(2);
 
     const formatEthPhone = (raw: string) => {
@@ -98,7 +106,6 @@ export async function POST(request: Request) {
       const lakipayDirectUrl = (
         process.env.LAKIPAY_DIRECT_URL || 
         process.env.LAKIPAY_CHECKOUT_URL || 
-        process.env.NEXT_PUBLIC_LAKIPAY_CHECKOUT_URL ||
         ''
       ).trim();
 
@@ -114,8 +121,8 @@ export async function POST(request: Request) {
         process.env.LAKIPAY_OPERATOR || ''
       ).trim();
 
-      const secretKey = (process.env.LAKIPAY_SECRET_KEY || process.env.NEXT_PUBLIC_LAKIPAY_SECRET_KEY || '').trim().replace(/^["']|["']$/g, '');
-      const publicKey = (process.env.LAKIPAY_PUBLIC_KEY || process.env.NEXT_PUBLIC_LAKIPAY_PUBLIC_KEY || '').trim().replace(/^["']|["']$/g, '');
+      const secretKey = (process.env.LAKIPAY_SECRET_KEY || '').trim().replace(/^["']|["']$/g, '');
+      const publicKey = (process.env.LAKIPAY_PUBLIC_KEY || '').trim().replace(/^["']|["']$/g, '');
       const rawApiKey = (process.env.LAKIPAY_API_KEY || '').trim().replace(/^["']|["']$/g, '');
 
       const formattedApiKey = (publicKey && secretKey) 
@@ -280,7 +287,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ checkoutUrl: paypalDirectUrl, reference: tx_ref });
       }
 
-      const PAYPAL_CLIENT_ID = process.env.PAYPAL_CLIENT_ID || process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID;
+      const PAYPAL_CLIENT_ID = process.env.PAYPAL_CLIENT_ID;
       const PAYPAL_SECRET = process.env.PAYPAL_CLIENT_SECRET || process.env.PAYPAL_SECRET_KEY || process.env.PAYPAL_SECRET;
 
       if (PAYPAL_CLIENT_ID && PAYPAL_SECRET) {
@@ -348,7 +355,6 @@ export async function POST(request: Request) {
         process.env.NOWPAYMENTS_API_KEY || 
         process.env.NOW_PAYMENTS_API_KEY || 
         process.env.NOWPAYMENT_API_KEY || 
-        process.env.NEXT_PUBLIC_NOWPAYMENTS_API_KEY ||
         ''
       ).replace(/['"]/g, '').trim();
 

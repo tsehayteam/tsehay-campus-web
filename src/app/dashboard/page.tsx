@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useState, useRef } from 'react';
-import { db } from '@/lib/firebase/config';
+import { db, auth } from '@/lib/firebase/config';
 import { collection, getDocs, query, orderBy, doc, getDoc, updateDoc, setDoc, serverTimestamp, where, onSnapshot } from 'firebase/firestore';
 import { useAuth } from '@/context/AuthContext';
 import { updateProfile } from 'firebase/auth';
@@ -13,6 +13,7 @@ import AssessmentModal from '@/components/AssessmentModal';
 const ReactPlayer: any = dynamic(() => import('react-player'), { ssr: false });
 
 import CourseRatingModal from '@/components/CourseRatingModal';
+import { formatDriveImageUrl } from '@/lib/courseCache';
 
 export default function StudentDashboard() {
   const { user } = useAuth();
@@ -20,17 +21,46 @@ export default function StudentDashboard() {
   const [isCourseCompleted, setIsCourseCompleted] = useState(false);
   const [hasTakenQuiz, setHasTakenQuiz] = useState(false);
   const [showRatingModal, setShowRatingModal] = useState(false);
+  const [ratedCourses, setRatedCourses] = useState<Record<string, boolean>>({});
+  const [dismissedRatingOverlay, setDismissedRatingOverlay] = useState<Record<string, boolean>>({});
   const [quizMessages, setQuizMessages] = useState([
     { role: 'ai', text: 'ሰላም! የኮርሱን ፈተና ለመውሰድ ዝግጁ ነዎት? አዎ ካሉኝ ፈተናውን እጀምራለሁ።' }
   ]);
   const [quizInput, setQuizInput] = useState('');
   const [isQuizLoading, setIsQuizLoading] = useState(false);
-  const [courses, setCourses] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [activeCourse, setActiveCourse] = useState<any>(null);
-  const [activeLesson, setActiveLesson] = useState<any>(null);
+  const [courses, setCourses] = useState<any[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const cached = localStorage.getItem('tsehay_user_courses_cache');
+      return cached ? JSON.parse(cached) : [];
+    } catch (e) { return []; }
+  });
+  const [loading, setLoading] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true;
+    return !localStorage.getItem('tsehay_user_courses_cache');
+  });
+  const [activeCourse, setActiveCourse] = useState<any>(() => {
+    if (typeof window === 'undefined') return null;
+    try {
+      const cachedCourse = localStorage.getItem('tsehay_user_active_course');
+      return cachedCourse ? JSON.parse(cachedCourse) : null;
+    } catch (e) { return null; }
+  });
+  const [activeLesson, setActiveLesson] = useState<any>(() => {
+    if (typeof window === 'undefined') return null;
+    try {
+      const cachedLesson = localStorage.getItem('tsehay_user_active_lesson');
+      return cachedLesson ? JSON.parse(cachedLesson) : null;
+    } catch (e) { return null; }
+  });
   const [activeTab, setActiveTab] = useState('overview');
-  const [modules, setModules] = useState<any[]>([]);
+  const [modules, setModules] = useState<any[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const cachedModules = localStorage.getItem('tsehay_user_active_modules');
+      return cachedModules ? JSON.parse(cachedModules) : [];
+    } catch (e) { return []; }
+  });
   const router = useRouter();
   const [progress, setProgress] = useState<any[]>([]);
   // Settings State
@@ -46,8 +76,40 @@ export default function StudentDashboard() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [isDarkTheme, setIsDarkTheme] = useState(true);
 
-  // Notes State
-  const [studentNotes, setStudentNotes] = useState<Array<{ id: string; text: string; createdAt: string; lessonTitle?: string }>>([]);
+  // Notes State with resilient multi-tier instant local loading
+  const [studentNotes, setStudentNotes] = useState<Array<{ id: string; text: string; createdAt: string; lessonTitle?: string; courseId?: string; source?: string }>>(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      let uid = '';
+      const cachedAuth = localStorage.getItem('tsehay_auth_user_cache');
+      if (cachedAuth) {
+        try { uid = JSON.parse(cachedAuth)?.uid || ''; } catch (e) {}
+      }
+      if (uid) {
+        const uNotes = localStorage.getItem(`tsehay_user_notes_${uid}`);
+        if (uNotes) {
+          const parsed = JSON.parse(uNotes);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      }
+      const allNotes = localStorage.getItem('tsehay_user_notes_all');
+      if (allNotes) {
+        const parsed = JSON.parse(allNotes);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (key.startsWith('tsehay_user_notes_') || key.startsWith('tsehay_notes_'))) {
+          const val = localStorage.getItem(key);
+          if (val) {
+            const parsed = JSON.parse(val);
+            if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+          }
+        }
+      }
+    } catch (e) {}
+    return [];
+  });
   const [noteInput, setNoteInput] = useState("");
   const [noteSavedMessage, setNoteSavedMessage] = useState("");
 
@@ -110,28 +172,11 @@ export default function StudentDashboard() {
           return;
         }
 
-        // Check if returning from successful payment (LakiPay / PayPal)
+        // Clean up URL parameters after returning from payment gateway
         if (typeof window !== 'undefined') {
           const urlParams = new URLSearchParams(window.location.search);
-          const isSuccess = urlParams.get('success') === 'true';
-          const targetCourseId = urlParams.get('course');
-          const txRef = urlParams.get('reference') || urlParams.get('tx_ref') || '';
-          if (isSuccess && targetCourseId) {
-            try {
-              await fetch('/api/confirm-enrollment', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  courseId: targetCourseId,
-                  userId: user.uid,
-                  paymentMethod: 'lakipay',
-                  tx_ref: txRef
-                })
-              });
-              window.history.replaceState({}, document.title, window.location.pathname);
-            } catch (confErr) {
-              console.warn("Auto enrollment notice:", confErr);
-            }
+          if (urlParams.has('success') || urlParams.has('reference') || urlParams.has('tx_ref')) {
+            window.history.replaceState({}, document.title, window.location.pathname);
           }
         }
 
@@ -158,9 +203,20 @@ export default function StudentDashboard() {
         const allCourses = (await Promise.all(coursePromises)).filter(c => c !== null);
         const userCourses = allCourses;
         setCourses(userCourses);
+        try {
+          localStorage.setItem('tsehay_user_courses_cache', JSON.stringify(userCourses));
+        } catch(e) {}
           
         if (userCourses.length > 0) {
-          setActiveCourse(userCourses[0]);
+          setActiveCourse((prev: any) => {
+            if (prev && userCourses.some(c => c.id === prev.id)) {
+              const updated = userCourses.find(c => c.id === prev.id) || prev;
+              try { localStorage.setItem('tsehay_user_active_course', JSON.stringify(updated)); } catch(e) {}
+              return updated;
+            }
+            try { localStorage.setItem('tsehay_user_active_course', JSON.stringify(userCourses[0])); } catch(e) {}
+            return userCourses[0];
+          });
         }
         
         // Initialize settings state
@@ -201,11 +257,35 @@ export default function StudentDashboard() {
             }
             
             setModules(fetchedModules);
-            // Default to first lesson of first module if exists
-            if (fetchedModules.length > 0 && fetchedModules[0].lessons && fetchedModules[0].lessons.length > 0) {
-                setActiveLesson({ ...fetchedModules[0].lessons[0], moduleIndex: 0, lessonIndex: 0 });
+            try {
+              localStorage.setItem('tsehay_user_active_modules', JSON.stringify(fetchedModules));
+            } catch(e) {}
+
+            // Retain active lesson if already matching this course, otherwise default to first
+            if (fetchedModules.length > 0) {
+              setActiveLesson((prev: any) => {
+                if (prev) {
+                  for (let mIdx = 0; mIdx < fetchedModules.length; mIdx++) {
+                    const mod = fetchedModules[mIdx];
+                    if (mod.lessons) {
+                      const foundIdx = mod.lessons.findIndex((l: any) => l.title === prev.title || l.id === prev.id);
+                      if (foundIdx !== -1) {
+                        const updated = { ...mod.lessons[foundIdx], moduleIndex: mIdx, lessonIndex: foundIdx };
+                        try { localStorage.setItem('tsehay_user_active_lesson', JSON.stringify(updated)); } catch(e) {}
+                        return updated;
+                      }
+                    }
+                  }
+                }
+                if (fetchedModules[0].lessons && fetchedModules[0].lessons.length > 0) {
+                  const first = { ...fetchedModules[0].lessons[0], moduleIndex: 0, lessonIndex: 0 };
+                  try { localStorage.setItem('tsehay_user_active_lesson', JSON.stringify(first)); } catch(e) {}
+                  return first;
+                }
+                return null;
+              });
             } else {
-                setActiveLesson(null);
+              setActiveLesson(null);
             }
         } catch (error) {
             console.error("Error fetching modules", error);
@@ -213,6 +293,69 @@ export default function StudentDashboard() {
     };
     fetchModules();
   }, [activeCourse]);
+
+  // Persistent Global Notes Sync
+  useEffect(() => {
+    let isMounted = true;
+    const currentUser = user || auth.currentUser;
+    let uid = currentUser?.uid || '';
+    if (!uid && typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('tsehay_auth_user_cache');
+        if (cached) uid = JSON.parse(cached)?.uid || '';
+      } catch (e) {}
+    }
+
+    // 1. Sync from local storage immediately for instant UI display
+    try {
+      if (uid) {
+        const cached = localStorage.getItem(`tsehay_user_notes_${uid}`);
+        if (cached && isMounted) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) setStudentNotes(parsed);
+        }
+      }
+      const genericCached = localStorage.getItem('tsehay_user_notes_all');
+      if (genericCached && isMounted) {
+        const parsed = JSON.parse(genericCached);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setStudentNotes(prev => {
+            const existingIds = new Set(prev.map(n => n.id));
+            const newOnes = parsed.filter((n: any) => !existingIds.has(n.id));
+            return newOnes.length > 0 ? [...prev, ...newOnes] : prev;
+          });
+        }
+      }
+    } catch (e) {}
+
+    // 2. Fetch permanent notes list from Firestore
+    if (uid) {
+      const fetchGlobalNotes = async () => {
+        try {
+          const globalNotesRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', uid, 'notes', 'all_notes');
+          const snap = await getDoc(globalNotesRef);
+          if (isMounted && snap.exists() && Array.isArray(snap.data().list) && snap.data().list.length > 0) {
+            const firestoreNotes = snap.data().list;
+            setStudentNotes(prev => {
+              const existingIds = new Set(prev.map(n => n.id));
+              const newOnes = firestoreNotes.filter((n: any) => !existingIds.has(n.id));
+              const merged = [...prev, ...newOnes];
+              try { 
+                localStorage.setItem(`tsehay_user_notes_${uid}`, JSON.stringify(merged));
+                localStorage.setItem('tsehay_user_notes_all', JSON.stringify(merged));
+              } catch (e) {}
+              return merged;
+            });
+          }
+        } catch (err) {
+          console.warn("Could not load global notes from Firestore:", err);
+        }
+      };
+      fetchGlobalNotes();
+    }
+
+    return () => { isMounted = false; };
+  }, [user]);
 
   useEffect(() => {
     if (!activeCourse || !user) return;
@@ -227,11 +370,30 @@ export default function StudentDashboard() {
           if (data.isCompleted) {
             setIsCourseCompleted(true);
           }
-          if (data.notes && Array.isArray(data.notes)) {
-            setStudentNotes(data.notes);
-          } else {
-            setStudentNotes([]);
+          if (data.hasRated) {
+            setRatedCourses(prev => ({ ...prev, [activeCourse.id]: true }));
+            try { localStorage.setItem(`rated_course_${activeCourse.id}`, 'true'); } catch (e) {}
+          } else if (typeof window !== 'undefined' && localStorage.getItem(`rated_course_${activeCourse.id}`)) {
+            setRatedCourses(prev => ({ ...prev, [activeCourse.id]: true }));
           }
+          // Merge course notes with existing student notes if any
+          if (data.notes && Array.isArray(data.notes) && data.notes.length > 0) {
+            setStudentNotes(prev => {
+              const existingIds = new Set(prev.map(n => n.id));
+              const newItems = data.notes.filter((n: any) => !existingIds.has(n.id));
+              if (newItems.length > 0) {
+                const merged = [...newItems, ...prev];
+                try { 
+                  localStorage.setItem(`tsehay_user_notes_${user.uid}`, JSON.stringify(merged));
+                  localStorage.setItem('tsehay_user_notes_all', JSON.stringify(merged));
+                } catch (e) {}
+                return merged;
+              }
+              return prev;
+            });
+          }
+        } else if (typeof window !== 'undefined' && localStorage.getItem(`rated_course_${activeCourse.id}`)) {
+          setRatedCourses(prev => ({ ...prev, [activeCourse.id]: true }));
         }
       } catch (e) {
         console.error("Error loading user progress & notes:", e);
@@ -240,59 +402,135 @@ export default function StudentDashboard() {
     fetchUserData();
   }, [activeCourse, user]);
 
-  const handleSaveNote = async (textToSave?: string) => {
-    const text = textToSave || noteInput;
-    if (!text || !text.trim() || !user) return;
+  const handleSaveNote = async (textToSave?: string, customTitle?: string) => {
+    const text = (textToSave || noteInput || '').trim();
+    if (!text) return;
 
-    const targetCourse = activeCourse || (courses && courses.length > 0 ? courses[0] : { id: 'general', title: 'ፀሐይ ካምፓስ' });
+    const currentUser = user || auth.currentUser;
+    let uid = currentUser?.uid || '';
+    if (!uid && typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('tsehay_auth_user_cache');
+        if (cached) uid = JSON.parse(cached)?.uid || '';
+      } catch (e) {}
+    }
+
+    const targetCourse = activeCourse || (courses && courses.length > 0 ? courses[0] : null);
+    
+    let defaultTitle = 'Tsehay AI ማስታወሻ';
+    if (customTitle) {
+      defaultTitle = customTitle;
+    } else if (textToSave) {
+      defaultTitle = activeLesson?.title 
+        ? `${activeCourse?.title ? activeCourse.title + ' - ' : ''}${activeLesson.title} (Tsehay AI)`
+        : (targetCourse?.title ? `${targetCourse.title} - Tsehay AI` : 'Tsehay AI ማስታወሻ');
+    } else if (activeLesson?.title) {
+      defaultTitle = `${activeCourse?.title ? activeCourse.title + ' - ' : ''}${activeLesson.title}`;
+    } else if (targetCourse?.title) {
+      defaultTitle = targetCourse.title;
+    }
 
     const newNote = {
-      id: Date.now().toString(),
-      text: text.trim(),
+      id: Date.now().toString() + '-' + Math.random().toString(36).substring(2, 7),
+      text: text,
       createdAt: new Date().toLocaleString('am-ET', { dateStyle: 'medium', timeStyle: 'short' }),
-      lessonTitle: activeLesson?.title || targetCourse?.title || 'Tsehay AI Note'
+      lessonTitle: defaultTitle,
+      courseId: targetCourse?.id || 'general',
+      source: textToSave ? 'ai' : 'lesson'
     };
 
-    const updatedNotes = [newNote, ...studentNotes];
-    setStudentNotes(updatedNotes);
-    if (!textToSave) setNoteInput('');
+    // 1. Immediately update React state
+    setStudentNotes(prevNotes => {
+      const filtered = prevNotes.filter(n => n.text !== newNote.text || n.id === newNote.id);
+      const updatedNotes = [newNote, ...filtered];
+      
+      // 2. Persist to localStorage synchronously across all keys
+      try {
+        if (uid) {
+          localStorage.setItem(`tsehay_user_notes_${uid}`, JSON.stringify(updatedNotes));
+        }
+        localStorage.setItem('tsehay_user_notes_all', JSON.stringify(updatedNotes));
+      } catch (e) {}
 
-    try {
-      if (targetCourse?.id && targetCourse.id !== 'general') {
-        const userRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'purchased_courses', targetCourse.id);
-        await setDoc(userRef, { notes: updatedNotes }, { merge: true });
-      }
-      const globalNotesRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'notes', 'all_notes');
-      await setDoc(globalNotesRef, { list: updatedNotes }, { merge: true });
+      return updatedNotes;
+    });
 
+    if (!textToSave) {
+      setNoteInput('');
       setNoteSavedMessage("ማስታወሻዎ በተሳካ ሁኔታ ተመዝግቧል!");
-      setTimeout(() => setNoteSavedMessage(""), 3000);
-    } catch (err) {
-      console.error("Error saving note:", err);
+      setTimeout(() => setNoteSavedMessage(""), 3500);
+    }
+
+    // 3. Asynchronously persist to Firestore if uid is available
+    if (uid) {
+      try {
+        const globalNotesRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', uid, 'notes', 'all_notes');
+        const currentSaved = localStorage.getItem(`tsehay_user_notes_${uid}`) || localStorage.getItem('tsehay_user_notes_all');
+        const notesToSave = currentSaved ? JSON.parse(currentSaved) : [newNote];
+        await setDoc(globalNotesRef, { list: notesToSave, updatedAt: serverTimestamp() }, { merge: true });
+
+        if (targetCourse?.id && targetCourse.id !== 'general') {
+          const userRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', uid, 'purchased_courses', targetCourse.id);
+          await setDoc(userRef, { notes: notesToSave }, { merge: true });
+        }
+      } catch (err) {
+        console.warn("Error persisting note to Firestore:", err);
+      }
     }
   };
 
   const handleDeleteNote = async (noteId: string) => {
-    if (!activeCourse || !user) return;
-    const updatedNotes = studentNotes.filter(n => n.id !== noteId);
-    setStudentNotes(updatedNotes);
-    try {
-      const userRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'purchased_courses', activeCourse.id);
-      await setDoc(userRef, { notes: updatedNotes }, { merge: true });
-    } catch (err) {
-      console.error("Error deleting note:", err);
+    const currentUser = user || auth.currentUser;
+    let uid = currentUser?.uid || '';
+    if (!uid && typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('tsehay_auth_user_cache');
+        if (cached) uid = JSON.parse(cached)?.uid || '';
+      } catch (e) {}
     }
+
+    setStudentNotes(prevNotes => {
+      const updatedNotes = prevNotes.filter(n => n.id !== noteId);
+      try {
+        if (uid) {
+          localStorage.setItem(`tsehay_user_notes_${uid}`, JSON.stringify(updatedNotes));
+        }
+        localStorage.setItem('tsehay_user_notes_all', JSON.stringify(updatedNotes));
+      } catch (e) {}
+
+      if (uid) {
+        (async () => {
+          try {
+            const globalNotesRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', uid, 'notes', 'all_notes');
+            await setDoc(globalNotesRef, { list: updatedNotes, updatedAt: serverTimestamp() }, { merge: true });
+
+            if (activeCourse?.id) {
+              const userRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', uid, 'purchased_courses', activeCourse.id);
+              await setDoc(userRef, { notes: updatedNotes }, { merge: true });
+            }
+          } catch (err) {
+            console.error("Error deleting note from Firestore:", err);
+          }
+        })();
+      }
+
+      return updatedNotes;
+    });
   };
 
   useEffect(() => {
     const handleGlobalAddToNotes = (e: any) => {
       if (e.detail?.text) {
-        handleSaveNote(e.detail.text);
+        handleSaveNote(e.detail.text, e.detail.title);
       }
     };
     window.addEventListener('add-to-notes', handleGlobalAddToNotes);
-    return () => window.removeEventListener('add-to-notes', handleGlobalAddToNotes);
-  }, [activeCourse, user, studentNotes, activeLesson]);
+    document.addEventListener('add-to-notes', handleGlobalAddToNotes);
+    return () => {
+      window.removeEventListener('add-to-notes', handleGlobalAddToNotes);
+      document.removeEventListener('add-to-notes', handleGlobalAddToNotes);
+    };
+  }, [activeCourse, user, activeLesson]);
 
   // Subscribe to Student's Q&A Tickets with Instructor/Admin
   useEffect(() => {
@@ -424,45 +662,100 @@ export default function StudentDashboard() {
 
   const [savedAiNotes, setSavedAiNotes] = useState<Record<number, boolean>>({});
 
+  // Persistent Tsehay AI Chat Sync across sessions & devices
   useEffect(() => {
-      const saved = localStorage.getItem('tsehay-ai-chat');
-      if (saved) {
-          try {
-              setChatMessages(JSON.parse(saved));
-          } catch (e) {}
-      }
-  }, []);
+    if (!user) return;
+    let isMounted = true;
 
-  useEffect(() => {
-      if (chatMessages.length > 0) {
-          localStorage.setItem('tsehay-ai-chat', JSON.stringify(chatMessages));
+    // Load cached chat from localStorage immediately
+    try {
+      const saved = localStorage.getItem(`tsehay-ai-chat_${user.uid}`) || localStorage.getItem('tsehay-ai-chat');
+      if (saved && isMounted) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setChatMessages(parsed);
+        }
       }
-  }, [chatMessages]);
+    } catch (e) {}
+
+    // Load permanent chat from Firestore
+    const fetchChatHistory = async () => {
+      try {
+        const chatHistoryRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'ai_chat', 'history');
+        const snap = await getDoc(chatHistoryRef);
+        if (isMounted && snap.exists() && Array.isArray(snap.data().messages) && snap.data().messages.length > 0) {
+          setChatMessages(snap.data().messages);
+          try { localStorage.setItem(`tsehay-ai-chat_${user.uid}`, JSON.stringify(snap.data().messages)); } catch (e) {}
+        }
+      } catch (err) {
+        console.warn("Could not load AI chat history from Firestore:", err);
+      }
+    };
+    fetchChatHistory();
+
+    return () => { isMounted = false; };
+  }, [user]);
 
   const handleSendAiMessage = async (e: React.FormEvent) => {
-      e.preventDefault();
-      if (!chatInput.trim()) return;
+    e.preventDefault();
+    if (!chatInput.trim()) return;
 
-      const userMsg = chatInput.trim();
-      const newMsgs = [...chatMessages, { role: 'user', text: userMsg }];
-      setChatMessages(newMsgs);
-      setChatInput('');
-      setIsChatLoading(true);
+    const userMsg = chatInput.trim();
+    const newMsgs = [...chatMessages, { role: 'user', text: userMsg }];
+    setChatMessages(newMsgs);
+    setChatInput('');
+    setIsChatLoading(true);
 
-      try {
-          const response = await fetch('/api/chat', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ prompt: userMsg })
-          });
-          const data = await response.json();
-          const reply = data.reply || data.error || "ይቅርታ፣ አሁን ላይ መመለስ አልቻልኩም።";
-          setChatMessages([...newMsgs, { role: 'system', text: reply }]);
-      } catch (error: any) {
-          setChatMessages([...newMsgs, { role: 'system', text: "ይቅርታ፣ የሲስተም ችግር አጋጥሟል!" }]);
-      } finally {
-          setIsChatLoading(false);
+    if (user?.uid) {
+      try { localStorage.setItem(`tsehay-ai-chat_${user.uid}`, JSON.stringify(newMsgs)); } catch (e) {}
+      (async () => {
+        try {
+          const chatHistoryRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'ai_chat', 'history');
+          await setDoc(chatHistoryRef, { messages: newMsgs, updatedAt: serverTimestamp() }, { merge: true });
+        } catch (e) {}
+      })();
+    }
+
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: userMsg })
+      });
+      const data = await response.json();
+      const reply = data.reply || data.error || "ይቅርታ፣ አሁን ላይ መመለስ አልቻልኩም።";
+      const finalMsgs = [...newMsgs, { role: 'ai', text: reply }];
+      setChatMessages(finalMsgs);
+
+      if (user?.uid) {
+        try { localStorage.setItem(`tsehay-ai-chat_${user.uid}`, JSON.stringify(finalMsgs)); } catch (e) {}
+        try {
+          const chatHistoryRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'ai_chat', 'history');
+          await setDoc(chatHistoryRef, { messages: finalMsgs, updatedAt: serverTimestamp() }, { merge: true });
+        } catch (dbErr) {
+          console.warn("Could not save AI chat history to Firestore:", dbErr);
+        }
       }
+    } catch (error: any) {
+      const errorMsgs = [...newMsgs, { role: 'ai', text: "ይቅርታ፣ የሲስተም ችግር አጋጥሟል! እባክዎ ትንሽ ቆይተው እንደገና ይሞክሩ።" }];
+      setChatMessages(errorMsgs);
+    } finally {
+      setIsChatLoading(false);
+    }
+  };
+
+  const handleClearAiChat = async () => {
+    if (!confirm('የ Tsehay AI ቻት ታሪክዎን ማጥፋት እርግጠኛ ነዎት? (ከጠፋ በኋላ አይመለስም)')) return;
+    const defaultGreeting = [{ role: 'ai', text: "ሰላም! እኔ Tsehay AI ነኝ። የትምህርት ጥያቄዎች ካሉዎት እባክዎ ይጠይቁኝ!" }];
+    setChatMessages(defaultGreeting);
+    if (user?.uid) {
+      try { localStorage.removeItem(`tsehay-ai-chat_${user.uid}`); } catch (e) {}
+      try { localStorage.removeItem('tsehay-ai-chat'); } catch (e) {}
+      try {
+        const chatHistoryRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'ai_chat', 'history');
+        await setDoc(chatHistoryRef, { messages: defaultGreeting, updatedAt: serverTimestamp() });
+      } catch (e) {}
+    }
   };
 
   useEffect(() => {
@@ -540,9 +833,13 @@ export default function StudentDashboard() {
       setActiveLesson(nextLesson);
     } else {
       setIsCourseCompleted(true);
-      if (activeCourse?.id && !localStorage.getItem(`rated_course_${activeCourse.id}`)) {
-        setShowRatingModal(true);
-      }
+      setActiveTab('quiz');
+      setTimeout(() => {
+        const tabsSection = document.getElementById('classroom-tabs-section');
+        if (tabsSection) {
+          tabsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 120);
     }
   };
 
@@ -570,24 +867,29 @@ export default function StudentDashboard() {
     await handleNextLesson();
   };
 
-  const handleQuizSubmit = async () => {
-    if (!quizInput.trim()) return;
+  const handleQuizSubmit = async (customPrompt?: string) => {
+    const textToSend = typeof customPrompt === 'string' ? customPrompt : quizInput;
+    if (!textToSend.trim()) return;
     
-    const newMessages = [...quizMessages, { role: 'user', text: quizInput }];
+    const newMessages = [...quizMessages, { role: 'user', text: textToSend.trim() }];
     setQuizMessages(newMessages);
-    setQuizInput('');
+    if (!customPrompt) {
+      setQuizInput('');
+    }
     setIsQuizLoading(true);
     
     try {
         const response = await fetch('/api/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt: `I am taking a quiz for this course. Generate a relevant quiz question or evaluate my answer: ${quizInput}` })
+            body: JSON.stringify({ 
+              prompt: `I am taking a quiz for the course "${activeCourse?.title || 'Tsehay Campus Course'}". The course topic is: ${activeCourse?.category || 'General'}. Ask a relevant quiz question or evaluate the student's answer in Amharic: ${textToSend.trim()}` 
+            })
         });
         
         const data = await response.json();
         setQuizMessages([...newMessages, { role: 'ai', text: data.reply || "ይቅርታ፣ አሁን ላይ መመለስ አልቻልኩም።" }]);
-        setHasTakenQuiz(true); // Unlock certificate after first interaction for demo purposes
+        setHasTakenQuiz(true); // Unlock certificate after interaction
     } catch (e) {
         setQuizMessages([...newMessages, { role: 'ai', text: "ይቅርታ፣ አሁን ላይ መመለስ አልቻልኩም።" }]);
     } finally {
@@ -912,19 +1214,34 @@ ${customAdminPrompt}
                     {/* Cinematic Video Player */}
                     <div className="bg-dark rounded-2xl overflow-hidden shadow-2xl relative border border-gray-800 aspect-video flex items-center justify-center">
                         {/* Video End Course Rating Overlay */}
-                        {isCourseCompleted && activeCourse?.id && !localStorage.getItem(`rated_course_${activeCourse.id}`) && (
+                        {isCourseCompleted && activeCourse?.id && !ratedCourses[activeCourse.id] && !(typeof window !== 'undefined' && localStorage.getItem(`rated_course_${activeCourse.id}`)) && !dismissedRatingOverlay[activeCourse.id] && (
                           <div className="absolute inset-0 z-40 bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-300">
-                             <div className="w-16 h-16 bg-amber-400/20 text-primary rounded-full flex items-center justify-center text-3xl mb-4 border-2 border-primary animate-bounce">
+                             <button 
+                               onClick={() => setDismissedRatingOverlay(prev => ({ ...prev, [activeCourse.id]: true }))}
+                               className="absolute top-4 right-4 text-gray-400 hover:text-white text-sm font-bold w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition cursor-pointer"
+                               title="ዝጋ (Close)"
+                             >
+                               ✕
+                             </button>
+                             <div className="w-14 h-14 bg-amber-400/20 text-primary rounded-full flex items-center justify-center text-2xl mb-3 border-2 border-primary animate-bounce">
                                  <i className="fa-solid fa-star"></i>
                              </div>
-                             <h3 className="text-xl md:text-2xl font-black text-white font-heading mb-2">እንኳን ደስ አሎት! ኮርሱን አጠናቀዋል።</h3>
-                             <p className="text-xs md:text-sm text-gray-300 mb-6 max-w-md">እባክዎ ለኮርሱ እና ለአስተማሪው ያለዎትን ሬቲንግ እና አስተያየት ይስጡ።</p>
-                             <button 
-                               onClick={() => setShowRatingModal(true)}
-                               className="bg-primary text-dark font-black px-6 py-3 rounded-xl hover:bg-yellow-400 transition shadow-lg text-sm transform hover:scale-105 cursor-pointer"
-                             >
-                               ⭐ ሬቲንግ/ሪቪው ስጥ (Rate Course)
-                             </button>
+                             <h3 className="text-lg md:text-xl font-black text-white font-heading mb-1.5">እንኳን ደስ አሎት! ኮርሱን አጠናቀዋል።</h3>
+                             <p className="text-xs text-gray-300 mb-5 max-w-sm">እባክዎ ለኮርሱ እና ለአስተማሪው ያለዎትን ሬቲንግ እና አስተያየት ይስጡ።</p>
+                             <div className="flex items-center gap-3">
+                               <button 
+                                 onClick={() => setShowRatingModal(true)}
+                                 className="bg-primary text-dark font-black px-5 py-2.5 rounded-xl hover:bg-yellow-400 transition shadow-lg text-xs transform hover:scale-105 cursor-pointer active:scale-95"
+                               >
+                                 ⭐ ሬቲንግ ስጥ (Rate Course)
+                               </button>
+                               <button 
+                                 onClick={() => setDismissedRatingOverlay(prev => ({ ...prev, [activeCourse.id]: true }))}
+                                 className="bg-white/10 text-white font-bold px-4 py-2.5 rounded-xl hover:bg-white/20 transition text-xs cursor-pointer"
+                               >
+                                 አሁን ይለፈኝ
+                               </button>
+                             </div>
                           </div>
                         )}
                         {(() => {
@@ -982,15 +1299,7 @@ ${customAdminPrompt}
                             }
                         })() || (
                             <>
-                                <img src={(() => {
-                                    const url = activeCourse?.image;
-                                    if (!url) return 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1200';
-                                    const match = url.match(/(?:file\/d\/|id=|thumbnail\?id=|\/d\/)([a-zA-Z0-9_-]{20,})/);
-                                    if (match && match[1]) return `https://lh3.googleusercontent.com/d/${match[1]}`;
-                                    return url;
-                                })()} className="absolute inset-0 w-full h-full object-cover opacity-60" alt="Video cover" onError={(e) => {
-                                    e.currentTarget.src = 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1200';
-                                }} />
+                                <img src={formatDriveImageUrl(activeCourse?.image) || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1200'} className="absolute inset-0 w-full h-full object-cover opacity-60" alt="Video cover" />
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20 flex flex-col justify-between p-6 lg:p-8">
                                     <div className="self-end bg-black/40 backdrop-blur-md text-white text-xs font-bold px-3 py-1.5 rounded-lg border border-white/10">
                                         No Video Available
@@ -1019,63 +1328,178 @@ ${customAdminPrompt}
                         const isCurrentCompleted = activeLesson && progress.includes(activeLesson.title);
 
                         return (
-                            <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-gray-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-3 transition">
+                            <div className="bg-white dark:bg-slate-800 p-3 sm:p-4 rounded-2xl shadow-sm border border-gray-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-3 transition">
                                 <button 
                                     onClick={handlePrevLesson}
                                     disabled={!hasPrev}
-                                    className="px-4 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 text-xs font-bold text-dark dark:text-white hover:bg-gray-100 dark:hover:bg-slate-700 transition flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                                    className="px-3.5 sm:px-4 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 text-xs font-bold text-dark dark:text-white hover:bg-gray-100 dark:hover:bg-slate-700 transition-all flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer group active:scale-95"
                                 >
-                                    <i className="fa-solid fa-chevron-left"></i>
-                                    <span>የቀደመው ክፍል (Prev)</span>
+                                    <i className="fa-solid fa-chevron-left group-hover:-translate-x-0.5 transition-transform duration-200"></i>
+                                    <span>የቀደመው</span>
                                 </button>
 
                                 <div className="flex items-center gap-2">
                                     <button 
                                         onClick={() => markLessonCompleted(activeLesson)}
-                                        className={`px-5 py-2.5 rounded-xl text-xs font-black transition shadow-sm flex items-center gap-2 cursor-pointer ${
+                                        className={`px-4 sm:px-5 py-2.5 rounded-xl text-xs font-black transition-all duration-300 shadow-xs flex items-center gap-2 cursor-pointer active:scale-95 ${
                                             isCurrentCompleted
-                                                ? 'bg-emerald-500 text-white'
+                                                ? 'bg-emerald-500 text-white shadow-emerald-500/20'
                                                 : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 hover:bg-emerald-500 hover:text-white'
                                         }`}
                                     >
                                         <i className={`fa-solid ${isCurrentCompleted ? 'fa-circle-check' : 'fa-check'}`}></i>
-                                        <span>{isCurrentCompleted ? 'ይህ ክፍል ተጠናቋል ✓' : 'ይህን ትምህርት ጨርሻለሁ (Complete)'}</span>
+                                        <span>{isCurrentCompleted ? 'ተጠናቋል ✓' : 'ጨርሻለሁ'}</span>
                                         {!isCurrentCompleted && (
-                                            <span className="text-[10px] bg-primary text-dark font-black px-1.5 py-0.5 rounded-md ml-1">+{activeLesson?.points || 25} ፖይንት</span>
+                                            <span className="text-[10px] bg-primary text-dark font-black px-1.5 py-0.5 rounded-md ml-0.5">+{activeLesson?.points || 25} ፖይንት</span>
                                         )}
                                     </button>
                                 </div>
 
                                 <button 
                                     onClick={handleNextLesson}
-                                    className="px-5 py-2.5 rounded-xl bg-primary text-dark hover:bg-yellow-400 text-xs font-black transition shadow-sm flex items-center gap-2 cursor-pointer"
+                                    className={`relative overflow-hidden group px-5 py-2.5 rounded-xl text-xs font-black transition-all duration-300 shadow-md flex items-center gap-2 cursor-pointer active:scale-95 ${
+                                        hasNext 
+                                            ? 'bg-gradient-to-r from-amber-400 via-primary to-yellow-400 hover:from-amber-300 hover:to-yellow-300 text-dark shadow-amber-400/25 hover:shadow-amber-400/40 hover:-translate-y-0.5' 
+                                            : 'bg-gradient-to-r from-amber-500 via-primary to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-dark shadow-lg shadow-amber-500/30 hover:shadow-amber-500/50 ring-2 ring-amber-400/60 animate-gentle-bounce hover:-translate-y-0.5'
+                                    }`}
                                 >
-                                    <span>{hasNext ? 'ቀጣይ ትምህርት (Next)' : 'ፈተናውን ውሰድ (Take Quiz)'}</span>
-                                    <i className="fa-solid fa-chevron-right"></i>
+                                    {/* Shimmer light reflection effect */}
+                                    <span className={`absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/40 to-transparent pointer-events-none ${
+                                        hasNext 
+                                            ? '-translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-out' 
+                                            : 'animate-shimmer-sweep'
+                                    }`}></span>
+
+                                    {hasNext ? (
+                                        <>
+                                            <span className="font-extrabold tracking-wide">ቀጣይ</span>
+                                            <i className="fa-solid fa-arrow-right text-xs group-hover:translate-x-1.5 transition-transform duration-300"></i>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <i className="fa-solid fa-graduation-cap text-sm group-hover:rotate-12 transition-transform duration-300"></i>
+                                            <span className="font-extrabold tracking-wide">ወደ ፈተና</span>
+                                            <i className="fa-solid fa-arrow-right text-xs group-hover:translate-x-1.5 transition-transform duration-300"></i>
+                                        </>
+                                    )}
                                 </button>
                             </div>
                         );
                     })()}
 
                     {/* Tabs */}
-                    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden min-h-[300px]">
+                    <div id="classroom-tabs-section" className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden min-h-[300px] scroll-mt-6">
                         <div className="flex overflow-x-auto border-b border-gray-200 dark:border-slate-700 no-scrollbar bg-gray-50/50 dark:bg-slate-800/50 px-2 pt-2">
-                            <button onClick={() => setActiveTab('overview')} className={`px-6 py-4 font-heading text-[15px] font-bold whitespace-nowrap ${activeTab === 'overview' ? 'text-dark dark:text-white border-b-2 border-secondary dark:border-primary' : 'text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white'}`}>{t('overview')}</button>
-                            <button onClick={() => setActiveTab('notes')} className={`px-6 py-4 font-heading text-[15px] whitespace-nowrap flex items-center gap-2 ${activeTab === 'notes' ? 'font-bold text-dark dark:text-white border-b-2 border-secondary dark:border-primary' : 'text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white'}`}>
+                            <button onClick={() => setActiveTab('syllabus')} className={`lg:hidden px-4 sm:px-6 py-3.5 sm:py-4 font-heading text-xs sm:text-[15px] font-bold whitespace-nowrap flex items-center gap-1.5 shrink-0 ${activeTab === 'syllabus' ? 'text-dark dark:text-primary border-b-2 border-primary font-black' : 'text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white'}`}>
+                                <i className="fa-solid fa-list-ol text-primary"></i> <span>ትምህርቶች (Syllabus)</span>
+                            </button>
+                            <button onClick={() => setActiveTab('overview')} className={`px-4 sm:px-6 py-3.5 sm:py-4 font-heading text-xs sm:text-[15px] font-bold whitespace-nowrap shrink-0 ${activeTab === 'overview' ? 'text-dark dark:text-white border-b-2 border-secondary dark:border-primary' : 'text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white'}`}>{t('overview')}</button>
+                            <button onClick={() => setActiveTab('notes')} className={`px-4 sm:px-6 py-3.5 sm:py-4 font-heading text-xs sm:text-[15px] whitespace-nowrap flex items-center gap-1.5 shrink-0 ${activeTab === 'notes' ? 'font-bold text-dark dark:text-white border-b-2 border-secondary dark:border-primary' : 'text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white'}`}>
                                 <i className="fa-regular fa-pen-to-square"></i> {t('notes')}
                             </button>
-                            <button onClick={() => setActiveTab('qa')} className={`px-6 py-4 font-heading text-[15px] whitespace-nowrap flex items-center gap-2 ${activeTab === 'qa' ? 'font-bold text-dark dark:text-white border-b-2 border-secondary dark:border-primary' : 'text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white'}`}>
+                            <button onClick={() => setActiveTab('qa')} className={`px-4 sm:px-6 py-3.5 sm:py-4 font-heading text-xs sm:text-[15px] whitespace-nowrap flex items-center gap-1.5 shrink-0 ${activeTab === 'qa' ? 'font-bold text-dark dark:text-white border-b-2 border-secondary dark:border-primary' : 'text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white'}`}>
                                 {t('qa')} <i className="fa-regular fa-comments"></i>
                             </button>
-                            <button onClick={() => setActiveTab('quiz')} className={`px-6 py-4 font-heading text-[15px] whitespace-nowrap flex items-center gap-2 ${activeTab === 'quiz' ? 'font-bold text-dark dark:text-white border-b-2 border-secondary dark:border-primary' : 'text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white'}`}>
+                            <button onClick={() => setActiveTab('quiz')} className={`px-4 sm:px-6 py-3.5 sm:py-4 font-heading text-xs sm:text-[15px] whitespace-nowrap flex items-center gap-1.5 shrink-0 ${activeTab === 'quiz' ? 'font-bold text-dark dark:text-white border-b-2 border-secondary dark:border-primary' : 'text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white'}`}>
                                 {t('quiz')} <i className="fa-solid fa-list-check"></i>
                             </button>
-                            <button onClick={() => setActiveTab('certificate')} className={`px-6 py-4 font-heading text-[15px] whitespace-nowrap flex items-center gap-2 ${activeTab === 'certificate' ? 'font-bold text-dark dark:text-white border-b-2 border-secondary dark:border-primary' : 'text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white'}`}>
+                            <button onClick={() => setActiveTab('certificate')} className={`px-4 sm:px-6 py-3.5 sm:py-4 font-heading text-xs sm:text-[15px] whitespace-nowrap flex items-center gap-1.5 shrink-0 ${activeTab === 'certificate' ? 'font-bold text-dark dark:text-white border-b-2 border-secondary dark:border-primary' : 'text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white'}`}>
                                 {t('certificate')} <i className="fa-solid fa-award text-primary"></i>
                             </button>
                         </div>
                         
-                        <div className="p-6 sm:p-8">
+                        <div className="p-4 sm:p-6 lg:p-8">
+                            {activeTab === 'syllabus' && (
+                                <div className="space-y-4">
+                                    <div className="flex justify-between items-center bg-primary/10 dark:bg-primary/20 p-4 rounded-2xl border border-primary/30">
+                                        <div>
+                                            <h4 className="font-black text-sm text-dark dark:text-white">የኮርስ ይዘት እና ሂደት</h4>
+                                            <p className="text-xs text-gray-500 dark:text-gray-300 mt-0.5">ያሉትን ትምህርቶች መርጠው ይመልከቱ</p>
+                                        </div>
+                                        {(() => {
+                                            let totalCount = 0;
+                                            modules.forEach((m: any) => { totalCount += (m.lessons || []).length; });
+                                            if (totalCount === 0) totalCount = 1;
+                                            const percent = Math.min(100, Math.round((progress.length / totalCount) * 100));
+                                            return (
+                                                <span className="text-xs font-black bg-primary text-dark px-3 py-1.5 rounded-full shadow-xs">
+                                                    {percent}% ተጠናቋል
+                                                </span>
+                                            );
+                                        })()}
+                                    </div>
+
+                                    {modules.length === 0 ? (
+                                        <div className="p-8 text-center text-gray-500 text-sm font-bold">
+                                            ምንም ትምህርት አልተገኘም
+                                        </div>
+                                    ) : (
+                                        modules.map((mod: any, idx: number) => (
+                                            <div key={mod.id || idx} className="border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-2xl overflow-hidden shadow-xs">
+                                                <div className="bg-gray-50 dark:bg-slate-800/90 p-3.5 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between">
+                                                    <h4 className="font-black text-xs sm:text-sm text-dark dark:text-white">ክፍል {idx + 1}: {mod.title}</h4>
+                                                    <span className="text-[10px] bg-gray-200 dark:bg-slate-700 text-gray-600 dark:text-gray-300 font-bold px-2 py-0.5 rounded-md">
+                                                        {(mod.lessons || []).length} ትምህርቶች
+                                                    </span>
+                                                </div>
+                                                <div className="p-2 space-y-1.5">
+                                                    {(mod.lessons || []).map((lesson: any, lidx: number) => {
+                                                        const isActive = activeLesson?.title === lesson.title;
+                                                        const isCompleted = progress.includes(lesson.title);
+                                                        return (
+                                                            <div 
+                                                                key={lidx} 
+                                                                onClick={() => {
+                                                                    const selectedLesson = {...lesson, moduleIndex: idx, lessonIndex: lidx};
+                                                                    setActiveLesson(selectedLesson);
+                                                                    try {
+                                                                        localStorage.setItem('tsehay_user_active_lesson', JSON.stringify(selectedLesson));
+                                                                    } catch(e) {}
+                                                                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                                                                }}
+                                                                className={`flex items-center justify-between p-3 rounded-xl transition cursor-pointer active:scale-[0.98] ${
+                                                                    isActive 
+                                                                        ? 'bg-primary/15 dark:bg-primary/25 border-l-4 border-primary shadow-xs' 
+                                                                        : 'hover:bg-gray-50 dark:hover:bg-slate-800 bg-gray-50/50 dark:bg-slate-900/40'
+                                                                }`}
+                                                            >
+                                                                <div className="flex items-center gap-3 min-w-0 pr-2">
+                                                                    {isActive ? (
+                                                                        <i className="fa-solid fa-circle-play text-primary text-base animate-pulse shrink-0"></i>
+                                                                    ) : isCompleted ? (
+                                                                        <i className="fa-solid fa-circle-check text-emerald-500 text-base shrink-0"></i>
+                                                                    ) : (
+                                                                        <i className="fa-solid fa-circle-play text-gray-400 text-sm shrink-0"></i>
+                                                                    )}
+                                                                    <div className="min-w-0">
+                                                                        <p className={`text-xs sm:text-sm font-bold truncate ${isActive ? 'text-primary' : isCompleted ? 'text-emerald-600 dark:text-emerald-400' : 'text-dark dark:text-white'}`}>
+                                                                            {lesson.title}
+                                                                        </p>
+                                                                        <div className="flex items-center gap-2 mt-0.5 text-[10px] text-gray-500">
+                                                                            <span><i className="fa-solid fa-video"></i> {lesson.duration || '00:00'}</span>
+                                                                            <span className="text-primary font-bold">+{lesson.points || 25} ነጥብ</span>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                                {isCompleted ? (
+                                                                    <span className="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2.5 py-1 rounded-md font-black shrink-0">
+                                                                        ✓ ተጠናቋል
+                                                                    </span>
+                                                                ) : isActive ? (
+                                                                    <span className="text-[10px] bg-primary text-dark px-2.5 py-1 rounded-md font-black shrink-0 animate-pulse">
+                                                                        እየታየ ነው
+                                                                    </span>
+                                                                ) : null}
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            )}
+
                             {activeTab === 'overview' && (
                                 <>
                                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8 pb-8 border-b border-gray-100 dark:border-slate-700">
@@ -1110,7 +1534,23 @@ ${customAdminPrompt}
                                                 <p className="text-sm text-secondary dark:text-primary font-bold">{t('lead_instructor')}</p>
                                             </div>
                                         </div>
-                                        <div className="flex gap-4">
+                                        <div className="flex items-center gap-3">
+                                            <button
+                                                onClick={() => setShowRatingModal(true)}
+                                                className={`h-11 px-4 rounded-full border text-xs font-black transition-all flex items-center gap-2 cursor-pointer shadow-xs ${
+                                                    ratedCourses[activeCourse?.id] || (typeof window !== 'undefined' && localStorage.getItem(`rated_course_${activeCourse?.id}`))
+                                                        ? 'bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-300 hover:bg-amber-500/20'
+                                                        : 'bg-primary text-dark border-primary hover:bg-yellow-400'
+                                                }`}
+                                                title="ለዚህ ኮርስ ሬቲንግ ይስጡ"
+                                            >
+                                                <i className="fa-solid fa-star text-amber-500"></i>
+                                                <span>
+                                                    {ratedCourses[activeCourse?.id] || (typeof window !== 'undefined' && localStorage.getItem(`rated_course_${activeCourse?.id}`))
+                                                        ? 'ደረጃ ሰጥተዋል ✓'
+                                                        : 'ሬቲንግ ስጥ'}
+                                                </span>
+                                            </button>
                                             <a 
                                                 href={(() => {
                                                     const username = (activeCourse?.instructorTelegram || 'EyoubSahle').replace('@', '').trim();
@@ -1119,9 +1559,9 @@ ${customAdminPrompt}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 title="የመምህሩ ቴሌግራም (Instructor Telegram)"
-                                                className="w-12 h-12 rounded-full bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 text-[#26A5E4] flex items-center justify-center hover:bg-[#26A5E4] hover:text-white transition-all shadow-md transform hover:-translate-y-1"
+                                                className="w-11 h-11 rounded-full bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 text-[#26A5E4] flex items-center justify-center hover:bg-[#26A5E4] hover:text-white transition-all shadow-md transform hover:-translate-y-1"
                                             >
-                                                <i className="fa-brands fa-telegram text-2xl"></i>
+                                                <i className="fa-brands fa-telegram text-xl"></i>
                                             </a>
                                         </div>
                                     </div>
@@ -1220,23 +1660,40 @@ ${customAdminPrompt}
                                         ) : (
                                             <div className="space-y-3">
                                                 {studentNotes.map((note) => (
-                                                    <div key={note.id} className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm relative group hover:border-primary/50 transition">
-                                                        <div className="flex justify-between items-start mb-2">
-                                                            <span className="text-[11px] font-bold bg-primary/20 text-dark dark:text-primary px-2.5 py-0.5 rounded-full">
-                                                                <i className="fa-solid fa-bookmark mr-1 text-[10px]"></i> {note.lessonTitle || activeCourse?.title}
-                                                            </span>
-                                                            <div className="flex items-center gap-3">
-                                                                <span className="text-[10px] text-gray-400">{note.createdAt}</span>
+                                                    <div key={note.id} className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-gray-200 dark:border-slate-700 shadow-sm relative group hover:border-primary/50 transition">
+                                                        <div className="flex justify-between items-start mb-3 gap-2 flex-wrap">
+                                                            <div className="flex items-center gap-2 flex-wrap">
+                                                                <span className={`text-[11px] font-black px-3 py-1 rounded-full flex items-center gap-1.5 shadow-xs ${
+                                                                    note.source === 'ai' || (note.lessonTitle && note.lessonTitle.includes('Tsehay AI'))
+                                                                        ? 'bg-amber-400/20 text-amber-800 dark:text-amber-300 border border-amber-400/30'
+                                                                        : 'bg-primary/20 text-dark dark:text-primary border border-primary/30'
+                                                                }`}>
+                                                                    <i className={`fa-solid ${note.source === 'ai' || (note.lessonTitle && note.lessonTitle.includes('Tsehay AI')) ? 'fa-robot text-primary' : 'fa-bookmark text-primary'} text-[11px]`}></i>
+                                                                    <span>{note.lessonTitle || activeCourse?.title || 'ማስታወሻ'}</span>
+                                                                </span>
+                                                            </div>
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-[10px] text-gray-400 font-bold">{note.createdAt}</span>
+                                                                <button
+                                                                    onClick={() => {
+                                                                        navigator.clipboard.writeText(note.text);
+                                                                        alert('ማስታወሻው ኮፒ ተደርጓል! (Note Copied)');
+                                                                    }}
+                                                                    className="w-7 h-7 rounded-lg bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-500 dark:text-gray-300 transition flex items-center justify-center text-xs cursor-pointer"
+                                                                    title="ኮፒ አድርግ (Copy)"
+                                                                >
+                                                                    <i className="fa-solid fa-copy"></i>
+                                                                </button>
                                                                 <button 
                                                                     onClick={() => handleDeleteNote(note.id)} 
-                                                                    className="text-gray-400 hover:text-red-500 transition text-xs" 
+                                                                    className="w-7 h-7 rounded-lg bg-red-50 dark:bg-red-950/30 hover:bg-red-100 text-red-500 transition flex items-center justify-center text-xs cursor-pointer" 
                                                                     title="ሰርዝ (Delete Note)"
                                                                 >
                                                                     <i className="fa-solid fa-trash-can"></i>
                                                                 </button>
                                                             </div>
                                                         </div>
-                                                        <p className="text-sm text-gray-700 dark:text-gray-200 font-body leading-relaxed whitespace-pre-wrap">
+                                                        <p className="text-sm text-gray-800 dark:text-gray-200 font-body leading-relaxed whitespace-pre-wrap">
                                                             {note.text}
                                                         </p>
                                                     </div>
@@ -1409,36 +1866,70 @@ ${customAdminPrompt}
                             )}
 
                             {activeTab === 'quiz' && (
-                                <div className="p-4">
+                                <div className="p-4 sm:p-6">
                                     {!isCourseCompleted ? (
-                                        <div className="text-center py-10 bg-gray-50 dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700">
-                                            <i className="fa-solid fa-lock text-4xl text-gray-300 dark:text-gray-600 mb-4"></i>
-                                            <h3 className="text-lg font-bold text-dark dark:text-white mb-2">ፈተናው ዝግ ነው (Quiz Locked)</h3>
-                                            <p className="text-sm text-gray-500 mb-6 max-w-md mx-auto">ፈተናውን ለመውሰድ በመጀመሪያ የኮርሱን ትምህርቶች (Videos) በሙሉ አይተው ማጠናቀቅ አለብዎት።</p>
-                                            <button onClick={() => setIsCourseCompleted(true)} className="text-xs bg-gray-200 dark:bg-slate-700 px-3 py-1.5 rounded-lg font-bold text-gray-600 dark:text-gray-300">
-                                                (Demo) ኮርሱን ጨርሻለሁ በል
+                                        <div className="text-center py-12 bg-gray-50 dark:bg-slate-800/60 rounded-2xl border border-dashed border-gray-200 dark:border-slate-700">
+                                            <div className="w-16 h-16 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 mx-auto flex items-center justify-center text-2xl mb-4">
+                                                <i className="fa-solid fa-lock"></i>
+                                            </div>
+                                            <h3 className="text-lg font-black text-dark dark:text-white mb-2 font-heading">ፈተናው አልተከፈተም (Quiz Locked)</h3>
+                                            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-6 max-w-md mx-auto">ፈተናውን ለመውሰድ በመጀመሪያ የኮርሱን ትምህርቶች በሙሉ አይተው ማጠናቀቅ አለብዎት።</p>
+                                            <button onClick={() => setIsCourseCompleted(true)} className="text-xs bg-primary/20 hover:bg-primary text-dark dark:text-white dark:hover:text-dark px-4 py-2 rounded-xl font-bold transition">
+                                                (Demo) ፈተናውን ክፈት (Unlock Quiz)
                                             </button>
                                         </div>
                                     ) : (
-                                        <div className="flex flex-col h-[400px] bg-gray-50 dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 overflow-hidden relative">
-                                            <div className="bg-primary text-dark p-3 font-bold flex items-center justify-between shadow-sm z-10">
-                                                <div className="flex items-center gap-2">
-                                                    <i className="fa-solid fa-robot text-xl"></i>
-                                                    <span>Tsehay AI - የኮርስ ፈተና</span>
+                                        <div className="flex flex-col h-[460px] bg-gray-50 dark:bg-slate-900/80 rounded-2xl border border-gray-200 dark:border-slate-700 overflow-hidden relative shadow-sm">
+                                            <div className="bg-gradient-to-r from-amber-500 via-primary to-yellow-400 text-dark p-4 font-bold flex items-center justify-between shadow-sm z-10">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-9 h-9 rounded-xl bg-dark/10 flex items-center justify-center text-dark text-lg">
+                                                        <i className="fa-solid fa-robot"></i>
+                                                    </div>
+                                                    <div>
+                                                        <h3 className="font-heading font-black text-sm text-dark">Tsehay AI - የኮርስ ፈተና</h3>
+                                                        <p className="text-[11px] text-dark/80 font-medium">{activeCourse?.title || 'Tsehay Campus Course'}</p>
+                                                    </div>
                                                 </div>
+                                                <span className="text-[11px] bg-dark text-white font-black px-3 py-1 rounded-full shadow-xs">
+                                                    🎯 ፈተና
+                                                </span>
                                             </div>
                                             
-                                            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                                            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+                                                {/* Welcome celebration banner */}
+                                                <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 rounded-2xl p-4 flex items-start gap-3">
+                                                    <div className="w-8 h-8 rounded-full bg-amber-400/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 mt-0.5">
+                                                        <i className="fa-solid fa-graduation-cap"></i>
+                                                    </div>
+                                                    <div className="text-xs text-amber-900 dark:text-amber-200 leading-relaxed font-medium">
+                                                        <p className="font-bold mb-0.5">🎉 እንኳን ደስ አሎት! ሁሉንም ትምህርቶች አጠናቀዋል።</p>
+                                                        የኮርሱን ማጠቃለያ ጥያቄዎች ይመልሱ። ፈተናውን እንደጨረሱ በስምዎ የተዘጋጀ ዲጂታል ሰርተፍኬት ያገኛሉ!
+                                                    </div>
+                                                </div>
+
                                                 {quizMessages.map((msg, idx) => (
                                                     <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                                        <div className={`max-w-[80%] rounded-2xl p-4 text-sm ${msg.role === 'user' ? 'bg-secondary text-white rounded-tr-sm' : 'bg-white dark:bg-slate-700 dark:text-white border border-gray-100 dark:border-slate-600 rounded-tl-sm shadow-sm'}`}>
+                                                        <div className={`max-w-[85%] rounded-2xl p-4 text-sm leading-relaxed ${msg.role === 'user' ? 'bg-secondary text-white rounded-tr-xs shadow-sm' : 'bg-white dark:bg-slate-800 dark:text-white border border-gray-200 dark:border-slate-700 rounded-tl-xs shadow-sm'}`}>
                                                             {msg.text}
                                                         </div>
                                                     </div>
                                                 ))}
+
+                                                {quizMessages.length <= 1 && (
+                                                    <div className="pt-2 flex flex-wrap gap-2">
+                                                        <button 
+                                                            onClick={() => handleQuizSubmit('ፈተናውን ለመጀመር ዝግጁ ነኝ፣ የመጀመሪያውን ጥያቄ ጠይቀኝ።')}
+                                                            className="bg-primary text-dark text-xs font-black px-4 py-2.5 rounded-xl hover:bg-yellow-400 transition shadow-sm flex items-center gap-2 cursor-pointer transform hover:scale-105 active:scale-95"
+                                                        >
+                                                            <span>🚀 ፈተናውን ጀምር (Start Exam)</span>
+                                                            <i className="fa-solid fa-arrow-right text-[10px]"></i>
+                                                        </button>
+                                                    </div>
+                                                )}
+
                                                 {isQuizLoading && (
                                                     <div className="flex justify-start">
-                                                        <div className="bg-white dark:bg-slate-700 border border-gray-100 dark:border-slate-600 rounded-2xl rounded-tl-sm p-4 shadow-sm flex gap-2 items-center">
+                                                        <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl rounded-tl-xs p-4 shadow-sm flex gap-2 items-center">
                                                             <div className="w-2 h-2 rounded-full bg-primary animate-bounce"></div>
                                                             <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{animationDelay: '0.2s'}}></div>
                                                             <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{animationDelay: '0.4s'}}></div>
@@ -1447,17 +1938,18 @@ ${customAdminPrompt}
                                                 )}
                                             </div>
 
-                                            <div className="p-3 bg-white dark:bg-slate-800 border-t border-gray-100 dark:border-slate-700 flex gap-2">
+                                            <div className="p-3 sm:p-4 bg-white dark:bg-slate-800 border-t border-gray-200 dark:border-slate-700 flex gap-2">
                                                 <input 
                                                     type="text" 
                                                     value={quizInput}
                                                     onChange={e => setQuizInput(e.target.value)}
                                                     onKeyDown={e => e.key === 'Enter' && handleQuizSubmit()}
                                                     placeholder="መልስዎን እዚህ ይፃፉ..." 
-                                                    className="flex-1 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2 text-sm outline-none focus:border-primary"
+                                                    className="flex-1 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary text-dark dark:text-white transition"
                                                 />
-                                                <button onClick={handleQuizSubmit} className="w-10 h-10 bg-primary text-dark rounded-xl flex items-center justify-center font-bold hover:bg-secondary hover:text-white transition shadow-sm shrink-0">
+                                                <button onClick={() => handleQuizSubmit()} className="h-10 px-5 bg-primary text-dark rounded-xl flex items-center justify-center gap-2 font-black hover:bg-yellow-400 transition shadow-sm shrink-0 text-sm cursor-pointer active:scale-95">
                                                     <i className="fa-solid fa-paper-plane"></i>
+                                                    <span className="hidden sm:inline">ላክ</span>
                                                 </button>
                                             </div>
                                         </div>
@@ -1489,8 +1981,8 @@ ${customAdminPrompt}
                     </div>
                 </div>
 
-                {/* Right Side: Curriculum/Course Content */}
-                <div className="lg:col-span-1 xl:col-span-1">
+                {/* Right Side: Curriculum/Course Content (Desktop Only, Mobile uses Syllabus tab) */}
+                <div className="hidden lg:block lg:col-span-1 xl:col-span-1">
                     <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-200 dark:border-slate-700 flex flex-col h-full lg:h-[calc(100vh-160px)] lg:sticky lg:top-4 overflow-hidden transition-colors duration-300">
                         
                         <div className="p-5 border-b border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 z-10 shadow-sm">
@@ -1546,7 +2038,11 @@ ${customAdminPrompt}
                                                     <div 
                                                         key={lidx} 
                                                         onClick={() => {
-                                                            setActiveLesson({...lesson, moduleIndex: idx, lessonIndex: lidx});
+                                                            const selectedLesson = {...lesson, moduleIndex: idx, lessonIndex: lidx};
+                                                            setActiveLesson(selectedLesson);
+                                                            try {
+                                                              localStorage.setItem('tsehay_user_active_lesson', JSON.stringify(selectedLesson));
+                                                            } catch(e) {}
                                                         }}
                                                         className={`flex items-center justify-between p-2.5 rounded-xl transition cursor-pointer ${
                                                             isActive 
@@ -1616,9 +2112,16 @@ ${customAdminPrompt}
               ) : (
                 courses.map(course => (
                   <div key={course.id} className="bg-white dark:bg-slate-800 rounded-3xl p-4 shadow-sm border border-slate-100 dark:border-slate-700">
-                    <img src={course.thumbnail || course.image || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1200'} className="w-full h-48 object-cover rounded-2xl mb-4" />
-                    <h3 className="font-bold text-lg mb-2 line-clamp-2">{course.title}</h3>
-                    <button onClick={() => { setActiveCourse(course); setCurrentView('classroom'); }} className="w-full py-2 bg-primary text-dark font-bold rounded-xl hover:bg-yellow-400">ወደ ትምህርቱ</button>
+                    <img src={formatDriveImageUrl(course.thumbnail || course.image) || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1200'} className="w-full h-48 object-cover rounded-2xl mb-4" />
+                    <h3 className="font-bold text-lg mb-3 line-clamp-2 text-dark dark:text-white font-heading">{course.title}</h3>
+                    <button onClick={() => { 
+                      setActiveCourse(course); 
+                      try { localStorage.setItem('tsehay_user_active_course', JSON.stringify(course)); } catch(e) {}
+                      setCurrentView('classroom'); 
+                    }} className="w-full py-2.5 bg-primary text-dark font-black rounded-xl hover:bg-yellow-400 transition shadow-sm cursor-pointer active:scale-95 flex items-center justify-center gap-2">
+                      <i className="fa-solid fa-play"></i>
+                      <span>ወደ ትምህርቱ</span>
+                    </button>
                   </div>
                 ))
               )}
@@ -1639,7 +2142,7 @@ ${customAdminPrompt}
                              <p className="text-xs text-gray-500">ከኮርስ አስተማሪዎች ጋር የሚላላኩት ቀጥታ መልዕክቶች እና የተሰጡ ምላሾች</p>
                          </div>
                      </div>
-                     <button onClick={() => setCurrentView('classroom')} className="text-xs bg-primary text-dark font-black px-4 py-2 rounded-xl hover:bg-yellow-400 transition shadow-xs">
+                     <button onClick={() => setCurrentView('classroom')} className="text-xs bg-primary text-dark font-black px-4 py-2 rounded-xl hover:bg-yellow-400 transition shadow-xs cursor-pointer">
                          <i className="fa-solid fa-plus mr-1"></i> አዲስ ጥያቄ ጠይቅ
                      </button>
                  </div>
@@ -1670,28 +2173,28 @@ ${customAdminPrompt}
                                  </div>
 
                                  <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-gray-100 dark:border-slate-700">
-                                     <span className="text-xs font-bold text-gray-400 block mb-1">የተላከው ጥያቄ፦</span>
-                                     <p className="text-sm font-body text-dark dark:text-white whitespace-pre-wrap">{ticket.message}</p>
-                                 </div>
+                                      <span className="text-xs font-bold text-gray-400 block mb-1">የተላከው ጥያቄ፦</span>
+                                      <p className="text-sm font-body text-dark dark:text-white whitespace-pre-wrap">{ticket.message}</p>
+                                  </div>
 
-                                 {ticket.replies && ticket.replies.length > 0 && (
-                                     <div className="pl-4 border-l-3 border-emerald-500 space-y-2 mt-3">
-                                         {ticket.replies.map((reply: any, rIdx: number) => (
-                                             <div key={rIdx} className="bg-emerald-50 dark:bg-emerald-950/30 p-4 rounded-xl border border-emerald-200 dark:border-emerald-800/40">
-                                                 <div className="flex items-center gap-2 mb-1.5">
-                                                     <i className="fa-solid fa-user-tie text-emerald-600 dark:text-emerald-400"></i>
-                                                     <span className="text-xs font-black text-emerald-800 dark:text-emerald-300">የአስተማሪው/Admin መልስ፦</span>
-                                                 </div>
-                                                 <p className="text-sm font-body text-slate-800 dark:text-slate-200 leading-relaxed">{reply.message}</p>
-                                             </div>
-                                         ))}
-                                     </div>
-                                 )}
-                             </div>
-                         ))
-                     )}
-                 </div>
-             </div>
+                                  {ticket.replies && ticket.replies.length > 0 && (
+                                      <div className="pl-4 border-l-3 border-emerald-500 space-y-2 mt-3">
+                                          {ticket.replies.map((reply: any, rIdx: number) => (
+                                              <div key={rIdx} className="bg-emerald-50 dark:bg-emerald-950/30 p-4 rounded-xl border border-emerald-200 dark:border-emerald-800/40">
+                                                  <div className="flex items-center gap-2 mb-1.5">
+                                                      <i className="fa-solid fa-user-tie text-emerald-600 dark:text-emerald-400"></i>
+                                                      <span className="text-xs font-black text-emerald-800 dark:text-emerald-300">የአስተማሪው/Admin መልስ፦</span>
+                                                  </div>
+                                                  <p className="text-sm font-body text-slate-800 dark:text-slate-200 leading-relaxed">{reply.message}</p>
+                                              </div>
+                                          ))}
+                                      </div>
+                                  )}
+                              </div>
+                          ))
+                      )}
+                  </div>
+              </div>
           </div>
         )}
 
@@ -1717,7 +2220,7 @@ ${customAdminPrompt}
                              <p className="text-xs text-gray-500 dark:text-gray-400 font-bold mt-0.5">ትምህርታዊ ጥያቄዎችዎን በፍጥነት የሚመልስ የእርስዎ AI ረዳት</p>
                          </div>
                      </div>
-                     <button onClick={() => { if(confirm('የ AI ቻት ታሪክዎን ማጥፋት እርግጠኛ ነዎት?')) { localStorage.removeItem('tsehay-ai-chat'); setChatMessages([{ role: 'system', text: 'ሰላም! እኔ Tsehay AI ነኝ። ምን ልርዳዎት?' }]); } }} className="text-xs bg-red-50 text-red-600 dark:bg-red-950/30 dark:text-red-400 font-bold px-3 py-2 rounded-xl hover:bg-red-100 transition shrink-0">
+                     <button onClick={handleClearAiChat} className="text-xs bg-red-50 text-red-600 dark:bg-red-950/30 dark:text-red-400 font-bold px-3 py-2 rounded-xl hover:bg-red-100 transition shrink-0 cursor-pointer">
                          <i className="fa-solid fa-trash mr-1"></i> ታሪክ አፅዳ
                      </button>
                  </div>
@@ -1730,20 +2233,34 @@ ${customAdminPrompt}
                                  {m.text}
                              </div>
                              {m.role !== 'user' && i > 0 && (
-                                 <button 
-                                     onClick={() => {
-                                         document.dispatchEvent(new CustomEvent('add-to-notes', { detail: { text: m.text } }));
-                                         setSavedAiNotes(prev => ({ ...prev, [i]: true }));
-                                     }} 
-                                     className={`mt-2 text-[11px] font-black px-3 py-1 rounded-lg border flex items-center gap-1.5 transition-all shadow-xs ${
-                                         savedAiNotes[i]
-                                             ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/40'
-                                             : 'bg-amber-400/20 hover:bg-amber-400 dark:bg-amber-500/20 dark:hover:bg-amber-400 text-amber-800 dark:text-amber-300 hover:text-dark border-amber-400/40'
-                                     }`}
-                                 >
-                                     <i className={`fa-solid ${savedAiNotes[i] ? 'fa-circle-check text-emerald-600 dark:text-emerald-400' : 'fa-bookmark text-[10px]'}`}></i> 
-                                     <span>{savedAiNotes[i] ? '✓ ወደ ማስታወሻ ተመዝግቧል' : 'ወደ ማስታወሻ አድ አድርግ'}</span>
-                                 </button>
+                                 <div className="flex items-center gap-2 mt-2 flex-wrap">
+                                     <button 
+                                         onClick={() => {
+                                             handleSaveNote(m.text);
+                                             setSavedAiNotes(prev => ({ ...prev, [i]: true }));
+                                         }} 
+                                         className={`text-[11px] font-black px-3 py-1.5 rounded-lg border flex items-center gap-1.5 transition-all shadow-xs cursor-pointer ${
+                                             savedAiNotes[i]
+                                                 ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/40'
+                                                 : 'bg-amber-400/20 hover:bg-amber-400 dark:bg-amber-500/20 dark:hover:bg-amber-400 text-amber-800 dark:text-amber-300 hover:text-dark border-amber-400/40'
+                                         }`}
+                                     >
+                                         <i className={`fa-solid ${savedAiNotes[i] ? 'fa-circle-check text-emerald-600 dark:text-emerald-400' : 'fa-bookmark text-[10px]'}`}></i> 
+                                         <span>{savedAiNotes[i] ? '✓ ወደ ማስታወሻ ተመዝግቧል' : 'ወደ ማስታወሻ አድ አድርግ'}</span>
+                                     </button>
+                                     {savedAiNotes[i] && (
+                                         <button
+                                             onClick={() => {
+                                                 setCurrentView('classroom');
+                                                 setActiveTab('notes');
+                                             }}
+                                             className="text-[11px] font-bold text-secondary dark:text-primary hover:underline flex items-center gap-1 cursor-pointer bg-primary/10 px-2.5 py-1 rounded-lg border border-primary/20"
+                                         >
+                                             <span>ማስታወሻዎችን እይ</span>
+                                             <i className="fa-solid fa-arrow-right text-[10px]"></i>
+                                         </button>
+                                     )}
+                                 </div>
                              )}
                          </div>
                      ))}
@@ -1842,6 +2359,12 @@ ${customAdminPrompt}
         courseId={activeCourse?.id || ''}
         courseTitle={activeCourse?.title || ''}
         user={user}
+        onRatingSubmitted={() => {
+          if (activeCourse?.id) {
+            setRatedCourses(prev => ({ ...prev, [activeCourse.id]: true }));
+            try { localStorage.setItem(`rated_course_${activeCourse.id}`, 'true'); } catch (e) {}
+          }
+        }}
       />
     </div>
   );

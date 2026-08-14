@@ -3,7 +3,6 @@ import { NextResponse } from 'next/server';
 async function getPayPalAccessToken() {
   const clientId = (
     process.env.PAYPAL_CLIENT_ID || 
-    process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || 
     process.env.PAYPAL_CLIENT || 
     process.env.PAYPAL_KEY ||
     ''
@@ -21,7 +20,7 @@ async function getPayPalAccessToken() {
     throw new Error('PayPal credentials not configured');
   }
 
-  const isLive = process.env.PAYPAL_MODE === 'live' || process.env.PAYPAL_ENV === 'live' || process.env.NEXT_PUBLIC_PAYPAL_MODE === 'live';
+  const isLive = process.env.PAYPAL_MODE === 'live' || process.env.PAYPAL_ENV === 'live';
   const mode = isLive ? 'https://api-m.paypal.com' : 'https://api-m.sandbox.paypal.com';
   const auth = Buffer.from(`${clientId}:${secret}`).toString('base64');
 
@@ -44,11 +43,26 @@ async function getPayPalAccessToken() {
 
 export async function POST(request: Request) {
   try {
-    const { courseId, title, price, userId } = await request.json();
+    const { courseId, title, price } = await request.json();
 
-    if (!courseId || !price || !userId) {
+    if (!courseId || !price) {
       return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 });
     }
+
+    let authenticatedUserId = 'anonymous';
+    const authHeader = request.headers.get('authorization');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      try {
+        const { adminAuth } = await import('@/lib/firebase/admin');
+        if (adminAuth) {
+          const decoded = await adminAuth.verifyIdToken(authHeader.split('Bearer ')[1].trim());
+          authenticatedUserId = decoded.uid;
+        }
+      } catch (tokenErr) {
+        console.warn("PayPal create-order token verification note:", tokenErr);
+      }
+    }
+    const userId = authenticatedUserId;
 
     const host = request.headers.get('host') || 'tsehaycampus.com';
     const protocol = host.includes('localhost') ? 'http' : 'https';

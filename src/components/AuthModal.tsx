@@ -73,6 +73,8 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
     setError("");
     setLoading(true);
 
+    const cleanEmail = email.trim();
+
     try {
       if (isSignupMode) {
         if (!agreedToTerms) {
@@ -83,43 +85,76 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
         
         let currentUser = pendingGoogleAuth;
         if (!currentUser) {
-            const cred = await createUserWithEmailAndPassword(auth, email, password);
-            await updateProfile(cred.user, { displayName: name });
-            
-            const { sendEmailVerification } = await import('firebase/auth');
-            await sendEmailVerification(cred.user);
-            alert('እባክዎ ኢሜልዎን ቼክ ያድርጉ። የኢሜል ማረጋገጫ (Verification link) ልከንልዎታል።');
-            
+            const cred = await createUserWithEmailAndPassword(auth, cleanEmail, password);
+            if (name.trim()) {
+              try { await updateProfile(cred.user, { displayName: name.trim() }); } catch(e) {}
+            }
             currentUser = cred.user;
+            
+            // Send verification in background
+            try {
+              const { sendEmailVerification } = await import('firebase/auth');
+              sendEmailVerification(cred.user).catch(() => {});
+            } catch(e) {}
         }
         
-        const userData = {
-            name: name,
-            email: email,
-            phone: phone,
-            city: city,
-            source: source,
-            createdAt: serverTimestamp(),
-            lastLogin: serverTimestamp(),
-            isAdmin: false,
-            photoURL: currentUser.photoURL || null
-        };
-        
-        await setDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', currentUser.uid, 'profile', 'info'), userData, { merge: true });
-        await setDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'users', currentUser.uid), userData, { merge: true });
-        
+        // Instant success - close modal immediately
+        setError("");
         onClose();
+
+        // Background profile sync
+        if (currentUser) {
+          (async () => {
+            try {
+              const userData = {
+                  name: name.trim() || currentUser.displayName || "ተጠቃሚ",
+                  email: cleanEmail,
+                  phone: phone.trim(),
+                  city: city.trim(),
+                  source: source || "Direct",
+                  createdAt: serverTimestamp(),
+                  lastLogin: serverTimestamp(),
+                  isAdmin: false,
+                  photoURL: currentUser.photoURL || null
+              };
+              
+              await setDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', currentUser.uid, 'profile', 'info'), userData, { merge: true });
+            } catch (err) {
+              console.warn("Background profile save error:", err);
+            }
+          })();
+        }
       } else {
-        await signInWithEmailAndPassword(auth, email, password);
+        // Login mode
+        const cred = await signInWithEmailAndPassword(auth, cleanEmail, password);
         
-        await setDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', auth.currentUser!.uid, 'profile', 'info'), {
-            lastLogin: serverTimestamp()
-        }, { merge: true });
-        
+        // Instant success - close modal immediately
+        setError("");
         onClose();
+
+        // Update last login in background
+        if (cred.user) {
+          (async () => {
+            try {
+              await setDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', cred.user.uid, 'profile', 'info'), {
+                  lastLogin: serverTimestamp()
+              }, { merge: true });
+            } catch(e) {}
+          })();
+        }
       }
     } catch (err: any) {
-      setError(getFriendlyErrorMessage(err));
+      console.error("Auth error:", err);
+      const code = err?.code || '';
+
+      if (!isSignupMode && (code === 'auth/user-not-found' || code === 'auth/invalid-credential')) {
+        setError('የተሳሳተ የይለፍ ቃል አስገብተዋል ወይም ይህ ኢሜል ገና አልተመዘገበም። አዲስ ከሆኑ ከታች "አዲስ ይመዝገቡ" የሚለውን ይጫኑ።');
+      } else if (isSignupMode && code === 'auth/email-already-in-use') {
+        setIsSignupMode(false);
+        setError('ይህ ኢሜል አስቀድሞ ተመዝግቧል! እባክዎ የይለፍ ቃልዎን አስገብተው በቀጥታ ይግቡ።');
+      } else {
+        setError(getFriendlyErrorMessage(err));
+      }
     } finally {
       setLoading(false);
     }
@@ -133,31 +168,41 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
       
-      const docRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'profile', 'info');
-      const publicUserRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'users', user.uid);
-      const docSnap = await getDoc(docRef);
-      
-      const userData = {
-          name: user.displayName || (docSnap.exists() ? docSnap.data()?.name : "") || "ተጠቃሚ",
-          email: user.email || (docSnap.exists() ? docSnap.data()?.email : "") || "",
-          phone: docSnap.exists() ? (docSnap.data()?.phone || "") : "",
-          city: docSnap.exists() ? (docSnap.data()?.city || "") : "",
-          source: docSnap.exists() ? (docSnap.data()?.source || "Google") : "Google",
-          photoURL: user.photoURL || (docSnap.exists() ? docSnap.data()?.photoURL : null),
-          lastLogin: serverTimestamp(),
-          isAdmin: docSnap.exists() ? (docSnap.data()?.isAdmin || false) : false,
-          createdAt: docSnap.exists() ? (docSnap.data()?.createdAt || serverTimestamp()) : serverTimestamp(),
-      };
-      
-      await setDoc(docRef, userData, { merge: true });
-      await setDoc(publicUserRef, userData, { merge: true });
-      
+      // Instant success - close modal immediately
       setPendingGoogleAuth(null);
       setError("");
       onClose();
+
+      // Background profile sync
+      (async () => {
+        try {
+          const docRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'profile', 'info');
+          const docSnap = await getDoc(docRef);
+          
+          const userData = {
+              name: user.displayName || (docSnap.exists() ? docSnap.data()?.name : "") || "ተጠቃሚ",
+              email: user.email || (docSnap.exists() ? docSnap.data()?.email : "") || "",
+              phone: docSnap.exists() ? (docSnap.data()?.phone || "") : "",
+              city: docSnap.exists() ? (docSnap.data()?.city || "") : "",
+              source: docSnap.exists() ? (docSnap.data()?.source || "Google") : "Google",
+              photoURL: user.photoURL || (docSnap.exists() ? docSnap.data()?.photoURL : null),
+              lastLogin: serverTimestamp(),
+              isAdmin: docSnap.exists() ? (docSnap.data()?.isAdmin || false) : false,
+              createdAt: docSnap.exists() ? (docSnap.data()?.createdAt || serverTimestamp()) : serverTimestamp(),
+          };
+          
+          await setDoc(docRef, userData, { merge: true });
+        } catch (e) {
+          console.warn("Background Google auth sync warning:", e);
+        }
+      })();
     } catch (err: any) {
-        console.error("Google Auth Error:", err);
-        setError(getFriendlyErrorMessage(err));
+        if (err?.code === 'auth/popup-closed-by-user' || err?.code === 'auth/cancelled-popup-request') {
+          setError("");
+        } else {
+          console.error("Google Auth Error:", err);
+          setError(getFriendlyErrorMessage(err));
+        }
     } finally {
         setLoading(false);
     }

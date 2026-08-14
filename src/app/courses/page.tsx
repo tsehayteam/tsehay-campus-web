@@ -11,10 +11,10 @@ import { useRouter } from 'next/navigation';
 
 import SmartSearchInput from '@/components/SmartSearchInput';
 import { searchCourses } from '@/lib/smartSearch';
-import { getCachedCourses, saveCachedCourses } from '@/lib/courseCache';
+import { getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl } from '@/lib/courseCache';
 
 export default function Courses() {
-  const [courses, setCourses] = useState<any[]>(() => getCachedCourses());
+  const [courses, setCourses] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [isEnrolling, setIsEnrolling] = useState(false);
@@ -27,7 +27,13 @@ export default function Courses() {
   const [selectedCategory, setSelectedCategory] = useState("All");
 
   useEffect(() => {
-    // Fetch courses from Firestore in real-time with instant cache
+    // Instant cache fallback on client mount
+    try {
+      const cached = getCachedCourses();
+      if (cached.length > 0) setCourses(cached);
+    } catch (e) {}
+
+    // Fetch courses from Firestore in real-time
     const q = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       if (!snapshot.empty) {
@@ -57,15 +63,21 @@ export default function Courses() {
       }
       setIsEnrolling(true);
       try {
-        const docRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'purchased_courses', course.id);
-        await setDoc(docRef, {
-            courseId: course.id,
-            amount: 0,
-            purchasedAt: serverTimestamp(),
-            status: 'active'
+        const idToken = await user.getIdToken();
+        const res = await fetch('/api/enroll-free', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${idToken}`
+          },
+          body: JSON.stringify({ courseId: course.id })
         });
-        
-        router.push('/dashboard');
+        const data = await res.json();
+        if (res.ok && data.success) {
+          router.push('/dashboard');
+        } else {
+          alert(`Failed to enroll: ${data.error || 'Please try again.'}`);
+        }
       } catch (err: any) {
          console.error("Free enrollment failed:", err);
          alert(`Failed to enroll: ${err.message || 'Please try again.'}`);
@@ -146,17 +158,16 @@ export default function Courses() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {filteredCourses.map((course) => (
-                  <div key={course.id} className="bg-white dark:bg-[#111111] rounded-3xl overflow-hidden flex flex-col transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_20px_40px_rgba(0,0,0,0.1)] dark:hover:shadow-[0_20px_40px_rgba(0,0,0,0.5)] group relative border border-gray-200 dark:border-gray-800">
+                  <div key={course.id} className="course-card bg-white dark:bg-[#111111] rounded-3xl overflow-hidden flex flex-col group relative border border-gray-200 dark:border-gray-800 transition-all duration-300">
                     
-                    <div className="relative h-56 md:h-64 overflow-hidden bg-white">
+                    <a href={`/courses/${course.id}`} className="relative h-56 md:h-64 overflow-hidden bg-slate-900 block cursor-pointer">
                       <img 
-                        src={(course.image && course.image.includes('drive.google.com/uc?export=view&id=')) ? `https://drive.google.com/thumbnail?id=${course.image.split('id=')[1]}&sz=w1000` : (course.image || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1000&auto=format&fit=crop')} 
+                        src={formatDriveImageUrl(course.image) || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1000&auto=format&fit=crop'} 
                         alt={course.title} 
                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                        onError={(e) => { e.currentTarget.src='https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1000&auto=format&fit=crop'; }}
                       />
                       
-                      {/* PREMIUM Badge */}
+                      {/* PREMIUM / FREE Badge */}
                       {(!course.isFree && course.price !== 0 && course.price !== '0' && course.price !== 'Free') ? (
                         <div className="absolute top-4 right-4 bg-primary text-dark text-[11px] font-black px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg">
                           <i className="fa-solid fa-star"></i> PREMIUM
@@ -169,16 +180,18 @@ export default function Courses() {
                       
                       {/* CATEGORY Badge */}
                       {course.category && (
-                        <div className="absolute bottom-4 left-4 bg-[#111111] text-white text-[10px] font-bold px-3 py-1.5 rounded-md uppercase tracking-wider shadow-md">
+                        <div className="absolute bottom-4 left-4 bg-[#111111]/90 backdrop-blur-xs text-white text-[10px] font-bold px-3 py-1.5 rounded-md uppercase tracking-wider shadow-md">
                           {course.category}
                         </div>
                       )}
-                    </div>
+                    </a>
                     
                     <div className="p-6 flex-1 flex flex-col">
-                      <h3 className="text-xl font-black text-dark dark:text-white mb-3 line-clamp-2 leading-tight group-hover:text-primary transition-colors">
-                        {course.title || t('course_unknown')}
-                      </h3>
+                      <a href={`/courses/${course.id}`}>
+                        <h3 className="text-xl font-black text-dark dark:text-white mb-3 line-clamp-2 leading-tight group-hover:text-primary transition-colors cursor-pointer font-heading">
+                          {course.title || t('course_unknown')}
+                        </h3>
+                      </a>
                       
                       <div className="flex items-center justify-between gap-2 mb-3">
                         <div className="flex items-center gap-2">
@@ -187,12 +200,12 @@ export default function Courses() {
                         </div>
                         <div className="flex items-center gap-1.5 bg-amber-400/10 text-amber-600 dark:text-amber-400 font-black px-2.5 py-1 rounded-full text-xs border border-amber-400/20 shadow-xs">
                           <i className="fa-solid fa-star text-amber-400 text-xs"></i>
-                          <span>{course.ratingAvg || '4.9'} (Instructor Rating)</span>
+                          <span>{course.ratingAvg || '4.9'}</span>
                         </div>
                       </div>
                       
-                      <p className="text-gray-400 text-sm mb-6 line-clamp-3 leading-relaxed">
-                        {course.desc || t('course_desc_placeholder')}
+                      <p className="text-gray-400 text-sm mb-6 line-clamp-3 leading-relaxed font-body">
+                        {formatCourseDesc(course) || t('course_desc_placeholder')}
                       </p>
                       
                       {/* Metadata Pills */}
@@ -212,7 +225,7 @@ export default function Courses() {
                       </div>
                       
                       {/* Price & Action */}
-                      <div className="mt-auto pt-5 border-t border-gray-200 dark:border-gray-800 flex items-center justify-between">
+                      <div className="mt-auto pt-5 border-t border-gray-200 dark:border-gray-800 flex items-center justify-between gap-2">
                         <div>
                           {(course.isFree || course.price === 0 || course.price === '0' || course.price === 'Free') ? (
                             <span className="text-2xl font-black text-success tracking-tight">{t('course_free')}</span>
@@ -226,13 +239,19 @@ export default function Courses() {
                           )}
                         </div>
                         
-                        <button onClick={() => openPaymentModal(course)} disabled={isEnrolling} className="bg-primary text-dark font-bold px-4 py-2.5 rounded-xl flex items-center gap-2 hover:bg-yellow-400 transition-colors shadow-md disabled:opacity-50">
-                          {(course.isFree || course.price === 0 || course.price === '0' || course.price === 'Free') ? (
-                            <>{isEnrolling ? 'እባክዎ ይጠብቁ...' : t('btn_go_to_class')} <i className="fa-solid fa-arrow-right"></i></>
-                          ) : (
-                            <>{t('btn_buy_course')} <i className="fa-solid fa-cart-shopping"></i></>
-                          )}
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <a href={`/courses/${course.id}`} className="bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-dark dark:text-white text-xs font-bold px-3 py-2.5 rounded-xl transition shadow-xs flex items-center gap-1.5">
+                            <i className="fa-solid fa-eye"></i>
+                            <span>ይመልከቱ</span>
+                          </a>
+                          <button onClick={() => openPaymentModal(course)} disabled={isEnrolling} className="bg-primary text-dark font-black px-4 py-2.5 rounded-xl flex items-center gap-2 hover:bg-yellow-400 transition-all shadow-md disabled:opacity-50 text-xs cursor-pointer active:scale-95">
+                            {(course.isFree || course.price === 0 || course.price === '0' || course.price === 'Free') ? (
+                              <>{isEnrolling ? 'እባክዎ ይጠብቁ...' : t('btn_go_to_class')} <i className="fa-solid fa-arrow-right"></i></>
+                            ) : (
+                              <>{t('btn_buy_course')} <i className="fa-solid fa-cart-shopping"></i></>
+                            )}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>

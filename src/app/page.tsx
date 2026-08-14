@@ -9,12 +9,12 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Footer from '@/components/Footer';
 import SmartSearchInput from '@/components/SmartSearchInput';
-import { getCachedCourses, saveCachedCourses } from '@/lib/courseCache';
+import { getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl } from '@/lib/courseCache';
 
 export default function Home() {
   const { user } = useAuth();
   const router = useRouter();
-  const [courses, setCourses] = useState(() => getCachedCourses());
+  const [courses, setCourses] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasPurchasedCourses, setHasPurchasedCourses] = useState<boolean | null>(null);
   
@@ -62,7 +62,13 @@ export default function Home() {
   }, [user]);
 
   useEffect(() => {
-    // Fetch courses for landing page with instant cache fallback
+    // Instant cache fallback on client mount
+    try {
+      const cached = getCachedCourses();
+      if (cached.length > 0) setCourses(cached);
+    } catch (e) {}
+
+    // Fetch courses for landing page with real-time updates
     const q = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       if (!snapshot.empty) {
@@ -136,44 +142,48 @@ export default function Home() {
 
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 w-full relative z-10 flex flex-col lg:flex-row items-center gap-10 lg:gap-16">
             <div className="max-w-2xl lg:w-1/2">
-                <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 text-white font-bold px-4 py-1.5 rounded-full text-xs sm:text-sm mb-6 backdrop-blur-md shadow-sm">
-                    <i className="fa-solid fa-medal text-primary"></i> {t('hero_badge')}
+                <div className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-500/20 via-primary/30 to-amber-500/20 border border-primary/40 text-white font-black px-4 py-2 rounded-full text-xs sm:text-sm mb-6 backdrop-blur-md shadow-lg animate-badge-glow">
+                    <i className="fa-solid fa-medal text-primary animate-gentle-bounce"></i> 
+                    <span className="tracking-wide">{t('hero_badge')}</span>
                 </div>
                 <h1 id="hero-welcome" className="text-4xl sm:text-5xl lg:text-6xl font-black mb-5 leading-[1.15] text-white">
                     {t('hero_title_1')} <br /> 
-                    <span className="text-gradient">{t('hero_title_2')}</span>
+                    <span className="text-gradient-gold">{t('hero_title_2')}</span>
                 </h1>
                 <p className="text-base sm:text-lg text-gray-200 mb-8 font-body leading-relaxed">
-                    <span className="notranslate font-bold">Tsehay Campus</span> {t('hero_desc')}
+                    <span className="notranslate font-black text-primary">Tsehay Campus</span> {t('hero_desc')}
                 </p>
                 
                 <div className="flex flex-col sm:flex-row gap-4" id="hero-action-buttons">
-                    <button onClick={() => { document.getElementById('courses')?.scrollIntoView({behavior: 'smooth'}) }} className="bg-primary text-dark px-6 py-3.5 rounded-xl font-extrabold transition btn-glow flex items-center justify-center gap-3 text-base shadow-md">
-                        {t('explore_courses')} <i className="fa-solid fa-arrow-right"></i>
+                    <button onClick={() => { document.getElementById('courses')?.scrollIntoView({behavior: 'smooth'}) }} className="bg-primary text-dark px-7 py-4 rounded-2xl font-black transition-all duration-300 btn-glow flex items-center justify-center gap-3 text-base shadow-xl transform hover:scale-105 active:scale-95 cursor-pointer">
+                        <span>{t('explore_courses')}</span>
+                        <i className="fa-solid fa-arrow-right animate-pulse"></i>
                     </button>
-                    <Link href="/about" className="group bg-white/10 hover:bg-white/20 border border-white/30 text-white backdrop-blur-md px-6 py-3.5 rounded-xl font-bold transition-all duration-300 hover:scale-105 active:scale-95 hover:shadow-[0_0_20px_rgba(255,255,255,0.4)] flex items-center justify-center gap-3 text-base shadow-sm">
-                        <i className="fa-solid fa-circle-play text-lg group-hover:scale-110 group-hover:text-primary transition-transform duration-300"></i> {t('learn_about_us')}
+                    <Link href="/about" className="group bg-white/10 hover:bg-white/20 border border-white/30 text-white backdrop-blur-md px-7 py-4 rounded-2xl font-bold transition-all duration-300 hover:scale-105 active:scale-95 hover:shadow-[0_0_25px_rgba(255,255,255,0.3)] flex items-center justify-center gap-3 text-base shadow-sm">
+                        <i className="fa-solid fa-circle-play text-lg group-hover:scale-110 group-hover:text-primary transition-all duration-300"></i>
+                        <span>{t('learn_about_us')}</span>
                     </Link>
                 </div>
             </div>
 
             <div className="lg:w-1/2 hidden lg:flex justify-center relative animate-float">
-                <div className="relative w-full max-w-[450px]">
-                    <div className="absolute inset-0 bg-secondary rounded-full blur-[100px] opacity-50 dark:opacity-30"></div>
-                    <div className="relative w-full h-[350px] rounded-2xl shadow-2xl border-4 border-white/10 overflow-hidden group z-10">
-                        <video id="hero-video" autoPlay loop muted playsInline preload="auto" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
+                <div className="relative w-full max-w-[460px]">
+                    <div className="absolute inset-0 bg-secondary rounded-full blur-[100px] opacity-60 dark:opacity-40"></div>
+                    <div className="relative w-full h-[350px] rounded-3xl shadow-2xl border-4 border-amber-400/30 dark:border-primary/40 overflow-hidden group z-10 hero-video-glow">
+                        <video id="hero-video" autoPlay loop muted playsInline preload="auto" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
                             <source src="/assets/for_landing_page_first.mp4" type="video/mp4" />
                         </video>
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none"></div>
                     </div>
-                    <div className="absolute -bottom-5 -left-8 bg-white dark:bg-darkCard p-3 rounded-xl shadow-xl z-20 flex items-center gap-3 animate-float border border-gray-100 dark:border-gray-800" style={{animationDelay: "1s"}}>
-                        <div className="bg-green-100 dark:bg-green-900/30 text-success p-2.5 rounded-full text-xl"><i className="fa-solid fa-check-double"></i></div>
+                    <div className="absolute -bottom-5 -left-8 bg-white/95 dark:bg-darkCard/95 backdrop-blur-md p-3.5 rounded-2xl shadow-2xl z-20 flex items-center gap-3 animate-float border border-gray-100 dark:border-gray-800" style={{animationDelay: "1s"}}>
+                        <div className="bg-green-100 dark:bg-green-900/40 text-success p-2.5 rounded-xl text-xl shadow-xs"><i className="fa-solid fa-check-double"></i></div>
                         <div>
                             <p className="text-[10px] text-gray-500 dark:text-gray-400 font-bold uppercase leading-none">{t('recognized_cert')}</p>
                             <p className="text-dark dark:text-white font-black text-sm notranslate">{t('recognized')}</p>
                         </div>
                     </div>
-                    <div className="absolute -top-6 -right-6 bg-white dark:bg-darkCard p-3 rounded-xl shadow-xl z-20 flex items-center gap-3 animate-float border border-gray-100 dark:border-gray-800" style={{animationDelay: "2s"}}>
-                        <div className="bg-blue-100 dark:bg-blue-900/30 text-secondary dark:text-primary p-2.5 rounded-full text-xl"><i className="fa-solid fa-users"></i></div>
+                    <div className="absolute -top-6 -right-6 bg-white/95 dark:bg-darkCard/95 backdrop-blur-md p-3.5 rounded-2xl shadow-2xl z-20 flex items-center gap-3 animate-float border border-gray-100 dark:border-gray-800" style={{animationDelay: "2s"}}>
+                        <div className="bg-blue-100 dark:bg-blue-900/40 text-secondary dark:text-primary p-2.5 rounded-xl text-xl shadow-xs"><i className="fa-solid fa-users"></i></div>
                         <div>
                             <p className="text-[10px] text-gray-500 dark:text-gray-400 font-bold uppercase leading-none">{t('students')}</p>
                             <p className="text-dark dark:text-white font-black text-sm">500+</p>
@@ -232,12 +242,12 @@ export default function Home() {
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
             <div className="text-center max-w-2xl mx-auto mb-16">
                 <h2 className="font-heading font-black text-3xl sm:text-5xl text-dark dark:text-white mb-4">{t('our')} <span className="text-secondary dark:text-primary">{t('difference')}</span></h2>
-                <div className="w-20 h-1.5 bg-primary mx-auto rounded-full"></div>
+                <div className="w-20 h-1.5 bg-primary mx-auto rounded-full shadow-sm"></div>
                 <p className="mt-5 text-gray-500 dark:text-gray-400 font-body text-lg">{t('difference_desc')}</p>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-10">
-                <div className="bg-white dark:bg-darkCard p-10 rounded-[2rem] shadow-sm border border-gray-100 dark:border-gray-800 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 group cursor-pointer active:scale-95" onClick={() => document.getElementById('courses')?.scrollIntoView({behavior: 'smooth'})}>
+                <div className="bg-white dark:bg-darkCard p-10 rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-gray-800 hover:shadow-2xl hover:-translate-y-2.5 transition-all duration-300 group cursor-pointer active:scale-95" onClick={() => document.getElementById('courses')?.scrollIntoView({behavior: 'smooth'})}>
                     <div className="w-20 h-20 bg-blue-50 dark:bg-blue-900/30 text-secondary dark:text-primary rounded-2xl flex items-center justify-center text-4xl mb-8 group-hover:bg-secondary dark:group-hover:bg-primary group-hover:text-white dark:group-hover:text-dark transition-colors duration-300 shadow-inner animate-float" style={{animationDelay: "0s"}}>
                         <i className="fa-solid fa-chalkboard-user"></i>
                     </div>
@@ -245,17 +255,17 @@ export default function Home() {
                     <p className="text-gray-600 dark:text-gray-300 font-body leading-relaxed text-[15px]">{t('practical_courses_desc')}</p>
                 </div>
                 
-                <div className="bg-white dark:bg-darkCard p-10 rounded-[2rem] shadow-xl border border-primary/30 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 group relative overflow-hidden transform md:-translate-y-6 cursor-pointer active:scale-95" onClick={() => document.getElementById('ai-feature')?.scrollIntoView({behavior: 'smooth'})}>
+                <div className="bg-white dark:bg-darkCard p-10 rounded-[2.5rem] shadow-xl border-2 border-primary/40 hover:shadow-2xl hover:-translate-y-2.5 transition-all duration-300 group relative overflow-hidden transform md:-translate-y-6 cursor-pointer active:scale-95" onClick={() => document.getElementById('ai-feature')?.scrollIntoView({behavior: 'smooth'})}>
                     <div className="absolute -right-10 -top-10 bg-gradient-to-br from-primary/20 to-transparent w-40 h-40 rounded-full -z-10 group-hover:scale-150 transition-transform duration-700"></div>
-                    <div className="w-20 h-20 bg-orange-50 dark:bg-orange-900/30 text-primary rounded-2xl flex items-center justify-center text-4xl mb-8 group-hover:bg-primary group-hover:text-white transition-colors duration-300 shadow-inner relative z-10 animate-float" style={{animationDelay: "0.2s"}}>
+                    <div className="w-20 h-20 bg-orange-50 dark:bg-orange-900/30 text-primary rounded-2xl flex items-center justify-center text-4xl mb-8 group-hover:bg-primary group-hover:text-dark transition-colors duration-300 shadow-inner relative z-10 animate-float" style={{animationDelay: "0.2s"}}>
                         <i className="fa-solid fa-robot"></i>
                     </div>
                     <h3 className="font-black text-2xl text-dark dark:text-white mb-4 font-heading relative z-10"><span className="notranslate">Tsehay AI</span> {t('ai_integration')}</h3>
                     <p className="text-gray-600 dark:text-gray-300 font-body leading-relaxed text-[15px] relative z-10">{t('ai_integration_desc')}</p>
-                    <div className="absolute top-5 right-5 bg-primary text-dark text-xs font-black px-3 py-1 rounded-md shadow-sm animate-pulse">{t('new_badge')}</div>
+                    <div className="absolute top-6 right-6 bg-primary text-dark text-xs font-black px-3.5 py-1 rounded-full shadow-md animate-pulse">{t('new_badge')}</div>
                 </div>
 
-                <div className="bg-white dark:bg-darkCard p-10 rounded-[2rem] shadow-sm border border-gray-100 dark:border-gray-800 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 group cursor-pointer active:scale-95">
+                <div className="bg-white dark:bg-darkCard p-10 rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-gray-800 hover:shadow-2xl hover:-translate-y-2.5 transition-all duration-300 group cursor-pointer active:scale-95">
                     <div className="w-20 h-20 bg-green-50 dark:bg-green-900/30 text-success rounded-2xl flex items-center justify-center text-4xl mb-8 group-hover:bg-success group-hover:text-white transition-colors duration-300 shadow-inner animate-float" style={{animationDelay: "0.4s"}}>
                         <i className="fa-solid fa-certificate"></i>
                     </div>
@@ -291,7 +301,7 @@ export default function Home() {
                     {courses.slice(0, 4).map(course => (
                         <div key={course.id} className="bg-white dark:bg-[#111111] rounded-3xl overflow-hidden flex flex-col transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_20px_40px_rgba(0,0,0,0.1)] dark:hover:shadow-[0_20px_40px_rgba(0,0,0,0.5)] group relative border border-gray-200 dark:border-gray-800 cursor-pointer" onClick={() => window.location.href=`/courses/${course.id}`}>
                             <div className="relative aspect-video w-full overflow-hidden bg-slate-900 flex items-center justify-center">
-                                <img src={(course.image && course.image.includes('drive.google.com/uc?export=view&id=')) ? `https://drive.google.com/thumbnail?id=${course.image.split('id=')[1]}&sz=w1000` : (course.image || `https://placehold.co/600x400/3268BA/FFFFFF?text=${encodeURIComponent(course.title || 'Tsehay Campus')}&font=Montserrat`)} alt={course.title} className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500" onError={(e) => { e.currentTarget.src='https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1000&auto=format&fit=crop' }} />
+                                <img src={formatDriveImageUrl(course.image) || `https://placehold.co/600x400/3268BA/FFFFFF?text=${encodeURIComponent(course.title || 'Tsehay Campus')}&font=Montserrat`} alt={course.title} className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500" />
                                 {(!course.isFree && course.price !== 0 && course.price !== '0' && course.price !== 'Free') ? (
                                     <div className="absolute top-4 right-4 bg-primary text-dark text-[11px] font-black px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg">
                                         <i className="fa-solid fa-star"></i> PREMIUM
@@ -311,7 +321,7 @@ export default function Home() {
                                     <i className="fa-solid fa-folder-open text-primary"></i>
                                     <span className="text-gray-400 text-sm font-bold">{course.instructor || 'Eyoub Sahle'}</span>
                                 </div>
-                                <p className="text-gray-400 text-sm mb-6 line-clamp-3 leading-relaxed">{course.desc || t('course_desc_placeholder')}</p>
+                                <p className="text-gray-400 text-sm mb-6 line-clamp-3 leading-relaxed">{formatCourseDesc(course) || t('course_desc_placeholder')}</p>
                                 
                                 <div className="flex flex-wrap gap-2 mb-6">
                                     <div className="flex items-center gap-2 bg-gray-100 dark:bg-black/40 text-gray-700 dark:text-gray-300 text-xs font-bold px-3 py-1.5 rounded-md border border-gray-200 dark:border-gray-800">

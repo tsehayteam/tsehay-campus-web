@@ -8,23 +8,32 @@ export async function POST(request: Request) {
     const sigHeader = request.headers.get('x-nowpayments-sig');
     const secret = (process.env.NOWPAYMENTS_IPN_SECRET || '').trim();
 
-    if (sigHeader && secret) {
-      const payload = JSON.parse(rawBody);
-      const sortedKeys = Object.keys(payload).sort();
-      const sortedPayload: Record<string, any> = {};
-      for (const key of sortedKeys) {
-        sortedPayload[key] = payload[key];
-      }
-      const sortedString = JSON.stringify(sortedPayload);
-      const hmac = crypto.createHmac('sha512', secret).update(sortedString).digest('hex');
-
-      if (hmac !== sigHeader) {
-        console.error("Invalid NOWPayments IPN Signature");
-        return NextResponse.json({ error: 'Invalid Signature' }, { status: 400 });
-      }
+    // Mandatory signature verification
+    if (!secret) {
+      console.error("NOWPayments Error: IPN secret is not configured on server.");
+      return NextResponse.json({ error: 'Server webhook configuration error' }, { status: 500 });
     }
 
-    const event = JSON.parse(rawBody);
+    if (!sigHeader) {
+      console.warn("NOWPayments Warning: Missing signature header.");
+      return NextResponse.json({ error: 'Missing signature header' }, { status: 401 });
+    }
+
+    const payload = JSON.parse(rawBody);
+    const sortedKeys = Object.keys(payload).sort();
+    const sortedPayload: Record<string, any> = {};
+    for (const key of sortedKeys) {
+      sortedPayload[key] = payload[key];
+    }
+    const sortedString = JSON.stringify(sortedPayload);
+    const hmac = crypto.createHmac('sha512', secret).update(sortedString).digest('hex');
+
+    if (hmac !== sigHeader) {
+      console.error("Invalid NOWPayments IPN Signature");
+      return NextResponse.json({ error: 'Invalid Signature' }, { status: 401 });
+    }
+
+    const event = payload;
 
     if (event.payment_status === 'finished' || event.payment_status === 'confirmed') {
       const tx_ref = event.order_id;
@@ -66,6 +75,12 @@ export async function POST(request: Request) {
             purchasedAt: new Date(),
             status: 'active'
           });
+
+          const { FieldValue } = await import('firebase-admin/firestore');
+          await userDocRef.set({
+            enrolledCourses: FieldValue.arrayUnion(courseId)
+          }, { merge: true });
+
           console.log(`NOWPayments: Granted course ${courseId} to user ${userId}`);
         }
       }

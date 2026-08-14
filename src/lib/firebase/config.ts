@@ -5,19 +5,22 @@ import { getFirestore, initializeFirestore } from "firebase/firestore";
 const getAuthDomain = () => {
   if (typeof window !== 'undefined') {
     const host = window.location.hostname;
+    // On production custom domain (tsehaycampus.com), use 100% white-labeled domain
     if (host.includes('tsehaycampus.com')) {
       return 'tsehaycampus.com';
     }
-    if (host !== 'localhost' && host !== '127.0.0.1') {
-      return host;
+    // On localhost / local network development, use default direct domain
+    if (host === 'localhost' || host === '127.0.0.1') {
+      return 'tsehaycampus-e1a6d.firebaseapp.com';
     }
+    return host;
   }
-  return 'tsehaycampus.com';
+  return process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || 'tsehaycampus-e1a6d.firebaseapp.com';
 };
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || 'tsehaycampus-e1a6d.firebaseapp.com',
+  authDomain: getAuthDomain(),
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'tsehaycampus-e1a6d',
   storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,

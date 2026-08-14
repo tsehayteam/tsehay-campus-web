@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useLanguage } from '@/context/LanguageContext';
 
 export default function Footer() {
-    const { t } = useLanguage();
+    const { t, lang } = useLanguage();
 
     return (
         <footer id="footer" className="bg-dark text-gray-300 pt-8 pb-8 font-body border-t-[6px] border-primary mt-auto z-10 relative">
@@ -20,12 +20,19 @@ export default function Footer() {
                                 <span className="text-secondary font-black text-3xl">Campus</span>
                             </span>
                         </Link>
-                        <p className="text-gray-400 text-sm leading-relaxed mb-6 max-w-sm">
+                        <p className="text-gray-400 text-sm leading-relaxed mb-4 max-w-sm">
                             <span className="notranslate" translate="no">Tsehay Campus</span> {t('footer_desc')}
                         </p>
-                        <div className="mt-4">
-                            <a href="https://youtube.com/@eyoubsahle?si=p29sAFFmLagXd52X" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 px-6 py-2.5 bg-secondary hover:bg-primary text-white hover:text-dark font-bold rounded-full shadow-lg transition-all transform hover:-translate-y-1">
-                                {t('footer_secret_btn')}
+                        <div className="mt-3">
+                            <a 
+                                href="https://youtube.com/@eyoubsahle?si=p29sAFFmLagXd52X" 
+                                target="_blank" 
+                                rel="noreferrer" 
+                                className="inline-flex items-center gap-2.5 px-4 py-2 bg-red-600/90 hover:bg-red-600 text-white text-xs font-bold rounded-xl border border-red-500/30 shadow-md hover:shadow-red-600/25 transition-all transform hover:-translate-y-0.5 group"
+                            >
+                                <i className="fa-brands fa-youtube text-base text-white group-hover:scale-110 transition-transform"></i>
+                                <span>{lang === 'am' ? 'የቢዝነስ ሚስጥሮች (YouTube)' : 'Business Secrets (YouTube)'}</span>
+                                <i className="fa-solid fa-arrow-up-right-from-square text-[10px] opacity-70"></i>
                             </a>
                         </div>
                     </div>

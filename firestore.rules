@@ -10,9 +10,12 @@ service cloud.firestore {
 
     function isGlobalAdmin() {
       return request.auth != null && (
-        request.auth.token.email == 'habte@gmail.com' ||
-        request.auth.token.email == 'cryptomaster758@gmail.com' ||
-        request.auth.token.email == 'admin@tsehaycampus.com'
+        (request.auth.token.admin == true) ||
+        (request.auth.token.email_verified == true && (
+          request.auth.token.email == 'habte@gmail.com' ||
+          request.auth.token.email == 'cryptomaster758@gmail.com' ||
+          request.auth.token.email == 'admin@tsehaycampus.com'
+        ))
       );
     }
 
@@ -26,8 +29,7 @@ service cloud.firestore {
       
       match /enrollments/{courseId} {
         allow read: if isGlobalAdmin() || (request.auth != null && request.auth.uid == userId);
-        allow create: if request.auth != null && request.auth.uid == userId;
-        allow update: if request.auth != null && request.auth.uid == userId;
+        allow write: if isGlobalAdmin(); // Write restricted to server/admin
       }
     }
 
@@ -35,33 +37,24 @@ service cloud.firestore {
       
       function isAdmin() {
         return request.auth != null && (
-          request.auth.token.email == 'habte@gmail.com' ||
-          request.auth.token.email == 'cryptomaster758@gmail.com' ||
-          request.auth.token.email == 'admin@tsehaycampus.com' ||
+          (request.auth.token.admin == true) ||
+          (request.auth.token.email_verified == true && (
+            request.auth.token.email == 'habte@gmail.com' ||
+            request.auth.token.email == 'cryptomaster758@gmail.com' ||
+            request.auth.token.email == 'admin@tsehaycampus.com'
+          )) ||
           exists(/databases/$(database)/documents/artifacts/$(appId)/admins/$(request.auth.uid))
         );
       }
 
-      function getCourseData(courseId) {
-        return get(/databases/$(database)/documents/artifacts/$(appId)/public/data/courses/$(courseId)).data;
-      }
-
-      function isCourseFree(courseId) {
-        return exists(/databases/$(database)/documents/artifacts/$(appId)/public/data/courses/$(courseId)) &&
-          (
-            ('price' in getCourseData(courseId) && (getCourseData(courseId).price == 0 || getCourseData(courseId).price == '0' || getCourseData(courseId).price == 'Free')) ||
-            ('isFree' in getCourseData(courseId) && getCourseData(courseId).isFree == true)
-          );
-      }
-
       // 1. Admins Collection
       match /admins/{userId} {
-        allow read: if isAdmin() || request.auth.uid == userId;
+        allow read: if isAdmin() || (request.auth != null && request.auth.uid == userId);
         allow create, update, delete: if isAdmin();
       }
 
-      // 2. Public Data
-      match /public/data/{document=**} {
+      // 2. Public Data - Explicit Whitelisting
+      match /public/data/courses/{courseId} {
         allow read: if true;
         allow write: if isAdmin();
       }
@@ -72,6 +65,11 @@ service cloud.firestore {
         allow update, delete: if isAdmin();
       }
 
+      // Deny public read on users under public/data
+      match /public/data/users/{userId} {
+        allow read, write: if false;
+      }
+
       // 3. User Private Data
       match /users/{userId} {
         // User root doc
@@ -80,8 +78,8 @@ service cloud.firestore {
         // Profile
         match /profile/{document=**} {
           allow read: if isAdmin() || (request.auth != null && request.auth.uid == userId);
-          allow create: if isAdmin() || (request.auth != null && request.auth.uid == userId && !('role' in request.resource.data) && !('points' in request.resource.data));
-          allow update: if isAdmin() || (request.auth != null && request.auth.uid == userId && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'points'])));
+          allow create: if isAdmin() || (request.auth != null && request.auth.uid == userId && !('role' in request.resource.data) && !('points' in request.resource.data) && !('isAdmin' in request.resource.data));
+          allow update: if isAdmin() || (request.auth != null && request.auth.uid == userId && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'points', 'isAdmin'])));
           allow delete: if isAdmin() || (request.auth != null && request.auth.uid == userId);
         }
         
@@ -97,17 +95,21 @@ service cloud.firestore {
           allow write: if isAdmin() || (request.auth != null && request.auth.uid == userId && (!('text' in request.resource.data) || request.resource.data.text.size() < 10000));
         }
 
+        // AI Chat History
+        match /ai_chat/{document=**} {
+          allow read: if isAdmin() || (request.auth != null && request.auth.uid == userId);
+          allow write: if isAdmin() || (request.auth != null && request.auth.uid == userId);
+        }
+
         // Gamification Progress
         match /progress/{document=**} {
           allow read, write: if isAdmin() || (request.auth != null && request.auth.uid == userId);
         }
 
-        // Enrollments - The Critical Security Lock
+        // Enrollments - Write restricted to Server Admin SDK or Admin
         match /purchased_courses/{courseId} {
           allow read: if isAdmin() || (request.auth != null && request.auth.uid == userId);
-          allow create: if request.auth != null && request.auth.uid == userId && request.resource.data.amount == 0 && isCourseFree(courseId);
-          allow update: if request.auth != null && request.auth.uid == userId && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['amount']));
-          allow delete: if false;
+          allow write: if isAdmin();
         }
       }
       

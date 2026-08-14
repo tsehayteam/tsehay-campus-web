@@ -9,9 +9,11 @@ import AuthModal from "./AuthModal";
 import SmartSearchInput from "./SmartSearchInput";
 import { auth } from "@/lib/firebase/config";
 import { signOut } from "firebase/auth";
+import { getCachedCourses, saveCachedCourses } from "@/lib/courseCache";
 
 export default function Navbar() {
   const { user, isAdmin } = useAuth();
+  const [mounted, setMounted] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isSignupMode, setIsSignupMode] = useState(false);
@@ -21,7 +23,7 @@ export default function Navbar() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [allCourses, setAllCourses] = useState<any[]>([]);
+  const [allCourses, setAllCourses] = useState<any[]>(() => getCachedCourses());
   const searchRef = useRef<HTMLDivElement>(null);
   
   const pathname = usePathname();
@@ -61,6 +63,7 @@ export default function Navbar() {
   }, [pathname]);
 
   useEffect(() => {
+    setMounted(true);
     // Initial sync of theme
     setTheme(document.documentElement.classList.contains('dark') ? 'dark' : 'light');
 
@@ -183,7 +186,7 @@ export default function Navbar() {
 
                     <div className="h-5 w-px bg-gray-300 dark:bg-gray-800 mx-0.5 lg:mx-1"></div>
                     
-                    {!user ? (
+                    {!mounted || !user ? (
                       <button onClick={() => openAuthModal(false)} className="bg-primary text-dark px-6 py-2.5 rounded-lg font-black hover:bg-yellow-400 transition shadow-lg hover:shadow-xl btn-glow whitespace-nowrap text-[15px] lg:text-base">{t('login')}</button>
                     ) : (
                       <div className="relative">
@@ -244,7 +247,7 @@ export default function Navbar() {
                     {t('all_courses')}
                 </button>
                 <hr className="my-2 border-gray-800" />
-                {!user ? (
+                {!mounted || !user ? (
                   <>
                     <button 
                         type="button" 
@@ -291,6 +294,70 @@ export default function Navbar() {
             </div>
         </div>
       </nav>
+
+      {/* Udacity-Style Mobile Bottom App Navigation Bar */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#0d0d0d]/95 backdrop-blur-xl border-t border-white/10 px-2 py-1.5 shadow-[0_-4px_20px_rgba(0,0,0,0.5)]">
+        <div className="flex items-center justify-around max-w-md mx-auto">
+          <Link 
+            href="/" 
+            className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition ${pathname === '/' ? 'text-primary font-black' : 'text-gray-400 hover:text-white font-medium'}`}
+          >
+            <i className={`fa-solid fa-house text-lg ${pathname === '/' ? 'scale-110' : ''} transition-transform`}></i>
+            <span className="text-[10px] mt-0.5 tracking-tight">መነሻ</span>
+          </Link>
+
+          <Link 
+            href="/courses" 
+            className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition ${pathname?.startsWith('/courses') ? 'text-primary font-black' : 'text-gray-400 hover:text-white font-medium'}`}
+          >
+            <i className={`fa-solid fa-book-open text-lg ${pathname?.startsWith('/courses') ? 'scale-110' : ''} transition-transform`}></i>
+            <span className="text-[10px] mt-0.5 tracking-tight">ኮርሶች</span>
+          </Link>
+
+          <Link 
+            href="/dashboard" 
+            className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition relative ${pathname === '/dashboard' ? 'text-primary font-black' : 'text-gray-400 hover:text-white font-medium'}`}
+          >
+            <div className="relative">
+              <i className={`fa-solid fa-graduation-cap text-lg ${pathname === '/dashboard' ? 'scale-110' : ''} transition-transform`}></i>
+              {mounted && user && (
+                <span className="absolute -top-1 -right-1.5 w-2 h-2 bg-emerald-500 rounded-full"></span>
+              )}
+            </div>
+            <span className="text-[10px] mt-0.5 tracking-tight">ክፍሌ</span>
+          </Link>
+
+          <button 
+            onClick={() => window.dispatchEvent(new CustomEvent('toggle-ai'))}
+            className="flex flex-col items-center justify-center py-1 px-2 rounded-xl text-primary font-extrabold hover:text-yellow-300 transition cursor-pointer"
+          >
+            <i className="fa-solid fa-wand-magic-sparkles text-lg animate-pulse"></i>
+            <span className="text-[10px] mt-0.5 tracking-tight notranslate">AI Tutor</span>
+          </button>
+
+          {!mounted || !user ? (
+            <button 
+              onClick={() => openAuthModal(false)}
+              className="flex flex-col items-center justify-center py-1 px-2 rounded-xl text-gray-400 hover:text-primary font-medium transition cursor-pointer"
+            >
+              <i className="fa-solid fa-user text-lg"></i>
+              <span className="text-[10px] mt-0.5 tracking-tight">መለያ</span>
+            </button>
+          ) : (
+            <button 
+              onClick={() => setShowProfileDropdown(prev => !prev)}
+              className="flex flex-col items-center justify-center py-1 px-2 rounded-xl text-gray-300 hover:text-primary transition cursor-pointer"
+            >
+              <img 
+                src={user.photoURL || 'https://ui-avatars.com/api/?name=User&background=3268BA&color=fff'} 
+                alt="Profile" 
+                className="w-5 h-5 rounded-full object-cover border border-primary" 
+              />
+              <span className="text-[10px] mt-0.5 font-bold tracking-tight">እኔ</span>
+            </button>
+          )}
+        </div>
+      </div>
       
       <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} isSignupMode={isSignupMode} setIsSignupMode={setIsSignupMode} />
     </>

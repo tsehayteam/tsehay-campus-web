@@ -87,7 +87,7 @@ export default function About() {
 
             
             <div className="mb-24">
-                <h3 className="text-2xl font-bold font-heading text-dark dark:text-white mb-8 text-center">Our Team</h3>
+                <h3 className="text-2xl font-bold font-heading text-dark dark:text-white mb-8 text-center">{t('our_team_title')}</h3>
                 <div className="flex flex-wrap justify-center gap-6">
                     
                     <div className="bg-white dark:bg-dark border border-gray-100 dark:border-gray-800 p-8 rounded-2xl text-center hover:-translate-y-3 transition-all duration-500 shadow-md hover:shadow-2xl hover:shadow-primary/20 hover:border-primary/40 cursor-pointer w-full sm:w-64">

@@ -96,7 +96,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { prompt, systemInstruction } = reqBody;
+    const { prompt } = reqBody;
     
     if (!prompt) {
         return NextResponse.json({ reply: getSmartFallbackReply("") }, { status: 200 });
@@ -105,8 +105,7 @@ export async function POST(req: Request) {
     const apiKeys = [
         process.env.GEMINI_API_KEY,
         process.env.GEMINI_API_KEY_2,
-        process.env.GEMINI_API_KEY_3,
-        process.env.NEXT_PUBLIC_FIREBASE_API_KEY
+        process.env.GEMINI_API_KEY_3
     ].filter(Boolean) as string[];
 
     const DEFAULT_SYSTEM_INSTRUCTION = `You are "Tsehay AI", the official virtual guide and AI Teaching Assistant for "Tsehay Campus" (tsehaycampus.com). Your persona is friendly, highly professional, encouraging, and focused on helping students succeed.
@@ -168,7 +167,7 @@ You are an expert educational and support assistant for the Tsehay Campus E-Lear
 [END SECURITY RULES]
 
 [DYNAMIC CONTEXT / ROLE]
-${systemInstruction || DEFAULT_SYSTEM_INSTRUCTION}
+${DEFAULT_SYSTEM_INSTRUCTION}
 [END DYNAMIC CONTEXT]`;
 
     const payload = { 
