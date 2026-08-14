@@ -91,6 +91,13 @@ export default function Navbar() {
   };
 
   const pathname = usePathname();
+
+  useEffect(() => {
+    // Automatically close mobile menu when navigating to another route
+    setIsMobileMenuOpen(false);
+    setShowProfileDropdown(false);
+  }, [pathname]);
+
   if (pathname?.startsWith('/dashboard') || pathname?.startsWith('/admin')) {
     return null;
   }
@@ -101,7 +108,7 @@ export default function Navbar() {
         <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-20 gap-4 lg:gap-6">
                 
-                <Link href="/" onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})} className="flex-shrink-0 flex items-center cursor-pointer group gap-2">
+                <Link href="/" onClick={() => { setIsMobileMenuOpen(false); window.scrollTo({top: 0, behavior: 'smooth'}); }} className="flex-shrink-0 flex items-center cursor-pointer group gap-2">
                     <img src="/tc-logo.jpg" alt="Tsehay Campus Logo" className="h-14 w-auto object-contain rounded-md shadow-sm group-hover:shadow-md transition-all duration-300 animate-logo-zoom" onError={(e) => { e.currentTarget.src='https://ui-avatars.com/api/?name=TC&background=3268BA&color=fff' }} />
                     <span className="font-black text-2xl tracking-tight hidden sm:block notranslate select-none"><span className="text-primary animate-tsehay-float">Tsehay</span> <span className="text-secondary animate-campus-float">Campus</span></span>
                 </Link>
@@ -177,7 +184,9 @@ export default function Navbar() {
 
                 <div className="md:hidden flex items-center gap-4">
                     <button onClick={toggleLanguage} className="bg-white/5 border border-white/10 px-3 py-1.5 rounded-full font-bold text-[11px] text-white transition shadow-sm notranslate" translate="no">{lang === 'am' ? 'EN' : 'አማ'}</button>
-                    <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="text-white text-2xl focus:outline-none"><i className="fa-solid fa-bars"></i></button>
+                    <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} aria-label="Toggle navigation menu" className="text-white text-2xl focus:outline-none p-1 transition-transform duration-200">
+                        <i className={`fa-solid ${isMobileMenuOpen ? 'fa-xmark' : 'fa-bars'}`}></i>
+                    </button>
                 </div>
             </div>
         </div>
@@ -185,7 +194,7 @@ export default function Navbar() {
         {/* Mobile Menu */}
         <div className={`md:hidden bg-[#0d0d0d] border-t border-gray-800 shadow-xl overflow-hidden transition-all duration-300 ${isMobileMenuOpen ? 'max-h-[70vh]' : 'max-h-0'}`}>
             <div className="px-4 pt-2 pb-6 space-y-2 text-center flex flex-col overflow-y-auto">
-                <Link href="/about" className="block px-3 py-2 text-white font-bold rounded-md hover:bg-white/5 border border-white/10">ስለ እኛ</Link>
+                <Link href="/about" onClick={() => setIsMobileMenuOpen(false)} className="block px-3 py-2 text-white font-bold rounded-md hover:bg-white/5 border border-white/10">{t('about_us')}</Link>
                 <a href="/#ai-feature" onClick={(e) => {
                     setIsMobileMenuOpen(false);
                     if (pathname === '/') {
@@ -207,30 +216,18 @@ export default function Navbar() {
                             window.scrollTo({ top: elementRect - bodyRect - offset, behavior: 'smooth' });
                         }
                     }
-                }} className="block px-3 py-2 text-white font-bold rounded-md hover:bg-white/5 border border-white/10">ሁሉም ኮርሶች</Link>
+                }} className="block px-3 py-2 text-white font-bold rounded-md hover:bg-white/5 border border-white/10">{t('all_courses')}</Link>
                 <hr className="my-2 border-gray-200 dark:border-gray-800" />
                 {!user ? (
                   <>
-                    <button onClick={() => openAuthModal(false)} className="w-full text-secondary dark:text-primary font-bold py-2.5 hover:bg-gray-50 dark:hover:bg-darkCard rounded-lg border border-secondary dark:border-primary transition">ግባ (Login)</button>
-                    <button onClick={() => openAuthModal(true)} className="w-full bg-primary text-dark font-bold py-2.5 rounded-lg mt-2 shadow-md hover:bg-yellow-400 transition">አዲስ ይመዝገቡ</button>
+                    <button onClick={() => { setIsMobileMenuOpen(false); openAuthModal(false); }} className="w-full text-secondary dark:text-primary font-bold py-2.5 hover:bg-gray-50 dark:hover:bg-darkCard rounded-lg border border-secondary dark:border-primary transition">{t('login')}</button>
+                    <button onClick={() => { setIsMobileMenuOpen(false); openAuthModal(true); }} className="w-full bg-primary text-dark font-bold py-2.5 rounded-lg mt-2 shadow-md hover:bg-yellow-400 transition">{t('register')}</button>
                   </>
                 ) : (
                   <>
-                    <a href="/#courses" onClick={(e) => {
-                        setIsMobileMenuOpen(false);
-                        if (pathname === '/') {
-                            e.preventDefault();
-                            const element = document.getElementById('courses');
-                            if (element) {
-                                const offset = 80;
-                                const bodyRect = document.body.getBoundingClientRect().top;
-                                const elementRect = element.getBoundingClientRect().top;
-                                window.scrollTo({ top: elementRect - bodyRect - offset, behavior: 'smooth' });
-                            }
-                        }
-                    }} className="block px-3 py-2.5 bg-primary/10 border border-primary/20 text-primary font-extrabold rounded-md"><i className="fa-solid fa-graduation-cap mr-2"></i> ወደ መማሪያ ክፍል</a>
+                    <Link href="/dashboard" onClick={() => setIsMobileMenuOpen(false)} className="block px-3 py-2.5 bg-primary/10 border border-primary/20 text-primary font-extrabold rounded-md"><i className="fa-solid fa-graduation-cap mr-2"></i> ወደ መማሪያ ክፍል</Link>
                     {isAdmin && <Link href="/admin" onClick={() => setIsMobileMenuOpen(false)} className="block px-3 py-2 text-gray-700 dark:text-gray-300 font-bold rounded-md hover:bg-gray-50 dark:hover:bg-darkCard border border-gray-100 dark:border-gray-800">አድሚን</Link>}
-                    <button onClick={handleSignOut} className="w-full text-danger font-bold py-2.5 hover:bg-red-50 rounded-lg border border-danger transition mt-2">ዘግተህ ውጣ (Logout)</button>
+                    <button onClick={() => { setIsMobileMenuOpen(false); handleSignOut(); }} className="w-full text-danger font-bold py-2.5 hover:bg-red-50 rounded-lg border border-danger transition mt-2">ዘግተህ ውጣ (Logout)</button>
                   </>
                 )}
             </div>

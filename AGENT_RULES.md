@@ -12,3 +12,4 @@ CRITICAL RULES & BOUNDARIES (DO NOT IGNORE):
 4. PRESERVE FILE STRUCTURE: Never rewrite, reformat, or "clean up" entire files. Make precise, surgical changes only to the parts of the code you were explicitly asked to work on.
 
 5. ASK BEFORE MAJOR CHANGES: If a requested fix or new feature requires significant changes to the database (Firebase/Firestore auth or structure) or major architectural shifts, you must briefly explain your plan and wait for the user's explicit GO-AHEAD before writing the code.
+Always commit and push changes to GitHub after completing a task
