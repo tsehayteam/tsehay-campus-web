@@ -92,7 +92,7 @@ export default function About() {
                     
                     <div className="bg-white dark:bg-dark border border-gray-100 dark:border-gray-800 p-8 rounded-2xl text-center hover:-translate-y-3 transition-all duration-500 shadow-md hover:shadow-2xl hover:shadow-primary/20 hover:border-primary/40 cursor-pointer w-full sm:w-64">
                         <div className="w-24 h-24 mx-auto rounded-full overflow-hidden mb-4 bg-gray-100 dark:bg-gray-800">
-                            <img src="assets/eyob_new2.png" alt="Eyob Sahle" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.src='https://ui-avatars.com/api/?name=Eyob+Sahle&background=000000&color=fff&size=128' }} />
+                            <img src="/assets/eyob_new2.png" alt="Eyob Sahle" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.src='https://ui-avatars.com/api/?name=Eyob+Sahle&background=000000&color=fff&size=128' }} />
                         </div>
                         <h4 className="font-bold text-dark dark:text-white text-lg notranslate">ኢዮብ ሳህሌ</h4>
                         <p className="text-sm text-gray-500 dark:text-gray-400 font-medium mt-1">Founder & Lead Instructor</p>
@@ -110,14 +110,14 @@ export default function About() {
 
             
             <div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                     <div className="rounded-3xl overflow-hidden shadow-xl group aspect-[9/16] bg-black relative">
                         <div className="absolute inset-0 z-20 flex flex-col items-center justify-center pointer-events-none transition-opacity duration-300 group-hover:opacity-0 bg-black/40">
                             <i className="fa-solid fa-hand-pointer text-primary text-4xl mb-3 animate-bounce"></i>
                             <span className="text-white font-bold text-lg drop-shadow-md">Tap To Unmute</span>
                         </div>
                         <video loop muted playsInline className="w-full h-full object-cover group-hover:scale-105 transition duration-700 relative z-10" onMouseOver={(e) => { e.currentTarget.play(); e.currentTarget.muted=false; }} onMouseOut={(e) => { e.currentTarget.pause(); e.currentTarget.muted=true; }}>
-                            <source src="assets/videos/Tsehay.mp4" type="video/mp4" />
+                            <source src="/assets/videos/Tsehay.mp4" type="video/mp4" />
                         </video>
                     </div>
                     <div className="rounded-3xl overflow-hidden shadow-xl group aspect-[9/16] bg-black relative">
@@ -126,7 +126,7 @@ export default function About() {
                             <span className="text-white font-bold text-lg drop-shadow-md">Tap To Unmute</span>
                         </div>
                         <video loop muted playsInline className="w-full h-full object-cover group-hover:scale-105 transition duration-700 relative z-10" onMouseOver={(e) => { e.currentTarget.play(); e.currentTarget.muted=false; }} onMouseOut={(e) => { e.currentTarget.pause(); e.currentTarget.muted=true; }}>
-                            <source src="assets/videos/Marketing%20and%20psyco.mp4" type="video/mp4" />
+                            <source src="/assets/videos/Marketing%20and%20psyco.mp4" type="video/mp4" />
                         </video>
                     </div>
                 </div>
@@ -135,28 +135,8 @@ export default function About() {
                 </div>
             </div>
         </div>
-
-</section>
-
-    
-    <Footer />
-
-    
-    <div className="fixed bottom-6 right-6 z-[9999] flex flex-col gap-4">
-        <a href="https://t.me/TsehayTeam" target="_blank" className="w-16 h-16 bg-primary text-dark rounded-full flex items-center justify-center text-3xl shadow-[0_0_20px_rgba(249,176,60,0.5)] transition-all duration-300 hover:scale-110 relative group border-2 border-white/20">
-            <i className="fa-brands fa-telegram"></i>
-            <span className="absolute right-full mr-4 bg-dark dark:bg-slate-800 text-white text-sm font-bold px-4 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap pointer-events-none border border-gray-700 shadow-xl">በቴሌግራም ያግኙን</span>
-        </a>
-        <a href="https://wa.me/251980209090" target="_blank" className="w-16 h-16 bg-primary text-dark rounded-full flex items-center justify-center text-3xl shadow-[0_0_20px_rgba(249,176,60,0.5)] transition-all duration-300 hover:scale-110 relative group border-2 border-white/20">
-            <i className="fa-brands fa-whatsapp"></i>
-            <span className="absolute right-full mr-4 bg-dark dark:bg-slate-800 text-white text-sm font-bold px-4 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap pointer-events-none border border-gray-700 shadow-xl">በWhatsApp ያግኙን</span>
-        </a>
-        <a href="tel:0980209090" className="w-16 h-16 bg-primary text-dark rounded-full flex items-center justify-center text-3xl shadow-[0_0_20px_rgba(249,176,60,0.5)] transition-all duration-300 hover:scale-110 relative group border-2 border-white/20">
-            <i className="fa-solid fa-phone"></i>
-            <span className="absolute right-full mr-4 bg-dark dark:bg-slate-800 text-white text-sm font-bold px-4 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap pointer-events-none border border-gray-700 shadow-xl">ስልክ ይደውሉ</span>
-        </a>
-    </div>
+    </section>
     </main>
-      </>
+    </>
   );
 }
