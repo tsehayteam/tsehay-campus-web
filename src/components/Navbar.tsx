@@ -1,7 +1,7 @@
 'use client';
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useState, useEffect, useRef } from "react";
@@ -23,6 +23,42 @@ export default function Navbar() {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [allCourses, setAllCourses] = useState<any[]>([]);
   const searchRef = useRef<HTMLDivElement>(null);
+  
+  const pathname = usePathname();
+  const router = useRouter();
+
+  const navigateTo = (url: string) => {
+    setIsMobileMenuOpen(false);
+    setShowProfileDropdown(false);
+
+    if (url.startsWith('/#') || url.startsWith('#')) {
+      const hash = url.replace('/#', '').replace('#', '');
+      if (pathname === '/') {
+        const el = document.getElementById(hash);
+        if (el) {
+          const offset = 80;
+          const bodyRect = document.body.getBoundingClientRect().top;
+          const elementRect = el.getBoundingClientRect().top;
+          window.scrollTo({ top: elementRect - bodyRect - offset, behavior: 'smooth' });
+        }
+      } else {
+        router.push(url);
+      }
+      return;
+    }
+
+    if (pathname === url) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      router.push(url);
+    }
+  };
+
+  useEffect(() => {
+    // Automatically close mobile menu when navigating to another route
+    setIsMobileMenuOpen(false);
+    setShowProfileDropdown(false);
+  }, [pathname]);
 
   useEffect(() => {
     // Initial sync of theme
@@ -90,14 +126,6 @@ export default function Navbar() {
     setShowProfileDropdown(false);
   };
 
-  const pathname = usePathname();
-
-  useEffect(() => {
-    // Automatically close mobile menu when navigating to another route
-    setIsMobileMenuOpen(false);
-    setShowProfileDropdown(false);
-  }, [pathname]);
-
   if (pathname?.startsWith('/dashboard') || pathname?.startsWith('/admin')) {
     return null;
   }
@@ -108,7 +136,7 @@ export default function Navbar() {
         <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-20 gap-4 lg:gap-6">
                 
-                <Link href="/" onClick={() => { setIsMobileMenuOpen(false); window.scrollTo({top: 0, behavior: 'smooth'}); }} className="flex-shrink-0 flex items-center cursor-pointer group gap-2">
+                <Link href="/" onClick={() => { setIsMobileMenuOpen(false); if (pathname === '/') window.scrollTo({top: 0, behavior: 'smooth'}); }} className="flex-shrink-0 flex items-center cursor-pointer group gap-2">
                     <img src="/tc-logo.jpg" alt="Tsehay Campus Logo" className="h-14 w-auto object-contain rounded-md shadow-sm group-hover:shadow-md transition-all duration-300 animate-logo-zoom" onError={(e) => { e.currentTarget.src='https://ui-avatars.com/api/?name=TC&background=3268BA&color=fff' }} />
                     <span className="font-black text-2xl tracking-tight hidden sm:block notranslate select-none"><span className="text-primary animate-tsehay-float">Tsehay</span> <span className="text-secondary animate-campus-float">Campus</span></span>
                 </Link>
@@ -165,16 +193,16 @@ export default function Navbar() {
                         {showProfileDropdown && (
                           <div className="absolute right-0 mt-2 w-52 bg-white dark:bg-darkCard rounded-xl shadow-xl border border-gray-100 dark:border-gray-800 py-2 z-50 animate-in fade-in slide-in-from-top-2">
                               <Link href="/dashboard" onClick={() => setShowProfileDropdown(false)} className="flex items-center gap-2.5 px-4 py-3 text-sm font-bold text-dark dark:text-white hover:bg-blue-50 dark:hover:bg-dark hover:text-secondary dark:hover:text-primary transition border-b border-gray-100 dark:border-gray-800">
-                                  <i className="fa-solid fa-graduation-cap text-primary text-base"></i> ወደ መማሪያ ክፍል
+                                  <i className="fa-solid fa-graduation-cap text-primary text-base"></i> {t('classroom') || 'ወደ መማሪያ ክፍል'}
                               </Link>
                               {isAdmin && (
                                 <Link href="/admin" onClick={() => setShowProfileDropdown(false)} className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-dark hover:text-secondary dark:hover:text-primary transition">
-                                    <i className="fa-solid fa-shield-halved text-primary"></i> አድሚን
+                                    <i className="fa-solid fa-shield-halved text-primary"></i> {t('admin') || 'አድሚን'}
                                 </Link>
                               )}
                               <hr className="my-1 border-gray-100 dark:border-gray-800" />
                               <button onClick={() => { setShowProfileDropdown(false); handleSignOut(); }} className="w-full text-left flex items-center gap-2.5 px-4 py-2.5 text-sm text-danger hover:bg-red-50 dark:hover:bg-red-900/10 font-bold transition">
-                                  <i className="fa-solid fa-arrow-right-from-bracket"></i> ዘግተህ ውጣ (Logout)
+                                  <i className="fa-solid fa-arrow-right-from-bracket"></i> {t('logout') || 'ዘግተህ ውጣ (Logout)'}
                               </button>
                           </div>
                         )}
@@ -192,42 +220,72 @@ export default function Navbar() {
         </div>
         
         {/* Mobile Menu */}
-        <div className={`md:hidden bg-[#0d0d0d] border-t border-gray-800 shadow-xl overflow-hidden transition-all duration-300 ${isMobileMenuOpen ? 'max-h-[70vh]' : 'max-h-0'}`}>
+        <div className={`md:hidden bg-[#0d0d0d] border-t border-gray-800 shadow-xl overflow-hidden transition-all duration-300 ${isMobileMenuOpen ? 'max-h-[500px] opacity-100 py-2' : 'max-h-0 opacity-0 pointer-events-none'}`}>
             <div className="px-4 pt-2 pb-6 space-y-2 text-center flex flex-col overflow-y-auto">
-                <Link href="/about" onClick={() => setIsMobileMenuOpen(false)} className="block px-3 py-2 text-white font-bold rounded-md hover:bg-white/5 border border-white/10">{t('about_us')}</Link>
-                <a href="/#ai-feature" onClick={(e) => {
-                    setIsMobileMenuOpen(false);
-                    if (pathname === '/') {
-                        e.preventDefault();
-                        document.getElementById('ai-feature')?.scrollIntoView({ behavior: 'smooth' });
-                    }
-                }} className="block px-3 py-2 text-white font-bold rounded-md hover:bg-white/5 border border-white/10 flex items-center justify-center gap-2">
+                <button 
+                    type="button" 
+                    onClick={() => navigateTo('/about')} 
+                    className="w-full block px-3 py-2.5 text-white font-bold rounded-md hover:bg-white/5 border border-white/10 transition cursor-pointer text-center"
+                >
+                    {t('about_us')}
+                </button>
+                <button 
+                    type="button" 
+                    onClick={() => navigateTo('/#ai-feature')} 
+                    className="w-full block px-3 py-2.5 text-white font-bold rounded-md hover:bg-white/5 border border-white/10 flex items-center justify-center gap-2 transition cursor-pointer text-center"
+                >
                     <i className="fa-solid fa-wand-magic-sparkles text-primary"></i> <span className="notranslate">Tsehay AI</span>
-                </a>
-                <Link href="/#courses" onClick={(e) => {
-                    setIsMobileMenuOpen(false);
-                    if (pathname === '/') {
-                        e.preventDefault();
-                        const element = document.getElementById('courses');
-                        if (element) {
-                            const offset = 80;
-                            const bodyRect = document.body.getBoundingClientRect().top;
-                            const elementRect = element.getBoundingClientRect().top;
-                            window.scrollTo({ top: elementRect - bodyRect - offset, behavior: 'smooth' });
-                        }
-                    }
-                }} className="block px-3 py-2 text-white font-bold rounded-md hover:bg-white/5 border border-white/10">{t('all_courses')}</Link>
-                <hr className="my-2 border-gray-200 dark:border-gray-800" />
+                </button>
+                <button 
+                    type="button" 
+                    onClick={() => navigateTo('/#courses')} 
+                    className="w-full block px-3 py-2.5 text-white font-bold rounded-md hover:bg-white/5 border border-white/10 transition cursor-pointer text-center"
+                >
+                    {t('all_courses')}
+                </button>
+                <hr className="my-2 border-gray-800" />
                 {!user ? (
                   <>
-                    <button onClick={() => { setIsMobileMenuOpen(false); openAuthModal(false); }} className="w-full text-secondary dark:text-primary font-bold py-2.5 hover:bg-gray-50 dark:hover:bg-darkCard rounded-lg border border-secondary dark:border-primary transition">{t('login')}</button>
-                    <button onClick={() => { setIsMobileMenuOpen(false); openAuthModal(true); }} className="w-full bg-primary text-dark font-bold py-2.5 rounded-lg mt-2 shadow-md hover:bg-yellow-400 transition">{t('register')}</button>
+                    <button 
+                        type="button" 
+                        onClick={() => { setIsMobileMenuOpen(false); openAuthModal(false); }} 
+                        className="w-full text-secondary dark:text-primary font-bold py-2.5 hover:bg-gray-50 dark:hover:bg-darkCard rounded-lg border border-secondary dark:border-primary transition cursor-pointer text-center"
+                    >
+                        {t('login')}
+                    </button>
+                    <button 
+                        type="button" 
+                        onClick={() => { setIsMobileMenuOpen(false); openAuthModal(true); }} 
+                        className="w-full bg-primary text-dark font-bold py-2.5 rounded-lg mt-2 shadow-md hover:bg-yellow-400 transition cursor-pointer text-center"
+                    >
+                        {t('register')}
+                    </button>
                   </>
                 ) : (
                   <>
-                    <Link href="/dashboard" onClick={() => setIsMobileMenuOpen(false)} className="block px-3 py-2.5 bg-primary/10 border border-primary/20 text-primary font-extrabold rounded-md"><i className="fa-solid fa-graduation-cap mr-2"></i> ወደ መማሪያ ክፍል</Link>
-                    {isAdmin && <Link href="/admin" onClick={() => setIsMobileMenuOpen(false)} className="block px-3 py-2 text-gray-700 dark:text-gray-300 font-bold rounded-md hover:bg-gray-50 dark:hover:bg-darkCard border border-gray-100 dark:border-gray-800">አድሚን</Link>}
-                    <button onClick={() => { setIsMobileMenuOpen(false); handleSignOut(); }} className="w-full text-danger font-bold py-2.5 hover:bg-red-50 rounded-lg border border-danger transition mt-2">ዘግተህ ውጣ (Logout)</button>
+                    <button 
+                        type="button" 
+                        onClick={() => navigateTo('/dashboard')} 
+                        className="w-full block px-3 py-2.5 bg-primary/10 border border-primary/20 text-primary font-extrabold rounded-md hover:bg-primary/20 transition cursor-pointer text-center flex items-center justify-center gap-2"
+                    >
+                        <i className="fa-solid fa-graduation-cap"></i> {t('classroom') || 'ወደ መማሪያ ክፍል'}
+                    </button>
+                    {isAdmin && (
+                      <button 
+                          type="button" 
+                          onClick={() => navigateTo('/admin')} 
+                          className="w-full block px-3 py-2 text-gray-300 font-bold rounded-md hover:bg-white/5 border border-white/10 transition cursor-pointer text-center"
+                      >
+                          {t('admin') || 'አድሚን'}
+                      </button>
+                    )}
+                    <button 
+                        type="button" 
+                        onClick={() => { setIsMobileMenuOpen(false); handleSignOut(); }} 
+                        className="w-full text-danger font-bold py-2.5 hover:bg-red-500/10 rounded-lg border border-danger/40 transition mt-2 cursor-pointer text-center flex items-center justify-center gap-2"
+                    >
+                        <i className="fa-solid fa-arrow-right-from-bracket"></i> {t('logout') || 'ዘግተህ ውጣ (Logout)'}
+                    </button>
                   </>
                 )}
             </div>
