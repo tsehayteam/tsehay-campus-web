@@ -142,13 +142,13 @@ export default function Home() {
 
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 w-full relative z-10 flex flex-col lg:flex-row items-center gap-10 lg:gap-16">
             <div className="max-w-2xl lg:w-1/2">
-                <div className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-500/20 via-primary/30 to-amber-500/20 border border-primary/40 text-white font-black px-4 py-2 rounded-full text-xs sm:text-sm mb-6 backdrop-blur-md shadow-lg animate-badge-glow">
+                <div className="inline-flex items-center gap-2.5 bg-gradient-to-r from-secondary/30 via-primary/20 to-secondary/30 border border-secondary/40 hover:border-primary/60 text-white font-black px-4 py-2 rounded-full text-xs sm:text-sm mb-6 backdrop-blur-md shadow-lg animate-badge-glow transition-all">
                     <i className="fa-solid fa-medal text-primary animate-gentle-bounce"></i> 
                     <span className="tracking-wide">{t('hero_badge')}</span>
                 </div>
                 <h1 id="hero-welcome" className="text-4xl sm:text-5xl lg:text-6xl font-black mb-5 leading-[1.15] text-white">
                     {t('hero_title_1')} <br /> 
-                    <span className="text-gradient-gold">{t('hero_title_2')}</span>
+                    <span className="text-gradient">{t('hero_title_2')}</span>
                 </h1>
                 <p className="text-base sm:text-lg text-gray-200 mb-8 font-body leading-relaxed">
                     <span className="notranslate font-black text-primary">Tsehay Campus</span> {t('hero_desc')}
