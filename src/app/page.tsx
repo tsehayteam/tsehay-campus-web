@@ -167,9 +167,9 @@ export default function Home() {
                     <span className="tracking-wide">{t('hero_badge')}</span>
                 </div>
 
-                <h1 id="hero-welcome" className="text-3xl sm:text-5xl lg:text-6xl font-black mb-4 sm:mb-5 leading-[1.2] text-white">
-                    {t('hero_title_1')} <br /> 
-                    <span className="text-gradient">{t('hero_title_2')}</span>
+                <h1 id="hero-welcome" className="text-3xl sm:text-5xl lg:text-6xl font-black mb-4 sm:mb-5 leading-[1.2] tracking-tight">
+                    <span className="text-secondary dark:text-[#4d8df5]">{t('hero_title_1')}</span> <br /> 
+                    <span className="text-primary">{t('hero_title_2')}</span>
                 </h1>
 
                 <p className="text-sm sm:text-base md:text-lg text-gray-200 mb-6 sm:mb-8 font-body leading-relaxed max-w-xl mx-auto lg:mx-0">
