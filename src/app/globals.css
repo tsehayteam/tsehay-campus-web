@@ -292,3 +292,11 @@ body {
 ::-webkit-scrollbar-thumb:hover { background: #3268BA; }
 .dark ::-webkit-scrollbar-thumb { background: #262626; }
 .dark ::-webkit-scrollbar-thumb:hover { background: #F9B03C; }
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
