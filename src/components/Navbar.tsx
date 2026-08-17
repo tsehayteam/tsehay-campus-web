@@ -213,140 +213,190 @@ export default function Navbar() {
                     )}
                 </div>
 
-                <div className="md:hidden flex items-center gap-4">
-                    <button onClick={toggleLanguage} className="bg-white/5 border border-white/10 px-3 py-1.5 rounded-full font-bold text-[11px] text-white transition shadow-sm notranslate" translate="no">{lang === 'am' ? 'EN' : 'አማ'}</button>
-                    <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} aria-label="Toggle navigation menu" className="text-white text-2xl focus:outline-none p-1 transition-transform duration-200">
-                        <i className={`fa-solid ${isMobileMenuOpen ? 'fa-xmark' : 'fa-bars'}`}></i>
+                <div className="md:hidden flex items-center gap-2 sm:gap-3">
+                    <button 
+                        onClick={toggleTheme} 
+                        className="w-9 h-9 rounded-full bg-gray-100 dark:bg-white/10 border border-gray-200 dark:border-white/10 flex items-center justify-center text-gray-700 dark:text-yellow-400 text-sm transition"
+                        aria-label="Toggle dark/light mode"
+                    >
+                        <i className={`fa-solid ${theme === 'dark' ? 'fa-moon' : 'fa-sun'}`}></i>
+                    </button>
+
+                    <button 
+                        onClick={toggleLanguage} 
+                        className="bg-gray-100 dark:bg-white/10 border border-gray-200 dark:border-white/10 px-3 py-1.5 rounded-full font-bold text-xs text-gray-800 dark:text-white transition shadow-xs notranslate" 
+                        translate="no"
+                    >
+                        {lang === 'am' ? 'EN' : 'አማ'}
+                    </button>
+
+                    <button 
+                        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} 
+                        aria-label="Toggle navigation menu" 
+                        className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-white/10 border border-gray-200 dark:border-white/10 text-gray-800 dark:text-white flex items-center justify-center text-xl focus:outline-none transition active:scale-95"
+                    >
+                        <i className={`fa-solid ${isMobileMenuOpen ? 'fa-xmark text-primary' : 'fa-bars'}`}></i>
                     </button>
                 </div>
             </div>
         </div>
         
         {/* Mobile Menu */}
-        <div className={`md:hidden bg-[#0d0d0d] border-t border-gray-800 shadow-xl overflow-hidden transition-all duration-300 ${isMobileMenuOpen ? 'max-h-[500px] opacity-100 py-2' : 'max-h-0 opacity-0 pointer-events-none'}`}>
-            <div className="px-4 pt-2 pb-6 space-y-2 text-center flex flex-col overflow-y-auto">
+        <div className={`md:hidden bg-white/95 dark:bg-[#0d0d0d]/95 backdrop-blur-2xl border-t border-b border-gray-200 dark:border-gray-800/80 shadow-2xl overflow-hidden transition-all duration-300 ${isMobileMenuOpen ? 'max-h-[550px] opacity-100 py-3' : 'max-h-0 opacity-0 pointer-events-none'}`}>
+            <div className="px-4 space-y-2 flex flex-col overflow-y-auto max-h-[75vh]">
+                <div className="pb-1">
+                    <SmartSearchInput 
+                        courses={allCourses} 
+                        placeholder={t('search_placeholder') || "ኮርሶችን ይፈልጉ..."} 
+                    />
+                </div>
+
+                <button 
+                    type="button" 
+                    onClick={() => navigateTo('/courses')} 
+                    className="w-full flex items-center justify-between px-4 py-3 text-dark dark:text-white font-bold rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 border border-gray-100 dark:border-gray-800/80 transition cursor-pointer text-left"
+                >
+                    <span className="flex items-center gap-3">
+                        <i className="fa-solid fa-book-open text-primary"></i>
+                        <span>{t('all_courses')}</span>
+                    </span>
+                    <i className="fa-solid fa-chevron-right text-xs text-gray-400"></i>
+                </button>
+
                 <button 
                     type="button" 
                     onClick={() => navigateTo('/about')} 
-                    className="w-full block px-3 py-2.5 text-white font-bold rounded-md hover:bg-white/5 border border-white/10 transition cursor-pointer text-center"
+                    className="w-full flex items-center justify-between px-4 py-3 text-dark dark:text-white font-bold rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 border border-gray-100 dark:border-gray-800/80 transition cursor-pointer text-left"
                 >
-                    {t('about_us')}
+                    <span className="flex items-center gap-3">
+                        <i className="fa-solid fa-circle-info text-secondary dark:text-primary"></i>
+                        <span>{t('about_us')}</span>
+                    </span>
+                    <i className="fa-solid fa-chevron-right text-xs text-gray-400"></i>
                 </button>
+
                 <button 
                     type="button" 
                     onClick={() => navigateTo('/#ai-feature')} 
-                    className="w-full block px-3 py-2.5 text-white font-bold rounded-md hover:bg-white/5 border border-white/10 flex items-center justify-center gap-2 transition cursor-pointer text-center"
+                    className="w-full flex items-center justify-between px-4 py-3 text-dark dark:text-white font-bold rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 border border-gray-100 dark:border-gray-800/80 transition cursor-pointer text-left"
                 >
-                    <i className="fa-solid fa-wand-magic-sparkles text-primary"></i> <span className="notranslate">Tsehay AI</span>
+                    <span className="flex items-center gap-3">
+                        <i className="fa-solid fa-wand-magic-sparkles text-primary"></i>
+                        <span className="notranslate">Tsehay AI</span>
+                    </span>
+                    <span className="text-[10px] bg-primary/20 text-primary font-black px-2 py-0.5 rounded-full">AI</span>
                 </button>
-                <button 
-                    type="button" 
-                    onClick={() => navigateTo('/#courses')} 
-                    className="w-full block px-3 py-2.5 text-white font-bold rounded-md hover:bg-white/5 border border-white/10 transition cursor-pointer text-center"
-                >
-                    {t('all_courses')}
-                </button>
-                <hr className="my-2 border-gray-800" />
+
+                <hr className="my-1 border-gray-200 dark:border-gray-800" />
+
                 {!mounted || !user ? (
-                  <>
+                  <div className="grid grid-cols-2 gap-2 pt-1">
                     <button 
                         type="button" 
                         onClick={() => { setIsMobileMenuOpen(false); openAuthModal(false); }} 
-                        className="w-full text-secondary dark:text-primary font-bold py-2.5 hover:bg-gray-50 dark:hover:bg-darkCard rounded-lg border border-secondary dark:border-primary transition cursor-pointer text-center"
+                        className="w-full text-secondary dark:text-white font-bold py-3 rounded-xl border-2 border-secondary/30 dark:border-white/20 hover:bg-secondary/10 dark:hover:bg-white/5 transition cursor-pointer text-center text-sm"
                     >
                         {t('login')}
                     </button>
                     <button 
                         type="button" 
                         onClick={() => { setIsMobileMenuOpen(false); openAuthModal(true); }} 
-                        className="w-full bg-primary text-dark font-bold py-2.5 rounded-lg mt-2 shadow-md hover:bg-yellow-400 transition cursor-pointer text-center"
+                        className="w-full bg-primary text-dark font-black py-3 rounded-xl shadow-md hover:bg-yellow-400 transition cursor-pointer text-center text-sm btn-glow"
                     >
                         {t('register')}
                     </button>
-                  </>
+                  </div>
                 ) : (
-                  <>
+                  <div className="space-y-2 pt-1">
                     <button 
                         type="button" 
                         onClick={() => navigateTo('/dashboard')} 
-                        className="w-full block px-3 py-2.5 bg-primary/10 border border-primary/20 text-primary font-extrabold rounded-md hover:bg-primary/20 transition cursor-pointer text-center flex items-center justify-center gap-2"
+                        className="w-full flex items-center justify-between px-4 py-3 bg-primary/10 border border-primary/30 text-primary font-black rounded-xl hover:bg-primary/20 transition cursor-pointer"
                     >
-                        <i className="fa-solid fa-graduation-cap"></i> {t('classroom') || 'ወደ መማሪያ ክፍል'}
+                        <span className="flex items-center gap-3">
+                            <i className="fa-solid fa-graduation-cap"></i>
+                            <span>{t('classroom') || 'ወደ መማሪያ ክፍል'}</span>
+                        </span>
+                        <i className="fa-solid fa-arrow-right text-xs"></i>
                     </button>
                     {isAdmin && (
                       <button 
                           type="button" 
                           onClick={() => navigateTo('/admin')} 
-                          className="w-full block px-3 py-2 text-gray-300 font-bold rounded-md hover:bg-white/5 border border-white/10 transition cursor-pointer text-center"
+                          className="w-full flex items-center justify-between px-4 py-2.5 text-gray-700 dark:text-gray-300 font-bold rounded-xl hover:bg-gray-100 dark:hover:bg-white/5 border border-gray-200 dark:border-gray-800 transition cursor-pointer text-sm"
                       >
-                          {t('admin') || 'አድሚን'}
+                          <span className="flex items-center gap-3">
+                              <i className="fa-solid fa-shield-halved text-primary"></i>
+                              <span>{t('admin') || 'አድሚን'}</span>
+                          </span>
+                          <i className="fa-solid fa-chevron-right text-xs text-gray-400"></i>
                       </button>
                     )}
                     <button 
                         type="button" 
                         onClick={() => { setIsMobileMenuOpen(false); handleSignOut(); }} 
-                        className="w-full text-danger font-bold py-2.5 hover:bg-red-500/10 rounded-lg border border-danger/40 transition mt-2 cursor-pointer text-center flex items-center justify-center gap-2"
+                        className="w-full text-danger font-bold py-2.5 hover:bg-red-500/10 rounded-xl border border-danger/30 transition cursor-pointer text-center flex items-center justify-center gap-2 text-sm"
                     >
                         <i className="fa-solid fa-arrow-right-from-bracket"></i> {t('logout') || 'ዘግተህ ውጣ (Logout)'}
                     </button>
-                  </>
+                  </div>
                 )}
             </div>
         </div>
       </nav>
 
       {/* Udacity-Style Mobile Bottom App Navigation Bar */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#0d0d0d]/95 backdrop-blur-xl border-t border-white/10 px-2 py-1.5 shadow-[0_-4px_20px_rgba(0,0,0,0.5)]">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-[#0d0d0d]/95 backdrop-blur-xl border-t border-gray-200 dark:border-white/10 px-2 py-2 safe-area-bottom shadow-[0_-4px_25px_rgba(0,0,0,0.15)] dark:shadow-[0_-4px_25px_rgba(0,0,0,0.7)]">
         <div className="flex items-center justify-around max-w-md mx-auto">
           <Link 
             href="/" 
-            className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition ${pathname === '/' ? 'text-primary font-black' : 'text-gray-400 hover:text-white font-medium'}`}
+            className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition ${pathname === '/' ? 'text-primary font-black' : 'text-gray-600 dark:text-gray-400 hover:text-dark dark:hover:text-white font-medium'}`}
           >
-            <i className={`fa-solid fa-house text-lg ${pathname === '/' ? 'scale-110' : ''} transition-transform`}></i>
-            <span className="text-[10px] mt-0.5 tracking-tight">መነሻ</span>
+            <i className={`fa-solid fa-house text-lg ${pathname === '/' ? 'scale-110 text-primary' : ''} transition-transform`}></i>
+            <span className="text-[10px] mt-0.5 tracking-tight font-bold">መነሻ</span>
           </Link>
 
           <Link 
             href="/courses" 
-            className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition ${pathname?.startsWith('/courses') ? 'text-primary font-black' : 'text-gray-400 hover:text-white font-medium'}`}
+            className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition ${pathname?.startsWith('/courses') ? 'text-primary font-black' : 'text-gray-600 dark:text-gray-400 hover:text-dark dark:hover:text-white font-medium'}`}
           >
-            <i className={`fa-solid fa-book-open text-lg ${pathname?.startsWith('/courses') ? 'scale-110' : ''} transition-transform`}></i>
-            <span className="text-[10px] mt-0.5 tracking-tight">ኮርሶች</span>
+            <i className={`fa-solid fa-book-open text-lg ${pathname?.startsWith('/courses') ? 'scale-110 text-primary' : ''} transition-transform`}></i>
+            <span className="text-[10px] mt-0.5 tracking-tight font-bold">ኮርሶች</span>
           </Link>
 
           <Link 
             href="/dashboard" 
-            className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition relative ${pathname === '/dashboard' ? 'text-primary font-black' : 'text-gray-400 hover:text-white font-medium'}`}
+            className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition relative ${pathname === '/dashboard' ? 'text-primary font-black' : 'text-gray-600 dark:text-gray-400 hover:text-dark dark:hover:text-white font-medium'}`}
           >
             <div className="relative">
-              <i className={`fa-solid fa-graduation-cap text-lg ${pathname === '/dashboard' ? 'scale-110' : ''} transition-transform`}></i>
+              <i className={`fa-solid fa-graduation-cap text-lg ${pathname === '/dashboard' ? 'scale-110 text-primary' : ''} transition-transform`}></i>
               {mounted && user && (
                 <span className="absolute -top-1 -right-1.5 w-2 h-2 bg-emerald-500 rounded-full"></span>
               )}
             </div>
-            <span className="text-[10px] mt-0.5 tracking-tight">ክፍሌ</span>
+            <span className="text-[10px] mt-0.5 tracking-tight font-bold">ክፍሌ</span>
           </Link>
 
           <button 
             onClick={() => window.dispatchEvent(new CustomEvent('toggle-ai'))}
-            className="flex flex-col items-center justify-center py-1 px-2 rounded-xl text-primary font-extrabold hover:text-yellow-300 transition cursor-pointer"
+            className="flex flex-col items-center justify-center py-1 px-2 rounded-xl text-primary font-extrabold hover:text-yellow-400 transition cursor-pointer"
           >
             <i className="fa-solid fa-wand-magic-sparkles text-lg animate-pulse"></i>
-            <span className="text-[10px] mt-0.5 tracking-tight notranslate">AI Tutor</span>
+            <span className="text-[10px] mt-0.5 tracking-tight notranslate font-black">AI Tutor</span>
           </button>
 
           {!mounted || !user ? (
             <button 
               onClick={() => openAuthModal(false)}
-              className="flex flex-col items-center justify-center py-1 px-2 rounded-xl text-gray-400 hover:text-primary font-medium transition cursor-pointer"
+              className="flex flex-col items-center justify-center py-1 px-2 rounded-xl text-gray-600 dark:text-gray-400 hover:text-primary font-medium transition cursor-pointer"
             >
               <i className="fa-solid fa-user text-lg"></i>
-              <span className="text-[10px] mt-0.5 tracking-tight">መለያ</span>
+              <span className="text-[10px] mt-0.5 tracking-tight font-bold">መለያ</span>
             </button>
           ) : (
             <button 
               onClick={() => setShowProfileDropdown(prev => !prev)}
-              className="flex flex-col items-center justify-center py-1 px-2 rounded-xl text-gray-300 hover:text-primary transition cursor-pointer"
+              className="flex flex-col items-center justify-center py-1 px-2 rounded-xl text-gray-700 dark:text-gray-300 hover:text-primary transition cursor-pointer"
             >
               <img 
                 src={user.photoURL || 'https://ui-avatars.com/api/?name=User&background=3268BA&color=fff'} 

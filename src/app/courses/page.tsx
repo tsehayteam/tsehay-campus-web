@@ -126,29 +126,26 @@ export default function Courses() {
                   onSearchChange={(searchResults, q) => {
                     setSearchQuery(q);
                   }}
-                />
-            </div>
-
-            {/* Enhanced Categories including Free and Paid */}
-            <div className="flex flex-wrap justify-center gap-3">
-                <button onClick={() => setSelectedCategory('All')} className={`px-6 py-2.5 rounded-full font-bold text-sm transition shadow-md ${selectedCategory === 'All' ? 'bg-primary text-dark' : 'bg-white dark:bg-transparent border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'}`}>{t('cat_all')}</button>
-                <button onClick={() => setSelectedCategory('Free')} className={`px-6 py-2.5 rounded-full font-bold text-sm transition border ${selectedCategory === 'Free' ? 'bg-success text-white border-success' : 'bg-transparent text-success hover:bg-success hover:text-white border-success/30'}`}>{t('cat_free')}</button>
-                <button onClick={() => setSelectedCategory('Paid')} className={`px-6 py-2.5 rounded-full font-bold text-sm transition border ${selectedCategory === 'Paid' ? 'bg-primary text-dark border-primary' : 'bg-transparent text-primary hover:bg-primary hover:text-dark border-primary/30'}`}>{t('cat_paid')}</button>
+                          {/* Enhanced Categories including Free and Paid */}
+            <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
+                <button onClick={() => setSelectedCategory('All')} className={`px-4 sm:px-6 py-2 sm:py-2.5 rounded-full font-bold text-xs sm:text-sm transition shadow-sm ${selectedCategory === 'All' ? 'bg-primary text-dark' : 'bg-white dark:bg-transparent border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'}`}>{t('cat_all')}</button>
+                <button onClick={() => setSelectedCategory('Free')} className={`px-4 sm:px-6 py-2 sm:py-2.5 rounded-full font-bold text-xs sm:text-sm transition border ${selectedCategory === 'Free' ? 'bg-success text-white border-success' : 'bg-transparent text-success hover:bg-success hover:text-white border-success/30'}`}>{t('cat_free')}</button>
+                <button onClick={() => setSelectedCategory('Paid')} className={`px-4 sm:px-6 py-2 sm:py-2.5 rounded-full font-bold text-xs sm:text-sm transition border ${selectedCategory === 'Paid' ? 'bg-primary text-dark border-primary' : 'bg-transparent text-primary hover:bg-primary hover:text-dark border-primary/30'}`}>{t('cat_paid')}</button>
                 <div className="w-full sm:w-auto h-0 sm:h-8 border-l border-gray-300 dark:border-gray-700 mx-2 hidden sm:block"></div>
-                <button onClick={() => setSelectedCategory('Ecommerce')} className={`px-6 py-2.5 rounded-full font-bold text-sm transition border ${selectedCategory === 'Ecommerce' ? 'bg-gray-800 dark:bg-white text-white dark:text-dark border-gray-800 dark:border-white' : 'bg-transparent border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'}`}>{t('cat_ecommerce')}</button>
-                <button onClick={() => setSelectedCategory('Marketing')} className={`px-6 py-2.5 rounded-full font-bold text-sm transition border ${selectedCategory === 'Marketing' ? 'bg-gray-800 dark:bg-white text-white dark:text-dark border-gray-800 dark:border-white' : 'bg-transparent border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'}`}>{t('cat_marketing')}</button>
-                <button onClick={() => setSelectedCategory('Crypto')} className={`px-6 py-2.5 rounded-full font-bold text-sm transition border ${selectedCategory === 'Crypto' ? 'bg-gray-800 dark:bg-white text-white dark:text-dark border-gray-800 dark:border-white' : 'bg-transparent border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'}`}>{t('cat_crypto')}</button>
-                <button onClick={() => setSelectedCategory('Tech')} className={`px-6 py-2.5 rounded-full font-bold text-sm transition border ${selectedCategory === 'Tech' ? 'bg-gray-800 dark:bg-white text-white dark:text-dark border-gray-800 dark:border-white' : 'bg-transparent border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'}`}>{t('cat_tech')}</button>
+                <button onClick={() => setSelectedCategory('Ecommerce')} className={`px-4 sm:px-6 py-2 sm:py-2.5 rounded-full font-bold text-xs sm:text-sm transition border ${selectedCategory === 'Ecommerce' ? 'bg-gray-800 dark:bg-white text-white dark:text-dark border-gray-800 dark:border-white' : 'bg-transparent border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'}`}>{t('cat_ecommerce')}</button>
+                <button onClick={() => setSelectedCategory('Marketing')} className={`px-4 sm:px-6 py-2 sm:py-2.5 rounded-full font-bold text-xs sm:text-sm transition border ${selectedCategory === 'Marketing' ? 'bg-gray-800 dark:bg-white text-white dark:text-dark border-gray-800 dark:border-white' : 'bg-transparent border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'}`}>{t('cat_marketing')}</button>
+                <button onClick={() => setSelectedCategory('Crypto')} className={`px-4 sm:px-6 py-2 sm:py-2.5 rounded-full font-bold text-xs sm:text-sm transition border ${selectedCategory === 'Crypto' ? 'bg-gray-800 dark:bg-white text-white dark:text-dark border-gray-800 dark:border-white' : 'bg-transparent border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'}`}>{t('cat_crypto')}</button>
+                <button onClick={() => setSelectedCategory('Tech')} className={`px-4 sm:px-6 py-2 sm:py-2.5 rounded-full font-bold text-xs sm:text-sm transition border ${selectedCategory === 'Tech' ? 'bg-gray-800 dark:bg-white text-white dark:text-dark border-gray-800 dark:border-white' : 'bg-transparent border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'}`}>{t('cat_tech')}</button>
             </div>
           </div>
         </section>
         
-        <section className="py-8 lg:py-12 relative">
+        <section className="py-6 sm:py-12 relative">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             {loading ? (
               <div className="flex flex-col items-center justify-center py-20">
                 <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
-                <p className="text-gray-500 font-bold tracking-widest uppercase text-sm">{t('loading_courses_2')}</p>
+                <p className="text-gray-500 font-bold tracking-widest uppercase text-xs sm:text-sm">{t('loading_courses_2')}</p>
               </div>
             ) : filteredCourses.length === 0 ? (
               <div className="text-center py-20">
@@ -156,11 +153,11 @@ export default function Courses() {
                 <h3 className="text-xl font-bold text-gray-500 dark:text-gray-400">{t('no_courses_found')}</h3>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-8">
                 {filteredCourses.map((course) => (
-                  <div key={course.id} className="course-card bg-white dark:bg-[#111111] rounded-3xl overflow-hidden flex flex-col group relative border border-gray-200 dark:border-gray-800 transition-all duration-300">
+                  <div key={course.id} className="course-card bg-white dark:bg-[#111111] rounded-2xl sm:rounded-3xl overflow-hidden flex flex-col group relative border border-gray-200 dark:border-gray-800 transition-all duration-300 shadow-xs">
                     
-                    <a href={`/courses/${course.id}`} className="relative h-56 md:h-64 overflow-hidden bg-slate-900 block cursor-pointer">
+                    <a href={`/courses/${course.id}`} className="relative h-48 sm:h-56 md:h-64 overflow-hidden bg-slate-900 block cursor-pointer">
                       <img 
                         src={formatDriveImageUrl(course.image) || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1000&auto=format&fit=crop'} 
                         alt={course.title} 
@@ -169,58 +166,57 @@ export default function Courses() {
                       
                       {/* PREMIUM / FREE Badge */}
                       {(!course.isFree && course.price !== 0 && course.price !== '0' && course.price !== 'Free') ? (
-                        <div className="absolute top-4 right-4 bg-primary text-dark text-[11px] font-black px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg">
+                        <div className="absolute top-3 sm:top-4 right-3 sm:right-4 bg-primary text-dark text-[10px] sm:text-[11px] font-black px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full flex items-center gap-1.5 shadow-lg">
                           <i className="fa-solid fa-star"></i> PREMIUM
                         </div>
                       ) : (
-                        <div className="absolute top-4 right-4 bg-success text-white text-[11px] font-black px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg">
+                        <div className="absolute top-3 sm:top-4 right-3 sm:right-4 bg-success text-white text-[10px] sm:text-[11px] font-black px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full flex items-center gap-1.5 shadow-lg">
                           <i className="fa-solid fa-gift"></i> FREE
                         </div>
                       )}
                       
                       {/* CATEGORY Badge */}
                       {course.category && (
-                        <div className="absolute bottom-4 left-4 bg-[#111111]/90 backdrop-blur-xs text-white text-[10px] font-bold px-3 py-1.5 rounded-md uppercase tracking-wider shadow-md">
+                        <div className="absolute bottom-3 sm:bottom-4 left-3 sm:left-4 bg-[#111111]/90 backdrop-blur-xs text-white text-[9px] sm:text-[10px] font-bold px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-md uppercase tracking-wider shadow-md">
                           {course.category}
                         </div>
                       )}
                     </a>
                     
-                    <div className="p-6 flex-1 flex flex-col">
-                      <a href={`/courses/${course.id}`}>
-                        <h3 className="text-xl font-black text-dark dark:text-white mb-3 line-clamp-2 leading-tight group-hover:text-primary transition-colors cursor-pointer font-heading">
-                          {course.title || t('course_unknown')}
-                        </h3>
-                      </a>
-                      
-                      <div className="flex items-center justify-between gap-2 mb-3">
-                        <div className="flex items-center gap-2">
-                          <i className="fa-solid fa-folder-open text-primary"></i>
-                          <span className="text-gray-400 text-sm font-bold">{course.instructor || 'Eyoub Sahle'}</span>
+                    <div className="p-4 sm:p-6 flex-1 flex flex-col justify-between">
+                      <div>
+                        <a href={`/courses/${course.id}`}>
+                          <h3 className="text-lg sm:text-xl font-black text-dark dark:text-white mb-2 sm:mb-3 line-clamp-2 leading-tight group-hover:text-primary transition-colors cursor-pointer font-heading">
+                            {course.title || t('course_unknown')}
+                          </h3>
+                        </a>
+                        
+                        <div className="flex items-center justify-between gap-2 mb-3">
+                          <div className="flex items-center gap-2">
+                            <i className="fa-solid fa-folder-open text-primary text-xs sm:text-sm"></i>
+                            <span className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm font-bold">{course.instructor || 'Eyoub Sahle'}</span>
+                          </div>
+                          <div className="flex items-center gap-1 bg-amber-400/10 text-amber-600 dark:text-amber-400 font-black px-2 py-0.5 rounded-full text-xs border border-amber-400/20 shadow-xs">
+                            <i className="fa-solid fa-star text-amber-400 text-[10px]"></i>
+                            <span>{course.ratingAvg || '4.9'}</span>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1.5 bg-amber-400/10 text-amber-600 dark:text-amber-400 font-black px-2.5 py-1 rounded-full text-xs border border-amber-400/20 shadow-xs">
-                          <i className="fa-solid fa-star text-amber-400 text-xs"></i>
-                          <span>{course.ratingAvg || '4.9'}</span>
-                        </div>
-                      </div>
-                      
-                      <p className="text-gray-400 text-sm mb-6 line-clamp-3 leading-relaxed font-body">
-                        {formatCourseDesc(course) || t('course_desc_placeholder')}
-                      </p>
-                      
-                      {/* Metadata Pills */}
-                      <div className="flex flex-wrap gap-2 mb-6">
-                        <div className="flex items-center gap-2 bg-gray-100 dark:bg-black/40 text-gray-700 dark:text-gray-300 text-xs font-bold px-3 py-1.5 rounded-md border border-gray-200 dark:border-gray-800">
-                          <i className="fa-regular fa-clock text-primary"></i> {course.duration || '00:50:00'}
-                        </div>
-                        <div className="flex items-center gap-2 bg-gray-100 dark:bg-black/40 text-gray-700 dark:text-gray-300 text-xs font-bold px-3 py-1.5 rounded-md border border-gray-200 dark:border-gray-800">
-                          <i className="fa-solid fa-list text-primary"></i> {course.lessons?.length || 0} {t('course_lessons')}
-                        </div>
-                        <div className="flex items-center gap-2 bg-gray-100 dark:bg-black/40 text-gray-700 dark:text-gray-300 text-xs font-bold px-3 py-1.5 rounded-md border border-gray-200 dark:border-gray-800">
-                          <i className="fa-solid fa-signal text-primary"></i> {course.level || 'ጀማሪ (Beginner)'}
-                        </div>
-                        <div className="flex items-center gap-2 bg-gray-100 dark:bg-black/40 text-gray-700 dark:text-gray-300 text-xs font-bold px-3 py-1.5 rounded-md border border-gray-200 dark:border-gray-800">
-                          <i className="fa-solid fa-language text-primary"></i> {t('course_language')}
+                        
+                        <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm mb-4 sm:mb-6 line-clamp-2 leading-relaxed font-body">
+                          {formatCourseDesc(course) || t('course_desc_placeholder')}
+                        </p>
+                        
+                        {/* Metadata Pills */}
+                        <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-4 sm:mb-6">
+                          <div className="flex items-center gap-1.5 bg-gray-100 dark:bg-black/40 text-gray-700 dark:text-gray-300 text-[11px] sm:text-xs font-bold px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-md border border-gray-200 dark:border-gray-800">
+                            <i className="fa-regular fa-clock text-primary text-[10px]"></i> {course.duration || '00:50:00'}
+                          </div>
+                          <div className="flex items-center gap-1.5 bg-gray-100 dark:bg-black/40 text-gray-700 dark:text-gray-300 text-[11px] sm:text-xs font-bold px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-md border border-gray-200 dark:border-gray-800">
+                            <i className="fa-solid fa-list text-primary text-[10px]"></i> {course.lessons?.length || 0} {t('course_lessons')}
+                          </div>
+                          <div className="flex items-center gap-1.5 bg-gray-100 dark:bg-black/40 text-gray-700 dark:text-gray-300 text-[11px] sm:text-xs font-bold px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-md border border-gray-200 dark:border-gray-800">
+                            <i className="fa-solid fa-signal text-primary text-[10px]"></i> {course.level || 'ጀማሪ'}
+                          </div>
                         </div>
                       </div>
                       
