@@ -2787,6 +2787,9 @@ ${customAdminPrompt}
               </div>
           </div>
       )}
+
+      {/* Floating AI Button */}
+      <FloatingAIButton />
     </div>
   );
 }
