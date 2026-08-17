@@ -1465,11 +1465,16 @@ ${customAdminPrompt}
                                                     localStorage.setItem(`tsehay_resume_${activeCourse.id}_${encodeURIComponent(activeLesson.title)}`, Math.floor(playedSeconds).toString());
                                                 } catch(e) {}
                                             }
-                                            if (played >= 0.5) {
-                                                handleVideoProgress50();
+                                            if (played >= 0.90 && activeLesson && !progress.includes(activeLesson.title)) {
+                                                markLessonCompleted(activeLesson);
                                             }
                                         }}
-                                        onEnded={handleVideoEnd}
+                                        onEnded={async () => {
+                                            if (activeLesson) {
+                                                await markLessonCompleted(activeLesson);
+                                            }
+                                            await handleNextLesson();
+                                        }}
                                         className="absolute inset-0"
                                     />
                                 );
@@ -1617,68 +1622,94 @@ ${customAdminPrompt}
                                             ምንም ትምህርት አልተገኘም
                                         </div>
                                     ) : (
-                                        modules.map((mod: any, idx: number) => (
-                                            <div key={mod.id || idx} className="border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-2xl overflow-hidden shadow-xs">
-                                                <div className="bg-gray-50 dark:bg-slate-800/90 p-3.5 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between">
-                                                    <h4 className="font-black text-xs sm:text-sm text-dark dark:text-white">ክፍል {idx + 1}: {mod.title}</h4>
-                                                    <span className="text-[10px] bg-gray-200 dark:bg-slate-700 text-gray-600 dark:text-gray-300 font-bold px-2 py-0.5 rounded-md">
-                                                        {(mod.lessons || []).length} ትምህርቶች
-                                                    </span>
-                                                </div>
-                                                <div className="p-2 space-y-1.5">
-                                                    {(mod.lessons || []).map((lesson: any, lidx: number) => {
-                                                        const isActive = activeLesson?.title === lesson.title;
-                                                        const isCompleted = progress.includes(lesson.title);
-                                                        return (
-                                                            <div 
-                                                                key={lidx} 
-                                                                onClick={() => {
-                                                                    const selectedLesson = {...lesson, moduleIndex: idx, lessonIndex: lidx};
-                                                                    setActiveLesson(selectedLesson);
-                                                                    try {
-                                                                        localStorage.setItem('tsehay_user_active_lesson', JSON.stringify(selectedLesson));
-                                                                    } catch(e) {}
-                                                                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                                                                }}
-                                                                className={`flex items-center justify-between p-3 rounded-xl transition cursor-pointer active:scale-[0.98] ${
-                                                                    isActive 
-                                                                        ? 'bg-primary/15 dark:bg-primary/25 border-l-4 border-primary shadow-xs' 
-                                                                        : 'hover:bg-gray-50 dark:hover:bg-slate-800 bg-gray-50/50 dark:bg-slate-900/40'
-                                                                }`}
-                                                            >
-                                                                <div className="flex items-center gap-3 min-w-0 pr-2">
-                                                                    {isActive ? (
-                                                                        <i className="fa-solid fa-circle-play text-primary text-base animate-pulse shrink-0"></i>
-                                                                    ) : isCompleted ? (
-                                                                        <i className="fa-solid fa-circle-check text-emerald-500 text-base shrink-0"></i>
-                                                                    ) : (
-                                                                        <i className="fa-solid fa-circle-play text-gray-400 text-sm shrink-0"></i>
-                                                                    )}
-                                                                    <div className="min-w-0">
-                                                                        <p className={`text-xs sm:text-sm font-bold truncate ${isActive ? 'text-primary' : isCompleted ? 'text-emerald-600 dark:text-emerald-400' : 'text-dark dark:text-white'}`}>
-                                                                            {lesson.title}
-                                                                        </p>
-                                                                        <div className="flex items-center gap-2 mt-0.5 text-[10px] text-gray-500">
-                                                                            <span><i className="fa-solid fa-video"></i> {lesson.duration || '00:00'}</span>
-                                                                            <span className="text-primary font-bold">+{lesson.points || 25} ነጥብ</span>
+                                        (() => {
+                                            const allFlatLessons: any[] = [];
+                                            modules.forEach((m: any) => {
+                                                (m.lessons || []).forEach((l: any) => allFlatLessons.push(l));
+                                            });
+
+                                            let currentGlobalIdx = 0;
+
+                                            return modules.map((mod: any, idx: number) => (
+                                                <div key={mod.id || idx} className="border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-2xl overflow-hidden shadow-xs">
+                                                    <div className="bg-gray-50 dark:bg-slate-800/90 p-3.5 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between">
+                                                        <h4 className="font-black text-xs sm:text-sm text-dark dark:text-white">ክፍል {idx + 1}: {mod.title}</h4>
+                                                        <span className="text-[10px] bg-gray-200 dark:bg-slate-700 text-gray-600 dark:text-gray-300 font-bold px-2 py-0.5 rounded-md">
+                                                            {(mod.lessons || []).length} ትምህርቶች
+                                                        </span>
+                                                    </div>
+                                                    <div className="p-2 space-y-1.5">
+                                                        {(mod.lessons || []).map((lesson: any, lidx: number) => {
+                                                            const globalIdx = currentGlobalIdx++;
+                                                            const isActive = activeLesson?.title === lesson.title;
+                                                            const isCompleted = progress.includes(lesson.title);
+                                                            
+                                                            const prevLessonTitle = globalIdx > 0 ? allFlatLessons[globalIdx - 1]?.title : null;
+                                                            const isUnlocked = isCourseCompleted || globalIdx === 0 || (prevLessonTitle ? progress.includes(prevLessonTitle) : true);
+
+                                                            return (
+                                                                <div 
+                                                                    key={lidx} 
+                                                                    onClick={() => {
+                                                                        if (!isUnlocked) {
+                                                                            alert("🔒 ይህ ትምህርት አልተከፈተም! እባክዎ መጀመሪያ የቀደመውን ትምህርት አይተው ያጠናቁ።");
+                                                                            return;
+                                                                        }
+                                                                        const selectedLesson = {...lesson, moduleIndex: idx, lessonIndex: lidx};
+                                                                        setActiveLesson(selectedLesson);
+                                                                        try {
+                                                                            localStorage.setItem('tsehay_user_active_lesson', JSON.stringify(selectedLesson));
+                                                                        } catch(e) {}
+                                                                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                                                                    }}
+                                                                    className={`flex items-center justify-between p-3 rounded-xl transition ${
+                                                                        !isUnlocked
+                                                                            ? 'opacity-60 cursor-not-allowed bg-gray-100/40 dark:bg-slate-900/20'
+                                                                            : isActive 
+                                                                                ? 'bg-primary/15 dark:bg-primary/25 border-l-4 border-primary shadow-xs cursor-pointer active:scale-[0.98]' 
+                                                                                : 'hover:bg-gray-50 dark:hover:bg-slate-800 bg-gray-50/50 dark:bg-slate-900/40 cursor-pointer active:scale-[0.98]'
+                                                                    }`}
+                                                                >
+                                                                    <div className="flex items-center gap-3 min-w-0 pr-2">
+                                                                        {isActive ? (
+                                                                            <i className="fa-solid fa-circle-play text-primary text-base animate-pulse shrink-0"></i>
+                                                                        ) : isCompleted ? (
+                                                                            <i className="fa-solid fa-circle-check text-emerald-500 text-base shrink-0"></i>
+                                                                        ) : !isUnlocked ? (
+                                                                            <i className="fa-solid fa-lock text-gray-400 dark:text-gray-500 text-sm shrink-0"></i>
+                                                                        ) : (
+                                                                            <i className="fa-solid fa-circle-play text-gray-400 text-sm shrink-0"></i>
+                                                                        )}
+                                                                        <div className="min-w-0">
+                                                                            <p className={`text-xs sm:text-sm font-bold truncate ${isActive ? 'text-primary' : isCompleted ? 'text-emerald-600 dark:text-emerald-400' : !isUnlocked ? 'text-gray-400 dark:text-gray-500' : 'text-dark dark:text-white'}`}>
+                                                                                {lesson.title}
+                                                                            </p>
+                                                                            <div className="flex items-center gap-2 mt-0.5 text-[10px] text-gray-500">
+                                                                                <span><i className="fa-solid fa-video"></i> {lesson.duration || '00:00'}</span>
+                                                                                <span className="text-primary font-bold">+{lesson.points || 25} ነጥብ</span>
+                                                                            </div>
                                                                         </div>
                                                                     </div>
+                                                                    {isCompleted ? (
+                                                                        <span className="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2.5 py-1 rounded-md font-black shrink-0 flex items-center gap-1">
+                                                                            <i className="fa-solid fa-check"></i> ተጠናቋል
+                                                                        </span>
+                                                                    ) : isActive ? (
+                                                                        <span className="text-[10px] bg-primary text-dark px-2.5 py-1 rounded-md font-black shrink-0 animate-pulse">
+                                                                            እየታየ ነው
+                                                                        </span>
+                                                                    ) : !isUnlocked ? (
+                                                                        <span className="text-[10px] bg-gray-200 dark:bg-slate-700 text-gray-500 dark:text-gray-400 px-2 py-0.5 rounded-md font-bold shrink-0 flex items-center gap-1">
+                                                                            <i className="fa-solid fa-lock text-[9px]"></i> ተቆልፏል
+                                                                        </span>
+                                                                    ) : null}
                                                                 </div>
-                                                                {isCompleted ? (
-                                                                    <span className="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2.5 py-1 rounded-md font-black shrink-0">
-                                                                        ✓ ተጠናቋል
-                                                                    </span>
-                                                                ) : isActive ? (
-                                                                    <span className="text-[10px] bg-primary text-dark px-2.5 py-1 rounded-md font-black shrink-0 animate-pulse">
-                                                                        እየታየ ነው
-                                                                    </span>
-                                                                ) : null}
-                                                            </div>
-                                                        );
-                                                    })}
+                                                            );
+                                                        })}
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        ))
+                                            ));
+                                        })()
                                     )}
                                 </div>
                             )}
@@ -2362,16 +2393,22 @@ ${customAdminPrompt}
                                                     <div 
                                                         key={lidx} 
                                                         onClick={() => {
+                                                            if (!isUnlocked) {
+                                                                alert("🔒 ይህ ትምህርት አልተከፈተም! እባክዎ መጀመሪያ የቀደመውን ትምህርት አይተው ያጠናቁ።");
+                                                                return;
+                                                            }
                                                             const selectedLesson = {...lesson, moduleIndex: idx, lessonIndex: lidx};
                                                             setActiveLesson(selectedLesson);
                                                             try {
                                                               localStorage.setItem('tsehay_user_active_lesson', JSON.stringify(selectedLesson));
                                                             } catch(e) {}
                                                         }}
-                                                        className={`flex items-center justify-between p-2.5 rounded-xl transition cursor-pointer ${
-                                                            isActive 
-                                                                ? 'bg-white dark:bg-slate-700 border-l-4 border-primary shadow-sm' 
-                                                                : 'hover:bg-white dark:hover:bg-slate-700/80 bg-gray-100/50 dark:bg-slate-900/40'
+                                                        className={`flex items-center justify-between p-2.5 rounded-xl transition ${
+                                                            !isUnlocked
+                                                                ? 'opacity-60 cursor-not-allowed bg-gray-100/40 dark:bg-slate-900/20'
+                                                                : isActive 
+                                                                    ? 'bg-white dark:bg-slate-700 border-l-4 border-primary shadow-sm cursor-pointer' 
+                                                                    : 'hover:bg-white dark:hover:bg-slate-700/80 bg-gray-100/50 dark:bg-slate-900/40 cursor-pointer'
                                                         }`}
                                                     >
                                                         <div className="flex items-center gap-3 min-w-0 pr-2">
@@ -2379,11 +2416,13 @@ ${customAdminPrompt}
                                                                 <i className="fa-solid fa-circle-play text-primary text-sm animate-pulse shrink-0"></i>
                                                             ) : isCompleted ? (
                                                                 <i className="fa-solid fa-circle-check text-emerald-500 text-sm shrink-0"></i>
+                                                            ) : !isUnlocked ? (
+                                                                <i className="fa-solid fa-lock text-gray-400 dark:text-gray-500 text-xs shrink-0"></i>
                                                             ) : (
                                                                 <i className="fa-solid fa-circle-play text-gray-400 text-xs shrink-0"></i>
                                                             )}
                                                             <div className="min-w-0">
-                                                                <p className={`text-xs font-bold truncate ${isActive ? 'text-primary' : isCompleted ? 'text-emerald-600 dark:text-emerald-400' : 'text-dark dark:text-white'}`}>
+                                                                <p className={`text-xs font-bold truncate ${isActive ? 'text-primary' : isCompleted ? 'text-emerald-600 dark:text-emerald-400' : !isUnlocked ? 'text-gray-400 dark:text-gray-500' : 'text-dark dark:text-white'}`}>
                                                                     {lesson.title}
                                                                 </p>
                                                                 <div className="flex items-center gap-2 mt-0.5 text-[10px] text-gray-500">
@@ -2393,12 +2432,16 @@ ${customAdminPrompt}
                                                             </div>
                                                         </div>
                                                         {isCompleted ? (
-                                                            <span className="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-md font-bold shrink-0">
-                                                                ✓ ተጠናቋል
+                                                            <span className="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-md font-bold shrink-0 flex items-center gap-1">
+                                                                <i className="fa-solid fa-check"></i> ተጠናቋል
                                                             </span>
                                                         ) : isActive ? (
                                                             <span className="text-[10px] bg-primary/20 text-dark dark:text-primary px-2 py-0.5 rounded-md font-bold shrink-0 animate-pulse">
                                                                 እየታየ ነው
+                                                            </span>
+                                                        ) : !isUnlocked ? (
+                                                            <span className="text-[10px] bg-gray-200 dark:bg-slate-700 text-gray-500 dark:text-gray-400 px-2 py-0.5 rounded-md font-bold shrink-0 flex items-center gap-1">
+                                                                <i className="fa-solid fa-lock text-[9px]"></i> ተቆልፏል
                                                             </span>
                                                         ) : null}
                                                     </div>
