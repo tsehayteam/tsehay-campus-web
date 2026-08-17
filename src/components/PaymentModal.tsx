@@ -139,7 +139,10 @@ export default function PaymentModal({ course, onClose }: any) {
                         <div className="space-y-3 mb-5">
                             
                             {/* Option 1: LakiPay */}
-                            <label className={`payment-option flex items-center justify-between p-3.5 sm:p-4.5 rounded-2xl border cursor-pointer transition-all ${paymethod === 'lakipay' ? 'border-amber-500 bg-amber-500/10 shadow-lg ring-2 ring-amber-500/40 scale-[1.01]' : 'border-gray-800 bg-[#121e3d] hover:bg-[#16254a]'}`}>
+                            <label 
+                              style={{ animation: 'optionPop 0.45s cubic-bezier(0.16, 1, 0.3, 1) 0.08s backwards' }}
+                              className={`payment-option flex items-center justify-between p-3.5 sm:p-4.5 rounded-2xl border cursor-pointer transition-all ${paymethod === 'lakipay' ? 'border-amber-500 bg-amber-500/10 shadow-lg ring-2 ring-amber-500/40 scale-[1.01]' : 'border-gray-800 bg-[#121e3d] hover:bg-[#16254a]'}`}
+                            >
                                 <div className="flex items-center gap-3 min-w-0 pr-2">
                                     <input 
                                       type="radio" 
@@ -162,7 +165,10 @@ export default function PaymentModal({ course, onClose }: any) {
                             </label>
 
                             {/* Option 2: PayPal */}
-                            <label className={`payment-option flex items-center justify-between p-3.5 sm:p-4.5 rounded-2xl border cursor-pointer transition-all ${paymethod === 'paypal' ? 'border-blue-500 bg-blue-500/10 shadow-lg ring-2 ring-blue-500/40 scale-[1.01]' : 'border-gray-800 bg-[#121e3d] hover:bg-[#16254a]'}`}>
+                            <label 
+                              style={{ animation: 'optionPop 0.45s cubic-bezier(0.16, 1, 0.3, 1) 0.18s backwards' }}
+                              className={`payment-option flex items-center justify-between p-3.5 sm:p-4.5 rounded-2xl border cursor-pointer transition-all ${paymethod === 'paypal' ? 'border-blue-500 bg-blue-500/10 shadow-lg ring-2 ring-blue-500/40 scale-[1.01]' : 'border-gray-800 bg-[#121e3d] hover:bg-[#16254a]'}`}
+                            >
                                 <div className="flex items-center gap-3 min-w-0 pr-2">
                                     <input 
                                       type="radio" 
@@ -185,7 +191,10 @@ export default function PaymentModal({ course, onClose }: any) {
                             </label>
 
                             {/* Option 3: NOWPayments (Crypto) */}
-                            <label className={`payment-option flex items-center justify-between p-3.5 sm:p-4.5 rounded-2xl border cursor-pointer transition-all ${paymethod === 'crypto' || paymethod === 'nowpayments' ? 'border-cyan-500 bg-cyan-500/10 shadow-lg ring-2 ring-cyan-500/40 scale-[1.01]' : 'border-gray-800 bg-[#121e3d] hover:bg-[#16254a]'}`}>
+                            <label 
+                              style={{ animation: 'optionPop 0.45s cubic-bezier(0.16, 1, 0.3, 1) 0.28s backwards' }}
+                              className={`payment-option flex items-center justify-between p-3.5 sm:p-4.5 rounded-2xl border cursor-pointer transition-all ${paymethod === 'crypto' || paymethod === 'nowpayments' ? 'border-cyan-500 bg-cyan-500/10 shadow-lg ring-2 ring-cyan-500/40 scale-[1.01]' : 'border-gray-800 bg-[#121e3d] hover:bg-[#16254a]'}`}
+                            >
                                 <div className="flex items-center gap-3 min-w-0 pr-2">
                                     <input 
                                       type="radio" 
@@ -215,9 +224,10 @@ export default function PaymentModal({ course, onClose }: any) {
 
                 {/* Primary Proceed Button */}
                 <button 
+                  style={{ animation: 'optionPop 0.45s cubic-bezier(0.16, 1, 0.3, 1) 0.36s backwards' }}
                   onClick={handlePayment} 
                   disabled={isPaying} 
-                  className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-4 rounded-2xl text-base transition-all shadow-lg hover:shadow-amber-500/25 flex items-center justify-center gap-2 group disabled:opacity-70 cursor-pointer"
+                  className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-4 rounded-2xl text-base transition-all shadow-lg hover:shadow-amber-500/25 flex items-center justify-center gap-2 group disabled:opacity-70 cursor-pointer active:scale-[0.98]"
                 >
                     {isPaying ? (
                         <>
@@ -235,8 +245,22 @@ export default function PaymentModal({ course, onClose }: any) {
         </div>
         <style dangerouslySetInnerHTML={{__html: `
             @keyframes modalPop {
-                0% { opacity: 0; transform: scale(0.95); }
-                100% { opacity: 1; transform: scale(1); }
+                0% { opacity: 0; transform: scale(0.92) translateY(12px); }
+                100% { opacity: 1; transform: scale(1) translateY(0); }
+            }
+            @keyframes optionPop {
+                0% { 
+                    opacity: 0; 
+                    transform: translateY(22px) scale(0.94); 
+                }
+                60% {
+                    opacity: 1;
+                    transform: translateY(-2px) scale(1.01);
+                }
+                100% { 
+                    opacity: 1; 
+                    transform: translateY(0) scale(1); 
+                }
             }
         `}} />
     </div>
