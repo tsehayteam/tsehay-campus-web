@@ -96,7 +96,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { prompt } = reqBody;
+    const { prompt, courseContext } = reqBody;
     
     if (!prompt) {
         return NextResponse.json({ reply: getSmartFallbackReply("") }, { status: 200 });
@@ -108,8 +108,20 @@ export async function POST(req: Request) {
         process.env.GEMINI_API_KEY_3
     ].filter(Boolean) as string[];
 
-    const DEFAULT_SYSTEM_INSTRUCTION = `You are "Tsehay AI", the official virtual guide and AI Teaching Assistant for "Tsehay Campus" (tsehaycampus.com). Your persona is friendly, highly professional, encouraging, and focused on helping students succeed.
+    let contextualCourseSection = '';
+    if (courseContext) {
+        contextualCourseSection = `
+[CURRENT LESSON & COURSE CONTEXT]
+- Course Title: ${courseContext.courseTitle || 'Tsehay Campus Course'}
+- Active Lesson: ${courseContext.lessonTitle || 'Lesson'}
+- Lesson Overview / Description: ${courseContext.lessonDesc || 'In-depth practical lesson.'}
+${courseContext.courseAiPrompt ? `- Custom Course AI Guidance (From Instructor): ${courseContext.courseAiPrompt}` : ''}
+${courseContext.isSummaryRequest ? '- TASK: Provide a clear, structured 3-bullet Key Takeaway summary of this lesson with practical action points in encouraging Amharic.' : '- TASK: Answer the student\'s question directly in the context of this specific lesson with real-world examples.'}
+`;
+    }
 
+    const DEFAULT_SYSTEM_INSTRUCTION = `You are "Tsehay AI", the official virtual guide and AI Teaching Assistant for "Tsehay Campus" (tsehaycampus.com). Your persona is friendly, highly professional, encouraging, and focused on helping students succeed.
+${contextualCourseSection}
 [STRICT CONVERSATION FLOW RULES]
 - NEVER repeat your welcome, greeting, or platform introduction message after the very first turn of the conversation.
 - Do not output a static, pre-written, or repetitive welcome template for every user message. You must read and dynamically answer the user's specific question.

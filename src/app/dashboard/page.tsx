@@ -163,6 +163,117 @@ export default function StudentDashboard() {
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [currentVideoPlayedFraction, setCurrentVideoPlayedFraction] = useState(0);
 
+  // Enterprise Classroom States
+  const [playbackSpeed, setPlaybackSpeed] = useState(1);
+  const [watermarkPos, setWatermarkPos] = useState({ x: 14, y: 18 });
+  const [resumeToast, setResumeToast] = useState<{ seconds: number; timeStr: string } | null>(null);
+  const playerRef = useRef<any>(null);
+  const [lessonSummary, setLessonSummary] = useState<string | null>(null);
+  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
+  const [showLessonAiModal, setShowLessonAiModal] = useState(false);
+  const [lessonAiQuery, setLessonAiQuery] = useState('');
+  const [lessonAiMessages, setLessonAiMessages] = useState<Array<{ role: 'user' | 'ai'; text: string }>>([]);
+  const [isLessonAiLoading, setIsLessonAiLoading] = useState(false);
+  const [showKnowledgeCheck, setShowKnowledgeCheck] = useState(false);
+  const [knowledgeCheckPassed, setKnowledgeCheckPassed] = useState<Record<string, boolean>>({});
+
+  // Dynamic subtle watermark motion
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const newX = Math.floor(Math.random() * 60) + 10;
+      const newY = Math.floor(Math.random() * 55) + 15;
+      setWatermarkPos({ x: newX, y: newY });
+    }, 12000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Auto-Resume Timestamp Tracker
+  useEffect(() => {
+    if (!activeCourse?.id || !activeLesson?.title) return;
+    setLessonSummary(null);
+    try {
+      const key = `tsehay_resume_${activeCourse.id}_${encodeURIComponent(activeLesson.title)}`;
+      const saved = localStorage.getItem(key);
+      if (saved) {
+        const sec = parseInt(saved, 10);
+        if (sec > 10) {
+          const mins = Math.floor(sec / 60);
+          const remSecs = sec % 60;
+          const timeStr = `${mins.toString().padStart(2, '0')}:${remSecs.toString().padStart(2, '0')}`;
+          setResumeToast({ seconds: sec, timeStr });
+        } else {
+          setResumeToast(null);
+        }
+      } else {
+        setResumeToast(null);
+      }
+    } catch(e) {
+      setResumeToast(null);
+    }
+  }, [activeCourse?.id, activeLesson?.title]);
+
+  const handleGenerateLessonSummary = async () => {
+    if (!activeLesson) return;
+    setIsGeneratingSummary(true);
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: `እባክዎ ለዚህ ትምህርት ("${activeLesson.title}") ቁልፍ የሆኑትን 3 ዋና ዋና ነጥቦች (Key Takeaways) እና ተግባራዊ እርምጃዎችን በአጭሩ አዘጋጅተው ይስጡኝ።`,
+          courseContext: {
+            courseTitle: activeCourse?.title,
+            lessonTitle: activeLesson?.title,
+            lessonDesc: activeLesson?.desc || activeCourse?.desc,
+            courseAiPrompt: activeCourse?.aiPrompt,
+            isSummaryRequest: true
+          }
+        })
+      });
+      const data = await res.json();
+      if (data.reply) {
+        setLessonSummary(data.reply);
+      }
+    } catch (err) {
+      console.error("Summary error:", err);
+    } finally {
+      setIsGeneratingSummary(false);
+    }
+  };
+
+  const handleAskLessonAi = async (customPrompt?: string) => {
+    const queryText = customPrompt || lessonAiQuery;
+    if (!queryText.trim() || isLessonAiLoading) return;
+
+    const userMsg = { role: 'user' as const, text: queryText };
+    setLessonAiMessages(prev => [...prev, userMsg]);
+    setLessonAiQuery('');
+    setIsLessonAiLoading(true);
+
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: queryText,
+          courseContext: {
+            courseTitle: activeCourse?.title,
+            lessonTitle: activeLesson?.title,
+            lessonDesc: activeLesson?.desc || activeCourse?.desc,
+            courseAiPrompt: activeCourse?.aiPrompt,
+            isLessonQuery: true
+          }
+        })
+      });
+      const data = await res.json();
+      setLessonAiMessages(prev => [...prev, { role: 'ai', text: data.reply || 'ይቅርታ፣ ማግኘት አልቻልኩም።' }]);
+    } catch (err) {
+      setLessonAiMessages(prev => [...prev, { role: 'ai', text: 'የኔትወርክ ችግር አጋጥሟል። እባክዎ እንደገና ይሞክሩ።' }]);
+    } finally {
+      setIsLessonAiLoading(false);
+    }
+  };
+
   useEffect(() => {
     // Fetch courses for the student
     const fetchPurchasedCourses = async () => {
@@ -1212,7 +1323,66 @@ ${customAdminPrompt}
                 <div className="lg:col-span-2 xl:col-span-3 flex flex-col gap-6">
                     
                     {/* Cinematic Video Player */}
-                    <div className="bg-dark rounded-2xl overflow-hidden shadow-2xl relative border border-gray-800 aspect-video flex items-center justify-center">
+                    <div className="bg-dark rounded-2xl overflow-hidden shadow-2xl relative border border-gray-800 aspect-video flex items-center justify-center group/player">
+                        
+                        {/* Dynamic Translucent Anti-Piracy Watermark */}
+                        {user && (
+                            <div 
+                                className="absolute z-30 pointer-events-none text-[10px] sm:text-xs font-mono font-bold text-white/20 select-none transition-all duration-1000 tracking-wider"
+                                style={{ top: `${watermarkPos.y}%`, left: `${watermarkPos.x}%` }}
+                            >
+                                <span className="bg-black/30 px-2 py-0.5 rounded backdrop-blur-[1px] border border-white/5">
+                                    {user.email || user.displayName || user.uid} • Tsehay Campus
+                                </span>
+                            </div>
+                        )}
+
+                        {/* Auto-Resume Floating Toast */}
+                        {resumeToast && (
+                            <div className="absolute top-4 left-4 z-40 bg-slate-900/90 backdrop-blur-md text-white border border-amber-400/40 px-3.5 py-2 rounded-xl shadow-xl flex items-center gap-3 animate-in slide-in-from-top duration-300">
+                                <i className="fa-solid fa-clock-rotate-left text-amber-400 text-sm"></i>
+                                <div className="text-xs">
+                                    <span className="font-bold block text-[11px] text-amber-300">ያቆሙበት ደቂቃ፦ {resumeToast.timeStr}</span>
+                                    <span className="text-[10px] text-gray-300">ከዚህ ሰኮንድ ይቀጥሉ?</span>
+                                </div>
+                                <button 
+                                    onClick={() => {
+                                        if (playerRef.current && typeof playerRef.current.seekTo === 'function') {
+                                            playerRef.current.seekTo(resumeToast.seconds);
+                                        }
+                                        setResumeToast(null);
+                                    }}
+                                    className="bg-amber-400 hover:bg-amber-300 text-slate-950 font-black px-2.5 py-1 rounded-lg text-[11px] transition cursor-pointer"
+                                >
+                                    ይቀጥሉ
+                                </button>
+                                <button 
+                                    onClick={() => setResumeToast(null)}
+                                    className="text-gray-400 hover:text-white text-xs px-1"
+                                >
+                                    ✕
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Playback Speed Quick Selector (Top Right) */}
+                        <div className="absolute top-4 right-4 z-30 flex items-center gap-1 bg-black/70 backdrop-blur-md p-1 rounded-xl border border-white/10 shadow-lg opacity-80 group-hover/player:opacity-100 transition-opacity">
+                            {[0.75, 1, 1.25, 1.5, 2].map((spd) => (
+                                <button
+                                    key={spd}
+                                    onClick={() => setPlaybackSpeed(spd)}
+                                    className={`px-2 py-0.5 rounded-lg text-[10px] sm:text-xs font-black transition cursor-pointer ${
+                                        playbackSpeed === spd 
+                                            ? 'bg-primary text-slate-950 shadow-xs' 
+                                            : 'text-gray-300 hover:text-white hover:bg-white/10'
+                                    }`}
+                                    title={`${spd}x Playback Speed`}
+                                >
+                                    {spd}x
+                                </button>
+                            ))}
+                        </div>
+
                         {/* Video End Course Rating Overlay */}
                         {isCourseCompleted && activeCourse?.id && !ratedCourses[activeCourse.id] && !(typeof window !== 'undefined' && localStorage.getItem(`rated_course_${activeCourse.id}`)) && !dismissedRatingOverlay[activeCourse.id] && (
                           <div className="absolute inset-0 z-40 bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-300">
@@ -1280,14 +1450,21 @@ ${customAdminPrompt}
                             } else {
                                 return (
                                     <ReactPlayer
+                                        ref={playerRef}
                                         key={cleanUrl}
                                         url={cleanUrl}
                                         width="100%"
                                         height="100%"
                                         controls={true}
                                         playing={true}
-                                        onProgress={({ played }: { played: number }) => {
+                                        playbackRate={playbackSpeed}
+                                        onProgress={({ played, playedSeconds }: { played: number; playedSeconds: number }) => {
                                             setCurrentVideoPlayedFraction(played);
+                                            if (activeCourse?.id && activeLesson?.title && playedSeconds > 5) {
+                                                try {
+                                                    localStorage.setItem(`tsehay_resume_${activeCourse.id}_${encodeURIComponent(activeLesson.title)}`, Math.floor(playedSeconds).toString());
+                                                } catch(e) {}
+                                            }
                                             if (played >= 0.5) {
                                                 handleVideoProgress50();
                                             }
@@ -1394,11 +1571,17 @@ ${customAdminPrompt}
                                 <i className="fa-solid fa-list-ol text-primary"></i> <span>ትምህርቶች (Syllabus)</span>
                             </button>
                             <button onClick={() => setActiveTab('overview')} className={`px-4 sm:px-6 py-3.5 sm:py-4 font-heading text-xs sm:text-[15px] font-bold whitespace-nowrap shrink-0 ${activeTab === 'overview' ? 'text-dark dark:text-white border-b-2 border-secondary dark:border-primary' : 'text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white'}`}>{t('overview')}</button>
+                            <button onClick={() => setActiveTab('resources')} className={`px-4 sm:px-6 py-3.5 sm:py-4 font-heading text-xs sm:text-[15px] whitespace-nowrap flex items-center gap-1.5 shrink-0 ${activeTab === 'resources' ? 'font-bold text-dark dark:text-white border-b-2 border-secondary dark:border-primary' : 'text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white'}`}>
+                                <i className="fa-solid fa-folder-open text-amber-500"></i> <span>ፋይሎች (Resources)</span>
+                            </button>
                             <button onClick={() => setActiveTab('notes')} className={`px-4 sm:px-6 py-3.5 sm:py-4 font-heading text-xs sm:text-[15px] whitespace-nowrap flex items-center gap-1.5 shrink-0 ${activeTab === 'notes' ? 'font-bold text-dark dark:text-white border-b-2 border-secondary dark:border-primary' : 'text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white'}`}>
                                 <i className="fa-regular fa-pen-to-square"></i> {t('notes')}
                             </button>
                             <button onClick={() => setActiveTab('qa')} className={`px-4 sm:px-6 py-3.5 sm:py-4 font-heading text-xs sm:text-[15px] whitespace-nowrap flex items-center gap-1.5 shrink-0 ${activeTab === 'qa' ? 'font-bold text-dark dark:text-white border-b-2 border-secondary dark:border-primary' : 'text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white'}`}>
                                 {t('qa')} <i className="fa-regular fa-comments"></i>
+                            </button>
+                            <button onClick={() => setActiveTab('community')} className={`px-4 sm:px-6 py-3.5 sm:py-4 font-heading text-xs sm:text-[15px] whitespace-nowrap flex items-center gap-1.5 shrink-0 ${activeTab === 'community' ? 'font-bold text-dark dark:text-white border-b-2 border-secondary dark:border-primary' : 'text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white'}`}>
+                                <i className="fa-brands fa-telegram text-[#26A5E4]"></i> <span>VIP ማህበረሰብ</span>
                             </button>
                             <button onClick={() => setActiveTab('quiz')} className={`px-4 sm:px-6 py-3.5 sm:py-4 font-heading text-xs sm:text-[15px] whitespace-nowrap flex items-center gap-1.5 shrink-0 ${activeTab === 'quiz' ? 'font-bold text-dark dark:text-white border-b-2 border-secondary dark:border-primary' : 'text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white'}`}>
                                 {t('quiz')} <i className="fa-solid fa-list-check"></i>
@@ -1502,6 +1685,80 @@ ${customAdminPrompt}
 
                             {activeTab === 'overview' && (
                                 <>
+                                    {/* Contextual AI Quick Bar */}
+                                    <div className="bg-gradient-to-r from-amber-500/10 via-primary/10 to-amber-500/5 dark:from-amber-500/20 dark:via-primary/20 dark:to-transparent p-4 sm:p-5 rounded-2xl border border-amber-500/30 mb-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-sm">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center text-lg font-black shrink-0 shadow-md">
+                                                <i className="fa-solid fa-wand-magic-sparkles"></i>
+                                            </div>
+                                            <div>
+                                                <h4 className="font-black text-sm text-dark dark:text-white flex items-center gap-2">
+                                                    Tsehay AI የትምህርት ረዳት 
+                                                    <span className="text-[10px] bg-primary text-slate-950 px-2 py-0.5 rounded-full font-extrabold uppercase">Smart Tutor</span>
+                                                </h4>
+                                                <p className="text-xs text-gray-600 dark:text-gray-300 mt-0.5">ስለዚህ ትምህርት ፈጣን ማጠቃለያ ወይም ማብራሪያ ያግኙ</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-2 w-full md:w-auto flex-wrap">
+                                            <button
+                                                onClick={handleGenerateLessonSummary}
+                                                disabled={isGeneratingSummary}
+                                                className="flex-1 md:flex-initial bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 hover:border-primary text-dark dark:text-white px-4 py-2.5 rounded-xl text-xs font-bold transition shadow-xs flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
+                                            >
+                                                {isGeneratingSummary ? (
+                                                    <>
+                                                        <div className="w-3.5 h-3.5 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                                                        <span>ማጠቃለያ በማዘጋጀት ላይ...</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <i className="fa-solid fa-bolt text-amber-500"></i>
+                                                        <span>የትምህርቱ ማጠቃለያ (AI Summary)</span>
+                                                    </>
+                                                )}
+                                            </button>
+                                            <button
+                                                onClick={() => setShowLessonAiModal(true)}
+                                                className="flex-1 md:flex-initial bg-primary hover:bg-yellow-400 text-slate-950 px-4 py-2.5 rounded-xl text-xs font-black transition shadow-md flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+                                            >
+                                                <i className="fa-solid fa-comments"></i>
+                                                <span>ስለዚህ ትምህርት AIን ጠይቅ</span>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Render AI Summary Box if Generated */}
+                                    {lessonSummary && (
+                                        <div className="bg-amber-50/50 dark:bg-slate-900/80 p-5 rounded-2xl border border-amber-400/40 shadow-md mb-8 animate-in fade-in duration-300">
+                                            <div className="flex items-center justify-between mb-3 border-b border-amber-400/20 pb-3">
+                                                <div className="flex items-center gap-2">
+                                                    <i className="fa-solid fa-sparkles text-amber-500"></i>
+                                                    <h4 className="font-black text-sm text-dark dark:text-white">የትምህርቱ ዋና ዋና ነጥቦች (AI Key Takeaways)</h4>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        onClick={() => {
+                                                            navigator.clipboard.writeText(lessonSummary);
+                                                            alert('ማጠቃለያው ኮፒ ተደርጓል!');
+                                                        }}
+                                                        className="text-xs bg-white dark:bg-slate-800 px-3 py-1 rounded-lg border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-gray-300 hover:text-primary transition"
+                                                    >
+                                                        <i className="fa-solid fa-copy mr-1"></i> ኮፒ
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setLessonSummary(null)}
+                                                        className="text-gray-400 hover:text-white text-xs px-1"
+                                                    >
+                                                        ✕
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <p className="text-sm text-gray-800 dark:text-gray-200 leading-relaxed font-body whitespace-pre-wrap">
+                                                {lessonSummary}
+                                            </p>
+                                        </div>
+                                    )}
+
                                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8 pb-8 border-b border-gray-100 dark:border-slate-700">
                                         <div className="flex items-center gap-4">
                                             <div className="w-16 h-16 rounded-full border-2 border-gray-200 dark:border-slate-600 shadow-md bg-blue-50 flex items-center justify-center text-secondary text-2xl overflow-hidden shrink-0">
@@ -1579,41 +1836,108 @@ ${customAdminPrompt}
                                     <p className="text-gray-600 dark:text-gray-300 font-body leading-relaxed text-base mb-6">
                                         {activeCourse?.desc || "ስለዚህ ኮርስ ዝርዝር መረጃ የለም።"}
                                     </p>
-                                    
-                                    <div className="mt-6 border-t border-gray-100 dark:border-slate-700 pt-6">
-                                        <h3 className="font-black text-lg text-dark dark:text-white mb-4 font-heading">ዳውንሎድ የሚደረጉ ማቴሪያሎች</h3>
-                                        <div className="flex flex-wrap gap-4">
-                                            {activeCourse?.pdfUrl || activeLesson?.pdf ? (
-                                                <a 
+                                </>
+                            )}
+
+                            {activeTab === 'resources' && (
+                                <div className="space-y-6">
+                                    <div className="bg-primary/10 dark:bg-primary/20 p-5 rounded-2xl border border-primary/30 flex items-center justify-between flex-wrap gap-4">
+                                        <div>
+                                            <h3 className="font-heading font-black text-lg text-dark dark:text-white flex items-center gap-2">
+                                                <i className="fa-solid fa-folder-open text-primary"></i>
+                                                <span>የኮርስ ፋይሎች እና ማቴሪያሎች (Resources & Assets)</span>
+                                            </h3>
+                                            <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">ለተግባራዊ ልምምድ የሚያግዙ PDF ማቴሪያሎች፣ ቴምፕሌቶች እና ፋይሎች</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {/* Main Course PDF */}
+                                        <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-gray-200 dark:border-slate-700 shadow-sm flex flex-col justify-between hover:border-primary/50 transition">
+                                            <div className="flex items-start gap-3.5 mb-4">
+                                                <div className="w-12 h-12 rounded-xl bg-red-100 dark:bg-red-950/40 text-red-500 flex items-center justify-center text-2xl shrink-0 shadow-xs">
+                                                    <i className="fa-solid fa-file-pdf"></i>
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-black text-sm text-dark dark:text-white leading-tight">{activeCourse?.pdfTitle || 'የኮርስ መማሪያ ሰነድ (Course Manual PDF)'}</h4>
+                                                    <p className="text-xs text-gray-500 mt-1">ሙሉ የትምህርቱ የተዘጋጀ ማስታወሻ እና መመሪያ</p>
+                                                </div>
+                                            </div>
+                                            {activeCourse?.pdfUrl ? (
+                                                <a
                                                     href={(() => {
-                                                        const url = activeCourse?.pdfUrl || activeLesson?.pdf;
-                                                        if (!url) return '#';
+                                                        const url = activeCourse.pdfUrl;
                                                         const match = url.match(/(?:file\/d\/|id=|\/d\/)([a-zA-Z0-9_-]{20,})/);
                                                         if (match && match[1]) {
-                                                          return `https://drive.google.com/file/d/${match[1]}/view?usp=sharing`;
+                                                            return `https://drive.google.com/file/d/${match[1]}/view?usp=sharing`;
                                                         }
                                                         return url;
-                                                    })()} 
-                                                    target="_blank" 
+                                                    })()}
+                                                    target="_blank"
                                                     rel="noopener noreferrer"
-                                                    className="flex items-center gap-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 px-5 py-3.5 rounded-xl border border-red-200 dark:border-red-800 font-bold text-sm hover:bg-red-100 dark:hover:bg-red-900/40 transition shadow-sm group"
+                                                    className="w-full bg-red-50 dark:bg-red-950/30 hover:bg-red-500 hover:text-white text-red-600 dark:text-red-400 font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 transition"
                                                 >
-                                                    <i className="fa-solid fa-file-pdf text-xl group-hover:scale-110 transition-transform"></i>
-                                                    <div>
-                                                        <p className="font-bold">{activeCourse?.pdfTitle || 'የኮርስ ማቴሪያል (Course PDF)'}</p>
-                                                        <p className="text-xs opacity-75 font-normal">ለማየት / ለማውረድ እዚህ ይጫኑ (Click to View / Download)</p>
-                                                    </div>
-                                                    <i className="fa-solid fa-download ml-2 text-xs opacity-60"></i>
+                                                    <i className="fa-solid fa-download"></i>
+                                                    <span>PDF አውርድ / ይመልከቱ (Download)</span>
                                                 </a>
                                             ) : (
-                                                <div className="text-sm text-gray-500 italic bg-gray-50 dark:bg-slate-800/50 p-4 rounded-xl border border-gray-100 dark:border-slate-700 w-full">
-                                                    <i className="fa-solid fa-folder-open mr-2 text-gray-400"></i>
-                                                    ለዚህ ኮርስ እስካሁን የተጫነ PDF ማቴሪያል የለም (No PDF materials uploaded for this course yet).
+                                                <div className="text-xs text-gray-400 italic bg-gray-50 dark:bg-slate-800 p-2.5 rounded-xl text-center">
+                                                    ማቴሪያሉ በቅርቡ ይጨመራል
                                                 </div>
                                             )}
                                         </div>
+
+                                        {/* Practical Worksheets & Assets */}
+                                        <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-gray-200 dark:border-slate-700 shadow-sm flex flex-col justify-between hover:border-primary/50 transition">
+                                            <div className="flex items-start gap-3.5 mb-4">
+                                                <div className="w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-950/40 text-amber-600 flex items-center justify-center text-2xl shrink-0 shadow-xs">
+                                                    <i className="fa-solid fa-layer-group"></i>
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-black text-sm text-dark dark:text-white leading-tight">የተግባር ልምምድ ፋይሎች (Practice Assets)</h4>
+                                                    <p className="text-xs text-gray-500 mt-1">የትምህርቱ ማስፈንጠሪያዎች፣ ቴምፕሌቶች እና የኮድ ናሙናዎች</p>
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={() => setActiveTab('overview')}
+                                                className="w-full bg-primary/10 dark:bg-primary/20 hover:bg-primary hover:text-slate-950 text-dark dark:text-primary font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 transition cursor-pointer"
+                                            >
+                                                <i className="fa-solid fa-arrow-up-right-from-square"></i>
+                                                <span>የትምህርቱን ማብራሪያ ይመልከቱ</span>
+                                            </button>
+                                        </div>
                                     </div>
-                                </>
+                                </div>
+                            )}
+
+                            {activeTab === 'community' && (
+                                <div className="space-y-6">
+                                    <div className="bg-gradient-to-br from-[#26A5E4]/15 via-blue-900/10 to-slate-900 p-6 sm:p-8 rounded-3xl border border-[#26A5E4]/30 shadow-lg relative overflow-hidden">
+                                        <div className="max-w-xl relative z-10">
+                                            <span className="bg-[#26A5E4] text-white text-[11px] font-black px-3.5 py-1 rounded-full uppercase tracking-wider shadow-xs mb-3 inline-block">
+                                                VIP Community
+                                            </span>
+                                            <h3 className="text-xl sm:text-2xl font-black text-dark dark:text-white font-heading mb-2">
+                                                የፀሐይ ካምፓስ የተማሪዎች VIP ማህበረሰብ
+                                            </h3>
+                                            <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed mb-6">
+                                                ከተመዘገቡ ተማሪዎች፣ ከአስተማሪው እና ከቴክኖሎጂ ባለሙያዎች ጋር በቀጥታ ይገናኙ፣ ጥያቄ ይጠይቁ፣ አዳዲስ የገበያ መረጃዎችን እና የኔትወርኪንግ እድሎችን ያግኙ።
+                                            </p>
+                                            <a
+                                                href="https://t.me/TsehayTeam"
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-flex items-center gap-2.5 bg-[#26A5E4] hover:bg-[#1f8ec4] text-white font-black px-6 py-3.5 rounded-2xl text-sm transition shadow-lg shadow-[#26A5E4]/30 active:scale-95 transform hover:-translate-y-0.5"
+                                            >
+                                                <i className="fa-brands fa-telegram text-lg"></i>
+                                                <span>ወደ VIP ቴሌግራም ግሩፕ ይቀላቀሉ (Join VIP Telegram)</span>
+                                            </a>
+                                        </div>
+                                        <div className="absolute -bottom-6 -right-6 text-[#26A5E4]/10 text-9xl pointer-events-none">
+                                            <i className="fa-brands fa-telegram"></i>
+                                        </div>
+                                    </div>
+                                </div>
                             )}
                             
                             {activeTab === 'notes' && (
@@ -2366,6 +2690,103 @@ ${customAdminPrompt}
           }
         }}
       />
+
+      {/* In-Lesson Contextual AI Tutor Modal */}
+      {showLessonAiModal && (
+          <div className="fixed inset-0 z-[10000] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+              <div className="bg-slate-900 border border-slate-700 text-white w-full max-w-xl rounded-3xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden animate-in zoom-in-95 duration-200">
+                  {/* Header */}
+                  <div className="p-4 sm:p-5 border-b border-slate-800 bg-slate-950 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-2xl bg-amber-400 text-slate-950 flex items-center justify-center text-lg font-black shadow-md">
+                              <i className="fa-solid fa-robot"></i>
+                          </div>
+                          <div>
+                              <h4 className="font-black text-sm sm:text-base">ስለዚህ ትምህርት AIን ይጠይቁ</h4>
+                              <p className="text-[11px] text-amber-400 font-bold truncate max-w-xs sm:max-w-sm">
+                                  {activeLesson?.title || activeCourse?.title}
+                              </p>
+                          </div>
+                      </div>
+                      <button
+                          onClick={() => setShowLessonAiModal(false)}
+                          className="text-gray-400 hover:text-white p-2 rounded-full hover:bg-slate-800 text-lg transition cursor-pointer"
+                      >
+                          ✕
+                      </button>
+                  </div>
+
+                  {/* Chat Body */}
+                  <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-[260px] max-h-[400px]">
+                      {lessonAiMessages.length === 0 ? (
+                          <div className="text-center py-8 text-gray-400 space-y-3">
+                              <i className="fa-solid fa-wand-magic-sparkles text-3xl text-amber-400 animate-pulse"></i>
+                              <p className="text-xs sm:text-sm font-bold">ስለዚህ ሌሰን ያልገባዎትን ነገር ወይም ጥያቄ ይጠይቁኝ!</p>
+                              <div className="flex flex-wrap gap-2 justify-center pt-2">
+                                  <button
+                                      onClick={() => handleAskLessonAi(`ይህንን ትምህርት ("${activeLesson?.title}") በምሳሌ በአጭሩ አስረዳኝ።`)}
+                                      className="text-[11px] bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 px-3 py-1.5 rounded-full transition cursor-pointer"
+                                  >
+                                      💡 በምሳሌ አስረዳኝ
+                                  </button>
+                                  <button
+                                      onClick={() => handleAskLessonAi(`በዚህ ሌሰን ላይ የተማርነውን በገቢ ለመቀየር ምን ምን እርምጃዎችን መውሰድ አለብኝ?`)}
+                                      className="text-[11px] bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 px-3 py-1.5 rounded-full transition cursor-pointer"
+                                  >
+                                      🚀 ተግባራዊ እርምጃዎች
+                                  </button>
+                              </div>
+                          </div>
+                      ) : (
+                          lessonAiMessages.map((msg, idx) => (
+                              <div
+                                  key={idx}
+                                  className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                              >
+                                  <div
+                                      className={`max-w-[85%] p-3.5 rounded-2xl text-xs sm:text-sm leading-relaxed ${
+                                          msg.role === 'user'
+                                              ? 'bg-amber-500 text-slate-950 font-bold rounded-tr-none'
+                                              : 'bg-slate-800 text-gray-100 border border-slate-700 rounded-tl-none font-body whitespace-pre-wrap'
+                                      }`}
+                                  >
+                                      {msg.text}
+                                  </div>
+                              </div>
+                          ))
+                      )}
+                      {isLessonAiLoading && (
+                          <div className="flex justify-start">
+                              <div className="bg-slate-800 text-amber-400 p-3 rounded-2xl rounded-tl-none text-xs flex items-center gap-2 border border-slate-700">
+                                  <div className="w-3.5 h-3.5 border-2 border-amber-400 border-t-transparent rounded-full animate-spin"></div>
+                                  <span>Tsehay AI እያሰላሰለ ነው...</span>
+                              </div>
+                          </div>
+                      )}
+                  </div>
+
+                  {/* Input Bar */}
+                  <div className="p-3 bg-slate-950 border-t border-slate-800 flex items-center gap-2">
+                      <input
+                          type="text"
+                          value={lessonAiQuery}
+                          onChange={(e) => setLessonAiQuery(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === 'Enter') handleAskLessonAi(); }}
+                          placeholder="ጥያቄዎን እዚህ ይፃፉ..."
+                          className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white placeholder-gray-500 outline-none focus:border-amber-400"
+                      />
+                      <button
+                          onClick={() => handleAskLessonAi()}
+                          disabled={isLessonAiLoading || !lessonAiQuery.trim()}
+                          className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-black px-4 py-2.5 rounded-xl text-xs transition disabled:opacity-50 flex items-center gap-1.5 cursor-pointer active:scale-95"
+                      >
+                          <span>ላክ</span>
+                          <i className="fa-solid fa-paper-plane text-xs"></i>
+                      </button>
+                  </div>
+              </div>
+          </div>
+      )}
     </div>
   );
 }
