@@ -6,6 +6,7 @@ import { doc, setDoc, serverTimestamp, arrayUnion } from 'firebase/firestore';
 
 export default function PaymentModal({ course, onClose }: any) {
   const [paymethod, setPaymethod] = useState('lakipay');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [isPaying, setIsPaying] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
@@ -61,7 +62,7 @@ export default function PaymentModal({ course, onClose }: any) {
           title: course.title,
           price: course.price,
           userEmail: user?.email || 'student@example.com',
-          phoneNumber: user?.phoneNumber || '',
+          phoneNumber: phoneNumber || user?.phoneNumber || '',
           userId: user?.uid || 'anonymous',
           paymethod: paymethod,
         })
@@ -139,30 +140,56 @@ export default function PaymentModal({ course, onClose }: any) {
                         <div className="space-y-3 mb-5">
                             
                             {/* Option 1: LakiPay */}
-                            <label 
-                              style={{ animation: 'optionPop 0.45s cubic-bezier(0.16, 1, 0.3, 1) 0.08s backwards' }}
-                              className={`payment-option flex items-center justify-between p-3.5 sm:p-4.5 rounded-2xl border cursor-pointer transition-all ${paymethod === 'lakipay' ? 'border-amber-500 bg-amber-500/10 shadow-lg ring-2 ring-amber-500/40 scale-[1.01]' : 'border-gray-800 bg-[#121e3d] hover:bg-[#16254a]'}`}
-                            >
-                                <div className="flex items-center gap-3 min-w-0 pr-2">
-                                    <input 
-                                      type="radio" 
-                                      name="paymethod" 
-                                      value="lakipay" 
-                                      checked={paymethod === 'lakipay'} 
-                                      onChange={() => setPaymethod('lakipay')} 
-                                      className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500 focus:ring-amber-500 accent-amber-500 cursor-pointer shrink-0" 
-                                    />
-                                    <div className="min-w-0">
-                                        <span className="font-black text-white text-base sm:text-lg block leading-tight">LakiPay</span>
-                                        <span className="text-[11px] sm:text-xs text-amber-400 font-bold block mt-0.5">For local payment</span>
+                            <div className="flex flex-col gap-2">
+                                <label 
+                                  style={{ animation: 'optionPop 0.45s cubic-bezier(0.16, 1, 0.3, 1) 0.08s backwards' }}
+                                  className={`payment-option flex items-center justify-between p-3.5 sm:p-4.5 rounded-2xl border cursor-pointer transition-all ${paymethod === 'lakipay' ? 'border-amber-500 bg-amber-500/10 shadow-lg ring-2 ring-amber-500/40 scale-[1.01]' : 'border-gray-800 bg-[#121e3d] hover:bg-[#16254a]'}`}
+                                >
+                                    <div className="flex items-center gap-3 min-w-0 pr-2">
+                                        <input 
+                                          type="radio" 
+                                          name="paymethod" 
+                                          value="lakipay" 
+                                          checked={paymethod === 'lakipay'} 
+                                          onChange={() => setPaymethod('lakipay')} 
+                                          className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500 focus:ring-amber-500 accent-amber-500 cursor-pointer shrink-0" 
+                                        />
+                                        <div className="min-w-0">
+                                            <span className="font-black text-white text-base sm:text-lg block leading-tight">LakiPay</span>
+                                            <span className="text-[11px] sm:text-xs text-amber-400 font-bold block mt-0.5">For local payment (Telebirr / M-Pesa / CBE)</span>
+                                        </div>
                                     </div>
-                                </div>
-                                <div className="flex items-center shrink-0">
-                                    <div className="bg-white w-28 sm:w-36 h-10 sm:h-11 px-2.5 rounded-xl flex items-center justify-center shadow-md border border-gray-200">
-                                        <img src="/lakipay-logo.svg" alt="LakiPay" className="h-6 sm:h-7 w-auto max-w-full object-contain" />
+                                    <div className="flex items-center shrink-0">
+                                        <div className="bg-white w-28 sm:w-36 h-10 sm:h-11 px-2.5 rounded-xl flex items-center justify-center shadow-md border border-gray-200">
+                                            <img src="/lakipay-logo.svg" alt="LakiPay" className="h-6 sm:h-7 w-auto max-w-full object-contain" />
+                                        </div>
                                     </div>
-                                </div>
-                            </label>
+                                </label>
+
+                                {paymethod === 'lakipay' && (
+                                    <div className="p-3.5 bg-[#0d1735] rounded-2xl border border-amber-500/30 animate-[fadeIn_0.3s_ease-out]">
+                                        <label className="block text-[11px] font-bold text-amber-400 mb-1.5 flex items-center justify-between">
+                                            <span>የስልክ ቁጥርዎ (Phone Number)</span>
+                                            <span className="text-[10px] text-gray-400 font-normal">አማራጭ (Optional)</span>
+                                        </label>
+                                        <div className="flex items-center gap-2 bg-[#121e3d] rounded-xl border border-gray-700 px-3.5 py-2.5 focus-within:border-amber-400 transition">
+                                            <span className="text-xs font-bold text-amber-400">🇪🇹 +251</span>
+                                            <input
+                                                type="tel"
+                                                value={phoneNumber}
+                                                onChange={(e) => setPhoneNumber(e.target.value.replace(/[^0-9]/g, ''))}
+                                                placeholder="9xxxxxxxx ወይም 7xxxxxxxx"
+                                                className="w-full bg-transparent text-sm text-white placeholder-gray-500 outline-none font-mono"
+                                                maxLength={10}
+                                            />
+                                        </div>
+                                        <p className="text-[10px] text-gray-400 mt-1.5 flex items-center gap-1">
+                                            <i className="fa-solid fa-circle-info text-amber-400"></i>
+                                            <span>ለቴሌብር (09...) ወይም ለኤምፔሳ (07...) ስልክ ቁጥርዎን እዚህ ማስገባት ይችላሉ።</span>
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
 
                             {/* Option 2: PayPal */}
                             <label 
