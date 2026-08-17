@@ -151,7 +151,7 @@ export default function PaymentModal({ course, onClose }: any) {
                                     />
                                     <div className="min-w-0">
                                         <span className="font-black text-white text-base sm:text-lg block leading-tight">LakiPay</span>
-                                        <span className="text-[11px] sm:text-xs text-amber-400 font-bold block mt-0.5">Telebirr / Local Banks</span>
+                                        <span className="text-[11px] sm:text-xs text-amber-400 font-bold block mt-0.5">For local payment</span>
                                     </div>
                                 </div>
                                 <div className="flex items-center shrink-0">
@@ -174,7 +174,7 @@ export default function PaymentModal({ course, onClose }: any) {
                                     />
                                     <div className="min-w-0">
                                         <span className="font-black text-white text-base sm:text-lg block leading-tight">PayPal</span>
-                                        <span className="text-[11px] sm:text-xs text-blue-400 font-bold block mt-0.5">Cards / International</span>
+                                        <span className="text-[11px] sm:text-xs text-blue-400 font-bold block mt-0.5">For international payments</span>
                                     </div>
                                 </div>
                                 <div className="flex items-center shrink-0">
@@ -184,7 +184,7 @@ export default function PaymentModal({ course, onClose }: any) {
                                 </div>
                             </label>
 
-                            {/* Option 3: NOWPayments */}
+                            {/* Option 3: NOWPayments (Crypto) */}
                             <label className={`payment-option flex items-center justify-between p-3.5 sm:p-4.5 rounded-2xl border cursor-pointer transition-all ${paymethod === 'crypto' || paymethod === 'nowpayments' ? 'border-cyan-500 bg-cyan-500/10 shadow-lg ring-2 ring-cyan-500/40 scale-[1.01]' : 'border-gray-800 bg-[#121e3d] hover:bg-[#16254a]'}`}>
                                 <div className="flex items-center gap-3 min-w-0 pr-2">
                                     <input 
@@ -196,13 +196,13 @@ export default function PaymentModal({ course, onClose }: any) {
                                       className="w-4 h-4 sm:w-5 sm:h-5 text-cyan-500 focus:ring-cyan-500 accent-cyan-500 cursor-pointer shrink-0" 
                                     />
                                     <div className="min-w-0">
-                                        <span className="font-black text-white text-base sm:text-lg block leading-tight">Crypto</span>
-                                        <span className="text-[11px] sm:text-xs text-cyan-400 font-bold block mt-0.5">USDT / BTC / ETH</span>
+                                        <span className="font-black text-white text-base sm:text-lg block leading-tight">NOWPayments</span>
+                                        <span className="text-[11px] sm:text-xs text-cyan-400 font-bold block mt-0.5">For crypto payments</span>
                                     </div>
                                 </div>
                                 <div className="flex items-center shrink-0">
-                                    <div className="bg-white w-28 sm:w-36 h-10 sm:h-11 px-2.5 rounded-xl flex items-center justify-center shadow-md border border-gray-200">
-                                        <img src="/nowpayments-logo.svg" alt="NOWPayments" className="h-6 sm:h-7 w-auto max-w-full object-contain" />
+                                    <div className="bg-white w-28 sm:w-36 h-10 sm:h-11 px-2 rounded-xl flex items-center justify-center shadow-md border border-gray-200">
+                                        <img src="/crypto-logo.svg" alt="Bitcoin, Ethereum, Solana" className="h-7 sm:h-8 w-auto max-w-full object-contain" />
                                     </div>
                                 </div>
                             </label>

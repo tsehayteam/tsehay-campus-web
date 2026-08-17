@@ -111,24 +111,8 @@ export default function About() {
             
             <div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                    <div className="rounded-3xl overflow-hidden shadow-xl group aspect-[9/16] bg-black relative">
-                        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center pointer-events-none transition-opacity duration-300 group-hover:opacity-0 bg-black/40">
-                            <i className="fa-solid fa-hand-pointer text-primary text-4xl mb-3 animate-bounce"></i>
-                            <span className="text-white font-bold text-lg drop-shadow-md">Tap To Unmute</span>
-                        </div>
-                        <video loop muted playsInline className="w-full h-full object-cover group-hover:scale-105 transition duration-700 relative z-10" onMouseOver={(e) => { e.currentTarget.play(); e.currentTarget.muted=false; }} onMouseOut={(e) => { e.currentTarget.pause(); e.currentTarget.muted=true; }}>
-                            <source src="/assets/videos/Tsehay.mp4" type="video/mp4" />
-                        </video>
-                    </div>
-                    <div className="rounded-3xl overflow-hidden shadow-xl group aspect-[9/16] bg-black relative">
-                        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center pointer-events-none transition-opacity duration-300 group-hover:opacity-0 bg-black/40">
-                            <i className="fa-solid fa-hand-pointer text-primary text-4xl mb-3 animate-bounce"></i>
-                            <span className="text-white font-bold text-lg drop-shadow-md">Tap To Unmute</span>
-                        </div>
-                        <video loop muted playsInline className="w-full h-full object-cover group-hover:scale-105 transition duration-700 relative z-10" onMouseOver={(e) => { e.currentTarget.play(); e.currentTarget.muted=false; }} onMouseOut={(e) => { e.currentTarget.pause(); e.currentTarget.muted=true; }}>
-                            <source src="/assets/videos/Marketing%20and%20psyco.mp4" type="video/mp4" />
-                        </video>
-                    </div>
+                    <AboutShortVideo src="/assets/videos/Tsehay.mp4" />
+                    <AboutShortVideo src="/assets/videos/Marketing%20and%20psyco.mp4" />
                 </div>
                 <div className="rounded-3xl overflow-hidden shadow-xl group w-full h-64 md:h-96 bg-black relative">
                     <img src="https://i.postimg.cc/qvqt1bJK/about-photo-1.jpg" className="w-full h-full object-cover group-hover:scale-105 transition duration-700" alt="Team" onError={(e) => { e.currentTarget.src='https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=800&auto=format&fit=crop' }} />
@@ -138,5 +122,94 @@ export default function About() {
     </section>
     </main>
     </>
+  );
+}
+
+function AboutShortVideo({ src }: { src: string }) {
+  const videoRef = React.useRef<HTMLVideoElement>(null);
+  const [isUnmuted, setIsUnmuted] = React.useState(false);
+  const [isPlaying, setIsPlaying] = React.useState(true);
+
+  const toggleSoundAndPlay = () => {
+    if (!videoRef.current) return;
+
+    if (!isUnmuted) {
+      videoRef.current.muted = false;
+      videoRef.current
+        .play()
+        .then(() => {
+          setIsUnmuted(true);
+          setIsPlaying(true);
+        })
+        .catch((e) => {
+          console.warn('Video playback error:', e);
+        });
+    } else {
+      if (videoRef.current.paused) {
+        videoRef.current.play();
+        setIsPlaying(true);
+      } else {
+        videoRef.current.pause();
+        setIsPlaying(false);
+      }
+    }
+  };
+
+  const handleMouseEnter = () => {
+    if (!videoRef.current) return;
+    if (!isUnmuted) {
+      videoRef.current.play().catch(() => {});
+    }
+  };
+
+  const handleMouseLeave = () => {
+    if (!videoRef.current) return;
+    if (!isUnmuted) {
+      videoRef.current.pause();
+    }
+  };
+
+  return (
+    <div 
+      onClick={toggleSoundAndPlay}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      className="rounded-3xl overflow-hidden shadow-xl group aspect-[9/16] bg-black relative cursor-pointer select-none ring-1 ring-white/10"
+    >
+      {/* Tap to Unmute Overlay */}
+      <div 
+        className={`absolute inset-0 z-20 flex flex-col items-center justify-center transition-all duration-300 bg-black/50 backdrop-blur-[2px] ${
+          isUnmuted ? 'opacity-0 pointer-events-none' : 'opacity-100'
+        }`}
+      >
+        <div className="w-14 h-14 rounded-full bg-primary/90 text-dark flex items-center justify-center shadow-2xl mb-3 animate-bounce">
+          <i className="fa-solid fa-volume-high text-xl"></i>
+        </div>
+        <span className="text-white font-black text-sm sm:text-base drop-shadow-md bg-black/60 px-4 py-1.5 rounded-full border border-white/20">
+          Tap To Unmute
+        </span>
+      </div>
+
+      {/* Floating Audio / Playback status indicator when unmuted */}
+      {isUnmuted && (
+        <div className="absolute top-4 right-4 z-20 bg-black/60 backdrop-blur-md text-white px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-2 border border-white/20 shadow-lg">
+          <i className={`fa-solid ${isPlaying ? 'fa-volume-high text-primary' : 'fa-pause text-amber-400'}`}></i>
+          <span>{isPlaying ? 'Playing' : 'Paused'}</span>
+        </div>
+      )}
+
+      {/* Video Element */}
+      <video
+        ref={videoRef}
+        loop
+        muted={!isUnmuted}
+        playsInline
+        autoPlay
+        webkit-playsinline="true"
+        className="w-full h-full object-cover group-hover:scale-105 transition duration-700 relative z-10"
+      >
+        <source src={src} type="video/mp4" />
+      </video>
+    </div>
   );
 }

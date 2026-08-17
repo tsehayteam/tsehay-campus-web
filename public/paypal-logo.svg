@@ -3,5 +3,5 @@
     <path d="M14 6 L33 6 C41 6 47 12 45 20 C43 28 36 33 27 33 L19 33 L13 54 L6 54 L14 6 Z" fill="#003087" />
     <path d="M23 14 L39 14 C46 14 52 19 50 27 C48 35 41 40 33 40 L25 40 L20 58 L14 58 L23 14 Z" fill="#0079C1" />
   </g>
-  <text x="92" y="58" font-family="'Inter', 'Outfit', system-ui, sans-serif" font-weight="900" font-size="42" fill="#003087" letter-spacing="-1">Pay<tspan fill="#0079C1">Pal</tspan></text>
+  <text x="88" y="58" font-family="'Inter', 'Outfit', system-ui, -apple-system, sans-serif" font-weight="900" font-size="44" fill="#003087" letter-spacing="-1">Pay<tspan fill="#0079C1">Pal</tspan></text>
 </svg>

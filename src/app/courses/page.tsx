@@ -126,7 +126,10 @@ export default function Courses() {
                   onSearchChange={(searchResults, q) => {
                     setSearchQuery(q);
                   }}
-                          {/* Enhanced Categories including Free and Paid */}
+                />
+            </div>
+
+            {/* Enhanced Categories including Free and Paid */}
             <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
                 <button onClick={() => setSelectedCategory('All')} className={`px-4 sm:px-6 py-2 sm:py-2.5 rounded-full font-bold text-xs sm:text-sm transition shadow-sm ${selectedCategory === 'All' ? 'bg-primary text-dark' : 'bg-white dark:bg-transparent border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'}`}>{t('cat_all')}</button>
                 <button onClick={() => setSelectedCategory('Free')} className={`px-4 sm:px-6 py-2 sm:py-2.5 rounded-full font-bold text-xs sm:text-sm transition border ${selectedCategory === 'Free' ? 'bg-success text-white border-success' : 'bg-transparent text-success hover:bg-success hover:text-white border-success/30'}`}>{t('cat_free')}</button>
