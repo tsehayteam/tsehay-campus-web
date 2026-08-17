@@ -195,11 +195,18 @@ export default function CoursePreviewPage() {
         }
 
         // 4. Smoothly route to dashboard classroom
-        router.push('/dashboard');
+        if (typeof window !== 'undefined') {
+          window.location.href = '/dashboard';
+        } else {
+          router.push('/dashboard');
+        }
       } catch (error) {
         console.error("Error enrolling in free course", error);
-        // Even on unexpected error, route to dashboard since cache is primed
-        router.push('/dashboard');
+        if (typeof window !== 'undefined') {
+          window.location.href = '/dashboard';
+        } else {
+          router.push('/dashboard');
+        }
       } finally {
         setIsEnrolling(false);
       }

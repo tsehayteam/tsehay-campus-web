@@ -101,10 +101,18 @@ export default function Courses() {
         }
 
         // 4. Route to dashboard classroom
-        router.push('/dashboard');
+        if (typeof window !== 'undefined') {
+          window.location.href = '/dashboard';
+        } else {
+          router.push('/dashboard');
+        }
       } catch (err: any) {
          console.error("Free enrollment failed:", err);
-         router.push('/dashboard');
+         if (typeof window !== 'undefined') {
+           window.location.href = '/dashboard';
+         } else {
+           router.push('/dashboard');
+         }
       } finally {
          setIsEnrolling(false);
       }
