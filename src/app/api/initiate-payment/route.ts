@@ -199,16 +199,7 @@ export async function POST(request: Request) {
                 data.data?.checkout_link;
 
               if (rawCheckoutUrl && typeof rawCheckoutUrl === 'string' && rawCheckoutUrl.startsWith('http')) {
-                let checkoutUrl = rawCheckoutUrl;
-                const separator = checkoutUrl.includes('?') ? '&' : '?';
-                if (!checkoutUrl.includes('amount=') && numAmount > 0) {
-                  checkoutUrl = `${checkoutUrl}${separator}amount=${numAmount}&reference=${returnedRef}&title=${encodeURIComponent(payDetails.title)}`;
-                }
-                if (validEthPhone && !checkoutUrl.includes('phone')) {
-                  const phoneSep = checkoutUrl.includes('?') ? '&' : '?';
-                  checkoutUrl = `${checkoutUrl}${phoneSep}phone_number=${validEthPhone}&phone=${validEthPhone}`;
-                }
-                return NextResponse.json({ checkoutUrl, reference: returnedRef });
+                return NextResponse.json({ checkoutUrl: rawCheckoutUrl, reference: returnedRef });
               }
 
               if (data.message || data.error || data.detail || data.data?.message) {
