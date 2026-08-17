@@ -128,38 +128,31 @@ export default function About() {
 function AboutShortVideo({ src }: { src: string }) {
   const videoRef = React.useRef<HTMLVideoElement>(null);
   const [isUnmuted, setIsUnmuted] = React.useState(false);
-  const [isPlaying, setIsPlaying] = React.useState(true);
 
-  const toggleSoundAndPlay = () => {
+  const toggleSound = () => {
     if (!videoRef.current) return;
 
     if (!isUnmuted) {
+      // Unmute and play
       videoRef.current.muted = false;
       videoRef.current
         .play()
         .then(() => {
           setIsUnmuted(true);
-          setIsPlaying(true);
         })
         .catch((e) => {
           console.warn('Video playback error:', e);
         });
     } else {
-      if (videoRef.current.paused) {
-        videoRef.current.play();
-        setIsPlaying(true);
-      } else {
-        videoRef.current.pause();
-        setIsPlaying(false);
-      }
+      // Mute again when tapped and show Tap To Unmute overlay
+      videoRef.current.muted = true;
+      setIsUnmuted(false);
     }
   };
 
   const handleMouseEnter = () => {
     if (!videoRef.current) return;
-    if (!isUnmuted) {
-      videoRef.current.play().catch(() => {});
-    }
+    videoRef.current.play().catch(() => {});
   };
 
   const handleMouseLeave = () => {
@@ -171,32 +164,20 @@ function AboutShortVideo({ src }: { src: string }) {
 
   return (
     <div 
-      onClick={toggleSoundAndPlay}
+      onClick={toggleSound}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      className="rounded-3xl overflow-hidden shadow-xl group aspect-[9/16] bg-black relative cursor-pointer select-none ring-1 ring-white/10"
+      className="rounded-3xl overflow-hidden shadow-xl group aspect-[9/16] bg-black relative cursor-pointer select-none"
     >
-      {/* Tap to Unmute Overlay */}
+      {/* Tap to Unmute Overlay with exact original finger pointer icon */}
       <div 
-        className={`absolute inset-0 z-20 flex flex-col items-center justify-center transition-all duration-300 bg-black/50 backdrop-blur-[2px] ${
+        className={`absolute inset-0 z-20 flex flex-col items-center justify-center transition-all duration-300 bg-black/40 ${
           isUnmuted ? 'opacity-0 pointer-events-none' : 'opacity-100'
         }`}
       >
-        <div className="w-14 h-14 rounded-full bg-primary/90 text-dark flex items-center justify-center shadow-2xl mb-3 animate-bounce">
-          <i className="fa-solid fa-volume-high text-xl"></i>
-        </div>
-        <span className="text-white font-black text-sm sm:text-base drop-shadow-md bg-black/60 px-4 py-1.5 rounded-full border border-white/20">
-          Tap To Unmute
-        </span>
+        <i className="fa-solid fa-hand-pointer text-primary text-4xl mb-3 animate-bounce"></i>
+        <span className="text-white font-bold text-lg drop-shadow-md">Tap To Unmute</span>
       </div>
-
-      {/* Floating Audio / Playback status indicator when unmuted */}
-      {isUnmuted && (
-        <div className="absolute top-4 right-4 z-20 bg-black/60 backdrop-blur-md text-white px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-2 border border-white/20 shadow-lg">
-          <i className={`fa-solid ${isPlaying ? 'fa-volume-high text-primary' : 'fa-pause text-amber-400'}`}></i>
-          <span>{isPlaying ? 'Playing' : 'Paused'}</span>
-        </div>
-      )}
 
       {/* Video Element */}
       <video
