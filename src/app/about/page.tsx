@@ -128,30 +128,27 @@ export default function About() {
 function AboutShortVideo({ src }: { src: string }) {
   const containerRef = React.useRef<HTMLDivElement>(null);
   const videoRef = React.useRef<HTMLVideoElement>(null);
-  const [isPlaying, setIsPlaying] = React.useState(false);
-  const [isUnmuted, setIsUnmuted] = React.useState(false);
-  const [isHovered, setIsHovered] = React.useState(false);
 
-  // Auto-play on mobile when in viewport, auto-pause when scrolled away
   React.useEffect(() => {
     const el = containerRef.current;
-    if (!el) return;
+    const video = videoRef.current;
+    if (!el || !video) return;
+
+    // Autoplay immediately
+    video.play().catch(() => {});
 
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (!videoRef.current) return;
           if (entry.isIntersecting) {
-            videoRef.current.play().then(() => {
-              setIsPlaying(true);
-            }).catch(() => {});
+            videoRef.current.play().catch(() => {});
           } else {
             videoRef.current.pause();
-            setIsPlaying(false);
           }
         });
       },
-      { threshold: 0.45 }
+      { threshold: 0.25 }
     );
 
     observer.observe(el);
@@ -160,98 +157,32 @@ function AboutShortVideo({ src }: { src: string }) {
     };
   }, []);
 
-  const handleMouseEnter = () => {
-    setIsHovered(true);
+  const toggleSound = () => {
     if (!videoRef.current) return;
-    videoRef.current.play().then(() => {
-      setIsPlaying(true);
-    }).catch(() => {});
-  };
-
-  const handleMouseLeave = () => {
-    setIsHovered(false);
-    if (!videoRef.current) return;
-    // On desktop, pause on mouse leave unless user explicitly unmuted and wants to keep watching
-    if (!isUnmuted) {
-      videoRef.current.pause();
-      setIsPlaying(false);
-    }
-  };
-
-  const togglePlaybackAndSound = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!videoRef.current) return;
-
-    if (!isUnmuted) {
-      // Unmute and ensure it's playing
-      videoRef.current.muted = false;
-      videoRef.current.play().then(() => {
-        setIsUnmuted(true);
-        setIsPlaying(true);
-      }).catch((err) => {
-        console.warn('Video play error:', err);
-      });
-    } else {
-      // Toggle mute
-      videoRef.current.muted = true;
-      setIsUnmuted(false);
+    videoRef.current.muted = !videoRef.current.muted;
+    if (videoRef.current.paused) {
+      videoRef.current.play().catch(() => {});
     }
   };
 
   return (
     <div 
       ref={containerRef}
-      onClick={togglePlaybackAndSound}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      className="rounded-3xl overflow-hidden shadow-2xl group aspect-[9/16] bg-slate-950 relative cursor-pointer select-none border border-slate-800 hover:border-amber-400/50 transition-all duration-500 hover:shadow-amber-400/10"
+      onClick={toggleSound}
+      className="rounded-3xl overflow-hidden shadow-2xl group aspect-[9/16] bg-slate-950 relative cursor-pointer select-none border border-gray-100 dark:border-gray-800"
     >
-      {/* Top Floating Sound Status Pill */}
-      <div className="absolute top-4 right-4 z-30 pointer-events-auto">
-        <button
-          onClick={togglePlaybackAndSound}
-          className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold backdrop-blur-md transition-all duration-300 cursor-pointer shadow-lg ${
-            isUnmuted 
-              ? 'bg-amber-400 text-dark font-black scale-105 shadow-amber-400/30' 
-              : 'bg-black/60 text-white/90 border border-white/20 hover:bg-black/80'
-          }`}
-        >
-          <i className={`fa-solid ${isUnmuted ? 'fa-volume-high text-dark animate-pulse' : 'fa-volume-xmark text-amber-400'}`}></i>
-          <span>{isUnmuted ? 'ድምፅ በርቷል' : 'ድምፅ ክፈት'}</span>
-        </button>
-      </div>
-
-      {/* Center Interactive Overlay (Fades out cleanly when playing or hovered) */}
-      <div 
-        className={`absolute inset-0 z-20 flex flex-col items-center justify-center transition-all duration-500 bg-black/35 ${
-          isPlaying && (isHovered || isUnmuted)
-            ? 'opacity-0 pointer-events-none' 
-            : 'opacity-100'
-        }`}
-      >
-        <div className="w-16 h-16 rounded-full bg-amber-400/90 text-dark flex items-center justify-center text-2xl mb-3 shadow-xl shadow-amber-400/30 group-hover:scale-110 transition-transform duration-300">
-          <i className={`fa-solid ${isPlaying ? 'fa-volume-high' : 'fa-play pl-1'}`}></i>
-        </div>
-        <span className="text-white font-black text-sm sm:text-base drop-shadow-lg tracking-wide bg-black/60 px-4 py-1.5 rounded-full border border-white/10">
-          {isPlaying ? 'ድምፅ ለማብራት ይጫኑ' : 'ለመመልከት ይጫኑ'}
-        </span>
-      </div>
-
-      {/* Video Element */}
       <video
         ref={videoRef}
+        autoPlay
         loop
-        muted={!isUnmuted}
+        muted
         playsInline
         webkit-playsinline="true"
-        preload="metadata"
-        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 relative z-10"
+        preload="auto"
+        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
       >
         <source src={src} type="video/mp4" />
       </video>
-
-      {/* Bottom Progress Glow Line */}
-      <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 via-primary to-yellow-300 z-20 opacity-75"></div>
     </div>
   );
 }
