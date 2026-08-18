@@ -145,7 +145,6 @@ export default function Navbar() {
                 </Link>
 
                 <div className="hidden lg:flex items-center h-full">
-                    <Link href="/about" className="text-gray-700 dark:text-gray-300 hover:text-secondary dark:hover:text-primary font-bold transition text-[14px] lg:text-[15px] px-2 lg:px-3">{t('about_us')}</Link>
                     <a href="/#courses" onClick={(e) => {
                         if (pathname === '/') {
                             e.preventDefault();
@@ -158,6 +157,7 @@ export default function Navbar() {
                             }
                         }
                     }} className="text-gray-700 dark:text-gray-300 hover:text-secondary dark:hover:text-primary font-bold transition text-[14px] lg:text-[15px] px-2 lg:px-3">{t('all_courses')}</a>
+                    <Link href="/about" className="text-gray-700 dark:text-gray-300 hover:text-secondary dark:hover:text-primary font-bold transition text-[14px] lg:text-[15px] px-2 lg:px-3">{t('about_us')}</Link>
                 </div>
                 
                 <div className="flex-1 max-w-md hidden md:flex items-center mx-2 lg:mx-4 relative z-[60]">
