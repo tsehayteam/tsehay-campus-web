@@ -95,7 +95,7 @@ export default function About() {
                             <img src="/assets/eyob_new2.png" alt="Eyob Sahle" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.src='https://ui-avatars.com/api/?name=Eyob+Sahle&background=000000&color=fff&size=128' }} />
                         </div>
                         <h4 className="font-bold text-dark dark:text-white text-lg notranslate">ኢዮብ ሳህሌ</h4>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 font-medium mt-1">Founder & Lead Instructor</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 font-medium mt-1">Owner & Lead Instructor</p>
                     </div>
                     {/* Ribka Teshome */}
                     <div className="bg-white dark:bg-dark border border-gray-100 dark:border-gray-800 p-8 rounded-2xl text-center hover:-translate-y-3 transition-all duration-500 shadow-md hover:shadow-2xl hover:shadow-primary/20 hover:border-primary/40 cursor-pointer w-full sm:w-64">
