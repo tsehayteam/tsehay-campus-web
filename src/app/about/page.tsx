@@ -97,12 +97,12 @@ export default function About() {
                         <h4 className="font-bold text-dark dark:text-white text-lg notranslate">ኢዮብ ሳህሌ</h4>
                         <p className="text-sm text-gray-500 dark:text-gray-400 font-medium mt-1">Founder & Lead Instructor</p>
                     </div>
-                    
+                    {/* Ribka Teshome */}
                     <div className="bg-white dark:bg-dark border border-gray-100 dark:border-gray-800 p-8 rounded-2xl text-center hover:-translate-y-3 transition-all duration-500 shadow-md hover:shadow-2xl hover:shadow-primary/20 hover:border-primary/40 cursor-pointer w-full sm:w-64">
-                        <div className="w-24 h-24 mx-auto rounded-full overflow-hidden mb-4 bg-gray-100 dark:bg-gray-800 text-3xl flex items-center justify-center text-white font-bold" >
-                            H
+                        <div className="w-24 h-24 mx-auto rounded-full overflow-hidden mb-4 bg-gray-100 dark:bg-gray-800">
+                            <img src="/assets/ribka.jpg" alt="Ribka Teshome" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.src='https://ui-avatars.com/api/?name=Ribka+Teshome&background=000000&color=fff&size=128' }} />
                         </div>
-                        <h4 className="font-bold text-dark dark:text-white text-lg notranslate">ሀብታሙ ዓለሙ</h4>
+                        <h4 className="font-bold text-dark dark:text-white text-lg notranslate">ርብቃ ተሾመ</h4>
                         <p className="text-sm text-gray-500 dark:text-gray-400 font-medium mt-1">General Manager</p>
                     </div>
                 </div>

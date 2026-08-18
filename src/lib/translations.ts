@@ -20,6 +20,7 @@ const amharicToEnglish = {
     "Tsehay AI የኮርስ ረዳት": "Tsehay AI Course Assistant",
     "Tsehay AI የዚህን ኮርስ ይዘት በማንበብ አሁን 15 አዳዲስ ጥያቄዎችን ያዘጋጅልዎታል።": "Tsehay AI will now read this course content and generate 15 new questions.",
     "ሀብታሙ ዓለሙ": "Habtamu Alemu",
+    "ርብቃ ተሾመ": "Ribka Teshome",
     "ሁሉም": "All",
     "ሁሉም ኮርሶች": "All Courses",
     "ሁሉንም አጽዳ": "Clear All",
