@@ -128,7 +128,7 @@ export default function StudentDashboard() {
     }
   ]);
   
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme');
@@ -1509,57 +1509,91 @@ ${customAdminPrompt}
                         const isCurrentCompleted = activeLesson && progress.includes(activeLesson.title);
 
                         return (
-                            <div className="bg-white dark:bg-slate-800 p-3 sm:p-4 rounded-2xl shadow-sm border border-gray-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-3 transition">
+                            <div className="bg-slate-900/90 dark:bg-slate-900/95 p-3 sm:p-4 rounded-2xl sm:rounded-3xl shadow-xl shadow-black/25 border border-slate-700/70 backdrop-blur-md flex flex-wrap items-center justify-between gap-3 sm:gap-4 transition-all">
+                                
+                                {/* Previous Lesson Button */}
                                 <button 
                                     onClick={handlePrevLesson}
                                     disabled={!hasPrev}
-                                    className="px-3.5 sm:px-4 py-2.5 rounded-xl border border-gray-200 dark:border-slate-700 text-xs font-bold text-dark dark:text-white hover:bg-gray-100 dark:hover:bg-slate-700 transition-all flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer group active:scale-95"
+                                    className={`relative group px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-black transition-all duration-300 flex items-center gap-2.5 cursor-pointer active:scale-95 border ${
+                                        hasPrev
+                                            ? 'bg-slate-800 hover:bg-slate-700/90 text-white border-slate-600/80 hover:border-slate-500 shadow-md hover:shadow-lg hover:shadow-black/40 hover:-translate-x-1'
+                                            : 'bg-slate-800/40 text-slate-500 border-slate-800/60 cursor-not-allowed opacity-40'
+                                    }`}
+                                    title={hasPrev ? (lang === 'am' ? 'የቀደመው ትምህርት' : 'Previous Lesson') : ''}
                                 >
-                                    <i className="fa-solid fa-chevron-left group-hover:-translate-x-0.5 transition-transform duration-200"></i>
-                                    <span>የቀደመው</span>
+                                    <span className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl flex items-center justify-center transition-all duration-300 ${
+                                        hasPrev 
+                                            ? 'bg-slate-700/90 group-hover:bg-primary group-hover:text-dark text-primary group-hover:-translate-x-0.5 shadow-inner' 
+                                            : 'bg-slate-800 text-slate-600'
+                                    }`}>
+                                        <i className="fa-solid fa-chevron-left text-xs sm:text-sm"></i>
+                                    </span>
+                                    <span className="font-extrabold tracking-wide">
+                                        {lang === 'am' ? 'የቀደመው' : 'Previous'}
+                                    </span>
                                 </button>
 
-                                <div className="flex items-center gap-2">
+                                {/* Center: Lesson Progress Counter & Mark Complete */}
+                                <div className="flex items-center gap-2 sm:gap-3 order-3 sm:order-2 w-full sm:w-auto justify-center sm:justify-start pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-800">
+                                    {allFlatLessons.length > 0 && currentIdx >= 0 && (
+                                        <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/80 border border-slate-700/60 text-[11px] font-bold text-gray-300">
+                                            <i className="fa-solid fa-layer-group text-primary text-[10px]"></i>
+                                            <span>{currentIdx + 1} / {allFlatLessons.length}</span>
+                                        </div>
+                                    )}
+
                                     <button 
                                         onClick={() => markLessonCompleted(activeLesson)}
-                                        className={`px-4 sm:px-5 py-2.5 rounded-xl text-xs font-black transition-all duration-300 shadow-xs flex items-center gap-2 cursor-pointer active:scale-95 ${
+                                        className={`group relative overflow-hidden px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl text-xs font-black transition-all duration-300 flex items-center gap-2 cursor-pointer active:scale-95 border ${
                                             isCurrentCompleted
-                                                ? 'bg-emerald-500 text-white shadow-emerald-500/20'
-                                                : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 hover:bg-emerald-500 hover:text-white'
+                                                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 shadow-sm shadow-emerald-500/20 hover:bg-emerald-500/30'
+                                                : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white border-emerald-400/40 shadow-lg shadow-emerald-600/30 hover:shadow-emerald-600/50 hover:scale-[1.02]'
                                         }`}
                                     >
-                                        <i className={`fa-solid ${isCurrentCompleted ? 'fa-circle-check' : 'fa-check'}`}></i>
-                                        <span>{isCurrentCompleted ? 'ተጠናቋል ✓' : 'ጨርሻለሁ'}</span>
+                                        <span className={`w-5 h-5 rounded-full flex items-center justify-center ${isCurrentCompleted ? 'bg-emerald-500/40 text-emerald-200' : 'bg-white/20 text-white'}`}>
+                                            <i className={`fa-solid ${isCurrentCompleted ? 'fa-check' : 'fa-check'} text-[10px]`}></i>
+                                        </span>
+                                        <span className="font-extrabold tracking-wide">
+                                            {isCurrentCompleted ? (lang === 'am' ? 'ተጠናቋል ✓' : 'Completed ✓') : (lang === 'am' ? 'ጨርሻለሁ' : 'Mark Complete')}
+                                        </span>
                                         {!isCurrentCompleted && (
-                                            <span className="text-[10px] bg-primary text-dark font-black px-1.5 py-0.5 rounded-md ml-0.5">+{activeLesson?.points || 25} ፖይንት</span>
+                                            <span className="text-[10px] bg-primary text-dark font-black px-1.5 py-0.5 rounded-md ml-0.5 shadow-xs animate-pulse">
+                                                +{activeLesson?.points || 25}
+                                            </span>
                                         )}
                                     </button>
                                 </div>
 
+                                {/* Next / Quiz Button */}
                                 <button 
                                     onClick={handleNextLesson}
-                                    className={`relative overflow-hidden group px-5 py-2.5 rounded-xl text-xs font-black transition-all duration-300 shadow-md flex items-center gap-2 cursor-pointer active:scale-95 ${
+                                    className={`relative group overflow-hidden px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-black transition-all duration-300 flex items-center gap-2.5 cursor-pointer active:scale-95 border shadow-xl ${
                                         hasNext 
-                                            ? 'bg-gradient-to-r from-amber-400 via-primary to-yellow-400 hover:from-amber-300 hover:to-yellow-300 text-dark shadow-amber-400/25 hover:shadow-amber-400/40 hover:-translate-y-0.5' 
-                                            : 'bg-gradient-to-r from-amber-500 via-primary to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-dark shadow-lg shadow-amber-500/30 hover:shadow-amber-500/50 ring-2 ring-amber-400/60 animate-gentle-bounce hover:-translate-y-0.5'
+                                            ? 'bg-gradient-to-r from-amber-400 via-primary to-yellow-400 hover:from-amber-300 hover:via-yellow-300 hover:to-amber-400 text-dark border-amber-300/70 shadow-primary/30 hover:shadow-primary/60 hover:-translate-y-0.5 hover:scale-[1.02]' 
+                                            : 'bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-400 hover:from-emerald-400 hover:to-teal-400 text-white border-emerald-300/70 shadow-emerald-500/40 hover:shadow-emerald-500/70 ring-2 ring-emerald-400/50 animate-pulse hover:-translate-y-0.5 hover:scale-[1.02]'
                                     }`}
                                 >
-                                    {/* Shimmer light reflection effect */}
-                                    <span className={`absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/40 to-transparent pointer-events-none ${
-                                        hasNext 
-                                            ? '-translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-out' 
-                                            : 'animate-shimmer-sweep'
-                                    }`}></span>
+                                    {/* Shimmer light sweep */}
+                                    <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-out pointer-events-none"></span>
 
                                     {hasNext ? (
                                         <>
-                                            <span className="font-extrabold tracking-wide">ቀጣይ</span>
-                                            <i className="fa-solid fa-arrow-right text-xs group-hover:translate-x-1.5 transition-transform duration-300"></i>
+                                            <span className="font-black tracking-wide drop-shadow-xs">
+                                                {lang === 'am' ? 'ቀጣይ ትምህርት' : 'Next Lesson'}
+                                            </span>
+                                            <span className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-dark/15 backdrop-blur-xs flex items-center justify-center group-hover:translate-x-1 group-hover:bg-dark/25 transition-all duration-300 shadow-inner">
+                                                <i className="fa-solid fa-arrow-right text-xs sm:text-sm text-dark"></i>
+                                            </span>
                                         </>
                                     ) : (
                                         <>
-                                            <i className="fa-solid fa-graduation-cap text-sm group-hover:rotate-12 transition-transform duration-300"></i>
-                                            <span className="font-extrabold tracking-wide">ወደ ፈተና</span>
+                                            <span className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl bg-white/20 backdrop-blur-xs flex items-center justify-center group-hover:scale-110 transition-all duration-300 shadow-inner">
+                                                <i className="fa-solid fa-graduation-cap text-sm sm:text-base text-white"></i>
+                                            </span>
+                                            <span className="font-black tracking-wide drop-shadow-xs">
+                                                {lang === 'am' ? 'ወደ ፈተና (Quiz)' : 'Take Final Quiz'}
+                                            </span>
                                             <i className="fa-solid fa-arrow-right text-xs group-hover:translate-x-1.5 transition-transform duration-300"></i>
                                         </>
                                     )}
