@@ -3,7 +3,6 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import Navbar from "@/components/Navbar";
-import FloatingAIButton from "@/components/FloatingAIButton";
 import AuthModal from "@/components/AuthModal";
 import PaymentModal from "@/components/PaymentModal";
 import TermsModal from "@/components/TermsModal";
@@ -170,7 +169,6 @@ export default function RootLayout({
           <AuthProvider>
             <Navbar />
             {children}
-            <FloatingAIButton />
             <TermsModal />
             <PaymentModal />
           </AuthProvider>

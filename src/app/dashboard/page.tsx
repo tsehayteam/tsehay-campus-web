@@ -7,7 +7,6 @@ import { updateProfile } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageContext';
 import dynamic from 'next/dynamic';
-import FloatingAIButton from '@/components/FloatingAIButton';
 import AssessmentModal from '@/components/AssessmentModal';
 
 const ReactPlayer: any = dynamic(() => import('react-player'), { ssr: false });
@@ -2710,7 +2709,6 @@ ${customAdminPrompt}
 
       </main>
       </div>
-      <FloatingAIButton />
       {showAssessment && (
         <AssessmentModal 
            onClose={() => setShowAssessment(false)} 
@@ -2830,9 +2828,6 @@ ${customAdminPrompt}
               </div>
           </div>
       )}
-
-      {/* Floating AI Button */}
-      <FloatingAIButton />
     </div>
   );
 }
