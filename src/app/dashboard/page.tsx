@@ -1131,59 +1131,195 @@ ${customAdminPrompt}
           </div>
         </div>
 
-        <nav className="flex-1 overflow-x-auto md:overflow-y-auto py-3 md:py-6 px-3 space-y-0 md:space-y-1.5 font-body no-scrollbar w-full flex flex-row md:flex-col gap-2 md:gap-0 items-center md:items-stretch">
-          <p className="hidden lg:block px-4 text-sm font-black text-secondary dark:text-primary uppercase tracking-widest mb-3 border-b border-slate-100 dark:border-slate-700/60 pb-1.5 font-heading">
-            {t('main_menu')}
-          </p>
-
-          <button onClick={() => setCurrentView('classroom')} className={`flex items-center gap-2 md:gap-3 p-2.5 md:p-3 rounded-xl font-bold transition flex-shrink-0 group w-auto md:w-full text-left text-sm ${currentView === 'classroom' ? 'bg-blue-50 dark:bg-primary/10 text-secondary dark:text-primary' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-dark dark:hover:text-white'}`}>
-            <i className="fa-solid fa-play-circle text-lg w-5 text-center group-hover:scale-110 transition-transform"></i>
-            <span className="whitespace-nowrap md:whitespace-normal md:hidden lg:block">{t('classroom')}</span>
-          </button>
+        <nav className="flex-1 overflow-x-auto md:overflow-y-auto py-3 md:py-4 px-3 space-y-1 font-body no-scrollbar w-full flex flex-row md:flex-col gap-2 md:gap-0 items-center md:items-stretch">
           
-          <button onClick={() => setCurrentView('courses')} className={`flex items-center gap-2 md:gap-3 p-2.5 md:p-3 rounded-xl font-bold transition flex-shrink-0 group w-auto md:w-full text-left text-sm ${currentView === 'courses' ? 'bg-blue-50 dark:bg-primary/10 text-secondary dark:text-primary' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-dark dark:hover:text-white'}`}>
-            <i className="fa-solid fa-layer-group text-lg w-5 text-center group-hover:scale-110 transition-transform"></i>
-            <span className="whitespace-nowrap md:whitespace-normal md:hidden lg:block">{t('my_courses')}</span>
-          </button>
+          {/* SECTION 1: ዋና ሜኑ (Main Menu) */}
+          <div className="hidden lg:flex items-center justify-between px-3 pt-1 pb-2 mb-1">
+            <span className="text-[11px] font-black uppercase tracking-wider text-amber-500 dark:text-primary flex items-center gap-2 font-heading">
+              <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+              {t('main_menu')}
+            </span>
+            <span className="text-[9px] uppercase tracking-widest bg-amber-500/10 dark:bg-primary/15 text-amber-600 dark:text-primary font-black px-2 py-0.5 rounded-full border border-amber-500/20 dark:border-primary/30">
+              Core
+            </span>
+          </div>
 
-          <button onClick={() => setCurrentView('messages')} className={`flex items-center gap-2 md:gap-3 p-2.5 md:p-3 rounded-xl font-bold transition flex-shrink-0 group w-auto md:w-full text-left text-sm ${currentView === 'messages' ? 'bg-blue-50 dark:bg-primary/10 text-secondary dark:text-primary' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-dark dark:hover:text-white'}`}>
-            <i className="fa-solid fa-comments text-lg w-5 text-center group-hover:scale-110 transition-transform"></i>
-            <span className="whitespace-nowrap md:whitespace-normal md:hidden lg:block">{t('messages')}</span>
-          </button>
-
-          <p className="hidden lg:block px-4 text-sm font-black text-secondary dark:text-primary uppercase tracking-widest mb-3 mt-6 border-b border-slate-100 dark:border-slate-700/60 pb-1.5 font-heading">
-            {t('tools')}
-          </p>
-
+          {/* Classroom Button */}
           <button 
-            onClick={() => setCurrentView('ai')} 
-            className={`relative flex items-center justify-between gap-2 md:gap-3 p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-auto md:w-full text-left text-sm border ${
-              currentView === 'ai' 
-                ? 'bg-secondary text-white border-secondary scale-[1.03] shadow-lg' 
-                : 'bg-secondary/10 hover:bg-secondary/20 text-secondary dark:text-primary border-secondary/30 hover:scale-[1.03] shadow-sm'
+            onClick={() => setCurrentView('classroom')} 
+            className={`flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-auto md:w-full text-left text-sm cursor-pointer ${
+              currentView === 'classroom' 
+                ? 'bg-gradient-to-r from-amber-400 via-primary to-yellow-400 text-dark shadow-md shadow-primary/25 font-extrabold scale-[1.01]' 
+                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/80 hover:text-dark dark:hover:text-white'
             }`}
           >
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-3">
+              <span className={`w-8 h-8 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 ${
+                currentView === 'classroom'
+                  ? 'bg-dark/15 text-dark shadow-inner'
+                  : 'bg-slate-100 dark:bg-slate-800/90 text-slate-500 dark:text-slate-400 group-hover:bg-primary/20 group-hover:text-primary'
+              }`}>
+                <i className="fa-solid fa-play text-xs"></i>
+              </span>
+              <span className="whitespace-nowrap md:whitespace-normal md:hidden lg:block font-bold">
+                {t('classroom')}
+              </span>
+            </div>
+            {currentView === 'classroom' && (
+              <i className="hidden lg:block fa-solid fa-chevron-right text-xs text-dark/70"></i>
+            )}
+          </button>
+          
+          {/* My Courses Button */}
+          <button 
+            onClick={() => setCurrentView('courses')} 
+            className={`flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-auto md:w-full text-left text-sm cursor-pointer ${
+              currentView === 'courses' 
+                ? 'bg-gradient-to-r from-amber-400 via-primary to-yellow-400 text-dark shadow-md shadow-primary/25 font-extrabold scale-[1.01]' 
+                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/80 hover:text-dark dark:hover:text-white'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <span className={`w-8 h-8 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 ${
+                currentView === 'courses'
+                  ? 'bg-dark/15 text-dark shadow-inner'
+                  : 'bg-slate-100 dark:bg-slate-800/90 text-slate-500 dark:text-slate-400 group-hover:bg-primary/20 group-hover:text-primary'
+              }`}>
+                <i className="fa-solid fa-layer-group text-xs"></i>
+              </span>
+              <span className="whitespace-nowrap md:whitespace-normal md:hidden lg:block font-bold">
+                {t('my_courses')}
+              </span>
+            </div>
+            {currentView === 'courses' && (
+              <i className="hidden lg:block fa-solid fa-chevron-right text-xs text-dark/70"></i>
+            )}
+          </button>
+
+          {/* Messages Button */}
+          <button 
+            onClick={() => setCurrentView('messages')} 
+            className={`flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-auto md:w-full text-left text-sm cursor-pointer ${
+              currentView === 'messages' 
+                ? 'bg-gradient-to-r from-amber-400 via-primary to-yellow-400 text-dark shadow-md shadow-primary/25 font-extrabold scale-[1.01]' 
+                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/80 hover:text-dark dark:hover:text-white'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <span className={`w-8 h-8 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 ${
+                currentView === 'messages'
+                  ? 'bg-dark/15 text-dark shadow-inner'
+                  : 'bg-slate-100 dark:bg-slate-800/90 text-slate-500 dark:text-slate-400 group-hover:bg-primary/20 group-hover:text-primary'
+              }`}>
+                <i className="fa-solid fa-comments text-xs"></i>
+              </span>
+              <span className="whitespace-nowrap md:whitespace-normal md:hidden lg:block font-bold">
+                {t('messages')}
+              </span>
+            </div>
+            {currentView === 'messages' && (
+              <i className="hidden lg:block fa-solid fa-chevron-right text-xs text-dark/70"></i>
+            )}
+          </button>
+
+          {/* SECTION DIVIDER */}
+          <div className="hidden lg:flex items-center gap-2 my-3 px-2">
+            <div className="h-px bg-slate-200 dark:bg-slate-700/80 flex-1"></div>
+            <span className="text-[9px] uppercase font-black text-slate-400 dark:text-slate-500 tracking-wider">መሳሪያዎች</span>
+            <div className="h-px bg-slate-200 dark:bg-slate-700/80 flex-1"></div>
+          </div>
+
+          {/* SECTION 2: መሳሪያዎች (Tools & Resources) */}
+          <div className="hidden lg:flex items-center justify-between px-3 pt-0.5 pb-2 mb-1">
+            <span className="text-[11px] font-black uppercase tracking-wider text-teal-600 dark:text-teal-400 flex items-center gap-2 font-heading">
+              <span className="w-2 h-2 rounded-full bg-teal-500"></span>
+              {t('tools')}
+            </span>
+            <span className="text-[9px] uppercase tracking-widest bg-teal-500/10 dark:bg-teal-500/20 text-teal-600 dark:text-teal-400 font-black px-2 py-0.5 rounded-full border border-teal-500/20">
+              Tools
+            </span>
+          </div>
+
+          {/* Tsehay AI Button */}
+          <button 
+            onClick={() => setCurrentView('ai')} 
+            className={`relative flex items-center justify-between gap-2 md:gap-3 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-auto md:w-full text-left text-sm border cursor-pointer ${
+              currentView === 'ai' 
+                ? 'bg-gradient-to-r from-teal-500 via-emerald-500 to-teal-600 text-white border-teal-400 shadow-lg shadow-teal-500/30 scale-[1.02]' 
+                : 'bg-slate-100/70 dark:bg-slate-800/70 hover:bg-teal-500/10 dark:hover:bg-teal-950/30 text-slate-700 dark:text-slate-200 border-slate-200/80 dark:border-slate-700/70 hover:border-teal-500/40 shadow-xs'
+            }`}
+          >
+            <div className="flex items-center gap-3">
               <div className="relative">
-                <i className={`fa-solid fa-user-astronaut text-lg ${currentView === 'ai' ? 'text-primary' : 'text-secondary dark:text-primary'}`}></i>
+                <span className={`w-8 h-8 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 ${
+                  currentView === 'ai'
+                    ? 'bg-white/20 text-white'
+                    : 'bg-teal-500/15 text-teal-500 dark:text-teal-400'
+                }`}>
+                  <i className="fa-solid fa-robot text-sm"></i>
+                </span>
                 <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 border-2 border-white dark:border-slate-800 rounded-full animate-ping"></span>
                 <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 border-2 border-white dark:border-slate-800 rounded-full"></span>
               </div>
-              <span className="whitespace-nowrap md:whitespace-normal md:hidden lg:block font-heading font-black">Tsehay AI</span>
+              <span className="whitespace-nowrap md:whitespace-normal md:hidden lg:block font-heading font-black">
+                Tsehay AI
+              </span>
             </div>
             <span className="hidden lg:flex items-center gap-1 text-[10px] bg-emerald-500 text-white font-black px-2 py-0.5 rounded-full shadow-xs uppercase tracking-wider">
               ● Online
             </span>
           </button>
           
-          <button onClick={() => setCurrentView('certificates')} className={`flex items-center gap-2 md:gap-3 p-2.5 md:p-3 rounded-xl font-bold transition flex-shrink-0 group w-auto md:w-full text-left ${currentView === 'certificates' ? 'bg-blue-50 dark:bg-primary/10 text-secondary dark:text-primary' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-dark dark:hover:text-white'}`}>
-            <i className="fa-solid fa-certificate text-lg w-5 text-center group-hover:scale-110 transition-transform"></i>
-            <span className="whitespace-nowrap md:whitespace-normal md:hidden lg:block">{t('certificates')}</span>
+          {/* Certificates Button */}
+          <button 
+            onClick={() => setCurrentView('certificates')} 
+            className={`flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-auto md:w-full text-left text-sm cursor-pointer ${
+              currentView === 'certificates' 
+                ? 'bg-gradient-to-r from-amber-400 via-primary to-yellow-400 text-dark shadow-md shadow-primary/25 font-extrabold scale-[1.01]' 
+                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/80 hover:text-dark dark:hover:text-white'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <span className={`w-8 h-8 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 ${
+                currentView === 'certificates'
+                  ? 'bg-dark/15 text-dark shadow-inner'
+                  : 'bg-slate-100 dark:bg-slate-800/90 text-slate-500 dark:text-slate-400 group-hover:bg-amber-500/20 group-hover:text-amber-500'
+              }`}>
+                <i className="fa-solid fa-award text-sm"></i>
+              </span>
+              <span className="whitespace-nowrap md:whitespace-normal md:hidden lg:block font-bold">
+                {t('certificates')}
+              </span>
+            </div>
+            {currentView === 'certificates' && (
+              <i className="hidden lg:block fa-solid fa-chevron-right text-xs text-dark/70"></i>
+            )}
           </button>
           
-          <button onClick={() => setCurrentView('settings')} className={`flex items-center gap-2 md:gap-3 p-2.5 md:p-3 rounded-xl font-bold transition flex-shrink-0 group w-auto md:w-full text-left ${currentView === 'settings' ? 'bg-blue-50 dark:bg-primary/10 text-secondary dark:text-primary' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-dark dark:hover:text-white'}`}>
-            <i className="fa-solid fa-gear text-lg w-5 text-center group-hover:scale-110 transition-transform"></i>
-            <span className="whitespace-nowrap md:whitespace-normal md:hidden lg:block">{t('settings')}</span>
+          {/* Settings Button */}
+          <button 
+            onClick={() => setCurrentView('settings')} 
+            className={`flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-auto md:w-full text-left text-sm cursor-pointer ${
+              currentView === 'settings' 
+                ? 'bg-gradient-to-r from-amber-400 via-primary to-yellow-400 text-dark shadow-md shadow-primary/25 font-extrabold scale-[1.01]' 
+                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/80 hover:text-dark dark:hover:text-white'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <span className={`w-8 h-8 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 ${
+                currentView === 'settings'
+                  ? 'bg-dark/15 text-dark shadow-inner'
+                  : 'bg-slate-100 dark:bg-slate-800/90 text-slate-500 dark:text-slate-400 group-hover:bg-primary/20 group-hover:text-primary'
+              }`}>
+                <i className="fa-solid fa-gear text-sm"></i>
+              </span>
+              <span className="whitespace-nowrap md:whitespace-normal md:hidden lg:block font-bold">
+                {t('settings')}
+              </span>
+            </div>
+            {currentView === 'settings' && (
+              <i className="hidden lg:block fa-solid fa-chevron-right text-xs text-dark/70"></i>
+            )}
           </button>
         </nav>
 
