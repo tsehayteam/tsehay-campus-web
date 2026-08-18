@@ -23,16 +23,34 @@ export default function Footer() {
                         <p className="text-gray-400 text-sm leading-relaxed mb-4 max-w-sm">
                             <span className="notranslate" translate="no">Tsehay Campus</span> {t('footer_desc')}
                         </p>
-                        <div className="mt-3">
+                        <div className="mt-4">
                             <a 
                                 href="https://youtube.com/@eyoubsahle?si=p29sAFFmLagXd52X" 
                                 target="_blank" 
                                 rel="noreferrer" 
-                                className="inline-flex items-center gap-2.5 px-4 py-2 bg-red-600/90 hover:bg-red-600 text-white text-xs font-bold rounded-xl border border-red-500/30 shadow-md hover:shadow-red-600/25 transition-all transform hover:-translate-y-0.5 group"
+                                className="relative group inline-flex items-center gap-3.5 px-5 py-3.5 bg-gradient-to-r from-red-600 via-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 text-white rounded-2xl border border-red-400/40 shadow-lg shadow-red-600/35 hover:shadow-red-600/60 transition-all duration-300 transform hover:-translate-y-1 hover:scale-[1.03] active:scale-95 cursor-pointer overflow-hidden"
                             >
-                                <i className="fa-brands fa-youtube text-base text-white group-hover:scale-110 transition-transform"></i>
-                                <span>{lang === 'am' ? 'የቢዝነስ ሚስጥሮች (YouTube)' : 'Business Secrets (YouTube)'}</span>
-                                <i className="fa-solid fa-arrow-up-right-from-square text-[10px] opacity-70"></i>
+                                {/* Shimmer glow effect */}
+                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out pointer-events-none" />
+                                
+                                {/* YouTube Icon Box */}
+                                <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-inner group-hover:scale-110 group-hover:bg-white transition-all duration-300 shrink-0">
+                                    <i className="fa-brands fa-youtube text-2xl text-white group-hover:text-red-600 transition-colors"></i>
+                                </div>
+
+                                <div className="flex flex-col text-left">
+                                    <span className="text-[11px] font-bold text-red-100/90 tracking-wide uppercase flex items-center gap-1.5">
+                                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-sm"></span>
+                                        {lang === 'am' ? 'ነፃ ቪዲዮዎች & ሚስጥሮች' : 'Free Lessons & Insights'}
+                                    </span>
+                                    <span className="text-sm md:text-base font-black text-white tracking-wide font-heading drop-shadow-sm">
+                                        {lang === 'am' ? 'የቢዝነስ ሚስጥሮች (YouTube)' : 'Business Secrets (YouTube)'}
+                                    </span>
+                                </div>
+
+                                <div className="ml-1 w-7 h-7 rounded-full bg-white/15 flex items-center justify-center group-hover:bg-white/30 group-hover:translate-x-0.5 transition-all shrink-0">
+                                    <i className="fa-solid fa-arrow-up-right-from-square text-xs text-white"></i>
+                                </div>
                             </a>
                         </div>
                     </div>
