@@ -293,3 +293,31 @@ body {
 ::-webkit-scrollbar-thumb:hover { background: #3268BA; }
 .dark ::-webkit-scrollbar-thumb { background: #262626; }
 .dark ::-webkit-scrollbar-thumb:hover { background: #F9B03C; }
+
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+  .printable-certificate,
+  .printable-certificate * {
+    visibility: visible !important;
+  }
+  .printable-certificate {
+    position: fixed !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    margin: 0 !important;
+    padding: 30px !important;
+    box-shadow: none !important;
+    background: #0a0f1d !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    z-index: 9999999 !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+}
+

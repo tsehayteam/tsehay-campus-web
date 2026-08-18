@@ -11,6 +11,8 @@ import dynamic from 'next/dynamic';
 const ReactPlayer: any = dynamic(() => import('react-player'), { ssr: false });
 
 import CourseRatingModal from '@/components/CourseRatingModal';
+import CourseQuiz from '@/components/CourseQuiz';
+import CourseCertificate from '@/components/CourseCertificate';
 import { formatDriveImageUrl } from '@/lib/courseCache';
 
 export default function StudentDashboard() {
@@ -21,11 +23,17 @@ export default function StudentDashboard() {
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [ratedCourses, setRatedCourses] = useState<Record<string, boolean>>({});
   const [dismissedRatingOverlay, setDismissedRatingOverlay] = useState<Record<string, boolean>>({});
-  const [quizMessages, setQuizMessages] = useState([
-    { role: 'ai', text: 'ሰላም! የኮርሱን ፈተና ለመውሰድ ዝግጁ ነዎት? አዎ ካሉኝ ፈተናውን እጀምራለሁ።' }
-  ]);
-  const [quizInput, setQuizInput] = useState('');
-  const [isQuizLoading, setIsQuizLoading] = useState(false);
+  
+  // Quiz & Certificate State
+  const [passedQuizzes, setPassedQuizzes] = useState<Record<string, { score: number; passedAt: string }>>(() => {
+    if (typeof window === 'undefined') return {};
+    try {
+      const cached = localStorage.getItem('tsehay_passed_quizzes');
+      return cached ? JSON.parse(cached) : {};
+    } catch (e) {
+      return {};
+    }
+  });
   const [courses, setCourses] = useState<any[]>(() => {
     if (typeof window === 'undefined') return [];
     try {
@@ -975,33 +983,36 @@ export default function StudentDashboard() {
     await handleNextLesson();
   };
 
-  const handleQuizSubmit = async (customPrompt?: string) => {
-    const textToSend = typeof customPrompt === 'string' ? customPrompt : quizInput;
-    if (!textToSend.trim()) return;
+  const handleQuizPass = async (courseId?: string, score: number = 80) => {
+    const targetCourseId = courseId || activeCourse?.id;
+    if (!targetCourseId) return;
+
+    const passedAt = new Date().toLocaleDateString('am-ET', { year: 'numeric', month: 'long', day: 'numeric' });
     
-    const newMessages = [...quizMessages, { role: 'user', text: textToSend.trim() }];
-    setQuizMessages(newMessages);
-    if (!customPrompt) {
-      setQuizInput('');
-    }
-    setIsQuizLoading(true);
-    
-    try {
-        const response = await fetch('/api/chat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-              prompt: `I am taking a quiz for the course "${activeCourse?.title || 'Tsehay Campus Course'}". The course topic is: ${activeCourse?.category || 'General'}. Ask a relevant quiz question or evaluate the student's answer in Amharic: ${textToSend.trim()}` 
-            })
-        });
-        
-        const data = await response.json();
-        setQuizMessages([...newMessages, { role: 'ai', text: data.reply || "ይቅርታ፣ አሁን ላይ መመለስ አልቻልኩም።" }]);
-        setHasTakenQuiz(true); // Unlock certificate after interaction
-    } catch (e) {
-        setQuizMessages([...newMessages, { role: 'ai', text: "ይቅርታ፣ አሁን ላይ መመለስ አልቻልኩም።" }]);
-    } finally {
-        setIsQuizLoading(false);
+    setPassedQuizzes(prev => {
+      const updated = { ...prev, [targetCourseId]: { score, passedAt } };
+      try {
+        localStorage.setItem('tsehay_passed_quizzes', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+
+    setHasTakenQuiz(true);
+    setIsCourseCompleted(true);
+
+    if (user?.uid) {
+      try {
+        const certDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'certificates', targetCourseId);
+        await setDoc(certDocRef, {
+          courseId: targetCourseId,
+          courseTitle: activeCourse?.title || 'Tsehay Campus Course',
+          score,
+          passedAt,
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+      } catch (e) {
+        console.error("Error saving certificate to firestore:", e);
+      }
     }
   };
 
@@ -2388,113 +2399,43 @@ ${customAdminPrompt}
                             )}
 
                             {activeTab === 'quiz' && (
-                                <div className="p-4 sm:p-6">
-                                    {!isCourseCompleted ? (
-                                        <div className="text-center py-12 bg-gray-50 dark:bg-slate-800/60 rounded-2xl border border-dashed border-gray-200 dark:border-slate-700">
-                                            <div className="w-16 h-16 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 mx-auto flex items-center justify-center text-2xl mb-4">
-                                                <i className="fa-solid fa-lock"></i>
-                                            </div>
-                                            <h3 className="text-lg font-black text-dark dark:text-white mb-2 font-heading">ፈተናው አልተከፈተም (Quiz Locked)</h3>
-                                            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-6 max-w-md mx-auto">ፈተናውን ለመውሰድ በመጀመሪያ የኮርሱን ትምህርቶች በሙሉ አይተው ማጠናቀቅ አለብዎት።</p>
-                                            <button onClick={() => setIsCourseCompleted(true)} className="text-xs bg-primary/20 hover:bg-primary text-dark dark:text-white dark:hover:text-dark px-4 py-2 rounded-xl font-bold transition">
-                                                (Demo) ፈተናውን ክፈት (Unlock Quiz)
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <div className="flex flex-col h-[460px] bg-gray-50 dark:bg-slate-900/80 rounded-2xl border border-gray-200 dark:border-slate-700 overflow-hidden relative shadow-sm">
-                                            <div className="bg-gradient-to-r from-amber-500 via-primary to-yellow-400 text-dark p-4 font-bold flex items-center justify-between shadow-sm z-10">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-9 h-9 rounded-xl bg-dark/10 flex items-center justify-center text-dark text-lg">
-                                                        <i className="fa-solid fa-robot"></i>
-                                                    </div>
-                                                    <div>
-                                                        <h3 className="font-heading font-black text-sm text-dark">Tsehay AI - የኮርስ ፈተና</h3>
-                                                        <p className="text-[11px] text-dark/80 font-medium">{activeCourse?.title || 'Tsehay Campus Course'}</p>
-                                                    </div>
-                                                </div>
-                                                <span className="text-[11px] bg-dark text-white font-black px-3 py-1 rounded-full shadow-xs">
-                                                    🎯 ፈተና
-                                                </span>
-                                            </div>
-                                            
-                                            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
-                                                {/* Welcome celebration banner */}
-                                                <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 rounded-2xl p-4 flex items-start gap-3">
-                                                    <div className="w-8 h-8 rounded-full bg-amber-400/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 mt-0.5">
-                                                        <i className="fa-solid fa-graduation-cap"></i>
-                                                    </div>
-                                                    <div className="text-xs text-amber-900 dark:text-amber-200 leading-relaxed font-medium">
-                                                        <p className="font-bold mb-0.5">🎉 እንኳን ደስ አሎት! ሁሉንም ትምህርቶች አጠናቀዋል።</p>
-                                                        የኮርሱን ማጠቃለያ ጥያቄዎች ይመልሱ። ፈተናውን እንደጨረሱ በስምዎ የተዘጋጀ ዲጂታል ሰርተፍኬት ያገኛሉ!
-                                                    </div>
-                                                </div>
-
-                                                {quizMessages.map((msg, idx) => (
-                                                    <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                                        <div className={`max-w-[85%] rounded-2xl p-4 text-sm leading-relaxed ${msg.role === 'user' ? 'bg-secondary text-white rounded-tr-xs shadow-sm' : 'bg-white dark:bg-slate-800 dark:text-white border border-gray-200 dark:border-slate-700 rounded-tl-xs shadow-sm'}`}>
-                                                            {msg.text}
-                                                        </div>
-                                                    </div>
-                                                ))}
-
-                                                {quizMessages.length <= 1 && (
-                                                    <div className="pt-2 flex flex-wrap gap-2">
-                                                        <button 
-                                                            onClick={() => handleQuizSubmit('ፈተናውን ለመጀመር ዝግጁ ነኝ፣ የመጀመሪያውን ጥያቄ ጠይቀኝ።')}
-                                                            className="bg-primary text-dark text-xs font-black px-4 py-2.5 rounded-xl hover:bg-yellow-400 transition shadow-sm flex items-center gap-2 cursor-pointer transform hover:scale-105 active:scale-95"
-                                                        >
-                                                            <span>🚀 ፈተናውን ጀምር (Start Exam)</span>
-                                                            <i className="fa-solid fa-arrow-right text-[10px]"></i>
-                                                        </button>
-                                                    </div>
-                                                )}
-
-                                                {isQuizLoading && (
-                                                    <div className="flex justify-start">
-                                                        <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl rounded-tl-xs p-4 shadow-sm flex gap-2 items-center">
-                                                            <div className="w-2 h-2 rounded-full bg-primary animate-bounce"></div>
-                                                            <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{animationDelay: '0.2s'}}></div>
-                                                            <div className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{animationDelay: '0.4s'}}></div>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-
-                                            <div className="p-3 sm:p-4 bg-white dark:bg-slate-800 border-t border-gray-200 dark:border-slate-700 flex gap-2">
-                                                <input 
-                                                    type="text" 
-                                                    value={quizInput}
-                                                    onChange={e => setQuizInput(e.target.value)}
-                                                    onKeyDown={e => e.key === 'Enter' && handleQuizSubmit()}
-                                                    placeholder="መልስዎን እዚህ ይፃፉ..." 
-                                                    className="flex-1 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary text-dark dark:text-white transition"
-                                                />
-                                                <button onClick={() => handleQuizSubmit()} className="h-10 px-5 bg-primary text-dark rounded-xl flex items-center justify-center gap-2 font-black hover:bg-yellow-400 transition shadow-sm shrink-0 text-sm cursor-pointer active:scale-95">
-                                                    <i className="fa-solid fa-paper-plane"></i>
-                                                    <span className="hidden sm:inline">ላክ</span>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )}
+                                <div className="p-3 sm:p-6">
+                                    <CourseQuiz
+                                        course={activeCourse}
+                                        user={user}
+                                        onPass={(score) => handleQuizPass(activeCourse?.id, score)}
+                                        onViewCertificate={() => setActiveTab('certificate')}
+                                    />
                                 </div>
                             )}
 
                             {activeTab === 'certificate' && (
-                                <div className="p-4">
-                                    {!hasTakenQuiz ? (
-                                        <div className="text-center py-10 bg-gray-50 dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700">
-                                            <i className="fa-solid fa-lock text-4xl text-gray-300 dark:text-gray-600 mb-4"></i>
-                                            <h3 className="text-lg font-bold text-dark dark:text-white mb-2">ሰርተፍኬት ዝግ ነው (Certificate Locked)</h3>
-                                            <p className="text-sm text-gray-500 mb-6 max-w-md mx-auto">ሰርተፍኬትዎን ለማግኘት በመጀመሪያ ፈተናውን ወስደው ማለፍ አለብዎት።</p>
-                                        </div>
+                                <div className="p-3 sm:p-6">
+                                    {passedQuizzes[activeCourse?.id] || hasTakenQuiz ? (
+                                        <CourseCertificate
+                                            course={activeCourse}
+                                            user={user}
+                                            score={passedQuizzes[activeCourse?.id]?.score || 90}
+                                            issueDate={passedQuizzes[activeCourse?.id]?.passedAt}
+                                        />
                                     ) : (
-                                        <div className="text-center py-10 bg-green-50 dark:bg-green-900/10 rounded-xl border border-green-100 dark:border-green-900/30">
-                                            <i className="fa-solid fa-award text-6xl text-success mb-4 drop-shadow-md"></i>
-                                            <h3 className="text-2xl font-black text-dark dark:text-white mb-2 font-heading">እንኳን ደስ አሎት!</h3>
-                                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-6 max-w-md mx-auto">ኮርሱን እና ፈተናውን በተሳካ ሁኔታ ስላጠናቀቁ ሰርተፍኬትዎ ተዘጋጅቷል።</p>
-                                            <button className="bg-success text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-success/30 hover:scale-105 transition transform">
-                                                <i className="fa-solid fa-download mr-2"></i> ሰርተፍኬት ዳውንሎድ ያድርጉ
-                                            </button>
+                                        <div className="text-center py-12 px-4 bg-slate-900/60 border border-slate-800 rounded-3xl max-w-xl mx-auto space-y-4">
+                                            <div className="w-16 h-16 rounded-3xl bg-amber-400/10 text-amber-400 mx-auto flex items-center justify-center text-3xl border border-amber-400/20 shadow-md">
+                                                <i className="fa-solid fa-lock"></i>
+                                            </div>
+                                            <h3 className="text-xl font-black text-white font-heading">ሰርተፍኬት ዝግ ነው (Certificate Locked)</h3>
+                                            <p className="text-xs sm:text-sm text-slate-400 max-w-md mx-auto leading-relaxed">
+                                                እውቅና ያለው ይፋዊ የዲጂታል ሰርተፍኬትዎን ለመውሰድ የኮርስ ማጠቃለያ ፈተናውን ወስደው ቢያንስ <span className="text-amber-400 font-bold">80%</span> ማምጣት ይኖርብዎታል።
+                                            </p>
+                                            <div className="pt-2">
+                                                <button
+                                                    onClick={() => setActiveTab('quiz')}
+                                                    className="px-7 py-3.5 bg-gradient-to-r from-amber-400 via-primary to-yellow-400 text-dark font-black text-xs sm:text-sm rounded-2xl shadow-lg shadow-amber-400/25 hover:scale-105 transition flex items-center justify-center gap-2 mx-auto cursor-pointer"
+                                                >
+                                                    <i className="fa-solid fa-list-check"></i>
+                                                    <span>🎯 ወደ ፈተናው ይሂዱ (Take Exam)</span>
+                                                </button>
+                                            </div>
                                         </div>
                                     )}
                                 </div>
@@ -2824,14 +2765,61 @@ ${customAdminPrompt}
         )}
 
         {currentView === 'certificates' && (
-          <div className="max-w-4xl mx-auto py-10">
-             <div className="bg-white dark:bg-slate-800 rounded-3xl p-10 shadow-sm border border-slate-100 dark:border-slate-700 text-center">
-                 <div className="w-24 h-24 bg-yellow-50 dark:bg-yellow-500/10 rounded-full flex items-center justify-center mx-auto mb-4 text-primary text-4xl">
-                     <i className="fa-solid fa-award"></i>
-                 </div>
-                 <h2 className="text-2xl font-black font-heading text-dark dark:text-white mb-2">የምስክር ወረቀት (Certificates)</h2>
-                 <p className="text-gray-500 max-w-md mx-auto">እስካሁን ያጠናቀቁት ኮርስ የለም። የምስክር ወረቀት ለማግኘት እባክዎ ኮርሶችን አጠናቀው ፈተናዎችን ይውሰዱ።</p>
-             </div>
+          <div className="max-w-5xl mx-auto py-8 px-4 space-y-8">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-5">
+              <div>
+                <h2 className="text-2xl sm:text-3xl font-black font-heading text-dark dark:text-white">
+                  የምስክር ወረቀቶች (Earned Certificates)
+                </h2>
+                <p className="text-xs sm:text-sm text-gray-500 dark:text-slate-400 mt-1">
+                  በፀሐይ ካምፓስ ያጠናቀቋቸው እና ያገኟቸው ይፋዊ ሰርተፍኬቶች
+                </p>
+              </div>
+              <div className="inline-flex items-center gap-2 bg-amber-400/10 border border-amber-400/30 text-amber-500 px-4 py-2 rounded-2xl text-xs font-black">
+                <i className="fa-solid fa-award text-base"></i>
+                <span>{Object.keys(passedQuizzes).length} ሰርተፍኬት ተገኝቷል</span>
+              </div>
+            </div>
+
+            {Object.keys(passedQuizzes).length === 0 ? (
+              <div className="bg-white dark:bg-slate-900 rounded-3xl p-10 shadow-sm border border-slate-100 dark:border-slate-800 text-center space-y-4 max-w-xl mx-auto">
+                <div className="w-20 h-20 bg-amber-50 dark:bg-amber-500/10 rounded-full flex items-center justify-center mx-auto text-primary text-3xl">
+                  <i className="fa-solid fa-award"></i>
+                </div>
+                <h3 className="text-xl font-black font-heading text-dark dark:text-white">እስካሁን ያጠናቀቁት ኮርስ የለም</h3>
+                <p className="text-xs sm:text-sm text-gray-500 dark:text-slate-400 leading-relaxed">
+                  የምስክር ወረቀት ለማግኘት የተመዘገቡባቸውን ኮርሶች አጠናቀው የኮርስ ማጠቃለያ ፈተናዎችን በ 80%+ ውጤት ይለፉ።
+                </p>
+                <button
+                  onClick={() => {
+                    setCurrentView('classroom');
+                    setActiveTab('quiz');
+                  }}
+                  className="px-6 py-3 bg-gradient-to-r from-amber-400 to-yellow-400 text-dark font-black text-xs sm:text-sm rounded-xl shadow-md hover:scale-105 transition cursor-pointer"
+                >
+                  🚀 ወደ መማሪያ ክፍል ይሂዱ
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-10">
+                {courses
+                  .filter(c => passedQuizzes[c.id])
+                  .map(course => (
+                    <div key={course.id} className="space-y-4">
+                      <h3 className="font-heading font-black text-lg text-dark dark:text-white flex items-center gap-2">
+                        <i className="fa-solid fa-circle-check text-emerald-500"></i>
+                        <span>{course.title}</span>
+                      </h3>
+                      <CourseCertificate
+                        course={course}
+                        user={user}
+                        score={passedQuizzes[course.id]?.score || 90}
+                        issueDate={passedQuizzes[course.id]?.passedAt}
+                      />
+                    </div>
+                  ))}
+              </div>
+            )}
           </div>
         )}
 
