@@ -139,25 +139,46 @@ export default function Navbar() {
         <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-20 gap-4 lg:gap-6">
                 
-                <Link href="/" onClick={() => { setIsMobileMenuOpen(false); if (pathname === '/') window.scrollTo({top: 0, behavior: 'smooth'}); }} className="flex-shrink-0 flex items-center cursor-pointer group gap-2">
+                {/* 1. Brand Logo with extra breathing room */}
+                <Link href="/" onClick={() => { setIsMobileMenuOpen(false); if (pathname === '/') window.scrollTo({top: 0, behavior: 'smooth'}); }} className="flex-shrink-0 flex items-center cursor-pointer group gap-2 mr-4 lg:mr-8">
                     <img src="/tc-logo.jpg" alt="Tsehay Campus Logo" className="h-14 w-auto object-contain rounded-md shadow-sm group-hover:shadow-md transition-all duration-300 animate-logo-zoom" onError={(e) => { e.currentTarget.src='https://ui-avatars.com/api/?name=TC&background=3268BA&color=fff' }} />
                     <span className="font-black text-2xl tracking-tight hidden sm:block notranslate select-none"><span className="text-primary animate-tsehay-float">Tsehay</span> <span className="text-secondary animate-campus-float">Campus</span></span>
                 </Link>
 
-                <div className="hidden lg:flex items-center h-full">
-                    <a href="/#courses" onClick={(e) => {
-                        if (pathname === '/') {
-                            e.preventDefault();
-                            const element = document.getElementById('courses');
-                            if (element) {
-                                const offset = 80;
-                                const bodyRect = document.body.getBoundingClientRect().top;
-                                const elementRect = element.getBoundingClientRect().top;
-                                window.scrollTo({ top: elementRect - bodyRect - offset, behavior: 'smooth' });
+                {/* 2. Navigation Links with Hover & Active Underline States */}
+                <div className="hidden lg:flex items-center gap-6 h-full">
+                    <a 
+                        href="/#courses" 
+                        onClick={(e) => {
+                            if (pathname === '/') {
+                                e.preventDefault();
+                                const element = document.getElementById('courses');
+                                if (element) {
+                                    const offset = 80;
+                                    const bodyRect = document.body.getBoundingClientRect().top;
+                                    const elementRect = element.getBoundingClientRect().top;
+                                    window.scrollTo({ top: elementRect - bodyRect - offset, behavior: 'smooth' });
+                                }
                             }
-                        }
-                    }} className="text-gray-700 dark:text-gray-300 hover:text-secondary dark:hover:text-primary font-bold transition text-[14px] lg:text-[15px] px-2 lg:px-3">{t('all_courses')}</a>
-                    <Link href="/about" className="text-gray-700 dark:text-gray-300 hover:text-secondary dark:hover:text-primary font-bold transition text-[14px] lg:text-[15px] px-2 lg:px-3">{t('about_us')}</Link>
+                        }} 
+                        className={`py-1.5 transition-all duration-200 text-[14px] lg:text-[15px] border-b-2 font-bold ${
+                            pathname === '/courses' 
+                                ? 'text-[#f9b03c] border-[#f9b03c]' 
+                                : 'text-gray-700 dark:text-white hover:text-[#f9b03c] border-transparent hover:border-[#f9b03c]'
+                        }`}
+                    >
+                        {t('all_courses')}
+                    </a>
+                    <Link 
+                        href="/about" 
+                        className={`py-1.5 transition-all duration-200 text-[14px] lg:text-[15px] border-b-2 font-bold ${
+                            pathname === '/about' 
+                                ? 'text-[#f9b03c] border-[#f9b03c]' 
+                                : 'text-gray-700 dark:text-white hover:text-[#f9b03c] border-transparent hover:border-[#f9b03c]'
+                        }`}
+                    >
+                        {t('about_us')}
+                    </Link>
                 </div>
                 
                 <div className="flex-1 max-w-md hidden md:flex items-center mx-2 lg:mx-4 relative z-[60]">
@@ -168,16 +189,29 @@ export default function Navbar() {
                 </div>
                 
                 <div className="hidden md:flex items-center gap-2 lg:gap-3 font-heading text-sm">
-                    <a href="/#ai-feature" onClick={(e) => {
-                        if (pathname === '/') {
-                            e.preventDefault();
-                            document.getElementById('ai-feature')?.scrollIntoView({ behavior: 'smooth' });
-                        }
-                    }} className="text-gray-700 dark:text-white hover:text-secondary dark:hover:text-primary font-black transition flex items-center gap-1.5 lg:gap-2 px-1 lg:px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-darkCard whitespace-nowrap ml-1 notranslate cursor-pointer">
-                        <i className="fa-solid fa-wand-magic-sparkles text-primary animate-pulse text-lg"></i> <span className="hidden lg:inline text-lg">Tsehay AI</span>
+                    {/* 3. Interactive Tsehay AI Pill Button */}
+                    <a 
+                        href="/#ai-feature" 
+                        onClick={(e) => {
+                            if (pathname === '/') {
+                                e.preventDefault();
+                                document.getElementById('ai-feature')?.scrollIntoView({ behavior: 'smooth' });
+                            }
+                        }} 
+                        className="group flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-[#f9b03c] bg-[#f9b03c]/10 text-dark dark:text-white font-semibold hover:bg-[#f9b03c] hover:text-black dark:hover:text-black hover:shadow-[0_0_12px_rgba(249,176,60,0.35)] transition-all duration-200 cursor-pointer notranslate"
+                    >
+                        <i className="fa-solid fa-wand-magic-sparkles text-[#f9b03c] group-hover:text-black transition-colors text-sm"></i> 
+                        <span className="text-sm font-bold">Tsehay AI</span>
                     </a>
-                    <button onClick={toggleLanguage} className="hidden sm:flex items-center justify-center bg-gray-100 dark:bg-dark border border-gray-200 dark:border-gray-800 hover:bg-gray-200 dark:hover:bg-gray-800 transition shadow-sm shrink-0 font-bold text-[12px] text-dark dark:text-white px-4 py-1.5 rounded-full notranslate" translate="no">
-                        {lang === 'am' ? 'EN' : 'አማ'}
+
+                    {/* 4. Language Switcher (Globe + EN/አማ) */}
+                    <button 
+                        onClick={toggleLanguage} 
+                        className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gray-300 dark:border-white/20 hover:border-[#f9b03c] dark:hover:border-[#f9b03c] hover:text-[#f9b03c] dark:hover:text-[#f9b03c] bg-transparent text-gray-700 dark:text-white text-sm font-bold transition-all duration-200 cursor-pointer notranslate shadow-xs" 
+                        translate="no"
+                    >
+                        <i className="fa-solid fa-globe text-xs opacity-80"></i>
+                        <span>{lang === 'am' ? 'EN' : 'አማ'}</span>
                     </button>
 
                     <button onClick={toggleTheme} className="w-9 h-9 rounded-full bg-gray-100 dark:bg-dark border border-gray-200 dark:border-gray-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-darkCard transition shadow-sm text-gray-600 dark:text-yellow-400">
@@ -190,8 +224,13 @@ export default function Navbar() {
                       <button onClick={() => openAuthModal(false)} className="bg-primary text-dark px-6 py-2.5 rounded-lg font-black hover:bg-yellow-400 transition shadow-lg hover:shadow-xl btn-glow whitespace-nowrap text-[15px] lg:text-base">{t('login')}</button>
                     ) : (
                       <div className="relative">
+                        {/* 5. User Avatar with Yellow Border */}
                         <button onClick={() => setShowProfileDropdown(!showProfileDropdown)} className="flex items-center gap-2 focus:outline-none">
-                            <img src={user.photoURL || 'https://ui-avatars.com/api/?name=User&background=3268BA&color=fff'} alt="Profile" className="w-10 h-10 rounded-full border-2 border-primary object-cover" />
+                            <img 
+                                src={user.photoURL || 'https://ui-avatars.com/api/?name=User&background=3268BA&color=fff'} 
+                                alt="Profile" 
+                                className="w-9 h-9 rounded-full border-2 border-[#f9b03c] object-cover cursor-pointer hover:scale-105 transition-transform" 
+                            />
                         </button>
                         {showProfileDropdown && (
                           <div className="absolute right-0 mt-2 w-52 bg-white dark:bg-darkCard rounded-xl shadow-xl border border-gray-100 dark:border-gray-800 py-2 z-50 animate-in fade-in slide-in-from-top-2">
@@ -224,10 +263,11 @@ export default function Navbar() {
 
                     <button 
                         onClick={toggleLanguage} 
-                        className="bg-gray-100 dark:bg-white/10 border border-gray-200 dark:border-white/10 px-3 py-1.5 rounded-full font-bold text-xs text-gray-800 dark:text-white transition shadow-xs notranslate" 
+                        className="flex items-center gap-1.5 px-3 py-1 rounded-full border border-gray-300 dark:border-white/20 hover:border-[#f9b03c] dark:hover:border-[#f9b03c] bg-transparent text-gray-800 dark:text-white font-bold text-xs transition shadow-xs notranslate" 
                         translate="no"
                     >
-                        {lang === 'am' ? 'EN' : 'አማ'}
+                        <i className="fa-solid fa-globe text-[11px] opacity-80"></i>
+                        <span>{lang === 'am' ? 'EN' : 'አማ'}</span>
                     </button>
 
                     <button 
