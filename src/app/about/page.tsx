@@ -67,20 +67,31 @@ export default function About() {
             <div className="mb-24">
                 <h3 className="text-2xl font-bold font-heading text-dark dark:text-white mb-8 text-center">{t('what_we_do_title')}</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="bg-white dark:bg-dark border border-gray-100 dark:border-gray-800 p-8 rounded-2xl text-center hover:-translate-y-3 transition-all duration-500 shadow-md hover:shadow-2xl hover:shadow-primary/20 hover:border-primary/40 cursor-pointer">
-                        <div className="w-16 h-16 mx-auto bg-blue-50 dark:bg-blue-900/20 text-secondary dark:text-blue-400 rounded-2xl flex items-center justify-center text-2xl mb-6"><i className="fa-solid fa-laptop-code"></i></div>
-                        <h4 className="font-bold text-dark dark:text-white text-lg mb-2">{t('wwd_1_title')}</h4>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">{t('wwd_1_desc')}</p>
+                    {/* Card 1 */}
+                    <div className="bg-white dark:bg-dark border border-gray-100 dark:border-gray-800 p-8 rounded-2xl text-center hover:-translate-y-3 transition-all duration-500 shadow-md hover:shadow-2xl hover:shadow-[#f9b03c]/20 hover:border-[#f9b03c]/40 cursor-pointer">
+                        <div className="w-16 h-16 mx-auto bg-[#f9b03c]/10 text-[#f9b03c] rounded-2xl flex items-center justify-center text-2xl mb-6 shadow-sm">
+                            <i className="fa-solid fa-chart-line"></i>
+                        </div>
+                        <h4 className="font-bold text-dark dark:text-white text-lg mb-3 leading-snug">{t('wwd_1_title')}</h4>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">{t('wwd_1_desc')}</p>
                     </div>
-                    <div className="bg-white dark:bg-dark border border-gray-100 dark:border-gray-800 p-8 rounded-2xl text-center hover:-translate-y-3 transition-all duration-500 shadow-md hover:shadow-2xl hover:shadow-primary/20 hover:border-primary/40 cursor-pointer">
-                        <div className="w-16 h-16 mx-auto bg-orange-50 dark:bg-orange-900/20 text-primary rounded-2xl flex items-center justify-center text-2xl mb-6"><i className="fa-solid fa-users-rays"></i></div>
-                        <h4 className="font-bold text-dark dark:text-white text-lg mb-2">{t('wwd_2_title')}</h4>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">{t('wwd_2_desc')}</p>
+
+                    {/* Card 2 */}
+                    <div className="bg-white dark:bg-dark border border-gray-100 dark:border-gray-800 p-8 rounded-2xl text-center hover:-translate-y-3 transition-all duration-500 shadow-md hover:shadow-2xl hover:shadow-[#3268ba]/20 hover:border-[#3268ba]/40 cursor-pointer">
+                        <div className="w-16 h-16 mx-auto bg-[#3268ba]/10 text-[#3268ba] rounded-2xl flex items-center justify-center text-2xl mb-6 shadow-sm">
+                            <i className="fa-solid fa-people-group"></i>
+                        </div>
+                        <h4 className="font-bold text-dark dark:text-white text-lg mb-3 leading-snug">{t('wwd_2_title')}</h4>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">{t('wwd_2_desc')}</p>
                     </div>
-                    <div className="bg-white dark:bg-dark border border-gray-100 dark:border-gray-800 p-8 rounded-2xl text-center hover:-translate-y-3 transition-all duration-500 shadow-md hover:shadow-2xl hover:shadow-primary/20 hover:border-primary/40 cursor-pointer">
-                        <div className="w-16 h-16 mx-auto bg-green-50 dark:bg-green-900/20 text-success rounded-2xl flex items-center justify-center text-2xl mb-6"><i className="fa-solid fa-robot"></i></div>
-                        <h4 className="font-bold text-dark dark:text-white text-lg mb-2">{t('wwd_3_title')}</h4>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">{t('wwd_3_desc')}</p>
+
+                    {/* Card 3 */}
+                    <div className="bg-white dark:bg-dark border border-gray-100 dark:border-gray-800 p-8 rounded-2xl text-center hover:-translate-y-3 transition-all duration-500 shadow-md hover:shadow-2xl hover:shadow-[#f9b03c]/20 hover:border-[#f9b03c]/40 cursor-pointer">
+                        <div className="w-16 h-16 mx-auto bg-[#f9b03c]/10 text-[#f9b03c] rounded-2xl flex items-center justify-center text-2xl mb-6 shadow-sm">
+                            <i className="fa-solid fa-wand-magic-sparkles"></i>
+                        </div>
+                        <h4 className="font-bold text-dark dark:text-white text-lg mb-3 leading-snug">{t('wwd_3_title')}</h4>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">{t('wwd_3_desc')}</p>
                     </div>
                 </div>
             </div>
