@@ -1081,7 +1081,7 @@ ${customAdminPrompt}
 2. Understand student interests and recommend relevant Tsehay Campus courses when appropriate:
    - Digital Marketing Course (FREE) for marketing, social media, SEO, FB ads.
    - Shein Import Business Course (4,500 ETB) for e-commerce, importing winning products, dollar payment.
-   - YouTube Secrets Masterclass / Book (600 ETB) for content creation, channel growth.
+   - YouTube Secrets Masterclass / Book (900 ETB) for content creation, channel growth.
    - Web Development / Coding (Coming Soon).
 3. Support students patiently and encourage their learning journey.`;
 

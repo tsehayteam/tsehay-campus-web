@@ -375,7 +375,7 @@ export default function CoursePreviewPage() {
             <h1 className="text-3xl md:text-5xl font-black font-heading mb-4 leading-tight text-primary">
               {course.title}
             </h1>
-            <p className="text-lg md:text-xl mb-6 text-blue-100 line-clamp-3">
+            <p className="text-base sm:text-lg md:text-xl mb-6 text-blue-100 whitespace-pre-line leading-relaxed max-w-4xl">
               {formatCourseDesc(course)}
             </p>
             
@@ -519,6 +519,14 @@ export default function CoursePreviewPage() {
               <li className="text-gray-500 italic list-none">No requirements specified for this course.</li>
             )}
           </ul>
+
+          {/* Description Section */}
+          <div className="mb-10 border-t border-gray-200 dark:border-gray-800 pt-8">
+            <h2 className="text-2xl font-black font-heading text-secondary dark:text-primary mb-4">Description</h2>
+            <div className="text-sm sm:text-base text-gray-700 dark:text-gray-300 whitespace-pre-line leading-relaxed">
+              {course?.desc || course?.description || "No detailed description provided for this course."}
+            </div>
+          </div>
 
           {/* Instructor Section */}
           <div className="mb-10 border-t border-gray-200 dark:border-gray-800 pt-8">
@@ -678,8 +686,8 @@ export default function CoursePreviewPage() {
                 ) : (
                   <div className="flex items-baseline gap-2">
                     <span className="text-4xl font-black text-dark dark:text-white">{formatPrice(course?.price)} ETB</span>
-                    {course?.originalPrice && (
-                      <span className="text-lg text-gray-500 line-through">{formatPrice(course.originalPrice)}</span>
+                    {(course?.originalPrice || course?.oldPrice) && (
+                      <span className="text-lg text-gray-500 line-through">{formatPrice(course.originalPrice || course.oldPrice)} ETB</span>
                     )}
                   </div>
                 )}

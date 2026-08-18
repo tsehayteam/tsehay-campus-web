@@ -127,7 +127,7 @@ Primary language: Amharic (using Ethiopic script). Use English terms for technic
         try {
             const firebaseConfig = {
                 apiKey: "AIzaSyDCxlwfYAS_I0D7c-8e-iB-Y-Rh2ZZoHZw",
-                authDomain: "tsehaycampus-e1a6d.firebaseapp.com",
+                authDomain: (typeof window !== 'undefined' && window.location.hostname.includes('tsehaycampus.com')) ? window.location.hostname : "tsehaycampus-e1a6d.firebaseapp.com",
                 projectId: "tsehaycampus-e1a6d",
                 storageBucket: "tsehaycampus-e1a6d.firebasestorage.app",
                 messagingSenderId: "1043616909865",

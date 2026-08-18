@@ -16,7 +16,7 @@ function getSmartFallbackReply(userPrompt: string): string {
     }
     
     if (p.includes('ኮርስ') || p.includes('course') || p.includes('ትምህርት') || p.includes('ስልጠና')) {
-        return "በፀሐይ ካምፓስ የሚከተሉት ስልጠናዎች ይገኛሉ፦\n1. ዲጂታል ማርኬቲንግ ኮርስ (Digital Marketing) - ነፃ (FREE)\n2. የሼን ኢምፖርት ቢዝነስ (Shein Import) - 4,500 ብር\n3. የዩቲዩብ ስኬት ሚስጥሮች (YouTube Masterclass) - 600 ብር\n\nለበለጠ መረጃ ወይም ለመመዝገብ በ @TsehayTeam ያግኙን።";
+        return "በፀሐይ ካምፓስ የሚከተሉት ስልጠናዎች ይገኛሉ፦\n1. ዲጂታል ማርኬቲንግ ኮርስ (Digital Marketing) - ነፃ (FREE)\n2. የሼን ኢምፖርት ቢዝነስ (Shein Import) - 4,500 ብር\n3. የዩቲዩብ ስኬት ሚስጥሮች (YouTube Masterclass) - 900 ብር\n\nለበለጠ መረጃ ወይም ለመመዝገብ በ @TsehayTeam ያግኙን።";
     }
     
     if (p.includes('ሰርተፊኬት') || p.includes('certif') || p.includes('ማስረጃ')) {
@@ -158,7 +158,7 @@ Base your answers ONLY on the verified facts provided below. Do not invent or as
    - Price: 4,500 ETB (4,500 ብር)
    - Syllabus: Section 0 (Orientation), Section 1 (App & Winning Products), Section 2 (Transit & Customs), Section 3 (Pricing & Marketing), Section 4 (Dollar Payment).
 3. YouTube Secrets Masterclass / Book (የዩቲዩብ ስኬት ሚስጥሮች)
-   - Price: 600 ETB (600 ብር)
+   - Price: 900 ETB (900 ብር)
    - Includes: A step-by-step masterclass, free Amharic e-book, and a half-day physical masterclass.
 4. Upcoming Courses: Web Development, Crypto Trading, and other premium/free courses will be added and listed on the website.
 
