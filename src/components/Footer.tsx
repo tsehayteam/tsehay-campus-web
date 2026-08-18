@@ -28,28 +28,31 @@ export default function Footer() {
                                 href="https://youtube.com/@eyoubsahle?si=p29sAFFmLagXd52X" 
                                 target="_blank" 
                                 rel="noreferrer" 
-                                className="relative group inline-flex items-center gap-3.5 px-5 py-3.5 bg-gradient-to-r from-red-600 via-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 text-white rounded-2xl border border-red-400/40 shadow-lg shadow-red-600/35 hover:shadow-red-600/60 transition-all duration-300 transform hover:-translate-y-1 hover:scale-[1.03] active:scale-95 cursor-pointer overflow-hidden"
+                                className="relative group inline-flex items-center gap-3 px-4 py-2.5 bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 text-white rounded-xl border border-red-400/30 shadow-md shadow-red-600/30 hover:shadow-red-600/50 transition-all duration-300 transform hover:-translate-y-0.5 hover:scale-105 active:scale-95 cursor-pointer overflow-hidden"
                             >
                                 {/* Shimmer glow effect */}
                                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out pointer-events-none" />
                                 
-                                {/* YouTube Icon Box */}
-                                <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-inner group-hover:scale-110 group-hover:bg-white transition-all duration-300 shrink-0">
-                                    <i className="fa-brands fa-youtube text-2xl text-white group-hover:text-red-600 transition-colors"></i>
+                                {/* YouTube Icon with Animated LIVE Signal Radar */}
+                                <div className="relative flex items-center justify-center shrink-0">
+                                    <div className="w-8 h-8 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-inner group-hover:bg-white transition-all duration-300">
+                                        <i className="fa-brands fa-youtube text-lg text-white group-hover:text-red-600 transition-colors"></i>
+                                    </div>
+                                    {/* Live Ping Ring */}
+                                    <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-300 opacity-75"></span>
+                                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500 border border-white"></span>
+                                    </span>
                                 </div>
 
                                 <div className="flex flex-col text-left">
-                                    <span className="text-[11px] font-bold text-red-100/90 tracking-wide uppercase flex items-center gap-1.5">
-                                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-sm"></span>
-                                        {lang === 'am' ? 'ነፃ ቪዲዮዎች & ሚስጥሮች' : 'Free Lessons & Insights'}
+                                    <div className="flex items-center gap-1">
+                                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                                        <span className="text-[10px] font-black text-red-100 uppercase tracking-widest">LIVE</span>
+                                    </div>
+                                    <span className="text-sm font-black text-white tracking-wide font-heading drop-shadow-sm">
+                                        {lang === 'am' ? 'የቢዝነስ ሚስጥሮች' : 'Business Secrets'}
                                     </span>
-                                    <span className="text-sm md:text-base font-black text-white tracking-wide font-heading drop-shadow-sm">
-                                        {lang === 'am' ? 'የቢዝነስ ሚስጥሮች (YouTube)' : 'Business Secrets (YouTube)'}
-                                    </span>
-                                </div>
-
-                                <div className="ml-1 w-7 h-7 rounded-full bg-white/15 flex items-center justify-center group-hover:bg-white/30 group-hover:translate-x-0.5 transition-all shrink-0">
-                                    <i className="fa-solid fa-arrow-up-right-from-square text-xs text-white"></i>
                                 </div>
                             </a>
                         </div>
