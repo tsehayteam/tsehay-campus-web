@@ -127,7 +127,7 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&family=Inter:wght@400;500;700&family=Noto+Sans+Ethiopic:wght@400;700;900&family=Playfair+Display:ital,wght@0,700;1,700&family=Great+Vibes&display=swap" rel="stylesheet" />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased pt-20 notranslate`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased pt-0 notranslate`}
         translate="no"
         suppressHydrationWarning
       >

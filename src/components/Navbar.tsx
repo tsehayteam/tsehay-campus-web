@@ -18,7 +18,7 @@ export default function Navbar() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isSignupMode, setIsSignupMode] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isNavVisible, setIsNavVisible] = useState(true);
+  const [isCurtainOpen, setIsCurtainOpen] = useState(false);
   const [theme, setTheme] = useState('dark');
   const { lang, toggleLanguage, t } = useLanguage();
 
@@ -26,6 +26,7 @@ export default function Navbar() {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [allCourses, setAllCourses] = useState<any[]>(() => getCachedCourses());
   const searchRef = useRef<HTMLDivElement>(null);
+  const touchStartY = useRef<number | null>(null);
   
   const pathname = usePathname();
   const router = useRouter();
@@ -33,13 +34,14 @@ export default function Navbar() {
   const navigateTo = (url: string) => {
     setIsMobileMenuOpen(false);
     setShowProfileDropdown(false);
+    setIsCurtainOpen(false); // Roll up curtain when navigating
 
     if (url.startsWith('/#') || url.startsWith('#')) {
       const hash = url.replace('/#', '').replace('#', '');
       if (pathname === '/') {
         const el = document.getElementById(hash);
         if (el) {
-          const offset = 80;
+          const offset = 40;
           const bodyRect = document.body.getBoundingClientRect().top;
           const elementRect = el.getBoundingClientRect().top;
           window.scrollTo({ top: elementRect - bodyRect - offset, behavior: 'smooth' });
@@ -49,7 +51,7 @@ export default function Navbar() {
         setTimeout(() => {
           const el = document.getElementById(hash);
           if (el) {
-            const offset = 80;
+            const offset = 40;
             const bodyRect = document.body.getBoundingClientRect().top;
             const elementRect = el.getBoundingClientRect().top;
             window.scrollTo({ top: elementRect - bodyRect - offset, behavior: 'smooth' });
@@ -67,13 +69,13 @@ export default function Navbar() {
   };
 
   useEffect(() => {
-    // Automatically close mobile menu and reset visibility on route change
+    // When entering any page (e.g. /courses, /about), roll up curtain into ceiling
     setIsMobileMenuOpen(false);
     setShowProfileDropdown(false);
-    setIsNavVisible(true);
+    setIsCurtainOpen(false);
   }, [pathname]);
 
-  // Scroll listener for smart auto-hiding / auto-revealing navbar
+  // Smart scroll: Scrolling down rolls up curtain; scrolling up can also reveal handle
   useEffect(() => {
     let lastScroll = 0;
     let ticking = false;
@@ -83,16 +85,10 @@ export default function Navbar() {
         window.requestAnimationFrame(() => {
           const currentScroll = window.scrollY || document.documentElement.scrollTop;
 
-          // Always show when at the top of the page
-          if (currentScroll <= 50) {
-            setIsNavVisible(true);
-          } else if (currentScroll > lastScroll + 8) {
-            // Scrolling down -> hide navbar for clean full-screen immersive view
-            setIsNavVisible(false);
+          if (currentScroll > lastScroll + 15) {
+            // Scrolling down -> roll up curtain to give full screen focus
+            setIsCurtainOpen(false);
             setShowProfileDropdown(false);
-          } else if (currentScroll < lastScroll - 6) {
-            // Scrolling up / swiping down -> smoothly reveal navbar
-            setIsNavVisible(true);
           }
 
           lastScroll = Math.max(0, currentScroll);
@@ -107,6 +103,23 @@ export default function Navbar() {
       window.removeEventListener('scroll', handleScroll);
     };
   }, []);
+
+  // Handle touch drag for pulling curtain down/up
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartY.current === null) return;
+    const currentY = e.changedTouches[0].clientY;
+    const diff = currentY - touchStartY.current;
+    if (diff > 35) {
+      setIsCurtainOpen(true);
+    } else if (diff < -35) {
+      setIsCurtainOpen(false);
+    }
+    touchStartY.current = null;
+  };
 
   useEffect(() => {
     setMounted(true);
@@ -181,9 +194,69 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className={`glass-nav fixed w-full top-0 z-50 transition-all duration-300 ease-in-out transform ${
-        isNavVisible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0 pointer-events-none'
-      }`}>
+      {/* 1. Sleek Floating Pull Tab Handle (የሚታይ መጎተቻ) - Visible when Curtain is Rolled Up */}
+      <div 
+        onClick={() => setIsCurtainOpen(true)}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        className={`fixed top-0 left-1/2 -translate-x-1/2 z-50 cursor-pointer select-none transition-all duration-300 ${
+          isCurtainOpen 
+            ? 'opacity-0 -translate-y-full pointer-events-none' 
+            : 'opacity-100 translate-y-0'
+        }`}
+        title="ማውጫውን ለመክፈት ይጎትቱ ወይም ይጫኑ (Click or Pull to Open Menu)"
+      >
+        <div className="bg-[#080d1a]/95 hover:bg-[#0f172a] backdrop-blur-2xl border-x border-b border-[#f9b03c]/70 hover:border-[#f9b03c] px-4 sm:px-6 py-1.5 rounded-b-2xl shadow-[0_4px_25px_rgba(249,176,60,0.35),0_8px_30px_rgba(0,0,0,0.8)] flex items-center gap-2.5 group transition-all duration-300 hover:py-2 hover:px-7 active:scale-95">
+          {/* Tsehay Sun / Compass Icon */}
+          <div className="w-5 h-5 rounded-full bg-[#f9b03c]/20 border border-[#f9b03c]/50 flex items-center justify-center text-[#f9b03c] text-[11px] shadow-[0_0_8px_rgba(249,176,60,0.4)]">
+            <i className="fa-solid fa-compass animate-spin" style={{ animationDuration: '14s' }}></i>
+          </div>
+
+          {/* Grip Bar Notches */}
+          <div className="flex flex-col gap-0.5 items-center">
+            <span className="w-5 h-0.5 bg-[#f9b03c] rounded-full group-hover:w-7 transition-all duration-300"></span>
+            <span className="w-3 h-0.5 bg-[#f9b03c]/60 rounded-full group-hover:w-5 transition-all duration-300"></span>
+          </div>
+
+          {/* Label Text & Bouncing Chevron */}
+          <span className="text-[11px] sm:text-xs font-black tracking-wide text-white group-hover:text-[#f9b03c] transition-colors whitespace-nowrap">
+            ማውጫውን ሳብ (Menu)
+          </span>
+          <i className="fa-solid fa-chevron-down text-[10px] text-[#f9b03c] animate-bounce"></i>
+        </div>
+      </div>
+
+      {/* 2. Backdrop Overlay when Curtain is Expanded (Clicking outside closes it) */}
+      {isCurtainOpen && (
+        <div 
+          onClick={() => setIsCurtainOpen(false)}
+          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[2px] transition-opacity duration-300"
+        />
+      )}
+
+      {/* 3. Curtain Rollup Navbar (እንደ መጋረጃ የሚወርድ እና የሚጠቀለል) */}
+      <nav 
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        className={`glass-nav fixed w-full top-0 z-50 border-b border-[#f9b03c]/30 shadow-[0_12px_40px_rgba(0,0,0,0.7)] transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] transform ${
+          isCurtainOpen 
+            ? 'translate-y-0 opacity-100' 
+            : '-translate-y-full opacity-0 pointer-events-none'
+        }`}
+      >
+        {/* Attached Roll-up Close Handle at Bottom Center */}
+        <button 
+          type="button"
+          onClick={() => setIsCurtainOpen(false)}
+          className="absolute -bottom-6 left-1/2 -translate-x-1/2 bg-[#080d1a]/95 hover:bg-[#0f172a] backdrop-blur-2xl border-x border-b border-[#f9b03c]/70 hover:border-[#f9b03c] px-4 py-1 rounded-b-xl shadow-[0_4px_20px_rgba(0,0,0,0.7)] flex items-center gap-1.5 text-[#f9b03c] hover:text-white transition-all cursor-pointer group/close hover:px-5"
+          title="ወደ ላይ መልሰህ እጠፍ (Roll Up)"
+        >
+          <i className="fa-solid fa-chevron-up text-[10px] group-hover/close:-translate-y-0.5 transition-transform"></i>
+          <span className="text-[10px] font-black uppercase tracking-wider text-gray-200 group-hover/close:text-[#f9b03c]">
+            ወደ ላይ እጠፍ (Roll Up)
+          </span>
+        </button>
+
         <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-20 gap-4 lg:gap-6">
                 
@@ -439,9 +512,7 @@ export default function Navbar() {
       </nav>
 
       {/* Udacity-Style Mobile Bottom App Navigation Bar */}
-      <div className={`md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-[#0d0d0d]/95 backdrop-blur-xl border-t border-gray-200 dark:border-white/10 px-2 py-2 safe-area-bottom shadow-[0_-4px_25px_rgba(0,0,0,0.15)] dark:shadow-[0_-4px_25px_rgba(0,0,0,0.7)] transition-all duration-300 ease-in-out transform ${
-        isNavVisible ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'
-      }`}>
+      <div className={`md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-[#0d0d0d]/95 backdrop-blur-xl border-t border-gray-200 dark:border-white/10 px-2 py-2 safe-area-bottom shadow-[0_-4px_25px_rgba(0,0,0,0.15)] dark:shadow-[0_-4px_25px_rgba(0,0,0,0.7)] transition-all duration-300 ease-in-out transform translate-y-0 opacity-100`}>
         <div className="flex items-center justify-around max-w-md mx-auto">
           <Link 
             href="/" 
