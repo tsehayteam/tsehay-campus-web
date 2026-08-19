@@ -251,28 +251,28 @@ export default function YouTubeVideoSlider() {
                   onClick={() => setSelectedModalVideo(video)}
                   className="group relative bg-[#0c101d] rounded-2xl sm:rounded-3xl overflow-hidden border border-white/10 hover:border-[#f9b03c] shadow-xl hover:shadow-[0_0_40px_rgba(249,176,60,0.35)] transition-all duration-400 cursor-pointer flex flex-col hover:-translate-y-2"
                 >
-                  {/* 16:9 Thumbnail Image Container */}
+                  {/* 16:9 Thumbnail Image Container (100% Crisp & Visible!) */}
                   <div className="relative aspect-[16/9] w-full overflow-hidden bg-black">
                     <img
                       src={thumbUrl}
                       alt={video.title}
-                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                       onError={(e) => {
                         if (video.youtubeId) {
                           e.currentTarget.src = `https://img.youtube.com/vi/${video.youtubeId}/hqdefault.jpg`;
                         }
                       }}
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent"></div>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-black/20 pointer-events-none"></div>
 
-                    {/* Centered Glowing Round Play Icon */}
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-14 h-14 rounded-full bg-black/80 group-hover:bg-[#f9b03c] border-2 border-[#f9b03c]/90 flex items-center justify-center text-[#f9b03c] group-hover:text-black transition-all duration-300 shadow-[0_0_25px_rgba(249,176,60,0.5)] group-hover:scale-110">
-                      <i className="fa-solid fa-play text-lg pl-0.5"></i>
+                    {/* Centered Sleek Glowing Play Icon (Minimal, Non-Intrusive) */}
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-black/50 group-hover:bg-[#f9b03c] border-2 border-[#f9b03c]/90 flex items-center justify-center text-[#f9b03c] group-hover:text-black backdrop-blur-xs transition-all duration-300 shadow-[0_0_25px_rgba(249,176,60,0.5)] group-hover:scale-110">
+                      <i className="fa-solid fa-play text-base sm:text-lg pl-0.5"></i>
                     </div>
 
                     {/* Top Index & Tag Badges */}
                     <div className="absolute top-3 left-3 flex items-center gap-2">
-                      <span className="bg-red-600 text-white text-[11px] font-black px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-md">
+                      <span className="bg-red-600/90 text-white text-[10px] sm:text-[11px] font-black px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-md backdrop-blur-xs">
                         <i className="fa-brands fa-youtube text-[11px]"></i>
                         <span>#{idx + 1}</span>
                       </span>
@@ -299,7 +299,7 @@ export default function YouTubeVideoSlider() {
             })}
           </div>
         ) : (
-          /* View 2: 16:9 HORIZONTAL 3D COVERFLOW CAROUSEL */
+          /* View 2: 16:9 HORIZONTAL 3D COVERFLOW CAROUSEL (Thumbnail 100% Visible & Clear!) */
           <div>
             <div 
               className="relative w-full h-[240px] sm:h-[360px] md:h-[430px] lg:h-[480px] flex items-center justify-center perspective-[1200px]"
@@ -368,7 +368,7 @@ export default function YouTubeVideoSlider() {
                         transformStyle: 'preserve-3d',
                       }}
                     >
-                      {/* Background 16:9 Thumbnail Image */}
+                      {/* Background 16:9 Thumbnail Image (100% Sharp & Unobscured!) */}
                       <img
                         src={thumbUrl}
                         alt={video.title}
@@ -396,31 +396,29 @@ export default function YouTubeVideoSlider() {
                         />
                       )}
 
-                      {/* Subtle Dark Vignette for Cinematic Glow */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30 pointer-events-none"></div>
+                      {/* Subtle Dark Vignette at edges only for high contrast */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20 pointer-events-none"></div>
 
-                      {/* Frosted Center Overlay Card Matching Screenshot */}
+                      {/* Non-intrusive Center Play / Unmute Button */}
                       {isCenter && (
-                        <div 
-                          className="absolute inset-0 z-20 flex flex-col items-center justify-center p-4 bg-black/30 backdrop-blur-[1.5px] cursor-pointer group/card select-none"
-                        >
-                          {/* Top Pill Badge */}
-                          <div className="absolute top-3 sm:top-5 px-3 sm:px-4 py-1 rounded-full bg-black/80 border border-white/15 text-white text-[10px] sm:text-xs font-bold shadow-lg backdrop-blur-md">
-                            {video.videoSrc && !isMuted ? 'Mute' : 'Unmute'}
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none">
+                          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-black/40 hover:bg-[#f9b03c] border-2 border-[#f9b03c]/90 text-[#f9b03c] hover:text-black flex items-center justify-center shadow-[0_0_30px_rgba(249,176,60,0.6)] backdrop-blur-xs transition-all duration-300 transform group-hover:scale-110">
+                            {video.videoSrc ? (
+                              <i className={`fa-solid ${isMuted ? 'fa-volume-xmark' : 'fa-volume-high'} text-lg sm:text-xl pl-0.5`}></i>
+                            ) : (
+                              <i className="fa-solid fa-play text-lg sm:text-xl pl-1"></i>
+                            )}
                           </div>
+                        </div>
+                      )}
 
-                          {/* Frosted Center Card */}
-                          <div className="rounded-2xl sm:rounded-3xl bg-[#1c1f2b]/85 backdrop-blur-xl border border-white/15 px-5 sm:px-8 py-4 sm:py-6 flex flex-col items-center justify-center text-center shadow-2xl transition-transform duration-300 group-hover/card:scale-105 max-w-[280px] sm:max-w-[320px]">
-                            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full border-2 border-[#f9b03c]/80 bg-black/50 flex items-center justify-center text-[#f9b03c] mb-2 sm:mb-3 shadow-[0_0_20px_rgba(249,176,60,0.5)]">
-                              <i className={`fa-solid ${video.videoSrc && !isMuted ? 'fa-volume-high' : 'fa-volume-high'} text-base sm:text-xl animate-pulse`}></i>
-                            </div>
-                            <h4 className="text-xs sm:text-base font-extrabold text-white tracking-tight mb-0.5 sm:mb-1">
-                              Your Video Is Playing
-                            </h4>
-                            <p className="text-[10px] sm:text-xs font-bold text-[#f9b03c] tracking-wide">
-                              {video.videoSrc && !isMuted ? 'Click to Mute' : 'Click to Unmute'}
-                            </p>
-                          </div>
+                      {/* Sleek Floating Island Pill (Bottom-Right) - Doesn't Block Center Face/Thumb! */}
+                      {isCenter && (
+                        <div className="absolute bottom-3 sm:bottom-4 right-3 sm:right-4 z-20 flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-full bg-black/80 hover:bg-[#f9b03c] border border-[#f9b03c]/60 text-white hover:text-black backdrop-blur-md shadow-xl transition-all duration-300 cursor-pointer">
+                          <i className={`fa-solid ${video.videoSrc && !isMuted ? 'fa-volume-high text-green-400' : 'fa-volume-high text-[#f9b03c]'} text-xs animate-pulse`}></i>
+                          <span className="text-[10px] sm:text-xs font-black tracking-wide">
+                            {video.videoSrc ? (isMuted ? 'ድምፅ ክፈት (Unmute)' : 'ድምፅ ተከፍቷል (Mute)') : 'ቪዲዮውን ክፈት (Play)'}
+                          </span>
                         </div>
                       )}
                     </div>
@@ -449,7 +447,7 @@ export default function YouTubeVideoSlider() {
         )}
       </div>
 
-      {/* Fullscreen Video Modal for Deep Viewing (Ultra-Clean, Luxury Standard, No Captions/Clutter) */}
+      {/* Fullscreen Video Modal for Deep Viewing (Zero Clutter, No Captions/Annotations: cc_load_policy=0, iv_load_policy=3, rel=0) */}
       {selectedModalVideo && (
         <div
           className="fixed inset-0 z-50 bg-black/95 backdrop-blur-xl flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-200"
@@ -479,7 +477,7 @@ export default function YouTubeVideoSlider() {
               </button>
             </div>
 
-            {/* Video Player Embed / Direct MP4 (Captions Disabled by Default: cc_load_policy=0 & iv_load_policy=3) */}
+            {/* Video Player Embed / Direct MP4 (Clean Pure Stream: No Subtitles/Captions, No Annotations, Clean Player) */}
             <div className="relative aspect-video w-full bg-black">
               {selectedModalVideo.videoSrc ? (
                 <video
@@ -490,7 +488,7 @@ export default function YouTubeVideoSlider() {
                 />
               ) : (
                 <iframe
-                  src={`https://www.youtube.com/embed/${selectedModalVideo.youtubeId || extractYouTubeId(selectedModalVideo.youtubeUrl)}?autoplay=1&rel=0&modestbranding=1&cc_load_policy=0&iv_load_policy=3&playsinline=1&controls=1`}
+                  src={`https://www.youtube.com/embed/${selectedModalVideo.youtubeId || extractYouTubeId(selectedModalVideo.youtubeUrl)}?autoplay=1&rel=0&modestbranding=1&cc_load_policy=0&cc_lang_pref=off&iv_load_policy=3&playsinline=1&controls=1&hl=en`}
                   title={selectedModalVideo.title}
                   className="w-full h-full border-0"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"

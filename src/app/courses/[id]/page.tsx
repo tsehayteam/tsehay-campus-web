@@ -667,25 +667,28 @@ export default function CoursePreviewPage() {
                 <div className="cursor-pointer relative w-full aspect-video bg-black overflow-hidden group select-none" onClick={() => { if (currentVideoUrl) setIsPlaying(true); }}>
                   <img src={displayImage || `https://placehold.co/600x400/3268BA/FFFFFF?text=${encodeURIComponent(course.title || 'Tsehay Campus')}&font=Montserrat`} alt={course.title} className="w-full h-full object-cover block group-hover:scale-105 transition-transform duration-700" onError={(e) => { e.currentTarget.src='https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1000&auto=format&fit=crop' }} />
                   {currentVideoUrl && (
-                    <div className="absolute inset-0 z-20 flex flex-col items-center justify-center p-4 bg-black/40 backdrop-blur-[2px] transition-colors group-hover:bg-black/50">
+                    <>
+                      {/* Subtle Edge Vignette only */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20 pointer-events-none"></div>
+
                       {/* Top Pill Badge */}
-                      <div className="absolute top-3 px-3 py-1 rounded-full bg-black/80 border border-white/15 text-white text-[11px] font-bold shadow-lg backdrop-blur-md">
+                      <div className="absolute top-3 left-3 px-3 py-1 rounded-full bg-black/80 border border-white/15 text-white text-[11px] font-bold shadow-lg backdrop-blur-md">
                         Preview
                       </div>
 
-                      {/* Frosted Center Card */}
-                      <div className="rounded-2xl bg-[#1c1f2b]/85 backdrop-blur-xl border border-white/15 px-6 py-5 flex flex-col items-center justify-center text-center shadow-2xl transition-transform duration-300 group-hover:scale-105 max-w-[260px]">
-                        <div className="w-12 h-12 rounded-full border-2 border-[#f9b03c]/80 bg-black/50 flex items-center justify-center text-[#f9b03c] mb-2.5 shadow-[0_0_20px_rgba(249,176,60,0.5)]">
-                          <i className="fa-solid fa-play text-lg pl-0.5 text-[#f9b03c] animate-pulse"></i>
+                      {/* Minimalist Glowing Center Play Icon */}
+                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none">
+                        <div className="w-14 h-14 rounded-full bg-black/50 group-hover:bg-[#f9b03c] border-2 border-[#f9b03c] text-[#f9b03c] group-hover:text-black flex items-center justify-center shadow-[0_0_30px_rgba(249,176,60,0.6)] backdrop-blur-xs transition-all duration-300 group-hover:scale-110">
+                          <i className="fa-solid fa-play text-lg pl-1"></i>
                         </div>
-                        <h4 className="text-sm font-extrabold text-white tracking-tight mb-0.5">
-                          Course Preview
-                        </h4>
-                        <p className="text-[11px] font-bold text-[#f9b03c]">
-                          Click to Play Preview
-                        </p>
                       </div>
-                    </div>
+
+                      {/* Floating Bottom Pill */}
+                      <div className="absolute bottom-3 right-3 z-20 flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-black/80 group-hover:bg-[#f9b03c] border border-[#f9b03c]/60 text-white group-hover:text-black backdrop-blur-md shadow-lg transition-all duration-300">
+                        <i className="fa-solid fa-play text-xs text-[#f9b03c] group-hover:text-black"></i>
+                        <span className="text-[11px] font-black tracking-wide">ኮርሱን ይመልከቱ (Play Preview)</span>
+                      </div>
+                    </>
                   )}
                 </div>
               )}

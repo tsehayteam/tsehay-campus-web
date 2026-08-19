@@ -21,7 +21,7 @@ export default function About() {
               <div className="w-20 h-1.5 bg-primary mx-auto rounded-full"></div>
             </div>
 
-            {/* Main Video Presentation with "Your Video Is Playing - Click to Unmute" Overlay */}
+            {/* Main Video Presentation: 100% Crisp, Pure, No Giant Cover / No Captions */}
             <AboutHeroYouTube />
 
             {/* Our Story */}
@@ -57,7 +57,7 @@ export default function About() {
               </p>
             </div>
 
-            {/* What We Do / Why Tsehay Campus Cards (Primary Color Heading) */}
+            {/* What We Do / Why Tsehay Campus Cards */}
             <div className="mb-20 sm:mb-24">
               <h3 className="text-2xl sm:text-3xl font-extrabold font-heading text-primary mb-8 text-center">
                 {t('what_we_do_title')}
@@ -118,7 +118,7 @@ export default function About() {
 
             {/* Video Reels & Team/Community Photo Showcase */}
             <div className="space-y-6">
-              {/* Short Vertical Videos with "Your Video Is Playing - Click to Unmute" Overlay */}
+              {/* Short Vertical Videos with Sleek Floating Corner Sound Controller */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <AboutShortVideo src="/assets/videos/Tsehay.mp4" title="Tsehay Campus Life" />
                 <AboutShortVideo src="/assets/videos/Marketing%20and%20psyco.mp4" title="Marketing & Practical Training" />
@@ -146,13 +146,13 @@ export default function About() {
 function AboutHeroYouTube() {
   const [isUnmuted, setIsUnmuted] = useState(false);
   const [iframeSrc, setIframeSrc] = useState(
-    'https://www.youtube.com/embed/mgdOMtW6J8k?rel=0&modestbranding=1&showinfo=0&autoplay=1&mute=1&vq=hd1080&cc_load_policy=0&iv_load_policy=3&playsinline=1'
+    'https://www.youtube.com/embed/mgdOMtW6J8k?rel=0&modestbranding=1&showinfo=0&autoplay=1&mute=1&vq=hd1080&cc_load_policy=0&cc_lang_pref=off&iv_load_policy=3&playsinline=1&controls=1&hl=en'
   );
 
   const handleUnmute = () => {
     setIsUnmuted(true);
     setIframeSrc(
-      'https://www.youtube.com/embed/mgdOMtW6J8k?rel=0&modestbranding=1&showinfo=0&autoplay=1&mute=0&vq=hd1080&cc_load_policy=0&iv_load_policy=3&playsinline=1'
+      'https://www.youtube.com/embed/mgdOMtW6J8k?rel=0&modestbranding=1&showinfo=0&autoplay=1&mute=0&vq=hd1080&cc_load_policy=0&cc_lang_pref=off&iv_load_policy=3&playsinline=1&controls=1&hl=en'
     );
   };
 
@@ -170,30 +170,16 @@ function AboutHeroYouTube() {
           allowFullScreen
         ></iframe>
 
-        {/* Frosted Glass "Your Video Is Playing - Click to Unmute" Overlay Card */}
+        {/* Sleek Non-Intrusive Unmute Island Pill (Floating, Never Blocks the Video!) */}
         {!isUnmuted && (
-          <div 
+          <button
+            type="button"
             onClick={handleUnmute}
-            className="absolute inset-0 z-20 bg-black/40 backdrop-blur-[2px] flex flex-col items-center justify-center cursor-pointer transition-all duration-300 hover:bg-black/50 p-4 select-none"
+            className="absolute bottom-4 sm:bottom-6 right-4 sm:right-6 z-20 inline-flex items-center gap-2.5 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full bg-black/85 hover:bg-[#f9b03c] border border-[#f9b03c]/70 text-white hover:text-black shadow-[0_4px_25px_rgba(0,0,0,0.8),0_0_20px_rgba(249,176,60,0.5)] backdrop-blur-md transition-all duration-300 transform hover:scale-105 active:scale-95 cursor-pointer"
           >
-            {/* Top Pill Badge */}
-            <div className="absolute top-4 sm:top-6 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-black/80 border border-white/15 text-white text-xs font-bold shadow-lg backdrop-blur-md hover:bg-[#f9b03c] hover:text-black transition-colors">
-              Unmute
-            </div>
-
-            {/* Frosted Center Card Matching User's Screenshot */}
-            <div className="rounded-2xl sm:rounded-3xl bg-[#1c1f2b]/85 backdrop-blur-xl border border-white/15 px-6 sm:px-10 py-6 sm:py-8 flex flex-col items-center justify-center text-center shadow-2xl transition-transform duration-300 hover:scale-105 max-w-[340px]">
-              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full border-2 border-[#f9b03c]/80 bg-black/50 flex items-center justify-center text-[#f9b03c] mb-3 shadow-[0_0_25px_rgba(249,176,60,0.5)]">
-                <i className="fa-solid fa-volume-high text-xl sm:text-2xl animate-pulse"></i>
-              </div>
-              <h4 className="text-base sm:text-xl font-extrabold text-white tracking-tight mb-1">
-                Your Video Is Playing
-              </h4>
-              <p className="text-xs sm:text-sm font-bold text-[#f9b03c] tracking-wide">
-                Click to Unmute
-              </p>
-            </div>
-          </div>
+            <i className="fa-solid fa-volume-high text-sm sm:text-base text-[#f9b03c] group-hover:text-black animate-pulse"></i>
+            <span className="text-xs sm:text-sm font-black tracking-wide">ድምፅ ክፈት (Click to Unmute)</span>
+          </button>
         )}
       </div>
     </div>
@@ -257,7 +243,7 @@ function AboutShortVideo({ src, title }: { src: string; title?: string }) {
       onClick={toggleSound}
       className="rounded-3xl overflow-hidden shadow-2xl group aspect-[9/16] bg-slate-950 relative cursor-pointer select-none border border-gray-200 dark:border-gray-800 transition-all duration-300 hover:shadow-[0_0_35px_rgba(249,176,60,0.3)]"
     >
-      {/* HTML5 Video Element */}
+      {/* HTML5 Video Element (100% Crisp & Visible!) */}
       <video
         ref={videoRef}
         autoPlay
@@ -271,7 +257,7 @@ function AboutShortVideo({ src, title }: { src: string; title?: string }) {
         <source src={src} type="video/mp4" />
       </video>
 
-      {/* Dark Vignette Overlay */}
+      {/* Dark Subtle Edge Vignette */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-black/30 pointer-events-none"></div>
 
       {/* Top Badge */}
@@ -282,34 +268,20 @@ function AboutShortVideo({ src, title }: { src: string; title?: string }) {
         </span>
       </div>
 
-      {/* Frosted "Your Video Is Playing - Click to Unmute" Overlay Card */}
-      {isMuted ? (
-        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center p-4 bg-black/30 backdrop-blur-[2px]">
-          {/* Top Pill */}
-          <div className="absolute top-4 px-3 py-1 rounded-full bg-black/80 border border-white/15 text-white text-[11px] font-bold shadow-md backdrop-blur-md">
-            Unmute
-          </div>
+      {/* Center Subtle Play/Sound Indicator on Hover */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        <div className="w-14 h-14 rounded-full bg-black/50 border border-white/20 text-[#f9b03c] flex items-center justify-center backdrop-blur-sm shadow-xl">
+          <i className={`fa-solid ${isMuted ? 'fa-volume-xmark' : 'fa-volume-high'} text-lg`}></i>
+        </div>
+      </div>
 
-          {/* Center Card */}
-          <div className="rounded-2xl bg-[#1c1f2b]/85 backdrop-blur-xl border border-white/15 px-6 py-5 flex flex-col items-center justify-center text-center shadow-2xl transition-transform duration-300 group-hover:scale-105 max-w-[240px]">
-            <div className="w-12 h-12 rounded-full border-2 border-[#f9b03c]/80 bg-black/50 flex items-center justify-center text-[#f9b03c] mb-2.5 shadow-[0_0_20px_rgba(249,176,60,0.5)]">
-              <i className="fa-solid fa-volume-high text-lg animate-pulse"></i>
-            </div>
-            <h4 className="text-xs sm:text-sm font-extrabold text-white tracking-tight mb-0.5">
-              Your Video Is Playing
-            </h4>
-            <p className="text-[11px] font-bold text-[#f9b03c]">
-              Click to Unmute
-            </p>
-          </div>
-        </div>
-      ) : (
-        /* Floating Unmuted Sound Indicator */
-        <div className="absolute bottom-4 right-4 z-20 px-3 py-1.5 rounded-full bg-black/85 border border-[#f9b03c]/50 text-white backdrop-blur-md shadow-lg flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-green-500"></span>
-          <span className="text-[11px] font-black text-[#f9b03c]">SOUND ON</span>
-        </div>
-      )}
+      {/* Floating Corner Sound Pill */}
+      <div className="absolute bottom-4 right-4 z-20 px-3.5 py-1.5 rounded-full bg-black/80 hover:bg-[#f9b03c] border border-[#f9b03c]/60 text-white hover:text-black backdrop-blur-md shadow-lg transition-all flex items-center gap-2">
+        <i className={`fa-solid ${isMuted ? 'fa-volume-xmark text-[#f9b03c]' : 'fa-volume-high text-green-400'} text-xs animate-pulse`}></i>
+        <span className="text-[11px] font-black tracking-wide">
+          {isMuted ? 'ድምፅ ክፈት (Unmute)' : 'SOUND ON'}
+        </span>
+      </div>
 
       {/* Bottom Brand Watermark */}
       <div className="absolute bottom-4 left-4 flex items-center z-10 pointer-events-none">
