@@ -1,17 +1,43 @@
 'use client';
 import React from 'react';
 import Link from 'next/link';
+import { useRouter, usePathname } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageContext';
 
 export default function Footer() {
     const { t, lang } = useLanguage();
+    const router = useRouter();
+    const pathname = usePathname();
+
+    const navigateToSection = (hash: string) => {
+        if (pathname === '/') {
+            const el = document.getElementById(hash);
+            if (el) {
+                const offset = 80;
+                const bodyRect = document.body.getBoundingClientRect().top;
+                const elementRect = el.getBoundingClientRect().top;
+                window.scrollTo({ top: elementRect - bodyRect - offset, behavior: 'smooth' });
+            }
+        } else {
+            router.push('/#' + hash);
+            setTimeout(() => {
+                const el = document.getElementById(hash);
+                if (el) {
+                    const offset = 80;
+                    const bodyRect = document.body.getBoundingClientRect().top;
+                    const elementRect = el.getBoundingClientRect().top;
+                    window.scrollTo({ top: elementRect - bodyRect - offset, behavior: 'smooth' });
+                }
+            }, 350);
+        }
+    };
 
     return (
         <footer id="footer" className="bg-dark text-gray-300 pt-8 pb-8 font-body border-t-[6px] border-primary mt-auto z-10 relative">
             <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8 mb-12">
                     <div className="lg:col-span-2 pr-4">
-                        <Link href="/" onClick={() => { window.scrollTo({ top: 0, behavior: 'smooth' }) }} className="flex items-center gap-3 cursor-pointer mb-6 group">
+                        <Link href="/" onClick={() => { if (pathname === '/') window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="flex items-center gap-3 cursor-pointer mb-6 group">
                             <div className="bg-white p-1 rounded-md">
                                 <img src="/tc-logo.jpg" alt="Logo" className="h-10 w-auto object-contain rounded-sm" onError={(e) => { e.currentTarget.src='https://ui-avatars.com/api/?name=TC&background=fff&color=0f172a' }} />
                             </div>
@@ -61,19 +87,19 @@ export default function Footer() {
                     <div className="flex flex-col items-center text-center">
                         <h4 className="text-white font-black mb-5 font-heading tracking-wide text-base border-b-2 border-primary pb-2 inline-block">{t('quick_links')}</h4>
                         <ul className="space-y-3 text-sm">
-                            <li><button onClick={() => { document.getElementById('courses')?.scrollIntoView({behavior: 'smooth'}) }} className="hover:text-primary transition flex items-center gap-2 cursor-pointer">{t('link_shein')}</button></li>
-                            <li><button onClick={() => { document.getElementById('courses')?.scrollIntoView({behavior: 'smooth'}) }} className="hover:text-primary transition flex items-center gap-2 cursor-pointer">{t('link_digital')}</button></li>
-                            <li><button onClick={() => { document.getElementById('courses')?.scrollIntoView({behavior: 'smooth'}) }} className="hover:text-primary transition flex items-center gap-2 cursor-pointer">{t('link_web')}</button></li>
-                            <li><button onClick={() => { document.getElementById('courses')?.scrollIntoView({behavior: 'smooth'}) }} className="hover:text-primary transition flex items-center gap-2 cursor-pointer">{t('link_crypto')}</button></li>
+                            <li><Link href="/courses" className="hover:text-primary transition flex items-center gap-2 cursor-pointer">{t('link_shein')}</Link></li>
+                            <li><Link href="/courses" className="hover:text-primary transition flex items-center gap-2 cursor-pointer">{t('link_digital')}</Link></li>
+                            <li><Link href="/courses" className="hover:text-primary transition flex items-center gap-2 cursor-pointer">{t('link_web')}</Link></li>
+                            <li><Link href="/courses" className="hover:text-primary transition flex items-center gap-2 cursor-pointer">{t('link_crypto')}</Link></li>
                         </ul>
                     </div>
 
                     <div className="flex flex-col items-end text-right">
                         <h4 className="text-white font-black mb-5 font-heading tracking-wide text-base border-b-2 border-primary pb-2 inline-block">{t('contact_us')}</h4>
                         <ul className="space-y-3 text-sm text-gray-200">
-                            <li><a href="javascript:void(0)" onClick={() => { document.getElementById('faq')?.scrollIntoView({behavior: 'smooth'}) }} className="hover:text-primary transition flex items-center gap-2">{t('link_faq')}</a></li>
-                            <li><a href="javascript:void(0)" onClick={() => { window.dispatchEvent(new Event('open-terms-modal')) }} className="hover:text-primary transition flex items-center gap-2">{t('link_terms')}</a></li>
-                            <li><a href="javascript:void(0)" onClick={() => { window.dispatchEvent(new Event('open-terms-modal')) }} className="hover:text-primary transition flex items-center gap-2">{t('link_privacy')}</a></li>
+                            <li><button type="button" onClick={() => navigateToSection('faq')} className="hover:text-primary transition flex items-center gap-2 cursor-pointer">{t('link_faq')}</button></li>
+                            <li><button type="button" onClick={() => { window.dispatchEvent(new Event('open-terms-modal')) }} className="hover:text-primary transition flex items-center gap-2 cursor-pointer">{t('link_terms')}</button></li>
+                            <li><button type="button" onClick={() => { window.dispatchEvent(new Event('open-terms-modal')) }} className="hover:text-primary transition flex items-center gap-2 cursor-pointer">{t('link_privacy')}</button></li>
                         </ul>
                     </div>
                 </div>

@@ -44,7 +44,16 @@ export default function Navbar() {
           window.scrollTo({ top: elementRect - bodyRect - offset, behavior: 'smooth' });
         }
       } else {
-        router.push(url);
+        router.push('/#' + hash);
+        setTimeout(() => {
+          const el = document.getElementById(hash);
+          if (el) {
+            const offset = 80;
+            const bodyRect = document.body.getBoundingClientRect().top;
+            const elementRect = el.getBoundingClientRect().top;
+            window.scrollTo({ top: elementRect - bodyRect - offset, behavior: 'smooth' });
+          }
+        }, 350);
       }
       return;
     }
@@ -147,30 +156,28 @@ export default function Navbar() {
 
                 {/* 2. Navigation Links with Hover & Active Underline States */}
                 <div className="hidden lg:flex items-center gap-6 h-full">
-                    <a 
-                        href="/#courses" 
-                        onClick={(e) => {
-                            if (pathname === '/') {
-                                e.preventDefault();
-                                const element = document.getElementById('courses');
-                                if (element) {
-                                    const offset = 80;
-                                    const bodyRect = document.body.getBoundingClientRect().top;
-                                    const elementRect = element.getBoundingClientRect().top;
-                                    window.scrollTo({ top: elementRect - bodyRect - offset, behavior: 'smooth' });
-                                }
+                    <Link 
+                        href="/courses" 
+                        onClick={() => {
+                            if (pathname === '/courses') {
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
                             }
-                        }} 
+                        }}
                         className={`py-1.5 transition-all duration-200 text-[14px] lg:text-[15px] border-b-2 font-bold ${
-                            pathname === '/courses' 
+                            pathname?.startsWith('/courses')
                                 ? 'text-[#f9b03c] border-[#f9b03c]' 
                                 : 'text-gray-700 dark:text-white hover:text-[#f9b03c] border-transparent hover:border-[#f9b03c]'
                         }`}
                     >
                         {t('all_courses')}
-                    </a>
+                    </Link>
                     <Link 
                         href="/about" 
+                        onClick={() => {
+                            if (pathname === '/about') {
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }
+                        }}
                         className={`py-1.5 transition-all duration-200 text-[14px] lg:text-[15px] border-b-2 font-bold ${
                             pathname === '/about' 
                                 ? 'text-[#f9b03c] border-[#f9b03c]' 
@@ -190,19 +197,26 @@ export default function Navbar() {
                 
                 <div className="hidden md:flex items-center gap-2 lg:gap-3 font-heading text-sm">
                     {/* 3. Interactive Tsehay AI Pill Button */}
-                    <a 
-                        href="/#ai-feature" 
-                        onClick={(e) => {
+                    <button 
+                        type="button"
+                        onClick={() => {
                             if (pathname === '/') {
-                                e.preventDefault();
-                                document.getElementById('ai-feature')?.scrollIntoView({ behavior: 'smooth' });
+                                const element = document.getElementById('ai-feature');
+                                if (element) {
+                                    element.scrollIntoView({ behavior: 'smooth' });
+                                }
+                            } else {
+                                router.push('/#ai-feature');
+                                setTimeout(() => {
+                                    document.getElementById('ai-feature')?.scrollIntoView({ behavior: 'smooth' });
+                                }, 350);
                             }
                         }} 
                         className="group flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-[#f9b03c] bg-[#f9b03c]/10 text-dark dark:text-white font-semibold hover:bg-[#f9b03c] hover:text-black dark:hover:text-black hover:shadow-[0_0_12px_rgba(249,176,60,0.35)] transition-all duration-200 cursor-pointer notranslate"
                     >
                         <i className="fa-solid fa-wand-magic-sparkles text-[#f9b03c] group-hover:text-black transition-colors text-sm"></i> 
                         <span className="text-sm font-bold">Tsehay AI</span>
-                    </a>
+                    </button>
 
                     {/* 4. Language Switcher (Globe + EN/አማ) */}
                     <button 
