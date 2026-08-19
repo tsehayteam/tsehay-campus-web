@@ -152,7 +152,6 @@ const translations: Record<string, Record<Language, string>> = {
   'settings': { am: 'ማስተካከያዎች', en: 'Settings' },
   'pro_member': { am: 'ፕሮ አባል', en: 'Pro Member' },
   'normal_student': { am: 'መደበኛ ተማሪ', en: 'Normal Student' },
-  'logout': { am: 'ውጣ', en: 'Logout' },
 
   // Dashboard Header
   'courses': { am: 'ኮርሶች', en: 'Courses' },
