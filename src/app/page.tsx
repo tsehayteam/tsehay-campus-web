@@ -429,80 +429,126 @@ export default function Home() {
     </section>
 
     
-    <section id="courses" className="py-14 sm:py-20 bg-gradient-to-b from-slate-50 to-blue-50/30 dark:from-darkCard dark:to-dark border-b border-gray-200 dark:border-gray-800 transition-colors duration-300">
-        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex flex-col items-center text-center mb-8 sm:mb-12 gap-3 sm:gap-4">
-                <div>
-                    <h2 className="font-heading font-black text-2xl sm:text-4xl text-dark dark:text-white mb-2 sm:mb-3">{t('popular_courses')}</h2>
-                    <p className="text-gray-600 dark:text-gray-400 font-body text-sm sm:text-lg mb-2">{t('popular_courses_desc')}</p>
+    <section id="courses" className="py-20 sm:py-28 bg-slate-50/50 dark:bg-[#030509] border-b border-gray-200/80 dark:border-white/[0.06] transition-colors duration-300 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#f9b03c]/5 rounded-full blur-[140px] pointer-events-none"></div>
+        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-[#3268ba]/5 rounded-full blur-[140px] pointer-events-none"></div>
+
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div className="flex flex-col items-center text-center mb-12 sm:mb-16 gap-3">
+                <div className="inline-flex items-center gap-2 bg-amber-400/10 dark:bg-amber-400/5 border border-amber-400/20 px-4 py-1.5 rounded-full">
+                    <span className="w-2 h-2 rounded-full bg-[#f9b03c] animate-pulse"></span>
+                    <span className="text-xs font-black uppercase tracking-widest text-[#f9b03c]">FEATURED MASTERCLASSES</span>
                 </div>
+                <h2 className="font-heading font-black text-3xl sm:text-5xl text-slate-900 dark:text-white">
+                    {t('popular_courses')}
+                </h2>
+                <p className="text-gray-600 dark:text-[#8a95a5] font-body text-base sm:text-lg max-w-2xl">
+                    {t('popular_courses_desc')}
+                </p>
             </div>
 
             {loading ? (
-                <div className="flex flex-col items-center justify-center py-16 w-full">
-                    <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
-                    <p className="text-gray-500 font-bold tracking-widest uppercase text-xs sm:text-sm">{t('loading_courses')}</p>
+                <div className="flex flex-col items-center justify-center py-20 w-full">
+                    <div className="w-12 h-12 border-4 border-[#f9b03c] border-t-transparent rounded-full animate-spin mb-4"></div>
+                    <p className="text-gray-500 dark:text-gray-400 font-bold tracking-widest uppercase text-xs sm:text-sm">{t('loading_courses')}</p>
                 </div>
             ) : courses.length === 0 ? (
-                <div className="text-center py-10 w-full">
+                <div className="text-center py-16 w-full">
                     <i className="fa-solid fa-box-open text-5xl text-gray-300 dark:text-slate-600 mb-4"></i>
                     <p className="text-gray-500 dark:text-gray-400 font-bold text-lg">{t('no_course_found')}</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 sm:gap-8" id="courseList">
-                    {courses.slice(0, 4).map(course => (
-                        <div key={course.id} className="bg-white dark:bg-[#111111] rounded-2xl sm:rounded-3xl overflow-hidden flex flex-col transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_20px_40px_rgba(0,0,0,0.1)] dark:hover:shadow-[0_20px_40px_rgba(0,0,0,0.5)] group relative border border-gray-200 dark:border-gray-800 cursor-pointer shadow-xs" onClick={() => window.location.href=`/courses/${course.id}`}>
-                            <div className="relative aspect-video w-full overflow-hidden bg-slate-900 flex items-center justify-center">
-                                <img src={formatDriveImageUrl(course.image) || `https://placehold.co/600x400/3268BA/FFFFFF?text=${encodeURIComponent(course.title || 'Tsehay Campus')}&font=Montserrat`} alt={course.title} className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500" />
-                                {(!course.isFree && course.price !== 0 && course.price !== '0' && course.price !== 'Free') ? (
-                                    <div className="absolute top-3 sm:top-4 right-3 sm:right-4 bg-primary text-dark text-[10px] sm:text-[11px] font-black px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full flex items-center gap-1.5 shadow-lg">
-                                        <i className="fa-solid fa-star"></i> PREMIUM
-                                    </div>
-                                ) : (
-                                    <div className="absolute top-3 sm:top-4 right-3 sm:right-4 bg-success text-white text-[10px] sm:text-[11px] font-black px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full flex items-center gap-1.5 shadow-lg">
-                                        <i className="fa-solid fa-gift"></i> FREE
-                                    </div>
-                                )}
-                                {course.category && (
-                                    <div className="absolute bottom-3 sm:bottom-4 left-3 sm:left-4 bg-[#111111]/90 backdrop-blur-xs text-white text-[9px] sm:text-[10px] font-bold px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-md uppercase tracking-wider shadow-md">{course.category}</div>
-                                )}
-                            </div>
-                            <div className="p-4 sm:p-6 flex-1 flex flex-col justify-between">
-                                <div>
-                                    <h3 className="text-base sm:text-xl font-black text-dark dark:text-white mb-2 sm:mb-3 line-clamp-2 leading-tight group-hover:text-primary transition-colors">{course.title || t('course_unknown')}</h3>
-                                    <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                                        <i className="fa-solid fa-folder-open text-primary text-xs sm:text-sm"></i>
-                                        <span className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm font-bold">{course.instructor || 'Eyoub Sahle'}</span>
-                                    </div>
-                                    <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm mb-4 sm:mb-6 line-clamp-2 leading-relaxed">{formatCourseDesc(course) || t('course_desc_placeholder')}</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="courseList">
+                    {courses.slice(0, 6).map(course => (
+                        <div 
+                            key={course.id} 
+                            className="bg-white/80 dark:bg-white/[0.02] backdrop-blur-xl rounded-2xl overflow-hidden flex flex-col justify-between transition-all duration-300 hover:-translate-y-2 border border-gray-200/80 dark:border-white/[0.05] hover:border-[#f9b03c] dark:hover:border-[#f9b03c]/70 hover:shadow-[0_12px_30px_rgba(249,176,60,0.15)] group cursor-pointer active:scale-98" 
+                            onClick={() => window.location.href=`/courses/${course.id}`}
+                        >
+                            <div>
+                                {/* Thumbnail Wrapper (16:9) */}
+                                <div className="relative aspect-video w-full overflow-hidden bg-slate-900 flex items-center justify-center">
+                                    <img 
+                                        src={formatDriveImageUrl(course.image) || `https://placehold.co/600x400/3268BA/FFFFFF?text=${encodeURIComponent(course.title || 'Tsehay Campus')}&font=Montserrat`} 
+                                        alt={course.title} 
+                                        className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500" 
+                                    />
                                     
-                                    <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-4 sm:mb-6">
-                                        <div className="flex items-center gap-1.5 bg-gray-100 dark:bg-black/40 text-gray-700 dark:text-gray-300 text-[11px] sm:text-xs font-bold px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-md border border-gray-200 dark:border-gray-800">
-                                            <i className="fa-regular fa-clock text-primary text-[10px]"></i> {course.duration || '00:50:00'}
+                                    {/* Badges - Royal Blue / Gold only (NO GREEN) */}
+                                    {(!course.isFree && course.price !== 0 && course.price !== '0' && course.price !== 'Free') ? (
+                                        <div className="absolute top-3 right-3 bg-gradient-to-r from-[#f9b03c] to-amber-500 text-slate-950 text-[11px] font-black px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg">
+                                            <i className="fa-solid fa-crown text-[10px]"></i> PREMIUM
                                         </div>
-                                        <div className="flex items-center gap-1.5 bg-gray-100 dark:bg-black/40 text-gray-700 dark:text-gray-300 text-[11px] sm:text-xs font-bold px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-md border border-gray-200 dark:border-gray-800">
-                                            <i className="fa-solid fa-list text-primary text-[10px]"></i> {course.lessons?.length || 0} {t('course_lessons')}
+                                    ) : (
+                                        <div className="absolute top-3 right-3 bg-[#3268ba]/90 text-white text-[11px] font-black px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg backdrop-blur-md border border-white/20">
+                                            <i className="fa-solid fa-sparkles text-[10px] text-[#f9b03c]"></i> FREE
                                         </div>
-                                        <div className="flex items-center gap-1.5 bg-gray-100 dark:bg-black/40 text-gray-700 dark:text-gray-300 text-[11px] sm:text-xs font-bold px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-md border border-gray-200 dark:border-gray-800">
-                                            <i className="fa-solid fa-signal text-primary text-[10px]"></i> {course.level || 'ጀማሪ'}
+                                    )}
+                                </div>
+
+                                {/* Content Details */}
+                                <div className="p-5 sm:p-6">
+                                    {/* Category Tag */}
+                                    <span className="text-[11px] font-black uppercase tracking-wider text-[#f9b03c] inline-block mb-1.5">
+                                        {course.category || 'DIGITAL SKILLS'}
+                                    </span>
+
+                                    {/* Title */}
+                                    <h3 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white mb-2 line-clamp-2 leading-snug group-hover:text-[#f9b03c] transition-colors font-heading">
+                                        {course.title || t('course_unknown')}
+                                    </h3>
+
+                                    {/* Instructor Info */}
+                                    <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-[#8a95a5] font-semibold mb-3">
+                                        <i className="fa-solid fa-chalkboard-user text-[#f9b03c]"></i>
+                                        <span>{course.instructor || 'Eyoub Sahle'}</span>
+                                    </div>
+
+                                    {/* Description */}
+                                    <p className="text-gray-600 dark:text-[#a0aec0] text-xs sm:text-[13px] leading-relaxed line-clamp-2 mb-4">
+                                        {formatCourseDesc(course) || t('course_desc_placeholder')}
+                                    </p>
+                                    
+                                    {/* Meta capsules */}
+                                    <div className="flex flex-wrap gap-2 mb-2">
+                                        <div className="flex items-center gap-1.5 bg-gray-100/80 dark:bg-white/[0.04] text-gray-600 dark:text-gray-300 text-xs font-semibold px-2.5 py-1 rounded-full border border-gray-200/60 dark:border-white/[0.06]">
+                                            <i className="fa-regular fa-clock text-[#f9b03c] text-[10px]"></i>
+                                            <span>{course.duration || '00:50:00'}</span>
+                                        </div>
+                                        <div className="flex items-center gap-1.5 bg-gray-100/80 dark:bg-white/[0.04] text-gray-600 dark:text-gray-300 text-xs font-semibold px-2.5 py-1 rounded-full border border-gray-200/60 dark:border-white/[0.06]">
+                                            <i className="fa-solid fa-layer-group text-[#f9b03c] text-[10px]"></i>
+                                            <span>{course.lessons?.length || 0} {t('course_lessons')}</span>
+                                        </div>
+                                        <div className="flex items-center gap-1.5 bg-gray-100/80 dark:bg-white/[0.04] text-gray-600 dark:text-gray-300 text-xs font-semibold px-2.5 py-1 rounded-full border border-gray-200/60 dark:border-white/[0.06]">
+                                            <i className="fa-solid fa-signal text-[#f9b03c] text-[10px]"></i>
+                                            <span>{course.level || 'ጀማሪ'}</span>
                                         </div>
                                     </div>
                                 </div>
+                            </div>
 
-                                <div className="pt-3 sm:pt-5 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between mt-auto">
-                                    <div>
-                                        {(course.isFree || course.price === 0 || course.price === '0' || course.price === 'Free') ? (
-                                            <span className="text-lg sm:text-2xl font-black text-success tracking-tight">{t('course_free')}</span>
-                                        ) : (
-                                            <div className="flex items-baseline gap-1.5 sm:gap-2">
-                                                <span className="text-lg sm:text-2xl font-black text-dark dark:text-white tracking-tight">{Number(course.price).toLocaleString()} {t('course_currency')}</span>
-                                                {course.originalPrice && (
-                                                    <span className="text-xs sm:text-sm font-medium text-gray-400 dark:text-gray-500 line-through">{Number(course.originalPrice).toLocaleString()}</span>
-                                                )}
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-50 dark:bg-gray-800 text-secondary dark:text-gray-300 flex items-center justify-center group-hover:bg-primary group-hover:text-dark transition-colors text-xs sm:text-sm shadow-xs"><i className="fa-solid fa-arrow-right"></i></div>
+                            {/* Price & CTA Row (Bottom) */}
+                            <div className="px-5 sm:px-6 pb-5 sm:pb-6 pt-3 border-t border-gray-100 dark:border-white/[0.06] flex items-center justify-between mt-auto">
+                                <div>
+                                    {(course.isFree || course.price === 0 || course.price === '0' || course.price === 'Free') ? (
+                                        <span className="text-lg sm:text-xl font-black text-[#f9b03c] tracking-tight">
+                                            {t('course_free') || 'ነፃ (Free)'}
+                                        </span>
+                                    ) : (
+                                        <div className="flex items-baseline gap-1.5">
+                                            <span className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight">
+                                                {Number(course.price).toLocaleString()} {t('course_currency') || 'ብር'}
+                                            </span>
+                                            {course.originalPrice && (
+                                                <span className="text-xs font-medium text-gray-400 dark:text-gray-500 line-through">
+                                                    {Number(course.originalPrice).toLocaleString()}
+                                                </span>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-white/[0.05] border border-gray-200/80 dark:border-white/[0.08] text-slate-700 dark:text-white flex items-center justify-center group-hover:bg-[#f9b03c] group-hover:text-slate-950 group-hover:border-[#f9b03c] group-hover:rotate-[-45deg] transition-all duration-300 shadow-sm">
+                                    <i className="fa-solid fa-arrow-right text-sm"></i>
                                 </div>
                             </div>
                         </div>
