@@ -28,7 +28,7 @@ export default function About() {
                 <iframe 
                   id="about-youtube-player" 
                   className="w-full h-full relative z-10 rounded-[2rem]" 
-                  src="https://www.youtube.com/embed/mgdOMtW6J8k?rel=0&modestbranding=1&showinfo=0&autoPlay=1&mute=1&vq=hd1080" 
+                  src="https://www.youtube.com/embed/mgdOMtW6J8k?rel=0&modestbranding=1&showinfo=0&autoPlay=1&mute=1&vq=hd1080&cc_load_policy=0&iv_load_policy=3&playsinline=1" 
                   title="Tsehay Campus Introduction" 
                   frameBorder="0" 
                   allow="accelerometer; autoPlay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 

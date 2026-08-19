@@ -177,7 +177,7 @@ export default function YouTubeVideoSlider() {
   }
 
   return (
-    <section className="bg-[#050810] py-14 sm:py-20 text-white relative overflow-hidden border-b border-white/5 select-none">
+    <section className="bg-[#050810] py-14 sm:py-24 text-white relative overflow-hidden border-b border-white/5 select-none">
       {/* Background Ambient Glows */}
       <div 
         className="absolute inset-0 opacity-15 pointer-events-none"
@@ -186,23 +186,45 @@ export default function YouTubeVideoSlider() {
           backgroundSize: '32px 32px',
         }}
       ></div>
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] h-[350px] bg-[#f9b03c]/10 rounded-full blur-[140px] pointer-events-none"></div>
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[380px] bg-[#f9b03c]/10 rounded-full blur-[150px] pointer-events-none"></div>
 
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         
-        {/* Top Header: Title & YouTube Channel Link */}
-        <div className="flex items-center justify-between gap-4 mb-8 sm:mb-12">
-          <div className="flex items-center gap-3 sm:gap-4">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-red-600/20 border border-red-500/30 flex items-center justify-center text-red-500 shrink-0 shadow-inner">
-              <i className="fa-brands fa-youtube text-xl sm:text-2xl"></i>
+        {/* Animated Top Header: Title, Luxury Glowing Badge & YouTube Link */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5 mb-10 sm:mb-14">
+          <div className="flex items-center gap-3.5 sm:gap-5">
+            {/* 3D Animated Glowing YouTube Icon */}
+            <div className="relative group">
+              <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-red-600 via-[#f9b03c] to-red-600 opacity-75 blur-md group-hover:opacity-100 transition duration-500 animate-pulse"></div>
+              <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-[#1b090a] via-[#101420] to-[#080b14] border border-red-500/40 flex items-center justify-center text-red-500 shadow-xl yt-glow-icon">
+                <i className="fa-brands fa-youtube text-2xl sm:text-3xl text-red-500 drop-shadow-[0_0_12px_rgba(239,68,68,0.8)]"></i>
+              </div>
             </div>
+
             <div>
-              <h2 className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight font-heading">
-                ነፃ የ <span className="text-[#f9b03c]">ዩቲዩብ</span> ስልጠናዎቻችን
+              {/* Top Badge with Live Equalizer Animation */}
+              <div className="flex items-center gap-2 mb-1">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-red-600/15 border border-red-500/30 text-red-400 text-[10px] sm:text-[11px] font-black uppercase tracking-wider">
+                  <span className="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
+                  <span>FREE MASTERCLASS</span>
+                </span>
+                
+                {/* Audio wave bars */}
+                <div className="hidden sm:flex items-center gap-0.5 h-3 px-1">
+                  <span className="w-0.5 bg-[#f9b03c] rounded-full soundwave-bar-1"></span>
+                  <span className="w-0.5 bg-[#f9b03c] rounded-full soundwave-bar-2"></span>
+                  <span className="w-0.5 bg-[#f9b03c] rounded-full soundwave-bar-3"></span>
+                </div>
+              </div>
+
+              {/* Title with Shimmering Gradient */}
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight font-heading flex items-center gap-2 flex-wrap">
+                <span>ነፃ የ</span>
+                <span className="yt-gradient-text">
+                  ዩቲዩብ
+                </span>
+                <span>ስልጠናዎቻችን</span>
               </h2>
-              <p className="text-xs sm:text-sm text-gray-400 mt-0.5">
-                በኢዮብ ሳህሌ እና በፀሐይ ካምፓስ የተዘጋጁ ልዩ የተመረጡ ቪዲዮዎች
-              </p>
             </div>
           </div>
 
@@ -210,10 +232,10 @@ export default function YouTubeVideoSlider() {
             href="https://youtube.com/@eyoubsahle?si=p29sAFFmLagXd52X"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-gray-300 hover:text-[#f9b03c] transition-colors duration-300 text-xs sm:text-sm font-bold flex items-center gap-1.5 group shrink-0 bg-white/5 hover:bg-white/10 px-3.5 py-1.5 rounded-full border border-white/10"
+            className="self-start sm:self-center text-gray-200 hover:text-[#f9b03c] transition-all duration-300 text-xs sm:text-sm font-black flex items-center gap-2 group shrink-0 bg-white/5 hover:bg-white/10 px-4 py-2 rounded-full border border-white/15 hover:border-[#f9b03c]/50 shadow-md hover:shadow-[0_0_20px_rgba(249,176,60,0.3)]"
           >
             <span>ሁሉንም እይ</span>
-            <span className="inline-block transition-transform duration-300 group-hover:translate-x-1">
+            <span className="inline-block transition-transform duration-300 group-hover:translate-x-1 text-[#f9b03c]">
               &rarr;
             </span>
           </a>
@@ -274,7 +296,7 @@ export default function YouTubeVideoSlider() {
                   }}
                   className={`absolute inset-0 aspect-[16/9] rounded-2xl sm:rounded-3xl overflow-hidden transition-all duration-500 ease-out cursor-pointer ${
                     isCenter
-                      ? 'z-20 scale-100 opacity-100 border-2 border-[#f9b03c] shadow-[0_0_40px_rgba(249,176,60,0.4),0_15px_40px_rgba(0,0,0,0.8)] translate-x-0 rotate-y-0'
+                      ? 'z-20 scale-100 opacity-100 border-2 border-[#f9b03c] shadow-[0_0_45px_rgba(249,176,60,0.45),0_15px_40px_rgba(0,0,0,0.8)] translate-x-0 rotate-y-0'
                       : isLeft
                       ? 'z-10 scale-[0.82] opacity-35 brightness-50 -translate-x-[55%] sm:-translate-x-[58%] -rotate-y-[10deg] shadow-2xl hover:opacity-60'
                       : 'z-10 scale-[0.82] opacity-35 brightness-50 translate-x-[55%] sm:translate-x-[58%] rotate-y-[10deg] shadow-2xl hover:opacity-60'
@@ -362,20 +384,22 @@ export default function YouTubeVideoSlider() {
         </div>
       </div>
 
-      {/* Fullscreen Video Modal for Deep Viewing */}
+      {/* Fullscreen Video Modal for Deep Viewing (Ultra-Clean, Luxury Standard, No Captions/Clutter) */}
       {selectedModalVideo && (
         <div
-          className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200"
+          className="fixed inset-0 z-50 bg-black/95 backdrop-blur-xl flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-200"
           onClick={() => setSelectedModalVideo(null)}
         >
           <div
-            className="bg-[#0c101d] border border-white/15 rounded-2xl sm:rounded-3xl w-full max-w-4xl overflow-hidden shadow-2xl relative"
+            className="bg-[#080b13] border border-white/15 rounded-3xl w-full max-w-4xl overflow-hidden shadow-[0_0_60px_rgba(0,0,0,0.9),0_0_40px_rgba(249,176,60,0.15)] relative flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Modal Header */}
-            <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/10 bg-black/40">
-              <div className="flex items-center gap-2.5">
-                <i className="fa-brands fa-youtube text-red-500 text-lg"></i>
+            {/* Modal Clean Header */}
+            <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-white/10 bg-black/50">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-red-600/20 border border-red-500/30 flex items-center justify-center text-red-500">
+                  <i className="fa-brands fa-youtube text-base"></i>
+                </div>
                 <h4 className="text-sm sm:text-base font-bold text-white line-clamp-1">
                   {selectedModalVideo.title}
                 </h4>
@@ -383,13 +407,14 @@ export default function YouTubeVideoSlider() {
               <button
                 type="button"
                 onClick={() => setSelectedModalVideo(null)}
-                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-gray-300 hover:text-white flex items-center justify-center transition cursor-pointer"
+                className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-gray-300 hover:text-white flex items-center justify-center transition cursor-pointer"
+                title="ዝጋ (Close)"
               >
-                <i className="fa-solid fa-xmark text-sm"></i>
+                <i className="fa-solid fa-xmark text-base"></i>
               </button>
             </div>
 
-            {/* Video Player Embed / Direct MP4 */}
+            {/* Video Player Embed / Direct MP4 (Captions Disabled by Default: cc_load_policy=0 & iv_load_policy=3) */}
             <div className="relative aspect-video w-full bg-black">
               {selectedModalVideo.videoSrc ? (
                 <video
@@ -400,33 +425,75 @@ export default function YouTubeVideoSlider() {
                 />
               ) : (
                 <iframe
-                  src={`https://www.youtube.com/embed/${selectedModalVideo.youtubeId || extractYouTubeId(selectedModalVideo.youtubeUrl)}?autoplay=1&rel=0&modestbranding=1`}
+                  src={`https://www.youtube.com/embed/${selectedModalVideo.youtubeId || extractYouTubeId(selectedModalVideo.youtubeUrl)}?autoplay=1&rel=0&modestbranding=1&cc_load_policy=0&iv_load_policy=3&playsinline=1&controls=1`}
                   title={selectedModalVideo.title}
-                  className="w-full h-full"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  className="w-full h-full border-0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                   allowFullScreen
                 ></iframe>
               )}
             </div>
 
-            {/* Modal Footer */}
-            <div className="p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-3 bg-black/30">
-              <div className="text-xs text-gray-400 text-center sm:text-left">
-                ተጨማሪ ነፃ የቢዝነስ፣ የቲክቶክ እና የቴክኖሎጂ ስልጠናዎችን በዩቲዩብ ቻናላችን ይከታተሉ።
+            {/* Luxury Minimalist Modal Footer */}
+            <div className="px-6 py-4 flex items-center justify-between bg-gradient-to-r from-black via-[#0a0d17] to-black border-t border-white/10">
+              <div className="flex items-center gap-2 text-xs text-gray-400">
+                <span className="w-2 h-2 rounded-full bg-[#f9b03c]"></span>
+                <span className="font-medium text-gray-300">Tsehay Campus Masterclass</span>
               </div>
               <a
                 href={selectedModalVideo.youtubeUrl || `https://www.youtube.com/watch?v=${selectedModalVideo.youtubeId}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs sm:text-sm font-bold rounded-xl shadow-md transition-all duration-200 active:scale-95"
+                className="inline-flex items-center gap-2.5 px-6 py-2.5 bg-gradient-to-r from-red-600 via-red-500 to-amber-600 hover:from-red-500 hover:to-amber-500 text-white font-black text-xs sm:text-sm rounded-full shadow-[0_0_25px_rgba(220,38,38,0.5)] hover:shadow-[0_0_35px_rgba(249,176,60,0.6)] border border-white/20 transition-all duration-300 transform hover:-translate-y-0.5 active:scale-95 cursor-pointer"
               >
-                <i className="fa-brands fa-youtube"></i>
+                <i className="fa-brands fa-youtube text-base text-white drop-shadow"></i>
                 <span>በዩቲዩብ ይመልከቱ</span>
+                <i className="fa-solid fa-arrow-up-right-from-square text-[10px] ml-0.5 opacity-80"></i>
               </a>
             </div>
           </div>
         </div>
       )}
+
+      {/* Embedded CSS Keyframes for Luxury Animations */}
+      <style dangerouslySetInnerHTML={{__html: `
+        .yt-gradient-text {
+          background: linear-gradient(90deg, #f9b03c 0%, #ffe6a3 25%, #ff5252 50%, #f9b03c 75%, #ffe6a3 100%);
+          background-size: 200% auto;
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          animation: ytShimmer 4s linear infinite;
+        }
+        @keyframes ytShimmer {
+          to {
+            background-position: 200% center;
+          }
+        }
+        .yt-glow-icon {
+          animation: ytPulse 3s ease-in-out infinite;
+        }
+        @keyframes ytPulse {
+          0%, 100% {
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.4), 0 0 30px rgba(249, 176, 60, 0.2);
+          }
+          50% {
+            box-shadow: 0 0 25px rgba(239, 68, 68, 0.7), 0 0 45px rgba(249, 176, 60, 0.4);
+          }
+        }
+        .soundwave-bar-1 {
+          animation: soundwave 1s ease-in-out infinite;
+        }
+        .soundwave-bar-2 {
+          animation: soundwave 1.2s ease-in-out infinite 0.2s;
+        }
+        .soundwave-bar-3 {
+          animation: soundwave 0.9s ease-in-out infinite 0.4s;
+        }
+        @keyframes soundwave {
+          0%, 100% { height: 4px; }
+          50% { height: 14px; }
+        }
+      `}} />
     </section>
   );
 }
