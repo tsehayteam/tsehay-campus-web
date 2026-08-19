@@ -39,14 +39,15 @@ const translations: Record<string, Record<Language, string>> = {
   // Features section
   'our': { am: 'የእኛ ', en: 'Our ' },
   'difference': { am: 'ልዩነት', en: 'Difference' },
-  'difference_desc': { am: 'ከሌሎች የኦንላይን ስልጠናዎች በምን እንለያለን?', en: 'What makes us different from other online trainings?' },
-  'practical_courses': { am: 'የተግባር ኮርሶች', en: 'Practical Courses' },
-  'practical_courses_desc': { am: 'ወቅታዊ፣ በተግባር ላይ ያተኮሩ እና ልምድ ባላቸው ባለሙያዎች የተዘጋጁ ኮርሶች።', en: 'Up-to-date, practical courses prepared by experienced professionals.' },
+  'difference_desc': { am: 'ከሌሎች የኦንላይን መማሪያ መድረኮች በምን እንለያለን?', en: 'What makes us different from other online learning platforms?' },
+  'practical_courses': { am: 'ኦንላይን + የፊት ለፊት ስልጠና', en: 'Online + In-Person Training' },
+  'practical_courses_desc': { am: 'ትምህርትዎን በኦንላይን በራስዎ ፍጥነት እየተከታተሉ፤ በተጨማሪም የካምፓሳችን አባል በመሆን በየጊዜው በአካል (Offline) በሚሰጡ የተግባር ስልጠናዎች እና የልምድ ልውውጦች ይሳተፋሉ።', en: 'Follow your lessons online at your own pace; plus join in-person (offline) practical workshops and mastermind networking as an active campus member.' },
+  'ai_tutor_card_title': { am: 'የ 24/7 የግል AI መምህር', en: '24/7 Personal AI Tutor' },
   'ai_integration': { am: 'ትስስር', en: 'Integration' },
-  'ai_integration_desc': { am: 'በእያንዳንዱ ኮርስ ውስጥ የተካተተ፣ ጥያቄ የሚመልስ እና የቢዝነስ ትንታኔ የሚሰጥ AI።', en: 'AI included in every course, answering questions and providing business analysis.' },
+  'ai_integration_desc': { am: 'በማንኛውም ሰዓት ከጎንዎ ሆኖ ጥያቄዎችዎን የሚመልስ፣ የቢዝነስ ሀሳቦችን የሚያመነጭ እና የሚያማክር ዘመናዊ የ AI ረዳት (Tsehay AI) በእያንዳንዱ ኮርስ ውስጥ ተካቷል።', en: 'A modern AI assistant (Tsehay AI) included in every course by your side 24/7 answering questions, generating business ideas, and consulting.' },
   'new_badge': { am: 'አዲስ', en: 'New' },
   'cert_title': { am: 'እውቅና ያለው ሰርተፍኬት', en: 'Accredited Certificate' },
-  'cert_desc': { am: 'ትምህርትዎን እንዳጠናቀቁ፣ ክህሎትዎን የሚያረጋግጥ ዲጂታል ሰርተፍኬት ወዲያውኑ ያገኛሉ።', en: 'Get a digital certificate proving your skills immediately upon completing your course.' },
+  'cert_desc': { am: 'ትምህርትዎን እንዳጠናቀቁ፣ ክህሎትዎን የሚያረጋግጥ እና ለስራ ማመልከቻ የሚሆን ዲጂታል ሰርተፍኬት ወዲያውኑ ይደርስዎታል።', en: 'Get an instant verifiable digital certificate upon graduation to showcase on resumes, job applications, and professional networks.' },
 
   // Courses section
   'popular_courses': { am: 'በብዛት የሚፈለጉ ኮርሶች', en: 'Popular Courses' },

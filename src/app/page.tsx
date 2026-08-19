@@ -344,45 +344,85 @@ export default function Home() {
         `}} />
     </section>
 
-    <section id="features" className="py-24 relative overflow-hidden bg-gradient-to-b from-blue-50/60 to-white dark:from-darkCard dark:to-dark border-b border-gray-200 dark:border-gray-800 transition-colors duration-300">
+    <section id="features" className="py-24 relative overflow-hidden bg-slate-50/50 dark:bg-[#030509] border-b border-gray-200/80 dark:border-white/[0.06] transition-colors duration-300">
         <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
-            <div className="absolute -top-32 -left-32 w-[500px] h-[500px] bg-primary/5 rounded-full blur-3xl"></div>
-            <div className="absolute top-1/2 -right-32 w-[500px] h-[500px] bg-secondary/5 rounded-full blur-3xl"></div>
-            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.03] dark:opacity-[0.01]"></div>
+            <div className="absolute -top-32 -left-32 w-[500px] h-[500px] bg-[#f9b03c]/10 dark:bg-[#f9b03c]/5 rounded-full blur-[120px]"></div>
+            <div className="absolute top-1/2 -right-32 w-[500px] h-[500px] bg-[#3268ba]/10 dark:bg-[#3268ba]/5 rounded-full blur-[120px]"></div>
+            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.03] dark:opacity-[0.015]"></div>
         </div>
 
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-            <div className="text-center max-w-2xl mx-auto mb-16">
-                <h2 className="font-heading font-black text-3xl sm:text-5xl text-dark dark:text-white mb-4">{t('our')} <span className="text-secondary dark:text-primary">{t('difference')}</span></h2>
-                <div className="w-20 h-1.5 bg-primary mx-auto rounded-full shadow-sm"></div>
-                <p className="mt-5 text-gray-500 dark:text-gray-400 font-body text-lg">{t('difference_desc')}</p>
+            <div className="text-center max-w-2xl mx-auto mb-16 sm:mb-20">
+                <div className="inline-flex items-center gap-2 bg-amber-400/10 dark:bg-amber-400/5 border border-amber-400/20 px-4 py-1.5 rounded-full mb-4">
+                    <span className="w-2 h-2 rounded-full bg-[#f9b03c] animate-pulse"></span>
+                    <span className="text-xs font-black uppercase tracking-widest text-[#f9b03c]">THE TSEHAY DIFFERENCE</span>
+                </div>
+                <h2 className="font-heading font-black text-3xl sm:text-5xl text-slate-900 dark:text-white mb-4">
+                  {t('our')} <span className="text-secondary dark:text-primary">{t('difference')}</span>
+                </h2>
+                <div className="w-20 h-1.5 bg-[#f9b03c] mx-auto rounded-full shadow-sm"></div>
+                <p className="mt-5 text-gray-600 dark:text-[#8a95a5] font-body text-base sm:text-lg">{t('difference_desc')}</p>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 lg:gap-10">
-                <div className="bg-white dark:bg-darkCard p-6 sm:p-10 rounded-3xl sm:rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-gray-800 hover:shadow-2xl hover:-translate-y-2.5 transition-all duration-300 group cursor-pointer active:scale-95" onClick={() => document.getElementById('courses')?.scrollIntoView({behavior: 'smooth'})}>
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 bg-blue-50 dark:bg-blue-900/30 text-secondary dark:text-primary rounded-2xl flex items-center justify-center text-3xl sm:text-4xl mb-6 sm:mb-8 group-hover:bg-secondary dark:group-hover:bg-primary group-hover:text-white dark:group-hover:text-dark transition-colors duration-300 shadow-inner animate-float" style={{animationDelay: "0s"}}>
-                        <i className="fa-solid fa-chalkboard-user"></i>
+                {/* Card 1: Online + In-Person Training */}
+                <div 
+                    className="bg-white/80 dark:bg-white/[0.03] backdrop-blur-xl p-7 sm:p-10 rounded-3xl sm:rounded-[2.5rem] shadow-sm border border-gray-200/70 dark:border-white/[0.06] hover:border-[#f9b03c]/50 dark:hover:border-[#f9b03c]/40 hover:shadow-[0_20px_50px_rgba(249,176,60,0.15)] hover:-translate-y-2 transition-all duration-300 group cursor-pointer active:scale-98 flex flex-col justify-between"
+                    onClick={() => document.getElementById('courses')?.scrollIntoView({behavior: 'smooth'})}
+                >
+                    <div>
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 bg-amber-400/10 dark:bg-[#f9b03c]/10 text-[#f9b03c] border border-amber-400/20 rounded-2xl flex items-center justify-center text-3xl sm:text-4xl mb-6 sm:mb-8 group-hover:scale-110 group-hover:bg-[#f9b03c] group-hover:text-slate-950 transition-all duration-300 shadow-inner">
+                            <i className="fa-solid fa-people-group"></i>
+                        </div>
+                        <h3 className="font-black text-xl sm:text-2xl text-slate-900 dark:text-white mb-3 sm:mb-4 font-heading">{t('practical_courses')}</h3>
+                        <p className="text-gray-600 dark:text-[#8a95a5] font-body leading-relaxed text-sm sm:text-[15px]">{t('practical_courses_desc')}</p>
                     </div>
-                    <h3 className="font-black text-xl sm:text-2xl text-dark dark:text-white mb-3 sm:mb-4 font-heading">{t('practical_courses')}</h3>
-                    <p className="text-gray-600 dark:text-gray-300 font-body leading-relaxed text-sm sm:text-[15px]">{t('practical_courses_desc')}</p>
+                    <div className="mt-8 flex items-center gap-2 text-xs sm:text-sm font-bold text-[#f9b03c] group-hover:translate-x-1.5 transition-transform duration-300">
+                        <span>ተጨማሪ ይመልከቱ</span>
+                        <i className="fa-solid fa-arrow-right text-xs"></i>
+                    </div>
                 </div>
                 
-                <div className="bg-white dark:bg-darkCard p-6 sm:p-10 rounded-3xl sm:rounded-[2.5rem] shadow-xl border-2 border-primary/40 hover:shadow-2xl hover:-translate-y-2.5 transition-all duration-300 group relative overflow-hidden transform md:-translate-y-6 cursor-pointer active:scale-95" onClick={() => document.getElementById('ai-feature')?.scrollIntoView({behavior: 'smooth'})}>
-                    <div className="absolute -right-10 -top-10 bg-gradient-to-br from-primary/20 to-transparent w-40 h-40 rounded-full -z-10 group-hover:scale-150 transition-transform duration-700"></div>
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 bg-orange-50 dark:bg-orange-900/30 text-primary rounded-2xl flex items-center justify-center text-3xl sm:text-4xl mb-6 sm:mb-8 group-hover:bg-primary group-hover:text-dark transition-colors duration-300 shadow-inner relative z-10 animate-float" style={{animationDelay: "0.2s"}}>
-                        <i className="fa-solid fa-robot"></i>
+                {/* Card 2: 24/7 Personal AI Tutor (Highlighted Center Card) */}
+                <div 
+                    className="bg-white/90 dark:bg-white/[0.04] backdrop-blur-2xl p-7 sm:p-10 rounded-3xl sm:rounded-[2.5rem] shadow-xl border-2 border-primary/60 dark:border-[#f9b03c]/50 hover:border-[#f9b03c] dark:hover:border-[#f9b03c] hover:shadow-[0_25px_60px_rgba(249,176,60,0.25)] hover:-translate-y-2 transition-all duration-300 group relative overflow-hidden transform md:-translate-y-4 cursor-pointer active:scale-98 flex flex-col justify-between" 
+                    onClick={() => document.getElementById('ai-feature')?.scrollIntoView({behavior: 'smooth'})}
+                >
+                    <div className="absolute -right-10 -top-10 bg-gradient-to-br from-amber-400/20 via-primary/10 to-transparent w-48 h-48 rounded-full -z-10 group-hover:scale-150 transition-transform duration-700 pointer-events-none"></div>
+                    <div className="absolute top-4 sm:top-6 right-4 sm:right-6 bg-gradient-to-r from-[#f9b03c] to-amber-500 text-slate-950 text-xs font-black px-3.5 py-1 rounded-full shadow-md animate-pulse">
+                        {t('new_badge')}
                     </div>
-                    <h3 className="font-black text-xl sm:text-2xl text-dark dark:text-white mb-3 sm:mb-4 font-heading relative z-10"><span className="notranslate">Tsehay AI</span> {t('ai_integration')}</h3>
-                    <p className="text-gray-600 dark:text-gray-300 font-body leading-relaxed text-sm sm:text-[15px] relative z-10">{t('ai_integration_desc')}</p>
-                    <div className="absolute top-4 sm:top-6 right-4 sm:right-6 bg-primary text-dark text-xs font-black px-3.5 py-1 rounded-full shadow-md animate-pulse">{t('new_badge')}</div>
+                    <div>
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 bg-amber-400/15 dark:bg-[#f9b03c]/15 text-[#f9b03c] border border-amber-400/30 rounded-2xl flex items-center justify-center text-3xl sm:text-4xl mb-6 sm:mb-8 group-hover:scale-110 group-hover:bg-[#f9b03c] group-hover:text-slate-950 transition-all duration-300 shadow-inner relative z-10">
+                            <i className="fa-solid fa-robot"></i>
+                        </div>
+                        <h3 className="font-black text-xl sm:text-2xl text-slate-900 dark:text-white mb-3 sm:mb-4 font-heading relative z-10">
+                            {t('ai_tutor_card_title') || 'የ 24/7 የግል AI መምህር'}
+                        </h3>
+                        <p className="text-gray-600 dark:text-[#8a95a5] font-body leading-relaxed text-sm sm:text-[15px] relative z-10">{t('ai_integration_desc')}</p>
+                    </div>
+                    <div className="mt-8 flex items-center gap-2 text-xs sm:text-sm font-black text-[#f9b03c] group-hover:translate-x-1.5 transition-transform duration-300">
+                        <span>Tsehay AI ን ይሞክሩ</span>
+                        <i className="fa-solid fa-wand-magic-sparkles text-xs"></i>
+                    </div>
                 </div>
 
-                <div className="bg-white dark:bg-darkCard p-6 sm:p-10 rounded-3xl sm:rounded-[2.5rem] shadow-sm border border-gray-100 dark:border-gray-800 hover:shadow-2xl hover:-translate-y-2.5 transition-all duration-300 group cursor-pointer active:scale-95">
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 bg-green-50 dark:bg-green-900/30 text-success rounded-2xl flex items-center justify-center text-3xl sm:text-4xl mb-6 sm:mb-8 group-hover:bg-success group-hover:text-white transition-colors duration-300 shadow-inner animate-float" style={{animationDelay: "0.4s"}}>
-                        <i className="fa-solid fa-certificate"></i>
+                {/* Card 3: Accredited Certificate (Royal Blue / Gold - NO GREEN) */}
+                <div 
+                    className="bg-white/80 dark:bg-white/[0.03] backdrop-blur-xl p-7 sm:p-10 rounded-3xl sm:rounded-[2.5rem] shadow-sm border border-gray-200/70 dark:border-white/[0.06] hover:border-[#3268ba]/50 dark:hover:border-[#3268ba]/50 hover:shadow-[0_20px_50px_rgba(50,104,186,0.18)] hover:-translate-y-2 transition-all duration-300 group cursor-pointer active:scale-98 flex flex-col justify-between"
+                    onClick={() => document.getElementById('courses')?.scrollIntoView({behavior: 'smooth'})}
+                >
+                    <div>
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 bg-blue-500/10 dark:bg-[#3268ba]/15 text-[#3268ba] dark:text-[#5a93e8] border border-blue-500/20 rounded-2xl flex items-center justify-center text-3xl sm:text-4xl mb-6 sm:mb-8 group-hover:scale-110 group-hover:bg-[#3268ba] group-hover:text-white transition-all duration-300 shadow-inner">
+                            <i className="fa-solid fa-award"></i>
+                        </div>
+                        <h3 className="font-black text-xl sm:text-2xl text-slate-900 dark:text-white mb-3 sm:mb-4 font-heading">{t('cert_title')}</h3>
+                        <p className="text-gray-600 dark:text-[#8a95a5] font-body leading-relaxed text-sm sm:text-[15px]">{t('cert_desc')}</p>
                     </div>
-                    <h3 className="font-black text-xl sm:text-2xl text-dark dark:text-white mb-3 sm:mb-4 font-heading">{t('cert_title')}</h3>
-                    <p className="text-gray-600 dark:text-gray-300 font-body leading-relaxed text-sm sm:text-[15px]">{t('cert_desc')}</p>
+                    <div className="mt-8 flex items-center gap-2 text-xs sm:text-sm font-bold text-[#3268ba] dark:text-[#5a93e8] group-hover:translate-x-1.5 transition-transform duration-300">
+                        <span>ሰርተፍኬት ያረጋግጡ</span>
+                        <i className="fa-solid fa-arrow-right text-xs"></i>
+                    </div>
                 </div>
             </div>
         </div>
