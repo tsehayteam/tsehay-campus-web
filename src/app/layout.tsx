@@ -84,6 +84,9 @@ export const metadata: Metadata = {
       "max-snippet": -1,
     },
   },
+  other: {
+    google: "notranslate",
+  },
 };
 
 import Script from "next/script";
@@ -94,8 +97,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="am" className="dark" suppressHydrationWarning>
+    <html lang="am" className="dark notranslate" translate="no" suppressHydrationWarning>
       <head>
+        <meta name="google" content="notranslate" />
+        <meta name="googlebot" content="notranslate" />
         <meta name="google-site-verification" content="sjgyVc7j64r1mVrfW1zLgxfjGQGNeE1ZUIy85yDf35o" />
         <link rel="icon" href="/favicon.ico" sizes="48x48" type="image/png" />
         <link rel="icon" href="/favicon.png" type="image/png" sizes="192x192" />
@@ -122,7 +127,8 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&family=Inter:wght@400;500;700&family=Noto+Sans+Ethiopic:wght@400;700;900&family=Playfair+Display:ital,wght@0,700;1,700&family=Great+Vibes&display=swap" rel="stylesheet" />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased pt-20`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased pt-20 notranslate`}
+        translate="no"
         suppressHydrationWarning
       >
         <Script
