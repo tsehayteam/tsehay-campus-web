@@ -664,14 +664,27 @@ export default function CoursePreviewPage() {
                   })()}
                 </div>
               ) : (
-                <div className="cursor-pointer relative w-full aspect-video bg-black overflow-hidden" onClick={() => { if (currentVideoUrl) setIsPlaying(true); }}>
-                  <img src={displayImage || `https://placehold.co/600x400/3268BA/FFFFFF?text=${encodeURIComponent(course.title || 'Tsehay Campus')}&font=Montserrat`} alt={course.title} className="w-full h-full object-cover block" onError={(e) => { e.currentTarget.src='https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1000&auto=format&fit=crop' }} />
+                <div className="cursor-pointer relative w-full aspect-video bg-black overflow-hidden group select-none" onClick={() => { if (currentVideoUrl) setIsPlaying(true); }}>
+                  <img src={displayImage || `https://placehold.co/600x400/3268BA/FFFFFF?text=${encodeURIComponent(course.title || 'Tsehay Campus')}&font=Montserrat`} alt={course.title} className="w-full h-full object-cover block group-hover:scale-105 transition-transform duration-700" onError={(e) => { e.currentTarget.src='https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1000&auto=format&fit=crop' }} />
                   {currentVideoUrl && (
-                    <div className="absolute inset-0 bg-black/40 flex flex-col justify-center items-center group-hover:bg-black/20 transition-colors">
-                      <div className="w-16 h-16 bg-white rounded-full flex justify-center items-center text-dark text-2xl shadow-lg transform group-hover:scale-110 transition-transform">
-                        <i className="fa-solid fa-play ml-1 text-primary"></i>
+                    <div className="absolute inset-0 z-20 flex flex-col items-center justify-center p-4 bg-black/40 backdrop-blur-[2px] transition-colors group-hover:bg-black/50">
+                      {/* Top Pill Badge */}
+                      <div className="absolute top-3 px-3 py-1 rounded-full bg-black/80 border border-white/15 text-white text-[11px] font-bold shadow-lg backdrop-blur-md">
+                        Preview
                       </div>
-                      <span className="text-white font-bold mt-4 shadow-sm">Preview this course</span>
+
+                      {/* Frosted Center Card */}
+                      <div className="rounded-2xl bg-[#1c1f2b]/85 backdrop-blur-xl border border-white/15 px-6 py-5 flex flex-col items-center justify-center text-center shadow-2xl transition-transform duration-300 group-hover:scale-105 max-w-[260px]">
+                        <div className="w-12 h-12 rounded-full border-2 border-[#f9b03c]/80 bg-black/50 flex items-center justify-center text-[#f9b03c] mb-2.5 shadow-[0_0_20px_rgba(249,176,60,0.5)]">
+                          <i className="fa-solid fa-play text-lg pl-0.5 text-[#f9b03c] animate-pulse"></i>
+                        </div>
+                        <h4 className="text-sm font-extrabold text-white tracking-tight mb-0.5">
+                          Course Preview
+                        </h4>
+                        <p className="text-[11px] font-bold text-[#f9b03c]">
+                          Click to Play Preview
+                        </p>
+                      </div>
                     </div>
                   )}
                 </div>
