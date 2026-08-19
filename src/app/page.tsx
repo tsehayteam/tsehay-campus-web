@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Footer from '@/components/Footer';
 import SmartSearchInput from '@/components/SmartSearchInput';
+import YouTubeVideoSlider from '@/components/YouTubeVideoSlider';
 import { getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl } from '@/lib/courseCache';
 
 export default function Home() {
@@ -412,6 +413,8 @@ export default function Home() {
         </div>
     </section>
 
+    {/* YouTube Free Video Lessons Horizontal Slider */}
+    <YouTubeVideoSlider />
     
     <section id="faq" className="py-16 bg-slate-50 dark:bg-darkCard border-b border-gray-200 dark:border-gray-800 transition-colors duration-300">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
