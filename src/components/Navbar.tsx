@@ -215,8 +215,24 @@ export default function Navbar() {
   };
 
   const handleSignOut = async () => {
-    await signOut(auth);
-    setShowProfileDropdown(false);
+    try {
+      await signOut(auth);
+    } catch (e) {
+      console.warn("Signout warning:", e);
+    } finally {
+      try {
+        localStorage.removeItem('tsehay_auth_user_cache');
+        localStorage.removeItem('tsehay_auth_is_admin');
+        localStorage.removeItem('tsehay_user_role');
+        localStorage.removeItem('tsehay_user_active_course');
+        localStorage.removeItem('tsehay_user_active_lesson');
+        sessionStorage.clear();
+      } catch (e) {}
+      setShowProfileDropdown(false);
+      if (pathname?.startsWith('/dashboard') || pathname?.startsWith('/admin')) {
+        router.push('/');
+      }
+    }
   };
 
   if (pathname?.startsWith('/dashboard') || pathname?.startsWith('/admin')) {

@@ -99,6 +99,9 @@ const translations: Record<string, Record<Language, string>> = {
   'tools': { am: 'መሳሪያዎች', en: 'TOOLS' },
   'sidebar_account': { am: 'አካውንት', en: 'Account' },
   'sidebar_settings': { am: 'ሴቲንግ', en: 'Settings' },
+  'logout': { am: 'ውጣ (Logout)', en: 'Log Out' },
+  'logging_out': { am: 'በመውጣት ላይ...', en: 'Logging out...' },
+  'account_security': { am: 'የአካውንት ደህንነት እና መውጫ', en: 'Account Security & Sign Out' },
 
   // About Page
   'about_us_page': { am: 'ስለ እኛ', en: 'About Us' },

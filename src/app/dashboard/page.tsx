@@ -91,6 +91,7 @@ export default function StudentDashboard() {
   const [profileMessage, setProfileMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [passwordResetMessage, setPasswordResetMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [showAvatarPresets, setShowAvatarPresets] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const profileFileInputRef = useRef<HTMLInputElement>(null);
 
   const AVATAR_PRESETS = [
@@ -1196,6 +1197,35 @@ export default function StudentDashboard() {
       }
   };
 
+  const handleLogout = async () => {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+    try {
+      const { signOut } = await import('firebase/auth');
+      const { auth } = await import('@/lib/firebase/config');
+      await signOut(auth);
+    } catch (err) {
+      console.warn("Sign out auth error:", err);
+    } finally {
+      try {
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('tsehay_auth_user_cache');
+          localStorage.removeItem('tsehay_auth_is_admin');
+          localStorage.removeItem('tsehay_user_role');
+          localStorage.removeItem('tsehay_user_active_course');
+          localStorage.removeItem('tsehay_user_active_lesson');
+          sessionStorage.clear();
+        }
+      } catch (e) {}
+
+      if (typeof window !== 'undefined') {
+        window.location.href = '/';
+      } else {
+        router.push('/');
+      }
+    }
+  };
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!chatInput.trim()) return;
@@ -1269,16 +1299,30 @@ ${customAdminPrompt}
             </span>
           </a>
           
-          <div className="md:hidden flex items-center gap-3">
-             <img 
-               src={studentPhotoUrl} 
-               className="w-8 h-8 rounded-full object-cover shadow-sm ring-2 ring-primary/40 cursor-pointer" 
-               alt={studentDisplayName}
+          <div className="md:hidden flex items-center gap-2">
+             <button 
                onClick={() => setCurrentView('settings')}
-               onError={(e) => {
-                 (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(studentDisplayName)}&background=f9b03c&color=111827&bold=true`;
-               }}
-             />
+               className="p-1 rounded-xl bg-slate-100 dark:bg-slate-700/80 text-slate-700 dark:text-slate-200 cursor-pointer"
+               title="ማስተካከያ (Settings)"
+             >
+               <img 
+                 src={studentPhotoUrl} 
+                 className="w-7 h-7 rounded-full object-cover ring-2 ring-primary/40" 
+                 alt={studentDisplayName}
+                 onError={(e) => {
+                   (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(studentDisplayName)}&background=f9b03c&color=111827&bold=true`;
+                 }}
+               />
+             </button>
+             <button
+               onClick={handleLogout}
+               disabled={isLoggingOut}
+               className="px-2.5 py-1.5 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded-xl text-xs font-black border border-red-500/20 transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+               title="ውጣ (Logout)"
+             >
+               {isLoggingOut ? <i className="fa-solid fa-spinner fa-spin"></i> : <i className="fa-solid fa-arrow-right-from-bracket"></i>}
+               <span>{isLoggingOut ? '...' : (t('logout') || 'ውጣ')}</span>
+             </button>
           </div>
         </div>
 
@@ -1509,15 +1553,18 @@ ${customAdminPrompt}
               </p>
             </div>
           </div>
-          <button onClick={() => {
-              import('firebase/auth').then(({ signOut }) => {
-                  import('@/lib/firebase/config').then(({ auth }) => {
-                      signOut(auth);
-                  });
-              });
-          }} className="w-full flex items-center justify-center lg:justify-center gap-2 p-2 rounded-xl text-red-500 border border-red-500/20 hover:bg-red-500/10 font-bold transition text-sm cursor-pointer">
-             <i className="fa-solid fa-arrow-right-from-bracket"></i>
-             <span className="hidden lg:block">{t('logout')}</span>
+          <button 
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+            className="w-full flex items-center justify-center lg:justify-center gap-2 p-2.5 rounded-xl text-red-500 hover:text-white border border-red-500/20 hover:bg-red-500 font-bold transition duration-200 text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed group shadow-xs active:scale-95"
+            title="ከአካውንትዎ ይውጡ (Sign Out)"
+          >
+             {isLoggingOut ? (
+               <i className="fa-solid fa-spinner fa-spin"></i>
+             ) : (
+               <i className="fa-solid fa-arrow-right-from-bracket group-hover:-translate-x-0.5 transition-transform"></i>
+             )}
+             <span className="hidden lg:block">{isLoggingOut ? (t('logging_out') || 'በመውጣት ላይ...') : (t('logout') || 'ውጣ (Logout)')}</span>
           </button>
         </div>
       </aside>
@@ -3209,6 +3256,27 @@ ${customAdminPrompt}
                       <i className="fa-solid fa-paper-plane text-xs text-primary"></i>
                       <span>የይለፍ ቃል መቀየሪያ ኢሜይል ላክ (Send Reset Link)</span>
                   </button>
+              </div>
+
+              {/* Account Security & Sign Out Section */}
+              <div className="mt-8 pt-6 border-t border-gray-100 dark:border-slate-700/80 space-y-3">
+                  <div className="p-4 rounded-2xl bg-red-500/5 dark:bg-red-950/20 border border-red-500/20 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div>
+                      <h4 className="font-bold text-sm text-red-600 dark:text-red-400 flex items-center gap-2">
+                        <i className="fa-solid fa-arrow-right-from-bracket"></i>
+                        <span>ከአካውንት መውጫ (Sign Out)</span>
+                      </h4>
+                      <p className="text-[11px] text-gray-500 dark:text-slate-400 mt-0.5">የካምፓስ መማሪያ ክፍሉን አጠናቀው ለመውጣት ይህንን ይጫኑ።</p>
+                    </div>
+                    <button 
+                      onClick={handleLogout}
+                      disabled={isLoggingOut}
+                      className="w-full sm:w-auto px-5 py-2.5 bg-red-500 hover:bg-red-600 text-white font-black text-xs rounded-xl shadow-xs transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 active:scale-95"
+                    >
+                      {isLoggingOut ? <i className="fa-solid fa-spinner fa-spin"></i> : <i className="fa-solid fa-arrow-right-from-bracket"></i>}
+                      <span>{isLoggingOut ? 'በመውጣት ላይ...' : 'ከአካውንቴ ውጣ (Log Out)'}</span>
+                    </button>
+                  </div>
               </div>
             </div>
           </div>
