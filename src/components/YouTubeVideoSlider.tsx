@@ -270,13 +270,7 @@ export default function YouTubeVideoSlider() {
                       <i className="fa-solid fa-play text-base sm:text-lg pl-0.5"></i>
                     </div>
 
-                    {/* Top Index & Tag Badges */}
-                    <div className="absolute top-3 left-3 flex items-center gap-2">
-                      <span className="bg-red-600/90 text-white text-[10px] sm:text-[11px] font-black px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-md backdrop-blur-xs">
-                        <i className="fa-brands fa-youtube text-[11px]"></i>
-                        <span>#{idx + 1}</span>
-                      </span>
-                    </div>
+
                   </div>
 
                   {/* Title & Watch CTA Bar */}
@@ -348,11 +342,7 @@ export default function YouTubeVideoSlider() {
                       key={video.id}
                       onClick={() => {
                         if (isCenter) {
-                          if (video.videoSrc) {
-                            toggleMute({ stopPropagation: () => {} } as any);
-                          } else {
-                            setSelectedModalVideo(video);
-                          }
+                          setSelectedModalVideo(video);
                         } else {
                           goToSlide(idx);
                         }
@@ -399,26 +389,12 @@ export default function YouTubeVideoSlider() {
                       {/* Subtle Dark Vignette at edges only for high contrast */}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20 pointer-events-none"></div>
 
-                      {/* Non-intrusive Center Play / Unmute Button */}
+                      {/* Clean Minimal Glowing Center Play Button */}
                       {isCenter && (
                         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none">
-                          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-black/40 hover:bg-[#f9b03c] border-2 border-[#f9b03c]/90 text-[#f9b03c] hover:text-black flex items-center justify-center shadow-[0_0_30px_rgba(249,176,60,0.6)] backdrop-blur-xs transition-all duration-300 transform group-hover:scale-110">
-                            {video.videoSrc ? (
-                              <i className={`fa-solid ${isMuted ? 'fa-volume-xmark' : 'fa-volume-high'} text-lg sm:text-xl pl-0.5`}></i>
-                            ) : (
-                              <i className="fa-solid fa-play text-lg sm:text-xl pl-1"></i>
-                            )}
+                          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-black/50 hover:bg-[#f9b03c] border-2 border-[#f9b03c]/90 text-[#f9b03c] hover:text-black flex items-center justify-center shadow-[0_0_30px_rgba(249,176,60,0.6)] backdrop-blur-xs transition-all duration-300 transform group-hover:scale-110">
+                            <i className="fa-solid fa-play text-lg sm:text-xl pl-1"></i>
                           </div>
-                        </div>
-                      )}
-
-                      {/* Sleek Floating Island Pill (Bottom-Right) - Doesn't Block Center Face/Thumb! */}
-                      {isCenter && (
-                        <div className="absolute bottom-3 sm:bottom-4 right-3 sm:right-4 z-20 flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-full bg-black/80 hover:bg-[#f9b03c] border border-[#f9b03c]/60 text-white hover:text-black backdrop-blur-md shadow-xl transition-all duration-300 cursor-pointer">
-                          <i className={`fa-solid ${video.videoSrc && !isMuted ? 'fa-volume-high text-green-400' : 'fa-volume-high text-[#f9b03c]'} text-xs animate-pulse`}></i>
-                          <span className="text-[10px] sm:text-xs font-black tracking-wide">
-                            {video.videoSrc ? (isMuted ? 'ድምፅ ክፈት (Unmute)' : 'ድምፅ ተከፍቷል (Mute)') : 'ቪዲዮውን ክፈት (Play)'}
-                          </span>
                         </div>
                       )}
                     </div>

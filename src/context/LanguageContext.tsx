@@ -11,6 +11,8 @@ interface LanguageContextType {
 
 const translations: Record<string, Record<Language, string>> = {
   // Navbar
+  'home': { am: 'መነሻ', en: 'Home' },
+  'slide_menu': { am: 'ተንሸራታች ማውጫ', en: 'Slide Menu' },
   'about_us': { am: 'ስለ እኛ', en: 'About Us' },
   'all_courses': { am: 'ሁሉም ኮርሶች', en: 'All Courses' },
   'search_placeholder': { am: 'ኮርሶችን ይፈልጉ...', en: 'Search courses...' },

@@ -163,6 +163,31 @@ export default function Navbar() {
     };
     window.addEventListener('open-auth-modal', handleOpenAuth);
 
+    const handleOpenCurtain = () => setIsCurtainOpen(true);
+    const handleCloseCurtain = () => setIsCurtainOpen(false);
+    const handleToggleCurtain = () => setIsCurtainOpen(prev => !prev);
+
+    window.addEventListener('open-nav-curtain', handleOpenCurtain);
+    window.addEventListener('close-nav-curtain', handleCloseCurtain);
+    window.addEventListener('toggle-nav-curtain', handleToggleCurtain);
+
+    const handleGlobalTouchStart = (e: TouchEvent) => {
+      if (e.touches && e.touches[0] && e.touches[0].clientY < 80) {
+        touchStartY.current = e.touches[0].clientY;
+      }
+    };
+    const handleGlobalTouchEnd = (e: TouchEvent) => {
+      if (touchStartY.current !== null && e.changedTouches && e.changedTouches[0]) {
+        const diff = e.changedTouches[0].clientY - touchStartY.current;
+        if (diff > 40) {
+          setIsCurtainOpen(true);
+        }
+        touchStartY.current = null;
+      }
+    };
+    window.addEventListener('touchstart', handleGlobalTouchStart, { passive: true });
+    window.addEventListener('touchend', handleGlobalTouchEnd, { passive: true });
+
     const handleClickOutside = (event: MouseEvent) => {
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
         setSearchResults([]);
@@ -184,6 +209,11 @@ export default function Navbar() {
 
     return () => {
       window.removeEventListener('open-auth-modal', handleOpenAuth);
+      window.removeEventListener('open-nav-curtain', handleOpenCurtain);
+      window.removeEventListener('close-nav-curtain', handleCloseCurtain);
+      window.removeEventListener('toggle-nav-curtain', handleToggleCurtain);
+      window.removeEventListener('touchstart', handleGlobalTouchStart);
+      window.removeEventListener('touchend', handleGlobalTouchEnd);
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
@@ -251,9 +281,9 @@ export default function Navbar() {
             ? 'opacity-0 -translate-y-full pointer-events-none' 
             : 'opacity-100 translate-y-0'
         }`}
-        title="ማውጫውን ለመክፈት ይጎትቱ ወይም ይጫኑ (Click or Pull to Open Menu)"
+        title="ማውጫውን እና መነሻ ገጽ ለመክፈት ይጎትቱ ወይም ይጫኑ (Click or Pull to Open Menu & Return to Home)"
       >
-        <div className="bg-[#080d1a]/95 hover:bg-[#0f172a] backdrop-blur-2xl border-x border-b border-[#f9b03c]/70 hover:border-[#f9b03c] px-4 sm:px-6 py-1.5 rounded-b-2xl shadow-[0_4px_25px_rgba(249,176,60,0.35),0_8px_30px_rgba(0,0,0,0.8)] flex items-center gap-2.5 group transition-all duration-300 hover:py-2 hover:px-7 active:scale-95">
+        <div className="bg-[#080d1a]/95 hover:bg-[#0f172a] backdrop-blur-2xl border-x border-b border-[#f9b03c]/70 hover:border-[#f9b03c] px-4 sm:px-6 py-1.5 rounded-b-2xl shadow-[0_4px_25px_rgba(249,176,60,0.4),0_8px_30px_rgba(0,0,0,0.85)] flex items-center gap-2.5 group transition-all duration-300 hover:py-2 hover:px-7 active:scale-95">
           {/* Tsehay Sun / Compass Icon */}
           <div className="w-5 h-5 rounded-full bg-[#f9b03c]/20 border border-[#f9b03c]/50 flex items-center justify-center text-[#f9b03c] text-[11px] shadow-[0_0_8px_rgba(249,176,60,0.4)]">
             <i className="fa-solid fa-compass animate-spin" style={{ animationDuration: '14s' }}></i>
@@ -266,8 +296,9 @@ export default function Navbar() {
           </div>
 
           {/* Label Text & Bouncing Chevron */}
-          <span className="text-[11px] sm:text-xs font-black tracking-wide text-white group-hover:text-[#f9b03c] transition-colors whitespace-nowrap">
-            ማውጫውን ሳብ (Menu)
+          <span className="text-[11px] sm:text-xs font-black tracking-wide text-white group-hover:text-[#f9b03c] transition-colors whitespace-nowrap flex items-center gap-1.5">
+            <i className="fa-solid fa-house text-[10px] text-[#f9b03c]"></i>
+            <span>ማውጫ / መነሻ (Menu)</span>
           </span>
           <i className="fa-solid fa-chevron-down text-[10px] text-[#f9b03c] animate-bounce"></i>
         </div>
@@ -277,11 +308,11 @@ export default function Navbar() {
       {isCurtainOpen && (
         <div 
           onClick={() => setIsCurtainOpen(false)}
-          className="fixed inset-0 z-[9995] bg-black/50 backdrop-blur-[2px] transition-opacity duration-300"
+          className="fixed inset-0 z-[9995] bg-black/60 backdrop-blur-[3px] transition-opacity duration-300"
         />
       )}
 
-      {/* 3. Curtain Rollup Navbar (እንደ መጋረጃ የሚወርድ እና የሚጠቀለል) */}
+      {/* 3. Curtain Rollup Navbar (እንደ መጋረጃ የሚወርድ እና የሚጠቀለል ተንሸራታች) */}
       <nav 
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
@@ -308,7 +339,7 @@ export default function Navbar() {
             <div className="flex justify-between items-center h-20 gap-4 lg:gap-6">
                 
                 {/* 1. Brand Logo with extra breathing room */}
-                <Link href="/" onClick={() => { setIsMobileMenuOpen(false); if (pathname === '/') window.scrollTo({top: 0, behavior: 'smooth'}); }} className="flex-shrink-0 flex items-center cursor-pointer group gap-2 mr-4 lg:mr-8">
+                <Link href="/" onClick={() => { setIsMobileMenuOpen(false); setIsCurtainOpen(false); if (pathname === '/') window.scrollTo({top: 0, behavior: 'smooth'}); }} className="flex-shrink-0 flex items-center cursor-pointer group gap-2 mr-4 lg:mr-8">
                     <img src="/tc-logo.jpg" alt="Tsehay Campus Logo" className="h-14 w-auto object-contain rounded-md shadow-sm group-hover:shadow-md transition-all duration-300 animate-logo-zoom" onError={(e) => { e.currentTarget.src='https://ui-avatars.com/api/?name=TC&background=3268BA&color=fff' }} />
                     <span className="font-black text-2xl tracking-tight hidden sm:block notranslate select-none"><span className="text-primary animate-tsehay-float">Tsehay</span> <span className="text-secondary animate-campus-float">Campus</span></span>
                 </Link>
@@ -316,8 +347,28 @@ export default function Navbar() {
                 {/* 2. Navigation Links with Hover & Active Underline States */}
                 <div className="hidden lg:flex items-center gap-6 h-full">
                     <Link 
+                        href="/" 
+                        onClick={() => {
+                            setIsMobileMenuOpen(false);
+                            setIsCurtainOpen(false);
+                            if (pathname === '/') {
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }
+                        }}
+                        className={`py-1.5 transition-all duration-200 text-[14px] lg:text-[15px] border-b-2 font-bold flex items-center gap-1.5 ${
+                            pathname === '/' 
+                                ? 'text-[#f9b03c] border-[#f9b03c]' 
+                                : 'text-gray-700 dark:text-white hover:text-[#f9b03c] border-transparent hover:border-[#f9b03c]'
+                        }`}
+                    >
+                        <i className="fa-solid fa-house text-xs"></i>
+                        <span>{t('home') || 'መነሻ'}</span>
+                    </Link>
+                    <Link 
                         href="/courses" 
                         onClick={() => {
+                            setIsMobileMenuOpen(false);
+                            setIsCurtainOpen(false);
                             if (pathname === '/courses') {
                                 window.scrollTo({ top: 0, behavior: 'smooth' });
                             }
@@ -333,6 +384,8 @@ export default function Navbar() {
                     <Link 
                         href="/about" 
                         onClick={() => {
+                            setIsMobileMenuOpen(false);
+                            setIsCurtainOpen(false);
                             if (pathname === '/about') {
                                 window.scrollTo({ top: 0, behavior: 'smooth' });
                             }
@@ -466,6 +519,18 @@ export default function Navbar() {
                         placeholder={t('search_placeholder') || "ኮርሶችን ይፈልጉ..."} 
                     />
                 </div>
+
+                <button 
+                    type="button" 
+                    onClick={() => navigateTo('/')} 
+                    className="w-full flex items-center justify-between px-4 py-3 text-dark dark:text-white font-bold rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 border border-gray-100 dark:border-gray-800/80 transition cursor-pointer text-left"
+                >
+                    <span className="flex items-center gap-3">
+                        <i className="fa-solid fa-house text-primary"></i>
+                        <span>{t('home') || 'መነሻ ገጽ'}</span>
+                    </span>
+                    <i className="fa-solid fa-chevron-right text-xs text-gray-400"></i>
+                </button>
 
                 <button 
                     type="button" 

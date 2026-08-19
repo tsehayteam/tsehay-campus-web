@@ -144,18 +144,6 @@ export default function About() {
 }
 
 function AboutHeroYouTube() {
-  const [isUnmuted, setIsUnmuted] = useState(false);
-  const [iframeSrc, setIframeSrc] = useState(
-    'https://www.youtube.com/embed/mgdOMtW6J8k?rel=0&modestbranding=1&showinfo=0&autoplay=1&mute=1&vq=hd1080&cc_load_policy=0&cc_lang_pref=off&iv_load_policy=3&playsinline=1&controls=1&hl=en'
-  );
-
-  const handleUnmute = () => {
-    setIsUnmuted(true);
-    setIframeSrc(
-      'https://www.youtube.com/embed/mgdOMtW6J8k?rel=0&modestbranding=1&showinfo=0&autoplay=1&mute=0&vq=hd1080&cc_load_policy=0&cc_lang_pref=off&iv_load_policy=3&playsinline=1&controls=1&hl=en'
-    );
-  };
-
   return (
     <div className="max-w-4xl mx-auto mb-16">
       <div className="relative rounded-[2rem] overflow-hidden shadow-2xl border border-white/10 bg-black aspect-video flex items-center justify-center group">
@@ -163,24 +151,12 @@ function AboutHeroYouTube() {
         <iframe 
           id="about-youtube-player" 
           className="w-full h-full relative z-10 rounded-[2rem]" 
-          src={iframeSrc}
+          src="https://www.youtube.com/embed/mgdOMtW6J8k?rel=0&modestbranding=1&showinfo=0&autoplay=0&controls=1&vq=hd1080&cc_load_policy=0&cc_lang_pref=off&iv_load_policy=3&playsinline=1&hl=en"
           title="Tsehay Campus Introduction" 
           frameBorder="0" 
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
           allowFullScreen
         ></iframe>
-
-        {/* Sleek Non-Intrusive Unmute Island Pill (Floating, Never Blocks the Video!) */}
-        {!isUnmuted && (
-          <button
-            type="button"
-            onClick={handleUnmute}
-            className="absolute bottom-4 sm:bottom-6 right-4 sm:right-6 z-20 inline-flex items-center gap-2.5 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full bg-black/85 hover:bg-[#f9b03c] border border-[#f9b03c]/70 text-white hover:text-black shadow-[0_4px_25px_rgba(0,0,0,0.8),0_0_20px_rgba(249,176,60,0.5)] backdrop-blur-md transition-all duration-300 transform hover:scale-105 active:scale-95 cursor-pointer"
-          >
-            <i className="fa-solid fa-volume-high text-sm sm:text-base text-[#f9b03c] group-hover:text-black animate-pulse"></i>
-            <span className="text-xs sm:text-sm font-black tracking-wide">ድምፅ ክፈት (Click to Unmute)</span>
-          </button>
-        )}
       </div>
     </div>
   );
@@ -258,36 +234,13 @@ function AboutShortVideo({ src, title }: { src: string; title?: string }) {
       </video>
 
       {/* Dark Subtle Edge Vignette */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-black/30 pointer-events-none"></div>
+      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20 pointer-events-none"></div>
 
-      {/* Top Badge */}
-      <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-10 pointer-events-none">
-        <span className="bg-black/70 backdrop-blur-md text-white text-[11px] font-black px-3 py-1 rounded-full border border-white/10 flex items-center gap-1.5 shadow">
-          <i className="fa-solid fa-play text-primary text-[10px]"></i>
-          <span>{title || 'Tsehay Campus'}</span>
-        </span>
-      </div>
-
-      {/* Center Subtle Play/Sound Indicator on Hover */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-        <div className="w-14 h-14 rounded-full bg-black/50 border border-white/20 text-[#f9b03c] flex items-center justify-center backdrop-blur-sm shadow-xl">
-          <i className={`fa-solid ${isMuted ? 'fa-volume-xmark' : 'fa-volume-high'} text-lg`}></i>
+      {/* Sleek Minimal Center Play/Sound Button */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none">
+        <div className="w-14 h-14 rounded-full bg-black/50 group-hover:bg-[#f9b03c] border-2 border-[#f9b03c] text-[#f9b03c] group-hover:text-black flex items-center justify-center shadow-[0_0_30px_rgba(249,176,60,0.6)] backdrop-blur-xs transition-all duration-300 group-hover:scale-110">
+          <i className="fa-solid fa-play text-lg pl-0.5"></i>
         </div>
-      </div>
-
-      {/* Floating Corner Sound Pill */}
-      <div className="absolute bottom-4 right-4 z-20 px-3.5 py-1.5 rounded-full bg-black/80 hover:bg-[#f9b03c] border border-[#f9b03c]/60 text-white hover:text-black backdrop-blur-md shadow-lg transition-all flex items-center gap-2">
-        <i className={`fa-solid ${isMuted ? 'fa-volume-xmark text-[#f9b03c]' : 'fa-volume-high text-green-400'} text-xs animate-pulse`}></i>
-        <span className="text-[11px] font-black tracking-wide">
-          {isMuted ? 'ድምፅ ክፈት (Unmute)' : 'SOUND ON'}
-        </span>
-      </div>
-
-      {/* Bottom Brand Watermark */}
-      <div className="absolute bottom-4 left-4 flex items-center z-10 pointer-events-none">
-        <span className="text-[11px] text-gray-300 font-bold uppercase tracking-wider drop-shadow">
-          Tsehay Campus
-        </span>
       </div>
     </div>
   );

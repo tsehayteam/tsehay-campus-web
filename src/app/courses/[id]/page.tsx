@@ -671,22 +671,11 @@ export default function CoursePreviewPage() {
                       {/* Subtle Edge Vignette only */}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20 pointer-events-none"></div>
 
-                      {/* Top Pill Badge */}
-                      <div className="absolute top-3 left-3 px-3 py-1 rounded-full bg-black/80 border border-white/15 text-white text-[11px] font-bold shadow-lg backdrop-blur-md">
-                        Preview
-                      </div>
-
                       {/* Minimalist Glowing Center Play Icon */}
                       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none">
                         <div className="w-14 h-14 rounded-full bg-black/50 group-hover:bg-[#f9b03c] border-2 border-[#f9b03c] text-[#f9b03c] group-hover:text-black flex items-center justify-center shadow-[0_0_30px_rgba(249,176,60,0.6)] backdrop-blur-xs transition-all duration-300 group-hover:scale-110">
                           <i className="fa-solid fa-play text-lg pl-1"></i>
                         </div>
-                      </div>
-
-                      {/* Floating Bottom Pill */}
-                      <div className="absolute bottom-3 right-3 z-20 flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-black/80 group-hover:bg-[#f9b03c] border border-[#f9b03c]/60 text-white group-hover:text-black backdrop-blur-md shadow-lg transition-all duration-300">
-                        <i className="fa-solid fa-play text-xs text-[#f9b03c] group-hover:text-black"></i>
-                        <span className="text-[11px] font-black tracking-wide">ኮርሱን ይመልከቱ (Play Preview)</span>
                       </div>
                     </>
                   )}

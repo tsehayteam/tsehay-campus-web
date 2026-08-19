@@ -1582,14 +1582,21 @@ ${customAdminPrompt}
                     <span className="text-dark dark:text-white font-bold truncate max-w-[200px]">{activeCourse ? activeCourse.title : t('loading')}</span>
                 </nav>
             </div>
-            <div className="flex items-center gap-3 sm:gap-4 shrink-0 relative">
-                <a 
-                  href="/" 
-                  className="flex items-center gap-2 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-slate-700 dark:to-slate-800 hover:from-primary hover:to-yellow-400 text-secondary dark:text-white hover:text-dark font-black px-3.5 py-1.5 rounded-full text-xs sm:text-sm transition-all duration-300 shadow-sm border border-blue-200 dark:border-slate-600 transform hover:-translate-y-0.5 group shrink-0"
+                <button 
+                  type="button"
+                  onClick={() => {
+                    window.dispatchEvent(new CustomEvent('toggle-nav-curtain'));
+                  }}
+                  className="flex items-center gap-2 bg-gradient-to-r from-amber-500/15 via-primary/20 to-yellow-500/15 hover:from-primary hover:to-yellow-400 text-slate-800 dark:text-white hover:text-slate-950 font-black px-3.5 sm:px-4 py-1.5 rounded-full text-xs sm:text-sm transition-all duration-300 shadow-sm border border-primary/40 hover:border-primary transform hover:-translate-y-0.5 group shrink-0 cursor-pointer active:scale-95"
+                  title="ተንሸራታች ማውጫውን ይክፈቱ / ወደ መነሻ ይመለሱ (Pull Down Slide Menu / Return to Home)"
                 >
-                  <i className="fa-solid fa-house text-xs group-hover:scale-110 transition-transform text-primary group-hover:text-dark"></i>
-                  <span className="font-bold">{t('back_to_home')}</span>
-                </a>
+                  <i className="fa-solid fa-house text-xs text-primary group-hover:text-slate-950 group-hover:scale-110 transition-all"></i>
+                  <span className="font-bold">{t('back_to_home') || 'ወደ መነሻ ተመለስ'}</span>
+                  <div className="flex items-center gap-1 bg-primary/20 group-hover:bg-black/20 px-1.5 py-0.5 rounded-full text-[10px] text-amber-600 dark:text-amber-300 group-hover:text-slate-950 transition-colors ml-0.5">
+                    <i className="fa-solid fa-compass text-[9px] animate-spin" style={{ animationDuration: '10s' }}></i>
+                    <i className="fa-solid fa-chevron-down text-[8px] animate-bounce"></i>
+                  </div>
+                </button>
 
                 <button 
                   onClick={toggleTheme} 
@@ -1720,23 +1727,7 @@ ${customAdminPrompt}
                             </div>
                         )}
 
-                        {/* Playback Speed Quick Selector (Top Right) */}
-                        <div className="absolute top-4 right-4 z-30 flex items-center gap-1 bg-black/70 backdrop-blur-md p-1 rounded-xl border border-white/10 shadow-lg opacity-80 group-hover/player:opacity-100 transition-opacity">
-                            {[0.75, 1, 1.25, 1.5, 2].map((spd) => (
-                                <button
-                                    key={spd}
-                                    onClick={() => setPlaybackSpeed(spd)}
-                                    className={`px-2 py-0.5 rounded-lg text-[10px] sm:text-xs font-black transition cursor-pointer ${
-                                        playbackSpeed === spd 
-                                            ? 'bg-primary text-slate-950 shadow-xs' 
-                                            : 'text-gray-300 hover:text-white hover:bg-white/10'
-                                    }`}
-                                    title={`${spd}x Playback Speed`}
-                                >
-                                    {spd}x
-                                </button>
-                            ))}
-                        </div>
+
 
                         {/* Video End Course Rating Overlay */}
                         {isCourseCompleted && activeCourse?.id && !ratedCourses[activeCourse.id] && !(typeof window !== 'undefined' && localStorage.getItem(`rated_course_${activeCourse.id}`)) && !dismissedRatingOverlay[activeCourse.id] && (
