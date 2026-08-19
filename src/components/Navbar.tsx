@@ -68,7 +68,7 @@ export default function Navbar() {
     setTheme(document.documentElement.classList.contains('dark') ? 'dark' : 'light');
 
     const handleOpenAuth = (e: any) => {
-        setIsSignupMode(e.detail?.isSignupMode || false);
+        setIsSignupMode(e.detail?.isSignupMode ?? e.detail?.isSignUp ?? false);
         setIsAuthModalOpen(true);
     };
     window.addEventListener('open-auth-modal', handleOpenAuth);
