@@ -70,9 +70,11 @@ export default function About() {
               </p>
             </div>
 
-            {/* What We Do Cards */}
+            {/* What We Do / Why Tsehay Campus Cards (Primary Color Heading) */}
             <div className="mb-20 sm:mb-24">
-              <h3 className="text-2xl font-bold font-heading text-dark dark:text-white mb-8 text-center">{t('what_we_do_title')}</h3>
+              <h3 className="text-2xl sm:text-3xl font-extrabold font-heading text-primary mb-8 text-center">
+                {t('what_we_do_title')}
+              </h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Card 1 */}
                 <div className="bg-white dark:bg-dark border border-gray-100 dark:border-gray-800 p-8 rounded-2xl text-center hover:-translate-y-3 transition-all duration-500 shadow-md hover:shadow-2xl hover:shadow-[#f9b03c]/20 hover:border-[#f9b03c]/40 cursor-pointer">
@@ -128,20 +130,20 @@ export default function About() {
             </div>
 
             {/* Video Reels & Team/Community Photo Showcase */}
-            <div className="space-y-8">
+            <div className="space-y-6">
               {/* Short Vertical Videos with Tap to Unmute */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <AboutShortVideo src="/assets/videos/Tsehay.mp4" title="Tsehay Campus Life" />
                 <AboutShortVideo src="/assets/videos/Marketing%20and%20psyco.mp4" title="Marketing & Practical Training" />
               </div>
 
-              {/* Full Community & Team Photo (Full visible view without cropping on desktop & mobile) */}
-              <div className="rounded-3xl overflow-hidden shadow-2xl border border-gray-200 dark:border-gray-800 bg-slate-950 p-2 sm:p-4 relative group flex items-center justify-center">
+              {/* Previous Banner Style Photo as requested */}
+              <div className="rounded-3xl overflow-hidden shadow-xl group w-full h-64 md:h-96 bg-black relative border border-gray-100 dark:border-gray-800">
                 <img 
                   src="https://i.postimg.cc/qvqt1bJK/about-photo-1.jpg" 
-                  className="w-full h-auto max-h-[700px] object-contain rounded-2xl group-hover:scale-[1.01] transition-transform duration-500" 
-                  alt="Tsehay Campus Team & Community" 
-                  onError={(e) => { e.currentTarget.src='https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=1200&auto=format&fit=crop'; }} 
+                  className="w-full h-full object-cover group-hover:scale-105 transition duration-700" 
+                  alt="Tsehay Campus Team" 
+                  onError={(e) => { e.currentTarget.src='https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=800&auto=format&fit=crop'; }} 
                 />
               </div>
             </div>

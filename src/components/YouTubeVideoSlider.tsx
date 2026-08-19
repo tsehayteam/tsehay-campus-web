@@ -78,6 +78,7 @@ export default function YouTubeVideoSlider() {
   const [videos, setVideos] = useState<YouTubeItem[]>(DEFAULT_VIDEOS);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isMuted, setIsMuted] = useState(true);
+  const [isGridView, setIsGridView] = useState(false);
   const [selectedModalVideo, setSelectedModalVideo] = useState<YouTubeItem | null>(null);
 
   const videoRefs = useRef<{ [key: string]: HTMLVideoElement | null }>({});
@@ -130,7 +131,7 @@ export default function YouTubeVideoSlider() {
 
   // Sync HTML5 background video playback if local mp4 exists
   useEffect(() => {
-    if (!videos[currentIndex]) return;
+    if (isGridView || !videos[currentIndex]) return;
     Object.keys(videoRefs.current).forEach((key) => {
       const vid = videoRefs.current[key];
       if (vid) {
@@ -142,7 +143,7 @@ export default function YouTubeVideoSlider() {
         }
       }
     });
-  }, [currentIndex, videos]);
+  }, [currentIndex, videos, isGridView]);
 
   const toggleMute = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -177,7 +178,7 @@ export default function YouTubeVideoSlider() {
   }
 
   return (
-    <section className="bg-[#050810] py-14 sm:py-24 text-white relative overflow-hidden border-b border-white/5 select-none">
+    <section id="youtube-section" className="bg-[#050810] py-14 sm:py-24 text-white relative overflow-hidden border-b border-white/5 select-none">
       {/* Background Ambient Glows */}
       <div 
         className="absolute inset-0 opacity-15 pointer-events-none"
@@ -190,7 +191,7 @@ export default function YouTubeVideoSlider() {
 
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         
-        {/* Animated Top Header: Title, Luxury Glowing Badge & YouTube Link */}
+        {/* Animated Top Header: Title, Luxury Glowing Badge & Animated View-Toggle Button */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5 mb-10 sm:mb-14">
           <div className="flex items-center gap-3.5 sm:gap-5">
             {/* 3D Animated Glowing YouTube Icon */}
@@ -228,160 +229,220 @@ export default function YouTubeVideoSlider() {
             </div>
           </div>
 
-          <a
-            href="https://youtube.com/@eyoubsahle?si=p29sAFFmLagXd52X"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="self-start sm:self-center text-gray-200 hover:text-[#f9b03c] transition-all duration-300 text-xs sm:text-sm font-black flex items-center gap-2 group shrink-0 bg-white/5 hover:bg-white/10 px-4 py-2 rounded-full border border-white/15 hover:border-[#f9b03c]/50 shadow-md hover:shadow-[0_0_20px_rgba(249,176,60,0.3)]"
+          {/* Toggle View: "ሁሉንም እይ" (Animates and Unfolds All Videos in Grid List) */}
+          <button
+            type="button"
+            onClick={() => setIsGridView((prev) => !prev)}
+            className="self-start sm:self-center text-gray-200 hover:text-[#f9b03c] transition-all duration-300 text-xs sm:text-sm font-black flex items-center gap-2.5 group shrink-0 bg-white/5 hover:bg-white/10 px-5 py-2.5 rounded-full border border-white/15 hover:border-[#f9b03c]/50 shadow-md hover:shadow-[0_0_25px_rgba(249,176,60,0.3)] cursor-pointer active:scale-95"
           >
-            <span>ሁሉንም እይ</span>
-            <span className="inline-block transition-transform duration-300 group-hover:translate-x-1 text-[#f9b03c]">
-              &rarr;
-            </span>
-          </a>
+            <span>{isGridView ? 'ወደ ስላይደር መልስ (Slider)' : 'ሁሉንም እይ (ዝርዝር)'}</span>
+            <i className={`fa-solid ${isGridView ? 'fa-sliders' : 'fa-table-cells-large'} text-xs sm:text-sm text-[#f9b03c] transition-transform duration-300 group-hover:scale-125`}></i>
+          </button>
         </div>
 
-        {/* 16:9 Horizontal Long-Form 3D Coverflow Carousel Container */}
-        <div 
-          className="relative w-full h-[240px] sm:h-[360px] md:h-[430px] lg:h-[480px] flex items-center justify-center perspective-[1200px]"
-          onTouchStart={handleTouchStart}
-          onTouchEnd={handleTouchEnd}
-        >
-          {/* Navigation Arrow: Left */}
-          <button
-            type="button"
-            onClick={prevSlide}
-            aria-label="Previous Video"
-            className="absolute left-1 sm:left-4 lg:left-8 z-30 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#121722]/90 hover:bg-[#f9b03c] text-white hover:text-black border border-white/20 hover:border-[#f9b03c] flex items-center justify-center shadow-[0_8px_30px_rgba(0,0,0,0.6)] backdrop-blur-md transition-all duration-300 active:scale-90 cursor-pointer"
-          >
-            <i className="fa-solid fa-chevron-left text-sm sm:text-base"></i>
-          </button>
-
-          {/* Navigation Arrow: Right */}
-          <button
-            type="button"
-            onClick={nextSlide}
-            aria-label="Next Video"
-            className="absolute right-1 sm:right-4 lg:right-8 z-30 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#121722]/90 hover:bg-[#f9b03c] text-white hover:text-black border border-white/20 hover:border-[#f9b03c] flex items-center justify-center shadow-[0_8px_30px_rgba(0,0,0,0.6)] backdrop-blur-md transition-all duration-300 active:scale-90 cursor-pointer"
-          >
-            <i className="fa-solid fa-chevron-right text-sm sm:text-base"></i>
-          </button>
-
-          {/* 16:9 Video Cards with 3D Pop-up / Coverflow Effect */}
-          <div className="relative w-full max-w-[320px] sm:max-w-[540px] md:max-w-[680px] lg:max-w-[780px] aspect-[16/9] flex items-center justify-center">
+        {/* View 1: ANIMATED FULL GRID / LIST VIEW OF ALL VIDEOS */}
+        {isGridView ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 animate-in fade-in zoom-in-95 duration-500">
             {videos.map((video, idx) => {
-              let offset = (idx - currentIndex + total) % total;
-              if (offset > total / 2) {
-                offset -= total;
-              }
-
-              const isCenter = offset === 0;
-              const isLeft = offset === -1 || (currentIndex === 0 && idx === total - 1);
-              const isRight = offset === 1 || (currentIndex === total - 1 && idx === 0);
-              const isVisible = Math.abs(offset) <= 1;
-
-              if (!isVisible) return null;
-
               const thumbUrl = video.thumbnail || getYouTubeThumbnail(video.youtubeId, video.thumbnail);
-
               return (
                 <div
                   key={video.id}
-                  onClick={() => {
-                    if (isCenter) {
-                      setSelectedModalVideo(video);
-                    } else {
-                      goToSlide(idx);
-                    }
-                  }}
-                  className={`absolute inset-0 aspect-[16/9] rounded-2xl sm:rounded-3xl overflow-hidden transition-all duration-500 ease-out cursor-pointer ${
-                    isCenter
-                      ? 'z-20 scale-100 opacity-100 border-2 border-[#f9b03c] shadow-[0_0_45px_rgba(249,176,60,0.45),0_15px_40px_rgba(0,0,0,0.8)] translate-x-0 rotate-y-0'
-                      : isLeft
-                      ? 'z-10 scale-[0.82] opacity-35 brightness-50 -translate-x-[55%] sm:-translate-x-[58%] -rotate-y-[10deg] shadow-2xl hover:opacity-60'
-                      : 'z-10 scale-[0.82] opacity-35 brightness-50 translate-x-[55%] sm:translate-x-[58%] rotate-y-[10deg] shadow-2xl hover:opacity-60'
-                  }`}
-                  style={{
-                    transformStyle: 'preserve-3d',
-                  }}
+                  onClick={() => setSelectedModalVideo(video)}
+                  className="group relative bg-[#0c101d] rounded-2xl sm:rounded-3xl overflow-hidden border border-white/10 hover:border-[#f9b03c] shadow-xl hover:shadow-[0_0_40px_rgba(249,176,60,0.35)] transition-all duration-400 cursor-pointer flex flex-col hover:-translate-y-2"
                 >
-                  {/* Background 16:9 Thumbnail Image */}
-                  <img
-                    src={thumbUrl}
-                    alt={video.title}
-                    className="absolute inset-0 w-full h-full object-cover"
-                    onError={(e) => {
-                      if (video.youtubeId) {
-                        e.currentTarget.src = `https://img.youtube.com/vi/${video.youtubeId}/hqdefault.jpg`;
-                      }
-                    }}
-                  />
-
-                  {/* HTML5 Video Element if direct video file provided */}
-                  {video.videoSrc && (
-                    <video
-                      ref={(el) => { videoRefs.current[video.id] = el; }}
-                      src={video.videoSrc}
-                      poster={thumbUrl}
-                      playsInline
-                      muted={isMuted}
-                      loop
-                      autoPlay={isCenter}
-                      className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
-                        isCenter ? 'opacity-100' : 'opacity-0'
-                      }`}
+                  {/* 16:9 Thumbnail Image Container */}
+                  <div className="relative aspect-[16/9] w-full overflow-hidden bg-black">
+                    <img
+                      src={thumbUrl}
+                      alt={video.title}
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                      onError={(e) => {
+                        if (video.youtubeId) {
+                          e.currentTarget.src = `https://img.youtube.com/vi/${video.youtubeId}/hqdefault.jpg`;
+                        }
+                      }}
                     />
-                  )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent"></div>
 
-                  {/* Subtle Dark Vignette for Cinematic Glow */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30 pointer-events-none"></div>
-
-                  {/* Center Audio / Unmute Toggle for Active Card (Clean & Prominent) */}
-                  {isCenter && (
-                    <div 
-                      onClick={video.videoSrc ? toggleMute : () => setSelectedModalVideo(video)}
-                      className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 flex flex-col items-center gap-2.5 group/btn cursor-pointer"
-                    >
-                      {/* Pulsing Round Action Button */}
-                      <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-black/75 hover:bg-[#f9b03c] border-2 border-[#f9b03c]/80 hover:border-[#f9b03c] backdrop-blur-md flex items-center justify-center text-white hover:text-black transition-all duration-300 shadow-[0_0_30px_rgba(249,176,60,0.5)] group-hover/btn:scale-110">
-                        {video.videoSrc ? (
-                          <i className={`fa-solid ${isMuted ? 'fa-volume-xmark' : 'fa-volume-high'} text-lg sm:text-xl pl-0.5`}></i>
-                        ) : (
-                          <i className="fa-solid fa-play text-lg sm:text-xl text-[#f9b03c] group-hover/btn:text-black pl-1"></i>
-                        )}
-                      </div>
-
-                      {/* Pill Badge: CLICK TO UNMUTE / ቪዲዮውን ክፈት */}
-                      <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-black/85 border border-[#f9b03c]/50 text-white backdrop-blur-md shadow-lg transition-transform group-hover/btn:scale-105">
-                        <span className="w-2 h-2 rounded-full bg-[#f9b03c] animate-ping"></span>
-                        <span className="text-[11px] sm:text-xs font-black tracking-wider uppercase text-[#f9b03c]">
-                          {video.videoSrc ? (isMuted ? 'CLICK TO UNMUTE' : 'ድምፅ ተከፍቷል') : 'ይመልከቱ (CLICK TO PLAY)'}
-                        </span>
-                      </div>
+                    {/* Centered Glowing Round Play Icon */}
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-14 h-14 rounded-full bg-black/80 group-hover:bg-[#f9b03c] border-2 border-[#f9b03c]/90 flex items-center justify-center text-[#f9b03c] group-hover:text-black transition-all duration-300 shadow-[0_0_25px_rgba(249,176,60,0.5)] group-hover:scale-110">
+                      <i className="fa-solid fa-play text-lg pl-0.5"></i>
                     </div>
-                  )}
+
+                    {/* Top Index & Tag Badges */}
+                    <div className="absolute top-3 left-3 flex items-center gap-2">
+                      <span className="bg-red-600 text-white text-[11px] font-black px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-md">
+                        <i className="fa-brands fa-youtube text-[11px]"></i>
+                        <span>#{idx + 1}</span>
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Title & Watch CTA Bar */}
+                  <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between bg-gradient-to-b from-[#0e1322] to-[#080b13]">
+                    <h3 className="font-heading font-bold text-sm sm:text-base text-white group-hover:text-[#f9b03c] transition-colors duration-300 line-clamp-2 leading-snug">
+                      {video.title}
+                    </h3>
+                    <div className="flex items-center justify-between mt-4 pt-3 border-t border-white/10 text-xs">
+                      <span className="flex items-center gap-2 text-[#f9b03c] font-black text-xs uppercase tracking-wider">
+                        <span className="w-2 h-2 rounded-full bg-[#f9b03c] animate-ping"></span>
+                        ይመልከቱ (Play)
+                      </span>
+                      <span className="w-8 h-8 rounded-full bg-white/5 group-hover:bg-[#f9b03c] text-gray-300 group-hover:text-black flex items-center justify-center transition-all">
+                        <i className="fa-solid fa-arrow-right text-xs"></i>
+                      </span>
+                    </div>
+                  </div>
                 </div>
               );
             })}
           </div>
-        </div>
+        ) : (
+          /* View 2: 16:9 HORIZONTAL 3D COVERFLOW CAROUSEL */
+          <div>
+            <div 
+              className="relative w-full h-[240px] sm:h-[360px] md:h-[430px] lg:h-[480px] flex items-center justify-center perspective-[1200px]"
+              onTouchStart={handleTouchStart}
+              onTouchEnd={handleTouchEnd}
+            >
+              {/* Navigation Arrow: Left */}
+              <button
+                type="button"
+                onClick={prevSlide}
+                aria-label="Previous Video"
+                className="absolute left-1 sm:left-4 lg:left-8 z-30 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#121722]/90 hover:bg-[#f9b03c] text-white hover:text-black border border-white/20 hover:border-[#f9b03c] flex items-center justify-center shadow-[0_8px_30px_rgba(0,0,0,0.6)] backdrop-blur-md transition-all duration-300 active:scale-90 cursor-pointer"
+              >
+                <i className="fa-solid fa-chevron-left text-sm sm:text-base"></i>
+              </button>
 
-        {/* Carousel Pill Pagination Dots */}
-        <div className="flex items-center justify-center gap-2 mt-6 sm:mt-8">
-          {videos.map((_, i) => (
-            <button
-              key={i}
-              type="button"
-              onClick={() => goToSlide(i)}
-              aria-label={`Slide ${i + 1}`}
-              className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${
-                i === currentIndex
-                  ? 'w-8 bg-[#f9b03c] shadow-[0_0_10px_rgba(249,176,60,0.6)]'
-                  : 'w-2 bg-white/20 hover:bg-white/40'
-              }`}
-            />
-          ))}
-        </div>
+              {/* Navigation Arrow: Right */}
+              <button
+                type="button"
+                onClick={nextSlide}
+                aria-label="Next Video"
+                className="absolute right-1 sm:right-4 lg:right-8 z-30 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#121722]/90 hover:bg-[#f9b03c] text-white hover:text-black border border-white/20 hover:border-[#f9b03c] flex items-center justify-center shadow-[0_8px_30px_rgba(0,0,0,0.6)] backdrop-blur-md transition-all duration-300 active:scale-90 cursor-pointer"
+              >
+                <i className="fa-solid fa-chevron-right text-sm sm:text-base"></i>
+              </button>
+
+              {/* 16:9 Video Cards with 3D Pop-up / Coverflow Effect */}
+              <div className="relative w-full max-w-[320px] sm:max-w-[540px] md:max-w-[680px] lg:max-w-[780px] aspect-[16/9] flex items-center justify-center">
+                {videos.map((video, idx) => {
+                  let offset = (idx - currentIndex + total) % total;
+                  if (offset > total / 2) {
+                    offset -= total;
+                  }
+
+                  const isCenter = offset === 0;
+                  const isLeft = offset === -1 || (currentIndex === 0 && idx === total - 1);
+                  const isRight = offset === 1 || (currentIndex === total - 1 && idx === 0);
+                  const isVisible = Math.abs(offset) <= 1;
+
+                  if (!isVisible) return null;
+
+                  const thumbUrl = video.thumbnail || getYouTubeThumbnail(video.youtubeId, video.thumbnail);
+
+                  return (
+                    <div
+                      key={video.id}
+                      onClick={() => {
+                        if (isCenter) {
+                          setSelectedModalVideo(video);
+                        } else {
+                          goToSlide(idx);
+                        }
+                      }}
+                      className={`absolute inset-0 aspect-[16/9] rounded-2xl sm:rounded-3xl overflow-hidden transition-all duration-500 ease-out cursor-pointer ${
+                        isCenter
+                          ? 'z-20 scale-100 opacity-100 border-2 border-[#f9b03c] shadow-[0_0_45px_rgba(249,176,60,0.45),0_15px_40px_rgba(0,0,0,0.8)] translate-x-0 rotate-y-0'
+                          : isLeft
+                          ? 'z-10 scale-[0.82] opacity-35 brightness-50 -translate-x-[55%] sm:-translate-x-[58%] -rotate-y-[10deg] shadow-2xl hover:opacity-60'
+                          : 'z-10 scale-[0.82] opacity-35 brightness-50 translate-x-[55%] sm:translate-x-[58%] rotate-y-[10deg] shadow-2xl hover:opacity-60'
+                      }`}
+                      style={{
+                        transformStyle: 'preserve-3d',
+                      }}
+                    >
+                      {/* Background 16:9 Thumbnail Image */}
+                      <img
+                        src={thumbUrl}
+                        alt={video.title}
+                        className="absolute inset-0 w-full h-full object-cover"
+                        onError={(e) => {
+                          if (video.youtubeId) {
+                            e.currentTarget.src = `https://img.youtube.com/vi/${video.youtubeId}/hqdefault.jpg`;
+                          }
+                        }}
+                      />
+
+                      {/* HTML5 Video Element if direct video file provided */}
+                      {video.videoSrc && (
+                        <video
+                          ref={(el) => { videoRefs.current[video.id] = el; }}
+                          src={video.videoSrc}
+                          poster={thumbUrl}
+                          playsInline
+                          muted={isMuted}
+                          loop
+                          autoPlay={isCenter}
+                          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
+                            isCenter ? 'opacity-100' : 'opacity-0'
+                          }`}
+                        />
+                      )}
+
+                      {/* Subtle Dark Vignette for Cinematic Glow */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30 pointer-events-none"></div>
+
+                      {/* Center Audio / Unmute Toggle for Active Card (Clean & Prominent) */}
+                      {isCenter && (
+                        <div 
+                          onClick={video.videoSrc ? toggleMute : () => setSelectedModalVideo(video)}
+                          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 flex flex-col items-center gap-2.5 group/btn cursor-pointer"
+                        >
+                          {/* Pulsing Round Action Button */}
+                          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-black/75 hover:bg-[#f9b03c] border-2 border-[#f9b03c]/80 hover:border-[#f9b03c] backdrop-blur-md flex items-center justify-center text-white hover:text-black transition-all duration-300 shadow-[0_0_30px_rgba(249,176,60,0.5)] group-hover/btn:scale-110">
+                            {video.videoSrc ? (
+                              <i className={`fa-solid ${isMuted ? 'fa-volume-xmark' : 'fa-volume-high'} text-lg sm:text-xl pl-0.5`}></i>
+                            ) : (
+                              <i className="fa-solid fa-play text-lg sm:text-xl text-[#f9b03c] group-hover/btn:text-black pl-1"></i>
+                            )}
+                          </div>
+
+                          {/* Pill Badge: CLICK TO UNMUTE / ቪዲዮውን ክፈት */}
+                          <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-black/85 border border-[#f9b03c]/50 text-white backdrop-blur-md shadow-lg transition-transform group-hover/btn:scale-105">
+                            <span className="w-2 h-2 rounded-full bg-[#f9b03c] animate-ping"></span>
+                            <span className="text-[11px] sm:text-xs font-black tracking-wider uppercase text-[#f9b03c]">
+                              {video.videoSrc ? (isMuted ? 'CLICK TO UNMUTE' : 'ድምፅ ተከፍቷል') : 'ይመልከቱ (CLICK TO PLAY)'}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Carousel Pill Pagination Dots */}
+            <div className="flex items-center justify-center gap-2 mt-6 sm:mt-8">
+              {videos.map((_, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => goToSlide(i)}
+                  aria-label={`Slide ${i + 1}`}
+                  className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${
+                    i === currentIndex
+                      ? 'w-8 bg-[#f9b03c] shadow-[0_0_10px_rgba(249,176,60,0.6)]'
+                      : 'w-2 bg-white/20 hover:bg-white/40'
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Fullscreen Video Modal for Deep Viewing (Ultra-Clean, Luxury Standard, No Captions/Clutter) */}
