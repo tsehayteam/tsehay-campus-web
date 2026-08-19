@@ -1773,11 +1773,13 @@ ${customAdminPrompt}
                             cleanUrl = cleanUrl.replace(/&amp;/g, '&');
                             
                             if (cleanUrl.includes('mediadelivery.net')) {
-                                const embedUrl = cleanUrl.replace('/play/', '/embed/').replace('video.mediadelivery.net', 'iframe.mediadelivery.net');
+                                let embedUrl = cleanUrl.replace('/play/', '/embed/').replace('video.mediadelivery.net', 'iframe.mediadelivery.net');
+                                if (!embedUrl.includes('autoplay=')) {
+                                    embedUrl += (embedUrl.includes('?') ? '&' : '?') + 'autoplay=true';
+                                }
                                 return (
                                     <iframe
                                         src={embedUrl}
-                                        loading="lazy"
                                         className="absolute inset-0 w-full h-full border-none"
                                         allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;"
                                         allowFullScreen

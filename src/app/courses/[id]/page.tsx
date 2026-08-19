@@ -629,10 +629,13 @@ export default function CoursePreviewPage() {
                   {(() => {
                       let finalUrl = currentVideoUrl;
                       if (finalUrl.includes('mediadelivery.net')) {
+                          let embedUrl = finalUrl.replace('/play/', '/embed/').replace('video.mediadelivery.net', 'iframe.mediadelivery.net');
+                          if (!embedUrl.includes('autoplay=')) {
+                              embedUrl += (embedUrl.includes('?') ? '&' : '?') + 'autoplay=true';
+                          }
                           return (
                               <iframe
-                                  src={finalUrl}
-                                  loading="lazy"
+                                  src={embedUrl}
                                   className="w-full h-full border-none block"
                                   allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;"
                                   allowFullScreen
@@ -642,9 +645,20 @@ export default function CoursePreviewPage() {
                           return (
                               <iframe
                                   src={finalUrl.replace(/\/view.*$/, '/preview').replace(/\/edit.*$/, '/preview')}
-                                  loading="lazy"
                                   className="w-full h-full border-none block"
                                   allow="autoplay; encrypted-media"
+                                  allowFullScreen
+                              ></iframe>
+                          );
+                      } else if (finalUrl.includes('youtube.com') || finalUrl.includes('youtu.be')) {
+                          const yIdMatch = finalUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
+                          const yId = yIdMatch ? yIdMatch[1] : finalUrl;
+                          return (
+                              <iframe
+                                  src={`https://www.youtube.com/embed/${yId}?autoplay=1&rel=0&modestbranding=1&playsinline=1`}
+                                  title={course?.title || 'Course Preview'}
+                                  className="w-full h-full border-0"
+                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                   allowFullScreen
                               ></iframe>
                           );
