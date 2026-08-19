@@ -16,8 +16,8 @@ const PARTNER_BRANDS = [
   {
     name: 'Google',
     render: () => (
-      <div className="flex items-center gap-3 sm:gap-4 opacity-90 hover:opacity-100 transition-all duration-300 transform hover:scale-105 cursor-pointer">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className="w-8 h-8 sm:w-11 sm:h-11 md:w-12 md:h-12 shrink-0">
+      <div className="flex items-center gap-3 sm:gap-4 opacity-95 hover:opacity-100 transition-all duration-300 transform hover:scale-105 cursor-pointer">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className="w-9 h-9 sm:w-11 sm:h-11 md:w-13 md:h-13 shrink-0">
           <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
           <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
           <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
@@ -35,9 +35,46 @@ const PARTNER_BRANDS = [
     )
   },
   {
+    name: 'telebirr',
+    render: () => (
+      <div className="flex items-center gap-3 sm:gap-4 opacity-95 hover:opacity-100 transition-all duration-300 transform hover:scale-105 cursor-pointer">
+        <svg viewBox="0 0 100 100" className="w-9 h-9 sm:w-11 sm:h-11 md:w-13 md:h-13 shrink-0 drop-shadow-sm">
+          <circle cx="50" cy="50" r="48" fill="#00A3E0" />
+          <path d="M28 32 H44 V68 H36 V40 H28 Z" fill="#FFFFFF" />
+          <path d="M48 32 H66 C73 32 78 37 78 43 C78 47 75 51 70 52 C76 53 80 58 80 64 C80 70 74 75 66 75 H48 V32 Z M56 40 V50 H64 C67 50 70 48 70 45 C70 42 67 40 64 40 Z M56 57 V67 H65 C69 67 72 65 72 62 C72 59 69 57 65 57 Z" fill="#FFFFFF" />
+        </svg>
+        <span className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-[#00A3E0] tracking-tight" style={{ fontFamily: 'Montserrat, Arial, sans-serif' }}>
+          telebirr
+        </span>
+      </div>
+    )
+  },
+  {
+    name: 'CBE BIRR',
+    render: () => (
+      <div className="flex items-center gap-3 sm:gap-4 opacity-95 hover:opacity-100 transition-all duration-300 transform hover:scale-105 cursor-pointer">
+        <div className="w-9 h-9 sm:w-11 sm:h-11 md:w-13 md:h-13 rounded-2xl bg-gradient-to-br from-[#6F1D77] via-[#56145E] to-[#3B0D41] border border-amber-400/40 p-1 flex items-center justify-center shadow-md shrink-0">
+          <svg viewBox="0 0 100 100" className="w-full h-full">
+            <polygon points="50,6 90,28 90,72 50,94 10,72 10,28" fill="#FFB800" stroke="#FFFFFF" strokeWidth="3" />
+            <polygon points="50,15 82,33 82,67 50,85 18,67 18,33" fill="#6F1D77" />
+            <text x="50" y="58" textAnchor="middle" fill="#FFB800" fontSize="22" fontWeight="900" fontFamily="Arial, sans-serif">CBE</text>
+          </svg>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-[#7B1FA2] dark:text-[#E19EEA] tracking-tight" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+            CBE
+          </span>
+          <span className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-[#FFB800] tracking-tight" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+            BIRR
+          </span>
+        </div>
+      </div>
+    )
+  },
+  {
     name: 'Meta',
     render: () => (
-      <div className="flex items-center gap-3 sm:gap-4 opacity-90 hover:opacity-100 transition-all duration-300 transform hover:scale-105 cursor-pointer">
+      <div className="flex items-center gap-3 sm:gap-4 opacity-95 hover:opacity-100 transition-all duration-300 transform hover:scale-105 cursor-pointer">
         <i className="fa-brands fa-meta text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-[#0668E1] shrink-0"></i>
         <span className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-[#0668E1] tracking-tight" style={{ fontFamily: 'Montserrat, sans-serif' }}>
           Meta
@@ -48,7 +85,7 @@ const PARTNER_BRANDS = [
   {
     name: 'TikTok',
     render: () => (
-      <div className="flex items-center gap-3 sm:gap-4 opacity-90 hover:opacity-100 transition-all duration-300 transform hover:scale-105 cursor-pointer">
+      <div className="flex items-center gap-3 sm:gap-4 opacity-95 hover:opacity-100 transition-all duration-300 transform hover:scale-105 cursor-pointer">
         <i className="fa-brands fa-tiktok text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-slate-900 dark:text-white shrink-0"></i>
         <span className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-slate-900 dark:text-white tracking-tight" style={{ fontFamily: 'Montserrat, sans-serif' }}>
           TikTok
@@ -59,7 +96,7 @@ const PARTNER_BRANDS = [
   {
     name: 'SHEIN',
     render: () => (
-      <div className="flex items-center opacity-90 hover:opacity-100 transition-all duration-300 transform hover:scale-105 cursor-pointer">
+      <div className="flex items-center opacity-95 hover:opacity-100 transition-all duration-300 transform hover:scale-105 cursor-pointer">
         <div className="bg-black dark:bg-white text-white dark:text-black px-4 py-1.5 sm:px-6 sm:py-2.5 rounded-xl text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black tracking-[0.2em] sm:tracking-[0.25em] uppercase shadow-lg shrink-0" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>
           SHEIN
         </div>
@@ -69,7 +106,7 @@ const PARTNER_BRANDS = [
   {
     name: 'BYBIT',
     render: () => (
-      <div className="flex items-center opacity-90 hover:opacity-100 transition-all duration-300 transform hover:scale-105 cursor-pointer">
+      <div className="flex items-center opacity-95 hover:opacity-100 transition-all duration-300 transform hover:scale-105 cursor-pointer">
         <div className="flex items-end text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 dark:text-white tracking-tighter leading-none" style={{ fontFamily: 'Montserrat, sans-serif' }}>
           BYB<span className="w-1.5 sm:w-2 md:w-2.5 h-6 sm:h-8 md:h-10 lg:h-12 bg-[#F7A600] mx-0.5 sm:mx-1 inline-block relative bottom-0.5 sm:bottom-1"></span>T
         </div>
@@ -77,33 +114,9 @@ const PARTNER_BRANDS = [
     )
   },
   {
-    name: 'shopify',
-    render: () => (
-      <div className="flex items-center gap-3 sm:gap-4 opacity-90 hover:opacity-100 transition-all duration-300 transform hover:scale-105 cursor-pointer">
-        <i className="fa-brands fa-shopify text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-[#95BF47] shrink-0"></i>
-        <span className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-slate-900 dark:text-white tracking-tight" style={{ fontFamily: 'Inter, sans-serif' }}>
-          shopify
-        </span>
-      </div>
-    )
-  },
-  {
-    name: 'telebirr',
-    render: () => (
-      <div className="flex items-center gap-2.5 sm:gap-3.5 opacity-90 hover:opacity-100 transition-all duration-300 transform hover:scale-105 cursor-pointer">
-        <div className="w-8 h-8 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-full bg-[#009FE3] flex items-center justify-center text-white font-black text-xs sm:text-base md:text-lg shadow-md shrink-0">
-          tb
-        </div>
-        <span className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-[#009FE3] tracking-tight" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-          telebirr
-        </span>
-      </div>
-    )
-  },
-  {
     name: 'YouTube',
     render: () => (
-      <div className="flex items-center gap-3 sm:gap-4 opacity-90 hover:opacity-100 transition-all duration-300 transform hover:scale-105 cursor-pointer">
+      <div className="flex items-center gap-3 sm:gap-4 opacity-95 hover:opacity-100 transition-all duration-300 transform hover:scale-105 cursor-pointer">
         <i className="fa-brands fa-youtube text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-[#FF0000] shrink-0"></i>
         <span className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black tracking-tight text-slate-900 dark:text-white" style={{ fontFamily: 'Oswald, Montserrat, sans-serif' }}>
           YouTube
