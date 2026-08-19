@@ -261,7 +261,7 @@ export default function CoursePreviewPage() {
 
   const instructorName = course?.instructorName || course?.instructor || 'Eyoub Sahle';
   const isEyoub = !instructorName || instructorName.toLowerCase().includes('eyoub') || instructorName.toLowerCase().includes('eyob') || instructorName.includes('ኢዮብ');
-  const defaultInstructorPhoto = isEyoub ? '/assets/eyob_new4.jpg' : '/tc-logo.jpg';
+  const defaultInstructorPhoto = isEyoub ? '/assets/eyob_white.jpg' : '/tc-logo.jpg';
   const displayInstructorImage = course?.instructorImage ? formatDriveImageUrl(course.instructorImage) : defaultInstructorPhoto;
 
   const formatPrice = (val: any) => {
