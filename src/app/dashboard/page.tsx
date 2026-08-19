@@ -1582,6 +1582,7 @@ ${customAdminPrompt}
                     <span className="text-dark dark:text-white font-bold truncate max-w-[200px]">{activeCourse ? activeCourse.title : t('loading')}</span>
                 </nav>
             </div>
+            <div className="flex items-center gap-3 sm:gap-4 shrink-0 relative">
                 <button 
                   type="button"
                   onClick={() => {
