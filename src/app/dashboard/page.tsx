@@ -76,6 +76,8 @@ export default function StudentDashboard() {
   const [settingsCity, setSettingsCity] = useState("");
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const [settingsEmail, setSettingsEmail] = useState("");
+  const [profileMessage, setProfileMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [passwordResetMessage, setPasswordResetMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   
   // Notification State
   const [showNotifications, setShowNotifications] = useState(false);
@@ -279,6 +281,41 @@ export default function StudentDashboard() {
     }
   };
 
+  // Dedicated User Profile Fetcher (Runs for all users regardless of purchased courses)
+  useEffect(() => {
+    if (!user) return;
+    
+    setSettingsName(user.displayName || '');
+    setSettingsPhotoUrl(user.photoURL || '');
+    setSettingsEmail(user.email || '');
+
+    const fetchUserProfile = async () => {
+      try {
+        const profileRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'profile', 'info');
+        const profileSnap = await getDoc(profileRef);
+        if (profileSnap.exists()) {
+          const data = profileSnap.data();
+          if (data.name) setSettingsName(data.name);
+          if (data.phone) setSettingsPhone(data.phone);
+          if (data.city) setSettingsCity(data.city);
+        } else {
+          const userDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid);
+          const userDocSnap = await getDoc(userDocRef);
+          if (userDocSnap.exists()) {
+            const uData = userDocSnap.data();
+            if (uData.name || uData.displayName) setSettingsName(uData.name || uData.displayName);
+            if (uData.phone) setSettingsPhone(uData.phone);
+            if (uData.city) setSettingsCity(uData.city);
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching user profile:", err);
+      }
+    };
+
+    fetchUserProfile();
+  }, [user]);
+
   useEffect(() => {
     // Fetch courses for the student
     const fetchPurchasedCourses = async () => {
@@ -333,20 +370,6 @@ export default function StudentDashboard() {
             try { localStorage.setItem('tsehay_user_active_course', JSON.stringify(userCourses[0])); } catch(e) {}
             return userCourses[0];
           });
-        }
-        
-        // Initialize settings state
-        setSettingsName(user.displayName || '');
-        setSettingsPhotoUrl(user.photoURL || '');
-        setSettingsEmail(user.email || '');
-        
-        // Fetch extra profile info
-        const profileRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'profile', 'info');
-        const profileSnap = await getDoc(profileRef);
-        if (profileSnap.exists()) {
-            const data = profileSnap.data();
-            if (data.phone) setSettingsPhone(data.phone);
-            if (data.city) setSettingsCity(data.city);
         }
       } catch (error) {
         console.error("Error fetching courses", error);
@@ -1019,31 +1042,55 @@ export default function StudentDashboard() {
   const handleUpdateProfile = async () => {
     if (!user) return;
     setIsUpdatingProfile(true);
+    setProfileMessage(null);
     try {
-      await updateProfile(user, {
-        displayName: settingsName,
-        photoURL: settingsPhotoUrl || user.photoURL
-      });
-      // Optionally update user doc in firestore if it exists
+      if (settingsName || settingsPhotoUrl) {
+        try {
+          await updateProfile(user, {
+            displayName: settingsName,
+            photoURL: settingsPhotoUrl || user.photoURL
+          });
+        } catch (authErr) {
+          console.warn("Client auth update warning:", authErr);
+        }
+      }
+      
       const userDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid);
-      await updateDoc(userDocRef, {
+      await setDoc(userDocRef, {
          displayName: settingsName,
-         photoURL: settingsPhotoUrl || user.photoURL
-      });
+         name: settingsName,
+         photoURL: settingsPhotoUrl || user.photoURL || '',
+         email: user.email || '',
+         phone: settingsPhone,
+         city: settingsCity,
+         updatedAt: serverTimestamp()
+      }, { merge: true });
       
       const profileRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'profile', 'info');
       await setDoc(profileRef, {
           name: settingsName,
+          displayName: settingsName,
           phone: settingsPhone,
-          city: settingsCity
+          city: settingsCity,
+          email: user.email || '',
+          updatedAt: serverTimestamp()
       }, { merge: true });
 
-      alert('Profile updated successfully!');
-      // Force reload to update context or just let Next.js handle it
-      window.location.reload();
+      try {
+        const cachedAuth = localStorage.getItem('tsehay_auth_user_cache');
+        if (cachedAuth) {
+          const parsed = JSON.parse(cachedAuth);
+          parsed.displayName = settingsName;
+          localStorage.setItem('tsehay_auth_user_cache', JSON.stringify(parsed));
+        }
+      } catch (e) {}
+
+      setProfileMessage({ type: 'success', text: 'መረጃዎ በተሳካ ሁኔታ ተዘምኗል! (Profile updated successfully)' });
+      setTimeout(() => setProfileMessage(null), 5000);
     } catch (error) {
       console.error("Error updating profile:", error);
-      alert('Failed to update profile.');
+      setProfileMessage({ type: 'error', text: 'መረጃውን ማዘመን አልተቻለም። እባክዎ እንደገና ይሞክሩ።' });
+      setTimeout(() => setProfileMessage(null), 5000);
     } finally {
       setIsUpdatingProfile(false);
     }
@@ -1051,14 +1098,17 @@ export default function StudentDashboard() {
 
   const handlePasswordReset = async () => {
       if (!user?.email) return;
+      setPasswordResetMessage(null);
       try {
           const { getAuth, sendPasswordResetEmail } = await import('firebase/auth');
           const auth = getAuth();
           await sendPasswordResetEmail(auth, user.email);
-          alert('Password reset email sent! Check your inbox.');
+          setPasswordResetMessage({ type: 'success', text: 'የይለፍ ቃል መቀየሪያ ሊንክ ወደ ኢሜልዎ ተልኳል! (Reset link sent to your email)' });
+          setTimeout(() => setPasswordResetMessage(null), 5000);
       } catch (error: any) {
           console.error("Error sending reset email:", error);
-          alert('የይለፍ ቃል መቀየሪያ ኢሜል መላክ አልተቻለም። እባክዎ በድጋሚ ይሞክሩ።');
+          setPasswordResetMessage({ type: 'error', text: 'የይለፍ ቃል መቀየሪያ ኢሜል መላክ አልተቻለም። እባክዎ በድጋሚ ይሞክሩ።' });
+          setTimeout(() => setPasswordResetMessage(null), 5000);
       }
   };
 
@@ -1334,9 +1384,9 @@ ${customAdminPrompt}
 
         <div className="hidden md:block p-4 w-full border-t border-slate-100 dark:border-slate-700">
           <div className="flex items-center justify-center lg:justify-start gap-3 p-2 mb-2">
-            <img src={user?.photoURL || "https://ui-avatars.com/api/?name=" + (user?.displayName || 'User') + "&background=7b61ff&color=fff"} className="w-10 h-10 rounded-full object-cover shadow-sm" alt="Profile" />
-            <div className="hidden lg:block">
-              <p className="text-sm font-bold text-slate-800 dark:text-white leading-tight">{user?.displayName || 'Tsehay Student'}</p>
+            <img src={user?.photoURL || "https://ui-avatars.com/api/?name=" + encodeURIComponent(settingsName || user?.displayName || 'User') + "&background=f9b03c&color=111827"} className="w-10 h-10 rounded-full object-cover shadow-sm ring-2 ring-primary/30" alt="Profile" />
+            <div className="hidden lg:block overflow-hidden">
+              <p className="text-sm font-bold text-slate-800 dark:text-white leading-tight truncate">{settingsName || user?.displayName || 'Tsehay Student'}</p>
               <p className="text-[11px] text-slate-500 dark:text-slate-400">
                 {courses.some(c => {
                   const isFree = c.isFree === true || c.price === 'Free' || c.price === '0' || c.price === 0 || Number(c.price) === 0;
@@ -2824,35 +2874,101 @@ ${customAdminPrompt}
         )}
 
         {currentView === 'settings' && (
-          <div className="max-w-2xl mx-auto py-10 bg-white dark:bg-slate-800 p-8 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700">
-            <h2 className="text-2xl font-bold mb-6">ማስተካከያ (Settings)</h2>
+          <div className="max-w-2xl mx-auto py-10 bg-white dark:bg-slate-800 p-6 sm:p-8 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 space-y-6 animate-in fade-in duration-200">
+            <div className="flex items-center justify-between border-b border-gray-100 dark:border-slate-700/80 pb-4">
+              <div>
+                <h2 className="text-2xl font-black text-dark dark:text-white font-heading">ማስተካከያ (Settings)</h2>
+                <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">የግል መረጃዎን እና የይለፍ ቃልዎን እዚህ ያስተካክሉ</p>
+              </div>
+              <div className="w-10 h-10 rounded-2xl bg-primary/20 text-primary flex items-center justify-center text-lg shadow-sm">
+                <i className="fa-solid fa-user-gear"></i>
+              </div>
+            </div>
+
+            {profileMessage && (
+              <div className={`p-4 rounded-2xl flex items-center gap-3 text-xs sm:text-sm font-bold animate-in fade-in duration-200 ${
+                profileMessage.type === 'success'
+                  ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
+                  : 'bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400'
+              }`}>
+                <i className={`fa-solid ${profileMessage.type === 'success' ? 'fa-circle-check text-emerald-500 text-base' : 'fa-circle-exclamation text-red-500 text-base'}`}></i>
+                <span>{profileMessage.text}</span>
+              </div>
+            )}
+
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-bold mb-1">ስም (Name)</label>
-                <input type="text" value={settingsName} onChange={(e) => setSettingsName(e.target.value)} className="w-full p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700" />
+                <label className="block text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-300 mb-1.5">ስም (Name)</label>
+                <input 
+                  type="text" 
+                  value={settingsName} 
+                  onChange={(e) => setSettingsName(e.target.value)} 
+                  placeholder="ሙሉ ስምዎን ያስገቡ"
+                  className="w-full p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-dark dark:text-white text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary transition font-medium" 
+                />
               </div>
               <div>
-                <label className="block text-sm font-bold mb-1">ስልክ (Phone)</label>
-                <input type="tel" value={settingsPhone} onChange={(e) => setSettingsPhone(e.target.value)} className="w-full p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700" />
+                <label className="block text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-300 mb-1.5">ስልክ (Phone)</label>
+                <input 
+                  type="tel" 
+                  value={settingsPhone} 
+                  onChange={(e) => setSettingsPhone(e.target.value)} 
+                  placeholder="ስልክ ቁጥርዎን ያስገቡ"
+                  className="w-full p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-dark dark:text-white text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary transition font-medium" 
+                />
               </div>
               <div>
-                <label className="block text-sm font-bold mb-1">ከተማ (City)</label>
-                <input type="text" value={settingsCity} onChange={(e) => setSettingsCity(e.target.value)} className="w-full p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700" />
+                <label className="block text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-300 mb-1.5">ከተማ (City)</label>
+                <input 
+                  type="text" 
+                  value={settingsCity} 
+                  onChange={(e) => setSettingsCity(e.target.value)} 
+                  placeholder="ከተማ ወይም ሀገር ያስገቡ"
+                  className="w-full p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-dark dark:text-white text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary transition font-medium" 
+                />
               </div>
               <div>
-                <label className="block text-sm font-bold mb-1">ኢሜይል (Email)</label>
-                <input type="email" readOnly className="w-full p-3 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-500" value={settingsEmail} />
+                <label className="block text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-300 mb-1.5">ኢሜይል (Email)</label>
+                <input 
+                  type="email" 
+                  readOnly 
+                  className="w-full p-3.5 rounded-xl bg-slate-100/80 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 text-sm cursor-not-allowed font-medium select-none" 
+                  value={settingsEmail || user?.email || ''} 
+                />
               </div>
-              <button onClick={handleUpdateProfile} disabled={isUpdatingProfile} className="px-6 py-3 bg-primary text-dark font-bold rounded-xl hover:bg-yellow-400 w-full mt-4 flex justify-center items-center gap-2">
-                  {isUpdatingProfile ? <i className="fa-solid fa-spinner fa-spin"></i> : <i className="fa-solid fa-save"></i>} 
-                  አዘምን (Save Changes)
+              <button 
+                onClick={handleUpdateProfile} 
+                disabled={isUpdatingProfile} 
+                className="w-full px-6 py-3.5 bg-gradient-to-r from-amber-400 via-primary to-yellow-400 text-dark font-black rounded-xl hover:brightness-105 active:scale-[0.99] transition shadow-md flex justify-center items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed mt-4"
+              >
+                  {isUpdatingProfile ? <i className="fa-solid fa-spinner fa-spin"></i> : <i className="fa-solid fa-floppy-disk"></i>} 
+                  <span>{isUpdatingProfile ? 'በማዘመን ላይ...' : 'አዘምን (Save Changes)'}</span>
               </button>
               
-              <div className="mt-8 pt-8 border-t border-gray-100 dark:border-slate-700">
-                  <h3 className="font-bold text-lg text-dark dark:text-white mb-2">የይለፍ ቃል ቀይር (Reset Password)</h3>
-                  <p className="text-sm text-gray-500 mb-4">የይለፍ ቃልዎን ለመቀየር ከታች ያለውን ቁልፍ ይጫኑ።</p>
-                  <button onClick={handlePasswordReset} className="px-6 py-3 bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 text-dark dark:text-white font-bold rounded-xl hover:bg-gray-50 dark:hover:bg-slate-600 w-full">
-                      የይለፍ ቃል መቀየሪያ ኢሜይል ላክ
+              <div className="mt-8 pt-6 border-t border-gray-100 dark:border-slate-700/80 space-y-3">
+                  <h3 className="font-bold text-base text-dark dark:text-white flex items-center gap-2">
+                    <i className="fa-solid fa-key text-primary"></i>
+                    <span>የይለፍ ቃል ቀይር (Reset Password)</span>
+                  </h3>
+                  <p className="text-xs text-gray-500 dark:text-slate-400">የይለፍ ቃልዎን ለመቀየር ከታች ያለውን ቁልፍ ሲጫኑ የማስተካከያ ሊንክ ወደ ኢሜልዎ ይላካል።</p>
+                  
+                  {passwordResetMessage && (
+                    <div className={`p-3.5 rounded-xl flex items-center gap-2.5 text-xs font-bold animate-in fade-in duration-200 ${
+                      passwordResetMessage.type === 'success'
+                        ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
+                        : 'bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400'
+                    }`}>
+                      <i className={`fa-solid ${passwordResetMessage.type === 'success' ? 'fa-circle-check text-emerald-500' : 'fa-circle-exclamation text-red-500'}`}></i>
+                      <span>{passwordResetMessage.text}</span>
+                    </div>
+                  )}
+
+                  <button 
+                    onClick={handlePasswordReset} 
+                    className="w-full px-6 py-3 bg-white dark:bg-slate-700/60 border border-gray-200 dark:border-slate-600 text-dark dark:text-white font-bold text-xs sm:text-sm rounded-xl hover:bg-gray-50 dark:hover:bg-slate-700 transition cursor-pointer active:scale-[0.99] flex items-center justify-center gap-2"
+                  >
+                      <i className="fa-solid fa-paper-plane text-xs text-primary"></i>
+                      <span>የይለፍ ቃል መቀየሪያ ኢሜይል ላክ (Send Reset Link)</span>
                   </button>
               </div>
             </div>

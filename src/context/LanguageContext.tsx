@@ -50,7 +50,7 @@ const translations: Record<string, Record<Language, string>> = {
   'popular_courses': { am: 'በብዛት የሚፈለጉ ኮርሶች', en: 'Popular Courses' },
   'popular_courses_desc': { am: 'ተማሪዎቻችን በአሁኑ ጊዜ በስፋት እየተከታተሉ ያሉ ስልጠናዎች', en: 'Trainings our students are widely following right now' },
   'loading_courses': { am: 'ኮርሶችን በማምጣት ላይ...', en: 'Loading courses...' },
-  'no_course_found': { am: 'ይቅርታ፣ ኮርስ አልተገኘም።', en: 'Sorry, no courses found.' },
+  'no_course_found': { am: 'ምንም ኮርስ አልተገኘም።', en: 'No courses found.' },
 
   // AI section
   'make_smart': { am: 'የካምፓስ ቆይታዎን የተሟላ ያድርጉ!', en: 'Make your campus stay complete!' },
