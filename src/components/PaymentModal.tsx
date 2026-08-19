@@ -209,8 +209,8 @@ export default function PaymentModal({ course, onClose }: any) {
                                     </div>
                                 </div>
                                 <div className="flex items-center shrink-0">
-                                    <div className="bg-white w-28 sm:w-36 h-10 sm:h-11 px-2 rounded-xl flex items-center justify-center shadow-md border border-gray-200">
-                                        <img src="/crypto-logo.svg" alt="Bitcoin, Ethereum, Solana" className="h-7 sm:h-8 w-auto max-w-full object-contain" />
+                                    <div className="bg-white w-28 sm:w-36 h-10 sm:h-11 px-2.5 rounded-xl flex items-center justify-center shadow-md border border-gray-200">
+                                        <img src="/nowpayments-logo.svg" alt="NOWPayments" className="h-6 sm:h-7 w-auto max-w-full object-contain" />
                                     </div>
                                 </div>
                             </label>
