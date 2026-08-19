@@ -235,7 +235,7 @@ export default function Navbar() {
     }
   };
 
-  if (pathname?.startsWith('/dashboard') || pathname?.startsWith('/admin')) {
+  if (pathname?.startsWith('/admin')) {
     return null;
   }
 
@@ -246,7 +246,7 @@ export default function Navbar() {
         onClick={() => setIsCurtainOpen(true)}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
-        className={`fixed top-0 left-1/2 -translate-x-1/2 z-50 cursor-pointer select-none transition-all duration-300 ${
+        className={`fixed top-0 left-1/2 -translate-x-1/2 z-[9990] cursor-pointer select-none transition-all duration-300 ${
           isCurtainOpen 
             ? 'opacity-0 -translate-y-full pointer-events-none' 
             : 'opacity-100 translate-y-0'
@@ -277,7 +277,7 @@ export default function Navbar() {
       {isCurtainOpen && (
         <div 
           onClick={() => setIsCurtainOpen(false)}
-          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[2px] transition-opacity duration-300"
+          className="fixed inset-0 z-[9995] bg-black/50 backdrop-blur-[2px] transition-opacity duration-300"
         />
       )}
 
@@ -285,7 +285,7 @@ export default function Navbar() {
       <nav 
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
-        className={`glass-nav fixed w-full top-0 z-50 border-b border-[#f9b03c]/30 shadow-[0_12px_40px_rgba(0,0,0,0.7)] transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] transform ${
+        className={`glass-nav fixed w-full top-0 z-[9999] border-b border-[#f9b03c]/30 shadow-[0_12px_40px_rgba(0,0,0,0.7)] transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] transform ${
           isCurtainOpen 
             ? 'translate-y-0 opacity-100' 
             : '-translate-y-full opacity-0 pointer-events-none'
@@ -562,71 +562,73 @@ export default function Navbar() {
       </nav>
 
       {/* Udacity-Style Mobile Bottom App Navigation Bar */}
-      <div className={`md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-[#0d0d0d]/95 backdrop-blur-xl border-t border-gray-200 dark:border-white/10 px-2 py-2 safe-area-bottom shadow-[0_-4px_25px_rgba(0,0,0,0.15)] dark:shadow-[0_-4px_25px_rgba(0,0,0,0.7)] transition-all duration-300 ease-in-out transform translate-y-0 opacity-100`}>
-        <div className="flex items-center justify-around max-w-md mx-auto">
-          <Link 
-            href="/" 
-            className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition ${pathname === '/' ? 'text-primary font-black' : 'text-gray-600 dark:text-gray-400 hover:text-dark dark:hover:text-white font-medium'}`}
-          >
-            <i className={`fa-solid fa-house text-lg ${pathname === '/' ? 'scale-110 text-primary' : ''} transition-transform`}></i>
-            <span className="text-[10px] mt-0.5 tracking-tight font-bold">መነሻ</span>
-          </Link>
-
-          <Link 
-            href="/courses" 
-            className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition ${pathname?.startsWith('/courses') ? 'text-primary font-black' : 'text-gray-600 dark:text-gray-400 hover:text-dark dark:hover:text-white font-medium'}`}
-          >
-            <i className={`fa-solid fa-book-open text-lg ${pathname?.startsWith('/courses') ? 'scale-110 text-primary' : ''} transition-transform`}></i>
-            <span className="text-[10px] mt-0.5 tracking-tight font-bold">ኮርሶች</span>
-          </Link>
-
-          <Link 
-            href="/dashboard" 
-            className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition relative ${pathname === '/dashboard' ? 'text-primary font-black' : 'text-gray-600 dark:text-gray-400 hover:text-dark dark:hover:text-white font-medium'}`}
-          >
-            <div className="relative">
-              <i className={`fa-solid fa-graduation-cap text-lg ${pathname === '/dashboard' ? 'scale-110 text-primary' : ''} transition-transform`}></i>
-              {mounted && user && (
-                <span className="absolute -top-1 -right-1.5 w-2 h-2 bg-emerald-500 rounded-full"></span>
-              )}
-            </div>
-            <span className="text-[10px] mt-0.5 tracking-tight font-bold">ክፍሌ</span>
-          </Link>
-
-          <button 
-            onClick={() => window.dispatchEvent(new CustomEvent('toggle-ai'))}
-            className="flex flex-col items-center justify-center py-1 px-2 rounded-xl text-primary font-extrabold hover:text-yellow-400 transition cursor-pointer"
-          >
-            <i className="fa-solid fa-wand-magic-sparkles text-lg animate-pulse"></i>
-            <span className="text-[10px] mt-0.5 tracking-tight notranslate font-black">AI Tutor</span>
-          </button>
-
-          {!mounted || !user ? (
-            <button 
-              onClick={() => openAuthModal(false)}
-              className="flex flex-col items-center justify-center py-1 px-2 rounded-xl text-gray-600 dark:text-gray-400 hover:text-primary font-medium transition cursor-pointer"
+      {!pathname?.startsWith('/dashboard') && (
+        <div className={`md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-[#0d0d0d]/95 backdrop-blur-xl border-t border-gray-200 dark:border-white/10 px-2 py-2 safe-area-bottom shadow-[0_-4px_25px_rgba(0,0,0,0.15)] dark:shadow-[0_-4px_25px_rgba(0,0,0,0.7)] transition-all duration-300 ease-in-out transform translate-y-0 opacity-100`}>
+          <div className="flex items-center justify-around max-w-md mx-auto">
+            <Link 
+              href="/" 
+              className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition ${pathname === '/' ? 'text-primary font-black' : 'text-gray-600 dark:text-gray-400 hover:text-dark dark:hover:text-white font-medium'}`}
             >
-              <i className="fa-solid fa-user text-lg"></i>
-              <span className="text-[10px] mt-0.5 tracking-tight font-bold">መለያ</span>
-            </button>
-          ) : (
-            <button 
-              onClick={() => setShowProfileDropdown(prev => !prev)}
-              className="flex flex-col items-center justify-center py-1 px-2 rounded-xl text-gray-700 dark:text-gray-300 hover:text-primary transition cursor-pointer"
+              <i className={`fa-solid fa-house text-lg ${pathname === '/' ? 'scale-110 text-primary' : ''} transition-transform`}></i>
+              <span className="text-[10px] mt-0.5 tracking-tight font-bold">መነሻ</span>
+            </Link>
+
+            <Link 
+              href="/courses" 
+              className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition ${pathname?.startsWith('/courses') ? 'text-primary font-black' : 'text-gray-600 dark:text-gray-400 hover:text-dark dark:hover:text-white font-medium'}`}
             >
-              <img 
-                src={navUserPhoto} 
-                alt={navUserName} 
-                className="w-5 h-5 rounded-full object-cover border border-primary" 
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(navUserName)}&background=f9b03c&color=111827&bold=true`;
-                }}
-              />
-              <span className="text-[10px] mt-0.5 font-bold tracking-tight">እኔ</span>
+              <i className={`fa-solid fa-book-open text-lg ${pathname?.startsWith('/courses') ? 'scale-110 text-primary' : ''} transition-transform`}></i>
+              <span className="text-[10px] mt-0.5 tracking-tight font-bold">ኮርሶች</span>
+            </Link>
+
+            <Link 
+              href="/dashboard" 
+              className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition relative ${pathname === '/dashboard' ? 'text-primary font-black' : 'text-gray-600 dark:text-gray-400 hover:text-dark dark:hover:text-white font-medium'}`}
+            >
+              <div className="relative">
+                <i className={`fa-solid fa-graduation-cap text-lg ${pathname === '/dashboard' ? 'scale-110 text-primary' : ''} transition-transform`}></i>
+                {mounted && user && (
+                  <span className="absolute -top-1 -right-1.5 w-2 h-2 bg-emerald-500 rounded-full"></span>
+                )}
+              </div>
+              <span className="text-[10px] mt-0.5 tracking-tight font-bold">ክፍሌ</span>
+            </Link>
+
+            <button 
+              onClick={() => window.dispatchEvent(new CustomEvent('toggle-ai'))}
+              className="flex flex-col items-center justify-center py-1 px-2 rounded-xl text-primary font-extrabold hover:text-yellow-400 transition cursor-pointer"
+            >
+              <i className="fa-solid fa-wand-magic-sparkles text-lg animate-pulse"></i>
+              <span className="text-[10px] mt-0.5 tracking-tight notranslate font-black">AI Tutor</span>
             </button>
-          )}
+
+            {!mounted || !user ? (
+              <button 
+                onClick={() => openAuthModal(false)}
+                className="flex flex-col items-center justify-center py-1 px-2 rounded-xl text-gray-600 dark:text-gray-400 hover:text-primary font-medium transition cursor-pointer"
+              >
+                <i className="fa-solid fa-user text-lg"></i>
+                <span className="text-[10px] mt-0.5 tracking-tight font-bold">መለያ</span>
+              </button>
+            ) : (
+              <button 
+                onClick={() => setShowProfileDropdown(prev => !prev)}
+                className="flex flex-col items-center justify-center py-1 px-2 rounded-xl text-gray-700 dark:text-gray-300 hover:text-primary transition cursor-pointer"
+              >
+                <img 
+                  src={navUserPhoto} 
+                  alt={navUserName} 
+                  className="w-5 h-5 rounded-full object-cover border border-primary" 
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(navUserName)}&background=f9b03c&color=111827&bold=true`;
+                  }}
+                />
+                <span className="text-[10px] mt-0.5 font-bold tracking-tight">እኔ</span>
+              </button>
+            )}
+          </div>
         </div>
-      </div>
+      )}
       
       <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} isSignupMode={isSignupMode} setIsSignupMode={setIsSignupMode} />
     </>

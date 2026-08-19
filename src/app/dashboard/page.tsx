@@ -1285,7 +1285,7 @@ ${customAdminPrompt}
   }
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] dark:bg-slate-900 text-slate-800 dark:text-slate-200 flex flex-col md:flex-row font-body transition-colors duration-300 -mt-20 relative z-[60]">
+    <div className="min-h-screen bg-[#F8FAFC] dark:bg-slate-900 text-slate-800 dark:text-slate-200 flex flex-col md:flex-row font-body transition-colors duration-300 relative">
       
       {/* Sidebar Navigation */}
       <aside className="w-full md:w-24 lg:w-72 bg-white dark:bg-slate-800 border-b md:border-b-0 md:border-r border-slate-200 dark:border-slate-700 flex flex-col items-center lg:items-start shadow-sm z-20 shrink-0">
