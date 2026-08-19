@@ -22,8 +22,28 @@ const PRESET_INCLUDES = [
   'የሚወርዱ የትምህርት ማቴሪያሎች (Downloadable PDF resources)'
 ];
 
+export function extractYouTubeId(urlOrId: string): string {
+  if (!urlOrId) return '';
+  const trimmed = urlOrId.trim();
+  if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) return trimmed;
+  const matchWatch = trimmed.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
+  if (matchWatch && matchWatch[1]) return matchWatch[1];
+  const matchYoutu = trimmed.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/);
+  if (matchYoutu && matchYoutu[1]) return matchYoutu[1];
+  const matchEmbed = trimmed.match(/(?:embed|shorts|live)\/([a-zA-Z0-9_-]{11})/);
+  if (matchEmbed && matchEmbed[1]) return matchEmbed[1];
+  return trimmed;
+}
+
+export function getYouTubeThumbnail(youtubeId?: string, customThumb?: string): string {
+  if (customThumb && customThumb.trim()) return customThumb;
+  if (youtubeId && youtubeId.trim()) return `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`;
+  return '/assets/hero-bg-new.jpg';
+}
+
 export default function AdminDashboard() {
   const [courses, setCourses] = useState<any[]>([]);
+  const [youtubeVideos, setYoutubeVideos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -41,6 +61,17 @@ export default function AdminDashboard() {
   const [settingsName, setSettingsName] = useState('');
   const [settingsPhotoUrl, setSettingsPhotoUrl] = useState('');
   const [isUpdatingSettings, setIsUpdatingSettings] = useState(false);
+
+  // YouTube Form State
+  const [isYouTubeModalOpen, setIsYouTubeModalOpen] = useState(false);
+  const [editingYouTubeVideo, setEditingYouTubeVideo] = useState<any>(null);
+  const [youtubeForm, setYoutubeForm] = useState({
+    title: '',
+    youtubeUrl: '',
+    thumbnail: '',
+    videoSrc: '',
+    order: 0,
+  });
 
   // Course Form State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -101,6 +132,13 @@ export default function AdminDashboard() {
       setLoading(false);
     });
 
+    const yq = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'youtube_videos'), orderBy('order', 'asc'));
+    const unsubscribeYouTube = onSnapshot(yq, (snapshot) => {
+      setYoutubeVideos(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    }, (err) => {
+      console.warn("YouTube videos Firestore sync:", err);
+    });
+
     const sq = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'users'));
     const unsubscribeStudents = onSnapshot(sq, (snapshot) => {
       setStudents(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
@@ -119,6 +157,7 @@ export default function AdminDashboard() {
     return () => {
         unsubscribeAuth();
         unsubscribe();
+        unsubscribeYouTube();
         unsubscribeStudents();
         unsubscribePayments();
         unsubscribeTickets();
@@ -228,6 +267,98 @@ export default function AdminDashboard() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  const openAddYouTubeModal = () => {
+    setEditingYouTubeVideo(null);
+    setYoutubeForm({
+      title: '',
+      youtubeUrl: '',
+      thumbnail: '',
+      videoSrc: '',
+      order: youtubeVideos.length,
+    });
+    setIsYouTubeModalOpen(true);
+  };
+
+  const openEditYouTubeModal = (video: any) => {
+    setEditingYouTubeVideo(video);
+    setYoutubeForm({
+      title: video.title || '',
+      youtubeUrl: video.youtubeUrl || (video.youtubeId ? `https://www.youtube.com/watch?v=${video.youtubeId}` : ''),
+      thumbnail: video.thumbnail || '',
+      videoSrc: video.videoSrc || '',
+      order: video.order ?? 0,
+    });
+    setIsYouTubeModalOpen(true);
+  };
+
+  const handleSaveYouTubeVideo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!youtubeForm.youtubeUrl && !youtubeForm.videoSrc) {
+      alert("እባክዎ የዩቲዩብ ሊንክ ያስገቡ (Please provide a YouTube URL)");
+      return;
+    }
+
+    const yId = extractYouTubeId(youtubeForm.youtubeUrl);
+    const docId = editingYouTubeVideo?.id || `yt_${Date.now()}`;
+    const docRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'youtube_videos', docId);
+
+    const autoThumb = yId ? `https://img.youtube.com/vi/${yId}/hqdefault.jpg` : '';
+
+    await setDoc(docRef, {
+      title: youtubeForm.title.trim() || 'ነፃ የዩቲዩብ ስልጠና',
+      youtubeUrl: youtubeForm.youtubeUrl.trim(),
+      youtubeId: yId,
+      thumbnail: youtubeForm.thumbnail.trim() || autoThumb,
+      videoSrc: youtubeForm.videoSrc.trim() || '',
+      order: Number(youtubeForm.order) || 0,
+      timestamp: editingYouTubeVideo?.timestamp || Date.now(),
+      updatedAt: serverTimestamp(),
+    }, { merge: true });
+
+    setIsYouTubeModalOpen(false);
+    setEditingYouTubeVideo(null);
+    setYoutubeForm({ title: '', youtubeUrl: '', thumbnail: '', videoSrc: '', order: 0 });
+  };
+
+  const handleDeleteYouTubeVideo = async (id: string) => {
+    if (window.confirm("እርግጠኛ ነዎት ይህን የዩቲዩብ ቪዲዮ ማጥፋት ይፈልጋሉ? (Delete YouTube video?)")) {
+      try {
+        await deleteDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'youtube_videos', id));
+      } catch (err: any) {
+        console.error(err);
+        alert(`ስህተት ተከስቷል፡ ${err.message}`);
+      }
+    }
+  };
+
+  const handleMoveYouTubeUp = async (index: number) => {
+    if (index <= 0) return;
+    const current = youtubeVideos[index];
+    const prev = youtubeVideos[index - 1];
+    if (!current || !prev) return;
+
+    try {
+      await setDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'youtube_videos', current.id), { order: index - 1 }, { merge: true });
+      await setDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'youtube_videos', prev.id), { order: index }, { merge: true });
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleMoveYouTubeDown = async (index: number) => {
+    if (index >= youtubeVideos.length - 1) return;
+    const current = youtubeVideos[index];
+    const next = youtubeVideos[index + 1];
+    if (!current || !next) return;
+
+    try {
+      await setDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'youtube_videos', current.id), { order: index + 1 }, { merge: true });
+      await setDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'youtube_videos', next.id), { order: index }, { merge: true });
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const handlePdfFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -473,6 +604,9 @@ export default function AdminDashboard() {
           <button onClick={() => setActiveTab('courses')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition ${activeTab === 'courses' ? 'bg-blue-50 dark:bg-slate-700/50 text-secondary dark:text-primary' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700/30'}`}>
             <i className="fa-solid fa-layer-group"></i> ኮርሶች (Courses)
           </button>
+          <button onClick={() => setActiveTab('youtube')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition ${activeTab === 'youtube' ? 'bg-red-50 dark:bg-slate-700/50 text-red-600 dark:text-red-400' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700/30'}`}>
+            <i className="fa-brands fa-youtube text-red-500 text-lg"></i> ነጻ የዩቲዩብ ቪዲዮዎች
+          </button>
           <button onClick={() => setActiveTab('students')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition ${activeTab === 'students' ? 'bg-blue-50 dark:bg-slate-700/50 text-secondary dark:text-primary' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700/30'}`}>
             <i className="fa-solid fa-users"></i> ተማሪዎች (Students)
           </button>
@@ -518,6 +652,7 @@ export default function AdminDashboard() {
           <h1 className="text-xl font-black text-dark dark:text-white">
              {activeTab === 'dashboard' && 'አጠቃላይ መረጃ'}
              {activeTab === 'courses' && 'ኮርሶች ማስተዳደሪያ'}
+             {activeTab === 'youtube' && 'ነጻ የዩቲዩብ ቪዲዮዎች ማስተዳደሪያ (YouTube Videos)'}
              {activeTab === 'students' && 'የተማሪዎች አስተዳደር'}
              {activeTab === 'teachers' && 'የአስተማሪዎች ዝርዝር'}
              {activeTab === 'payments' && 'የክፍያ ሪፖርቶች'}
@@ -537,6 +672,11 @@ export default function AdminDashboard() {
             {activeTab === 'courses' && (
               <button onClick={() => openForm()} className="bg-dark dark:bg-primary text-white dark:text-dark px-6 py-2 rounded-xl text-sm font-bold hover:bg-secondary dark:hover:bg-yellow-400 transition shadow-sm flex items-center gap-2 ml-2">
                 <i className="fa-solid fa-plus"></i> አዲስ ኮርስ ጨምር
+              </button>
+            )}
+            {activeTab === 'youtube' && (
+              <button onClick={openAddYouTubeModal} className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-xl text-sm font-bold transition shadow-sm flex items-center gap-2 ml-2">
+                <i className="fa-solid fa-plus"></i> አዲስ ቪዲዮ ጨምር
               </button>
             )}
           </div>
@@ -750,6 +890,159 @@ export default function AdminDashboard() {
               </tbody>
             </table>
           </div>
+          )}
+
+          {activeTab === 'youtube' && (
+            <div className="space-y-6">
+              {/* Info Header Card */}
+              <div className="bg-gradient-to-r from-red-600/10 via-slate-800 to-amber-500/10 border border-red-500/20 rounded-3xl p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-2xl bg-red-600/20 border border-red-500/30 flex items-center justify-center text-red-500 text-2xl shrink-0">
+                    <i className="fa-brands fa-youtube"></i>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-black text-dark dark:text-white flex items-center gap-2">
+                      ነፃ የዩቲዩብ ቪዲዮዎች (YouTube Showcase)
+                      <span className="text-xs bg-red-600 text-white px-2.5 py-0.5 rounded-full font-bold">
+                        {youtubeVideos.length} ቪዲዮዎች
+                      </span>
+                    </h3>
+                    <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
+                      በሆም ፔጅ ላይ በ 16:9 ፎርማት የሚታዩ ነፃ የዩቲዩብ ቪዲዮዎችን እዚህ ማከል፣ ማስተካከል እና መሰረዝ ይችላሉ። የዩቲዩብ ሊንክ ሲያስገቡ ፎቶው በራሱ ይመረጣል።
+                    </p>
+                  </div>
+                </div>
+                <button 
+                  onClick={openAddYouTubeModal}
+                  className="shrink-0 bg-red-600 hover:bg-red-700 text-white font-bold px-6 py-3 rounded-2xl shadow-lg transition flex items-center gap-2 text-sm cursor-pointer active:scale-95"
+                >
+                  <i className="fa-solid fa-plus"></i>
+                  <span>አዲስ ቪዲዮ ጨምር</span>
+                </button>
+              </div>
+
+              {/* Videos Grid */}
+              {youtubeVideos.length === 0 ? (
+                <div className="bg-white dark:bg-slate-800 rounded-3xl border border-gray-100 dark:border-slate-700 p-12 text-center">
+                  <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/30 text-red-500 flex items-center justify-center mx-auto mb-4 text-2xl">
+                    <i className="fa-brands fa-youtube"></i>
+                  </div>
+                  <h4 className="text-lg font-bold text-dark dark:text-white mb-2">ምንም የተመዘገበ የዩቲዩብ ቪዲዮ የለም</h4>
+                  <p className="text-sm text-gray-500 max-w-md mx-auto mb-6">የመጀመሪያውን የዩቲዩብ ቪዲዮ ሊንክ በማስገባት በሆም ፔጅ ላይ በውብ 16:9 እይታ እንዲታይ ያድርጉ።</p>
+                  <button onClick={openAddYouTubeModal} className="bg-primary text-dark font-black px-6 py-2.5 rounded-xl hover:bg-yellow-400 transition cursor-pointer">
+                    <i className="fa-solid fa-plus mr-2"></i> ቪዲዮ ጨምር
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {youtubeVideos.map((video, index) => {
+                    const yId = video.youtubeId || extractYouTubeId(video.youtubeUrl || '');
+                    const thumb = video.thumbnail || getYouTubeThumbnail(yId, video.thumbnail);
+                    return (
+                      <div 
+                        key={video.id} 
+                        className="bg-white dark:bg-slate-800 rounded-3xl border border-gray-100 dark:border-slate-700 shadow-sm overflow-hidden flex flex-col group hover:shadow-xl transition-all duration-300"
+                      >
+                        {/* 16:9 Thumbnail Box */}
+                        <div className="relative aspect-video w-full bg-slate-900 overflow-hidden">
+                          <img 
+                            src={thumb} 
+                            alt={video.title} 
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                            onError={(e) => {
+                              if (yId) {
+                                e.currentTarget.src = `https://img.youtube.com/vi/${yId}/hqdefault.jpg`;
+                              }
+                            }}
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30 pointer-events-none"></div>
+
+                          {/* Index / Order badge */}
+                          <div className="absolute top-3 left-3 bg-black/70 backdrop-blur-md text-white text-xs font-black px-2.5 py-1 rounded-lg border border-white/10 flex items-center gap-1.5">
+                            <span className="text-[#f9b03c]">#{index + 1}</span>
+                          </div>
+
+                          {/* Video ID badge */}
+                          {yId && (
+                            <div className="absolute top-3 right-3 bg-red-600/90 text-white text-[10px] font-black px-2.5 py-1 rounded-full flex items-center gap-1">
+                              <i className="fa-brands fa-youtube"></i>
+                              <span>{yId}</span>
+                            </div>
+                          )}
+
+                          {/* Center Play Watermark */}
+                          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-black/60 backdrop-blur-md border border-white/20 flex items-center justify-center text-white text-lg">
+                            <i className="fa-solid fa-play pl-0.5 text-primary"></i>
+                          </div>
+                        </div>
+
+                        {/* Card Details */}
+                        <div className="p-5 flex-1 flex flex-col justify-between">
+                          <div>
+                            <h4 className="font-bold text-dark dark:text-white text-base leading-snug line-clamp-2 mb-2 group-hover:text-primary transition-colors">
+                              {video.title}
+                            </h4>
+                            
+                            {video.youtubeUrl && (
+                              <a 
+                                href={video.youtubeUrl} 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                className="text-xs text-red-500 hover:underline flex items-center gap-1.5 line-clamp-1 break-all"
+                              >
+                                <i className="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                                <span>{video.youtubeUrl}</span>
+                              </a>
+                            )}
+                          </div>
+
+                          {/* Actions & Reordering */}
+                          <div className="mt-5 pt-4 border-t border-gray-100 dark:border-slate-700 flex items-center justify-between">
+                            {/* Reorder Buttons */}
+                            <div className="flex items-center gap-1 bg-gray-100 dark:bg-slate-700/50 p-1 rounded-xl">
+                              <button 
+                                onClick={() => handleMoveYouTubeUp(index)}
+                                disabled={index === 0}
+                                title="ወደ ላይ ውሰድ"
+                                className="w-7 h-7 rounded-lg flex items-center justify-center text-xs text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-slate-600 disabled:opacity-30 disabled:cursor-not-allowed transition"
+                              >
+                                <i className="fa-solid fa-arrow-up"></i>
+                              </button>
+                              <button 
+                                onClick={() => handleMoveYouTubeDown(index)}
+                                disabled={index === youtubeVideos.length - 1}
+                                title="ወደ ታች ውሰድ"
+                                className="w-7 h-7 rounded-lg flex items-center justify-center text-xs text-gray-600 dark:text-gray-300 hover:bg-white dark:hover:bg-slate-600 disabled:opacity-30 disabled:cursor-not-allowed transition"
+                              >
+                                <i className="fa-solid fa-arrow-down"></i>
+                              </button>
+                            </div>
+
+                            {/* Edit & Delete */}
+                            <div className="flex items-center gap-2">
+                              <button 
+                                onClick={() => openEditYouTubeModal(video)}
+                                className="px-3 py-1.5 bg-blue-50 dark:bg-blue-500/10 text-secondary dark:text-blue-400 hover:bg-secondary hover:text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5"
+                              >
+                                <i className="fa-solid fa-pen"></i>
+                                <span>አስተካክል</span>
+                              </button>
+                              <button 
+                                onClick={() => handleDeleteYouTubeVideo(video.id)}
+                                className="w-8 h-8 bg-red-50 dark:bg-red-500/10 text-red-500 hover:bg-red-600 hover:text-white rounded-xl text-xs transition flex items-center justify-center"
+                                title="ቪዲዮውን አጥፋ"
+                              >
+                                <i className="fa-solid fa-trash"></i>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           )}
 
           {activeTab === 'students' && (
@@ -1359,6 +1652,182 @@ export default function AdminDashboard() {
               <div className="mt-8 flex gap-4 pt-4 border-t border-gray-100 dark:border-slate-700">
                 <button type="button" onClick={() => setIsModalOpen(false)} className="flex-1 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 font-bold py-4 rounded-xl hover:bg-gray-200 dark:hover:bg-slate-600 transition">ሰርዝ (Cancel)</button>
                 <button type="submit" className="flex-1 bg-primary text-dark font-black py-4 rounded-xl hover:bg-yellow-400 transition shadow-lg">ኮርሱን ሴቭ አድርግ (Save Course)</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* YouTube Video Add / Edit Modal */}
+      {isYouTubeModalOpen && (
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-start justify-center p-4 sm:p-6 backdrop-blur-md overflow-y-auto">
+          <div className="bg-white dark:bg-slate-800 w-full max-w-xl flex flex-col rounded-3xl shadow-2xl overflow-hidden animate-[modalPop_0.3s_ease-out_forwards] mt-12 mb-20 shrink-0 border border-gray-100 dark:border-slate-700">
+            {/* Modal Header */}
+            <div className="p-6 border-b border-gray-100 dark:border-slate-700 flex justify-between items-center bg-gray-50 dark:bg-slate-900/50">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-red-600/20 text-red-500 flex items-center justify-center text-xl">
+                  <i className="fa-brands fa-youtube"></i>
+                </div>
+                <div>
+                  <h2 className="font-black text-lg sm:text-xl text-dark dark:text-white">
+                    {editingYouTubeVideo ? 'የዩቲዩብ ቪዲዮ አስተካክል' : 'አዲስ የዩቲዩብ ቪዲዮ ጨምር'}
+                  </h2>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    በሆም ፔጅ ላይ በ 16:9 እይታ የሚታይ የዩቲዩብ ቪዲዮ
+                  </p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setIsYouTubeModalOpen(false)} 
+                className="w-9 h-9 rounded-full bg-gray-100 dark:bg-slate-700 text-gray-400 hover:text-danger hover:bg-red-50 flex items-center justify-center transition cursor-pointer"
+              >
+                <i className="fa-solid fa-xmark text-lg"></i>
+              </button>
+            </div>
+
+            {/* Modal Form */}
+            <form onSubmit={handleSaveYouTubeVideo} className="p-6 space-y-5">
+              {/* YouTube Link Field */}
+              <div>
+                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1.5">
+                  የዩቲዩብ ሊንክ ወይም Video ID (YouTube URL) *
+                </label>
+                <div className="relative">
+                  <input 
+                    required 
+                    type="text" 
+                    placeholder="https://www.youtube.com/watch?v=... ወይም https://youtu.be/..." 
+                    value={youtubeForm.youtubeUrl} 
+                    onChange={e => {
+                      const val = e.target.value;
+                      const extracted = extractYouTubeId(val);
+                      setYoutubeForm(prev => ({
+                        ...prev,
+                        youtubeUrl: val,
+                        thumbnail: prev.thumbnail || (extracted ? `https://img.youtube.com/vi/${extracted}/hqdefault.jpg` : '')
+                      }));
+                    }} 
+                    className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 pl-11 text-dark dark:text-white outline-none focus:border-red-500 transition text-sm font-mono" 
+                  />
+                  <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-red-500 text-base">
+                    <i className="fa-brands fa-youtube"></i>
+                  </div>
+                </div>
+                <p className="text-[11px] text-gray-500 mt-1">
+                  የዩቲዩብ ሊንክ እንዳስገቡ ቪዲዮ ID እና ተምኔል (Thumbnail) በራሱ ይሰራልዎታል።
+                </p>
+              </div>
+
+              {/* Video Title */}
+              <div>
+                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1.5">
+                  የቪዲዮው ርዕስ (Video Title) *
+                </label>
+                <input 
+                  required 
+                  type="text" 
+                  placeholder="ለምሳሌ፡ የስኬት ሚስጥሮች - ከዜሮ ወደ ከፍተኛ ገቢ መድረሻ" 
+                  value={youtubeForm.title} 
+                  onChange={e => setYoutubeForm({...youtubeForm, title: e.target.value})} 
+                  className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-dark dark:text-white outline-none focus:border-primary transition text-sm" 
+                />
+              </div>
+
+              {/* Custom Thumbnail URL */}
+              <div>
+                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1.5">
+                  የተለየ ተምኔል ፎቶ URL (Custom Thumbnail - አማራጭ)
+                </label>
+                <input 
+                  type="text" 
+                  placeholder="ባዶ ከተዉት ከዩቲዩብ በራሱ ያመጣዋል (https://...)" 
+                  value={youtubeForm.thumbnail} 
+                  onChange={e => setYoutubeForm({...youtubeForm, thumbnail: e.target.value})} 
+                  className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-dark dark:text-white outline-none focus:border-primary transition text-sm" 
+                />
+              </div>
+
+              {/* Direct .mp4 Video URL (Optional) */}
+              <div>
+                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1.5">
+                  የቀጥታ .MP4 ቪዲዮ ፋይል URL (Direct MP4 Preview - አማራጭ)
+                </label>
+                <input 
+                  type="text" 
+                  placeholder="/assets/videos/Tsehay.mp4" 
+                  value={youtubeForm.videoSrc} 
+                  onChange={e => setYoutubeForm({...youtubeForm, videoSrc: e.target.value})} 
+                  className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-dark dark:text-white outline-none focus:border-primary transition text-sm font-mono" 
+                />
+                <p className="text-[11px] text-gray-500 mt-1">
+                  በካርዱ ላይ በቀጥታ በጀርባ እንዲጫወት የሚፈልጉት .mp4 ፋይል ካለ እዚህ ያስገቡ።
+                </p>
+              </div>
+
+              {/* Order Index */}
+              <div>
+                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1.5">
+                  የማሳያ ቅደም ተከተል (Order Index)
+                </label>
+                <input 
+                  type="number" 
+                  value={youtubeForm.order} 
+                  onChange={e => setYoutubeForm({...youtubeForm, order: Number(e.target.value)})} 
+                  className="w-32 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-dark dark:text-white outline-none focus:border-primary transition text-sm" 
+                />
+              </div>
+
+              {/* Live 16:9 Thumbnail Preview */}
+              {(() => {
+                const yId = extractYouTubeId(youtubeForm.youtubeUrl);
+                const thumbPreview = youtubeForm.thumbnail || (yId ? `https://img.youtube.com/vi/${yId}/hqdefault.jpg` : '');
+                if (!thumbPreview && !youtubeForm.youtubeUrl) return null;
+                return (
+                  <div className="bg-slate-900 p-3.5 rounded-2xl border border-gray-200 dark:border-slate-700">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-bold text-gray-400">የ 16:9 ካርድ ቅድመ እይታ (Live Preview)</span>
+                      {yId && (
+                        <span className="text-[10px] bg-red-600 text-white font-bold px-2 py-0.5 rounded-full">
+                          ID: {yId}
+                        </span>
+                      )}
+                    </div>
+                    <div className="relative aspect-video w-full rounded-xl overflow-hidden bg-black border border-white/10">
+                      {thumbPreview && (
+                        <img 
+                          src={thumbPreview} 
+                          alt="Preview" 
+                          className="w-full h-full object-cover" 
+                        />
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent flex items-center justify-center">
+                        <div className="w-12 h-12 rounded-full bg-black/60 border border-white/20 flex items-center justify-center text-primary text-xl">
+                          <i className="fa-solid fa-play pl-0.5"></i>
+                        </div>
+                      </div>
+                      <div className="absolute bottom-2.5 left-3 right-3 text-white text-xs font-bold truncate drop-shadow">
+                        {youtubeForm.title || 'የቪዲዮው ርዕስ እዚህ ይታያል'}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Form Buttons */}
+              <div className="flex gap-3 pt-4 border-t border-gray-100 dark:border-slate-700">
+                <button 
+                  type="button" 
+                  onClick={() => setIsYouTubeModalOpen(false)} 
+                  className="flex-1 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 font-bold py-3 rounded-xl hover:bg-gray-200 dark:hover:bg-slate-600 transition text-sm cursor-pointer"
+                >
+                  ሰርዝ (Cancel)
+                </button>
+                <button 
+                  type="submit" 
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white font-black py-3 rounded-xl transition shadow-lg text-sm cursor-pointer active:scale-95"
+                >
+                  ቪዲዮውን አስቀምጥ (Save Video)
+                </button>
               </div>
             </form>
           </div>

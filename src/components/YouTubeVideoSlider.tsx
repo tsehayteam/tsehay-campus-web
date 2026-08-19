@@ -1,91 +1,120 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import { db } from '@/lib/firebase/config';
+import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 
-interface ShowcaseVideo {
+export interface YouTubeItem {
   id: string;
   title: string;
-  badge: string;
-  author: string;
-  videoSrc?: string;
-  youtubeId?: string;
-  thumbnail: string;
-  duration?: string;
-  views?: string;
   youtubeUrl: string;
+  youtubeId?: string;
+  thumbnail?: string;
+  videoSrc?: string;
+  order?: number;
 }
 
-const SHOWCASE_VIDEOS: ShowcaseVideo[] = [
+export function extractYouTubeId(urlOrId: string): string {
+  if (!urlOrId) return '';
+  const trimmed = urlOrId.trim();
+  if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) return trimmed;
+  const matchWatch = trimmed.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
+  if (matchWatch && matchWatch[1]) return matchWatch[1];
+  const matchYoutu = trimmed.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/);
+  if (matchYoutu && matchYoutu[1]) return matchYoutu[1];
+  const matchEmbed = trimmed.match(/(?:embed|shorts|live)\/([a-zA-Z0-9_-]{11})/);
+  if (matchEmbed && matchEmbed[1]) return matchEmbed[1];
+  return trimmed;
+}
+
+export function getYouTubeThumbnail(youtubeId?: string, customThumb?: string): string {
+  if (customThumb && customThumb.trim()) return customThumb;
+  if (youtubeId && youtubeId.trim()) return `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`;
+  return '/assets/hero-bg-new.jpg';
+}
+
+const DEFAULT_VIDEOS: YouTubeItem[] = [
   {
-    id: 'vid-1',
+    id: 'yt-1',
     title: 'ተግባራዊ የቲክቶክ እና የዲጂታል ገበያ ማስተርክላስ',
-    badge: 'TIKTOK WORKSHOP IN HAWASSA',
-    author: 'Eyob Sahle • Tsehay Campus',
+    youtubeUrl: 'https://youtube.com/@eyoubsahle?si=p29sAFFmLagXd52X',
+    youtubeId: 'B-s71n0dHUk',
     videoSrc: '/assets/videos/Marketing and psyco.mp4',
-    youtubeId: 'B-s71n0dHUk',
     thumbnail: '/assets/eyob_new.png',
-    duration: '14:20',
-    views: '85K+ እይታ',
-    youtubeUrl: 'https://youtube.com/@eyoubsahle?si=p29sAFFmLagXd52X',
   },
   {
-    id: 'vid-2',
+    id: 'yt-2',
     title: 'የስኬት ሚስጥሮች - ከዜሮ ወደ ከፍተኛ ገቢ መድረሻ',
-    badge: 'TSEHAY CAMPUS EXCLUSIVE',
-    author: 'Tsehay Campus Masterclass',
+    youtubeUrl: 'https://youtube.com/@eyoubsahle?si=p29sAFFmLagXd52X',
+    youtubeId: 'mgdOMtW6J8k',
     videoSrc: '/assets/videos/Tsehay.mp4',
-    youtubeId: 'mgdOMtW6J8k',
     thumbnail: '/assets/hero-bg-new.jpg',
-    duration: '22:45',
-    views: '120K+ እይታ',
-    youtubeUrl: 'https://youtube.com/@eyoubsahle?si=p29sAFFmLagXd52X',
   },
   {
-    id: 'vid-3',
+    id: 'yt-3',
     title: 'የዩቲዩብ ስኬት ሚስጥሮች እና ገቢ ማግኛ መንገዶች',
-    badge: 'YOUTUBE SECRETS (ክፍል 1)',
-    author: 'Eyob Sahle',
+    youtubeUrl: 'https://youtube.com/@eyoubsahle?si=p29sAFFmLagXd52X',
+    youtubeId: 'B-s71n0dHUk',
     videoSrc: '/assets/for_landing_page_first.mp4',
-    youtubeId: 'B-s71n0dHUk',
     thumbnail: '/assets/eyob_new2.png',
-    duration: '18:10',
-    views: '94K+ እይታ',
-    youtubeUrl: 'https://youtube.com/@eyoubsahle?si=p29sAFFmLagXd52X',
   },
   {
-    id: 'vid-4',
+    id: 'yt-4',
     title: 'የሼን (Shein) ኢምፖርት ቢዝነስ አሰራር',
-    badge: 'SHEIN IMPORT MASTERCLASS',
-    author: 'Tsehay Team',
-    youtubeId: 'mgdOMtW6J8k',
-    thumbnail: 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?auto=format&fit=crop&w=800&q=80',
-    duration: '26:30',
-    views: '67K+ እይታ',
     youtubeUrl: 'https://youtube.com/@eyoubsahle?si=p29sAFFmLagXd52X',
+    youtubeId: 'mgdOMtW6J8k',
+    thumbnail: 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?auto=format&fit=crop&w=1200&q=80',
   },
   {
-    id: 'vid-5',
+    id: 'yt-5',
     title: 'ዲጂታል ማርኬቲንግ እና AI ለጀማሪዎች',
-    badge: 'DIGITAL MARKETING & AI',
-    author: 'Eyob Sahle & AI Master',
-    youtubeId: 'B-s71n0dHUk',
-    thumbnail: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=800&q=80',
-    duration: '31:15',
-    views: '110K+ እይታ',
     youtubeUrl: 'https://youtube.com/@eyoubsahle?si=p29sAFFmLagXd52X',
+    youtubeId: 'B-s71n0dHUk',
+    thumbnail: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1200&q=80',
   },
 ];
 
 export default function YouTubeVideoSlider() {
+  const [videos, setVideos] = useState<YouTubeItem[]>(DEFAULT_VIDEOS);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isMuted, setIsMuted] = useState(true);
-  const [isPlaying, setIsPlaying] = useState(true);
-  const [selectedModalVideo, setSelectedModalVideo] = useState<ShowcaseVideo | null>(null);
-  
+  const [selectedModalVideo, setSelectedModalVideo] = useState<YouTubeItem | null>(null);
+
   const videoRefs = useRef<{ [key: string]: HTMLVideoElement | null }>({});
   const touchStartX = useRef<number | null>(null);
 
-  const total = SHOWCASE_VIDEOS.length;
+  // Real-time Firestore sync for dynamic YouTube videos from Admin
+  useEffect(() => {
+    try {
+      const q = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'youtube_videos'), orderBy('order', 'asc'));
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        if (!snapshot.empty) {
+          const list: YouTubeItem[] = snapshot.docs.map((doc) => {
+            const data = doc.data();
+            const yId = data.youtubeId || extractYouTubeId(data.youtubeUrl || '');
+            return {
+              id: doc.id,
+              title: data.title || 'ነፃ የዩቲዩብ ስልጠና',
+              youtubeUrl: data.youtubeUrl || `https://www.youtube.com/watch?v=${yId}`,
+              youtubeId: yId,
+              thumbnail: data.thumbnail || getYouTubeThumbnail(yId, data.thumbnail),
+              videoSrc: data.videoSrc || '',
+              order: data.order ?? 0,
+            };
+          });
+          setVideos(list);
+        }
+      }, (error) => {
+        console.warn("Firestore youtube_videos listener fallback:", error);
+      });
+
+      return () => unsubscribe();
+    } catch (e) {
+      console.warn("Firestore listener init failed:", e);
+    }
+  }, []);
+
+  const total = videos.length || 1;
 
   const nextSlide = () => {
     setCurrentIndex((prev) => (prev + 1) % total);
@@ -99,12 +128,13 @@ export default function YouTubeVideoSlider() {
     setCurrentIndex(index);
   };
 
-  // Sync video play/pause on index change
+  // Sync HTML5 background video playback if local mp4 exists
   useEffect(() => {
+    if (!videos[currentIndex]) return;
     Object.keys(videoRefs.current).forEach((key) => {
       const vid = videoRefs.current[key];
       if (vid) {
-        if (key === SHOWCASE_VIDEOS[currentIndex].id) {
+        if (key === videos[currentIndex].id) {
           vid.currentTime = 0;
           vid.play().catch(() => {});
         } else {
@@ -112,30 +142,14 @@ export default function YouTubeVideoSlider() {
         }
       }
     });
-  }, [currentIndex]);
+  }, [currentIndex, videos]);
 
   const toggleMute = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsMuted((prev) => !prev);
-    const activeVid = videoRefs.current[SHOWCASE_VIDEOS[currentIndex].id];
+    const activeVid = videoRefs.current[videos[currentIndex]?.id];
     if (activeVid) {
       activeVid.muted = !isMuted;
-    }
-  };
-
-  const togglePlayPause = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    const activeVid = videoRefs.current[SHOWCASE_VIDEOS[currentIndex].id];
-    if (activeVid) {
-      if (activeVid.paused) {
-        activeVid.play();
-        setIsPlaying(true);
-      } else {
-        activeVid.pause();
-        setIsPlaying(false);
-      }
-    } else {
-      setSelectedModalVideo(SHOWCASE_VIDEOS[currentIndex]);
     }
   };
 
@@ -158,26 +172,29 @@ export default function YouTubeVideoSlider() {
     touchStartX.current = null;
   };
 
+  if (!videos || videos.length === 0) {
+    return null;
+  }
+
   return (
-    <section className="bg-[#050810] py-16 sm:py-24 text-white relative overflow-hidden border-b border-white/5 select-none">
-      {/* Background Matrix Dots & Ambient Glows */}
+    <section className="bg-[#050810] py-14 sm:py-20 text-white relative overflow-hidden border-b border-white/5 select-none">
+      {/* Background Ambient Glows */}
       <div 
-        className="absolute inset-0 opacity-20 pointer-events-none"
+        className="absolute inset-0 opacity-15 pointer-events-none"
         style={{
-          backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.25) 1px, transparent 1px)',
-          backgroundSize: '28px 28px',
+          backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.2) 1px, transparent 1px)',
+          backgroundSize: '32px 32px',
         }}
       ></div>
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#f9b03c]/10 rounded-full blur-[140px] pointer-events-none"></div>
-      <div className="absolute top-1/3 left-10 w-[350px] h-[350px] bg-[#3268ba]/15 rounded-full blur-[120px] pointer-events-none"></div>
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] h-[350px] bg-[#f9b03c]/10 rounded-full blur-[140px] pointer-events-none"></div>
 
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         
         {/* Top Header: Title & YouTube Channel Link */}
         <div className="flex items-center justify-between gap-4 mb-8 sm:mb-12">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-red-600/20 border border-red-500/30 flex items-center justify-center text-red-500 shrink-0 shadow-inner">
-              <i className="fa-brands fa-youtube text-xl"></i>
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-red-600/20 border border-red-500/30 flex items-center justify-center text-red-500 shrink-0 shadow-inner">
+              <i className="fa-brands fa-youtube text-xl sm:text-2xl"></i>
             </div>
             <div>
               <h2 className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight font-heading">
@@ -193,7 +210,7 @@ export default function YouTubeVideoSlider() {
             href="https://youtube.com/@eyoubsahle?si=p29sAFFmLagXd52X"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-gray-300 hover:text-[#f9b03c] transition-colors duration-300 text-sm sm:text-[15px] font-bold flex items-center gap-1.5 group shrink-0"
+            className="text-gray-300 hover:text-[#f9b03c] transition-colors duration-300 text-xs sm:text-sm font-bold flex items-center gap-1.5 group shrink-0 bg-white/5 hover:bg-white/10 px-3.5 py-1.5 rounded-full border border-white/10"
           >
             <span>ሁሉንም እይ</span>
             <span className="inline-block transition-transform duration-300 group-hover:translate-x-1">
@@ -202,9 +219,9 @@ export default function YouTubeVideoSlider() {
           </a>
         </div>
 
-        {/* 3D Coverflow Carousel Container */}
+        {/* 16:9 Horizontal Long-Form 3D Coverflow Carousel Container */}
         <div 
-          className="relative w-full h-[520px] sm:h-[600px] md:h-[650px] flex items-center justify-center perspective-[1200px]"
+          className="relative w-full h-[240px] sm:h-[360px] md:h-[430px] lg:h-[480px] flex items-center justify-center perspective-[1200px]"
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
         >
@@ -213,7 +230,7 @@ export default function YouTubeVideoSlider() {
             type="button"
             onClick={prevSlide}
             aria-label="Previous Video"
-            className="absolute left-2 sm:left-6 lg:left-12 z-30 w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-[#121722]/90 hover:bg-[#f9b03c] text-white hover:text-black border border-white/20 hover:border-[#f9b03c] flex items-center justify-center shadow-[0_8px_30px_rgba(0,0,0,0.6)] backdrop-blur-md transition-all duration-300 active:scale-90 cursor-pointer"
+            className="absolute left-1 sm:left-4 lg:left-8 z-30 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#121722]/90 hover:bg-[#f9b03c] text-white hover:text-black border border-white/20 hover:border-[#f9b03c] flex items-center justify-center shadow-[0_8px_30px_rgba(0,0,0,0.6)] backdrop-blur-md transition-all duration-300 active:scale-90 cursor-pointer"
           >
             <i className="fa-solid fa-chevron-left text-sm sm:text-base"></i>
           </button>
@@ -223,15 +240,14 @@ export default function YouTubeVideoSlider() {
             type="button"
             onClick={nextSlide}
             aria-label="Next Video"
-            className="absolute right-2 sm:right-6 lg:right-12 z-30 w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-[#121722]/90 hover:bg-[#f9b03c] text-white hover:text-black border border-white/20 hover:border-[#f9b03c] flex items-center justify-center shadow-[0_8px_30px_rgba(0,0,0,0.6)] backdrop-blur-md transition-all duration-300 active:scale-90 cursor-pointer"
+            className="absolute right-1 sm:right-4 lg:right-8 z-30 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#121722]/90 hover:bg-[#f9b03c] text-white hover:text-black border border-white/20 hover:border-[#f9b03c] flex items-center justify-center shadow-[0_8px_30px_rgba(0,0,0,0.6)] backdrop-blur-md transition-all duration-300 active:scale-90 cursor-pointer"
           >
             <i className="fa-solid fa-chevron-right text-sm sm:text-base"></i>
           </button>
 
-          {/* Video Cards with 3D Pop-up / Coverflow Effect */}
-          <div className="relative w-full max-w-[340px] sm:max-w-[380px] h-[480px] sm:h-[570px] md:h-[620px] flex items-center justify-center">
-            {SHOWCASE_VIDEOS.map((video, idx) => {
-              // Calculate offset relative to current index
+          {/* 16:9 Video Cards with 3D Pop-up / Coverflow Effect */}
+          <div className="relative w-full max-w-[320px] sm:max-w-[540px] md:max-w-[680px] lg:max-w-[780px] aspect-[16/9] flex items-center justify-center">
+            {videos.map((video, idx) => {
               let offset = (idx - currentIndex + total) % total;
               if (offset > total / 2) {
                 offset -= total;
@@ -244,6 +260,8 @@ export default function YouTubeVideoSlider() {
 
               if (!isVisible) return null;
 
+              const thumbUrl = video.thumbnail || getYouTubeThumbnail(video.youtubeId, video.thumbnail);
+
               return (
                 <div
                   key={video.id}
@@ -254,30 +272,35 @@ export default function YouTubeVideoSlider() {
                       goToSlide(idx);
                     }
                   }}
-                  className={`absolute inset-0 rounded-[28px] overflow-hidden transition-all duration-500 ease-out cursor-pointer ${
+                  className={`absolute inset-0 aspect-[16/9] rounded-2xl sm:rounded-3xl overflow-hidden transition-all duration-500 ease-out cursor-pointer ${
                     isCenter
-                      ? 'z-20 scale-100 opacity-100 border-2 border-[#f9b03c] shadow-[0_0_45px_rgba(249,176,60,0.45),0_15px_40px_rgba(0,0,0,0.8)] translate-x-0 rotate-y-0'
+                      ? 'z-20 scale-100 opacity-100 border-2 border-[#f9b03c] shadow-[0_0_40px_rgba(249,176,60,0.4),0_15px_40px_rgba(0,0,0,0.8)] translate-x-0 rotate-y-0'
                       : isLeft
-                      ? 'z-10 scale-[0.84] opacity-35 brightness-50 -translate-x-[65%] sm:-translate-x-[68%] -rotate-y-[12deg] shadow-2xl hover:opacity-60'
-                      : 'z-10 scale-[0.84] opacity-35 brightness-50 translate-x-[65%] sm:translate-x-[68%] rotate-y-[12deg] shadow-2xl hover:opacity-60'
+                      ? 'z-10 scale-[0.82] opacity-35 brightness-50 -translate-x-[55%] sm:-translate-x-[58%] -rotate-y-[10deg] shadow-2xl hover:opacity-60'
+                      : 'z-10 scale-[0.82] opacity-35 brightness-50 translate-x-[55%] sm:translate-x-[58%] rotate-y-[10deg] shadow-2xl hover:opacity-60'
                   }`}
                   style={{
                     transformStyle: 'preserve-3d',
                   }}
                 >
-                  {/* Background Image / Poster */}
+                  {/* Background 16:9 Thumbnail Image */}
                   <img
-                    src={video.thumbnail}
+                    src={thumbUrl}
                     alt={video.title}
                     className="absolute inset-0 w-full h-full object-cover"
+                    onError={(e) => {
+                      if (video.youtubeId) {
+                        e.currentTarget.src = `https://img.youtube.com/vi/${video.youtubeId}/hqdefault.jpg`;
+                      }
+                    }}
                   />
 
-                  {/* HTML5 Video Element if available & active */}
+                  {/* HTML5 Video Element if direct video file provided */}
                   {video.videoSrc && (
                     <video
                       ref={(el) => { videoRefs.current[video.id] = el; }}
                       src={video.videoSrc}
-                      poster={video.thumbnail}
+                      poster={thumbUrl}
                       playsInline
                       muted={isMuted}
                       loop
@@ -288,69 +311,33 @@ export default function YouTubeVideoSlider() {
                     />
                   )}
 
-                  {/* Dark Gradient Overlay for Readability */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/25 to-black/40 pointer-events-none"></div>
+                  {/* Subtle Dark Vignette for Cinematic Glow */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30 pointer-events-none"></div>
 
-                  {/* Top Bar: Badges & View Count */}
-                  <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-10">
-                    <span className="bg-red-600/90 text-white text-[10px] font-black px-2.5 py-1 rounded-full shadow flex items-center gap-1.5 backdrop-blur-xs">
-                      <i className="fa-brands fa-youtube text-[11px]"></i>
-                      <span>MASTERCLASS</span>
-                    </span>
-
-                    {video.views && (
-                      <span className="bg-black/60 backdrop-blur-md text-white/90 text-[10px] font-bold px-2 py-1 rounded-full border border-white/10">
-                        {video.views}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Center Audio / Unmute Toggle for Active Card */}
+                  {/* Center Audio / Unmute Toggle for Active Card (Clean & Prominent) */}
                   {isCenter && (
                     <div 
-                      onClick={toggleMute}
-                      className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 flex flex-col items-center gap-2 group/btn cursor-pointer"
+                      onClick={video.videoSrc ? toggleMute : () => setSelectedModalVideo(video)}
+                      className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 flex flex-col items-center gap-2.5 group/btn cursor-pointer"
                     >
-                      <div className="w-13 h-13 sm:w-15 sm:h-15 rounded-full bg-black/60 hover:bg-[#f9b03c] border border-white/20 hover:border-[#f9b03c] backdrop-blur-md flex items-center justify-center text-white hover:text-black transition-all duration-300 shadow-[0_0_25px_rgba(0,0,0,0.7)] group-hover/btn:scale-110">
-                        <i className={`fa-solid ${isMuted ? 'fa-volume-xmark' : 'fa-volume-high'} text-lg sm:text-xl pl-0.5`}></i>
+                      {/* Pulsing Round Action Button */}
+                      <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-black/75 hover:bg-[#f9b03c] border-2 border-[#f9b03c]/80 hover:border-[#f9b03c] backdrop-blur-md flex items-center justify-center text-white hover:text-black transition-all duration-300 shadow-[0_0_30px_rgba(249,176,60,0.5)] group-hover/btn:scale-110">
+                        {video.videoSrc ? (
+                          <i className={`fa-solid ${isMuted ? 'fa-volume-xmark' : 'fa-volume-high'} text-lg sm:text-xl pl-0.5`}></i>
+                        ) : (
+                          <i className="fa-solid fa-play text-lg sm:text-xl text-[#f9b03c] group-hover/btn:text-black pl-1"></i>
+                        )}
                       </div>
-                      <span className="text-[10px] font-black tracking-wider uppercase px-2.5 py-1 rounded-full bg-black/70 border border-white/15 text-gray-200 backdrop-blur-md">
-                        {isMuted ? 'CLICK TO UNMUTE' : 'MUTED'}
-                      </span>
+
+                      {/* Pill Badge: CLICK TO UNMUTE / ቪዲዮውን ክፈት */}
+                      <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-black/85 border border-[#f9b03c]/50 text-white backdrop-blur-md shadow-lg transition-transform group-hover/btn:scale-105">
+                        <span className="w-2 h-2 rounded-full bg-[#f9b03c] animate-ping"></span>
+                        <span className="text-[11px] sm:text-xs font-black tracking-wider uppercase text-[#f9b03c]">
+                          {video.videoSrc ? (isMuted ? 'CLICK TO UNMUTE' : 'ድምፅ ተከፍቷል') : 'ይመልከቱ (CLICK TO PLAY)'}
+                        </span>
+                      </div>
                     </div>
                   )}
-
-                  {/* Bottom Video Information & Badges matching Screenshot */}
-                  <div className="absolute bottom-5 left-4 right-4 z-10">
-                    {/* Badge / Workshop Tag */}
-                    <div className="flex items-center justify-between gap-2 mb-2">
-                      <div className="flex items-center gap-1.5 bg-[#f9b03c]/20 border border-[#f9b03c]/40 px-2 py-0.5 rounded-md text-[#f9b03c] text-[10px] font-black tracking-wide">
-                        <i className="fa-solid fa-bolt text-[9px]"></i>
-                        <span>{video.badge}</span>
-                      </div>
-                      
-                      {/* Brand Logo Watermark */}
-                      <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
-                        Tsehay Campus
-                      </span>
-                    </div>
-
-                    {/* Main Title */}
-                    <h3 className="text-sm sm:text-base font-bold text-white leading-snug line-clamp-2 drop-shadow-md">
-                      {video.title}
-                    </h3>
-
-                    {/* Author & Full Play CTA */}
-                    <div className="mt-2.5 pt-2 border-t border-white/10 flex items-center justify-between text-xs text-gray-300">
-                      <span className="line-clamp-1 text-[11px] text-gray-400">
-                        {video.author}
-                      </span>
-                      <span className="text-[#f9b03c] font-black text-[11px] flex items-center gap-1 shrink-0">
-                        <span>ሙሉውን እይ</span>
-                        <i className="fa-solid fa-play text-[9px]"></i>
-                      </span>
-                    </div>
-                  </div>
                 </div>
               );
             })}
@@ -359,7 +346,7 @@ export default function YouTubeVideoSlider() {
 
         {/* Carousel Pill Pagination Dots */}
         <div className="flex items-center justify-center gap-2 mt-6 sm:mt-8">
-          {SHOWCASE_VIDEOS.map((_, i) => (
+          {videos.map((_, i) => (
             <button
               key={i}
               type="button"
@@ -382,7 +369,7 @@ export default function YouTubeVideoSlider() {
           onClick={() => setSelectedModalVideo(null)}
         >
           <div
-            className="bg-[#0c101d] border border-white/15 rounded-2xl sm:rounded-3xl w-full max-w-3xl overflow-hidden shadow-2xl relative"
+            className="bg-[#0c101d] border border-white/15 rounded-2xl sm:rounded-3xl w-full max-w-4xl overflow-hidden shadow-2xl relative"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
@@ -413,7 +400,7 @@ export default function YouTubeVideoSlider() {
                 />
               ) : (
                 <iframe
-                  src={`https://www.youtube.com/embed/${selectedModalVideo.youtubeId}?autoplay=1&rel=0&modestbranding=1`}
+                  src={`https://www.youtube.com/embed/${selectedModalVideo.youtubeId || extractYouTubeId(selectedModalVideo.youtubeUrl)}?autoplay=1&rel=0&modestbranding=1`}
                   title={selectedModalVideo.title}
                   className="w-full h-full"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -428,7 +415,7 @@ export default function YouTubeVideoSlider() {
                 ተጨማሪ ነፃ የቢዝነስ፣ የቲክቶክ እና የቴክኖሎጂ ስልጠናዎችን በዩቲዩብ ቻናላችን ይከታተሉ።
               </div>
               <a
-                href={selectedModalVideo.youtubeUrl}
+                href={selectedModalVideo.youtubeUrl || `https://www.youtube.com/watch?v=${selectedModalVideo.youtubeId}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs sm:text-sm font-bold rounded-xl shadow-md transition-all duration-200 active:scale-95"
