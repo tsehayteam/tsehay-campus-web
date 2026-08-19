@@ -216,16 +216,24 @@ export default function Footer() {
                     <div className="lg:col-span-2">
                         <h4 className="text-white font-extrabold mb-5 font-heading tracking-wide text-sm sm:text-base flex items-center gap-2">
                             <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-                            <span>{lang === 'am' ? 'አድራሻ' : 'Contact'}</span>
+                            <span>{lang === 'am' ? 'አድራሻ እና ግንኙነት' : 'Contact & Location'}</span>
                         </h4>
                         <ul className="space-y-3.5 text-xs text-gray-400">
                             <li className="flex items-start gap-2.5">
                                 <i className="fa-solid fa-location-dot text-[#f9b03c] mt-0.5 shrink-0"></i>
-                                <span>አዲስ አበባ፣ ኢትዮጵያ (Addis Ababa, Ethiopia)</span>
+                                <span>{lang === 'am' ? 'ቦሌ፣ አዲስ አበባ፣ ኢትዮጵያ' : 'Bole, Addis Ababa, Ethiopia'}</span>
                             </li>
                             <li className="flex items-center gap-2.5">
                                 <i className="fa-solid fa-phone text-[#f9b03c] shrink-0"></i>
                                 <a href="tel:0980209090" className="hover:text-white transition">0980209090</a>
+                            </li>
+                            <li className="flex items-center gap-2.5">
+                                <i className="fa-brands fa-whatsapp text-emerald-400 shrink-0"></i>
+                                <a href="https://wa.me/251980209090" target="_blank" rel="noreferrer" className="hover:text-emerald-400 transition">0980209090</a>
+                            </li>
+                            <li className="flex items-center gap-2.5">
+                                <i className="fa-brands fa-telegram text-[#0088cc] shrink-0"></i>
+                                <a href="https://t.me/eyoubsahle" target="_blank" rel="noreferrer" className="hover:text-[#0088cc] transition">@eyoubsahle</a>
                             </li>
                             <li className="flex items-center gap-2.5">
                                 <i className="fa-solid fa-envelope text-[#f9b03c] shrink-0"></i>
