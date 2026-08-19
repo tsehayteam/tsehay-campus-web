@@ -18,6 +18,7 @@ export default function Navbar() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isSignupMode, setIsSignupMode] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isNavVisible, setIsNavVisible] = useState(true);
   const [theme, setTheme] = useState('dark');
   const { lang, toggleLanguage, t } = useLanguage();
 
@@ -66,10 +67,46 @@ export default function Navbar() {
   };
 
   useEffect(() => {
-    // Automatically close mobile menu when navigating to another route
+    // Automatically close mobile menu and reset visibility on route change
     setIsMobileMenuOpen(false);
     setShowProfileDropdown(false);
+    setIsNavVisible(true);
   }, [pathname]);
+
+  // Scroll listener for smart auto-hiding / auto-revealing navbar
+  useEffect(() => {
+    let lastScroll = 0;
+    let ticking = false;
+
+    const handleScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const currentScroll = window.scrollY || document.documentElement.scrollTop;
+
+          // Always show when at the top of the page
+          if (currentScroll <= 50) {
+            setIsNavVisible(true);
+          } else if (currentScroll > lastScroll + 8) {
+            // Scrolling down -> hide navbar for clean full-screen immersive view
+            setIsNavVisible(false);
+            setShowProfileDropdown(false);
+          } else if (currentScroll < lastScroll - 6) {
+            // Scrolling up / swiping down -> smoothly reveal navbar
+            setIsNavVisible(true);
+          }
+
+          lastScroll = Math.max(0, currentScroll);
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
 
   useEffect(() => {
     setMounted(true);
@@ -144,7 +181,9 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className="glass-nav fixed w-full top-0 z-50 transition-all duration-300">
+      <nav className={`glass-nav fixed w-full top-0 z-50 transition-all duration-300 ease-in-out transform ${
+        isNavVisible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0 pointer-events-none'
+      }`}>
         <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-20 gap-4 lg:gap-6">
                 
@@ -400,7 +439,9 @@ export default function Navbar() {
       </nav>
 
       {/* Udacity-Style Mobile Bottom App Navigation Bar */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-[#0d0d0d]/95 backdrop-blur-xl border-t border-gray-200 dark:border-white/10 px-2 py-2 safe-area-bottom shadow-[0_-4px_25px_rgba(0,0,0,0.15)] dark:shadow-[0_-4px_25px_rgba(0,0,0,0.7)]">
+      <div className={`md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-[#0d0d0d]/95 backdrop-blur-xl border-t border-gray-200 dark:border-white/10 px-2 py-2 safe-area-bottom shadow-[0_-4px_25px_rgba(0,0,0,0.15)] dark:shadow-[0_-4px_25px_rgba(0,0,0,0.7)] transition-all duration-300 ease-in-out transform ${
+        isNavVisible ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'
+      }`}>
         <div className="flex items-center justify-around max-w-md mx-auto">
           <Link 
             href="/" 
