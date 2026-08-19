@@ -14,43 +14,16 @@ import { getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImage
 
 const PARTNER_BRANDS = [
   {
-    name: 'amazon',
-    render: () => (
-      <div className="flex items-center gap-1.5 opacity-80 hover:opacity-100 transition-all duration-300 transform hover:scale-110 cursor-pointer">
-        <span className="text-2xl sm:text-3xl font-black text-slate-800 dark:text-white tracking-tight" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>
-          amazon
-        </span>
-        <svg viewBox="0 0 100 25" className="w-14 h-3.5 text-[#FF9900] fill-current -mt-1 shrink-0">
-          <path d="M5 12 Q50 26 95 6 Q65 20 18 13 Z" />
-          <path d="M92 4 L98 7 L93 11 Z" />
-        </svg>
-      </div>
-    )
-  },
-  {
-    name: 'NVIDIA',
-    render: () => (
-      <div className="flex items-center gap-2 opacity-80 hover:opacity-100 transition-all duration-300 transform hover:scale-110 cursor-pointer">
-        <svg viewBox="0 0 24 24" className="w-6 h-6 text-[#76B900] fill-current shrink-0">
-          <path d="M8.7 17.5c-2.4 0-4.4-1.9-4.4-4.3 0-2.4 2-4.3 4.4-4.3 2.1 0 3.8 1.4 4.2 3.4H15c-.5-3.1-3.1-5.4-6.3-5.4C5 6.9 2 9.7 2 13.2s3 6.3 6.7 6.3c2.9 0 5.4-1.8 6.3-4.5h-2.1c-.8 1.5-2.3 2.5-4.2 2.5zm6.5-12.7c-5.5 0-9.9 4.1-9.9 9.2 0 4.9 4.1 8.9 9.4 9.1v-1.8c-4.3-.2-7.6-3.4-7.6-7.3 0-4.1 3.6-7.4 8.1-7.4 3.7 0 6.9 2.3 7.8 5.6h1.9c-1-4.3-4.9-7.4-9.7-7.4zm0-2.8C8.3 2 2.7 7 2.7 13.2s5.6 11.2 12.5 11.2c5.9 0 10.8-3.9 12.1-9.4h-2.1c-1.2 4.4-5.3 7.6-10 7.6-5.8 0-10.5-4.2-10.5-9.4S9.4 3.8 15.2 3.8c4.6 0 8.5 2.8 10 6.9h2.1C25.9 5.5 21 2 15.2 2z"/>
-        </svg>
-        <span className="text-xl sm:text-2xl font-black text-slate-800 dark:text-white tracking-wider" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>
-          nVIDIA
-        </span>
-      </div>
-    )
-  },
-  {
     name: 'Google',
     render: () => (
-      <div className="flex items-center gap-2 opacity-80 hover:opacity-100 transition-all duration-300 transform hover:scale-110 cursor-pointer">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className="w-6 h-6 shrink-0">
+      <div className="flex items-center gap-3 sm:gap-4 opacity-90 hover:opacity-100 transition-all duration-300 transform hover:scale-105 cursor-pointer">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className="w-8 h-8 sm:w-11 sm:h-11 md:w-12 md:h-12 shrink-0">
           <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
           <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
           <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
           <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
         </svg>
-        <span className="text-xl sm:text-2xl font-bold font-sans">
+        <span className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black font-heading tracking-tight">
           <span className="text-[#4285F4]">G</span>
           <span className="text-[#EA4335]">o</span>
           <span className="text-[#FBBC05]">o</span>
@@ -62,33 +35,11 @@ const PARTNER_BRANDS = [
     )
   },
   {
-    name: 'coinbase',
-    render: () => (
-      <div className="flex items-center gap-1.5 opacity-80 hover:opacity-100 transition-all duration-300 transform hover:scale-110 cursor-pointer">
-        <div className="w-5 h-5 rounded-full bg-[#0052FF] flex items-center justify-center text-white font-black text-xs shrink-0">C</div>
-        <span className="text-xl sm:text-2xl font-black text-[#0052FF]" style={{ fontFamily: 'Inter, sans-serif' }}>
-          coinbase
-        </span>
-      </div>
-    )
-  },
-  {
-    name: 'shopify',
-    render: () => (
-      <div className="flex items-center gap-2 opacity-80 hover:opacity-100 transition-all duration-300 transform hover:scale-110 cursor-pointer">
-        <i className="fa-brands fa-shopify text-2xl sm:text-3xl text-[#95BF47] shrink-0"></i>
-        <span className="text-xl sm:text-2xl font-black text-slate-800 dark:text-white" style={{ fontFamily: 'Inter, sans-serif' }}>
-          shopify
-        </span>
-      </div>
-    )
-  },
-  {
     name: 'Meta',
     render: () => (
-      <div className="flex items-center gap-2 opacity-80 hover:opacity-100 transition-all duration-300 transform hover:scale-110 cursor-pointer">
-        <i className="fa-brands fa-meta text-2xl sm:text-3xl text-[#0668E1] shrink-0"></i>
-        <span className="text-xl sm:text-2xl font-black text-[#0668E1]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+      <div className="flex items-center gap-3 sm:gap-4 opacity-90 hover:opacity-100 transition-all duration-300 transform hover:scale-105 cursor-pointer">
+        <i className="fa-brands fa-meta text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-[#0668E1] shrink-0"></i>
+        <span className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-[#0668E1] tracking-tight" style={{ fontFamily: 'Montserrat, sans-serif' }}>
           Meta
         </span>
       </div>
@@ -97,9 +48,9 @@ const PARTNER_BRANDS = [
   {
     name: 'TikTok',
     render: () => (
-      <div className="flex items-center gap-2 opacity-80 hover:opacity-100 transition-all duration-300 transform hover:scale-110 cursor-pointer">
-        <i className="fa-brands fa-tiktok text-2xl sm:text-3xl text-slate-900 dark:text-white shrink-0"></i>
-        <span className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+      <div className="flex items-center gap-3 sm:gap-4 opacity-90 hover:opacity-100 transition-all duration-300 transform hover:scale-105 cursor-pointer">
+        <i className="fa-brands fa-tiktok text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-slate-900 dark:text-white shrink-0"></i>
+        <span className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-slate-900 dark:text-white tracking-tight" style={{ fontFamily: 'Montserrat, sans-serif' }}>
           TikTok
         </span>
       </div>
@@ -108,9 +59,30 @@ const PARTNER_BRANDS = [
   {
     name: 'SHEIN',
     render: () => (
-      <div className="flex items-center opacity-80 hover:opacity-100 transition-all duration-300 transform hover:scale-110 cursor-pointer">
-        <span className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-[0.2em]" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>
+      <div className="flex items-center opacity-90 hover:opacity-100 transition-all duration-300 transform hover:scale-105 cursor-pointer">
+        <div className="bg-black dark:bg-white text-white dark:text-black px-4 py-1.5 sm:px-6 sm:py-2.5 rounded-xl text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black tracking-[0.2em] sm:tracking-[0.25em] uppercase shadow-lg shrink-0" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>
           SHEIN
+        </div>
+      </div>
+    )
+  },
+  {
+    name: 'BYBIT',
+    render: () => (
+      <div className="flex items-center opacity-90 hover:opacity-100 transition-all duration-300 transform hover:scale-105 cursor-pointer">
+        <div className="flex items-end text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 dark:text-white tracking-tighter leading-none" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+          BYB<span className="w-1.5 sm:w-2 md:w-2.5 h-6 sm:h-8 md:h-10 lg:h-12 bg-[#F7A600] mx-0.5 sm:mx-1 inline-block relative bottom-0.5 sm:bottom-1"></span>T
+        </div>
+      </div>
+    )
+  },
+  {
+    name: 'shopify',
+    render: () => (
+      <div className="flex items-center gap-3 sm:gap-4 opacity-90 hover:opacity-100 transition-all duration-300 transform hover:scale-105 cursor-pointer">
+        <i className="fa-brands fa-shopify text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-[#95BF47] shrink-0"></i>
+        <span className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-slate-900 dark:text-white tracking-tight" style={{ fontFamily: 'Inter, sans-serif' }}>
+          shopify
         </span>
       </div>
     )
@@ -118,11 +90,11 @@ const PARTNER_BRANDS = [
   {
     name: 'telebirr',
     render: () => (
-      <div className="flex items-center gap-2 opacity-80 hover:opacity-100 transition-all duration-300 transform hover:scale-110 cursor-pointer">
-        <div className="w-6 h-6 rounded-full bg-[#009FE3] flex items-center justify-center text-white font-black text-xs shadow-xs shrink-0">
+      <div className="flex items-center gap-2.5 sm:gap-3.5 opacity-90 hover:opacity-100 transition-all duration-300 transform hover:scale-105 cursor-pointer">
+        <div className="w-8 h-8 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-full bg-[#009FE3] flex items-center justify-center text-white font-black text-xs sm:text-base md:text-lg shadow-md shrink-0">
           tb
         </div>
-        <span className="text-xl sm:text-2xl font-extrabold text-[#009FE3]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+        <span className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-[#009FE3] tracking-tight" style={{ fontFamily: 'Montserrat, sans-serif' }}>
           telebirr
         </span>
       </div>
@@ -131,97 +103,10 @@ const PARTNER_BRANDS = [
   {
     name: 'YouTube',
     render: () => (
-      <div className="flex items-center gap-2 opacity-80 hover:opacity-100 transition-all duration-300 transform hover:scale-110 cursor-pointer">
-        <i className="fa-brands fa-youtube text-2xl sm:text-3xl text-[#FF0000] shrink-0"></i>
-        <span className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white" style={{ fontFamily: 'Oswald, Montserrat, sans-serif' }}>
+      <div className="flex items-center gap-3 sm:gap-4 opacity-90 hover:opacity-100 transition-all duration-300 transform hover:scale-105 cursor-pointer">
+        <i className="fa-brands fa-youtube text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-[#FF0000] shrink-0"></i>
+        <span className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black tracking-tight text-slate-900 dark:text-white" style={{ fontFamily: 'Oswald, Montserrat, sans-serif' }}>
           YouTube
-        </span>
-      </div>
-    )
-  },
-  {
-    name: 'stripe',
-    render: () => (
-      <div className="flex items-center opacity-80 hover:opacity-100 transition-all duration-300 transform hover:scale-110 cursor-pointer">
-        <span className="text-2xl sm:text-3xl font-extrabold text-[#635BFF] tracking-tight" style={{ fontFamily: 'Inter, sans-serif' }}>
-          stripe
-        </span>
-      </div>
-    )
-  },
-  {
-    name: 'Telegram',
-    render: () => (
-      <div className="flex items-center gap-2 opacity-80 hover:opacity-100 transition-all duration-300 transform hover:scale-110 cursor-pointer">
-        <i className="fa-brands fa-telegram text-2xl sm:text-3xl text-[#229ED9] shrink-0"></i>
-        <span className="text-xl sm:text-2xl font-bold text-slate-800 dark:text-white" style={{ fontFamily: 'Inter, sans-serif' }}>
-          Telegram
-        </span>
-      </div>
-    )
-  },
-  {
-    name: 'CBE BIRR',
-    render: () => (
-      <div className="flex items-center gap-2 opacity-80 hover:opacity-100 transition-all duration-300 transform hover:scale-110 cursor-pointer">
-        <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-[#7B1FA2] to-[#F57C00] flex items-center justify-center text-white font-black text-[10px] shrink-0">
-          CBE
-        </div>
-        <span className="text-xl sm:text-2xl font-black text-[#7B1FA2] dark:text-[#F57C00]" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-          CBE BIRR
-        </span>
-      </div>
-    )
-  },
-  {
-    name: 'OpenAI',
-    render: () => (
-      <div className="flex items-center gap-2 opacity-80 hover:opacity-100 transition-all duration-300 transform hover:scale-110 cursor-pointer">
-        <i className="fa-solid fa-robot text-xl text-emerald-500 shrink-0"></i>
-        <span className="text-xl sm:text-2xl font-black text-slate-800 dark:text-white" style={{ fontFamily: 'Inter, sans-serif' }}>
-          OpenAI
-        </span>
-      </div>
-    )
-  },
-  {
-    name: 'BYBIT',
-    render: () => (
-      <div className="flex items-center opacity-80 hover:opacity-100 transition-all duration-300 transform hover:scale-110 cursor-pointer">
-        <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tighter leading-none" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-          BYB<span className="w-1 h-5 bg-[#F7A600] mx-0.5 inline-block align-middle"></span>T
-        </div>
-      </div>
-    )
-  },
-  {
-    name: 'WordPress',
-    render: () => (
-      <div className="flex items-center gap-2 opacity-80 hover:opacity-100 transition-all duration-300 transform hover:scale-110 cursor-pointer">
-        <i className="fa-brands fa-wordpress text-2xl sm:text-3xl text-[#21759B] shrink-0"></i>
-        <span className="text-xl sm:text-2xl font-bold text-slate-800 dark:text-white" style={{ fontFamily: 'Inter, sans-serif' }}>
-          WordPress
-        </span>
-      </div>
-    )
-  },
-  {
-    name: 'Canva',
-    render: () => (
-      <div className="flex items-center opacity-80 hover:opacity-100 transition-all duration-300 transform hover:scale-110 cursor-pointer">
-        <span className="text-2xl sm:text-3xl font-black italic text-[#00C4CC]" style={{ fontFamily: 'cursive, sans-serif' }}>
-          Canva
-        </span>
-      </div>
-    )
-  },
-  {
-    name: 'HubSpot',
-    render: () => (
-      <div className="flex items-center gap-2 opacity-80 hover:opacity-100 transition-all duration-300 transform hover:scale-110 cursor-pointer">
-        <i className="fa-brands fa-hubspot text-2xl sm:text-3xl text-[#FF7A59] shrink-0"></i>
-        <span className="text-xl sm:text-2xl font-bold text-slate-800 dark:text-white" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-          HubSpot
         </span>
       </div>
     )
@@ -422,12 +307,12 @@ export default function Home() {
         </div>
 
         {/* Pure Brand Logos Infinite Marquee Strip */}
-        <div className="relative w-full overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)] py-2">
-            <div className="flex w-max items-center gap-12 sm:gap-16 md:gap-20 animate-marquee hover:[animation-play-state:paused]">
+        <div className="relative w-full overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)] py-3 sm:py-4">
+            <div className="flex w-max items-center gap-16 sm:gap-24 md:gap-32 animate-marquee hover:[animation-play-state:paused]">
                 {[...PARTNER_BRANDS, ...PARTNER_BRANDS].map((partner, index) => (
                     <div 
                         key={`${partner.name}-${index}`}
-                        className="shrink-0 flex items-center justify-center grayscale-20 hover:grayscale-0 transition-all duration-300"
+                        className="shrink-0 flex items-center justify-center grayscale-15 hover:grayscale-0 transition-all duration-300"
                     >
                         {partner.render()}
                     </div>
@@ -441,7 +326,7 @@ export default function Home() {
                 100% { transform: translateX(-50%); }
             }
             .animate-marquee {
-                animation: marqueeScroll 45s linear infinite;
+                animation: marqueeScroll 35s linear infinite;
             }
         `}} />
     </section>
