@@ -348,7 +348,11 @@ export default function YouTubeVideoSlider() {
                       key={video.id}
                       onClick={() => {
                         if (isCenter) {
-                          setSelectedModalVideo(video);
+                          if (video.videoSrc) {
+                            toggleMute({ stopPropagation: () => {} } as any);
+                          } else {
+                            setSelectedModalVideo(video);
+                          }
                         } else {
                           goToSlide(idx);
                         }
@@ -395,27 +399,27 @@ export default function YouTubeVideoSlider() {
                       {/* Subtle Dark Vignette for Cinematic Glow */}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30 pointer-events-none"></div>
 
-                      {/* Center Audio / Unmute Toggle for Active Card (Clean & Prominent) */}
+                      {/* Frosted Center Overlay Card Matching Screenshot */}
                       {isCenter && (
                         <div 
-                          onClick={video.videoSrc ? toggleMute : () => setSelectedModalVideo(video)}
-                          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 flex flex-col items-center gap-2.5 group/btn cursor-pointer"
+                          className="absolute inset-0 z-20 flex flex-col items-center justify-center p-4 bg-black/30 backdrop-blur-[1.5px] cursor-pointer group/card select-none"
                         >
-                          {/* Pulsing Round Action Button */}
-                          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-black/75 hover:bg-[#f9b03c] border-2 border-[#f9b03c]/80 hover:border-[#f9b03c] backdrop-blur-md flex items-center justify-center text-white hover:text-black transition-all duration-300 shadow-[0_0_30px_rgba(249,176,60,0.5)] group-hover/btn:scale-110">
-                            {video.videoSrc ? (
-                              <i className={`fa-solid ${isMuted ? 'fa-volume-xmark' : 'fa-volume-high'} text-lg sm:text-xl pl-0.5`}></i>
-                            ) : (
-                              <i className="fa-solid fa-play text-lg sm:text-xl text-[#f9b03c] group-hover/btn:text-black pl-1"></i>
-                            )}
+                          {/* Top Pill Badge */}
+                          <div className="absolute top-3 sm:top-5 px-3 sm:px-4 py-1 rounded-full bg-black/80 border border-white/15 text-white text-[10px] sm:text-xs font-bold shadow-lg backdrop-blur-md">
+                            {video.videoSrc && !isMuted ? 'Mute' : 'Unmute'}
                           </div>
 
-                          {/* Pill Badge: CLICK TO UNMUTE / ቪዲዮውን ክፈት */}
-                          <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-black/85 border border-[#f9b03c]/50 text-white backdrop-blur-md shadow-lg transition-transform group-hover/btn:scale-105">
-                            <span className="w-2 h-2 rounded-full bg-[#f9b03c] animate-ping"></span>
-                            <span className="text-[11px] sm:text-xs font-black tracking-wider uppercase text-[#f9b03c]">
-                              {video.videoSrc ? (isMuted ? 'CLICK TO UNMUTE' : 'ድምፅ ተከፍቷል') : 'ይመልከቱ (CLICK TO PLAY)'}
-                            </span>
+                          {/* Frosted Center Card */}
+                          <div className="rounded-2xl sm:rounded-3xl bg-[#1c1f2b]/85 backdrop-blur-xl border border-white/15 px-5 sm:px-8 py-4 sm:py-6 flex flex-col items-center justify-center text-center shadow-2xl transition-transform duration-300 group-hover/card:scale-105 max-w-[280px] sm:max-w-[320px]">
+                            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full border-2 border-[#f9b03c]/80 bg-black/50 flex items-center justify-center text-[#f9b03c] mb-2 sm:mb-3 shadow-[0_0_20px_rgba(249,176,60,0.5)]">
+                              <i className={`fa-solid ${video.videoSrc && !isMuted ? 'fa-volume-high' : 'fa-volume-high'} text-base sm:text-xl animate-pulse`}></i>
+                            </div>
+                            <h4 className="text-xs sm:text-base font-extrabold text-white tracking-tight mb-0.5 sm:mb-1">
+                              Your Video Is Playing
+                            </h4>
+                            <p className="text-[10px] sm:text-xs font-bold text-[#f9b03c] tracking-wide">
+                              {video.videoSrc && !isMuted ? 'Click to Mute' : 'Click to Unmute'}
+                            </p>
                           </div>
                         </div>
                       )}
