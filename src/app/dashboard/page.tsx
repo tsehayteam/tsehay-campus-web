@@ -70,14 +70,39 @@ export default function StudentDashboard() {
   const router = useRouter();
   const [progress, setProgress] = useState<any[]>([]);
   // Settings State
-  const [settingsName, setSettingsName] = useState("");
-  const [settingsPhotoUrl, setSettingsPhotoUrl] = useState("");
+  const [settingsName, setSettingsName] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    try {
+      const cached = localStorage.getItem('tsehay_auth_user_cache');
+      return cached ? JSON.parse(cached)?.displayName || '' : '';
+    } catch (e) { return ''; }
+  });
+  const [settingsPhotoUrl, setSettingsPhotoUrl] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    try {
+      const cached = localStorage.getItem('tsehay_auth_user_cache');
+      return cached ? JSON.parse(cached)?.photoURL || '' : '';
+    } catch (e) { return ''; }
+  });
   const [settingsPhone, setSettingsPhone] = useState("");
   const [settingsCity, setSettingsCity] = useState("");
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const [settingsEmail, setSettingsEmail] = useState("");
   const [profileMessage, setProfileMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [passwordResetMessage, setPasswordResetMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [showAvatarPresets, setShowAvatarPresets] = useState(false);
+  const profileFileInputRef = useRef<HTMLInputElement>(null);
+
+  const AVATAR_PRESETS = [
+    { id: 'av-1', label: 'ተማሪ 1', url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80' },
+    { id: 'av-2', label: 'ተማሪ 2', url: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=200&auto=format&fit=crop&q=80' },
+    { id: 'av-3', label: 'ፕሮፌሽናል 1', url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80' },
+    { id: 'av-4', label: 'ፕሮፌሽናል 2', url: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=200&auto=format&fit=crop&q=80' },
+    { id: 'av-5', label: 'ፈጣሪ', url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&auto=format&fit=crop&q=80' },
+    { id: 'av-6', label: 'ቢዝነስ', url: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=200&auto=format&fit=crop&q=80' },
+    { id: 'av-7', label: '3D ሮቦት', url: 'https://api.dicebear.com/7.x/bottts/svg?seed=Felix&backgroundColor=f9b03c' },
+    { id: 'av-8', label: '3D አቫታር', url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Jack&backgroundColor=c0aede' },
+  ];
   
   // Notification State
   const [showNotifications, setShowNotifications] = useState(false);
@@ -281,13 +306,63 @@ export default function StudentDashboard() {
     }
   };
 
+  // Student Display Name and Photo Computed Helpers
+  const studentDisplayName = settingsName?.trim() || user?.displayName || (user?.email ? user.email.split('@')[0] : '') || 'ተማሪ (Student)';
+  const studentPhotoUrl = settingsPhotoUrl || user?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(studentDisplayName)}&background=f9b03c&color=111827&bold=true`;
+
+  const handleProfilePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    if (!file.type.startsWith('image/')) {
+      setProfileMessage({ type: 'error', text: 'እባክዎ ትክክለኛ የምስል/ፎቶ ፋይል ይምረጡ (Please select a valid image file)' });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 400;
+        const MAX_HEIGHT = 400;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+          setSettingsPhotoUrl(dataUrl);
+          setProfileMessage({ type: 'success', text: 'ፎቶው ተመርጧል! ለውጡን ለማስቀመጥ "አዘምን (Save Changes)" የሚለውን ይጫኑ።' });
+        }
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
+
   // Dedicated User Profile Fetcher (Runs for all users regardless of purchased courses)
   useEffect(() => {
     if (!user) return;
     
-    setSettingsName(user.displayName || '');
-    setSettingsPhotoUrl(user.photoURL || '');
-    setSettingsEmail(user.email || '');
+    if (user.displayName && !settingsName) setSettingsName(user.displayName);
+    if (user.photoURL && !settingsPhotoUrl) setSettingsPhotoUrl(user.photoURL);
+    if (user.email && !settingsEmail) setSettingsEmail(user.email);
 
     const fetchUserProfile = async () => {
       try {
@@ -295,7 +370,8 @@ export default function StudentDashboard() {
         const profileSnap = await getDoc(profileRef);
         if (profileSnap.exists()) {
           const data = profileSnap.data();
-          if (data.name) setSettingsName(data.name);
+          if (data.name || data.displayName) setSettingsName(data.name || data.displayName);
+          if (data.photoURL || data.photoUrl || data.avatar) setSettingsPhotoUrl(data.photoURL || data.photoUrl || data.avatar);
           if (data.phone) setSettingsPhone(data.phone);
           if (data.city) setSettingsCity(data.city);
         } else {
@@ -304,6 +380,7 @@ export default function StudentDashboard() {
           if (userDocSnap.exists()) {
             const uData = userDocSnap.data();
             if (uData.name || uData.displayName) setSettingsName(uData.name || uData.displayName);
+            if (uData.photoURL || uData.photoUrl || uData.avatar) setSettingsPhotoUrl(uData.photoURL || uData.photoUrl || uData.avatar);
             if (uData.phone) setSettingsPhone(uData.phone);
             if (uData.city) setSettingsCity(uData.city);
           }
@@ -1044,22 +1121,23 @@ export default function StudentDashboard() {
     setIsUpdatingProfile(true);
     setProfileMessage(null);
     try {
-      if (settingsName || settingsPhotoUrl) {
-        try {
-          await updateProfile(user, {
-            displayName: settingsName,
-            photoURL: settingsPhotoUrl || user.photoURL
-          });
-        } catch (authErr) {
-          console.warn("Client auth update warning:", authErr);
-        }
+      const finalName = settingsName.trim() || user.displayName || 'ተማሪ';
+      const finalPhoto = settingsPhotoUrl || user.photoURL || '';
+
+      try {
+        await updateProfile(user, {
+          displayName: finalName,
+          photoURL: finalPhoto || undefined
+        });
+      } catch (authErr) {
+        console.warn("Client auth update warning:", authErr);
       }
       
       const userDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid);
       await setDoc(userDocRef, {
-         displayName: settingsName,
-         name: settingsName,
-         photoURL: settingsPhotoUrl || user.photoURL || '',
+         displayName: finalName,
+         name: finalName,
+         photoURL: finalPhoto,
          email: user.email || '',
          phone: settingsPhone,
          city: settingsCity,
@@ -1068,8 +1146,9 @@ export default function StudentDashboard() {
       
       const profileRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'profile', 'info');
       await setDoc(profileRef, {
-          name: settingsName,
-          displayName: settingsName,
+          name: finalName,
+          displayName: finalName,
+          photoURL: finalPhoto,
           phone: settingsPhone,
           city: settingsCity,
           email: user.email || '',
@@ -1078,14 +1157,19 @@ export default function StudentDashboard() {
 
       try {
         const cachedAuth = localStorage.getItem('tsehay_auth_user_cache');
-        if (cachedAuth) {
-          const parsed = JSON.parse(cachedAuth);
-          parsed.displayName = settingsName;
-          localStorage.setItem('tsehay_auth_user_cache', JSON.stringify(parsed));
-        }
+        const parsed = cachedAuth ? JSON.parse(cachedAuth) : {};
+        parsed.displayName = finalName;
+        parsed.photoURL = finalPhoto;
+        localStorage.setItem('tsehay_auth_user_cache', JSON.stringify(parsed));
       } catch (e) {}
 
-      setProfileMessage({ type: 'success', text: 'መረጃዎ በተሳካ ሁኔታ ተዘምኗል! (Profile updated successfully)' });
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('tsehay_profile_updated', {
+          detail: { displayName: finalName, photoURL: finalPhoto }
+        }));
+      }
+
+      setProfileMessage({ type: 'success', text: 'የመገለጫ መረጃዎ እና ፎቶዎ በተሳካ ሁኔታ ተዘምኗል! (Profile and photo updated successfully)' });
       setTimeout(() => setProfileMessage(null), 5000);
     } catch (error) {
       console.error("Error updating profile:", error);
@@ -1186,7 +1270,15 @@ ${customAdminPrompt}
           </a>
           
           <div className="md:hidden flex items-center gap-3">
-             <img src={user?.photoURL || "https://ui-avatars.com/api/?name=Nehmiya&background=7b61ff&color=fff"} className="w-8 h-8 rounded-full object-cover shadow-sm" alt="Profile" />
+             <img 
+               src={studentPhotoUrl} 
+               className="w-8 h-8 rounded-full object-cover shadow-sm ring-2 ring-primary/40 cursor-pointer" 
+               alt={studentDisplayName}
+               onClick={() => setCurrentView('settings')}
+               onError={(e) => {
+                 (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(studentDisplayName)}&background=f9b03c&color=111827&bold=true`;
+               }}
+             />
           </div>
         </div>
 
@@ -1385,15 +1477,35 @@ ${customAdminPrompt}
         </nav>
 
         <div className="hidden md:block p-4 w-full border-t border-slate-100 dark:border-slate-700">
-          <div className="flex items-center justify-center lg:justify-start gap-3 p-2 mb-2">
-            <img src={user?.photoURL || "https://ui-avatars.com/api/?name=" + encodeURIComponent(settingsName || user?.displayName || 'User') + "&background=f9b03c&color=111827"} className="w-10 h-10 rounded-full object-cover shadow-sm ring-2 ring-primary/30" alt="Profile" />
+          <div 
+            onClick={() => setCurrentView('settings')}
+            className="flex items-center justify-center lg:justify-start gap-3 p-2 mb-2 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700/50 transition cursor-pointer group"
+            title="መገለጫዎን ለማስተካከል ይጫኑ"
+          >
+            <div className="relative shrink-0">
+              <img 
+                src={studentPhotoUrl} 
+                className="w-10 h-10 rounded-full object-cover shadow-sm ring-2 ring-primary/40 group-hover:ring-primary transition" 
+                alt={studentDisplayName}
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(studentDisplayName)}&background=f9b03c&color=111827&bold=true`;
+                }}
+              />
+              <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-white dark:ring-slate-800"></span>
+            </div>
             <div className="hidden lg:block overflow-hidden">
-              <p className="text-sm font-bold text-slate-800 dark:text-white leading-tight truncate">{settingsName || user?.displayName || 'Tsehay Student'}</p>
+              <p className="text-sm font-bold text-slate-800 dark:text-white leading-tight truncate group-hover:text-primary transition">
+                {studentDisplayName}
+              </p>
               <p className="text-[11px] text-slate-500 dark:text-slate-400">
                 {courses.some(c => {
                   const isFree = c.isFree === true || c.price === 'Free' || c.price === '0' || c.price === 0 || Number(c.price) === 0;
                   return !isFree;
-                }) ? t('pro_member') : 'Free Member'}
+                }) ? (
+                  <span className="text-amber-600 dark:text-primary font-bold flex items-center gap-1">
+                    <i className="fa-solid fa-crown text-[10px]"></i> {t('pro_member')}
+                  </span>
+                ) : 'Free Member'}
               </p>
             </div>
           </div>
@@ -1403,7 +1515,7 @@ ${customAdminPrompt}
                       signOut(auth);
                   });
               });
-          }} className="w-full flex items-center justify-center lg:justify-center gap-2 p-2 rounded-xl text-red-500 border border-red-500/20 hover:bg-red-500/10 font-bold transition text-sm">
+          }} className="w-full flex items-center justify-center lg:justify-center gap-2 p-2 rounded-xl text-red-500 border border-red-500/20 hover:bg-red-500/10 font-bold transition text-sm cursor-pointer">
              <i className="fa-solid fa-arrow-right-from-bracket"></i>
              <span className="hidden lg:block">{t('logout')}</span>
           </button>
@@ -2876,11 +2988,11 @@ ${customAdminPrompt}
         )}
 
         {currentView === 'settings' && (
-          <div className="max-w-2xl mx-auto py-10 bg-white dark:bg-slate-800 p-6 sm:p-8 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 space-y-6 animate-in fade-in duration-200">
+          <div className="max-w-2xl mx-auto py-8 bg-white dark:bg-slate-800 p-6 sm:p-8 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 space-y-6 animate-in fade-in duration-200">
             <div className="flex items-center justify-between border-b border-gray-100 dark:border-slate-700/80 pb-4">
               <div>
-                <h2 className="text-2xl font-black text-dark dark:text-white font-heading">ማስተካከያ (Settings)</h2>
-                <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">የግል መረጃዎን እና የይለፍ ቃልዎን እዚህ ያስተካክሉ</p>
+                <h2 className="text-2xl font-black text-dark dark:text-white font-heading">የመገለጫ ማስተካከያ (Profile Settings)</h2>
+                <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">የግል መረጃዎን፣ የመገለጫ ፎቶዎን እና የይለፍ ቃልዎን እዚህ ያስተካክሉ</p>
               </div>
               <div className="w-10 h-10 rounded-2xl bg-primary/20 text-primary flex items-center justify-center text-lg shadow-sm">
                 <i className="fa-solid fa-user-gear"></i>
@@ -2898,19 +3010,138 @@ ${customAdminPrompt}
               </div>
             )}
 
+            {/* Profile Photo Management Card */}
+            <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-700/70 space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-xs sm:text-sm font-black text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                  <i className="fa-solid fa-camera text-primary"></i>
+                  <span>የመገለጫ ፎቶ (Profile Photo)</span>
+                </span>
+                <span className="text-[11px] text-slate-500 dark:text-slate-400">JPG, PNG ወይም አቫታር</span>
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-center gap-5">
+                {/* Interactive Avatar Preview */}
+                <div className="relative group shrink-0">
+                  <div className="w-24 h-24 rounded-full overflow-hidden ring-4 ring-primary/30 shadow-md bg-white dark:bg-slate-800">
+                    <img 
+                      src={studentPhotoUrl} 
+                      alt={studentDisplayName}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(studentDisplayName)}&background=f9b03c&color=111827&bold=true`;
+                      }}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => profileFileInputRef.current?.click()}
+                    className="absolute inset-0 bg-black/60 rounded-full flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 cursor-pointer text-xs font-bold"
+                  >
+                    <i className="fa-solid fa-camera text-base mb-1"></i>
+                    <span>ቀይር</span>
+                  </button>
+                  <span className="absolute bottom-1 right-1 w-4 h-4 bg-emerald-500 rounded-full ring-2 ring-white dark:ring-slate-900"></span>
+                </div>
+
+                {/* Upload & Action Buttons */}
+                <div className="flex-1 space-y-2.5 text-center sm:text-left w-full">
+                  <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
+                    <input 
+                      type="file" 
+                      ref={profileFileInputRef}
+                      onChange={handleProfilePhotoUpload}
+                      accept="image/png, image/jpeg, image/webp, image/gif" 
+                      className="hidden" 
+                    />
+                    <button
+                      type="button"
+                      onClick={() => profileFileInputRef.current?.click()}
+                      className="px-4 py-2 bg-primary hover:bg-yellow-400 text-dark font-black text-xs rounded-xl shadow-xs transition flex items-center gap-2 cursor-pointer active:scale-95"
+                    >
+                      <i className="fa-solid fa-cloud-arrow-up"></i>
+                      <span>ፎቶ ይጫኑ (Upload Photo)</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowAvatarPresets(prev => !prev)}
+                      className="px-3.5 py-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs rounded-xl transition flex items-center gap-1.5 cursor-pointer active:scale-95 border border-slate-300 dark:border-slate-700"
+                    >
+                      <i className="fa-solid fa-masks-theater text-primary"></i>
+                      <span>አቫታር ይምረጡ</span>
+                    </button>
+                    {settingsPhotoUrl && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSettingsPhotoUrl('');
+                          setProfileMessage({ type: 'success', text: 'ፎቶው ተሰርዟል! ወደ ነባሪው አቫታር ተመልሷል። "አዘምን" የሚለውን ይጫኑ።' });
+                        }}
+                        className="px-3 py-2 text-red-500 hover:bg-red-500/10 text-xs font-bold rounded-xl transition cursor-pointer"
+                        title="ፎቶውን አስወግድ"
+                      >
+                        <i className="fa-solid fa-trash-can mr-1"></i>
+                        <span>አስወግድ</span>
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    የተማሪዎን መለያ ይበልጥ ፕሮፌሽናል ለማድረግ ፎቶዎን ወይም ከታች ካሉት አቫታሮች አንዱን ይምረጡ።
+                  </p>
+                </div>
+              </div>
+
+              {/* Avatar Presets Grid */}
+              {showAvatarPresets && (
+                <div className="pt-3 border-t border-slate-200 dark:border-slate-700/80 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <p className="text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-2.5">
+                    የሚፈልጉትን አቫታር ይንኩ፦
+                  </p>
+                  <div className="grid grid-cols-4 sm:grid-cols-8 gap-2.5">
+                    {AVATAR_PRESETS.map((av) => (
+                      <button
+                        key={av.id}
+                        type="button"
+                        onClick={() => {
+                          setSettingsPhotoUrl(av.url);
+                          setProfileMessage({ type: 'success', text: `"${av.label}" አቫታር ተመርጧል! "አዘምን (Save Changes)" የሚለውን ይጫኑ።` });
+                        }}
+                        className={`group relative p-1 rounded-2xl border-2 transition-all duration-200 hover:scale-105 flex flex-col items-center cursor-pointer ${
+                          settingsPhotoUrl === av.url 
+                            ? 'border-primary bg-primary/10 shadow-sm' 
+                            : 'border-transparent hover:border-slate-300 dark:hover:border-slate-600 bg-white dark:bg-slate-800'
+                        }`}
+                      >
+                        <img src={av.url} alt={av.label} className="w-10 h-10 rounded-full object-cover" />
+                        <span className="text-[9px] font-bold text-slate-600 dark:text-slate-400 mt-1 truncate max-w-full">
+                          {av.label}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
             <div className="space-y-4">
               <div>
-                <label className="block text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-300 mb-1.5">ስም (Name)</label>
+                <label className="block text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
+                  <i className="fa-solid fa-user text-primary text-xs"></i>
+                  <span>ሙሉ ስም (Full Name)</span>
+                </label>
                 <input 
                   type="text" 
                   value={settingsName} 
                   onChange={(e) => setSettingsName(e.target.value)} 
-                  placeholder="ሙሉ ስምዎን ያስገቡ"
+                  placeholder="ሙሉ ስምዎን ያስገቡ (ለምሳሌ፦ ዮናስ ታደሰ)"
                   className="w-full p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-dark dark:text-white text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary transition font-medium" 
                 />
               </div>
               <div>
-                <label className="block text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-300 mb-1.5">ስልክ (Phone)</label>
+                <label className="block text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
+                  <i className="fa-solid fa-phone text-primary text-xs"></i>
+                  <span>ስልክ ቁጥር (Phone Number)</span>
+                </label>
                 <input 
                   type="tel" 
                   value={settingsPhone} 
@@ -2920,17 +3151,23 @@ ${customAdminPrompt}
                 />
               </div>
               <div>
-                <label className="block text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-300 mb-1.5">ከተማ (City)</label>
+                <label className="block text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
+                  <i className="fa-solid fa-location-dot text-primary text-xs"></i>
+                  <span>ከተማ / አድራሻ (City / Location)</span>
+                </label>
                 <input 
                   type="text" 
                   value={settingsCity} 
                   onChange={(e) => setSettingsCity(e.target.value)} 
-                  placeholder="ከተማ ወይም ሀገር ያስገቡ"
+                  placeholder="ከተማ ወይም ሀገር ያስገቡ (ለምሳሌ፦ አዲስ አበባ)"
                   className="w-full p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-dark dark:text-white text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary transition font-medium" 
                 />
               </div>
               <div>
-                <label className="block text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-300 mb-1.5">ኢሜይል (Email)</label>
+                <label className="block text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
+                  <i className="fa-solid fa-envelope text-primary text-xs"></i>
+                  <span>ኢሜይል (Email Address)</span>
+                </label>
                 <input 
                   type="email" 
                   readOnly 

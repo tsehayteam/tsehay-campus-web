@@ -22,11 +22,42 @@ export default function Navbar() {
   const [theme, setTheme] = useState('dark');
   const { lang, toggleLanguage, t } = useLanguage();
 
+  const [customPhoto, setCustomPhoto] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+    try {
+      const cached = localStorage.getItem('tsehay_auth_user_cache');
+      return cached ? JSON.parse(cached)?.photoURL || null : null;
+    } catch (e) { return null; }
+  });
+  const [customName, setCustomName] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+    try {
+      const cached = localStorage.getItem('tsehay_auth_user_cache');
+      return cached ? JSON.parse(cached)?.displayName || null : null;
+    } catch (e) { return null; }
+  });
+
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [allCourses, setAllCourses] = useState<any[]>(() => getCachedCourses());
   const searchRef = useRef<HTMLDivElement>(null);
   const touchStartY = useRef<number | null>(null);
+
+  const navUserName = customName || user?.displayName || user?.email?.split('@')[0] || 'User';
+  const navUserPhoto = customPhoto || user?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(navUserName)}&background=f9b03c&color=111827&bold=true`;
+
+  useEffect(() => {
+    const handleProfileUpdate = (e: any) => {
+      if (e.detail?.photoURL !== undefined) {
+        setCustomPhoto(e.detail.photoURL || null);
+      }
+      if (e.detail?.displayName !== undefined) {
+        setCustomName(e.detail.displayName || null);
+      }
+    };
+    window.addEventListener('tsehay_profile_updated', handleProfileUpdate);
+    return () => window.removeEventListener('tsehay_profile_updated', handleProfileUpdate);
+  }, []);
   
   const pathname = usePathname();
   const router = useRouter();
@@ -353,9 +384,12 @@ export default function Navbar() {
                         {/* 5. User Avatar with Yellow Border */}
                         <button onClick={() => setShowProfileDropdown(!showProfileDropdown)} className="flex items-center gap-2 focus:outline-none">
                             <img 
-                                src={user.photoURL || 'https://ui-avatars.com/api/?name=User&background=3268BA&color=fff'} 
-                                alt="Profile" 
+                                src={navUserPhoto} 
+                                alt={navUserName} 
                                 className="w-9 h-9 rounded-full border-2 border-[#f9b03c] object-cover cursor-pointer hover:scale-105 transition-transform" 
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(navUserName)}&background=f9b03c&color=111827&bold=true`;
+                                }}
                             />
                         </button>
                         {showProfileDropdown && (
@@ -565,9 +599,12 @@ export default function Navbar() {
               className="flex flex-col items-center justify-center py-1 px-2 rounded-xl text-gray-700 dark:text-gray-300 hover:text-primary transition cursor-pointer"
             >
               <img 
-                src={user.photoURL || 'https://ui-avatars.com/api/?name=User&background=3268BA&color=fff'} 
-                alt="Profile" 
+                src={navUserPhoto} 
+                alt={navUserName} 
                 className="w-5 h-5 rounded-full object-cover border border-primary" 
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(navUserName)}&background=f9b03c&color=111827&bold=true`;
+                }}
               />
               <span className="text-[10px] mt-0.5 font-bold tracking-tight">እኔ</span>
             </button>
