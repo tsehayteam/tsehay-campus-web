@@ -1451,20 +1451,14 @@ ${customAdminPrompt}
                 }`}>
                   <i className="fa-solid fa-robot text-sm"></i>
                 </span>
-                <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 border-2 border-white dark:border-slate-800 rounded-full animate-ping"></span>
-                <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 border-2 border-white dark:border-slate-800 rounded-full"></span>
+                {/* Bold, prominent blinking online status indicator dot */}
+                <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-400 rounded-full animate-ping opacity-90"></span>
+                <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-white dark:border-slate-800 rounded-full shadow-[0_0_10px_#10b981] animate-pulse"></span>
               </div>
               <span className="whitespace-nowrap md:whitespace-normal md:hidden lg:block font-heading font-black">
                 Tsehay AI
               </span>
             </div>
-            <span className={`hidden lg:flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-full shadow-xs uppercase tracking-wider ${
-              currentView === 'ai'
-                ? 'bg-white/25 text-white'
-                : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
-            }`}>
-              ● Online
-            </span>
           </button>
           
           {/* Certificates Button */}
@@ -2091,10 +2085,10 @@ ${customAdminPrompt}
                                             </div>
                                             <div>
                                                 <h4 className="font-black text-sm text-dark dark:text-white flex items-center gap-2">
-                                                    Tsehay AI የትምህርት ረዳት 
-                                                    <span className="text-[10px] bg-primary text-slate-950 px-2 py-0.5 rounded-full font-extrabold uppercase">Smart Tutor</span>
+                                                    የግል ረዳትህ ፀሐይ
+                                                    <span className="text-[10px] bg-primary text-slate-950 px-2 py-0.5 rounded-full font-extrabold uppercase">Tsehay</span>
                                                 </h4>
-                                                <p className="text-xs text-gray-600 dark:text-gray-300 mt-0.5">ስለዚህ ትምህርት ፈጣን ማጠቃለያ ወይም ማብራሪያ ያግኙ</p>
+                                                <p className="text-xs text-gray-600 dark:text-gray-300 mt-0.5">ስለዚህ ትምህርት ከረዳትህ ፀሐይ ፈጣን ማብራሪያ ወይም እገዛ አግኝ</p>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-2 w-full md:w-auto flex-wrap">
@@ -2111,7 +2105,7 @@ ${customAdminPrompt}
                                                 ) : (
                                                     <>
                                                         <i className="fa-solid fa-bolt text-amber-500"></i>
-                                                        <span>የትምህርቱ ማጠቃለያ (AI Summary)</span>
+                                                        <span>የትምህርቱ ማጠቃለያ (Summary)</span>
                                                     </>
                                                 )}
                                             </button>
@@ -2120,7 +2114,7 @@ ${customAdminPrompt}
                                                 className="flex-1 md:flex-initial bg-primary hover:bg-yellow-400 text-slate-950 px-4 py-2.5 rounded-xl text-xs font-black transition shadow-md flex items-center justify-center gap-2 cursor-pointer active:scale-95"
                                             >
                                                 <i className="fa-solid fa-comments"></i>
-                                                <span>ስለዚህ ትምህርት AIን ጠይቅ</span>
+                                                <span>ስለዚህ ትምህርት ፀሐይን ጠይቅ</span>
                                             </button>
                                         </div>
                                     </div>
@@ -3284,10 +3278,10 @@ ${customAdminPrompt}
                   <div className="p-4 sm:p-5 border-b border-slate-800 bg-slate-950 flex items-center justify-between">
                       <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-2xl bg-amber-400 text-slate-950 flex items-center justify-center text-lg font-black shadow-md">
-                              <i className="fa-solid fa-robot"></i>
+                              <i className="fa-solid fa-user-astronaut"></i>
                           </div>
                           <div>
-                              <h4 className="font-black text-sm sm:text-base">ስለዚህ ትምህርት AIን ይጠይቁ</h4>
+                              <h4 className="font-black text-sm sm:text-base">ስለዚህ ትምህርት ፀሐይን ጠይቁ</h4>
                               <p className="text-[11px] text-amber-400 font-bold truncate max-w-xs sm:max-w-sm">
                                   {activeLesson?.title || activeCourse?.title}
                               </p>
@@ -3306,7 +3300,7 @@ ${customAdminPrompt}
                       {lessonAiMessages.length === 0 ? (
                           <div className="text-center py-8 text-gray-400 space-y-3">
                               <i className="fa-solid fa-wand-magic-sparkles text-3xl text-amber-400 animate-pulse"></i>
-                              <p className="text-xs sm:text-sm font-bold">ስለዚህ ሌሰን ያልገባዎትን ነገር ወይም ጥያቄ ይጠይቁኝ!</p>
+                              <p className="text-xs sm:text-sm font-bold">ስለዚህ ሌሰን ያልገባዎትን ነገር ወይም ጥያቄ ፀሐይን ይጠይቁ!</p>
                               <div className="flex flex-wrap gap-2 justify-center pt-2">
                                   <button
                                       onClick={() => handleAskLessonAi(`ይህንን ትምህርት ("${activeLesson?.title}") በምሳሌ በአጭሩ አስረዳኝ።`)}
