@@ -236,9 +236,9 @@ function AboutShortVideo({ src, title }: { src: string; title?: string }) {
       {/* Dark Subtle Edge Vignette */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20 pointer-events-none"></div>
 
-      {/* Sleek Minimal Center Play/Sound Button */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none">
-        <div className="w-14 h-14 rounded-full bg-black/50 group-hover:bg-[#f9b03c] border-2 border-[#f9b03c] text-[#f9b03c] group-hover:text-black flex items-center justify-center shadow-[0_0_30px_rgba(249,176,60,0.6)] backdrop-blur-xs transition-all duration-300 group-hover:scale-110">
+      {/* Sleek Minimal Center Play/Sound Button: Auto-hides when video is playing, reveals on hover/touch */}
+      <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none transition-all duration-300 transform scale-90 group-hover:scale-100 ${isPlaying ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'}`}>
+        <div className="w-14 h-14 rounded-full bg-black/60 group-hover:bg-[#f9b03c] border-2 border-[#f9b03c] text-[#f9b03c] group-hover:text-black flex items-center justify-center shadow-[0_0_30px_rgba(249,176,60,0.6)] backdrop-blur-md transition-all duration-300">
           <i className="fa-solid fa-play text-lg pl-0.5"></i>
         </div>
       </div>

@@ -267,12 +267,10 @@ export default function YouTubeVideoSlider() {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-black/20 pointer-events-none"></div>
 
-                    {/* Centered Sleek Glowing Play Icon (Minimal, Non-Intrusive) */}
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-black/50 group-hover:bg-[#f9b03c] border-2 border-[#f9b03c]/90 flex items-center justify-center text-[#f9b03c] group-hover:text-black backdrop-blur-xs transition-all duration-300 shadow-[0_0_25px_rgba(249,176,60,0.5)] group-hover:scale-110">
+                    {/* Centered Sleek Glowing Play Icon: Reveals on hover/interaction only */}
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-black/60 group-hover:bg-[#f9b03c] border-2 border-[#f9b03c]/90 flex items-center justify-center text-[#f9b03c] group-hover:text-black backdrop-blur-md opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-[0_0_25px_rgba(249,176,60,0.5)] transform scale-90 group-hover:scale-100 pointer-events-none">
                       <i className="fa-solid fa-play text-base sm:text-lg pl-0.5"></i>
                     </div>
-
-
                   </div>
 
                   {/* Title & Watch CTA Bar */}
@@ -349,7 +347,7 @@ export default function YouTubeVideoSlider() {
                           goToSlide(idx);
                         }
                       }}
-                      className={`absolute inset-0 aspect-[16/9] rounded-2xl sm:rounded-3xl overflow-hidden transition-all duration-500 ease-out cursor-pointer ${
+                      className={`group absolute inset-0 aspect-[16/9] rounded-2xl sm:rounded-3xl overflow-hidden transition-all duration-500 ease-out cursor-pointer ${
                         isCenter
                           ? 'z-20 scale-100 opacity-100 border-2 border-[#f9b03c] shadow-[0_0_45px_rgba(249,176,60,0.45),0_15px_40px_rgba(0,0,0,0.8)] translate-x-0 rotate-y-0'
                           : isLeft
@@ -391,10 +389,10 @@ export default function YouTubeVideoSlider() {
                       {/* Subtle Dark Vignette at edges only for high contrast */}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20 pointer-events-none"></div>
 
-                      {/* Clean Minimal Glowing Center Play Button */}
+                      {/* Play Button: Auto-hides when video is playing/centered, reveals smoothly on hover/touch */}
                       {isCenter && (
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none">
-                          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-black/50 hover:bg-[#f9b03c] border-2 border-[#f9b03c]/90 text-[#f9b03c] hover:text-black flex items-center justify-center shadow-[0_0_30px_rgba(249,176,60,0.6)] backdrop-blur-xs transition-all duration-300 transform group-hover:scale-110">
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-all duration-300 transform scale-90 group-hover:scale-100">
+                          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-black/60 hover:bg-[#f9b03c] border-2 border-[#f9b03c]/90 text-[#f9b03c] hover:text-black flex items-center justify-center shadow-[0_0_30px_rgba(249,176,60,0.6)] backdrop-blur-md transition-all duration-300">
                             <i className="fa-solid fa-play text-lg sm:text-xl pl-1"></i>
                           </div>
                         </div>
