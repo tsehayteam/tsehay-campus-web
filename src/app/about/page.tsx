@@ -3,6 +3,9 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
 import Footer from '@/components/Footer';
+import { db } from '@/lib/firebase/config';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { parseVideoEmbedUrl } from '@/lib/videoParser';
 
 export default function About() {
   const { t } = useLanguage();
@@ -21,8 +24,8 @@ export default function About() {
               <div className="w-20 h-1.5 bg-primary mx-auto rounded-full"></div>
             </div>
 
-            {/* Main Video Presentation: 100% Crisp, Pure, No Giant Cover / No Captions */}
-            <AboutHeroYouTube />
+            {/* Main Video Presentation: Dynamic Player Connected to Admin Settings */}
+            <AboutHeroPlayer />
 
             {/* Our Story */}
             <div className="max-w-4xl mx-auto mb-20 sm:mb-24">
@@ -143,20 +146,57 @@ export default function About() {
   );
 }
 
-function AboutHeroYouTube() {
+function AboutHeroPlayer() {
+  const [videoData, setVideoData] = useState({
+    videoUrl: 'https://www.youtube.com/embed/mgdOMtW6J8k',
+    title: 'Tsehay Campus Introduction'
+  });
+
+  useEffect(() => {
+    try {
+      const docRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'site_settings', 'about_video');
+      const unsubscribe = onSnapshot(docRef, (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          if (data && data.videoUrl) {
+            setVideoData({
+              videoUrl: data.videoUrl,
+              title: data.title || 'Tsehay Campus Introduction'
+            });
+          }
+        }
+      });
+      return () => unsubscribe();
+    } catch (e) {
+      console.warn("About video listener error:", e);
+    }
+  }, []);
+
+  const parsed = parseVideoEmbedUrl(videoData.videoUrl);
+
   return (
     <div className="max-w-4xl mx-auto mb-16">
       <div className="relative rounded-[2rem] overflow-hidden shadow-2xl border border-white/10 bg-black aspect-video flex items-center justify-center group">
         <div className="absolute -inset-2 bg-gradient-to-r from-secondary to-primary rounded-[2.5rem] blur-xl opacity-20 group-hover:opacity-40 transition duration-500"></div>
-        <iframe 
-          id="about-youtube-player" 
-          className="w-full h-full relative z-10 rounded-[2rem]" 
-          src="https://www.youtube.com/embed/mgdOMtW6J8k?rel=0&modestbranding=1&showinfo=0&autoplay=0&controls=1&vq=hd1080&cc_load_policy=0&cc_lang_pref=off&iv_load_policy=3&playsinline=1&hl=en"
-          title="Tsehay Campus Introduction" 
-          frameBorder="0" 
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-          allowFullScreen
-        ></iframe>
+        {parsed.type === 'video' ? (
+          <video 
+            id="about-html5-player"
+            className="w-full h-full relative z-10 rounded-[2rem] object-cover" 
+            src={parsed.src}
+            controls
+            playsInline
+          />
+        ) : (
+          <iframe 
+            id="about-youtube-player" 
+            className="w-full h-full relative z-10 rounded-[2rem]" 
+            src={parsed.src}
+            title={videoData.title || "Tsehay Campus Introduction"} 
+            frameBorder="0" 
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+            allowFullScreen
+          ></iframe>
+        )}
       </div>
     </div>
   );

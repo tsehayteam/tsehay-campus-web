@@ -5,6 +5,8 @@ import { collection, onSnapshot, doc, setDoc, deleteDoc, serverTimestamp, query,
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile, sendPasswordResetEmail } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 
+import { parseVideoEmbedUrl } from '@/lib/videoParser';
+
 const PRESET_REQUIREMENTS = [
   'መሰረታዊ የኮምፒውተር እውቀት (Basic Computer Skill)',
   'ስማርት ስልክ ወይም ላፕቶፕ (Smartphone or Laptop)',
@@ -61,6 +63,12 @@ export default function AdminDashboard() {
   const [settingsName, setSettingsName] = useState('');
   const [settingsPhotoUrl, setSettingsPhotoUrl] = useState('');
   const [isUpdatingSettings, setIsUpdatingSettings] = useState(false);
+
+  // About Video State
+  const [aboutVideoUrl, setAboutVideoUrl] = useState('https://www.youtube.com/embed/mgdOMtW6J8k');
+  const [aboutVideoTitle, setAboutVideoTitle] = useState('Tsehay Campus Introduction');
+  const [isSavingAboutVideo, setIsSavingAboutVideo] = useState(false);
+  const [aboutVideoSavedMessage, setAboutVideoSavedMessage] = useState('');
 
   // YouTube Form State
   const [isYouTubeModalOpen, setIsYouTubeModalOpen] = useState(false);
@@ -154,6 +162,17 @@ export default function AdminDashboard() {
       setTickets(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
 
+    const aboutVidRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'site_settings', 'about_video');
+    const unsubscribeAboutVideo = onSnapshot(aboutVidRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (data && data.videoUrl) setAboutVideoUrl(data.videoUrl);
+        if (data && data.title) setAboutVideoTitle(data.title);
+      }
+    }, (err) => {
+      console.warn("About video Firestore sync:", err);
+    });
+
     return () => {
         unsubscribeAuth();
         unsubscribe();
@@ -161,8 +180,30 @@ export default function AdminDashboard() {
         unsubscribeStudents();
         unsubscribePayments();
         unsubscribeTickets();
+        unsubscribeAboutVideo();
     };
   }, []);
+
+  const handleSaveAboutVideo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingAboutVideo(true);
+    setAboutVideoSavedMessage('');
+    try {
+      const aboutVidRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'site_settings', 'about_video');
+      await setDoc(aboutVidRef, {
+        videoUrl: aboutVideoUrl.trim(),
+        title: aboutVideoTitle.trim() || 'Tsehay Campus Introduction',
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+      setAboutVideoSavedMessage('ስለ እኛ ገጽ ቪዲዮ በተሳካ ሁኔታ ተቀምጧል! (Saved Successfully)');
+      setTimeout(() => setAboutVideoSavedMessage(''), 4000);
+    } catch (err: any) {
+      console.error("Error saving about video:", err);
+      alert("ስህተት ተፈጥሯል: " + err.message);
+    } finally {
+      setIsSavingAboutVideo(false);
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -607,6 +648,9 @@ export default function AdminDashboard() {
           <button onClick={() => setActiveTab('youtube')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition ${activeTab === 'youtube' ? 'bg-red-50 dark:bg-slate-700/50 text-red-600 dark:text-red-400' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700/30'}`}>
             <i className="fa-brands fa-youtube text-red-500 text-lg"></i> ነጻ የዩቲዩብ ቪዲዮዎች
           </button>
+          <button onClick={() => setActiveTab('about_video')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition ${activeTab === 'about_video' ? 'bg-[#f9b03c]/15 dark:bg-slate-700/50 text-[#f9b03c]' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700/30'}`}>
+            <i className="fa-solid fa-film text-[#f9b03c] text-lg"></i> ስለ እኛ ቪዲዮ (About Video)
+          </button>
           <button onClick={() => setActiveTab('students')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition ${activeTab === 'students' ? 'bg-blue-50 dark:bg-slate-700/50 text-secondary dark:text-primary' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700/30'}`}>
             <i className="fa-solid fa-users"></i> ተማሪዎች (Students)
           </button>
@@ -653,6 +697,7 @@ export default function AdminDashboard() {
              {activeTab === 'dashboard' && 'አጠቃላይ መረጃ'}
              {activeTab === 'courses' && 'ኮርሶች ማስተዳደሪያ'}
              {activeTab === 'youtube' && 'ነጻ የዩቲዩብ ቪዲዮዎች ማስተዳደሪያ (YouTube Videos)'}
+             {activeTab === 'about_video' && 'ስለ እኛ ገጽ ቪዲዮ ፕሌየር ማስተዳደሪያ (About Page Video Player)'}
              {activeTab === 'students' && 'የተማሪዎች አስተዳደር'}
              {activeTab === 'teachers' && 'የአስተማሪዎች ዝርዝር'}
              {activeTab === 'payments' && 'የክፍያ ሪፖርቶች'}
@@ -1251,6 +1296,112 @@ export default function AdminDashboard() {
                         ))
                     )}
                 </div>
+            </div>
+          )}
+
+          {activeTab === 'about_video' && (
+            <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-300">
+              <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 sm:p-8 border border-gray-100 dark:border-slate-700 shadow-xl">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 dark:border-slate-700 pb-5 mb-6">
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-12 h-12 rounded-2xl bg-[#f9b03c]/15 border border-[#f9b03c]/30 flex items-center justify-center text-[#f9b03c] text-xl shadow-sm">
+                      <i className="fa-solid fa-film"></i>
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-black text-dark dark:text-white">ስለ እኛ ገጽ ቪዲዮ ፕሌየር (About Page Video Player)</h3>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">በ "ስለ እኛ" (About Us) ገጽ ላይ የሚታየውን የቪዲዮ ማጫወቻ ሊንክ እዚህ ያስገቡ</p>
+                    </div>
+                  </div>
+                  {aboutVideoSavedMessage && (
+                    <div className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 animate-bounce">
+                      <i className="fa-solid fa-circle-check"></i>
+                      <span>{aboutVideoSavedMessage}</span>
+                    </div>
+                  )}
+                </div>
+
+                <form onSubmit={handleSaveAboutVideo} className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+                      <i className="fa-solid fa-link text-[#f9b03c]"></i>
+                      <span>የቪዲዮ ወይም የፕሌየር ሊንክ (Video / Embed Player URL) *</span>
+                    </label>
+                    <textarea 
+                      rows={2}
+                      required
+                      placeholder="e.g. https://www.youtube.com/watch?v=mgdOMtW6J8k ወይም https://iframe.mediadelivery.net/... ወይም <iframe ...></iframe> ወይም MP4 Link" 
+                      value={aboutVideoUrl}
+                      onChange={(e) => setAboutVideoUrl(e.target.value)}
+                      className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl px-4 py-3.5 text-sm font-mono text-dark dark:text-white outline-none focus:border-[#f9b03c] focus:ring-2 focus:ring-[#f9b03c]/20 transition"
+                    />
+                    <div className="mt-2.5 flex flex-wrap gap-2 text-[11px] text-gray-500 dark:text-gray-400 font-medium">
+                      <span className="bg-gray-100 dark:bg-slate-700/60 px-2.5 py-1 rounded-md">✓ YouTube (Watch / Shorts / Embed)</span>
+                      <span className="bg-gray-100 dark:bg-slate-700/60 px-2.5 py-1 rounded-md">✓ Iframe Embed Code</span>
+                      <span className="bg-gray-100 dark:bg-slate-700/60 px-2.5 py-1 rounded-md">✓ BunnyCDN / Vimeo / Cloudflare Player</span>
+                      <span className="bg-gray-100 dark:bg-slate-700/60 px-2.5 py-1 rounded-md">✓ Direct MP4 Video</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+                      <i className="fa-solid fa-heading text-[#3268ba]"></i>
+                      <span>የቪዲዮ ርዕስ (Video Title / Optional)</span>
+                    </label>
+                    <input 
+                      type="text" 
+                      placeholder="e.g. ስለ ፀሐይ ካምፓስ (Tsehay Campus Introduction)" 
+                      value={aboutVideoTitle}
+                      onChange={(e) => setAboutVideoTitle(e.target.value)}
+                      className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl px-4 py-3.5 text-sm text-dark dark:text-white outline-none focus:border-[#f9b03c] focus:ring-2 focus:ring-[#f9b03c]/20 transition"
+                    />
+                  </div>
+
+                  {/* Live Player Preview */}
+                  <div>
+                    <h4 className="text-sm font-black text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
+                      <i className="fa-solid fa-eye text-[#f9b03c]"></i>
+                      <span>ቀጥታ እይታ (Live Player Preview):</span>
+                    </h4>
+                    <div className="relative rounded-2xl overflow-hidden shadow-2xl border-2 border-[#f9b03c]/40 bg-black aspect-video flex items-center justify-center">
+                      {(() => {
+                        const parsed = parseVideoEmbedUrl(aboutVideoUrl);
+                        if (parsed.type === 'video') {
+                          return (
+                            <video 
+                              controls
+                              playsInline
+                              src={parsed.src}
+                              className="w-full h-full object-cover rounded-2xl"
+                            />
+                          );
+                        }
+                        return (
+                          <iframe 
+                            src={parsed.src}
+                            title={aboutVideoTitle || "Live Preview"}
+                            frameBorder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                            className="w-full h-full rounded-2xl"
+                          />
+                        );
+                      })()}
+                    </div>
+                  </div>
+
+                  {/* Submit Button */}
+                  <div className="pt-4 border-t border-gray-100 dark:border-slate-700 flex items-center justify-end gap-3">
+                    <button 
+                      type="submit" 
+                      disabled={isSavingAboutVideo || !aboutVideoUrl.trim()}
+                      className="bg-gradient-to-r from-[#f9b03c] to-amber-500 hover:from-amber-400 hover:to-[#f9b03c] text-slate-950 font-black px-8 py-3.5 rounded-2xl shadow-lg hover:shadow-[0_0_25px_rgba(249,176,60,0.5)] transition-all duration-300 disabled:opacity-50 flex items-center gap-2 cursor-pointer active:scale-95 text-sm"
+                    >
+                      <i className="fa-solid fa-floppy-disk"></i>
+                      <span>{isSavingAboutVideo ? 'እየቀየረ ነው...' : 'አስቀምጥ (Save Player Link)'}</span>
+                    </button>
+                  </div>
+                </form>
+              </div>
             </div>
           )}
 
