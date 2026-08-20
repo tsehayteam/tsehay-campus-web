@@ -191,16 +191,22 @@ export default function YouTubeVideoSlider() {
 
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         
-        {/* Animated Top Header: Title, Luxury Glowing Badge & Animated View-Toggle Button */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5 mb-10 sm:mb-14">
+        {/* Animated Top Header: Title & Luxury Glowing Clickable YouTube Badge */}
+        <div className="flex items-center justify-between gap-5 mb-10 sm:mb-14">
           <div className="flex items-center gap-3.5 sm:gap-5">
-            {/* 3D Animated Glowing YouTube Icon */}
-            <div className="relative group">
+            {/* 3D Animated Glowing YouTube Icon (Clickable -> Opens YouTube Channel) */}
+            <a
+              href="https://youtube.com/@eyoubsahle?si=p29sAFFmLagXd52X"
+              target="_blank"
+              rel="noopener noreferrer"
+              title="የእዮብ ሳህለ ይፋዊ የዩቲዩብ ቻናልን ይጎብኙ (Visit YouTube Channel)"
+              className="relative group cursor-pointer shrink-0 block hover:scale-105 active:scale-95 transition-transform duration-300"
+            >
               <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-red-600 via-[#f9b03c] to-red-600 opacity-75 blur-md group-hover:opacity-100 transition duration-500 animate-pulse"></div>
-              <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-[#1b090a] via-[#101420] to-[#080b14] border border-red-500/40 flex items-center justify-center text-red-500 shadow-xl yt-glow-icon">
-                <i className="fa-brands fa-youtube text-2xl sm:text-3xl text-red-500 drop-shadow-[0_0_12px_rgba(239,68,68,0.8)]"></i>
+              <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-[#1b090a] via-[#101420] to-[#080b14] border border-red-500/40 flex items-center justify-center text-red-500 shadow-xl yt-glow-icon group-hover:border-red-500">
+                <i className="fa-brands fa-youtube text-2xl sm:text-3xl text-red-500 drop-shadow-[0_0_12px_rgba(239,68,68,0.8)] group-hover:scale-110 transition-transform"></i>
               </div>
-            </div>
+            </a>
 
             <div>
               {/* Top Badge with Live Equalizer Animation */}
@@ -221,25 +227,19 @@ export default function YouTubeVideoSlider() {
               {/* Title with Shimmering Gradient */}
               <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight font-heading flex items-center gap-2 flex-wrap">
                 <span>ነፃ የ</span>
-                <span className="yt-gradient-text">
+                <a 
+                  href="https://youtube.com/@eyoubsahle?si=p29sAFFmLagXd52X" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="yt-gradient-text hover:opacity-85 transition-opacity"
+                  title="ወደ ዩቲዩብ ቻናል ይሂዱ"
+                >
                   ዩቲዩብ
-                </span>
+                </a>
                 <span>ስልጠናዎቻችን</span>
               </h2>
             </div>
           </div>
-
-          {/* Direct Link to Official YouTube Channel */}
-          <a
-            href="https://youtube.com/@eyoubsahle?si=p29sAFFmLagXd52X"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="self-start sm:self-center text-gray-200 hover:text-white transition-all duration-300 text-xs sm:text-sm font-black flex items-center gap-2.5 group shrink-0 bg-white/5 hover:bg-red-600/20 px-5 py-2.5 rounded-full border border-white/15 hover:border-red-500/50 shadow-md hover:shadow-[0_0_25px_rgba(239,68,68,0.35)] cursor-pointer active:scale-95"
-          >
-            <i className="fa-brands fa-youtube text-red-500 text-base group-hover:scale-110 transition-transform"></i>
-            <span>የዩቲዩብ ቻናላችንን ይጎብኙ</span>
-            <i className="fa-solid fa-arrow-up-right-from-square text-[10px] text-[#f9b03c] group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform"></i>
-          </a>
         </div>
 
         {/* View 1: ANIMATED FULL GRID / LIST VIEW OF ALL VIDEOS */}
