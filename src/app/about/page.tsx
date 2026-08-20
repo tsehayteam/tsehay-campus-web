@@ -213,17 +213,16 @@ function AboutShortVideo({ src, title }: { src: string; title?: string }) {
     const video = videoRef.current;
     if (!el || !video) return;
 
-    // Fast immediate autoplay muted
+    // Initial instant autoplay muted
     video.muted = true;
-    video.play().catch(() => {});
+    video.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
 
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (!videoRef.current) return;
           if (entry.isIntersecting) {
-            videoRef.current.play().catch(() => {});
-            setIsPlaying(true);
+            videoRef.current.play().then(() => setIsPlaying(true)).catch(() => {});
           } else {
             videoRef.current.pause();
             setIsPlaying(false);
@@ -239,25 +238,36 @@ function AboutShortVideo({ src, title }: { src: string; title?: string }) {
     };
   }, []);
 
-  const toggleSound = (e: React.MouseEvent) => {
+  // Instant Play / Pause toggle on click/touch
+  const togglePlayPause = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!videoRef.current) return;
-    
-    const nextMuted = !videoRef.current.muted;
-    videoRef.current.muted = nextMuted;
-    setIsMuted(nextMuted);
+    const video = videoRef.current;
+    if (!video) return;
 
-    if (videoRef.current.paused) {
-      videoRef.current.play().catch(() => {});
-      setIsPlaying(true);
+    if (video.paused) {
+      video.play().then(() => {
+        setIsPlaying(true);
+      }).catch(() => {});
+    } else {
+      video.pause();
+      setIsPlaying(false);
     }
+  };
+
+  const toggleMute = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const video = videoRef.current;
+    if (!video) return;
+    const nextMuted = !video.muted;
+    video.muted = nextMuted;
+    setIsMuted(nextMuted);
   };
 
   return (
     <div 
       ref={containerRef}
-      onClick={toggleSound}
-      className="rounded-3xl overflow-hidden shadow-2xl group aspect-[9/16] bg-slate-950 relative cursor-pointer select-none border border-gray-200 dark:border-gray-800 transition-all duration-300 hover:shadow-[0_0_35px_rgba(249,176,60,0.3)]"
+      onClick={togglePlayPause}
+      className="rounded-3xl overflow-hidden shadow-2xl group aspect-[9/16] bg-slate-950 relative cursor-pointer select-none border border-gray-200 dark:border-gray-800 transition-all duration-300 hover:shadow-[0_0_35px_rgba(249,176,60,0.3)] active:scale-[0.99]"
     >
       {/* HTML5 Video Element (100% Crisp & Visible!) */}
       <video
@@ -268,7 +278,9 @@ function AboutShortVideo({ src, title }: { src: string; title?: string }) {
         playsInline
         webkit-playsinline="true"
         preload="auto"
-        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+        onPlay={() => setIsPlaying(true)}
+        onPause={() => setIsPlaying(false)}
+        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 pointer-events-none"
       >
         <source src={src} type="video/mp4" />
       </video>
@@ -276,12 +288,42 @@ function AboutShortVideo({ src, title }: { src: string; title?: string }) {
       {/* Dark Subtle Edge Vignette */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20 pointer-events-none"></div>
 
-      {/* Sleek Minimal Center Play/Sound Button: Auto-hides when video is playing, reveals on hover/touch */}
-      <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none transition-all duration-300 transform scale-90 group-hover:scale-100 ${isPlaying ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'}`}>
-        <div className="w-14 h-14 rounded-full bg-black/60 group-hover:bg-[#f9b03c] border-2 border-[#f9b03c] text-[#f9b03c] group-hover:text-black flex items-center justify-center shadow-[0_0_30px_rgba(249,176,60,0.6)] backdrop-blur-md transition-all duration-300">
-          <i className="fa-solid fa-play text-lg pl-0.5"></i>
+      {/* Sleek Center Play/Pause Button: 
+          - When Paused: Clearly visible with Play icon 
+          - When Playing: Auto-hides (opacity-0), reveals on hover with Pause icon 
+      */}
+      <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none transition-all duration-200 transform ${
+        isPlaying 
+          ? 'opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-100' 
+          : 'opacity-100 scale-100'
+      }`}>
+        <div className="w-16 h-16 rounded-full bg-black/65 hover:bg-[#f9b03c] border-2 border-[#f9b03c] text-[#f9b03c] hover:text-black flex items-center justify-center shadow-[0_0_35px_rgba(249,176,60,0.6)] backdrop-blur-md transition-all duration-200">
+          {isPlaying ? (
+            <i className="fa-solid fa-pause text-xl"></i>
+          ) : (
+            <i className="fa-solid fa-play text-xl pl-1"></i>
+          )}
         </div>
       </div>
+
+      {/* Floating Sound Toggle Pill */}
+      <button 
+        type="button"
+        onClick={toggleMute}
+        className="absolute top-4 right-4 z-30 bg-black/60 hover:bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-full text-xs text-white/90 border border-white/15 flex items-center gap-1.5 transition-all shadow-md active:scale-95"
+        title={isMuted ? "ድምጽ ክፈት (Unmute)" : "ድምጽ ዝጋ (Mute)"}
+      >
+        <i className={`fa-solid ${isMuted ? 'fa-volume-xmark text-gray-400' : 'fa-volume-high text-[#f9b03c]'}`}></i>
+        <span className="text-[11px] font-bold">{isMuted ? 'ድምጽ ዝጋ' : 'ድምጽ ክፈት'}</span>
+      </button>
+
+      {/* Bottom Status / Title Pill */}
+      {title && (
+        <div className="absolute bottom-4 left-4 z-20 pointer-events-none bg-black/60 backdrop-blur-md px-3.5 py-1.5 rounded-full text-xs font-bold text-white/90 border border-white/10 flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-[#f9b03c] animate-pulse"></span>
+          <span>{title}</span>
+        </div>
+      )}
     </div>
   );
 }
