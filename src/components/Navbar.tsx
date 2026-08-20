@@ -365,23 +365,6 @@ export default function Navbar() {
                         <span>{t('home') || 'መነሻ'}</span>
                     </Link>
                     <Link 
-                        href="/courses" 
-                        onClick={() => {
-                            setIsMobileMenuOpen(false);
-                            setIsCurtainOpen(false);
-                            if (pathname === '/courses') {
-                                window.scrollTo({ top: 0, behavior: 'smooth' });
-                            }
-                        }}
-                        className={`py-1.5 transition-all duration-200 text-[14px] lg:text-[15px] border-b-2 font-bold ${
-                            pathname?.startsWith('/courses')
-                                ? 'text-[#f9b03c] border-[#f9b03c]' 
-                                : 'text-gray-700 dark:text-white hover:text-[#f9b03c] border-transparent hover:border-[#f9b03c]'
-                        }`}
-                    >
-                        {t('all_courses')}
-                    </Link>
-                    <Link 
                         href="/about" 
                         onClick={() => {
                             setIsMobileMenuOpen(false);
@@ -397,6 +380,23 @@ export default function Navbar() {
                         }`}
                     >
                         {t('about_us')}
+                    </Link>
+                    <Link 
+                        href="/courses" 
+                        onClick={() => {
+                            setIsMobileMenuOpen(false);
+                            setIsCurtainOpen(false);
+                            if (pathname === '/courses') {
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }
+                        }}
+                        className={`py-1.5 transition-all duration-200 text-[14px] lg:text-[15px] border-b-2 font-bold ${
+                            pathname?.startsWith('/courses')
+                                ? 'text-[#f9b03c] border-[#f9b03c]' 
+                                : 'text-gray-700 dark:text-white hover:text-[#f9b03c] border-transparent hover:border-[#f9b03c]'
+                        }`}
+                    >
+                        {t('all_courses')}
                     </Link>
                 </div>
                 
@@ -534,24 +534,24 @@ export default function Navbar() {
 
                 <button 
                     type="button" 
-                    onClick={() => navigateTo('/courses')} 
-                    className="w-full flex items-center justify-between px-4 py-3 text-dark dark:text-white font-bold rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 border border-gray-100 dark:border-gray-800/80 transition cursor-pointer text-left"
-                >
-                    <span className="flex items-center gap-3">
-                        <i className="fa-solid fa-book-open text-primary"></i>
-                        <span>{t('all_courses')}</span>
-                    </span>
-                    <i className="fa-solid fa-chevron-right text-xs text-gray-400"></i>
-                </button>
-
-                <button 
-                    type="button" 
                     onClick={() => navigateTo('/about')} 
                     className="w-full flex items-center justify-between px-4 py-3 text-dark dark:text-white font-bold rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 border border-gray-100 dark:border-gray-800/80 transition cursor-pointer text-left"
                 >
                     <span className="flex items-center gap-3">
                         <i className="fa-solid fa-circle-info text-secondary dark:text-primary"></i>
                         <span>{t('about_us')}</span>
+                    </span>
+                    <i className="fa-solid fa-chevron-right text-xs text-gray-400"></i>
+                </button>
+
+                <button 
+                    type="button" 
+                    onClick={() => navigateTo('/courses')} 
+                    className="w-full flex items-center justify-between px-4 py-3 text-dark dark:text-white font-bold rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 border border-gray-100 dark:border-gray-800/80 transition cursor-pointer text-left"
+                >
+                    <span className="flex items-center gap-3">
+                        <i className="fa-solid fa-book-open text-primary"></i>
+                        <span>{t('all_courses')}</span>
                     </span>
                     <i className="fa-solid fa-chevron-right text-xs text-gray-400"></i>
                 </button>
