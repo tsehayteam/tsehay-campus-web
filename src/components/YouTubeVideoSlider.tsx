@@ -229,15 +229,17 @@ export default function YouTubeVideoSlider() {
             </div>
           </div>
 
-          {/* Toggle View: "ሁሉንም እይ" (Animates and Unfolds All Videos in Grid List) */}
-          <button
-            type="button"
-            onClick={() => setIsGridView((prev) => !prev)}
-            className="self-start sm:self-center text-gray-200 hover:text-[#f9b03c] transition-all duration-300 text-xs sm:text-sm font-black flex items-center gap-2.5 group shrink-0 bg-white/5 hover:bg-white/10 px-5 py-2.5 rounded-full border border-white/15 hover:border-[#f9b03c]/50 shadow-md hover:shadow-[0_0_25px_rgba(249,176,60,0.3)] cursor-pointer active:scale-95"
+          {/* Direct Link to Official YouTube Channel */}
+          <a
+            href="https://youtube.com/@eyoubsahle?si=p29sAFFmLagXd52X"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="self-start sm:self-center text-gray-200 hover:text-white transition-all duration-300 text-xs sm:text-sm font-black flex items-center gap-2.5 group shrink-0 bg-white/5 hover:bg-red-600/20 px-5 py-2.5 rounded-full border border-white/15 hover:border-red-500/50 shadow-md hover:shadow-[0_0_25px_rgba(239,68,68,0.35)] cursor-pointer active:scale-95"
           >
-            <span>{isGridView ? 'ወደ ስላይደር መልስ (Slider)' : 'ሁሉንም እይ (ዝርዝር)'}</span>
-            <i className={`fa-solid ${isGridView ? 'fa-sliders' : 'fa-table-cells-large'} text-xs sm:text-sm text-[#f9b03c] transition-transform duration-300 group-hover:scale-125`}></i>
-          </button>
+            <i className="fa-brands fa-youtube text-red-500 text-base group-hover:scale-110 transition-transform"></i>
+            <span>የዩቲዩብ ቻናላችንን ይጎብኙ</span>
+            <i className="fa-solid fa-arrow-up-right-from-square text-[10px] text-[#f9b03c] group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform"></i>
+          </a>
         </div>
 
         {/* View 1: ANIMATED FULL GRID / LIST VIEW OF ALL VIDEOS */}
