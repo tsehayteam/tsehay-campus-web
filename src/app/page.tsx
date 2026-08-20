@@ -14,45 +14,6 @@ import { getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImage
 
 const PARTNER_BRANDS = [
   {
-    name: 'telebirr',
-    render: () => (
-      <div className="flex items-center gap-2 opacity-95 hover:opacity-100 transition-all duration-300 transform hover:scale-105 cursor-pointer bg-white/95 dark:bg-white/95 px-3 py-1.5 rounded-2xl shadow-sm">
-        <img 
-          src="/telebirr-symbol.jpg" 
-          alt="telebirr" 
-          className="h-9 sm:h-11 md:h-12 w-auto object-contain shrink-0 rounded-lg" 
-        />
-        <span className="text-xl sm:text-2xl font-black text-[#00A3E0] tracking-tight pr-1" style={{ fontFamily: 'Montserrat, Arial, sans-serif' }}>
-          telebirr
-        </span>
-      </div>
-    )
-  },
-  {
-    name: 'CBE BIRR',
-    render: () => (
-      <div className="flex items-center opacity-95 hover:opacity-100 transition-all duration-300 transform hover:scale-105 cursor-pointer bg-white/95 dark:bg-white/95 px-3.5 py-1.5 rounded-2xl shadow-sm">
-        <img 
-          src="/cbe-birr-light.png" 
-          alt="CBE BIRR" 
-          className="h-9 sm:h-11 md:h-12 w-auto object-contain shrink-0" 
-        />
-      </div>
-    )
-  },
-  {
-    name: 'Bank of Abyssinia',
-    render: () => (
-      <div className="flex items-center opacity-95 hover:opacity-100 transition-all duration-300 transform hover:scale-105 cursor-pointer bg-white/95 dark:bg-white/95 px-3.5 py-1.5 rounded-2xl shadow-sm">
-        <img 
-          src="/abyssinia-logo.png" 
-          alt="Bank of Abyssinia" 
-          className="h-9 sm:h-11 md:h-12 w-auto object-contain shrink-0" 
-        />
-      </div>
-    )
-  },
-  {
     name: 'Google',
     render: () => (
       <div className="flex items-center gap-3 sm:gap-4 opacity-95 hover:opacity-100 transition-all duration-300 transform hover:scale-105 cursor-pointer">
