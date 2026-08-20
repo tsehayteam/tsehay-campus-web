@@ -16,39 +16,39 @@ const PARTNER_BRANDS = [
   {
     name: 'telebirr',
     render: () => (
-      <div className="flex items-center opacity-95 hover:opacity-100 transition-all duration-300 transform hover:scale-105 cursor-pointer bg-white/90 dark:bg-white/95 px-3.5 py-1.5 rounded-2xl shadow-sm">
+      <div className="flex items-center gap-2 opacity-95 hover:opacity-100 transition-all duration-300 transform hover:scale-105 cursor-pointer bg-white/95 dark:bg-white/95 px-3 py-1.5 rounded-2xl shadow-sm">
         <img 
-          src="/telebirr-logo.png" 
+          src="/telebirr-symbol.jpg" 
           alt="telebirr" 
-          className="h-9 sm:h-11 md:h-12 w-auto object-contain shrink-0" 
+          className="h-9 sm:h-11 md:h-12 w-auto object-contain shrink-0 rounded-lg" 
         />
+        <span className="text-xl sm:text-2xl font-black text-[#00A3E0] tracking-tight pr-1" style={{ fontFamily: 'Montserrat, Arial, sans-serif' }}>
+          telebirr
+        </span>
       </div>
     )
   },
   {
     name: 'CBE BIRR',
     render: () => (
-      <div className="flex items-center gap-3 opacity-95 hover:opacity-100 transition-all duration-300 transform hover:scale-105 cursor-pointer bg-white/90 dark:bg-slate-900/90 px-4 py-2 rounded-2xl border border-gray-100 dark:border-slate-800 shadow-sm">
-        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-[#701d78] border border-[#FFB800] p-1 flex items-center justify-center shadow-xs shrink-0">
-          <svg viewBox="0 0 100 100" className="w-full h-full">
-            <circle cx="50" cy="50" r="44" fill="#FFB800" />
-            <circle cx="50" cy="50" r="36" fill="#701d78" />
-            <text x="50" y="58" textAnchor="middle" fill="#FFB800" fontSize="22" fontWeight="900" fontFamily="Arial, sans-serif" letterSpacing="1">CBE</text>
-          </svg>
-        </div>
-        <div className="flex flex-col text-left">
-          <div className="flex items-center gap-1.5 leading-none">
-            <span className="text-xl sm:text-2xl md:text-3xl font-black text-[#701d78] dark:text-[#E895F2] tracking-tight" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-              CBE
-            </span>
-            <span className="text-xl sm:text-2xl md:text-3xl font-black text-[#FFB800] tracking-tight" style={{ fontFamily: 'Montserrat, sans-serif' }}>
-              BIRR
-            </span>
-          </div>
-          <span className="text-[8px] sm:text-[9px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mt-0.5">
-            የኢትዮጵያ ንግድ ባንክ
-          </span>
-        </div>
+      <div className="flex items-center opacity-95 hover:opacity-100 transition-all duration-300 transform hover:scale-105 cursor-pointer bg-white/95 dark:bg-white/95 px-3.5 py-1.5 rounded-2xl shadow-sm">
+        <img 
+          src="/cbe-birr-light.png" 
+          alt="CBE BIRR" 
+          className="h-9 sm:h-11 md:h-12 w-auto object-contain shrink-0" 
+        />
+      </div>
+    )
+  },
+  {
+    name: 'Bank of Abyssinia',
+    render: () => (
+      <div className="flex items-center opacity-95 hover:opacity-100 transition-all duration-300 transform hover:scale-105 cursor-pointer bg-white/95 dark:bg-white/95 px-3.5 py-1.5 rounded-2xl shadow-sm">
+        <img 
+          src="/abyssinia-logo.png" 
+          alt="Bank of Abyssinia" 
+          className="h-9 sm:h-11 md:h-12 w-auto object-contain shrink-0" 
+        />
       </div>
     )
   },
@@ -446,7 +446,7 @@ export default function Home() {
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#f9b03c]/5 rounded-full blur-[140px] pointer-events-none"></div>
         <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-[#3268ba]/5 rounded-full blur-[140px] pointer-events-none"></div>
 
-        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="max-w-[1300px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
             <div className="flex flex-col items-center text-center mb-12 sm:mb-16 gap-3">
                 <div className="inline-flex items-center gap-2 bg-amber-400/10 dark:bg-amber-400/5 border border-amber-400/20 px-4 py-1.5 rounded-full">
                     <span className="w-2 h-2 rounded-full bg-[#f9b03c] animate-pulse"></span>
@@ -471,16 +471,20 @@ export default function Home() {
                     <p className="text-gray-500 dark:text-gray-400 font-bold text-lg">{t('no_course_found')}</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="courseList">
+                <div 
+                    className="grid gap-7 sm:gap-8" 
+                    id="courseList"
+                    style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))' }}
+                >
                     {courses.slice(0, 6).map(course => (
                         <div 
                             key={course.id} 
-                            className="bg-white/80 dark:bg-white/[0.02] backdrop-blur-xl rounded-2xl overflow-hidden flex flex-col justify-between transition-all duration-300 hover:-translate-y-2 border border-gray-200/80 dark:border-white/[0.05] hover:border-[#f9b03c] dark:hover:border-[#f9b03c]/70 hover:shadow-[0_12px_30px_rgba(249,176,60,0.15)] group cursor-pointer active:scale-98" 
+                            className="bg-white/80 dark:bg-white/[0.02] backdrop-blur-xl rounded-2xl overflow-hidden flex flex-col justify-between transition-all duration-300 hover:-translate-y-2 border border-gray-200/80 dark:border-white/[0.05] hover:border-[#f9b03c] dark:hover:border-[#f9b03c]/70 shadow-[0_10px_30px_rgba(0,0,0,0.5)] hover:shadow-[0_20px_45px_rgba(249,176,60,0.2)] group cursor-pointer active:scale-98" 
                             onClick={() => window.location.href=`/courses/${course.id}`}
                         >
                             <div>
-                                {/* Thumbnail Wrapper (16:9) */}
-                                <div className="relative aspect-video w-full overflow-hidden bg-slate-900 flex items-center justify-center">
+                                {/* Thumbnail Wrapper (16/10 Aspect Ratio / 220px+ for prominent view) */}
+                                <div className="relative aspect-[16/10] sm:min-h-[220px] w-full overflow-hidden bg-slate-900 flex items-center justify-center">
                                     <img 
                                         src={formatDriveImageUrl(course.image) || `https://placehold.co/600x400/3268BA/FFFFFF?text=${encodeURIComponent(course.title || 'Tsehay Campus')}&font=Montserrat`} 
                                         alt={course.title} 
@@ -489,50 +493,50 @@ export default function Home() {
                                     
                                     {/* Badges - Royal Blue / Gold only (NO GREEN) */}
                                     {(!course.isFree && course.price !== 0 && course.price !== '0' && course.price !== 'Free') ? (
-                                        <div className="absolute top-3 right-3 bg-gradient-to-r from-[#f9b03c] to-amber-500 text-slate-950 text-[11px] font-black px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg">
+                                        <div className="absolute top-3 right-3 bg-gradient-to-r from-[#f9b03c] to-amber-500 text-slate-950 text-[11px] font-black px-3.5 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg">
                                             <i className="fa-solid fa-crown text-[10px]"></i> PREMIUM
                                         </div>
                                     ) : (
-                                        <div className="absolute top-3 right-3 bg-[#3268ba]/90 text-white text-[11px] font-black px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg backdrop-blur-md border border-white/20">
+                                        <div className="absolute top-3 right-3 bg-[#3268ba]/90 text-white text-[11px] font-black px-3.5 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg backdrop-blur-md border border-white/20">
                                             <i className="fa-solid fa-sparkles text-[10px] text-[#f9b03c]"></i> FREE
                                         </div>
                                     )}
                                 </div>
 
-                                {/* Content Details */}
-                                <div className="p-5 sm:p-6">
+                                {/* Content Details (24px padding for breathing room) */}
+                                <div className="p-6 sm:p-7">
                                     {/* Category Tag */}
-                                    <span className="text-[11px] font-black uppercase tracking-wider text-[#f9b03c] inline-block mb-1.5">
+                                    <span className="text-[11px] font-black uppercase tracking-wider text-[#f9b03c] inline-block mb-2">
                                         {course.category || 'DIGITAL SKILLS'}
                                     </span>
 
-                                    {/* Title */}
-                                    <h3 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white mb-2 line-clamp-2 leading-snug group-hover:text-[#f9b03c] transition-colors font-heading">
+                                    {/* Title - Bold & Crisp White */}
+                                    <h3 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mb-2.5 line-clamp-2 leading-snug group-hover:text-[#f9b03c] transition-colors font-heading">
                                         {course.title || t('course_unknown')}
                                     </h3>
 
                                     {/* Instructor Info */}
-                                    <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-[#8a95a5] font-semibold mb-3">
+                                    <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-[#8a95a5] font-semibold mb-3.5">
                                         <i className="fa-solid fa-chalkboard-user text-[#f9b03c]"></i>
                                         <span>{course.instructor || 'Eyoub Sahle'}</span>
                                     </div>
 
                                     {/* Description */}
-                                    <p className="text-gray-600 dark:text-[#a0aec0] text-xs sm:text-[13px] leading-relaxed line-clamp-2 mb-4">
+                                    <p className="text-gray-600 dark:text-[#a0aec0] text-xs sm:text-[13.5px] leading-relaxed line-clamp-2 mb-5">
                                         {formatCourseDesc(course) || t('course_desc_placeholder')}
                                     </p>
                                     
                                     {/* Meta capsules */}
                                     <div className="flex flex-wrap gap-2 mb-2">
-                                        <div className="flex items-center gap-1.5 bg-gray-100/80 dark:bg-white/[0.04] text-gray-600 dark:text-gray-300 text-xs font-semibold px-2.5 py-1 rounded-full border border-gray-200/60 dark:border-white/[0.06]">
+                                        <div className="flex items-center gap-1.5 bg-gray-100/80 dark:bg-white/[0.04] text-gray-600 dark:text-gray-300 text-xs font-semibold px-3 py-1 rounded-full border border-gray-200/60 dark:border-white/[0.06]">
                                             <i className="fa-regular fa-clock text-[#f9b03c] text-[10px]"></i>
                                             <span>{course.duration || '00:50:00'}</span>
                                         </div>
-                                        <div className="flex items-center gap-1.5 bg-gray-100/80 dark:bg-white/[0.04] text-gray-600 dark:text-gray-300 text-xs font-semibold px-2.5 py-1 rounded-full border border-gray-200/60 dark:border-white/[0.06]">
+                                        <div className="flex items-center gap-1.5 bg-gray-100/80 dark:bg-white/[0.04] text-gray-600 dark:text-gray-300 text-xs font-semibold px-3 py-1 rounded-full border border-gray-200/60 dark:border-white/[0.06]">
                                             <i className="fa-solid fa-layer-group text-[#f9b03c] text-[10px]"></i>
                                             <span>{course.lessons?.length || 0} {t('course_lessons')}</span>
                                         </div>
-                                        <div className="flex items-center gap-1.5 bg-gray-100/80 dark:bg-white/[0.04] text-gray-600 dark:text-gray-300 text-xs font-semibold px-2.5 py-1 rounded-full border border-gray-200/60 dark:border-white/[0.06]">
+                                        <div className="flex items-center gap-1.5 bg-gray-100/80 dark:bg-white/[0.04] text-gray-600 dark:text-gray-300 text-xs font-semibold px-3 py-1 rounded-full border border-gray-200/60 dark:border-white/[0.06]">
                                             <i className="fa-solid fa-signal text-[#f9b03c] text-[10px]"></i>
                                             <span>{course.level || 'ጀማሪ'}</span>
                                         </div>
@@ -541,27 +545,27 @@ export default function Home() {
                             </div>
 
                             {/* Price & CTA Row (Bottom) */}
-                            <div className="px-5 sm:px-6 pb-5 sm:pb-6 pt-3 border-t border-gray-100 dark:border-white/[0.06] flex items-center justify-between mt-auto">
+                            <div className="px-6 sm:px-7 pb-6 sm:pb-7 pt-4 border-t border-gray-100 dark:border-white/[0.06] flex items-center justify-between mt-auto">
                                 <div>
                                     {(course.isFree || course.price === 0 || course.price === '0' || course.price === 'Free') ? (
-                                        <span className="text-lg sm:text-xl font-black text-[#f9b03c] tracking-tight">
+                                        <span className="text-xl sm:text-2xl font-black text-[#f9b03c] tracking-tight">
                                             {t('course_free') || 'ነፃ (Free)'}
                                         </span>
                                     ) : (
                                         <div className="flex items-baseline gap-1.5">
-                                            <span className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight">
+                                            <span className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
                                                 {Number(course.price).toLocaleString()} {t('course_currency') || 'ብር'}
                                             </span>
                                             {course.originalPrice && (
-                                                <span className="text-xs font-medium text-gray-400 dark:text-gray-500 line-through">
+                                                <span className="text-xs sm:text-sm font-medium text-gray-400 dark:text-gray-500 line-through">
                                                     {Number(course.originalPrice).toLocaleString()}
                                                 </span>
                                             )}
                                         </div>
                                     )}
                                 </div>
-                                <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-white/[0.05] border border-gray-200/80 dark:border-white/[0.08] text-slate-700 dark:text-white flex items-center justify-center group-hover:bg-[#f9b03c] group-hover:text-slate-950 group-hover:border-[#f9b03c] group-hover:rotate-[-45deg] transition-all duration-300 shadow-sm">
-                                    <i className="fa-solid fa-arrow-right text-sm"></i>
+                                <div className="w-11 h-11 rounded-full bg-slate-100 dark:bg-white/[0.05] border border-gray-200/80 dark:border-white/[0.08] text-slate-700 dark:text-white flex items-center justify-center group-hover:bg-[#f9b03c] group-hover:text-slate-950 group-hover:border-[#f9b03c] group-hover:rotate-[-45deg] transition-all duration-300 shadow-sm">
+                                    <i className="fa-solid fa-arrow-right text-base"></i>
                                 </div>
                             </div>
                         </div>
@@ -671,24 +675,7 @@ export default function Home() {
         </div>
     </section>
 
-
-
     <Footer />
-
-    <div className="fixed bottom-6 right-6 z-[9999] flex flex-col gap-4">
-        <a href="https://t.me/TsehayTeam" target="_blank" className="w-16 h-16 bg-primary text-dark rounded-full flex items-center justify-center text-3xl shadow-[0_0_20px_rgba(249,176,60,0.5)] transition-all duration-300 hover:scale-110 relative group border-2 border-white/20">
-            <i className="fa-brands fa-telegram"></i>
-            <span className="absolute right-full mr-4 bg-dark dark:bg-slate-800 text-white text-sm font-bold px-4 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap pointer-events-none border border-gray-700 shadow-xl">በቴሌግራም ያግኙን</span>
-        </a>
-        <a href="https://wa.me/251980209090" target="_blank" className="w-16 h-16 bg-primary text-dark rounded-full flex items-center justify-center text-3xl shadow-[0_0_20px_rgba(249,176,60,0.5)] transition-all duration-300 hover:scale-110 relative group border-2 border-white/20">
-            <i className="fa-brands fa-whatsapp"></i>
-            <span className="absolute right-full mr-4 bg-dark dark:bg-slate-800 text-white text-sm font-bold px-4 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap pointer-events-none border border-gray-700 shadow-xl">በWhatsApp ያግኙን</span>
-        </a>
-        <a href="tel:0980209090" className="w-16 h-16 bg-primary text-dark rounded-full flex items-center justify-center text-3xl shadow-[0_0_20px_rgba(249,176,60,0.5)] transition-all duration-300 hover:scale-110 relative group border-2 border-white/20">
-            <i className="fa-solid fa-phone"></i>
-            <span className="absolute right-full mr-4 bg-dark dark:bg-slate-800 text-white text-sm font-bold px-4 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap pointer-events-none border border-gray-700 shadow-xl">ስልክ ይደውሉ</span>
-        </a>
-    </div>
 
     
     
