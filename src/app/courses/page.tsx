@@ -198,28 +198,34 @@ export default function Courses() {
                     className="bg-white/90 dark:bg-white/[0.02] backdrop-blur-xl rounded-2xl overflow-hidden flex flex-col justify-between transition-all duration-300 hover:-translate-y-2 border border-gray-200/80 dark:border-white/[0.05] hover:border-[#f9b03c] dark:hover:border-[#f9b03c]/70 shadow-[0_10px_30px_rgba(0,0,0,0.5)] hover:shadow-[0_20px_45px_rgba(249,176,60,0.2)] group"
                   >
                     <div>
-                      {/* Thumbnail Wrapper (16/10 Aspect Ratio / 220px+ for prominent view) */}
-                      <a href={`/courses/${course.id}`} className="relative aspect-[16/10] sm:min-h-[220px] w-full overflow-hidden bg-slate-900 flex items-center justify-center block cursor-pointer">
+                      {/* Thumbnail Wrapper: 100% full view, non-cropped with ambient glow */}
+                      <a href={`/courses/${course.id}`} className="relative aspect-video w-full overflow-hidden bg-slate-950 flex items-center justify-center block cursor-pointer">
+                        <img 
+                          src={formatDriveImageUrl(course.image) || `https://placehold.co/600x400/3268BA/FFFFFF?text=${encodeURIComponent(course.title || 'Tsehay Campus')}&font=Montserrat`} 
+                          alt="" 
+                          aria-hidden="true" 
+                          className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-40 scale-125 pointer-events-none select-none" 
+                        />
                         <img 
                           src={formatDriveImageUrl(course.image) || `https://placehold.co/600x400/3268BA/FFFFFF?text=${encodeURIComponent(course.title || 'Tsehay Campus')}&font=Montserrat`} 
                           alt={course.title} 
-                          className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
+                          className="relative z-10 w-full h-full object-contain p-2 transition-transform duration-700 group-hover:scale-[1.03]" 
                         />
                         
                         {/* PREMIUM / FREE Badge - Strictly Royal Blue / Gold (NO GREEN) */}
                         {(!course.isFree && course.price !== 0 && course.price !== '0' && course.price !== 'Free') ? (
-                          <div className="absolute top-3 right-3 bg-gradient-to-r from-[#f9b03c] to-amber-500 text-slate-950 text-[11px] font-black px-3.5 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg">
+                          <div className="absolute top-3 right-3 z-20 bg-gradient-to-r from-[#f9b03c] to-amber-500 text-slate-950 text-[11px] font-black px-3.5 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg">
                             <i className="fa-solid fa-crown text-[10px]"></i> PREMIUM
                           </div>
                         ) : (
-                          <div className="absolute top-3 right-3 bg-[#3268ba]/90 text-white text-[11px] font-black px-3.5 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg backdrop-blur-md border border-white/20">
+                          <div className="absolute top-3 right-3 z-20 bg-[#3268ba]/90 text-white text-[11px] font-black px-3.5 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg backdrop-blur-md border border-white/20">
                             <i className="fa-solid fa-sparkles text-[10px] text-[#f9b03c]"></i> FREE
                           </div>
                         )}
                         
                         {/* CATEGORY Badge */}
                         {course.category && (
-                          <div className="absolute bottom-3 left-3 bg-[#030509]/85 backdrop-blur-md text-[#f9b03c] border border-white/10 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider shadow-md">
+                          <div className="absolute bottom-3 left-3 z-20 bg-[#030509]/85 backdrop-blur-md text-[#f9b03c] border border-white/10 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider shadow-md">
                             {course.category}
                           </div>
                         )}
@@ -238,13 +244,13 @@ export default function Courses() {
                             <i className="fa-solid fa-chalkboard-user text-[#f9b03c]"></i>
                             <span>{course.instructor || 'Eyoub Sahle'}</span>
                           </div>
-                          <div className="flex items-center gap-1 bg-[#f9b03c]/10 text-[#f9b03c] font-black px-2.5 py-0.5 rounded-full text-xs border border-[#f9b03c]/20 shadow-xs">
+                          <div className="flex items-center gap-1 bg-[#f9b03c]/10 text-[#f9b03c] font-black px-2 py-0.5 rounded-full text-xs border border-[#f9b03c]/20">
                             <i className="fa-solid fa-star text-[10px]"></i>
                             <span>{course.ratingAvg || '4.9'}</span>
                           </div>
                         </div>
                         
-                        <p className="text-gray-600 dark:text-[#a0aec0] text-xs sm:text-[13.5px] leading-relaxed line-clamp-2 mb-5 font-body">
+                        <p className="text-gray-600 dark:text-[#a0aec0] text-xs sm:text-[13.5px] leading-relaxed line-clamp-3 mb-5 font-body">
                           {formatCourseDesc(course) || t('course_desc_placeholder')}
                         </p>
                         

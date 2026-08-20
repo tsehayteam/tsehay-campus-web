@@ -444,21 +444,27 @@ export default function Home() {
                             onClick={() => window.location.href=`/courses/${course.id}`}
                         >
                             <div>
-                                {/* Thumbnail Wrapper (16/10 Aspect Ratio / 220px+ for prominent view) */}
-                                <div className="relative aspect-[16/10] sm:min-h-[220px] w-full overflow-hidden bg-slate-900 flex items-center justify-center">
+                                {/* Thumbnail Wrapper: 100% full view, non-cropped with ambient glow */}
+                                <div className="relative aspect-video w-full overflow-hidden bg-slate-950 flex items-center justify-center">
+                                    <img 
+                                        src={formatDriveImageUrl(course.image) || `https://placehold.co/600x400/3268BA/FFFFFF?text=${encodeURIComponent(course.title || 'Tsehay Campus')}&font=Montserrat`} 
+                                        alt="" 
+                                        aria-hidden="true" 
+                                        className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-40 scale-125 pointer-events-none select-none" 
+                                    />
                                     <img 
                                         src={formatDriveImageUrl(course.image) || `https://placehold.co/600x400/3268BA/FFFFFF?text=${encodeURIComponent(course.title || 'Tsehay Campus')}&font=Montserrat`} 
                                         alt={course.title} 
-                                        className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500" 
+                                        className="relative z-10 w-full h-full object-contain p-2 group-hover:scale-[1.03] transition-transform duration-500" 
                                     />
                                     
                                     {/* Badges - Royal Blue / Gold only (NO GREEN) */}
                                     {(!course.isFree && course.price !== 0 && course.price !== '0' && course.price !== 'Free') ? (
-                                        <div className="absolute top-3 right-3 bg-gradient-to-r from-[#f9b03c] to-amber-500 text-slate-950 text-[11px] font-black px-3.5 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg">
+                                        <div className="absolute top-3 right-3 z-20 bg-gradient-to-r from-[#f9b03c] to-amber-500 text-slate-950 text-[11px] font-black px-3.5 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg">
                                             <i className="fa-solid fa-crown text-[10px]"></i> PREMIUM
                                         </div>
                                     ) : (
-                                        <div className="absolute top-3 right-3 bg-[#3268ba]/90 text-white text-[11px] font-black px-3.5 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg backdrop-blur-md border border-white/20">
+                                        <div className="absolute top-3 right-3 z-20 bg-[#3268ba]/90 text-white text-[11px] font-black px-3.5 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg backdrop-blur-md border border-white/20">
                                             <i className="fa-solid fa-sparkles text-[10px] text-[#f9b03c]"></i> FREE
                                         </div>
                                     )}
@@ -483,7 +489,7 @@ export default function Home() {
                                     </div>
 
                                     {/* Description */}
-                                    <p className="text-gray-600 dark:text-[#a0aec0] text-xs sm:text-[13.5px] leading-relaxed line-clamp-2 mb-5">
+                                    <p className="text-gray-600 dark:text-[#a0aec0] text-xs sm:text-[13.5px] leading-relaxed line-clamp-3 mb-5">
                                         {formatCourseDesc(course) || t('course_desc_placeholder')}
                                     </p>
                                     

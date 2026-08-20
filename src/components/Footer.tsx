@@ -268,10 +268,12 @@ export default function Footer() {
                             title="Tsehay Digital"
                         >
                             <img 
-                                src="/tsehay-digital-logo-new.png" 
+                                src="/tsehay-digital-logo.jpg" 
                                 alt="Tsehay Digital" 
+                                loading="eager"
+                                fetchPriority="high"
                                 className="h-4.5 w-auto object-contain rounded-sm transition-transform duration-300 group-hover:rotate-12" 
-                                onError={(e) => { e.currentTarget.src='/tsehay-digital-logo.jpg'; }}
+                                onError={(e) => { e.currentTarget.src='/tc-logo.jpg'; }}
                             />
                             <span className="font-black text-[#f9b03c] tracking-wider text-xs">POWERED BY TSEHAY DIGITAL</span>
                         </a>
