@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="am">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tsehay Campus - ወደፊቱን ዛሬ ይማሩ | Ultra-Premium E-Learning</title>
+  <meta name="description" content="በፀሐይ ካምፓስ (Tsehay Campus) በ AI የታገዘ የኦንላይን እና የተግባር የክህሎት ስልጠናዎችን ይማሩ።" />
+
+  <!-- Google Fonts: Inter & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+
+  <!-- Font Awesome 6.5.1 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <!-- CDN: Three.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+  <!-- CDN: GSAP & ScrollTrigger -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+
+  <style>
+    /* ==========================================================================
+       GLOBAL DESIGN SYSTEM & RESETS
+       ========================================================================== */
+    :root {
+      --bg-void: #030509;
+      --bg-dashboard: #030509;
+      --gold-primary: #f9b03c;
+      --gold-glow: rgba(249, 176, 60, 0.45);
+      --royal-blue: #3268ba;
+      --blue-glow: rgba(50, 104, 186, 0.45);
+      --text-white: #ffffff;
+      --text-gray: #a0aec0;
+      --glass-bg: rgba(255, 255, 255, 0.02);
+      --glass-border: rgba(255, 255, 255, 0.06);
+      --glass-blur: blur(16px);
+      --card-radius: 16px;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      background-color: var(--bg-void);
+      color: var(--text-white);
+      overflow-x: hidden;
+      scroll-behavior: smooth;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #030509;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(249, 176, 60, 0.25);
+      border-radius: 999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--gold-primary);
+    }
+
+    /* Typography & Utilities */
+    .font-heading {
+      font-family: 'Outfit', 'Inter', sans-serif;
+    }
+
+    .glass-card {
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--card-radius);
+    }
+
+    .glass-card-hover {
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .glass-card-hover:hover {
+      background: rgba(255, 255, 255, 0.04);
+      border-color: rgba(249, 176, 60, 0.3);
+      box-shadow: 0 12px 35px rgba(249, 176, 60, 0.15);
+      transform: translateY(-4px);
+    }
+
+    .text-gold-gradient {
+      background: linear-gradient(135deg, #ffffff 10%, #f9b03c 70%, #ffc670 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .text-blue-gradient {
+      background: linear-gradient(135deg, #60a5fa 0%, #3268ba 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .btn-gold {
+      background: linear-gradient(135deg, #f9b03c 0%, #e69d28 100%);
+      color: #030509;
+      font-weight: 800;
+      padding: 14px 28px;
+      border-radius: 14px;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 4px 20px rgba(249, 176, 60, 0.35);
+      text-decoration: none;
+      font-size: 15px;
+    }
+    .btn-gold:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(249, 176, 60, 0.6);
+      background: linear-gradient(135deg, #ffbe53 0%, #f9b03c 100%);
+    }
+
+    .btn-outline {
+      background: rgba(255, 255, 255, 0.03);
+      color: #ffffff;
+      font-weight: 700;
+      padding: 13px 26px;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      transition: all 0.3s;
+      text-decoration: none;
+      font-size: 15px;
+      backdrop-filter: blur(10px);
+    }
+    .btn-outline:hover {
+      border-color: var(--gold-primary);
+      color: var(--gold-primary);
+      background: rgba(249, 176, 60, 0.06);
+    }
+
+    /* ==========================================================================
+       PART 1: 3D THREE.JS CANVAS & SCROLLYTELLING CONTAINER
+       ========================================================================== */
+    #webgl-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    /* Floating Navigation */
+    .top-nav {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: calc(100% - 40px);
+      max-width: 1300px;
+      z-index: 100;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 28px;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      background: rgba(3, 5, 9, 0.7);
+      border: 1px solid rgba(249, 176, 60, 0.2);
+      border-radius: 999px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+    }
+
+    .brand-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+    }
+    .brand-logo img {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      object-fit: cover;
+    }
+    .brand-logo span {
+      font-size: 20px;
+      font-weight: 900;
+      letter-spacing: -0.5px;
+    }
+    .brand-logo .tsehay {
+      color: var(--gold-primary);
+    }
+    .brand-logo .campus {
+      color: #ffffff;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+    .nav-links a {
+      color: var(--text-gray);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 600;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover, .nav-links a.active {
+      color: var(--gold-primary);
+    }
+
+    /* Scrollytelling Journey Container (Pinned Scroll Window) */
+    .scroll-container {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      height: 300vh; /* 300vh provides smooth scroll pacing */
+    }
+
+    .scroll-scene {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      padding: 0 20px;
+    }
+
+    .scroll-card {
+      pointer-events: auto;
+      max-width: 820px;
+      width: 100%;
+      padding: 48px 44px;
+      text-align: center;
+      border-radius: 28px;
+      background: rgba(3, 5, 9, 0.65);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7), 0 0 50px rgba(249, 176, 60, 0.08);
+      opacity: 0;
+      transform: translateY(40px);
+    }
+
+    .badge-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 16px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 24px;
+      background: rgba(249, 176, 60, 0.1);
+      border: 1px solid rgba(249, 176, 60, 0.3);
+      color: var(--gold-primary);
+    }
+
+    .card-title {
+      font-size: 52px;
+      font-weight: 900;
+      line-height: 1.15;
+      margin-bottom: 18px;
+      letter-spacing: -1px;
+    }
+
+    .card-subtitle {
+      font-size: 18px;
+      color: var(--text-gray);
+      line-height: 1.6;
+      margin-bottom: 32px;
+      max-width: 620px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .button-group {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .scroll-indicator {
+      position: absolute;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-col;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-gray);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      opacity: 0.8;
+      animation: bounce 2s infinite;
+      z-index: 10;
+    }
+
+    @keyframes bounce {
+      0%, 20%, 50%, 80%, 100% { transform: translateY(0) translateX(-50%); }
+      40% { transform: translateY(-8px) translateX(-50%); }
+      60% { transform: translateY(-4px) translateX(-50%); }
+    }
+
+    /* ==========================================================================
+       PART 2: LEARNING DASHBOARD (MASTERCLASS STYLE - DISTRACTION-FREE)
+       ========================================================================== */
+    .dashboard-section {
+      position: relative;
+      z-index: 20;
+      background-color: var(--bg-dashboard); /* SOLID DEEP BLACK TO COVER 3D */
+      min-height: 100vh;
+      border-top: 1px solid rgba(249, 176, 60, 0.2);
+      box-shadow: 0 -30px 80px rgba(3, 5, 9, 1);
+      padding: 100px 24px 80px;
+    }
+
+    .dashboard-container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    /* Dashboard Header Bar */
+    .dash-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 32px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .breadcrumbs {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      color: var(--text-gray);
+      font-weight: 500;
+    }
+    .breadcrumbs span.active {
+      color: var(--text-white);
+      font-weight: 700;
+    }
+
+    .dash-user-controls {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .pts-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(249, 176, 60, 0.12);
+      border: 1px solid rgba(249, 176, 60, 0.35);
+      padding: 6px 14px;
+      border-radius: 999px;
+      color: var(--gold-primary);
+      font-weight: 800;
+      font-size: 13px;
+    }
+
+    /* Main Dashboard 2-Column Grid */
+    .dash-grid {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 32px;
+      align-items: start;
+    }
+
+    /* Sidebar: Course Modules & Lessons */
+    .course-sidebar {
+      padding: 24px;
+      max-height: calc(100vh - 200px);
+      overflow-y: auto;
+    }
+
+    .course-info-head {
+      margin-bottom: 24px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .course-info-head h3 {
+      font-size: 18px;
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+    .progress-bar-wrap {
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 999px;
+      margin-top: 12px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      width: 45%;
+      height: 100%;
+      background: linear-gradient(90deg, var(--royal-blue), var(--gold-primary));
+      border-radius: 999px;
+    }
+
+    .module-group {
+      margin-bottom: 20px;
+    }
+    .module-title {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-gray);
+      font-weight: 800;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .lesson-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px;
+      border-radius: 12px;
+      margin-bottom: 6px;
+      text-decoration: none;
+      color: var(--text-gray);
+      font-size: 13.5px;
+      font-weight: 600;
+      transition: all 0.2s;
+      border-left: 3px solid transparent;
+      cursor: pointer;
+    }
+    .lesson-item:hover {
+      background: rgba(255, 255, 255, 0.04);
+      color: #ffffff;
+    }
+    .lesson-item.active {
+      background: rgba(249, 176, 60, 0.08);
+      color: var(--gold-primary);
+      border-left: 3px solid var(--gold-primary);
+      font-weight: 800;
+    }
+    .lesson-item.completed {
+      color: #e2e8f0;
+    }
+    .lesson-item.completed i {
+      color: #10b981;
+    }
+
+    /* Main Video Player & Lesson Content Area */
+    .main-video-area {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .video-wrapper {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      border-radius: 20px;
+      overflow: hidden;
+      background: #000000;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .video-wrapper iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
+    .lesson-details-card {
+      padding: 32px;
+    }
+
+    .lesson-meta-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .lesson-title {
+      font-size: 28px;
+      font-weight: 900;
+      margin-bottom: 12px;
+      letter-spacing: -0.5px;
+    }
+
+    .lesson-desc {
+      font-size: 15px;
+      color: var(--text-gray);
+      line-height: 1.7;
+      margin-bottom: 24px;
+    }
+
+    .action-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 20px;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .btn-pdf {
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text-white);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      padding: 10px 18px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.25s;
+      text-decoration: none;
+    }
+    .btn-pdf:hover {
+      background: rgba(249, 176, 60, 0.1);
+      border-color: var(--gold-primary);
+      color: var(--gold-primary);
+    }
+
+    /* Floating AI Button at Bottom Right */
+    .floating-ai-btn {
+      position: fixed;
+      bottom: 28px;
+      right: 28px;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: linear-gradient(135deg, rgba(249, 176, 60, 0.15), rgba(50, 104, 186, 0.15));
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(249, 176, 60, 0.5);
+      padding: 12px 22px;
+      border-radius: 999px;
+      color: #ffffff;
+      font-weight: 800;
+      font-size: 14px;
+      cursor: pointer;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 25px rgba(249, 176, 60, 0.3);
+      transition: all 0.3s;
+      text-decoration: none;
+    }
+    .floating-ai-btn:hover {
+      transform: translateY(-3px) scale(1.02);
+      border-color: var(--gold-primary);
+      box-shadow: 0 15px 40px rgba(249, 176, 60, 0.5);
+    }
+
+    .pulse-dot {
+      width: 9px;
+      height: 9px;
+      background-color: #10b981;
+      border-radius: 50%;
+      box-shadow: 0 0 10px #10b981;
+      animation: pulseGreen 1.8s infinite;
+    }
+
+    @keyframes pulseGreen {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(1.3); }
+    }
+
+    /* Responsive Queries */
+    @media (max-width: 992px) {
+      .dash-grid {
+        grid-template-columns: 1fr;
+      }
+      .card-title {
+        font-size: 38px;
+      }
+      .course-sidebar {
+        max-height: none;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .top-nav {
+        padding: 10px 18px;
+      }
+      .nav-links {
+        display: none;
+      }
+      .card-title {
+        font-size: 30px;
+      }
+      .card-subtitle {
+        font-size: 15px;
+      }
+      .scroll-card {
+        padding: 32px 20px;
+      }
+      .dashboard-section {
+        padding: 70px 16px 60px;
+      }
+      .lesson-details-card {
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- WebGL 3D Canvas Background -->
+  <div id="webgl-container"></div>
+
+  <!-- Top Floating Navbar -->
+  <header class="top-nav">
+    <a href="#" class="brand-logo">
+      <img src="/tc-logo.jpg" alt="Tsehay Campus" onerror="this.src='https://ui-avatars.com/api/?name=TC&background=3268BA&color=fff'" />
+      <span><span class="tsehay">Tsehay</span> <span class="campus">Campus</span></span>
+    </a>
+    <nav class="nav-links">
+      <a href="#hero" class="active">መነሻ</a>
+      <a href="#dashboard">መማሪያ ክፍል (Classroom)</a>
+      <a href="#about">ስለ እኛ</a>
+    </nav>
+    <a href="#dashboard" class="btn-gold" style="padding: 9px 20px; font-size: 13px; border-radius: 999px;">
+      <i class="fa-solid fa-play text-xs"></i> መማር ጀምር
+    </a>
+  </header>
+
+  <!-- ==========================================================================
+       PART 1: THE SCROLLYTELLING LANDING PAGE (TERAFAB STYLE)
+       ========================================================================== -->
+  <div class="scroll-container" id="hero">
+    <div class="scroll-scene">
+      
+      <!-- Slide 1: 0% - 40% Scroll -->
+      <div class="scroll-card" id="card-1">
+        <div class="badge-pill">
+          <i class="fa-solid fa-atom"></i>
+          <span>የኢትዮጵያ #1 Next-Gen E-Learning</span>
+        </div>
+        <h1 class="card-title font-heading text-gold-gradient">
+          ወደፊቱን ዛሬ ይማሩ።
+        </h1>
+        <p class="card-subtitle">
+          በፀሐይ ካምፓስ (Tsehay Campus) በዘመናዊ ቴክኖሎጂ፣ ዲጂታል ማርኬቲንግ እና ኢኮሜርስ የፋይናንስ ነፃነትዎን ያረጋግጡ።
+        </p>
+        <div class="button-group">
+          <a href="#dashboard" class="btn-gold">
+            <span>ወደ መማሪያ ክፍል ግባ</span>
+            <i class="fa-solid fa-arrow-right"></i>
+          </a>
+          <a href="#dashboard" class="btn-outline">
+            <i class="fa-solid fa-circle-play text-[#f9b03c]"></i>
+            <span>ነፃ ማሳያ ተመልከት</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Slide 2: 45% - 85% Scroll -->
+      <div class="scroll-card" id="card-2">
+        <div class="badge-pill" style="border-color: rgba(50, 104, 186, 0.4); background: rgba(50, 104, 186, 0.15); color: #60a5fa;">
+          <i class="fa-solid fa-brain"></i>
+          <span>Tsehay Intelligent Tutor</span>
+        </div>
+        <h2 class="card-title font-heading text-blue-gradient">
+          የ 24/7 Tsehay AI መምህር
+        </h2>
+        <p class="card-subtitle">
+          በማንኛውም ሰዓት ከጎንዎ ሆኖ ጥያቄዎችን የሚመልስ፣ የቢዝነስ ስትራቴጂዎችን የሚያመነጭ እና የሚያማክር ዘመናዊ ረዳት።
+        </p>
+        <div class="button-group">
+          <a href="#dashboard" class="btn-gold">
+            <i class="fa-solid fa-wand-magic-sparkles"></i>
+            <span>Tsehay AIን አነጋግር</span>
+          </a>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Scroll Down Visual Indicator -->
+    <div class="scroll-indicator">
+      <span>Scroll To Explore</span>
+      <i class="fa-solid fa-chevron-down"></i>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       PART 2: THE LEARNING DASHBOARD (MASTERCLASS STYLE - DISTRACTION-FREE)
+       ========================================================================== -->
+  <section class="dashboard-section" id="dashboard">
+    <div class="dashboard-container">
+      
+      <!-- Top Dashboard Breadcrumb & Points Status -->
+      <div class="dash-header">
+        <div class="breadcrumbs">
+          <span>ኮርሶች</span>
+          <i class="fa-solid fa-chevron-right text-[10px]"></i>
+          <span>የዩቲዩብ እና ዲጂታል ቢዝነስ</span>
+          <i class="fa-solid fa-chevron-right text-[10px]"></i>
+          <span class="active">የዩቲዩብ ስኬት ሚስጥሮች</span>
+        </div>
+        <div class="dash-user-controls">
+          <div class="pts-badge" title="የተከማቹ ነጥቦች">
+            <i class="fa-solid fa-bolt"></i>
+            <span>100 Pts (Max)</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="width: 38px; height: 38px; border-radius: 50%; background: #3268ba; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px;">
+              TC
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MasterClass Layout: Sidebar + Main Video Player -->
+      <div class="dash-grid">
+        
+        <!-- Left Sidebar: Course Modules & Lessons -->
+        <aside class="course-sidebar glass-card">
+          <div class="course-info-head">
+            <span style="font-size: 11px; font-weight: 800; color: var(--gold-primary); text-transform: uppercase;">MasterClass Course</span>
+            <h3 class="font-heading">የዩቲዩብ እና ዲጂታል ቢዝነስ ስኬት</h3>
+            <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text-gray); margin-top: 8px;">
+              <span>ሂደት (Progress)</span>
+              <span style="color: var(--gold-primary); font-weight: 800;">3/8 ተጠናቋል (45%)</span>
+            </div>
+            <div class="progress-bar-wrap">
+              <div class="progress-bar-fill"></div>
+            </div>
+          </div>
+
+          <!-- Module 1 -->
+          <div class="module-group">
+            <div class="module-title">
+              <span>ሞጁል 1: መግቢያ እና መሰረታዊ ዝግጅት</span>
+              <span>100%</span>
+            </div>
+            <div class="lesson-item completed">
+              <span style="display: flex; align-items: center; gap: 10px;">
+                <i class="fa-solid fa-circle-check"></i>
+                <span>1.1 የቻናል አከፋፈት እና ሴቲንግ</span>
+              </span>
+              <span style="font-size: 11px; opacity: 0.6;">12 ደቂቃ</span>
+            </div>
+            <div class="lesson-item completed">
+              <span style="display: flex; align-items: center; gap: 10px;">
+                <i class="fa-solid fa-circle-check"></i>
+                <span>1.2 አትራፊ ኒች (Niche) መምረጫ</span>
+              </span>
+              <span style="font-size: 11px; opacity: 0.6;">18 ደቂቃ</span>
+            </div>
+          </div>
+
+          <!-- Module 2 -->
+          <div class="module-group">
+            <div class="module-title">
+              <span>ሞጁል 2: የቪዲዮ ፕሮዳክሽን እና አልጎሪዝም</span>
+              <span>እየተከታተሉ ነው</span>
+            </div>
+            <div class="lesson-item active">
+              <span style="display: flex; align-items: center; gap: 10px;">
+                <i class="fa-solid fa-circle-play text-[#f9b03c]"></i>
+                <span>2.1 የዩቲዩብ ስኬት ሚስጥሮች</span>
+              </span>
+              <span style="font-size: 11px; color: var(--gold-primary);">አሁን የሚጫወት</span>
+            </div>
+            <div class="lesson-item">
+              <span style="display: flex; align-items: center; gap: 10px;">
+                <i class="fa-regular fa-circle-play"></i>
+                <span>2.2 ማራኪ ተምኔል (Thumbnail) አሰራር</span>
+              </span>
+              <span style="font-size: 11px; opacity: 0.6;">22 ደቂቃ</span>
+            </div>
+            <div class="lesson-item">
+              <span style="display: flex; align-items: center; gap: 10px;">
+                <i class="fa-regular fa-circle-play"></i>
+                <span>2.3 የ SEO እና የርዕስ አጻጻፍ</span>
+              </span>
+              <span style="font-size: 11px; opacity: 0.6;">15 ደቂቃ</span>
+            </div>
+          </div>
+
+          <!-- Module 3 -->
+          <div class="module-group">
+            <div class="module-title">
+              <span>ሞጁል 3: ሞኒታይዜሽን እና ገቢ ፈጠራ</span>
+              <span>ቀጣይ</span>
+            </div>
+            <div class="lesson-item">
+              <span style="display: flex; align-items: center; gap: 10px;">
+                <i class="fa-solid fa-lock text-xs"></i>
+                <span>3.1 AdSense እና የባንክ ማገናኘት</span>
+              </span>
+              <span style="font-size: 11px; opacity: 0.6;">20 ደቂቃ</span>
+            </div>
+          </div>
+        </aside>
+
+        <!-- Main Content Area: Cinematic Video & Lesson Text -->
+        <main class="main-video-area">
+          
+          <!-- 16:9 MasterClass Style Video Player -->
+          <div class="video-wrapper">
+            <iframe 
+              src="https://www.youtube.com/embed/mgdOMtW6J8k?rel=0&modestbranding=1&showinfo=0&autoplay=0&controls=1&vq=hd1080&playsinline=1" 
+              title="የዩቲዩብ ስኬት ሚስጥሮች"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowfullscreen
+            ></iframe>
+          </div>
+
+          <!-- Lesson Details & PDF Download -->
+          <div class="lesson-details-card glass-card">
+            <div class="lesson-meta-bar">
+              <span style="font-size: 12px; font-weight: 800; color: var(--gold-primary); text-transform: uppercase;">ትምህርት 2.1 • ሞጁል 2</span>
+              <div style="display: flex; gap: 10px;">
+                <button class="btn-pdf">
+                  <i class="fa-solid fa-file-pdf text-red-500"></i>
+                  <span>የኮርስ PDF ማቴሪያል (Download PDF - 2.4 MB)</span>
+                </button>
+              </div>
+            </div>
+
+            <h2 class="lesson-title font-heading">የዩቲዩብ ስኬት ሚስጥሮች (Mastering YouTube Success)</h2>
+            <p class="lesson-desc">
+              በዚህ የተግባር ትምህርት ውስጥ የዩቲዩብን አልጎሪዝም እንዴት ለቻናላችን እድገት እንደምንጠቀምበት፣ እይታን (Views) እና ተከታዮችን (Subscribers) በአጭር ጊዜ ውስጥ ለማሳደግ የሚረዱ ስትራቴጂዎችን በዝርዝር እንመለከታለን።
+            </p>
+
+            <div class="action-row">
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="width: 44px; height: 44px; border-radius: 50%; overflow: hidden; background: #222;">
+                  <img src="/assets/eyob_white.jpg" alt="Eyob Sahle" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='https://ui-avatars.com/api/?name=Eyob+Sahle&background=000&color=fff'" />
+                </div>
+                <div>
+                  <h4 style="font-size: 14px; font-weight: 800;">ኢዮብ ሳህሌ (Eyob Sahle)</h4>
+                  <p style="font-size: 12px; color: var(--text-gray);">Owner & Lead Instructor</p>
+                </div>
+              </div>
+
+              <div style="display: flex; gap: 12px;">
+                <button class="btn-gold" style="padding: 10px 20px; font-size: 13px;">
+                  <i class="fa-solid fa-circle-check"></i>
+                  <span>ትምህርቱን ጨርሻለሁ</span>
+                </button>
+              </div>
+            </div>
+
+          </div>
+
+        </main>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Floating Tsehay AI Interactive Button -->
+  <a href="#dashboard" class="floating-ai-btn" onclick="alert('ሰላም! እኔ Tsehay AI ነኝ። ስለዚህ ትምህርት ያልገባዎትን ነገር መጠየቅ ይችላሉ!')">
+    <div class="pulse-dot"></div>
+    <i class="fa-solid fa-wand-magic-sparkles text-[#f9b03c]"></i>
+    <span>Tsehay AI</span>
+  </a>
+
+  <!-- ==========================================================================
+       SCRIPTS: 3D THREE.JS GALAXY & GSAP SCROLLTRIGGER FLY-THROUGH
+       ========================================================================== -->
+  <script>
+    // --------------------------------------------------------------------------
+    // 1. THREE.JS 3D SCENE SETUP
+    // --------------------------------------------------------------------------
+    const container = document.getElementById('webgl-container');
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x030509, 0.0018);
+
+    const camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 2000);
+    camera.position.z = 500;
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    container.appendChild(renderer.domElement);
+
+    // 2. PARTICLE GALAXY CREATION (#f9b03c Gold & #3268ba Royal Blue)
+    const particleCount = 2800;
+    const geometry = new THREE.BufferGeometry();
+    const positions = new Float32Array(particleCount * 3);
+    const colors = new Float32Array(particleCount * 3);
+
+    const colorGold = new THREE.Color(0xf9b03c);
+    const colorBlue = new THREE.Color(0x3268ba);
+
+    for (let i = 0; i < particleCount; i++) {
+      // Cylindrical / Tunnel Distribution
+      const radius = 100 + Math.random() * 450;
+      const theta = Math.random() * Math.PI * 2;
+      const z = (Math.random() - 0.5) * 1600;
+
+      positions[i * 3] = Math.cos(theta) * radius;
+      positions[i * 3 + 1] = Math.sin(theta) * radius;
+      positions[i * 3 + 2] = z;
+
+      // Color assignment: 60% Gold, 40% Royal Blue
+      const chosenColor = Math.random() > 0.4 ? colorGold : colorBlue;
+      colors[i * 3] = chosenColor.r;
+      colors[i * 3 + 1] = chosenColor.g;
+      colors[i * 3 + 2] = chosenColor.b;
+    }
+
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+    // Particle Texture Canvas
+    function createGlowTexture() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 64;
+      canvas.height = 64;
+      const ctx = canvas.getContext('2d');
+      const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+      gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
+      gradient.addColorStop(0.3, 'rgba(249, 176, 60, 0.8)');
+      gradient.addColorStop(0.7, 'rgba(50, 104, 186, 0.2)');
+      gradient.addColorStop(1, 'rgba(3, 5, 9, 0)');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, 64, 64);
+      return new THREE.CanvasTexture(canvas);
+    }
+
+    const material = new THREE.PointsMaterial({
+      size: 5.5,
+      map: createGlowTexture(),
+      vertexColors: true,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    });
+
+    const particleSystem = new THREE.Points(geometry, material);
+    scene.add(particleSystem);
+
+    // 3. CYBER NETWORK CONNECTING LINES
+    const lineMaterial = new THREE.LineBasicMaterial({
+      color: 0x3268ba,
+      transparent: true,
+      opacity: 0.15,
+      blending: THREE.AdditiveBlending
+    });
+
+    const lineGeometry = new THREE.BufferGeometry();
+    const linePositions = [];
+    for (let i = 0; i < 180; i++) {
+      const p1 = Math.floor(Math.random() * particleCount);
+      const p2 = Math.floor(Math.random() * particleCount);
+      linePositions.push(
+        positions[p1 * 3], positions[p1 * 3 + 1], positions[p1 * 3 + 2],
+        positions[p2 * 3], positions[p2 * 3 + 1], positions[p2 * 3 + 2]
+      );
+    }
+    lineGeometry.setAttribute('position', new THREE.Float32BufferAttribute(linePositions, 3));
+    const lines = new THREE.LineSegments(lineGeometry, lineMaterial);
+    scene.add(lines);
+
+    // 4. MOUSE PARALLAX INTERACTION
+    let mouseX = 0;
+    let mouseY = 0;
+    window.addEventListener('mousemove', (e) => {
+      mouseX = (e.clientX / window.innerWidth - 0.5) * 2;
+      mouseY = (e.clientY / window.innerHeight - 0.5) * 2;
+    });
+
+    // 5. ANIMATION LOOP
+    const clock = new THREE.Clock();
+    function animate() {
+      requestAnimationFrame(animate);
+      const delta = clock.getDelta();
+
+      // Subtle continuous slow rotation
+      particleSystem.rotation.z += 0.0004;
+      lines.rotation.z += 0.0004;
+
+      // Mouse Parallax reaction
+      camera.position.x += (mouseX * 40 - camera.position.x) * 0.05;
+      camera.position.y += (-mouseY * 40 - camera.position.y) * 0.05;
+
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    // 6. WINDOW RESIZE HANDLER
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // --------------------------------------------------------------------------
+    // 7. GSAP SCROLLTRIGGER SCROLLYTELLING INTEGRATION
+    // --------------------------------------------------------------------------
+    gsap.registerPlugin(ScrollTrigger);
+
+    // Camera 3D Forward Fly-Through (Scrollytelling)
+    gsap.to(camera.position, {
+      z: -450,
+      ease: "none",
+      scrollTrigger: {
+        trigger: ".scroll-container",
+        start: "top top",
+        end: "bottom bottom",
+        scrub: 1.2
+      }
+    });
+
+    // Card 1 Animations: Fade in at 0%, fade out as user reaches 40%
+    gsap.timeline({
+      scrollTrigger: {
+        trigger: ".scroll-container",
+        start: "top top",
+        end: "40% top",
+        scrub: true
+      }
+    })
+    .to("#card-1", { opacity: 1, y: 0, duration: 0.3, ease: "power2.out" })
+    .to("#card-1", { opacity: 0, y: -40, duration: 0.7, ease: "power2.in" });
+
+    // Card 2 Animations: Fade in at 45%, fade out at 85%
+    gsap.timeline({
+      scrollTrigger: {
+        trigger: ".scroll-container",
+        start: "40% top",
+        end: "85% top",
+        scrub: true
+      }
+    })
+    .fromTo("#card-2", { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 0.4, ease: "power2.out" })
+    .to("#card-2", { opacity: 0, y: -50, duration: 0.4, ease: "power2.in" });
+
+  </script>
+</body>
+</html>
