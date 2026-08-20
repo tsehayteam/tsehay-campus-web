@@ -1584,55 +1584,121 @@ ${customAdminPrompt}
                 >
                     <i className={`fa-solid ${isDarkTheme ? 'fa-sun text-yellow-400' : 'fa-moon text-secondary'} text-sm group-hover:scale-110 transition-transform`}></i>
                 </button>
-                <div className="hidden sm:flex items-center gap-2 bg-gradient-to-r from-orange-50 to-yellow-50 dark:from-orange-500/10 dark:to-yellow-500/10 border border-primary/30 px-3 py-1.5 rounded-full shadow-sm cursor-help hover:scale-105 transition" title="የተከማቹ ፖይንቶች (Earned Points)">
-                    <div className="bg-primary/20 p-1 rounded-full"><i className="fa-solid fa-bolt text-primary text-xs"></i></div>
+                <div 
+                  className="hidden sm:flex items-center gap-2 bg-gradient-to-r from-amber-500/10 to-yellow-500/10 dark:from-amber-500/20 dark:to-yellow-500/20 border border-[#f9b03c]/40 px-3.5 py-1.5 rounded-full shadow-sm cursor-help hover:scale-105 transition" 
+                  title="የተከማቹ ፖይንቶች ከመቶ (Earned Points out of 100)"
+                >
+                    <div className="w-5 h-5 rounded-full bg-[#f9b03c]/20 flex items-center justify-center text-[#f9b03c] text-xs">
+                        <i className="fa-solid fa-bolt"></i>
+                    </div>
                     <span className="font-black text-dark dark:text-white text-sm font-heading">
                       {(() => {
-                        let totalCount = 0;
-                        modules.forEach((m: any) => { totalCount += (m.lessons || []).length; });
-                        if (totalCount === 0) totalCount = 1;
-                        const pointsPerLesson = Math.max(1, Math.round(100 / totalCount));
-                        const earned = Math.min(100, progress.length * pointsPerLesson) + (studentNotes.length * 10);
-                        return earned;
+                        const totalCoursesCount = courses && courses.length > 0 ? courses.length : 1;
+                        const pointsPerCourse = 100 / totalCoursesCount;
+                        
+                        let currentLessonCount = 0;
+                        modules.forEach((m: any) => { currentLessonCount += (m.lessons || []).length; });
+                        if (currentLessonCount === 0) currentLessonCount = 1;
+                        
+                        const currentProgressRatio = Math.min(1, progress.length / currentLessonCount);
+                        const currentCourseEarned = currentProgressRatio * pointsPerCourse;
+                        
+                        let otherCoursesEarned = 0;
+                        if (courses && courses.length > 1) {
+                          courses.forEach((c: any) => {
+                            if (c.id !== activeCourse?.id) {
+                              if (c.isCompleted) {
+                                otherCoursesEarned += pointsPerCourse;
+                              } else if (c.progress) {
+                                otherCoursesEarned += (Math.min(100, Number(c.progress)) / 100) * pointsPerCourse;
+                              }
+                            }
+                          });
+                        }
+                        
+                        const totalPoints = Math.min(100, Math.round(currentCourseEarned + otherCoursesEarned));
+                        return totalPoints;
                       })()} Pts
                     </span>
                 </div>
+
+                {/* Notifications Bell & Dropdown */}
                 <div className="relative">
-                  <button onClick={() => setShowNotifications(!showNotifications)} className="relative text-gray-400 dark:text-gray-300 hover:text-dark dark:hover:text-white transition text-xl shrink-0 p-1">
+                  <button 
+                    onClick={() => setShowNotifications(!showNotifications)} 
+                    className="relative text-gray-500 dark:text-gray-300 hover:text-[#f9b03c] dark:hover:text-[#f9b03c] transition text-xl shrink-0 p-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-800"
+                    title="ማሳወቂያዎች"
+                  >
                       <i className="fa-regular fa-bell"></i>
                       {notificationsList.filter(n => !n.read).length > 0 && (
-                        <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-pulse">
-                          {notificationsList.filter(n => !n.read).length}
-                        </span>
+                        <span className="absolute 0 top-0.5 right-0.5 w-2.5 h-2.5 bg-[#f9b03c] rounded-full ring-2 ring-white dark:ring-slate-900 animate-pulse"></span>
                       )}
                   </button>
-                  {showNotifications && (
-                    <div className="absolute top-11 right-0 w-80 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 shadow-2xl rounded-2xl p-4 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-                       <div className="flex items-center justify-between border-b border-gray-100 dark:border-slate-700 pb-3 mb-3">
-                         <div className="flex items-center gap-2">
-                           <i className="fa-solid fa-bell text-primary text-sm"></i>
-                           <h4 className="text-xs font-black uppercase tracking-wider text-dark dark:text-white">አሳውቂያዎች (Notifications)</h4>
-                         </div>
-                         <button onClick={handleMarkAllNotificationsRead} className="text-[11px] font-bold text-secondary dark:text-primary hover:underline">
-                           ሁሉንም እንደተነበቡ ቁጠር
-                         </button>
-                       </div>
 
-                       <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
-                          {notificationsList.map(n => (
-                            <div key={n.id} className={`flex items-start gap-3 p-2.5 rounded-xl transition ${n.read ? 'bg-transparent opacity-75' : 'bg-blue-50/60 dark:bg-slate-700/50 border border-blue-100 dark:border-slate-600'}`}>
-                                <div className="w-8 h-8 rounded-full bg-primary/20 text-dark dark:text-primary flex items-center justify-center shrink-0 mt-0.5">
-                                  <i className="fa-solid fa-bullhorn text-xs"></i>
+                  {showNotifications && (
+                    <>
+                      {/* Backdrop for outside click */}
+                      <div 
+                        onClick={() => setShowNotifications(false)} 
+                        className="fixed inset-0 z-40 bg-transparent" 
+                      />
+
+                      {/* Clean Modern Notification Card */}
+                      <div className="absolute top-12 right-0 w-80 sm:w-88 bg-white dark:bg-[#0c121e] border border-gray-100 dark:border-slate-800 shadow-2xl rounded-2xl p-4 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                         {/* Header */}
+                         <div className="flex items-center justify-between border-b border-gray-100 dark:border-slate-800 pb-3 mb-3">
+                           <div className="flex items-center gap-2">
+                             <div className="w-7 h-7 rounded-lg bg-[#f9b03c]/15 text-[#f9b03c] flex items-center justify-center text-xs">
+                               <i className="fa-solid fa-bell"></i>
+                             </div>
+                             <h4 className="text-sm font-black text-dark dark:text-white font-heading">ማሳወቂያዎች</h4>
+                             {notificationsList.filter(n => !n.read).length > 0 && (
+                               <span className="text-[10px] font-bold bg-[#f9b03c]/20 text-[#f9b03c] px-2 py-0.5 rounded-full">
+                                 {notificationsList.filter(n => !n.read).length} አዲስ
+                               </span>
+                             )}
+                           </div>
+                           <button 
+                             onClick={handleMarkAllNotificationsRead} 
+                             className="text-xs font-bold text-gray-400 hover:text-[#f9b03c] dark:hover:text-[#f9b03c] transition cursor-pointer"
+                           >
+                             ሁሉንም አንብብ
+                           </button>
+                         </div>
+
+                         {/* Notifications List */}
+                         <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
+                            {notificationsList.length === 0 ? (
+                              <div className="text-center py-6 text-gray-400 text-xs">
+                                <i className="fa-regular fa-bell-slash text-2xl mb-2 block opacity-40"></i>
+                                ምንም ማሳወቂያ የለም
+                              </div>
+                            ) : (
+                              notificationsList.map(n => (
+                                <div 
+                                  key={n.id} 
+                                  className={`flex items-start gap-3 p-3 rounded-xl transition-all ${
+                                    n.read 
+                                      ? 'bg-transparent hover:bg-gray-50 dark:hover:bg-slate-800/50 opacity-70' 
+                                      : 'bg-amber-500/10 dark:bg-amber-500/10 border border-amber-500/20'
+                                  }`}
+                                >
+                                    <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#f9b03c] to-amber-400 text-slate-950 flex items-center justify-center shrink-0 mt-0.5 shadow-sm text-xs">
+                                      <i className="fa-solid fa-bullhorn"></i>
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center justify-between gap-1">
+                                          <p className="text-xs font-bold text-dark dark:text-white truncate">{n.title}</p>
+                                          <span className="text-[10px] text-gray-400 dark:text-gray-500 whitespace-nowrap">{n.createdAt}</span>
+                                        </div>
+                                        <p className="text-xs text-gray-600 dark:text-gray-300 font-body leading-relaxed mt-0.5">{n.message}</p>
+                                    </div>
                                 </div>
-                                <div className="flex-1">
-                                    <p className="text-xs font-bold text-dark dark:text-white">{n.title}</p>
-                                    <p className="text-[11px] text-gray-600 dark:text-gray-300 leading-tight mt-0.5">{n.message}</p>
-                                    <span className="text-[9px] text-gray-400 mt-1 block">{n.createdAt}</span>
-                                </div>
-                            </div>
-                          ))}
-                       </div>
-                    </div>
+                              ))
+                            )}
+                         </div>
+                      </div>
+                    </>
                   )}
                 </div>
             </div>
