@@ -246,10 +246,13 @@ function AboutHeroPlayer() {
                 src={parsed.src}
                 autoPlay
                 controls
+                preload="auto"
+                playsInline
+                webkit-playsinline="true"
                 controlsList="nodownload noremoteplayback"
                 disablePictureInPicture
-                playsInline
                 onContextMenu={(e) => e.preventDefault()}
+                style={{ transform: 'translateZ(0)', backfaceVisibility: 'hidden' }}
               />
             ) : (
               <iframe 
@@ -258,8 +261,9 @@ function AboutHeroPlayer() {
                 src={parsed.src}
                 title={videoData.title || "Tsehay Campus Introduction"} 
                 frameBorder="0" 
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen" 
                 allowFullScreen
+                loading="eager"
               ></iframe>
             )}
           </div>
@@ -282,6 +286,7 @@ function AboutShortVideo({ src }: { src: string }) {
 
     if (video.paused) {
       video.muted = false;
+      video.volume = 1.0;
       video.play().then(() => {
         setIsPlaying(true);
       }).catch(() => {
@@ -309,7 +314,7 @@ function AboutShortVideo({ src }: { src: string }) {
         webkit-playsinline="true"
         disablePictureInPicture
         controlsList="nodownload noremoteplayback"
-        preload="metadata"
+        preload="auto"
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
         onEnded={() => {
@@ -319,6 +324,7 @@ function AboutShortVideo({ src }: { src: string }) {
           }
         }}
         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 pointer-events-none"
+        style={{ transform: 'translateZ(0)', backfaceVisibility: 'hidden' }}
       >
         <source src={src} type="video/mp4" />
       </video>

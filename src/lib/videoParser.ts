@@ -20,7 +20,7 @@ export function parseImageUrl(rawUrl?: string): string {
   if (!rawUrl || !rawUrl.trim()) return '/assets/hero-bg-new.jpg';
   const trimmed = rawUrl.trim();
 
-  // 1. Google Drive Links: Extract ID and use Google's direct CDN image rendering
+  // 1. Google Drive Links: Extract ID and use Google's direct CDN high-res image rendering
   const gDriveMatch = trimmed.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) ||
                       trimmed.match(/drive\.google\.com\/(?:open|uc)\?.*id=([a-zA-Z0-9_-]+)/) ||
                       trimmed.match(/[?&]id=([a-zA-Z0-9_-]+)/);
@@ -29,10 +29,10 @@ export function parseImageUrl(rawUrl?: string): string {
     return `https://lh3.googleusercontent.com/d/${fileId}`;
   }
 
-  // 2. If user pasted a YouTube video URL as thumbnail
+  // 2. If user pasted a YouTube video URL as thumbnail -> return Max-Res thumbnail
   const ytId = extractYouTubeId(trimmed);
   if (ytId) {
-    return `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`;
+    return `https://img.youtube.com/vi/${ytId}/maxresdefault.jpg`;
   }
 
   return trimmed;
@@ -43,16 +43,18 @@ export function getYouTubeThumbnail(youtubeId?: string, customThumb?: string): s
     return parseImageUrl(customThumb);
   }
   if (youtubeId && youtubeId.trim()) {
-    return `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`;
+    return `https://img.youtube.com/vi/${youtubeId}/maxresdefault.jpg`;
   }
   return '/assets/hero-bg-new.jpg';
 }
 
 export function parseVideoEmbedUrl(rawUrl: string, autoplay: boolean = false): ParsedVideo {
+  const ytParams = `rel=0&modestbranding=1&showinfo=0&autoplay=${autoplay ? 1 : 0}&controls=1&vq=hd1080&hd=1&playsinline=1&enablejsapi=1`;
+
   if (!rawUrl || !rawUrl.trim()) {
     return {
       type: 'embed',
-      src: `https://www.youtube.com/embed/mgdOMtW6J8k?rel=0&modestbranding=1&showinfo=0&autoplay=${autoplay ? 1 : 0}&controls=1&vq=hd1080&playsinline=1`
+      src: `https://www.youtube.com/embed/mgdOMtW6J8k?${ytParams}`
     };
   }
 
@@ -101,7 +103,7 @@ export function parseVideoEmbedUrl(rawUrl: string, autoplay: boolean = false): P
   if (ytWatchMatch && ytWatchMatch[1]) {
     return {
       type: 'embed',
-      src: `https://www.youtube.com/embed/${ytWatchMatch[1]}?rel=0&modestbranding=1&showinfo=0&autoplay=${autoplay ? 1 : 0}&controls=1&vq=hd1080&playsinline=1`
+      src: `https://www.youtube.com/embed/${ytWatchMatch[1]}?${ytParams}`
     };
   }
 
@@ -110,7 +112,7 @@ export function parseVideoEmbedUrl(rawUrl: string, autoplay: boolean = false): P
   if (ytuMatch && ytuMatch[1]) {
     return {
       type: 'embed',
-      src: `https://www.youtube.com/embed/${ytuMatch[1]}?rel=0&modestbranding=1&showinfo=0&autoplay=${autoplay ? 1 : 0}&controls=1&vq=hd1080&playsinline=1`
+      src: `https://www.youtube.com/embed/${ytuMatch[1]}?${ytParams}`
     };
   }
 
@@ -119,7 +121,7 @@ export function parseVideoEmbedUrl(rawUrl: string, autoplay: boolean = false): P
   if (ytEmbedMatch && ytEmbedMatch[1]) {
     return {
       type: 'embed',
-      src: `https://www.youtube.com/embed/${ytEmbedMatch[1]}?rel=0&modestbranding=1&showinfo=0&autoplay=${autoplay ? 1 : 0}&controls=1&vq=hd1080&playsinline=1`
+      src: `https://www.youtube.com/embed/${ytEmbedMatch[1]}?${ytParams}`
     };
   }
 
@@ -127,7 +129,7 @@ export function parseVideoEmbedUrl(rawUrl: string, autoplay: boolean = false): P
   if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) {
     return {
       type: 'embed',
-      src: `https://www.youtube.com/embed/${trimmed}?rel=0&modestbranding=1&showinfo=0&autoplay=${autoplay ? 1 : 0}&controls=1&vq=hd1080&playsinline=1`
+      src: `https://www.youtube.com/embed/${trimmed}?${ytParams}`
     };
   }
 
