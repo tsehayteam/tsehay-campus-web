@@ -145,15 +145,6 @@ export default function YouTubeVideoSlider() {
     });
   }, [currentIndex, videos, isGridView]);
 
-  const toggleMute = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setIsMuted((prev) => !prev);
-    const activeVid = videoRefs.current[videos[currentIndex]?.id];
-    if (activeVid) {
-      activeVid.muted = !isMuted;
-    }
-  };
-
   // Touch Swipe Handlers for Mobile
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;

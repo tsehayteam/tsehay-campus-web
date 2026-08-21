@@ -259,7 +259,7 @@ export default function Home() {
                 <div className="relative w-full max-w-[460px]">
                     <div className="absolute inset-0 bg-secondary rounded-full blur-[100px] opacity-60 dark:opacity-40"></div>
                     <div className="relative w-full h-[350px] rounded-3xl shadow-2xl border-4 border-amber-400/30 dark:border-primary/40 overflow-hidden group z-10 hero-video-glow">
-                        <video id="hero-video" autoPlay loop muted playsInline preload="auto" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
+                        <video id="hero-video" autoPlay loop muted playsInline preload="auto" disablePictureInPicture controlsList="nodownload noremoteplayback" onContextMenu={(e) => e.preventDefault()} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
                             <source src="/assets/for_landing_page_first.mp4" type="video/mp4" />
                         </video>
                         <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none"></div>

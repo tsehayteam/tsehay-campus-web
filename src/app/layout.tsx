@@ -6,6 +6,7 @@ import Navbar from "@/components/Navbar";
 import AuthModal from "@/components/AuthModal";
 import PaymentModal from "@/components/PaymentModal";
 import TermsModal from "@/components/TermsModal";
+import ContentProtection from "@/components/ContentProtection";
 import { LanguageProvider } from "@/context/LanguageContext";
 
 const geistSans = Geist({
@@ -173,6 +174,7 @@ export default function RootLayout({
         />
         <LanguageProvider>
           <AuthProvider>
+            <ContentProtection />
             <Navbar />
             {children}
             <TermsModal />
