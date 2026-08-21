@@ -7,6 +7,7 @@ import AuthModal from "@/components/AuthModal";
 import PaymentModal from "@/components/PaymentModal";
 import TermsModal from "@/components/TermsModal";
 import ContentProtection from "@/components/ContentProtection";
+import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import { LanguageProvider } from "@/context/LanguageContext";
 
 const geistSans = Geist({
@@ -179,6 +180,7 @@ export default function RootLayout({
             {children}
             <TermsModal />
             <PaymentModal />
+            <PWAInstallPrompt />
           </AuthProvider>
         </LanguageProvider>
       </body>

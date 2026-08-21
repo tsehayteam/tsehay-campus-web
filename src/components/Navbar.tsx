@@ -430,6 +430,17 @@ export default function Navbar() {
                         <span className="text-sm font-bold">Tsehay AI</span>
                     </button>
 
+                    {/* Install App Quick Trigger */}
+                    <button 
+                        type="button"
+                        onClick={() => window.dispatchEvent(new CustomEvent('open-pwa-install'))}
+                        className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[#f9b03c]/40 hover:border-[#f9b03c] bg-[#f9b03c]/10 hover:bg-[#f9b03c]/20 text-[#f9b03c] font-bold text-xs transition cursor-pointer shadow-xs active:scale-95"
+                        title="አፕሊኬሽኑን በስልክዎ ወይም በኮምፒተርዎ ላይ ይጫኑ (Install App)"
+                    >
+                        <i className="fa-solid fa-mobile-screen-button text-xs"></i>
+                        <span>አፕ ጫን</span>
+                    </button>
+
                     {/* 4. Language Switcher (Globe + EN/አማ) */}
                     <button 
                         onClick={toggleLanguage} 
@@ -566,6 +577,22 @@ export default function Navbar() {
                         <span className="notranslate">Tsehay AI</span>
                     </span>
                     <span className="text-[10px] bg-primary/20 text-primary font-black px-2 py-0.5 rounded-full">AI</span>
+                </button>
+
+                {/* Mobile Install App Button */}
+                <button 
+                    type="button" 
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      window.dispatchEvent(new CustomEvent('open-pwa-install'));
+                    }} 
+                    className="w-full flex items-center justify-between px-4 py-3 bg-amber-500/10 dark:bg-amber-500/10 border border-[#f9b03c]/30 text-[#f9b03c] font-black rounded-xl hover:bg-[#f9b03c]/20 transition cursor-pointer text-left"
+                >
+                    <span className="flex items-center gap-3">
+                        <i className="fa-solid fa-mobile-screen-button text-base"></i>
+                        <span>አፕሊኬሽኑን ጫን (Install App)</span>
+                    </span>
+                    <span className="text-[10px] bg-[#f9b03c] text-black font-black px-2 py-0.5 rounded-md">FREE</span>
                 </button>
 
                 <hr className="my-1 border-gray-200 dark:border-gray-800" />
