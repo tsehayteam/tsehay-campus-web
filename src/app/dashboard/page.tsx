@@ -198,27 +198,7 @@ export default function StudentDashboard() {
 
   // Enterprise Classroom States
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
-  const [watermarkPos, setWatermarkPos] = useState({ x: 14, y: 18 });
   const [resumeToast, setResumeToast] = useState<{ seconds: number; timeStr: string } | null>(null);
-  const playerRef = useRef<any>(null);
-  const [lessonSummary, setLessonSummary] = useState<string | null>(null);
-  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
-  const [showLessonAiModal, setShowLessonAiModal] = useState(false);
-  const [lessonAiQuery, setLessonAiQuery] = useState('');
-  const [lessonAiMessages, setLessonAiMessages] = useState<Array<{ role: 'user' | 'ai'; text: string }>>([]);
-  const [isLessonAiLoading, setIsLessonAiLoading] = useState(false);
-  const [showKnowledgeCheck, setShowKnowledgeCheck] = useState(false);
-  const [knowledgeCheckPassed, setKnowledgeCheckPassed] = useState<Record<string, boolean>>({});
-
-  // Dynamic subtle watermark motion
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const newX = Math.floor(Math.random() * 60) + 10;
-      const newY = Math.floor(Math.random() * 55) + 15;
-      setWatermarkPos({ x: newX, y: newY });
-    }, 12000);
-    return () => clearInterval(interval);
-  }, []);
 
   // Auto-Resume Timestamp Tracker
   useEffect(() => {
@@ -1732,18 +1712,6 @@ ${customAdminPrompt}
                     {/* Cinematic Video Player */}
                     <div className="bg-dark rounded-2xl overflow-hidden shadow-2xl relative border border-gray-800 aspect-video flex items-center justify-center group/player">
                         
-                        {/* Dynamic Translucent Anti-Piracy Watermark */}
-                        {user && (
-                            <div 
-                                className="absolute z-30 pointer-events-none text-[10px] sm:text-xs font-mono font-bold text-white/20 select-none transition-all duration-1000 tracking-wider"
-                                style={{ top: `${watermarkPos.y}%`, left: `${watermarkPos.x}%` }}
-                            >
-                                <span className="bg-black/30 px-2 py-0.5 rounded backdrop-blur-[1px] border border-white/5">
-                                    {user.email || user.displayName || user.uid} • Tsehay Campus
-                                </span>
-                            </div>
-                        )}
-
                         {/* Auto-Resume Floating Toast */}
                         {resumeToast && (
                             <div className="absolute top-4 left-4 z-40 bg-slate-900/90 backdrop-blur-md text-white border border-amber-400/40 px-3.5 py-2 rounded-xl shadow-xl flex items-center gap-3 animate-in slide-in-from-top duration-300">
