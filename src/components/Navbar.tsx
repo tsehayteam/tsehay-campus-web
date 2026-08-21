@@ -295,14 +295,14 @@ export default function Navbar() {
                 <span className="text-xs font-black tracking-wide">Tsehay AI</span>
               </button>
 
-              {/* Install App Quick Trigger */}
+              {/* Install App Quick Trigger (Sleek Glassmorphic Pill) */}
               <button 
                 type="button"
                 onClick={() => window.dispatchEvent(new CustomEvent('open-pwa-install'))}
-                className="hidden xl:flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gray-200 dark:border-white/10 hover:border-[#f9b03c]/60 bg-gray-100/80 dark:bg-white/5 hover:bg-[#f9b03c]/10 text-gray-700 dark:text-gray-300 hover:text-[#f9b03c] font-bold text-xs transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+                className="btn-install-pwa hidden lg:flex items-center gap-1.5 px-3.5 py-1.5 rounded-full font-bold text-xs cursor-pointer notranslate"
                 title="አፕሊኬሽኑን በስልክዎ ወይም በኮምፒተርዎ ላይ ይጫኑ (Install App)"
               >
-                <i className="fa-solid fa-mobile-screen-button text-xs text-[#f9b03c]"></i>
+                <i className="fa-solid fa-mobile-screen-button text-xs opacity-75"></i>
                 <span>አፕ ጫን</span>
               </button>
 
