@@ -14,6 +14,8 @@ import { getCachedCourses } from "@/lib/courseCache";
 export default function Navbar() {
   const { user, isAdmin } = useAuth();
   const [mounted, setMounted] = useState(false);
+  const [isCurtainOpen, setIsCurtainOpen] = useState(true);
+  const [touchStartY, setTouchStartY] = useState<number | null>(null);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isSignupMode, setIsSignupMode] = useState(false);
@@ -56,6 +58,38 @@ export default function Navbar() {
     };
     window.addEventListener('tsehay_profile_updated', handleProfileUpdate);
     return () => window.removeEventListener('tsehay_profile_updated', handleProfileUpdate);
+  }, []);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStartY(e.touches[0].clientY);
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartY === null) return;
+    const touchEndY = e.changedTouches[0].clientY;
+    const diff = touchEndY - touchStartY;
+    if (diff > 50) {
+      setIsCurtainOpen(true);
+    } else if (diff < -50) {
+      setIsCurtainOpen(false);
+    }
+    setTouchStartY(null);
+  };
+
+  useEffect(() => {
+    const handleOpenCurtain = () => setIsCurtainOpen(true);
+    const handleCloseCurtain = () => setIsCurtainOpen(false);
+    const handleToggleCurtain = () => setIsCurtainOpen(prev => !prev);
+
+    window.addEventListener('open-nav-curtain', handleOpenCurtain);
+    window.addEventListener('close-nav-curtain', handleCloseCurtain);
+    window.addEventListener('toggle-nav-curtain', handleToggleCurtain);
+
+    return () => {
+      window.removeEventListener('open-nav-curtain', handleOpenCurtain);
+      window.removeEventListener('close-nav-curtain', handleCloseCurtain);
+      window.removeEventListener('toggle-nav-curtain', handleToggleCurtain);
+    };
   }, []);
 
   const navigateTo = (url: string) => {
@@ -181,15 +215,69 @@ export default function Navbar() {
 
   return (
     <>
-      {/* 🚀 Ultra-Premium Silicon Valley Terafab Fixed Top Navbar */}
-      <nav 
-        className="fixed top-0 left-0 right-0 z-[9990] w-full glass-nav transition-all select-none animate-in fade-in slide-in-from-top-2"
-        style={{ animationDuration: '0.6s', animationTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)' }}
+      {/* 1. ✨ Floating Minimalist Pull Tab Handle (Visible when Curtain is Rolled Up) */}
+      <div 
+        onClick={() => setIsCurtainOpen(true)}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        className={`fixed top-0 left-1/2 -translate-x-1/2 z-[9990] cursor-pointer select-none transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+          isCurtainOpen 
+            ? 'opacity-0 -translate-y-full pointer-events-none' 
+            : 'opacity-100 translate-y-0'
+        }`}
+        title="ማውጫውን ለመክፈት ይጫኑ (Click to Open Menu)"
       >
+        <div className="bg-white/90 dark:bg-[#030509]/90 hover:bg-white dark:hover:bg-[#080d1a] backdrop-blur-2xl border-x border-b border-black/10 dark:border-white/10 hover:border-[#f9b03c]/60 px-5 sm:px-6 py-1.5 rounded-b-2xl shadow-[0_4px_25px_rgba(0,0,0,0.4),0_0_15px_rgba(249,176,60,0.15)] flex items-center gap-2.5 group transition-all duration-300 hover:py-2 hover:px-7 active:scale-95">
+          {/* Compass Icon */}
+          <div className="w-5 h-5 rounded-full bg-[#f9b03c]/15 border border-[#f9b03c]/40 flex items-center justify-center text-[#f9b03c] text-[11px] shadow-sm">
+            <i className="fa-solid fa-compass"></i>
+          </div>
+
+          {/* Label Text */}
+          <span className="text-xs font-bold tracking-wide text-gray-800 dark:text-gray-200 group-hover:text-[#f9b03c] transition-colors whitespace-nowrap flex items-center gap-1.5 font-heading">
+            <i className="fa-solid fa-house text-[10px] text-[#f9b03c]"></i>
+            <span>ማውጫ / መነሻ (Menu)</span>
+          </span>
+
+          <i className="fa-solid fa-chevron-down text-[10px] text-[#f9b03c] transition-transform group-hover:translate-y-0.5"></i>
+        </div>
+      </div>
+
+      {/* 2. Backdrop Overlay when Curtain is Expanded (Clicking outside closes it) */}
+      {isCurtainOpen && (
+        <div 
+          onClick={() => setIsCurtainOpen(false)}
+          className="fixed inset-0 z-[9995] bg-black/40 backdrop-blur-[2px] transition-opacity duration-300"
+        />
+      )}
+
+      {/* 3. 🚀 Sliding Curtain Navbar (እንደ መጋረጃ የሚወርድ እና የሚጠቀለል ተንሸራታች) */}
+      <nav 
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        className={`fixed top-0 left-0 right-0 w-full z-[9999] glass-nav border-b border-black/5 dark:border-white/[0.06] shadow-[0_12px_40px_rgba(0,0,0,0.6)] transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] transform select-none ${
+          isCurtainOpen 
+            ? 'translate-y-0 opacity-100' 
+            : '-translate-y-full opacity-0 pointer-events-none'
+        }`}
+      >
+        {/* Attached Roll-up Close Handle at Bottom Center */}
+        <button 
+          type="button"
+          onClick={() => setIsCurtainOpen(false)}
+          className="absolute -bottom-6 left-1/2 -translate-x-1/2 bg-white/90 dark:bg-[#030509]/90 hover:bg-white dark:hover:bg-[#080d1a] backdrop-blur-2xl border-x border-b border-black/10 dark:border-white/10 hover:border-[#f9b03c]/60 px-4 py-1 rounded-b-xl shadow-lg flex items-center gap-1.5 text-gray-600 dark:text-gray-400 hover:text-[#f9b03c] transition-all cursor-pointer group/close hover:px-5"
+          title="ወደ ላይ መልሰህ እጠፍ (Roll Up Menu)"
+        >
+          <i className="fa-solid fa-chevron-up text-[10px] group-hover/close:-translate-y-0.5 transition-transform text-[#f9b03c]"></i>
+          <span className="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 group-hover/close:text-[#f9b03c]">
+            ወደ ላይ እጠፍ (Roll Up)
+          </span>
+        </button>
+
         <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-18 sm:h-20 gap-3 lg:gap-6">
             
-            {/* 1. Brand Logo (Crisp & Minimalist) */}
+            {/* Brand Logo */}
             <Link 
               href="/" 
               onClick={() => { 
@@ -209,7 +297,7 @@ export default function Navbar() {
               </span>
             </Link>
 
-            {/* 2. Navigation Links (Crisp Typography, No Jump, Smooth Golden Glow Underline) */}
+            {/* Navigation Links (Crisp Typography, No Jump, Smooth Golden Glow Underline) */}
             <div className="hidden lg:flex items-center gap-7 h-full">
               <Link 
                 href="/" 
@@ -261,7 +349,7 @@ export default function Navbar() {
               </Link>
             </div>
             
-            {/* 3. Sleek Integrated Search Bar */}
+            {/* Sleek Integrated Search Bar */}
             <div className="flex-1 max-w-xs md:max-w-sm hidden md:flex items-center mx-2 lg:mx-4 relative z-[60]">
               <SmartSearchInput 
                 courses={allCourses} 
@@ -270,7 +358,7 @@ export default function Navbar() {
               />
             </div>
             
-            {/* 4. Desktop Right Action Items */}
+            {/* Desktop Right Action Items */}
             <div className="hidden md:flex items-center gap-2 lg:gap-3 font-heading text-sm">
               {/* Premium AI Feature Pill Button */}
               <button 
