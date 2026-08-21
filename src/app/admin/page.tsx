@@ -195,7 +195,6 @@ export default function AdminDashboard() {
       const aboutVidRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'site_settings', 'about_video');
       await setDoc(aboutVidRef, {
         videoUrl: aboutVideoUrl.trim(),
-        title: aboutVideoTitle.trim() || 'Tsehay Campus Introduction',
         thumbnail: aboutVideoThumbnail.trim(),
         updatedAt: serverTimestamp()
       }, { merge: true });
@@ -1405,30 +1404,15 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 
-                  {/* Video Title */}
-                  <div>
-                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
-                      <i className="fa-solid fa-heading text-[#3268ba]"></i>
-                      <span>የቪዲዮ ርዕስ (Video Title / Optional)</span>
-                    </label>
-                    <input 
-                      type="text" 
-                      placeholder="e.g. ስለ ፀሐይ ካምፓስ (Tsehay Campus Introduction)" 
-                      value={aboutVideoTitle}
-                      onChange={(e) => setAboutVideoTitle(e.target.value)}
-                      className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl px-4 py-3.5 text-sm text-dark dark:text-white outline-none focus:border-[#f9b03c] focus:ring-2 focus:ring-[#f9b03c]/20 transition"
-                    />
-                  </div>
-
                   {/* Single Clean Interactive Live Preview */}
-                  <div>
+                  <div className="pt-2">
                     <div className="flex items-center justify-between gap-2 mb-3">
                       <h4 className="text-sm font-black text-gray-700 dark:text-gray-300 flex items-center gap-2">
                         <i className="fa-solid fa-eye text-[#f9b03c]"></i>
                         <span>ቀጥታ እይታ (Live Preview):</span>
                       </h4>
                       <span className="text-xs text-gray-400">
-                        {aboutPreviewMode === 'thumbnail' ? '▶️ ቪዲዮውን ለማጫወት ተምኔሉን ወይም በተኑን ይጫኑ' : '⏹️ ቪዲዮው እየተጫወተ ነው'}
+                        {aboutPreviewMode === 'thumbnail' ? '▶️ ተምኔሉን ሲጫኑ ቪዲዮው ይጫወታል' : '⏹️ ቪዲዮው እየተጫወተ ነው'}
                       </span>
                     </div>
 
@@ -1450,18 +1434,19 @@ export default function AdminDashboard() {
                               <img 
                                 src={activeThumb} 
                                 alt="Thumbnail Preview"
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                                className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
                                 onError={(e) => {
                                   e.currentTarget.src = '/assets/hero-bg-new.jpg';
                                 }}
                               />
-                              {/* Dark Scrim */}
-                              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 group-hover:bg-black/10 transition duration-300"></div>
+                              {/* Subtle Vignette Scrim */}
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/20 group-hover:bg-black/10 transition duration-300"></div>
 
-                              {/* Clean Glowing Play Button */}
-                              <div className="relative flex items-center justify-center z-10 pointer-events-none">
+                              {/* Clean Glowing Play Button (Locked Dead Center) */}
+                              <div className="relative z-10 flex items-center justify-center pointer-events-none">
                                 <div className="relative flex items-center justify-center">
                                   <span className="absolute -inset-2.5 rounded-full bg-[#f9b03c]/35 animate-ping pointer-events-none"></span>
+                                  <span className="absolute -inset-1 rounded-full bg-[#f9b03c]/20"></span>
                                   <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 flex items-center justify-center text-2xl sm:text-3xl shadow-[0_0_35px_rgba(249,176,60,0.75)] group-hover:scale-110 group-hover:shadow-[0_0_55px_rgba(249,176,60,0.95)] transition-all duration-300">
                                     <i className="fa-solid fa-play ml-1"></i>
                                   </div>
@@ -1486,7 +1471,7 @@ export default function AdminDashboard() {
                               ) : (
                                 <iframe 
                                   src={parsed.src}
-                                  title={aboutVideoTitle || "Live Preview"}
+                                  title="Live Preview"
                                   frameBorder="0"
                                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                   allowFullScreen
