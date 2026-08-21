@@ -5,7 +5,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import Footer from '@/components/Footer';
 import { db } from '@/lib/firebase/config';
 import { doc, onSnapshot } from 'firebase/firestore';
-import { parseVideoEmbedUrl, extractYouTubeId } from '@/lib/videoParser';
+import { parseVideoEmbedUrl, extractYouTubeId, parseImageUrl } from '@/lib/videoParser';
 
 export default function About() {
   const { t } = useLanguage();
