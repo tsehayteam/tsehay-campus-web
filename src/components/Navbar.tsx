@@ -293,7 +293,7 @@ export default function Navbar() {
                 onError={(e) => { e.currentTarget.src = 'https://ui-avatars.com/api/?name=TC&background=3268BA&color=fff'; }} 
               />
               <span className="font-heading font-black text-xl sm:text-2xl tracking-tight hidden sm:block notranslate select-none">
-                <span className="text-[#f9b03c]">Tsehay</span> <span className="text-gray-900 dark:text-white">Campus</span>
+                <span className="text-[#f9b03c]">Tsehay</span> <span className="text-[#3268ba]">Campus</span>
               </span>
             </Link>
 
