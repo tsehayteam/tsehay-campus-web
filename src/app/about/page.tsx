@@ -119,22 +119,20 @@ export default function About() {
               </div>
             </div>
 
-            {/* Video Reels & Team/Community Photo Showcase */}
-            <div className="space-y-6">
-              {/* Short Vertical Videos */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <AboutShortVideo src="/assets/videos/Tsehay.mp4" />
-                <AboutShortVideo src="/assets/videos/Marketing%20and%20psyco.mp4" />
+            {/* Vertical Video Highlights Grid */}
+            <div className="mt-16 sm:mt-24">
+              <div className="text-center mb-8 sm:mb-12">
+                <h3 className="text-2xl sm:text-3xl font-black text-dark dark:text-white mb-2 font-heading">
+                  የተማሪዎቻችን እና የካምፓሳችን ቅንጭብ ቪዲዮዎች
+                </h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  አጫጭር የቪዲዮ ሪልሶች • Short Campus Life & Training Reels
+                </p>
               </div>
 
-              {/* Previous Banner Style Photo */}
-              <div className="rounded-3xl overflow-hidden shadow-xl group w-full h-64 md:h-96 bg-black relative border border-gray-100 dark:border-gray-800">
-                <img 
-                  src="https://i.postimg.cc/qvqt1bJK/about-photo-1.jpg" 
-                  className="w-full h-full object-cover group-hover:scale-105 transition duration-700" 
-                  alt="Tsehay Campus Team" 
-                  onError={(e) => { e.currentTarget.src='https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=800&auto=format&fit=crop'; }} 
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-2xl mx-auto">
+                <AboutShortVideo src="/assets/videos/for_about_us_second.mp4" />
+                <AboutShortVideo src="/assets/videos/for_about_us_third.mp4" />
               </div>
             </div>
 
@@ -179,12 +177,9 @@ function AboutHeroPlayer() {
   const yId = extractYouTubeId(videoData.videoUrl);
   const customThumb = videoData.thumbnail?.trim();
   
-  let activeThumbnail = '/assets/hero-bg-new.jpg';
-  if (customThumb) {
-    activeThumbnail = customThumb;
-  } else if (yId) {
-    activeThumbnail = `https://img.youtube.com/vi/${yId}/hqdefault.jpg`;
-  }
+  const activeThumbnail = customThumb 
+    ? parseImageUrl(customThumb) 
+    : (yId ? `https://img.youtube.com/vi/${yId}/hqdefault.jpg` : '/assets/hero-bg-new.jpg');
 
   return (
     <div className="max-w-4xl mx-auto mb-16">
@@ -192,16 +187,16 @@ function AboutHeroPlayer() {
         <div className="absolute -inset-2 bg-gradient-to-r from-secondary to-primary rounded-[2.5rem] blur-xl opacity-25 group-hover:opacity-50 transition duration-500 pointer-events-none"></div>
 
         {!isPlaying ? (
-          /* Thumbnail Card Screen */
+          /* Clean Minimalist Thumbnail Card Screen */
           <div 
             onClick={() => setIsPlaying(true)}
-            className="absolute inset-0 w-full h-full z-10 cursor-pointer overflow-hidden select-none"
+            className="absolute inset-0 w-full h-full z-10 cursor-pointer overflow-hidden select-none flex items-center justify-center"
             role="button"
             tabIndex={0}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setIsPlaying(true); }}
             aria-label="ቪዲዮውን ለማጫወት ይጫኑ"
           >
-            {/* Poster / Thumbnail Image */}
+            {/* Poster / Thumbnail Image with Instant Fallback */}
             <img 
               src={activeThumbnail} 
               alt={videoData.title || "Tsehay Campus Video"} 
@@ -214,33 +209,21 @@ function AboutHeroPlayer() {
               }}
             />
 
-            {/* Cinematic Gradient Scrim */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/20 group-hover:bg-black/20 transition-colors duration-500"></div>
+            {/* Subtle Vignette Scrim */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 group-hover:bg-black/10 transition-colors duration-500"></div>
 
-            {/* Glowing Interactive Play Button (Locked Dead-Center) */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 flex flex-col items-center justify-center pointer-events-none">
+            {/* Glowing Interactive Play Button (Clean & Centered) */}
+            <div className="relative z-20 flex items-center justify-center pointer-events-none">
               <div className="relative flex items-center justify-center">
                 {/* Ping ring */}
                 <span className="absolute -inset-3 rounded-full bg-[#f9b03c]/35 animate-ping pointer-events-none"></span>
                 <span className="absolute -inset-1.5 rounded-full bg-[#f9b03c]/25"></span>
                 {/* Main Play Circle */}
-                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 flex items-center justify-center text-2xl sm:text-3xl shadow-[0_0_35px_rgba(249,176,60,0.7)] group-hover:scale-110 group-hover:shadow-[0_0_55px_rgba(249,176,60,0.95)] transition-all duration-300">
+                <div className="w-18 h-18 sm:w-22 sm:h-22 rounded-full bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 flex items-center justify-center text-2xl sm:text-3xl shadow-[0_0_40px_rgba(249,176,60,0.75)] group-hover:scale-110 group-hover:shadow-[0_0_60px_rgba(249,176,60,0.95)] transition-all duration-300">
                   <i className="fa-solid fa-play ml-1.5"></i>
                 </div>
               </div>
-              <span className="mt-3.5 text-xs sm:text-sm font-black text-white bg-black/60 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/20 shadow-lg tracking-wide group-hover:border-[#f9b03c]/60 group-hover:text-[#f9b03c] transition-all">
-                ቪዲዮውን ለማጫወት ይንኩ (Click to Play)
-              </span>
             </div>
-
-            {/* Bottom Title Bar */}
-            {videoData.title && (
-              <div className="absolute bottom-4 left-4 right-4 sm:bottom-6 sm:left-6 sm:right-6 z-20 pointer-events-none">
-                <h4 className="text-white font-extrabold text-base sm:text-xl drop-shadow-md line-clamp-1">
-                  {videoData.title}
-                </h4>
-              </div>
-            )}
           </div>
         ) : (
           /* Active Playing Video / Iframe */

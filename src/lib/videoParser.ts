@@ -16,9 +16,35 @@ export function extractYouTubeId(urlOrId: string): string {
   return '';
 }
 
+export function parseImageUrl(rawUrl?: string): string {
+  if (!rawUrl || !rawUrl.trim()) return '/assets/hero-bg-new.jpg';
+  const trimmed = rawUrl.trim();
+
+  // 1. Google Drive Links: Extract ID and use Google's direct CDN image rendering
+  const gDriveMatch = trimmed.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) ||
+                      trimmed.match(/drive\.google\.com\/(?:open|uc)\?.*id=([a-zA-Z0-9_-]+)/) ||
+                      trimmed.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if (gDriveMatch && gDriveMatch[1]) {
+    const fileId = gDriveMatch[1];
+    return `https://lh3.googleusercontent.com/d/${fileId}`;
+  }
+
+  // 2. If user pasted a YouTube video URL as thumbnail
+  const ytId = extractYouTubeId(trimmed);
+  if (ytId) {
+    return `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`;
+  }
+
+  return trimmed;
+}
+
 export function getYouTubeThumbnail(youtubeId?: string, customThumb?: string): string {
-  if (customThumb && customThumb.trim()) return customThumb.trim();
-  if (youtubeId && youtubeId.trim()) return `https://img.youtube.com/vi/${youtubeId}/maxresdefault.jpg`;
+  if (customThumb && customThumb.trim()) {
+    return parseImageUrl(customThumb);
+  }
+  if (youtubeId && youtubeId.trim()) {
+    return `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`;
+  }
   return '/assets/hero-bg-new.jpg';
 }
 
@@ -48,7 +74,18 @@ export function parseVideoEmbedUrl(rawUrl: string, autoplay: boolean = false): P
     }
   }
 
-  // 2. Direct video file (mp4, webm, mov)
+  // 2. Google Drive Video: drive.google.com/file/d/.../view
+  const gDriveVideoMatch = trimmed.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) ||
+                          trimmed.match(/drive\.google\.com\/(?:open|uc)\?.*id=([a-zA-Z0-9_-]+)/);
+  if (gDriveVideoMatch && gDriveVideoMatch[1]) {
+    const fileId = gDriveVideoMatch[1];
+    return {
+      type: 'embed',
+      src: `https://drive.google.com/file/d/${fileId}/preview${autoplay ? '?autoplay=1' : ''}`
+    };
+  }
+
+  // 3. Direct video file (mp4, webm, mov)
   if (
     trimmed.endsWith('.mp4') || 
     trimmed.endsWith('.webm') || 
@@ -59,7 +96,7 @@ export function parseVideoEmbedUrl(rawUrl: string, autoplay: boolean = false): P
     return { type: 'video', src: trimmed };
   }
 
-  // 3. YouTube Watch URL: youtube.com/watch?v=...
+  // 4. YouTube Watch URL: youtube.com/watch?v=...
   const ytWatchMatch = trimmed.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
   if (ytWatchMatch && ytWatchMatch[1]) {
     return {
@@ -68,7 +105,7 @@ export function parseVideoEmbedUrl(rawUrl: string, autoplay: boolean = false): P
     };
   }
 
-  // 4. YouTube Short Link: youtu.be/...
+  // 5. YouTube Short Link: youtu.be/...
   const ytuMatch = trimmed.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/);
   if (ytuMatch && ytuMatch[1]) {
     return {
@@ -77,7 +114,7 @@ export function parseVideoEmbedUrl(rawUrl: string, autoplay: boolean = false): P
     };
   }
 
-  // 5. YouTube Embed / Shorts / Live
+  // 6. YouTube Embed / Shorts / Live
   const ytEmbedMatch = trimmed.match(/(?:embed|shorts|live)\/([a-zA-Z0-9_-]{11})/);
   if (ytEmbedMatch && ytEmbedMatch[1]) {
     return {
@@ -86,7 +123,7 @@ export function parseVideoEmbedUrl(rawUrl: string, autoplay: boolean = false): P
     };
   }
 
-  // 6. Direct 11-char YouTube ID
+  // 7. Direct 11-char YouTube ID
   if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) {
     return {
       type: 'embed',
@@ -94,7 +131,7 @@ export function parseVideoEmbedUrl(rawUrl: string, autoplay: boolean = false): P
     };
   }
 
-  // 7. General Player / Embed URL (Vimeo, BunnyCDN, Cloudflare, Custom Player)
+  // 8. General Player / Embed URL (Vimeo, BunnyCDN, Cloudflare, Custom Player)
   let generalSrc = trimmed;
   if (autoplay) {
     if (!generalSrc.includes('autoplay=')) {
