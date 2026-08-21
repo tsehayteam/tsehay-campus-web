@@ -3,11 +3,30 @@ export interface ParsedVideo {
   src: string;
 }
 
-export function parseVideoEmbedUrl(rawUrl: string): ParsedVideo {
+export function extractYouTubeId(urlOrId: string): string {
+  if (!urlOrId) return '';
+  const trimmed = urlOrId.trim();
+  if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) return trimmed;
+  const matchWatch = trimmed.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
+  if (matchWatch && matchWatch[1]) return matchWatch[1];
+  const matchYoutu = trimmed.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/);
+  if (matchYoutu && matchYoutu[1]) return matchYoutu[1];
+  const matchEmbed = trimmed.match(/(?:embed|shorts|live)\/([a-zA-Z0-9_-]{11})/);
+  if (matchEmbed && matchEmbed[1]) return matchEmbed[1];
+  return '';
+}
+
+export function getYouTubeThumbnail(youtubeId?: string, customThumb?: string): string {
+  if (customThumb && customThumb.trim()) return customThumb.trim();
+  if (youtubeId && youtubeId.trim()) return `https://img.youtube.com/vi/${youtubeId}/maxresdefault.jpg`;
+  return '/assets/hero-bg-new.jpg';
+}
+
+export function parseVideoEmbedUrl(rawUrl: string, autoplay: boolean = false): ParsedVideo {
   if (!rawUrl || !rawUrl.trim()) {
     return {
       type: 'embed',
-      src: 'https://www.youtube.com/embed/mgdOMtW6J8k?rel=0&modestbranding=1&showinfo=0&autoplay=0&controls=1&vq=hd1080&playsinline=1'
+      src: `https://www.youtube.com/embed/mgdOMtW6J8k?rel=0&modestbranding=1&showinfo=0&autoplay=${autoplay ? 1 : 0}&controls=1&vq=hd1080&playsinline=1`
     };
   }
 
@@ -17,7 +36,15 @@ export function parseVideoEmbedUrl(rawUrl: string): ParsedVideo {
   if (trimmed.includes('<iframe')) {
     const srcMatch = trimmed.match(/src=["']([^"']+)["']/i);
     if (srcMatch && srcMatch[1]) {
-      return { type: 'embed', src: srcMatch[1] };
+      let src = srcMatch[1];
+      if (autoplay) {
+        if (!src.includes('autoplay=')) {
+          src += (src.includes('?') ? '&' : '?') + 'autoplay=1';
+        } else {
+          src = src.replace(/autoplay=0/g, 'autoplay=1');
+        }
+      }
+      return { type: 'embed', src };
     }
   }
 
@@ -37,7 +64,7 @@ export function parseVideoEmbedUrl(rawUrl: string): ParsedVideo {
   if (ytWatchMatch && ytWatchMatch[1]) {
     return {
       type: 'embed',
-      src: `https://www.youtube.com/embed/${ytWatchMatch[1]}?rel=0&modestbranding=1&showinfo=0&autoplay=0&controls=1&vq=hd1080&playsinline=1`
+      src: `https://www.youtube.com/embed/${ytWatchMatch[1]}?rel=0&modestbranding=1&showinfo=0&autoplay=${autoplay ? 1 : 0}&controls=1&vq=hd1080&playsinline=1`
     };
   }
 
@@ -46,7 +73,7 @@ export function parseVideoEmbedUrl(rawUrl: string): ParsedVideo {
   if (ytuMatch && ytuMatch[1]) {
     return {
       type: 'embed',
-      src: `https://www.youtube.com/embed/${ytuMatch[1]}?rel=0&modestbranding=1&showinfo=0&autoplay=0&controls=1&vq=hd1080&playsinline=1`
+      src: `https://www.youtube.com/embed/${ytuMatch[1]}?rel=0&modestbranding=1&showinfo=0&autoplay=${autoplay ? 1 : 0}&controls=1&vq=hd1080&playsinline=1`
     };
   }
 
@@ -55,7 +82,7 @@ export function parseVideoEmbedUrl(rawUrl: string): ParsedVideo {
   if (ytEmbedMatch && ytEmbedMatch[1]) {
     return {
       type: 'embed',
-      src: `https://www.youtube.com/embed/${ytEmbedMatch[1]}?rel=0&modestbranding=1&showinfo=0&autoplay=0&controls=1&vq=hd1080&playsinline=1`
+      src: `https://www.youtube.com/embed/${ytEmbedMatch[1]}?rel=0&modestbranding=1&showinfo=0&autoplay=${autoplay ? 1 : 0}&controls=1&vq=hd1080&playsinline=1`
     };
   }
 
@@ -63,10 +90,18 @@ export function parseVideoEmbedUrl(rawUrl: string): ParsedVideo {
   if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) {
     return {
       type: 'embed',
-      src: `https://www.youtube.com/embed/${trimmed}?rel=0&modestbranding=1&showinfo=0&autoplay=0&controls=1&vq=hd1080&playsinline=1`
+      src: `https://www.youtube.com/embed/${trimmed}?rel=0&modestbranding=1&showinfo=0&autoplay=${autoplay ? 1 : 0}&controls=1&vq=hd1080&playsinline=1`
     };
   }
 
   // 7. General Player / Embed URL (Vimeo, BunnyCDN, Cloudflare, Custom Player)
-  return { type: 'embed', src: trimmed };
+  let generalSrc = trimmed;
+  if (autoplay) {
+    if (!generalSrc.includes('autoplay=')) {
+      generalSrc += (generalSrc.includes('?') ? '&' : '?') + 'autoplay=1';
+    } else {
+      generalSrc = generalSrc.replace(/autoplay=0/g, 'autoplay=1');
+    }
+  }
+  return { type: 'embed', src: generalSrc };
 }

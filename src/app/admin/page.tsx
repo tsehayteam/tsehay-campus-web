@@ -67,6 +67,8 @@ export default function AdminDashboard() {
   // About Video State
   const [aboutVideoUrl, setAboutVideoUrl] = useState('https://www.youtube.com/embed/mgdOMtW6J8k');
   const [aboutVideoTitle, setAboutVideoTitle] = useState('Tsehay Campus Introduction');
+  const [aboutVideoThumbnail, setAboutVideoThumbnail] = useState('');
+  const [aboutPreviewMode, setAboutPreviewMode] = useState<'thumbnail' | 'player'>('thumbnail');
   const [isSavingAboutVideo, setIsSavingAboutVideo] = useState(false);
   const [aboutVideoSavedMessage, setAboutVideoSavedMessage] = useState('');
 
@@ -166,8 +168,9 @@ export default function AdminDashboard() {
     const unsubscribeAboutVideo = onSnapshot(aboutVidRef, (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
-        if (data && data.videoUrl) setAboutVideoUrl(data.videoUrl);
-        if (data && data.title) setAboutVideoTitle(data.title);
+        if (data && data.videoUrl !== undefined) setAboutVideoUrl(data.videoUrl);
+        if (data && data.title !== undefined) setAboutVideoTitle(data.title);
+        if (data && data.thumbnail !== undefined) setAboutVideoThumbnail(data.thumbnail);
       }
     }, (err) => {
       console.warn("About video Firestore sync:", err);
@@ -193,9 +196,10 @@ export default function AdminDashboard() {
       await setDoc(aboutVidRef, {
         videoUrl: aboutVideoUrl.trim(),
         title: aboutVideoTitle.trim() || 'Tsehay Campus Introduction',
+        thumbnail: aboutVideoThumbnail.trim(),
         updatedAt: serverTimestamp()
       }, { merge: true });
-      setAboutVideoSavedMessage('ስለ እኛ ገጽ ቪዲዮ በተሳካ ሁኔታ ተቀምጧል! (Saved Successfully)');
+      setAboutVideoSavedMessage('ስለ እኛ ገጽ ቪዲዮ እና ተምኔል በተሳካ ሁኔታ ተቀምጧል! (Saved Successfully)');
       setTimeout(() => setAboutVideoSavedMessage(''), 4000);
     } catch (err: any) {
       console.error("Error saving about video:", err);
@@ -1308,8 +1312,8 @@ export default function AdminDashboard() {
                       <i className="fa-solid fa-film"></i>
                     </div>
                     <div>
-                      <h3 className="text-xl font-black text-dark dark:text-white">ስለ እኛ ገጽ ቪዲዮ ፕሌየር (About Page Video Player)</h3>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">በ "ስለ እኛ" (About Us) ገጽ ላይ የሚታየውን የቪዲዮ ማጫወቻ ሊንክ እዚህ ያስገቡ</p>
+                      <h3 className="text-xl font-black text-dark dark:text-white">ስለ እኛ ገጽ ቪዲዮ እና ተምኔል (About Us Video & Thumbnail)</h3>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">በ "ስለ እኛ" (About Us) ገጽ ላይ የሚታየውን ቪዲዮ እና የመነሻ ፎቶ (Thumbnail) እዚህ ያስተዳድሩ</p>
                     </div>
                   </div>
                   {aboutVideoSavedMessage && (
@@ -1321,6 +1325,7 @@ export default function AdminDashboard() {
                 </div>
 
                 <form onSubmit={handleSaveAboutVideo} className="space-y-6">
+                  {/* Video URL */}
                   <div>
                     <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
                       <i className="fa-solid fa-link text-[#f9b03c]"></i>
@@ -1331,7 +1336,15 @@ export default function AdminDashboard() {
                       required
                       placeholder="e.g. https://www.youtube.com/watch?v=mgdOMtW6J8k ወይም https://iframe.mediadelivery.net/... ወይም <iframe ...></iframe> ወይም MP4 Link" 
                       value={aboutVideoUrl}
-                      onChange={(e) => setAboutVideoUrl(e.target.value)}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setAboutVideoUrl(val);
+                        // If thumbnail is empty and user pastes a youtube url, suggest thumbnail
+                        const yId = extractYouTubeId(val);
+                        if (yId && !aboutVideoThumbnail) {
+                          setAboutVideoThumbnail(`https://img.youtube.com/vi/${yId}/maxresdefault.jpg`);
+                        }
+                      }}
                       className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl px-4 py-3.5 text-sm font-mono text-dark dark:text-white outline-none focus:border-[#f9b03c] focus:ring-2 focus:ring-[#f9b03c]/20 transition"
                     />
                     <div className="mt-2.5 flex flex-wrap gap-2 text-[11px] text-gray-500 dark:text-gray-400 font-medium">
@@ -1342,6 +1355,55 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 
+                  {/* Thumbnail / Cover Image URL */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                        <i className="fa-solid fa-image text-emerald-500"></i>
+                        <span>የተምኔል ፎቶ ሊንክ (Thumbnail / Cover Image URL)</span>
+                      </label>
+                      {(() => {
+                        const yId = extractYouTubeId(aboutVideoUrl);
+                        if (yId) {
+                          return (
+                            <button
+                              type="button"
+                              onClick={() => setAboutVideoThumbnail(`https://img.youtube.com/vi/${yId}/maxresdefault.jpg`)}
+                              className="text-[11px] bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 font-bold px-3 py-1 rounded-lg transition flex items-center gap-1.5 cursor-pointer"
+                            >
+                              <i className="fa-brands fa-youtube"></i>
+                              <span>ከዩቲዩብ ፎቶ አስመጣ</span>
+                            </button>
+                          );
+                        }
+                        return null;
+                      })()}
+                    </div>
+                    <div className="relative">
+                      <input 
+                        type="text" 
+                        placeholder="e.g. https://images.unsplash.com/... ወይም https://i.postimg.cc/... (ባዶ ከተዉት ከዩቲዩብ በራሱ ያመጣል)" 
+                        value={aboutVideoThumbnail}
+                        onChange={(e) => setAboutVideoThumbnail(e.target.value)}
+                        className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl px-4 py-3.5 text-sm text-dark dark:text-white outline-none focus:border-[#f9b03c] focus:ring-2 focus:ring-[#f9b03c]/20 transition pr-10 font-mono"
+                      />
+                      {aboutVideoThumbnail && (
+                        <button
+                          type="button"
+                          onClick={() => setAboutVideoThumbnail('')}
+                          className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 transition text-sm cursor-pointer"
+                          title="አጽዳ"
+                        >
+                          <i className="fa-solid fa-xmark"></i>
+                        </button>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1.5">
+                      💡 ተጠቃሚው "ስለ እኛ" ገጽ ሲገባ በመጀመሪያ ይህ ተምኔል ይታያል። ተምኔሉን ሲነካ ቪዲዮው ይጫወታል።
+                    </p>
+                  </div>
+
+                  {/* Video Title */}
                   <div>
                     <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
                       <i className="fa-solid fa-heading text-[#3268ba]"></i>
@@ -1356,36 +1418,117 @@ export default function AdminDashboard() {
                     />
                   </div>
 
-                  {/* Live Player Preview */}
+                  {/* Interactive Live Preview */}
                   <div>
-                    <h4 className="text-sm font-black text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-2">
-                      <i className="fa-solid fa-eye text-[#f9b03c]"></i>
-                      <span>ቀጥታ እይታ (Live Player Preview):</span>
-                    </h4>
-                    <div className="relative rounded-2xl overflow-hidden shadow-2xl border-2 border-[#f9b03c]/40 bg-black aspect-video flex items-center justify-center">
-                      {(() => {
-                        const parsed = parseVideoEmbedUrl(aboutVideoUrl);
-                        if (parsed.type === 'video') {
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                      <h4 className="text-sm font-black text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                        <i className="fa-solid fa-eye text-[#f9b03c]"></i>
+                        <span>ቀጥታ እይታ (Live Preview):</span>
+                      </h4>
+                      {/* Preview Mode Switcher */}
+                      <div className="flex items-center bg-gray-100 dark:bg-slate-900 p-1 rounded-xl border border-gray-200 dark:border-slate-700 text-xs font-bold self-start sm:self-auto">
+                        <button
+                          type="button"
+                          onClick={() => setAboutPreviewMode('thumbnail')}
+                          className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 cursor-pointer ${
+                            aboutPreviewMode === 'thumbnail'
+                              ? 'bg-white dark:bg-slate-800 text-[#f9b03c] shadow-sm'
+                              : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                          }`}
+                        >
+                          <i className="fa-solid fa-image text-xs"></i>
+                          <span>ተምኔል እይታ (Thumbnail)</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setAboutPreviewMode('player')}
+                          className={`px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 cursor-pointer ${
+                            aboutPreviewMode === 'player'
+                              ? 'bg-white dark:bg-slate-800 text-[#f9b03c] shadow-sm'
+                              : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                          }`}
+                        >
+                          <i className="fa-solid fa-play text-xs"></i>
+                          <span>ፕሌየር እይታ (Player)</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="relative rounded-2xl overflow-hidden shadow-2xl border-2 border-[#f9b03c]/40 bg-black aspect-video flex items-center justify-center group">
+                      {aboutPreviewMode === 'thumbnail' ? (
+                        (() => {
+                          const yId = extractYouTubeId(aboutVideoUrl);
+                          const activeThumb = aboutVideoThumbnail.trim() || (yId ? `https://img.youtube.com/vi/${yId}/hqdefault.jpg` : '/assets/hero-bg-new.jpg');
                           return (
-                            <video 
-                              controls
-                              playsInline
+                            <div 
+                              onClick={() => setAboutPreviewMode('player')}
+                              className="relative w-full h-full cursor-pointer overflow-hidden flex items-center justify-center select-none"
+                              title="ቪዲዮውን ለማጫወት ይጫኑ"
+                            >
+                              <img 
+                                src={activeThumb} 
+                                alt="Thumbnail Preview"
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                                onError={(e) => {
+                                  if (yId && !e.currentTarget.src.includes('hqdefault')) {
+                                    e.currentTarget.src = `https://img.youtube.com/vi/${yId}/hqdefault.jpg`;
+                                  } else {
+                                    e.currentTarget.src = '/assets/hero-bg-new.jpg';
+                                  }
+                                }}
+                              />
+                              {/* Dark Scrim */}
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-black/30 group-hover:bg-black/20 transition duration-300"></div>
+
+                              {/* Badges */}
+                              <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md text-white text-[11px] font-black px-3 py-1 rounded-full border border-white/20 flex items-center gap-1.5">
+                                <span className="w-2 h-2 rounded-full bg-[#f9b03c] animate-pulse"></span>
+                                <span>Tsehay Campus Introduction</span>
+                              </div>
+
+                              {/* Glowing Play Button */}
+                              <div className="relative flex flex-col items-center justify-center z-10">
+                                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 flex items-center justify-center text-xl sm:text-2xl shadow-[0_0_30px_rgba(249,176,60,0.7)] group-hover:scale-110 group-hover:shadow-[0_0_45px_rgba(249,176,60,0.95)] transition-all duration-300">
+                                  <i className="fa-solid fa-play ml-1"></i>
+                                </div>
+                                <span className="mt-2.5 text-[11px] sm:text-xs font-black text-white bg-black/70 backdrop-blur-md px-3.5 py-1 rounded-full border border-white/20 shadow-md">
+                                  ለመሞከር ይጫኑ (Click to Test Play)
+                                </span>
+                              </div>
+
+                              {/* Bottom Title Bar */}
+                              <div className="absolute bottom-3 left-3 right-3 text-white font-bold text-sm truncate drop-shadow z-10">
+                                {aboutVideoTitle || 'Tsehay Campus Introduction'}
+                              </div>
+                            </div>
+                          );
+                        })()
+                      ) : (
+                        (() => {
+                          const parsed = parseVideoEmbedUrl(aboutVideoUrl, true);
+                          if (parsed.type === 'video') {
+                            return (
+                              <video 
+                                controls
+                                autoPlay
+                                playsInline
+                                src={parsed.src}
+                                className="w-full h-full object-cover rounded-2xl"
+                              />
+                            );
+                          }
+                          return (
+                            <iframe 
                               src={parsed.src}
-                              className="w-full h-full object-cover rounded-2xl"
+                              title={aboutVideoTitle || "Live Preview"}
+                              frameBorder="0"
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                              allowFullScreen
+                              className="w-full h-full rounded-2xl"
                             />
                           );
-                        }
-                        return (
-                          <iframe 
-                            src={parsed.src}
-                            title={aboutVideoTitle || "Live Preview"}
-                            frameBorder="0"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                            allowFullScreen
-                            className="w-full h-full rounded-2xl"
-                          />
-                        );
-                      })()}
+                        })()
+                      )}
                     </div>
                   </div>
 
@@ -1397,7 +1540,7 @@ export default function AdminDashboard() {
                       className="bg-gradient-to-r from-[#f9b03c] to-amber-500 hover:from-amber-400 hover:to-[#f9b03c] text-slate-950 font-black px-8 py-3.5 rounded-2xl shadow-lg hover:shadow-[0_0_25px_rgba(249,176,60,0.5)] transition-all duration-300 disabled:opacity-50 flex items-center gap-2 cursor-pointer active:scale-95 text-sm"
                     >
                       <i className="fa-solid fa-floppy-disk"></i>
-                      <span>{isSavingAboutVideo ? 'እየቀየረ ነው...' : 'አስቀምጥ (Save Player Link)'}</span>
+                      <span>{isSavingAboutVideo ? 'እየቀየረ ነው...' : 'አስቀምጥ (Save Video & Thumbnail)'}</span>
                     </button>
                   </div>
                 </form>

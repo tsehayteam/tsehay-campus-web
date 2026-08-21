@@ -5,7 +5,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import Footer from '@/components/Footer';
 import { db } from '@/lib/firebase/config';
 import { doc, onSnapshot } from 'firebase/firestore';
-import { parseVideoEmbedUrl } from '@/lib/videoParser';
+import { parseVideoEmbedUrl, extractYouTubeId } from '@/lib/videoParser';
 
 export default function About() {
   const { t } = useLanguage();
@@ -121,10 +121,10 @@ export default function About() {
 
             {/* Video Reels & Team/Community Photo Showcase */}
             <div className="space-y-6">
-              {/* Short Vertical Videos with Sleek Floating Corner Sound Controller */}
+              {/* Short Vertical Videos */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <AboutShortVideo src="/assets/videos/Tsehay.mp4" title="Tsehay Campus Life" />
-                <AboutShortVideo src="/assets/videos/Marketing%20and%20psyco.mp4" title="Marketing & Practical Training" />
+                <AboutShortVideo src="/assets/videos/Tsehay.mp4" />
+                <AboutShortVideo src="/assets/videos/Marketing%20and%20psyco.mp4" />
               </div>
 
               {/* Previous Banner Style Photo */}
@@ -149,8 +149,11 @@ export default function About() {
 function AboutHeroPlayer() {
   const [videoData, setVideoData] = useState({
     videoUrl: 'https://www.youtube.com/embed/mgdOMtW6J8k',
-    title: 'Tsehay Campus Introduction'
+    title: 'Tsehay Campus Introduction',
+    thumbnail: ''
   });
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [imgError, setImgError] = useState(false);
 
   useEffect(() => {
     try {
@@ -158,11 +161,13 @@ function AboutHeroPlayer() {
       const unsubscribe = onSnapshot(docRef, (docSnap) => {
         if (docSnap.exists()) {
           const data = docSnap.data();
-          if (data && data.videoUrl) {
+          if (data) {
             setVideoData({
-              videoUrl: data.videoUrl,
-              title: data.title || 'Tsehay Campus Introduction'
+              videoUrl: data.videoUrl || 'https://www.youtube.com/embed/mgdOMtW6J8k',
+              title: data.title || 'Tsehay Campus Introduction',
+              thumbnail: data.thumbnail || ''
             });
+            setImgError(false);
           }
         }
       });
@@ -172,40 +177,129 @@ function AboutHeroPlayer() {
     }
   }, []);
 
-  const parsed = parseVideoEmbedUrl(videoData.videoUrl);
+  const parsed = parseVideoEmbedUrl(videoData.videoUrl, true);
+  const yId = extractYouTubeId(videoData.videoUrl);
+  const customThumb = videoData.thumbnail?.trim();
+  
+  let activeThumbnail = '';
+  if (customThumb) {
+    activeThumbnail = customThumb;
+  } else if (yId) {
+    activeThumbnail = imgError 
+      ? `https://img.youtube.com/vi/${yId}/hqdefault.jpg` 
+      : `https://img.youtube.com/vi/${yId}/maxresdefault.jpg`;
+  } else {
+    activeThumbnail = '/assets/hero-bg-new.jpg';
+  }
 
   return (
     <div className="max-w-4xl mx-auto mb-16">
       <div className="relative rounded-[2rem] overflow-hidden shadow-2xl border border-white/10 bg-black aspect-video flex items-center justify-center group">
-        <div className="absolute -inset-2 bg-gradient-to-r from-secondary to-primary rounded-[2.5rem] blur-xl opacity-20 group-hover:opacity-40 transition duration-500"></div>
-        {parsed.type === 'video' ? (
-          <video 
-            id="about-html5-player"
-            className="w-full h-full relative z-10 rounded-[2rem] object-cover" 
-            src={parsed.src}
-            controls
-            playsInline
-          />
+        <div className="absolute -inset-2 bg-gradient-to-r from-secondary to-primary rounded-[2.5rem] blur-xl opacity-25 group-hover:opacity-50 transition duration-500 pointer-events-none"></div>
+
+        {!isPlaying ? (
+          /* Thumbnail Card Screen */
+          <div 
+            onClick={() => setIsPlaying(true)}
+            className="relative w-full h-full z-10 cursor-pointer overflow-hidden flex items-center justify-center select-none"
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setIsPlaying(true); }}
+            aria-label="ቪዲዮውን ለማጫወት ይጫኑ"
+          >
+            {/* Poster / Thumbnail Image */}
+            <img 
+              src={activeThumbnail} 
+              alt={videoData.title || "Tsehay Campus Video"} 
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+              onError={() => {
+                if (!imgError && yId) {
+                  setImgError(true);
+                }
+              }}
+            />
+
+            {/* Cinematic Gradient Scrim */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-black/25 group-hover:bg-black/20 transition-colors duration-500"></div>
+
+            {/* Top Badges */}
+            <div className="absolute top-4 left-4 sm:top-6 sm:left-6 z-20 flex items-center gap-2">
+              <div className="bg-black/60 backdrop-blur-md text-white text-xs font-black px-3.5 py-1.5 rounded-full border border-white/20 shadow-md flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#f9b03c] animate-pulse"></span>
+                <span>Tsehay Campus</span>
+              </div>
+            </div>
+
+            {/* Glowing Interactive Play Button */}
+            <div className="relative z-20 flex flex-col items-center justify-center">
+              <div className="relative flex items-center justify-center">
+                {/* Ping ring */}
+                <span className="absolute -inset-3 rounded-full bg-[#f9b03c]/35 animate-ping pointer-events-none"></span>
+                <span className="absolute -inset-1.5 rounded-full bg-[#f9b03c]/25"></span>
+                {/* Main Play Circle */}
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 flex items-center justify-center text-2xl sm:text-3xl shadow-[0_0_35px_rgba(249,176,60,0.7)] group-hover:scale-110 group-hover:shadow-[0_0_55px_rgba(249,176,60,0.95)] transition-all duration-300">
+                  <i className="fa-solid fa-play ml-1.5"></i>
+                </div>
+              </div>
+              <span className="mt-3.5 text-xs sm:text-sm font-black text-white bg-black/60 backdrop-blur-md px-4 py-1.5 rounded-full border border-white/20 shadow-lg tracking-wide group-hover:border-[#f9b03c]/60 group-hover:text-[#f9b03c] transition-all">
+                ቪዲዮውን ለማጫወት ይንኩ (Click to Play)
+              </span>
+            </div>
+
+            {/* Bottom Title Bar */}
+            <div className="absolute bottom-4 left-4 right-4 sm:bottom-6 sm:left-6 sm:right-6 z-20">
+              <h4 className="text-white font-extrabold text-base sm:text-xl drop-shadow-md line-clamp-1">
+                {videoData.title || "Tsehay Campus Introduction"}
+              </h4>
+            </div>
+          </div>
         ) : (
-          <iframe 
-            id="about-youtube-player" 
-            className="w-full h-full relative z-10 rounded-[2rem]" 
-            src={parsed.src}
-            title={videoData.title || "Tsehay Campus Introduction"} 
-            frameBorder="0" 
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-            allowFullScreen
-          ></iframe>
+          /* Active Playing Video / Iframe */
+          <div className="relative w-full h-full z-10">
+            {parsed.type === 'video' ? (
+              <video 
+                id="about-html5-player"
+                className="w-full h-full rounded-[2rem] object-cover" 
+                src={parsed.src}
+                autoPlay
+                controls
+                controlsList="nodownload noremoteplayback"
+                disablePictureInPicture
+                playsInline
+                onContextMenu={(e) => e.preventDefault()}
+              />
+            ) : (
+              <iframe 
+                id="about-youtube-player" 
+                className="w-full h-full rounded-[2rem]" 
+                src={parsed.src}
+                title={videoData.title || "Tsehay Campus Introduction"} 
+                frameBorder="0" 
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                allowFullScreen
+              ></iframe>
+            )}
+            {/* Close / Return to Thumbnail Button */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsPlaying(false);
+              }}
+              className="absolute top-4 right-4 z-30 w-8 h-8 rounded-full bg-black/70 hover:bg-black text-white border border-white/20 flex items-center justify-center text-xs backdrop-blur-md transition shadow-lg cursor-pointer"
+              title="ተምኔል አሳይ (Back to Thumbnail)"
+            >
+              <i className="fa-solid fa-xmark"></i>
+            </button>
+          </div>
         )}
       </div>
     </div>
   );
 }
 
-function AboutShortVideo({ src, title }: { src: string; title?: string }) {
+function AboutShortVideo({ src }: { src: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [isMuted, setIsMuted] = useState(true);
   const [isPlaying, setIsPlaying] = useState(true);
 
   useEffect(() => {
@@ -238,13 +332,14 @@ function AboutShortVideo({ src, title }: { src: string; title?: string }) {
     };
   }, []);
 
-  // Instant Play / Pause toggle on click/touch
+  // Instant Play / Pause toggle on click/touch (unmutes when played)
   const togglePlayPause = (e: React.MouseEvent) => {
     e.stopPropagation();
     const video = videoRef.current;
     if (!video) return;
 
     if (video.paused) {
+      video.muted = false;
       video.play().then(() => {
         setIsPlaying(true);
       }).catch(() => {});
@@ -252,15 +347,6 @@ function AboutShortVideo({ src, title }: { src: string; title?: string }) {
       video.pause();
       setIsPlaying(false);
     }
-  };
-
-  const toggleMute = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    const video = videoRef.current;
-    if (!video) return;
-    const nextMuted = !video.muted;
-    video.muted = nextMuted;
-    setIsMuted(nextMuted);
   };
 
   return (
@@ -274,9 +360,11 @@ function AboutShortVideo({ src, title }: { src: string; title?: string }) {
         ref={videoRef}
         autoPlay
         loop
-        muted={isMuted}
+        muted
         playsInline
         webkit-playsinline="true"
+        disablePictureInPicture
+        controlsList="nodownload noremoteplayback"
         preload="auto"
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
@@ -288,10 +376,7 @@ function AboutShortVideo({ src, title }: { src: string; title?: string }) {
       {/* Dark Subtle Edge Vignette */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20 pointer-events-none"></div>
 
-      {/* Sleek Center Play/Pause Button: 
-          - When Paused: Clearly visible with Play icon 
-          - When Playing: Auto-hides (opacity-0), reveals on hover with Pause icon 
-      */}
+      {/* Sleek Center Play/Pause Button */}
       <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none transition-all duration-200 transform ${
         isPlaying 
           ? 'opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-100' 
@@ -305,25 +390,6 @@ function AboutShortVideo({ src, title }: { src: string; title?: string }) {
           )}
         </div>
       </div>
-
-      {/* Floating Sound Toggle Pill */}
-      <button 
-        type="button"
-        onClick={toggleMute}
-        className="absolute top-4 right-4 z-30 bg-black/60 hover:bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-full text-xs text-white/90 border border-white/15 flex items-center gap-1.5 transition-all shadow-md active:scale-95"
-        title={isMuted ? "ድምጽ ክፈት (Unmute)" : "ድምጽ ዝጋ (Mute)"}
-      >
-        <i className={`fa-solid ${isMuted ? 'fa-volume-xmark text-gray-400' : 'fa-volume-high text-[#f9b03c]'}`}></i>
-        <span className="text-[11px] font-bold">{isMuted ? 'ድምጽ ዝጋ' : 'ድምጽ ክፈት'}</span>
-      </button>
-
-      {/* Bottom Status / Title Pill */}
-      {title && (
-        <div className="absolute bottom-4 left-4 z-20 pointer-events-none bg-black/60 backdrop-blur-md px-3.5 py-1.5 rounded-full text-xs font-bold text-white/90 border border-white/10 flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-[#f9b03c] animate-pulse"></span>
-          <span>{title}</span>
-        </div>
-      )}
     </div>
   );
 }
