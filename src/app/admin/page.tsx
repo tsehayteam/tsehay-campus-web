@@ -1478,18 +1478,6 @@ export default function AdminDashboard() {
                                   className="w-full h-full rounded-2xl"
                                 />
                               )}
-                              {/* Return to Thumbnail Mode */}
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setAboutPreviewMode('thumbnail');
-                                }}
-                                className="absolute top-3 right-3 z-30 w-8 h-8 rounded-full bg-black/70 hover:bg-black text-white border border-white/20 flex items-center justify-center text-xs backdrop-blur-md transition shadow-lg cursor-pointer"
-                                title="ተምኔል አሳይ (Back to Thumbnail)"
-                              >
-                                <i className="fa-solid fa-xmark"></i>
-                              </button>
                             </div>
                           );
                         })()
