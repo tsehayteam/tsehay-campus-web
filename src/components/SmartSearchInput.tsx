@@ -8,13 +8,15 @@ interface SmartSearchInputProps {
   placeholder?: string;
   onSearchChange?: (filteredCourses: any[], query: string) => void;
   className?: string;
+  compact?: boolean;
 }
 
 export default function SmartSearchInput({
   courses = [],
   placeholder = "ኮርሶችን ይፈልጉ (e.g. Social Media, Facebook, ዌብሳይት, Python)...",
   onSearchChange,
-  className = ""
+  className = "",
+  compact = false
 }: SmartSearchInputProps) {
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
@@ -57,8 +59,8 @@ export default function SmartSearchInput({
 
   return (
     <div className={`relative w-full ${className}`} ref={dropdownRef}>
-      <div className="relative shadow-xl rounded-full group">
-        <i className="fa-solid fa-magnifying-glass absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 text-lg group-focus-within:text-primary transition-colors"></i>
+      <div className={`relative group ${compact ? 'rounded-full' : 'shadow-xl rounded-full'}`}>
+        <i className={`fa-solid fa-magnifying-glass absolute ${compact ? 'left-3.5 text-xs text-gray-400' : 'left-5 text-lg text-gray-400'} top-1/2 -translate-y-1/2 group-focus-within:text-primary transition-colors`}></i>
         
         <input 
           type="text" 
@@ -66,14 +68,18 @@ export default function SmartSearchInput({
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => { if (query.trim()) setIsOpen(true); }}
           placeholder={placeholder}
-          className="w-full bg-white dark:bg-[#111111] border-2 border-gray-200 dark:border-slate-700 rounded-full py-4 pl-14 pr-12 text-dark dark:text-white font-bold outline-none focus:border-primary transition shadow-inner text-sm md:text-base placeholder:font-medium placeholder:text-gray-400"
+          className={
+            compact 
+              ? "w-full bg-gray-100/90 dark:bg-white/[0.06] border border-gray-200 dark:border-white/10 focus:border-[#f9b03c]/70 focus:bg-white dark:focus:bg-black/60 focus:shadow-[0_0_15px_rgba(249,176,60,0.2)] rounded-full py-2 pl-9 pr-8 text-dark dark:text-white font-medium outline-none transition-all duration-300 text-xs placeholder:text-gray-400 dark:placeholder:text-gray-500"
+              : "w-full bg-white dark:bg-[#111111] border-2 border-gray-200 dark:border-slate-700 rounded-full py-4 pl-14 pr-12 text-dark dark:text-white font-bold outline-none focus:border-primary transition shadow-inner text-sm md:text-base placeholder:font-medium placeholder:text-gray-400"
+          }
         />
 
         {query && (
           <button 
             type="button"
             onClick={() => setQuery('')} 
-            className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-dark dark:hover:text-white text-sm"
+            className={`absolute ${compact ? 'right-3 text-xs' : 'right-5 text-sm'} top-1/2 -translate-y-1/2 text-gray-400 hover:text-dark dark:hover:text-white transition-colors cursor-pointer`}
           >
             <i className="fa-solid fa-xmark"></i>
           </button>

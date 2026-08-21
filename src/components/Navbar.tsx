@@ -9,7 +9,7 @@ import AuthModal from "./AuthModal";
 import SmartSearchInput from "./SmartSearchInput";
 import { auth } from "@/lib/firebase/config";
 import { signOut } from "firebase/auth";
-import { getCachedCourses, saveCachedCourses } from "@/lib/courseCache";
+import { getCachedCourses } from "@/lib/courseCache";
 
 export default function Navbar() {
   const { user, isAdmin } = useAuth();
@@ -18,7 +18,6 @@ export default function Navbar() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isSignupMode, setIsSignupMode] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isCurtainOpen, setIsCurtainOpen] = useState(false);
   const [theme, setTheme] = useState('dark');
   const { lang, toggleLanguage, t } = useLanguage();
 
@@ -37,14 +36,14 @@ export default function Navbar() {
     } catch (e) { return null; }
   });
 
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<any[]>([]);
   const [allCourses, setAllCourses] = useState<any[]>(() => getCachedCourses());
-  const searchRef = useRef<HTMLDivElement>(null);
-  const touchStartY = useRef<number | null>(null);
+  const profileDropdownRef = useRef<HTMLDivElement>(null);
 
   const navUserName = customName || user?.displayName || user?.email?.split('@')[0] || 'User';
   const navUserPhoto = customPhoto || user?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(navUserName)}&background=f9b03c&color=111827&bold=true`;
+
+  const pathname = usePathname();
+  const router = useRouter();
 
   useEffect(() => {
     const handleProfileUpdate = (e: any) => {
@@ -58,21 +57,17 @@ export default function Navbar() {
     window.addEventListener('tsehay_profile_updated', handleProfileUpdate);
     return () => window.removeEventListener('tsehay_profile_updated', handleProfileUpdate);
   }, []);
-  
-  const pathname = usePathname();
-  const router = useRouter();
 
   const navigateTo = (url: string) => {
     setIsMobileMenuOpen(false);
     setShowProfileDropdown(false);
-    setIsCurtainOpen(false); // Roll up curtain when navigating
 
     if (url.startsWith('/#') || url.startsWith('#')) {
       const hash = url.replace('/#', '').replace('#', '');
       if (pathname === '/') {
         const el = document.getElementById(hash);
         if (el) {
-          const offset = 40;
+          const offset = 80;
           const bodyRect = document.body.getBoundingClientRect().top;
           const elementRect = el.getBoundingClientRect().top;
           window.scrollTo({ top: elementRect - bodyRect - offset, behavior: 'smooth' });
@@ -82,7 +77,7 @@ export default function Navbar() {
         setTimeout(() => {
           const el = document.getElementById(hash);
           if (el) {
-            const offset = 40;
+            const offset = 80;
             const bodyRect = document.body.getBoundingClientRect().top;
             const elementRect = el.getBoundingClientRect().top;
             window.scrollTo({ top: elementRect - bodyRect - offset, behavior: 'smooth' });
@@ -100,140 +95,51 @@ export default function Navbar() {
   };
 
   useEffect(() => {
-    // When entering any page (e.g. /courses, /about), roll up curtain into ceiling
     setIsMobileMenuOpen(false);
     setShowProfileDropdown(false);
-    setIsCurtainOpen(false);
   }, [pathname]);
-
-  // Smart scroll: Scrolling down rolls up curtain; scrolling up can also reveal handle
-  useEffect(() => {
-    let lastScroll = 0;
-    let ticking = false;
-
-    const handleScroll = () => {
-      if (!ticking) {
-        window.requestAnimationFrame(() => {
-          const currentScroll = window.scrollY || document.documentElement.scrollTop;
-
-          if (currentScroll > lastScroll + 15) {
-            // Scrolling down -> roll up curtain to give full screen focus
-            setIsCurtainOpen(false);
-            setShowProfileDropdown(false);
-          }
-
-          lastScroll = Math.max(0, currentScroll);
-          ticking = false;
-        });
-        ticking = true;
-      }
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-    };
-  }, []);
-
-  // Handle touch drag for pulling curtain down/up
-  const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartY.current = e.touches[0].clientY;
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (touchStartY.current === null) return;
-    const currentY = e.changedTouches[0].clientY;
-    const diff = currentY - touchStartY.current;
-    if (diff > 35) {
-      setIsCurtainOpen(true);
-    } else if (diff < -35) {
-      setIsCurtainOpen(false);
-    }
-    touchStartY.current = null;
-  };
 
   useEffect(() => {
     setMounted(true);
-    // Initial sync of theme
     setTheme(document.documentElement.classList.contains('dark') ? 'dark' : 'light');
 
     const handleOpenAuth = (e: any) => {
-        setIsSignupMode(e.detail?.isSignupMode ?? e.detail?.isSignUp ?? false);
-        setIsAuthModalOpen(true);
+      setIsSignupMode(e.detail?.isSignupMode ?? e.detail?.isSignUp ?? false);
+      setIsAuthModalOpen(true);
     };
     window.addEventListener('open-auth-modal', handleOpenAuth);
 
-    const handleOpenCurtain = () => setIsCurtainOpen(true);
-    const handleCloseCurtain = () => setIsCurtainOpen(false);
-    const handleToggleCurtain = () => setIsCurtainOpen(prev => !prev);
-
-    window.addEventListener('open-nav-curtain', handleOpenCurtain);
-    window.addEventListener('close-nav-curtain', handleCloseCurtain);
-    window.addEventListener('toggle-nav-curtain', handleToggleCurtain);
-
-    const handleGlobalTouchStart = (e: TouchEvent) => {
-      if (e.touches && e.touches[0] && e.touches[0].clientY < 80) {
-        touchStartY.current = e.touches[0].clientY;
-      }
-    };
-    const handleGlobalTouchEnd = (e: TouchEvent) => {
-      if (touchStartY.current !== null && e.changedTouches && e.changedTouches[0]) {
-        const diff = e.changedTouches[0].clientY - touchStartY.current;
-        if (diff > 40) {
-          setIsCurtainOpen(true);
-        }
-        touchStartY.current = null;
-      }
-    };
-    window.addEventListener('touchstart', handleGlobalTouchStart, { passive: true });
-    window.addEventListener('touchend', handleGlobalTouchEnd, { passive: true });
-
     const handleClickOutside = (event: MouseEvent) => {
-      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
-        setSearchResults([]);
+      if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target as Node)) {
+        setShowProfileDropdown(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
 
     const fetchCourses = async () => {
-       try {
-         const { collection, getDocs } = await import('firebase/firestore');
-         const { db } = await import('@/lib/firebase/config');
-         const querySnapshot = await getDocs(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses'));
-         setAllCourses(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-       } catch (e) {
-         console.error('Failed to fetch courses for search');
-       }
+      try {
+        const { collection, getDocs } = await import('firebase/firestore');
+        const { db } = await import('@/lib/firebase/config');
+        const querySnapshot = await getDocs(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses'));
+        setAllCourses(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      } catch (e) {
+        console.error('Failed to fetch courses for search');
+      }
     };
     fetchCourses();
 
     return () => {
       window.removeEventListener('open-auth-modal', handleOpenAuth);
-      window.removeEventListener('open-nav-curtain', handleOpenCurtain);
-      window.removeEventListener('close-nav-curtain', handleCloseCurtain);
-      window.removeEventListener('toggle-nav-curtain', handleToggleCurtain);
-      window.removeEventListener('touchstart', handleGlobalTouchStart);
-      window.removeEventListener('touchend', handleGlobalTouchEnd);
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
 
-  const handleSearch = (val: string) => {
-     setSearchQuery(val);
-     if (!val.trim()) {
-       setSearchResults([]);
-       return;
-     }
-     const filtered = allCourses.filter(c => c.title?.toLowerCase().includes(val.toLowerCase()) || c.category?.toLowerCase().includes(val.toLowerCase()));
-     setSearchResults(filtered);
-  };
-
   const toggleTheme = () => {
     const newTheme = theme === 'dark' ? 'light' : 'dark';
     if (newTheme === 'dark') {
-        document.documentElement.classList.add('dark');
+      document.documentElement.classList.add('dark');
     } else {
-        document.documentElement.classList.remove('dark');
+      document.documentElement.classList.remove('dark');
     }
     setTheme(newTheme);
     localStorage.setItem('theme', newTheme);
@@ -269,387 +175,378 @@ export default function Navbar() {
     return null;
   }
 
+  const isHome = pathname === '/';
+  const isAbout = pathname === '/about';
+  const isCourses = pathname?.startsWith('/courses');
+
   return (
     <>
-      {/* 1. Sleek Floating Pull Tab Handle (የሚታይ መጎተቻ) - Visible when Curtain is Rolled Up */}
-      <div 
-        onClick={() => setIsCurtainOpen(true)}
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-        className={`fixed top-0 left-1/2 -translate-x-1/2 z-[9990] cursor-pointer select-none transition-all duration-300 ${
-          isCurtainOpen 
-            ? 'opacity-0 -translate-y-full pointer-events-none' 
-            : 'opacity-100 translate-y-0'
-        }`}
-        title="ማውጫውን እና መነሻ ገጽ ለመክፈት ይጎትቱ ወይም ይጫኑ (Click or Pull to Open Menu & Return to Home)"
-      >
-        <div className="bg-[#080d1a]/95 hover:bg-[#0f172a] backdrop-blur-2xl border-x border-b border-[#f9b03c]/70 hover:border-[#f9b03c] px-4 sm:px-6 py-1.5 rounded-b-2xl shadow-[0_4px_25px_rgba(249,176,60,0.4),0_8px_30px_rgba(0,0,0,0.85)] flex items-center gap-2.5 group transition-all duration-300 hover:py-2 hover:px-7 active:scale-95">
-          {/* Tsehay Sun / Compass Icon */}
-          <div className="w-5 h-5 rounded-full bg-[#f9b03c]/20 border border-[#f9b03c]/50 flex items-center justify-center text-[#f9b03c] text-[11px] shadow-[0_0_8px_rgba(249,176,60,0.4)]">
-            <i className="fa-solid fa-compass animate-spin" style={{ animationDuration: '14s' }}></i>
-          </div>
-
-          {/* Grip Bar Notches */}
-          <div className="flex flex-col gap-0.5 items-center">
-            <span className="w-5 h-0.5 bg-[#f9b03c] rounded-full group-hover:w-7 transition-all duration-300"></span>
-            <span className="w-3 h-0.5 bg-[#f9b03c]/60 rounded-full group-hover:w-5 transition-all duration-300"></span>
-          </div>
-
-          {/* Label Text & Bouncing Chevron */}
-          <span className="text-[11px] sm:text-xs font-black tracking-wide text-white group-hover:text-[#f9b03c] transition-colors whitespace-nowrap flex items-center gap-1.5">
-            <i className="fa-solid fa-house text-[10px] text-[#f9b03c]"></i>
-            <span>ማውጫ / መነሻ (Menu)</span>
-          </span>
-          <i className="fa-solid fa-chevron-down text-[10px] text-[#f9b03c] animate-bounce"></i>
-        </div>
-      </div>
-
-      {/* 2. Backdrop Overlay when Curtain is Expanded (Clicking outside closes it) */}
-      {isCurtainOpen && (
-        <div 
-          onClick={() => setIsCurtainOpen(false)}
-          className="fixed inset-0 z-[9995] bg-black/60 backdrop-blur-[3px] transition-opacity duration-300"
-        />
-      )}
-
-      {/* 3. Curtain Rollup Navbar (እንደ መጋረጃ የሚወርድ እና የሚጠቀለል ተንሸራታች) */}
+      {/* 🚀 Ultra-Premium Silicon Valley Terafab Fixed Top Navbar */}
       <nav 
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-        className={`glass-nav fixed w-full top-0 z-[9999] border-b border-[#f9b03c]/30 shadow-[0_12px_40px_rgba(0,0,0,0.7)] transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] transform ${
-          isCurtainOpen 
-            ? 'translate-y-0 opacity-100' 
-            : '-translate-y-full opacity-0 pointer-events-none'
-        }`}
+        className="fixed top-0 left-0 right-0 z-[9990] w-full glass-nav transition-all select-none animate-in fade-in slide-in-from-top-2"
+        style={{ animationDuration: '0.6s', animationTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)' }}
       >
-        {/* Attached Roll-up Close Handle at Bottom Center */}
-        <button 
-          type="button"
-          onClick={() => setIsCurtainOpen(false)}
-          className="absolute -bottom-6 left-1/2 -translate-x-1/2 bg-[#080d1a]/95 hover:bg-[#0f172a] backdrop-blur-2xl border-x border-b border-[#f9b03c]/70 hover:border-[#f9b03c] px-4 py-1 rounded-b-xl shadow-[0_4px_20px_rgba(0,0,0,0.7)] flex items-center gap-1.5 text-[#f9b03c] hover:text-white transition-all cursor-pointer group/close hover:px-5"
-          title="ወደ ላይ መልሰህ እጠፍ (Roll Up)"
-        >
-          <i className="fa-solid fa-chevron-up text-[10px] group-hover/close:-translate-y-0.5 transition-transform"></i>
-          <span className="text-[10px] font-black uppercase tracking-wider text-gray-200 group-hover/close:text-[#f9b03c]">
-            ወደ ላይ እጠፍ (Roll Up)
-          </span>
-        </button>
-
         <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center h-20 gap-4 lg:gap-6">
-                
-                {/* 1. Brand Logo with extra breathing room */}
-                <Link href="/" onClick={() => { setIsMobileMenuOpen(false); setIsCurtainOpen(false); if (pathname === '/') window.scrollTo({top: 0, behavior: 'smooth'}); }} className="flex-shrink-0 flex items-center cursor-pointer group gap-2 mr-4 lg:mr-8">
-                    <img src="/tc-logo.jpg" alt="Tsehay Campus Logo" className="h-14 w-auto object-contain rounded-md shadow-sm group-hover:shadow-md transition-all duration-300 animate-logo-zoom" onError={(e) => { e.currentTarget.src='https://ui-avatars.com/api/?name=TC&background=3268BA&color=fff' }} />
-                    <span className="font-black text-2xl tracking-tight hidden sm:block notranslate select-none"><span className="text-primary animate-tsehay-float">Tsehay</span> <span className="text-secondary animate-campus-float">Campus</span></span>
-                </Link>
+          <div className="flex justify-between items-center h-18 sm:h-20 gap-3 lg:gap-6">
+            
+            {/* 1. Brand Logo (Crisp & Minimalist) */}
+            <Link 
+              href="/" 
+              onClick={() => { 
+                setIsMobileMenuOpen(false); 
+                if (pathname === '/') window.scrollTo({ top: 0, behavior: 'smooth' }); 
+              }} 
+              className="flex-shrink-0 flex items-center cursor-pointer group gap-2.5 mr-2 sm:mr-4 lg:mr-8 transition-opacity duration-300 hover:opacity-90"
+            >
+              <img 
+                src="/tc-logo.jpg" 
+                alt="Tsehay Campus Logo" 
+                className="h-10 sm:h-12 w-auto object-contain rounded-xl shadow-sm border border-black/10 dark:border-white/10 group-hover:border-[#f9b03c]/50 transition-colors duration-300" 
+                onError={(e) => { e.currentTarget.src = 'https://ui-avatars.com/api/?name=TC&background=3268BA&color=fff'; }} 
+              />
+              <span className="font-heading font-black text-xl sm:text-2xl tracking-tight hidden sm:block notranslate select-none">
+                <span className="text-[#f9b03c]">Tsehay</span> <span className="text-gray-900 dark:text-white">Campus</span>
+              </span>
+            </Link>
 
-                {/* 2. Navigation Links with Hover & Active Underline States */}
-                <div className="hidden lg:flex items-center gap-6 h-full">
-                    <Link 
-                        href="/" 
-                        onClick={() => {
-                            setIsMobileMenuOpen(false);
-                            setIsCurtainOpen(false);
-                            if (pathname === '/') {
-                                window.scrollTo({ top: 0, behavior: 'smooth' });
-                            }
-                        }}
-                        className={`py-1.5 transition-all duration-200 text-[14px] lg:text-[15px] border-b-2 font-bold flex items-center gap-1.5 ${
-                            pathname === '/' 
-                                ? 'text-[#f9b03c] border-[#f9b03c]' 
-                                : 'text-gray-700 dark:text-white hover:text-[#f9b03c] border-transparent hover:border-[#f9b03c]'
-                        }`}
-                    >
-                        <i className="fa-solid fa-house text-xs"></i>
-                        <span>{t('home') || 'መነሻ'}</span>
-                    </Link>
-                    <Link 
-                        href="/about" 
-                        onClick={() => {
-                            setIsMobileMenuOpen(false);
-                            setIsCurtainOpen(false);
-                            if (pathname === '/about') {
-                                window.scrollTo({ top: 0, behavior: 'smooth' });
-                            }
-                        }}
-                        className={`py-1.5 transition-all duration-200 text-[14px] lg:text-[15px] border-b-2 font-bold ${
-                            pathname === '/about' 
-                                ? 'text-[#f9b03c] border-[#f9b03c]' 
-                                : 'text-gray-700 dark:text-white hover:text-[#f9b03c] border-transparent hover:border-[#f9b03c]'
-                        }`}
-                    >
-                        {t('about_us')}
-                    </Link>
-                    <Link 
-                        href="/courses" 
-                        onClick={() => {
-                            setIsMobileMenuOpen(false);
-                            setIsCurtainOpen(false);
-                            if (pathname === '/courses') {
-                                window.scrollTo({ top: 0, behavior: 'smooth' });
-                            }
-                        }}
-                        className={`py-1.5 transition-all duration-200 text-[14px] lg:text-[15px] border-b-2 font-bold ${
-                            pathname?.startsWith('/courses')
-                                ? 'text-[#f9b03c] border-[#f9b03c]' 
-                                : 'text-gray-700 dark:text-white hover:text-[#f9b03c] border-transparent hover:border-[#f9b03c]'
-                        }`}
-                    >
-                        {t('all_courses')}
-                    </Link>
-                </div>
-                
-                <div className="flex-1 max-w-md hidden md:flex items-center mx-2 lg:mx-4 relative z-[60]">
-                    <SmartSearchInput 
-                        courses={allCourses} 
-                        placeholder={t('search_placeholder') || "ኮርሶችን ይፈልጉ (Social Media, Facebook, ዌብሳይት)..."} 
-                    />
-                </div>
-                
-                <div className="hidden md:flex items-center gap-2 lg:gap-3 font-heading text-sm">
-                    {/* 3. Interactive Tsehay AI Pill Button */}
-                    <button 
-                        type="button"
-                        onClick={() => {
-                            if (pathname === '/') {
-                                const element = document.getElementById('ai-feature');
-                                if (element) {
-                                    element.scrollIntoView({ behavior: 'smooth' });
-                                }
-                            } else {
-                                router.push('/#ai-feature');
-                                setTimeout(() => {
-                                    document.getElementById('ai-feature')?.scrollIntoView({ behavior: 'smooth' });
-                                }, 350);
-                            }
-                        }} 
-                        className="group flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-[#f9b03c] bg-[#f9b03c]/10 text-dark dark:text-white font-semibold hover:bg-[#f9b03c] hover:text-black dark:hover:text-black hover:shadow-[0_0_12px_rgba(249,176,60,0.35)] transition-all duration-200 cursor-pointer notranslate"
-                    >
-                        <i className="fa-solid fa-wand-magic-sparkles text-[#f9b03c] group-hover:text-black transition-colors text-sm"></i> 
-                        <span className="text-sm font-bold">Tsehay AI</span>
-                    </button>
+            {/* 2. Navigation Links (Crisp Typography, No Jump, Smooth Golden Glow Underline) */}
+            <div className="hidden lg:flex items-center gap-7 h-full">
+              <Link 
+                href="/" 
+                onClick={() => {
+                  if (pathname === '/') {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }
+                }}
+                className={`py-2 text-[14px] lg:text-[15px] font-bold flex items-center gap-1.5 transition-all duration-300 ${
+                  isHome 
+                    ? 'terafab-nav-link-active' 
+                    : 'terafab-nav-link text-gray-700 dark:text-gray-300'
+                }`}
+              >
+                <i className="fa-solid fa-house text-xs opacity-75"></i>
+                <span>{t('home') || 'መነሻ'}</span>
+              </Link>
 
-                    {/* Install App Quick Trigger */}
-                    <button 
-                        type="button"
-                        onClick={() => window.dispatchEvent(new CustomEvent('open-pwa-install'))}
-                        className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[#f9b03c]/40 hover:border-[#f9b03c] bg-[#f9b03c]/10 hover:bg-[#f9b03c]/20 text-[#f9b03c] font-bold text-xs transition cursor-pointer shadow-xs active:scale-95"
-                        title="አፕሊኬሽኑን በስልክዎ ወይም በኮምፒተርዎ ላይ ይጫኑ (Install App)"
-                    >
-                        <i className="fa-solid fa-mobile-screen-button text-xs"></i>
-                        <span>አፕ ጫን</span>
-                    </button>
+              <Link 
+                href="/about" 
+                onClick={() => {
+                  if (pathname === '/about') {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }
+                }}
+                className={`py-2 text-[14px] lg:text-[15px] font-bold transition-all duration-300 ${
+                  isAbout 
+                    ? 'terafab-nav-link-active' 
+                    : 'terafab-nav-link text-gray-700 dark:text-gray-300'
+                }`}
+              >
+                {t('about_us')}
+              </Link>
 
-                    {/* 4. Language Switcher (Globe + EN/አማ) */}
-                    <button 
-                        onClick={toggleLanguage} 
-                        className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gray-300 dark:border-white/20 hover:border-[#f9b03c] dark:hover:border-[#f9b03c] hover:text-[#f9b03c] dark:hover:text-[#f9b03c] bg-transparent text-gray-700 dark:text-white text-sm font-bold transition-all duration-200 cursor-pointer notranslate shadow-xs" 
-                        translate="no"
-                    >
-                        <i className="fa-solid fa-globe text-xs opacity-80"></i>
-                        <span>{lang === 'am' ? 'EN' : 'አማ'}</span>
-                    </button>
-
-                    <button onClick={toggleTheme} className="w-9 h-9 rounded-full bg-gray-100 dark:bg-dark border border-gray-200 dark:border-gray-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-darkCard transition shadow-sm text-gray-600 dark:text-yellow-400">
-                        <i className={`fa-solid ${theme === 'dark' ? 'fa-moon' : 'fa-sun'}`}></i>
-                    </button>
-
-                    <div className="h-5 w-px bg-gray-300 dark:bg-gray-800 mx-0.5 lg:mx-1"></div>
-                    
-                    {!mounted || !user ? (
-                      <button onClick={() => openAuthModal(false)} className="bg-primary text-dark px-6 py-2.5 rounded-lg font-black hover:bg-yellow-400 transition shadow-lg hover:shadow-xl btn-glow whitespace-nowrap text-[15px] lg:text-base">{t('login')}</button>
-                    ) : (
-                      <div className="relative">
-                        {/* 5. User Avatar with Yellow Border */}
-                        <button onClick={() => setShowProfileDropdown(!showProfileDropdown)} className="flex items-center gap-2 focus:outline-none">
-                            <img 
-                                src={navUserPhoto} 
-                                alt={navUserName} 
-                                className="w-9 h-9 rounded-full border-2 border-[#f9b03c] object-cover cursor-pointer hover:scale-105 transition-transform" 
-                                onError={(e) => {
-                                  (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(navUserName)}&background=f9b03c&color=111827&bold=true`;
-                                }}
-                            />
-                        </button>
-                        {showProfileDropdown && (
-                          <div className="absolute right-0 mt-2 w-52 bg-white dark:bg-darkCard rounded-xl shadow-xl border border-gray-100 dark:border-gray-800 py-2 z-50 animate-in fade-in slide-in-from-top-2">
-                              <Link href="/dashboard" onClick={() => setShowProfileDropdown(false)} className="flex items-center gap-2.5 px-4 py-3 text-sm font-bold text-dark dark:text-white hover:bg-blue-50 dark:hover:bg-dark hover:text-secondary dark:hover:text-primary transition border-b border-gray-100 dark:border-gray-800">
-                                  <i className="fa-solid fa-graduation-cap text-primary text-base"></i> {t('classroom') || 'ወደ መማሪያ ክፍል'}
-                              </Link>
-                              {isAdmin && (
-                                <Link href="/admin" onClick={() => setShowProfileDropdown(false)} className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-dark hover:text-secondary dark:hover:text-primary transition">
-                                    <i className="fa-solid fa-shield-halved text-primary"></i> {t('admin') || 'አድሚን'}
-                                </Link>
-                              )}
-                              <hr className="my-1 border-gray-100 dark:border-gray-800" />
-                              <button onClick={() => { setShowProfileDropdown(false); handleSignOut(); }} className="w-full text-left flex items-center gap-2.5 px-4 py-2.5 text-sm text-danger hover:bg-red-50 dark:hover:bg-red-900/10 font-bold transition">
-                                  <i className="fa-solid fa-arrow-right-from-bracket"></i> {t('logout') || 'ዘግተህ ውጣ (Logout)'}
-                              </button>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                </div>
-
-                <div className="md:hidden flex items-center gap-2 sm:gap-3">
-                    <button 
-                        onClick={toggleTheme} 
-                        className="w-9 h-9 rounded-full bg-gray-100 dark:bg-white/10 border border-gray-200 dark:border-white/10 flex items-center justify-center text-gray-700 dark:text-yellow-400 text-sm transition"
-                        aria-label="Toggle dark/light mode"
-                    >
-                        <i className={`fa-solid ${theme === 'dark' ? 'fa-moon' : 'fa-sun'}`}></i>
-                    </button>
-
-                    <button 
-                        onClick={toggleLanguage} 
-                        className="flex items-center gap-1.5 px-3 py-1 rounded-full border border-gray-300 dark:border-white/20 hover:border-[#f9b03c] dark:hover:border-[#f9b03c] bg-transparent text-gray-800 dark:text-white font-bold text-xs transition shadow-xs notranslate" 
-                        translate="no"
-                    >
-                        <i className="fa-solid fa-globe text-[11px] opacity-80"></i>
-                        <span>{lang === 'am' ? 'EN' : 'አማ'}</span>
-                    </button>
-
-                    <button 
-                        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} 
-                        aria-label="Toggle navigation menu" 
-                        className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-white/10 border border-gray-200 dark:border-white/10 text-gray-800 dark:text-white flex items-center justify-center text-xl focus:outline-none transition active:scale-95"
-                    >
-                        <i className={`fa-solid ${isMobileMenuOpen ? 'fa-xmark text-primary' : 'fa-bars'}`}></i>
-                    </button>
-                </div>
+              <Link 
+                href="/courses" 
+                onClick={() => {
+                  if (pathname === '/courses') {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }
+                }}
+                className={`py-2 text-[14px] lg:text-[15px] font-bold transition-all duration-300 ${
+                  isCourses 
+                    ? 'terafab-nav-link-active' 
+                    : 'terafab-nav-link text-gray-700 dark:text-gray-300'
+                }`}
+              >
+                {t('all_courses')}
+              </Link>
             </div>
+            
+            {/* 3. Sleek Integrated Search Bar */}
+            <div className="flex-1 max-w-xs md:max-w-sm hidden md:flex items-center mx-2 lg:mx-4 relative z-[60]">
+              <SmartSearchInput 
+                courses={allCourses} 
+                compact={true}
+                placeholder={t('search_placeholder') || "ኮርሶችን ይፈልጉ (Marketing, Python)..."} 
+              />
+            </div>
+            
+            {/* 4. Desktop Right Action Items */}
+            <div className="hidden md:flex items-center gap-2 lg:gap-3 font-heading text-sm">
+              {/* Premium AI Feature Pill Button */}
+              <button 
+                type="button"
+                onClick={() => {
+                  if (pathname === '/') {
+                    const element = document.getElementById('ai-feature');
+                    if (element) {
+                      element.scrollIntoView({ behavior: 'smooth' });
+                    }
+                  } else {
+                    router.push('/#ai-feature');
+                    setTimeout(() => {
+                      document.getElementById('ai-feature')?.scrollIntoView({ behavior: 'smooth' });
+                    }, 350);
+                  }
+                }} 
+                className="terafab-ai-btn flex items-center gap-2 px-3.5 py-1.5 rounded-full text-gray-900 dark:text-white font-bold text-xs cursor-pointer notranslate active:scale-[0.98]"
+                title="Tsehay AI 24/7 የግል መምህር"
+              >
+                <i className="fa-solid fa-wand-magic-sparkles text-[#f9b03c] text-xs"></i> 
+                <span className="text-xs font-black tracking-wide">Tsehay AI</span>
+              </button>
+
+              {/* Install App Quick Trigger */}
+              <button 
+                type="button"
+                onClick={() => window.dispatchEvent(new CustomEvent('open-pwa-install'))}
+                className="hidden xl:flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gray-200 dark:border-white/10 hover:border-[#f9b03c]/60 bg-gray-100/80 dark:bg-white/5 hover:bg-[#f9b03c]/10 text-gray-700 dark:text-gray-300 hover:text-[#f9b03c] font-bold text-xs transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+                title="አፕሊኬሽኑን በስልክዎ ወይም በኮምፒተርዎ ላይ ይጫኑ (Install App)"
+              >
+                <i className="fa-solid fa-mobile-screen-button text-xs text-[#f9b03c]"></i>
+                <span>አፕ ጫን</span>
+              </button>
+
+              {/* Minimalist Language Switcher */}
+              <button 
+                onClick={toggleLanguage} 
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gray-200 dark:border-white/10 hover:border-[#f9b03c]/50 bg-gray-100/80 dark:bg-white/5 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-bold text-xs transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer notranslate" 
+                translate="no"
+                title="ቋንቋ ይቀይሩ / Switch Language"
+              >
+                <i className="fa-solid fa-globe text-[11px] opacity-75"></i>
+                <span>{lang === 'am' ? 'EN' : 'አማ'}</span>
+              </button>
+
+              {/* Minimalist Dark/Light Mode Toggle */}
+              <button 
+                onClick={toggleTheme} 
+                className="w-9 h-9 rounded-full border border-gray-200 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20 bg-gray-100/80 dark:bg-white/5 text-gray-700 dark:text-yellow-400 flex items-center justify-center text-xs transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+                aria-label="Toggle dark/light mode"
+              >
+                <i className={`fa-solid ${theme === 'dark' ? 'fa-moon' : 'fa-sun'}`}></i>
+              </button>
+
+              <div className="h-5 w-px bg-gray-200 dark:bg-white/10 mx-0.5"></div>
+              
+              {!mounted || !user ? (
+                /* Primary Golden CTA Button */
+                <button 
+                  onClick={() => openAuthModal(false)} 
+                  className="bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#f9b03c] text-slate-950 font-black px-5 py-2 rounded-xl text-xs sm:text-sm shadow-[0_0_18px_rgba(249,176,60,0.25)] hover:shadow-[0_0_25px_rgba(249,176,60,0.5)] hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] whitespace-nowrap cursor-pointer"
+                >
+                  {t('login')}
+                </button>
+              ) : (
+                <div className="relative" ref={profileDropdownRef}>
+                  {/* User Profile Avatar */}
+                  <button 
+                    onClick={() => setShowProfileDropdown(!showProfileDropdown)} 
+                    className="flex items-center gap-2 focus:outline-none cursor-pointer"
+                  >
+                    <img 
+                      src={navUserPhoto} 
+                      alt={navUserName} 
+                      className="w-9 h-9 rounded-full border-2 border-[#f9b03c] object-cover hover:scale-105 transition-transform duration-300 shadow-sm" 
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(navUserName)}&background=f9b03c&color=111827&bold=true`;
+                      }}
+                    />
+                  </button>
+
+                  {showProfileDropdown && (
+                    <div className="absolute right-0 mt-2 w-52 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-gray-100 dark:border-white/10 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                      <Link 
+                        href="/dashboard" 
+                        onClick={() => setShowProfileDropdown(false)} 
+                        className="flex items-center gap-2.5 px-4 py-3 text-sm font-bold text-gray-900 dark:text-white hover:bg-[#f9b03c]/10 hover:text-[#f9b03c] transition border-b border-gray-100 dark:border-white/5"
+                      >
+                        <i className="fa-solid fa-graduation-cap text-[#f9b03c] text-base"></i> 
+                        <span>{t('classroom') || 'ወደ መማሪያ ክፍል'}</span>
+                      </Link>
+                      {isAdmin && (
+                        <Link 
+                          href="/admin" 
+                          onClick={() => setShowProfileDropdown(false)} 
+                          className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-bold text-gray-700 dark:text-gray-300 hover:bg-[#f9b03c]/10 hover:text-[#f9b03c] transition"
+                        >
+                          <i className="fa-solid fa-shield-halved text-[#f9b03c]"></i> 
+                          <span>{t('admin') || 'አድሚን'}</span>
+                        </Link>
+                      )}
+                      <hr className="my-1 border-gray-100 dark:border-white/5" />
+                      <button 
+                        onClick={() => { setShowProfileDropdown(false); handleSignOut(); }} 
+                        className="w-full text-left flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-500 hover:bg-red-500/10 font-bold transition cursor-pointer"
+                      >
+                        <i className="fa-solid fa-arrow-right-from-bracket"></i> 
+                        <span>{t('logout') || 'ዘግተህ ውጣ (Logout)'}</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Mobile View Controls */}
+            <div className="md:hidden flex items-center gap-2">
+              <button 
+                onClick={toggleTheme} 
+                className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 flex items-center justify-center text-gray-700 dark:text-yellow-400 text-xs transition"
+                aria-label="Toggle dark/light mode"
+              >
+                <i className={`fa-solid ${theme === 'dark' ? 'fa-moon' : 'fa-sun'}`}></i>
+              </button>
+
+              <button 
+                onClick={toggleLanguage} 
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-100 dark:bg-white/5 text-gray-800 dark:text-white font-bold text-xs transition notranslate" 
+                translate="no"
+              >
+                <i className="fa-solid fa-globe text-[10px] opacity-75"></i>
+                <span>{lang === 'am' ? 'EN' : 'አማ'}</span>
+              </button>
+
+              <button 
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} 
+                aria-label="Toggle navigation menu" 
+                className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-800 dark:text-white flex items-center justify-center text-base focus:outline-none transition active:scale-95 cursor-pointer"
+              >
+                <i className={`fa-solid ${isMobileMenuOpen ? 'fa-xmark text-[#f9b03c]' : 'fa-bars'}`}></i>
+              </button>
+            </div>
+          </div>
         </div>
         
-        {/* Mobile Menu */}
-        <div className={`md:hidden bg-white/95 dark:bg-[#0d0d0d]/95 backdrop-blur-2xl border-t border-b border-gray-200 dark:border-gray-800/80 shadow-2xl overflow-hidden transition-all duration-300 ${isMobileMenuOpen ? 'max-h-[550px] opacity-100 py-3' : 'max-h-0 opacity-0 pointer-events-none'}`}>
-            <div className="px-4 space-y-2 flex flex-col overflow-y-auto max-h-[75vh]">
-                <div className="pb-1">
-                    <SmartSearchInput 
-                        courses={allCourses} 
-                        placeholder={t('search_placeholder') || "ኮርሶችን ይፈልጉ..."} 
-                    />
-                </div>
-
-                <button 
-                    type="button" 
-                    onClick={() => navigateTo('/')} 
-                    className="w-full flex items-center justify-between px-4 py-3 text-dark dark:text-white font-bold rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 border border-gray-100 dark:border-gray-800/80 transition cursor-pointer text-left"
-                >
-                    <span className="flex items-center gap-3">
-                        <i className="fa-solid fa-house text-primary"></i>
-                        <span>{t('home') || 'መነሻ ገጽ'}</span>
-                    </span>
-                    <i className="fa-solid fa-chevron-right text-xs text-gray-400"></i>
-                </button>
-
-                <button 
-                    type="button" 
-                    onClick={() => navigateTo('/about')} 
-                    className="w-full flex items-center justify-between px-4 py-3 text-dark dark:text-white font-bold rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 border border-gray-100 dark:border-gray-800/80 transition cursor-pointer text-left"
-                >
-                    <span className="flex items-center gap-3">
-                        <i className="fa-solid fa-circle-info text-secondary dark:text-primary"></i>
-                        <span>{t('about_us')}</span>
-                    </span>
-                    <i className="fa-solid fa-chevron-right text-xs text-gray-400"></i>
-                </button>
-
-                <button 
-                    type="button" 
-                    onClick={() => navigateTo('/courses')} 
-                    className="w-full flex items-center justify-between px-4 py-3 text-dark dark:text-white font-bold rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 border border-gray-100 dark:border-gray-800/80 transition cursor-pointer text-left"
-                >
-                    <span className="flex items-center gap-3">
-                        <i className="fa-solid fa-book-open text-primary"></i>
-                        <span>{t('all_courses')}</span>
-                    </span>
-                    <i className="fa-solid fa-chevron-right text-xs text-gray-400"></i>
-                </button>
-
-                <button 
-                    type="button" 
-                    onClick={() => navigateTo('/#ai-feature')} 
-                    className="w-full flex items-center justify-between px-4 py-3 text-dark dark:text-white font-bold rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 border border-gray-100 dark:border-gray-800/80 transition cursor-pointer text-left"
-                >
-                    <span className="flex items-center gap-3">
-                        <i className="fa-solid fa-wand-magic-sparkles text-primary"></i>
-                        <span className="notranslate">Tsehay AI</span>
-                    </span>
-                    <span className="text-[10px] bg-primary/20 text-primary font-black px-2 py-0.5 rounded-full">AI</span>
-                </button>
-
-                {/* Mobile Install App Button */}
-                <button 
-                    type="button" 
-                    onClick={() => {
-                      setIsMobileMenuOpen(false);
-                      window.dispatchEvent(new CustomEvent('open-pwa-install'));
-                    }} 
-                    className="w-full flex items-center justify-between px-4 py-3 bg-amber-500/10 dark:bg-amber-500/10 border border-[#f9b03c]/30 text-[#f9b03c] font-black rounded-xl hover:bg-[#f9b03c]/20 transition cursor-pointer text-left"
-                >
-                    <span className="flex items-center gap-3">
-                        <i className="fa-solid fa-mobile-screen-button text-base"></i>
-                        <span>አፕሊኬሽኑን ጫን (Install App)</span>
-                    </span>
-                    <span className="text-[10px] bg-[#f9b03c] text-black font-black px-2 py-0.5 rounded-md">FREE</span>
-                </button>
-
-                <hr className="my-1 border-gray-200 dark:border-gray-800" />
-
-                {!mounted || !user ? (
-                  <div className="grid grid-cols-2 gap-2 pt-1">
-                    <button 
-                        type="button" 
-                        onClick={() => { setIsMobileMenuOpen(false); openAuthModal(false); }} 
-                        className="w-full text-secondary dark:text-white font-bold py-3 rounded-xl border-2 border-secondary/30 dark:border-white/20 hover:bg-secondary/10 dark:hover:bg-white/5 transition cursor-pointer text-center text-sm"
-                    >
-                        {t('login')}
-                    </button>
-                    <button 
-                        type="button" 
-                        onClick={() => { setIsMobileMenuOpen(false); openAuthModal(true); }} 
-                        className="w-full bg-primary text-dark font-black py-3 rounded-xl shadow-md hover:bg-yellow-400 transition cursor-pointer text-center text-sm btn-glow"
-                    >
-                        {t('register')}
-                    </button>
-                  </div>
-                ) : (
-                  <div className="space-y-2 pt-1">
-                    <button 
-                        type="button" 
-                        onClick={() => navigateTo('/dashboard')} 
-                        className="w-full flex items-center justify-between px-4 py-3 bg-primary/10 border border-primary/30 text-primary font-black rounded-xl hover:bg-primary/20 transition cursor-pointer"
-                    >
-                        <span className="flex items-center gap-3">
-                            <i className="fa-solid fa-graduation-cap"></i>
-                            <span>{t('classroom') || 'ወደ መማሪያ ክፍል'}</span>
-                        </span>
-                        <i className="fa-solid fa-arrow-right text-xs"></i>
-                    </button>
-                    {isAdmin && (
-                      <button 
-                          type="button" 
-                          onClick={() => navigateTo('/admin')} 
-                          className="w-full flex items-center justify-between px-4 py-2.5 text-gray-700 dark:text-gray-300 font-bold rounded-xl hover:bg-gray-100 dark:hover:bg-white/5 border border-gray-200 dark:border-gray-800 transition cursor-pointer text-sm"
-                      >
-                          <span className="flex items-center gap-3">
-                              <i className="fa-solid fa-shield-halved text-primary"></i>
-                              <span>{t('admin') || 'አድሚን'}</span>
-                          </span>
-                          <i className="fa-solid fa-chevron-right text-xs text-gray-400"></i>
-                      </button>
-                    )}
-                    <button 
-                        type="button" 
-                        onClick={() => { setIsMobileMenuOpen(false); handleSignOut(); }} 
-                        className="w-full text-danger font-bold py-2.5 hover:bg-red-500/10 rounded-xl border border-danger/30 transition cursor-pointer text-center flex items-center justify-center gap-2 text-sm"
-                    >
-                        <i className="fa-solid fa-arrow-right-from-bracket"></i> {t('logout') || 'ዘግተህ ውጣ (Logout)'}
-                    </button>
-                  </div>
-                )}
+        {/* Mobile Frosted Glass Drawer */}
+        <div className={`md:hidden bg-white/95 dark:bg-[#030509]/95 backdrop-blur-2xl border-t border-b border-gray-200 dark:border-white/5 shadow-2xl overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${isMobileMenuOpen ? 'max-h-[550px] opacity-100 py-3' : 'max-h-0 opacity-0 pointer-events-none'}`}>
+          <div className="px-4 space-y-2 flex flex-col overflow-y-auto max-h-[75vh]">
+            <div className="pb-1">
+              <SmartSearchInput 
+                courses={allCourses} 
+                compact={true}
+                placeholder={t('search_placeholder') || "ኮርሶችን ይፈልጉ..."} 
+              />
             </div>
+
+            <button 
+              type="button" 
+              onClick={() => navigateTo('/')} 
+              className="w-full flex items-center justify-between px-4 py-3 text-gray-900 dark:text-white font-bold rounded-xl hover:bg-[#f9b03c]/10 border border-gray-100 dark:border-white/5 transition cursor-pointer text-left"
+            >
+              <span className="flex items-center gap-3">
+                <i className="fa-solid fa-house text-[#f9b03c]"></i>
+                <span>{t('home') || 'መነሻ ገጽ'}</span>
+              </span>
+              <i className="fa-solid fa-chevron-right text-xs text-gray-400"></i>
+            </button>
+
+            <button 
+              type="button" 
+              onClick={() => navigateTo('/about')} 
+              className="w-full flex items-center justify-between px-4 py-3 text-gray-900 dark:text-white font-bold rounded-xl hover:bg-[#f9b03c]/10 border border-gray-100 dark:border-white/5 transition cursor-pointer text-left"
+            >
+              <span className="flex items-center gap-3">
+                <i className="fa-solid fa-circle-info text-[#f9b03c]"></i>
+                <span>{t('about_us')}</span>
+              </span>
+              <i className="fa-solid fa-chevron-right text-xs text-gray-400"></i>
+            </button>
+
+            <button 
+              type="button" 
+              onClick={() => navigateTo('/courses')} 
+              className="w-full flex items-center justify-between px-4 py-3 text-gray-900 dark:text-white font-bold rounded-xl hover:bg-[#f9b03c]/10 border border-gray-100 dark:border-white/5 transition cursor-pointer text-left"
+            >
+              <span className="flex items-center gap-3">
+                <i className="fa-solid fa-book-open text-[#f9b03c]"></i>
+                <span>{t('all_courses')}</span>
+              </span>
+              <i className="fa-solid fa-chevron-right text-xs text-gray-400"></i>
+            </button>
+
+            <button 
+              type="button" 
+              onClick={() => navigateTo('/#ai-feature')} 
+              className="w-full flex items-center justify-between px-4 py-3 text-gray-900 dark:text-white font-bold rounded-xl hover:bg-[#f9b03c]/10 border border-gray-100 dark:border-white/5 transition cursor-pointer text-left"
+            >
+              <span className="flex items-center gap-3">
+                <i className="fa-solid fa-wand-magic-sparkles text-[#f9b03c]"></i>
+                <span className="notranslate">Tsehay AI</span>
+              </span>
+              <span className="text-[10px] bg-[#f9b03c]/20 text-[#f9b03c] font-black px-2 py-0.5 rounded-full">AI</span>
+            </button>
+
+            {/* Mobile Install App Button */}
+            <button 
+              type="button" 
+              onClick={() => {
+                setIsMobileMenuOpen(false);
+                window.dispatchEvent(new CustomEvent('open-pwa-install'));
+              }} 
+              className="w-full flex items-center justify-between px-4 py-3 bg-amber-500/10 dark:bg-amber-500/10 border border-[#f9b03c]/30 text-[#f9b03c] font-black rounded-xl hover:bg-[#f9b03c]/20 transition cursor-pointer text-left"
+            >
+              <span className="flex items-center gap-3">
+                <i className="fa-solid fa-mobile-screen-button text-base"></i>
+                <span>አፕሊኬሽኑን ጫን (Install App)</span>
+              </span>
+              <span className="text-[10px] bg-[#f9b03c] text-black font-black px-2 py-0.5 rounded-md">FREE</span>
+            </button>
+
+            <hr className="my-1 border-gray-200 dark:border-white/5" />
+
+            {!mounted || !user ? (
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                <button 
+                  type="button" 
+                  onClick={() => { setIsMobileMenuOpen(false); openAuthModal(false); }} 
+                  className="w-full text-gray-800 dark:text-white font-bold py-3 rounded-xl border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/5 transition cursor-pointer text-center text-sm"
+                >
+                  {t('login')}
+                </button>
+                <button 
+                  type="button" 
+                  onClick={() => { setIsMobileMenuOpen(false); openAuthModal(true); }} 
+                  className="w-full bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#f9b03c] text-slate-950 font-black py-3 rounded-xl shadow-md transition cursor-pointer text-center text-sm"
+                >
+                  {t('register')}
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-2 pt-1">
+                <button 
+                  type="button" 
+                  onClick={() => navigateTo('/dashboard')} 
+                  className="w-full flex items-center justify-between px-4 py-3 bg-[#f9b03c]/10 border border-[#f9b03c]/30 text-[#f9b03c] font-black rounded-xl hover:bg-[#f9b03c]/20 transition cursor-pointer"
+                >
+                  <span className="flex items-center gap-3">
+                    <i className="fa-solid fa-graduation-cap"></i>
+                    <span>{t('classroom') || 'ወደ መማሪያ ክፍል'}</span>
+                  </span>
+                  <i className="fa-solid fa-arrow-right text-xs"></i>
+                </button>
+                {isAdmin && (
+                  <button 
+                    type="button" 
+                    onClick={() => navigateTo('/admin')} 
+                    className="w-full flex items-center justify-between px-4 py-2.5 text-gray-700 dark:text-gray-300 font-bold rounded-xl hover:bg-gray-100 dark:hover:bg-white/5 border border-gray-200 dark:border-white/10 transition cursor-pointer text-sm"
+                  >
+                    <span className="flex items-center gap-3">
+                      <i className="fa-solid fa-shield-halved text-[#f9b03c]"></i>
+                      <span>{t('admin') || 'አድሚን'}</span>
+                    </span>
+                    <i className="fa-solid fa-chevron-right text-xs text-gray-400"></i>
+                  </button>
+                )}
+                <button 
+                  type="button" 
+                  onClick={() => { setIsMobileMenuOpen(false); handleSignOut(); }} 
+                  className="w-full text-red-500 font-bold py-2.5 hover:bg-red-500/10 rounded-xl border border-red-500/30 transition cursor-pointer text-center flex items-center justify-center gap-2 text-sm"
+                >
+                  <i className="fa-solid fa-arrow-right-from-bracket"></i> {t('logout') || 'ዘግተህ ውጣ (Logout)'}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </nav>
       
