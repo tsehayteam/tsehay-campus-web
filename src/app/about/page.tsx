@@ -119,8 +119,8 @@ export default function About() {
               </div>
             </div>
 
-            {/* Vertical Video Highlights Grid */}
-            <div className="mt-16 sm:mt-24">
+            {/* Video Reels & Team/Community Photo Showcase */}
+            <div className="space-y-8 mt-16 sm:mt-24">
               <div className="text-center mb-8 sm:mb-12">
                 <h3 className="text-2xl sm:text-3xl font-black text-dark dark:text-white mb-2 font-heading">
                   የተማሪዎቻችን እና የካምፓሳችን ቅንጭብ ቪዲዮዎች
@@ -130,9 +130,20 @@ export default function About() {
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-2xl mx-auto">
-                <AboutShortVideo src="/assets/videos/for_about_us_second.mp4" />
-                <AboutShortVideo src="/assets/videos/for_about_us_third.mp4" />
+              {/* Short Vertical Videos */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
+                <AboutShortVideo src="/assets/videos/Tsehay.mp4" />
+                <AboutShortVideo src="/assets/videos/Marketing%20and%20psyco.mp4" />
+              </div>
+
+              {/* Banner Style Team Photo */}
+              <div className="rounded-3xl overflow-hidden shadow-xl group w-full h-64 md:h-96 bg-black relative border border-gray-100 dark:border-gray-800 max-w-4xl mx-auto mt-8">
+                <img 
+                  src="https://i.postimg.cc/qvqt1bJK/about-photo-1.jpg" 
+                  className="w-full h-full object-cover group-hover:scale-105 transition duration-700" 
+                  alt="Tsehay Campus Team" 
+                  onError={(e) => { e.currentTarget.src='https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=800&auto=format&fit=crop'; }} 
+                />
               </div>
             </div>
 
