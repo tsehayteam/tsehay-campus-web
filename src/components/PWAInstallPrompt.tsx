@@ -177,7 +177,7 @@ export default function PWAInstallPrompt() {
                 </p>
                 <div className="flex items-center gap-1 text-[10px] text-amber-500 font-bold mt-0.5">
                   <span>★★★★★</span>
-                  <span className="text-gray-400 text-[9px] font-normal">• 1,000+ ተማሪዎች</span>
+                  <span className="text-gray-400 text-[9px] font-normal">• 500+ ተማሪዎች</span>
                 </div>
               </div>
             </div>
