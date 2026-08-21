@@ -2,11 +2,16 @@
 
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { usePathname } from 'next/navigation';
 
 export default function ContentProtection() {
   const { user } = useAuth();
+  const pathname = usePathname();
   const [isShieldActive, setIsShieldActive] = useState(false);
   const [screenshotDetected, setScreenshotDetected] = useState(false);
+
+  // Only apply strict protections inside private classroom/lesson dashboard
+  const isProtectedArea = pathname?.startsWith('/dashboard');
 
   useEffect(() => {
     // 1. Intercept PrintScreen key to prevent screen capturing
@@ -113,6 +118,8 @@ export default function ContentProtection() {
       document.removeEventListener('cut', handleCopyCut);
     };
   }, []);
+
+  if (!isProtectedArea) return null;
 
   return (
     <>

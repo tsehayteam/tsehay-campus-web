@@ -153,7 +153,6 @@ function AboutHeroPlayer() {
     thumbnail: ''
   });
   const [isPlaying, setIsPlaying] = useState(false);
-  const [imgError, setImgError] = useState(false);
 
   useEffect(() => {
     try {
@@ -167,7 +166,6 @@ function AboutHeroPlayer() {
               title: data.title || 'Tsehay Campus Introduction',
               thumbnail: data.thumbnail || ''
             });
-            setImgError(false);
           }
         }
       });
@@ -181,15 +179,11 @@ function AboutHeroPlayer() {
   const yId = extractYouTubeId(videoData.videoUrl);
   const customThumb = videoData.thumbnail?.trim();
   
-  let activeThumbnail = '';
+  let activeThumbnail = '/assets/hero-bg-new.jpg';
   if (customThumb) {
     activeThumbnail = customThumb;
   } else if (yId) {
-    activeThumbnail = imgError 
-      ? `https://img.youtube.com/vi/${yId}/hqdefault.jpg` 
-      : `https://img.youtube.com/vi/${yId}/maxresdefault.jpg`;
-  } else {
-    activeThumbnail = '/assets/hero-bg-new.jpg';
+    activeThumbnail = `https://img.youtube.com/vi/${yId}/hqdefault.jpg`;
   }
 
   return (
@@ -201,7 +195,7 @@ function AboutHeroPlayer() {
           /* Thumbnail Card Screen */
           <div 
             onClick={() => setIsPlaying(true)}
-            className="relative w-full h-full z-10 cursor-pointer overflow-hidden flex items-center justify-center select-none"
+            className="absolute inset-0 w-full h-full z-10 cursor-pointer overflow-hidden select-none"
             role="button"
             tabIndex={0}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setIsPlaying(true); }}
@@ -211,27 +205,20 @@ function AboutHeroPlayer() {
             <img 
               src={activeThumbnail} 
               alt={videoData.title || "Tsehay Campus Video"} 
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
-              onError={() => {
-                if (!imgError && yId) {
-                  setImgError(true);
+              className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+              onError={(e) => {
+                const target = e.currentTarget as HTMLImageElement;
+                if (target.src !== '/assets/hero-bg-new.jpg') {
+                  target.src = '/assets/hero-bg-new.jpg';
                 }
               }}
             />
 
             {/* Cinematic Gradient Scrim */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-black/25 group-hover:bg-black/20 transition-colors duration-500"></div>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/20 group-hover:bg-black/20 transition-colors duration-500"></div>
 
-            {/* Top Badges */}
-            <div className="absolute top-4 left-4 sm:top-6 sm:left-6 z-20 flex items-center gap-2">
-              <div className="bg-black/60 backdrop-blur-md text-white text-xs font-black px-3.5 py-1.5 rounded-full border border-white/20 shadow-md flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#f9b03c] animate-pulse"></span>
-                <span>Tsehay Campus</span>
-              </div>
-            </div>
-
-            {/* Glowing Interactive Play Button */}
-            <div className="relative z-20 flex flex-col items-center justify-center">
+            {/* Glowing Interactive Play Button (Locked Dead-Center) */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 flex flex-col items-center justify-center pointer-events-none">
               <div className="relative flex items-center justify-center">
                 {/* Ping ring */}
                 <span className="absolute -inset-3 rounded-full bg-[#f9b03c]/35 animate-ping pointer-events-none"></span>
@@ -247,11 +234,13 @@ function AboutHeroPlayer() {
             </div>
 
             {/* Bottom Title Bar */}
-            <div className="absolute bottom-4 left-4 right-4 sm:bottom-6 sm:left-6 sm:right-6 z-20">
-              <h4 className="text-white font-extrabold text-base sm:text-xl drop-shadow-md line-clamp-1">
-                {videoData.title || "Tsehay Campus Introduction"}
-              </h4>
-            </div>
+            {videoData.title && (
+              <div className="absolute bottom-4 left-4 right-4 sm:bottom-6 sm:left-6 sm:right-6 z-20 pointer-events-none">
+                <h4 className="text-white font-extrabold text-base sm:text-xl drop-shadow-md line-clamp-1">
+                  {videoData.title}
+                </h4>
+              </div>
+            )}
           </div>
         ) : (
           /* Active Playing Video / Iframe */
