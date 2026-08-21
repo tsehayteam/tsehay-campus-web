@@ -520,14 +520,6 @@ export default function CoursePreviewPage() {
             )}
           </ul>
 
-          {/* Description Section */}
-          <div className="mb-10 border-t border-gray-200 dark:border-gray-800 pt-8">
-            <h2 className="text-2xl font-black font-heading text-secondary dark:text-primary mb-4">Description</h2>
-            <div className="text-sm sm:text-base text-gray-700 dark:text-gray-300 whitespace-pre-line leading-relaxed">
-              {course?.desc || course?.description || "No detailed description provided for this course."}
-            </div>
-          </div>
-
           {/* Instructor Section */}
           <div className="mb-10 border-t border-gray-200 dark:border-gray-800 pt-8">
             <h2 className="text-2xl font-black font-heading text-secondary dark:text-primary mb-6">Instructor</h2>
