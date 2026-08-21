@@ -9,28 +9,7 @@ export default function ContentProtection() {
   const [screenshotDetected, setScreenshotDetected] = useState(false);
 
   useEffect(() => {
-    // 1. Blackout on Window Blur & Visibility Change (Snipping tool, OBS, Screen Recorders, Alt-Tab)
-    const handleBlur = () => {
-      setIsShieldActive(true);
-    };
-
-    const handleFocus = () => {
-      setIsShieldActive(false);
-    };
-
-    const handleVisibilityChange = () => {
-      if (document.hidden) {
-        setIsShieldActive(true);
-      } else {
-        setIsShieldActive(false);
-      }
-    };
-
-    window.addEventListener('blur', handleBlur);
-    window.addEventListener('focus', handleFocus);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    // 2. Intercept PrintScreen and Screen Recording Shortcuts
+    // 1. Intercept PrintScreen key to prevent screen capturing
     const handleKeyDown = (e: KeyboardEvent) => {
       // PrintScreen (PrtScn) key
       if (e.key === 'PrintScreen' || e.keyCode === 44 || e.code === 'PrintScreen') {
@@ -126,9 +105,6 @@ export default function ContentProtection() {
     } catch (e) {}
 
     return () => {
-      window.removeEventListener('blur', handleBlur);
-      window.removeEventListener('focus', handleFocus);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('keydown', handleKeyDown, true);
       window.removeEventListener('keyup', handleKeyUp, true);
       document.removeEventListener('contextmenu', handleContextMenu);

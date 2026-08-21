@@ -300,39 +300,9 @@ function AboutHeroPlayer() {
 function AboutShortVideo({ src }: { src: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [isPlaying, setIsPlaying] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(false);
 
-  useEffect(() => {
-    const el = containerRef.current;
-    const video = videoRef.current;
-    if (!el || !video) return;
-
-    // Initial instant autoplay muted
-    video.muted = true;
-    video.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (!videoRef.current) return;
-          if (entry.isIntersecting) {
-            videoRef.current.play().then(() => setIsPlaying(true)).catch(() => {});
-          } else {
-            videoRef.current.pause();
-            setIsPlaying(false);
-          }
-        });
-      },
-      { threshold: 0.25 }
-    );
-
-    observer.observe(el);
-    return () => {
-      observer.disconnect();
-    };
-  }, []);
-
-  // Instant Play / Pause toggle on click/touch (unmutes when played)
+  // Manual Play / Pause toggle on click/touch (NO automatic scroll autoplay)
   const togglePlayPause = (e: React.MouseEvent) => {
     e.stopPropagation();
     const video = videoRef.current;
@@ -342,7 +312,11 @@ function AboutShortVideo({ src }: { src: string }) {
       video.muted = false;
       video.play().then(() => {
         setIsPlaying(true);
-      }).catch(() => {});
+      }).catch(() => {
+        // Fallback for browsers requiring muted initial interaction
+        video.muted = true;
+        video.play().then(() => setIsPlaying(true)).catch(() => {});
+      });
     } else {
       video.pause();
       setIsPlaying(false);
@@ -354,20 +328,24 @@ function AboutShortVideo({ src }: { src: string }) {
       ref={containerRef}
       onClick={togglePlayPause}
       className="rounded-3xl overflow-hidden shadow-2xl group aspect-[9/16] bg-slate-950 relative cursor-pointer select-none border border-gray-200 dark:border-gray-800 transition-all duration-300 hover:shadow-[0_0_35px_rgba(249,176,60,0.3)] active:scale-[0.99]"
+      title={isPlaying ? "ለማቆም ይጫኑ (Click to Pause)" : "ለማጫወት ይጫኑ (Click to Play)"}
     >
-      {/* HTML5 Video Element (100% Crisp & Visible!) */}
+      {/* HTML5 Video Element */}
       <video
         ref={videoRef}
-        autoPlay
-        loop
-        muted
         playsInline
         webkit-playsinline="true"
         disablePictureInPicture
         controlsList="nodownload noremoteplayback"
-        preload="auto"
+        preload="metadata"
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
+        onEnded={() => {
+          setIsPlaying(false);
+          if (videoRef.current) {
+            videoRef.current.currentTime = 0;
+          }
+        }}
         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 pointer-events-none"
       >
         <source src={src} type="video/mp4" />
@@ -377,16 +355,20 @@ function AboutShortVideo({ src }: { src: string }) {
       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20 pointer-events-none"></div>
 
       {/* Sleek Center Play/Pause Button */}
-      <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none transition-all duration-200 transform ${
+      <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none transition-all duration-300 transform ${
         isPlaying 
           ? 'opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-100' 
           : 'opacity-100 scale-100'
       }`}>
-        <div className="w-16 h-16 rounded-full bg-black/65 hover:bg-[#f9b03c] border-2 border-[#f9b03c] text-[#f9b03c] hover:text-black flex items-center justify-center shadow-[0_0_35px_rgba(249,176,60,0.6)] backdrop-blur-md transition-all duration-200">
+        <div className={`w-16 h-16 sm:w-18 sm:h-18 rounded-full flex items-center justify-center shadow-[0_0_35px_rgba(249,176,60,0.6)] backdrop-blur-md transition-all duration-300 ${
+          isPlaying 
+            ? 'bg-black/70 border-2 border-[#f9b03c] text-[#f9b03c]' 
+            : 'bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 group-hover:scale-110 shadow-[0_0_40px_rgba(249,176,60,0.8)]'
+        }`}>
           {isPlaying ? (
-            <i className="fa-solid fa-pause text-xl"></i>
+            <i className="fa-solid fa-pause text-2xl"></i>
           ) : (
-            <i className="fa-solid fa-play text-xl pl-1"></i>
+            <i className="fa-solid fa-play text-2xl ml-1"></i>
           )}
         </div>
       </div>
