@@ -10,6 +10,7 @@ import Link from 'next/link';
 import Footer from '@/components/Footer';
 import SmartSearchInput from '@/components/SmartSearchInput';
 import YouTubeVideoSlider from '@/components/YouTubeVideoSlider';
+import SynthesiaAiChatDemo from '@/components/SynthesiaAiChatDemo';
 import { getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl } from '@/lib/courseCache';
 
 const PARTNER_BRANDS = [
@@ -256,14 +257,6 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [hasPurchasedCourses, setHasPurchasedCourses] = useState<boolean | null>(null);
   
-  // AI Chat state
-  const [aiMessages, setAiMessages] = useState([
-    { role: 'ai', text: 'ሰላም! 👋 እኔ የ Tsehay Campus አጠቃላይ የ AI ረዳት ነኝ። ስለ ኮርሶቻችን፣ ስለ ዌብሳይቱ አጠቃቀም፣ ስለ ክፍያ እና ስለ መስራቾቻችን ማንኛውንም መረጃ ሊጠይቁኝ ይችላሉ። ዛሬ በምን ልርዳዎ?' }
-  ]);
-  const [aiInput, setAiInput] = useState('');
-  const [isAiLoading, setIsAiLoading] = useState(false);
-  const chatEndRef = useRef<HTMLDivElement>(null);
-  
   // FAQ state
   const [openFaqId, setOpenFaqId] = useState<number | null>(null);
 
@@ -309,31 +302,6 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    const container = document.getElementById('ai-landing-chat');
-    if (container) {
-      container.scrollTop = container.scrollHeight;
-    }
-  }, [aiMessages, isAiLoading]);
-
-  useEffect(() => {
-    if (user) {
-      const fetchPurchasedCourses = async () => {
-        try {
-          const purchasesRef = collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'purchased_courses');
-          const purchasesSnap = await getDocs(purchasesRef);
-          setHasPurchasedCourses(!purchasesSnap.empty);
-        } catch (error) {
-          console.error("Error fetching user purchases:", error);
-          setHasPurchasedCourses(false);
-        }
-      };
-      fetchPurchasedCourses();
-    } else {
-      setHasPurchasedCourses(null);
-    }
-  }, [user]);
-
-  useEffect(() => {
     // Instant cache fallback on client mount
     try {
       const cached = getCachedCourses();
@@ -358,42 +326,6 @@ export default function Home() {
     });
     return () => unsubscribe();
   }, []);
-
-  const handleAiSubmit = async (e?: React.FormEvent | React.KeyboardEvent | React.MouseEvent) => {
-    if (e) e.preventDefault();
-    if (!aiInput.trim()) return;
-    
-    const question = aiInput.trim();
-    const newMessages = [...aiMessages, { role: 'user', text: question }];
-    setAiMessages(newMessages);
-    setAiInput('');
-    setIsAiLoading(true);
-
-    setTimeout(() => {
-      const container = document.getElementById('ai-landing-chat');
-      if (container) container.scrollTop = container.scrollHeight;
-    }, 50);
-    
-    try {
-        const response = await fetch('/api/chat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt: question })
-        });
-        
-        const data = await response.json();
-        const reply = data.reply || data.error || "ይቅርታ፣ አሁን ላይ መመለስ አልቻልኩም።";
-        setAiMessages([...newMessages, { role: 'ai', text: reply }]);
-        setTimeout(() => {
-          const container = document.getElementById('ai-landing-chat');
-          if (container) container.scrollTop = container.scrollHeight;
-        }, 50);
-    } catch (err: any) {
-        setAiMessages([...newMessages, { role: 'ai', text: `ስህተት: ${err?.message || err || "ያልታወቀ ስህተት"}` }]);
-    } finally {
-        setIsAiLoading(false);
-    }
-  };
 
   return (
     <main className="relative bg-transparent">
@@ -515,11 +447,14 @@ export default function Home() {
 
 
 
-    <section className="py-10 sm:py-14 bg-white/5 dark:bg-[#030509]/60 backdrop-blur-md border-b border-white/[0.06] relative z-20 shadow-xs transition-colors duration-300 overflow-hidden select-none scrolly-reveal">
+    {/* SECTION 2: MASSIVE SOCIAL PROOF (Synthesia Style Trust Banner) */}
+    <section className="py-10 sm:py-14 bg-white/5 dark:bg-[#030509]/70 backdrop-blur-xl border-b border-white/[0.06] relative z-20 shadow-xs transition-colors duration-300 overflow-hidden select-none scrolly-reveal">
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 text-center mb-6 sm:mb-8">
-            <div className="inline-flex items-center gap-2 bg-blue-50/60 dark:bg-darkCard/80 border border-blue-100/80 dark:border-gray-800 rounded-full px-5 py-1.5 shadow-xs">
-                <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
-                <p className="font-accent text-secondary dark:text-primary font-extrabold tracking-widest text-[11px] sm:text-xs uppercase">{t('trusted_by')}</p>
+            <div className="inline-flex items-center gap-2.5 bg-[#3268ba]/15 dark:bg-[#3268ba]/20 border border-[#3268ba]/30 rounded-full px-5 py-2 shadow-xs backdrop-blur-md">
+                <span className="w-2 h-2 rounded-full bg-[#f9b03c] animate-pulse"></span>
+                <p className="font-mono text-[#f9b03c] font-black tracking-widest text-[11px] sm:text-xs uppercase">
+                    ከ 500+ በላይ ተማሪዎች እና ታላላቅ ተቋማት የታመነ
+                </p>
             </div>
         </div>
 
@@ -529,7 +464,7 @@ export default function Home() {
                 {[...PARTNER_BRANDS, ...PARTNER_BRANDS].map((partner, index) => (
                     <div 
                         key={`${partner.name}-${index}`}
-                        className="shrink-0 flex items-center justify-center grayscale-15 hover:grayscale-0 transition-all duration-300"
+                        className="shrink-0 flex items-center justify-center grayscale-15 hover:grayscale-0 transition-all duration-300 transform hover:scale-105"
                     >
                         {partner.render()}
                     </div>
@@ -777,53 +712,82 @@ export default function Home() {
     </section>
 
     
-    <section id="ai-feature" className="relative py-24 lg:py-32 overflow-hidden hero-mesh text-white border-y border-white/10 scrolly-reveal">
-        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20 mix-blend-overlay"></div>
-        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col lg:flex-row items-center gap-12 relative z-10">
-            <div className="flex-1 text-center lg:text-left animate-float" style={{animationDuration: "6s"}}>
-                <h2 className="text-3xl sm:text-5xl font-black font-heading mb-6 leading-tight"><span className="text-gradient notranslate">በ Tsehay AI</span> {t('make_smart')}</h2>
-                <p className="text-lg text-blue-100 font-body mb-8 leading-relaxed">{t('ai_section_desc')}</p>
-                <button onClick={() => { document.getElementById('ai-landing-input')?.focus() }} className="bg-white text-secondary font-black px-8 py-3.5 rounded-xl hover:bg-primary hover:text-dark transition shadow-[0_0_20px_rgba(249,176,60,0.5)] transform hover:-translate-y-1">{t('ask_ai_tutor')}</button>
-            </div>
-            <div className="flex-1 w-full max-w-lg bg-white/95 dark:bg-darkCard/95 backdrop-blur-md p-8 rounded-[3rem] shadow-2xl text-dark border border-white/20">
-                <div className="flex items-center gap-3 border-b border-gray-100 dark:border-gray-800 pb-4 mb-5">
-                    <div className="bg-secondary text-white p-2.5 rounded-xl shadow-inner"><i className="fa-solid fa-robot animate-pulse"></i></div>
-                    <h3 className="font-black text-base dark:text-white notranslate">Tsehay AI (የካምፓስ ረዳትዎ)</h3>
-                </div>
-                <div className="space-y-4 mb-6 text-sm font-body h-64 overflow-y-auto pr-2 custom-modal-scroll" id="ai-landing-chat">
-                    {aiMessages.map((msg, index) => (
-                        <div key={index} className={`flex ${msg.role === 'user' ? 'justify-end' : 'gap-2'} mb-4`}>
-                            {msg.role === 'ai' && (
-                                <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-dark shrink-0 shadow-md">
-                                    <i className="fa-solid fa-robot text-xs"></i>
-                                </div>
-                            )}
-                            <div className={`${msg.role === 'user' ? 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-dark dark:text-gray-200' : 'bg-blue-50 dark:bg-dark border-primary text-gray-800 dark:text-gray-200'} p-3 rounded-2xl max-w-[85%] border-l-4 shadow-sm text-sm leading-relaxed font-medium`} dangerouslySetInnerHTML={{ __html: msg.text.replace(/\n/g, '<br>') }} />
-                        </div>
-                    ))}
-                    {isAiLoading && (
-                        <div className="flex gap-2 mb-4">
-                            <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-white shrink-0 shadow-md">
-                                <i className="fa-solid fa-robot text-xs animate-bounce"></i>
+    {/* SECTION 1: INTERACTIVE "TSEHAY AI" DEMO (Synthesia.io Style Split 50/50 Screen) */}
+    <section id="ai-feature" className="relative py-20 lg:py-28 overflow-hidden bg-[#030509]/80 border-y border-white/10 scrolly-reveal">
+        {/* Subtle Stardust Mesh Background */}
+        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-15 mix-blend-overlay pointer-events-none"></div>
+        <div className="absolute top-1/4 -left-32 w-96 h-96 bg-[#f9b03c]/10 rounded-full blur-[140px] pointer-events-none"></div>
+        <div className="absolute bottom-1/4 -right-32 w-96 h-96 bg-[#3268ba]/15 rounded-full blur-[140px] pointer-events-none"></div>
+
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+                {/* Left Side: Bold High-Converting Typography */}
+                <div className="flex flex-col text-left">
+                    <div className="inline-flex items-center gap-2 bg-[#f9b03c]/10 border border-[#f9b03c]/25 px-4 py-1.5 rounded-full mb-5 w-fit">
+                        <span className="w-2 h-2 rounded-full bg-[#f9b03c] animate-pulse"></span>
+                        <span className="text-xs font-black uppercase tracking-widest text-[#f9b03c]">የእርስዎ የግል AI ረዳት</span>
+                    </div>
+
+                    <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black font-heading text-white mb-6 leading-[1.18] tracking-tight">
+                        በጥያቄዎ እና በቢዝነስዎ ውስጥ አብሮዎት የሚሰራ <span className="hero-headline-shift">የግል AI መምህር</span>
+                    </h2>
+
+                    <p className="text-base sm:text-lg text-slate-300 font-body mb-8 leading-relaxed">
+                        በ Tsehay Campus ውስጥ እያንዳንዱ ተማሪ የራሱ የሆነ የ 24/7 የግል AI ረዳት አለው። በማንኛውም ሰዓት ጥያቄዎችን ይጠይቁ፣ የቢዝነስ ስልቶችን ያዘጋጁ፣ እና ተግባራዊ መመሪያዎችን በቅጽበት በአማርኛ ያግኙ።
+                    </p>
+
+                    {/* Value Prop Bullet Checklist */}
+                    <div className="space-y-4 mb-9">
+                        <div className="flex items-start gap-3.5">
+                            <div className="w-8 h-8 rounded-xl bg-[#f9b03c]/15 text-[#f9b03c] border border-[#f9b03c]/30 flex items-center justify-center text-sm shrink-0 mt-0.5 shadow-[0_0_10px_rgba(249,176,60,0.2)]">
+                                <i className="fa-solid fa-bolt"></i>
                             </div>
-                            <div className="bg-blue-50 dark:bg-darkCard p-3 rounded-2xl max-w-[85%] border-l-4 border-secondary shadow-sm text-gray-500 dark:text-gray-400 text-sm">እያሰብኩ ነው...</div>
+                            <div>
+                                <h4 className="text-white font-bold text-sm sm:text-base">ፈጣን እና ተግባራዊ መልሶች</h4>
+                                <p className="text-xs sm:text-sm text-gray-400">በኮርሶች ውስጥ ለሚገጥምዎት ማንኛውም ጥያቄ በሰከንዶች ውስጥ የተብራራ መልስ ያገኛሉ።</p>
+                            </div>
                         </div>
-                    )}
-                    <div ref={chatEndRef} />
+
+                        <div className="flex items-start gap-3.5">
+                            <div className="w-8 h-8 rounded-xl bg-[#3268ba]/20 text-[#5a93e8] border border-[#3268ba]/35 flex items-center justify-center text-sm shrink-0 mt-0.5 shadow-[0_0_10px_rgba(50,104,186,0.2)]">
+                                <i className="fa-solid fa-bullseye"></i>
+                            </div>
+                            <div>
+                                <h4 className="text-white font-bold text-sm sm:text-base">በኢትዮጵያ ገበያ ላይ ያተኮረ የቢዝነስ ስትራቴጂ</h4>
+                                <p className="text-xs sm:text-sm text-gray-400">በሀገር ውስጥ ለሚሰሩ የኦንላይን ንግዶች እና ማስታወቂያዎች የተስተካከለ ተግባራዊ ምክር።</p>
+                            </div>
+                        </div>
+
+                        <div className="flex items-start gap-3.5">
+                            <div className="w-8 h-8 rounded-xl bg-[#f9b03c]/15 text-[#f9b03c] border border-[#f9b03c]/30 flex items-center justify-center text-sm shrink-0 mt-0.5 shadow-[0_0_10px_rgba(249,176,60,0.2)]">
+                                <i className="fa-solid fa-comments"></i>
+                            </div>
+                            <div>
+                                <h4 className="text-white font-bold text-sm sm:text-base">በአማርኛ እና በእንግሊዝኛ የሰለጠነ</h4>
+                                <p className="text-xs sm:text-sm text-gray-400">ጥያቄዎን በሚመችዎት ቋንቋ ይጠይቁ፣ ግልጽ እና ቀጥተኛ መመሪያ ያግኙ።</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* CTA Buttons */}
+                    <div className="flex flex-col sm:flex-row items-center gap-4">
+                        <MagneticButton 
+                            onClick={() => { document.getElementById('courses')?.scrollIntoView({behavior: 'smooth'}) }} 
+                            className="group terafab-btn-primary w-full sm:w-auto px-8 py-3.5 rounded-2xl flex items-center justify-center gap-3 text-sm sm:text-base cursor-pointer shadow-[0_0_30px_rgba(249,176,60,0.35)]"
+                        >
+                            <span>ኮርሶችን ያስሱ እና AI ን ያግኙ</span>
+                            <svg className="w-5 h-5 transition-transform duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:translate-x-1.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M5 12h14"></path>
+                                <path d="m12 5 7 7-7 7"></path>
+                            </svg>
+                        </MagneticButton>
+                    </div>
                 </div>
-                <form onSubmit={handleAiSubmit} className="flex gap-2">
-                    <input 
-                      id="ai-landing-input" 
-                      type="text" 
-                      value={aiInput} 
-                      onChange={(e) => setAiInput(e.target.value)} 
-                      placeholder="ጥያቄዎን እዚህ ይጻፉ..." 
-                      className="flex-1 bg-gray-100 dark:bg-dark dark:text-white border-none rounded-full px-5 py-3 text-sm focus:ring-2 focus:ring-secondary/30 outline-none transition" 
-                    />
-                    <button type="submit" disabled={isAiLoading || !aiInput.trim()} className="bg-secondary text-white w-12 h-12 rounded-full flex items-center justify-center hover:bg-dark dark:hover:bg-primary transition shadow-md disabled:opacity-50">
-                        <i className="fa-solid fa-paper-plane"></i>
-                    </button>
-                </form>
+
+                {/* Right Side: Synthesia-Style Interactive Live Typewriter Glassmorphism Mockup */}
+                <div className="w-full flex justify-center">
+                    <SynthesiaAiChatDemo />
+                </div>
             </div>
         </div>
     </section>
