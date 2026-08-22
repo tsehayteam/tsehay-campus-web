@@ -24,6 +24,7 @@ export default function CertificateGeneratorPage() {
   const [certId, setCertId] = useState('TC-2026-X8F9');
   const [issueDate, setIssueDate] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [downloadSuccess, setDownloadSuccess] = useState(false);
   const [scale, setScale] = useState(1);
 
   const certRef = useRef<HTMLDivElement>(null);
@@ -92,9 +93,11 @@ export default function CertificateGeneratorPage() {
       } else {
         window.print();
       }
+      setDownloadSuccess(true);
     } catch (error) {
       console.error('Error generating certificate PNG:', error);
       window.print();
+      setDownloadSuccess(true);
     } finally {
       setIsGenerating(false);
     }
@@ -102,6 +105,7 @@ export default function CertificateGeneratorPage() {
 
   const handlePrint = () => {
     window.print();
+    setDownloadSuccess(true);
   };
 
   return (
@@ -110,7 +114,7 @@ export default function CertificateGeneratorPage() {
       <link rel="preconnect" href="https://fonts.googleapis.com" />
       <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       <link
-        href="https://fonts.googleapis.com/css2?family=Alex+Brush&family=Cinzel:wght@500;700;900&family=Great+Vibes&family=Playfair+Display:ital,wght@0,600;0,800;0,900;1,400;1,700&family=Montserrat:wght@400;600;700;900&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Playfair+Display:ital,wght@0,600;0,800;0,900;1,400;1,700&family=Montserrat:wght@400;600;700;900&display=swap"
         rel="stylesheet"
       />
 
@@ -132,7 +136,7 @@ export default function CertificateGeneratorPage() {
         </div>
 
         {/* Generator Form Controls (Glassmorphic Box) */}
-        <div className="bg-[#050811]/95 backdrop-blur-2xl border border-white/[0.1] rounded-3xl p-6 sm:p-8 mb-12 shadow-[0_20px_60px_rgba(0,0,0,0.7)] max-w-4xl mx-auto">
+        <div className="bg-[#050811]/95 backdrop-blur-2xl border border-white/[0.1] rounded-3xl p-6 sm:p-8 mb-8 shadow-[0_20px_60px_rgba(0,0,0,0.7)] max-w-4xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             {/* Input 1: Student Full Name */}
             <div>
@@ -143,7 +147,7 @@ export default function CertificateGeneratorPage() {
                 type="text"
                 value={studentName}
                 onChange={(e) => setStudentName(e.target.value)}
-                placeholder="उदा. Abebe Kebede / እዮብ ሳህሌ"
+                placeholder="उदा. Abebe Kebede / አበበ ከበደ"
                 className="w-full bg-white/[0.04] border border-white/[0.1] rounded-xl px-4 py-3.5 text-white font-semibold text-base focus:border-[#f9b03c] focus:ring-1 focus:ring-[#f9b03c] outline-none transition"
               />
             </div>
@@ -213,13 +217,45 @@ export default function CertificateGeneratorPage() {
                 ) : (
                   <>
                     <i className="fa-solid fa-download"></i>
-                    <span>Download High-Res PNG</span>
+                    <span>Generate & Download Certificate</span>
                   </>
                 )}
               </button>
             </div>
           </div>
         </div>
+
+        {/* IN-PERSON STAMP NOTIFICATION ALERT */}
+        {downloadSuccess && (
+          <div className="max-w-4xl mx-auto mb-10 bg-[#050811]/95 backdrop-blur-2xl border-2 border-[#f9b03c] rounded-3xl p-6 sm:p-7 shadow-[0_15px_50px_rgba(249,176,60,0.3)] animate-in fade-in slide-in-from-top-3 duration-300">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-[#f9b03c]/20 text-[#f9b03c] border border-[#f9b03c]/40 flex items-center justify-center text-xl shrink-0 shadow-[0_0_20px_rgba(249,176,60,0.35)]">
+                <i className="fa-solid fa-circle-check"></i>
+              </div>
+              <div className="space-y-2 flex-1">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-heading font-black text-lg sm:text-xl text-white">
+                    እንኳን ደስ አለዎት! ሰርተፍኬትዎን በተሳካ ሁኔታ አውርደዋል።
+                  </h3>
+                  <button 
+                    onClick={() => setDownloadSuccess(false)}
+                    className="text-gray-400 hover:text-white text-xs px-2.5 py-1 rounded-lg bg-white/5"
+                  >
+                    <i className="fa-solid fa-xmark"></i>
+                  </button>
+                </div>
+                <p className="text-sm sm:text-base text-slate-200 font-body leading-relaxed">
+                  የሰርተፍኬትዎን ህጋዊነት ለማረጋገጥ እና ኦሪጅናል ማህተም እና ፊርማ ለማስመታት፣ እባክዎ በስልክ ቁጥር <span className="text-[#f9b03c] font-black underline font-mono text-base sm:text-lg">0980209090</span> በመደወል በአካል ቢሯችን ይምጡ።
+                </p>
+                <div className="pt-2 flex items-center gap-4 text-xs sm:text-sm font-bold text-[#f9b03c]">
+                  <a href="tel:0980209090" className="inline-flex items-center gap-2 hover:underline">
+                    <i className="fa-solid fa-phone"></i> ደውለው ቀጠሮ ይያዙ: 0980209090
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* =========================================================================
             ✨ LIVE PRINTABLE CERTIFICATE PREVIEW CONTAINER
@@ -261,7 +297,7 @@ export default function CertificateGeneratorPage() {
               {/* Subtle Guilloche Pattern Background */}
               <div className="absolute inset-10 opacity-[0.025] pointer-events-none bg-[radial-gradient(#3268ba_1px,transparent_1px)] [background-size:16px_16px]"></div>
 
-              {/* SECTION 1: HEADER & LOGO */}
+              {/* SECTION 1: HEADER & LOGO (Clean without line under logo) */}
               <div className="relative z-10 text-center pt-2">
                 <div className="flex justify-center items-center mb-2">
                   <img 
@@ -324,42 +360,32 @@ export default function CertificateGeneratorPage() {
                 </div>
               </div>
 
-              {/* SECTION 3: SIGNATURE, SEAL & VERIFICATION DETAILS */}
+              {/* SECTION 3: PHYSICAL SIGNATURE & IN-PERSON STAMP DESIGNATED AREAS */}
               <div className="relative z-10 grid grid-cols-3 items-end pb-3 px-8 text-center">
-                {/* Bottom Left: Eyoub Sahle Signature */}
+                {/* Bottom Left: Blank Line for Official Physical Signature */}
                 <div className="text-left">
-                  <div className="h-14 flex items-end">
-                    <span
-                      className="text-4xl text-[#0f172a] font-normal"
-                      style={{ fontFamily: "'Great Vibes', cursive", letterSpacing: '1px' }}
-                    >
-                      Eyoub Sahle
-                    </span>
-                  </div>
-                  <div className="w-48 h-[2px] bg-[#3268ba] mb-1.5 mt-1"></div>
-                  <p className="text-xs font-black text-[#0f172a] uppercase tracking-wider">ኢዮብ ሳህሌ (መስራች)</p>
-                  <p className="text-[10px] text-gray-500 font-semibold">Founder & Lead Instructor</p>
+                  <div className="h-12"></div>
+                  <div className="w-48 h-[1.5px] bg-[#3268ba] mb-1.5 mt-1"></div>
+                  <p className="text-xs font-black text-[#0f172a] uppercase tracking-wider">የአሰልጣኙ ፊርማ (Signature)</p>
+                  <p className="text-[10px] text-gray-600 font-bold">ኢዮብ ሳህሌ (መስራች)</p>
                 </div>
 
-                {/* Center: Official Custom Stamp */}
-                <div className="flex justify-center items-center">
-                  <img 
-                    src="/logo.png" 
-                    alt="Official Verified Stamp" 
-                    className="h-20 w-20 object-contain drop-shadow-[0_0_15px_rgba(249,176,60,0.45)]"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = '/tc-logo.jpg';
-                    }}
-                  />
+                {/* Center: Blank Designated Area for Official In-Person Stamp */}
+                <div className="flex flex-col items-center justify-center">
+                  <div className="w-20 h-20 rounded-full border-2 border-dashed border-[#3268ba]/40 flex flex-col items-center justify-center p-1 bg-[#3268ba]/[0.02]">
+                    <i className="fa-solid fa-stamp text-[#3268ba]/60 text-lg mb-0.5"></i>
+                    <span className="text-[8px] font-black text-[#3268ba] uppercase tracking-tighter text-center leading-tight">ይፋዊ ማህተም</span>
+                  </div>
+                  <span className="text-[9px] text-gray-500 font-semibold mt-1">Official Stamp Area</span>
                 </div>
 
                 {/* Bottom Right: Date & Verification ID */}
                 <div className="text-right">
-                  <div className="h-14 flex flex-col justify-end text-right">
+                  <div className="h-12 flex flex-col justify-end text-right">
                     <p className="text-sm font-bold text-[#0f172a]">{issueDate}</p>
-                    <div className="w-48 h-[2px] bg-[#3268ba] mb-1.5 mt-1 ml-auto"></div>
+                    <div className="w-48 h-[1.5px] bg-[#3268ba] mb-1.5 mt-1 ml-auto"></div>
                   </div>
-                  <p className="text-xs font-black text-[#0f172a] uppercase tracking-wider">ISSUE DATE</p>
+                  <p className="text-xs font-black text-[#0f172a] uppercase tracking-wider">የተሰጠበት ቀን (Issue Date)</p>
                   <p className="text-[10px] text-[#3268ba] font-mono font-bold tracking-wider">ID: {certId}</p>
                 </div>
               </div>
