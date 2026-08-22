@@ -284,15 +284,15 @@ export default function Navbar() {
                 setIsMobileMenuOpen(false); 
                 if (pathname === '/') window.scrollTo({ top: 0, behavior: 'smooth' }); 
               }} 
-              className="flex-shrink-0 flex items-center cursor-pointer group gap-2.5 mr-2 sm:mr-4 lg:mr-8 transition-opacity duration-300 hover:opacity-90"
+              className="flex-shrink-0 flex items-center cursor-pointer group gap-2.5 mr-2 sm:mr-4 lg:mr-8 brand-entrance"
             >
               <img 
                 src="/tc-logo.jpg" 
                 alt="Tsehay Campus Logo" 
-                className="h-10 sm:h-12 w-auto object-contain rounded-xl shadow-sm border border-black/10 dark:border-white/10 group-hover:border-[#f9b03c]/50 transition-colors duration-300" 
+                className="h-10 sm:h-12 w-auto object-contain rounded-xl shadow-sm border border-black/10 dark:border-white/10 group-hover:border-[#f9b03c]/50 brand-logo-img" 
                 onError={(e) => { e.currentTarget.src = 'https://ui-avatars.com/api/?name=TC&background=3268BA&color=fff'; }} 
               />
-              <span className="font-heading font-black text-xl sm:text-2xl tracking-tight hidden sm:block notranslate select-none">
+              <span className="font-heading font-black text-xl sm:text-2xl tracking-tight hidden sm:block notranslate select-none transition-colors duration-300">
                 <span className="text-[#f9b03c]">Tsehay</span> <span className="text-[#3268ba]">Campus</span>
               </span>
             </Link>

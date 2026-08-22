@@ -1282,12 +1282,12 @@ ${customAdminPrompt}
       {/* Sidebar Navigation */}
       <aside className="w-full md:w-24 lg:w-72 bg-white dark:bg-slate-800 border-b md:border-b-0 md:border-r border-slate-200 dark:border-slate-700 flex flex-col items-center lg:items-start shadow-sm z-20 shrink-0">
         <div className="h-16 md:h-20 w-full flex items-center justify-between md:justify-center lg:justify-start px-4 lg:px-6 border-b border-slate-100 dark:border-slate-700">
-          <a href="/" className="flex items-center cursor-pointer group">
-            <div className="w-8 h-8 md:w-10 md:h-10 bg-white rounded-xl mx-auto flex items-center justify-center shadow-lg p-0.5 border border-white/20 animate-logo-zoom">
+          <a href="/" className="flex items-center cursor-pointer group brand-entrance">
+            <div className="w-8 h-8 md:w-10 md:h-10 bg-white rounded-xl mx-auto flex items-center justify-center shadow-lg p-0.5 border border-white/20 brand-logo-img">
               <img src="/tc-logo.jpg" alt="Tsehay Campus Logo" className="w-full h-full object-contain rounded-xl" />
             </div>
             <span className="ml-3 font-heading font-black text-lg md:text-xl tracking-tight notranslate select-none">
-              <span className="text-primary animate-tsehay-float">Tsehay</span> <span className="text-secondary dark:text-secondary animate-campus-float">Campus</span>
+              <span className="text-[#f9b03c]">Tsehay</span> <span className="text-[#3268ba]">Campus</span>
             </span>
           </a>
           

@@ -634,10 +634,10 @@ export default function AdminDashboard() {
       {/* Sidebar */}
       <aside className="w-[280px] bg-white dark:bg-[#1E293B] border-r border-gray-200 dark:border-slate-700 hidden lg:flex flex-col">
         <div className="h-16 flex items-center px-6 border-b border-gray-100 dark:border-slate-700">
-          <div className="flex items-center gap-3">
-            <img src="/tc-logo.jpg" alt="AdminPanel Logo" className="h-8 w-auto rounded-lg bg-white p-1 animate-logo-zoom" />
+          <div className="flex items-center gap-3 brand-entrance">
+            <img src="/tc-logo.jpg" alt="AdminPanel Logo" className="h-8 w-auto rounded-lg bg-white p-1 brand-logo-img" />
             <h2 className="text-xl font-black font-heading text-dark dark:text-white tracking-tighter select-none">
-              <span className="animate-tsehay-float">Admin</span><span className="text-primary animate-campus-float">Panel</span>
+              <span>Admin</span><span className="text-primary">Panel</span>
             </h2>
           </div>
         </div>
