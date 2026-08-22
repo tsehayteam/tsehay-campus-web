@@ -285,8 +285,8 @@ body {
   align-items: center;
   text-align: center;
   overflow: hidden;
-  padding-top: max(130px, 14vh);
-  padding-bottom: max(60px, 8vh);
+  padding-top: max(88px, 9vh);
+  padding-bottom: max(35px, 4vh);
 }
 
 .terafab-hero-bg {
@@ -560,6 +560,33 @@ img, video, canvas {
   transform: translateY(-4px) scale(1.02);
   border-color: rgba(50, 104, 186, 0.55);
   box-shadow: 0 15px 40px rgba(50, 104, 186, 0.35), 0 0 20px rgba(50, 104, 186, 0.2);
+}
+
+/* ==========================================================================
+   🌈 Hero Cinematic Color-Shifting Headline Animation
+   Smooth transition between Primary Golden Yellow (#f9b03c) and Royal Blue (#3268ba / #5a93e8)
+   ========================================================================== */
+
+@keyframes heroColorPulse {
+  0% {
+    background-image: linear-gradient(135deg, #ffffff 0%, #f9b03c 35%, #ffd580 70%, #ffffff 100%);
+    filter: drop-shadow(0 0 25px rgba(249, 176, 60, 0.45));
+  }
+  50% {
+    background-image: linear-gradient(135deg, #ffffff 0%, #3268ba 30%, #5a93e8 65%, #f9b03c 100%);
+    filter: drop-shadow(0 0 30px rgba(50, 104, 186, 0.55));
+  }
+  100% {
+    background-image: linear-gradient(135deg, #ffffff 0%, #f9b03c 35%, #ffd580 70%, #ffffff 100%);
+    filter: drop-shadow(0 0 25px rgba(249, 176, 60, 0.45));
+  }
+}
+
+.hero-headline-shift {
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: heroColorPulse 5s ease-in-out infinite;
 }
 
 
