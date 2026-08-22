@@ -20,16 +20,6 @@ export default function SmoothScrollAndScrollyProvider({
 }) {
   const pathname = usePathname();
 
-  // Scroll Target and Smooth Inertia State
-  const state = useRef({
-    currentY: 0,
-    targetY: 0,
-    isScrolling: false,
-    maxScroll: 0,
-    animFrame: 0,
-    isTouch: false,
-  });
-
   const scrollTo = (target: string | number, offset = 0) => {
     let targetPosition = 0;
     if (typeof target === 'number') {
@@ -48,101 +38,114 @@ export default function SmoothScrollAndScrollyProvider({
   };
 
   useEffect(() => {
-    // Detect touch devices where native momentum is preferred
-    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-    state.current.isTouch = isTouchDevice;
+    interface TrackedElement {
+      el: HTMLElement;
+      currentProgress: number;
+      targetProgress: number;
+      order: number;
+      isScrub: boolean;
+    }
 
-    let elementsToObserve: HTMLElement[] = [];
+    let trackedElements: TrackedElement[] = [];
 
     const refreshElements = () => {
-      elementsToObserve = Array.from(
+      const domElements = Array.from(
         document.querySelectorAll<HTMLElement>(
-          '.scrolly-reveal, .scrolly-scrub, [data-scrolly], .scrolly-scale, .scrolly-parallax'
+          '.scrolly-reveal, .scrolly-scrub, [data-scrolly], .scrolly-card, .scrolly-stagger-1, .scrolly-stagger-2, .scrolly-stagger-3, .scrolly-stagger-4, .scrolly-stagger-5, .scrolly-stagger-6'
         )
       );
+
+      trackedElements = domElements.map((el) => {
+        let order = 0;
+        if (el.classList.contains('scrolly-stagger-1')) order = 1;
+        else if (el.classList.contains('scrolly-stagger-2')) order = 2;
+        else if (el.classList.contains('scrolly-stagger-3')) order = 3;
+        else if (el.classList.contains('scrolly-stagger-4')) order = 4;
+        else if (el.classList.contains('scrolly-stagger-5')) order = 5;
+        else if (el.classList.contains('scrolly-stagger-6')) order = 6;
+        else if (el.hasAttribute('data-scrolly-order')) {
+          order = parseInt(el.getAttribute('data-scrolly-order') || '0', 10);
+        }
+
+        const isScrub = el.classList.contains('scrolly-scrub');
+
+        return {
+          el,
+          currentProgress: 0,
+          targetProgress: 0,
+          order,
+          isScrub,
+        };
+      });
     };
 
     refreshElements();
 
-    // GSAP-style Bi-directional ScrollTrigger Engine with scrub interpolation
-    const updateScrollyElements = () => {
+    let animId: number;
+    let isRunning = true;
+
+    // Bi-directional ScrollTrigger Engine (Scrub: 1 interpolation)
+    const update = () => {
+      if (!isRunning) return;
+
       const viewportHeight = window.innerHeight;
-      const scrollY = window.scrollY;
 
-      for (let i = 0; i < elementsToObserve.length; i++) {
-        const el = elementsToObserve[i];
-        if (!el || !el.isConnected) continue;
+      for (let i = 0; i < trackedElements.length; i++) {
+        const item = trackedElements[i];
+        if (!item.el || !item.el.isConnected) continue;
 
-        const rect = el.getBoundingClientRect();
+        const rect = item.el.getBoundingClientRect();
         const elementTop = rect.top;
-        const elementHeight = rect.height || 100;
+        const elementHeight = rect.height || 120;
 
-        // Trigger start when top enters 92% of viewport; trigger end when bottom leaves 8% of viewport
-        const startTrigger = viewportHeight * 0.92;
-        const endTrigger = -elementHeight * 0.4;
+        // Calculate staggered trigger based on sequential order (one-by-one reveal)
+        const orderOffset = item.order * 90; // Each sequential card requires an extra 90px of scroll
+        const startTrigger = viewportHeight * 0.90 - orderOffset;
+        const endTrigger = -elementHeight * 0.3;
 
-        // Progress from 0 (offscreen below) to 1 (fully revealed in viewport)
+        // Compute normalized progress [0 -> 1]
         let rawProgress = (startTrigger - elementTop) / (startTrigger - endTrigger);
-        let progress = Math.max(0, Math.min(1, rawProgress));
+        item.targetProgress = Math.max(0, Math.min(1, rawProgress));
 
-        // Smooth cubic ease for progress
-        const easedProgress = Math.pow(progress, 1.4);
+        // Scrub: 1 lerp dampening (0.12 speed per frame for buttery smoothness)
+        item.currentProgress += (item.targetProgress - item.currentProgress) * 0.12;
 
-        if (el.classList.contains('scrolly-scrub')) {
-          // Continuous bi-directional scrub: smoothly interpolate transform & opacity
-          const translateY = (1 - easedProgress) * 50;
-          const scale = 0.94 + easedProgress * 0.06;
-          const opacity = Math.min(1, easedProgress * 1.3);
+        if (item.isScrub) {
+          // Direct scrub mode
+          const translateY = (1 - item.currentProgress) * 45;
+          const scale = 0.94 + item.currentProgress * 0.06;
+          const opacity = Math.min(1, item.currentProgress * 1.25);
 
-          el.style.transform = `translate3d(0, ${translateY}px, 0) scale(${scale})`;
-          el.style.opacity = `${opacity}`;
-        } else if (el.classList.contains('scrolly-parallax')) {
-          // Parallax depth calculation
-          const speed = parseFloat(el.getAttribute('data-speed') || '0.2');
-          const offset = (elementTop - viewportHeight / 2) * speed;
-          el.style.transform = `translate3d(0, ${offset}px, 0)`;
+          item.el.style.transform = `translate3d(0, ${translateY}px, 0) scale(${scale})`;
+          item.el.style.opacity = `${opacity}`;
         } else {
-          // Standard Bi-directional reveal with smooth exit on reverse scroll
-          if (progress > 0.08) {
-            if (!el.classList.contains('is-visible')) {
-              el.classList.add('is-visible');
+          // Sequential bi-directional thresholding
+          if (item.currentProgress > 0.08) {
+            if (!item.el.classList.contains('is-visible')) {
+              item.el.classList.add('is-visible');
             }
           } else {
-            if (el.classList.contains('is-visible')) {
-              el.classList.remove('is-visible');
+            // Smoothly reverse when scrolling up
+            if (item.el.classList.contains('is-visible')) {
+              item.el.classList.remove('is-visible');
             }
           }
         }
       }
+
+      animId = requestAnimationFrame(update);
     };
 
-    // Lenis-style momentum smooth scroll RAF loop
-    let lastScrollY = window.scrollY;
-    let ticking = false;
+    animId = requestAnimationFrame(update);
 
-    const onScroll = () => {
-      if (!ticking) {
-        requestAnimationFrame(() => {
-          updateScrollyElements();
-          ticking = false;
-        });
-        ticking = true;
-      }
-    };
-
-    window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', () => {
+    const onResize = () => {
       refreshElements();
-      updateScrollyElements();
-    });
+    };
+    window.addEventListener('resize', onResize, { passive: true });
 
-    // Initial pass
-    updateScrollyElements();
-
-    // Re-observe after route change or DOM mutation
+    // Mutation observer for dynamically rendered course cards
     const observer = new MutationObserver(() => {
       refreshElements();
-      updateScrollyElements();
     });
 
     observer.observe(document.body, {
@@ -151,7 +154,9 @@ export default function SmoothScrollAndScrollyProvider({
     });
 
     return () => {
-      window.removeEventListener('scroll', onScroll);
+      isRunning = false;
+      cancelAnimationFrame(animId);
+      window.removeEventListener('resize', onResize);
       observer.disconnect();
     };
   }, [pathname]);

@@ -550,9 +550,10 @@ export default function Home() {
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 lg:gap-10">
-                {/* Card 1: Online + In-Person Training (Stagger 1) */}
+                {/* Card 1: Online + In-Person Training (Sequential Order 1) */}
                 <div 
-                    className="bg-white/80 dark:bg-white/[0.03] backdrop-blur-2xl p-8 sm:p-10 rounded-3xl sm:rounded-[2.5rem] shadow-sm border border-gray-200/70 dark:border-white/[0.08] hover:border-[#f9b03c]/60 dark:hover:border-[#f9b03c]/50 hover:shadow-[0_25px_60px_rgba(249,176,60,0.2)] hover:-translate-y-2 transition-all duration-500 group cursor-pointer active:scale-98 flex flex-col justify-between scrolly-reveal scrolly-stagger-1"
+                    data-scrolly-order="1"
+                    className="bg-white/80 dark:bg-white/[0.03] backdrop-blur-2xl p-8 sm:p-10 rounded-3xl sm:rounded-[2.5rem] shadow-sm border border-gray-200/70 dark:border-white/[0.08] hover:border-[#f9b03c]/60 dark:hover:border-[#f9b03c]/50 hover:shadow-[0_25px_60px_rgba(249,176,60,0.2)] hover:-translate-y-2 transition-all duration-500 group cursor-pointer active:scale-98 flex flex-col justify-between scrolly-card scrolly-stagger-1"
                     onClick={() => document.getElementById('courses')?.scrollIntoView({behavior: 'smooth'})}
                 >
                     <div>
@@ -568,9 +569,10 @@ export default function Home() {
                     </div>
                 </div>
                 
-                {/* Card 2: 24/7 Personal AI Tutor (Stagger 2 - Center Highlight) */}
+                {/* Card 2: 24/7 Personal AI Tutor (Sequential Order 2 - Center Highlight) */}
                 <div 
-                    className="bg-white/90 dark:bg-white/[0.05] backdrop-blur-2xl p-8 sm:p-10 rounded-3xl sm:rounded-[2.5rem] shadow-xl border-2 border-primary/70 dark:border-[#f9b03c]/60 hover:border-[#f9b03c] dark:hover:border-[#f9b03c] hover:shadow-[0_30px_70px_rgba(249,176,60,0.3)] hover:-translate-y-2 transition-all duration-500 group relative overflow-hidden transform md:-translate-y-4 cursor-pointer active:scale-98 flex flex-col justify-between scrolly-reveal scrolly-stagger-2" 
+                    data-scrolly-order="2"
+                    className="bg-white/90 dark:bg-white/[0.05] backdrop-blur-2xl p-8 sm:p-10 rounded-3xl sm:rounded-[2.5rem] shadow-xl border-2 border-primary/70 dark:border-[#f9b03c]/60 hover:border-[#f9b03c] dark:hover:border-[#f9b03c] hover:shadow-[0_30px_70px_rgba(249,176,60,0.3)] hover:-translate-y-2 transition-all duration-500 group relative overflow-hidden transform md:-translate-y-4 cursor-pointer active:scale-98 flex flex-col justify-between scrolly-card scrolly-stagger-2" 
                     onClick={() => document.getElementById('ai-feature')?.scrollIntoView({behavior: 'smooth'})}
                 >
                     <div className="absolute -right-10 -top-10 bg-gradient-to-br from-amber-400/20 via-primary/10 to-transparent w-48 h-48 rounded-full -z-10 group-hover:scale-150 transition-transform duration-700 pointer-events-none"></div>
@@ -592,9 +594,10 @@ export default function Home() {
                     </div>
                 </div>
 
-                {/* Card 3: Accredited Certificate (Stagger 3 - Royal Blue & Gold - NO GREEN) */}
+                {/* Card 3: Accredited Certificate (Sequential Order 3 - Royal Blue & Gold) */}
                 <div 
-                    className="bg-white/80 dark:bg-white/[0.03] backdrop-blur-2xl p-8 sm:p-10 rounded-3xl sm:rounded-[2.5rem] shadow-sm border border-gray-200/70 dark:border-white/[0.08] hover:border-[#3268ba]/60 dark:hover:border-[#3268ba]/60 hover:shadow-[0_25px_60px_rgba(50,104,186,0.22)] hover:-translate-y-2 transition-all duration-500 group cursor-pointer active:scale-98 flex flex-col justify-between scrolly-reveal scrolly-stagger-3"
+                    data-scrolly-order="3"
+                    className="bg-white/80 dark:bg-white/[0.03] backdrop-blur-2xl p-8 sm:p-10 rounded-3xl sm:rounded-[2.5rem] shadow-sm border border-gray-200/70 dark:border-white/[0.08] hover:border-[#3268ba]/60 dark:hover:border-[#3268ba]/60 hover:shadow-[0_25px_60px_rgba(50,104,186,0.22)] hover:-translate-y-2 transition-all duration-500 group cursor-pointer active:scale-98 flex flex-col justify-between scrolly-card scrolly-stagger-3"
                     onClick={() => document.getElementById('courses')?.scrollIntoView({behavior: 'smooth'})}
                 >
                     <div>
@@ -644,14 +647,15 @@ export default function Home() {
                 </div>
             ) : (
                 <div 
-                    className="grid gap-7 sm:gap-8 scrolly-reveal scrolly-stagger-2" 
+                    className="grid gap-7 sm:gap-8" 
                     id="courseList"
                     style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))' }}
                 >
-                    {courses.slice(0, 6).map(course => (
+                    {courses.slice(0, 6).map((course, index) => (
                         <div 
                             key={course.id} 
-                            className="bg-white/80 dark:bg-white/[0.02] backdrop-blur-xl rounded-2xl overflow-hidden flex flex-col justify-between transition-all duration-300 hover:-translate-y-2 border border-gray-200/80 dark:border-white/[0.05] hover:border-[#f9b03c] dark:hover:border-[#f9b03c]/70 shadow-[0_10px_30px_rgba(0,0,0,0.5)] hover:shadow-[0_20px_45px_rgba(249,176,60,0.2)] group cursor-pointer active:scale-98" 
+                            data-scrolly-order={index + 1}
+                            className={`bg-white/80 dark:bg-white/[0.02] backdrop-blur-xl rounded-2xl overflow-hidden flex flex-col justify-between transition-all duration-300 hover:-translate-y-2 border border-gray-200/80 dark:border-white/[0.05] hover:border-[#f9b03c] dark:hover:border-[#f9b03c]/70 shadow-[0_10px_30px_rgba(0,0,0,0.5)] hover:shadow-[0_20px_45px_rgba(249,176,60,0.2)] group cursor-pointer active:scale-98 scrolly-card scrolly-stagger-${(index % 3) + 1}`}
                             onClick={() => window.location.href=`/courses/${course.id}`}
                         >
                             <div>
@@ -672,7 +676,7 @@ export default function Home() {
                                     {/* Badges - Royal Blue / Gold only (NO GREEN) */}
                                     {(!course.isFree && course.price !== 0 && course.price !== '0' && course.price !== 'Free') ? (
                                         <div className="absolute top-3 right-3 z-20 bg-gradient-to-r from-[#f9b03c] to-amber-500 text-slate-950 text-[11px] font-black px-3.5 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg">
-                                            <i className="fa-solid fa-crown text-[10px]"></i> PREMIUM
+                                             PREMIUM
                                         </div>
                                     ) : (
                                         <div className="absolute top-3 right-3 z-20 bg-[#3268ba]/90 text-white text-[11px] font-black px-3.5 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg backdrop-blur-md border border-white/20">
@@ -818,8 +822,9 @@ export default function Home() {
             </div>
             
             <div className="space-y-4">
-                <div className="bg-white dark:bg-dark border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden shadow-sm">
-                    <button className="w-full text-left p-5 font-bold flex justify-between items-center hover:bg-gray-50 dark:hover:bg-gray-900 transition" onClick={() => setOpenFaqId(openFaqId === 1 ? null : 1)}>
+                {/* FAQ Accordion 1 (Sequential Order 1) */}
+                <div data-scrolly-order="1" className="bg-white dark:bg-dark border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden shadow-sm scrolly-card scrolly-stagger-1">
+                    <button className="w-full text-left p-5 font-bold flex justify-between items-center hover:bg-gray-50 dark:hover:bg-gray-900 transition cursor-pointer" onClick={() => setOpenFaqId(openFaqId === 1 ? null : 1)}>
                         <span className="text-dark dark:text-white text-lg flex items-center gap-3"><i className="fa-solid fa-circle-question text-primary"></i> {t('faq_q1')}</span>
                         <i className={`fa-solid fa-chevron-down text-gray-400 transition duration-300 ${openFaqId === 1 ? 'rotate-180' : ''}`}></i>
                     </button>
@@ -829,8 +834,10 @@ export default function Home() {
                         </div>
                     )}
                 </div>
-                <div className="bg-white dark:bg-dark border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden shadow-sm">
-                    <button className="w-full text-left p-5 font-bold flex justify-between items-center hover:bg-gray-50 dark:hover:bg-gray-900 transition" onClick={() => setOpenFaqId(openFaqId === 2 ? null : 2)}>
+
+                {/* FAQ Accordion 2 (Sequential Order 2) */}
+                <div data-scrolly-order="2" className="bg-white dark:bg-dark border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden shadow-sm scrolly-card scrolly-stagger-2">
+                    <button className="w-full text-left p-5 font-bold flex justify-between items-center hover:bg-gray-50 dark:hover:bg-gray-900 transition cursor-pointer" onClick={() => setOpenFaqId(openFaqId === 2 ? null : 2)}>
                         <span className="text-dark dark:text-white text-lg flex items-center gap-3"><i className="fa-solid fa-circle-question text-primary"></i> {t('faq_q2')}</span>
                         <i className={`fa-solid fa-chevron-down text-gray-400 transition duration-300 ${openFaqId === 2 ? 'rotate-180' : ''}`}></i>
                     </button>
@@ -840,8 +847,10 @@ export default function Home() {
                         </div>
                     )}
                 </div>
-                <div className="bg-white dark:bg-dark border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden shadow-sm">
-                    <button className="w-full text-left p-5 font-bold flex justify-between items-center hover:bg-gray-50 dark:hover:bg-gray-900 transition" onClick={() => setOpenFaqId(openFaqId === 3 ? null : 3)}>
+
+                {/* FAQ Accordion 3 (Sequential Order 3) */}
+                <div data-scrolly-order="3" className="bg-white dark:bg-dark border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden shadow-sm scrolly-card scrolly-stagger-3">
+                    <button className="w-full text-left p-5 font-bold flex justify-between items-center hover:bg-gray-50 dark:hover:bg-gray-900 transition cursor-pointer" onClick={() => setOpenFaqId(openFaqId === 3 ? null : 3)}>
                         <span className="text-dark dark:text-white text-lg flex items-center gap-3"><i className="fa-solid fa-circle-question text-primary"></i> {t('faq_q3')}</span>
                         <i className={`fa-solid fa-chevron-down text-gray-400 transition duration-300 ${openFaqId === 3 ? 'rotate-180' : ''}`}></i>
                     </button>
