@@ -219,64 +219,93 @@ export default function Home() {
     
 
     
-    <section className="relative pt-28 pb-16 lg:pt-36 lg:pb-24 overflow-hidden bg-dark" id="home">
-        <div className="absolute inset-0 z-0" style={{backgroundImage: "url('/assets/hero-bg-new.jpg')", backgroundSize: "cover", backgroundPosition: "center"}}></div>
-        <div className="absolute inset-0 bg-gradient-to-r from-dark/70 via-dark/40 to-dark/40 dark:from-black/80 dark:via-black/50 dark:to-black/50 z-0"></div>
+    <section className="terafab-hero-container" id="home">
+        {/* Full-Cover Background Image / Mesh */}
+        <div className="terafab-hero-bg" style={{backgroundImage: "url('/assets/hero-bg-new.jpg')"}}></div>
+        {/* Deep Void Black Vignette */}
+        <div className="terafab-hero-vignette"></div>
         
-        <div className="absolute bottom-0 left-0 w-full overflow-hidden leading-[0]">
-            <svg viewBox="0 0 1200 120" preserveAspectRatio="none" className="w-full h-[40px] md:h-[80px] block" style={{transform: "rotate(180deg)"}}>
+        {/* Subtle Wave Boundary at Bottom */}
+        <div className="absolute bottom-0 left-0 w-full overflow-hidden leading-[0] z-10 pointer-events-none">
+            <svg viewBox="0 0 1200 120" preserveAspectRatio="none" className="w-full h-[30px] md:h-[60px] block" style={{transform: "rotate(180deg)"}}>
                 <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V120H0V95.8C59.71,118.08,130.83,123.82,200,111.4,241.9,103.95,281.87,83.47,321.39,56.44Z" fill="var(--bodyBg)"></path>
             </svg>
         </div>
 
-        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 w-full relative z-10 flex flex-col lg:flex-row items-center gap-10 lg:gap-16">
-            <div className="max-w-2xl lg:w-1/2">
-                <div className="inline-flex items-center gap-2.5 bg-gradient-to-r from-secondary/35 via-primary/20 to-secondary/35 border border-primary/50 text-white font-black px-4.5 py-2 rounded-full text-xs sm:text-sm mb-6 backdrop-blur-md shadow-lg animate-badge-glow transition-all">
-                    <i className="fa-solid fa-medal text-primary text-sm sm:text-base animate-gentle-bounce drop-shadow-[0_0_8px_rgba(249,176,60,0.6)]"></i> 
-                    <span className="tracking-wide text-white font-black">{t('hero_badge')}</span>
-                </div>
-                <h1 id="hero-welcome" className="text-4xl sm:text-5xl lg:text-6xl font-black mb-5 leading-[1.15] text-white">
-                    <span className="text-white drop-shadow-md">{t('hero_title_1')}</span> <br /> 
-                    <span className="text-gradient font-black inline-block mt-1">{t('hero_title_2')}</span>
-                </h1>
-                <p className="text-base sm:text-lg text-gray-200 mb-8 font-body leading-relaxed">
-                    <span className="notranslate font-black text-primary">Tsehay Campus</span> {t('hero_desc')}
-                </p>
-                
-                <div className="flex flex-col sm:flex-row gap-4" id="hero-action-buttons">
-                    <button onClick={() => { document.getElementById('courses')?.scrollIntoView({behavior: 'smooth'}) }} className="bg-primary text-dark px-7 py-4 rounded-2xl font-black transition-all duration-300 btn-glow flex items-center justify-center gap-3 text-base shadow-xl transform hover:scale-105 active:scale-95 cursor-pointer">
-                        <span>{t('explore_courses')}</span>
-                        <i className="fa-solid fa-arrow-right animate-pulse"></i>
-                    </button>
-                    <Link href="/about" className="group bg-white/10 hover:bg-white/20 border border-white/30 text-white backdrop-blur-md px-7 py-4 rounded-2xl font-bold transition-all duration-300 hover:scale-105 active:scale-95 hover:shadow-[0_0_25px_rgba(255,255,255,0.3)] flex items-center justify-center gap-3 text-base shadow-sm">
-                        <i className="fa-solid fa-circle-play text-lg group-hover:scale-110 group-hover:text-primary transition-all duration-300"></i>
-                        <span>{t('learn_about_us')}</span>
-                    </Link>
-                </div>
+        {/* Centered Terafab Layout */}
+        <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 w-full relative z-10 flex flex-col justify-center items-center text-center my-auto">
+            {/* Terafab Badge */}
+            <div className="inline-flex items-center gap-2.5 bg-white/[0.04] border border-white/10 text-white font-black px-5 py-2 rounded-full text-xs sm:text-sm mb-6 sm:mb-8 backdrop-blur-xl shadow-[0_0_25px_rgba(249,176,60,0.15)] transition-all">
+                <span className="w-2 h-2 rounded-full bg-[#f9b03c] shadow-[0_0_10px_#f9b03c] animate-pulse"></span>
+                <span className="tracking-widest text-[#f9b03c] font-black uppercase text-[11px] sm:text-xs">{t('hero_badge')}</span>
             </div>
 
-            <div className="lg:w-1/2 hidden lg:flex justify-center relative animate-float">
-                <div className="relative w-full max-w-[460px]">
-                    <div className="absolute inset-0 bg-secondary rounded-full blur-[100px] opacity-60 dark:opacity-40"></div>
-                    <div className="relative w-full h-[350px] rounded-3xl shadow-2xl border-4 border-amber-400/30 dark:border-primary/40 overflow-hidden group z-10 hero-video-glow">
-                        <video id="hero-video" autoPlay loop muted playsInline preload="auto" disablePictureInPicture controlsList="nodownload noremoteplayback" onContextMenu={(e) => e.preventDefault()} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
-                            <source src="/assets/for_landing_page_first.mp4" type="video/mp4" />
-                        </video>
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none"></div>
+            {/* Massive Headline */}
+            <h1 id="hero-welcome" className="text-4xl sm:text-6xl md:text-7xl lg:text-[5rem] font-black mb-6 leading-[1.08] tracking-tight text-white max-w-5xl">
+                <span className="text-white drop-shadow-[0_4px_25px_rgba(0,0,0,0.9)]">{t('hero_title_1')}</span> <br className="hidden sm:inline" />
+                <span className="text-gradient font-black inline-block mt-1 drop-shadow-[0_0_35px_rgba(249,176,60,0.4)]">{t('hero_title_2')}</span>
+            </h1>
+
+            {/* Sub-headline in Metallic Light Gray */}
+            <p className="text-base sm:text-xl text-[#a0aec0] mb-10 max-w-2xl font-body leading-relaxed">
+                <span className="notranslate font-black text-[#f9b03c]">Tsehay Campus</span> {t('hero_desc')}
+            </p>
+            
+            {/* Refined Buttons (Terafab Style) */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 w-full max-w-md sm:max-w-none mb-12 sm:mb-16" id="hero-action-buttons">
+                {/* Button 1: Solid Golden Yellow with smooth scale & arrow translate */}
+                <button 
+                    onClick={() => { document.getElementById('courses')?.scrollIntoView({behavior: 'smooth'}) }} 
+                    className="terafab-btn-primary w-full sm:w-auto px-8 py-4 rounded-2xl flex items-center justify-center gap-3 text-base cursor-pointer"
+                >
+                    <span>{t('explore_courses')}</span>
+                    <i className="fa-solid fa-arrow-right text-sm btn-arrow"></i>
+                </button>
+
+                {/* Button 2: Glassmorphism with pulsing Play icon */}
+                <Link 
+                    href="/about" 
+                    className="terafab-btn-glass w-full sm:w-auto px-8 py-4 rounded-2xl flex items-center justify-center gap-3 text-base cursor-pointer"
+                >
+                    <i className="fa-solid fa-circle-play text-lg btn-play-icon"></i>
+                    <span>{t('learn_about_us')}</span>
+                </Link>
+            </div>
+
+            {/* Centered Showcase Preview Card */}
+            <div className="w-full max-w-4xl relative group">
+                <div className="absolute -inset-1.5 bg-gradient-to-r from-[#3268ba]/30 via-[#f9b03c]/25 to-[#3268ba]/30 rounded-[2rem] blur-xl opacity-50 group-hover:opacity-80 transition duration-700 pointer-events-none"></div>
+                <div className="relative w-full h-[240px] sm:h-[360px] md:h-[420px] rounded-[1.8rem] shadow-2xl border border-white/10 overflow-hidden bg-black/80">
+                    <video 
+                        id="hero-video" 
+                        autoPlay 
+                        loop 
+                        muted 
+                        playsInline 
+                        preload="auto" 
+                        disablePictureInPicture 
+                        controlsList="nodownload noremoteplayback" 
+                        onContextMenu={(e) => e.preventDefault()} 
+                        className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-700"
+                    >
+                        <source src="/assets/for_landing_page_first.mp4" type="video/mp4" />
+                    </video>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none"></div>
+                </div>
+
+                {/* Floating Badges on Desktop */}
+                <div className="hidden sm:flex absolute -bottom-5 -left-6 bg-slate-900/90 backdrop-blur-xl p-3.5 rounded-2xl shadow-2xl z-20 items-center gap-3 border border-white/10">
+                    <div className="bg-emerald-500/20 text-emerald-400 p-2.5 rounded-xl text-xl shadow-xs"><i className="fa-solid fa-check-double"></i></div>
+                    <div className="text-left">
+                        <p className="text-[10px] text-gray-400 font-bold uppercase leading-none">{t('recognized_cert')}</p>
+                        <p className="text-white font-black text-sm notranslate">{t('recognized')}</p>
                     </div>
-                    <div className="absolute -bottom-5 -left-8 bg-white/95 dark:bg-darkCard/95 backdrop-blur-md p-3.5 rounded-2xl shadow-2xl z-20 flex items-center gap-3 animate-float border border-gray-100 dark:border-gray-800" style={{animationDelay: "1s"}}>
-                        <div className="bg-green-100 dark:bg-green-900/40 text-success p-2.5 rounded-xl text-xl shadow-xs"><i className="fa-solid fa-check-double"></i></div>
-                        <div>
-                            <p className="text-[10px] text-gray-500 dark:text-gray-400 font-bold uppercase leading-none">{t('recognized_cert')}</p>
-                            <p className="text-dark dark:text-white font-black text-sm notranslate">{t('recognized')}</p>
-                        </div>
-                    </div>
-                    <div className="absolute -top-6 -right-6 bg-white/95 dark:bg-darkCard/95 backdrop-blur-md p-3.5 rounded-2xl shadow-2xl z-20 flex items-center gap-3 animate-float border border-gray-100 dark:border-gray-800" style={{animationDelay: "2s"}}>
-                        <div className="bg-blue-100 dark:bg-blue-900/40 text-secondary dark:text-primary p-2.5 rounded-xl text-xl shadow-xs"><i className="fa-solid fa-users"></i></div>
-                        <div>
-                            <p className="text-[10px] text-gray-500 dark:text-gray-400 font-bold uppercase leading-none">{t('students')}</p>
-                            <p className="text-dark dark:text-white font-black text-sm">500+</p>
-                        </div>
+                </div>
+                <div className="hidden sm:flex absolute -top-5 -right-6 bg-slate-900/90 backdrop-blur-xl p-3.5 rounded-2xl shadow-2xl z-20 items-center gap-3 border border-white/10">
+                    <div className="bg-blue-500/20 text-blue-400 p-2.5 rounded-xl text-xl shadow-xs"><i className="fa-solid fa-users"></i></div>
+                    <div className="text-left">
+                        <p className="text-[10px] text-gray-400 font-bold uppercase leading-none">{t('students')}</p>
+                        <p className="text-white font-black text-sm">500+</p>
                     </div>
                 </div>
             </div>

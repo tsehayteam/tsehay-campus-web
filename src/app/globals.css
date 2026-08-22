@@ -269,6 +269,109 @@ body {
   border-color: rgba(249, 176, 60, 0.7);
 }
 
+/* ==========================================================================
+   🚀 Terafab.ai Elite Full-Screen Hero Aesthetics
+   ========================================================================== */
+
+.terafab-hero-container {
+  min-height: 100vh;
+  min-height: 100dvh;
+  width: 100%;
+  position: relative;
+  background-color: #030509;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  overflow: hidden;
+  padding-top: max(130px, 14vh);
+  padding-bottom: max(60px, 8vh);
+}
+
+.terafab-hero-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background-size: cover;
+  background-position: center top;
+  background-repeat: no-repeat;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.terafab-hero-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 35%, rgba(3, 5, 9, 0.3) 0%, rgba(3, 5, 9, 0.85) 75%, #030509 100%),
+              linear-gradient(180deg, rgba(3, 5, 9, 0.6) 0%, transparent 25%, transparent 75%, #030509 100%);
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* Button 1: Solid Golden Yellow with smooth scale & arrow transition */
+.terafab-btn-primary {
+  background: #f9b03c;
+  color: #000000;
+  font-weight: 900;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 0 20px rgba(249, 176, 60, 0.25);
+}
+
+.terafab-btn-primary:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 35px rgba(249, 176, 60, 0.55);
+}
+
+.terafab-btn-primary:active {
+  transform: scale(0.98);
+}
+
+.terafab-btn-primary .btn-arrow {
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.terafab-btn-primary:hover .btn-arrow {
+  transform: translateX(4px);
+}
+
+/* Button 2: Glassmorphism with pulsing Play icon */
+.terafab-btn-glass {
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.terafab-btn-glass:hover {
+  transform: scale(1.05);
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.25);
+  box-shadow: 0 0 25px rgba(255, 255, 255, 0.1);
+}
+
+.terafab-btn-glass:active {
+  transform: scale(0.98);
+}
+
+.terafab-btn-glass .btn-play-icon {
+  transition: color 0.3s ease, transform 0.3s ease;
+}
+
+.terafab-btn-glass:hover .btn-play-icon {
+  color: #f9b03c;
+  animation: gentlePulse 1.5s infinite ease-in-out;
+}
+
+@keyframes gentlePulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+
 .hero-mesh {
   background-color: #0f172a;
   background-image: radial-gradient(at 0% 0%, rgba(50, 104, 186, 0.45) 0px, transparent 50%),
