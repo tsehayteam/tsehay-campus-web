@@ -97,8 +97,118 @@ const PARTNER_BRANDS = [
         </span>
       </div>
     )
-  },
-];
+function HeroTypewriterGlow({ phrases }: { phrases?: string[] }) {
+  const defaultPhrases = [
+    "የኢትዮጵያ #1 የኦንላይን የክህሎት ማበልፀጊያ",
+    "Ethiopia's #1 Online Skills Academy",
+    "በ AI የታገዘ ተግባራዊ የቢዝነስ ስልጠና"
+  ];
+  const words = phrases || defaultPhrases;
+  const [currentIdx, setCurrentIdx] = useState(0);
+  const [currentText, setCurrentText] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    const word = words[currentIdx];
+    const speed = isDeleting ? 35 : 75;
+
+    const timer = setTimeout(() => {
+      if (!isDeleting) {
+        if (currentText.length < word.length) {
+          setCurrentText(word.slice(0, currentText.length + 1));
+        } else {
+          setTimeout(() => setIsDeleting(true), 2600);
+        }
+      } else {
+        if (currentText.length > 0) {
+          setCurrentText(word.slice(0, currentText.length - 1));
+        } else {
+          setIsDeleting(false);
+          setCurrentIdx((prev) => (prev + 1) % words.length);
+        }
+      }
+    }, speed);
+
+    return () => clearTimeout(timer);
+  }, [currentText, isDeleting, currentIdx, words]);
+
+  return (
+    <span className="inline-flex items-center gap-1 font-black text-[#f9b03c] drop-shadow-[0_0_15px_rgba(249,176,60,0.6)]">
+      <span>{currentText}</span>
+      <span className="w-0.5 h-4 bg-[#f9b03c] animate-pulse inline-block ml-0.5 shadow-[0_0_8px_#f9b03c]"></span>
+    </span>
+  );
+}
+
+function MagneticButton({ children, className, onClick, ...props }: any) {
+  const btnRef = useRef<HTMLButtonElement | null>(null);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (!btnRef.current) return;
+    const { clientX, clientY } = e;
+    const { left, top, width, height } = btnRef.current.getBoundingClientRect();
+    const x = (clientX - (left + width / 2)) * 0.28;
+    const y = (clientY - (top + height / 2)) * 0.28;
+    setPosition({ x, y });
+  };
+
+  const handleMouseLeave = () => {
+    setPosition({ x: 0, y: 0 });
+  };
+
+  return (
+    <button
+      ref={btnRef}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      onClick={onClick}
+      style={{
+        transform: `translate3d(${position.x}px, ${position.y}px, 0)`,
+        transition: position.x === 0 ? 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.4s ease' : 'transform 0.1s ease-out, box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
+      }}
+      className={className}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+}
+
+function MagneticLink({ children, className, href, ...props }: any) {
+  const linkRef = useRef<HTMLAnchorElement | null>(null);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (!linkRef.current) return;
+    const { clientX, clientY } = e;
+    const { left, top, width, height } = linkRef.current.getBoundingClientRect();
+    const x = (clientX - (left + width / 2)) * 0.28;
+    const y = (clientY - (top + height / 2)) * 0.28;
+    setPosition({ x, y });
+  };
+
+  const handleMouseLeave = () => {
+    setPosition({ x: 0, y: 0 });
+  };
+
+  return (
+    <Link
+      ref={linkRef}
+      href={href}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      style={{
+        transform: `translate3d(${position.x}px, ${position.y}px, 0)`,
+        transition: position.x === 0 ? 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1), background 0.4s ease' : 'transform 0.1s ease-out, box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
+      }}
+      className={className}
+      {...props}
+    >
+      {children}
+    </Link>
+  );
+}
 
 export default function Home() {
   const { user } = useAuth();
@@ -214,12 +324,7 @@ export default function Home() {
 
   return (
     <main>
-
-    
-    
-
-    
-    <section className="terafab-hero-container" id="home">
+      <section className="terafab-hero-container" id="home">
         {/* Full-Cover Background Image / Mesh */}
         <div className="terafab-hero-bg" style={{backgroundImage: "url('/assets/hero-bg-new.jpg')"}}></div>
         {/* Deep Void Black Vignette */}
@@ -234,10 +339,10 @@ export default function Home() {
 
         {/* Centered Terafab Layout */}
         <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 w-full relative z-10 flex flex-col justify-center items-center text-center my-auto">
-            {/* Terafab Badge */}
-            <div className="inline-flex items-center gap-2.5 bg-white/[0.04] border border-white/10 text-white font-black px-5 py-2 rounded-full text-xs sm:text-sm mb-6 sm:mb-8 backdrop-blur-xl shadow-[0_0_25px_rgba(249,176,60,0.15)] transition-all">
+            {/* Terafab Badge with Typewriter Glow */}
+            <div className="inline-flex items-center gap-2.5 bg-white/[0.04] border border-[#f9b03c]/30 text-white font-black px-5 py-2.5 rounded-full text-xs sm:text-sm mb-6 sm:mb-8 backdrop-blur-xl shadow-[0_0_25px_rgba(249,176,60,0.18)] transition-all">
                 <span className="w-2 h-2 rounded-full bg-[#f9b03c] shadow-[0_0_10px_#f9b03c] animate-pulse"></span>
-                <span className="tracking-widest text-[#f9b03c] font-black uppercase text-[11px] sm:text-xs">{t('hero_badge')}</span>
+                <HeroTypewriterGlow phrases={["የኢትዮጵያ #1 የኦንላይን የክህሎት ማበልፀጊያ", "Ethiopia's #1 Online Skills Academy", "በ AI የታገዘ ተግባራዊ የቢዝነስ ስልጠና"]} />
             </div>
 
             {/* Massive Headline */}
@@ -251,25 +356,31 @@ export default function Home() {
                 <span className="notranslate font-black text-[#f9b03c]">Tsehay Campus</span> {t('hero_desc')}
             </p>
             
-            {/* Refined Buttons (Terafab Style) */}
+            {/* Refined Buttons (Magnetic CTA Style) */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 w-full max-w-md sm:max-w-none mb-12 sm:mb-16" id="hero-action-buttons">
-                {/* Button 1: Solid Golden Yellow with smooth scale & arrow translate */}
-                <button 
+                {/* Button 1: Solid Golden Yellow with Magnetic Hover & Arrow icon */}
+                <MagneticButton 
                     onClick={() => { document.getElementById('courses')?.scrollIntoView({behavior: 'smooth'}) }} 
-                    className="terafab-btn-primary w-full sm:w-auto px-8 py-4 rounded-2xl flex items-center justify-center gap-3 text-base cursor-pointer"
+                    className="group terafab-btn-primary w-full sm:w-auto px-8 py-4 rounded-2xl flex items-center justify-center gap-3 text-base cursor-pointer"
                 >
                     <span>{t('explore_courses')}</span>
-                    <i className="fa-solid fa-arrow-right text-sm btn-arrow"></i>
-                </button>
+                    <svg className="w-5 h-5 transition-transform duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:translate-x-1.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M5 12h14"></path>
+                        <path d="m12 5 7 7-7 7"></path>
+                    </svg>
+                </MagneticButton>
 
-                {/* Button 2: Glassmorphism with pulsing Play icon */}
-                <Link 
+                {/* Button 2: Glassmorphism with Magnetic Hover & pulsing Play icon */}
+                <MagneticLink 
                     href="/about" 
-                    className="terafab-btn-glass w-full sm:w-auto px-8 py-4 rounded-2xl flex items-center justify-center gap-3 text-base cursor-pointer"
+                    className="group terafab-btn-glass w-full sm:w-auto px-8 py-4 rounded-2xl flex items-center justify-center gap-3 text-base cursor-pointer"
                 >
-                    <i className="fa-solid fa-circle-play text-lg btn-play-icon"></i>
+                    <svg className="w-5 h-5 text-white/90 btn-play-icon transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polygon points="10 8 16 12 10 16 10 8" fill="currentColor"></polygon>
+                    </svg>
                     <span>{t('learn_about_us')}</span>
-                </Link>
+                </MagneticLink>
             </div>
 
             {/* Centered Showcase Preview Card */}
