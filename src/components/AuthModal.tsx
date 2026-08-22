@@ -496,7 +496,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
     }
   };
 
-  const isFormBlockedFromSubmitting = (isSignupMode || pendingGoogleAuth) && (!isPhoneVerified || !!emailError);
+  const isFormBlockedFromSubmitting = Boolean((isSignupMode || !!pendingGoogleAuth) && (!isPhoneVerified || !!emailError));
 
   return (
     <div 
@@ -857,7 +857,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
             {/* Main Submit Button */}
             <button 
               type="submit" 
-              disabled={loading || isFormBlockedFromSubmitting} 
+              disabled={loading || !!isFormBlockedFromSubmitting} 
               className={`w-full font-black py-3.5 rounded-2xl transition shadow-md mt-5 flex items-center justify-center gap-2 ${
                 isFormBlockedFromSubmitting
                   ? 'bg-gray-300 dark:bg-white/[0.08] text-gray-500 dark:text-gray-400 cursor-not-allowed border border-white/[0.06]'
