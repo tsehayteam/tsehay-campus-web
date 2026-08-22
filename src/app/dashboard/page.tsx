@@ -850,6 +850,18 @@ export default function StudentDashboard() {
     }
   };
 
+  const handleGoToQa = () => {
+    setCurrentView('classroom');
+    setActiveTab('qa');
+    setTimeout(() => {
+      const qaInput = document.getElementById('classroom-qa-input');
+      if (qaInput) {
+        qaInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        qaInput.focus();
+      }
+    }, 150);
+  };
+
   const handleMarkAllNotificationsRead = () => {
     setNotificationsList(prev => prev.map(n => ({ ...n, read: true })));
     setTimeout(() => {
@@ -2595,6 +2607,7 @@ ${customAdminPrompt}
                                                 </div>
 
                                                 <input 
+                                                    id="classroom-qa-input"
                                                     type="text" 
                                                     value={questionInput}
                                                     onChange={e => setQuestionInput(e.target.value)}
@@ -2830,7 +2843,7 @@ ${customAdminPrompt}
                              <p className="text-xs text-gray-500">ከኮርስ አስተማሪዎች ጋር የሚላላኩት ቀጥታ መልዕክቶች እና የተሰጡ ምላሾች</p>
                          </div>
                      </div>
-                     <button onClick={() => setCurrentView('classroom')} className="text-xs bg-primary text-dark font-black px-4 py-2 rounded-xl hover:bg-yellow-400 transition shadow-xs cursor-pointer">
+                     <button onClick={handleGoToQa} className="text-xs bg-primary text-dark font-black px-4 py-2 rounded-xl hover:bg-yellow-400 transition shadow-xs cursor-pointer">
                          <i className="fa-solid fa-plus mr-1"></i> አዲስ ጥያቄ ጠይቅ
                      </button>
                  </div>
@@ -2841,7 +2854,7 @@ ${customAdminPrompt}
                              <i className="fa-solid fa-envelope-open-text text-5xl text-gray-300 dark:text-gray-600 mb-3 block"></i>
                              <h3 className="text-base font-bold text-dark dark:text-white mb-1">ምንም የተላከ መልዕክት የለም</h3>
                              <p className="text-xs text-gray-400 max-w-sm mx-auto mb-4">በመማሪያ ክፍሉ (Classroom) ሆነው ለኮርሱ አስተማሪ የላኳቸው ጥያቄዎች እና የተሰጡ ምላሾች እዚህ ይገኛሉ።</p>
-                             <button onClick={() => setCurrentView('classroom')} className="bg-primary text-dark font-black px-5 py-2.5 rounded-xl hover:bg-yellow-400 text-xs transition">
+                             <button onClick={handleGoToQa} className="bg-primary text-dark font-black px-5 py-2.5 rounded-xl hover:bg-yellow-400 text-xs transition cursor-pointer">
                                  ወደ የመማሪያ ክፍል ሂድ
                              </button>
                          </div>
