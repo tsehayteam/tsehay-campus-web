@@ -2130,48 +2130,6 @@ ${customAdminPrompt}
 
                             {activeTab === 'overview' && (
                                 <>
-                                    {/* Contextual AI Quick Bar */}
-                                    <div className="bg-gradient-to-r from-amber-500/10 via-primary/10 to-amber-500/5 dark:from-amber-500/20 dark:via-primary/20 dark:to-transparent p-4 sm:p-5 rounded-2xl border border-amber-500/30 mb-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-sm">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center text-lg font-black shrink-0 shadow-md">
-                                                <i className="fa-solid fa-wand-magic-sparkles"></i>
-                                            </div>
-                                            <div>
-                                                <h4 className="font-black text-sm text-dark dark:text-white flex items-center gap-2">
-                                                    የግል ረዳትህ ፀሐይ
-                                                    <span className="text-[10px] bg-primary text-slate-950 px-2 py-0.5 rounded-full font-extrabold uppercase">Tsehay</span>
-                                                </h4>
-                                                <p className="text-xs text-gray-600 dark:text-gray-300 mt-0.5">ስለዚህ ትምህርት ከረዳትህ ፀሐይ ፈጣን ማብራሪያ ወይም እገዛ አግኝ</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-2 w-full md:w-auto flex-wrap">
-                                            <button
-                                                onClick={handleGenerateLessonSummary}
-                                                disabled={isGeneratingSummary}
-                                                className="flex-1 md:flex-initial bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 hover:border-primary text-dark dark:text-white px-4 py-2.5 rounded-xl text-xs font-bold transition shadow-xs flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
-                                            >
-                                                {isGeneratingSummary ? (
-                                                    <>
-                                                        <div className="w-3.5 h-3.5 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-                                                        <span>ማጠቃለያ በማዘጋጀት ላይ...</span>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <i className="fa-solid fa-bolt text-amber-500"></i>
-                                                        <span>የትምህርቱ ማጠቃለያ (Summary)</span>
-                                                    </>
-                                                )}
-                                            </button>
-                                            <button
-                                                onClick={() => setShowLessonAiModal(true)}
-                                                className="flex-1 md:flex-initial bg-primary hover:bg-yellow-400 text-slate-950 px-4 py-2.5 rounded-xl text-xs font-black transition shadow-md flex items-center justify-center gap-2 cursor-pointer active:scale-95"
-                                            >
-                                                <i className="fa-solid fa-comments"></i>
-                                                <span>ስለዚህ ትምህርት ፀሐይን ጠይቅ</span>
-                                            </button>
-                                        </div>
-                                    </div>
-
                                     {/* Render AI Summary Box if Generated */}
                                     {lessonSummary && (
                                         <div className="bg-amber-50/50 dark:bg-slate-900/80 p-5 rounded-2xl border border-amber-400/40 shadow-md mb-8 animate-in fade-in duration-300">
