@@ -323,10 +323,15 @@ export default function CourseCertificate({ course, user, score = 90, issueDate 
               <div className="h-10"></div>
               {/* Signature Line */}
               <div className="h-[1.5px] bg-amber-400/70 w-32 sm:w-40"></div>
-              {/* Instructor Name Underneath - Always Visible in UI, Print, and PNG */}
-              <p className="text-xs sm:text-sm text-amber-300 font-black tracking-wide mt-1">
-                {course?.instructor || 'ኢዮብ ሳህሌ (መስራች)'}
-              </p>
+              {/* Instructor Name & Title Underneath - Always Visible in UI, Print, and PNG */}
+              <div className="mt-1.5 space-y-0.5">
+                <p className="text-sm sm:text-base text-amber-300 font-black font-heading tracking-wide leading-tight">
+                  {course?.instructor || 'ኢዮብ ሳህሌ'}
+                </p>
+                <p className="text-[11px] font-bold text-slate-300 font-body leading-tight">
+                  {course?.instructorTitle || '(መስራች)'}
+                </p>
+              </div>
             </div>
 
             {/* Center: Stamp Area - COMPLETELY BLANK on Print & Download */}

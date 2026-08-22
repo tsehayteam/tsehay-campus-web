@@ -511,10 +511,15 @@ export default function CertificateGeneratorPage() {
                   </p>
                   <div className="h-10"></div>
                   <div className="w-48 h-[1.5px] bg-[#3268ba] mb-1.5 mt-1"></div>
-                  {/* Instructor Name Underneath Line - Always Visible in UI, Print, and PNG */}
-                  <p className="text-xs font-black text-[#3268ba] uppercase tracking-wider">
-                    ኢዮብ ሳህሌ (መስራች)
-                  </p>
+                  {/* Instructor Name & Title Underneath Line - Always Visible in UI, Print, and PNG */}
+                  <div className="space-y-0.5 mt-1">
+                    <p className="text-sm font-black text-[#0f172a] font-heading tracking-wide leading-tight">
+                      ኢዮብ ሳህሌ
+                    </p>
+                    <p className="text-[11px] font-bold text-[#3268ba] font-body leading-tight">
+                      (መስራች)
+                    </p>
+                  </div>
                 </div>
 
                 {/* Center: Blank Designated Area for Official In-Person Stamp */}
