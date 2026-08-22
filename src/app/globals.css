@@ -458,10 +458,14 @@ body {
     z-index: 9999999 !important;
   }
   .no-print,
-  .cert-guide-placeholder {
+  .cert-guide-placeholder,
+  .cert-stamp-box,
+  .stamp-container-class {
     display: none !important;
     visibility: hidden !important;
     opacity: 0 !important;
+    border: none !important;
+    background: transparent !important;
   }
 }
 

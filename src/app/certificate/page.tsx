@@ -506,36 +506,29 @@ export default function CertificateGeneratorPage() {
               <div className="relative z-10 grid grid-cols-3 items-end pb-3 px-8 text-center">
                 {/* Bottom Left: Blank Line for Official Physical Signature */}
                 <div className="text-left">
-                  <div className="h-12 flex items-end">
-                    {!isRenderingForDownload && (
-                      <span className="cert-guide-placeholder text-[11px] text-gray-500 font-medium italic">
-                        (የአሰልጣኝ ፊርማ ቦታ)
-                      </span>
-                    )}
-                  </div>
+                  <p className="text-xs font-black text-[#0f172a] uppercase tracking-wider">
+                    የአሰልጣኝ ፊርማ (Signature)
+                  </p>
+                  <div className="h-10"></div>
                   <div className="w-48 h-[1.5px] bg-[#3268ba] mb-1.5 mt-1"></div>
-                  <p className="text-xs font-black text-[#0f172a] uppercase tracking-wider">የአሰልጣኙ ፊርማ (Signature)</p>
-                  {!isRenderingForDownload ? (
-                    <p className="cert-guide-placeholder text-[10px] text-gray-600 font-bold">ኢዮብ ሳህሌ (መስራች)</p>
-                  ) : (
-                    <div className="h-3"></div>
-                  )}
+                  {/* Instructor Name Underneath Line - Always Visible in UI, Print, and PNG */}
+                  <p className="text-xs font-black text-[#3268ba] uppercase tracking-wider">
+                    ኢዮብ ሳህሌ (መስራች)
+                  </p>
                 </div>
 
                 {/* Center: Blank Designated Area for Official In-Person Stamp */}
-                <div className="flex flex-col items-center justify-center">
-                  <div className="w-20 h-20 rounded-full border-2 border-dashed border-[#3268ba]/40 flex flex-col items-center justify-center p-1 bg-[#3268ba]/[0.02]">
-                    {!isRenderingForDownload ? (
-                      <>
-                        <i className="cert-guide-placeholder fa-solid fa-stamp text-[#3268ba]/60 text-lg mb-0.5"></i>
-                        <span className="cert-guide-placeholder text-[8px] font-black text-[#3268ba] uppercase tracking-tighter text-center leading-tight">ይፋዊ ማህተም</span>
-                      </>
-                    ) : (
-                      <div className="w-full h-full"></div>
-                    )}
-                  </div>
-                  {!isRenderingForDownload && (
-                    <span className="cert-guide-placeholder text-[9px] text-gray-500 font-semibold mt-1">Official Stamp Area</span>
+                <div className="flex flex-col items-center justify-center min-h-[80px]">
+                  {!isRenderingForDownload ? (
+                    <div className="cert-stamp-box stamp-container-class flex flex-col items-center justify-center">
+                      <div className="w-20 h-20 rounded-full border-2 border-dashed border-[#3268ba]/40 flex flex-col items-center justify-center p-1 bg-[#3268ba]/[0.02]">
+                        <i className="fa-solid fa-stamp text-[#3268ba]/60 text-lg mb-0.5"></i>
+                        <span className="text-[8px] font-black text-[#3268ba] uppercase tracking-tighter text-center leading-tight">ይፋዊ ማህተም</span>
+                      </div>
+                      <span className="text-[9px] text-gray-500 font-semibold mt-1">Official Stamp Area</span>
+                    </div>
+                  ) : (
+                    <div className="w-20 h-20"></div>
                   )}
                 </div>
 

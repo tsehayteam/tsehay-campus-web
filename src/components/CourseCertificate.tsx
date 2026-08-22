@@ -311,41 +311,36 @@ export default function CourseCertificate({ course, user, score = 90, issueDate 
             በፀሐይ ካምፓስ የተዘጋጀውን የ <span className="text-white font-black underline decoration-amber-400/60">«{courseTitle}»</span> ስልጠና እና ማጠቃለያ ፈተና በላቀ ውጤት ({score}%) ስላጠናቀቁ ይህ ይፋዊ ሰርተፍኬት ተበርክቶላቸዋል።
           </p>
 
-          {/* Signatures & Seal Section (Ready for Physical Signature & Stamp) */}
+          {/* Signatures & Seal Section */}
           <div className="pt-10 border-t border-slate-800/80 grid grid-cols-3 items-end gap-4 text-center">
             
-            {/* Left: Blank Line for Instructor Signature with Guide Text (Hidden on Print/Canvas Download) */}
-            <div className="space-y-1.5 text-left">
-              <div className="h-10 flex items-end">
-                {!isRenderingForDownload && (
-                  <span className="cert-guide-placeholder text-[11px] text-gray-500 font-medium italic">
-                    (የአሰልጣኝ ፊርማ ቦታ)
-                  </span>
-                )}
-              </div>
+            {/* Left: Blank Line for Instructor Signature */}
+            <div className="space-y-1 text-left">
+              <p className="text-[11px] text-slate-200 font-bold uppercase tracking-wider">
+                የአሰልጣኝ ፊርማ
+              </p>
+              {/* Blank space for real physical signing */}
+              <div className="h-10"></div>
+              {/* Signature Line */}
               <div className="h-[1.5px] bg-amber-400/70 w-32 sm:w-40"></div>
-              <p className="text-[11px] text-slate-200 font-bold uppercase tracking-wider">የአሰልጣኙ ፊርማ</p>
-              {!isRenderingForDownload ? (
-                <p className="cert-guide-placeholder text-[10px] text-amber-400/80 font-semibold">ኢዮብ ሳህሌ (መስራች)</p>
-              ) : (
-                <div className="h-3"></div>
-              )}
+              {/* Instructor Name Underneath - Always Visible in UI, Print, and PNG */}
+              <p className="text-xs sm:text-sm text-amber-300 font-black tracking-wide mt-1">
+                {course?.instructor || 'ኢዮብ ሳህሌ (መስራች)'}
+              </p>
             </div>
 
-            {/* Center: Blank Designated Area for Official In-Person Stamp */}
-            <div className="flex flex-col items-center justify-center">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-dashed border-amber-400/40 flex flex-col items-center justify-center p-1 bg-white/[0.02]">
-                {!isRenderingForDownload ? (
-                  <>
-                    <i className="cert-guide-placeholder fa-solid fa-stamp text-amber-400/60 text-base mb-0.5"></i>
-                    <span className="cert-guide-placeholder text-[8px] font-bold text-slate-400 uppercase tracking-tighter text-center leading-tight">ይፋዊ ማህተም</span>
-                  </>
-                ) : (
-                  <div className="w-full h-full"></div>
-                )}
-              </div>
-              {!isRenderingForDownload && (
-                <span className="cert-guide-placeholder text-[9px] text-slate-400 font-medium mt-1">Official Stamp</span>
+            {/* Center: Stamp Area - COMPLETELY BLANK on Print & Download */}
+            <div className="flex flex-col items-center justify-center min-h-[80px]">
+              {!isRenderingForDownload ? (
+                <div className="cert-stamp-box stamp-container-class flex flex-col items-center justify-center">
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-dashed border-amber-400/40 flex flex-col items-center justify-center p-1 bg-white/[0.02]">
+                    <i className="fa-solid fa-stamp text-amber-400/60 text-base mb-0.5"></i>
+                    <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter text-center leading-tight">ይፋዊ ማህተም</span>
+                  </div>
+                  <span className="text-[9px] text-slate-400 font-medium mt-1">Official Stamp</span>
+                </div>
+              ) : (
+                <div className="w-20 h-20"></div>
               )}
             </div>
 
