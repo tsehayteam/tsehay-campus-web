@@ -199,6 +199,12 @@ export default function StudentDashboard() {
   // Enterprise Classroom States
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const [resumeToast, setResumeToast] = useState<{ seconds: number; timeStr: string } | null>(null);
+  const [lessonSummary, setLessonSummary] = useState<string | null>(null);
+  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
+  const [showLessonAiModal, setShowLessonAiModal] = useState(false);
+  const [lessonAiQuery, setLessonAiQuery] = useState('');
+  const [lessonAiMessages, setLessonAiMessages] = useState<Array<{ role: 'user' | 'ai'; text: string }>>([]);
+  const [isLessonAiLoading, setIsLessonAiLoading] = useState(false);
 
   // Auto-Resume Timestamp Tracker
   useEffect(() => {
