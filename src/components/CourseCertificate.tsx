@@ -64,9 +64,15 @@ export default function CourseCertificate({ course, user, score = 90, issueDate 
           
           {/* Logo & Header */}
           <div className="space-y-2">
-            <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-amber-400/10 border border-amber-400/30 text-amber-400 text-xs font-black uppercase tracking-widest">
-              <i className="fa-solid fa-sun text-amber-400 animate-spin" style={{ animationDuration: '10s' }}></i>
-              <span>TSEHAY CAMPUS • ACADEMY</span>
+            <div className="flex justify-center items-center mb-1">
+              <img 
+                src="/tc-logo.jpg" 
+                alt="Tsehay Campus Logo" 
+                className="h-11 sm:h-12 w-auto object-contain rounded-xl p-0.5 bg-white border border-white/20 shadow-md"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = '/logo.png';
+                }}
+              />
             </div>
             <h1 className="text-2xl sm:text-4xl font-black font-heading tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-yellow-200 uppercase pt-1">
               የማጠናቀቂያ የምስክር ወረቀት
@@ -100,17 +106,20 @@ export default function CourseCertificate({ course, user, score = 90, issueDate 
             <div className="space-y-1">
               <p className="text-sm sm:text-base font-serif italic text-amber-400 font-bold">Eyoub Sahle</p>
               <div className="h-0.5 bg-slate-700 w-24 mx-auto"></div>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">እዮብ ሳህሌ (መስራች)</p>
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">ኢዮብ ሳህሌ (መስራች)</p>
               <p className="text-[9px] text-slate-500">Tsehay Campus</p>
             </div>
 
-            {/* Official Gold Seal */}
-            <div className="flex justify-center">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-tr from-amber-500 via-yellow-400 to-amber-600 text-dark flex flex-col items-center justify-center p-1 shadow-lg shadow-amber-500/30 border-2 border-white/40">
-                <i className="fa-solid fa-ribbon text-lg sm:text-xl"></i>
-                <span className="text-[8px] font-black uppercase tracking-tighter mt-0.5">VERIFIED</span>
-                <span className="text-[7px] font-bold">SEAL</span>
-              </div>
+            {/* Official Custom Stamp */}
+            <div className="flex justify-center items-center">
+              <img 
+                src="/logo.png" 
+                alt="Official Verified Stamp" 
+                className="h-20 w-20 object-contain drop-shadow-[0_0_15px_rgba(249,176,60,0.45)]"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = '/tc-logo.jpg';
+                }}
+              />
             </div>
 
             {/* Issue Date & ID */}

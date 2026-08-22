@@ -263,23 +263,20 @@ export default function CertificateGeneratorPage() {
 
               {/* SECTION 1: HEADER & LOGO */}
               <div className="relative z-10 text-center pt-2">
-                <div className="flex items-center justify-center gap-3 mb-2">
-                  <div className="w-12 h-12 rounded-xl bg-white p-1 shadow-md border border-gray-200 flex items-center justify-center">
-                    <img src="/tc-logo.jpg" alt="Tsehay Campus" className="w-full h-full object-contain rounded-lg" />
-                  </div>
-                  <div className="text-left">
-                    <span className="text-2xl font-black tracking-tight" style={{ fontFamily: "'Cinzel', serif" }}>
-                      <span className="text-[#f9b03c]">TSEHAY</span> <span className="text-[#3268ba]">CAMPUS</span>
-                    </span>
-                    <p className="text-[9px] font-bold text-gray-500 tracking-[0.25em] uppercase -mt-1">
-                      ACADEMY OF MODERN SKILLS
-                    </p>
-                  </div>
+                <div className="flex justify-center items-center mb-2">
+                  <img 
+                    src="/tc-logo.jpg" 
+                    alt="Tsehay Campus Logo" 
+                    className="h-12 w-auto object-contain rounded-xl p-0.5 bg-white border border-gray-200 shadow-md"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = '/logo.png';
+                    }}
+                  />
                 </div>
 
                 {/* Massive Elegant Title */}
                 <h2
-                  className="text-4xl font-black tracking-wider text-[#0f172a] uppercase mt-4 mb-1"
+                  className="text-4xl font-black tracking-wider text-[#0f172a] uppercase mt-3 mb-1"
                   style={{ fontFamily: "'Cinzel', serif" }}
                 >
                   {certLanguage === 'en' ? 'CERTIFICATE OF COMPLETION' : 'የማጠናቀቂያ የምስክር ወረቀት'}
@@ -340,29 +337,20 @@ export default function CertificateGeneratorPage() {
                     </span>
                   </div>
                   <div className="w-48 h-[2px] bg-[#3268ba] mb-1.5 mt-1"></div>
-                  <p className="text-xs font-black text-[#0f172a] uppercase tracking-wider">EYOUB SAHLE</p>
+                  <p className="text-xs font-black text-[#0f172a] uppercase tracking-wider">ኢዮብ ሳህሌ (መስራች)</p>
                   <p className="text-[10px] text-gray-500 font-semibold">Founder & Lead Instructor</p>
                 </div>
 
-                {/* Center: Stylized Official Golden Seal of Excellence */}
+                {/* Center: Official Custom Stamp */}
                 <div className="flex justify-center items-center">
-                  <div className="relative w-28 h-28 flex items-center justify-center">
-                    {/* Golden Starburst / Ribbon Stamp */}
-                    <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-[#e59b20] via-[#f9b03c] to-[#ffcc66] p-1 shadow-xl flex items-center justify-center border-2 border-white">
-                      <div className="w-full h-full rounded-full border-2 border-dashed border-[#855302] flex flex-col items-center justify-center text-center p-1 bg-[#f9b03c]">
-                        <i className="fa-solid fa-award text-2xl text-[#683f00] mb-0.5"></i>
-                        <span className="text-[8px] font-black text-[#4d2f00] tracking-widest uppercase leading-none">
-                          OFFICIAL
-                        </span>
-                        <span className="text-[7px] font-black text-[#4d2f00] tracking-tighter uppercase leading-none">
-                          SEAL OF MASTERY
-                        </span>
-                      </div>
-                    </div>
-                    {/* Seal Ribbons */}
-                    <div className="absolute -bottom-2 w-8 h-4 bg-[#3268ba] -z-10 transform -rotate-12 rounded-xs"></div>
-                    <div className="absolute -bottom-2 w-8 h-4 bg-[#3268ba] -z-10 transform rotate-12 rounded-xs"></div>
-                  </div>
+                  <img 
+                    src="/logo.png" 
+                    alt="Official Verified Stamp" 
+                    className="h-20 w-20 object-contain drop-shadow-[0_0_15px_rgba(249,176,60,0.45)]"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = '/tc-logo.jpg';
+                    }}
+                  />
                 </div>
 
                 {/* Bottom Right: Date & Verification ID */}
