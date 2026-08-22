@@ -193,6 +193,7 @@ export default function StudentDashboard() {
     { role: 'ai', text: "ሰላም! እኔ Tsehay AI ነኝ። የትምህርት ጥያቄዎች ካሉዎት እባክዎ ይጠይቁኝ!" }
   ]);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const playerRef = useRef<any>(null);
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [currentVideoPlayedFraction, setCurrentVideoPlayedFraction] = useState(0);
 
