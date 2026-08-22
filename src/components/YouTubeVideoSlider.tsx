@@ -414,73 +414,44 @@ export default function YouTubeVideoSlider() {
         )}
       </div>
 
-      {/* Fullscreen Video Modal for Deep Viewing (Zero Clutter, No Captions/Annotations: cc_load_policy=0, iv_load_policy=3, rel=0) */}
+      {/* Fullscreen Pure Cinematic Video Modal (Autoplay, Zero Text/Clutter, Outside Close Button) */}
       {selectedModalVideo && (
         <div
-          className="fixed inset-0 z-50 bg-black/95 backdrop-blur-xl flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-200"
+          className="fixed inset-0 z-50 bg-black/95 backdrop-blur-2xl flex items-center justify-center p-3 sm:p-6 sm:py-10 animate-in fade-in duration-200"
           onClick={() => setSelectedModalVideo(null)}
         >
+          {/* Close Button Outside the Video Frame */}
+          <button
+            type="button"
+            onClick={() => setSelectedModalVideo(null)}
+            className="fixed top-4 right-4 sm:top-6 sm:right-8 z-50 w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-white/10 hover:bg-white/25 text-white flex items-center justify-center transition-all duration-300 border border-white/20 hover:scale-110 shadow-[0_0_25px_rgba(0,0,0,0.8)] backdrop-blur-md cursor-pointer"
+            title="ዝጋ (Close)"
+            aria-label="Close video player"
+          >
+            <i className="fa-solid fa-xmark text-lg sm:text-xl"></i>
+          </button>
+
+          {/* Pure Video Frame (No Titles, No Subtitles, No Bottom Bars) */}
           <div
-            className="bg-[#080b13] border border-white/15 rounded-3xl w-full max-w-4xl overflow-hidden shadow-[0_0_60px_rgba(0,0,0,0.9),0_0_40px_rgba(249,176,60,0.15)] relative flex flex-col"
+            className="relative w-full max-w-5xl aspect-video rounded-2xl sm:rounded-3xl overflow-hidden shadow-[0_0_80px_rgba(0,0,0,0.95),0_0_40px_rgba(249,176,60,0.2)] border border-white/15 bg-black"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Modal Clean Header */}
-            <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-white/10 bg-black/50">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-red-600/20 border border-red-500/30 flex items-center justify-center text-red-500">
-                  <i className="fa-brands fa-youtube text-base"></i>
-                </div>
-                <h4 className="text-sm sm:text-base font-bold text-white line-clamp-1">
-                  {selectedModalVideo.title}
-                </h4>
-              </div>
-              <button
-                type="button"
-                onClick={() => setSelectedModalVideo(null)}
-                className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-gray-300 hover:text-white flex items-center justify-center transition cursor-pointer"
-                title="ዝጋ (Close)"
-              >
-                <i className="fa-solid fa-xmark text-base"></i>
-              </button>
-            </div>
-
-            {/* Video Player Embed / Direct MP4 (Clean Pure Stream: No Subtitles/Captions, No Annotations, Clean Player) */}
-            <div className="relative aspect-video w-full bg-black">
-              {selectedModalVideo.videoSrc ? (
-                <video
-                  src={selectedModalVideo.videoSrc}
-                  controls
-                  autoPlay
-                  className="w-full h-full object-contain"
-                />
-              ) : (
-                <iframe
-                  src={`https://www.youtube.com/embed/${selectedModalVideo.youtubeId || extractYouTubeId(selectedModalVideo.youtubeUrl)}?autoplay=1&rel=0&modestbranding=1&cc_load_policy=0&cc_lang_pref=off&iv_load_policy=3&playsinline=1&controls=1&hl=en`}
-                  title={selectedModalVideo.title}
-                  className="w-full h-full border-0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowFullScreen
-                ></iframe>
-              )}
-            </div>
-
-            {/* Luxury Minimalist Modal Footer */}
-            <div className="px-6 py-4 flex items-center justify-between bg-gradient-to-r from-black via-[#0a0d17] to-black border-t border-white/10">
-              <div className="flex items-center gap-2 text-xs text-gray-400">
-                <span className="w-2 h-2 rounded-full bg-[#f9b03c]"></span>
-                <span className="font-medium text-gray-300">Tsehay Campus Masterclass</span>
-              </div>
-              <a
-                href={selectedModalVideo.youtubeUrl || `https://www.youtube.com/watch?v=${selectedModalVideo.youtubeId}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2.5 px-6 py-2.5 bg-gradient-to-r from-red-600 via-red-500 to-amber-600 hover:from-red-500 hover:to-amber-500 text-white font-black text-xs sm:text-sm rounded-full shadow-[0_0_25px_rgba(220,38,38,0.5)] hover:shadow-[0_0_35px_rgba(249,176,60,0.6)] border border-white/20 transition-all duration-300 transform hover:-translate-y-0.5 active:scale-95 cursor-pointer"
-              >
-                <i className="fa-brands fa-youtube text-base text-white drop-shadow"></i>
-                <span>በዩቲዩብ ይመልከቱ</span>
-                <i className="fa-solid fa-arrow-up-right-from-square text-[10px] ml-0.5 opacity-80"></i>
-              </a>
-            </div>
+            {selectedModalVideo.videoSrc ? (
+              <video
+                src={selectedModalVideo.videoSrc}
+                controls
+                autoPlay
+                className="w-full h-full object-contain"
+              />
+            ) : (
+              <iframe
+                src={`https://www.youtube.com/embed/${selectedModalVideo.youtubeId || extractYouTubeId(selectedModalVideo.youtubeUrl)}?autoplay=1&rel=0&modestbranding=1&cc_load_policy=0&cc_lang_pref=off&iv_load_policy=3&playsinline=1&controls=1&hl=en`}
+                title="Tsehay Campus Video"
+                className="w-full h-full border-0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+              ></iframe>
+            )}
           </div>
         </div>
       )}

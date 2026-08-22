@@ -76,7 +76,6 @@ export default function AdminDashboard() {
   const [isYouTubeModalOpen, setIsYouTubeModalOpen] = useState(false);
   const [editingYouTubeVideo, setEditingYouTubeVideo] = useState<any>(null);
   const [youtubeForm, setYoutubeForm] = useState({
-    title: '',
     youtubeUrl: '',
     thumbnail: '',
     videoSrc: '',
@@ -337,7 +336,6 @@ export default function AdminDashboard() {
   const openAddYouTubeModal = () => {
     setEditingYouTubeVideo(null);
     setYoutubeForm({
-      title: '',
       youtubeUrl: '',
       thumbnail: '',
       videoSrc: '',
@@ -349,7 +347,6 @@ export default function AdminDashboard() {
   const openEditYouTubeModal = (video: any) => {
     setEditingYouTubeVideo(video);
     setYoutubeForm({
-      title: video.title || '',
       youtubeUrl: video.youtubeUrl || (video.youtubeId ? `https://www.youtube.com/watch?v=${video.youtubeId}` : ''),
       thumbnail: video.thumbnail || '',
       videoSrc: video.videoSrc || '',
@@ -372,7 +369,6 @@ export default function AdminDashboard() {
     const autoThumb = yId ? `https://img.youtube.com/vi/${yId}/hqdefault.jpg` : '';
 
     await setDoc(docRef, {
-      title: youtubeForm.title.trim() || 'ነፃ የዩቲዩብ ስልጠና',
       youtubeUrl: youtubeForm.youtubeUrl.trim(),
       youtubeId: yId,
       thumbnail: youtubeForm.thumbnail.trim() || autoThumb,
@@ -384,7 +380,7 @@ export default function AdminDashboard() {
 
     setIsYouTubeModalOpen(false);
     setEditingYouTubeVideo(null);
-    setYoutubeForm({ title: '', youtubeUrl: '', thumbnail: '', videoSrc: '', order: 0 });
+    setYoutubeForm({ youtubeUrl: '', thumbnail: '', videoSrc: '', order: 0 });
   };
 
   const handleDeleteYouTubeVideo = async (id: string) => {
@@ -1051,9 +1047,12 @@ export default function AdminDashboard() {
                         {/* Card Details */}
                         <div className="p-5 flex-1 flex flex-col justify-between">
                           <div>
-                            <h4 className="font-bold text-dark dark:text-white text-base leading-snug line-clamp-2 mb-2 group-hover:text-primary transition-colors">
-                              {video.title}
-                            </h4>
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="text-xs bg-red-600/10 text-red-500 font-black px-2.5 py-1 rounded-lg">
+                                <i className="fa-brands fa-youtube mr-1.5"></i> YouTube Video
+                              </span>
+                              {yId && <span className="text-xs text-gray-400 font-mono">ID: {yId}</span>}
+                            </div>
                             
                             {video.youtubeUrl && (
                               <a 
@@ -1989,21 +1988,6 @@ export default function AdminDashboard() {
                 </p>
               </div>
 
-              {/* Video Title */}
-              <div>
-                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1.5">
-                  የቪዲዮው ርዕስ (Video Title) *
-                </label>
-                <input 
-                  required 
-                  type="text" 
-                  placeholder="ለምሳሌ፡ የስኬት ሚስጥሮች - ከዜሮ ወደ ከፍተኛ ገቢ መድረሻ" 
-                  value={youtubeForm.title} 
-                  onChange={e => setYoutubeForm({...youtubeForm, title: e.target.value})} 
-                  className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-dark dark:text-white outline-none focus:border-primary transition text-sm" 
-                />
-              </div>
-
               {/* Custom Thumbnail URL */}
               <div>
                 <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1.5">
@@ -2075,9 +2059,6 @@ export default function AdminDashboard() {
                         <div className="w-12 h-12 rounded-full bg-black/60 border border-white/20 flex items-center justify-center text-primary text-xl">
                           <i className="fa-solid fa-play pl-0.5"></i>
                         </div>
-                      </div>
-                      <div className="absolute bottom-2.5 left-3 right-3 text-white text-xs font-bold truncate drop-shadow">
-                        {youtubeForm.title || 'የቪዲዮው ርዕስ እዚህ ይታያል'}
                       </div>
                     </div>
                   </div>
