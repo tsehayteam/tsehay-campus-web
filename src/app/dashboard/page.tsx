@@ -1284,11 +1284,11 @@ ${customAdminPrompt}
   }
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] dark:bg-slate-900 text-slate-800 dark:text-slate-200 flex flex-col md:flex-row font-body transition-colors duration-300 relative">
+    <div className="min-h-screen bg-[#030509] text-slate-200 flex flex-col md:flex-row font-body relative overflow-x-hidden selection:bg-[#f9b03c]/30">
       
       {/* Sidebar Navigation */}
-      <aside className="w-full md:w-24 lg:w-72 bg-white dark:bg-slate-800 border-b md:border-b-0 md:border-r border-slate-200 dark:border-slate-700 flex flex-col items-center lg:items-start shadow-sm z-20 shrink-0">
-        <div className="h-16 md:h-20 w-full flex items-center justify-between md:justify-center lg:justify-start px-4 lg:px-6 border-b border-slate-100 dark:border-slate-700">
+      <aside className="w-full md:w-24 lg:w-72 bg-[#050811]/95 backdrop-blur-2xl border-b md:border-b-0 md:border-r border-white/[0.08] flex flex-col items-center lg:items-start shadow-2xl z-20 shrink-0">
+        <div className="h-16 md:h-20 w-full flex items-center justify-between md:justify-center lg:justify-start px-4 lg:px-6 border-b border-white/[0.06]">
           <a href="/" className="flex items-center cursor-pointer group brand-entrance">
             <div className="w-8 h-8 md:w-10 md:h-10 bg-white rounded-xl mx-auto flex items-center justify-center shadow-lg p-0.5 border border-white/20 brand-logo-img">
               <img src="/tc-logo.jpg" alt="Tsehay Campus Logo" className="w-full h-full object-contain rounded-xl" />

@@ -7,7 +7,7 @@ export default function Global3DBackgroundCanvas() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const pathname = usePathname();
 
-  // Determine context: is user inside classroom / dashboard / admin / settings?
+  // Distraction-free route detection: Classroom / Dashboard / Admin / Settings
   const isClassroomOrDashboard = 
     pathname?.startsWith('/dashboard') || 
     pathname?.startsWith('/admin') ||
@@ -20,6 +20,11 @@ export default function Global3DBackgroundCanvas() {
   }, [isClassroomOrDashboard]);
 
   useEffect(() => {
+    // If inside dashboard or classroom, don't run particle animation loop
+    if (isClassroomOrDashboard) {
+      return;
+    }
+
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d', { alpha: false });
@@ -86,7 +91,6 @@ export default function Global3DBackgroundCanvas() {
     let mouseY = 0;
     let targetMouseX = 0;
     let targetMouseY = 0;
-    let currentGlobalAlpha = isClassroomOrDashboard ? 0.08 : 1.0;
 
     const handleScroll = () => {
       const maxScroll = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
@@ -101,8 +105,7 @@ export default function Global3DBackgroundCanvas() {
     window.addEventListener('mousemove', handleMouseMove, { passive: true });
 
     const render = () => {
-      const targetAlpha = isDarkAppModeRef.current ? 0.09 : 1.0;
-      currentGlobalAlpha += (targetAlpha - currentGlobalAlpha) * 0.04;
+      if (isDarkAppModeRef.current) return;
 
       // Smooth camera interpolation
       scrollProgress += (targetScrollProgress - scrollProgress) * 0.08;
@@ -114,19 +117,17 @@ export default function Global3DBackgroundCanvas() {
       ctx.fillRect(0, 0, width, height);
 
       // Camera Z fly-through based on scroll
-      const cameraFlySpeed = isDarkAppModeRef.current ? 0 : scrollProgress * DEPTH * 1.6;
+      const cameraFlySpeed = scrollProgress * DEPTH * 1.6;
       const cx = width / 2 + mouseX;
       const cy = height / 2 + mouseY;
-
-      const speedFactor = isDarkAppModeRef.current ? 0.25 : 1.0;
 
       // Project all nodes
       const projectedNodes: Array<{ px: number; py: number; scale: number; alpha: number; node: Node3D } | null> = [];
 
       for (let i = 0; i < nodes.length; i++) {
         const node = nodes[i];
-        node.x += node.speedX * speedFactor;
-        node.y += node.speedY * speedFactor;
+        node.x += node.speedX;
+        node.y += node.speedY;
 
         // Wrap boundaries in X and Y
         if (node.x < -width * 1.1) node.x = width * 1.1;
@@ -151,7 +152,7 @@ export default function Global3DBackgroundCanvas() {
 
         // Depth fading
         const depthRatio = 1 - Math.abs(effZ) / (DEPTH / 2);
-        const alpha = Math.max(0, Math.min(1, depthRatio * 1.25)) * currentGlobalAlpha;
+        const alpha = Math.max(0, Math.min(1, depthRatio * 1.25));
 
         projectedNodes.push({ px, py, scale, alpha, node });
       }
@@ -217,14 +218,29 @@ export default function Global3DBackgroundCanvas() {
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('mousemove', handleMouseMove);
     };
-  }, []);
+  }, [isClassroomOrDashboard]);
 
+  // If inside Learning Dashboard/Classroom: render static deep void background with subtle static corner mesh gradients
+  if (isClassroomOrDashboard) {
+    return (
+      <div 
+        id="global-static-dashboard-background" 
+        className="fixed inset-0 w-full h-full pointer-events-none -z-20 bg-[#030509]"
+      >
+        {/* Subtle static blurred mesh gradients in corners (5-7% opacity for distraction-free learning) */}
+        <div className="absolute top-0 left-0 w-[450px] h-[450px] bg-[#f9b03c]/[0.05] rounded-full blur-[140px] pointer-events-none" />
+        <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-[#3268ba]/[0.07] rounded-full blur-[150px] pointer-events-none" />
+      </div>
+    );
+  }
+
+  // Marketing Pages (Landing, About, Courses, Preview): Render interactive 3D particle canvas
   return (
     <canvas
       ref={canvasRef}
       id="global-3d-background-canvas"
       aria-hidden="true"
-      className="fixed inset-0 w-full h-full pointer-events-none z-0 transition-opacity duration-1000"
+      className="fixed inset-0 w-full h-full pointer-events-none -z-20 transition-opacity duration-700"
       style={{
         backgroundColor: '#030509',
         willChange: 'transform, opacity',

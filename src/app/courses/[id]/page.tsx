@@ -341,22 +341,22 @@ export default function CoursePreviewPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#0a0a0a]">
+    <div className="min-h-screen bg-[#030509] text-white">
       {/* Dark Header Section with Vivid Course Banner */}
-      <div className="relative text-white pt-24 md:pt-28 pb-14 px-4 sm:px-6 lg:px-8 overflow-hidden bg-[#0c101d]">
+      <div className="relative text-white pt-24 md:pt-28 pb-14 px-4 sm:px-6 lg:px-8 overflow-hidden bg-[#030509]/90 border-b border-white/[0.06]">
         {displayBanner ? (
           <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
             <img 
               src={displayBanner} 
               alt="Course Banner" 
-              className="w-full h-full object-cover opacity-75 scale-105 filter brightness-90 contrast-105" 
+              className="w-full h-full object-cover opacity-60 scale-105 filter brightness-90 contrast-105" 
             />
             {/* Elegant gradient overlays for text readability */}
-            <div className="absolute inset-0 bg-gradient-to-r from-[#070b16]/95 via-[#070b16]/75 to-[#070b16]/35"></div>
-            <div className="absolute inset-0 bg-gradient-to-t from-[#070b16] via-transparent to-transparent"></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-[#030509]/98 via-[#030509]/80 to-[#030509]/40"></div>
+            <div className="absolute inset-0 bg-gradient-to-t from-[#030509] via-transparent to-transparent"></div>
           </div>
         ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-[#0c1424] via-[#080d1a] to-[#04060d] z-0"></div>
+          <div className="absolute inset-0 bg-gradient-to-br from-[#050812] via-[#030509] to-[#010204] z-0"></div>
         )}
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20 mix-blend-overlay z-0 pointer-events-none"></div>
         
@@ -636,9 +636,9 @@ export default function CoursePreviewPage() {
 
         {/* Right Column (Sticky Card) */}
         <div className="w-full md:w-1/3">
-          <div className="md:sticky md:top-24 bg-white dark:bg-[#1c1d1f] border border-gray-200 dark:border-gray-800 shadow-xl rounded-sm overflow-hidden z-10 md:-mt-[350px]">
+          <div className="md:sticky md:top-24 bg-[#050811]/90 backdrop-blur-2xl border border-white/[0.08] shadow-2xl rounded-2xl overflow-hidden z-10 md:-mt-[350px]">
             {/* Video Preview Thumbnail */}
-            <div className="relative group border-b border-gray-200 dark:border-gray-800 overflow-hidden rounded-t-sm">
+            <div className="relative group border-b border-white/[0.08] overflow-hidden rounded-t-2xl">
               {isPlaying && currentVideoUrl ? (
                 <div className="w-full aspect-video bg-black overflow-hidden relative">
                   {(() => {
