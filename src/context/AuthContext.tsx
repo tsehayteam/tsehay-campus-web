@@ -1,7 +1,7 @@
 'use client';
 import { createContext, useContext, useEffect, useState } from 'react';
 import { auth, db } from '@/lib/firebase/config';
-import { onAuthStateChanged, User } from 'firebase/auth';
+import { onAuthStateChanged, signOut, User } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 
 interface AuthContextType {
@@ -39,6 +39,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      // Security check: Only allow authenticated user if email is verified OR signed in with Google
+      const isPasswordProvider = firebaseUser?.providerData?.some(p => p.providerId === 'password');
+      const isUnverifiedEmail = firebaseUser && isPasswordProvider && !firebaseUser.emailVerified;
+
+      if (isUnverifiedEmail) {
+        // Unverified email account! Force sign out to prevent premature login
+        try {
+          await signOut(auth);
+        } catch (e) {}
+        setUser(null);
+        setIsAdmin(false);
+        try {
+          localStorage.removeItem('tsehay_auth_user_cache');
+          localStorage.removeItem('tsehay_auth_is_admin');
+        } catch (e) {}
+        setLoading(false);
+        return;
+      }
+
       setUser(firebaseUser);
       if (firebaseUser) {
         try {
