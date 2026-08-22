@@ -97,6 +97,9 @@ const PARTNER_BRANDS = [
         </span>
       </div>
     )
+  },
+];
+
 function HeroTypewriterGlow({ phrases }: { phrases?: string[] }) {
   const defaultPhrases = [
     "የኢትዮጵያ #1 የኦንላይን የክህሎት ማበልፀጊያ",
