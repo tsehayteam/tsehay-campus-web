@@ -570,37 +570,60 @@ export default function CoursePreviewPage() {
               </p>
             </div>
 
-            {/* More Courses by this Instructor */}
+            {/* More Courses by this Instructor - Ultra-Premium Dark-Mode Redesign */}
             {instructorCourses.filter(c => c.id !== course.id).length > 0 && (
-              <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-800">
-                <h4 className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-2">
-                  <i className="fa-solid fa-book-open text-primary"></i>
+              <div className="mt-10 pt-8 border-t border-gray-200 dark:border-white/[0.08]">
+                <h4 className="text-base font-black text-gray-900 dark:text-white uppercase tracking-wider mb-5 flex items-center gap-2.5 font-heading">
+                  <i className="fa-solid fa-book-open text-[#f9b03c]"></i>
                   <span>{instructorName} የሚያስተምሯቸው ሌሎች ኮርሶች ({instructorCourses.filter(c => c.id !== course.id).length})</span>
                 </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {instructorCourses.filter(c => c.id !== course.id).slice(0, 4).map((otherCourse) => (
+                
+                <div 
+                  className="grid gap-5"
+                  style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))' }}
+                >
+                  {instructorCourses.filter(c => c.id !== course.id).slice(0, 6).map((otherCourse) => (
                     <div 
                       key={otherCourse.id} 
                       onClick={() => router.push(`/courses/${otherCourse.id}`)}
-                      className="p-3 rounded-2xl border border-gray-200 dark:border-gray-800 hover:border-primary transition cursor-pointer flex gap-3 items-center bg-gray-50 dark:bg-[#111111] group shadow-xs hover:shadow-md"
+                      className="p-4 rounded-xl border border-gray-200 dark:border-white/[0.06] hover:border-[#f9b03c]/50 dark:hover:border-[#f9b03c]/50 bg-white dark:bg-white/[0.03] backdrop-blur-md transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(249,176,60,0.15)] cursor-pointer flex flex-row gap-4 items-center group select-none"
                     >
-                      <img 
-                        src={formatDriveImageUrl(otherCourse.image) || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=200'} 
-                        alt={otherCourse.title} 
-                        className="w-16 h-12 object-cover rounded-xl shrink-0 group-hover:scale-105 transition-transform"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-bold text-gray-900 dark:text-white line-clamp-1 group-hover:text-primary transition-colors">
+                      {/* 150px 16:9 Thumbnail with overflow hidden */}
+                      <div className="w-[150px] shrink-0 aspect-video rounded-lg overflow-hidden bg-slate-950 relative">
+                        <img 
+                          src={formatDriveImageUrl(otherCourse.image) || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=300'} 
+                          alt={otherCourse.title} 
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = `https://placehold.co/300x170/111827/f9b03c?text=${encodeURIComponent(otherCourse.title || 'Course')}`;
+                          }}
+                        />
+                        {/* Free / Premium Badge */}
+                        {(otherCourse.isFree || otherCourse.price === 0 || otherCourse.price === '0' || otherCourse.price === 'Free') && (
+                          <span className="absolute top-1.5 left-1.5 bg-[#3268ba]/90 text-white text-[9px] font-black px-2 py-0.5 rounded-sm backdrop-blur-xs">
+                            FREE
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Content Column */}
+                      <div className="flex-1 min-w-0 flex flex-col justify-between h-full py-0.5">
+                        <h5 className="text-[15px] sm:text-base font-semibold text-gray-900 dark:text-white leading-snug line-clamp-2 group-hover:text-[#f9b03c] transition-colors">
                           {otherCourse.title}
-                        </p>
-                        <div className="flex items-center gap-2 text-[11px] text-gray-500 mt-1">
-                          <span className="text-amber-500 font-bold flex items-center gap-0.5">
-                            <i className="fa-solid fa-star text-[10px]"></i> {otherCourse.ratingAvg || otherCourse.rating || 4.9}
-                          </span>
-                          <span>•</span>
-                          <span className="font-bold text-primary">
-                            {(otherCourse.isFree || otherCourse.price === 0 || otherCourse.price === '0') ? 'FREE' : `${formatPrice(otherCourse.price)} ETB`}
-                          </span>
+                        </h5>
+
+                        {/* Meta Info Row: Rating (Golden Yellow) & Price */}
+                        <div className="flex items-center justify-between gap-2 mt-3 pt-2 border-t border-gray-100 dark:border-white/[0.04]">
+                          <div className="flex items-center gap-1.5 text-xs text-[#f9b03c] font-bold">
+                            <i className="fa-solid fa-star text-[11px]"></i>
+                            <span>{(Number(otherCourse.ratingAvg || otherCourse.rating || 4.9)).toFixed(1)}</span>
+                          </div>
+
+                          <div className="text-xs font-black text-gray-900 dark:text-white group-hover:text-[#f9b03c] transition-colors">
+                            {(otherCourse.isFree || otherCourse.price === 0 || otherCourse.price === '0' || otherCourse.price === 'Free') 
+                              ? <span className="text-[#f9b03c]">ነፃ (FREE)</span>
+                              : `${formatPrice(otherCourse.price)} ETB`}
+                          </div>
                         </div>
                       </div>
                     </div>
