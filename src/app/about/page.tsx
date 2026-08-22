@@ -8,7 +8,7 @@ import { doc, onSnapshot } from 'firebase/firestore';
 import { parseVideoEmbedUrl, extractYouTubeId, parseImageUrl } from '@/lib/videoParser';
 
 export default function About() {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
 
   return (
     <>
@@ -123,7 +123,7 @@ export default function About() {
             <div className="space-y-8 mt-16 sm:mt-24">
               <div className="text-center mb-8 sm:mb-12">
                 <h3 className="text-2xl sm:text-3xl font-black text-primary font-heading">
-                  {lang === 'am' ? 'የተማሪዎቻችን እና የካምፓሳችን አጫጭር ቪዲዮዎች' : 'Our Students & Campus Short Videos'}
+                  {t('about_reels_title')}
                 </h3>
               </div>
 

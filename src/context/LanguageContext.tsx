@@ -124,6 +124,7 @@ const translations: Record<string, Record<Language, string>> = {
   'wwd_3_title': { am: 'የ 24/7 የግል AI መምህር (Tsehay AI)', en: '24/7 Personal AI Tutor (Tsehay AI)' },
   'wwd_3_desc': { am: 'በማንኛውም ሰዓት ጥያቄዎን የሚመልስ፣ የቢዝነስ ሀሳቦችን የሚያመነጭ እና የሚያማክር ዘመናዊ የግል ረዳት።', en: 'A modern personal assistant that answers your questions at any time, generates business ideas, and provides consultation.' },
   'our_team_title': { am: 'የእኛ ቡድን', en: 'Our Team' },
+  'about_reels_title': { am: 'የተማሪዎቻችን እና የካምፓሳችን አጫጭር ቪዲዮዎች', en: 'Our Students & Campus Short Videos' },
 
   // Courses Page
   'courses_badge': { am: 'ለርስዎ ስኬት የተዘጋጀ መድረክ', en: 'A platform prepared for your success' },
