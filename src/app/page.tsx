@@ -570,30 +570,30 @@ export default function Home() {
         </div>
 
         {/* Centered Terafab Layout */}
-        <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 w-full relative z-10 flex flex-col justify-center items-center text-center my-auto">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 w-full relative z-10 flex flex-col justify-center items-center text-center my-auto">
             {/* Terafab Badge with Typewriter Glow & Continuous Pulse */}
             <div className="inline-flex items-center gap-2.5 bg-white/[0.04] border border-[#f9b03c]/30 text-white font-black px-5 py-2.5 rounded-full text-xs sm:text-sm mb-6 sm:mb-8 backdrop-blur-xl headline-glow-badge shadow-[0_0_25px_rgba(249,176,60,0.18)] transition-all">
                 <span className="w-2 h-2 rounded-full bg-[#f9b03c] shadow-[0_0_10px_#f9b03c] animate-pulse"></span>
                 <HeroTypewriterGlow phrases={["የኢትዮጵያ #1 የኦንላይን የክህሎት ማበልፀጊያ", "Ethiopia's #1 Online Skills Academy", "በ AI የታገዘ ተግባራዊ የቢዝነስ ስልጠና"]} />
             </div>
 
-            {/* Massive Headline */}
-            <h1 id="hero-welcome" className="text-4xl sm:text-6xl md:text-7xl lg:text-[5rem] font-black mb-6 leading-[1.08] tracking-tight text-white max-w-5xl">
-                <span className="text-white drop-shadow-[0_4px_25px_rgba(0,0,0,0.9)]">{t('hero_title_1')}</span> <br className="hidden sm:inline" />
-                <span className="text-gradient font-black inline-block mt-1 drop-shadow-[0_0_35px_rgba(249,176,60,0.4)]">{t('hero_title_2')}</span>
+            {/* Massive Cinematic Headline - Wide Horizon Container */}
+            <h1 id="hero-welcome" className="text-3xl sm:text-5xl md:text-6xl lg:text-[4.25rem] xl:text-[4.75rem] font-extrabold sm:font-black mb-6 sm:mb-8 leading-[1.16] sm:leading-[1.1] tracking-tight text-white max-w-[1020px] mx-auto w-full">
+                <span className="text-white drop-shadow-[0_4px_25px_rgba(0,0,0,0.9)]">{t('hero_title_1')} </span>
+                <span className="text-gradient font-extrabold sm:font-black inline-block drop-shadow-[0_0_35px_rgba(249,176,60,0.4)]">{t('hero_title_2')}</span>
             </h1>
 
-            {/* Sub-headline in Metallic Light Gray */}
-            <p className="text-base sm:text-xl text-[#a0aec0] mb-10 max-w-2xl font-body leading-relaxed">
+            {/* Sub-headline in Metallic Light Gray - Proportional Size & Balanced Width */}
+            <p className="text-base sm:text-xl md:text-[1.3rem] text-[#a0aec0] mb-10 sm:mb-12 max-w-3xl mx-auto font-body leading-relaxed">
                 <span className="notranslate font-black text-[#f9b03c]">Tsehay Campus</span> {t('hero_desc')}
             </p>
             
-            {/* Refined Buttons (Magnetic CTA Style) */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 w-full max-w-md sm:max-w-none mb-12 sm:mb-16" id="hero-action-buttons">
+            {/* Refined Buttons (Magnetic CTA Style - 24px Balanced Spacing) */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-5 sm:gap-6 w-full max-w-md sm:max-w-none mb-12 sm:mb-16" id="hero-action-buttons">
                 {/* Button 1: Solid Golden Yellow with Magnetic Hover & Arrow icon */}
                 <MagneticButton 
                     onClick={() => { document.getElementById('courses')?.scrollIntoView({behavior: 'smooth'}) }} 
-                    className="group terafab-btn-primary w-full sm:w-auto px-8 py-4 rounded-2xl flex items-center justify-center gap-3 text-base cursor-pointer"
+                    className="group terafab-btn-primary w-full sm:w-auto px-9 py-4 rounded-2xl flex items-center justify-center gap-3 text-base cursor-pointer shadow-[0_0_30px_rgba(249,176,60,0.35)]"
                 >
                     <span>{t('explore_courses')}</span>
                     <svg className="w-5 h-5 transition-transform duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:translate-x-1.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -605,7 +605,7 @@ export default function Home() {
                 {/* Button 2: Glassmorphism with Magnetic Hover & pulsing Play icon */}
                 <MagneticLink 
                     href="/about" 
-                    className="group terafab-btn-glass w-full sm:w-auto px-8 py-4 rounded-2xl flex items-center justify-center gap-3 text-base cursor-pointer"
+                    className="group terafab-btn-glass w-full sm:w-auto px-9 py-4 rounded-2xl flex items-center justify-center gap-3 text-base cursor-pointer"
                 >
                     <svg className="w-5 h-5 text-white/90 btn-play-icon transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <circle cx="12" cy="12" r="10"></circle>
