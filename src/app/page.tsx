@@ -213,6 +213,211 @@ function MagneticLink({ children, className, href, ...props }: any) {
   );
 }
 
+function Terafab3DBackgroundCanvas() {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let animId: number;
+    let width = (canvas.width = window.innerWidth);
+    let height = (canvas.height = window.innerHeight);
+
+    const handleResize = () => {
+      if (!canvas) return;
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+    };
+    window.addEventListener('resize', handleResize);
+
+    // Particle nodes in 3D space
+    const PARTICLE_COUNT = 110;
+    const FOV = 380;
+    const DEPTH = 1800;
+
+    interface Node3D {
+      x: number;
+      y: number;
+      z: number;
+      baseZ: number;
+      size: number;
+      color: string;
+      glowColor: string;
+      speedX: number;
+      speedY: number;
+    }
+
+    const nodes: Node3D[] = [];
+    const colors = [
+      { fill: '#f9b03c', glow: 'rgba(249, 176, 60, 0.8)' },
+      { fill: '#3268ba', glow: 'rgba(50, 104, 186, 0.8)' },
+      { fill: '#f9b03c', glow: 'rgba(249, 176, 60, 0.8)' },
+      { fill: '#ffffff', glow: 'rgba(255, 255, 255, 0.6)' },
+    ];
+
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      const col = colors[i % colors.length];
+      const zVal = (Math.random() * DEPTH) - DEPTH / 2;
+      nodes.push({
+        x: (Math.random() - 0.5) * width * 2,
+        y: (Math.random() - 0.5) * height * 2,
+        z: zVal,
+        baseZ: zVal,
+        size: Math.random() * 2.2 + 1.2,
+        color: col.fill,
+        glowColor: col.glow,
+        speedX: (Math.random() - 0.5) * 0.4,
+        speedY: (Math.random() - 0.5) * 0.4,
+      });
+    }
+
+    let scrollProgress = 0;
+    let targetScrollProgress = 0;
+    let mouseX = 0;
+    let mouseY = 0;
+    let targetMouseX = 0;
+    let targetMouseY = 0;
+
+    const handleScroll = () => {
+      const maxScroll = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+      targetScrollProgress = window.scrollY / maxScroll;
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    const handleMouseMove = (e: MouseEvent) => {
+      targetMouseX = (e.clientX / width - 0.5) * 40;
+      targetMouseY = (e.clientY / height - 0.5) * 40;
+    };
+    window.addEventListener('mousemove', handleMouseMove, { passive: true });
+
+    let lastTime = performance.now();
+
+    const render = (time: number) => {
+      const dt = Math.min((time - lastTime) / 1000, 0.1);
+      lastTime = time;
+
+      // Smooth camera interpolation
+      scrollProgress += (targetScrollProgress - scrollProgress) * 0.08;
+      mouseX += (targetMouseX - mouseX) * 0.05;
+      mouseY += (targetMouseY - mouseY) * 0.05;
+
+      // Deep void black clear
+      ctx.fillStyle = '#030509';
+      ctx.fillRect(0, 0, width, height);
+
+      // Camera Z fly-through based on scroll
+      const cameraFlySpeed = scrollProgress * DEPTH * 1.5;
+      const cx = width / 2 + mouseX;
+      const cy = height / 2 + mouseY;
+
+      // Project all nodes
+      const projectedNodes: Array<{ px: number; py: number; scale: number; alpha: number; node: Node3D } | null> = [];
+
+      for (let i = 0; i < nodes.length; i++) {
+        const node = nodes[i];
+        node.x += node.speedX;
+        node.y += node.speedY;
+
+        // Wrap boundaries in X and Y
+        if (node.x < -width) node.x = width;
+        if (node.x > width) node.x = -width;
+        if (node.y < -height) node.y = height;
+        if (node.y > height) node.y = -height;
+
+        // Compute effective Z with fly-through
+        let effZ = (node.baseZ - cameraFlySpeed) % DEPTH;
+        if (effZ < -DEPTH / 2) effZ += DEPTH;
+        if (effZ > DEPTH / 2) effZ -= DEPTH;
+
+        const distanceZ = effZ + FOV;
+        if (distanceZ <= 10) {
+          projectedNodes.push(null);
+          continue;
+        }
+
+        const scale = FOV / distanceZ;
+        const px = cx + node.x * scale;
+        const py = cy + node.y * scale;
+
+        // Fade out when too far or too close
+        const depthRatio = 1 - Math.abs(effZ) / (DEPTH / 2);
+        const alpha = Math.max(0, Math.min(1, depthRatio * 1.2));
+
+        projectedNodes.push({ px, py, scale, alpha, node });
+      }
+
+      // Draw connecting digital pathways / neon lines
+      for (let i = 0; i < projectedNodes.length; i++) {
+        const p1 = projectedNodes[i];
+        if (!p1 || p1.alpha <= 0.05) continue;
+
+        for (let j = i + 1; j < projectedNodes.length; j++) {
+          const p2 = projectedNodes[j];
+          if (!p2 || p2.alpha <= 0.05) continue;
+
+          const dx = p1.px - p2.px;
+          const dy = p1.py - p2.py;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+
+          if (dist < 130 * p1.scale) {
+            const lineAlpha = (1 - dist / (130 * p1.scale)) * Math.min(p1.alpha, p2.alpha) * 0.45;
+            ctx.beginPath();
+            ctx.moveTo(p1.px, p1.py);
+            ctx.lineTo(p2.px, p2.py);
+            ctx.strokeStyle = p1.node.color === '#f9b03c' ? `rgba(249, 176, 60, ${lineAlpha})` : `rgba(50, 104, 186, ${lineAlpha})`;
+            ctx.lineWidth = Math.max(0.6, 1.2 * p1.scale);
+            ctx.stroke();
+          }
+        }
+      }
+
+      // Draw glowing particle nodes
+      for (let i = 0; i < projectedNodes.length; i++) {
+        const p = projectedNodes[i];
+        if (!p || p.alpha <= 0.05) continue;
+
+        const radius = Math.max(1, p.node.size * p.scale);
+
+        // Subtle glow bloom
+        ctx.beginPath();
+        ctx.arc(p.px, p.py, radius * 2.2, 0, Math.PI * 2);
+        ctx.fillStyle = p.node.glowColor.replace('0.8', (p.alpha * 0.25).toString());
+        ctx.fill();
+
+        // Core dot
+        ctx.beginPath();
+        ctx.arc(p.px, p.py, radius, 0, Math.PI * 2);
+        ctx.fillStyle = p.node.color;
+        ctx.globalAlpha = p.alpha;
+        ctx.fill();
+        ctx.globalAlpha = 1.0;
+      }
+
+      animId = requestAnimationFrame(render);
+    };
+
+    animId = requestAnimationFrame(render);
+
+    return () => {
+      cancelAnimationFrame(animId);
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="fixed inset-0 w-full h-full pointer-events-none z-0"
+      style={{ background: '#030509' }}
+    />
+  );
+}
+
 export default function Home() {
   const { user } = useAuth();
   const router = useRouter();
@@ -234,8 +439,29 @@ export default function Home() {
   const { t } = useLanguage();
 
   useEffect(() => {
-    // Force scroll to top on initial load to prevent browser from restoring scroll position to the AI section
+    // Force scroll to top on initial load
     window.scrollTo(0, 0);
+
+    // Scrollytelling Reveal Observer
+    const observerCallback: IntersectionObserverCallback = (entries, observer) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-visible');
+        }
+      });
+    };
+
+    const observer = new IntersectionObserver(observerCallback, {
+      threshold: 0.12,
+      rootMargin: '0px 0px -50px 0px'
+    });
+
+    const revealElements = document.querySelectorAll('.scrolly-reveal');
+    revealElements.forEach((el) => observer.observe(el));
+
+    return () => {
+      observer.disconnect();
+    };
   }, []);
 
   useEffect(() => {
@@ -326,7 +552,10 @@ export default function Home() {
   };
 
   return (
-    <main>
+    <main className="relative bg-[#030509]">
+      {/* Terafab 3D Particle Network Canvas */}
+      <Terafab3DBackgroundCanvas />
+
       <section className="terafab-hero-container" id="home">
         {/* Full-Cover Background Image / Mesh */}
         <div className="terafab-hero-bg" style={{backgroundImage: "url('/assets/hero-bg-new.jpg')"}}></div>
@@ -342,8 +571,8 @@ export default function Home() {
 
         {/* Centered Terafab Layout */}
         <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 w-full relative z-10 flex flex-col justify-center items-center text-center my-auto">
-            {/* Terafab Badge with Typewriter Glow */}
-            <div className="inline-flex items-center gap-2.5 bg-white/[0.04] border border-[#f9b03c]/30 text-white font-black px-5 py-2.5 rounded-full text-xs sm:text-sm mb-6 sm:mb-8 backdrop-blur-xl shadow-[0_0_25px_rgba(249,176,60,0.18)] transition-all">
+            {/* Terafab Badge with Typewriter Glow & Continuous Pulse */}
+            <div className="inline-flex items-center gap-2.5 bg-white/[0.04] border border-[#f9b03c]/30 text-white font-black px-5 py-2.5 rounded-full text-xs sm:text-sm mb-6 sm:mb-8 backdrop-blur-xl headline-glow-badge shadow-[0_0_25px_rgba(249,176,60,0.18)] transition-all">
                 <span className="w-2 h-2 rounded-full bg-[#f9b03c] shadow-[0_0_10px_#f9b03c] animate-pulse"></span>
                 <HeroTypewriterGlow phrases={["የኢትዮጵያ #1 የኦንላይን የክህሎት ማበልፀጊያ", "Ethiopia's #1 Online Skills Academy", "በ AI የታገዘ ተግባራዊ የቢዝነስ ስልጠና"]} />
             </div>
@@ -387,7 +616,7 @@ export default function Home() {
             </div>
 
             {/* Centered Showcase Preview Card */}
-            <div className="w-full max-w-4xl relative group">
+            <div className="w-full max-w-4xl relative group scrolly-reveal">
                 <div className="absolute -inset-1.5 bg-gradient-to-r from-[#3268ba]/30 via-[#f9b03c]/25 to-[#3268ba]/30 rounded-[2rem] blur-xl opacity-50 group-hover:opacity-80 transition duration-700 pointer-events-none"></div>
                 <div className="relative w-full h-[240px] sm:h-[360px] md:h-[420px] rounded-[1.8rem] shadow-2xl border border-white/10 overflow-hidden bg-black/80">
                     <video 
@@ -428,7 +657,7 @@ export default function Home() {
 
 
 
-    <section className="py-10 sm:py-14 bg-white dark:bg-dark border-b border-gray-100 dark:border-gray-800/80 relative z-20 shadow-xs transition-colors duration-300 overflow-hidden select-none">
+    <section className="py-10 sm:py-14 bg-white/5 dark:bg-[#030509]/60 backdrop-blur-md border-b border-white/[0.06] relative z-20 shadow-xs transition-colors duration-300 overflow-hidden select-none scrolly-reveal">
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 text-center mb-6 sm:mb-8">
             <div className="inline-flex items-center gap-2 bg-blue-50/60 dark:bg-darkCard/80 border border-blue-100/80 dark:border-gray-800 rounded-full px-5 py-1.5 shadow-xs">
                 <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
@@ -469,7 +698,7 @@ export default function Home() {
         </div>
 
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-            <div className="text-center max-w-2xl mx-auto mb-16 sm:mb-20">
+            <div className="text-center max-w-2xl mx-auto mb-16 sm:mb-20 scrolly-reveal">
                 <div className="inline-flex items-center gap-2 bg-amber-400/10 dark:bg-amber-400/5 border border-amber-400/20 px-4 py-1.5 rounded-full mb-4">
                     <span className="w-2 h-2 rounded-full bg-[#f9b03c] animate-pulse"></span>
                     <span className="text-xs font-black uppercase tracking-widest text-[#f9b03c]">THE TSEHAY DIFFERENCE</span>
@@ -482,9 +711,9 @@ export default function Home() {
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 lg:gap-10">
-                {/* Card 1: Online + In-Person Training */}
+                {/* Card 1: Online + In-Person Training (Stagger 1) */}
                 <div 
-                    className="bg-white/80 dark:bg-white/[0.03] backdrop-blur-xl p-7 sm:p-10 rounded-3xl sm:rounded-[2.5rem] shadow-sm border border-gray-200/70 dark:border-white/[0.06] hover:border-[#f9b03c]/50 dark:hover:border-[#f9b03c]/40 hover:shadow-[0_20px_50px_rgba(249,176,60,0.15)] hover:-translate-y-2 transition-all duration-300 group cursor-pointer active:scale-98 flex flex-col justify-between"
+                    className="bg-white/80 dark:bg-white/[0.03] backdrop-blur-2xl p-8 sm:p-10 rounded-3xl sm:rounded-[2.5rem] shadow-sm border border-gray-200/70 dark:border-white/[0.08] hover:border-[#f9b03c]/60 dark:hover:border-[#f9b03c]/50 hover:shadow-[0_25px_60px_rgba(249,176,60,0.2)] hover:-translate-y-2 transition-all duration-500 group cursor-pointer active:scale-98 flex flex-col justify-between scrolly-reveal scrolly-stagger-1"
                     onClick={() => document.getElementById('courses')?.scrollIntoView({behavior: 'smooth'})}
                 >
                     <div>
@@ -500,9 +729,9 @@ export default function Home() {
                     </div>
                 </div>
                 
-                {/* Card 2: 24/7 Personal AI Tutor (Highlighted Center Card) */}
+                {/* Card 2: 24/7 Personal AI Tutor (Stagger 2 - Center Highlight) */}
                 <div 
-                    className="bg-white/90 dark:bg-white/[0.04] backdrop-blur-2xl p-7 sm:p-10 rounded-3xl sm:rounded-[2.5rem] shadow-xl border-2 border-primary/60 dark:border-[#f9b03c]/50 hover:border-[#f9b03c] dark:hover:border-[#f9b03c] hover:shadow-[0_25px_60px_rgba(249,176,60,0.25)] hover:-translate-y-2 transition-all duration-300 group relative overflow-hidden transform md:-translate-y-4 cursor-pointer active:scale-98 flex flex-col justify-between" 
+                    className="bg-white/90 dark:bg-white/[0.05] backdrop-blur-2xl p-8 sm:p-10 rounded-3xl sm:rounded-[2.5rem] shadow-xl border-2 border-primary/70 dark:border-[#f9b03c]/60 hover:border-[#f9b03c] dark:hover:border-[#f9b03c] hover:shadow-[0_30px_70px_rgba(249,176,60,0.3)] hover:-translate-y-2 transition-all duration-500 group relative overflow-hidden transform md:-translate-y-4 cursor-pointer active:scale-98 flex flex-col justify-between scrolly-reveal scrolly-stagger-2" 
                     onClick={() => document.getElementById('ai-feature')?.scrollIntoView({behavior: 'smooth'})}
                 >
                     <div className="absolute -right-10 -top-10 bg-gradient-to-br from-amber-400/20 via-primary/10 to-transparent w-48 h-48 rounded-full -z-10 group-hover:scale-150 transition-transform duration-700 pointer-events-none"></div>
@@ -524,9 +753,9 @@ export default function Home() {
                     </div>
                 </div>
 
-                {/* Card 3: Accredited Certificate (Royal Blue / Gold - NO GREEN) */}
+                {/* Card 3: Accredited Certificate (Stagger 3 - Royal Blue & Gold - NO GREEN) */}
                 <div 
-                    className="bg-white/80 dark:bg-white/[0.03] backdrop-blur-xl p-7 sm:p-10 rounded-3xl sm:rounded-[2.5rem] shadow-sm border border-gray-200/70 dark:border-white/[0.06] hover:border-[#3268ba]/50 dark:hover:border-[#3268ba]/50 hover:shadow-[0_20px_50px_rgba(50,104,186,0.18)] hover:-translate-y-2 transition-all duration-300 group cursor-pointer active:scale-98 flex flex-col justify-between"
+                    className="bg-white/80 dark:bg-white/[0.03] backdrop-blur-2xl p-8 sm:p-10 rounded-3xl sm:rounded-[2.5rem] shadow-sm border border-gray-200/70 dark:border-white/[0.08] hover:border-[#3268ba]/60 dark:hover:border-[#3268ba]/60 hover:shadow-[0_25px_60px_rgba(50,104,186,0.22)] hover:-translate-y-2 transition-all duration-500 group cursor-pointer active:scale-98 flex flex-col justify-between scrolly-reveal scrolly-stagger-3"
                     onClick={() => document.getElementById('courses')?.scrollIntoView({behavior: 'smooth'})}
                 >
                     <div>
@@ -551,7 +780,7 @@ export default function Home() {
         <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-[#3268ba]/5 rounded-full blur-[140px] pointer-events-none"></div>
 
         <div className="max-w-[1300px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-            <div className="flex flex-col items-center text-center mb-12 sm:mb-16 gap-3">
+            <div className="flex flex-col items-center text-center mb-12 sm:mb-16 gap-3 scrolly-reveal">
                 <div className="inline-flex items-center gap-2 bg-amber-400/10 dark:bg-amber-400/5 border border-amber-400/20 px-4 py-1.5 rounded-full">
                     <span className="w-2 h-2 rounded-full bg-[#f9b03c] animate-pulse"></span>
                     <span className="text-xs font-black uppercase tracking-widest text-[#f9b03c]">FEATURED MASTERCLASSES</span>
@@ -565,18 +794,18 @@ export default function Home() {
             </div>
 
             {loading ? (
-                <div className="flex flex-col items-center justify-center py-20 w-full">
+                <div className="flex flex-col items-center justify-center py-20 w-full scrolly-reveal">
                     <div className="w-12 h-12 border-4 border-[#f9b03c] border-t-transparent rounded-full animate-spin mb-4"></div>
                     <p className="text-gray-500 dark:text-gray-400 font-bold tracking-widest uppercase text-xs sm:text-sm">{t('loading_courses')}</p>
                 </div>
             ) : courses.length === 0 ? (
-                <div className="text-center py-16 w-full">
+                <div className="text-center py-16 w-full scrolly-reveal">
                     <i className="fa-solid fa-box-open text-5xl text-gray-300 dark:text-slate-600 mb-4"></i>
                     <p className="text-gray-500 dark:text-gray-400 font-bold text-lg">{t('no_course_found')}</p>
                 </div>
             ) : (
                 <div 
-                    className="grid gap-7 sm:gap-8" 
+                    className="grid gap-7 sm:gap-8 scrolly-reveal scrolly-stagger-2" 
                     id="courseList"
                     style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))' }}
                 >
@@ -686,7 +915,7 @@ export default function Home() {
     </section>
 
     
-    <section id="ai-feature" className="relative py-24 lg:py-32 overflow-hidden hero-mesh text-white border-y border-white/10">
+    <section id="ai-feature" className="relative py-24 lg:py-32 overflow-hidden hero-mesh text-white border-y border-white/10 scrolly-reveal">
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20 mix-blend-overlay"></div>
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col lg:flex-row items-center gap-12 relative z-10">
             <div className="flex-1 text-center lg:text-left animate-float" style={{animationDuration: "6s"}}>
@@ -738,9 +967,11 @@ export default function Home() {
     </section>
 
     {/* YouTube Free Video Lessons Horizontal Slider */}
-    <YouTubeVideoSlider />
+    <div className="scrolly-reveal">
+      <YouTubeVideoSlider />
+    </div>
     
-    <section id="faq" className="py-16 bg-slate-50 dark:bg-darkCard border-b border-gray-200 dark:border-gray-800 transition-colors duration-300">
+    <section id="faq" className="py-16 bg-slate-50 dark:bg-darkCard border-b border-gray-200 dark:border-gray-800 transition-colors duration-300 scrolly-reveal">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-10">
                 <h2 className="font-heading font-black text-3xl sm:text-4xl text-dark dark:text-white mb-3">{t('faq_title')}</h2>
