@@ -9,6 +9,9 @@ import TermsModal from "@/components/TermsModal";
 import ContentProtection from "@/components/ContentProtection";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import { LanguageProvider } from "@/context/LanguageContext";
+import Global3DBackgroundCanvas from "@/components/scrollytelling/Global3DBackgroundCanvas";
+import SmoothScrollAndScrollyProvider from "@/components/scrollytelling/SmoothScrollAndScrollyProvider";
+import PageTransitionWrapper from "@/components/scrollytelling/PageTransitionWrapper";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -175,12 +178,21 @@ export default function RootLayout({
         />
         <LanguageProvider>
           <AuthProvider>
-            <ContentProtection />
-            <Navbar />
-            {children}
-            <TermsModal />
-            <PaymentModal />
-            <PWAInstallPrompt />
+            <SmoothScrollAndScrollyProvider>
+              {/* Global Context-Aware 3D Particle Network Canvas */}
+              <Global3DBackgroundCanvas />
+              
+              <ContentProtection />
+              <Navbar />
+              
+              <PageTransitionWrapper>
+                {children}
+              </PageTransitionWrapper>
+              
+              <TermsModal />
+              <PaymentModal />
+              <PWAInstallPrompt />
+            </SmoothScrollAndScrollyProvider>
           </AuthProvider>
         </LanguageProvider>
       </body>

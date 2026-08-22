@@ -589,4 +589,57 @@ img, video, canvas {
   animation: heroColorPulse 5s ease-in-out infinite;
 }
 
+/* ==========================================================================
+   💎 Universal Glassmorphic Components & Hover States across Platform
+   ========================================================================== */
+
+.terafab-glass-card {
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  background: rgba(8, 12, 22, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.4s ease, box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.terafab-glass-card:hover {
+  transform: translateY(-4px) scale(1.015);
+  border-color: rgba(249, 176, 60, 0.4);
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.8), 0 0 25px rgba(249, 176, 60, 0.2);
+}
+
+.terafab-glass-sidebar {
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  background: rgba(3, 5, 9, 0.85);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Bi-directional Scrolly Scrub Utilities */
+.scrolly-scrub {
+  will-change: transform, opacity;
+  transition: transform 0.15s ease-out, opacity 0.15s ease-out;
+}
+
+.scrolly-scale {
+  transform: scale(0.92);
+  opacity: 0;
+  transition: transform 1s cubic-bezier(0.16, 1, 0.3, 1), opacity 1s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.scrolly-scale.is-visible {
+  transform: scale(1);
+  opacity: 1;
+}
+
+/* Universal Magnetic & Glow Micro-Interactions */
+.magnetic-hover {
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.magnetic-hover:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 0 25px rgba(249, 176, 60, 0.35);
+}
+
 
