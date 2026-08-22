@@ -457,8 +457,11 @@ body {
     print-color-adjust: exact !important;
     z-index: 9999999 !important;
   }
-  .no-print {
+  .no-print,
+  .cert-guide-placeholder {
     display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
   }
 }
 

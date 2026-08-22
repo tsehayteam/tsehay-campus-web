@@ -1,5 +1,7 @@
 'use client';
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
+import { db } from '@/lib/firebase/config';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 interface CourseCertificateProps {
   course: any;
@@ -12,13 +14,93 @@ export default function CourseCertificate({ course, user, score = 90, issueDate 
   const certificateRef = useRef<HTMLDivElement>(null);
   const [downloadSuccess, setDownloadSuccess] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isRenderingForDownload, setIsRenderingForDownload] = useState(false);
+  
+  // Database fields
+  const [physicalCopyClaimed, setPhysicalCopyClaimed] = useState<boolean | null>(null);
+  const [isClaimingInDb, setIsClaimingInDb] = useState(false);
+  const [isDismissed, setIsDismissed] = useState(false);
 
+  const courseId = course?.id || 'default_course';
   const studentName = user?.displayName || user?.email?.split('@')[0] || 'Tsehay Student';
   const courseTitle = course?.title || 'ዲጂታል ማርኬቲንግ እና ኦንላይን ቢዝነስ';
   const formattedDate = issueDate || new Date().toLocaleDateString('am-ET', { year: 'numeric', month: 'long', day: 'numeric' });
   const certId = `TC-${course?.id ? course.id.slice(0, 4).toUpperCase() : 'CERT'}-${user?.uid ? user.uid.slice(0, 6).toUpperCase() : '894201'}`;
 
+  // Fetch certificate status from Firestore
+  useEffect(() => {
+    if (!user?.uid || !courseId) return;
+
+    // Check session dismissal
+    const sessionDismiss = sessionStorage.getItem(`dismiss_cert_claim_${courseId}`);
+    if (sessionDismiss === 'true') {
+      setIsDismissed(true);
+    }
+
+    const fetchCertData = async () => {
+      try {
+        const certDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'certificates', courseId);
+        const docSnap = await getDoc(certDocRef);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          setPhysicalCopyClaimed(data.physical_copy_claimed ?? false);
+        } else {
+          setPhysicalCopyClaimed(false);
+        }
+      } catch (err) {
+        console.error('Error loading certificate claim state:', err);
+        setPhysicalCopyClaimed(false);
+      }
+    };
+
+    fetchCertData();
+  }, [user?.uid, courseId]);
+
+  // Record download / print action in database
+  const recordDownloadInDb = async () => {
+    if (!user?.uid || !courseId) return;
+    try {
+      const certDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'certificates', courseId);
+      await setDoc(certDocRef, {
+        courseId,
+        courseTitle,
+        certificate_downloaded: true,
+        downloadedAt: serverTimestamp(),
+        physical_copy_claimed: physicalCopyClaimed ?? false,
+        score,
+        updatedAt: serverTimestamp(),
+      }, { merge: true });
+    } catch (err) {
+      console.error('Error saving certificate download action to firestore:', err);
+    }
+  };
+
+  // Claim physical copy button handler
+  const handleClaimPhysicalCopy = async () => {
+    if (!user?.uid || !courseId) return;
+    setIsClaimingInDb(true);
+    try {
+      const certDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'certificates', courseId);
+      await setDoc(certDocRef, {
+        physical_copy_claimed: true,
+        claimedAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      }, { merge: true });
+      setPhysicalCopyClaimed(true);
+    } catch (err) {
+      console.error('Error updating physical copy claimed status:', err);
+    } finally {
+      setIsClaimingInDb(false);
+    }
+  };
+
+  const handleDismissSession = () => {
+    sessionStorage.setItem(`dismiss_cert_claim_${courseId}`, 'true');
+    setIsDismissed(true);
+  };
+
   const handlePrint = () => {
+    recordDownloadInDb();
     window.print();
     setDownloadSuccess(true);
   };
@@ -26,8 +108,12 @@ export default function CourseCertificate({ course, user, score = 90, issueDate 
   const handleDownloadPNG = async () => {
     if (!certificateRef.current) return;
     setIsGenerating(true);
+    setIsRenderingForDownload(true);
 
     try {
+      // Small pause to allow React to remove .cert-guide-placeholder from DOM
+      await new Promise((r) => setTimeout(r, 60));
+
       if (typeof window !== 'undefined' && !(window as any).html2canvas) {
         await new Promise<void>((resolve, reject) => {
           const script = document.createElement('script');
@@ -57,18 +143,76 @@ export default function CourseCertificate({ course, user, score = 90, issueDate 
       } else {
         window.print();
       }
+      
+      await recordDownloadInDb();
       setDownloadSuccess(true);
     } catch (err) {
       console.error(err);
       window.print();
       setDownloadSuccess(true);
     } finally {
+      setIsRenderingForDownload(false);
       setIsGenerating(false);
     }
   };
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
+      {/* PERSISTENT IN-PERSON STAMP POPUP / ALERT (Glassmorphism with Golden Yellow border) */}
+      {physicalCopyClaimed === false && !isDismissed && (
+        <div className="no-print bg-[#050811]/95 backdrop-blur-2xl border-2 border-[#f9b03c] rounded-3xl p-5 sm:p-7 shadow-[0_15px_40px_rgba(249,176,60,0.25)] relative overflow-hidden transition-all duration-300 animate-in fade-in slide-in-from-top-3">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-[#f9b03c]/20 text-[#f9b03c] border border-[#f9b03c]/40 flex items-center justify-center text-xl shrink-0 shadow-[0_0_15px_rgba(249,176,60,0.3)] mt-0.5">
+                <i className="fa-solid fa-stamp"></i>
+              </div>
+              <div className="space-y-1">
+                <h4 className="font-heading font-black text-sm sm:text-base text-white">
+                  ማሳሰቢያ፦ የሰርተፍኬትዎን ኦሪጅናል ማህተም እና ፊርማ ለማስመታት፣ እባክዎ በአካል ቢሯችን ይምጡ።
+                </h4>
+                <p className="text-xs sm:text-sm text-slate-300 font-body leading-relaxed">
+                  ይፋዊውን ማህተም እና ፊርማ በአካል ተገኝተው ካስመቱ በኋላ ሰርተፍኬትዎ ሙሉ በሙሉ ህጋዊ እና የተረጋገጠ ይሆናል።
+                </p>
+                <div className="pt-1">
+                  <a href="tel:0980209090" className="inline-flex items-center gap-1.5 text-xs font-bold text-[#f9b03c] hover:underline">
+                    <i className="fa-solid fa-phone"></i> ስልክ: 0980209090
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            {/* Interactive Action Buttons */}
+            <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 w-full sm:w-auto shrink-0 pt-2 sm:pt-0">
+              <button
+                onClick={handleClaimPhysicalCopy}
+                disabled={isClaimingInDb}
+                className="flex-1 sm:flex-none px-4 py-2.5 bg-[#f9b03c] hover:bg-[#ffbe53] text-black font-black text-xs sm:text-sm rounded-xl shadow-md transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+              >
+                {isClaimingInDb ? (
+                  <>
+                    <i className="fa-solid fa-spinner fa-spin"></i>
+                    <span>በማረጋገጥ ላይ...</span>
+                  </>
+                ) : (
+                  <>
+                    <i className="fa-solid fa-check-double"></i>
+                    <span>ቢሮ መጥቼ ወስጃለሁ</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                onClick={handleDismissSession}
+                className="flex-1 sm:flex-none px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white font-bold text-xs sm:text-sm rounded-xl border border-white/10 transition flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <i className="fa-solid fa-clock"></i>
+                <span>በኋላ እመጣለሁ</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Top Action Bar */}
       <div className="no-print flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-900/90 border border-slate-800 p-4 rounded-2xl">
         <div className="flex items-center gap-3">
@@ -128,7 +272,7 @@ export default function CourseCertificate({ course, user, score = 90, issueDate 
         {/* Certificate Inner Content */}
         <div className="relative z-10 space-y-6 max-w-2xl mx-auto">
           
-          {/* Logo & Header (Clean without divider line under logo) */}
+          {/* Logo & Header */}
           <div className="space-y-3">
             <div className="flex justify-center items-center">
               <img 
@@ -170,21 +314,39 @@ export default function CourseCertificate({ course, user, score = 90, issueDate 
           {/* Signatures & Seal Section (Ready for Physical Signature & Stamp) */}
           <div className="pt-10 border-t border-slate-800/80 grid grid-cols-3 items-end gap-4 text-center">
             
-            {/* Left: Blank Line for Instructor Signature */}
+            {/* Left: Blank Line for Instructor Signature with Guide Text (Hidden on Print/Canvas Download) */}
             <div className="space-y-1.5 text-left">
-              <div className="h-10"></div>
+              <div className="h-10 flex items-end">
+                {!isRenderingForDownload && (
+                  <span className="cert-guide-placeholder text-[11px] text-gray-500 font-medium italic">
+                    (የአሰልጣኝ ፊርማ ቦታ)
+                  </span>
+                )}
+              </div>
               <div className="h-[1.5px] bg-amber-400/70 w-32 sm:w-40"></div>
               <p className="text-[11px] text-slate-200 font-bold uppercase tracking-wider">የአሰልጣኙ ፊርማ</p>
-              <p className="text-[10px] text-amber-400 font-semibold">ኢዮብ ሳህሌ (መስራች)</p>
+              {!isRenderingForDownload ? (
+                <p className="cert-guide-placeholder text-[10px] text-amber-400/80 font-semibold">ኢዮብ ሳህሌ (መስራች)</p>
+              ) : (
+                <div className="h-3"></div>
+              )}
             </div>
 
             {/* Center: Blank Designated Area for Official In-Person Stamp */}
             <div className="flex flex-col items-center justify-center">
               <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-dashed border-amber-400/40 flex flex-col items-center justify-center p-1 bg-white/[0.02]">
-                <i className="fa-solid fa-stamp text-amber-400/60 text-base mb-0.5"></i>
-                <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter text-center leading-tight">ይፋዊ ማህተም</span>
+                {!isRenderingForDownload ? (
+                  <>
+                    <i className="cert-guide-placeholder fa-solid fa-stamp text-amber-400/60 text-base mb-0.5"></i>
+                    <span className="cert-guide-placeholder text-[8px] font-bold text-slate-400 uppercase tracking-tighter text-center leading-tight">ይፋዊ ማህተም</span>
+                  </>
+                ) : (
+                  <div className="w-full h-full"></div>
+                )}
               </div>
-              <span className="text-[9px] text-slate-400 font-medium mt-1">Official Stamp</span>
+              {!isRenderingForDownload && (
+                <span className="cert-guide-placeholder text-[9px] text-slate-400 font-medium mt-1">Official Stamp</span>
+              )}
             </div>
 
             {/* Right: Date & Verification ID */}
@@ -200,7 +362,7 @@ export default function CourseCertificate({ course, user, score = 90, issueDate 
         </div>
       </div>
 
-      {/* NEW FEATURE: In-Person Stamp & Physical Signature Notification Alert */}
+      {/* Success Notification Alert after action */}
       {downloadSuccess && (
         <div className="no-print bg-[#050811]/95 backdrop-blur-2xl border-2 border-[#f9b03c] rounded-2xl p-5 sm:p-6 shadow-[0_15px_40px_rgba(249,176,60,0.25)] animate-in fade-in slide-in-from-top-3 duration-300">
           <div className="flex items-start gap-4">

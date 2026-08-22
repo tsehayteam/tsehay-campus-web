@@ -5,6 +5,8 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
+import { db } from '@/lib/firebase/config';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 const DEFAULT_COURSES = [
   'ዲጂታል ማርኬቲንግ እና የኦንላይን ቢዝነስ ማስተርክላስ (Digital Marketing)',
@@ -24,11 +26,19 @@ export default function CertificateGeneratorPage() {
   const [certId, setCertId] = useState('TC-2026-X8F9');
   const [issueDate, setIssueDate] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isRenderingForDownload, setIsRenderingForDownload] = useState(false);
   const [downloadSuccess, setDownloadSuccess] = useState(false);
+  
+  // Database fields
+  const [physicalCopyClaimed, setPhysicalCopyClaimed] = useState<boolean | null>(null);
+  const [isClaimingInDb, setIsClaimingInDb] = useState(false);
+  const [isDismissed, setIsDismissed] = useState(false);
   const [scale, setScale] = useState(1);
 
   const certRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const courseKey = selectedCourse.slice(0, 20).replace(/[^a-zA-Z0-9_-]/g, '_');
 
   useEffect(() => {
     // Generate unique ID and formatted date on mount
@@ -40,6 +50,31 @@ export default function CertificateGeneratorPage() {
     const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
     setIssueDate(today.toLocaleDateString('en-US', options));
   }, []);
+
+  // Fetch claim state
+  useEffect(() => {
+    if (!user?.uid) return;
+
+    const sessionDismiss = sessionStorage.getItem(`dismiss_cert_gen_${user.uid}`);
+    if (sessionDismiss === 'true') {
+      setIsDismissed(true);
+    }
+
+    const fetchCertStatus = async () => {
+      try {
+        const certDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'certificates', courseKey);
+        const docSnap = await getDoc(certDocRef);
+        if (docSnap.exists()) {
+          setPhysicalCopyClaimed(docSnap.data()?.physical_copy_claimed ?? false);
+        } else {
+          setPhysicalCopyClaimed(false);
+        }
+      } catch (err) {
+        setPhysicalCopyClaimed(false);
+      }
+    };
+    fetchCertStatus();
+  }, [user?.uid, courseKey]);
 
   // Responsive scaling for the 1123px wide certificate preview
   useEffect(() => {
@@ -58,12 +93,60 @@ export default function CertificateGeneratorPage() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  const recordDownloadInDb = async () => {
+    if (!user?.uid) return;
+    try {
+      const certDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'certificates', courseKey);
+      await setDoc(certDocRef, {
+        courseTitle: selectedCourse,
+        studentName,
+        certificate_downloaded: true,
+        downloadedAt: serverTimestamp(),
+        physical_copy_claimed: physicalCopyClaimed ?? false,
+        updatedAt: serverTimestamp(),
+      }, { merge: true });
+    } catch (err) {
+      console.error('Error tracking download action in DB:', err);
+    }
+  };
+
+  const handleClaimPhysicalCopy = async () => {
+    if (!user?.uid) {
+      setPhysicalCopyClaimed(true);
+      return;
+    }
+    setIsClaimingInDb(true);
+    try {
+      const certDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'certificates', courseKey);
+      await setDoc(certDocRef, {
+        physical_copy_claimed: true,
+        claimedAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      }, { merge: true });
+      setPhysicalCopyClaimed(true);
+    } catch (err) {
+      console.error('Error claiming physical copy:', err);
+    } finally {
+      setIsClaimingInDb(false);
+    }
+  };
+
+  const handleDismissSession = () => {
+    if (user?.uid) {
+      sessionStorage.setItem(`dismiss_cert_gen_${user.uid}`, 'true');
+    }
+    setIsDismissed(true);
+  };
+
   const handleDownloadPNG = async () => {
     if (!certRef.current) return;
     setIsGenerating(true);
+    setIsRenderingForDownload(true);
 
     try {
-      // Ensure html2canvas is loaded via CDN without build dependencies
+      // Pause to remove placeholders from DOM before rasterizing canvas
+      await new Promise((r) => setTimeout(r, 60));
+
       if (typeof window !== 'undefined' && !(window as any).html2canvas) {
         await new Promise<void>((resolve, reject) => {
           const script = document.createElement('script');
@@ -93,17 +176,21 @@ export default function CertificateGeneratorPage() {
       } else {
         window.print();
       }
+
+      await recordDownloadInDb();
       setDownloadSuccess(true);
     } catch (error) {
       console.error('Error generating certificate PNG:', error);
       window.print();
       setDownloadSuccess(true);
     } finally {
+      setIsRenderingForDownload(false);
       setIsGenerating(false);
     }
   };
 
   const handlePrint = () => {
+    recordDownloadInDb();
     window.print();
     setDownloadSuccess(true);
   };
@@ -134,6 +221,61 @@ export default function CertificateGeneratorPage() {
             ስምዎን እና የወሰዱትን ኮርስ በማስገባት በይፋ የተረጋገጠ፣ በከፍተኛ ጥራት የሚታተም እና የሚወርድ የ Tsehay Campus ሰርተፍኬት ያመንጩ።
           </p>
         </div>
+
+        {/* PERSISTENT IN-PERSON STAMP POPUP / ALERT */}
+        {physicalCopyClaimed === false && !isDismissed && (
+          <div className="max-w-4xl mx-auto mb-8 bg-[#050811]/95 backdrop-blur-2xl border-2 border-[#f9b03c] rounded-3xl p-5 sm:p-7 shadow-[0_15px_40px_rgba(249,176,60,0.25)] relative overflow-hidden transition-all duration-300 animate-in fade-in slide-in-from-top-3">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-[#f9b03c]/20 text-[#f9b03c] border border-[#f9b03c]/40 flex items-center justify-center text-xl shrink-0 shadow-[0_0_15px_rgba(249,176,60,0.3)] mt-0.5">
+                  <i className="fa-solid fa-stamp"></i>
+                </div>
+                <div className="space-y-1">
+                  <h4 className="font-heading font-black text-sm sm:text-base text-white">
+                    ማሳሰቢያ፦ የሰርተፍኬትዎን ኦሪጅናል ማህተም እና ፊርማ ለማስመታት፣ እባክዎ በአካል ቢሯችን ይምጡ።
+                  </h4>
+                  <p className="text-xs sm:text-sm text-slate-300 font-body leading-relaxed">
+                    ይፋዊውን ማህተም እና ፊርማ በአካል ተገኝተው ካስመቱ በኋላ ሰርተፍኬትዎ ሙሉ በሙሉ ህጋዊ እና የተረጋገጠ ይሆናል።
+                  </p>
+                  <div className="pt-1">
+                    <a href="tel:0980209090" className="inline-flex items-center gap-1.5 text-xs font-bold text-[#f9b03c] hover:underline">
+                      <i className="fa-solid fa-phone"></i> ስልክ: 0980209090
+                    </a>
+                  </div>
+                </div>
+              </div>
+
+              {/* Interactive Action Buttons */}
+              <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 w-full sm:w-auto shrink-0 pt-2 sm:pt-0">
+                <button
+                  onClick={handleClaimPhysicalCopy}
+                  disabled={isClaimingInDb}
+                  className="flex-1 sm:flex-none px-4 py-2.5 bg-[#f9b03c] hover:bg-[#ffbe53] text-black font-black text-xs sm:text-sm rounded-xl shadow-md transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                >
+                  {isClaimingInDb ? (
+                    <>
+                      <i className="fa-solid fa-spinner fa-spin"></i>
+                      <span>በማረጋገጥ ላይ...</span>
+                    </>
+                  ) : (
+                    <>
+                      <i className="fa-solid fa-check-double"></i>
+                      <span>ቢሮ መጥቼ ወስጃለሁ</span>
+                    </>
+                  )}
+                </button>
+
+                <button
+                  onClick={handleDismissSession}
+                  className="flex-1 sm:flex-none px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white font-bold text-xs sm:text-sm rounded-xl border border-white/10 transition flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <i className="fa-solid fa-clock"></i>
+                  <span>በኋላ እመጣለሁ</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Generator Form Controls (Glassmorphic Box) */}
         <div className="bg-[#050811]/95 backdrop-blur-2xl border border-white/[0.1] rounded-3xl p-6 sm:p-8 mb-8 shadow-[0_20px_60px_rgba(0,0,0,0.7)] max-w-4xl mx-auto">
@@ -225,7 +367,7 @@ export default function CertificateGeneratorPage() {
           </div>
         </div>
 
-        {/* IN-PERSON STAMP NOTIFICATION ALERT */}
+        {/* IN-PERSON STAMP NOTIFICATION ALERT ON ACTION */}
         {downloadSuccess && (
           <div className="max-w-4xl mx-auto mb-10 bg-[#050811]/95 backdrop-blur-2xl border-2 border-[#f9b03c] rounded-3xl p-6 sm:p-7 shadow-[0_15px_50px_rgba(249,176,60,0.3)] animate-in fade-in slide-in-from-top-3 duration-300">
             <div className="flex items-start gap-4">
@@ -297,7 +439,7 @@ export default function CertificateGeneratorPage() {
               {/* Subtle Guilloche Pattern Background */}
               <div className="absolute inset-10 opacity-[0.025] pointer-events-none bg-[radial-gradient(#3268ba_1px,transparent_1px)] [background-size:16px_16px]"></div>
 
-              {/* SECTION 1: HEADER & LOGO (Clean without line under logo) */}
+              {/* SECTION 1: HEADER & LOGO */}
               <div className="relative z-10 text-center pt-2">
                 <div className="flex justify-center items-center mb-2">
                   <img 
@@ -364,19 +506,37 @@ export default function CertificateGeneratorPage() {
               <div className="relative z-10 grid grid-cols-3 items-end pb-3 px-8 text-center">
                 {/* Bottom Left: Blank Line for Official Physical Signature */}
                 <div className="text-left">
-                  <div className="h-12"></div>
+                  <div className="h-12 flex items-end">
+                    {!isRenderingForDownload && (
+                      <span className="cert-guide-placeholder text-[11px] text-gray-500 font-medium italic">
+                        (የአሰልጣኝ ፊርማ ቦታ)
+                      </span>
+                    )}
+                  </div>
                   <div className="w-48 h-[1.5px] bg-[#3268ba] mb-1.5 mt-1"></div>
                   <p className="text-xs font-black text-[#0f172a] uppercase tracking-wider">የአሰልጣኙ ፊርማ (Signature)</p>
-                  <p className="text-[10px] text-gray-600 font-bold">ኢዮብ ሳህሌ (መስራች)</p>
+                  {!isRenderingForDownload ? (
+                    <p className="cert-guide-placeholder text-[10px] text-gray-600 font-bold">ኢዮብ ሳህሌ (መስራች)</p>
+                  ) : (
+                    <div className="h-3"></div>
+                  )}
                 </div>
 
                 {/* Center: Blank Designated Area for Official In-Person Stamp */}
                 <div className="flex flex-col items-center justify-center">
                   <div className="w-20 h-20 rounded-full border-2 border-dashed border-[#3268ba]/40 flex flex-col items-center justify-center p-1 bg-[#3268ba]/[0.02]">
-                    <i className="fa-solid fa-stamp text-[#3268ba]/60 text-lg mb-0.5"></i>
-                    <span className="text-[8px] font-black text-[#3268ba] uppercase tracking-tighter text-center leading-tight">ይፋዊ ማህተም</span>
+                    {!isRenderingForDownload ? (
+                      <>
+                        <i className="cert-guide-placeholder fa-solid fa-stamp text-[#3268ba]/60 text-lg mb-0.5"></i>
+                        <span className="cert-guide-placeholder text-[8px] font-black text-[#3268ba] uppercase tracking-tighter text-center leading-tight">ይፋዊ ማህተም</span>
+                      </>
+                    ) : (
+                      <div className="w-full h-full"></div>
+                    )}
                   </div>
-                  <span className="text-[9px] text-gray-500 font-semibold mt-1">Official Stamp Area</span>
+                  {!isRenderingForDownload && (
+                    <span className="cert-guide-placeholder text-[9px] text-gray-500 font-semibold mt-1">Official Stamp Area</span>
+                  )}
                 </div>
 
                 {/* Bottom Right: Date & Verification ID */}
