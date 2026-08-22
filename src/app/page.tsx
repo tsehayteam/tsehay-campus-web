@@ -269,6 +269,19 @@ export default function Home() {
 
   const { t } = useLanguage();
 
+  // Smooth Scroll Parallax for Hero Background
+  const [heroParallaxY, setHeroParallaxY] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY < window.innerHeight * 1.5) {
+        setHeroParallaxY(window.scrollY * 0.24);
+      }
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   useEffect(() => {
     // Force scroll to top on initial load
     window.scrollTo(0, 0);
@@ -385,8 +398,14 @@ export default function Home() {
   return (
     <main className="relative bg-transparent">
       <section className="terafab-hero-container" id="home">
-        {/* Full-Cover Background Image / Mesh */}
-        <div className="terafab-hero-bg" style={{backgroundImage: "url('/assets/hero-bg-new.jpg')"}}></div>
+        {/* Full-Cover Background Image / Mesh with Continuous Ken Burns + Parallax */}
+        <div 
+          className="terafab-hero-bg" 
+          style={{
+            backgroundImage: "url('/assets/hero-bg-new.jpg')",
+            transform: `translate3d(0, ${heroParallaxY}px, 0)`
+          }}
+        ></div>
         {/* Deep Void Black Vignette */}
         <div className="terafab-hero-vignette"></div>
         

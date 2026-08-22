@@ -270,8 +270,26 @@ body {
 }
 
 /* ==========================================================================
-   🚀 Terafab.ai Elite Full-Screen Hero Aesthetics
+   🚀 Terafab.ai Elite Full-Screen Hero Aesthetics & Continuous Ken Burns
    ========================================================================== */
+
+@keyframes kenBurnsSlow {
+  0% {
+    transform: scale(1) translate3d(0, 0, 0);
+  }
+  50% {
+    transform: scale(1.08) translate3d(0, -10px, 0);
+  }
+  100% {
+    transform: scale(1) translate3d(0, 0, 0);
+  }
+}
+
+.ken-burns-bg {
+  animation: kenBurnsSlow 26s infinite alternate ease-in-out;
+  will-change: transform;
+  transform-origin: center center;
+}
 
 .terafab-hero-container {
   min-height: 100vh;
@@ -291,22 +309,24 @@ body {
 
 .terafab-hero-bg {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+  inset: -6% -6% -6% -6%;
+  width: 112%;
+  height: 112%;
   object-fit: cover;
   background-size: cover;
   background-position: center top;
   background-repeat: no-repeat;
   z-index: 0;
   pointer-events: none;
+  animation: kenBurnsSlow 28s infinite alternate ease-in-out;
+  will-change: transform;
 }
 
 .terafab-hero-vignette {
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at 50% 35%, rgba(3, 5, 9, 0.3) 0%, rgba(3, 5, 9, 0.85) 75%, #030509 100%),
-              linear-gradient(180deg, rgba(3, 5, 9, 0.6) 0%, transparent 25%, transparent 75%, #030509 100%);
+  background: radial-gradient(circle at 50% 35%, rgba(3, 5, 9, 0.42) 0%, rgba(3, 5, 9, 0.88) 75%, #030509 100%),
+              linear-gradient(180deg, rgba(3, 5, 9, 0.7) 0%, rgba(3, 5, 9, 0.15) 30%, rgba(3, 5, 9, 0.65) 80%, #030509 100%);
   z-index: 1;
   pointer-events: none;
 }
