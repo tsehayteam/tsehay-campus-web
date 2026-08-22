@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { auth, db } from "@/lib/firebase/config";
 import { 
   signInWithEmailAndPassword, 
@@ -8,10 +8,15 @@ import {
   updateProfile, 
   GoogleAuthProvider, 
   signInWithPopup, 
+  RecaptchaVerifier,
+  signInWithPhoneNumber,
+  ConfirmationResult,
   User 
 } from "firebase/auth";
 import { doc, setDoc, serverTimestamp, getDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
+import { validateEmailForSignup, isDisposableEmail } from "@/lib/disposableEmailBlocker";
+import { formatPhoneNumberToE164, isValidEthiopianOrIntlPhone } from "@/lib/phoneAuthHelper";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -26,6 +31,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
   
   // Form fields
   const [email, setEmail] = useState("");
+  const [emailError, setEmailError] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -33,19 +39,63 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
   const [source, setSource] = useState("");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   
+  // Phone OTP Verification State
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const [isPhoneVerified, setIsPhoneVerified] = useState(false);
+  const [verifiedPhoneNumber, setVerifiedPhoneNumber] = useState("");
+  const [otpCountdown, setOtpCountdown] = useState(0);
+  const [otpError, setOtpError] = useState("");
+  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
+
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [pendingGoogleAuth, setPendingGoogleAuth] = useState<User | null>(null);
   const router = useRouter();
 
+  const recaptchaVerifierRef = useRef<RecaptchaVerifier | null>(null);
+
   useEffect(() => {
     if (!isOpen) {
       setPendingGoogleAuth(null);
       setError("");
+      setEmailError("");
+      setOtpError("");
       setIsResetMode(false);
       setShowPassword(false);
+      setOtpSent(false);
+      setOtpCode("");
+      setIsPhoneVerified(false);
+      setVerifiedPhoneNumber("");
+      setConfirmationResult(null);
     }
   }, [isOpen]);
+
+  // Countdown timer for OTP resend
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (otpCountdown > 0) {
+      timer = setTimeout(() => setOtpCountdown(otpCountdown - 1), 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [otpCountdown]);
+
+  // Real-time email validation for disposable domains
+  const handleEmailChange = (val: string) => {
+    setEmail(val);
+    setError("");
+    if ((isSignupMode || pendingGoogleAuth) && val.trim().includes("@")) {
+      if (isDisposableEmail(val)) {
+        setEmailError("ይቅርታ! እባክዎ ትክክለኛ እና ቋሚ የኢሜይል አድራሻ (እንደ Gmail, Yahoo) ይጠቀሙ።");
+      } else {
+        setEmailError("");
+      }
+    } else {
+      setEmailError("");
+    }
+  };
 
   const getFriendlyErrorMessage = (error: any) => {
     const errorCode = error?.code || '';
@@ -64,10 +114,121 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
     if (errorCode === 'auth/network-request-failed') {
       return 'የኢንተርኔት ግንኙነት ችግር አጋጥሟል። እባክዎ የኢንተርኔትዎን ሁኔታ አረጋግጠው በድጋሚ ይሞክሩ።';
     }
+    if (errorCode === 'auth/invalid-phone-number') {
+      return 'የተሳሳተ ስልክ ቁጥር ነው። እባክዎ ትክክለኛ የኢትዮጵያ ስልክ ቁጥር ያስገቡ።';
+    }
+    if (errorCode === 'auth/invalid-verification-code') {
+      return 'ያስገቡት የ 6-ድጂት የማረጋገጫ ኮድ የተሳሳተ ነው። እባክዎ በድጋሚ ይሞክሩ።';
+    }
+    if (errorCode === 'auth/code-expired') {
+      return 'የማረጋገጫ ኮዱ ጊዜው አልፎበታል። እባክዎ ኮዱን በድጋሚ ያስልኩ።';
+    }
+    if (errorCode === 'auth/too-many-requests') {
+      return 'ብዙ ሙከራዎች ተደርገዋል። እባክዎ ጥቂት ደቂቃዎችን ቆይተው በድጋሚ ይሞክሩ።';
+    }
     if (errorCode === 'auth/popup-closed-by-user') {
       return '';
     }
     return error?.message || 'የሆነ ችግር አጋጥሟል። እባክዎ በድጋሚ ይሞክሩ።';
+  };
+
+  // Setup Recaptcha Verifier for Phone OTP
+  const getRecaptchaVerifier = () => {
+    if (typeof window === 'undefined') return null;
+    
+    try {
+      if (!recaptchaVerifierRef.current) {
+        recaptchaVerifierRef.current = new RecaptchaVerifier(auth, 'recaptcha-container', {
+          size: 'invisible',
+          callback: () => {
+            // reCAPTCHA solved
+          },
+          'expired-callback': () => {
+            if (recaptchaVerifierRef.current) {
+              try {
+                recaptchaVerifierRef.current.clear();
+              } catch (e) {}
+              recaptchaVerifierRef.current = null;
+            }
+          }
+        });
+      }
+      return recaptchaVerifierRef.current;
+    } catch (e) {
+      console.error("Recaptcha initialization error:", e);
+      return null;
+    }
+  };
+
+  // Send SMS OTP Code
+  const handleSendOtp = async () => {
+    setError("");
+    setOtpError("");
+    
+    if (!phone.trim()) {
+      setOtpError("እባክዎ መጀመሪያ ስልክ ቁጥርዎን ያስገቡ።");
+      return;
+    }
+
+    const formattedPhone = formatPhoneNumberToE164(phone);
+    if (!isValidEthiopianOrIntlPhone(formattedPhone)) {
+      setOtpError("እባክዎ ትክክለኛ ስልክ ቁጥር (ለምሳሌ 0911234567 ወይም +251 911...) ያስገቡ።");
+      return;
+    }
+
+    setIsSendingOtp(true);
+    try {
+      const verifier = getRecaptchaVerifier();
+      if (!verifier) {
+        throw new Error("reCAPTCHA ማረጋገጫውን ማስጀመር አልተቻለም።");
+      }
+
+      const confirmation = await signInWithPhoneNumber(auth, formattedPhone, verifier);
+      setConfirmationResult(confirmation);
+      setOtpSent(true);
+      setOtpCountdown(60);
+      setOtpError("");
+    } catch (err: any) {
+      console.error("SMS OTP Send Error:", err);
+      setOtpError(getFriendlyErrorMessage(err));
+      // Reset verifier on failure so it can re-trigger
+      if (recaptchaVerifierRef.current) {
+        try { recaptchaVerifierRef.current.clear(); } catch (e) {}
+        recaptchaVerifierRef.current = null;
+      }
+    } finally {
+      setIsSendingOtp(false);
+    }
+  };
+
+  // Verify entered 6-digit OTP code
+  const handleVerifyOtp = async () => {
+    setError("");
+    setOtpError("");
+
+    if (!otpCode.trim() || otpCode.trim().length < 6) {
+      setOtpError("እባክዎ 6 ድጂት የማረጋገጫ ኮድ ያስገቡ።");
+      return;
+    }
+
+    if (!confirmationResult) {
+      setOtpError("የማረጋገጫ ኮድ አልተላከም። እባክዎ በድጋሚ ኮድ ይላኩ።");
+      return;
+    }
+
+    setIsVerifyingOtp(true);
+    try {
+      await confirmationResult.confirm(otpCode.trim());
+      setIsPhoneVerified(true);
+      setVerifiedPhoneNumber(formatPhoneNumberToE164(phone));
+      setOtpSent(false);
+      setOtpError("");
+    } catch (err: any) {
+      console.error("OTP Verification Error:", err);
+      setOtpError(getFriendlyErrorMessage(err));
+    } finally {
+      setIsVerifyingOtp(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -102,7 +263,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
     return hasPhone && hasCity;
   };
 
-  // Google Authentication Flow with Automatic Profile Completion Detection
+  // Google Authentication Flow
   const handleGoogleAuth = async () => {
     setError("");
     setLoading(true);
@@ -117,7 +278,6 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
       const existingData = docSnap.exists() ? docSnap.data() : null;
 
       if (existingData && isProfileDataComplete(existingData)) {
-        // User is already fully registered! Update last login and proceed directly.
         await setDoc(docRef, {
           lastLogin: serverTimestamp(),
           photoURL: user.photoURL || existingData.photoURL || null,
@@ -128,8 +288,6 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
         setError("");
         onClose();
       } else {
-        // User is NEW or has missing profile fields (phone, city, etc.)
-        // DO NOT close modal! Prompt them to fill out the remaining signup fields.
         setPendingGoogleAuth(user);
         setName(existingData?.name || user.displayName || "");
         setEmail(user.email || "");
@@ -164,10 +322,13 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
         setError('እባክዎ ሙሉ ስምዎን ያስገቡ።');
         return;
       }
-      if (!phone.trim() || phone.trim().length < 7) {
-        setError('እባክዎ ትክክለኛ ስልክ ቁጥር ያስገቡ።');
+
+      // Mandatory phone verification
+      if (!isPhoneVerified) {
+        setError('እባክዎ መጀመሪያ ስልክ ቁጥርዎን በ SMS OTP ያረጋግጡ።');
         return;
       }
+
       if (!city.trim()) {
         setError('እባክዎ የሚኖሩበትን ከተማ ወይም ሀገር ያስገቡ።');
         return;
@@ -186,7 +347,8 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
         const userData = {
           name: name.trim() || pendingGoogleAuth.displayName || "ተጠቃሚ",
           email: pendingGoogleAuth.email || cleanEmail,
-          phone: phone.trim(),
+          phone: verifiedPhoneNumber || formatPhoneNumberToE164(phone),
+          phoneVerified: true,
           city: city.trim(),
           source: source || "Google",
           photoURL: pendingGoogleAuth.photoURL || null,
@@ -222,20 +384,26 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
         setError('እባክዎ ሙሉ ስምዎን ያስገቡ።');
         return;
       }
-      if (!phone.trim() || phone.trim().length < 7) {
-        setError('እባክዎ ትክክለኛ ስልክ ቁጥር ያስገቡ።');
+
+      // CRITICAL CHECK 1: Disposable Email Blocker
+      const emailValidation = validateEmailForSignup(cleanEmail);
+      if (!emailValidation.isValid) {
+        setError(emailValidation.errorMessage || 'ይቅርታ! እባክዎ ትክክለኛ እና ቋሚ የኢሜይል አድራሻ (እንደ Gmail, Yahoo) ይጠቀሙ።');
         return;
       }
+
+      // CRITICAL CHECK 2: Mandatory Phone OTP Verification
+      if (!isPhoneVerified) {
+        setError('እባክዎ መጀመሪያ ስልክ ቁጥርዎን በ SMS OTP ያረጋግጡ።');
+        return;
+      }
+
       if (!city.trim()) {
         setError('እባክዎ የሚኖሩበትን ከተማ ወይም ሀገር ያስገቡ።');
         return;
       }
       if (!source) {
         setError('እባክዎ ስለ እኛ ከየት እንደሰሙ ይምረጡ።');
-        return;
-      }
-      if (!cleanEmail) {
-        setError('እባክዎ የኢሜል አድራሻዎን ያስገቡ።');
         return;
       }
       if (!password || password.length < 6) {
@@ -259,7 +427,8 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
         const userData = {
           name: name.trim(),
           email: cleanEmail,
-          phone: phone.trim(),
+          phone: verifiedPhoneNumber || formatPhoneNumberToE164(phone),
+          phoneVerified: true,
           city: city.trim(),
           source: source || "Direct",
           createdAt: serverTimestamp(),
@@ -270,7 +439,6 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
 
         await setDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', cred.user.uid, 'profile', 'info'), userData, { merge: true });
 
-        // Try sending verification email in background
         try {
           const { sendEmailVerification } = await import('firebase/auth');
           sendEmailVerification(cred.user).catch(() => {});
@@ -307,7 +475,6 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
     try {
       const cred = await signInWithEmailAndPassword(auth, cleanEmail, password);
 
-      // Background lastLogin update
       if (cred.user) {
         setDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', cred.user.uid, 'profile', 'info'), {
           lastLogin: serverTimestamp()
@@ -329,20 +496,25 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
     }
   };
 
+  const isFormBlockedFromSubmitting = (isSignupMode || pendingGoogleAuth) && (!isPhoneVerified || !!emailError);
+
   return (
     <div 
       className="fixed inset-0 bg-black/80 z-[9999] flex items-center justify-center backdrop-blur-sm p-4 animate-fade-in" 
       onClick={(e) => { if (e.target === e.currentTarget && !loading) onClose(); }}
     >
-      <div className="bg-white dark:bg-darkCard w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col relative modal-animate border border-gray-100 dark:border-gray-800 max-h-[92vh]">
+      {/* Hidden Recaptcha Container for Firebase Phone Auth */}
+      <div id="recaptcha-container"></div>
+
+      <div className="bg-white dark:bg-[#050811] w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col relative modal-animate border border-gray-100 dark:border-white/[0.1] max-h-[92vh]">
         
         {/* Modal Header */}
-        <div className="bg-secondary dark:bg-dark p-6 text-white text-center relative border-b border-secondary/50 dark:border-gray-800 shrink-0">
+        <div className="bg-secondary dark:bg-[#030509] p-6 text-white text-center relative border-b border-secondary/50 dark:border-white/[0.08] shrink-0">
           <button 
             type="button" 
             onClick={onClose} 
             disabled={loading}
-            className="absolute top-4 right-4 text-white/70 hover:text-white transition text-2xl z-50 p-2"
+            className="absolute top-4 right-4 text-white/70 hover:text-white transition text-2xl z-50 p-2 cursor-pointer"
           >
             <i className="fa-solid fa-xmark"></i>
           </button>
@@ -367,7 +539,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
               : isResetMode 
               ? 'የኢሜል አድራሻዎን ያስገቡ፤ ሊንክ እንልክልዎታለን' 
               : isSignupMode 
-              ? 'በ Google ወይም በኢሜል እና የይለፍ ቃል አዲስ አካውንት ይክፈቱ' 
+              ? 'በ Google ወይም በኢሜል እና ስልክ ቁጥር አዲስ አካውንት ይክፈቱ' 
               : 'በ Google ወይም በኢሜል እና የይለፍ ቃል ይግቡ'}
           </p>
         </div>
@@ -375,7 +547,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
         {/* Modal Body */}
         <div className="p-6 md:p-8 overflow-y-auto custom-modal-scroll flex-1">
           {error && (
-            <div className="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 text-sm p-3 rounded-xl mb-5 font-bold text-center">
+            <div className="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 text-xs sm:text-sm p-3.5 rounded-2xl mb-5 font-bold text-center">
               <i className="fa-solid fa-circle-exclamation mr-2"></i>
               {error}
             </div>
@@ -399,25 +571,25 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
             </div>
           )}
 
-          {/* Top Quick Google Sign-In / Sign-Up Button (Shown when not pending and not in reset mode) */}
+          {/* Top Quick Google Sign-In / Sign-Up Button */}
           {!pendingGoogleAuth && !isResetMode && (
             <>
               <button 
                 type="button" 
                 onClick={handleGoogleAuth} 
                 disabled={loading}
-                className="w-full bg-white dark:bg-dark border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white font-bold py-3.5 px-4 rounded-2xl hover:bg-gray-50 dark:hover:bg-gray-900 transition shadow-sm flex items-center justify-center gap-3 mb-4 group cursor-pointer hover:border-primary/50"
+                className="w-full bg-white dark:bg-[#0d1222] border border-gray-200 dark:border-white/[0.1] text-gray-900 dark:text-white font-bold py-3.5 px-4 rounded-2xl hover:bg-gray-50 dark:hover:bg-white/[0.05] transition shadow-sm flex items-center justify-center gap-3 mb-4 group cursor-pointer hover:border-primary/50"
               >
                 <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-5 h-5 group-hover:scale-110 transition-transform" />
                 <span>{isSignupMode ? 'በ Google (Gmail) በፍጥነት ይመዝገቡ' : 'በ Google (Gmail) ይግቡ'}</span>
               </button>
 
               <div className="flex items-center my-5">
-                <hr className="flex-1 border-gray-200 dark:border-gray-800" />
+                <hr className="flex-1 border-gray-200 dark:border-white/[0.08]" />
                 <span className="px-3 text-xs text-gray-400 dark:text-gray-500 font-bold uppercase">
-                  {isSignupMode ? 'ወይም በኢሜል እና የይለፍ ቃል' : 'ወይም በኢሜል ይግቡ'}
+                  {isSignupMode ? 'ወይም በኢሜል እና ስልክ ይመዝገቡ' : 'ወይም በኢሜል ይግቡ'}
                 </span>
-                <hr className="flex-1 border-gray-200 dark:border-gray-800" />
+                <hr className="flex-1 border-gray-200 dark:border-white/[0.08]" />
               </div>
             </>
           )}
@@ -429,7 +601,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
             {(isSignupMode || pendingGoogleAuth) && !isResetMode && (
               <>
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
                     ሙሉ ስም (Full Name) <span className="text-red-500">*</span>
                   </label>
                   <input 
@@ -438,26 +610,132 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
                     onChange={(e) => setName(e.target.value)} 
                     required 
                     placeholder="ለምሳሌ፡ ዮናስ አበበ" 
-                    className="w-full bg-gray-50 dark:bg-dark border border-gray-200 dark:border-gray-800 rounded-xl py-3 px-4 text-sm outline-none focus:border-secondary dark:focus:border-primary dark:text-white transition" 
+                    className="w-full bg-gray-50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/[0.1] rounded-xl py-3 px-4 text-sm outline-none focus:border-secondary dark:focus:border-[#f9b03c] dark:text-white transition" 
                   />
                 </div>
 
+                {/* MANDATORY PHONE NUMBER & OTP VERIFICATION SECTION */}
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">
-                    ስልክ ቁጥር (Phone Number) <span className="text-red-500">*</span>
-                  </label>
-                  <input 
-                    type="tel" 
-                    value={phone} 
-                    onChange={(e) => setPhone(e.target.value)} 
-                    required 
-                    placeholder="ለምሳሌ፡ +251 91 123 4567 ወይም 0911..." 
-                    className="w-full bg-gray-50 dark:bg-dark border border-gray-200 dark:border-gray-800 rounded-xl py-3 px-4 text-sm outline-none focus:border-secondary dark:focus:border-primary dark:text-white transition" 
-                  />
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-300">
+                      ስልክ ቁጥር (Phone Number) <span className="text-red-500">*</span>
+                    </label>
+                    {isPhoneVerified && (
+                      <span className="text-[11px] font-black text-emerald-400 flex items-center gap-1">
+                        <i className="fa-solid fa-circle-check"></i> ተረጋግጧል (Verified)
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center bg-gray-100 dark:bg-white/[0.06] border border-gray-200 dark:border-white/[0.1] rounded-xl px-3 py-3 text-xs font-bold text-gray-600 dark:text-gray-300 shrink-0 select-none">
+                      <span className="mr-1.5">🇪🇹</span> +251
+                    </div>
+                    <input 
+                      type="tel" 
+                      value={phone} 
+                      onChange={(e) => {
+                        setPhone(e.target.value);
+                        if (isPhoneVerified) setIsPhoneVerified(false);
+                      }} 
+                      required 
+                      disabled={isPhoneVerified}
+                      placeholder="911234567 ወይም 0911..." 
+                      className={`flex-1 bg-gray-50 dark:bg-white/[0.04] border rounded-xl py-3 px-4 text-sm outline-none transition dark:text-white ${
+                        isPhoneVerified 
+                          ? 'border-emerald-500/50 bg-emerald-500/5 text-emerald-400 font-bold' 
+                          : 'border-gray-200 dark:border-white/[0.1] focus:border-secondary dark:focus:border-[#f9b03c]'
+                      }`} 
+                    />
+                    {!isPhoneVerified && (
+                      <button
+                        type="button"
+                        onClick={handleSendOtp}
+                        disabled={isSendingOtp || !phone.trim() || otpCountdown > 0}
+                        className="bg-[#f9b03c] hover:bg-[#ffbe53] text-black font-black text-xs px-4 py-3 rounded-xl shadow-sm transition shrink-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+                      >
+                        {isSendingOtp ? (
+                          <>
+                            <i className="fa-solid fa-spinner fa-spin"></i>
+                            <span>በመላክ ላይ...</span>
+                          </>
+                        ) : otpCountdown > 0 ? (
+                          <span>{otpCountdown}s</span>
+                        ) : (
+                          <>
+                            <i className="fa-solid fa-paper-plane"></i>
+                            <span>{otpSent ? 'ድጋሚ ላክ' : 'አረጋግጥ'}</span>
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
+
+                  {/* OTP Error Display */}
+                  {otpError && (
+                    <p className="text-red-500 text-xs font-bold mt-1.5">
+                      <i className="fa-solid fa-circle-exclamation mr-1"></i>
+                      {otpError}
+                    </p>
+                  )}
+
+                  {/* Verified Success Badge */}
+                  {isPhoneVerified && (
+                    <div className="mt-2 bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-2.5 flex items-center justify-between text-xs text-emerald-400 font-bold animate-in fade-in">
+                      <span className="flex items-center gap-1.5">
+                        <i className="fa-solid fa-circle-check text-sm"></i>
+                        ስልክ ቁጥርዎ በይፋ ተረጋግጧል ({verifiedPhoneNumber})
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsPhoneVerified(false);
+                          setPhone("");
+                        }}
+                        className="text-gray-400 hover:text-white underline text-[11px] cursor-pointer"
+                      >
+                        ቀይር
+                      </button>
+                    </div>
+                  )}
+
+                  {/* 6-Digit OTP Input Sub-Box (Shown when OTP SMS is sent) */}
+                  {otpSent && !isPhoneVerified && (
+                    <div className="mt-3 bg-[#050811] border-2 border-[#f9b03c]/60 rounded-2xl p-4 shadow-lg animate-in fade-in slide-in-from-top-2">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-black text-[#f9b03c] flex items-center gap-1.5">
+                          <i className="fa-solid fa-shield-halved"></i>
+                          በ SMS የተላከውን 6-ድጂት ኮድ ያስገቡ
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={otpCode}
+                          onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                          maxLength={6}
+                          placeholder="123456"
+                          className="flex-1 bg-white/[0.06] border border-white/[0.2] rounded-xl py-2.5 px-3 text-center text-lg font-mono font-black tracking-widest text-white outline-none focus:border-[#f9b03c]"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleVerifyOtp}
+                          disabled={isVerifyingOtp || otpCode.length < 6}
+                          className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs px-4 py-3 rounded-xl shadow-md transition cursor-pointer disabled:opacity-50"
+                        >
+                          {isVerifyingOtp ? (
+                            <i className="fa-solid fa-spinner fa-spin"></i>
+                          ) : (
+                            'ኮዱን አረጋግጥ'
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
                     ከተማ / ሀገር (City / Country) <span className="text-red-500">*</span>
                   </label>
                   <input 
@@ -466,53 +744,63 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
                     onChange={(e) => setCity(e.target.value)} 
                     required 
                     placeholder="ለምሳሌ፡ አዲስ አበባ, ኢትዮጵያ" 
-                    className="w-full bg-gray-50 dark:bg-dark border border-gray-200 dark:border-gray-800 rounded-xl py-3 px-4 text-sm outline-none focus:border-secondary dark:focus:border-primary dark:text-white transition" 
+                    className="w-full bg-gray-50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/[0.1] rounded-xl py-3 px-4 text-sm outline-none focus:border-secondary dark:focus:border-[#f9b03c] dark:text-white transition" 
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
                     ስለ እኛ ከየት ሰሙ? (How did you hear about us?) <span className="text-red-500">*</span>
                   </label>
                   <select 
                     value={source} 
                     onChange={(e) => setSource(e.target.value)} 
                     required 
-                    className="w-full bg-gray-50 dark:bg-dark border border-gray-200 dark:border-gray-800 rounded-xl py-3 px-4 text-sm outline-none focus:border-secondary dark:focus:border-primary dark:text-white transition cursor-pointer"
+                    className="w-full bg-gray-50 dark:bg-[#0d1222] border border-gray-200 dark:border-white/[0.1] rounded-xl py-3 px-4 text-sm outline-none focus:border-secondary dark:focus:border-[#f9b03c] dark:text-white transition cursor-pointer"
                   >
-                    <option value="" disabled>እባክዎ ይምረጡ...</option>
-                    <option value="Telegram">ቴሌግራም (Telegram)</option>
-                    <option value="TikTok">ቲክቶክ (TikTok)</option>
-                    <option value="Facebook">ፌስቡክ (Facebook)</option>
-                    <option value="YouTube">ዩቲዩብ (YouTube)</option>
-                    <option value="Friend">ከጓደኛ ወይም ከሰው ጥቆማ (Friend / Referral)</option>
-                    <option value="Google">Google Search</option>
-                    <option value="Other">ሌላ (Other)</option>
+                    <option value="" disabled className="bg-[#0d1222] text-gray-400">እባክዎ ይምረጡ...</option>
+                    <option value="Telegram" className="bg-[#0d1222] text-white">ቴሌግራም (Telegram)</option>
+                    <option value="TikTok" className="bg-[#0d1222] text-white">ቲክቶክ (TikTok)</option>
+                    <option value="Facebook" className="bg-[#0d1222] text-white">ፌስቡክ (Facebook)</option>
+                    <option value="YouTube" className="bg-[#0d1222] text-white">ዩቲዩብ (YouTube)</option>
+                    <option value="Friend" className="bg-[#0d1222] text-white">ከጓደኛ ወይም ከሰው ጥቆማ (Friend / Referral)</option>
+                    <option value="Google" className="bg-[#0d1222] text-white">Google Search</option>
+                    <option value="Other" className="bg-[#0d1222] text-white">ሌላ (Other)</option>
                   </select>
                 </div>
               </>
             )}
 
-            {/* Email Field (Disabled if authenticated through Google) */}
+            {/* Email Field with Disposable Blocker Validation */}
             <div>
-              <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
                 ኢሜል (Email) <span className="text-red-500">*</span>
               </label>
               <input 
                 type="email" 
                 value={pendingGoogleAuth ? pendingGoogleAuth.email || "" : email} 
-                onChange={(e) => setEmail(e.target.value)} 
+                onChange={(e) => handleEmailChange(e.target.value)} 
                 required 
-                placeholder="email@example.com" 
+                placeholder="email@gmail.com" 
                 disabled={!!pendingGoogleAuth} 
-                className="w-full bg-gray-50 dark:bg-dark border border-gray-200 dark:border-gray-800 rounded-xl py-3 px-4 text-sm outline-none focus:border-secondary dark:focus:border-primary dark:text-white transition disabled:opacity-60 disabled:cursor-not-allowed" 
+                className={`w-full bg-gray-50 dark:bg-white/[0.04] border rounded-xl py-3 px-4 text-sm outline-none transition disabled:opacity-60 disabled:cursor-not-allowed dark:text-white ${
+                  emailError 
+                    ? 'border-red-500 focus:border-red-500' 
+                    : 'border-gray-200 dark:border-white/[0.1] focus:border-secondary dark:focus:border-[#f9b03c]'
+                }`} 
               />
+              {emailError && (
+                <p className="text-red-500 text-xs font-bold mt-1.5 leading-relaxed animate-in fade-in">
+                  <i className="fa-solid fa-triangle-exclamation mr-1"></i>
+                  {emailError}
+                </p>
+              )}
             </div>
 
-            {/* Password Field (Shown for Email/Password mode, hidden for Google Auth and Reset Mode) */}
+            {/* Password Field (Shown for Email/Password mode) */}
             {!pendingGoogleAuth && !isResetMode && (
               <div>
-                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">
+                <label className="block text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
                   {isSignupMode ? 'አዲስ የይለፍ ቃል (Create Password)' : 'የይለፍ ቃል (Password)'} <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
@@ -523,12 +811,12 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
                     required 
                     placeholder="•••••••• (ቢያንስ 6 ፊደላት)" 
                     minLength={6} 
-                    className="w-full bg-gray-50 dark:bg-dark border border-gray-200 dark:border-gray-800 rounded-xl py-3 pl-4 pr-11 text-sm outline-none focus:border-secondary dark:focus:border-primary dark:text-white transition" 
+                    className="w-full bg-gray-50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/[0.1] rounded-xl py-3 pl-4 pr-11 text-sm outline-none focus:border-secondary dark:focus:border-[#f9b03c] dark:text-white transition" 
                   />
                   <button 
                     type="button" 
                     onClick={() => setShowPassword(!showPassword)} 
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition text-sm p-1"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition text-sm p-1 cursor-pointer"
                   >
                     <i className={`fa-solid ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
                   </button>
@@ -542,7 +830,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
                 <button 
                   type="button" 
                   onClick={() => setIsResetMode(true)} 
-                  className="text-xs font-bold text-secondary dark:text-primary hover:underline cursor-pointer"
+                  className="text-xs font-bold text-secondary dark:text-[#f9b03c] hover:underline cursor-pointer"
                 >
                   የይለፍ ቃል ረሱ? (Forgot Password?)
                 </button>
@@ -551,7 +839,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
 
             {/* Terms and Privacy Checkbox */}
             {(isSignupMode || pendingGoogleAuth) && !isResetMode && (
-              <div className="flex items-start gap-3 mt-4 text-sm bg-gray-50/50 dark:bg-dark/50 p-3 rounded-xl border border-gray-100 dark:border-gray-800">
+              <div className="flex items-start gap-3 mt-4 text-sm bg-gray-50/50 dark:bg-white/[0.02] p-3.5 rounded-2xl border border-gray-100 dark:border-white/[0.08]">
                 <input 
                   type="checkbox" 
                   id="terms" 
@@ -561,16 +849,20 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
                   className="mt-0.5 min-w-[18px] w-4.5 h-4.5 text-primary bg-white border-gray-300 rounded focus:ring-primary dark:bg-gray-800 dark:border-gray-600 cursor-pointer accent-[#f9b03c]" 
                 />
                 <label htmlFor="terms" className="text-gray-600 dark:text-gray-400 leading-snug cursor-pointer text-xs sm:text-sm select-none">
-                  አካውንት በመክፈት የTsehay Campus <button type="button" onClick={() => window.dispatchEvent(new Event('open-terms-modal'))} className="text-secondary dark:text-primary hover:underline font-bold">የአጠቃቀም ህግ እና የግላዊነት ፖሊሲ (Terms & Privacy)</button> ለመቀበል እስማማለሁ።
+                  አካውንት በመክፈት የTsehay Campus <button type="button" onClick={() => window.dispatchEvent(new Event('open-terms-modal'))} className="text-secondary dark:text-[#f9b03c] hover:underline font-bold">የአጠቃቀም ህግ እና የግላዊነት ፖሊሲ (Terms & Privacy)</button> ለመቀበል እስማማለሁ።
                 </label>
               </div>
             )}
 
-            {/* Submit Button */}
+            {/* Main Submit Button */}
             <button 
               type="submit" 
-              disabled={loading} 
-              className="w-full bg-primary text-dark font-black py-3.5 rounded-2xl hover:bg-yellow-400 active:scale-[0.99] transition shadow-md mt-5 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={loading || isFormBlockedFromSubmitting} 
+              className={`w-full font-black py-3.5 rounded-2xl transition shadow-md mt-5 flex items-center justify-center gap-2 ${
+                isFormBlockedFromSubmitting
+                  ? 'bg-gray-300 dark:bg-white/[0.08] text-gray-500 dark:text-gray-400 cursor-not-allowed border border-white/[0.06]'
+                  : 'bg-[#f9b03c] hover:bg-[#ffbe53] text-black cursor-pointer shadow-[0_0_20px_rgba(249,176,60,0.35)] active:scale-[0.99]'
+              }`}
             >
               {loading ? (
                 <>
@@ -597,36 +889,55 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
               )}
             </button>
 
-            {/* Back to Login Button from Reset Mode */}
+            {/* Hint when signup is blocked due to unverified phone */}
+            {isFormBlockedFromSubmitting && (
+              <p className="text-[11px] text-amber-400 font-bold text-center mt-2 animate-in fade-in">
+                <i className="fa-solid fa-lock mr-1"></i>
+                ምዝገባውን ለማጠናቀቅ መጀመሪያ ስልክ ቁጥርዎን በ SMS OTP ማረጋገጥ አለብዎት።
+              </p>
+            )}
+
+            {/* Back to Login from Reset Mode */}
             {isResetMode && (
               <button 
                 type="button" 
                 onClick={() => setIsResetMode(false)} 
-                className="w-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-bold py-3.5 rounded-2xl hover:bg-gray-200 dark:hover:bg-gray-700 transition mt-2 cursor-pointer"
+                className="w-full text-center text-xs font-bold text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white transition pt-2 cursor-pointer"
               >
-                ተመለስ (Back to Login)
+                <i className="fa-solid fa-arrow-left mr-1"></i> ወደ መግቢያ ተመለስ (Back to Login)
               </button>
             )}
           </form>
-          
-          {/* Bottom Switcher (Sign Up <-> Login) */}
-          {!pendingGoogleAuth && !isResetMode && (
-            <div className="mt-6 pt-5 border-t border-gray-100 dark:border-gray-800 flex flex-col items-center gap-3 text-sm text-gray-600 dark:text-gray-400 shrink-0">
-              <div>
-                <span>{isSignupMode ? 'አካውንት አስቀድሞ አለዎት?' : 'አካውንት የለዎትም?'}</span> 
-                <button 
-                  type="button" 
-                  onClick={() => {
-                    setIsSignupMode(!isSignupMode);
-                    setError("");
-                  }} 
-                  className="text-secondary dark:text-primary font-bold hover:underline ml-1.5 cursor-pointer"
-                >
-                  {isSignupMode ? 'ግባ (Login)' : 'አዲስ ይመዝገቡ (Sign Up)'}
-                </button>
-              </div>
+
+          {/* Bottom Switch between Login & Signup */}
+          {!isResetMode && !pendingGoogleAuth && (
+            <div className="text-center mt-6 pt-5 border-t border-gray-100 dark:border-white/[0.08] text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+              {isSignupMode ? (
+                <p>
+                  አስቀድመው አካውንት አለዎት?{' '}
+                  <button 
+                    type="button" 
+                    onClick={() => { setIsSignupMode(false); setError(""); setEmailError(""); }} 
+                    className="text-secondary dark:text-[#f9b03c] font-black hover:underline ml-1 cursor-pointer"
+                  >
+                    ይግቡ (Login)
+                  </button>
+                </p>
+              ) : (
+                <p>
+                  አዲስ ተማሪ ነዎት?{' '}
+                  <button 
+                    type="button" 
+                    onClick={() => { setIsSignupMode(true); setError(""); setEmailError(""); }} 
+                    className="text-secondary dark:text-[#f9b03c] font-black hover:underline ml-1 cursor-pointer"
+                  >
+                    አዲስ ይመዝገቡ (Sign Up)
+                  </button>
+                </p>
+              )}
             </div>
           )}
+
         </div>
       </div>
     </div>
