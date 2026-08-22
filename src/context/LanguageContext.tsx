@@ -116,7 +116,7 @@ const translations: Record<string, Record<Language, string>> = {
   'stat_ai': { am: 'የ AI ድጋፍ', en: 'AI Support' },
   'mission_title': { am: 'ተልእኳችን', en: 'Our Mission' },
   'mission_desc': { am: 'ወጣቶችን በዘመናዊ የዲጂታል እና የቢዝነስ ክህሎቶች በማስታጠቅ፣ የፋይናንስ ነፃነታቸውን እንዲያረጋግጡ ማስቻል።', en: 'Empowering youth with modern digital and business skills to enable them to achieve financial freedom.' },
-  'what_we_do_title': { am: 'ለምን ፀሐይ ካምፓስ? (Why Tsehay Campus?)', en: 'Why Tsehay Campus?' },
+  'what_we_do_title': { am: 'ለምን ፀሐይ ካምፓስ?', en: 'Why Tsehay Campus?' },
   'wwd_1_title': { am: '100% ተግባራዊ የቢዝነስ ክህሎቶች', en: '100% Practical Business Skills' },
   'wwd_1_desc': { am: 'በባዶ ቲዎሪ ሳይሆን፣ ገበያ ላይ ወዲያውኑ ገቢ የሚያስገኙ በተግባር የተፈተኑ ዘመናዊ ስልጠናዎች።', en: 'Not empty theory, but practically tested modern trainings that generate immediate income in the market.' },
   'wwd_2_title': { am: 'የተቀናጀ ማህበረሰብ እና የአካል ስልጠና', en: 'Integrated Community & In-Person Training' },

@@ -122,12 +122,9 @@ export default function About() {
             {/* Video Reels & Team/Community Photo Showcase */}
             <div className="space-y-8 mt-16 sm:mt-24">
               <div className="text-center mb-8 sm:mb-12">
-                <h3 className="text-2xl sm:text-3xl font-black text-primary mb-2 font-heading">
-                  የተማሪዎቻችን እና የካምፓሳችን ቅንጭብ ቪዲዮዎች
+                <h3 className="text-2xl sm:text-3xl font-black text-primary font-heading">
+                  {lang === 'am' ? 'የተማሪዎቻችን እና የካምፓሳችን አጫጭር ቪዲዮዎች' : 'Our Students & Campus Short Videos'}
                 </h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  አጫጭር የቪዲዮ ሪልሶች • Short Campus Life & Training Reels
-                </p>
               </div>
 
               {/* Short Vertical Videos */}
