@@ -97,7 +97,7 @@ export default function About() {
 
             {/* Our Team */}
             <div className="mb-20 sm:mb-24">
-              <h3 className="text-2xl font-bold font-heading text-dark dark:text-white mb-8 text-center">{t('our_team_title')}</h3>
+              <h3 className="text-2xl font-bold font-heading text-primary mb-8 text-center">{t('our_team_title')}</h3>
               <div className="flex flex-wrap justify-center gap-6">
                 {/* Eyob Sahle */}
                 <div className="bg-white dark:bg-dark border border-gray-100 dark:border-gray-800 p-8 rounded-2xl text-center hover:-translate-y-3 transition-all duration-500 shadow-md hover:shadow-2xl hover:shadow-primary/20 hover:border-primary/40 cursor-pointer w-full sm:w-64">
@@ -122,7 +122,7 @@ export default function About() {
             {/* Video Reels & Team/Community Photo Showcase */}
             <div className="space-y-8 mt-16 sm:mt-24">
               <div className="text-center mb-8 sm:mb-12">
-                <h3 className="text-2xl sm:text-3xl font-black text-dark dark:text-white mb-2 font-heading">
+                <h3 className="text-2xl sm:text-3xl font-black text-primary mb-2 font-heading">
                   የተማሪዎቻችን እና የካምፓሳችን ቅንጭብ ቪዲዮዎች
                 </h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
