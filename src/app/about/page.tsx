@@ -156,12 +156,30 @@ export default function About() {
 }
 
 function AboutHeroPlayer() {
-  const [videoData, setVideoData] = useState({
-    videoUrl: 'https://www.youtube.com/embed/mgdOMtW6J8k',
-    title: 'Tsehay Campus Introduction',
-    thumbnail: ''
+  const [videoData, setVideoData] = useState<{ videoUrl: string; title: string; thumbnail: string }>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('tsehay_about_video_cache');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed && typeof parsed === 'object' && (parsed.videoUrl || parsed.thumbnail)) {
+            return {
+              videoUrl: parsed.videoUrl || '',
+              title: parsed.title || '',
+              thumbnail: parsed.thumbnail || ''
+            };
+          }
+        }
+      } catch (e) {}
+    }
+    return {
+      videoUrl: '',
+      title: '',
+      thumbnail: ''
+    };
   });
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
     try {
@@ -170,17 +188,26 @@ function AboutHeroPlayer() {
         if (docSnap.exists()) {
           const data = docSnap.data();
           if (data) {
-            setVideoData({
-              videoUrl: data.videoUrl || 'https://www.youtube.com/embed/mgdOMtW6J8k',
-              title: data.title || 'Tsehay Campus Introduction',
+            const nextData = {
+              videoUrl: data.videoUrl || '',
+              title: data.title || '',
               thumbnail: data.thumbnail || ''
-            });
+            };
+            setVideoData(nextData);
+            try {
+              localStorage.setItem('tsehay_about_video_cache', JSON.stringify(nextData));
+            } catch (e) {}
           }
         }
+        setIsLoaded(true);
+      }, (err) => {
+        console.warn("About video listener error:", err);
+        setIsLoaded(true);
       });
       return () => unsubscribe();
     } catch (e) {
-      console.warn("About video listener error:", e);
+      console.warn("About video listener setup error:", e);
+      setIsLoaded(true);
     }
   }, []);
 
@@ -190,7 +217,7 @@ function AboutHeroPlayer() {
   
   const activeThumbnail = customThumb 
     ? parseImageUrl(customThumb) 
-    : (yId ? `https://img.youtube.com/vi/${yId}/hqdefault.jpg` : '/assets/hero-bg-new.jpg');
+    : (yId ? `https://img.youtube.com/vi/${yId}/maxresdefault.jpg` : '');
 
   return (
     <div className="max-w-4xl mx-auto mb-16">
@@ -200,25 +227,27 @@ function AboutHeroPlayer() {
         {!isPlaying ? (
           /* Clean Minimalist Thumbnail Card Screen */
           <div 
-            onClick={() => setIsPlaying(true)}
+            onClick={() => {
+              if (videoData.videoUrl) setIsPlaying(true);
+            }}
             className="absolute inset-0 w-full h-full z-10 cursor-pointer overflow-hidden select-none flex items-center justify-center"
             role="button"
             tabIndex={0}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setIsPlaying(true); }}
+            onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && videoData.videoUrl) setIsPlaying(true); }}
             aria-label="ቪዲዮውን ለማጫወት ይጫኑ"
           >
             {/* Poster / Thumbnail Image with Instant Fallback */}
-            <img 
-              src={activeThumbnail} 
-              alt={videoData.title || "Tsehay Campus Video"} 
-              className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
-              onError={(e) => {
-                const target = e.currentTarget as HTMLImageElement;
-                if (target.src !== '/assets/hero-bg-new.jpg') {
-                  target.src = '/assets/hero-bg-new.jpg';
-                }
-              }}
-            />
+            {activeThumbnail ? (
+              <img 
+                src={activeThumbnail} 
+                alt="Tsehay Campus Video" 
+                className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+              />
+            ) : (
+              <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-slate-900 via-slate-950 to-black flex items-center justify-center">
+                <div className="w-12 h-12 rounded-full border-2 border-primary/30 border-t-primary animate-spin"></div>
+              </div>
+            )}
 
             {/* Subtle Vignette Scrim */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 group-hover:bg-black/10 transition-colors duration-500"></div>

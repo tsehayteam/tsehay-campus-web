@@ -198,6 +198,12 @@ export default function AdminDashboard() {
         thumbnail: aboutVideoThumbnail.trim(),
         updatedAt: serverTimestamp()
       }, { merge: true });
+      try {
+        localStorage.setItem('tsehay_about_video_cache', JSON.stringify({
+          videoUrl: aboutVideoUrl.trim(),
+          thumbnail: aboutVideoThumbnail.trim()
+        }));
+      } catch (e) {}
       setAboutVideoSavedMessage('ስለ እኛ ገጽ ቪዲዮ እና ተምኔል በተሳካ ሁኔታ ተቀምጧል! (Saved Successfully)');
       setTimeout(() => setAboutVideoSavedMessage(''), 4000);
     } catch (err: any) {
