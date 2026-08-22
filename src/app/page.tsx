@@ -411,21 +411,9 @@ export default function Home() {
                 <span className="hero-headline-shift font-extrabold sm:font-black inline-block">{t('hero_title_2')}</span>
             </h1>
             
-            {/* Refined Buttons (Magnetic CTA Style - Compact Spacing & Pulled Closer) */}
+            {/* Refined Buttons (Magnetic CTA Style - Compact Spacing & Swapped Order) */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 w-full max-w-md sm:max-w-none mb-7 sm:mb-9" id="hero-action-buttons">
-                {/* Button 1: Solid Golden Yellow with Magnetic Hover & Arrow icon */}
-                <MagneticButton 
-                    onClick={() => { document.getElementById('courses')?.scrollIntoView({behavior: 'smooth'}) }} 
-                    className="group terafab-btn-primary w-full sm:w-auto px-8 sm:px-9 py-3.5 sm:py-4 rounded-2xl flex items-center justify-center gap-3 text-sm sm:text-base cursor-pointer shadow-[0_0_30px_rgba(249,176,60,0.35)]"
-                >
-                    <span>{t('explore_courses')}</span>
-                    <svg className="w-5 h-5 transition-transform duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:translate-x-1.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M5 12h14"></path>
-                        <path d="m12 5 7 7-7 7"></path>
-                    </svg>
-                </MagneticButton>
-
-                {/* Button 2: Glassmorphism with Magnetic Hover & pulsing Play icon */}
+                {/* Button 1 (LEFT): Glassmorphism with Magnetic Hover & pulsing Play icon */}
                 <MagneticLink 
                     href="/about" 
                     className="group terafab-btn-glass w-full sm:w-auto px-8 sm:px-9 py-3.5 sm:py-4 rounded-2xl flex items-center justify-center gap-3 text-sm sm:text-base cursor-pointer"
@@ -436,6 +424,18 @@ export default function Home() {
                     </svg>
                     <span>{t('learn_about_us')}</span>
                 </MagneticLink>
+
+                {/* Button 2 (RIGHT): Solid Golden Yellow with Magnetic Hover & Arrow icon */}
+                <MagneticButton 
+                    onClick={() => { document.getElementById('courses')?.scrollIntoView({behavior: 'smooth'}) }} 
+                    className="group terafab-btn-primary w-full sm:w-auto px-8 sm:px-9 py-3.5 sm:py-4 rounded-2xl flex items-center justify-center gap-3 text-sm sm:text-base cursor-pointer shadow-[0_0_30px_rgba(249,176,60,0.35)]"
+                >
+                    <span>{t('explore_courses')}</span>
+                    <svg className="w-5 h-5 transition-transform duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:translate-x-1.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M5 12h14"></path>
+                        <path d="m12 5 7 7-7 7"></path>
+                    </svg>
+                </MagneticButton>
             </div>
 
             {/* Centered Showcase Preview Card - Pulled Up for Above-the-Fold View */}
