@@ -143,6 +143,40 @@ function HeroTypewriterGlow({ phrases }: { phrases?: string[] }) {
   );
 }
 
+function LiveCounter({ target = 500, suffix = "+", duration = 1600 }: { target?: number; suffix?: string; duration?: number }) {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    let startTimestamp: number | null = null;
+    let animFrame: number;
+
+    const step = (timestamp: number) => {
+      if (!startTimestamp) startTimestamp = timestamp;
+      const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+      // Ease out cubic
+      const easeProgress = 1 - Math.pow(1 - progress, 3);
+      setCount(Math.floor(easeProgress * target));
+
+      if (progress < 1) {
+        animFrame = requestAnimationFrame(step);
+      } else {
+        setCount(target);
+      }
+    };
+
+    const delayTimer = setTimeout(() => {
+      animFrame = requestAnimationFrame(step);
+    }, 450);
+
+    return () => {
+      clearTimeout(delayTimer);
+      cancelAnimationFrame(animFrame);
+    };
+  }, [target, duration]);
+
+  return <span>{count}{suffix}</span>;
+}
+
 function MagneticButton({ children, className, onClick, ...props }: any) {
   const btnRef = useRef<HTMLButtonElement | null>(null);
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -637,18 +671,34 @@ export default function Home() {
                 </div>
 
                 {/* Floating Badges on Desktop */}
-                <div className="hidden sm:flex absolute -bottom-5 -left-6 bg-slate-900/90 backdrop-blur-xl p-3.5 rounded-2xl shadow-2xl z-20 items-center gap-3 border border-white/10">
-                    <div className="bg-emerald-500/20 text-emerald-400 p-2.5 rounded-xl text-xl shadow-xs"><i className="fa-solid fa-check-double"></i></div>
-                    <div className="text-left">
-                        <p className="text-[10px] text-gray-400 font-bold uppercase leading-none">{t('recognized_cert')}</p>
-                        <p className="text-white font-black text-sm notranslate">{t('recognized')}</p>
+                {/* Bottom Left: Certificate Badge (Golden Yellow Accent) */}
+                <div className="hidden sm:flex absolute -bottom-5 -left-6 hero-floating-badge hero-badge-cert p-3.5 sm:p-4 rounded-2xl z-20 items-center gap-3.5 cursor-default select-none">
+                    <div className="w-10 h-10 rounded-xl bg-[#f9b03c]/15 text-[#f9b03c] border border-[#f9b03c]/30 flex items-center justify-center text-xl shadow-[0_0_15px_rgba(249,176,60,0.25)] shrink-0">
+                        <i className="fa-solid fa-award"></i>
+                    </div>
+                    <div className="text-left pr-2">
+                        <p className="text-[10px] text-[#a0aec0] font-bold uppercase tracking-wider leading-none mb-1">
+                            {t('recognized_cert') || 'የተረጋገጠ'}
+                        </p>
+                        <p className="text-white font-black text-sm tracking-tight drop-shadow-sm">
+                            እውቅና ያለው ሰርተፍኬት
+                        </p>
                     </div>
                 </div>
-                <div className="hidden sm:flex absolute -top-5 -right-6 bg-slate-900/90 backdrop-blur-xl p-3.5 rounded-2xl shadow-2xl z-20 items-center gap-3 border border-white/10">
-                    <div className="bg-blue-500/20 text-blue-400 p-2.5 rounded-xl text-xl shadow-xs"><i className="fa-solid fa-users"></i></div>
-                    <div className="text-left">
-                        <p className="text-[10px] text-gray-400 font-bold uppercase leading-none">{t('students')}</p>
-                        <p className="text-white font-black text-sm">500+</p>
+
+                {/* Top Right: Students Badge (Royal Blue Accent + Live Counter) */}
+                <div className="hidden sm:flex absolute -top-5 -right-6 hero-floating-badge hero-badge-students p-3.5 sm:p-4 rounded-2xl z-20 items-center gap-3.5 cursor-default select-none">
+                    <div className="w-10 h-10 rounded-xl bg-[#3268ba]/20 text-[#5a93e8] border border-[#3268ba]/35 flex items-center justify-center text-xl shadow-[0_0_15px_rgba(50,104,186,0.3)] shrink-0">
+                        <i className="fa-solid fa-users"></i>
+                    </div>
+                    <div className="text-left pr-2">
+                        <p className="text-[10px] text-[#a0aec0] font-bold uppercase tracking-wider leading-none mb-1">
+                            {t('students') || 'ተማሪዎች'}
+                        </p>
+                        <p className="text-white font-black text-sm tracking-tight font-mono drop-shadow-sm flex items-center gap-1.5">
+                            <LiveCounter target={500} suffix="+" />
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                        </p>
                     </div>
                 </div>
             </div>
