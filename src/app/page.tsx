@@ -610,7 +610,7 @@ export default function Home() {
                         <div 
                             key={course.id} 
                             data-scrolly-order={index + 1}
-                            className={`bg-white/80 dark:bg-white/[0.02] backdrop-blur-xl rounded-2xl overflow-hidden flex flex-col justify-between transition-all duration-300 hover:-translate-y-2 border border-gray-200/80 dark:border-white/[0.05] hover:border-[#f9b03c] dark:hover:border-[#f9b03c]/70 shadow-[0_10px_30px_rgba(0,0,0,0.5)] hover:shadow-[0_20px_45px_rgba(249,176,60,0.2)] group cursor-pointer active:scale-98 scrolly-card scrolly-stagger-${(index % 3) + 1}`}
+                            className={`course-card bg-white/80 dark:bg-white/[0.02] backdrop-blur-xl rounded-2xl overflow-hidden flex flex-col justify-between border border-gray-200/80 dark:border-white/[0.05] shadow-[0_10px_30px_rgba(0,0,0,0.5)] group cursor-pointer active:scale-98 scrolly-card scrolly-stagger-${(index % 3) + 1}`}
                             onClick={() => window.location.href=`/courses/${course.id}`}
                         >
                             <div>

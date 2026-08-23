@@ -740,21 +740,46 @@ body {
   transform: scale(0.97);
 }
 
-.course-card {
-  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.35s ease, border-color 0.35s ease;
-  will-change: transform, box-shadow;
+/* ==========================================================================
+   🛡️ Anti-Flicker & Stable Hover Hitbox for All Course Cards
+   ========================================================================== */
+.course-card,
+.scrolly-card {
+  position: relative;
+  isolation: isolate;
   backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease, border-color 0.35s ease;
+  will-change: transform, box-shadow;
 }
 
-.course-card:hover {
-  transform: translateY(-8px) scale(1.01);
-  box-shadow: 0 24px 38px -10px rgba(50, 104, 186, 0.2), 0 12px 18px -8px rgba(249, 176, 60, 0.15);
-  border-color: rgba(249, 176, 60, 0.6);
+/* Invisible bottom anchor bridge to prevent mouse cursor from slipping out on translateY hover */
+.course-card::after,
+.scrolly-card::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -20px;
+  height: 24px;
+  background: transparent;
+  pointer-events: auto;
+  z-index: 1;
 }
 
-.dark .course-card:hover {
-  box-shadow: 0 24px 40px -10px rgba(249, 176, 60, 0.18), 0 10px 20px -8px rgba(0, 0, 0, 0.8);
-  border-color: rgba(249, 176, 60, 0.7);
+.course-card:hover,
+.scrolly-card:hover {
+  transform: translateY(-6px) scale(1.008);
+  box-shadow: 0 20px 40px -10px rgba(50, 104, 186, 0.2), 0 10px 20px -8px rgba(249, 176, 60, 0.15);
+  border-color: rgba(249, 176, 60, 0.6) !important;
+}
+
+.dark .course-card:hover,
+.dark .scrolly-card:hover {
+  box-shadow: 0 20px 40px -10px rgba(249, 176, 60, 0.18), 0 10px 20px -8px rgba(0, 0, 0, 0.8);
+  border-color: rgba(249, 176, 60, 0.7) !important;
 }
 
 /* ==========================================================================
