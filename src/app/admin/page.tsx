@@ -72,6 +72,12 @@ export default function AdminDashboard() {
   const [isSavingAboutVideo, setIsSavingAboutVideo] = useState(false);
   const [aboutVideoSavedMessage, setAboutVideoSavedMessage] = useState('');
 
+  // Portfolio Videos State
+  const [portfolioLocalUrl, setPortfolioLocalUrl] = useState('https://www.youtube.com/watch?v=mgdOMtW6J8k');
+  const [portfolioInternationalUrl, setPortfolioInternationalUrl] = useState('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+  const [isSavingPortfolio, setIsSavingPortfolio] = useState(false);
+  const [portfolioSavedMessage, setPortfolioSavedMessage] = useState('');
+
   // YouTube Form State
   const [isYouTubeModalOpen, setIsYouTubeModalOpen] = useState(false);
   const [editingYouTubeVideo, setEditingYouTubeVideo] = useState<any>(null);
@@ -171,10 +177,17 @@ export default function AdminDashboard() {
         const data = docSnap.data();
         if (data && data.videoUrl !== undefined) setAboutVideoUrl(data.videoUrl);
         if (data && data.title !== undefined) setAboutVideoTitle(data.title);
-        if (data && data.thumbnail !== undefined) setAboutVideoThumbnail(data.thumbnail);
+    const portfolioDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'site_settings', 'youtube_portfolio');
+    const unsubscribePortfolio = onSnapshot(portfolioDocRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (data) {
+          if (data.localVideoUrl) setPortfolioLocalUrl(data.localVideoUrl);
+          if (data.internationalVideoUrl) setPortfolioInternationalUrl(data.internationalVideoUrl);
+        }
       }
     }, (err) => {
-      console.warn("About video Firestore sync:", err);
+      console.warn("Portfolio video Firestore sync:", err);
     });
 
     return () => {
@@ -185,6 +198,7 @@ export default function AdminDashboard() {
         unsubscribePayments();
         unsubscribeTickets();
         unsubscribeAboutVideo();
+        unsubscribePortfolio();
     };
   }, []);
 
@@ -212,6 +226,37 @@ export default function AdminDashboard() {
       alert("ስህተት ተፈጥሯል: " + err.message);
     } finally {
       setIsSavingAboutVideo(false);
+    }
+  };
+
+  const handleSavePortfolio = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!portfolioLocalUrl.trim() || !portfolioInternationalUrl.trim()) {
+      alert("እባክዎ ሁለቱንም የቪዲዮ ሊንኮች ያስገቡ።");
+      return;
+    }
+    setIsSavingPortfolio(true);
+    setPortfolioSavedMessage('');
+    try {
+      const portfolioDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'site_settings', 'youtube_portfolio');
+      await setDoc(portfolioDocRef, {
+        localVideoUrl: portfolioLocalUrl.trim(),
+        internationalVideoUrl: portfolioInternationalUrl.trim(),
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+      try {
+        localStorage.setItem('tsehay_youtube_portfolio_cache', JSON.stringify({
+          localVideoUrl: portfolioLocalUrl.trim(),
+          internationalVideoUrl: portfolioInternationalUrl.trim()
+        }));
+      } catch (e) {}
+      setPortfolioSavedMessage('የአሰልጣኙ ዩቲዩብ ፖርትፎሊዮ በተሳካ ሁኔታ ተቀምጧል! (Saved Successfully)');
+      setTimeout(() => setPortfolioSavedMessage(''), 4000);
+    } catch (err: any) {
+      console.error("Error saving portfolio videos:", err);
+      alert("ስህተት ተፈጥሯል: " + err.message);
+    } finally {
+      setIsSavingPortfolio(false);
     }
   };
 
@@ -668,6 +713,9 @@ export default function AdminDashboard() {
           <button onClick={() => setActiveTab('courses')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition ${activeTab === 'courses' ? 'bg-blue-50 dark:bg-slate-700/50 text-secondary dark:text-primary' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700/30'}`}>
             <i className="fa-solid fa-layer-group"></i> ኮርሶች (Courses)
           </button>
+          <button onClick={() => setActiveTab('portfolio')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition ${activeTab === 'portfolio' ? 'bg-[#f9b03c]/15 dark:bg-slate-700/50 text-[#f9b03c]' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700/30'}`}>
+            <i className="fa-solid fa-briefcase text-[#f9b03c] text-lg"></i> የፖርትፎሊዮ ቪዲዮዎች
+          </button>
           <button onClick={() => setActiveTab('youtube')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition ${activeTab === 'youtube' ? 'bg-red-50 dark:bg-slate-700/50 text-red-600 dark:text-red-400' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700/30'}`}>
             <i className="fa-brands fa-youtube text-red-500 text-lg"></i> ነጻ የዩቲዩብ ቪዲዮዎች
           </button>
@@ -719,6 +767,7 @@ export default function AdminDashboard() {
           <h1 className="text-xl font-black text-dark dark:text-white">
              {activeTab === 'dashboard' && 'አጠቃላይ መረጃ'}
              {activeTab === 'courses' && 'ኮርሶች ማስተዳደሪያ'}
+             {activeTab === 'portfolio' && 'የአሰልጣኙ ዩቲዩብ ፖርትፎሊዮ ማስተዳደሪያ (Instructor YouTube Portfolio)'}
              {activeTab === 'youtube' && 'ነጻ የዩቲዩብ ቪዲዮዎች ማስተዳደሪያ (YouTube Videos)'}
              {activeTab === 'about_video' && 'ስለ እኛ ገጽ ቪዲዮ ፕሌየር ማስተዳደሪያ (About Page Video Player)'}
              {activeTab === 'students' && 'የተማሪዎች አስተዳደር'}
@@ -1322,6 +1371,141 @@ export default function AdminDashboard() {
                         ))
                     )}
                 </div>
+            </div>
+          )}
+
+          {activeTab === 'portfolio' && (
+            <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-300">
+              <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 sm:p-8 border border-gray-100 dark:border-slate-700 shadow-xl">
+                
+                {/* Header */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 dark:border-slate-700 pb-5 mb-6">
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-12 h-12 rounded-2xl bg-[#f9b03c]/15 border border-[#f9b03c]/30 flex items-center justify-center text-[#f9b03c] text-xl shadow-sm">
+                      <i className="fa-solid fa-briefcase"></i>
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-black text-dark dark:text-white">የአሰልጣኙ የተግባር ስራዎች (YouTube Portfolio Management)</h3>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">በዋናው ገጽ (Landing Page) ላይ የሚታዩትን የሀገር ውስጥ እና የአለም አቀፍ ቻናል ቪዲዮዎችን እዚህ ያስተዳድሩ</p>
+                    </div>
+                  </div>
+                  {portfolioSavedMessage && (
+                    <div className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 animate-bounce">
+                      <i className="fa-solid fa-circle-check"></i>
+                      <span>{portfolioSavedMessage}</span>
+                    </div>
+                  )}
+                </div>
+
+                <form onSubmit={handleSavePortfolio} className="space-y-7">
+                  
+                  {/* Field 1: Local YouTube Video URL */}
+                  <div className="bg-gray-50 dark:bg-slate-900/80 p-5 rounded-2xl border border-gray-200 dark:border-slate-700/80 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full bg-[#3268ba]"></span>
+                        <span>1. የአማርኛ ቪዲዮ ሊንክ (Local YouTube Video URL) *</span>
+                      </label>
+                      <span className="text-xs bg-[#3268ba]/15 text-[#3268ba] dark:text-[#5a93e8] border border-[#3268ba]/30 px-3 py-0.5 rounded-full font-black">
+                        በአማርኛ (Local)
+                      </span>
+                    </div>
+
+                    <input 
+                      type="text"
+                      required
+                      placeholder="e.g. https://www.youtube.com/watch?v=... ወይም https://youtu.be/..."
+                      value={portfolioLocalUrl}
+                      onChange={(e) => setPortfolioLocalUrl(e.target.value)}
+                      className="w-full bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm font-mono text-dark dark:text-white outline-none focus:border-[#3268ba] focus:ring-2 focus:ring-[#3268ba]/20 transition"
+                    />
+
+                    {/* Auto-Thumbnail Live Preview for Local Video */}
+                    {(() => {
+                      const yId = extractYouTubeId(portfolioLocalUrl);
+                      if (yId) {
+                        return (
+                          <div className="flex items-center gap-4 bg-white dark:bg-slate-800 p-3 rounded-xl border border-gray-100 dark:border-slate-700">
+                            <img 
+                              src={`https://img.youtube.com/vi/${yId}/hqdefault.jpg`} 
+                              alt="Local Thumbnail" 
+                              className="w-28 h-16 object-cover rounded-lg shadow-sm border border-black/10 dark:border-white/10"
+                              onError={(e) => { e.currentTarget.src = `https://img.youtube.com/vi/${yId}/default.jpg`; }}
+                            />
+                            <div className="text-xs space-y-1">
+                              <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
+                                <i className="fa-solid fa-circle-check"></i>
+                                <span>ራስ-ሰር ፎቶ (Auto-Thumbnail Generated)</span>
+                              </span>
+                              <p className="font-mono text-gray-500 dark:text-gray-400">Video ID: <strong className="text-slate-800 dark:text-slate-200">{yId}</strong></p>
+                            </div>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
+                  </div>
+
+                  {/* Field 2: International YouTube Video URL */}
+                  <div className="bg-gray-50 dark:bg-slate-900/80 p-5 rounded-2xl border border-gray-200 dark:border-slate-700/80 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full bg-[#f9b03c]"></span>
+                        <span>2. የአለም አቀፍ ቪዲዮ ሊንክ (International YouTube Video URL) *</span>
+                      </label>
+                      <span className="text-xs bg-[#f9b03c]/15 text-amber-800 dark:text-[#f9b03c] border border-[#f9b03c]/30 px-3 py-0.5 rounded-full font-black">
+                        ዓለም አቀፍ (International)
+                      </span>
+                    </div>
+
+                    <input 
+                      type="text"
+                      required
+                      placeholder="e.g. https://www.youtube.com/watch?v=... ወይም https://youtu.be/..."
+                      value={portfolioInternationalUrl}
+                      onChange={(e) => setPortfolioInternationalUrl(e.target.value)}
+                      className="w-full bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm font-mono text-dark dark:text-white outline-none focus:border-[#f9b03c] focus:ring-2 focus:ring-[#f9b03c]/20 transition"
+                    />
+
+                    {/* Auto-Thumbnail Live Preview for International Video */}
+                    {(() => {
+                      const yId = extractYouTubeId(portfolioInternationalUrl);
+                      if (yId) {
+                        return (
+                          <div className="flex items-center gap-4 bg-white dark:bg-slate-800 p-3 rounded-xl border border-gray-100 dark:border-slate-700">
+                            <img 
+                              src={`https://img.youtube.com/vi/${yId}/hqdefault.jpg`} 
+                              alt="International Thumbnail" 
+                              className="w-28 h-16 object-cover rounded-lg shadow-sm border border-black/10 dark:border-white/10"
+                              onError={(e) => { e.currentTarget.src = `https://img.youtube.com/vi/${yId}/default.jpg`; }}
+                            />
+                            <div className="text-xs space-y-1">
+                              <span className="text-amber-700 dark:text-[#f9b03c] font-bold flex items-center gap-1">
+                                <i className="fa-solid fa-circle-check"></i>
+                                <span>ራስ-ሰር ፎቶ (Auto-Thumbnail Generated)</span>
+                              </span>
+                              <p className="font-mono text-gray-500 dark:text-gray-400">Video ID: <strong className="text-slate-800 dark:text-slate-200">{yId}</strong></p>
+                            </div>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
+                  </div>
+
+                  {/* Submit Button */}
+                  <div className="pt-4 border-t border-gray-100 dark:border-slate-700 flex items-center justify-end gap-3">
+                    <button 
+                      type="submit" 
+                      disabled={isSavingPortfolio || !portfolioLocalUrl.trim() || !portfolioInternationalUrl.trim()}
+                      className="bg-gradient-to-r from-[#f9b03c] to-amber-500 hover:from-amber-400 hover:to-[#f9b03c] text-slate-950 font-black px-8 py-3.5 rounded-2xl shadow-lg hover:shadow-[0_0_25px_rgba(249,176,60,0.5)] transition-all duration-300 disabled:opacity-50 flex items-center gap-2 cursor-pointer active:scale-95 text-sm"
+                    >
+                      <i className="fa-solid fa-floppy-disk"></i>
+                      <span>{isSavingPortfolio ? 'እየቀየረ ነው...' : 'አስቀምጥ / አዘምን (Save & Update Portfolio)'}</span>
+                    </button>
+                  </div>
+                </form>
+              </div>
             </div>
           )}
 

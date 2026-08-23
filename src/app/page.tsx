@@ -11,6 +11,7 @@ import Footer from '@/components/Footer';
 import SmartSearchInput from '@/components/SmartSearchInput';
 import YouTubeVideoSlider from '@/components/YouTubeVideoSlider';
 import SynthesiaAiChatDemo from '@/components/SynthesiaAiChatDemo';
+import InstructorYouTubePortfolio from '@/components/InstructorYouTubePortfolio';
 import { getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl } from '@/lib/courseCache';
 
 const PARTNER_BRANDS = [
@@ -793,6 +794,9 @@ export default function Home() {
     <div className="scrolly-reveal">
       <YouTubeVideoSlider />
     </div>
+
+    {/* Instructor's YouTube Portfolio (2-Column Terafab Glassmorphism Section) */}
+    <InstructorYouTubePortfolio />
     
     <section id="faq" className="py-16 bg-slate-50 dark:bg-darkCard border-b border-gray-200 dark:border-gray-800 transition-colors duration-300 scrolly-reveal">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
