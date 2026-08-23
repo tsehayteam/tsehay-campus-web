@@ -65,6 +65,8 @@ export default function SynthesiaAiChatDemo() {
   const [copied, setCopied] = useState(false);
   const chatScrollRef = useRef<HTMLDivElement>(null);
 
+  const currentScenario = SCENARIOS[scenarioIndex];
+
   // Fetch live and cached courses to dynamically match course IDs
   useEffect(() => {
     try {
@@ -88,6 +90,73 @@ export default function SynthesiaAiChatDemo() {
     };
     fetchLiveCourses();
   }, []);
+
+  // ✍️ Scrollytelling Automated Typing Engine with Calm Readable Cadence
+  useEffect(() => {
+    let timeout: NodeJS.Timeout;
+    const currentQ = currentScenario.question;
+    const currentR = currentScenario.response;
+
+    if (phase === 'typing_question') {
+      if (displayedQuestion.length < currentQ.length) {
+        timeout = setTimeout(() => {
+          setDisplayedQuestion(currentQ.slice(0, displayedQuestion.length + 1));
+        }, 55); // Calm humanized question typing pace
+      } else {
+        timeout = setTimeout(() => {
+          setIsAiThinking(true);
+          setPhase('thinking');
+        }, 650);
+      }
+    } else if (phase === 'thinking') {
+      timeout = setTimeout(() => {
+        setIsAiThinking(false);
+        setPhase('typing_response');
+      }, 1100); // Realistic neural deliberation pause
+    } else if (phase === 'typing_response') {
+      if (displayedResponse.length < currentR.length) {
+        timeout = setTimeout(() => {
+          // Readable, comfortable streaming pace (1 character per tick)
+          setDisplayedResponse(currentR.slice(0, displayedResponse.length + 1));
+        }, 36);
+      } else {
+        setPhase('done');
+      }
+    } else if (phase === 'done') {
+      // 8.5-second comfortable reading pause before transitioning to the next scenario
+      timeout = setTimeout(() => {
+        setDisplayedQuestion('');
+        setDisplayedResponse('');
+        setScenarioIndex((prev) => (prev + 1) % SCENARIOS.length);
+        setPhase('typing_question');
+      }, 8500);
+    }
+
+    return () => clearTimeout(timeout);
+  }, [phase, displayedQuestion, displayedResponse, currentScenario]);
+
+  // Auto scroll within container smoothly
+  useEffect(() => {
+    if (chatScrollRef.current) {
+      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+    }
+  }, [displayedQuestion, displayedResponse, isAiThinking]);
+
+  const handleSelectScenario = (index: number) => {
+    if (index === scenarioIndex) return;
+    setDisplayedQuestion('');
+    setDisplayedResponse('');
+    setIsAiThinking(false);
+    setScenarioIndex(index);
+    setPhase('typing_question');
+  };
+
+  const handleCopyResponse = () => {
+    if (!displayedResponse) return;
+    navigator.clipboard.writeText(displayedResponse);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   const getResolvedCourseId = (scenario: QuestionScenario): string => {
     if (!coursesList || coursesList.length === 0) return scenario.id;
