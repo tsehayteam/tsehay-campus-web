@@ -48,6 +48,9 @@ export default function InstructorYouTubePortfolio() {
     return DEFAULT_INTERNATIONAL_URL;
   });
 
+  const [playingLocal, setPlayingLocal] = useState(false);
+  const [playingInternational, setPlayingInternational] = useState(false);
+
   useEffect(() => {
     // 1. Fetch from Server Admin API (Guaranteed latest updated state)
     const fetchApiSettings = async () => {
@@ -123,8 +126,8 @@ export default function InstructorYouTubePortfolio() {
   const localVideoId = extractYouTubeId(localVideoUrl) || 'mgdOMtW6J8k';
   const internationalVideoId = extractYouTubeId(internationalVideoUrl) || 'B-s71n0dHUk';
 
-  const localEmbedUrl = `https://www.youtube-nocookie.com/embed/${localVideoId}?rel=0&modestbranding=1&controls=1&showinfo=0&iv_load_policy=3&cc_load_policy=0&playsinline=1`;
-  const internationalEmbedUrl = `https://www.youtube-nocookie.com/embed/${internationalVideoId}?rel=0&modestbranding=1&controls=1&showinfo=0&iv_load_policy=3&cc_load_policy=0&playsinline=1&loop=1&playlist=${internationalVideoId}`;
+  const localEmbedUrl = `https://www.youtube-nocookie.com/embed/${localVideoId}?autoplay=1&rel=0&modestbranding=1&controls=1&showinfo=0&iv_load_policy=3&cc_load_policy=0&playsinline=1`;
+  const internationalEmbedUrl = `https://www.youtube-nocookie.com/embed/${internationalVideoId}?autoplay=1&rel=0&modestbranding=1&controls=1&showinfo=0&iv_load_policy=3&cc_load_policy=0&playsinline=1&loop=1&playlist=${internationalVideoId}`;
 
   return (
     <section id="instructor-portfolio" className="relative py-16 sm:py-24 overflow-hidden bg-slate-900/60 dark:bg-[#030509]/90 border-b border-gray-200/80 dark:border-white/10">
@@ -168,16 +171,53 @@ export default function InstructorYouTubePortfolio() {
               </div>
             </div>
 
-            {/* Direct 100% Embedded YouTube Player */}
+            {/* 100% Full-View Uncropped Video Player / Clean Thumbnail */}
             <div className="relative aspect-video w-full overflow-hidden bg-black flex items-center justify-center">
-              <iframe
-                src={localEmbedUrl}
-                title="ሀገርኛ ዩቲዩብ ቻናል"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
-                allowFullScreen
-                loading="lazy"
-                className="w-full h-full border-0 absolute inset-0 z-10"
-              />
+              {playingLocal ? (
+                <div className="w-full h-full relative overflow-hidden">
+                  <iframe
+                    src={localEmbedUrl}
+                    title="ሀገርኛ ዩቲዩብ ቻናል"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+                    allowFullScreen
+                    className="w-full h-full border-0 absolute inset-0 z-10 pointer-events-auto"
+                  />
+
+                  {/* Clean Floating Close / Reset Button */}
+                  <button 
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setPlayingLocal(false); }}
+                    className="absolute top-2.5 right-2.5 z-40 bg-black/80 hover:bg-black text-white hover:text-[#f9b03c] text-xs font-bold px-3 py-1 rounded-full backdrop-blur-md border border-white/20 flex items-center gap-1.5 shadow-lg cursor-pointer transition-all active:scale-95"
+                    title="ተመለስ (Close Video)"
+                  >
+                    <i className="fa-solid fa-xmark text-xs"></i>
+                    <span>ተመለስ</span>
+                  </button>
+                </div>
+              ) : (
+                <div 
+                  onClick={() => setPlayingLocal(true)}
+                  className="w-full h-full absolute inset-0 cursor-pointer group/thumb flex items-center justify-center overflow-hidden bg-slate-950"
+                  title="ቪዲዮውን ለማጫወት ይጫኑ (Click to Play)"
+                >
+                  {/* 100% Crisp Thumbnail without Obstruction */}
+                  <img
+                    src={`https://img.youtube.com/vi/${localVideoId}/maxresdefault.jpg`}
+                    alt="ሀገርኛ ዩቲዩብ ቻናል"
+                    className="absolute inset-0 w-full h-full object-cover group-hover/thumb:scale-[1.03] transition-transform duration-500"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = `https://img.youtube.com/vi/${localVideoId}/hqdefault.jpg`;
+                    }}
+                  />
+
+                  {/* 🌟 Play Button Overlay: ONLY appears when hovering (ወደ thumbnail-ኡ ሲመጣ ብቻ) */}
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover/thumb:bg-black/25 transition-colors duration-300">
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[#f9b03c] text-slate-950 flex items-center justify-center text-2xl shadow-[0_0_35px_rgba(249,176,60,0.8)] opacity-0 scale-75 group-hover/thumb:opacity-100 group-hover/thumb:scale-100 transition-all duration-300 pointer-events-none">
+                      <i className="fa-solid fa-play ml-1"></i>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -197,16 +237,53 @@ export default function InstructorYouTubePortfolio() {
               </div>
             </div>
 
-            {/* Direct 100% Embedded YouTube Player */}
+            {/* 100% Full-View Uncropped Video Player / Clean Thumbnail */}
             <div className="relative aspect-video w-full overflow-hidden bg-black flex items-center justify-center">
-              <iframe
-                src={internationalEmbedUrl}
-                title="ዓለም አቀፍ ዩቲዩብ ቻናል"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
-                allowFullScreen
-                loading="lazy"
-                className="w-full h-full border-0 absolute inset-0 z-10"
-              />
+              {playingInternational ? (
+                <div className="w-full h-full relative overflow-hidden">
+                  <iframe
+                    src={internationalEmbedUrl}
+                    title="ዓለም አቀፍ ዩቲዩብ ቻናል"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+                    allowFullScreen
+                    className="w-full h-full border-0 absolute inset-0 z-10 pointer-events-auto"
+                  />
+
+                  {/* Clean Floating Close / Reset Button */}
+                  <button 
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setPlayingInternational(false); }}
+                    className="absolute top-2.5 right-2.5 z-40 bg-black/80 hover:bg-black text-white hover:text-[#f9b03c] text-xs font-bold px-3 py-1 rounded-full backdrop-blur-md border border-white/20 flex items-center gap-1.5 shadow-lg cursor-pointer transition-all active:scale-95"
+                    title="ተመለስ (Close Video)"
+                  >
+                    <i className="fa-solid fa-xmark text-xs"></i>
+                    <span>ተመለስ</span>
+                  </button>
+                </div>
+              ) : (
+                <div 
+                  onClick={() => setPlayingInternational(true)}
+                  className="w-full h-full absolute inset-0 cursor-pointer group/thumb flex items-center justify-center overflow-hidden bg-slate-950"
+                  title="ቪዲዮውን ለማጫወት ይጫኑ (Click to Play)"
+                >
+                  {/* 100% Crisp Thumbnail without Obstruction */}
+                  <img
+                    src={`https://img.youtube.com/vi/${internationalVideoId}/maxresdefault.jpg`}
+                    alt="ዓለም አቀፍ ዩቲዩብ ቻናል"
+                    className="absolute inset-0 w-full h-full object-cover group-hover/thumb:scale-[1.03] transition-transform duration-500"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = `https://img.youtube.com/vi/${internationalVideoId}/hqdefault.jpg`;
+                    }}
+                  />
+
+                  {/* 🌟 Play Button Overlay: ONLY appears when hovering (ወደ thumbnail-ኡ ሲመጣ ብቻ) */}
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover/thumb:bg-black/25 transition-colors duration-300">
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[#f9b03c] text-slate-950 flex items-center justify-center text-2xl shadow-[0_0_35px_rgba(249,176,60,0.8)] opacity-0 scale-75 group-hover/thumb:opacity-100 group-hover/thumb:scale-100 transition-all duration-300 pointer-events-none">
+                      <i className="fa-solid fa-play ml-1"></i>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
