@@ -13,6 +13,17 @@ export async function GET() {
         .get();
 
       const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+      // Also check root promo_codes collection if any exist
+      try {
+        const rootSnap = await adminDb.collection('promo_codes').get();
+        rootSnap.docs.forEach(d => {
+          if (!list.some(item => item.id === d.id || item.code === (d.data() as any).code)) {
+            list.push({ id: d.id, ...d.data() });
+          }
+        });
+      } catch (e) {}
+
       return NextResponse.json({ success: true, codes: list });
     }
 
@@ -57,6 +68,11 @@ export async function POST(req: NextRequest) {
 
       await codeRef.set(codeData, { merge: true });
 
+      // Also mirror to root promo_codes
+      try {
+        await adminDb.collection('promo_codes').doc(cleanCode).set(codeData, { merge: true });
+      } catch (e) {}
+
       return NextResponse.json({ success: true, message: `Code ${cleanCode} saved successfully`, data: codeData });
     }
 
@@ -88,6 +104,11 @@ export async function DELETE(req: NextRequest) {
         .doc(cleanCode);
 
       await codeRef.delete();
+
+      try {
+        await adminDb.collection('promo_codes').doc(cleanCode).delete();
+      } catch (e) {}
+
       return NextResponse.json({ success: true, message: `Code ${cleanCode} deleted successfully` });
     }
 
@@ -122,6 +143,13 @@ export async function PATCH(req: NextRequest) {
         isActive: Boolean(isActive),
         updatedAt: new Date().toISOString()
       }, { merge: true });
+
+      try {
+        await adminDb.collection('promo_codes').doc(cleanCode).set({
+          isActive: Boolean(isActive),
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+      } catch (e) {}
 
       return NextResponse.json({ success: true });
     }
