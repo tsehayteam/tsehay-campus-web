@@ -528,15 +528,15 @@ function StudentDashboardContent() {
           setActiveCourse((prev: any) => {
             // 1. Priority: URL courseId parameter
             if (urlCourseId) {
-              const matchedFromUrl = userCourses.find(c => c.id === urlCourseId || c.courseId === urlCourseId);
+              const matchedFromUrl = userCourses.find((c: any) => c.id === urlCourseId);
               if (matchedFromUrl) {
                 try { localStorage.setItem('tsehay_user_active_course', JSON.stringify(matchedFromUrl)); } catch(e) {}
                 return matchedFromUrl;
               }
             }
             // 2. Priority: previously selected active course
-            if (prev && userCourses.some(c => c.id === prev.id)) {
-              const updated = userCourses.find(c => c.id === prev.id) || prev;
+            if (prev && userCourses.some((c: any) => c.id === prev.id)) {
+              const updated = userCourses.find((c: any) => c.id === prev.id) || prev;
               try { localStorage.setItem('tsehay_user_active_course', JSON.stringify(updated)); } catch(e) {}
               return updated;
             }
