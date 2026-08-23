@@ -878,16 +878,90 @@ img, video, canvas {
   border-radius: 1px;
 }
 
-.cursor-pulse-blue {
-  display: inline-block;
-  width: 2.5px;
-  height: 1.15em;
-  background-color: #ffffff;
-  margin-left: 3px;
-  vertical-align: middle;
-  animation: cursorBlink 0.8s infinite;
-  box-shadow: 0 0 10px #ffffff;
-  border-radius: 1px;
+/* ==========================================================================
+   📱 Full-Screen Glassmorphism Mobile Menu & Morphing Hamburger (Elon Musk / Silicon Valley Style)
+   ========================================================================== */
+@keyframes fullScreenMenuIn {
+  0% {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+    -webkit-backdrop-filter: blur(0px);
+  }
+  100% {
+    opacity: 1;
+    backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
+  }
+}
+
+@keyframes linkStaggerIn {
+  0% {
+    opacity: 0;
+    transform: translateY(35px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.mobile-fullscreen-overlay {
+  height: 100dvh;
+  width: 100vw;
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(3, 5, 9, 0.88);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  animation: fullScreenMenuIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.mobile-link-stagger-1 {
+  animation: linkStaggerIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.06s both;
+}
+
+.mobile-link-stagger-2 {
+  animation: linkStaggerIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.14s both;
+}
+
+.mobile-link-stagger-3 {
+  animation: linkStaggerIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.22s both;
+}
+
+.mobile-link-stagger-4 {
+  animation: linkStaggerIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.30s both;
+}
+
+.mobile-link-stagger-bottom {
+  animation: linkStaggerIn 0.65s cubic-bezier(0.16, 1, 0.3, 1) 0.38s both;
+}
+
+/* Massive Cinematic Navigation Link Styling */
+.mobile-nav-hero-link {
+  color: #ffffff;
+  font-size: clamp(1.85rem, 7vw, 2.6rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.mobile-nav-hero-link:hover,
+.mobile-nav-hero-link:active,
+.mobile-nav-hero-link-active {
+  color: #f9b03c;
+  transform: scale(1.06);
+  text-shadow: 0 0 30px rgba(249, 176, 60, 0.5);
+}
+
+/* Hamburger Icon Morphing Lines */
+.hamburger-line {
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease, background-color 0.3s ease;
+  transform-origin: center;
 }
 
 
