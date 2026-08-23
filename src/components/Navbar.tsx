@@ -29,6 +29,7 @@ export default function Navbar() {
   const [isTypingDone, setIsTypingDone] = useState(false);
 
   useEffect(() => {
+    if (!isCurtainOpen) return;
     let charIndex = 0;
     setDisplayedBrand("");
     setIsTypingDone(false);
@@ -41,10 +42,10 @@ export default function Navbar() {
         setIsTypingDone(true);
         clearInterval(typingTimer);
       }
-    }, 80);
+    }, 70);
 
     return () => clearInterval(typingTimer);
-  }, []);
+  }, [isCurtainOpen, animationKey]);
 
   const [customPhoto, setCustomPhoto] = useState<string | null>(() => {
     if (typeof window === 'undefined') return null;
@@ -294,7 +295,7 @@ export default function Navbar() {
       <nav 
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
-        className={`fixed top-0 left-0 right-0 w-full z-[9999] glass-nav border-b border-black/5 dark:border-white/[0.06] shadow-[0_12px_45px_rgba(0,0,0,0.65)] transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] transform select-none ${
+        className={`fixed top-0 left-0 right-0 w-full z-[9999] glass-nav border-b border-black/5 dark:border-white/[0.06] shadow-[0_12px_45px_rgba(0,0,0,0.65)] curtain-nav-transition transform select-none ${
           isCurtainOpen 
             ? 'translate-y-0 opacity-100' 
             : '-translate-y-full opacity-0 pointer-events-none'
