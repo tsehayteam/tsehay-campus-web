@@ -312,17 +312,17 @@ export default function Navbar() {
             : '-translate-y-full opacity-0 pointer-events-none'
         }`}
       >
-        {/* 🔼 SINGLE DISTINCT ULTRA-PREMIUM ROLL-UP TAB AT BOTTOM CENTER (ጥቅልል / ዝርግት የሚል አኒሜሽን) */}
+        {/* 🔼 SINGLE DISTINCT ULTRA-PREMIUM ROLL-UP TAB AT BOTTOM CENTER (Secondary Brand Color: Royal Blue with Golden/White Contrast) */}
         <button 
           type="button"
           onClick={closeCurtain}
-          className="curtain-rollup-handle px-5 sm:px-6 py-1 sm:py-1.5 rounded-b-2xl flex items-center gap-2 text-white hover:text-[#f9b03c] cursor-pointer group active:scale-95 z-[10000]"
+          className="curtain-rollup-handle px-5 sm:px-6 py-1 sm:py-1.5 rounded-b-2xl flex items-center gap-2 text-white hover:text-white cursor-pointer group active:scale-95 z-[10000]"
           title="ወደ ላይ መልሰህ እጠፍ (Roll Up Menu)"
         >
-          <div className="w-4 h-4 rounded-full bg-gradient-to-tr from-[#f9b03c] to-amber-400 text-black flex items-center justify-center text-[10px] font-black shadow-md">
-            <i className="fa-solid fa-chevron-up text-[11px] font-black"></i>
+          <div className="w-4 h-4 rounded-full bg-gradient-to-tr from-[#f9b03c] to-amber-300 text-black flex items-center justify-center text-[10px] font-black shadow-md shrink-0">
+            <i className="fa-solid fa-chevron-up text-[10px] font-black"></i>
           </div>
-          <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-gray-200 group-hover:text-[#f9b03c] font-heading">
+          <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-white group-hover:text-amber-300 font-heading transition-colors">
             ወደ ላይ እጠፍ (Roll Up)
           </span>
         </button>
@@ -567,8 +567,8 @@ export default function Navbar() {
             </div>
           </div>
 
-          {/* 📱 Mobile Directly Visible Staggered Navigation Panel (Compact, Non-Scrolling Layout) */}
-          <div key={`mobile-nav-${animationKey}`} className="lg:hidden pb-3 pt-0.5 space-y-1.5">
+          {/* 📱 Mobile Directly Visible Staggered Navigation Panel (Centered, Compact, Non-Scrolling Layout) */}
+          <div key={`mobile-nav-${animationKey}`} className="lg:hidden pb-3 pt-0.5 space-y-1.5 max-w-lg mx-auto w-full">
             
             {/* 1. Staggered Item 1: Pop-Up Smart Search */}
             <div className="animate-pop-up-search">

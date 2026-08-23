@@ -365,9 +365,86 @@ body {
   box-shadow: 0 4px 18px rgba(249, 176, 60, 0.22) !important;
 }
 
+/* Roll-up Handle (Secondary Brand Color: Royal Blue with Golden/White Contrast) */
+.curtain-rollup-handle {
+  position: absolute;
+  bottom: -32px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #3268ba 0%, #1e4682 100%);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-top: none;
+  box-shadow: 0 8px 24px rgba(50, 104, 186, 0.45);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.curtain-rollup-handle:hover {
+  background: linear-gradient(135deg, #3b7ad6 0%, #25549c 100%);
+  box-shadow: 0 10px 30px rgba(50, 104, 186, 0.65), 0 0 15px rgba(249, 176, 60, 0.4);
+  transform: translateX(-50%) translateY(2px) scale(1.03);
+}
+
 /* ==========================================================================
    ✨ Navigation Role-Specific Micro-Animations & Brand Typewriter Reveal
    ========================================================================== */
+@keyframes iconHomeFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+.icon-anim-home {
+  animation: iconHomeFloat 2.5s ease-in-out infinite;
+  display: inline-block;
+}
+
+@keyframes iconCoursesTilt {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-10deg) scale(1.05); }
+  75% { transform: rotate(10deg) scale(1.05); }
+}
+.icon-anim-courses {
+  animation: iconCoursesTilt 3.2s ease-in-out infinite;
+  display: inline-block;
+}
+
+@keyframes iconAboutPulse {
+  0%, 100% { transform: scale(1); opacity: 0.9; }
+  50% { transform: scale(1.2); opacity: 1; filter: drop-shadow(0 0 4px rgba(249, 176, 60, 0.6)); }
+}
+.icon-anim-about {
+  animation: iconAboutPulse 2.2s ease-in-out infinite;
+  display: inline-block;
+}
+
+@keyframes iconAiSparkle {
+  0%, 100% { transform: scale(1) rotate(0deg); filter: drop-shadow(0 0 2px rgba(249, 176, 60, 0.4)); }
+  50% { transform: scale(1.25) rotate(14deg); filter: drop-shadow(0 0 10px rgba(249, 176, 60, 0.9)); }
+}
+.icon-anim-ai {
+  animation: iconAiSparkle 2.2s ease-in-out infinite;
+  display: inline-block;
+}
+
+@keyframes iconAppVibrate {
+  0%, 80%, 100% { transform: rotate(0deg); }
+  84% { transform: rotate(-12deg); }
+  88% { transform: rotate(12deg); }
+  92% { transform: rotate(-8deg); }
+  96% { transform: rotate(8deg); }
+}
+.icon-anim-app {
+  animation: iconAppVibrate 3.8s ease-in-out infinite;
+  display: inline-block;
+}
+
+@keyframes iconLoginNudge {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(3.5px); }
+}
+.icon-anim-login {
+  animation: iconLoginNudge 1.8s ease-in-out infinite;
+  display: inline-block;
+}
+
 @keyframes iconSpringPop {
   0% {
     opacity: 0;
