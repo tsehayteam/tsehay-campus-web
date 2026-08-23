@@ -72,9 +72,33 @@ export default function AdminDashboard() {
   const [isSavingAboutVideo, setIsSavingAboutVideo] = useState(false);
   const [aboutVideoSavedMessage, setAboutVideoSavedMessage] = useState('');
 
-  // Portfolio Videos State
-  const [portfolioLocalUrl, setPortfolioLocalUrl] = useState('');
-  const [portfolioInternationalUrl, setPortfolioInternationalUrl] = useState('');
+  // Portfolio Videos State - Synchronous lazy cache init so it NEVER reverts on refresh
+  const [portfolioLocalUrl, setPortfolioLocalUrl] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('tsehay_youtube_portfolio_cache');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed.localVideoUrl) return parsed.localVideoUrl;
+        }
+      } catch (e) {}
+    }
+    return '';
+  });
+
+  const [portfolioInternationalUrl, setPortfolioInternationalUrl] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('tsehay_youtube_portfolio_cache');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed.internationalVideoUrl) return parsed.internationalVideoUrl;
+        }
+      } catch (e) {}
+    }
+    return '';
+  });
+
   const [isSavingPortfolio, setIsSavingPortfolio] = useState(false);
   const [portfolioSavedMessage, setPortfolioSavedMessage] = useState('');
 
@@ -194,16 +218,41 @@ export default function AdminDashboard() {
     });
 
     const portfolioDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'site_settings', 'youtube_portfolio');
-    const unsubscribePortfolio = onSnapshot(portfolioDocRef, (docSnap) => {
+    const unsubscribePortfolio1 = onSnapshot(portfolioDocRef, (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
         if (data) {
           if (data.localVideoUrl) setPortfolioLocalUrl(data.localVideoUrl);
           if (data.internationalVideoUrl) setPortfolioInternationalUrl(data.internationalVideoUrl);
+          try {
+            localStorage.setItem('tsehay_youtube_portfolio_cache', JSON.stringify({
+              localVideoUrl: data.localVideoUrl,
+              internationalVideoUrl: data.internationalVideoUrl
+            }));
+          } catch (e) {}
         }
       }
     }, (err) => {
-      console.warn("Portfolio video Firestore sync:", err);
+      console.warn("Portfolio video nested Firestore sync:", err);
+    });
+
+    const rootPortfolioDocRef = doc(db, 'site_settings', 'youtube_portfolio');
+    const unsubscribePortfolio2 = onSnapshot(rootPortfolioDocRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (data) {
+          if (data.localVideoUrl) setPortfolioLocalUrl(data.localVideoUrl);
+          if (data.internationalVideoUrl) setPortfolioInternationalUrl(data.internationalVideoUrl);
+          try {
+            localStorage.setItem('tsehay_youtube_portfolio_cache', JSON.stringify({
+              localVideoUrl: data.localVideoUrl,
+              internationalVideoUrl: data.internationalVideoUrl
+            }));
+          } catch (e) {}
+        }
+      }
+    }, (err) => {
+      console.warn("Portfolio video root Firestore sync:", err);
     });
 
     // Also fetch current portfolio settings from server API
@@ -213,6 +262,12 @@ export default function AdminDashboard() {
         if (json.data) {
           if (json.data.localVideoUrl) setPortfolioLocalUrl(json.data.localVideoUrl);
           if (json.data.internationalVideoUrl) setPortfolioInternationalUrl(json.data.internationalVideoUrl);
+          try {
+            localStorage.setItem('tsehay_youtube_portfolio_cache', JSON.stringify({
+              localVideoUrl: json.data.localVideoUrl,
+              internationalVideoUrl: json.data.internationalVideoUrl
+            }));
+          } catch (e) {}
         }
       })
       .catch(e => console.warn("Portfolio API load error:", e));
@@ -269,7 +324,8 @@ export default function AdminDashboard() {
         unsubscribePayments();
         unsubscribeTickets();
         unsubscribeAboutVideo();
-        unsubscribePortfolio();
+        unsubscribePortfolio1();
+        unsubscribePortfolio2();
         unsubscribeReferrals();
     };
   }, []);
@@ -504,10 +560,17 @@ export default function AdminDashboard() {
     } catch (e) {}
 
     try {
-      // 2. Direct client Firestore write
+      // 2. Direct client Firestore write (dual path: nested artifacts and root)
       try {
         const portfolioDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'site_settings', 'youtube_portfolio');
         await setDoc(portfolioDocRef, {
+          localVideoUrl: portfolioLocalUrl.trim(),
+          internationalVideoUrl: portfolioInternationalUrl.trim(),
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+
+        const rootDocRef = doc(db, 'site_settings', 'youtube_portfolio');
+        await setDoc(rootDocRef, {
           localVideoUrl: portfolioLocalUrl.trim(),
           internationalVideoUrl: portfolioInternationalUrl.trim(),
           updatedAt: serverTimestamp()

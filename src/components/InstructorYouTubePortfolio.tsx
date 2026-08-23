@@ -75,9 +75,9 @@ export default function InstructorYouTubePortfolio() {
     };
     fetchApiSettings();
 
-    // 2. Real-time Firestore sync for instantaneous updates
+    // 2. Real-time Firestore sync for instantaneous updates (Multi-path listener)
     const portfolioDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'site_settings', 'youtube_portfolio');
-    const unsubscribe = onSnapshot(portfolioDocRef, (docSnap) => {
+    const unsubscribe1 = onSnapshot(portfolioDocRef, (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
         if (data) {
@@ -94,10 +94,34 @@ export default function InstructorYouTubePortfolio() {
         }
       }
     }, (err) => {
-      console.warn("YouTube portfolio Firestore sync warning:", err);
+      console.warn("YouTube portfolio nested Firestore sync warning:", err);
     });
 
-    return () => unsubscribe();
+    const rootDocRef = doc(db, 'site_settings', 'youtube_portfolio');
+    const unsubscribe2 = onSnapshot(rootDocRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (data) {
+          if (data.localVideoUrl) setLocalVideoUrl(data.localVideoUrl);
+          if (data.internationalVideoUrl) setInternationalVideoUrl(data.internationalVideoUrl);
+          setHasLoaded(true);
+
+          try {
+            localStorage.setItem('tsehay_youtube_portfolio_cache', JSON.stringify({
+              localVideoUrl: data.localVideoUrl,
+              internationalVideoUrl: data.internationalVideoUrl
+            }));
+          } catch (e) {}
+        }
+      }
+    }, (err) => {
+      console.warn("YouTube portfolio root Firestore sync warning:", err);
+    });
+
+    return () => {
+      unsubscribe1();
+      unsubscribe2();
+    };
   }, []);
 
   const localVideoId = extractYouTubeId(localVideoUrl);
