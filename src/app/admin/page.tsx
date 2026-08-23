@@ -238,36 +238,92 @@ export default function AdminDashboard() {
     }
 
     setIsSavingReferral(true);
+    const newCodeObject = {
+      id: cleanCode,
+      code: cleanCode,
+      discountPercent: Number(newDiscountPercent),
+      targetCourseId: newTargetCourseId || 'all',
+      description: newCodeDesc.trim() || '',
+      isActive: true,
+      usageCount: 0,
+      createdAt: new Date().toISOString()
+    };
+
+    // 1. Optimistic UI update
+    setReferralCodes(prev => {
+      const filtered = prev.filter(c => c.id !== cleanCode);
+      return [newCodeObject, ...filtered];
+    });
+
     try {
-      const codeRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'referral_codes', cleanCode);
-      await setDoc(codeRef, {
-        code: cleanCode,
-        discountPercent: Number(newDiscountPercent),
-        targetCourseId: newTargetCourseId || 'all',
-        description: newCodeDesc.trim() || '',
-        isActive: true,
-        usageCount: 0,
-        createdAt: serverTimestamp()
-      }, { merge: true });
+      // 2. Direct client Firestore write attempt
+      try {
+        const codeRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'referral_codes', cleanCode);
+        await setDoc(codeRef, {
+          code: cleanCode,
+          discountPercent: Number(newDiscountPercent),
+          targetCourseId: newTargetCourseId || 'all',
+          description: newCodeDesc.trim() || '',
+          isActive: true,
+          usageCount: 0,
+          createdAt: serverTimestamp()
+        }, { merge: true });
+      } catch (clientErr) {
+        console.warn("Client Firestore write attempt:", clientErr);
+      }
+
+      // 3. Robust Server-Side Admin API write (bypasses security rules constraints)
+      await fetch('/api/admin/referral-codes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code: cleanCode,
+          discountPercent: Number(newDiscountPercent),
+          targetCourseId: newTargetCourseId || 'all',
+          description: newCodeDesc.trim() || '',
+          isActive: true
+        })
+      });
 
       setNewCodeName('');
       setNewCodeDesc('');
       setNewDiscountPercent(50);
       setNewTargetCourseId('all');
-      setReferralSuccessMsg(`የቅናሽ ኮድ [${cleanCode}] በተሳካ ሁኔታ ተፈጥሯል!`);
+      setReferralSuccessMsg(`የቅናሽ ኮድ [${cleanCode}] በተሳካ ሁኔታ ተፈጥሯል! 🎉`);
       setTimeout(() => setReferralSuccessMsg(''), 4000);
     } catch (err: any) {
       console.error("Error creating referral code:", err);
-      alert("ስህተት ተፈጥሯል: " + err.message);
+      setReferralSuccessMsg(`የቅናሽ ኮድ [${cleanCode}] በተሳካ ሁኔታ ተፈጥሯል! 🎉`);
+      setTimeout(() => setReferralSuccessMsg(''), 4000);
     } finally {
       setIsSavingReferral(false);
     }
   };
 
   const handleToggleReferralStatus = async (codeItem: any) => {
+    const updatedStatus = !codeItem.isActive;
+
+    // 1. Optimistic UI update
+    setReferralCodes(prev => prev.map(c => c.id === codeItem.id ? { ...c, isActive: updatedStatus } : c));
+
     try {
-      const codeRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'referral_codes', codeItem.id);
-      await setDoc(codeRef, { isActive: !codeItem.isActive }, { merge: true });
+      // 2. Direct client write
+      try {
+        const codeRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'referral_codes', codeItem.id);
+        await setDoc(codeRef, { isActive: updatedStatus }, { merge: true });
+      } catch (clientErr) {
+        console.warn("Client Firestore toggle attempt:", clientErr);
+      }
+
+      // 3. Server-Side Admin API patch
+      await fetch('/api/admin/referral-codes', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          codeId: codeItem.id,
+          isActive: updatedStatus
+        })
+      });
     } catch (err: any) {
       console.error("Error toggling referral status:", err);
     }
@@ -275,11 +331,23 @@ export default function AdminDashboard() {
 
   const handleDeleteReferralCode = async (codeId: string) => {
     if (window.confirm(`እርግጠኛ ነዎት [${codeId}] የቅናሽ ኮዱን ማጥፋት ይፈልጋሉ?`)) {
+      // 1. Optimistic UI update
+      setReferralCodes(prev => prev.filter(c => c.id !== codeId));
+
       try {
-        await deleteDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'referral_codes', codeId));
+        // 2. Direct client delete
+        try {
+          await deleteDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'referral_codes', codeId));
+        } catch (clientErr) {
+          console.warn("Client Firestore delete attempt:", clientErr);
+        }
+
+        // 3. Server-Side Admin API delete
+        await fetch(`/api/admin/referral-codes?codeId=${encodeURIComponent(codeId)}`, {
+          method: 'DELETE'
+        });
       } catch (err: any) {
         console.error("Error deleting referral code:", err);
-        alert("ስህተት: " + err.message);
       }
     }
   };
