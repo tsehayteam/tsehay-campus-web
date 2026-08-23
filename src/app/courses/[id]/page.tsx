@@ -45,12 +45,55 @@ export default function CoursePreviewPage() {
 
     let isMounted = true;
 
+    // Helper to find best matching course from a list
+    const findMatchingCourse = (list: any[], searchId: string) => {
+      if (!list || list.length === 0) return null;
+      // 1. Direct ID match
+      const direct = list.find((c: any) => c.id === searchId);
+      if (direct) return direct;
+
+      const lower = searchId.toLowerCase();
+
+      // 2. Shein / Import match
+      if (lower.includes('shein') || lower.includes('import') || lower.includes('ኢምፖርት')) {
+        const match = list.find((c: any) => 
+          (c.title && /shein|ኢምፖርት|import|sheen/i.test(c.title)) ||
+          (c.category && /shein|import|ecommerce/i.test(c.category))
+        );
+        if (match) return match;
+      }
+
+      // 3. Digital Marketing match
+      if (lower.includes('marketing') || lower.includes('ማርኬቲንግ') || lower.includes('digital')) {
+        const match = list.find((c: any) => 
+          (c.title && /marketing|ማርኬቲንግ|ዲጂታል|social media|facebook/i.test(c.title)) ||
+          (c.category && /marketing|ማርኬቲንግ/i.test(c.category))
+        );
+        if (match) return match;
+      }
+
+      // 4. YouTube match
+      if (lower.includes('youtube') || lower.includes('ዩቲዩብ') || lower.includes('video')) {
+        const match = list.find((c: any) => 
+          (c.title && /youtube|ዩቲዩብ|ቪዲዮ/i.test(c.title)) ||
+          (c.category && /youtube|ዩቲዩብ/i.test(c.category))
+        );
+        if (match) return match;
+      }
+
+      // 5. Title substring match
+      const titleMatch = list.find((c: any) => c.title && (c.title.toLowerCase().includes(lower) || lower.includes(c.title.toLowerCase())));
+      if (titleMatch) return titleMatch;
+
+      return null;
+    };
+
     // Load from cache immediately on client mount
     try {
       const cached = getCachedCourses();
       if (cached.length > 0) {
         setAllCourses(cached);
-        const cachedCourse = cached.find((c: any) => c.id === id);
+        const cachedCourse = findMatchingCourse(cached, id);
         if (cachedCourse && isMounted) {
           const cleanDesc = formatCourseDesc({ id: cachedCourse.id, ...cachedCourse });
           setCourse({
@@ -70,31 +113,64 @@ export default function CoursePreviewPage() {
 
     const fetchCourseData = async () => {
       try {
-        // 1. Fetch current course details
-        const courseRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses', id);
-        const courseSnap = await getDoc(courseRef);
-        
-        if (isMounted && courseSnap.exists()) {
-          const courseData = courseSnap.data();
-          const cleanDesc = formatCourseDesc({ id: courseSnap.id, ...courseData });
+        let loadedCourseData: any = null;
+        let loadedCourseId = id;
+
+        // 1. Fetch current course details by ID
+        try {
+          const courseRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses', id);
+          const courseSnap = await getDoc(courseRef);
+          if (courseSnap.exists()) {
+            loadedCourseData = courseSnap.data();
+            loadedCourseId = courseSnap.id;
+          }
+        } catch (e) {}
+
+        // 2. Fetch all courses dynamically (also used for fallback resolution)
+        let allList: any[] = [];
+        try {
+          const allCoursesQuery = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses'));
+          const allCoursesSnap = await getDocs(allCoursesQuery);
+          if (!allCoursesSnap.empty) {
+            allList = allCoursesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+            if (isMounted) {
+              setAllCourses(allList);
+              saveCachedCourses(allList);
+            }
+          }
+        } catch (allErr) {
+          console.warn("All courses fetch fallback:", allErr);
+        }
+
+        // If direct getDoc didn't find the course, use fuzzy keyword match from allList
+        if (!loadedCourseData && allList.length > 0) {
+          const matched = findMatchingCourse(allList, id);
+          if (matched) {
+            loadedCourseData = matched;
+            loadedCourseId = matched.id;
+          }
+        }
+
+        if (isMounted && loadedCourseData) {
+          const cleanDesc = formatCourseDesc({ id: loadedCourseId, ...loadedCourseData });
           setCourse({ 
-            id: courseSnap.id, 
-            ...courseData,
+            id: loadedCourseId, 
+            ...loadedCourseData,
             desc: cleanDesc,
             description: cleanDesc
           });
           
           let modulesList = [];
           
-          if (courseData.lessons && courseData.lessons.length > 0) {
-            modulesList = [{ id: 'main', title: 'Course Content', lessons: courseData.lessons }];
-          } else if (courseData.modules && courseData.modules.length > 0) {
-            modulesList = courseData.modules;
+          if (loadedCourseData.lessons && loadedCourseData.lessons.length > 0) {
+            modulesList = [{ id: 'main', title: 'Course Content', lessons: loadedCourseData.lessons }];
+          } else if (loadedCourseData.modules && loadedCourseData.modules.length > 0) {
+            modulesList = loadedCourseData.modules;
           } else {
             // Fallback for older courses that used the subcollection
             try {
               const modulesQuery = query(
-                collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses', id, 'modules'),
+                collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses', loadedCourseId, 'modules'),
                 orderBy('order', 'asc')
               );
               const modulesSnap = await getDocs(modulesQuery);
@@ -109,19 +185,6 @@ export default function CoursePreviewPage() {
           if (modulesList.length > 0) {
             setExpandedModules({ [modulesList[0].id || 'main']: true });
           }
-        }
-
-        // 2. Fetch all courses dynamically to compute instructor metrics and live course count
-        try {
-          const allCoursesQuery = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses'));
-          const allCoursesSnap = await getDocs(allCoursesQuery);
-          if (isMounted && !allCoursesSnap.empty) {
-            const list = allCoursesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-            setAllCourses(list);
-            saveCachedCourses(list);
-          }
-        } catch (allErr) {
-          console.warn("All courses fetch fallback:", allErr);
         }
       } catch (error) {
         console.error("Error fetching course data:", error);

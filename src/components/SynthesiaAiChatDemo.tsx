@@ -2,6 +2,9 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { getCachedCourses } from '@/lib/courseCache';
+import { db } from '@/lib/firebase/config';
+import { collection, getDocs, query } from 'firebase/firestore';
 
 export interface QuestionScenario {
   id: string;
@@ -25,7 +28,7 @@ export const SCENARIOS: QuestionScenario[] = [
     question: 'የዩቲዩብ ቪዲዮዎቼን ሰዎች እንዳያቋርጡ (High Retention) ምን ላድርግ?',
     response: `የ ሚስተር ቢስት (MrBeast) ሚስጥር ልንገርዎት፦ የመጀመሪያዎቹ 3 ሰከንዶች (Hook) ወሳኝ ናቸው! ቪዲዮዎን በከፍተኛ ጉጉት ወይም ያልተጠበቀ ድርጊት ይጀምሩ። ከዚያም በየ 5 ሰከንዱ የስክሪኑን አንግል ወይም ጽሑፍ በመቀየር የተመልካቹን አይን 'Reset' ያድርጉ። ዝርዝሩን በ'ዩቲዩብ ስኬት ሚስጥሮች' ኮርሳችን ውስጥ በተግባር እናሳያለን!`,
     courseTag: 'የዩቲዩብ ስኬት ሚስጥሮች (YouTube Secrets)',
-    courseId: 'course_1784885267254'
+    courseId: 'youtube'
   },
   {
     id: 'marketing',
@@ -36,7 +39,7 @@ export const SCENARIOS: QuestionScenario[] = [
     question: 'በፌስቡክ ማስታወቂያ (FB Ads) አነስተኛ ወጪ አውጥቼ ብዙ ሽያጭ እንዴት ላግኝ?',
     response: `እንደ ኔሊ ፓተል (Neil Patel) ስትራቴጂ፣ ሚስጥሩ ያለው ማስታወቂያው ላይ ሳይሆን 'Retargeting' ላይ ነው። ብዙዎች ለመጀመሪያ ጊዜ ላዩት ሰው ይሸጣሉ፤ እርስዎ ግን ቪዲዮዎን ላዩ እና ሊንክዎን ለተጫኑ (Warm Audience) ብቻ ማስታወቂያዎን በድጋሚ ያሳዩ። ይህ ወጪዎን በ 70% ይቀንሰዋል! 'ክፍል 4' ላይ በተግባር እንየው።`,
     courseTag: 'የዲጂታል ማርኬቲንግ እና ሶሻል ሚዲያ ቢዝነስ',
-    courseId: 'digital-marketing-pro'
+    courseId: 'marketing'
   },
   {
     id: 'shein',
@@ -47,12 +50,13 @@ export const SCENARIOS: QuestionScenario[] = [
     question: 'ከሼን (Shein) ሳስመጣ የጉምሩክ እና የካርጎ ወጪ እንዳይበዛብኝ ምን ላድርግ?',
     response: `በኢትዮጵያ ካሉ ታላላቅ አስመጪዎች የምንማረው አንድ ህግ አለ፦ 'ክብደት ሳይሆን መጠን (Volume) ይግዙ'። ከባድ ጫማዎችን ከመግዛት ይልቅ፣ ቀላል ግን ውድ የሆኑ የሴቶች ጌጣጌጦችን (Accessories) እና ስስ ልብሶችን በብዛት ያምጡ። ይህ የካርጎ ወጪዎን በግማሽ ይቀንሰዋል። በኮርሱ 'ሴክሽን 2' ላይ ትክክለኛውን የወጪ ስሌት እንማራለን።`,
     courseTag: 'የሺን ኢምፖርት ቢዝነስ ስልጠና',
-    courseId: 'shein-import-mastery'
+    courseId: 'shein'
   }
 ];
 
 export default function SynthesiaAiChatDemo() {
   const router = useRouter();
+  const [coursesList, setCoursesList] = useState<any[]>([]);
   const [scenarioIndex, setScenarioIndex] = useState(0);
   const [displayedQuestion, setDisplayedQuestion] = useState('');
   const [displayedResponse, setDisplayedResponse] = useState('');
@@ -61,77 +65,74 @@ export default function SynthesiaAiChatDemo() {
   const [copied, setCopied] = useState(false);
   const chatScrollRef = useRef<HTMLDivElement>(null);
 
-  const currentScenario = SCENARIOS[scenarioIndex];
-
-  // ✍️ Scrollytelling Automated Typing Engine with Calm Readable Cadence
+  // Fetch live and cached courses to dynamically match course IDs
   useEffect(() => {
-    let timeout: NodeJS.Timeout;
-    const currentQ = currentScenario.question;
-    const currentR = currentScenario.response;
+    try {
+      const cached = getCachedCourses();
+      if (cached && cached.length > 0) {
+        setCoursesList(cached);
+      }
+    } catch(e) {}
 
-    if (phase === 'typing_question') {
-      if (displayedQuestion.length < currentQ.length) {
-        timeout = setTimeout(() => {
-          setDisplayedQuestion(currentQ.slice(0, displayedQuestion.length + 1));
-        }, 55); // Calm humanized question typing pace
-      } else {
-        timeout = setTimeout(() => {
-          setIsAiThinking(true);
-          setPhase('thinking');
-        }, 650);
+    const fetchLiveCourses = async () => {
+      try {
+        const q = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses'));
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+          const list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          setCoursesList(list);
+        }
+      } catch (err) {
+        console.warn("Live courses fetch for AI demo:", err);
       }
-    } else if (phase === 'thinking') {
-      timeout = setTimeout(() => {
-        setIsAiThinking(false);
-        setPhase('typing_response');
-      }, 1100); // Realistic neural deliberation pause
-    } else if (phase === 'typing_response') {
-      if (displayedResponse.length < currentR.length) {
-        timeout = setTimeout(() => {
-          // Readable, comfortable streaming pace (1 character per tick)
-          setDisplayedResponse(currentR.slice(0, displayedResponse.length + 1));
-        }, 36);
-      } else {
-        setPhase('done');
-      }
-    } else if (phase === 'done') {
-      // 8.5-second comfortable reading pause before transitioning to the next scenario
-      timeout = setTimeout(() => {
-        setDisplayedQuestion('');
-        setDisplayedResponse('');
-        setScenarioIndex((prev) => (prev + 1) % SCENARIOS.length);
-        setPhase('typing_question');
-      }, 8500);
+    };
+    fetchLiveCourses();
+  }, []);
+
+  const getResolvedCourseId = (scenario: QuestionScenario): string => {
+    if (!coursesList || coursesList.length === 0) return scenario.id;
+
+    // 1. Direct ID match
+    const direct = coursesList.find(c => c.id === scenario.courseId || c.id === scenario.id);
+    if (direct) return direct.id;
+
+    // 2. Shein / Import match
+    if (scenario.id === 'shein') {
+      const sheinCourse = coursesList.find(c => 
+        (c.title && /shein|ኢምፖርት|import|sheen/i.test(c.title)) ||
+        (c.category && /shein|import|ecommerce/i.test(c.category))
+      );
+      if (sheinCourse) return sheinCourse.id;
     }
 
-    return () => clearTimeout(timeout);
-  }, [phase, displayedQuestion, displayedResponse, currentScenario]);
-
-  // Auto scroll within container smoothly
-  useEffect(() => {
-    if (chatScrollRef.current) {
-      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+    // 3. Digital Marketing match
+    if (scenario.id === 'marketing') {
+      const marketingCourse = coursesList.find(c => 
+        (c.title && /marketing|ማርኬቲንግ|ዲጂታል|social media|facebook/i.test(c.title)) ||
+        (c.category && /marketing|ማርኬቲንግ/i.test(c.category))
+      );
+      if (marketingCourse) return marketingCourse.id;
     }
-  }, [displayedQuestion, displayedResponse, isAiThinking]);
 
-  const handleSelectScenario = (index: number) => {
-    if (index === scenarioIndex) return;
-    setDisplayedQuestion('');
-    setDisplayedResponse('');
-    setIsAiThinking(false);
-    setScenarioIndex(index);
-    setPhase('typing_question');
+    // 4. YouTube match
+    if (scenario.id === 'youtube') {
+      const ytCourse = coursesList.find(c => 
+        (c.title && /youtube|ዩቲዩብ|ቪዲዮ/i.test(c.title)) ||
+        (c.category && /youtube|ዩቲዩብ/i.test(c.category))
+      );
+      if (ytCourse) return ytCourse.id;
+    }
+
+    // 5. Fallback match by courseTag substring
+    const tagMatch = coursesList.find(c => c.title && (c.title.includes(scenario.courseTag) || scenario.courseTag.includes(c.title)));
+    if (tagMatch) return tagMatch.id;
+
+    return coursesList[0]?.id || scenario.id;
   };
 
-  const handleCopyResponse = () => {
-    if (!displayedResponse) return;
-    navigator.clipboard.writeText(displayedResponse);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const handleNavigateToCourse = (courseId: string) => {
-    router.push(`/courses/${courseId}`);
+  const handleNavigateToCourse = (scenario: QuestionScenario) => {
+    const targetId = getResolvedCourseId(scenario);
+    router.push(`/courses/${targetId}`);
   };
 
   return (
@@ -276,7 +277,7 @@ export default function SynthesiaAiChatDemo() {
                 
                 <button
                   type="button"
-                  onClick={() => handleNavigateToCourse(currentScenario.courseId)}
+                  onClick={() => handleNavigateToCourse(currentScenario)}
                   className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#f9b03c] text-black font-black text-[11px] shadow-[0_0_15px_rgba(249,176,60,0.35)] hover:shadow-[0_0_25px_rgba(249,176,60,0.6)] hover:scale-[1.03] active:scale-[0.98] transition-all flex items-center gap-1.5 cursor-pointer ml-auto"
                 >
                   <span>ይህንን ኮርስ ተማር</span>
