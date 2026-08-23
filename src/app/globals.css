@@ -339,7 +339,7 @@ body {
 }
 
 /* ==========================================================================
-   ✨ Navigation Micro-Animations: Icon Pop-Up Spring & Brand Typewriter Reveal
+   ✨ Navigation Role-Specific Micro-Animations & Brand Typewriter Reveal
    ========================================================================== */
 @keyframes iconSpringPop {
   0% {
@@ -360,8 +360,72 @@ body {
 }
 
 .icon-pop-spring {
-  animation: iconSpringPop 0.55s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+  animation: iconSpringPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
   will-change: transform, opacity;
+}
+
+/* 1. 🏠 Home Icon: Gentle Floating Bob */
+@keyframes iconHomeFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+}
+.icon-anim-home {
+  animation: iconHomeFloat 3s ease-in-out infinite;
+}
+
+/* 2. 🎓 Courses Icon: Graduation Cap Tilt */
+@keyframes iconCapTilt {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  30% { transform: rotate(-10deg) scale(1.08); }
+  60% { transform: rotate(4deg) scale(1.02); }
+}
+.icon-anim-courses {
+  animation: iconCapTilt 4s ease-in-out infinite;
+}
+
+/* 3. ℹ️ About Icon: Info Badge Pulse */
+@keyframes iconInfoPulse {
+  0%, 100% { transform: scale(1); opacity: 0.9; }
+  50% { transform: scale(1.12); opacity: 1; }
+}
+.icon-anim-about {
+  animation: iconInfoPulse 3.5s ease-in-out infinite;
+}
+
+/* 4. ✨ Tsehay AI Icon: Magic Wand Sparkle & Glowing Shimmer */
+@keyframes iconMagicSparkle {
+  0%, 100% {
+    transform: rotate(0deg) scale(1);
+    filter: drop-shadow(0 0 2px rgba(249, 176, 60, 0.4));
+  }
+  50% {
+    transform: rotate(14deg) scale(1.18);
+    filter: drop-shadow(0 0 9px rgba(249, 176, 60, 0.9));
+  }
+}
+.icon-anim-ai {
+  animation: iconMagicSparkle 2.4s ease-in-out infinite;
+}
+
+/* 5. 📱 Install App Icon: Gentle Phone Vibe Shake */
+@keyframes iconPhoneShake {
+  0%, 100%, 80% { transform: rotate(0deg); }
+  85% { transform: rotate(-8deg) translateY(-1px); }
+  90% { transform: rotate(8deg) translateY(-1px); }
+  95% { transform: rotate(-5deg); }
+}
+.icon-anim-app {
+  animation: iconPhoneShake 4s ease-in-out infinite;
+}
+
+/* 6. 🔑 Login Icon: Arrow Bracket Nudge */
+@keyframes iconLoginNudge {
+  0%, 100%, 75% { transform: translateX(0); }
+  85% { transform: translateX(3px); }
+  92% { transform: translateX(1px); }
+}
+.icon-anim-login {
+  animation: iconLoginNudge 3s ease-in-out infinite;
 }
 
 @keyframes brandCursorBlink {
