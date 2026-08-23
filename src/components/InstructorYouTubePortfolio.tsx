@@ -107,11 +107,11 @@ export default function InstructorYouTubePortfolio() {
   const internationalThumbnail = internationalVideoId ? `https://img.youtube.com/vi/${internationalVideoId}/hqdefault.jpg` : '';
 
   const localEmbedUrl = localVideoId 
-    ? `https://www.youtube-nocookie.com/embed/${localVideoId}?autoplay=1&modestbranding=1&rel=0&controls=1&showinfo=0&iv_load_policy=3&cc_load_policy=0&cc_lang_pref=none`
+    ? `https://www.youtube-nocookie.com/embed/${localVideoId}?autoplay=1&modestbranding=1&rel=0&controls=1&showinfo=0&iv_load_policy=3&cc_load_policy=0&cc_lang_pref=none&playsinline=1&loop=1&playlist=${localVideoId}&enablejsapi=1`
     : '';
 
   const internationalEmbedUrl = internationalVideoId 
-    ? `https://www.youtube-nocookie.com/embed/${internationalVideoId}?autoplay=1&modestbranding=1&rel=0&controls=1&showinfo=0&iv_load_policy=3&cc_load_policy=0&cc_lang_pref=none`
+    ? `https://www.youtube-nocookie.com/embed/${internationalVideoId}?autoplay=1&modestbranding=1&rel=0&controls=1&showinfo=0&iv_load_policy=3&cc_load_policy=0&cc_lang_pref=none&playsinline=1&loop=1&playlist=${internationalVideoId}&enablejsapi=1`
     : '';
 
   return (
