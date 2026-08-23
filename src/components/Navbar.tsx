@@ -24,9 +24,21 @@ export default function Navbar() {
   const [animationKey, setAnimationKey] = useState(0);
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.innerWidth >= 1024) {
-      setIsCurtainOpen(true);
+    if (typeof window !== 'undefined') {
+      if (window.innerWidth >= 1024) {
+        setIsCurtainOpen(true);
+      } else {
+        setIsCurtainOpen(false);
+      }
     }
+
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) {
+        setIsCurtainOpen(true);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   // ✍️ Typewriter effect for brand logo text ("Tsehay Campus")
@@ -98,10 +110,8 @@ export default function Navbar() {
     if (touchStartY === null) return;
     const touchEndY = e.changedTouches[0].clientY;
     const diff = touchEndY - touchStartY;
-    if (diff > 50) {
-      setIsCurtainOpen(true);
-      setAnimationKey(prev => prev + 1);
-    } else if (diff < -50) {
+    // Strictly ONLY swipe UP to close when open (NEVER swipe down to open)
+    if (diff < -35 && isCurtainOpen) {
       setIsCurtainOpen(false);
     }
     setTouchStartY(null);
@@ -142,6 +152,9 @@ export default function Navbar() {
 
   const navigateTo = (url: string) => {
     setShowProfileDropdown(false);
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+      setIsCurtainOpen(false);
+    }
 
     if (url.startsWith('/#') || url.startsWith('#')) {
       const hash = url.replace('/#', '').replace('#', '');
