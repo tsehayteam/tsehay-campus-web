@@ -59,8 +59,13 @@ export default function SmartSearchInput({
 
   return (
     <div className={`relative w-full ${className}`} ref={dropdownRef}>
-      <div className={`relative group ${compact ? 'rounded-full' : 'shadow-xl rounded-full'}`}>
-        <i className={`fa-solid fa-magnifying-glass absolute ${compact ? 'left-3.5 text-xs text-gray-400' : 'left-5 text-lg text-gray-400'} top-1/2 -translate-y-1/2 group-focus-within:text-primary transition-colors`}></i>
+      <div className={`relative group ${compact ? 'rounded-full search-input-beacon' : 'shadow-xl rounded-full'}`}>
+        <div className={`absolute ${compact ? 'left-3' : 'left-5'} top-1/2 -translate-y-1/2 flex items-center gap-1.5 pointer-events-none z-10`}>
+          <i className={`fa-solid fa-magnifying-glass ${compact ? 'text-xs text-gray-400 group-focus-within:text-[#f9b03c]' : 'text-lg text-gray-400 group-focus-within:text-primary'} transition-colors`}></i>
+          {compact && (
+            <span className="w-1.5 h-1.5 rounded-full bg-[#f9b03c] animate-pulse shadow-[0_0_6px_#f9b03c]"></span>
+          )}
+        </div>
         
         <input 
           type="text" 
@@ -70,7 +75,7 @@ export default function SmartSearchInput({
           placeholder={placeholder}
           className={
             compact 
-              ? "w-full bg-gray-100/90 dark:bg-white/[0.06] border border-gray-200 dark:border-white/10 focus:border-[#f9b03c]/70 focus:bg-white dark:focus:bg-black/60 focus:shadow-[0_0_15px_rgba(249,176,60,0.2)] rounded-full py-2 pl-9 pr-8 text-dark dark:text-white font-medium outline-none transition-all duration-300 text-xs placeholder:text-gray-400 dark:placeholder:text-gray-500"
+              ? "w-full bg-gray-100/90 dark:bg-white/[0.06] border border-gray-200 dark:border-white/10 focus:border-[#f9b03c]/70 focus:bg-white dark:focus:bg-black/60 focus:shadow-[0_0_15px_rgba(249,176,60,0.2)] rounded-full py-2 pl-11 pr-8 text-dark dark:text-white font-medium outline-none transition-all duration-300 text-xs placeholder:text-gray-400 dark:placeholder:text-gray-500"
               : "w-full bg-white dark:bg-[#111111] border-2 border-gray-200 dark:border-slate-700 rounded-full py-4 pl-14 pr-12 text-dark dark:text-white font-bold outline-none focus:border-primary transition shadow-inner text-sm md:text-base placeholder:font-medium placeholder:text-gray-400"
           }
         />

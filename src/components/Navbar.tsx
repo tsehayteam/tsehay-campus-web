@@ -309,7 +309,7 @@ export default function Navbar() {
           title="ወደ ላይ መልሰህ እጠፍ (Roll Up Menu)"
         >
           <div className="w-4 h-4 rounded-full bg-gradient-to-tr from-[#f9b03c] to-amber-400 text-black flex items-center justify-center text-[10px] font-black shadow-md">
-            <i className="fa-solid fa-chevron-up icon-rollup-bob text-[11px] font-black"></i>
+            <i className="fa-solid fa-chevron-up text-[11px] font-black"></i>
           </div>
           <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-gray-200 group-hover:text-[#f9b03c] font-heading">
             ወደ ላይ እጠፍ (Roll Up)

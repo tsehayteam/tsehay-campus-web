@@ -446,40 +446,19 @@ body {
 }
 
 /* ==========================================================================
-   🔼 Distinct Ultra-Premium Curtain Roll-Up Handle (Slow Rolling Breath & Bold Arrow)
+   🔼 Distinct Ultra-Premium Curtain Roll-Up Handle (Unified Sync Up/Down Animation)
    ========================================================================== */
-@keyframes iconSlowRollUpBob {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-4px);
-  }
-}
-
-.icon-rollup-bob {
-  animation: iconSlowRollUpBob 2.2s ease-in-out infinite;
-  will-change: transform;
-}
-
-/* Continuous Slow Breathing & Rolling Hint on the Handle (ጥቅልል ... ዝርግት የሚል) */
-@keyframes curtainHandleRollBreath {
+@keyframes curtainHandleUnifiedBob {
   0%, 100% {
     transform: translate(-50%, 0);
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.85), 0 0 16px rgba(249, 176, 60, 0.3);
     border-color: rgba(249, 176, 60, 0.6);
   }
-  40% {
-    /* ጥቅልል ሲል (slow upward roll/tuck hint) */
-    transform: translate(-50%, -3px);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.7), 0 0 25px rgba(249, 176, 60, 0.55);
-    border-color: rgba(249, 176, 60, 0.9);
-  }
-  75% {
-    /* ዝርግት ሲል (gentle return & unroll) */
-    transform: translate(-50%, 1px);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9), 0 0 18px rgba(249, 176, 60, 0.35);
-    border-color: rgba(249, 176, 60, 0.65);
+  50% {
+    /* Entire handle (frame + text + icon) smoothly glides up in 100% perfect sync */
+    transform: translate(-50%, -4px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.7), 0 0 25px rgba(249, 176, 60, 0.6);
+    border-color: rgba(249, 176, 60, 0.95);
   }
 }
 
@@ -494,13 +473,29 @@ body {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.85), 0 0 22px rgba(249, 176, 60, 0.35);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  animation: curtainHandleRollBreath 4.5s ease-in-out infinite;
+  animation: curtainHandleUnifiedBob 3s ease-in-out infinite;
   will-change: transform, box-shadow, border-color;
 }
 
 .curtain-rollup-handle:hover {
   border-color: #f9b03c;
   box-shadow: 0 12px 35px rgba(0, 0, 0, 0.95), 0 0 35px rgba(249, 176, 60, 0.75);
+}
+
+/* Subtle, non-intrusive Search Beacon Glow on mobile search bar */
+@keyframes searchBeaconGlow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(249, 176, 60, 0);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 14px 1px rgba(249, 176, 60, 0.22);
+    border-color: rgba(249, 176, 60, 0.5);
+  }
+}
+
+.search-input-beacon {
+  animation: searchBeaconGlow 3.5s ease-in-out infinite;
 }
 
 .curtain-nav-transition {
