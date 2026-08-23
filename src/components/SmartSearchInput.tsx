@@ -59,7 +59,7 @@ export default function SmartSearchInput({
 
   return (
     <div className={`relative w-full ${className}`} ref={dropdownRef}>
-      <div className={`relative group ${compact ? 'rounded-xl' : 'shadow-xl rounded-full'}`}>
+      <div className={`relative group ${compact ? 'rounded-xl search-box-glow-pulse' : 'shadow-xl rounded-full'}`}>
         <div className={`absolute ${compact ? 'left-3' : 'left-5'} top-1/2 -translate-y-1/2 flex items-center pointer-events-none z-10`}>
           <i className={`fa-solid fa-magnifying-glass ${compact ? 'text-xs text-[#f9b03c]' : 'text-lg text-gray-400 group-focus-within:text-primary'} transition-colors`}></i>
         </div>

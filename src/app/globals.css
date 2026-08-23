@@ -482,20 +482,23 @@ body {
   box-shadow: 0 12px 35px rgba(0, 0, 0, 0.95), 0 0 35px rgba(249, 176, 60, 0.75);
 }
 
-/* Subtle, non-intrusive Search Beacon Glow on mobile search bar */
-@keyframes searchBeaconGlow {
+/* Dynamic Bright/Blur Pulsating Glow on Search Box (ድምቅ ... ብለር ... ድምቅ ... ብለር) */
+@keyframes searchBoxGlowPulse {
   0%, 100% {
-    box-shadow: 0 0 0 0 rgba(249, 176, 60, 0);
-    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 0 10px 1px rgba(249, 176, 60, 0.15);
+    border-color: rgba(249, 176, 60, 0.4);
+    filter: brightness(0.98);
   }
   50% {
-    box-shadow: 0 0 14px 1px rgba(249, 176, 60, 0.22);
-    border-color: rgba(249, 176, 60, 0.5);
+    box-shadow: 0 0 24px 3px rgba(249, 176, 60, 0.45);
+    border-color: rgba(249, 176, 60, 0.85);
+    filter: brightness(1.06);
   }
 }
 
-.search-input-beacon {
-  animation: searchBeaconGlow 3.5s ease-in-out infinite;
+.search-box-glow-pulse {
+  animation: searchBoxGlowPulse 2.8s ease-in-out infinite;
+  will-change: box-shadow, border-color, filter;
 }
 
 .curtain-nav-transition {

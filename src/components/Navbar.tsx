@@ -607,10 +607,7 @@ export default function Navbar() {
                     {t('all_courses') || 'ሁሉም ኮርሶች'}
                   </span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/20">Explore</span>
-                  <i className="fa-solid fa-chevron-right text-[11px] text-gray-400 group-hover:text-[#f9b03c] group-hover:translate-x-0.5 transition-all"></i>
-                </div>
+                <i className="fa-solid fa-chevron-right text-[11px] text-gray-400 group-hover:text-[#f9b03c] group-hover:translate-x-0.5 transition-all"></i>
               </button>
             </div>
 
@@ -644,15 +641,11 @@ export default function Navbar() {
                   <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-gradient-to-tr from-amber-500/20 to-orange-500/20 border border-amber-500/40 text-amber-500 shadow-sm transition-transform group-hover:scale-110">
                     <i className="fa-solid fa-wand-magic-sparkles text-xs icon-anim-ai"></i>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs sm:text-sm font-black text-gray-900 dark:text-white notranslate">Tsehay AI</span>
-                    <span className="text-[8px] font-black tracking-wider bg-gradient-to-r from-[#f9b03c] to-amber-500 text-black px-1.5 py-0.2 rounded-full">24/7</span>
-                  </div>
+                  <span className="text-xs sm:text-sm font-black text-gray-900 dark:text-white notranslate">
+                    Tsehay AI
+                  </span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[9px] font-bold bg-[#f9b03c]/20 text-[#f9b03c] px-2 py-0.5 rounded-full">AI Tutor</span>
-                  <i className="fa-solid fa-chevron-right text-[11px] text-gray-400 group-hover:text-[#f9b03c] group-hover:translate-x-0.5 transition-all"></i>
-                </div>
+                <i className="fa-solid fa-chevron-right text-[11px] text-gray-400 group-hover:text-[#f9b03c] group-hover:translate-x-0.5 transition-all"></i>
               </button>
             </div>
 
@@ -670,9 +663,11 @@ export default function Navbar() {
                   <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-[#f9b03c]/20 text-[#f9b03c] transition-transform group-hover:scale-110">
                     <i className="fa-solid fa-mobile-screen-button text-xs icon-anim-app"></i>
                   </div>
-                  <span className="text-xs sm:text-sm font-black text-gray-900 dark:text-white">አፕሊኬሽኑን ጫን (Install App)</span>
+                  <span className="text-xs sm:text-sm font-black text-gray-900 dark:text-white">
+                    አፕሊኬሽኑን ጫን (Install App)
+                  </span>
                 </div>
-                <span className="text-[9px] bg-[#f9b03c] text-black font-black px-2 py-0.5 rounded-md shadow-sm">FREE</span>
+                <i className="fa-solid fa-chevron-right text-[11px] text-gray-400 group-hover:text-[#f9b03c] group-hover:translate-x-0.5 transition-all"></i>
               </button>
             </div>
 
