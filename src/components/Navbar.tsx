@@ -301,15 +301,15 @@ export default function Navbar() {
             : '-translate-y-full opacity-0 pointer-events-none'
         }`}
       >
-        {/* 🔼 SINGLE DISTINCT ULTRA-PREMIUM ROLL-UP TAB AT BOTTOM CENTER (ወደ ላይ ወደ ላይ የምትል አኒሜሽን) */}
+        {/* 🔼 SINGLE DISTINCT ULTRA-PREMIUM ROLL-UP TAB AT BOTTOM CENTER (ጥቅልል / ዝርግት የሚል አኒሜሽን) */}
         <button 
           type="button"
           onClick={closeCurtain}
-          className="curtain-rollup-handle absolute -bottom-8 sm:-bottom-9 left-1/2 -translate-x-1/2 px-5 sm:px-6 py-1 sm:py-1.5 rounded-b-2xl flex items-center gap-2 text-white hover:text-[#f9b03c] cursor-pointer group active:scale-95 z-[10000]"
+          className="curtain-rollup-handle px-5 sm:px-6 py-1 sm:py-1.5 rounded-b-2xl flex items-center gap-2 text-white hover:text-[#f9b03c] cursor-pointer group active:scale-95 z-[10000]"
           title="ወደ ላይ መልሰህ እጠፍ (Roll Up Menu)"
         >
-          <div className="w-4 h-4 rounded-full bg-gradient-to-tr from-[#f9b03c] to-amber-400 text-black flex items-center justify-center text-[9px] font-black shadow-md">
-            <i className="fa-solid fa-chevron-up icon-rollup-bob"></i>
+          <div className="w-4 h-4 rounded-full bg-gradient-to-tr from-[#f9b03c] to-amber-400 text-black flex items-center justify-center text-[10px] font-black shadow-md">
+            <i className="fa-solid fa-chevron-up icon-rollup-bob text-[11px] font-black"></i>
           </div>
           <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-gray-200 group-hover:text-[#f9b03c] font-heading">
             ወደ ላይ እጠፍ (Roll Up)

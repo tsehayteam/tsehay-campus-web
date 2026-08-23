@@ -446,36 +446,61 @@ body {
 }
 
 /* ==========================================================================
-   🔼 Distinct Ultra-Premium Curtain Roll-Up Handle Styling & Bob Animation
+   🔼 Distinct Ultra-Premium Curtain Roll-Up Handle (Slow Rolling Breath & Bold Arrow)
    ========================================================================== */
-@keyframes rollUpNudgeUp {
+@keyframes iconSlowRollUpBob {
   0%, 100% {
     transform: translateY(0);
   }
   50% {
-    transform: translateY(-3.5px);
+    transform: translateY(-4px);
   }
 }
 
 .icon-rollup-bob {
-  animation: rollUpNudgeUp 1.8s ease-in-out infinite;
+  animation: iconSlowRollUpBob 2.2s ease-in-out infinite;
   will-change: transform;
 }
 
+/* Continuous Slow Breathing & Rolling Hint on the Handle (ጥቅልል ... ዝርግት የሚል) */
+@keyframes curtainHandleRollBreath {
+  0%, 100% {
+    transform: translate(-50%, 0);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.85), 0 0 16px rgba(249, 176, 60, 0.3);
+    border-color: rgba(249, 176, 60, 0.6);
+  }
+  40% {
+    /* ጥቅልል ሲል (slow upward roll/tuck hint) */
+    transform: translate(-50%, -3px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.7), 0 0 25px rgba(249, 176, 60, 0.55);
+    border-color: rgba(249, 176, 60, 0.9);
+  }
+  75% {
+    /* ዝርግት ሲል (gentle return & unroll) */
+    transform: translate(-50%, 1px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9), 0 0 18px rgba(249, 176, 60, 0.35);
+    border-color: rgba(249, 176, 60, 0.65);
+  }
+}
+
 .curtain-rollup-handle {
+  position: absolute;
+  bottom: -32px;
+  left: 50%;
+  transform: translate(-50%, 0);
   background: rgba(3, 5, 9, 0.96);
   border: 1.5px solid rgba(249, 176, 60, 0.65);
   border-top: none;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.85), 0 0 22px rgba(249, 176, 60, 0.35);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: curtainHandleRollBreath 4.5s ease-in-out infinite;
+  will-change: transform, box-shadow, border-color;
 }
 
 .curtain-rollup-handle:hover {
   border-color: #f9b03c;
-  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.9), 0 0 30px rgba(249, 176, 60, 0.6);
-  transform: translate(-50%, 2px) scale(1.04);
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.95), 0 0 35px rgba(249, 176, 60, 0.75);
 }
 
 .curtain-nav-transition {
