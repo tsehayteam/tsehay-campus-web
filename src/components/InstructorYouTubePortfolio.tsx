@@ -111,23 +111,30 @@ export default function InstructorYouTubePortfolio() {
               </div>
             </div>
 
-            {/* 100% Flush Box-Fitting Video Player / Clean Thumbnail */}
+            {/* 100% Full-View Uncropped Video Player / Clean Thumbnail */}
             <div className="relative aspect-video w-full overflow-hidden bg-black flex items-center justify-center">
               {playingLocal ? (
                 <div className="w-full h-full relative overflow-hidden">
-                  {/* YouTube Iframe Scaled to Crop Out YouTube Titles, AI Badges, & Watermarks */}
+                  {/* YouTube Iframe Full View without Unwanted Cropping */}
                   <iframe
                     src={localEmbedUrl}
                     title="ሀገርኛ ዩቲዩብ ቻናል"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
                     allowFullScreen
-                    className="w-full h-full border-0 absolute inset-0 z-10 scale-[1.24] origin-center pointer-events-auto"
+                    className="w-full h-full border-0 absolute inset-0 z-10 pointer-events-auto"
                   />
 
-                  {/* 🛡️ Click Shields: Completely blocks clicks on YouTube logo/title from navigating away */}
-                  <div className="absolute top-0 left-0 right-0 h-16 z-30 pointer-events-auto bg-transparent" onClick={(e) => e.stopPropagation()} />
-                  <div className="absolute bottom-0 right-0 w-36 h-14 z-30 pointer-events-auto bg-transparent" onClick={(e) => e.stopPropagation()} />
-                  <div className="absolute bottom-0 left-0 w-24 h-14 z-30 pointer-events-auto bg-transparent" onClick={(e) => e.stopPropagation()} />
+                  {/* 🛡️ Click Shields: Transparent blocker over YouTube Logo & External Redirect links */}
+                  <div 
+                    className="absolute top-0 left-0 w-[70%] h-14 z-20 pointer-events-auto cursor-default bg-transparent" 
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); }} 
+                    title="Tsehay Campus In-App Player"
+                  />
+                  <div 
+                    className="absolute bottom-0 right-0 w-32 h-12 z-20 pointer-events-auto cursor-default bg-transparent" 
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); }} 
+                    title="Tsehay Campus In-App Player"
+                  />
 
                   {/* Clean Floating Close / Reset Button */}
                   <button 
@@ -146,7 +153,7 @@ export default function InstructorYouTubePortfolio() {
                   className="w-full h-full absolute inset-0 cursor-pointer group/thumb flex items-center justify-center overflow-hidden"
                   title="ቪዲዮውን ለማጫወት ተምኔሉን ይጫኑ (Click thumbnail to Play)"
                 >
-                  {/* Clean 100% Flush Thumbnail Fitting Box Without Any Overlay Obstruction */}
+                  {/* Clean 100% Flush Thumbnail Fitting Box */}
                   <img
                     src={localThumbnail}
                     alt="ሀገርኛ ዩቲዩብ ቻናል"
@@ -177,23 +184,30 @@ export default function InstructorYouTubePortfolio() {
               </div>
             </div>
 
-            {/* 100% Flush Box-Fitting Video Player / Clean Thumbnail */}
+            {/* 100% Full-View Uncropped Video Player / Clean Thumbnail */}
             <div className="relative aspect-video w-full overflow-hidden bg-black flex items-center justify-center">
               {playingInternational ? (
                 <div className="w-full h-full relative overflow-hidden">
-                  {/* YouTube Iframe Scaled to Crop Out YouTube Titles, AI Badges, & Watermarks; cc_load_policy=0 disables subtitles */}
+                  {/* YouTube Iframe Full View without Unwanted Cropping; cc_load_policy=0 disables subtitles */}
                   <iframe
                     src={internationalEmbedUrl}
                     title="ዓለም አቀፍ ዩቲዩብ ቻናል"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
                     allowFullScreen
-                    className="w-full h-full border-0 absolute inset-0 z-10 scale-[1.24] origin-center pointer-events-auto"
+                    className="w-full h-full border-0 absolute inset-0 z-10 pointer-events-auto"
                   />
 
-                  {/* 🛡️ Click Shields: Completely blocks clicks on YouTube logo/title from navigating away */}
-                  <div className="absolute top-0 left-0 right-0 h-16 z-30 pointer-events-auto bg-transparent" onClick={(e) => e.stopPropagation()} />
-                  <div className="absolute bottom-0 right-0 w-36 h-14 z-30 pointer-events-auto bg-transparent" onClick={(e) => e.stopPropagation()} />
-                  <div className="absolute bottom-0 left-0 w-24 h-14 z-30 pointer-events-auto bg-transparent" onClick={(e) => e.stopPropagation()} />
+                  {/* 🛡️ Click Shields: Transparent blocker over YouTube Logo & External Redirect links */}
+                  <div 
+                    className="absolute top-0 left-0 w-[70%] h-14 z-20 pointer-events-auto cursor-default bg-transparent" 
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); }} 
+                    title="Tsehay Campus In-App Player"
+                  />
+                  <div 
+                    className="absolute bottom-0 right-0 w-32 h-12 z-20 pointer-events-auto cursor-default bg-transparent" 
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); }} 
+                    title="Tsehay Campus In-App Player"
+                  />
 
                   {/* Clean Floating Close / Reset Button */}
                   <button 
@@ -212,7 +226,7 @@ export default function InstructorYouTubePortfolio() {
                   className="w-full h-full absolute inset-0 cursor-pointer group/thumb flex items-center justify-center overflow-hidden"
                   title="ቪዲዮውን ለማጫወት ተምኔሉን ይጫኑ (Click thumbnail to Play)"
                 >
-                  {/* Clean 100% Flush Thumbnail Fitting Box Without Any Overlay Obstruction */}
+                  {/* Clean 100% Flush Thumbnail Fitting Box */}
                   <img
                     src={internationalThumbnail}
                     alt="ዓለም አቀፍ ዩቲዩብ ቻናል"
