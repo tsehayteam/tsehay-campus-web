@@ -5,7 +5,13 @@ import { db } from '@/lib/firebase/config';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { validateReferralCode, recordReferralUsage } from '@/lib/referralService';
 
-export default function PaymentModal({ course, onClose }: any) {
+export default function PaymentModal({ course: propCourse, onClose: propOnClose }: any) {
+  const [internalCourse, setInternalCourse] = useState<any>(null);
+  const [isOpen, setIsOpen] = useState(false);
+
+  const course = propCourse || internalCourse;
+  const isControlled = propCourse !== undefined;
+
   const [paymethod, setPaymethod] = useState('lakipay');
   const [isPaying, setIsPaying] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -18,10 +24,61 @@ export default function PaymentModal({ course, onClose }: any) {
   const [referralMessage, setReferralMessage] = useState<{ text: string; isError: boolean } | null>(null);
   const [isValidatingCode, setIsValidatingCode] = useState(false);
 
+  // Listen for global open events if not controlled
+  useEffect(() => {
+    const handleOpenEvent = (e: any) => {
+      const targetCourse = e.detail?.course || e.detail;
+      if (targetCourse) {
+        setInternalCourse(targetCourse);
+        setIsOpen(true);
+        setError(null);
+        setIsPaying(false);
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('open-payment-modal', handleOpenEvent);
+      (window as any).openPaymentModal = (targetCourse: any) => {
+        setInternalCourse(targetCourse);
+        setIsOpen(true);
+        setError(null);
+        setIsPaying(false);
+      };
+    }
+
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('open-payment-modal', handleOpenEvent);
+      }
+    };
+  }, []);
+
+  const handleClose = () => {
+    if (isControlled && propOnClose) {
+      propOnClose();
+    } else {
+      setIsOpen(false);
+      setInternalCourse(null);
+    }
+  };
+
+  // Lock body scroll when modal is active
+  useEffect(() => {
+    const shouldShow = isControlled ? Boolean(propCourse) : isOpen;
+    if (shouldShow) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isControlled, propCourse, isOpen]);
+
   // Close modal on Escape key press and check cached referral code
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') handleClose();
     };
     window.addEventListener('keydown', handleKeyDown);
 
@@ -35,15 +92,34 @@ export default function PaymentModal({ course, onClose }: any) {
     } catch (e) {}
 
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onClose, course?.id]);
+  }, [course?.id]);
 
+  if (isControlled && !propCourse) return null;
+  if (!isControlled && !isOpen) return null;
   if (!course) return null;
 
-  const originalPrice = Number(course.price) || 4500;
-  const isOriginallyFree = course.isFree || course.price === 'Free' || course.price === '0' || course.price === 0;
+  // Safe Price Parsing
+  const rawPrice = course.price;
+  let originalPrice = 4500;
+  if (typeof rawPrice === 'number') {
+    originalPrice = rawPrice;
+  } else if (typeof rawPrice === 'string') {
+    const parsed = parseFloat(rawPrice.replace(/[^0-9.]/g, ''));
+    if (!isNaN(parsed) && parsed > 0) {
+      originalPrice = parsed;
+    }
+  }
+
+  const isOriginallyFree = Boolean(
+    course.isFree === true || 
+    course.price === 'Free' || 
+    course.price === '0' || 
+    course.price === 0 || 
+    originalPrice === 0
+  );
 
   // Calculate dynamic discounted price
-  const isFreeAfterDiscount = isOriginallyFree || discountPercent >= 100;
+  const isFreeAfterDiscount = Boolean(isOriginallyFree || (discountPercent >= 100));
   const finalPrice = isFreeAfterDiscount 
     ? 0 
     : Math.max(0, Math.round(originalPrice * (1 - discountPercent / 100)));
@@ -229,219 +305,239 @@ export default function PaymentModal({ course, onClose }: any) {
   };
 
   return (
-    <div id="payment-modal" className="fixed inset-0 bg-black/80 z-[9999] flex items-center justify-center backdrop-blur-md p-4" onClick={(e) => { if (e.target === e.currentTarget && !isPaying) onClose() }}>
-        <div className="bg-[#0b1329] text-white w-full max-w-lg max-h-[92vh] overflow-y-auto rounded-[2rem] shadow-2xl flex flex-col relative animate-[modalPop_0.3s_ease-out_forwards] border border-gray-800">
-            
-            {/* Header */}
-            <div className="p-5 sm:p-6 border-b border-gray-800/80 flex justify-between items-center bg-[#0d1735] sticky top-0 z-20">
-                <div>
-                  <h3 className="font-black text-lg sm:text-xl font-heading text-white flex items-center gap-2">
-                      <i className="fa-solid fa-shield-halved text-amber-400"></i> ደህንነቱ የተጠበቀ ክፍያ
-                  </h3>
-                  <p className="text-xs text-emerald-400 font-bold mt-0.5">100% አስተማማኝ እና ፈጣን ማረጋገጫ</p>
-                </div>
-                <button onClick={onClose} disabled={isPaying} className="text-gray-400 hover:text-white hover:bg-gray-800 transition text-xl p-2 rounded-full w-9 h-9 flex items-center justify-center cursor-pointer disabled:opacity-50">
-                    <i className="fa-solid fa-xmark"></i>
-                </button>
-            </div>
-            
-            <div className="p-4 sm:p-6 space-y-5">
-                
-                {/* Course Info Card */}
-                <div className="flex items-center gap-3.5 bg-[#121e3d] p-3.5 sm:p-4 rounded-2xl border border-gray-800">
-                    <img 
-                      src={course.image || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1000&auto=format&fit=crop'} 
-                      className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl object-cover shadow-sm border border-gray-700 shrink-0" 
-                      alt={course.title} 
-                    />
-                    <div className="flex-1 min-w-0">
-                        <p className="text-[10px] text-amber-400/90 font-black mb-1 uppercase tracking-widest">የተመረጠው ኮርስ</p>
-                        <h4 className="font-black text-white text-xs sm:text-base leading-snug line-clamp-2">{course.title}</h4>
-                    </div>
-                </div>
-
-                {/* 🌟 PROMO CODE (የቅናሽ ኮድ) INPUT BOX */}
-                <div className="bg-[#121e3d]/80 p-3.5 sm:p-4 rounded-2xl border border-gray-800 space-y-2">
-                    <div className="flex items-center justify-between text-xs font-bold text-gray-300">
-                        <span className="flex items-center gap-1.5">
-                            <i className="fa-solid fa-tag text-[#f9b03c]"></i>
-                            <span>የቅናሽ ኮድ (Promo Code)</span>
-                        </span>
-                        {appliedCode && (
-                            <span className="text-[11px] text-emerald-400 font-bold">✓ ተተግብሯል ({discountPercent}% OFF)</span>
-                        )}
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                        <input 
-                          type="text" 
-                          placeholder="የቅናሽ ኮድ (Promo Code)" 
-                          value={referralInput}
-                          disabled={isPaying || !!appliedCode}
-                          onChange={(e) => setReferralInput(e.target.value.toUpperCase().replace(/\s+/g, ''))}
-                          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); validateAndApplyCode(); } }}
-                          className="flex-1 bg-[#0b1329] border border-gray-700 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-mono uppercase tracking-wider text-white outline-none focus:border-[#f9b03c] transition disabled:opacity-60"
-                        />
-                        {appliedCode ? (
-                            <button
-                              type="button"
-                              onClick={handleRemoveCode}
-                              disabled={isPaying}
-                              className="bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/40 font-bold px-3.5 py-2.5 rounded-xl text-xs transition cursor-pointer shrink-0"
-                            >
-                                አስወግድ
-                            </button>
-                        ) : (
-                            <button
-                              type="button"
-                              onClick={() => validateAndApplyCode()}
-                              disabled={isValidatingCode || isPaying || !referralInput.trim()}
-                              className="bg-[#f9b03c] hover:bg-[#ffbe53] text-slate-950 font-black px-4 py-2.5 rounded-xl text-xs transition shadow-sm hover:shadow-[0_0_15px_rgba(249,176,60,0.3)] cursor-pointer disabled:opacity-50 shrink-0 active:scale-95"
-                            >
-                                {isValidatingCode ? <i className="fa-solid fa-spinner fa-spin"></i> : 'ተጠቀም (Apply)'}
-                            </button>
-                        )}
-                    </div>
-
-                    {referralMessage && (
-                        <div className={`text-xs font-bold flex items-center gap-1.5 pt-0.5 animate-in fade-in ${referralMessage.isError ? 'text-red-400' : 'text-emerald-400'}`}>
-                            <i className={`fa-solid ${referralMessage.isError ? 'fa-circle-exclamation' : 'fa-circle-check'}`}></i>
-                            <span>{referralMessage.text}</span>
-                        </div>
-                    )}
-                </div>
-
-                {/* Total Calculation Display */}
-                <div className="flex justify-between items-center py-3 border-y border-gray-800">
-                    <div>
-                      <span className="text-gray-300 font-bold text-xs sm:text-sm uppercase tracking-wider block">ጠቅላላ የሚከፈል</span>
-                      {appliedCode && discountPercent > 0 && !isOriginallyFree && (
-                        <span className="text-xs text-gray-400 line-through">
-                          {originalPrice.toLocaleString()} ETB
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-right">
-                      <span className="text-xl sm:text-3xl font-black text-amber-400 tracking-tight">
-                          {isFreeAfterDiscount ? "0 ETB (ነፃ)" : `${finalPrice.toLocaleString()} ETB`}
-                      </span>
-                      {appliedCode && discountPercent > 0 && (
-                        <span className="block text-[11px] font-bold text-emerald-400">
-                          {discountPercent >= 100 ? '100% FREE Pass' : `${discountPercent}% ቅናሽ ተደርጓል`}
-                        </span>
-                      )}
-                    </div>
-                </div>
-
-                {/* Payment Methods (Hidden if 100% Free) */}
-                {!isFreeAfterDiscount && (
-                    <div className="space-y-3">
-                        <h4 className="font-bold text-xs text-gray-400 uppercase tracking-wider">የክፍያ አማራጭ ይምረጡ</h4>
-                        
-                        {/* Option 1: LakiPay */}
-                        <label 
-                          className={`payment-option flex items-center justify-between p-3.5 sm:p-4 rounded-2xl border cursor-pointer transition-all ${paymethod === 'lakipay' ? 'border-amber-500 bg-amber-500/10 shadow-lg ring-2 ring-amber-500/40 scale-[1.01]' : 'border-gray-800 bg-[#121e3d] hover:bg-[#16254a]'}`}
-                        >
-                            <div className="flex items-center gap-3 min-w-0 pr-2">
-                                <input 
-                                  type="radio" 
-                                  name="paymethod" 
-                                  value="lakipay" 
-                                  checked={paymethod === 'lakipay'} 
-                                  onChange={() => setPaymethod('lakipay')} 
-                                  className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500 focus:ring-amber-500 accent-amber-500 cursor-pointer shrink-0" 
-                                />
-                                <div className="min-w-0">
-                                    <span className="font-black text-white text-base sm:text-lg block leading-tight">LakiPay</span>
-                                    <span className="text-[11px] sm:text-xs text-amber-400 font-bold block mt-0.5">For Local Payments</span>
-                                </div>
-                            </div>
-                            <div className="bg-white w-24 sm:w-32 h-9 sm:h-10 px-2 rounded-xl flex items-center justify-center shadow-md border border-gray-200 shrink-0">
-                                <img src="/lakipay-logo.svg" alt="LakiPay" className="h-5 sm:h-6 w-auto max-w-full object-contain" />
-                            </div>
-                        </label>
-
-                        {/* Option 2: PayPal */}
-                        <label 
-                          className={`payment-option flex items-center justify-between p-3.5 sm:p-4 rounded-2xl border cursor-pointer transition-all ${paymethod === 'paypal' ? 'border-blue-500 bg-blue-500/10 shadow-lg ring-2 ring-blue-500/40 scale-[1.01]' : 'border-gray-800 bg-[#121e3d] hover:bg-[#16254a]'}`}
-                        >
-                            <div className="flex items-center gap-3 min-w-0 pr-2">
-                                <input 
-                                  type="radio" 
-                                  name="paymethod" 
-                                  value="paypal" 
-                                  checked={paymethod === 'paypal'} 
-                                  onChange={() => setPaymethod('paypal')} 
-                                  className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500 focus:ring-blue-500 accent-blue-500 cursor-pointer shrink-0" 
-                                />
-                                <div className="min-w-0">
-                                    <span className="font-black text-white text-base sm:text-lg block leading-tight">PayPal</span>
-                                    <span className="text-[11px] sm:text-xs text-blue-400 font-bold block mt-0.5">For International Payments</span>
-                                </div>
-                            </div>
-                            <div className="bg-white w-24 sm:w-32 h-9 sm:h-10 px-2 rounded-xl flex items-center justify-center shadow-md border border-gray-200 shrink-0">
-                                <img src="/paypal-logo.svg" alt="PayPal" className="h-5 sm:h-6 w-auto max-w-full object-contain" />
-                            </div>
-                        </label>
-
-                        {/* Option 3: NOWPayments (Crypto) */}
-                        <label 
-                          className={`payment-option flex items-center justify-between p-3.5 sm:p-4 rounded-2xl border cursor-pointer transition-all ${paymethod === 'crypto' || paymethod === 'nowpayments' ? 'border-cyan-500 bg-cyan-500/10 shadow-lg ring-2 ring-cyan-500/40 scale-[1.01]' : 'border-gray-800 bg-[#121e3d] hover:bg-[#16254a]'}`}
-                        >
-                            <div className="flex items-center gap-3 min-w-0 pr-2">
-                                <input 
-                                  type="radio" 
-                                  name="paymethod" 
-                                  value="nowpayments" 
-                                  checked={paymethod === 'crypto' || paymethod === 'nowpayments'} 
-                                  onChange={() => setPaymethod('nowpayments')} 
-                                  className="w-4 h-4 sm:w-5 sm:h-5 text-cyan-500 focus:ring-cyan-500 accent-cyan-500 cursor-pointer shrink-0" 
-                                />
-                                <div className="min-w-0">
-                                    <span className="font-black text-white text-base sm:text-lg block leading-tight">NowPayments</span>
-                                    <span className="text-[11px] sm:text-xs text-cyan-400 font-bold block mt-0.5">For Crypto Payments</span>
-                                </div>
-                            </div>
-                            <div className="bg-white w-24 sm:w-32 h-9 sm:h-10 px-2 rounded-xl flex items-center justify-center shadow-md border border-gray-200 shrink-0">
-                                <img src="/nowpayments-logo.svg" alt="NOWPayments" className="h-5 sm:h-6 w-auto max-w-full object-contain" />
-                            </div>
-                        </label>
-                    </div>
-                )}
-
-                {error && <div className="bg-red-900/40 text-red-300 border border-red-800 p-3.5 rounded-xl font-bold text-xs text-center animate-in fade-in">{error}</div>}
-
-                {/* Primary Proceed Button */}
-                <button 
-                  onClick={handlePayment} 
-                  disabled={isPaying} 
-                  className="w-full bg-[#f9b03c] hover:bg-[#ffbe53] text-slate-950 font-black py-4 rounded-2xl text-base transition-all shadow-lg hover:shadow-[0_0_25px_rgba(249,176,60,0.4)] flex items-center justify-center gap-2 group disabled:opacity-70 cursor-pointer active:scale-[0.98]"
-                >
-                    {isPaying ? (
-                        <>
-                            <div className="w-5 h-5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin"></div>
-                            <span>በማስኬድ ላይ...</span>
-                        </>
-                    ) : isFreeAfterDiscount ? (
-                        <>
-                            <i className="fa-solid fa-gift text-lg"></i>
-                            <span>በነፃ ይመዝገቡ (Enroll 100% Free) 🎉</span>
-                        </>
-                    ) : (
-                        <>
-                            <span>ወደ ክፍያ ይቀጥሉ ({finalPrice.toLocaleString()} ETB)</span> 
-                            <i className="fa-solid fa-arrow-up-right-from-square group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform"></i>
-                        </>
-                    )}
-                </button>
-            </div>
+    <div 
+      id="payment-modal-backdrop" 
+      className="fixed inset-0 z-[9999999] bg-black/85 backdrop-blur-xl flex items-center justify-center p-3 sm:p-5 overflow-y-auto overscroll-none animate-in fade-in duration-300"
+      onClick={(e) => { 
+        if (e.target === e.currentTarget && !isPaying) handleClose(); 
+      }}
+    >
+      {/* Centered Modal Card */}
+      <div 
+        className="bg-[#0b1329] text-white w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-[2rem] shadow-[0_25px_80px_rgba(0,0,0,0.9)] flex flex-col relative border border-gray-800/90 my-auto animate-[modalCenterPop_0.35s_cubic-bezier(0.16,1,0.3,1)_forwards]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="p-5 sm:p-6 border-b border-gray-800/80 flex justify-between items-center bg-[#0d1735] sticky top-0 z-20">
+          <div>
+            <h3 className="font-black text-lg sm:text-xl font-heading text-white flex items-center gap-2">
+              <i className="fa-solid fa-shield-halved text-[#f9b03c]"></i> ደህንነቱ የተጠበቀ ክፍያ
+            </h3>
+            <p className="text-xs text-emerald-400 font-bold mt-0.5">100% አስተማማኝ እና ፈጣን ማረጋገጫ</p>
+          </div>
+          <button 
+            type="button"
+            onClick={handleClose} 
+            disabled={isPaying} 
+            className="text-gray-400 hover:text-white hover:bg-gray-800 transition text-xl p-2 rounded-full w-9 h-9 flex items-center justify-center cursor-pointer disabled:opacity-50"
+            title="ዝጋ (Close)"
+          >
+            <i className="fa-solid fa-xmark"></i>
+          </button>
         </div>
-        <style dangerouslySetInnerHTML={{__html: `
-            @keyframes modalPop {
-                0% { opacity: 0; transform: scale(0.92) translateY(12px); }
-                100% { opacity: 1; transform: scale(1) translateY(0); }
-            }
-        `}} />
+        
+        <div className="p-5 sm:p-6 space-y-5">
+          {/* Course Info Card */}
+          <div className="flex items-center gap-3.5 bg-[#121e3d] p-3.5 sm:p-4 rounded-2xl border border-gray-800">
+            <img 
+              src={course.image || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1000&auto=format&fit=crop'} 
+              className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl object-cover shadow-sm border border-gray-700 shrink-0" 
+              alt={course.title} 
+            />
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] text-[#f9b03c] font-black mb-1 uppercase tracking-widest">የተመረጠው ኮርስ</p>
+              <h4 className="font-black text-white text-xs sm:text-base leading-snug line-clamp-2">{course.title}</h4>
+            </div>
+          </div>
+
+          {/* 🌟 PROMO CODE (የቅናሽ ኮድ) INPUT BOX */}
+          <div className="bg-[#121e3d]/80 p-3.5 sm:p-4 rounded-2xl border border-gray-800 space-y-2">
+            <div className="flex items-center justify-between text-xs font-bold text-gray-300">
+              <span className="flex items-center gap-1.5">
+                <i className="fa-solid fa-tag text-[#f9b03c]"></i>
+                <span>የቅናሽ ኮድ (Promo Code)</span>
+              </span>
+              {appliedCode && (
+                <span className="text-[11px] text-emerald-400 font-bold">✓ ተተግብሯል ({discountPercent}% OFF)</span>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <input 
+                type="text" 
+                placeholder="የቅናሽ ኮድ (Promo Code)" 
+                value={referralInput}
+                disabled={isPaying || !!appliedCode}
+                onChange={(e) => setReferralInput(e.target.value.toUpperCase().replace(/\s+/g, ''))}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); validateAndApplyCode(); } }}
+                className="flex-1 bg-[#0b1329] border border-gray-700 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-mono uppercase tracking-wider text-white outline-none focus:border-[#f9b03c] transition disabled:opacity-60"
+              />
+              {appliedCode ? (
+                <button
+                  type="button"
+                  onClick={handleRemoveCode}
+                  disabled={isPaying}
+                  className="bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/40 font-bold px-3.5 py-2.5 rounded-xl text-xs transition cursor-pointer shrink-0"
+                >
+                  አስወግድ
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => validateAndApplyCode()}
+                  disabled={isValidatingCode || isPaying || !referralInput.trim()}
+                  className="bg-[#f9b03c] hover:bg-[#ffbe53] text-slate-950 font-black px-4 py-2.5 rounded-xl text-xs transition shadow-sm hover:shadow-[0_0_15px_rgba(249,176,60,0.3)] cursor-pointer disabled:opacity-50 shrink-0 active:scale-95"
+                >
+                  {isValidatingCode ? <i className="fa-solid fa-spinner fa-spin"></i> : 'ተጠቀም (Apply)'}
+                </button>
+              )}
+            </div>
+
+            {referralMessage && (
+              <div className={`text-xs font-bold flex items-center gap-1.5 pt-0.5 animate-in fade-in ${referralMessage.isError ? 'text-red-400' : 'text-emerald-400'}`}>
+                <i className={`fa-solid ${referralMessage.isError ? 'fa-circle-exclamation' : 'fa-circle-check'}`}></i>
+                <span>{referralMessage.text}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Total Calculation Display */}
+          <div className="flex justify-between items-center py-3 border-y border-gray-800">
+            <div>
+              <span className="text-gray-300 font-bold text-xs sm:text-sm uppercase tracking-wider block">ጠቅላላ የሚከፈል</span>
+              {appliedCode && discountPercent > 0 && !isOriginallyFree && (
+                <span className="text-xs text-gray-400 line-through">
+                  {originalPrice.toLocaleString()} ETB
+                </span>
+              )}
+            </div>
+            <div className="text-right">
+              <span className="text-xl sm:text-3xl font-black text-[#f9b03c] tracking-tight">
+                {isFreeAfterDiscount ? "0 ETB (ነፃ)" : `${finalPrice.toLocaleString()} ETB`}
+              </span>
+              {appliedCode && discountPercent > 0 && (
+                <span className="block text-[11px] font-bold text-emerald-400">
+                  {discountPercent >= 100 ? '100% FREE Pass' : `${discountPercent}% ቅናሽ ተደርጓል`}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Payment Methods (Always clearly displayed if not 100% free) */}
+          {!isFreeAfterDiscount && (
+            <div className="space-y-3">
+              <h4 className="font-bold text-xs text-gray-400 uppercase tracking-wider">የክፍያ አማራጭ ይምረጡ</h4>
+              
+              {/* Option 1: LakiPay */}
+              <label 
+                className={`payment-option flex items-center justify-between p-3.5 sm:p-4 rounded-2xl border cursor-pointer transition-all ${paymethod === 'lakipay' ? 'border-[#f9b03c] bg-amber-500/10 shadow-lg ring-2 ring-amber-500/40 scale-[1.01]' : 'border-gray-800 bg-[#121e3d] hover:bg-[#16254a]'}`}
+              >
+                <div className="flex items-center gap-3 min-w-0 pr-2">
+                  <input 
+                    type="radio" 
+                    name="paymethod" 
+                    value="lakipay" 
+                    checked={paymethod === 'lakipay'} 
+                    onChange={() => setPaymethod('lakipay')} 
+                    className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500 focus:ring-amber-500 accent-amber-500 cursor-pointer shrink-0" 
+                  />
+                  <div className="min-w-0">
+                    <span className="font-black text-white text-base sm:text-lg block leading-tight">LakiPay</span>
+                    <span className="text-[11px] sm:text-xs text-[#f9b03c] font-bold block mt-0.5">For Local Payments</span>
+                  </div>
+                </div>
+                <div className="bg-white w-24 sm:w-32 h-9 sm:h-10 px-2 rounded-xl flex items-center justify-center shadow-md border border-gray-200 shrink-0">
+                  <img src="/lakipay-logo.svg" alt="LakiPay" className="h-5 sm:h-6 w-auto max-w-full object-contain" />
+                </div>
+              </label>
+
+              {/* Option 2: PayPal */}
+              <label 
+                className={`payment-option flex items-center justify-between p-3.5 sm:p-4 rounded-2xl border cursor-pointer transition-all ${paymethod === 'paypal' ? 'border-blue-500 bg-blue-500/10 shadow-lg ring-2 ring-blue-500/40 scale-[1.01]' : 'border-gray-800 bg-[#121e3d] hover:bg-[#16254a]'}`}
+              >
+                <div className="flex items-center gap-3 min-w-0 pr-2">
+                  <input 
+                    type="radio" 
+                    name="paymethod" 
+                    value="paypal" 
+                    checked={paymethod === 'paypal'} 
+                    onChange={() => setPaymethod('paypal')} 
+                    className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500 focus:ring-blue-500 accent-blue-500 cursor-pointer shrink-0" 
+                  />
+                  <div className="min-w-0">
+                    <span className="font-black text-white text-base sm:text-lg block leading-tight">PayPal</span>
+                    <span className="text-[11px] sm:text-xs text-blue-400 font-bold block mt-0.5">For International Payments</span>
+                  </div>
+                </div>
+                <div className="bg-white w-24 sm:w-32 h-9 sm:h-10 px-2 rounded-xl flex items-center justify-center shadow-md border border-gray-200 shrink-0">
+                  <img src="/paypal-logo.svg" alt="PayPal" className="h-5 sm:h-6 w-auto max-w-full object-contain" />
+                </div>
+              </label>
+
+              {/* Option 3: NOWPayments (Crypto) */}
+              <label 
+                className={`payment-option flex items-center justify-between p-3.5 sm:p-4 rounded-2xl border cursor-pointer transition-all ${paymethod === 'crypto' || paymethod === 'nowpayments' ? 'border-cyan-500 bg-cyan-500/10 shadow-lg ring-2 ring-cyan-500/40 scale-[1.01]' : 'border-gray-800 bg-[#121e3d] hover:bg-[#16254a]'}`}
+              >
+                <div className="flex items-center gap-3 min-w-0 pr-2">
+                  <input 
+                    type="radio" 
+                    name="paymethod" 
+                    value="nowpayments" 
+                    checked={paymethod === 'crypto' || paymethod === 'nowpayments'} 
+                    onChange={() => setPaymethod('nowpayments')} 
+                    className="w-4 h-4 sm:w-5 sm:h-5 text-cyan-500 focus:ring-cyan-500 accent-cyan-500 cursor-pointer shrink-0" 
+                  />
+                  <div className="min-w-0">
+                    <span className="font-black text-white text-base sm:text-lg block leading-tight">NowPayments</span>
+                    <span className="text-[11px] sm:text-xs text-cyan-400 font-bold block mt-0.5">For Crypto Payments</span>
+                  </div>
+                </div>
+                <div className="bg-white w-24 sm:w-32 h-9 sm:h-10 px-2 rounded-xl flex items-center justify-center shadow-md border border-gray-200 shrink-0">
+                  <img src="/nowpayments-logo.svg" alt="NOWPayments" className="h-5 sm:h-6 w-auto max-w-full object-contain" />
+                </div>
+              </label>
+            </div>
+          )}
+
+          {error && (
+            <div className="bg-red-900/40 text-red-300 border border-red-800 p-3.5 rounded-xl font-bold text-xs text-center animate-in fade-in">
+              {error}
+            </div>
+          )}
+
+          {/* Primary Proceed Button */}
+          <button 
+            type="button"
+            onClick={handlePayment} 
+            disabled={isPaying} 
+            className="w-full bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#f9b03c] hover:brightness-110 text-slate-950 font-black py-4 rounded-2xl text-base transition-all shadow-lg hover:shadow-[0_0_25px_rgba(249,176,60,0.4)] flex items-center justify-center gap-2 group disabled:opacity-70 cursor-pointer active:scale-[0.98]"
+          >
+            {isPaying ? (
+              <>
+                <div className="w-5 h-5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin"></div>
+                <span>በማስኬድ ላይ...</span>
+              </>
+            ) : isFreeAfterDiscount ? (
+              <>
+                <i className="fa-solid fa-gift text-lg"></i>
+                <span>በነፃ ይመዝገቡ (Enroll 100% Free) 🎉</span>
+              </>
+            ) : (
+              <>
+                <span>ወደ ክፍያ ይቀጥሉ ({finalPrice.toLocaleString()} ETB)</span> 
+                <i className="fa-solid fa-arrow-up-right-from-square group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform"></i>
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+
+      <style dangerouslySetInnerHTML={{__html: `
+        @keyframes modalCenterPop {
+          0% { opacity: 0; transform: scale(0.90) translateY(20px); }
+          100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+      `}} />
     </div>
   );
 }
