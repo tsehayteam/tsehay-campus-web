@@ -129,6 +129,32 @@ body {
   }
 }
 
+@keyframes logoSpringReveal {
+  0% {
+    opacity: 0;
+    transform: scale(0.6) rotate(-18deg);
+    filter: drop-shadow(0 0 0 rgba(249, 176, 60, 0));
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.16) rotate(6deg);
+    filter: drop-shadow(0 0 16px rgba(249, 176, 60, 0.8));
+  }
+  85% {
+    transform: scale(0.96) rotate(-2deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+    filter: drop-shadow(0 0 8px rgba(249, 176, 60, 0.3));
+  }
+}
+
+.logo-spring-reveal {
+  animation: logoSpringReveal 0.65s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+  will-change: transform, opacity, filter;
+}
+
 .brand-entrance {
   animation: brandEntrance 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   will-change: opacity, transform;

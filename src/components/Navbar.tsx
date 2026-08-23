@@ -343,9 +343,10 @@ export default function Navbar() {
               className="flex-shrink-0 flex items-center cursor-pointer group gap-2.5 mr-2 sm:mr-4 lg:mr-8 brand-entrance"
             >
               <img 
+                key={`brand-logo-${animationKey}`}
                 src="/tc-logo.jpg" 
                 alt="Tsehay Campus Logo" 
-                className="h-8 sm:h-12 w-auto object-contain rounded-xl shadow-sm border border-black/10 dark:border-white/10 group-hover:border-[#f9b03c]/50 brand-logo-img hover:scale-105 transition-transform duration-300" 
+                className="h-8 sm:h-12 w-auto object-contain rounded-xl shadow-sm border border-black/10 dark:border-white/10 group-hover:border-[#f9b03c]/50 brand-logo-img hover:scale-105 transition-transform duration-300 logo-spring-reveal" 
                 onError={(e) => { e.currentTarget.src = 'https://ui-avatars.com/api/?name=TC&background=3268BA&color=fff'; }} 
               />
               
@@ -542,7 +543,7 @@ export default function Navbar() {
             </div>
 
             {/* Mobile Top Header Actions: 🔄 Swapped (Language Switcher first, then Brightness/Theme Toggle) */}
-            <div className="lg:hidden flex items-center gap-2">
+            <div key={`mobile-actions-${animationKey}`} className="lg:hidden flex items-center gap-2 animate-fade-in-scale">
               {/* 1. Language Switcher (Left) */}
               <button 
                 onClick={toggleLanguage} 
