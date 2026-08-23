@@ -17,8 +17,11 @@ export function extractYouTubeId(urlOrId: string): string {
   return trimmed;
 }
 
+const DEFAULT_LOCAL_URL = 'https://www.youtube.com/watch?v=mgdOMtW6J8k';
+const DEFAULT_INTERNATIONAL_URL = 'https://www.youtube.com/watch?v=B-s71n0dHUk';
+
 export default function InstructorYouTubePortfolio() {
-  // Synchronously initialize from local storage cache to eliminate ANY flash/blink of old sample data
+  // Synchronously initialize from local storage cache or verified defaults
   const [localVideoUrl, setLocalVideoUrl] = useState<string>(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -29,7 +32,7 @@ export default function InstructorYouTubePortfolio() {
         }
       } catch (e) {}
     }
-    return '';
+    return DEFAULT_LOCAL_URL;
   });
 
   const [internationalVideoUrl, setInternationalVideoUrl] = useState<string>(() => {
@@ -42,12 +45,11 @@ export default function InstructorYouTubePortfolio() {
         }
       } catch (e) {}
     }
-    return '';
+    return DEFAULT_INTERNATIONAL_URL;
   });
 
   const [playingLocal, setPlayingLocal] = useState(false);
   const [playingInternational, setPlayingInternational] = useState(false);
-  const [hasLoaded, setHasLoaded] = useState(false);
 
   useEffect(() => {
     // 1. Fetch from Server Admin API (Guaranteed latest updated state)
@@ -59,12 +61,11 @@ export default function InstructorYouTubePortfolio() {
           if (json.data) {
             if (json.data.localVideoUrl) setLocalVideoUrl(json.data.localVideoUrl);
             if (json.data.internationalVideoUrl) setInternationalVideoUrl(json.data.internationalVideoUrl);
-            setHasLoaded(true);
 
             try {
               localStorage.setItem('tsehay_youtube_portfolio_cache', JSON.stringify({
-                localVideoUrl: json.data.localVideoUrl,
-                internationalVideoUrl: json.data.internationalVideoUrl
+                localVideoUrl: json.data.localVideoUrl || DEFAULT_LOCAL_URL,
+                internationalVideoUrl: json.data.internationalVideoUrl || DEFAULT_INTERNATIONAL_URL
               }));
             } catch (e) {}
           }
@@ -83,7 +84,6 @@ export default function InstructorYouTubePortfolio() {
         if (data) {
           if (data.localVideoUrl) setLocalVideoUrl(data.localVideoUrl);
           if (data.internationalVideoUrl) setInternationalVideoUrl(data.internationalVideoUrl);
-          setHasLoaded(true);
 
           try {
             localStorage.setItem('tsehay_youtube_portfolio_cache', JSON.stringify({
@@ -104,7 +104,6 @@ export default function InstructorYouTubePortfolio() {
         if (data) {
           if (data.localVideoUrl) setLocalVideoUrl(data.localVideoUrl);
           if (data.internationalVideoUrl) setInternationalVideoUrl(data.internationalVideoUrl);
-          setHasLoaded(true);
 
           try {
             localStorage.setItem('tsehay_youtube_portfolio_cache', JSON.stringify({
@@ -124,19 +123,14 @@ export default function InstructorYouTubePortfolio() {
     };
   }, []);
 
-  const localVideoId = extractYouTubeId(localVideoUrl);
-  const internationalVideoId = extractYouTubeId(internationalVideoUrl);
+  const localVideoId = extractYouTubeId(localVideoUrl) || 'mgdOMtW6J8k';
+  const internationalVideoId = extractYouTubeId(internationalVideoUrl) || 'B-s71n0dHUk';
 
-  const localThumbnail = localVideoId ? `https://img.youtube.com/vi/${localVideoId}/hqdefault.jpg` : '';
-  const internationalThumbnail = internationalVideoId ? `https://img.youtube.com/vi/${internationalVideoId}/hqdefault.jpg` : '';
+  const localThumbnail = `https://img.youtube.com/vi/${localVideoId}/hqdefault.jpg`;
+  const internationalThumbnail = `https://img.youtube.com/vi/${internationalVideoId}/hqdefault.jpg`;
 
-  const localEmbedUrl = localVideoId 
-    ? `https://www.youtube-nocookie.com/embed/${localVideoId}?autoplay=1&modestbranding=1&rel=0&controls=1&showinfo=0&iv_load_policy=3&cc_load_policy=0&cc_lang_pref=none&playsinline=1&loop=1&playlist=${localVideoId}&enablejsapi=1`
-    : '';
-
-  const internationalEmbedUrl = internationalVideoId 
-    ? `https://www.youtube-nocookie.com/embed/${internationalVideoId}?autoplay=1&modestbranding=1&rel=0&controls=1&showinfo=0&iv_load_policy=3&cc_load_policy=0&cc_lang_pref=none&playsinline=1&loop=1&playlist=${internationalVideoId}&enablejsapi=1`
-    : '';
+  const localEmbedUrl = `https://www.youtube-nocookie.com/embed/${localVideoId}?autoplay=1&modestbranding=1&rel=0&controls=1&showinfo=0&iv_load_policy=3&cc_load_policy=0&cc_lang_pref=none&playsinline=1&loop=1&playlist=${localVideoId}&enablejsapi=1`;
+  const internationalEmbedUrl = `https://www.youtube-nocookie.com/embed/${internationalVideoId}?autoplay=1&modestbranding=1&rel=0&controls=1&showinfo=0&iv_load_policy=3&cc_load_policy=0&cc_lang_pref=none&playsinline=1&loop=1&playlist=${internationalVideoId}&enablejsapi=1`;
 
   return (
     <section id="instructor-portfolio" className="relative py-16 sm:py-24 overflow-hidden bg-slate-900/60 dark:bg-[#030509]/90 border-b border-gray-200/80 dark:border-white/10 scrolly-reveal">
@@ -219,31 +213,25 @@ export default function InstructorYouTubePortfolio() {
                 </div>
               ) : (
                 <div 
-                  onClick={() => { if (localVideoId) setPlayingLocal(true); }}
+                  onClick={() => setPlayingLocal(true)}
                   className="w-full h-full absolute inset-0 cursor-pointer group/thumb flex items-center justify-center overflow-hidden bg-slate-950"
                   title="ቪዲዮውን ለማጫወት ተምኔሉን ይጫኑ (Click thumbnail to Play)"
                 >
-                  {localThumbnail ? (
-                    <img
-                      src={localThumbnail}
-                      alt="ሀገርኛ ዩቲዩብ ቻናል"
-                      className="absolute inset-0 w-full h-full object-cover group-hover/thumb:scale-[1.03] transition-transform duration-500"
-                    />
-                  ) : (
-                    <div className="flex flex-col items-center justify-center text-slate-500 animate-pulse gap-2">
-                      <i className="fa-brands fa-youtube text-4xl text-[#3268ba]"></i>
-                      <span className="text-xs font-bold font-mono">ሀገርኛ ቻናል በመጫን ላይ...</span>
-                    </div>
-                  )}
+                  <img
+                    src={localThumbnail}
+                    alt="ሀገርኛ ዩቲዩብ ቻናል"
+                    className="absolute inset-0 w-full h-full object-cover group-hover/thumb:scale-[1.03] transition-transform duration-500"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = `https://img.youtube.com/vi/${localVideoId}/default.jpg`;
+                    }}
+                  />
 
                   {/* Play Button Overlay */}
-                  {localThumbnail && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/25 group-hover/thumb:bg-black/10 transition-colors">
-                      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[#f9b03c] text-slate-950 flex items-center justify-center text-2xl shadow-[0_0_30px_rgba(249,176,60,0.6)] group-hover/thumb:scale-110 transition-transform">
-                        <i className="fa-solid fa-play ml-1"></i>
-                      </div>
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/25 group-hover/thumb:bg-black/10 transition-colors">
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[#f9b03c] text-slate-950 flex items-center justify-center text-2xl shadow-[0_0_30px_rgba(249,176,60,0.6)] group-hover/thumb:scale-110 transition-transform">
+                      <i className="fa-solid fa-play ml-1"></i>
                     </div>
-                  )}
+                  </div>
                 </div>
               )}
             </div>
@@ -304,31 +292,25 @@ export default function InstructorYouTubePortfolio() {
                 </div>
               ) : (
                 <div 
-                  onClick={() => { if (internationalVideoId) setPlayingInternational(true); }}
+                  onClick={() => setPlayingInternational(true)}
                   className="w-full h-full absolute inset-0 cursor-pointer group/thumb flex items-center justify-center overflow-hidden bg-slate-950"
                   title="ቪዲዮውን ለማጫወት ተምኔሉን ይጫኑ (Click thumbnail to Play)"
                 >
-                  {internationalThumbnail ? (
-                    <img
-                      src={internationalThumbnail}
-                      alt="ዓለም አቀፍ ዩቲዩብ ቻናል"
-                      className="absolute inset-0 w-full h-full object-cover group-hover/thumb:scale-[1.03] transition-transform duration-500"
-                    />
-                  ) : (
-                    <div className="flex flex-col items-center justify-center text-slate-500 animate-pulse gap-2">
-                      <i className="fa-brands fa-youtube text-4xl text-[#f9b03c]"></i>
-                      <span className="text-xs font-bold font-mono">ዓለም አቀፍ ቻናል በመጫን ላይ...</span>
-                    </div>
-                  )}
+                  <img
+                    src={internationalThumbnail}
+                    alt="ዓለም አቀፍ ዩቲዩብ ቻናል"
+                    className="absolute inset-0 w-full h-full object-cover group-hover/thumb:scale-[1.03] transition-transform duration-500"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = `https://img.youtube.com/vi/${internationalVideoId}/default.jpg`;
+                    }}
+                  />
 
                   {/* Play Button Overlay */}
-                  {internationalThumbnail && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/25 group-hover/thumb:bg-black/10 transition-colors">
-                      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[#f9b03c] text-slate-950 flex items-center justify-center text-2xl shadow-[0_0_30px_rgba(249,176,60,0.6)] group-hover/thumb:scale-110 transition-transform">
-                        <i className="fa-solid fa-play ml-1"></i>
-                      </div>
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/25 group-hover/thumb:bg-black/10 transition-colors">
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[#f9b03c] text-slate-950 flex items-center justify-center text-2xl shadow-[0_0_30px_rgba(249,176,60,0.6)] group-hover/thumb:scale-110 transition-transform">
+                      <i className="fa-solid fa-play ml-1"></i>
                     </div>
-                  )}
+                  </div>
                 </div>
               )}
             </div>
