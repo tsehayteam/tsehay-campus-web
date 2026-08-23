@@ -1,5 +1,5 @@
 import { db } from '@/lib/firebase/config';
-import { doc, getDoc, collection, getDocs, setDoc, deleteDoc, serverTimestamp, increment } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp, increment } from 'firebase/firestore';
 
 export interface PromoCode {
   id?: string;
@@ -27,9 +27,11 @@ export async function validateReferralCode(
 
   const cleanCode = inputCode.trim().toUpperCase();
 
+  try {
     let data: PromoCode | null = null;
     let foundId = cleanCode;
 
+    // 1. Attempt direct client Firestore read
     try {
       const codeRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'referral_codes', cleanCode);
       const codeSnap = await getDoc(codeRef);
@@ -41,7 +43,7 @@ export async function validateReferralCode(
       console.warn("Client referral code check fallback to API:", clientErr);
     }
 
-    // Fallback to Server API if client read was blocked or not found
+    // 2. Fallback to Server API if client read was blocked or not found
     if (!data) {
       try {
         const res = await fetch('/api/admin/referral-codes');
