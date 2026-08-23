@@ -504,30 +504,20 @@ export default function Navbar() {
 
               <button 
                 onClick={toggleLanguage} 
-                className="flex items-center gap-1 px-2 py-1.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-100 dark:bg-white/5 text-gray-800 dark:text-white font-bold text-xs transition notranslate active:scale-95" 
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-100 dark:bg-white/5 text-gray-800 dark:text-white font-bold text-xs transition notranslate active:scale-95" 
                 translate="no"
               >
                 <i className="fa-solid fa-globe text-[10px] opacity-75"></i>
                 <span>{lang === 'am' ? 'EN' : 'አማ'}</span>
               </button>
-
-              <button 
-                onClick={closeCurtain} 
-                aria-label="Close menu curtain" 
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/30 text-[#f9b03c] font-black text-xs transition active:scale-95 cursor-pointer shadow-sm"
-                title="ወደ ላይ እጠፍ"
-              >
-                <i className="fa-solid fa-chevron-up text-[10px]"></i>
-                <span>እጠፍ</span>
-              </button>
             </div>
           </div>
 
           {/* 📱 Mobile Directly Visible Staggered Navigation Panel */}
-          <div key={`mobile-nav-${animationKey}`} className="md:hidden pb-4 pt-1 space-y-2.5 max-h-[78vh] overflow-y-auto pr-0.5">
+          <div key={`mobile-nav-${animationKey}`} className="md:hidden pb-3 pt-1 space-y-2 max-h-[75vh] overflow-y-auto pr-0.5">
             
-            {/* 1. Staggered Item 1: Smart Search */}
-            <div className="animate-nav-stagger-1 pb-0.5">
+            {/* 1. Staggered Item 1: Pop-Up Smart Search */}
+            <div className="animate-pop-up-search pb-0.5">
               <SmartSearchInput 
                 courses={allCourses} 
                 compact={true}
@@ -540,19 +530,16 @@ export default function Navbar() {
               <button 
                 type="button" 
                 onClick={() => { closeCurtain(); navigateTo('/'); }} 
-                className={`w-full flex items-center justify-between p-2.5 rounded-2xl mobile-nav-card ${isHome ? 'mobile-nav-card-active' : ''} text-left cursor-pointer group`}
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl mobile-nav-card ${isHome ? 'mobile-nav-card-active' : ''} text-left cursor-pointer group`}
               >
                 <div className="flex items-center gap-3">
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center transition-transform group-hover:scale-105 ${isHome ? 'bg-[#f9b03c] text-black shadow-md' : 'bg-gray-100 dark:bg-white/10 text-[#f9b03c]'}`}>
-                    <i className="fa-solid fa-house text-sm"></i>
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-transform group-hover:scale-105 ${isHome ? 'bg-[#f9b03c] text-black shadow-md' : 'bg-gray-100 dark:bg-white/10 text-[#f9b03c]'}`}>
+                    <i className="fa-solid fa-house text-xs"></i>
                   </div>
-                  <div>
-                    <div className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
-                      <span>{t('home') || 'መነሻ ገጽ'}</span>
-                      {isHome && <span className="w-1.5 h-1.5 rounded-full bg-[#f9b03c] animate-pulse"></span>}
-                    </div>
-                    <div className="text-[10px] text-gray-500 dark:text-gray-400">ዋና ገጽ እና ትኩስ መረጃዎች</div>
-                  </div>
+                  <span className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
+                    <span>{t('home') || 'መነሻ ገጽ'}</span>
+                    {isHome && <span className="w-1.5 h-1.5 rounded-full bg-[#f9b03c] animate-pulse"></span>}
+                  </span>
                 </div>
                 <i className="fa-solid fa-chevron-right text-xs text-gray-400 group-hover:text-[#f9b03c] group-hover:translate-x-0.5 transition-all"></i>
               </button>
@@ -563,19 +550,16 @@ export default function Navbar() {
               <button 
                 type="button" 
                 onClick={() => { closeCurtain(); navigateTo('/courses'); }} 
-                className={`w-full flex items-center justify-between p-2.5 rounded-2xl mobile-nav-card ${isCourses ? 'mobile-nav-card-active' : ''} text-left cursor-pointer group`}
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl mobile-nav-card ${isCourses ? 'mobile-nav-card-active' : ''} text-left cursor-pointer group`}
               >
                 <div className="flex items-center gap-3">
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center transition-transform group-hover:scale-105 ${isCourses ? 'bg-[#f9b03c] text-black shadow-md' : 'bg-gray-100 dark:bg-white/10 text-[#f9b03c]'}`}>
-                    <i className="fa-solid fa-graduation-cap text-sm"></i>
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-transform group-hover:scale-105 ${isCourses ? 'bg-[#f9b03c] text-black shadow-md' : 'bg-gray-100 dark:bg-white/10 text-[#f9b03c]'}`}>
+                    <i className="fa-solid fa-graduation-cap text-xs"></i>
                   </div>
-                  <div>
-                    <div className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
-                      <span>{t('all_courses') || 'ሁሉም ኮርሶች'}</span>
-                      {isCourses && <span className="w-1.5 h-1.5 rounded-full bg-[#f9b03c] animate-pulse"></span>}
-                    </div>
-                    <div className="text-[10px] text-gray-500 dark:text-gray-400">ዲጂታል ክህሎቶች እና ሰርተፍኬቶች</div>
-                  </div>
+                  <span className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
+                    <span>{t('all_courses') || 'ሁሉም ኮርሶች'}</span>
+                    {isCourses && <span className="w-1.5 h-1.5 rounded-full bg-[#f9b03c] animate-pulse"></span>}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/20">Explore</span>
@@ -589,19 +573,16 @@ export default function Navbar() {
               <button 
                 type="button" 
                 onClick={() => { closeCurtain(); navigateTo('/about'); }} 
-                className={`w-full flex items-center justify-between p-2.5 rounded-2xl mobile-nav-card ${isAbout ? 'mobile-nav-card-active' : ''} text-left cursor-pointer group`}
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl mobile-nav-card ${isAbout ? 'mobile-nav-card-active' : ''} text-left cursor-pointer group`}
               >
                 <div className="flex items-center gap-3">
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center transition-transform group-hover:scale-105 ${isAbout ? 'bg-[#f9b03c] text-black shadow-md' : 'bg-gray-100 dark:bg-white/10 text-[#f9b03c]'}`}>
-                    <i className="fa-solid fa-circle-info text-sm"></i>
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-transform group-hover:scale-105 ${isAbout ? 'bg-[#f9b03c] text-black shadow-md' : 'bg-gray-100 dark:bg-white/10 text-[#f9b03c]'}`}>
+                    <i className="fa-solid fa-circle-info text-xs"></i>
                   </div>
-                  <div>
-                    <div className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
-                      <span>{t('about_us') || 'ስለ እኛ'}</span>
-                      {isAbout && <span className="w-1.5 h-1.5 rounded-full bg-[#f9b03c] animate-pulse"></span>}
-                    </div>
-                    <div className="text-[10px] text-gray-500 dark:text-gray-400">ራዕይ፣ ተልዕኮ እና የመማሪያ መንገድ</div>
-                  </div>
+                  <span className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
+                    <span>{t('about_us') || 'ስለ እኛ'}</span>
+                    {isAbout && <span className="w-1.5 h-1.5 rounded-full bg-[#f9b03c] animate-pulse"></span>}
+                  </span>
                 </div>
                 <i className="fa-solid fa-chevron-right text-xs text-gray-400 group-hover:text-[#f9b03c] group-hover:translate-x-0.5 transition-all"></i>
               </button>
@@ -612,18 +593,15 @@ export default function Navbar() {
               <button 
                 type="button" 
                 onClick={() => { closeCurtain(); navigateTo('/#ai-feature'); }} 
-                className="w-full flex items-center justify-between p-2.5 rounded-2xl mobile-nav-card text-left cursor-pointer group"
+                className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl mobile-nav-card text-left cursor-pointer group"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-gradient-to-tr from-amber-500/20 to-orange-500/20 border border-amber-500/40 text-amber-500 shadow-sm transition-transform group-hover:scale-105">
-                    <i className="fa-solid fa-wand-magic-sparkles text-sm animate-pulse"></i>
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-gradient-to-tr from-amber-500/20 to-orange-500/20 border border-amber-500/40 text-amber-500 shadow-sm transition-transform group-hover:scale-105">
+                    <i className="fa-solid fa-wand-magic-sparkles text-xs animate-pulse"></i>
                   </div>
-                  <div>
-                    <div className="text-sm font-black text-gray-900 dark:text-white flex items-center gap-1.5">
-                      <span className="notranslate">Tsehay AI</span>
-                      <span className="text-[9px] font-black tracking-wider bg-gradient-to-r from-[#f9b03c] to-amber-500 text-black px-1.5 py-0.2 rounded-full">24/7</span>
-                    </div>
-                    <div className="text-[10px] text-gray-500 dark:text-gray-400">የግል AI መምህር እና ረዳት</div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-black text-gray-900 dark:text-white notranslate">Tsehay AI</span>
+                    <span className="text-[9px] font-black tracking-wider bg-gradient-to-r from-[#f9b03c] to-amber-500 text-black px-1.5 py-0.2 rounded-full">24/7</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -641,47 +619,36 @@ export default function Navbar() {
                   closeCurtain();
                   window.dispatchEvent(new CustomEvent('open-pwa-install'));
                 }} 
-                className="w-full flex items-center justify-between p-2.5 rounded-2xl mobile-nav-card bg-amber-500/5 dark:bg-amber-500/10 border-amber-500/30 text-left cursor-pointer group"
+                className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl mobile-nav-card bg-amber-500/5 dark:bg-amber-500/10 border-amber-500/30 text-left cursor-pointer group"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-[#f9b03c]/20 text-[#f9b03c] transition-transform group-hover:scale-105">
-                    <i className="fa-solid fa-mobile-screen-button text-sm"></i>
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-[#f9b03c]/20 text-[#f9b03c] transition-transform group-hover:scale-105">
+                    <i className="fa-solid fa-mobile-screen-button text-xs"></i>
                   </div>
-                  <div>
-                    <div className="text-sm font-black text-gray-900 dark:text-white">አፕሊኬሽኑን ጫን (Install App)</div>
-                    <div className="text-[10px] text-gray-500 dark:text-gray-400">ለስልክና ኮምፒውተር ፈጣን አፕ</div>
-                  </div>
+                  <span className="text-sm font-black text-gray-900 dark:text-white">አፕሊኬሽኑን ጫን (Install App)</span>
                 </div>
                 <span className="text-[9px] bg-[#f9b03c] text-black font-black px-2 py-0.5 rounded-md shadow-sm">FREE</span>
               </button>
             </div>
 
-            {/* 7. Staggered Item 7: Auth / Classroom Actions */}
-            <div className="animate-nav-stagger-7 pt-1">
+            {/* 7. Staggered Item 7: Ultra-Sleek Secondary Brand Color Login Action */}
+            <div className="animate-nav-stagger-7 pt-0.5">
               {!mounted || !user ? (
-                <div className="grid grid-cols-2 gap-2">
-                  <button 
-                    type="button" 
-                    onClick={() => { closeCurtain(); openAuthModal(false); }} 
-                    className="w-full py-2.5 rounded-xl border border-gray-300 dark:border-white/10 font-bold text-gray-800 dark:text-white hover:bg-gray-100 dark:hover:bg-white/5 transition text-center text-xs cursor-pointer shadow-sm active:scale-95"
-                  >
-                    {t('login') || 'ግባ'}
-                  </button>
-                  <button 
-                    type="button" 
-                    onClick={() => { closeCurtain(); openAuthModal(true); }} 
-                    className="w-full bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#f9b03c] text-slate-950 font-black py-2.5 rounded-xl shadow-[0_0_15px_rgba(249,176,60,0.3)] hover:scale-[1.02] active:scale-95 transition text-center text-xs cursor-pointer"
-                  >
-                    {t('register') || 'ተመዝገብ'}
-                  </button>
-                </div>
+                <button 
+                  type="button" 
+                  onClick={() => { closeCurtain(); openAuthModal(false); }} 
+                  className="w-full btn-login-secondary font-black py-2.5 rounded-xl shadow-lg flex items-center justify-center gap-2 text-sm cursor-pointer active:scale-95"
+                >
+                  <i className="fa-solid fa-arrow-right-to-bracket text-[#f9b03c]"></i>
+                  <span>{t('login') || 'ግባ (Login)'}</span>
+                </button>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <div className="flex items-center gap-2.5 p-2 rounded-xl bg-gray-100/70 dark:bg-white/5 border border-gray-200 dark:border-white/10">
                     <img 
                       src={navUserPhoto} 
                       alt={navUserName} 
-                      className="w-8 h-8 rounded-full border-2 border-[#f9b03c] object-cover shrink-0" 
+                      className="w-7 h-7 rounded-full border-2 border-[#f9b03c] object-cover shrink-0" 
                     />
                     <div className="min-w-0 flex-1">
                       <div className="text-xs font-bold text-gray-900 dark:text-white truncate">{navUserName}</div>
@@ -692,7 +659,7 @@ export default function Navbar() {
                   <button 
                     type="button" 
                     onClick={() => { closeCurtain(); navigateTo('/dashboard'); }} 
-                    className="w-full flex items-center justify-between px-3 py-2.5 bg-[#f9b03c]/15 border border-[#f9b03c]/40 text-gray-900 dark:text-white font-black rounded-xl hover:bg-[#f9b03c]/25 transition cursor-pointer text-xs"
+                    className="w-full flex items-center justify-between px-3 py-2 bg-[#f9b03c]/15 border border-[#f9b03c]/40 text-gray-900 dark:text-white font-black rounded-xl hover:bg-[#f9b03c]/25 transition cursor-pointer text-xs"
                   >
                     <span className="flex items-center gap-2">
                       <i className="fa-solid fa-graduation-cap text-[#f9b03c]"></i>
@@ -718,7 +685,7 @@ export default function Navbar() {
                   <button 
                     type="button" 
                     onClick={() => { closeCurtain(); handleSignOut(); }} 
-                    className="w-full text-red-500 font-bold py-2 hover:bg-red-500/10 rounded-xl border border-red-500/30 transition cursor-pointer text-center flex items-center justify-center gap-1.5 text-xs"
+                    className="w-full text-red-500 font-bold py-1.5 hover:bg-red-500/10 rounded-xl border border-red-500/30 transition cursor-pointer text-center flex items-center justify-center gap-1.5 text-xs"
                   >
                     <i className="fa-solid fa-arrow-right-from-bracket"></i> {t('logout') || 'ዘግተህ ውጣ (Logout)'}
                   </button>
