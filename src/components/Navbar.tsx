@@ -14,7 +14,7 @@ import { getCachedCourses } from "@/lib/courseCache";
 export default function Navbar() {
   const { user, isAdmin } = useAuth();
   const [mounted, setMounted] = useState(false);
-  const [isCurtainOpen, setIsCurtainOpen] = useState(true);
+  const [isCurtainOpen, setIsCurtainOpen] = useState(false);
   const [touchStartY, setTouchStartY] = useState<number | null>(null);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -22,6 +22,12 @@ export default function Navbar() {
   const [theme, setTheme] = useState('dark');
   const { lang, toggleLanguage, t } = useLanguage();
   const [animationKey, setAnimationKey] = useState(0);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerWidth >= 1024) {
+      setIsCurtainOpen(true);
+    }
+  }, []);
 
   // ✍️ Typewriter effect for brand logo text ("Tsehay Campus")
   const fullBrandName = "Tsehay Campus";
