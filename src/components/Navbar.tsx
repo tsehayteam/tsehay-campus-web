@@ -24,21 +24,8 @@ export default function Navbar() {
   const [animationKey, setAnimationKey] = useState(0);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      if (window.innerWidth >= 1024) {
-        setIsCurtainOpen(true);
-      } else {
-        setIsCurtainOpen(false);
-      }
-    }
-
-    const handleResize = () => {
-      if (window.innerWidth >= 1024) {
-        setIsCurtainOpen(true);
-      }
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    // Keep curtain closed by default so user manually clicks to open
+    setIsCurtainOpen(false);
   }, []);
 
   // ✍️ Typewriter effect for brand logo text ("Tsehay Campus")
@@ -190,9 +177,7 @@ export default function Navbar() {
 
   useEffect(() => {
     setShowProfileDropdown(false);
-    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
-      setIsCurtainOpen(false);
-    }
+    setIsCurtainOpen(false);
   }, [pathname]);
 
   useEffect(() => {
@@ -380,7 +365,7 @@ export default function Navbar() {
             </Link>
 
             {/* Desktop Navigation Links */}
-            <div className="hidden lg:flex items-center gap-7 h-full">
+            <div key={`desktop-nav-links-${animationKey}`} className="hidden lg:flex items-center gap-7 h-full">
               <Link 
                 href="/" 
                 onClick={() => {
@@ -388,7 +373,7 @@ export default function Navbar() {
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }
                 }}
-                className={`py-2 text-[14px] lg:text-[15px] font-bold flex items-center gap-1.5 transition-all duration-300 ${
+                className={`py-2 text-[14px] lg:text-[15px] font-bold flex items-center gap-1.5 transition-all duration-300 anim-nav-link-1 ${
                   isHome 
                     ? 'terafab-nav-link-active' 
                     : 'terafab-nav-link text-gray-700 dark:text-gray-300'
@@ -405,7 +390,7 @@ export default function Navbar() {
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }
                 }}
-                className={`py-2 text-[14px] lg:text-[15px] font-bold transition-all duration-300 ${
+                className={`py-2 text-[14px] lg:text-[15px] font-bold transition-all duration-300 anim-nav-link-2 ${
                   isAbout 
                     ? 'terafab-nav-link-active' 
                     : 'terafab-nav-link text-gray-700 dark:text-gray-300'
@@ -421,7 +406,7 @@ export default function Navbar() {
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }
                 }}
-                className={`py-2 text-[14px] lg:text-[15px] font-bold transition-all duration-300 ${
+                className={`py-2 text-[14px] lg:text-[15px] font-bold transition-all duration-300 anim-nav-link-3 ${
                   isCourses 
                     ? 'terafab-nav-link-active' 
                     : 'terafab-nav-link text-gray-700 dark:text-gray-300'
@@ -432,7 +417,7 @@ export default function Navbar() {
             </div>
             
             {/* Desktop Search Bar */}
-            <div className="flex-1 max-w-xs md:max-w-sm hidden md:flex items-center mx-2 lg:mx-4 relative z-[60]">
+            <div key={`desktop-search-${animationKey}`} className="flex-1 max-w-xs md:max-w-sm hidden md:flex items-center mx-2 lg:mx-4 relative z-[60] anim-nav-search">
               <SmartSearchInput 
                 courses={allCourses} 
                 compact={true}
@@ -441,7 +426,7 @@ export default function Navbar() {
             </div>
             
             {/* Desktop Right Action Items */}
-            <div className="hidden md:flex items-center gap-2 lg:gap-3 font-heading text-sm">
+            <div key={`desktop-actions-${animationKey}`} className="hidden md:flex items-center gap-2 lg:gap-3 font-heading text-sm">
               {/* Premium AI Feature Pill Button */}
               <button 
                 type="button"
@@ -458,10 +443,10 @@ export default function Navbar() {
                     }, 350);
                   }
                 }} 
-                className="terafab-ai-btn flex items-center gap-2 px-3.5 py-1.5 rounded-full text-gray-900 dark:text-white font-bold text-xs cursor-pointer notranslate active:scale-[0.98]"
+                className="terafab-ai-btn flex items-center gap-2 px-3.5 py-1.5 rounded-full text-gray-900 dark:text-white font-bold text-xs cursor-pointer notranslate active:scale-[0.98] anim-nav-ai group"
                 title="Tsehay AI 24/7 የግል መምህር"
               >
-                <i className="fa-solid fa-wand-magic-sparkles text-[#f9b03c] text-xs"></i> 
+                <i className="fa-solid fa-wand-magic-sparkles text-[#f9b03c] text-xs icon-anim-sparkle group-hover:rotate-12 transition-transform"></i> 
                 <span className="text-xs font-black tracking-wide">Tsehay AI</span>
               </button>
 
@@ -469,52 +454,53 @@ export default function Navbar() {
               <button 
                 type="button"
                 onClick={() => window.dispatchEvent(new CustomEvent('open-pwa-install'))}
-                className="btn-install-pwa hidden lg:flex items-center gap-1.5 px-3.5 py-1.5 rounded-full font-bold text-xs cursor-pointer notranslate"
+                className="btn-install-pwa hidden lg:flex items-center gap-1.5 px-3.5 py-1.5 rounded-full font-bold text-xs cursor-pointer notranslate anim-nav-app group"
                 title="አፕሊኬሽኑን በስልክዎ ወይም በኮምፒተርዎ ላይ ይጫኑ (Install App)"
               >
-                <i className="fa-solid fa-mobile-screen-button text-xs opacity-75"></i>
+                <i className="fa-solid fa-mobile-screen-button text-xs opacity-75 icon-anim-device group-hover:scale-110 transition-transform"></i>
                 <span>አፕ ጫን</span>
               </button>
 
               {/* Language Switcher */}
               <button 
                 onClick={toggleLanguage} 
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gray-200 dark:border-white/10 hover:border-[#f9b03c]/50 bg-gray-100/80 dark:bg-white/5 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-bold text-xs transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer notranslate" 
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gray-200 dark:border-white/10 hover:border-[#f9b03c]/50 bg-gray-100/80 dark:bg-white/5 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-bold text-xs transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer notranslate anim-nav-lang group" 
                 translate="no"
                 title="ቋንቋ ይቀይሩ / Switch Language"
               >
-                <i className="fa-solid fa-globe text-[11px] opacity-75"></i>
+                <i className="fa-solid fa-globe text-[11px] opacity-75 text-[#f9b03c] icon-anim-globe group-hover:rotate-45 transition-transform"></i>
                 <span>{lang === 'am' ? 'EN' : 'አማ'}</span>
               </button>
 
               {/* Dark/Light Mode Toggle */}
               <button 
                 onClick={toggleTheme} 
-                className="w-9 h-9 rounded-full border border-gray-200 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20 bg-gray-100/80 dark:bg-white/5 text-gray-700 dark:text-yellow-400 flex items-center justify-center text-xs transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+                className="w-9 h-9 rounded-full border border-gray-200 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20 bg-gray-100/80 dark:bg-white/5 text-gray-700 dark:text-yellow-400 flex items-center justify-center text-xs transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer anim-nav-theme group"
                 aria-label="Toggle dark/light mode"
               >
-                <i className={`fa-solid ${theme === 'dark' ? 'fa-moon' : 'fa-sun'}`}></i>
+                <i className={`fa-solid ${theme === 'dark' ? 'fa-moon' : 'fa-sun'} icon-anim-sunmoon group-hover:rotate-180 transition-transform duration-500`}></i>
               </button>
 
-              <div className="h-5 w-px bg-gray-200 dark:bg-white/10 mx-0.5"></div>
+              <div className="h-5 w-px bg-gray-200 dark:bg-white/10 mx-0.5 anim-nav-auth"></div>
               
               {!mounted || !user ? (
                 <button 
                   onClick={() => openAuthModal(false)} 
-                  className="bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#f9b03c] text-slate-950 font-black px-5 py-2 rounded-xl text-xs sm:text-sm shadow-[0_0_18px_rgba(249,176,60,0.25)] hover:shadow-[0_0_25px_rgba(249,176,60,0.5)] hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] whitespace-nowrap cursor-pointer"
+                  className="bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#f9b03c] text-slate-950 font-black px-5 py-2 rounded-xl text-xs sm:text-sm shadow-[0_0_18px_rgba(249,176,60,0.25)] hover:shadow-[0_0_25px_rgba(249,176,60,0.5)] hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] whitespace-nowrap cursor-pointer anim-nav-auth flex items-center gap-1.5 group"
                 >
-                  {t('login')}
+                  <i className="fa-solid fa-arrow-right-to-bracket text-xs icon-anim-auth group-hover:translate-x-0.5 transition-transform"></i>
+                  <span>{t('login')}</span>
                 </button>
               ) : (
-                <div className="relative" ref={profileDropdownRef}>
+                <div className="relative anim-nav-auth" ref={profileDropdownRef}>
                   <button 
                     onClick={() => setShowProfileDropdown(!showProfileDropdown)} 
-                    className="flex items-center gap-2 focus:outline-none cursor-pointer"
+                    className="flex items-center gap-2 focus:outline-none cursor-pointer group"
                   >
                     <img 
                       src={navUserPhoto} 
                       alt={navUserName} 
-                      className="w-9 h-9 rounded-full border-2 border-[#f9b03c] object-cover hover:scale-105 transition-transform duration-300 shadow-sm" 
+                      className="w-9 h-9 rounded-full border-2 border-[#f9b03c] object-cover hover:scale-105 transition-transform duration-300 shadow-sm icon-anim-auth" 
                       onError={(e) => {
                         (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(navUserName)}&background=f9b03c&color=111827&bold=true`;
                       }}
