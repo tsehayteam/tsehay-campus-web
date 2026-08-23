@@ -7,11 +7,11 @@ const MAX_REQUESTS_PER_WINDOW = 20;
 function getSmartFallbackReply(userPrompt: string): string {
     const p = (userPrompt || '').toLowerCase().trim();
     
-    if (p.includes('founder') || p.includes('መስራች') || p.includes('eyoub') || p.includes('እዮብ')) {
+    if (p.includes('founder') || p.includes('መስራች') || p.includes('eyoub') || p.includes('እዮብ') || p.includes('tsehay digital') || p.includes('ፀሐይ ዲጂታል') || p.includes('tsehay campus') || p.includes('ማን ነው') || p.includes('man new')) {
         return "የፀሐይ ካምፓስ (Tsehay Campus) መስራች እና ዋና አስተማሪ እዮብ ሳህሌ (Eyoub Sahle) ነው። እሱ የዲጂታል ማርኬቲንግ ባለሙያ እና የTsehay Digital (tsehay360.com) መስራች ነው።";
     }
     
-    if (p.includes('pay') || p.includes('ክፍያ') || p.includes('ቴሌብር') || p.includes('telebirr') || p.includes('ባንክ') || p.includes('lakipay')) {
+    if (p.includes('pay') || p.includes('ክፍያ') || p.includes('ቴሌብር') || p.includes('telebirr') || p.includes('ባንክ') || p.includes('lakipay') || p.includes('ዋጋ') || p.includes('price')) {
         return "ለኮርሶቻችን ክፍያ መፈጸም በጣም ቀላል ነው። በሀገር ውስጥ ካሉ በLakiPay (ላኪ ፔይ) አማካኝነት በቴሌብር፣ በሞባይል ዋሌት ወይም በባንክ ማስተላለፍ ይችላሉ። ከሀገር ውጭ ከሆኑ ደግሞ PayPal፣ የክሬዲት/ዴቢት ካርዶች (Credit/Debit Cards) ወይም ክሪፕቶ ከረንሲ መጠቀም ይችላሉ።";
     }
     
@@ -104,6 +104,12 @@ export async function POST(req: Request) {
 
     const apiKeys = [
         process.env.GEMINI_API_KEY,
+        process.env.GENINI_API_KEY,
+        process.env.GOOGLE_API_KEY,
+        process.env.GOOGLE_GENAI_API_KEY,
+        process.env.GEMINI_KEY,
+        process.env.GENINI_KEY,
+        process.env.GOOGLE_CLOUD_API_KEY,
         process.env.GEMINI_API_KEY_2,
         process.env.GEMINI_API_KEY_3
     ].filter(Boolean) as string[];
@@ -189,7 +195,14 @@ ${DEFAULT_SYSTEM_INSTRUCTION}
         contents: [{ role: "user", parts: [{ text: prompt }] }]
     };
 
-    const models = ['gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-1.5-pro', 'gemini-2.0-flash-lite'];
+    const models = [
+        'gemini-1.5-flash',
+        'gemini-1.5-flash-latest',
+        'gemini-2.0-flash',
+        'gemini-2.0-flash-001',
+        'gemini-1.5-pro',
+        'gemini-2.5-flash'
+    ];
     let lastErrorMsg = '';
     let success = false;
     let replyText = '';
@@ -202,7 +215,10 @@ ${DEFAULT_SYSTEM_INSTRUCTION}
 
                 const response = await fetch(apiUrl, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'x-goog-api-key': cleanedKey
+                    },
                     body: JSON.stringify(payload)
                 });
 
