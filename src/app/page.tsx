@@ -721,51 +721,48 @@ export default function Home() {
 
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-                {/* Left Side: Bold High-Converting Typography */}
+                {/* Left Side: Bold High-Converting Punchy Typography */}
                 <div className="flex flex-col text-left">
-                    <div className="inline-flex items-center gap-2 bg-[#f9b03c]/10 border border-[#f9b03c]/25 px-4 py-1.5 rounded-full mb-5 w-fit">
+                    <div className="inline-flex items-center gap-2 bg-[#f9b03c]/10 border border-[#f9b03c]/25 px-3.5 py-1 rounded-full mb-4 w-fit">
                         <span className="w-2 h-2 rounded-full bg-[#f9b03c] animate-pulse"></span>
-                        <span className="text-xs font-black uppercase tracking-widest text-[#f9b03c]">የእርስዎ የግል AI ረዳት</span>
+                        <span className="text-xs font-black uppercase tracking-widest text-[#f9b03c]">24/7 የግል AI ረዳት</span>
                     </div>
 
-                    <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black font-heading text-white mb-6 leading-[1.18] tracking-tight">
-                        በጥያቄዎ እና በቢዝነስዎ ውስጥ አብሮዎት የሚሰራ <span className="hero-headline-shift">የግል AI መምህር</span>
+                    <h2 className="text-3xl sm:text-4xl lg:text-[2.75rem] font-black font-heading text-slate-900 dark:text-white mb-4 leading-[1.18] tracking-tight">
+                        ጥያቄዎችዎን በቅጽበት የሚመልስ <span className="hero-headline-shift">የግል AI መምህር</span>
                     </h2>
 
-                    <p className="text-base sm:text-lg text-slate-300 font-body mb-8 leading-relaxed">
-                        በ Tsehay Campus ውስጥ እያንዳንዱ ተማሪ የራሱ የሆነ የ 24/7 የግል AI ረዳት አለው። በማንኛውም ሰዓት ጥያቄዎችን ይጠይቁ፣ የቢዝነስ ስልቶችን ያዘጋጁ፣ እና ተግባራዊ መመሪያዎችን በቅጽበት በአማርኛ ያግኙ።
+                    <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 font-body mb-6 leading-relaxed max-w-xl">
+                        በኮርሶችዎ ውስጥ ለሚገጥምዎት ማንኛውም ጥያቄ በሰከንዶች ውስጥ ተግባራዊ መፍትሄ፣ የቢዝነስ ስትራቴጂ እና ደረጃ በደረጃ መመሪያ የሚሰጥ የእርስዎ 24/7 ረዳት።
                     </p>
 
-                    {/* Value Prop Bullet Checklist */}
-                    <div className="space-y-4 mb-9">
-                        <div className="flex items-start gap-3.5">
-                            <div className="w-8 h-8 rounded-xl bg-[#f9b03c]/15 text-[#f9b03c] border border-[#f9b03c]/30 flex items-center justify-center text-sm shrink-0 mt-0.5 shadow-[0_0_10px_rgba(249,176,60,0.2)]">
+                    {/* Value Prop Bullet Checklist - Compact & Direct */}
+                    <div className="space-y-3 mb-7">
+                        <div className="flex items-center gap-3">
+                            <div className="w-7 h-7 rounded-lg bg-[#f9b03c]/15 text-[#f9b03c] border border-[#f9b03c]/30 flex items-center justify-center text-xs shrink-0 shadow-xs">
                                 <i className="fa-solid fa-bolt"></i>
                             </div>
-                            <div>
-                                <h4 className="text-white font-bold text-sm sm:text-base">ፈጣን እና ተግባራዊ መልሶች</h4>
-                                <p className="text-xs sm:text-sm text-gray-400">በኮርሶች ውስጥ ለሚገጥምዎት ማንኛውም ጥያቄ በሰከንዶች ውስጥ የተብራራ መልስ ያገኛሉ።</p>
-                            </div>
+                            <span className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200">
+                                ፈጣን ተግባራዊ መፍትሄ — በሰከንዶች ውስጥ የተብራራ ምላሽ
+                            </span>
                         </div>
 
-                        <div className="flex items-start gap-3.5">
-                            <div className="w-8 h-8 rounded-xl bg-[#3268ba]/20 text-[#5a93e8] border border-[#3268ba]/35 flex items-center justify-center text-sm shrink-0 mt-0.5 shadow-[0_0_10px_rgba(50,104,186,0.2)]">
+                        <div className="flex items-center gap-3">
+                            <div className="w-7 h-7 rounded-lg bg-[#3268ba]/20 text-[#5a93e8] border border-[#3268ba]/35 flex items-center justify-center text-xs shrink-0 shadow-xs">
                                 <i className="fa-solid fa-bullseye"></i>
                             </div>
-                            <div>
-                                <h4 className="text-white font-bold text-sm sm:text-base">በኢትዮጵያ ገበያ ላይ ያተኮረ የቢዝነስ ስትራቴጂ</h4>
-                                <p className="text-xs sm:text-sm text-gray-400">በሀገር ውስጥ ለሚሰሩ የኦንላይን ንግዶች እና ማስታወቂያዎች የተስተካከለ ተግባራዊ ምክር።</p>
-                            </div>
+                            <span className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200">
+                                ለሀገር ውስጥ ገበያ የተመቻቸ — በኢትዮጵያ ነባራዊ ሁኔታ ላይ ያተኮረ
+                            </span>
                         </div>
 
-                        <div className="flex items-start gap-3.5">
-                            <div className="w-8 h-8 rounded-xl bg-[#f9b03c]/15 text-[#f9b03c] border border-[#f9b03c]/30 flex items-center justify-center text-sm shrink-0 mt-0.5 shadow-[0_0_10px_rgba(249,176,60,0.2)]">
+                        <div className="flex items-center gap-3">
+                            <div className="w-7 h-7 rounded-lg bg-[#f9b03c]/15 text-[#f9b03c] border border-[#f9b03c]/30 flex items-center justify-center text-xs shrink-0 shadow-xs">
                                 <i className="fa-solid fa-comments"></i>
                             </div>
-                            <div>
-                                <h4 className="text-white font-bold text-sm sm:text-base">በአማርኛ እና በእንግሊዝኛ የሰለጠነ</h4>
-                                <p className="text-xs sm:text-sm text-gray-400">ጥያቄዎን በሚመችዎት ቋንቋ ይጠይቁ፣ ግልጽ እና ቀጥተኛ መመሪያ ያግኙ።</p>
-                            </div>
+                            <span className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200">
+                                በአማርኛ እና በእንግሊዝኛ — በሚመችዎት ቋንቋ ቀጥታ ይወያዩ
+                            </span>
                         </div>
                     </div>
 
@@ -773,10 +770,10 @@ export default function Home() {
                     <div className="flex flex-col sm:flex-row items-center gap-4">
                         <MagneticButton 
                             onClick={() => { document.getElementById('courses')?.scrollIntoView({behavior: 'smooth'}) }} 
-                            className="group terafab-btn-primary w-full sm:w-auto px-8 py-3.5 rounded-2xl flex items-center justify-center gap-3 text-sm sm:text-base cursor-pointer shadow-[0_0_30px_rgba(249,176,60,0.35)]"
+                            className="group terafab-btn-primary w-full sm:w-auto px-7 py-3 rounded-xl flex items-center justify-center gap-2.5 text-xs sm:text-sm font-black cursor-pointer shadow-[0_0_25px_rgba(249,176,60,0.35)]"
                         >
-                            <span>ኮርሶችን ያስሱ እና AI ን ያግኙ</span>
-                            <svg className="w-5 h-5 transition-transform duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:translate-x-1.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <span>ኮርሶችን ያስሱ እና ይማሩ</span>
+                            <svg className="w-4 h-4 transition-transform duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:translate-x-1.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M5 12h14"></path>
                                 <path d="m12 5 7 7-7 7"></path>
                             </svg>
