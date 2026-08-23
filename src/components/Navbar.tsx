@@ -177,6 +177,9 @@ export default function Navbar() {
 
   useEffect(() => {
     setShowProfileDropdown(false);
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+      setIsCurtainOpen(false);
+    }
   }, [pathname]);
 
   useEffect(() => {
