@@ -20,6 +20,8 @@ export default function PublicCertificateVerificationPage({ params }: PageProps)
   const [certData, setCertData] = useState<any>(null);
   const [copied, setCopied] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [showLinkedInModal, setShowLinkedInModal] = useState(false);
+  const [captionCopied, setCaptionCopied] = useState(false);
   const certificateRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -34,7 +36,6 @@ export default function PublicCertificateVerificationPage({ params }: PageProps)
           setCertData({ id: snap.id, ...snap.data() });
         } else {
           // 2. Intelligent fallback parse for valid certificate IDs
-          // Example: TC-YOUT-894201 or TC-2026-X8F9
           const isYouTube = /YOUT|VID|TUBE/i.test(certId);
           const isShein = /SHEIN|IMP|1688/i.test(certId);
           const isMarketing = /MARK|DIGI|ADS/i.test(certId);
@@ -64,7 +65,7 @@ export default function PublicCertificateVerificationPage({ params }: PageProps)
           courseTitle: 'የዩቲዩብ ስኬት ሚስጥሮች (YouTube Secrets Mastery)',
           score: 90,
           instructor: 'ኢዮብ ሳህሌ',
-          instructorTitle: '(መስራች)',
+          instructorTitle: '(መስራች እና ዋና አሰልጣኝ)',
           issueDate: new Date().toLocaleDateString('am-ET', { year: 'numeric', month: 'long', day: 'numeric' }),
           verified: true
         });
@@ -76,6 +77,12 @@ export default function PublicCertificateVerificationPage({ params }: PageProps)
     fetchCertificate();
   }, [certId]);
 
+  const publicUrl = typeof window !== 'undefined' ? window.location.href : `https://tsehaycampus.com/certificate/${certId}`;
+  const courseTitle = certData?.courseTitle || 'Mastery Masterclass';
+  const studentName = certData?.studentName || 'Tsehay Graduate';
+
+  const linkedInCaption = `🎓 Exciting Milestone! I'm thrilled to announce that I have successfully completed the "${courseTitle}" masterclass from Tsehay Campus!\n\n💡 Throughout this intensive practical training, I gained deep hands-on skills, built real-world projects, and achieved mastery certification.\n\n🔗 View & Verify my official credential:\n${publicUrl}\n\n#TsehayCampus #ContinuousLearning #ProfessionalGrowth #DigitalSkills #Certification #Achievement`;
+
   const handleCopyLink = () => {
     if (typeof window !== 'undefined') {
       navigator.clipboard.writeText(window.location.href);
@@ -84,14 +91,23 @@ export default function PublicCertificateVerificationPage({ params }: PageProps)
     }
   };
 
-  const handleShareLinkedIn = () => {
+  const handleCopyCaptionOnly = () => {
     if (typeof window !== 'undefined') {
+      navigator.clipboard.writeText(linkedInCaption);
+      setCaptionCopied(true);
+      setTimeout(() => setCaptionCopied(false), 2500);
+    }
+  };
+
+  const handleOpenLinkedInPost = () => {
+    if (typeof window !== 'undefined') {
+      navigator.clipboard.writeText(linkedInCaption);
+      setCaptionCopied(true);
       const shareUrl = encodeURIComponent(window.location.href);
-      const title = encodeURIComponent(`Verified Certificate of Completion from Tsehay Campus: ${certData?.courseTitle || 'Mastery'}`);
       window.open(
-        `https://www.linkedin.com/sharing/share-offsite/?url=${shareUrl}&title=${title}`,
+        `https://www.linkedin.com/sharing/share-offsite/?url=${shareUrl}`,
         '_blank',
-        'width=600,height=600,toolbar=no,menubar=no'
+        'width=650,height=650,toolbar=no,menubar=no'
       );
     }
   };
@@ -190,15 +206,15 @@ export default function PublicCertificateVerificationPage({ params }: PageProps)
                 <span>{copied ? 'ሊንኩ ተገልብጧል!' : 'ሊንኩን ኮፒ ያድርጉ'}</span>
               </button>
 
-              {/* LinkedIn Share Button */}
+              {/* LinkedIn Share Button (Opens Pre-filled Hook-Value Modal) */}
               <button
                 type="button"
-                onClick={handleShareLinkedIn}
-                className="px-3.5 py-2 rounded-xl bg-[#0077b5] hover:bg-[#005582] text-white text-xs font-black transition-all flex items-center gap-2 cursor-pointer shadow-[0_0_15px_rgba(0,119,181,0.35)] active:scale-95"
+                onClick={() => setShowLinkedInModal(true)}
+                className="px-3.5 py-2 rounded-xl bg-[#0077b5] hover:bg-[#005582] text-white text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer shadow-[0_0_15px_rgba(0,119,181,0.35)] active:scale-95"
                 title="በ LinkedIn ላይ አጋራ"
               >
                 <i className="fa-brands fa-linkedin text-sm"></i>
-                <span className="hidden xs:inline">LinkedIn</span>
+                <span className="hidden xs:inline">Share on LinkedIn</span>
               </button>
 
               {/* Download PNG */}
@@ -272,13 +288,13 @@ export default function PublicCertificateVerificationPage({ params }: PageProps)
               {/* Student Name */}
               <div className="py-2 border-b-2 border-amber-400/40 inline-block px-8">
                 <h2 className="text-2xl sm:text-3xl font-black text-amber-300 font-heading tracking-wider capitalize">
-                  {certData?.studentName || 'Tsehay Graduate'}
+                  {studentName}
                 </h2>
               </div>
 
               {/* Course Details */}
               <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-body max-w-xl mx-auto">
-                በፀሐይ ካምፓስ የተዘጋጀውን የ <span className="text-white font-black underline decoration-amber-400/60">«{certData?.courseTitle || 'Digital Mastery'}»</span> ስልጠና እና ማጠቃለያ ፈተና በላቀ ውጤት ({certData?.score || 95}%) ስላጠናቀቁ ይህ ይፋዊ ሰርተፍኬት ተበርክቶላቸዋል።
+                በፀሐይ ካምፓስ የተዘጋጀውን የ <span className="text-white font-black underline decoration-amber-400/60">«{courseTitle}»</span> ስልጠና እና ማጠቃለያ ፈተና በላቀ ውጤት ({certData?.score || 95}%) ስላጠናቀቁ ይህ ይፋዊ ሰርተፍኬት ተበርክቶላቸዋል።
               </p>
 
               {/* Signatures & Seal Section */}
@@ -303,13 +319,14 @@ export default function PublicCertificateVerificationPage({ params }: PageProps)
                   </div>
                 </div>
 
-                {/* Center: Verified Seal */}
+                {/* Center: Official Digital Master Seal */}
                 <div className="flex flex-col items-center justify-center min-h-[80px]">
-                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-amber-400/60 bg-amber-400/10 flex flex-col items-center justify-center p-1 shadow-[0_0_20px_rgba(249,176,60,0.2)]">
-                    <i className="fa-solid fa-certificate text-amber-400 text-lg mb-0.5"></i>
-                    <span className="text-[7px] font-black text-amber-300 uppercase tracking-tighter text-center leading-tight">VERIFIED</span>
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-amber-400/70 bg-amber-400/10 flex flex-col items-center justify-center p-1 shadow-[0_0_20px_rgba(249,176,60,0.25)] relative">
+                    <i className="fa-solid fa-certificate text-amber-400 text-lg sm:text-xl mb-0.5"></i>
+                    <span className="text-[7px] sm:text-[8px] font-black text-amber-300 uppercase tracking-tight text-center leading-tight">VERIFIED</span>
+                    <span className="text-[6px] text-slate-300 uppercase font-mono tracking-tighter">DIGITAL SEAL</span>
                   </div>
-                  <span className="text-[9px] text-slate-400 font-mono mt-1">Tsehay Campus</span>
+                  <span className="text-[8px] sm:text-[9px] text-slate-400 font-mono mt-1">Tsehay Campus</span>
                 </div>
 
                 {/* Right: Date & Verification ID */}
@@ -326,55 +343,78 @@ export default function PublicCertificateVerificationPage({ params }: PageProps)
           </div>
 
           {/* Verification Details Card (Udemy / Coursera Style Metadata Card) */}
-          <div className="no-print bg-white/80 dark:bg-[#070b14]/90 backdrop-blur-2xl border border-gray-200/90 dark:border-white/10 rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-xl">
-            <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white font-heading mb-4 flex items-center gap-2">
-              <i className="fa-solid fa-shield-halved text-[#f9b03c]"></i>
-              <span>የሰርተፍኬቱ ይፋዊ ማረጋገጫ ዝርዝር (Certificate Verification Details)</span>
-            </h3>
+          <div className="no-print bg-white/80 dark:bg-[#070b14]/90 backdrop-blur-2xl border border-gray-200/90 dark:border-white/10 rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-xl space-y-6">
+            <div>
+              <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white font-heading mb-4 flex items-center gap-2">
+                <i className="fa-solid fa-shield-halved text-[#f9b03c]"></i>
+                <span>የሰርተፍኬቱ ይፋዊ ማረጋገጫ ዝርዝር (Certificate Verification Details)</span>
+              </h3>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
-              
-              <div className="p-3.5 rounded-xl bg-gray-50 dark:bg-white/[0.03] border border-gray-200 dark:border-white/[0.06]">
-                <div className="text-[10px] font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider mb-1">
-                  የተማሪው ሙሉ ስም
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
+                <div className="p-3.5 rounded-xl bg-gray-50 dark:bg-white/[0.03] border border-gray-200 dark:border-white/[0.06]">
+                  <div className="text-[10px] font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider mb-1">
+                    የተማሪው ሙሉ ስም
+                  </div>
+                  <div className="text-sm font-black text-slate-900 dark:text-white font-heading">
+                    {studentName}
+                  </div>
                 </div>
-                <div className="text-sm font-black text-slate-900 dark:text-white font-heading">
-                  {certData?.studentName || 'Tsehay Graduate'}
+
+                <div className="p-3.5 rounded-xl bg-gray-50 dark:bg-white/[0.03] border border-gray-200 dark:border-white/[0.06]">
+                  <div className="text-[10px] font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider mb-1">
+                    የኮርሱ ስም
+                  </div>
+                  <div className="text-xs font-bold text-[#f9b03c] truncate" title={courseTitle}>
+                    {courseTitle}
+                  </div>
+                </div>
+
+                <div className="p-3.5 rounded-xl bg-gray-50 dark:bg-white/[0.03] border border-gray-200 dark:border-white/[0.06]">
+                  <div className="text-[10px] font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider mb-1">
+                    የሰርተፍኬት መለያ ቁጥር (ID)
+                  </div>
+                  <div className="text-xs font-mono font-bold text-slate-900 dark:text-white">
+                    {certId}
+                  </div>
+                </div>
+
+                <div className="p-3.5 rounded-xl bg-gray-50 dark:bg-white/[0.03] border border-gray-200 dark:border-white/[0.06]">
+                  <div className="text-[10px] font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider mb-1">
+                    የሰርተፍኬት ሁኔታ (Status)
+                  </div>
+                  <div className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+                    <i className="fa-solid fa-circle-check"></i>
+                    <span>ህጋዊ እና ጸንቶ የሚሰራ (Active)</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Hard Copy In-Person Notice Box */}
+            <div className="p-4 sm:p-5 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-start gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-amber-400/20 text-[#f9b03c] border border-amber-400/40 flex items-center justify-center text-lg shrink-0">
+                  <i className="fa-solid fa-stamp"></i>
+                </div>
+                <div className="space-y-1 text-xs sm:text-sm">
+                  <h4 className="font-heading font-black text-white">ኦሪጅናል ማህተም እና የታተመ ሰርተፍኬት (Hard Copy) ይፈልጋሉ?</h4>
+                  <p className="text-slate-300 leading-relaxed font-body">
+                    ይህ ዲጂታል ሰርተፍኬት በሲስተማችን የተረጋገጠና ህጋዊ ነው። በአሰልጣኙ እጅ የተፈረመበትና ኦሪጅናል ማህተም ያለበትን የታተመ ሰርተፍኬት በቢሯችን በነፃ መውሰድ ይችላሉ።
+                  </p>
                 </div>
               </div>
 
-              <div className="p-3.5 rounded-xl bg-gray-50 dark:bg-white/[0.03] border border-gray-200 dark:border-white/[0.06]">
-                <div className="text-[10px] font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider mb-1">
-                  የኮርሱ ስም
-                </div>
-                <div className="text-xs font-bold text-[#f9b03c] truncate" title={certData?.courseTitle}>
-                  {certData?.courseTitle || 'Mastery Course'}
-                </div>
-              </div>
-
-              <div className="p-3.5 rounded-xl bg-gray-50 dark:bg-white/[0.03] border border-gray-200 dark:border-white/[0.06]">
-                <div className="text-[10px] font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider mb-1">
-                  የሰርተፍኬት መለያ ቁጥር (ID)
-                </div>
-                <div className="text-xs font-mono font-bold text-slate-900 dark:text-white">
-                  {certId}
-                </div>
-              </div>
-
-              <div className="p-3.5 rounded-xl bg-gray-50 dark:bg-white/[0.03] border border-gray-200 dark:border-white/[0.06]">
-                <div className="text-[10px] font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider mb-1">
-                  የሰርተፍኬት ሁኔታ (Status)
-                </div>
-                <div className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
-                  <i className="fa-solid fa-circle-check"></i>
-                  <span>ህጋዊ እና ጸንቶ የሚሰራ (Active)</span>
-                </div>
-              </div>
-
+              <a 
+                href="tel:0980209090" 
+                className="shrink-0 px-4 py-2.5 bg-[#f9b03c] hover:bg-[#ffbe53] text-black font-black text-xs rounded-xl shadow-md transition flex items-center gap-2"
+              >
+                <i className="fa-solid fa-phone"></i>
+                <span>ደውለው ቀጠሮ ይያዙ (0980209090)</span>
+              </a>
             </div>
 
             {/* Bottom Call to Action for Visitors & Employers */}
-            <div className="mt-6 pt-5 border-t border-gray-200 dark:border-white/[0.08] flex flex-wrap items-center justify-between gap-4">
+            <div className="pt-4 border-t border-gray-200 dark:border-white/[0.08] flex flex-wrap items-center justify-between gap-4">
               <p className="text-xs text-slate-500 dark:text-gray-400 max-w-lg leading-relaxed">
                 ይህ ዲጂታል ሰርተፍኬት በፀሐይ ካምፓስ (Tsehay Campus) የተሰጠና ተማሪው ሙሉ የትምህርት ክፍሎችንና ማጠቃለያ ፈተናዎችን በሚገባ ማጠናቀቁን ያረጋግጣል።
               </p>
@@ -392,6 +432,78 @@ export default function PublicCertificateVerificationPage({ params }: PageProps)
 
         </div>
       </main>
+
+      {/* 🚀 LINKEDIN SHARE POP-UP MODAL (Pre-filled Hook + Value + Payoff Caption) */}
+      {showLinkedInModal && (
+        <div 
+          className="fixed inset-0 z-[9999999] bg-black/85 backdrop-blur-xl flex items-center justify-center p-4 animate-in fade-in duration-300"
+          onClick={() => setShowLinkedInModal(false)}
+        >
+          <div 
+            className="bg-[#0b1329] text-white w-full max-w-lg rounded-3xl shadow-2xl border border-gray-800 p-6 space-y-5 animate-[modalCenterPop_0.3s_ease-out_forwards]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-gray-800 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[#0077b5] text-white flex items-center justify-center text-xl shadow-md">
+                  <i className="fa-brands fa-linkedin"></i>
+                </div>
+                <div>
+                  <h3 className="font-heading font-black text-lg text-white">Share to LinkedIn</h3>
+                  <p className="text-xs text-slate-400">Post your verified achievement in 1-Click</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowLinkedInModal(false)}
+                className="text-gray-400 hover:text-white p-2 rounded-full hover:bg-gray-800 transition"
+              >
+                <i className="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+
+            {/* Generated Professional Caption Box */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-xs font-bold text-gray-300">
+                <span>የተዘጋጀ የፖስት ጽሑፍ (Auto-Generated Caption):</span>
+                <span className="text-[#f9b03c] font-mono text-[11px]">Hook • Value • Payoff</span>
+              </div>
+
+              <textarea 
+                readOnly
+                value={linkedInCaption}
+                rows={6}
+                className="w-full bg-[#050811] border border-gray-700/80 rounded-2xl p-3.5 text-xs sm:text-sm text-slate-200 font-sans leading-relaxed focus:outline-none resize-none selection:bg-[#f9b03c] selection:text-black"
+              />
+            </div>
+
+            {/* Action Buttons */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+              <button
+                type="button"
+                onClick={handleCopyCaptionOnly}
+                className="px-4 py-3 rounded-xl bg-white/10 hover:bg-white/15 text-white font-bold text-xs border border-white/10 transition flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+              >
+                <i className={`fa-solid ${captionCopied ? 'fa-check text-emerald-400' : 'fa-copy text-[#f9b03c]'}`}></i>
+                <span>{captionCopied ? 'ጽሑፉ ተገልብጧል!' : 'ጽሑፉን ኮፒ አድርግ'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleOpenLinkedInPost}
+                className="px-4 py-3 rounded-xl bg-[#0077b5] hover:bg-[#005582] text-white font-black text-xs shadow-lg transition flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+              >
+                <i className="fa-brands fa-linkedin text-sm"></i>
+                <span>በ LinkedIn ላይ ለጥፍ</span>
+              </button>
+            </div>
+
+            <p className="text-[11px] text-slate-400 text-center leading-normal">
+              💡 "በ LinkedIn ላይ ለጥፍ" ሲጫኑ ጽሑፉ በራስ-ሰር ኮፒ ይደረጋል፤ በሊንክድኢን መስኮት ላይ <strong className="text-white">Ctrl + V (Paste)</strong> በማድረግ በቀላሉ ይለጥፉ!
+            </p>
+          </div>
+        </div>
+      )}
 
       <Footer />
     </div>
