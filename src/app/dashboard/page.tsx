@@ -1,10 +1,10 @@
 'use client';
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, Suspense } from 'react';
 import { db, auth } from '@/lib/firebase/config';
 import { collection, getDocs, query, orderBy, doc, getDoc, updateDoc, setDoc, serverTimestamp, where, onSnapshot } from 'firebase/firestore';
 import { useAuth } from '@/context/AuthContext';
 import { updateProfile } from 'firebase/auth';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageContext';
 import dynamic from 'next/dynamic';
 
@@ -15,9 +15,109 @@ import CourseQuiz from '@/components/CourseQuiz';
 import CourseCertificate from '@/components/CourseCertificate';
 import { formatDriveImageUrl } from '@/lib/courseCache';
 
-export default function StudentDashboard() {
-  const { user } = useAuth();
-  const [currentView, setCurrentView] = useState('classroom');
+function DashboardLoadingScreen({ message }: { message?: string }) {
+  return (
+    <div className="min-h-screen bg-[#030509] flex flex-col items-center justify-center relative overflow-hidden text-white font-body select-none">
+      <div className="w-96 h-96 bg-[#f9b03c]/10 rounded-full blur-3xl absolute -top-10 -left-10 pointer-events-none animate-pulse"></div>
+      <div className="w-96 h-96 bg-[#3268ba]/10 rounded-full blur-3xl absolute -bottom-10 -right-10 pointer-events-none animate-pulse"></div>
+
+      <div className="relative z-10 flex flex-col items-center gap-5 text-center px-4">
+        <div className="w-20 h-20 rounded-2xl bg-white p-2 shadow-[0_0_40px_rgba(249,176,60,0.35)] border-2 border-[#f9b03c]/60 animate-bounce">
+          <img src="/tc-logo.jpg" alt="Tsehay Campus" className="w-full h-full object-contain rounded-xl" />
+        </div>
+
+        <div className="relative flex items-center justify-center">
+          <div className="w-12 h-12 border-3 border-[#f9b03c]/20 border-t-[#f9b03c] rounded-full animate-spin"></div>
+        </div>
+
+        <div className="space-y-1.5">
+          <h2 className="text-xl font-black text-white font-heading tracking-wide">
+            <span className="text-[#f9b03c]">Tsehay</span> <span className="text-[#3268ba]">Campus</span>
+          </h2>
+          <p className="text-xs text-gray-400 font-medium">
+            {message || 'የመማሪያ ክፍልዎን በማዘጋጀት ላይ... (Loading Classroom...)'}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StudentDashboardContent() {
+  const { user, loading: authLoading, authInitialized } = useAuth();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  // Read URL search params
+  const urlViewParam = searchParams?.get('view') || searchParams?.get('tab');
+  const urlCourseId = searchParams?.get('courseId') || searchParams?.get('course');
+  const urlLesson = searchParams?.get('lesson');
+
+  const validViews = ['classroom', 'courses', 'messages', 'ai', 'certificates', 'settings'];
+  const initialView = (urlViewParam && validViews.includes(urlViewParam))
+    ? urlViewParam
+    : (typeof window !== 'undefined' && localStorage.getItem('tsehay_dashboard_last_view')) || 'classroom';
+
+  const [currentView, _setCurrentView] = useState<string>(initialView);
+
+  // Synchronize state if URL view param changes
+  useEffect(() => {
+    if (urlViewParam && validViews.includes(urlViewParam) && urlViewParam !== currentView) {
+      _setCurrentView(urlViewParam);
+    }
+  }, [urlViewParam]);
+
+  // URL state synchronizer helper
+  const updateUrlState = (params: { view?: string; courseId?: string; lesson?: string | number }) => {
+    if (typeof window === 'undefined') return;
+    try {
+      const sp = new URLSearchParams(window.location.search);
+      sp.delete('success');
+      sp.delete('reference');
+      sp.delete('tx_ref');
+
+      if (params.view) {
+        sp.set('view', params.view);
+        try { localStorage.setItem('tsehay_dashboard_last_view', params.view); } catch(e) {}
+      }
+      if (params.courseId !== undefined) {
+        if (params.courseId) sp.set('courseId', params.courseId);
+        else sp.delete('courseId');
+      }
+      if (params.lesson !== undefined) {
+        if (params.lesson !== null && params.lesson !== '') sp.set('lesson', String(params.lesson));
+        else sp.delete('lesson');
+      }
+
+      const newUrl = `${window.location.pathname}?${sp.toString()}`;
+      window.history.replaceState({ ...window.history.state, as: newUrl, url: newUrl }, '', newUrl);
+    } catch(e) {}
+  };
+
+  const setCurrentView = (newView: string) => {
+    _setCurrentView(newView);
+    if (newView === 'classroom') {
+      updateUrlState({ 
+        view: 'classroom', 
+        courseId: activeCourse?.id || '', 
+        lesson: activeLesson?.lessonIndex ?? 0 
+      });
+    } else {
+      updateUrlState({ view: newView });
+    }
+  };
+
+  // Auth Guard: Only redirect if explicitly confirmed NOT authenticated after Firebase check completes
+  useEffect(() => {
+    if (authInitialized && !authLoading && !user) {
+      if (typeof window !== 'undefined') {
+        window.location.href = '/';
+      } else {
+        router.replace('/');
+      }
+    }
+  }, [authInitialized, authLoading, user, router]);
+
   const [isCourseCompleted, setIsCourseCompleted] = useState(false);
   const [hasTakenQuiz, setHasTakenQuiz] = useState(false);
   const [showRatingModal, setShowRatingModal] = useState(false);
@@ -427,11 +527,21 @@ export default function StudentDashboard() {
           
         if (userCourses.length > 0) {
           setActiveCourse((prev: any) => {
+            // 1. Priority: URL courseId parameter
+            if (urlCourseId) {
+              const matchedFromUrl = userCourses.find(c => c.id === urlCourseId || c.courseId === urlCourseId);
+              if (matchedFromUrl) {
+                try { localStorage.setItem('tsehay_user_active_course', JSON.stringify(matchedFromUrl)); } catch(e) {}
+                return matchedFromUrl;
+              }
+            }
+            // 2. Priority: previously selected active course
             if (prev && userCourses.some(c => c.id === prev.id)) {
               const updated = userCourses.find(c => c.id === prev.id) || prev;
               try { localStorage.setItem('tsehay_user_active_course', JSON.stringify(updated)); } catch(e) {}
               return updated;
             }
+            // 3. Fallback: first course
             try { localStorage.setItem('tsehay_user_active_course', JSON.stringify(userCourses[0])); } catch(e) {}
             return userCourses[0];
           });
@@ -465,9 +575,43 @@ export default function StudentDashboard() {
               localStorage.setItem('tsehay_user_active_modules', JSON.stringify(fetchedModules));
             } catch(e) {}
 
-            // Retain active lesson if already matching this course, otherwise default to first
+            // Retain active lesson if matching URL or existing state, otherwise default to first
             if (fetchedModules.length > 0) {
               setActiveLesson((prev: any) => {
+                // 1. Priority: URL lesson parameter
+                if (urlLesson !== null && urlLesson !== undefined && urlLesson !== '') {
+                  const lessonNum = parseInt(urlLesson, 10);
+                  if (!isNaN(lessonNum)) {
+                    let totalCount = 0;
+                    for (let mIdx = 0; mIdx < fetchedModules.length; mIdx++) {
+                      const mod = fetchedModules[mIdx];
+                      if (mod.lessons) {
+                        for (let lIdx = 0; lIdx < mod.lessons.length; lIdx++) {
+                          if (totalCount === lessonNum || lIdx === lessonNum) {
+                            const found = { ...mod.lessons[lIdx], moduleIndex: mIdx, lessonIndex: lIdx };
+                            try { localStorage.setItem('tsehay_user_active_lesson', JSON.stringify(found)); } catch(e) {}
+                            return found;
+                          }
+                          totalCount++;
+                        }
+                      }
+                    }
+                  } else {
+                    for (let mIdx = 0; mIdx < fetchedModules.length; mIdx++) {
+                      const mod = fetchedModules[mIdx];
+                      if (mod.lessons) {
+                        const foundIdx = mod.lessons.findIndex((l: any) => l.id === urlLesson || l.title === urlLesson);
+                        if (foundIdx !== -1) {
+                          const found = { ...mod.lessons[foundIdx], moduleIndex: mIdx, lessonIndex: foundIdx };
+                          try { localStorage.setItem('tsehay_user_active_lesson', JSON.stringify(found)); } catch(e) {}
+                          return found;
+                        }
+                      }
+                    }
+                  }
+                }
+
+                // 2. Priority: previous active lesson
                 if (prev) {
                   for (let mIdx = 0; mIdx < fetchedModules.length; mIdx++) {
                     const mod = fetchedModules[mIdx];
@@ -481,6 +625,8 @@ export default function StudentDashboard() {
                     }
                   }
                 }
+
+                // 3. Fallback: first lesson
                 if (fetchedModules[0].lessons && fetchedModules[0].lessons.length > 0) {
                   const first = { ...fetchedModules[0].lessons[0], moduleIndex: 0, lessonIndex: 0 };
                   try { localStorage.setItem('tsehay_user_active_lesson', JSON.stringify(first)); } catch(e) {}
@@ -1047,6 +1193,8 @@ export default function StudentDashboard() {
     if (currentIndex >= 0 && currentIndex < allFlatLessons.length - 1) {
       const nextLesson = allFlatLessons[currentIndex + 1];
       setActiveLesson(nextLesson);
+      try { localStorage.setItem('tsehay_user_active_lesson', JSON.stringify(nextLesson)); } catch(e) {}
+      updateUrlState({ view: 'classroom', courseId: activeCourse?.id, lesson: nextLesson.lessonIndex });
     } else {
       setIsCourseCompleted(true);
       setActiveTab('quiz');
@@ -1069,7 +1217,10 @@ export default function StudentDashboard() {
 
     const currentIndex = allFlatLessons.findIndex(l => l.title === activeLesson?.title);
     if (currentIndex > 0) {
-      setActiveLesson(allFlatLessons[currentIndex - 1]);
+      const prevLesson = allFlatLessons[currentIndex - 1];
+      setActiveLesson(prevLesson);
+      try { localStorage.setItem('tsehay_user_active_lesson', JSON.stringify(prevLesson)); } catch(e) {}
+      updateUrlState({ view: 'classroom', courseId: activeCourse?.id, lesson: prevLesson.lessonIndex });
     }
   };
 
@@ -1275,12 +1426,8 @@ ${customAdminPrompt}
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center">
-        <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
+  if (authLoading || (!authInitialized && !user) || (loading && courses.length === 0)) {
+    return <DashboardLoadingScreen message="የመማሪያ ክፍልዎን በማዘጋጀት ላይ... (Loading Classroom...)" />;
   }
 
   return (
@@ -2074,6 +2221,7 @@ ${customAdminPrompt}
                                                                         try {
                                                                             localStorage.setItem('tsehay_user_active_lesson', JSON.stringify(selectedLesson));
                                                                         } catch(e) {}
+                                                                        updateUrlState({ view: 'classroom', courseId: activeCourse?.id, lesson: lidx });
                                                                         window.scrollTo({ top: 0, behavior: 'smooth' });
                                                                     }}
                                                                     className={`flex items-center justify-between p-3 rounded-xl transition ${
@@ -2705,6 +2853,7 @@ ${customAdminPrompt}
                                                             try {
                                                               localStorage.setItem('tsehay_user_active_lesson', JSON.stringify(selectedLesson));
                                                             } catch(e) {}
+                                                            updateUrlState({ view: 'classroom', courseId: activeCourse?.id, lesson: lidx });
                                                         }}
                                                         className={`flex items-center justify-between p-2.5 rounded-xl transition ${
                                                             !isUnlocked
@@ -2784,6 +2933,7 @@ ${customAdminPrompt}
                       setActiveCourse(course); 
                       try { localStorage.setItem('tsehay_user_active_course', JSON.stringify(course)); } catch(e) {}
                       setCurrentView('classroom'); 
+                      updateUrlState({ view: 'classroom', courseId: course.id, lesson: 0 });
                     }} className="w-full py-2.5 bg-primary text-dark font-black rounded-xl hover:bg-yellow-400 transition shadow-sm cursor-pointer active:scale-95 flex items-center justify-center gap-2">
                       <i className="fa-solid fa-play"></i>
                       <span>ወደ ትምህርቱ</span>
@@ -3379,5 +3529,13 @@ ${customAdminPrompt}
           </div>
       )}
     </div>
+  );
+}
+
+export default function StudentDashboard() {
+  return (
+    <Suspense fallback={<DashboardLoadingScreen />}>
+      <StudentDashboardContent />
+    </Suspense>
   );
 }

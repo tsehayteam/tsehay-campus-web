@@ -7,10 +7,16 @@ import { doc, getDoc } from 'firebase/firestore';
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  authInitialized: boolean;
   isAdmin: boolean;
 }
 
-const AuthContext = createContext<AuthContextType>({ user: null, loading: false, isAdmin: false });
+const AuthContext = createContext<AuthContextType>({ 
+  user: null, 
+  loading: true, 
+  authInitialized: false, 
+  isAdmin: false 
+});
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(() => {
@@ -32,10 +38,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   });
 
-  const [loading, setLoading] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return true;
-    return !localStorage.getItem('tsehay_auth_user_cache');
-  });
+  const [loading, setLoading] = useState<boolean>(true);
+  const [authInitialized, setAuthInitialized] = useState<boolean>(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -55,6 +59,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           localStorage.removeItem('tsehay_auth_is_admin');
         } catch (e) {}
         setLoading(false);
+        setAuthInitialized(true);
         return;
       }
 
@@ -86,12 +91,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         } catch (e) {}
       }
       setLoading(false);
+      setAuthInitialized(true);
     });
 
     return () => unsubscribe();
   }, []);
 
-  return <AuthContext.Provider value={{ user, loading, isAdmin }}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={{ user, loading, authInitialized, isAdmin }}>
+      {children}
+    </AuthContext.Provider>
+  );
 };
 
 export const useAuth = () => useContext(AuthContext);
