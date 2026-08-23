@@ -289,13 +289,15 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* 2. Backdrop Overlay when Curtain is Expanded (Clicking outside closes it) */}
-      {isCurtainOpen && (
-        <div 
-          onClick={closeCurtain}
-          className="fixed inset-0 z-[9995] bg-black/50 backdrop-blur-[3px] transition-opacity duration-300"
-        />
-      )}
+      {/* 2. Backdrop Overlay when Curtain is Expanded (Clicking outside closes it smoothly) */}
+      <div 
+        onClick={closeCurtain}
+        className={`fixed inset-0 z-[9995] bg-black/60 backdrop-blur-[4px] transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+          isCurtainOpen 
+            ? 'opacity-100 pointer-events-auto' 
+            : 'opacity-0 pointer-events-none'
+        }`}
+      />
 
       {/* 3. 🚀 Sliding Curtain Navbar (እንደ መጋረጃ የሚወርድ እና የሚጠቀለል ተንሸራታች) */}
       <nav 
