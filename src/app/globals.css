@@ -338,23 +338,47 @@ body {
   box-shadow: 0 4px 18px rgba(249, 176, 60, 0.22) !important;
 }
 
-/* Pop-up spring animation for search input */
-@keyframes popUpSearch {
+/* ==========================================================================
+   ✨ Navigation Micro-Animations: Icon Pop-Up Spring & Brand Typewriter Reveal
+   ========================================================================== */
+@keyframes iconSpringPop {
   0% {
     opacity: 0;
-    transform: scale(0.9) translateY(-10px);
-    filter: blur(3px);
+    transform: scale(0) rotate(-20deg);
   }
   60% {
-    opacity: 0.95;
-    transform: scale(1.02) translateY(1.5px);
-    filter: blur(0px);
+    opacity: 1;
+    transform: scale(1.28) rotate(8deg);
+  }
+  85% {
+    transform: scale(0.94) rotate(-3deg);
   }
   100% {
     opacity: 1;
-    transform: scale(1) translateY(0);
-    filter: blur(0px);
+    transform: scale(1) rotate(0deg);
   }
+}
+
+.icon-pop-spring {
+  animation: iconSpringPop 0.55s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+  will-change: transform, opacity;
+}
+
+@keyframes brandCursorBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.brand-typing-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1.05em;
+  background-color: #f9b03c;
+  margin-left: 2px;
+  vertical-align: middle;
+  animation: brandCursorBlink 0.75s infinite;
+  box-shadow: 0 0 8px #f9b03c;
+  border-radius: 1px;
 }
 
 .animate-pop-up-search {
