@@ -64,8 +64,9 @@ export default function InstructorYouTubePortfolio() {
   const localThumbnail = `https://img.youtube.com/vi/${localVideoId}/hqdefault.jpg`;
   const internationalThumbnail = `https://img.youtube.com/vi/${internationalVideoId}/hqdefault.jpg`;
 
-  const localEmbedUrl = `https://www.youtube-nocookie.com/embed/${localVideoId}?autoplay=1&modestbranding=1&rel=0&controls=1&showinfo=0&iv_load_policy=3`;
-  const internationalEmbedUrl = `https://www.youtube-nocookie.com/embed/${internationalVideoId}?autoplay=1&modestbranding=1&rel=0&controls=1&showinfo=0&iv_load_policy=3`;
+  // cc_load_policy=0 disables auto-generated subtitles, iv_load_policy=3 disables annotations, showinfo=0 removes title bar
+  const localEmbedUrl = `https://www.youtube-nocookie.com/embed/${localVideoId}?autoplay=1&modestbranding=1&rel=0&controls=1&showinfo=0&iv_load_policy=3&cc_load_policy=0&cc_lang_pref=none`;
+  const internationalEmbedUrl = `https://www.youtube-nocookie.com/embed/${internationalVideoId}?autoplay=1&modestbranding=1&rel=0&controls=1&showinfo=0&iv_load_policy=3&cc_load_policy=0&cc_lang_pref=none`;
 
   return (
     <section id="instructor-portfolio" className="relative py-16 sm:py-24 overflow-hidden bg-slate-900/60 dark:bg-[#030509]/90 border-b border-gray-200/80 dark:border-white/10 scrolly-reveal">
@@ -94,36 +95,33 @@ export default function InstructorYouTubePortfolio() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-10">
           
           {/* =========================================================================
-              CARD 1: AMHARIC CHANNEL (የአማርኛ ቻናል)
+              CARD 1: HAGERIGNA CHANNEL (ሀገርኛ ቻናል)
               ========================================================================= */}
           <div 
             data-scrolly-order="1" 
-            className="group relative rounded-2xl sm:rounded-3xl overflow-hidden transition-all duration-500 hover:-translate-y-2 scrolly-card scrolly-stagger-1 bg-white/90 dark:bg-[#070b14]/90 backdrop-blur-2xl border border-gray-200/90 dark:border-white/10 hover:border-[#3268ba] shadow-lg hover:shadow-[0_20px_45px_rgba(50,104,186,0.3)] flex flex-col justify-between"
+            className="group relative rounded-2xl sm:rounded-3xl overflow-hidden transition-all duration-500 hover:-translate-y-2 scrolly-card scrolly-stagger-1 bg-white/90 dark:bg-[#070b14]/90 backdrop-blur-2xl border border-gray-200/90 dark:border-white/10 hover:border-[#3268ba] shadow-lg hover:shadow-[0_20px_45px_rgba(50,104,186,0.35)] flex flex-col justify-between"
           >
-            {/* Top Bar Label & Glowing Royal Blue Badge */}
+            {/* Top Bar Label with Smooth Glow Accent */}
             <div className="px-5 py-4 flex items-center justify-between border-b border-gray-100 dark:border-white/[0.08] bg-gray-50/50 dark:bg-white/[0.02]">
               <div className="flex items-center gap-2.5">
-                <span className="w-3 h-3 rounded-full bg-[#3268ba] shadow-[0_0_10px_#3268ba]"></span>
-                <span className="text-sm sm:text-base font-black text-slate-900 dark:text-white font-heading">
-                  የአማርኛ ቻናል
+                <span className="w-3 h-3 rounded-full bg-[#3268ba] shadow-[0_0_10px_#3268ba] group-hover:scale-125 transition-transform duration-300"></span>
+                <span className="text-base sm:text-lg font-black text-slate-900 dark:text-white font-heading tracking-wide group-hover:text-[#5a93e8] transition-colors duration-300">
+                  ሀገርኛ ቻናል
                 </span>
               </div>
-              <span className="text-xs font-black text-white bg-[#3268ba] px-3.5 py-1 rounded-full shadow-[0_0_15px_rgba(50,104,186,0.5)] border border-blue-400/40 group-hover:scale-105 transition-transform duration-300">
-                የአማርኛ ቻናል
-              </span>
             </div>
 
-            {/* 100% Flush Box-Fitting Video Player / Clean Thumbnail (No Play Button Overlay) */}
+            {/* 100% Flush Box-Fitting Video Player / Clean Thumbnail */}
             <div className="relative aspect-video w-full overflow-hidden bg-black flex items-center justify-center">
               {playingLocal ? (
                 <div className="w-full h-full relative overflow-hidden">
                   {/* YouTube Iframe Scaled to Crop Out YouTube Titles, AI Badges, & Watermarks */}
                   <iframe
                     src={localEmbedUrl}
-                    title="የአማርኛ ዩቲዩብ ቻናል"
+                    title="ሀገርኛ ዩቲዩብ ቻናል"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                     allowFullScreen
-                    className="w-full h-full border-0 absolute inset-0 z-10 scale-[1.18] origin-center pointer-events-auto"
+                    className="w-full h-full border-0 absolute inset-0 z-10 scale-[1.24] origin-center pointer-events-auto"
                   />
 
                   {/* 🛡️ Click Shields: Completely blocks clicks on YouTube logo/title from navigating away */}
@@ -151,10 +149,10 @@ export default function InstructorYouTubePortfolio() {
                   {/* Clean 100% Flush Thumbnail Fitting Box Without Any Overlay Obstruction */}
                   <img
                     src={localThumbnail}
-                    alt="የአማርኛ ዩቲዩብ ቻናል"
+                    alt="ሀገርኛ ዩቲዩብ ቻናል"
                     className="absolute inset-0 w-full h-full object-cover group-hover/thumb:scale-[1.03] transition-transform duration-500"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src = `https://placehold.co/640x360/0a1128/3268ba?text=${encodeURIComponent('የአማርኛ ቻናል')}&font=Montserrat`;
+                      (e.target as HTMLImageElement).src = `https://placehold.co/640x360/0a1128/3268ba?text=${encodeURIComponent('ሀገርኛ ቻናል')}&font=Montserrat`;
                     }}
                   />
                 </div>
@@ -167,32 +165,29 @@ export default function InstructorYouTubePortfolio() {
               ========================================================================= */}
           <div 
             data-scrolly-order="2" 
-            className="group relative rounded-2xl sm:rounded-3xl overflow-hidden transition-all duration-500 hover:-translate-y-2 scrolly-card scrolly-stagger-2 bg-white/90 dark:bg-[#070b14]/90 backdrop-blur-2xl border border-gray-200/90 dark:border-white/10 hover:border-[#f9b03c] shadow-lg hover:shadow-[0_20px_45px_rgba(249,176,60,0.3)] flex flex-col justify-between"
+            className="group relative rounded-2xl sm:rounded-3xl overflow-hidden transition-all duration-500 hover:-translate-y-2 scrolly-card scrolly-stagger-2 bg-white/90 dark:bg-[#070b14]/90 backdrop-blur-2xl border border-gray-200/90 dark:border-white/10 hover:border-[#f9b03c] shadow-lg hover:shadow-[0_20px_45px_rgba(249,176,60,0.35)] flex flex-col justify-between"
           >
-            {/* Top Bar Label & Glowing Golden Yellow Badge */}
+            {/* Top Bar Label with Smooth Glow Accent */}
             <div className="px-5 py-4 flex items-center justify-between border-b border-gray-100 dark:border-white/[0.08] bg-gray-50/50 dark:bg-white/[0.02]">
               <div className="flex items-center gap-2.5">
-                <span className="w-3 h-3 rounded-full bg-[#f9b03c] shadow-[0_0_10px_#f9b03c]"></span>
-                <span className="text-sm sm:text-base font-black text-slate-900 dark:text-white font-heading">
+                <span className="w-3 h-3 rounded-full bg-[#f9b03c] shadow-[0_0_10px_#f9b03c] group-hover:scale-125 transition-transform duration-300"></span>
+                <span className="text-base sm:text-lg font-black text-slate-900 dark:text-white font-heading tracking-wide group-hover:text-[#f9b03c] transition-colors duration-300">
                   ዓለም አቀፍ ቻናል
                 </span>
               </div>
-              <span className="text-xs font-black text-black bg-[#f9b03c] px-3.5 py-1 rounded-full shadow-[0_0_15px_rgba(249,176,60,0.5)] border border-amber-300/60 group-hover:scale-105 transition-transform duration-300">
-                ዓለም አቀፍ ቻናል
-              </span>
             </div>
 
-            {/* 100% Flush Box-Fitting Video Player / Clean Thumbnail (No Play Button Overlay) */}
+            {/* 100% Flush Box-Fitting Video Player / Clean Thumbnail */}
             <div className="relative aspect-video w-full overflow-hidden bg-black flex items-center justify-center">
               {playingInternational ? (
                 <div className="w-full h-full relative overflow-hidden">
-                  {/* YouTube Iframe Scaled to Crop Out YouTube Titles, AI Badges, & Watermarks */}
+                  {/* YouTube Iframe Scaled to Crop Out YouTube Titles, AI Badges, & Watermarks; cc_load_policy=0 disables subtitles */}
                   <iframe
                     src={internationalEmbedUrl}
                     title="ዓለም አቀፍ ዩቲዩብ ቻናል"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                     allowFullScreen
-                    className="w-full h-full border-0 absolute inset-0 z-10 scale-[1.18] origin-center pointer-events-auto"
+                    className="w-full h-full border-0 absolute inset-0 z-10 scale-[1.24] origin-center pointer-events-auto"
                   />
 
                   {/* 🛡️ Click Shields: Completely blocks clicks on YouTube logo/title from navigating away */}

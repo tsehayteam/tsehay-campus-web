@@ -20,6 +20,7 @@ export default function CourseCertificate({ course, user, score = 90, issueDate 
   const [physicalCopyClaimed, setPhysicalCopyClaimed] = useState<boolean | null>(null);
   const [isClaimingInDb, setIsClaimingInDb] = useState(false);
   const [isDismissed, setIsDismissed] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
 
   const courseId = course?.id || 'default_course';
   const studentName = user?.displayName || user?.email?.split('@')[0] || 'Tsehay Student';
@@ -27,7 +28,7 @@ export default function CourseCertificate({ course, user, score = 90, issueDate 
   const formattedDate = issueDate || new Date().toLocaleDateString('am-ET', { year: 'numeric', month: 'long', day: 'numeric' });
   const certId = `TC-${course?.id ? course.id.slice(0, 4).toUpperCase() : 'CERT'}-${user?.uid ? user.uid.slice(0, 6).toUpperCase() : '894201'}`;
 
-  // Fetch certificate status from Firestore
+  // Fetch certificate status from Firestore & sync to public verification collection
   useEffect(() => {
     if (!user?.uid || !courseId) return;
 
@@ -47,6 +48,23 @@ export default function CourseCertificate({ course, user, score = 90, issueDate 
         } else {
           setPhysicalCopyClaimed(false);
         }
+
+        // Also publish to public certificates collection for public verification
+        const publicCertRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'certificates', certId);
+        await setDoc(publicCertRef, {
+          certId,
+          studentName,
+          studentEmail: user?.email || '',
+          userId: user?.uid,
+          courseId,
+          courseTitle,
+          instructor: course?.instructor || 'ኢዮብ ሳህሌ',
+          instructorTitle: course?.instructorTitle || '(መስራች)',
+          issueDate: formattedDate,
+          score,
+          verified: true,
+          updatedAt: serverTimestamp()
+        }, { merge: true });
       } catch (err) {
         console.error('Error loading certificate claim state:', err);
         setPhysicalCopyClaimed(false);
@@ -54,7 +72,28 @@ export default function CourseCertificate({ course, user, score = 90, issueDate 
     };
 
     fetchCertData();
-  }, [user?.uid, courseId]);
+  }, [user?.uid, courseId, certId, studentName, courseTitle, formattedDate, score]);
+
+  const handleCopyPublicLink = () => {
+    if (typeof window !== 'undefined') {
+      const url = `${window.location.origin}/certificate/${certId}`;
+      navigator.clipboard.writeText(url);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2500);
+    }
+  };
+
+  const handleShareLinkedIn = () => {
+    if (typeof window !== 'undefined') {
+      const url = encodeURIComponent(`${window.location.origin}/certificate/${certId}`);
+      const title = encodeURIComponent(`Verified Certificate of Completion in ${courseTitle} from Tsehay Campus! 🎓`);
+      window.open(
+        `https://www.linkedin.com/sharing/share-offsite/?url=${url}&title=${title}`,
+        '_blank',
+        'width=600,height=600,toolbar=no,menubar=no'
+      );
+    }
+  };
 
   // Record download / print action in database
   const recordDownloadInDb = async () => {
@@ -151,13 +190,13 @@ export default function CourseCertificate({ course, user, score = 90, issueDate 
       window.print();
       setDownloadSuccess(true);
     } finally {
-      setIsRenderingForDownload(false);
       setIsGenerating(false);
+      setIsRenderingForDownload(false);
     }
   };
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
+    <div className="space-y-6 max-w-4xl mx-auto p-4 sm:p-6">
       {/* PERSISTENT IN-PERSON STAMP POPUP / ALERT (Glassmorphism with Golden Yellow border) */}
       {physicalCopyClaimed === false && !isDismissed && (
         <div className="no-print bg-[#050811]/95 backdrop-blur-2xl border-2 border-[#f9b03c] rounded-3xl p-5 sm:p-7 shadow-[0_15px_40px_rgba(249,176,60,0.25)] relative overflow-hidden transition-all duration-300 animate-in fade-in slide-in-from-top-3">
@@ -213,31 +252,57 @@ export default function CourseCertificate({ course, user, score = 90, issueDate 
         </div>
       )}
 
-      {/* Top Action Bar */}
-      <div className="no-print flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-900/90 border border-slate-800 p-4 rounded-2xl">
+      {/* Top Action Bar with Copy Link & LinkedIn Share */}
+      <div className="no-print flex flex-col md:flex-row items-center justify-between gap-4 bg-slate-900/90 border border-slate-800 p-4 sm:p-5 rounded-2xl sm:rounded-3xl shadow-xl backdrop-blur-xl">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-amber-400 text-dark flex items-center justify-center text-lg font-black shadow-md">
+          <div className="w-10 h-10 rounded-xl bg-[#f9b03c] text-dark flex items-center justify-center text-lg font-black shadow-[0_0_15px_rgba(249,176,60,0.4)]">
             <i className="fa-solid fa-award"></i>
           </div>
           <div>
             <h4 className="font-heading font-black text-sm text-white">እውቅና ያለው ይፋዊ ሰርተፍኬት</h4>
-            <p className="text-xs text-amber-400 font-bold">የሰርተፍኬት መለያ፡ {certId}</p>
+            <p className="text-xs text-[#f9b03c] font-bold font-mono">የሰርተፍኬት መለያ፡ {certId}</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3 w-full sm:w-auto">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 w-full md:w-auto">
+          {/* Glassmorphism Copy Link Button */}
           <button
-            onClick={handlePrint}
-            className="flex-1 sm:flex-none px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white font-bold text-xs sm:text-sm rounded-xl transition flex items-center justify-center gap-2 cursor-pointer border border-white/10"
+            type="button"
+            onClick={handleCopyPublicLink}
+            className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/15 dark:bg-white/[0.06] dark:hover:bg-white/[0.12] text-white text-xs font-bold border border-white/10 transition-all flex items-center gap-2 cursor-pointer shadow-xs active:scale-95"
+            title="ይፋዊውን የሰርተፍኬት ማረጋገጫ ሊንክ ኮፒ አድርግ"
           >
-            <i className="fa-solid fa-print"></i>
-            <span>አትም / PDF</span>
+            <i className={`fa-solid ${linkCopied ? 'fa-check text-emerald-400' : 'fa-link text-[#f9b03c]'}`}></i>
+            <span>{linkCopied ? 'ሊንኩ ተገልብጧል!' : 'ሊንኩን ኮፒ ያድርጉ'}</span>
           </button>
 
+          {/* Share to LinkedIn */}
           <button
+            type="button"
+            onClick={handleShareLinkedIn}
+            className="px-3.5 py-2 rounded-xl bg-[#0077b5] hover:bg-[#005582] text-white text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer shadow-[0_0_15px_rgba(0,119,181,0.3)] active:scale-95"
+            title="ב LinkedIn ላይ አጋራ"
+          >
+            <i className="fa-brands fa-linkedin text-sm"></i>
+            <span>LinkedIn</span>
+          </button>
+
+          {/* Print / PDF */}
+          <button
+            type="button"
+            onClick={handlePrint}
+            className="px-3.5 py-2 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer border border-white/10 active:scale-95"
+          >
+            <i className="fa-solid fa-print"></i>
+            <span>አትም</span>
+          </button>
+
+          {/* Download PNG */}
+          <button
+            type="button"
             onClick={handleDownloadPNG}
             disabled={isGenerating}
-            className="flex-1 sm:flex-none px-6 py-2.5 bg-[#f9b03c] hover:bg-[#ffbe53] text-black font-black text-xs sm:text-sm rounded-xl shadow-lg hover:scale-105 transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+            className="px-4 py-2 bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#f9b03c] hover:brightness-110 text-black font-black text-xs rounded-xl shadow-lg transition flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 disabled:opacity-50"
           >
             {isGenerating ? (
               <>
@@ -247,7 +312,7 @@ export default function CourseCertificate({ course, user, score = 90, issueDate 
             ) : (
               <>
                 <i className="fa-solid fa-download"></i>
-                <span>ሰርተፍኬቱን አውርድ (PNG)</span>
+                <span>አውርድ (PNG)</span>
               </>
             )}
           </button>
