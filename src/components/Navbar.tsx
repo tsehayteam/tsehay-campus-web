@@ -300,7 +300,7 @@ export default function Navbar() {
             : '-translate-y-full opacity-0 pointer-events-none'
         }`}
       >
-        {/* Single Attached Roll-up Close Handle at Bottom Center of Curtain Frame */}
+        {/* Outer Frame Bottom Handle */}
         <button 
           type="button"
           onClick={closeCurtain}
@@ -529,23 +529,27 @@ export default function Navbar() {
               )}
             </div>
 
-            {/* Mobile Top Header Actions */}
+            {/* Mobile Top Header Actions: 🔄 Swapped (Language Switcher first, then Brightness/Theme Toggle) */}
             <div className="lg:hidden flex items-center gap-2">
-              <button 
-                onClick={toggleTheme} 
-                className="w-8 h-8 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 flex items-center justify-center text-gray-700 dark:text-yellow-400 text-xs transition active:scale-95"
-                aria-label="Toggle dark/light mode"
-              >
-                <i className={`fa-solid ${theme === 'dark' ? 'fa-moon' : 'fa-sun'}`}></i>
-              </button>
-
+              {/* 1. Language Switcher (Left) */}
               <button 
                 onClick={toggleLanguage} 
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-100 dark:bg-white/5 text-gray-800 dark:text-white font-bold text-xs transition notranslate active:scale-95" 
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-100 dark:bg-white/5 text-gray-800 dark:text-white font-bold text-xs transition notranslate active:scale-95 cursor-pointer shadow-sm" 
                 translate="no"
+                title="ቋንቋ ይቀይሩ / Switch Language"
               >
-                <i className="fa-solid fa-globe text-[10px] opacity-75"></i>
+                <i className="fa-solid fa-globe text-[10px] opacity-75 text-[#f9b03c]"></i>
                 <span>{lang === 'am' ? 'EN' : 'አማ'}</span>
+              </button>
+
+              {/* 2. Theme / Brightness Toggle (Right) */}
+              <button 
+                onClick={toggleTheme} 
+                className="w-8 h-8 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 flex items-center justify-center text-gray-700 dark:text-yellow-400 text-xs transition active:scale-95 cursor-pointer shadow-sm"
+                aria-label="Toggle dark/light mode"
+                title="ሞድ ይቀይሩ / Toggle theme"
+              >
+                <i className={`fa-solid ${theme === 'dark' ? 'fa-moon' : 'fa-sun'}`}></i>
               </button>
             </div>
           </div>
@@ -665,17 +669,32 @@ export default function Navbar() {
               </button>
             </div>
 
-            {/* 7. Staggered Item 7: Ultra-Sleek Secondary Brand Color Login Action */}
-            <div className="animate-nav-stagger-7 pt-0.5">
+            {/* 7. Staggered Item 7: Ultra-Sleek Login Action with "ወደ ላይ እጠፍ" Attached to its Bottom Edge */}
+            <div className="animate-nav-stagger-7 pt-0.5 space-y-1">
               {!mounted || !user ? (
-                <button 
-                  type="button" 
-                  onClick={() => { closeCurtain(); openAuthModal(false); }} 
-                  className="w-full btn-login-secondary font-black py-2.5 rounded-xl shadow-lg flex items-center justify-center gap-2 text-xs sm:text-sm cursor-pointer active:scale-95 group"
-                >
-                  <i className="fa-solid fa-arrow-right-to-bracket text-[#f9b03c] icon-anim-login"></i>
-                  <span>{t('login') || 'ግባ (Login)'}</span>
-                </button>
+                <div className="space-y-1">
+                  <button 
+                    type="button" 
+                    onClick={() => { closeCurtain(); openAuthModal(false); }} 
+                    className="w-full btn-login-secondary font-black py-2.5 rounded-xl shadow-lg flex items-center justify-center gap-2 text-xs sm:text-sm cursor-pointer active:scale-95 group"
+                  >
+                    <i className="fa-solid fa-arrow-right-to-bracket text-[#f9b03c] icon-anim-login"></i>
+                    <span>{t('login') || 'ግባ (Login)'}</span>
+                  </button>
+
+                  {/* 🔼 Seamlessly Attached to the Bottom Edge of Login */}
+                  <button 
+                    type="button"
+                    onClick={closeCurtain}
+                    className="w-full py-1.5 px-3 rounded-lg bg-amber-500/10 dark:bg-amber-500/15 hover:bg-amber-500/25 border border-[#f9b03c]/40 hover:border-[#f9b03c] text-gray-900 dark:text-[#f9b03c] font-black text-[10px] shadow-sm flex items-center justify-center gap-1.5 cursor-pointer transition-all active:scale-95 group"
+                    title="ወደ ላይ መልሰህ እጠፍ (Roll Up Menu)"
+                  >
+                    <div className="w-3.5 h-3.5 rounded-full bg-[#f9b03c] text-black flex items-center justify-center text-[8px] font-black shadow-sm group-hover:scale-110 transition-transform">
+                      <i className="fa-solid fa-chevron-up"></i>
+                    </div>
+                    <span className="tracking-wider uppercase font-heading">ወደ ላይ እጠፍ (Roll Up)</span>
+                  </button>
+                </div>
               ) : (
                 <div className="space-y-1.5 p-2 rounded-xl bg-gray-100/70 dark:bg-white/5 border border-gray-200 dark:border-white/10">
                   <div className="flex items-center gap-2">
@@ -722,6 +741,19 @@ export default function Navbar() {
                     className="w-full text-red-500 font-bold py-1 hover:bg-red-500/10 rounded-xl border border-red-500/30 transition cursor-pointer text-center flex items-center justify-center gap-1.5 text-xs"
                   >
                     <i className="fa-solid fa-arrow-right-from-bracket"></i> {t('logout') || 'ዘግተህ ውጣ (Logout)'}
+                  </button>
+
+                  {/* 🔼 Roll Up Tab on Bottom Edge of Logged-in Card */}
+                  <button 
+                    type="button"
+                    onClick={closeCurtain}
+                    className="w-full py-1.5 px-3 rounded-lg bg-amber-500/10 dark:bg-amber-500/15 hover:bg-amber-500/25 border border-[#f9b03c]/40 hover:border-[#f9b03c] text-gray-900 dark:text-[#f9b03c] font-black text-[10px] shadow-sm flex items-center justify-center gap-1.5 cursor-pointer transition-all active:scale-95 group"
+                    title="ወደ ላይ መልሰህ እጠፍ (Roll Up Menu)"
+                  >
+                    <div className="w-3.5 h-3.5 rounded-full bg-[#f9b03c] text-black flex items-center justify-center text-[8px] font-black shadow-sm group-hover:scale-110 transition-transform">
+                      <i className="fa-solid fa-chevron-up"></i>
+                    </div>
+                    <span className="tracking-wider uppercase font-heading">ወደ ላይ እጠፍ (Roll Up)</span>
                   </button>
                 </div>
               )}
