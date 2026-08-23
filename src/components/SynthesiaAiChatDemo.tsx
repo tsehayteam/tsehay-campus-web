@@ -133,14 +133,14 @@ export default function SynthesiaAiChatDemo() {
       <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-[#3268ba]/20 rounded-full blur-[100px] pointer-events-none animate-pulse" />
 
       {/* Top Window Header (Mac / x.ai Terminal Style) */}
-      <div className="flex items-center justify-between border-b border-white/[0.08] pb-4 mb-5 relative z-10">
+      <div className="flex items-center justify-between border-b border-slate-200 dark:border-white/[0.08] pb-4 mb-5 relative z-10">
         <div className="flex items-center gap-2.5">
           <div className="flex items-center gap-1.5">
             <span className="w-3 h-3 rounded-full bg-[#ff5f56]/90 border border-[#e0443e] inline-block shadow-[0_0_8px_rgba(255,95,86,0.5)]"></span>
             <span className="w-3 h-3 rounded-full bg-[#ffbd2e]/90 border border-[#dea123] inline-block shadow-[0_0_8px_rgba(255,189,46,0.5)]"></span>
             <span className="w-3 h-3 rounded-full bg-[#27c93f]/90 border border-[#1aab29] inline-block shadow-[0_0_8px_rgba(39,201,63,0.5)]"></span>
           </div>
-          <span className="ml-2 text-xs font-bold text-gray-300 font-mono flex items-center gap-1.5">
+          <span className="ml-2 text-xs font-bold text-slate-700 dark:text-gray-300 font-mono flex items-center gap-1.5">
             <i className="fa-solid fa-terminal text-[10px] text-[#f9b03c]"></i>
             <span className="hidden xs:inline">Tsehay AI</span> Interactive Sandbox
           </span>
@@ -152,7 +152,7 @@ export default function SynthesiaAiChatDemo() {
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
             <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500 shadow-[0_0_8px_#10b981]"></span>
           </span>
-          <span className="text-[11px] font-black text-[#f9b03c] uppercase tracking-wider font-mono">
+          <span className="text-[11px] font-black text-amber-700 dark:text-[#f9b03c] uppercase tracking-wider font-mono">
             24/7 ONLINE
           </span>
         </div>
@@ -160,7 +160,7 @@ export default function SynthesiaAiChatDemo() {
 
       {/* Interactive Scenario Switcher Chips */}
       <div className="flex flex-wrap items-center gap-2 mb-5 relative z-10">
-        <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mr-1 flex items-center gap-1">
+        <span className="text-[11px] font-bold text-slate-500 dark:text-gray-400 uppercase tracking-wider mr-1 flex items-center gap-1">
           <i className="fa-solid fa-layer-group text-[10px] text-[#f9b03c]"></i>
           <span>Scenario:</span>
         </span>
@@ -171,7 +171,7 @@ export default function SynthesiaAiChatDemo() {
             className={`text-xs font-bold px-3 py-1.5 rounded-xl transition-all duration-300 cursor-pointer flex items-center gap-1.5 active:scale-95 ${
               scenarioIndex === i
                 ? 'bg-gradient-to-r from-[#f9b03c] to-[#ffc66e] text-black shadow-[0_0_20px_rgba(249,176,60,0.45)] scale-102 font-black border border-[#f9b03c]'
-                : 'bg-white/[0.04] text-gray-300 hover:bg-white/[0.08] hover:text-white border border-white/[0.07]'
+                : 'bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.04] text-slate-700 dark:text-gray-300 dark:hover:bg-white/[0.08] dark:hover:text-white border border-slate-200 dark:border-white/[0.07]'
             }`}
           >
             <span>{sc.category}</span>
@@ -182,7 +182,7 @@ export default function SynthesiaAiChatDemo() {
       {/* Live Chat Messages Feed */}
       <div 
         ref={chatScrollRef}
-        className="space-y-4 min-h-[310px] max-h-[380px] overflow-y-auto pr-1 flex flex-col justify-start relative z-10 scrollbar-thin scrollbar-thumb-white/10"
+        className="space-y-4 min-h-[310px] max-h-[380px] overflow-y-auto pr-1 flex flex-col justify-start relative z-10 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-white/10"
       >
         {/* User Question Bubble */}
         {displayedQuestion && (
@@ -197,7 +197,7 @@ export default function SynthesiaAiChatDemo() {
                 {phase === 'typing_question' && <span className="cursor-pulse-blue" />}
               </p>
             </div>
-            <div className="w-8 h-8 rounded-xl bg-[#3268ba]/80 text-white flex items-center justify-center text-xs font-black shrink-0 border border-white/20 shadow-[0_0_12px_rgba(50,104,186,0.4)]">
+            <div className="w-8 h-8 rounded-xl bg-[#3268ba] text-white flex items-center justify-center text-xs font-black shrink-0 border border-white/20 shadow-[0_0_12px_rgba(50,104,186,0.4)]">
               <i className="fa-solid fa-user"></i>
             </div>
           </div>
@@ -209,10 +209,10 @@ export default function SynthesiaAiChatDemo() {
             <div className="w-9 h-9 rounded-xl bg-[#f9b03c] text-black flex items-center justify-center text-sm font-black shrink-0 shadow-[0_0_20px_rgba(249,176,60,0.6)]">
               <i className="fa-solid fa-robot"></i>
             </div>
-            <div className="bg-white/[0.04] border border-[#f9b03c]/30 backdrop-blur-xl p-3.5 rounded-2xl rounded-tl-xs flex items-center gap-3 shadow-[0_0_15px_rgba(249,176,60,0.1)]">
+            <div className="bg-white/90 dark:bg-white/[0.04] border border-[#f9b03c]/40 backdrop-blur-xl p-3.5 rounded-2xl rounded-tl-xs flex items-center gap-3 shadow-[0_0_15px_rgba(249,176,60,0.1)]">
               <div className="flex items-center gap-2">
-                <span className="text-xs font-black text-[#f9b03c] font-mono tracking-wide">Tsehay AI እያሰላሰለ ነው</span>
-                <span className="text-[10px] text-gray-400">({currentScenario.badge})</span>
+                <span className="text-xs font-black text-amber-800 dark:text-[#f9b03c] font-mono tracking-wide">Tsehay AI እያሰላሰለ ነው</span>
+                <span className="text-[10px] text-slate-500 dark:text-gray-400">({currentScenario.badge})</span>
               </div>
               <div className="flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#f9b03c] animate-bounce" style={{ animationDelay: '0ms' }}></span>
@@ -229,43 +229,43 @@ export default function SynthesiaAiChatDemo() {
             <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#f9b03c] to-[#ffc66e] text-black flex items-center justify-center text-sm font-black shrink-0 shadow-[0_0_20px_rgba(249,176,60,0.5)]">
               <i className="fa-solid fa-robot"></i>
             </div>
-            <div className="bg-white/[0.04] border border-white/[0.1] backdrop-blur-2xl p-4 sm:p-5 rounded-2xl rounded-tl-xs max-w-[92%] sm:max-w-[88%] shadow-2xl relative">
+            <div className="bg-white/90 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.1] backdrop-blur-2xl p-4 sm:p-5 rounded-2xl rounded-tl-xs max-w-[92%] sm:max-w-[88%] shadow-lg dark:shadow-2xl relative">
               
               {/* Badge & Verified Mentor Strategy Tag */}
-              <div className="flex flex-wrap items-center justify-between gap-2 mb-3 pb-2 border-b border-white/[0.08]">
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-3 pb-2 border-b border-slate-200 dark:border-white/[0.08]">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-black text-[#f9b03c] flex items-center gap-1.5 font-heading">
+                  <span className="text-xs font-black text-amber-800 dark:text-[#f9b03c] flex items-center gap-1.5 font-heading">
                     <i className="fa-solid fa-wand-magic-sparkles text-[11px]"></i> Tsehay AI Tutor
                   </span>
-                  <span className="text-[10px] bg-[#f9b03c]/15 text-[#f9b03c] border border-[#f9b03c]/30 px-2 py-0.5 rounded-md font-black">
+                  <span className="text-[10px] bg-[#f9b03c]/20 text-amber-900 dark:text-[#f9b03c] border border-[#f9b03c]/40 px-2 py-0.5 rounded-md font-black">
                     {currentScenario.badge}
                   </span>
                 </div>
                 
                 <button
                   onClick={handleCopyResponse}
-                  className="text-[11px] text-gray-400 hover:text-white transition flex items-center gap-1 cursor-pointer bg-white/[0.05] hover:bg-white/[0.1] px-2 py-0.5 rounded-md border border-white/10"
+                  className="text-[11px] text-slate-600 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white transition flex items-center gap-1 cursor-pointer bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.05] dark:hover:bg-white/[0.1] px-2 py-0.5 rounded-md border border-slate-200 dark:border-white/10"
                   title="መልሱን ኮፒ አድርግ"
                 >
-                  <i className={`fa-solid ${copied ? 'fa-check text-emerald-400' : 'fa-copy'}`}></i>
+                  <i className={`fa-solid ${copied ? 'fa-check text-emerald-500' : 'fa-copy'}`}></i>
                   <span>{copied ? 'ተገልብጧል' : 'Copy'}</span>
                 </button>
               </div>
 
               {/* Streaming AI Text Body */}
-              <p className="text-xs sm:text-[13.5px] text-slate-100 font-normal leading-relaxed whitespace-pre-line font-body select-text">
+              <p className="text-xs sm:text-[13.5px] text-slate-900 dark:text-slate-100 font-medium leading-relaxed whitespace-pre-line font-body select-text">
                 {displayedResponse}
                 {phase === 'typing_response' && <span className="cursor-pulse-gold" />}
               </p>
 
               {/* Course Context Link */}
               {phase === 'done' && (
-                <div className="mt-3.5 pt-2.5 border-t border-white/[0.06] flex items-center justify-between text-[11px]">
-                  <span className="text-gray-400 flex items-center gap-1">
+                <div className="mt-3.5 pt-2.5 border-t border-slate-200 dark:border-white/[0.06] flex items-center justify-between text-[11px]">
+                  <span className="text-slate-600 dark:text-gray-400 flex items-center gap-1">
                     <i className="fa-solid fa-graduation-cap text-[#f9b03c]"></i>
-                    <span>ይህ ስትራቴጂ የሚገኘው፦ <strong className="text-white">{currentScenario.courseTag}</strong></span>
+                    <span>ይህ ስትራቴጂ የሚገኘው፦ <strong className="text-slate-900 dark:text-white">{currentScenario.courseTag}</strong></span>
                   </span>
-                  <span className="text-[#f9b03c] font-black hover:underline cursor-pointer">
+                  <span className="text-amber-700 dark:text-[#f9b03c] font-black hover:underline cursor-pointer">
                     ተማር →
                   </span>
                 </div>
@@ -276,16 +276,16 @@ export default function SynthesiaAiChatDemo() {
       </div>
 
       {/* Bottom Mockup Status & 5-Second Countdown Indicator */}
-      <div className="mt-5 pt-3.5 border-t border-white/[0.08] flex items-center justify-between text-xs text-gray-400 relative z-10">
+      <div className="mt-5 pt-3.5 border-t border-slate-200 dark:border-white/[0.08] flex items-center justify-between text-xs text-slate-500 dark:text-gray-400 relative z-10">
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-[#f9b03c] animate-ping"></span>
-          <span className="text-gray-300 font-medium text-[11px] sm:text-xs">
+          <span className="text-slate-700 dark:text-gray-300 font-semibold text-[11px] sm:text-xs">
             በካምፓሳችን ውስጥ ላሉ ሁሉም ተማሪዎች በነፃ የቀረበ
           </span>
         </div>
 
         {/* Phase Indicator */}
-        <div className="text-[11px] font-mono text-[#f9b03c] font-bold">
+        <div className="text-[11px] font-mono text-amber-800 dark:text-[#f9b03c] font-bold">
           {phase === 'typing_question' && '✍️ የተማሪ ጥያቄ በመፃፍ ላይ...'}
           {phase === 'thinking' && '🧠 AI ስትራቴጂዎችን እያሰላሰለ ነው...'}
           {phase === 'typing_response' && '⚡ Tsehay AI መልስ በመስጠት ላይ...'}

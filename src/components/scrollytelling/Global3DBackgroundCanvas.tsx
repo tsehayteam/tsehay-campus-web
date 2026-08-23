@@ -112,9 +112,22 @@ export default function Global3DBackgroundCanvas() {
       mouseX += (targetMouseX - mouseX) * 0.04;
       mouseY += (targetMouseY - mouseY) * 0.04;
 
-      // Deep void black clear (#030509)
-      ctx.fillStyle = '#030509';
-      ctx.fillRect(0, 0, width, height);
+      // Detect current theme
+      const isDark = typeof document !== 'undefined' ? document.documentElement.classList.contains('dark') : true;
+
+      if (isDark) {
+        // Deep void black clear (#030509)
+        ctx.fillStyle = '#030509';
+        ctx.fillRect(0, 0, width, height);
+      } else {
+        // Ultra-luxurious pearl background with subtle ambient depth for Light Mode
+        const grad = ctx.createLinearGradient(0, 0, 0, height);
+        grad.addColorStop(0, '#f8fafc');
+        grad.addColorStop(0.5, '#f1f5f9');
+        grad.addColorStop(1, '#e8eef6');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, width, height);
+      }
 
       // Camera Z fly-through based on scroll
       const cameraFlySpeed = scrollProgress * DEPTH * 1.6;

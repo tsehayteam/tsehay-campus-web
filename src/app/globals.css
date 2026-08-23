@@ -27,15 +27,16 @@
 }
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-  --plyr-color-main: #facc15;
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --plyr-color-main: #f59e0b;
   --bodyBg: #f8fafc;
 }
 
 :root.dark {
   --background: #000000;
   --foreground: #ededed;
+  --plyr-color-main: #facc15;
   --bodyBg: #000000;
 }
 
@@ -915,14 +916,25 @@ img, video, canvas {
 .terafab-glass-card {
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  background: rgba(8, 12, 22, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
   transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.4s ease, box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .terafab-glass-card:hover {
   transform: translateY(-4px) scale(1.015);
+  border-color: rgba(249, 176, 60, 0.6);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.08), 0 0 25px rgba(249, 176, 60, 0.2);
+}
+
+.dark .terafab-glass-card {
+  background: rgba(8, 12, 22, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
+}
+
+.dark .terafab-glass-card:hover {
   border-color: rgba(249, 176, 60, 0.4);
   box-shadow: 0 20px 45px rgba(0, 0, 0, 0.8), 0 0 25px rgba(249, 176, 60, 0.2);
 }
@@ -930,6 +942,11 @@ img, video, canvas {
 .terafab-glass-sidebar {
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
+  background: rgba(255, 255, 255, 0.96);
+  border-right: 1px solid rgba(226, 232, 240, 0.9);
+}
+
+.dark .terafab-glass-sidebar {
   background: rgba(3, 5, 9, 0.85);
   border-right: 1px solid rgba(255, 255, 255, 0.08);
 }
@@ -1005,9 +1022,16 @@ img, video, canvas {
 .terafab-ai-sandbox {
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(249, 176, 60, 0.4);
+  border-radius: 20px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.06), 0 0 35px rgba(249, 176, 60, 0.15);
+  transition: all 0.4s ease;
+}
+
+.dark .terafab-ai-sandbox {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 20px;
   animation: goldenBoxGlow 6s ease-in-out infinite;
 }
 
