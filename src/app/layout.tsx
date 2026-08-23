@@ -8,7 +8,6 @@ import PaymentModal from "@/components/PaymentModal";
 import TermsModal from "@/components/TermsModal";
 import ContentProtection from "@/components/ContentProtection";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
-import ScrollToTopButton from "@/components/ScrollToTopButton";
 import { LanguageProvider } from "@/context/LanguageContext";
 import Global3DBackgroundCanvas from "@/components/scrollytelling/Global3DBackgroundCanvas";
 import SmoothScrollAndScrollyProvider from "@/components/scrollytelling/SmoothScrollAndScrollyProvider";
@@ -193,7 +192,6 @@ export default function RootLayout({
               <TermsModal />
               <PaymentModal />
               <PWAInstallPrompt />
-              <ScrollToTopButton />
             </SmoothScrollAndScrollyProvider>
           </AuthProvider>
         </LanguageProvider>
