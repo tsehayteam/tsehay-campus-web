@@ -205,6 +205,17 @@ export default function AdminDashboard() {
       console.warn("Portfolio video Firestore sync:", err);
     });
 
+    // Also fetch current portfolio settings from server API
+    fetch('/api/admin/site-settings?settingKey=youtube_portfolio')
+      .then(res => res.json())
+      .then(json => {
+        if (json.data) {
+          if (json.data.localVideoUrl) setPortfolioLocalUrl(json.data.localVideoUrl);
+          if (json.data.internationalVideoUrl) setPortfolioInternationalUrl(json.data.internationalVideoUrl);
+        }
+      })
+      .catch(e => console.warn("Portfolio API load error:", e));
+
     // 1. Instant local storage cache for Promo Codes
     try {
       const cachedRef = localStorage.getItem('tsehay_referral_codes_cache');

@@ -34,7 +34,31 @@ export default function InstructorYouTubePortfolio() {
       }
     } catch (e) {}
 
-    // 2. Real-time Firestore sync
+    // 2. Fetch from Server Admin API (Bypasses security rules and ensures lifetime persistence)
+    const fetchApiSettings = async () => {
+      try {
+        const res = await fetch('/api/admin/site-settings?settingKey=youtube_portfolio');
+        if (res.ok) {
+          const json = await res.json();
+          if (json.data) {
+            if (json.data.localVideoUrl) setLocalVideoUrl(json.data.localVideoUrl);
+            if (json.data.internationalVideoUrl) setInternationalVideoUrl(json.data.internationalVideoUrl);
+
+            try {
+              localStorage.setItem('tsehay_youtube_portfolio_cache', JSON.stringify({
+                localVideoUrl: json.data.localVideoUrl,
+                internationalVideoUrl: json.data.internationalVideoUrl
+              }));
+            } catch (e) {}
+          }
+        }
+      } catch (err) {
+        console.warn("API site-settings fetch fallback:", err);
+      }
+    };
+    fetchApiSettings();
+
+    // 3. Real-time Firestore sync
     const portfolioDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'site_settings', 'youtube_portfolio');
     const unsubscribe = onSnapshot(portfolioDocRef, (docSnap) => {
       if (docSnap.exists()) {
