@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import React, { useEffect, useState, useRef, Suspense } from 'react';
 import { db, auth } from '@/lib/firebase/config';
 import { collection, getDocs, query, orderBy, doc, getDoc, updateDoc, setDoc, serverTimestamp, where, onSnapshot } from 'firebase/firestore';
@@ -1425,7 +1425,7 @@ ${customAdminPrompt}
     }
   };
 
-  if (authLoading || (!authInitialized && !user) || (loading && courses.length === 0)) {
+  if ((authLoading && !user) || (!authInitialized && !user) || (loading && courses.length === 0 && !activeCourse)) {
     return <DashboardLoadingScreen message="የመማሪያ ክፍልዎን በማዘጋጀት ላይ... (Loading Classroom...)" />;
   }
 

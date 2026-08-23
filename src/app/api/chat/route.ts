@@ -7,39 +7,69 @@ const MAX_REQUESTS_PER_WINDOW = 20;
 function getSmartFallbackReply(userPrompt: string): string {
     const p = (userPrompt || '').toLowerCase().trim();
     
-    if (p.includes('founder') || p.includes('መስራች') || p.includes('eyoub') || p.includes('እዮብ') || p.includes('tsehay digital') || p.includes('ፀሐይ ዲጂታል') || p.includes('tsehay campus') || p.includes('ማን ነው') || p.includes('man new')) {
+    // 1. Greetings & Warm Welcomes
+    if (p.includes('selam') || p.includes('ሰላም') || p.includes('hello') || p.includes('hi') || p.includes('hey') || p.includes('እንዴት') || p.includes('ጤና ይስጥልኝ') || p.includes('teneystlgn') || p.includes('morning') || p.includes('afternoon') || p.includes('tsehay ai') || p.includes('who are you') || p.includes('ማን ነህ') || p.includes('ማነህ')) {
+        return "ሰላም! እኔ Tsehay AI (የፀሐይ ካምፓስ ይፋዊ AI ረዳት) ነኝ። እንኳን ደህና መጡ! ዛሬ በምን ልርዳዎት? ስለ ኮርሶቻችን፣ ስለ ክፍያ፣ ስለ ሰርተፊኬት ወይም ስለ ትምህርቶች ማንኛውንም ጥያቄ መጠየቅ ይችላሉ።";
+    }
+
+    // 2. Founder / Instructor
+    if (p.includes('founder') || p.includes('መስራች') || p.includes('eyoub') || p.includes('እዮብ') || p.includes('tsehay digital') || p.includes('ፀሐይ ዲጂታል') || p.includes('tsehay campus') || p.includes('ማን ነው') || p.includes('man new') || p.includes('አስተማሪ')) {
         return "የፀሐይ ካምፓስ (Tsehay Campus) መስራች እና ዋና አስተማሪ እዮብ ሳህሌ (Eyoub Sahle) ነው። እሱ የዲጂታል ማርኬቲንግ ባለሙያ እና የTsehay Digital (tsehay360.com) መስራች ነው።";
     }
     
-    if (p.includes('pay') || p.includes('ክፍያ') || p.includes('ቴሌብር') || p.includes('telebirr') || p.includes('ባንክ') || p.includes('lakipay') || p.includes('ዋጋ') || p.includes('price')) {
+    // 3. Payments & Pricing
+    if (p.includes('pay') || p.includes('ክፍያ') || p.includes('ቴሌብር') || p.includes('telebirr') || p.includes('ባንክ') || p.includes('lakipay') || p.includes('ዋጋ') || p.includes('price') || p.includes('ብር') || p.includes('ገንዘብ')) {
         return "ለኮርሶቻችን ክፍያ መፈጸም በጣም ቀላል ነው። በሀገር ውስጥ ካሉ በLakiPay (ላኪ ፔይ) አማካኝነት በቴሌብር፣ በሞባይል ዋሌት ወይም በባንክ ማስተላለፍ ይችላሉ። ከሀገር ውጭ ከሆኑ ደግሞ PayPal፣ የክሬዲት/ዴቢት ካርዶች (Credit/Debit Cards) ወይም ክሪፕቶ ከረንሲ መጠቀም ይችላሉ።";
     }
     
-    if (p.includes('ኮርስ') || p.includes('course') || p.includes('ትምህርት') || p.includes('ስልጠና')) {
-        return "በፀሐይ ካምፓስ የሚከተሉት ስልጠናዎች ይገኛሉ፦\n1. ዲጂታል ማርኬቲንግ ኮርስ (Digital Marketing) - ነፃ (FREE)\n2. የሼን ኢምፖርት ቢዝነስ (Shein Import) - 4,500 ብር\n3. የዩቲዩብ ስኬት ሚስጥሮች (YouTube Masterclass) - 900 ብር\n\nለበለጠ መረጃ ወይም ለመመዝገብ በ @TsehayTeam ያግኙን።";
-    }
-    
-    if (p.includes('ሰርተፊኬት') || p.includes('certif') || p.includes('ማስረጃ')) {
-        return "ተማሪዎቻችን ማንኛውንም ኮርስ በተሳካ ሁኔታ ካጠናቀቁ በኋላ በነፃ የዲጂታል ማጠናቀቂያ ሰርተፊኬት (Digital Certificate of Completion) ያገኛሉ።";
+    // 4. Shein Import Business Course
+    if (p.includes('shein') || p.includes('ሺን') || p.includes('ሼን') || p.includes('import') || p.includes('ኢምፖርት')) {
+        return "የሼን ኢምፖርት ቢዝነስ ስልጠና (Shein Import Business)፦ ከሼን እቃዎችን በአነስተኛ ካፒታል አስመጥተው በሀገር ውስጥ ትርፋማ የሚሆኑበት የተሟላ የተግባር ስልጠና ሲሆን ዋጋው 4,500 ብር ነው። በውስጡ የአፕሊኬሽን አጠቃቀም፣ የዶላር ክፍያ፣ የጉምሩክ እና የማርኬቲንግ ስልቶችን ያካትታል።";
     }
 
-    if (p.includes('ስልክ') || p.includes('phone') || p.includes('contact') || p.includes('telegram') || p.includes('ቴሌግራም') || p.includes('አድራሻ')) {
+    // 5. YouTube Masterclass
+    if (p.includes('youtube') || p.includes('ዩቲዩብ') || p.includes('ዩቱብ')) {
+        return "የዩቲዩብ ስኬት ሚስጥሮች (YouTube Secrets Masterclass)፦ በዩቲዩብ ቻናል ከፍተው ቪዲዮዎችን በማዘጋጀት እና ሞኒታይዝ በማድረግ ገቢ የሚያገኙበት ስልጠና ሲሆን ዋጋው 900 ብር ነው። ነፃ የአማርኛ ኢ-ቡክ (E-book) እና የግማሽ ቀን የተግባር ወርክሾፕ ያካትታል።";
+    }
+
+    // 6. Digital Marketing Course
+    if (p.includes('marketing') || p.includes('ማርኬቲንግ') || p.includes('digital')) {
+        return "የዲጂታል ማርኬቲንግ ኮርስ (Digital Marketing)፦ በፀሐይ ካምፓስ ሙሉ በሙሉ በነፃ (100% FREE) የሚሰጥ ስልጠና ሲሆን የሶሻል ሚዲያ ማስታወቂያ (FB Ads)፣ SEO እና የኦንላይን ቢዝነስ ስልቶችን ያስተምራል።";
+    }
+
+    // 7. General Courses Listing
+    if (p.includes('ኮርስ') || p.includes('course') || p.includes('ትምህርት') || p.includes('ስልጠና') || p.includes('ምን አለ') || p.includes('list')) {
+        return "በፀሐይ ካምፓስ በአሁኑ ሰዓት የሚከተሉት ስልጠናዎች ይገኛሉ፦\n1. ዲጂታል ማርኬቲንግ ኮርስ (Digital Marketing) - ነፃ (FREE)\n2. የሼን ኢምፖርት ቢዝነስ (Shein Import) - 4,500 ብር\n3. የዩቲዩብ ስኬት ሚስጥሮች (YouTube Masterclass) - 900 ብር\n\nበቅርቡ የዌብ ዴቨሎፕመንት እና የክሪፕቶ ስልጠናዎችም ይካተታሉ። ለመመዝገብ በ @TsehayTeam ያግኙን።";
+    }
+    
+    // 8. Certificates
+    if (p.includes('ሰርተፊኬት') || p.includes('certif') || p.includes('ማስረጃ') || p.includes('ሰርተፍኬት')) {
+        return "ተማሪዎቻችን ማንኛውንም ኮርስ በተሳካ ሁኔታ ካጠናቀቁ በኋላ በነፃ ይፋዊ የዲጂታል ማጠናቀቂያ ሰርተፊኬት (Digital Certificate of Completion) ያገኛሉ።";
+    }
+
+    // 9. Contact / Support
+    if (p.includes('ስልክ') || p.includes('phone') || p.includes('contact') || p.includes('telegram') || p.includes('ቴሌግራም') || p.includes('አድራሻ') || p.includes('እገዛ') || p.includes('help') || p.includes('support')) {
         return "ለማንኛውም እገዛ በቴሌግራም በ @TsehayTeam ወይም በስልክ ቁጥር 0980209090 (0980-20-90-90) ማግኘት ይችላሉ።";
     }
 
-    return "ይቅርታ፣ ይህንን መረጃ በአሁኑ ሰዓት ማግኘት አልቻልኩም። እባክዎ ተጨማሪ እገዛ በ @TsehayTeam ወይንም በ 0980209090 ያግኙን።";
+    return "ሰላም! እኔ Tsehay AI ነኝ። ስለ ፀሐይ ካምፓስ ኮርሶች፣ ስለ አሰራር፣ ስለ ምዝገባ ወይም ስለ ትምህርቶች ማንኛውንም ጥያቄ መጠየቅ ይችላሉ። ተጨማሪ ቀጥታ እገዛ ከፈለጉ ደግሞ በቴሌግራም በ @TsehayTeam ወይም በ 0980209090 ያግኙን።";
 }
 
 export async function POST(req: Request) {
   let reqBody = {};
   try { reqBody = await req.json(); } catch(e) {}
   
-  // 🔒 Strict CORS validation
-  const allowedOrigins = ['https://tsehaycampus.com', 'https://www.tsehaycampus.com'];
+  // 🔒 CORS validation (Allow production domain, vercel preview subdomains, and localhost)
   const origin = req.headers.get('origin');
-  
-  if (origin && !allowedOrigins.includes(origin) && !origin.includes('localhost')) {
+  if (origin) {
+    const isAllowed = 
+      origin.includes('tsehaycampus.com') || 
+      origin.includes('vercel.app') || 
+      origin.includes('localhost') || 
+      origin.includes('127.0.0.1');
+    if (!isAllowed) {
       return NextResponse.json({ error: 'Forbidden Origin' }, { status: 403 });
+    }
   }
 
   if (req.method === 'OPTIONS') return new NextResponse(null, { status: 200 });
@@ -129,43 +159,34 @@ ${courseContext.isSummaryRequest ? '- TASK: Provide a clear, structured 3-bullet
     const DEFAULT_SYSTEM_INSTRUCTION = `You are "Tsehay AI", the official virtual guide and AI Teaching Assistant for "Tsehay Campus" (tsehaycampus.com). Your persona is friendly, highly professional, encouraging, and focused on helping students succeed.
 ${contextualCourseSection}
 [STRICT CONVERSATION FLOW RULES]
-- NEVER repeat your welcome, greeting, or platform introduction message after the very first turn of the conversation.
-- Do not output a static, pre-written, or repetitive welcome template for every user message. You must read and dynamically answer the user's specific question.
-- If the user's message is a direct question (e.g., "Who is the founder?", "How to pay?", "ክፍያው ስንት ነው?"), IMMEDIATELY answer that specific question in your first sentence. Do not add unnecessary introductory pleasantries, platform welcomes, or generic details. Keep answers short and direct.
+- GREETINGS: When greeted (e.g., "selam", "ሰላም", "hello", "hi", "እንዴት ነህ/ነሽ", "good morning"), respond warmly and enthusiastically in Amharic (or English if greeted in English), introduce yourself as Tsehay AI, and politely invite them to ask any question about courses, learning, or skills.
+- DYNAMIC REPLIES: If the user asks a specific question (e.g., about courses, founder, pricing, certificates, learning tips), answer it directly, accurately, and politely in the very first sentence.
+- NEVER output a static generic refusal if the student is simply saying hello or asking about education/business/skills.
 
 [LANGUAGES]
-- Your primary language is Amharic (አማርኛ).
-- If a student asks a question in English, you MUST respond in clear, professional English.
-- For all other queries, respond strictly in clear, polite, and grammatically correct Amharic (አማርኛ).
-
-[SOURCE OF TRUTH]
-Base your answers ONLY on the verified facts provided below. Do not invent or assume details about pricing, certificates, or courses. If asked about something not listed here, politely state: "ይቅርታ፣ ይህንን መረጃ በአሁኑ ሰዓት ማግኘት አልቻልኩም። እባክዎ ተጨማሪ እገዛ በ @TsehayTeam ወይንም በ 0980209090 ያግኙን።" (In English: "I'm sorry, I don't have that information right now. Please reach out to us at @TsehayTeam or call 0980209090 for further assistance.")
+- Primary language is Amharic (አማርኛ).
+- If a student asks in English, respond in clear, professional English.
+- For all other questions, respond in polite, grammatically correct Amharic (አማርኛ).
 
 [VERIFIED PLATFORM FACTS]
 - Platform Name: Tsehay Campus (ፀሐይ ካምፓስ)
-- Founder & Main Instructor: Eyoub Sahle (እዮብ ሳህሌ). He is a professional digital marketer and the founder of Tsehay Digital (tsehay360.com). More instructors may join in the future.
-- Learning Model: Hybrid. Lessons are studied online at the student's own pace. However, there are periodic in-person (offline) masterclasses, workshops, and community events to practice and network.
-- Public Telegram Community: "Tsehay Campus Chat" (ፀሐይ ካምፓስ ቻት) is our public Telegram group where students can connect and discuss.
-- General Support & Contact Info:
-  * Telegram Support Username: @TsehayTeam
-  * Phone Number: 0980209090 (0980-20-90-90)
-- Private/1-on-1 Student Support: For course-specific issues or private student inquiries, instruct them to contact the support team directly at @TsehayTeam on Telegram.
-- Certificates: Students receive a free Digital Certificate of Completion after successfully finishing any course.
-- Payment Methods:
-  * For local users (Ethiopia): We support Telebirr, mobile wallets, and direct bank transfers integrated securely via LakiPay.
-  * For international users: We accept PayPal, Credit/Debit cards, and Cryptocurrency.
-- Main Agency Website: tsehay360.com (Tsehay Digital) for advanced digital marketing services.
+- Founder & Main Instructor: Eyoub Sahle (እዮብ ሳህሌ). He is a professional digital marketer and the founder of Tsehay Digital (tsehay360.com).
+- Learning Model: Hybrid (Online lessons at own pace + periodic in-person masterclasses, workshops, and community events).
+- Public Telegram Community: "Tsehay Campus Chat" (ፀሐይ ካምፓስ ቻት)
+- Support Telegram: @TsehayTeam | Phone: 0980209090 (0980-20-90-90)
+- Certificates: Free Digital Certificate of Completion for every completed course.
+- Payment Methods: Telebirr, Mobile Wallets, Bank Transfers via LakiPay; International: PayPal, Credit/Debit cards, Crypto.
+- Main Agency Website: tsehay360.com (Tsehay Digital).
 
 [COURSE CATALOG & PRICING]
-1. Digital Marketing Course (ዲጂታል ማርኬቲንግ)
-   - Price: FREE (ነፃ)
-   - Syllabus: Section 1 (Intro), Section 2 (Trad vs. Dig Differences), Section 3 (SEO, Social, Email), Section 4 (FB Ads).
-2. Shein Import Business Course (የሼን ኢምፖርት)
-   - Price: 4,500 ETB (4,500 ብር)
-   - Syllabus: Section 0 (Orientation), Section 1 (App & Winning Products), Section 2 (Transit & Customs), Section 3 (Pricing & Marketing), Section 4 (Dollar Payment).
-3. YouTube Secrets Masterclass / Book (የዩቲዩብ ስኬት ሚስጥሮች)
-   - Price: 900 ETB (900 ብር)
-   - Includes: A step-by-step masterclass, free Amharic e-book, and a half-day physical masterclass.
+1. Digital Marketing Course (ዲጂታል ማርኬቲንግ) - 100% FREE (ነፃ)
+2. Shein Import Business Course (የሼን ኢምፖርት) - 4,500 ETB (4,500 ብር)
+3. YouTube Secrets Masterclass / Book (የዩቲዩብ ስኬት ሚስጥሮች) - 900 ETB (900 ብር)
+4. Upcoming: Full-Stack Web Development, Crypto Trading, Graphic Design.
+
+[HOW TO ANSWER SPECIFIC QUESTIONS]
+- "Who is the founder?" / "መስራቹ ማን ነው?": "የፀሐይ ካምፓስ (Tsehay Campus) መስራች እና ዋና አስተማሪ እዮብ ሳህሌ (Eyoub Sahle) ነው። እሱ የዲጂታል ማርኬቲንግ ባለሙያ እና የTsehay Digital (tsehay360.com) መስራች ነው።"
+- "How to pay?" / "እንዴት ልክፈል?": "ለኮርሶቻችን ክፍያ መፈጸም በጣም ቀላል ነው። በሀገር ውስጥ ካሉ በLakiPay (ላኪ ፔይ) አማካኝነት በቴሌብር፣ በሞባይል ዋሌት ወይም በባንክ ማስተላለፍ ይችላሉ። ከሀገር ውጭ ከሆኑ ደግሞ PayPal፣ የክሬዲት/ዴቢት ካርዶች (Credit/Debit Cards) ወይም ክሪፕቶ ከረንሲ መጠቀም ይችላሉ።"masterclass, free Amharic e-book, and a half-day physical masterclass.
 4. Upcoming Courses: Web Development, Crypto Trading, and other premium/free courses will be added and listed on the website.
 
 [HOW TO ANSWER SPECIFIC QUESTIONS]

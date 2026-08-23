@@ -19,7 +19,7 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<User | null>(() => {
+  const [cachedUserObj] = useState<User | null>(() => {
     if (typeof window === 'undefined') return null;
     try {
       const cachedUser = localStorage.getItem('tsehay_auth_user_cache');
@@ -28,6 +28,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       return null;
     }
   });
+
+  const [user, setUser] = useState<User | null>(cachedUserObj);
 
   const [isAdmin, setIsAdmin] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
@@ -38,8 +40,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   });
 
-  const [loading, setLoading] = useState<boolean>(true);
-  const [authInitialized, setAuthInitialized] = useState<boolean>(false);
+  // If user is cached locally, start immediately with loading: false for zero perceived delay
+  const [loading, setLoading] = useState<boolean>(!cachedUserObj);
+  const [authInitialized, setAuthInitialized] = useState<boolean>(!!cachedUserObj);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
