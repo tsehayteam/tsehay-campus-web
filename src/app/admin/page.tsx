@@ -78,6 +78,15 @@ export default function AdminDashboard() {
   const [isSavingPortfolio, setIsSavingPortfolio] = useState(false);
   const [portfolioSavedMessage, setPortfolioSavedMessage] = useState('');
 
+  // 🌟 Referral & Promo Codes State
+  const [referralCodes, setReferralCodes] = useState<any[]>([]);
+  const [newCodeName, setNewCodeName] = useState('');
+  const [newDiscountPercent, setNewDiscountPercent] = useState<number>(50);
+  const [newTargetCourseId, setNewTargetCourseId] = useState('all');
+  const [newCodeDesc, setNewCodeDesc] = useState('');
+  const [isSavingReferral, setIsSavingReferral] = useState(false);
+  const [referralSuccessMsg, setReferralSuccessMsg] = useState('');
+
   // YouTube Form State
   const [isYouTubeModalOpen, setIsYouTubeModalOpen] = useState(false);
   const [editingYouTubeVideo, setEditingYouTubeVideo] = useState<any>(null);
@@ -177,6 +186,12 @@ export default function AdminDashboard() {
         const data = docSnap.data();
         if (data && data.videoUrl !== undefined) setAboutVideoUrl(data.videoUrl);
         if (data && data.title !== undefined) setAboutVideoTitle(data.title);
+        if (data && data.thumbnail !== undefined) setAboutVideoThumbnail(data.thumbnail);
+      }
+    }, (err) => {
+      console.warn("About video Firestore sync:", err);
+    });
+
     const portfolioDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'site_settings', 'youtube_portfolio');
     const unsubscribePortfolio = onSnapshot(portfolioDocRef, (docSnap) => {
       if (docSnap.exists()) {
@@ -190,6 +205,13 @@ export default function AdminDashboard() {
       console.warn("Portfolio video Firestore sync:", err);
     });
 
+    const refQuery = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'referral_codes'));
+    const unsubscribeReferrals = onSnapshot(refQuery, (snapshot) => {
+      setReferralCodes(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    }, (err) => {
+      console.warn("Referral codes sync:", err);
+    });
+
     return () => {
         unsubscribeAuth();
         unsubscribe();
@@ -199,8 +221,68 @@ export default function AdminDashboard() {
         unsubscribeTickets();
         unsubscribeAboutVideo();
         unsubscribePortfolio();
+        unsubscribeReferrals();
     };
   }, []);
+
+  const handleCreateReferralCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanCode = newCodeName.trim().toUpperCase().replace(/\s+/g, '');
+    if (!cleanCode) {
+      alert("እባክዎ የኮድ ስም ያስገቡ።");
+      return;
+    }
+    if (newDiscountPercent < 1 || newDiscountPercent > 100) {
+      alert("የቅናሽ ፐርሰንት ከ 1 እስከ 100 መሆን አለበት።");
+      return;
+    }
+
+    setIsSavingReferral(true);
+    try {
+      const codeRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'referral_codes', cleanCode);
+      await setDoc(codeRef, {
+        code: cleanCode,
+        discountPercent: Number(newDiscountPercent),
+        targetCourseId: newTargetCourseId || 'all',
+        description: newCodeDesc.trim() || '',
+        isActive: true,
+        usageCount: 0,
+        createdAt: serverTimestamp()
+      }, { merge: true });
+
+      setNewCodeName('');
+      setNewCodeDesc('');
+      setNewDiscountPercent(50);
+      setNewTargetCourseId('all');
+      setReferralSuccessMsg(`የቅናሽ ኮድ [${cleanCode}] በተሳካ ሁኔታ ተፈጥሯል!`);
+      setTimeout(() => setReferralSuccessMsg(''), 4000);
+    } catch (err: any) {
+      console.error("Error creating referral code:", err);
+      alert("ስህተት ተፈጥሯል: " + err.message);
+    } finally {
+      setIsSavingReferral(false);
+    }
+  };
+
+  const handleToggleReferralStatus = async (codeItem: any) => {
+    try {
+      const codeRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'referral_codes', codeItem.id);
+      await setDoc(codeRef, { isActive: !codeItem.isActive }, { merge: true });
+    } catch (err: any) {
+      console.error("Error toggling referral status:", err);
+    }
+  };
+
+  const handleDeleteReferralCode = async (codeId: string) => {
+    if (window.confirm(`እርግጠኛ ነዎት [${codeId}] የቅናሽ ኮዱን ማጥፋት ይፈልጋሉ?`)) {
+      try {
+        await deleteDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'referral_codes', codeId));
+      } catch (err: any) {
+        console.error("Error deleting referral code:", err);
+        alert("ስህተት: " + err.message);
+      }
+    }
+  };
 
   const handleSaveAboutVideo = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -713,6 +795,9 @@ export default function AdminDashboard() {
           <button onClick={() => setActiveTab('courses')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition ${activeTab === 'courses' ? 'bg-blue-50 dark:bg-slate-700/50 text-secondary dark:text-primary' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700/30'}`}>
             <i className="fa-solid fa-layer-group"></i> ኮርሶች (Courses)
           </button>
+          <button onClick={() => setActiveTab('referrals')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition ${activeTab === 'referrals' ? 'bg-[#f9b03c]/15 dark:bg-slate-700/50 text-[#f9b03c]' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700/30'}`}>
+            <i className="fa-solid fa-gift text-[#f9b03c] text-lg"></i> የቅናሽ / ሪፈራል ኮዶች
+          </button>
           <button onClick={() => setActiveTab('portfolio')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition ${activeTab === 'portfolio' ? 'bg-[#f9b03c]/15 dark:bg-slate-700/50 text-[#f9b03c]' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700/30'}`}>
             <i className="fa-solid fa-briefcase text-[#f9b03c] text-lg"></i> የፖርትፎሊዮ ቪዲዮዎች
           </button>
@@ -767,6 +852,7 @@ export default function AdminDashboard() {
           <h1 className="text-xl font-black text-dark dark:text-white">
              {activeTab === 'dashboard' && 'አጠቃላይ መረጃ'}
              {activeTab === 'courses' && 'ኮርሶች ማስተዳደሪያ'}
+             {activeTab === 'referrals' && 'የሪፈራል እና የቅናሽ ኮዶች ማስተዳደሪያ (Referral & Promo Codes)'}
              {activeTab === 'portfolio' && 'የአሰልጣኙ ዩቲዩብ ፖርትፎሊዮ ማስተዳደሪያ (Instructor YouTube Portfolio)'}
              {activeTab === 'youtube' && 'ነጻ የዩቲዩብ ቪዲዮዎች ማስተዳደሪያ (YouTube Videos)'}
              {activeTab === 'about_video' && 'ስለ እኛ ገጽ ቪዲዮ ፕሌየር ማስተዳደሪያ (About Page Video Player)'}
@@ -1371,6 +1457,225 @@ export default function AdminDashboard() {
                         ))
                     )}
                 </div>
+            </div>
+          )}
+
+          {activeTab === 'referrals' && (
+            <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-300">
+              
+              {/* Top Creation Card */}
+              <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 sm:p-8 border border-gray-100 dark:border-slate-700 shadow-xl">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 dark:border-slate-700 pb-5 mb-6">
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-12 h-12 rounded-2xl bg-[#f9b03c]/15 border border-[#f9b03c]/30 flex items-center justify-center text-[#f9b03c] text-xl shadow-sm">
+                      <i className="fa-solid fa-gift"></i>
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-black text-dark dark:text-white">አዲስ የሪፈራል / የቅናሽ ኮድ ፍጠር (Create Promo Code)</h3>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">ለማርኬቲንግ እና ለተማሪዎች ቅናሽ ወይም 100% ነፃ መመዝገቢያ ኮድ እዚህ ያዘጋጁ</p>
+                    </div>
+                  </div>
+                  {referralSuccessMsg && (
+                    <div className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 animate-bounce">
+                      <i className="fa-solid fa-circle-check"></i>
+                      <span>{referralSuccessMsg}</span>
+                    </div>
+                  )}
+                </div>
+
+                <form onSubmit={handleCreateReferralCode} className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* Code Name */}
+                    <div>
+                      <label className="block text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-2">
+                        የኮድ ስም (Code Name) *
+                      </label>
+                      <input 
+                        type="text" 
+                        required 
+                        placeholder="e.g. TSEHAY50, FREE100, VIP30" 
+                        value={newCodeName}
+                        onChange={(e) => setNewCodeName(e.target.value.toUpperCase().replace(/\s+/g, ''))}
+                        className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm font-mono font-black uppercase tracking-wider text-dark dark:text-white outline-none focus:border-[#f9b03c] transition"
+                      />
+                    </div>
+
+                    {/* Discount Percentage */}
+                    <div>
+                      <label className="block text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-2 flex items-center justify-between">
+                        <span>የቅናሽ ፐርሰንት (Discount %) *</span>
+                        <span className="text-[#f9b03c] font-black">{newDiscountPercent}% {newDiscountPercent >= 100 ? '(100% FREE)' : 'OFF'}</span>
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input 
+                          type="number" 
+                          min={1} 
+                          max={100} 
+                          required 
+                          value={newDiscountPercent}
+                          onChange={(e) => setNewDiscountPercent(Math.min(100, Math.max(1, Number(e.target.value))))}
+                          className="w-24 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-3 py-3 text-sm font-bold text-center text-dark dark:text-white outline-none focus:border-[#f9b03c]"
+                        />
+                        <div className="flex-1 flex gap-1.5">
+                          {[20, 30, 50, 100].map(pct => (
+                            <button
+                              key={pct}
+                              type="button"
+                              onClick={() => setNewDiscountPercent(pct)}
+                              className={`flex-1 py-2 rounded-lg text-xs font-bold transition cursor-pointer ${
+                                newDiscountPercent === pct 
+                                  ? 'bg-[#f9b03c] text-slate-950 shadow-sm' 
+                                  : 'bg-gray-100 dark:bg-slate-700/60 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700'
+                              }`}
+                            >
+                              {pct === 100 ? 'Free' : `${pct}%`}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Target Course */}
+                    <div>
+                      <label className="block text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-2">
+                        የሚሰራበት ኮርስ (Applicable Course) *
+                      </label>
+                      <select 
+                        value={newTargetCourseId}
+                        onChange={(e) => setNewTargetCourseId(e.target.value)}
+                        className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm font-medium text-dark dark:text-white outline-none focus:border-[#f9b03c] transition cursor-pointer"
+                      >
+                        <option value="all">🌟 ለሁሉም ኮርሶች (All Courses)</option>
+                        {courses.map(c => (
+                          <option key={c.id} value={c.id}>
+                            📚 {c.title}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Description / Note */}
+                  <div>
+                    <label className="block text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-2">
+                      አጭር ማብራሪያ (Description / Note - Optional)
+                    </label>
+                    <input 
+                      type="text" 
+                      placeholder="ለምሳሌ፡ የቴሌግራም አባላት 50% ቅናሽ ወይም የቲክቶክ ጊቭአዌይ" 
+                      value={newCodeDesc}
+                      onChange={(e) => setNewCodeDesc(e.target.value)}
+                      className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm text-dark dark:text-white outline-none focus:border-[#f9b03c] transition"
+                    />
+                  </div>
+
+                  {/* Submit Button */}
+                  <div className="flex justify-end pt-2">
+                    <button 
+                      type="submit" 
+                      disabled={isSavingReferral || !newCodeName.trim()}
+                      className="bg-gradient-to-r from-[#f9b03c] to-amber-500 hover:from-amber-400 hover:to-[#f9b03c] text-slate-950 font-black px-8 py-3.5 rounded-2xl shadow-lg hover:shadow-[0_0_25px_rgba(249,176,60,0.5)] transition-all duration-300 disabled:opacity-50 flex items-center gap-2 cursor-pointer active:scale-95 text-sm"
+                    >
+                      <i className="fa-solid fa-plus"></i>
+                      <span>{isSavingReferral ? 'እየፈጠረ ነው...' : 'የቅናሽ ኮድ ፍጠር (Create Code)'}</span>
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              {/* Bottom List of Active Referral Codes */}
+              <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 sm:p-8 border border-gray-100 dark:border-slate-700 shadow-xl space-y-6">
+                <div className="flex items-center justify-between border-b border-gray-100 dark:border-slate-700 pb-4">
+                  <h4 className="text-lg font-black text-dark dark:text-white flex items-center gap-2">
+                    <i className="fa-solid fa-list-check text-[#f9b03c]"></i>
+                    <span>ያሉ የቅናሽ ኮዶች ዝርዝር ({referralCodes.length})</span>
+                  </h4>
+                  <span className="text-xs text-gray-500 font-medium">በቅጽበት የሚሰሩ</span>
+                </div>
+
+                {referralCodes.length === 0 ? (
+                  <div className="text-center py-12 text-gray-400 space-y-3">
+                    <i className="fa-solid fa-ticket text-4xl text-gray-300 dark:text-slate-600"></i>
+                    <p className="text-sm font-medium">እስካሁን የተፈጠረ የቅናሽ ኮድ የለም። ከላይ ባለው ፎርም አዲስ ኮድ መፍጠር ይችላሉ።</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {referralCodes.map((item) => {
+                      const matchedCourse = courses.find(c => c.id === item.targetCourseId);
+                      const courseLabel = item.targetCourseId === 'all' 
+                        ? 'ሁሉም ኮርሶች' 
+                        : (matchedCourse ? matchedCourse.title : item.targetCourseId);
+
+                      return (
+                        <div 
+                          key={item.id} 
+                          className={`p-5 rounded-2xl border transition-all space-y-4 ${
+                            item.isActive 
+                              ? 'bg-gray-50/70 dark:bg-slate-900/60 border-gray-200 dark:border-slate-700/80 hover:border-[#f9b03c]/50' 
+                              : 'bg-gray-100/40 dark:bg-slate-900/30 border-gray-200 dark:border-slate-800 opacity-60'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <span className="font-mono text-base font-black px-2.5 py-1 rounded-lg bg-[#f9b03c]/15 text-[#f9b03c] border border-[#f9b03c]/30 tracking-wider">
+                                {item.code || item.id}
+                              </span>
+                              {item.description && (
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 font-medium">
+                                  {item.description}
+                                </p>
+                              )}
+                            </div>
+
+                            <span className={`text-xs font-black px-2.5 py-1 rounded-full ${
+                              item.discountPercent >= 100 
+                                ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30' 
+                                : 'bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/30'
+                            }`}>
+                              {item.discountPercent >= 100 ? '100% FREE' : `${item.discountPercent}% OFF`}
+                            </span>
+                          </div>
+
+                          <div className="text-xs space-y-1.5 pt-2 border-t border-gray-100 dark:border-slate-800 text-gray-600 dark:text-gray-300">
+                            <div className="flex items-center justify-between">
+                              <span className="text-gray-400">ኮርስ፦</span>
+                              <span className="font-bold truncate max-w-[170px]" title={courseLabel}>{courseLabel}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-gray-400">የተጠቀሙ፦</span>
+                              <span className="font-bold text-amber-500">{item.usageCount || 0} ተማሪዎች</span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-slate-800">
+                            <button
+                              type="button"
+                              onClick={() => handleToggleReferralStatus(item)}
+                              className={`text-xs font-bold px-3 py-1 rounded-lg transition cursor-pointer ${
+                                item.isActive 
+                                  ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20' 
+                                  : 'bg-gray-200 dark:bg-slate-700 text-gray-500 hover:bg-gray-300'
+                              }`}
+                            >
+                              {item.isActive ? '✓ Active' : '✕ Inactive'}
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteReferralCode(item.id)}
+                              className="text-xs font-bold text-red-500 hover:text-red-600 p-1.5 hover:bg-red-500/10 rounded-lg transition cursor-pointer"
+                              title="ኮዱን አጥፋ"
+                            >
+                              <i className="fa-solid fa-trash"></i>
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
             </div>
           )}
 

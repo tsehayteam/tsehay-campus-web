@@ -16,6 +16,7 @@ import {
 import { doc, setDoc, serverTimestamp, getDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { validateEmailForSignup, isDisposableEmail } from "@/lib/disposableEmailBlocker";
+import { validateReferralCode, recordReferralUsage } from "@/lib/referralService";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -47,6 +48,8 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
   const [phone, setPhone] = useState("");
   const [city, setCity] = useState("");
   const [source, setSource] = useState("");
+  const [referralCode, setReferralCode] = useState("");
+  const [referralDiscountInfo, setReferralDiscountInfo] = useState("");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   const [error, setError] = useState("");
@@ -383,11 +386,19 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
           phone: phone.trim(),
           city: city.trim(),
           source: source || "Direct",
+          referralCode: referralCode.trim().toUpperCase() || null,
           createdAt: serverTimestamp(),
           lastLogin: serverTimestamp(),
           isAdmin: false,
           photoURL: null
         };
+
+        if (referralCode.trim()) {
+          recordReferralUsage(referralCode.trim().toUpperCase());
+          try {
+            localStorage.setItem('tsehay_applied_referral_code', referralCode.trim().toUpperCase());
+          } catch (e) {}
+        }
 
         // Save Firestore profile info
         await setDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', cred.user.uid, 'profile', 'info'), userData, { merge: true });
@@ -859,6 +870,47 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
                             <option value="Google" className="bg-[#0d1222] text-white">Google Search</option>
                             <option value="Other" className="bg-[#0d1222] text-white">ሌላ (Other)</option>
                           </select>
+                        </div>
+
+                        {/* Referral / Promo Code (Optional) */}
+                        <div>
+                          <label className="block text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5 flex items-center justify-between">
+                            <span className="flex items-center gap-1.5">
+                              <i className="fa-solid fa-gift text-[#f9b03c]"></i>
+                              <span>የሪፈራል / የቅናሽ ኮድ (Promo Code)</span>
+                            </span>
+                            <span className="text-[10px] text-gray-400 font-normal">አማራጭ (Optional)</span>
+                          </label>
+                          <input 
+                            type="text" 
+                            value={referralCode} 
+                            onChange={(e) => {
+                              const val = e.target.value.toUpperCase().replace(/\s+/g, '');
+                              setReferralCode(val);
+                              if (val) {
+                                validateReferralCode(val).then(res => {
+                                  if (res.isValid) {
+                                    setReferralDiscountInfo(res.message);
+                                    try {
+                                      localStorage.setItem('tsehay_applied_referral_code', val);
+                                    } catch(err) {}
+                                  } else {
+                                    setReferralDiscountInfo('');
+                                  }
+                                });
+                              } else {
+                                setReferralDiscountInfo('');
+                              }
+                            }} 
+                            placeholder="ለምሳሌ፡ TSEHAY50, FREE100" 
+                            className="w-full bg-gray-50 dark:bg-[#0d1222] border border-gray-200 dark:border-white/[0.1] rounded-xl py-3 px-4 text-sm font-mono uppercase tracking-wider outline-none focus:border-[#f9b03c] dark:text-white transition" 
+                          />
+                          {referralDiscountInfo && (
+                            <p className="text-emerald-500 text-xs font-bold mt-1.5 flex items-center gap-1.5 animate-in fade-in">
+                              <i className="fa-solid fa-circle-check"></i>
+                              <span>{referralDiscountInfo}</span>
+                            </p>
+                          )}
                         </div>
 
                         {/* Summary Pill */}
