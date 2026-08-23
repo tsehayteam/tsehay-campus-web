@@ -557,6 +557,13 @@ export default function AdminDashboard() {
         localVideoUrl: portfolioLocalUrl.trim(),
         internationalVideoUrl: portfolioInternationalUrl.trim()
       }));
+      window.dispatchEvent(new Event('storage'));
+      window.dispatchEvent(new CustomEvent('tsehay_portfolio_updated', {
+        detail: {
+          localVideoUrl: portfolioLocalUrl.trim(),
+          internationalVideoUrl: portfolioInternationalUrl.trim()
+        }
+      }));
     } catch (e) {}
 
     try {

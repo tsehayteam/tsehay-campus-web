@@ -1,19 +1,32 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { db } from '@/lib/firebase/config';
 import { doc, onSnapshot } from 'firebase/firestore';
 
 export function extractYouTubeId(urlOrId: string): string {
   if (!urlOrId) return '';
   const trimmed = urlOrId.trim();
+  
+  // 1. Direct 11-character video ID
   if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) return trimmed;
+  
+  // 2. Standard watch URL (e.g., youtube.com/watch?v=...)
   const matchWatch = trimmed.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
   if (matchWatch && matchWatch[1]) return matchWatch[1];
+  
+  // 3. Shortened youtu.be URL
   const matchYoutu = trimmed.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/);
   if (matchYoutu && matchYoutu[1]) return matchYoutu[1];
+  
+  // 4. Embed, Shorts, or Live URL
   const matchEmbed = trimmed.match(/(?:embed|shorts|live)\/([a-zA-Z0-9_-]{11})/);
   if (matchEmbed && matchEmbed[1]) return matchEmbed[1];
+  
+  // 5. Generic extraction fallback
+  const matchAny11 = trimmed.match(/(?:[=/&?]|^)([a-zA-Z0-9_-]{11})(?:[?&/#]|$)/);
+  if (matchAny11 && matchAny11[1]) return matchAny11[1];
+  
   return trimmed;
 }
 
@@ -51,8 +64,72 @@ export default function InstructorYouTubePortfolio() {
   const [playingLocal, setPlayingLocal] = useState(false);
   const [playingInternational, setPlayingInternational] = useState(false);
 
+  // 🌟 Dynamic Typewriter States
+  const fullDescText = 'እኛ በተግባር የምናስተዳድራቸውንና በውጤታማነታቸው የተረጋገጡትን የዩቲዩብ ቻናሎች (Faceless Channels) ይመልከቱ።';
+  const [typedDesc, setTypedDesc] = useState('');
+  const [descCursorVisible, setDescCursorVisible] = useState(true);
+
+  const localCardTitle = 'ሀገርኛ ቻናል (Domestic)';
+  const [typedLocalTitle, setTypedLocalTitle] = useState('');
+
+  const intlCardTitle = 'ዓለም አቀፍ ቻናል (International)';
+  const [typedIntlTitle, setTypedIntlTitle] = useState('');
+
+  // 1. Typewriter Animation for Description
   useEffect(() => {
-    // 1. Fetch from Server Admin API (Guaranteed latest updated state)
+    let index = 0;
+    setTypedDesc('');
+    const interval = setInterval(() => {
+      if (index <= fullDescText.length) {
+        setTypedDesc(fullDescText.slice(0, index));
+        index++;
+      } else {
+        clearInterval(interval);
+      }
+    }, 32);
+
+    const cursorInterval = setInterval(() => {
+      setDescCursorVisible((v) => !v);
+    }, 500);
+
+    return () => {
+      clearInterval(interval);
+      clearInterval(cursorInterval);
+    };
+  }, []);
+
+  // 2. Typewriter Animation for Card Badges
+  useEffect(() => {
+    let iLocal = 0;
+    let iIntl = 0;
+    
+    const localTimer = setInterval(() => {
+      if (iLocal <= localCardTitle.length) {
+        setTypedLocalTitle(localCardTitle.slice(0, iLocal));
+        iLocal++;
+      } else {
+        clearInterval(localTimer);
+      }
+    }, 45);
+
+    const intlTimer = setInterval(() => {
+      if (iIntl <= intlCardTitle.length) {
+        setTypedIntlTitle(intlCardTitle.slice(0, iIntl));
+        iIntl++;
+      } else {
+        clearInterval(intlTimer);
+      }
+    }, 45);
+
+    return () => {
+      clearInterval(localTimer);
+      clearInterval(intlTimer);
+    };
+  }, []);
+
+  // 3. Robust Real-time Firestore & API Sync
+  useEffect(() => {
+    // A. Fetch from Server Admin API (Guaranteed latest updated state from Admin)
     const fetchApiSettings = async () => {
       try {
         const res = await fetch('/api/admin/site-settings?settingKey=youtube_portfolio');
@@ -76,7 +153,27 @@ export default function InstructorYouTubePortfolio() {
     };
     fetchApiSettings();
 
-    // 2. Real-time Firestore sync for instantaneous updates (Multi-path listener)
+    // B. Listen to localStorage storage events & custom event for instantaneous updates
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'tsehay_youtube_portfolio_cache' && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (parsed.localVideoUrl) setLocalVideoUrl(parsed.localVideoUrl);
+          if (parsed.internationalVideoUrl) setInternationalVideoUrl(parsed.internationalVideoUrl);
+        } catch (err) {}
+      }
+    };
+    const handleCustomUpdate = (e: Event) => {
+      const customEvt = e as CustomEvent;
+      if (customEvt.detail) {
+        if (customEvt.detail.localVideoUrl) setLocalVideoUrl(customEvt.detail.localVideoUrl);
+        if (customEvt.detail.internationalVideoUrl) setInternationalVideoUrl(customEvt.detail.internationalVideoUrl);
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('tsehay_portfolio_updated', handleCustomUpdate);
+
+    // C. Real-time Firestore sync (Multi-path listener)
     const portfolioDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'site_settings', 'youtube_portfolio');
     const unsubscribe1 = onSnapshot(portfolioDocRef, (docSnap) => {
       if (docSnap.exists()) {
@@ -118,6 +215,8 @@ export default function InstructorYouTubePortfolio() {
     });
 
     return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('tsehay_portfolio_updated', handleCustomUpdate);
       unsubscribe1();
       unsubscribe2();
     };
@@ -130,160 +229,222 @@ export default function InstructorYouTubePortfolio() {
   const internationalEmbedUrl = `https://www.youtube-nocookie.com/embed/${internationalVideoId}?autoplay=1&rel=0&modestbranding=1&controls=1&showinfo=0&iv_load_policy=3&cc_load_policy=0&playsinline=1&loop=1&playlist=${internationalVideoId}`;
 
   return (
-    <section id="instructor-portfolio" className="relative py-16 sm:py-24 overflow-hidden bg-slate-900/60 dark:bg-[#030509]/90 border-b border-gray-200/80 dark:border-white/10">
+    <section id="instructor-portfolio" className="relative py-16 sm:py-24 overflow-hidden bg-slate-900/60 dark:bg-[#030509]/95 border-b border-gray-200/80 dark:border-white/10">
       
       {/* Subtle Background Glows */}
-      <div className="absolute top-1/3 -left-32 w-96 h-96 bg-[#3268ba]/10 rounded-full blur-[140px] pointer-events-none" />
-      <div className="absolute bottom-1/4 -right-32 w-96 h-96 bg-[#f9b03c]/10 rounded-full blur-[140px] pointer-events-none" />
+      <div className="absolute top-1/3 -left-32 w-96 h-96 bg-[#3268ba]/15 rounded-full blur-[140px] pointer-events-none" />
+      <div className="absolute bottom-1/4 -right-32 w-96 h-96 bg-[#f9b03c]/15 rounded-full blur-[140px] pointer-events-none" />
 
-      <div className="max-w-[1300px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+      <div className="max-w-[1340px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         
-        {/* Section Header */}
-        <div className="text-center max-w-3xl mx-auto mb-12 sm:mb-16">
+        {/* =========================================================================
+            SECTION HEADER: Animated Badge, Shining Title & One-Line Typing Description
+            ========================================================================= */}
+        <div className="text-center max-w-5xl mx-auto mb-12 sm:mb-16">
+          
+          {/* Top Animated Floating Badge */}
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#f9b03c]/10 border border-[#f9b03c]/35 text-[#f9b03c] text-xs font-black mb-4 shadow-[0_0_20px_rgba(249,176,60,0.25)] animate-pulse">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#f9b03c] opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#f9b03c]"></span>
+            </span>
+            <span className="tracking-wide">✨ 100% FACELESS • በተግባር የተረጋገጠ የስኬት ማረጋገጫ ✨</span>
+          </div>
+
+          {/* Section Main Title with Shimmering Gradient */}
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black font-heading text-slate-900 dark:text-white mb-4 tracking-tight">
-            <span className="text-[#f9b03c] drop-shadow-[0_0_25px_rgba(249,176,60,0.4)]">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#f9b03c] via-amber-200 to-[#f9b03c] animate-gradient-x drop-shadow-[0_0_25px_rgba(249,176,60,0.45)]">
               የዩቲዩብ
             </span>{' '}
             ቻናል ስኬት በተግባር
           </h2>
-          <p className="text-sm sm:text-base lg:text-lg text-slate-600 dark:text-[#a0aec0] font-body leading-relaxed max-w-2xl mx-auto">
-            እኛ በተግባር የምናስተዳድራቸውንና በውጤታማነታቸው የተረጋገጡትን የዩቲዩብ ቻናሎች (Faceless Channels) ይመልከቱ።
-          </p>
-          <div className="w-24 h-1 bg-gradient-to-r from-transparent via-[#f9b03c] to-transparent mx-auto mt-5 rounded-full shadow-[0_0_10px_rgba(249,176,60,0.5)]" />
+
+          {/* Clean One-Line Typing Description */}
+          <div className="min-h-[1.75rem] flex items-center justify-center">
+            <p className="text-sm sm:text-base lg:text-[17px] text-slate-700 dark:text-[#cbd5e1] font-medium leading-relaxed max-w-4xl mx-auto px-2">
+              <span>{typedDesc}</span>
+              <span className={`inline-block w-0.5 h-4 ml-0.5 bg-[#f9b03c] align-middle ${descCursorVisible ? 'opacity-100' : 'opacity-0'} transition-opacity duration-150`}></span>
+            </p>
+          </div>
+
+          {/* Glowing Gradient Divider */}
+          <div className="w-28 h-1 bg-gradient-to-r from-transparent via-[#f9b03c] to-transparent mx-auto mt-5 rounded-full shadow-[0_0_12px_rgba(249,176,60,0.6)]" />
         </div>
 
-        {/* 2 Clean Edge-to-Edge Balanced Video Cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-10">
+        {/* =========================================================================
+            2 BORDER-BEAM GLOWING RECTANGULAR CARDS (ሽክርክር የሚያደርግ ብርሃን ጠርዝ ጠርዙን ይዞ)
+            ========================================================================= */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-7 sm:gap-8 lg:gap-10">
           
           {/* =========================================================================
-              CARD 1: HAGERIGNA CHANNEL (ሀገርኛ ቻናል)
+              CARD 1: HAGERIGNA CHANNEL (ሀገርኛ ቻናል) WITH ROTATING BORDER BEAM
               ========================================================================= */}
-          <div 
-            className="group relative rounded-2xl sm:rounded-3xl overflow-hidden transition-all duration-500 hover:-translate-y-2 bg-white/90 dark:bg-[#070b14]/90 backdrop-blur-2xl border border-gray-200/90 dark:border-white/10 hover:border-[#3268ba] shadow-lg hover:shadow-[0_20px_45px_rgba(50,104,186,0.35)] flex flex-col justify-between"
-          >
-            {/* Top Bar Label */}
-            <div className="px-5 py-4 flex items-center justify-between border-b border-gray-100 dark:border-white/[0.08] bg-gray-50/50 dark:bg-white/[0.02]">
-              <div className="flex items-center gap-2.5">
-                <span className="w-3 h-3 rounded-full bg-[#3268ba] shadow-[0_0_10px_#3268ba] group-hover:scale-125 transition-transform duration-300"></span>
-                <span className="text-base sm:text-lg font-black text-slate-900 dark:text-white font-heading tracking-wide group-hover:text-[#5a93e8] transition-colors duration-300">
-                  ሀገርኛ ቻናል
-                </span>
-              </div>
-            </div>
+          <div className="relative p-[2px] rounded-2xl sm:rounded-3xl overflow-hidden group transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_20px_50px_rgba(50,104,186,0.35)] flex flex-col">
+            
+            {/* 🌟 Rotating Laser Light Beam along the Rectangular Border (ሽክርክር ብርሃን) */}
+            <div className="absolute inset-[-200%] animate-border-beam bg-[conic-gradient(from_0deg,transparent_0deg,transparent_270deg,#3268ba_320deg,#00f2fe_355deg,#ffffff_360deg)] pointer-events-none opacity-85 group-hover:opacity-100 transition-opacity duration-300" />
 
-            {/* 100% Full-View Uncropped Video Player / Clean Thumbnail */}
-            <div className="relative aspect-video w-full overflow-hidden bg-black flex items-center justify-center">
-              {playingLocal ? (
-                <div className="w-full h-full relative overflow-hidden">
-                  <iframe
-                    src={localEmbedUrl}
-                    title="ሀገርኛ ዩቲዩብ ቻናል"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
-                    allowFullScreen
-                    className="w-full h-full border-0 absolute inset-0 z-10 pointer-events-auto"
-                  />
-
-                  {/* Clean Floating Close / Reset Button */}
-                  <button 
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); setPlayingLocal(false); }}
-                    className="absolute top-2.5 right-2.5 z-40 bg-black/80 hover:bg-black text-white hover:text-[#f9b03c] text-xs font-bold px-3 py-1 rounded-full backdrop-blur-md border border-white/20 flex items-center gap-1.5 shadow-lg cursor-pointer transition-all active:scale-95"
-                    title="ተመለስ (Close Video)"
-                  >
-                    <i className="fa-solid fa-xmark text-xs"></i>
-                    <span>ተመለስ</span>
-                  </button>
+            {/* Card Inner Content Container */}
+            <div className="relative w-full h-full rounded-[calc(1rem-1px)] sm:rounded-[calc(1.5rem-2px)] bg-white/95 dark:bg-[#070b14]/95 backdrop-blur-2xl flex flex-col justify-between overflow-hidden z-10">
+              
+              {/* Top Bar Label with Typing Title and Blinking Live Indicator */}
+              <div className="px-5 py-4 flex items-center justify-between border-b border-gray-100 dark:border-white/[0.08] bg-gray-50/70 dark:bg-white/[0.03]">
+                <div className="flex items-center gap-3">
+                  {/* Blinking Live Indicator Dot (ብሊንክ ብሊንክ) */}
+                  <span className="relative flex h-3.5 w-3.5 items-center justify-center">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#3268ba] opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-[#3268ba] shadow-[0_0_12px_#3268ba]"></span>
+                  </span>
+                  
+                  {/* Typing Header */}
+                  <span className="text-base sm:text-lg font-black text-slate-900 dark:text-white font-heading tracking-wide group-hover:text-[#5a93e8] transition-colors duration-300">
+                    {typedLocalTitle || 'ሀገርኛ ቻናል'}
+                    <span className="inline-block w-1.5 h-3.5 ml-1 bg-[#3268ba] animate-cursor-blink align-middle"></span>
+                  </span>
                 </div>
-              ) : (
-                <div 
-                  onClick={() => setPlayingLocal(true)}
-                  className="w-full h-full absolute inset-0 cursor-pointer group/thumb flex items-center justify-center overflow-hidden bg-slate-950"
-                  title="ቪዲዮውን ለማጫወት ይጫኑ (Click to Play)"
-                >
-                  {/* 100% Crisp Thumbnail without Obstruction */}
-                  <img
-                    src={`https://img.youtube.com/vi/${localVideoId}/maxresdefault.jpg`}
-                    alt="ሀገርኛ ዩቲዩብ ቻናል"
-                    className="absolute inset-0 w-full h-full object-cover group-hover/thumb:scale-[1.03] transition-transform duration-500"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = `https://img.youtube.com/vi/${localVideoId}/hqdefault.jpg`;
-                    }}
-                  />
 
-                  {/* 🌟 Play Button Overlay: ONLY appears when hovering (ወደ thumbnail-ኡ ሲመጣ ብቻ) */}
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover/thumb:bg-black/25 transition-colors duration-300">
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[#f9b03c] text-slate-950 flex items-center justify-center text-2xl shadow-[0_0_35px_rgba(249,176,60,0.8)] opacity-0 scale-75 group-hover/thumb:opacity-100 group-hover/thumb:scale-100 transition-all duration-300 pointer-events-none">
-                      <i className="fa-solid fa-play ml-1"></i>
+                {/* High-Tech Blinking Tag */}
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#3268ba]/15 border border-[#3268ba]/40 text-[#3268ba] dark:text-[#7bb0ff] text-xs font-black shadow-sm animate-pulse">
+                  <i className="fa-solid fa-circle text-[7px] text-red-500 animate-ping"></i>
+                  <span>LIVE • FACELESS</span>
+                </div>
+              </div>
+
+              {/* 100% Full-View Uncropped Video Player / Clean Thumbnail */}
+              <div className="relative aspect-video w-full overflow-hidden bg-black flex items-center justify-center">
+                {playingLocal ? (
+                  <div className="w-full h-full relative overflow-hidden">
+                    <iframe
+                      src={localEmbedUrl}
+                      title="ሀገርኛ ዩቲዩብ ቻናል"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+                      allowFullScreen
+                      className="w-full h-full border-0 absolute inset-0 z-10 pointer-events-auto"
+                    />
+
+                    {/* Clean Floating Close / Reset Button */}
+                    <button 
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); setPlayingLocal(false); }}
+                      className="absolute top-2.5 right-2.5 z-40 bg-black/85 hover:bg-black text-white hover:text-[#f9b03c] text-xs font-bold px-3 py-1.5 rounded-full backdrop-blur-md border border-white/25 flex items-center gap-1.5 shadow-xl cursor-pointer transition-all active:scale-95"
+                      title="ተመለስ (Close Video)"
+                    >
+                      <i className="fa-solid fa-xmark text-xs"></i>
+                      <span>ዝጋ (Close)</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div 
+                    onClick={() => setPlayingLocal(true)}
+                    className="w-full h-full absolute inset-0 cursor-pointer group/thumb flex items-center justify-center overflow-hidden bg-slate-950"
+                    title="ቪዲዮውን ለማጫወት ይጫኑ (Click to Play)"
+                  >
+                    {/* 100% Crisp Thumbnail without Obstruction */}
+                    <img
+                      src={`https://img.youtube.com/vi/${localVideoId}/maxresdefault.jpg`}
+                      alt="ሀገርኛ ዩቲዩብ ቻናል"
+                      className="absolute inset-0 w-full h-full object-cover group-hover/thumb:scale-[1.03] transition-transform duration-500"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = `https://img.youtube.com/vi/${localVideoId}/hqdefault.jpg`;
+                      }}
+                    />
+
+                    {/* Play Button Overlay: ONLY appears when hovering with glowing scale */}
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover/thumb:bg-black/30 transition-colors duration-300">
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[#f9b03c] text-slate-950 flex items-center justify-center text-2xl shadow-[0_0_35px_rgba(249,176,60,0.85)] opacity-0 scale-75 group-hover/thumb:opacity-100 group-hover/thumb:scale-100 transition-all duration-300 pointer-events-none">
+                        <i className="fa-solid fa-play ml-1"></i>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
+
             </div>
           </div>
 
           {/* =========================================================================
-              CARD 2: INTERNATIONAL CHANNEL (ዓለም አቀፍ ቻናል)
+              CARD 2: INTERNATIONAL CHANNEL (ዓለም አቀፍ ቻናል) WITH ROTATING BORDER BEAM
               ========================================================================= */}
-          <div 
-            className="group relative rounded-2xl sm:rounded-3xl overflow-hidden transition-all duration-500 hover:-translate-y-2 bg-white/90 dark:bg-[#070b14]/90 backdrop-blur-2xl border border-gray-200/90 dark:border-white/10 hover:border-[#f9b03c] shadow-lg hover:shadow-[0_20px_45px_rgba(249,176,60,0.35)] flex flex-col justify-between"
-          >
-            {/* Top Bar Label */}
-            <div className="px-5 py-4 flex items-center justify-between border-b border-gray-100 dark:border-white/[0.08] bg-gray-50/50 dark:bg-white/[0.02]">
-              <div className="flex items-center gap-2.5">
-                <span className="w-3 h-3 rounded-full bg-[#f9b03c] shadow-[0_0_10px_#f9b03c] group-hover:scale-125 transition-transform duration-300"></span>
-                <span className="text-base sm:text-lg font-black text-slate-900 dark:text-white font-heading tracking-wide group-hover:text-[#f9b03c] transition-colors duration-300">
-                  ዓለም አቀፍ ቻናል
-                </span>
-              </div>
-            </div>
+          <div className="relative p-[2px] rounded-2xl sm:rounded-3xl overflow-hidden group transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_20px_50px_rgba(249,176,60,0.35)] flex flex-col">
+            
+            {/* 🌟 Rotating Laser Light Beam along the Rectangular Border (ሽክርክር ብርሃን) */}
+            <div className="absolute inset-[-200%] animate-border-beam bg-[conic-gradient(from_0deg,transparent_0deg,transparent_270deg,#f9b03c_320deg,#ffe066_355deg,#ffffff_360deg)] pointer-events-none opacity-85 group-hover:opacity-100 transition-opacity duration-300" />
 
-            {/* 100% Full-View Uncropped Video Player / Clean Thumbnail */}
-            <div className="relative aspect-video w-full overflow-hidden bg-black flex items-center justify-center">
-              {playingInternational ? (
-                <div className="w-full h-full relative overflow-hidden">
-                  <iframe
-                    src={internationalEmbedUrl}
-                    title="ዓለም አቀፍ ዩቲዩብ ቻናል"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
-                    allowFullScreen
-                    className="w-full h-full border-0 absolute inset-0 z-10 pointer-events-auto"
-                  />
-
-                  {/* Clean Floating Close / Reset Button */}
-                  <button 
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); setPlayingInternational(false); }}
-                    className="absolute top-2.5 right-2.5 z-40 bg-black/80 hover:bg-black text-white hover:text-[#f9b03c] text-xs font-bold px-3 py-1 rounded-full backdrop-blur-md border border-white/20 flex items-center gap-1.5 shadow-lg cursor-pointer transition-all active:scale-95"
-                    title="ተመለስ (Close Video)"
-                  >
-                    <i className="fa-solid fa-xmark text-xs"></i>
-                    <span>ተመለስ</span>
-                  </button>
+            {/* Card Inner Content Container */}
+            <div className="relative w-full h-full rounded-[calc(1rem-1px)] sm:rounded-[calc(1.5rem-2px)] bg-white/95 dark:bg-[#070b14]/95 backdrop-blur-2xl flex flex-col justify-between overflow-hidden z-10">
+              
+              {/* Top Bar Label with Typing Title and Blinking Live Indicator */}
+              <div className="px-5 py-4 flex items-center justify-between border-b border-gray-100 dark:border-white/[0.08] bg-gray-50/70 dark:bg-white/[0.03]">
+                <div className="flex items-center gap-3">
+                  {/* Blinking Live Indicator Dot (ብሊንክ ብሊንክ) */}
+                  <span className="relative flex h-3.5 w-3.5 items-center justify-center">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#f9b03c] opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-[#f9b03c] shadow-[0_0_12px_#f9b03c]"></span>
+                  </span>
+                  
+                  {/* Typing Header */}
+                  <span className="text-base sm:text-lg font-black text-slate-900 dark:text-white font-heading tracking-wide group-hover:text-[#f9b03c] transition-colors duration-300">
+                    {typedIntlTitle || 'ዓለም አቀፍ ቻናል'}
+                    <span className="inline-block w-1.5 h-3.5 ml-1 bg-[#f9b03c] animate-cursor-blink align-middle"></span>
+                  </span>
                 </div>
-              ) : (
-                <div 
-                  onClick={() => setPlayingInternational(true)}
-                  className="w-full h-full absolute inset-0 cursor-pointer group/thumb flex items-center justify-center overflow-hidden bg-slate-950"
-                  title="ቪዲዮውን ለማጫወት ይጫኑ (Click to Play)"
-                >
-                  {/* 100% Crisp Thumbnail without Obstruction */}
-                  <img
-                    src={`https://img.youtube.com/vi/${internationalVideoId}/maxresdefault.jpg`}
-                    alt="ዓለም አቀፍ ዩቲዩብ ቻናል"
-                    className="absolute inset-0 w-full h-full object-cover group-hover/thumb:scale-[1.03] transition-transform duration-500"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = `https://img.youtube.com/vi/${internationalVideoId}/hqdefault.jpg`;
-                    }}
-                  />
 
-                  {/* 🌟 Play Button Overlay: ONLY appears when hovering (ወደ thumbnail-ኡ ሲመጣ ብቻ) */}
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover/thumb:bg-black/25 transition-colors duration-300">
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[#f9b03c] text-slate-950 flex items-center justify-center text-2xl shadow-[0_0_35px_rgba(249,176,60,0.8)] opacity-0 scale-75 group-hover/thumb:opacity-100 group-hover/thumb:scale-100 transition-all duration-300 pointer-events-none">
-                      <i className="fa-solid fa-play ml-1"></i>
+                {/* High-Tech Blinking Tag */}
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#f9b03c]/15 border border-[#f9b03c]/40 text-amber-800 dark:text-[#f9b03c] text-xs font-black shadow-sm animate-pulse">
+                  <i className="fa-solid fa-bolt text-[8px] text-[#f9b03c] animate-bounce"></i>
+                  <span>GLOBAL • REACH</span>
+                </div>
+              </div>
+
+              {/* 100% Full-View Uncropped Video Player / Clean Thumbnail */}
+              <div className="relative aspect-video w-full overflow-hidden bg-black flex items-center justify-center">
+                {playingInternational ? (
+                  <div className="w-full h-full relative overflow-hidden">
+                    <iframe
+                      src={internationalEmbedUrl}
+                      title="ዓለም አቀፍ ዩቲዩብ ቻናል"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+                      allowFullScreen
+                      className="w-full h-full border-0 absolute inset-0 z-10 pointer-events-auto"
+                    />
+
+                    {/* Clean Floating Close / Reset Button */}
+                    <button 
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); setPlayingInternational(false); }}
+                      className="absolute top-2.5 right-2.5 z-40 bg-black/85 hover:bg-black text-white hover:text-[#f9b03c] text-xs font-bold px-3 py-1.5 rounded-full backdrop-blur-md border border-white/25 flex items-center gap-1.5 shadow-xl cursor-pointer transition-all active:scale-95"
+                      title="ተመለስ (Close Video)"
+                    >
+                      <i className="fa-solid fa-xmark text-xs"></i>
+                      <span>ዝጋ (Close)</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div 
+                    onClick={() => setPlayingInternational(true)}
+                    className="w-full h-full absolute inset-0 cursor-pointer group/thumb flex items-center justify-center overflow-hidden bg-slate-950"
+                    title="ቪዲዮውን ለማጫወት ይጫኑ (Click to Play)"
+                  >
+                    {/* 100% Crisp Thumbnail without Obstruction */}
+                    <img
+                      src={`https://img.youtube.com/vi/${internationalVideoId}/maxresdefault.jpg`}
+                      alt="ዓለም አቀፍ ዩቲዩብ ቻናል"
+                      className="absolute inset-0 w-full h-full object-cover group-hover/thumb:scale-[1.03] transition-transform duration-500"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = `https://img.youtube.com/vi/${internationalVideoId}/hqdefault.jpg`;
+                      }}
+                    />
+
+                    {/* Play Button Overlay: ONLY appears when hovering with glowing scale */}
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover/thumb:bg-black/30 transition-colors duration-300">
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[#f9b03c] text-slate-950 flex items-center justify-center text-2xl shadow-[0_0_35px_rgba(249,176,60,0.85)] opacity-0 scale-75 group-hover/thumb:opacity-100 group-hover/thumb:scale-100 transition-all duration-300 pointer-events-none">
+                        <i className="fa-solid fa-play ml-1"></i>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
+
             </div>
           </div>
 
