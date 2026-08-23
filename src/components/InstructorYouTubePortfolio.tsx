@@ -18,23 +18,39 @@ export function extractYouTubeId(urlOrId: string): string {
 }
 
 export default function InstructorYouTubePortfolio() {
-  const [localVideoUrl, setLocalVideoUrl] = useState('https://www.youtube.com/watch?v=mgdOMtW6J8k');
-  const [internationalVideoUrl, setInternationalVideoUrl] = useState('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+  // Synchronously initialize from local storage cache to eliminate ANY flash/blink of old sample data
+  const [localVideoUrl, setLocalVideoUrl] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('tsehay_youtube_portfolio_cache');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed.localVideoUrl) return parsed.localVideoUrl;
+        }
+      } catch (e) {}
+    }
+    return '';
+  });
+
+  const [internationalVideoUrl, setInternationalVideoUrl] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('tsehay_youtube_portfolio_cache');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed.internationalVideoUrl) return parsed.internationalVideoUrl;
+        }
+      } catch (e) {}
+    }
+    return '';
+  });
+
   const [playingLocal, setPlayingLocal] = useState(false);
   const [playingInternational, setPlayingInternational] = useState(false);
+  const [hasLoaded, setHasLoaded] = useState(false);
 
   useEffect(() => {
-    // 1. Instant local storage cache for immediate zero-latency rendering
-    try {
-      const cached = localStorage.getItem('tsehay_youtube_portfolio_cache');
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        if (parsed.localVideoUrl) setLocalVideoUrl(parsed.localVideoUrl);
-        if (parsed.internationalVideoUrl) setInternationalVideoUrl(parsed.internationalVideoUrl);
-      }
-    } catch (e) {}
-
-    // 2. Fetch from Server Admin API (Bypasses security rules and ensures lifetime persistence)
+    // 1. Fetch from Server Admin API (Guaranteed latest updated state)
     const fetchApiSettings = async () => {
       try {
         const res = await fetch('/api/admin/site-settings?settingKey=youtube_portfolio');
@@ -43,6 +59,7 @@ export default function InstructorYouTubePortfolio() {
           if (json.data) {
             if (json.data.localVideoUrl) setLocalVideoUrl(json.data.localVideoUrl);
             if (json.data.internationalVideoUrl) setInternationalVideoUrl(json.data.internationalVideoUrl);
+            setHasLoaded(true);
 
             try {
               localStorage.setItem('tsehay_youtube_portfolio_cache', JSON.stringify({
@@ -58,7 +75,7 @@ export default function InstructorYouTubePortfolio() {
     };
     fetchApiSettings();
 
-    // 3. Real-time Firestore sync
+    // 2. Real-time Firestore sync for instantaneous updates
     const portfolioDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'site_settings', 'youtube_portfolio');
     const unsubscribe = onSnapshot(portfolioDocRef, (docSnap) => {
       if (docSnap.exists()) {
@@ -66,6 +83,7 @@ export default function InstructorYouTubePortfolio() {
         if (data) {
           if (data.localVideoUrl) setLocalVideoUrl(data.localVideoUrl);
           if (data.internationalVideoUrl) setInternationalVideoUrl(data.internationalVideoUrl);
+          setHasLoaded(true);
 
           try {
             localStorage.setItem('tsehay_youtube_portfolio_cache', JSON.stringify({
@@ -82,15 +100,19 @@ export default function InstructorYouTubePortfolio() {
     return () => unsubscribe();
   }, []);
 
-  const localVideoId = extractYouTubeId(localVideoUrl) || 'mgdOMtW6J8k';
-  const internationalVideoId = extractYouTubeId(internationalVideoUrl) || 'dQw4w9WgXcQ';
+  const localVideoId = extractYouTubeId(localVideoUrl);
+  const internationalVideoId = extractYouTubeId(internationalVideoUrl);
 
-  const localThumbnail = `https://img.youtube.com/vi/${localVideoId}/hqdefault.jpg`;
-  const internationalThumbnail = `https://img.youtube.com/vi/${internationalVideoId}/hqdefault.jpg`;
+  const localThumbnail = localVideoId ? `https://img.youtube.com/vi/${localVideoId}/hqdefault.jpg` : '';
+  const internationalThumbnail = internationalVideoId ? `https://img.youtube.com/vi/${internationalVideoId}/hqdefault.jpg` : '';
 
-  // cc_load_policy=0 disables auto-generated subtitles, iv_load_policy=3 disables annotations, showinfo=0 removes title bar
-  const localEmbedUrl = `https://www.youtube-nocookie.com/embed/${localVideoId}?autoplay=1&modestbranding=1&rel=0&controls=1&showinfo=0&iv_load_policy=3&cc_load_policy=0&cc_lang_pref=none`;
-  const internationalEmbedUrl = `https://www.youtube-nocookie.com/embed/${internationalVideoId}?autoplay=1&modestbranding=1&rel=0&controls=1&showinfo=0&iv_load_policy=3&cc_load_policy=0&cc_lang_pref=none`;
+  const localEmbedUrl = localVideoId 
+    ? `https://www.youtube-nocookie.com/embed/${localVideoId}?autoplay=1&modestbranding=1&rel=0&controls=1&showinfo=0&iv_load_policy=3&cc_load_policy=0&cc_lang_pref=none`
+    : '';
+
+  const internationalEmbedUrl = internationalVideoId 
+    ? `https://www.youtube-nocookie.com/embed/${internationalVideoId}?autoplay=1&modestbranding=1&rel=0&controls=1&showinfo=0&iv_load_policy=3&cc_load_policy=0&cc_lang_pref=none`
+    : '';
 
   return (
     <section id="instructor-portfolio" className="relative py-16 sm:py-24 overflow-hidden bg-slate-900/60 dark:bg-[#030509]/90 border-b border-gray-200/80 dark:border-white/10 scrolly-reveal">
@@ -137,7 +159,7 @@ export default function InstructorYouTubePortfolio() {
 
             {/* 100% Full-View Uncropped Video Player / Clean Thumbnail */}
             <div className="relative aspect-video w-full overflow-hidden bg-black flex items-center justify-center">
-              {playingLocal ? (
+              {playingLocal && localEmbedUrl ? (
                 <div className="w-full h-full relative overflow-hidden">
                   {/* YouTube Iframe Full View without Unwanted Cropping */}
                   <iframe
@@ -173,19 +195,31 @@ export default function InstructorYouTubePortfolio() {
                 </div>
               ) : (
                 <div 
-                  onClick={() => setPlayingLocal(true)}
-                  className="w-full h-full absolute inset-0 cursor-pointer group/thumb flex items-center justify-center overflow-hidden"
+                  onClick={() => { if (localVideoId) setPlayingLocal(true); }}
+                  className="w-full h-full absolute inset-0 cursor-pointer group/thumb flex items-center justify-center overflow-hidden bg-slate-950"
                   title="ቪዲዮውን ለማጫወት ተምኔሉን ይጫኑ (Click thumbnail to Play)"
                 >
-                  {/* Clean 100% Flush Thumbnail Fitting Box */}
-                  <img
-                    src={localThumbnail}
-                    alt="ሀገርኛ ዩቲዩብ ቻናል"
-                    className="absolute inset-0 w-full h-full object-cover group-hover/thumb:scale-[1.03] transition-transform duration-500"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = `https://placehold.co/640x360/0a1128/3268ba?text=${encodeURIComponent('ሀገርኛ ቻናል')}&font=Montserrat`;
-                    }}
-                  />
+                  {localThumbnail ? (
+                    <img
+                      src={localThumbnail}
+                      alt="ሀገርኛ ዩቲዩብ ቻናል"
+                      className="absolute inset-0 w-full h-full object-cover group-hover/thumb:scale-[1.03] transition-transform duration-500"
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center justify-center text-slate-500 animate-pulse gap-2">
+                      <i className="fa-brands fa-youtube text-4xl text-[#3268ba]"></i>
+                      <span className="text-xs font-bold font-mono">ሀገርኛ ቻናል በመጫን ላይ...</span>
+                    </div>
+                  )}
+
+                  {/* Play Button Overlay */}
+                  {localThumbnail && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/25 group-hover/thumb:bg-black/10 transition-colors">
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[#f9b03c] text-slate-950 flex items-center justify-center text-2xl shadow-[0_0_30px_rgba(249,176,60,0.6)] group-hover/thumb:scale-110 transition-transform">
+                        <i className="fa-solid fa-play ml-1"></i>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -210,9 +244,9 @@ export default function InstructorYouTubePortfolio() {
 
             {/* 100% Full-View Uncropped Video Player / Clean Thumbnail */}
             <div className="relative aspect-video w-full overflow-hidden bg-black flex items-center justify-center">
-              {playingInternational ? (
+              {playingInternational && internationalEmbedUrl ? (
                 <div className="w-full h-full relative overflow-hidden">
-                  {/* YouTube Iframe Full View without Unwanted Cropping; cc_load_policy=0 disables subtitles */}
+                  {/* YouTube Iframe Full View without Unwanted Cropping */}
                   <iframe
                     src={internationalEmbedUrl}
                     title="ዓለም አቀፍ ዩቲዩብ ቻናል"
@@ -246,19 +280,31 @@ export default function InstructorYouTubePortfolio() {
                 </div>
               ) : (
                 <div 
-                  onClick={() => setPlayingInternational(true)}
-                  className="w-full h-full absolute inset-0 cursor-pointer group/thumb flex items-center justify-center overflow-hidden"
+                  onClick={() => { if (internationalVideoId) setPlayingInternational(true); }}
+                  className="w-full h-full absolute inset-0 cursor-pointer group/thumb flex items-center justify-center overflow-hidden bg-slate-950"
                   title="ቪዲዮውን ለማጫወት ተምኔሉን ይጫኑ (Click thumbnail to Play)"
                 >
-                  {/* Clean 100% Flush Thumbnail Fitting Box */}
-                  <img
-                    src={internationalThumbnail}
-                    alt="ዓለም አቀፍ ዩቲዩብ ቻናል"
-                    className="absolute inset-0 w-full h-full object-cover group-hover/thumb:scale-[1.03] transition-transform duration-500"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = `https://placehold.co/640x360/0a1128/f9b03c?text=${encodeURIComponent('ዓለም አቀፍ ቻናል')}&font=Montserrat`;
-                    }}
-                  />
+                  {internationalThumbnail ? (
+                    <img
+                      src={internationalThumbnail}
+                      alt="ዓለም አቀፍ ዩቲዩብ ቻናል"
+                      className="absolute inset-0 w-full h-full object-cover group-hover/thumb:scale-[1.03] transition-transform duration-500"
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center justify-center text-slate-500 animate-pulse gap-2">
+                      <i className="fa-brands fa-youtube text-4xl text-[#f9b03c]"></i>
+                      <span className="text-xs font-bold font-mono">ዓለም አቀፍ ቻናል በመጫን ላይ...</span>
+                    </div>
+                  )}
+
+                  {/* Play Button Overlay */}
+                  {internationalThumbnail && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/25 group-hover/thumb:bg-black/10 transition-colors">
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[#f9b03c] text-slate-950 flex items-center justify-center text-2xl shadow-[0_0_30px_rgba(249,176,60,0.6)] group-hover/thumb:scale-110 transition-transform">
+                        <i className="fa-solid fa-play ml-1"></i>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

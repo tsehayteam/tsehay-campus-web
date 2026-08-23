@@ -73,8 +73,8 @@ export default function AdminDashboard() {
   const [aboutVideoSavedMessage, setAboutVideoSavedMessage] = useState('');
 
   // Portfolio Videos State
-  const [portfolioLocalUrl, setPortfolioLocalUrl] = useState('https://www.youtube.com/watch?v=mgdOMtW6J8k');
-  const [portfolioInternationalUrl, setPortfolioInternationalUrl] = useState('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+  const [portfolioLocalUrl, setPortfolioLocalUrl] = useState('');
+  const [portfolioInternationalUrl, setPortfolioInternationalUrl] = useState('');
   const [isSavingPortfolio, setIsSavingPortfolio] = useState(false);
   const [portfolioSavedMessage, setPortfolioSavedMessage] = useState('');
 
