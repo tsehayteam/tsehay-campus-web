@@ -124,24 +124,25 @@ export default function InstructorYouTubePortfolio() {
               ) : (
                 <div 
                   onClick={() => setPlayingLocal(true)}
-                  className="w-full h-full relative cursor-pointer group/thumb flex items-center justify-center"
+                  className="w-full h-full absolute inset-0 cursor-pointer group/thumb flex items-center justify-center overflow-hidden"
+                  title="ቪዲዮውን ለማጫወት ይጫኑ (Click to Play)"
                 >
                   {/* Clean High-Res Cover Image Fitting Box */}
                   <img
                     src={localThumbnail}
                     alt="የሀገር ውስጥ ዩቲዩብ ቻናል"
-                    className="w-full h-full object-cover group-hover/thumb:scale-105 transition-transform duration-700"
+                    className="absolute inset-0 w-full h-full object-cover group-hover/thumb:scale-105 transition-transform duration-700"
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = `https://placehold.co/640x360/0a1128/f9b03c?text=${encodeURIComponent('የሀገር ውስጥ ቻናል')}&font=Montserrat`;
                     }}
                   />
 
-                  {/* Dark Vignette Overlay */}
-                  <div className="absolute inset-0 bg-black/20 group-hover/thumb:bg-black/40 transition-colors duration-300" />
+                  {/* Dark Vignette Overlay for Crisp Contrast */}
+                  <div className="absolute inset-0 bg-black/25 group-hover/thumb:bg-black/40 transition-colors duration-300" />
 
-                  {/* Glowing Minimalist Play Button */}
-                  <div className="relative z-10 w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-[#3268ba] group-hover/thumb:bg-[#25549d] text-white flex items-center justify-center shadow-[0_0_25px_rgba(50,104,186,0.6)] group-hover/thumb:scale-110 active:scale-95 transition-all duration-300 pl-1">
-                    <i className="fa-solid fa-play text-lg sm:text-xl"></i>
+                  {/* 🎯 EXACTLY CENTERED Glowing Minimalist Play Button */}
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[#3268ba]/90 hover:bg-[#3268ba] text-white flex items-center justify-center shadow-[0_0_30px_rgba(50,104,186,0.6)] group-hover/thumb:scale-115 active:scale-95 transition-all duration-300 pl-1 border border-white/20 backdrop-blur-sm">
+                    <i className="fa-solid fa-play text-xl sm:text-2xl drop-shadow-md"></i>
                   </div>
                 </div>
               )}
@@ -181,24 +182,25 @@ export default function InstructorYouTubePortfolio() {
               ) : (
                 <div 
                   onClick={() => setPlayingInternational(true)}
-                  className="w-full h-full relative cursor-pointer group/thumb flex items-center justify-center"
+                  className="w-full h-full absolute inset-0 cursor-pointer group/thumb flex items-center justify-center overflow-hidden"
+                  title="ቪዲዮውን ለማጫወት ይጫኑ (Click to Play)"
                 >
                   {/* Clean High-Res Cover Image Fitting Box */}
                   <img
                     src={internationalThumbnail}
                     alt="የውጭ ዩቲዩብ ቻናል"
-                    className="w-full h-full object-cover group-hover/thumb:scale-105 transition-transform duration-700"
+                    className="absolute inset-0 w-full h-full object-cover group-hover/thumb:scale-105 transition-transform duration-700"
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = `https://placehold.co/640x360/0a1128/f9b03c?text=${encodeURIComponent('የውጭ ቻናል')}&font=Montserrat`;
                     }}
                   />
 
-                  {/* Dark Vignette Overlay */}
-                  <div className="absolute inset-0 bg-black/20 group-hover/thumb:bg-black/40 transition-colors duration-300" />
+                  {/* Dark Vignette Overlay for Crisp Contrast */}
+                  <div className="absolute inset-0 bg-black/25 group-hover/thumb:bg-black/40 transition-colors duration-300" />
 
-                  {/* Glowing Minimalist Play Button */}
-                  <div className="relative z-10 w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-tr from-[#f9b03c] to-amber-300 text-black flex items-center justify-center shadow-[0_0_25px_rgba(249,176,60,0.6)] group-hover/thumb:scale-110 active:scale-95 transition-all duration-300 pl-1">
-                    <i className="fa-solid fa-play text-lg sm:text-xl"></i>
+                  {/* 🎯 EXACTLY CENTERED Glowing Minimalist Play Button */}
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-[#f9b03c] text-black flex items-center justify-center shadow-[0_0_30px_rgba(249,176,60,0.6)] group-hover/thumb:scale-115 active:scale-95 transition-all duration-300 pl-1 border border-amber-300/40 backdrop-blur-sm">
+                    <i className="fa-solid fa-play text-xl sm:text-2xl drop-shadow-md"></i>
                   </div>
                 </div>
               )}
