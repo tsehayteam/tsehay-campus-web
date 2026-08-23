@@ -1,6 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase/admin';
 
+export interface PromoCodeItem {
+  id: string;
+  code?: string;
+  discountPercent?: number;
+  targetCourseId?: string;
+  description?: string;
+  isActive?: boolean;
+  usageCount?: number;
+  createdAt?: string;
+  updatedAt?: string;
+  [key: string]: any;
+}
+
 export async function GET() {
   try {
     if (adminDb) {
@@ -12,14 +25,16 @@ export async function GET() {
         .collection('referral_codes')
         .get();
 
-      const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const list: PromoCodeItem[] = snap.docs.map(d => ({ id: d.id, ...(d.data() as any) }));
 
       // Also check root promo_codes collection if any exist
       try {
         const rootSnap = await adminDb.collection('promo_codes').get();
         rootSnap.docs.forEach(d => {
-          if (!list.some(item => item.id === d.id || item.code === (d.data() as any).code)) {
-            list.push({ id: d.id, ...d.data() });
+          const docData = d.data() as any;
+          const codeVal = docData?.code || d.id;
+          if (!list.some(item => item.id === d.id || item.code === codeVal)) {
+            list.push({ id: d.id, ...docData });
           }
         });
       } catch (e) {}
@@ -54,7 +69,7 @@ export async function POST(req: NextRequest) {
         .collection('referral_codes')
         .doc(cleanCode);
 
-      const codeData = {
+      const codeData: PromoCodeItem = {
         id: cleanCode,
         code: cleanCode,
         discountPercent: Number(discountPercent) || 0,
