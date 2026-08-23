@@ -167,7 +167,6 @@ function StudentDashboardContent() {
       return cachedModules ? JSON.parse(cachedModules) : [];
     } catch (e) { return []; }
   });
-  const router = useRouter();
   const [progress, setProgress] = useState<any[]>([]);
   // Settings State
   const [settingsName, setSettingsName] = useState(() => {
