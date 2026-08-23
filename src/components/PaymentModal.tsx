@@ -353,7 +353,7 @@ export default function PaymentModal({ course, onClose }: any) {
                                 />
                                 <div className="min-w-0">
                                     <span className="font-black text-white text-base sm:text-lg block leading-tight">LakiPay</span>
-                                    <span className="text-[11px] sm:text-xs text-amber-400 font-bold block mt-0.5">Telebirr, CBE, Awash, BOA</span>
+                                    <span className="text-[11px] sm:text-xs text-amber-400 font-bold block mt-0.5">For Local Payments</span>
                                 </div>
                             </div>
                             <div className="bg-white w-24 sm:w-32 h-9 sm:h-10 px-2 rounded-xl flex items-center justify-center shadow-md border border-gray-200 shrink-0">
@@ -376,7 +376,7 @@ export default function PaymentModal({ course, onClose }: any) {
                                 />
                                 <div className="min-w-0">
                                     <span className="font-black text-white text-base sm:text-lg block leading-tight">PayPal</span>
-                                    <span className="text-[11px] sm:text-xs text-blue-400 font-bold block mt-0.5">International Card / PayPal</span>
+                                    <span className="text-[11px] sm:text-xs text-blue-400 font-bold block mt-0.5">For International Payments</span>
                                 </div>
                             </div>
                             <div className="bg-white w-24 sm:w-32 h-9 sm:h-10 px-2 rounded-xl flex items-center justify-center shadow-md border border-gray-200 shrink-0">
@@ -398,8 +398,8 @@ export default function PaymentModal({ course, onClose }: any) {
                                   className="w-4 h-4 sm:w-5 sm:h-5 text-cyan-500 focus:ring-cyan-500 accent-cyan-500 cursor-pointer shrink-0" 
                                 />
                                 <div className="min-w-0">
-                                    <span className="font-black text-white text-base sm:text-lg block leading-tight">Crypto (USDT / BTC)</span>
-                                    <span className="text-[11px] sm:text-xs text-cyan-400 font-bold block mt-0.5">Instant Crypto Checkout</span>
+                                    <span className="font-black text-white text-base sm:text-lg block leading-tight">NowPayments</span>
+                                    <span className="text-[11px] sm:text-xs text-cyan-400 font-bold block mt-0.5">For Crypto Payments</span>
                                 </div>
                             </div>
                             <div className="bg-white w-24 sm:w-32 h-9 sm:h-10 px-2 rounded-xl flex items-center justify-center shadow-md border border-gray-200 shrink-0">
