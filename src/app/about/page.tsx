@@ -123,14 +123,29 @@ export default function About() {
             <div className="space-y-8 mt-16 sm:mt-24">
               <div className="text-center mb-8 sm:mb-12">
                 <h3 className="text-2xl sm:text-3xl font-black text-primary font-heading">
-                  {t('about_reels_title')}
+                  {t('about_reels_title') || 'የተማሪዎቻችን እና የካምፓሳችን አጫጭር ቪዲዮዎች'}
                 </h3>
+                <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-2">
+                  በካምፓሳችን የተዘጋጁ ልዩ አጫጭር የክህሎትና የተሞክሮ ቪዲዮዎች
+                </p>
               </div>
 
-              {/* Short Vertical Videos */}
+              {/* Exactly 2 Unique Short Vertical Videos */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
-                <AboutShortVideo src="/assets/videos/Tsehay.mp4" />
-                <AboutShortVideo src="/assets/videos/Marketing%20and%20psyco.mp4" />
+                <AboutShortVideo 
+                  src="/assets/videos/Tsehay.mp4" 
+                  title="ፀሐይ ካምፓስ (Tsehay Campus)"
+                  subtitle="የተማሪዎቻችን የክህሎት ጉዞና ልምድ"
+                  badge="🎬 Reel 1"
+                  poster="/assets/hero-bg-new.jpg"
+                />
+                <AboutShortVideo 
+                  src="/assets/videos/Marketing%20and%20psyco.mp4" 
+                  title="ዲጂታል ማርኬቲንግ እና ስነ-ልቦና"
+                  subtitle="Digital Marketing Strategy & Customer Psychology"
+                  badge="🎬 Reel 2"
+                  poster="/assets/eyob_new.png"
+                />
               </div>
 
               {/* Banner Style Team Photo */}
@@ -299,25 +314,49 @@ function AboutHeroPlayer() {
   );
 }
 
-function AboutShortVideo({ src }: { src: string }) {
+function AboutShortVideo({ 
+  src, 
+  title, 
+  subtitle, 
+  badge,
+  poster 
+}: { 
+  src: string; 
+  title: string; 
+  subtitle?: string; 
+  badge?: string;
+  poster?: string;
+}) {
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
 
-  // Manual Play / Pause toggle on click/touch (NO automatic scroll autoplay)
+  useEffect(() => {
+    const handlePauseOthers = (e: any) => {
+      if (e.detail?.id !== src && videoRef.current && !videoRef.current.paused) {
+        videoRef.current.pause();
+        setIsPlaying(false);
+      }
+    };
+    window.addEventListener('tsehay_pause_other_videos', handlePauseOthers);
+    return () => window.removeEventListener('tsehay_pause_other_videos', handlePauseOthers);
+  }, [src]);
+
   const togglePlayPause = (e: React.MouseEvent) => {
     e.stopPropagation();
     const video = videoRef.current;
     if (!video) return;
 
     if (video.paused) {
-      video.muted = false;
+      window.dispatchEvent(new CustomEvent('tsehay_pause_other_videos', { detail: { id: src } }));
+      video.muted = isMuted;
       video.volume = 1.0;
       video.play().then(() => {
         setIsPlaying(true);
       }).catch(() => {
-        // Fallback for browsers requiring muted initial interaction
         video.muted = true;
+        setIsMuted(true);
         video.play().then(() => setIsPlaying(true)).catch(() => {});
       });
     } else {
@@ -326,21 +365,30 @@ function AboutShortVideo({ src }: { src: string }) {
     }
   };
 
+  const toggleMute = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const video = videoRef.current;
+    if (!video) return;
+    video.muted = !video.muted;
+    setIsMuted(video.muted);
+  };
+
   return (
     <div 
       ref={containerRef}
       onClick={togglePlayPause}
-      className="rounded-3xl overflow-hidden shadow-2xl group aspect-[9/16] bg-slate-950 relative cursor-pointer select-none border border-gray-200 dark:border-gray-800 transition-all duration-300 hover:shadow-[0_0_35px_rgba(249,176,60,0.3)] active:scale-[0.99]"
+      className="rounded-3xl overflow-hidden shadow-2xl group aspect-[9/16] bg-slate-950 relative cursor-pointer select-none border border-gray-200 dark:border-white/10 transition-all duration-300 hover:border-[#f9b03c]/60 hover:shadow-[0_0_35px_rgba(249,176,60,0.3)] active:scale-[0.99] flex flex-col justify-between"
       title={isPlaying ? "ለማቆም ይጫኑ (Click to Pause)" : "ለማጫወት ይጫኑ (Click to Play)"}
     >
       {/* HTML5 Video Element */}
       <video
         ref={videoRef}
+        poster={poster}
         playsInline
         webkit-playsinline="true"
         disablePictureInPicture
         controlsList="nodownload noremoteplayback"
-        preload="auto"
+        preload="metadata"
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
         onEnded={() => {
@@ -349,14 +397,33 @@ function AboutShortVideo({ src }: { src: string }) {
             videoRef.current.currentTime = 0;
           }
         }}
-        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 pointer-events-none"
+        className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 pointer-events-none"
         style={{ transform: 'translateZ(0)', backfaceVisibility: 'hidden' }}
       >
         <source src={src} type="video/mp4" />
       </video>
 
       {/* Dark Subtle Edge Vignette */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20 pointer-events-none"></div>
+      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-black/40 pointer-events-none"></div>
+
+      {/* Top Header inside card */}
+      <div className="relative z-20 p-4 flex items-center justify-between">
+        {badge && (
+          <span className="px-3 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/20 text-[#f9b03c] text-xs font-black tracking-wide shadow-md">
+            {badge}
+          </span>
+        )}
+        {isPlaying && (
+          <button
+            type="button"
+            onClick={toggleMute}
+            className="w-8 h-8 rounded-full bg-black/60 hover:bg-black/80 backdrop-blur-md border border-white/20 text-white flex items-center justify-center text-xs transition cursor-pointer"
+            title={isMuted ? "ድምፅ ክፈት" : "ድምፅ ዝጋ"}
+          >
+            <i className={`fa-solid ${isMuted ? 'fa-volume-xmark text-red-400' : 'fa-volume-high text-[#f9b03c]'}`}></i>
+          </button>
+        )}
+      </div>
 
       {/* Sleek Center Play/Pause Button */}
       <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none transition-all duration-300 transform ${
@@ -375,6 +442,18 @@ function AboutShortVideo({ src }: { src: string }) {
             <i className="fa-solid fa-play text-2xl ml-1"></i>
           )}
         </div>
+      </div>
+
+      {/* Bottom Title & Subtitle */}
+      <div className="relative z-20 p-4 sm:p-5 text-white">
+        <h4 className="font-heading font-black text-base sm:text-lg text-white drop-shadow-md leading-tight mb-1">
+          {title}
+        </h4>
+        {subtitle && (
+          <p className="text-xs text-gray-300 line-clamp-1 drop-shadow">
+            {subtitle}
+          </p>
+        )}
       </div>
     </div>
   );

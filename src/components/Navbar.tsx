@@ -19,9 +19,9 @@ export default function Navbar() {
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isSignupMode, setIsSignupMode] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [theme, setTheme] = useState('dark');
   const { lang, toggleLanguage, t } = useLanguage();
+  const [animationKey, setAnimationKey] = useState(0);
 
   const [customPhoto, setCustomPhoto] = useState<string | null>(() => {
     if (typeof window === 'undefined') return null;
@@ -70,16 +70,34 @@ export default function Navbar() {
     const diff = touchEndY - touchStartY;
     if (diff > 50) {
       setIsCurtainOpen(true);
+      setAnimationKey(prev => prev + 1);
     } else if (diff < -50) {
       setIsCurtainOpen(false);
     }
     setTouchStartY(null);
   };
 
+  const openCurtain = () => {
+    setIsCurtainOpen(true);
+    setAnimationKey(prev => prev + 1);
+  };
+
+  const closeCurtain = () => {
+    setIsCurtainOpen(false);
+  };
+
   useEffect(() => {
-    const handleOpenCurtain = () => setIsCurtainOpen(true);
+    const handleOpenCurtain = () => {
+      setIsCurtainOpen(true);
+      setAnimationKey(prev => prev + 1);
+    };
     const handleCloseCurtain = () => setIsCurtainOpen(false);
-    const handleToggleCurtain = () => setIsCurtainOpen(prev => !prev);
+    const handleToggleCurtain = () => {
+      setIsCurtainOpen(prev => {
+        if (!prev) setAnimationKey(k => k + 1);
+        return !prev;
+      });
+    };
 
     window.addEventListener('open-nav-curtain', handleOpenCurtain);
     window.addEventListener('close-nav-curtain', handleCloseCurtain);
@@ -93,7 +111,6 @@ export default function Navbar() {
   }, []);
 
   const navigateTo = (url: string) => {
-    setIsMobileMenuOpen(false);
     setShowProfileDropdown(false);
 
     if (url.startsWith('/#') || url.startsWith('#')) {
@@ -129,7 +146,6 @@ export default function Navbar() {
   };
 
   useEffect(() => {
-    setIsMobileMenuOpen(false);
     setShowProfileDropdown(false);
   }, [pathname]);
 
@@ -217,7 +233,7 @@ export default function Navbar() {
     <>
       {/* 1. ✨ Floating Minimalist Pull Tab Handle (Visible when Curtain is Rolled Up) */}
       <div 
-        onClick={() => setIsCurtainOpen(true)}
+        onClick={openCurtain}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
         className={`fixed top-0 left-1/2 -translate-x-1/2 z-[9990] cursor-pointer select-none transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
@@ -227,7 +243,7 @@ export default function Navbar() {
         }`}
         title="ማውጫውን ለመክፈት ይጫኑ (Click to Open Menu)"
       >
-        <div className="bg-white/90 dark:bg-[#030509]/90 hover:bg-white dark:hover:bg-[#080d1a] backdrop-blur-2xl border-x border-b border-black/10 dark:border-white/10 hover:border-[#f9b03c]/60 px-5 sm:px-6 py-1.5 rounded-b-2xl shadow-[0_4px_25px_rgba(0,0,0,0.4),0_0_15px_rgba(249,176,60,0.15)] flex items-center gap-2.5 group transition-all duration-300 hover:py-2 hover:px-7 active:scale-95">
+        <div className="bg-white/95 dark:bg-[#030509]/95 hover:bg-white dark:hover:bg-[#080d1a] backdrop-blur-2xl border-x border-b border-black/10 dark:border-white/10 hover:border-[#f9b03c]/60 px-5 sm:px-6 py-2 rounded-b-2xl shadow-[0_4px_25px_rgba(0,0,0,0.4),0_0_15px_rgba(249,176,60,0.2)] flex items-center gap-2.5 group transition-all duration-300 hover:py-2.5 hover:px-7 active:scale-95">
           {/* Compass Icon */}
           <div className="w-5 h-5 rounded-full bg-[#f9b03c]/15 border border-[#f9b03c]/40 flex items-center justify-center text-[#f9b03c] text-[11px] shadow-sm">
             <i className="fa-solid fa-compass"></i>
@@ -235,7 +251,7 @@ export default function Navbar() {
 
           {/* Label Text */}
           <span className="text-xs font-bold tracking-wide text-gray-800 dark:text-gray-200 group-hover:text-[#f9b03c] transition-colors whitespace-nowrap flex items-center gap-1.5 font-heading">
-            <i className="fa-solid fa-house text-[10px] text-[#f9b03c]"></i>
+            <i className="fa-solid fa-bars text-[11px] text-[#f9b03c]"></i>
             <span>ማውጫ / መነሻ (Menu)</span>
           </span>
 
@@ -246,8 +262,8 @@ export default function Navbar() {
       {/* 2. Backdrop Overlay when Curtain is Expanded (Clicking outside closes it) */}
       {isCurtainOpen && (
         <div 
-          onClick={() => setIsCurtainOpen(false)}
-          className="fixed inset-0 z-[9995] bg-black/40 backdrop-blur-[2px] transition-opacity duration-300"
+          onClick={closeCurtain}
+          className="fixed inset-0 z-[9995] bg-black/50 backdrop-blur-[3px] transition-opacity duration-300"
         />
       )}
 
@@ -255,7 +271,7 @@ export default function Navbar() {
       <nav 
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
-        className={`fixed top-0 left-0 right-0 w-full z-[9999] glass-nav border-b border-black/5 dark:border-white/[0.06] shadow-[0_12px_40px_rgba(0,0,0,0.6)] transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] transform select-none ${
+        className={`fixed top-0 left-0 right-0 w-full z-[9999] glass-nav border-b border-black/5 dark:border-white/[0.06] shadow-[0_12px_45px_rgba(0,0,0,0.65)] transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] transform select-none ${
           isCurtainOpen 
             ? 'translate-y-0 opacity-100' 
             : '-translate-y-full opacity-0 pointer-events-none'
@@ -264,24 +280,27 @@ export default function Navbar() {
         {/* Attached Roll-up Close Handle at Bottom Center */}
         <button 
           type="button"
-          onClick={() => setIsCurtainOpen(false)}
-          className="absolute -bottom-6 left-1/2 -translate-x-1/2 bg-white/90 dark:bg-[#030509]/90 hover:bg-white dark:hover:bg-[#080d1a] backdrop-blur-2xl border-x border-b border-black/10 dark:border-white/10 hover:border-[#f9b03c]/60 px-4 py-1 rounded-b-xl shadow-lg flex items-center gap-1.5 text-gray-600 dark:text-gray-400 hover:text-[#f9b03c] transition-all cursor-pointer group/close hover:px-5"
+          onClick={closeCurtain}
+          className="absolute -bottom-7 left-1/2 -translate-x-1/2 bg-white/95 dark:bg-[#030509]/95 hover:bg-white dark:hover:bg-[#080d1a] backdrop-blur-2xl border-x border-b border-black/10 dark:border-white/10 hover:border-[#f9b03c]/60 px-5 py-1.5 rounded-b-xl shadow-xl flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:text-[#f9b03c] transition-all cursor-pointer group/close hover:px-6 active:scale-95"
           title="ወደ ላይ መልሰህ እጠፍ (Roll Up Menu)"
         >
-          <i className="fa-solid fa-chevron-up text-[10px] group-hover/close:-translate-y-0.5 transition-transform text-[#f9b03c]"></i>
-          <span className="text-[10px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 group-hover/close:text-[#f9b03c]">
+          <i className="fa-solid fa-chevron-up text-xs group-hover/close:-translate-y-0.5 transition-transform text-[#f9b03c]"></i>
+          <span className="text-[11px] font-black uppercase tracking-wider text-gray-800 dark:text-gray-200 group-hover/close:text-[#f9b03c]">
             ወደ ላይ እጠፍ (Roll Up)
           </span>
         </button>
 
+        {/* Navbar Inner Content */}
         <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-18 sm:h-20 gap-3 lg:gap-6">
+          
+          {/* Top Bar Row */}
+          <div className="flex justify-between items-center h-16 sm:h-20 gap-3 lg:gap-6">
             
             {/* Brand Logo */}
             <Link 
               href="/" 
               onClick={() => { 
-                setIsMobileMenuOpen(false); 
+                closeCurtain(); 
                 if (pathname === '/') window.scrollTo({ top: 0, behavior: 'smooth' }); 
               }} 
               className="flex-shrink-0 flex items-center cursor-pointer group gap-2.5 mr-2 sm:mr-4 lg:mr-8 brand-entrance"
@@ -289,15 +308,15 @@ export default function Navbar() {
               <img 
                 src="/tc-logo.jpg" 
                 alt="Tsehay Campus Logo" 
-                className="h-10 sm:h-12 w-auto object-contain rounded-xl shadow-sm border border-black/10 dark:border-white/10 group-hover:border-[#f9b03c]/50 brand-logo-img" 
+                className="h-9 sm:h-12 w-auto object-contain rounded-xl shadow-sm border border-black/10 dark:border-white/10 group-hover:border-[#f9b03c]/50 brand-logo-img" 
                 onError={(e) => { e.currentTarget.src = 'https://ui-avatars.com/api/?name=TC&background=3268BA&color=fff'; }} 
               />
-              <span className="font-heading font-black text-xl sm:text-2xl tracking-tight hidden sm:block notranslate select-none transition-colors duration-300">
+              <span className="font-heading font-black text-lg sm:text-2xl tracking-tight hidden sm:block notranslate select-none transition-colors duration-300">
                 <span className="text-[#f9b03c]">Tsehay</span> <span className="text-[#3268ba]">Campus</span>
               </span>
             </Link>
 
-            {/* Navigation Links (Crisp Typography, No Jump, Smooth Golden Glow Underline) */}
+            {/* Desktop Navigation Links */}
             <div className="hidden lg:flex items-center gap-7 h-full">
               <Link 
                 href="/" 
@@ -349,7 +368,7 @@ export default function Navbar() {
               </Link>
             </div>
             
-            {/* Sleek Integrated Search Bar */}
+            {/* Desktop Search Bar */}
             <div className="flex-1 max-w-xs md:max-w-sm hidden md:flex items-center mx-2 lg:mx-4 relative z-[60]">
               <SmartSearchInput 
                 courses={allCourses} 
@@ -383,7 +402,7 @@ export default function Navbar() {
                 <span className="text-xs font-black tracking-wide">Tsehay AI</span>
               </button>
 
-              {/* Install App Quick Trigger (Sleek Glassmorphic Pill) */}
+              {/* Install App Quick Trigger */}
               <button 
                 type="button"
                 onClick={() => window.dispatchEvent(new CustomEvent('open-pwa-install'))}
@@ -394,7 +413,7 @@ export default function Navbar() {
                 <span>አፕ ጫን</span>
               </button>
 
-              {/* Minimalist Language Switcher */}
+              {/* Language Switcher */}
               <button 
                 onClick={toggleLanguage} 
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gray-200 dark:border-white/10 hover:border-[#f9b03c]/50 bg-gray-100/80 dark:bg-white/5 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-bold text-xs transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer notranslate" 
@@ -405,7 +424,7 @@ export default function Navbar() {
                 <span>{lang === 'am' ? 'EN' : 'አማ'}</span>
               </button>
 
-              {/* Minimalist Dark/Light Mode Toggle */}
+              {/* Dark/Light Mode Toggle */}
               <button 
                 onClick={toggleTheme} 
                 className="w-9 h-9 rounded-full border border-gray-200 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20 bg-gray-100/80 dark:bg-white/5 text-gray-700 dark:text-yellow-400 flex items-center justify-center text-xs transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
@@ -417,7 +436,6 @@ export default function Navbar() {
               <div className="h-5 w-px bg-gray-200 dark:bg-white/10 mx-0.5"></div>
               
               {!mounted || !user ? (
-                /* Primary Golden CTA Button */
                 <button 
                   onClick={() => openAuthModal(false)} 
                   className="bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#f9b03c] text-slate-950 font-black px-5 py-2 rounded-xl text-xs sm:text-sm shadow-[0_0_18px_rgba(249,176,60,0.25)] hover:shadow-[0_0_25px_rgba(249,176,60,0.5)] hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] whitespace-nowrap cursor-pointer"
@@ -426,7 +444,6 @@ export default function Navbar() {
                 </button>
               ) : (
                 <div className="relative" ref={profileDropdownRef}>
-                  {/* User Profile Avatar */}
                   <button 
                     onClick={() => setShowProfileDropdown(!showProfileDropdown)} 
                     className="flex items-center gap-2 focus:outline-none cursor-pointer"
@@ -475,11 +492,11 @@ export default function Navbar() {
               )}
             </div>
 
-            {/* Mobile View Controls */}
+            {/* Mobile Top Header Actions */}
             <div className="md:hidden flex items-center gap-2">
               <button 
                 onClick={toggleTheme} 
-                className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 flex items-center justify-center text-gray-700 dark:text-yellow-400 text-xs transition"
+                className="w-8 h-8 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 flex items-center justify-center text-gray-700 dark:text-yellow-400 text-xs transition active:scale-95"
                 aria-label="Toggle dark/light mode"
               >
                 <i className={`fa-solid ${theme === 'dark' ? 'fa-moon' : 'fa-sun'}`}></i>
@@ -487,7 +504,7 @@ export default function Navbar() {
 
               <button 
                 onClick={toggleLanguage} 
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-100 dark:bg-white/5 text-gray-800 dark:text-white font-bold text-xs transition notranslate" 
+                className="flex items-center gap-1 px-2 py-1.5 rounded-xl border border-gray-200 dark:border-white/10 bg-gray-100 dark:bg-white/5 text-gray-800 dark:text-white font-bold text-xs transition notranslate active:scale-95" 
                 translate="no"
               >
                 <i className="fa-solid fa-globe text-[10px] opacity-75"></i>
@@ -495,145 +512,220 @@ export default function Navbar() {
               </button>
 
               <button 
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} 
-                aria-label="Toggle navigation menu" 
-                className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-800 dark:text-white flex items-center justify-center text-base focus:outline-none transition active:scale-95 cursor-pointer"
+                onClick={closeCurtain} 
+                aria-label="Close menu curtain" 
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-amber-500/10 dark:bg-amber-500/15 border border-amber-500/30 text-[#f9b03c] font-black text-xs transition active:scale-95 cursor-pointer shadow-sm"
+                title="ወደ ላይ እጠፍ"
               >
-                <i className={`fa-solid ${isMobileMenuOpen ? 'fa-xmark text-[#f9b03c]' : 'fa-bars'}`}></i>
+                <i className="fa-solid fa-chevron-up text-[10px]"></i>
+                <span>እጠፍ</span>
               </button>
             </div>
           </div>
-        </div>
-        
-        {/* Mobile Frosted Glass Drawer */}
-        <div className={`md:hidden bg-white/95 dark:bg-[#030509]/95 backdrop-blur-2xl border-t border-b border-gray-200 dark:border-white/5 shadow-2xl overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${isMobileMenuOpen ? 'max-h-[550px] opacity-100 py-3' : 'max-h-0 opacity-0 pointer-events-none'}`}>
-          <div className="px-4 space-y-2 flex flex-col overflow-y-auto max-h-[75vh]">
-            <div className="pb-1">
+
+          {/* 📱 Mobile Directly Visible Staggered Navigation Panel */}
+          <div key={`mobile-nav-${animationKey}`} className="md:hidden pb-4 pt-1 space-y-2.5 max-h-[78vh] overflow-y-auto pr-0.5">
+            
+            {/* 1. Staggered Item 1: Smart Search */}
+            <div className="animate-nav-stagger-1 pb-0.5">
               <SmartSearchInput 
                 courses={allCourses} 
                 compact={true}
-                placeholder={t('search_placeholder') || "ኮርሶችን ይፈልጉ..."} 
+                placeholder={t('search_placeholder') || "ኮርሶችን ይፈልጉ (Marketing, Python)..."} 
               />
             </div>
 
-            <button 
-              type="button" 
-              onClick={() => navigateTo('/')} 
-              className="w-full flex items-center justify-between px-4 py-3 text-gray-900 dark:text-white font-bold rounded-xl hover:bg-[#f9b03c]/10 border border-gray-100 dark:border-white/5 transition cursor-pointer text-left"
-            >
-              <span className="flex items-center gap-3">
-                <i className="fa-solid fa-house text-[#f9b03c]"></i>
-                <span>{t('home') || 'መነሻ ገጽ'}</span>
-              </span>
-              <i className="fa-solid fa-chevron-right text-xs text-gray-400"></i>
-            </button>
+            {/* 2. Staggered Item 2: Home */}
+            <div className="animate-nav-stagger-2">
+              <button 
+                type="button" 
+                onClick={() => { closeCurtain(); navigateTo('/'); }} 
+                className={`w-full flex items-center justify-between p-2.5 rounded-2xl mobile-nav-card ${isHome ? 'mobile-nav-card-active' : ''} text-left cursor-pointer group`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center transition-transform group-hover:scale-105 ${isHome ? 'bg-[#f9b03c] text-black shadow-md' : 'bg-gray-100 dark:bg-white/10 text-[#f9b03c]'}`}>
+                    <i className="fa-solid fa-house text-sm"></i>
+                  </div>
+                  <div>
+                    <div className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
+                      <span>{t('home') || 'መነሻ ገጽ'}</span>
+                      {isHome && <span className="w-1.5 h-1.5 rounded-full bg-[#f9b03c] animate-pulse"></span>}
+                    </div>
+                    <div className="text-[10px] text-gray-500 dark:text-gray-400">ዋና ገጽ እና ትኩስ መረጃዎች</div>
+                  </div>
+                </div>
+                <i className="fa-solid fa-chevron-right text-xs text-gray-400 group-hover:text-[#f9b03c] group-hover:translate-x-0.5 transition-all"></i>
+              </button>
+            </div>
 
-            <button 
-              type="button" 
-              onClick={() => navigateTo('/about')} 
-              className="w-full flex items-center justify-between px-4 py-3 text-gray-900 dark:text-white font-bold rounded-xl hover:bg-[#f9b03c]/10 border border-gray-100 dark:border-white/5 transition cursor-pointer text-left"
-            >
-              <span className="flex items-center gap-3">
-                <i className="fa-solid fa-circle-info text-[#f9b03c]"></i>
-                <span>{t('about_us')}</span>
-              </span>
-              <i className="fa-solid fa-chevron-right text-xs text-gray-400"></i>
-            </button>
+            {/* 3. Staggered Item 3: All Courses */}
+            <div className="animate-nav-stagger-3">
+              <button 
+                type="button" 
+                onClick={() => { closeCurtain(); navigateTo('/courses'); }} 
+                className={`w-full flex items-center justify-between p-2.5 rounded-2xl mobile-nav-card ${isCourses ? 'mobile-nav-card-active' : ''} text-left cursor-pointer group`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center transition-transform group-hover:scale-105 ${isCourses ? 'bg-[#f9b03c] text-black shadow-md' : 'bg-gray-100 dark:bg-white/10 text-[#f9b03c]'}`}>
+                    <i className="fa-solid fa-graduation-cap text-sm"></i>
+                  </div>
+                  <div>
+                    <div className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
+                      <span>{t('all_courses') || 'ሁሉም ኮርሶች'}</span>
+                      {isCourses && <span className="w-1.5 h-1.5 rounded-full bg-[#f9b03c] animate-pulse"></span>}
+                    </div>
+                    <div className="text-[10px] text-gray-500 dark:text-gray-400">ዲጂታል ክህሎቶች እና ሰርተፍኬቶች</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/20">Explore</span>
+                  <i className="fa-solid fa-chevron-right text-xs text-gray-400 group-hover:text-[#f9b03c] group-hover:translate-x-0.5 transition-all"></i>
+                </div>
+              </button>
+            </div>
 
-            <button 
-              type="button" 
-              onClick={() => navigateTo('/courses')} 
-              className="w-full flex items-center justify-between px-4 py-3 text-gray-900 dark:text-white font-bold rounded-xl hover:bg-[#f9b03c]/10 border border-gray-100 dark:border-white/5 transition cursor-pointer text-left"
-            >
-              <span className="flex items-center gap-3">
-                <i className="fa-solid fa-book-open text-[#f9b03c]"></i>
-                <span>{t('all_courses')}</span>
-              </span>
-              <i className="fa-solid fa-chevron-right text-xs text-gray-400"></i>
-            </button>
+            {/* 4. Staggered Item 4: About Us */}
+            <div className="animate-nav-stagger-4">
+              <button 
+                type="button" 
+                onClick={() => { closeCurtain(); navigateTo('/about'); }} 
+                className={`w-full flex items-center justify-between p-2.5 rounded-2xl mobile-nav-card ${isAbout ? 'mobile-nav-card-active' : ''} text-left cursor-pointer group`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center transition-transform group-hover:scale-105 ${isAbout ? 'bg-[#f9b03c] text-black shadow-md' : 'bg-gray-100 dark:bg-white/10 text-[#f9b03c]'}`}>
+                    <i className="fa-solid fa-circle-info text-sm"></i>
+                  </div>
+                  <div>
+                    <div className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
+                      <span>{t('about_us') || 'ስለ እኛ'}</span>
+                      {isAbout && <span className="w-1.5 h-1.5 rounded-full bg-[#f9b03c] animate-pulse"></span>}
+                    </div>
+                    <div className="text-[10px] text-gray-500 dark:text-gray-400">ራዕይ፣ ተልዕኮ እና የመማሪያ መንገድ</div>
+                  </div>
+                </div>
+                <i className="fa-solid fa-chevron-right text-xs text-gray-400 group-hover:text-[#f9b03c] group-hover:translate-x-0.5 transition-all"></i>
+              </button>
+            </div>
 
-            <button 
-              type="button" 
-              onClick={() => navigateTo('/#ai-feature')} 
-              className="w-full flex items-center justify-between px-4 py-3 text-gray-900 dark:text-white font-bold rounded-xl hover:bg-[#f9b03c]/10 border border-gray-100 dark:border-white/5 transition cursor-pointer text-left"
-            >
-              <span className="flex items-center gap-3">
-                <i className="fa-solid fa-wand-magic-sparkles text-[#f9b03c]"></i>
-                <span className="notranslate">Tsehay AI</span>
-              </span>
-              <span className="text-[10px] bg-[#f9b03c]/20 text-[#f9b03c] font-black px-2 py-0.5 rounded-full">AI</span>
-            </button>
+            {/* 5. Staggered Item 5: Tsehay AI */}
+            <div className="animate-nav-stagger-5">
+              <button 
+                type="button" 
+                onClick={() => { closeCurtain(); navigateTo('/#ai-feature'); }} 
+                className="w-full flex items-center justify-between p-2.5 rounded-2xl mobile-nav-card text-left cursor-pointer group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-gradient-to-tr from-amber-500/20 to-orange-500/20 border border-amber-500/40 text-amber-500 shadow-sm transition-transform group-hover:scale-105">
+                    <i className="fa-solid fa-wand-magic-sparkles text-sm animate-pulse"></i>
+                  </div>
+                  <div>
+                    <div className="text-sm font-black text-gray-900 dark:text-white flex items-center gap-1.5">
+                      <span className="notranslate">Tsehay AI</span>
+                      <span className="text-[9px] font-black tracking-wider bg-gradient-to-r from-[#f9b03c] to-amber-500 text-black px-1.5 py-0.2 rounded-full">24/7</span>
+                    </div>
+                    <div className="text-[10px] text-gray-500 dark:text-gray-400">የግል AI መምህር እና ረዳት</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[9px] font-bold bg-[#f9b03c]/20 text-[#f9b03c] px-2 py-0.5 rounded-full">AI Tutor</span>
+                  <i className="fa-solid fa-chevron-right text-xs text-gray-400 group-hover:text-[#f9b03c] group-hover:translate-x-0.5 transition-all"></i>
+                </div>
+              </button>
+            </div>
 
-            {/* Mobile Install App Button */}
-            <button 
-              type="button" 
-              onClick={() => {
-                setIsMobileMenuOpen(false);
-                window.dispatchEvent(new CustomEvent('open-pwa-install'));
-              }} 
-              className="w-full flex items-center justify-between px-4 py-3 bg-amber-500/10 dark:bg-amber-500/10 border border-[#f9b03c]/30 text-[#f9b03c] font-black rounded-xl hover:bg-[#f9b03c]/20 transition cursor-pointer text-left"
-            >
-              <span className="flex items-center gap-3">
-                <i className="fa-solid fa-mobile-screen-button text-base"></i>
-                <span>አፕሊኬሽኑን ጫን (Install App)</span>
-              </span>
-              <span className="text-[10px] bg-[#f9b03c] text-black font-black px-2 py-0.5 rounded-md">FREE</span>
-            </button>
+            {/* 6. Staggered Item 6: Install App */}
+            <div className="animate-nav-stagger-6">
+              <button 
+                type="button" 
+                onClick={() => {
+                  closeCurtain();
+                  window.dispatchEvent(new CustomEvent('open-pwa-install'));
+                }} 
+                className="w-full flex items-center justify-between p-2.5 rounded-2xl mobile-nav-card bg-amber-500/5 dark:bg-amber-500/10 border-amber-500/30 text-left cursor-pointer group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-[#f9b03c]/20 text-[#f9b03c] transition-transform group-hover:scale-105">
+                    <i className="fa-solid fa-mobile-screen-button text-sm"></i>
+                  </div>
+                  <div>
+                    <div className="text-sm font-black text-gray-900 dark:text-white">አፕሊኬሽኑን ጫን (Install App)</div>
+                    <div className="text-[10px] text-gray-500 dark:text-gray-400">ለስልክና ኮምፒውተር ፈጣን አፕ</div>
+                  </div>
+                </div>
+                <span className="text-[9px] bg-[#f9b03c] text-black font-black px-2 py-0.5 rounded-md shadow-sm">FREE</span>
+              </button>
+            </div>
 
-            <hr className="my-1 border-gray-200 dark:border-white/5" />
-
-            {!mounted || !user ? (
-              <div className="grid grid-cols-2 gap-2 pt-1">
-                <button 
-                  type="button" 
-                  onClick={() => { setIsMobileMenuOpen(false); openAuthModal(false); }} 
-                  className="w-full text-gray-800 dark:text-white font-bold py-3 rounded-xl border border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/5 transition cursor-pointer text-center text-sm"
-                >
-                  {t('login')}
-                </button>
-                <button 
-                  type="button" 
-                  onClick={() => { setIsMobileMenuOpen(false); openAuthModal(true); }} 
-                  className="w-full bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#f9b03c] text-slate-950 font-black py-3 rounded-xl shadow-md transition cursor-pointer text-center text-sm"
-                >
-                  {t('register')}
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-2 pt-1">
-                <button 
-                  type="button" 
-                  onClick={() => navigateTo('/dashboard')} 
-                  className="w-full flex items-center justify-between px-4 py-3 bg-[#f9b03c]/10 border border-[#f9b03c]/30 text-[#f9b03c] font-black rounded-xl hover:bg-[#f9b03c]/20 transition cursor-pointer"
-                >
-                  <span className="flex items-center gap-3">
-                    <i className="fa-solid fa-graduation-cap"></i>
-                    <span>{t('classroom') || 'ወደ መማሪያ ክፍል'}</span>
-                  </span>
-                  <i className="fa-solid fa-arrow-right text-xs"></i>
-                </button>
-                {isAdmin && (
+            {/* 7. Staggered Item 7: Auth / Classroom Actions */}
+            <div className="animate-nav-stagger-7 pt-1">
+              {!mounted || !user ? (
+                <div className="grid grid-cols-2 gap-2">
                   <button 
                     type="button" 
-                    onClick={() => navigateTo('/admin')} 
-                    className="w-full flex items-center justify-between px-4 py-2.5 text-gray-700 dark:text-gray-300 font-bold rounded-xl hover:bg-gray-100 dark:hover:bg-white/5 border border-gray-200 dark:border-white/10 transition cursor-pointer text-sm"
+                    onClick={() => { closeCurtain(); openAuthModal(false); }} 
+                    className="w-full py-2.5 rounded-xl border border-gray-300 dark:border-white/10 font-bold text-gray-800 dark:text-white hover:bg-gray-100 dark:hover:bg-white/5 transition text-center text-xs cursor-pointer shadow-sm active:scale-95"
                   >
-                    <span className="flex items-center gap-3">
-                      <i className="fa-solid fa-shield-halved text-[#f9b03c]"></i>
-                      <span>{t('admin') || 'አድሚን'}</span>
-                    </span>
-                    <i className="fa-solid fa-chevron-right text-xs text-gray-400"></i>
+                    {t('login') || 'ግባ'}
                   </button>
-                )}
-                <button 
-                  type="button" 
-                  onClick={() => { setIsMobileMenuOpen(false); handleSignOut(); }} 
-                  className="w-full text-red-500 font-bold py-2.5 hover:bg-red-500/10 rounded-xl border border-red-500/30 transition cursor-pointer text-center flex items-center justify-center gap-2 text-sm"
-                >
-                  <i className="fa-solid fa-arrow-right-from-bracket"></i> {t('logout') || 'ዘግተህ ውጣ (Logout)'}
-                </button>
-              </div>
-            )}
+                  <button 
+                    type="button" 
+                    onClick={() => { closeCurtain(); openAuthModal(true); }} 
+                    className="w-full bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#f9b03c] text-slate-950 font-black py-2.5 rounded-xl shadow-[0_0_15px_rgba(249,176,60,0.3)] hover:scale-[1.02] active:scale-95 transition text-center text-xs cursor-pointer"
+                  >
+                    {t('register') || 'ተመዝገብ'}
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2.5 p-2 rounded-xl bg-gray-100/70 dark:bg-white/5 border border-gray-200 dark:border-white/10">
+                    <img 
+                      src={navUserPhoto} 
+                      alt={navUserName} 
+                      className="w-8 h-8 rounded-full border-2 border-[#f9b03c] object-cover shrink-0" 
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="text-xs font-bold text-gray-900 dark:text-white truncate">{navUserName}</div>
+                      <div className="text-[10px] text-gray-500 dark:text-gray-400 truncate">{user?.email}</div>
+                    </div>
+                  </div>
+
+                  <button 
+                    type="button" 
+                    onClick={() => { closeCurtain(); navigateTo('/dashboard'); }} 
+                    className="w-full flex items-center justify-between px-3 py-2.5 bg-[#f9b03c]/15 border border-[#f9b03c]/40 text-gray-900 dark:text-white font-black rounded-xl hover:bg-[#f9b03c]/25 transition cursor-pointer text-xs"
+                  >
+                    <span className="flex items-center gap-2">
+                      <i className="fa-solid fa-graduation-cap text-[#f9b03c]"></i>
+                      <span>{t('classroom') || 'ወደ መማሪያ ክፍል'}</span>
+                    </span>
+                    <i className="fa-solid fa-arrow-right text-[10px] text-[#f9b03c]"></i>
+                  </button>
+
+                  {isAdmin && (
+                    <button 
+                      type="button" 
+                      onClick={() => { closeCurtain(); navigateTo('/admin'); }} 
+                      className="w-full flex items-center justify-between px-3 py-2 text-gray-700 dark:text-gray-300 font-bold rounded-xl hover:bg-gray-100 dark:hover:bg-white/5 border border-gray-200 dark:border-white/10 transition cursor-pointer text-xs"
+                    >
+                      <span className="flex items-center gap-2">
+                        <i className="fa-solid fa-shield-halved text-[#f9b03c]"></i>
+                        <span>{t('admin') || 'አድሚን'}</span>
+                      </span>
+                      <i className="fa-solid fa-chevron-right text-[10px] text-gray-400"></i>
+                    </button>
+                  )}
+
+                  <button 
+                    type="button" 
+                    onClick={() => { closeCurtain(); handleSignOut(); }} 
+                    className="w-full text-red-500 font-bold py-2 hover:bg-red-500/10 rounded-xl border border-red-500/30 transition cursor-pointer text-center flex items-center justify-center gap-1.5 text-xs"
+                  >
+                    <i className="fa-solid fa-arrow-right-from-bracket"></i> {t('logout') || 'ዘግተህ ውጣ (Logout)'}
+                  </button>
+                </div>
+              )}
+            </div>
+
           </div>
         </div>
       </nav>
