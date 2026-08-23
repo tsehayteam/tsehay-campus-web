@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase/config';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
@@ -8,6 +9,7 @@ import { validateReferralCode, recordReferralUsage } from '@/lib/referralService
 export default function PaymentModal({ course: propCourse, onClose: propOnClose }: any) {
   const [internalCourse, setInternalCourse] = useState<any>(null);
   const [isOpen, setIsOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   const course = propCourse || internalCourse;
   const isControlled = propCourse !== undefined;
@@ -23,6 +25,10 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
   const [discountPercent, setDiscountPercent] = useState<number>(0);
   const [referralMessage, setReferralMessage] = useState<{ text: string; isError: boolean } | null>(null);
   const [isValidatingCode, setIsValidatingCode] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Listen for global open events if not controlled
   useEffect(() => {
@@ -65,13 +71,15 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
   // Lock body scroll when modal is active
   useEffect(() => {
     const shouldShow = isControlled ? Boolean(propCourse) : isOpen;
-    if (shouldShow) {
+    if (shouldShow && typeof document !== 'undefined') {
       document.body.style.overflow = 'hidden';
-    } else {
+    } else if (typeof document !== 'undefined') {
       document.body.style.overflow = '';
     }
     return () => {
-      document.body.style.overflow = '';
+      if (typeof document !== 'undefined') {
+        document.body.style.overflow = '';
+      }
     };
   }, [isControlled, propCourse, isOpen]);
 
@@ -94,6 +102,7 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [course?.id]);
 
+  if (!mounted) return null;
   if (isControlled && !propCourse) return null;
   if (!isControlled && !isOpen) return null;
   if (!course) return null;
@@ -304,17 +313,17 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
     }
   };
 
-  return (
+  const modalContent = (
     <div 
       id="payment-modal-backdrop" 
-      className="fixed inset-0 z-[9999999] bg-black/85 backdrop-blur-xl flex items-center justify-center p-3 sm:p-5 overflow-y-auto overscroll-none animate-in fade-in duration-300"
+      className="fixed inset-0 z-[99999999] w-screen h-screen bg-black/85 backdrop-blur-xl flex items-center justify-center p-3 sm:p-5 overflow-y-auto overscroll-contain animate-in fade-in duration-300"
       onClick={(e) => { 
         if (e.target === e.currentTarget && !isPaying) handleClose(); 
       }}
     >
-      {/* Centered Modal Card */}
+      {/* Dead-Center Modal Card with Smooth Pop-In Animation */}
       <div 
-        className="bg-[#0b1329] text-white w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-[2rem] shadow-[0_25px_80px_rgba(0,0,0,0.9)] flex flex-col relative border border-gray-800/90 my-auto animate-[modalCenterPop_0.35s_cubic-bezier(0.16,1,0.3,1)_forwards]"
+        className="bg-[#0b1329] text-white w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-[2rem] shadow-[0_25px_80px_rgba(0,0,0,0.95)] flex flex-col relative border border-gray-800/90 m-auto animate-[modalCenterPop_0.35s_cubic-bezier(0.16,1,0.3,1)_forwards]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -534,10 +543,12 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
 
       <style dangerouslySetInnerHTML={{__html: `
         @keyframes modalCenterPop {
-          0% { opacity: 0; transform: scale(0.90) translateY(20px); }
+          0% { opacity: 0; transform: scale(0.92) translateY(12px); }
           100% { opacity: 1; transform: scale(1) translateY(0); }
         }
       `}} />
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 }
