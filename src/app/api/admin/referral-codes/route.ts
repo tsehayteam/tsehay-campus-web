@@ -9,6 +9,7 @@ export interface PromoCodeItem {
   description?: string;
   isActive?: boolean;
   usageCount?: number;
+  maxUsageLimit?: number; // 0 or undefined for Unlimited
   createdAt?: string;
   updatedAt?: string;
   [key: string]: any;
@@ -52,7 +53,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { code, discountPercent, targetCourseId, description, isActive } = body;
+    const { code, discountPercent, targetCourseId, description, isActive, maxUsageLimit } = body;
 
     if (!code) {
       return NextResponse.json({ error: 'Missing code' }, { status: 400 });
@@ -76,7 +77,8 @@ export async function POST(req: NextRequest) {
         targetCourseId: targetCourseId || 'all',
         description: description?.trim() || '',
         isActive: isActive !== false,
-        usageCount: 0,
+        usageCount: Number(body.usageCount) || 0,
+        maxUsageLimit: Number(maxUsageLimit) || 0,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
@@ -137,7 +139,7 @@ export async function DELETE(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   try {
     const body = await req.json();
-    const { codeId, isActive } = body;
+    const { codeId, isActive, maxUsageLimit } = body;
 
     if (!codeId) {
       return NextResponse.json({ error: 'Missing codeId' }, { status: 400 });
@@ -154,16 +156,16 @@ export async function PATCH(req: NextRequest) {
         .collection('referral_codes')
         .doc(cleanCode);
 
-      await codeRef.set({
-        isActive: Boolean(isActive),
+      const updateData: any = {
         updatedAt: new Date().toISOString()
-      }, { merge: true });
+      };
+      if (isActive !== undefined) updateData.isActive = Boolean(isActive);
+      if (maxUsageLimit !== undefined) updateData.maxUsageLimit = Number(maxUsageLimit) || 0;
+
+      await codeRef.set(updateData, { merge: true });
 
       try {
-        await adminDb.collection('promo_codes').doc(cleanCode).set({
-          isActive: Boolean(isActive),
-          updatedAt: new Date().toISOString()
-        }, { merge: true });
+        await adminDb.collection('promo_codes').doc(cleanCode).set(updateData, { merge: true });
       } catch (e) {}
 
       return NextResponse.json({ success: true });

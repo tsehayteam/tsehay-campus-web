@@ -9,6 +9,7 @@ export interface PromoCode {
   description?: string;
   isActive: boolean;
   usageCount?: number;
+  maxUsageLimit?: number; // 0 or undefined for Unlimited, or specific limit (e.g. 10)
   createdAt?: any;
 }
 
@@ -139,6 +140,18 @@ export async function validateReferralCode(
       };
     }
 
+    // 🌟 Check Max Usage Limit (የተጠቃሚ ብዛት ገደብ)
+    const maxLimit = Number(data.maxUsageLimit) || 0;
+    const currentUsage = Number(data.usageCount) || 0;
+    if (maxLimit > 0 && currentUsage >= maxLimit) {
+      return {
+        isValid: false,
+        discountPercent: 0,
+        isFree: false,
+        message: `ይቅርታ፣ የዚህ የቅናሽ ኮድ የተጠቃሚዎች ቁጥር ገደብ (${maxLimit} ሰው) ሞልቷል`
+      };
+    }
+
     // Check course applicability
     if (courseId && data.targetCourseId && data.targetCourseId !== 'all') {
       const normalizedTarget = data.targetCourseId.toLowerCase().trim();
@@ -193,6 +206,15 @@ export async function recordReferralUsage(code: string) {
       usageCount: increment(1),
       lastUsedAt: serverTimestamp()
     }, { merge: true });
+
+    // Also mirror to root promo_codes
+    try {
+      const rootRef = doc(db, 'promo_codes', cleanCode);
+      await setDoc(rootRef, {
+        usageCount: increment(1),
+        lastUsedAt: serverTimestamp()
+      }, { merge: true });
+    } catch (e) {}
   } catch (e) {
     console.warn("Could not record promo code usage via client:", e);
   }

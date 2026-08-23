@@ -83,6 +83,7 @@ export default function AdminDashboard() {
   const [newCodeName, setNewCodeName] = useState('');
   const [newDiscountPercent, setNewDiscountPercent] = useState<number>(50);
   const [newTargetCourseId, setNewTargetCourseId] = useState('all');
+  const [newMaxUsageLimit, setNewMaxUsageLimit] = useState<number | string>(10);
   const [newCodeDesc, setNewCodeDesc] = useState('');
   const [isSavingReferral, setIsSavingReferral] = useState(false);
   const [referralSuccessMsg, setReferralSuccessMsg] = useState('');
@@ -286,11 +287,13 @@ export default function AdminDashboard() {
     }
 
     setIsSavingReferral(true);
+    const parsedLimit = Number(newMaxUsageLimit) > 0 ? Number(newMaxUsageLimit) : 0;
     const newCodeObject = {
       id: cleanCode,
       code: cleanCode,
       discountPercent: Number(newDiscountPercent),
       targetCourseId: newTargetCourseId || 'all',
+      maxUsageLimit: parsedLimit,
       description: newCodeDesc.trim() || '',
       isActive: true,
       usageCount: 0,
@@ -315,6 +318,7 @@ export default function AdminDashboard() {
           code: cleanCode,
           discountPercent: Number(newDiscountPercent),
           targetCourseId: newTargetCourseId || 'all',
+          maxUsageLimit: parsedLimit,
           description: newCodeDesc.trim() || '',
           isActive: true,
           usageCount: 0,
@@ -332,6 +336,7 @@ export default function AdminDashboard() {
           code: cleanCode,
           discountPercent: Number(newDiscountPercent),
           targetCourseId: newTargetCourseId || 'all',
+          maxUsageLimit: parsedLimit,
           description: newCodeDesc.trim() || '',
           isActive: true
         })
@@ -1678,7 +1683,7 @@ export default function AdminDashboard() {
                 </div>
 
                 <form onSubmit={handleCreateReferralCode} className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                     {/* Code Name */}
                     <div>
                       <label className="block text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-2">
@@ -1687,7 +1692,7 @@ export default function AdminDashboard() {
                       <input 
                         type="text" 
                         required 
-                        placeholder="e.g. TSEHAY50, FREE100, VIP30" 
+                        placeholder="e.g. ABEL10, VIP50, FREE100" 
                         value={newCodeName}
                         onChange={(e) => setNewCodeName(e.target.value.toUpperCase().replace(/\s+/g, ''))}
                         className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm font-mono font-black uppercase tracking-wider text-dark dark:text-white outline-none focus:border-[#f9b03c] transition"
@@ -1697,10 +1702,10 @@ export default function AdminDashboard() {
                     {/* Discount Percentage */}
                     <div>
                       <label className="block text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-2 flex items-center justify-between">
-                        <span>የቅናሽ ፐርሰንት (Discount %) *</span>
-                        <span className="text-[#f9b03c] font-black">{newDiscountPercent}% {newDiscountPercent >= 100 ? '(100% FREE)' : 'OFF'}</span>
+                        <span>የቅናሽ ፐርሰንት (%) *</span>
+                        <span className="text-[#f9b03c] font-black">{newDiscountPercent}% {newDiscountPercent >= 100 ? '(FREE)' : 'OFF'}</span>
                       </label>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5">
                         <input 
                           type="number" 
                           min={1} 
@@ -1708,17 +1713,17 @@ export default function AdminDashboard() {
                           required 
                           value={newDiscountPercent}
                           onChange={(e) => setNewDiscountPercent(Math.min(100, Math.max(1, Number(e.target.value))))}
-                          className="w-24 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-3 py-3 text-sm font-bold text-center text-dark dark:text-white outline-none focus:border-[#f9b03c]"
+                          className="w-20 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-2 py-3 text-sm font-bold text-center text-dark dark:text-white outline-none focus:border-[#f9b03c]"
                         />
-                        <div className="flex-1 flex gap-1.5">
-                          {[20, 30, 50, 100].map(pct => (
+                        <div className="flex-1 flex gap-1">
+                          {[10, 20, 50, 100].map(pct => (
                             <button
                               key={pct}
                               type="button"
                               onClick={() => setNewDiscountPercent(pct)}
-                              className={`flex-1 py-2 rounded-lg text-xs font-bold transition cursor-pointer ${
+                              className={`flex-1 py-2 rounded-lg text-[11px] font-bold transition cursor-pointer ${
                                 newDiscountPercent === pct 
-                                  ? 'bg-[#f9b03c] text-slate-950 shadow-sm' 
+                                  ? 'bg-[#f9b03c] text-slate-950 shadow-sm font-black' 
                                   : 'bg-gray-100 dark:bg-slate-700/60 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700'
                               }`}
                             >
@@ -1732,7 +1737,7 @@ export default function AdminDashboard() {
                     {/* Target Course */}
                     <div>
                       <label className="block text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-2">
-                        የሚሰራበት ኮርስ (Applicable Course) *
+                        የሚሰራበት ኮርስ (Course) *
                       </label>
                       <select 
                         value={newTargetCourseId}
@@ -1747,6 +1752,42 @@ export default function AdminDashboard() {
                         ))}
                       </select>
                     </div>
+
+                    {/* Max Usage Limit (የተጠቃሚዎች ብዛት ገደብ) */}
+                    <div>
+                      <label className="block text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-2 flex items-center justify-between">
+                        <span>የተጠቃሚ ገደብ (Max Limit)</span>
+                        <span className="text-emerald-500 dark:text-emerald-400 font-bold">
+                          {Number(newMaxUsageLimit) > 0 ? `${newMaxUsageLimit} ሰው` : 'ያልተገደበ (Unlimited)'}
+                        </span>
+                      </label>
+                      <div className="flex items-center gap-1.5">
+                        <input 
+                          type="number" 
+                          min={0} 
+                          placeholder="0 = Unlimited"
+                          value={newMaxUsageLimit}
+                          onChange={(e) => setNewMaxUsageLimit(e.target.value)}
+                          className="w-20 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-2 py-3 text-sm font-bold text-center text-dark dark:text-white outline-none focus:border-[#f9b03c]"
+                        />
+                        <div className="flex-1 flex gap-1">
+                          {[10, 50, 100, 0].map(limit => (
+                            <button
+                              key={limit}
+                              type="button"
+                              onClick={() => setNewMaxUsageLimit(limit)}
+                              className={`flex-1 py-2 rounded-lg text-[11px] font-bold transition cursor-pointer ${
+                                Number(newMaxUsageLimit) === limit 
+                                  ? 'bg-emerald-500 text-slate-950 shadow-sm font-black' 
+                                  : 'bg-gray-100 dark:bg-slate-700/60 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700'
+                              }`}
+                            >
+                              {limit === 0 ? '∞' : limit}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Description / Note */}
@@ -1756,7 +1797,7 @@ export default function AdminDashboard() {
                     </label>
                     <input 
                       type="text" 
-                      placeholder="ለምሳሌ፡ የቴሌግራም አባላት 50% ቅናሽ ወይም የቲክቶክ ጊቭአዌይ" 
+                      placeholder="ለምሳሌ፡ ለአስር ፈጣን ተማሪዎች 10% ቅናሽ ወይም የቴሌግራም አባላት ጊቭአዌይ" 
                       value={newCodeDesc}
                       onChange={(e) => setNewCodeDesc(e.target.value)}
                       className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm text-dark dark:text-white outline-none focus:border-[#f9b03c] transition"
@@ -1800,7 +1841,7 @@ export default function AdminDashboard() {
                           <th className="py-3 px-4">የኮድ ስም (Code Name)</th>
                           <th className="py-3 px-4">የቅናሽ መጠን (Discount)</th>
                           <th className="py-3 px-4">የሚሰራበት ኮርስ (Target Course)</th>
-                          <th className="py-3 px-4 text-center">የተጠቀሙ (Usage Count)</th>
+                          <th className="py-3 px-4 text-center">የተጠቀሙ / ገደብ (Usage / Limit)</th>
                           <th className="py-3 px-4 text-center">ሁኔታ (Status)</th>
                           <th className="py-3 px-4 text-right">ድርጊት (Actions)</th>
                         </tr>
@@ -1811,6 +1852,10 @@ export default function AdminDashboard() {
                           const courseLabel = item.targetCourseId === 'all' 
                             ? '🌟 ሁሉም ኮርሶች (All Courses)' 
                             : (matchedCourse ? matchedCourse.title : item.targetCourseId);
+
+                          const usage = item.usageCount || 0;
+                          const maxLimit = Number(item.maxUsageLimit) || 0;
+                          const isLimitReached = maxLimit > 0 && usage >= maxLimit;
 
                           return (
                             <tr key={item.id} className="hover:bg-gray-50/50 dark:hover:bg-slate-700/20 transition group">
@@ -1840,12 +1885,27 @@ export default function AdminDashboard() {
                                 <span className="line-clamp-1 max-w-[220px]" title={courseLabel}>{courseLabel}</span>
                               </td>
 
-                              {/* Usage Count */}
+                              {/* Usage / Max Limit */}
                               <td className="py-4 px-4 text-center font-bold text-gray-900 dark:text-white">
-                                <span className="inline-flex items-center gap-1.5 bg-gray-100 dark:bg-slate-700/70 px-3 py-1 rounded-lg text-xs">
-                                  <i className="fa-solid fa-users text-[#f9b03c]"></i>
-                                  <span>{item.usageCount || 0} ተማሪዎች</span>
-                                </span>
+                                <div className="inline-flex flex-col items-center gap-1">
+                                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-mono font-bold ${
+                                    isLimitReached 
+                                      ? 'bg-red-500/20 text-red-500 border border-red-500/30' 
+                                      : 'bg-gray-100 dark:bg-slate-700/70 text-gray-800 dark:text-gray-200'
+                                  }`}>
+                                    <i className="fa-solid fa-users text-[#f9b03c]"></i>
+                                    <span>
+                                      {usage} / {maxLimit > 0 ? maxLimit : '∞'}
+                                    </span>
+                                  </span>
+                                  {isLimitReached ? (
+                                    <span className="text-[10px] text-red-400 font-bold">ገደቡ ሞልቷል (Full)</span>
+                                  ) : maxLimit > 0 ? (
+                                    <span className="text-[10px] text-gray-400">{maxLimit - usage} ሰው ይቀራል</span>
+                                  ) : (
+                                    <span className="text-[10px] text-emerald-400">ያልተገደበ (Unlimited)</span>
+                                  )}
+                                </div>
                               </td>
 
                               {/* Status Toggle */}
@@ -1854,12 +1914,12 @@ export default function AdminDashboard() {
                                   type="button"
                                   onClick={() => handleToggleReferralStatus(item)}
                                   className={`text-xs font-bold px-3 py-1 rounded-lg transition cursor-pointer ${
-                                    item.isActive 
+                                    item.isActive && !isLimitReached
                                       ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20' 
                                       : 'bg-gray-200 dark:bg-slate-700 text-gray-500 hover:bg-gray-300'
                                   }`}
                                 >
-                                  {item.isActive ? '✓ Active' : '✕ Inactive'}
+                                  {isLimitReached ? '🚫 Full' : item.isActive ? '✓ Active' : '✕ Inactive'}
                                 </button>
                               </td>
 
