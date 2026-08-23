@@ -76,38 +76,40 @@ export default function InstructorYouTubePortfolio() {
 
       <div className="max-w-[1300px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         
-        {/* Section Header: Clean & Minimalist */}
-        <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-14">
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black font-heading text-slate-900 dark:text-white mb-3 tracking-tight">
-            <span className="text-[#f9b03c] drop-shadow-[0_0_25px_rgba(249,176,60,0.35)]">
-              የአሰልጣኙ የተግባር ስራዎች
-            </span>
+        {/* Section Header: Refined YouTube Messaging */}
+        <div className="text-center max-w-3xl mx-auto mb-12 sm:mb-16">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black font-heading text-slate-900 dark:text-white mb-4 tracking-tight">
+            <span className="text-[#f9b03c] drop-shadow-[0_0_25px_rgba(249,176,60,0.4)]">
+              የዩቲዩብ
+            </span>{' '}
+            ቻናል ስኬት በተግባር
           </h2>
-          <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 font-body leading-relaxed">
-            እኛ በተግባር የምናስተዳድራቸውን አትራፊ የዩቲዩብ ቻናሎች ይመልከቱ።
+          <p className="text-sm sm:text-base lg:text-lg text-slate-600 dark:text-[#a0aec0] font-body leading-relaxed max-w-2xl mx-auto">
+            እኛ በተግባር የምናስተዳድራቸውንና በውጤታማነታቸው የተረጋገጡትን የዩቲዩብ ቻናሎች (Faceless Channels) ይመልከቱ።
           </p>
+          <div className="w-24 h-1 bg-gradient-to-r from-transparent via-[#f9b03c] to-transparent mx-auto mt-5 rounded-full shadow-[0_0_10px_rgba(249,176,60,0.5)]" />
         </div>
 
-        {/* 2 Clean Edge-to-Edge Fitting Cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
+        {/* 2 Clean Edge-to-Edge Balanced Video Cards */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-10">
           
           {/* =========================================================================
-              CARD 1: LOCAL CHANNEL (የሀገር ውስጥ ቻናል)
+              CARD 1: AMHARIC CHANNEL (የአማርኛ ቻናል)
               ========================================================================= */}
           <div 
             data-scrolly-order="1" 
-            className="group relative rounded-2xl sm:rounded-3xl overflow-hidden transition-all duration-300 hover:-translate-y-1.5 scrolly-card scrolly-stagger-1 bg-white/90 dark:bg-[#070b14]/90 backdrop-blur-2xl border border-gray-200/90 dark:border-white/10 hover:border-[#3268ba]/70 shadow-lg hover:shadow-[0_15px_35px_rgba(50,104,186,0.25)] flex flex-col justify-between"
+            className="group relative rounded-2xl sm:rounded-3xl overflow-hidden transition-all duration-500 hover:-translate-y-2 scrolly-card scrolly-stagger-1 bg-white/90 dark:bg-[#070b14]/90 backdrop-blur-2xl border border-gray-200/90 dark:border-white/10 hover:border-[#3268ba] shadow-lg hover:shadow-[0_20px_45px_rgba(50,104,186,0.3)] flex flex-col justify-between"
           >
-            {/* Top Bar Label */}
-            <div className="px-5 py-3.5 flex items-center justify-between border-b border-gray-100 dark:border-white/[0.08] bg-gray-50/50 dark:bg-white/[0.02]">
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#3268ba] shadow-[0_0_8px_#3268ba]"></span>
+            {/* Top Bar Label & Glowing Royal Blue Badge */}
+            <div className="px-5 py-4 flex items-center justify-between border-b border-gray-100 dark:border-white/[0.08] bg-gray-50/50 dark:bg-white/[0.02]">
+              <div className="flex items-center gap-2.5">
+                <span className="w-3 h-3 rounded-full bg-[#3268ba] shadow-[0_0_10px_#3268ba]"></span>
                 <span className="text-sm sm:text-base font-black text-slate-900 dark:text-white font-heading">
-                  የሀገር ውስጥ ቻናል
+                  የአማርኛ ቻናል
                 </span>
               </div>
-              <span className="text-[11px] font-bold text-[#3268ba] dark:text-[#5a93e8] bg-[#3268ba]/10 dark:bg-[#3268ba]/20 px-3 py-0.5 rounded-full border border-[#3268ba]/30">
-                Local
+              <span className="text-xs font-black text-white bg-[#3268ba] px-3.5 py-1 rounded-full shadow-[0_0_15px_rgba(50,104,186,0.5)] border border-blue-400/40 group-hover:scale-105 transition-transform duration-300">
+                የአማርኛ ቻናል
               </span>
             </div>
 
@@ -118,7 +120,7 @@ export default function InstructorYouTubePortfolio() {
                   {/* YouTube Iframe Scaled to Crop Out YouTube Titles, AI Badges, & Watermarks */}
                   <iframe
                     src={localEmbedUrl}
-                    title="የሀገር ውስጥ ዩቲዩብ ቻናል"
+                    title="የአማርኛ ዩቲዩብ ቻናል"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                     allowFullScreen
                     className="w-full h-full border-0 absolute inset-0 z-10 scale-[1.18] origin-center pointer-events-auto"
@@ -149,10 +151,10 @@ export default function InstructorYouTubePortfolio() {
                   {/* Clean 100% Flush Thumbnail Fitting Box Without Any Overlay Obstruction */}
                   <img
                     src={localThumbnail}
-                    alt="የሀገር ውስጥ ዩቲዩብ ቻናል"
+                    alt="የአማርኛ ዩቲዩብ ቻናል"
                     className="absolute inset-0 w-full h-full object-cover group-hover/thumb:scale-[1.03] transition-transform duration-500"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src = `https://placehold.co/640x360/0a1128/f9b03c?text=${encodeURIComponent('የሀገር ውስጥ ቻናል')}&font=Montserrat`;
+                      (e.target as HTMLImageElement).src = `https://placehold.co/640x360/0a1128/3268ba?text=${encodeURIComponent('የአማርኛ ቻናል')}&font=Montserrat`;
                     }}
                   />
                 </div>
@@ -161,22 +163,22 @@ export default function InstructorYouTubePortfolio() {
           </div>
 
           {/* =========================================================================
-              CARD 2: INTERNATIONAL CHANNEL (የውጭ ቻናል)
+              CARD 2: INTERNATIONAL CHANNEL (ዓለም አቀፍ ቻናል)
               ========================================================================= */}
           <div 
             data-scrolly-order="2" 
-            className="group relative rounded-2xl sm:rounded-3xl overflow-hidden transition-all duration-300 hover:-translate-y-1.5 scrolly-card scrolly-stagger-2 bg-white/90 dark:bg-[#070b14]/90 backdrop-blur-2xl border border-gray-200/90 dark:border-white/10 hover:border-[#f9b03c]/70 shadow-lg hover:shadow-[0_15px_35px_rgba(249,176,60,0.25)] flex flex-col justify-between"
+            className="group relative rounded-2xl sm:rounded-3xl overflow-hidden transition-all duration-500 hover:-translate-y-2 scrolly-card scrolly-stagger-2 bg-white/90 dark:bg-[#070b14]/90 backdrop-blur-2xl border border-gray-200/90 dark:border-white/10 hover:border-[#f9b03c] shadow-lg hover:shadow-[0_20px_45px_rgba(249,176,60,0.3)] flex flex-col justify-between"
           >
-            {/* Top Bar Label */}
-            <div className="px-5 py-3.5 flex items-center justify-between border-b border-gray-100 dark:border-white/[0.08] bg-gray-50/50 dark:bg-white/[0.02]">
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#f9b03c] shadow-[0_0_8px_#f9b03c]"></span>
+            {/* Top Bar Label & Glowing Golden Yellow Badge */}
+            <div className="px-5 py-4 flex items-center justify-between border-b border-gray-100 dark:border-white/[0.08] bg-gray-50/50 dark:bg-white/[0.02]">
+              <div className="flex items-center gap-2.5">
+                <span className="w-3 h-3 rounded-full bg-[#f9b03c] shadow-[0_0_10px_#f9b03c]"></span>
                 <span className="text-sm sm:text-base font-black text-slate-900 dark:text-white font-heading">
-                  የውጭ ቻናል
+                  ዓለም አቀፍ ቻናል
                 </span>
               </div>
-              <span className="text-[11px] font-bold text-amber-800 dark:text-[#f9b03c] bg-[#f9b03c]/10 dark:bg-[#f9b03c]/20 px-3 py-0.5 rounded-full border border-[#f9b03c]/30">
-                International
+              <span className="text-xs font-black text-black bg-[#f9b03c] px-3.5 py-1 rounded-full shadow-[0_0_15px_rgba(249,176,60,0.5)] border border-amber-300/60 group-hover:scale-105 transition-transform duration-300">
+                ዓለም አቀፍ ቻናል
               </span>
             </div>
 
@@ -187,7 +189,7 @@ export default function InstructorYouTubePortfolio() {
                   {/* YouTube Iframe Scaled to Crop Out YouTube Titles, AI Badges, & Watermarks */}
                   <iframe
                     src={internationalEmbedUrl}
-                    title="የውጭ ዩቲዩብ ቻናል"
+                    title="ዓለም አቀፍ ዩቲዩብ ቻናል"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                     allowFullScreen
                     className="w-full h-full border-0 absolute inset-0 z-10 scale-[1.18] origin-center pointer-events-auto"
@@ -218,10 +220,10 @@ export default function InstructorYouTubePortfolio() {
                   {/* Clean 100% Flush Thumbnail Fitting Box Without Any Overlay Obstruction */}
                   <img
                     src={internationalThumbnail}
-                    alt="የውጭ ዩቲዩብ ቻናል"
+                    alt="ዓለም አቀፍ ዩቲዩብ ቻናል"
                     className="absolute inset-0 w-full h-full object-cover group-hover/thumb:scale-[1.03] transition-transform duration-500"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src = `https://placehold.co/640x360/0a1128/f9b03c?text=${encodeURIComponent('የውጭ ቻናል')}&font=Montserrat`;
+                      (e.target as HTMLImageElement).src = `https://placehold.co/640x360/0a1128/f9b03c?text=${encodeURIComponent('ዓለም አቀፍ ቻናል')}&font=Montserrat`;
                     }}
                   />
                 </div>
