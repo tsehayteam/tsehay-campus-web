@@ -260,22 +260,22 @@ export default function PaymentModal({ course, onClose }: any) {
                     </div>
                 </div>
 
-                {/* 🌟 REFERRAL / PROMO CODE INPUT BOX */}
+                {/* 🌟 PROMO CODE (የቅናሽ ኮድ) INPUT BOX */}
                 <div className="bg-[#121e3d]/80 p-3.5 sm:p-4 rounded-2xl border border-gray-800 space-y-2">
-                    <label className="text-xs font-bold text-gray-300 flex items-center justify-between">
+                    <div className="flex items-center justify-between text-xs font-bold text-gray-300">
                         <span className="flex items-center gap-1.5">
-                            <i className="fa-solid fa-ticket text-[#f9b03c]"></i>
-                            <span>የሪፈራል ወይም የቅናሽ ኮድ (Referral / Promo Code)</span>
+                            <i className="fa-solid fa-tag text-[#f9b03c]"></i>
+                            <span>የቅናሽ ኮድ (Promo Code)</span>
                         </span>
                         {appliedCode && (
                             <span className="text-[11px] text-emerald-400 font-bold">✓ ተተግብሯል ({discountPercent}% OFF)</span>
                         )}
-                    </label>
+                    </div>
 
                     <div className="flex items-center gap-2">
                         <input 
                           type="text" 
-                          placeholder="ኮድ ያስገቡ (e.g. TSEHAY50, FREE100)" 
+                          placeholder="የቅናሽ ኮድ (Promo Code)" 
                           value={referralInput}
                           disabled={isPaying || !!appliedCode}
                           onChange={(e) => setReferralInput(e.target.value.toUpperCase().replace(/\s+/g, ''))}
@@ -287,7 +287,7 @@ export default function PaymentModal({ course, onClose }: any) {
                               type="button"
                               onClick={handleRemoveCode}
                               disabled={isPaying}
-                              className="bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/40 font-bold px-3 py-2.5 rounded-xl text-xs transition cursor-pointer shrink-0"
+                              className="bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/40 font-bold px-3.5 py-2.5 rounded-xl text-xs transition cursor-pointer shrink-0"
                             >
                                 አስወግድ
                             </button>
@@ -296,18 +296,18 @@ export default function PaymentModal({ course, onClose }: any) {
                               type="button"
                               onClick={() => validateAndApplyCode()}
                               disabled={isValidatingCode || isPaying || !referralInput.trim()}
-                              className="bg-[#f9b03c] hover:bg-[#ffbe53] text-slate-950 font-black px-4 py-2.5 rounded-xl text-xs transition shadow-sm cursor-pointer disabled:opacity-50 shrink-0"
+                              className="bg-[#f9b03c] hover:bg-[#ffbe53] text-slate-950 font-black px-4 py-2.5 rounded-xl text-xs transition shadow-sm hover:shadow-[0_0_15px_rgba(249,176,60,0.3)] cursor-pointer disabled:opacity-50 shrink-0 active:scale-95"
                             >
-                                {isValidatingCode ? <i className="fa-solid fa-spinner fa-spin"></i> : 'ተግብር (Apply)'}
+                                {isValidatingCode ? <i className="fa-solid fa-spinner fa-spin"></i> : 'ተጠቀም (Apply)'}
                             </button>
                         )}
                     </div>
 
                     {referralMessage && (
-                        <p className={`text-xs font-bold flex items-center gap-1.5 ${referralMessage.isError ? 'text-red-400' : 'text-emerald-400'}`}>
+                        <div className={`text-xs font-bold flex items-center gap-1.5 pt-0.5 animate-in fade-in ${referralMessage.isError ? 'text-red-400' : 'text-emerald-400'}`}>
                             <i className={`fa-solid ${referralMessage.isError ? 'fa-circle-exclamation' : 'fa-circle-check'}`}></i>
                             <span>{referralMessage.text}</span>
-                        </p>
+                        </div>
                     )}
                 </div>
 

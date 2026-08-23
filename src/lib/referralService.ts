@@ -1,24 +1,26 @@
 import { db } from '@/lib/firebase/config';
 import { doc, getDoc, collection, getDocs, setDoc, deleteDoc, serverTimestamp, increment } from 'firebase/firestore';
 
-export interface ReferralCodeData {
+export interface PromoCode {
   id?: string;
   code: string;
-  discountPercent: number; // e.g. 50 (for 50% off), 100 (for 100% free)
-  targetCourseId: string; // 'all' or specific courseId
+  discountPercent: number; // e.g. 10 (for 10% off), 50 (for 50% off), 100 (for 100% free)
+  targetCourseId: string; // 'all' or specific courseId (e.g. 'shein', 'youtube')
   description?: string;
   isActive: boolean;
   usageCount?: number;
   createdAt?: any;
 }
 
+export type ReferralCodeData = PromoCode;
+
 /**
- * Validate a referral code against Firestore and return discount info
+ * Validate a Promo / Referral code against Firestore and return discount details
  */
 export async function validateReferralCode(
   inputCode: string, 
   courseId?: string
-): Promise<{ isValid: boolean; discountPercent: number; isFree: boolean; message: string; data?: ReferralCodeData }> {
+): Promise<{ isValid: boolean; discountPercent: number; isFree: boolean; message: string; data?: PromoCode }> {
   if (!inputCode || !inputCode.trim()) {
     return { isValid: false, discountPercent: 0, isFree: false, message: '' };
   }
@@ -34,18 +36,18 @@ export async function validateReferralCode(
         isValid: false, 
         discountPercent: 0, 
         isFree: false, 
-        message: 'የተሳሳተ የሪፈራል ወይም የቅናሽ ኮድ ነው (Invalid code).' 
+        message: 'ትክክል ያልሆነ ኮድ' 
       };
     }
 
-    const data = codeSnap.data() as ReferralCodeData;
+    const data = codeSnap.data() as PromoCode;
 
     if (!data.isActive) {
       return { 
         isValid: false, 
         discountPercent: 0, 
         isFree: false, 
-        message: 'ይህ የቅናሽ ኮድ በአሁኑ ወቅት አያገለግልም (Code expired/inactive).' 
+        message: 'ትክክል ያልሆነ ኮድ (ጊዜው አልፏል)' 
       };
     }
 
@@ -55,7 +57,7 @@ export async function validateReferralCode(
         isValid: false, 
         discountPercent: 0, 
         isFree: false, 
-        message: 'ይህ የቅናሽ ኮድ ለዚህ ኮርስ አይሰራም (Code not valid for this course).' 
+        message: 'ትክክል ያልሆነ ኮድ (ለዚህ ኮርስ አይሰራም)' 
       };
     }
 
@@ -67,23 +69,23 @@ export async function validateReferralCode(
       discountPercent: discountPercent,
       isFree: isFree,
       message: isFree 
-        ? '🎉 100% ነፃ መመዝገቢያ ኮድ ተረጋግጧል! (100% FREE Access)' 
-        : `🎉 ${discountPercent}% የቅናሽ ኮድ በተሳካ ሁኔታ ተረጋግጧል!`,
+        ? '100% ነፃ መመዝገቢያ ቅናሽ ተደርጓል! 🎉' 
+        : `${discountPercent}% ቅናሽ ተደርጓል! 🎉`,
       data: { id: codeSnap.id, ...data }
     };
   } catch (error) {
-    console.error("Referral validation error:", error);
+    console.error("Promo code validation error:", error);
     return { 
       isValid: false, 
       discountPercent: 0, 
       isFree: false, 
-      message: 'ኮዱን ማረጋገጥ አልተቻለም። እባክዎ በድጋሚ ይሞክሩ።' 
+      message: 'ትክክል ያልሆነ ኮድ' 
     };
   }
 }
 
 /**
- * Increment referral code usage count
+ * Increment promo / referral code usage count
  */
 export async function recordReferralUsage(code: string) {
   if (!code) return;
@@ -95,6 +97,6 @@ export async function recordReferralUsage(code: string) {
       lastUsedAt: serverTimestamp()
     }, { merge: true });
   } catch (e) {
-    console.warn("Could not record referral usage:", e);
+    console.warn("Could not record promo code usage:", e);
   }
 }

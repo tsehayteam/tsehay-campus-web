@@ -872,47 +872,6 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
                           </select>
                         </div>
 
-                        {/* Referral / Promo Code (Optional) */}
-                        <div>
-                          <label className="block text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5 flex items-center justify-between">
-                            <span className="flex items-center gap-1.5">
-                              <i className="fa-solid fa-gift text-[#f9b03c]"></i>
-                              <span>የሪፈራል / የቅናሽ ኮድ (Promo Code)</span>
-                            </span>
-                            <span className="text-[10px] text-gray-400 font-normal">አማራጭ (Optional)</span>
-                          </label>
-                          <input 
-                            type="text" 
-                            value={referralCode} 
-                            onChange={(e) => {
-                              const val = e.target.value.toUpperCase().replace(/\s+/g, '');
-                              setReferralCode(val);
-                              if (val) {
-                                validateReferralCode(val).then(res => {
-                                  if (res.isValid) {
-                                    setReferralDiscountInfo(res.message);
-                                    try {
-                                      localStorage.setItem('tsehay_applied_referral_code', val);
-                                    } catch(err) {}
-                                  } else {
-                                    setReferralDiscountInfo('');
-                                  }
-                                });
-                              } else {
-                                setReferralDiscountInfo('');
-                              }
-                            }} 
-                            placeholder="ለምሳሌ፡ TSEHAY50, FREE100" 
-                            className="w-full bg-gray-50 dark:bg-[#0d1222] border border-gray-200 dark:border-white/[0.1] rounded-xl py-3 px-4 text-sm font-mono uppercase tracking-wider outline-none focus:border-[#f9b03c] dark:text-white transition" 
-                          />
-                          {referralDiscountInfo && (
-                            <p className="text-emerald-500 text-xs font-bold mt-1.5 flex items-center gap-1.5 animate-in fade-in">
-                              <i className="fa-solid fa-circle-check"></i>
-                              <span>{referralDiscountInfo}</span>
-                            </p>
-                          )}
-                        </div>
-
                         {/* Summary Pill */}
                         <div className="bg-[#3268ba]/10 border border-[#3268ba]/30 rounded-2xl p-3 text-xs space-y-1">
                           <div className="flex justify-between text-slate-300">

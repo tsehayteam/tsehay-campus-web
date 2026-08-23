@@ -796,7 +796,7 @@ export default function AdminDashboard() {
             <i className="fa-solid fa-layer-group"></i> ኮርሶች (Courses)
           </button>
           <button onClick={() => setActiveTab('referrals')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition ${activeTab === 'referrals' ? 'bg-[#f9b03c]/15 dark:bg-slate-700/50 text-[#f9b03c]' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700/30'}`}>
-            <i className="fa-solid fa-gift text-[#f9b03c] text-lg"></i> የቅናሽ / ሪፈራል ኮዶች
+            <i className="fa-solid fa-tag text-[#f9b03c] text-lg"></i> Promo Codes (የቅናሽ ኮዶች)
           </button>
           <button onClick={() => setActiveTab('portfolio')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition ${activeTab === 'portfolio' ? 'bg-[#f9b03c]/15 dark:bg-slate-700/50 text-[#f9b03c]' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700/30'}`}>
             <i className="fa-solid fa-briefcase text-[#f9b03c] text-lg"></i> የፖርትፎሊዮ ቪዲዮዎች
@@ -1583,14 +1583,14 @@ export default function AdminDashboard() {
                 </form>
               </div>
 
-              {/* Bottom List of Active Referral Codes */}
+              {/* Bottom List of Active Referral Codes: MasterClass Data Table */}
               <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 sm:p-8 border border-gray-100 dark:border-slate-700 shadow-xl space-y-6">
                 <div className="flex items-center justify-between border-b border-gray-100 dark:border-slate-700 pb-4">
                   <h4 className="text-lg font-black text-dark dark:text-white flex items-center gap-2">
                     <i className="fa-solid fa-list-check text-[#f9b03c]"></i>
                     <span>ያሉ የቅናሽ ኮዶች ዝርዝር ({referralCodes.length})</span>
                   </h4>
-                  <span className="text-xs text-gray-500 font-medium">በቅጽበት የሚሰሩ</span>
+                  <span className="text-xs text-gray-500 font-medium">ቀጥታ ስራ ላይ ያሉ (Real-Time)</span>
                 </div>
 
                 {referralCodes.length === 0 ? (
@@ -1599,79 +1599,92 @@ export default function AdminDashboard() {
                     <p className="text-sm font-medium">እስካሁን የተፈጠረ የቅናሽ ኮድ የለም። ከላይ ባለው ፎርም አዲስ ኮድ መፍጠር ይችላሉ።</p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {referralCodes.map((item) => {
-                      const matchedCourse = courses.find(c => c.id === item.targetCourseId);
-                      const courseLabel = item.targetCourseId === 'all' 
-                        ? 'ሁሉም ኮርሶች' 
-                        : (matchedCourse ? matchedCourse.title : item.targetCourseId);
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm">
+                      <thead>
+                        <tr className="border-b border-gray-100 dark:border-slate-700/80 text-xs text-gray-400 uppercase font-black tracking-wider">
+                          <th className="py-3 px-4">የኮድ ስም (Code Name)</th>
+                          <th className="py-3 px-4">የቅናሽ መጠን (Discount)</th>
+                          <th className="py-3 px-4">የሚሰራበት ኮርስ (Target Course)</th>
+                          <th className="py-3 px-4 text-center">የተጠቀሙ (Usage Count)</th>
+                          <th className="py-3 px-4 text-center">ሁኔታ (Status)</th>
+                          <th className="py-3 px-4 text-right">ድርጊት (Actions)</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100 dark:divide-slate-700/60">
+                        {referralCodes.map((item) => {
+                          const matchedCourse = courses.find(c => c.id === item.targetCourseId);
+                          const courseLabel = item.targetCourseId === 'all' 
+                            ? '🌟 ሁሉም ኮርሶች (All Courses)' 
+                            : (matchedCourse ? matchedCourse.title : item.targetCourseId);
 
-                      return (
-                        <div 
-                          key={item.id} 
-                          className={`p-5 rounded-2xl border transition-all space-y-4 ${
-                            item.isActive 
-                              ? 'bg-gray-50/70 dark:bg-slate-900/60 border-gray-200 dark:border-slate-700/80 hover:border-[#f9b03c]/50' 
-                              : 'bg-gray-100/40 dark:bg-slate-900/30 border-gray-200 dark:border-slate-800 opacity-60'
-                          }`}
-                        >
-                          <div className="flex items-start justify-between gap-2">
-                            <div>
-                              <span className="font-mono text-base font-black px-2.5 py-1 rounded-lg bg-[#f9b03c]/15 text-[#f9b03c] border border-[#f9b03c]/30 tracking-wider">
-                                {item.code || item.id}
-                              </span>
-                              {item.description && (
-                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 font-medium">
-                                  {item.description}
-                                </p>
-                              )}
-                            </div>
+                          return (
+                            <tr key={item.id} className="hover:bg-gray-50/50 dark:hover:bg-slate-700/20 transition group">
+                              {/* Code Name */}
+                              <td className="py-4 px-4 font-mono font-black text-sm text-dark dark:text-white">
+                                <span className="inline-block px-3 py-1 rounded-xl bg-[#f9b03c]/15 text-[#f9b03c] border border-[#f9b03c]/30 shadow-sm">
+                                  {item.code || item.id}
+                                </span>
+                                {item.description && (
+                                  <p className="text-[11px] font-sans text-gray-400 mt-1 font-normal line-clamp-1">{item.description}</p>
+                                )}
+                              </td>
 
-                            <span className={`text-xs font-black px-2.5 py-1 rounded-full ${
-                              item.discountPercent >= 100 
-                                ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30' 
-                                : 'bg-blue-500/20 text-blue-600 dark:text-blue-400 border border-blue-500/30'
-                            }`}>
-                              {item.discountPercent >= 100 ? '100% FREE' : `${item.discountPercent}% OFF`}
-                            </span>
-                          </div>
+                              {/* Discount */}
+                              <td className="py-4 px-4 font-black">
+                                <span className={`inline-block text-xs px-3 py-1 rounded-full ${
+                                  item.discountPercent >= 100 
+                                    ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30' 
+                                    : 'bg-amber-500/20 text-amber-700 dark:text-[#f9b03c] border border-amber-500/30'
+                                }`}>
+                                  {item.discountPercent >= 100 ? '100% FREE' : `${item.discountPercent}% OFF`}
+                                </span>
+                              </td>
 
-                          <div className="text-xs space-y-1.5 pt-2 border-t border-gray-100 dark:border-slate-800 text-gray-600 dark:text-gray-300">
-                            <div className="flex items-center justify-between">
-                              <span className="text-gray-400">ኮርስ፦</span>
-                              <span className="font-bold truncate max-w-[170px]" title={courseLabel}>{courseLabel}</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-gray-400">የተጠቀሙ፦</span>
-                              <span className="font-bold text-amber-500">{item.usageCount || 0} ተማሪዎች</span>
-                            </div>
-                          </div>
+                              {/* Target Course */}
+                              <td className="py-4 px-4 font-bold text-gray-700 dark:text-gray-200">
+                                <span className="line-clamp-1 max-w-[220px]" title={courseLabel}>{courseLabel}</span>
+                              </td>
 
-                          <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-slate-800">
-                            <button
-                              type="button"
-                              onClick={() => handleToggleReferralStatus(item)}
-                              className={`text-xs font-bold px-3 py-1 rounded-lg transition cursor-pointer ${
-                                item.isActive 
-                                  ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20' 
-                                  : 'bg-gray-200 dark:bg-slate-700 text-gray-500 hover:bg-gray-300'
-                              }`}
-                            >
-                              {item.isActive ? '✓ Active' : '✕ Inactive'}
-                            </button>
+                              {/* Usage Count */}
+                              <td className="py-4 px-4 text-center font-bold text-gray-900 dark:text-white">
+                                <span className="inline-flex items-center gap-1.5 bg-gray-100 dark:bg-slate-700/70 px-3 py-1 rounded-lg text-xs">
+                                  <i className="fa-solid fa-users text-[#f9b03c]"></i>
+                                  <span>{item.usageCount || 0} ተማሪዎች</span>
+                                </span>
+                              </td>
 
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteReferralCode(item.id)}
-                              className="text-xs font-bold text-red-500 hover:text-red-600 p-1.5 hover:bg-red-500/10 rounded-lg transition cursor-pointer"
-                              title="ኮዱን አጥፋ"
-                            >
-                              <i className="fa-solid fa-trash"></i>
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })}
+                              {/* Status Toggle */}
+                              <td className="py-4 px-4 text-center">
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleReferralStatus(item)}
+                                  className={`text-xs font-bold px-3 py-1 rounded-lg transition cursor-pointer ${
+                                    item.isActive 
+                                      ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20' 
+                                      : 'bg-gray-200 dark:bg-slate-700 text-gray-500 hover:bg-gray-300'
+                                  }`}
+                                >
+                                  {item.isActive ? '✓ Active' : '✕ Inactive'}
+                                </button>
+                              </td>
+
+                              {/* Actions */}
+                              <td className="py-4 px-4 text-right">
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteReferralCode(item.id)}
+                                  className="text-xs font-bold text-red-500 hover:text-red-600 p-2 hover:bg-red-500/10 rounded-xl transition cursor-pointer"
+                                  title="ኮዱን አጥፋ"
+                                >
+                                  <i className="fa-solid fa-trash"></i>
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
                   </div>
                 )}
               </div>
