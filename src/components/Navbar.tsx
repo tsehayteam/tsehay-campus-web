@@ -14,7 +14,7 @@ import { getCachedCourses } from "@/lib/courseCache";
 export default function Navbar() {
   const { user, isAdmin } = useAuth();
   const [mounted, setMounted] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isSignupMode, setIsSignupMode] = useState(false);
@@ -45,7 +45,7 @@ export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
 
-  // Handle custom profile updates
+  // Custom profile update event listener
   useEffect(() => {
     const handleProfileUpdate = (e: any) => {
       if (e.detail?.photoURL !== undefined) {
@@ -59,9 +59,9 @@ export default function Navbar() {
     return () => window.removeEventListener('tsehay_profile_updated', handleProfileUpdate);
   }, []);
 
-  // Lock body scroll when full-screen mobile menu is open
+  // Lock body scroll when mobile drawer is open
   useEffect(() => {
-    if (isMobileMenuOpen) {
+    if (isMobileDrawerOpen) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = '';
@@ -69,22 +69,22 @@ export default function Navbar() {
     return () => {
       document.body.style.overflow = '';
     };
-  }, [isMobileMenuOpen]);
+  }, [isMobileDrawerOpen]);
 
-  // Handle escape key to close mobile menu
+  // Handle escape key to close mobile drawer
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isMobileMenuOpen) {
-        setIsMobileMenuOpen(false);
+      if (e.key === 'Escape' && isMobileDrawerOpen) {
+        setIsMobileDrawerOpen(false);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isMobileMenuOpen]);
+  }, [isMobileDrawerOpen]);
 
   // Close menus on route change
   useEffect(() => {
-    setIsMobileMenuOpen(false);
+    setIsMobileDrawerOpen(false);
     setShowProfileDropdown(false);
   }, [pathname]);
 
@@ -154,7 +154,7 @@ export default function Navbar() {
         sessionStorage.clear();
       } catch (e) {}
       setShowProfileDropdown(false);
-      setIsMobileMenuOpen(false);
+      setIsMobileDrawerOpen(false);
       if (pathname?.startsWith('/dashboard') || pathname?.startsWith('/admin')) {
         router.push('/');
       }
@@ -162,7 +162,7 @@ export default function Navbar() {
   };
 
   const navigateTo = (url: string) => {
-    setIsMobileMenuOpen(false);
+    setIsMobileDrawerOpen(false);
     setShowProfileDropdown(false);
 
     if (url.startsWith('/#') || url.startsWith('#')) {
@@ -208,7 +208,7 @@ export default function Navbar() {
   return (
     <>
       {/* =========================================================================
-          1. 🚀 MAIN DESKTOP & MOBILE HEADER NAVBAR (Fixed Glassmorphic Bar)
+          1. 🚀 MAIN HEADER NAVBAR (Fixed Glassmorphic Bar)
          ========================================================================= */}
       <header className="fixed top-0 left-0 right-0 w-full z-[9990] glass-nav border-b border-black/5 dark:border-white/[0.06] shadow-[0_8px_35px_rgba(0,0,0,0.65)] select-none">
         <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8">
@@ -251,20 +251,6 @@ export default function Navbar() {
               </Link>
 
               <Link 
-                href="/courses" 
-                onClick={() => {
-                  if (pathname === '/courses') window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                className={`py-2 text-[14px] lg:text-[15px] font-bold transition-all duration-300 ${
-                  isCourses 
-                    ? 'terafab-nav-link-active' 
-                    : 'terafab-nav-link text-gray-700 dark:text-gray-300'
-                }`}
-              >
-                {t('all_courses') || 'ሁሉም ኮርሶች'}
-              </Link>
-
-              <Link 
                 href="/about" 
                 onClick={() => {
                   if (pathname === '/about') window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -276,6 +262,20 @@ export default function Navbar() {
                 }`}
               >
                 {t('about_us') || 'ስለ እኛ'}
+              </Link>
+
+              <Link 
+                href="/courses" 
+                onClick={() => {
+                  if (pathname === '/courses') window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className={`py-2 text-[14px] lg:text-[15px] font-bold transition-all duration-300 ${
+                  isCourses 
+                    ? 'terafab-nav-link-active' 
+                    : 'terafab-nav-link text-gray-700 dark:text-gray-300'
+                }`}
+              >
+                {t('all_courses') || 'ሁሉም ኮርሶች'}
               </Link>
             </div>
             
@@ -400,7 +400,7 @@ export default function Navbar() {
               )}
             </div>
 
-            {/* Mobile Top Header Actions with Morphing Hamburger */}
+            {/* Mobile Top Header Actions with Morphing Hamburger Trigger */}
             <div className="lg:hidden flex items-center gap-2">
               <button 
                 onClick={toggleTheme} 
@@ -422,24 +422,24 @@ export default function Navbar() {
               {/* 🍔 SILICON VALLEY MORPHING HAMBURGER BUTTON */}
               <button
                 type="button"
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="relative w-10 h-10 rounded-xl bg-gray-100 dark:bg-white/[0.08] border border-gray-200 dark:border-white/15 flex flex-col items-center justify-center gap-1.5 focus:outline-none cursor-pointer active:scale-95 transition-all duration-300 hover:border-[#f9b03c]/60 shadow-sm"
-                aria-label={isMobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
-                aria-expanded={isMobileMenuOpen}
+                onClick={() => setIsMobileDrawerOpen(!isMobileDrawerOpen)}
+                className="relative w-10 h-10 rounded-xl bg-gray-100 dark:bg-white/[0.08] border border-gray-200 dark:border-white/15 flex flex-col items-center justify-center gap-1.5 focus:outline-none cursor-pointer active:scale-95 transition-all duration-300 hover:border-[#f9b03c]/60 shadow-sm z-[10001]"
+                aria-label={isMobileDrawerOpen ? "Close navigation menu" : "Open navigation menu"}
+                aria-expanded={isMobileDrawerOpen}
               >
                 <span
                   className={`hamburger-line block h-[2.5px] w-5 rounded-full bg-gray-900 dark:bg-white transition-all duration-300 ${
-                    isMobileMenuOpen ? 'translate-y-[8px] rotate-45 bg-[#f9b03c] dark:bg-[#f9b03c]' : ''
+                    isMobileDrawerOpen ? 'translate-y-[8px] rotate-45 bg-[#f9b03c] dark:bg-[#f9b03c]' : ''
                   }`}
                 />
                 <span
                   className={`hamburger-line block h-[2.5px] w-5 rounded-full bg-gray-900 dark:bg-white transition-all duration-200 ${
-                    isMobileMenuOpen ? 'opacity-0 scale-x-0' : 'opacity-100'
+                    isMobileDrawerOpen ? 'opacity-0 scale-x-0' : 'opacity-100'
                   }`}
                 />
                 <span
                   className={`hamburger-line block h-[2.5px] w-5 rounded-full bg-gray-900 dark:bg-white transition-all duration-300 ${
-                    isMobileMenuOpen ? '-translate-y-[8px] -rotate-45 bg-[#f9b03c] dark:bg-[#f9b03c]' : ''
+                    isMobileDrawerOpen ? '-translate-y-[8px] -rotate-45 bg-[#f9b03c] dark:bg-[#f9b03c]' : ''
                   }`}
                 />
               </button>
@@ -450,195 +450,211 @@ export default function Navbar() {
       </header>
 
       {/* =========================================================================
-          2. ✨ FULL-SCREEN GLASSMORPHIC MOBILE OVERLAY MENU (terafab.ai / x.ai Style)
+          2. ✨ ULTRA-PREMIUM SLIDING MOBILE DRAWER (Right Slide-In Glassmorphism)
          ========================================================================= */}
-      {isMobileMenuOpen && (
-        <div 
-          className="mobile-fullscreen-overlay lg:hidden flex flex-col justify-between p-6 sm:p-8 select-none"
-          role="dialog"
-          aria-modal="true"
-        >
-          {/* Ambient Glowing Neon Orbs */}
-          <div className="absolute top-1/4 -left-20 w-72 h-72 bg-[#f9b03c]/15 rounded-full blur-[120px] pointer-events-none animate-pulse" />
-          <div className="absolute bottom-1/4 -right-20 w-72 h-72 bg-[#3268ba]/20 rounded-full blur-[120px] pointer-events-none animate-pulse" />
+      {/* Backdrop overlay */}
+      <div 
+        onClick={() => setIsMobileDrawerOpen(false)}
+        className={`mobile-drawer-backdrop lg:hidden ${
+          isMobileDrawerOpen 
+            ? 'opacity-100 pointer-events-auto' 
+            : 'opacity-0 pointer-events-none'
+        }`}
+      />
 
-          {/* Top Bar inside Overlay */}
-          <div className="flex items-center justify-between relative z-10 w-full">
-            <Link 
-              href="/" 
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="flex items-center gap-2.5 cursor-pointer"
-            >
-              <img 
-                src="/tc-logo.jpg" 
-                alt="Tsehay Campus Logo" 
-                className="h-10 w-auto object-contain rounded-xl shadow-md border border-white/20" 
-              />
-              <span className="font-heading font-black text-xl text-white tracking-tight notranslate">
-                <span className="text-[#f9b03c]">Tsehay</span> <span className="text-[#3268ba]">Campus</span>
-              </span>
-            </Link>
+      {/* Sliding Drawer Panel */}
+      <aside 
+        className={`mobile-drawer-panel lg:hidden flex flex-col justify-between p-6 sm:p-8 select-none ${
+          isMobileDrawerOpen 
+            ? 'translate-x-0 opacity-100' 
+            : 'translate-x-full opacity-0 pointer-events-none'
+        }`}
+        role="dialog"
+        aria-modal="true"
+      >
+        {/* Subtle Ambient Glow inside Drawer */}
+        <div className="absolute top-1/4 -right-16 w-60 h-60 bg-[#f9b03c]/15 rounded-full blur-[100px] pointer-events-none animate-pulse" />
+        <div className="absolute bottom-1/4 -left-16 w-60 h-60 bg-[#3268ba]/20 rounded-full blur-[100px] pointer-events-none animate-pulse" />
 
-            {/* Top Close Morphing Button */}
-            <button
-              type="button"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="w-10 h-10 rounded-xl bg-white/[0.08] border border-white/20 flex items-center justify-center text-white hover:text-[#f9b03c] transition-all cursor-pointer active:scale-95 shadow-md"
-              aria-label="Close menu"
+        {/* Drawer Header */}
+        <div className="flex items-center justify-between relative z-10 w-full pb-4 border-b border-white/[0.08]">
+          <Link 
+            href="/" 
+            onClick={() => setIsMobileDrawerOpen(false)}
+            className="flex items-center gap-2.5 cursor-pointer"
+          >
+            <img 
+              src="/tc-logo.jpg" 
+              alt="Tsehay Campus Logo" 
+              className="h-10 w-auto object-contain rounded-xl shadow-md border border-white/20" 
+            />
+            <span className="font-heading font-black text-xl text-white tracking-tight notranslate">
+              <span className="text-[#f9b03c]">Tsehay</span> <span className="text-[#3268ba]">Campus</span>
+            </span>
+          </Link>
+
+          {/* Close Button */}
+          <button
+            type="button"
+            onClick={() => setIsMobileDrawerOpen(false)}
+            className="w-10 h-10 rounded-xl bg-white/[0.08] hover:bg-[#f9b03c]/20 border border-white/20 hover:border-[#f9b03c]/60 flex items-center justify-center text-white hover:text-[#f9b03c] transition-all cursor-pointer active:scale-95 shadow-md"
+            aria-label="Close menu"
+          >
+            <i className="fa-solid fa-xmark text-lg"></i>
+          </button>
+        </div>
+
+        {/* Drawer Middle: Centered Staggered Cinematic Links */}
+        <div className="flex-1 flex flex-col justify-center gap-5 sm:gap-6 my-auto relative z-10 py-6">
+          
+          {/* Link 1: መነሻ (Home) */}
+          <div className={isMobileDrawerOpen ? "drawer-stagger-1" : ""}>
+            <button 
+              type="button" 
+              onClick={() => navigateTo('/')} 
+              className={`mobile-nav-hero-link font-heading cursor-pointer text-left w-full ${
+                isHome ? 'mobile-nav-hero-link-active' : ''
+              }`}
             >
-              <i className="fa-solid fa-xmark text-lg"></i>
+              <i className="fa-solid fa-house text-lg opacity-70 text-[#f9b03c]"></i>
+              <span>{t('home') || 'መነሻ'}</span>
+              {isHome && <span className="w-2.5 h-2.5 rounded-full bg-[#f9b03c] animate-pulse shadow-[0_0_12px_#f9b03c]"></span>}
             </button>
           </div>
 
-          {/* Middle: Centered Massive Typography Navigation Links */}
-          <div className="flex-1 flex flex-col items-center justify-center gap-6 sm:gap-8 my-auto relative z-10 text-center">
-            
-            {/* Link 1: መነሻ (Home) */}
-            <div className="mobile-link-stagger-1">
-              <button 
-                type="button" 
-                onClick={() => navigateTo('/')} 
-                className={`mobile-nav-hero-link font-heading cursor-pointer ${
-                  isHome ? 'mobile-nav-hero-link-active' : ''
-                }`}
-              >
-                <span>{t('home') || 'መነሻ'}</span>
-                {isHome && <span className="w-2.5 h-2.5 rounded-full bg-[#f9b03c] animate-pulse shadow-[0_0_12px_#f9b03c]"></span>}
-              </button>
-            </div>
-
-            {/* Link 2: ሁሉም ኮርሶች (All Courses) */}
-            <div className="mobile-link-stagger-2">
-              <button 
-                type="button" 
-                onClick={() => navigateTo('/courses')} 
-                className={`mobile-nav-hero-link font-heading cursor-pointer ${
-                  isCourses ? 'mobile-nav-hero-link-active' : ''
-                }`}
-              >
-                <span>{t('all_courses') || 'ሁሉም ኮርሶች'}</span>
-                {isCourses && <span className="w-2.5 h-2.5 rounded-full bg-[#f9b03c] animate-pulse shadow-[0_0_12px_#f9b03c]"></span>}
-              </button>
-            </div>
-
-            {/* Link 3: ስለ እኛ (About Us) */}
-            <div className="mobile-link-stagger-3">
-              <button 
-                type="button" 
-                onClick={() => navigateTo('/about')} 
-                className={`mobile-nav-hero-link font-heading cursor-pointer ${
-                  isAbout ? 'mobile-nav-hero-link-active' : ''
-                }`}
-              >
-                <span>{t('about_us') || 'ስለ እኛ'}</span>
-                {isAbout && <span className="w-2.5 h-2.5 rounded-full bg-[#f9b03c] animate-pulse shadow-[0_0_12px_#f9b03c]"></span>}
-              </button>
-            </div>
-
-            {/* Compact Search Bar beneath Links */}
-            <div className="mobile-link-stagger-4 w-full max-w-xs pt-2">
-              <SmartSearchInput 
-                courses={allCourses} 
-                compact={true}
-                placeholder={t('search_placeholder') || "ኮርሶችን ይፈልጉ (Marketing, Python)..."} 
-              />
-            </div>
+          {/* Link 2: ስለ እኛ (About Us) */}
+          <div className={isMobileDrawerOpen ? "drawer-stagger-2" : ""}>
+            <button 
+              type="button" 
+              onClick={() => navigateTo('/about')} 
+              className={`mobile-nav-hero-link font-heading cursor-pointer text-left w-full ${
+                isAbout ? 'mobile-nav-hero-link-active' : ''
+              }`}
+            >
+              <i className="fa-solid fa-circle-info text-lg opacity-70 text-[#f9b03c]"></i>
+              <span>{t('about_us') || 'ስለ እኛ'}</span>
+              {isAbout && <span className="w-2.5 h-2.5 rounded-full bg-[#f9b03c] animate-pulse shadow-[0_0_12px_#f9b03c]"></span>}
+            </button>
           </div>
 
-          {/* Bottom: Anchored Action Bar */}
-          <div className="mobile-link-stagger-bottom w-full space-y-3 relative z-10 pt-4 border-t border-white/[0.08]">
-            
-            {/* Row 1: Tsehay AI + Install App Buttons */}
-            <div className="grid grid-cols-2 gap-2.5">
-              {/* 1. Tsehay AI Button with Golden Glow */}
-              <button 
-                type="button"
-                onClick={() => {
-                  setIsMobileMenuOpen(false);
-                  navigateTo('/#ai-feature');
-                }}
-                className="py-3 px-3.5 rounded-2xl bg-white/[0.05] hover:bg-[#f9b03c]/15 border border-[#f9b03c]/50 hover:border-[#f9b03c] text-white flex items-center justify-center gap-2 transition-all shadow-[0_0_20px_rgba(249,176,60,0.15)] cursor-pointer active:scale-95 group"
-              >
-                <i className="fa-solid fa-wand-magic-sparkles text-[#f9b03c] text-sm animate-pulse"></i>
-                <div className="text-left">
-                  <div className="text-xs font-black text-white group-hover:text-[#f9b03c] leading-tight">Tsehay AI</div>
-                  <div className="text-[9px] text-[#f9b03c] font-bold">24/7 AI Tutor</div>
-                </div>
-              </button>
+          {/* Link 3: ሁሉም ኮርሶች (All Courses) */}
+          <div className={isMobileDrawerOpen ? "drawer-stagger-3" : ""}>
+            <button 
+              type="button" 
+              onClick={() => navigateTo('/courses')} 
+              className={`mobile-nav-hero-link font-heading cursor-pointer text-left w-full ${
+                isCourses ? 'mobile-nav-hero-link-active' : ''
+              }`}
+            >
+              <i className="fa-solid fa-graduation-cap text-lg opacity-70 text-[#f9b03c]"></i>
+              <span>{t('all_courses') || 'ሁሉም ኮርሶች'}</span>
+              {isCourses && <span className="w-2.5 h-2.5 rounded-full bg-[#f9b03c] animate-pulse shadow-[0_0_12px_#f9b03c]"></span>}
+            </button>
+          </div>
 
-              {/* 2. Install App Button */}
-              <button 
-                type="button"
-                onClick={() => {
-                  setIsMobileMenuOpen(false);
-                  window.dispatchEvent(new CustomEvent('open-pwa-install'));
-                }}
-                className="py-3 px-3.5 rounded-2xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/15 text-white flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-95"
-              >
-                <i className="fa-solid fa-mobile-screen-button text-[#3268ba] text-sm"></i>
-                <div className="text-left">
-                  <div className="text-xs font-black text-white leading-tight">አፕሊኬሽን ጫን</div>
-                  <div className="text-[9px] text-gray-400 font-bold">Install App (FREE)</div>
-                </div>
-              </button>
-            </div>
+          {/* Smart Search Bar */}
+          <div className={`w-full pt-2 ${isMobileDrawerOpen ? "drawer-stagger-4" : ""}`}>
+            <SmartSearchInput 
+              courses={allCourses} 
+              compact={true}
+              placeholder={t('search_placeholder') || "ኮርሶችን ይፈልጉ (Marketing, Python)..."} 
+            />
+          </div>
+        </div>
 
-            {/* Row 2: Wide Sleek Royal Blue Login / Classroom Button */}
-            {!mounted || !user ? (
+        {/* Drawer Bottom: Anchored Action Bar */}
+        <div className={`w-full space-y-3 relative z-10 pt-4 border-t border-white/[0.08] ${isMobileDrawerOpen ? "drawer-stagger-bottom" : ""}`}>
+          
+          {/* Row 1: Tsehay AI + Install App Buttons */}
+          <div className="grid grid-cols-2 gap-2.5">
+            {/* 1. Tsehay AI Button with Golden Glow */}
+            <button 
+              type="button"
+              onClick={() => {
+                setIsMobileDrawerOpen(false);
+                navigateTo('/#ai-feature');
+              }}
+              className="py-3 px-3.5 rounded-2xl bg-white/[0.05] hover:bg-[#f9b03c]/15 border border-[#f9b03c]/50 hover:border-[#f9b03c] text-white flex items-center justify-center gap-2 transition-all shadow-[0_0_20px_rgba(249,176,60,0.15)] cursor-pointer active:scale-95 group"
+            >
+              <i className="fa-solid fa-wand-magic-sparkles text-[#f9b03c] text-sm animate-pulse"></i>
+              <div className="text-left">
+                <div className="text-xs font-black text-white group-hover:text-[#f9b03c] leading-tight">Tsehay AI</div>
+                <div className="text-[9px] text-[#f9b03c] font-bold">24/7 AI Tutor</div>
+              </div>
+            </button>
+
+            {/* 2. Install App Button */}
+            <button 
+              type="button"
+              onClick={() => {
+                setIsMobileDrawerOpen(false);
+                window.dispatchEvent(new CustomEvent('open-pwa-install'));
+              }}
+              className="py-3 px-3.5 rounded-2xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/15 text-white flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-95"
+            >
+              <i className="fa-solid fa-mobile-screen-button text-[#3268ba] text-sm"></i>
+              <div className="text-left">
+                <div className="text-xs font-black text-white leading-tight">አፕሊኬሽን ጫን</div>
+                <div className="text-[9px] text-gray-400 font-bold">Install App (FREE)</div>
+              </div>
+            </button>
+          </div>
+
+          {/* Row 2: Wide Sleek Royal Blue Login / Classroom Button */}
+          {!mounted || !user ? (
+            <button 
+              type="button" 
+              onClick={() => { 
+                setIsMobileDrawerOpen(false); 
+                openAuthModal(false); 
+              }} 
+              className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-[#3268ba] to-[#245296] hover:from-[#2c5da8] hover:to-[#1e447d] text-white font-black text-sm shadow-[0_10px_30px_rgba(50,104,186,0.4)] border border-white/15 flex items-center justify-center gap-2 cursor-pointer active:scale-98 transition-all"
+            >
+              <i className="fa-solid fa-arrow-right-to-bracket text-[#f9b03c]"></i>
+              <span>{t('login') || 'ግባ (Login)'}</span>
+            </button>
+          ) : (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between p-2.5 rounded-2xl bg-white/[0.05] border border-white/10">
+                <div className="flex items-center gap-2.5">
+                  <img 
+                    src={navUserPhoto} 
+                    alt={navUserName} 
+                    className="w-8 h-8 rounded-full border-2 border-[#f9b03c] object-cover" 
+                  />
+                  <div className="text-left">
+                    <div className="text-xs font-bold text-white truncate">{navUserName}</div>
+                    <div className="text-[10px] text-gray-400 truncate">{user?.email}</div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsMobileDrawerOpen(false);
+                    handleSignOut();
+                  }}
+                  className="text-xs text-red-400 hover:text-red-300 font-bold px-2.5 py-1 rounded-lg bg-red-500/10 border border-red-500/20 cursor-pointer"
+                >
+                  Logout
+                </button>
+              </div>
+
               <button 
                 type="button" 
                 onClick={() => { 
-                  setIsMobileMenuOpen(false); 
-                  openAuthModal(false); 
+                  setIsMobileDrawerOpen(false); 
+                  navigateTo('/dashboard'); 
                 }} 
-                className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-[#3268ba] to-[#245296] hover:from-[#2c5da8] hover:to-[#1e447d] text-white font-black text-sm shadow-[0_10px_30px_rgba(50,104,186,0.4)] border border-white/15 flex items-center justify-center gap-2 cursor-pointer active:scale-98 transition-all"
+                className="w-full py-3 rounded-2xl bg-[#f9b03c] text-black font-black text-xs shadow-lg flex items-center justify-center gap-2 cursor-pointer active:scale-98 transition-all"
               >
-                <i className="fa-solid fa-arrow-right-to-bracket text-[#f9b03c]"></i>
-                <span>{t('login') || 'ግባ (Login)'}</span>
+                <i className="fa-solid fa-graduation-cap"></i>
+                <span>{t('classroom') || 'ወደ መማሪያ ክፍል (Classroom)'}</span>
               </button>
-            ) : (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between p-2.5 rounded-2xl bg-white/[0.05] border border-white/10">
-                  <div className="flex items-center gap-2.5">
-                    <img 
-                      src={navUserPhoto} 
-                      alt={navUserName} 
-                      className="w-8 h-8 rounded-full border-2 border-[#f9b03c] object-cover" 
-                    />
-                    <div className="text-left">
-                      <div className="text-xs font-bold text-white truncate">{navUserName}</div>
-                      <div className="text-[10px] text-gray-400 truncate">{user?.email}</div>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsMobileMenuOpen(false);
-                      handleSignOut();
-                    }}
-                    className="text-xs text-red-400 hover:text-red-300 font-bold px-2.5 py-1 rounded-lg bg-red-500/10 border border-red-500/20 cursor-pointer"
-                  >
-                    Logout
-                  </button>
-                </div>
+            </div>
+          )}
 
-                <button 
-                  type="button" 
-                  onClick={() => { 
-                    setIsMobileMenuOpen(false); 
-                    navigateTo('/dashboard'); 
-                  }} 
-                  className="w-full py-3 rounded-2xl bg-[#f9b03c] text-black font-black text-xs shadow-lg flex items-center justify-center gap-2 cursor-pointer active:scale-98 transition-all"
-                >
-                  <i className="fa-solid fa-graduation-cap"></i>
-                  <span>{t('classroom') || 'ወደ መማሪያ ክፍል (Classroom)'}</span>
-                </button>
-              </div>
-            )}
-
-          </div>
         </div>
-      )}
+      </aside>
       
       {/* Authentication Modal */}
       <AuthModal 
