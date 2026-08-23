@@ -114,13 +114,32 @@ export default function InstructorYouTubePortfolio() {
             {/* 100% Flush Box-Fitting Video Player / Clean Thumbnail */}
             <div className="relative aspect-video w-full overflow-hidden bg-black flex items-center justify-center">
               {playingLocal ? (
-                <iframe
-                  src={localEmbedUrl}
-                  title="የሀገር ውስጥ ዩቲዩብ ቻናል"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowFullScreen
-                  className="w-full h-full border-0 absolute inset-0 z-10"
-                />
+                <div className="w-full h-full relative overflow-hidden">
+                  {/* YouTube Iframe Scaled to Crop Out YouTube Titles, AI Badges, & Watermarks */}
+                  <iframe
+                    src={localEmbedUrl}
+                    title="የሀገር ውስጥ ዩቲዩብ ቻናል"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                    className="w-full h-full border-0 absolute inset-0 z-10 scale-[1.18] origin-center pointer-events-auto"
+                  />
+
+                  {/* 🛡️ Click Shields: Completely blocks clicks on YouTube logo/title from navigating away */}
+                  <div className="absolute top-0 left-0 right-0 h-16 z-30 pointer-events-auto bg-transparent" onClick={(e) => e.stopPropagation()} />
+                  <div className="absolute bottom-0 right-0 w-36 h-14 z-30 pointer-events-auto bg-transparent" onClick={(e) => e.stopPropagation()} />
+                  <div className="absolute bottom-0 left-0 w-24 h-14 z-30 pointer-events-auto bg-transparent" onClick={(e) => e.stopPropagation()} />
+
+                  {/* Clean Floating Close / Reset Button */}
+                  <button 
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setPlayingLocal(false); }}
+                    className="absolute top-2.5 right-2.5 z-40 bg-black/80 hover:bg-black text-white hover:text-[#f9b03c] text-xs font-bold px-3 py-1 rounded-full backdrop-blur-md border border-white/20 flex items-center gap-1.5 shadow-lg cursor-pointer transition-all active:scale-95"
+                    title="ተመለስ (Close Video)"
+                  >
+                    <i className="fa-solid fa-xmark text-xs"></i>
+                    <span>ተመለስ</span>
+                  </button>
+                </div>
               ) : (
                 <div 
                   onClick={() => setPlayingLocal(true)}
@@ -172,13 +191,32 @@ export default function InstructorYouTubePortfolio() {
             {/* 100% Flush Box-Fitting Video Player / Clean Thumbnail */}
             <div className="relative aspect-video w-full overflow-hidden bg-black flex items-center justify-center">
               {playingInternational ? (
-                <iframe
-                  src={internationalEmbedUrl}
-                  title="የውጭ ዩቲዩብ ቻናል"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowFullScreen
-                  className="w-full h-full border-0 absolute inset-0 z-10"
-                />
+                <div className="w-full h-full relative overflow-hidden">
+                  {/* YouTube Iframe Scaled to Crop Out YouTube Titles, AI Badges, & Watermarks */}
+                  <iframe
+                    src={internationalEmbedUrl}
+                    title="የውጭ ዩቲዩብ ቻናል"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                    className="w-full h-full border-0 absolute inset-0 z-10 scale-[1.18] origin-center pointer-events-auto"
+                  />
+
+                  {/* 🛡️ Click Shields: Completely blocks clicks on YouTube logo/title from navigating away */}
+                  <div className="absolute top-0 left-0 right-0 h-16 z-30 pointer-events-auto bg-transparent" onClick={(e) => e.stopPropagation()} />
+                  <div className="absolute bottom-0 right-0 w-36 h-14 z-30 pointer-events-auto bg-transparent" onClick={(e) => e.stopPropagation()} />
+                  <div className="absolute bottom-0 left-0 w-24 h-14 z-30 pointer-events-auto bg-transparent" onClick={(e) => e.stopPropagation()} />
+
+                  {/* Clean Floating Close / Reset Button */}
+                  <button 
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setPlayingInternational(false); }}
+                    className="absolute top-2.5 right-2.5 z-40 bg-black/80 hover:bg-black text-white hover:text-[#f9b03c] text-xs font-bold px-3 py-1 rounded-full backdrop-blur-md border border-white/20 flex items-center gap-1.5 shadow-lg cursor-pointer transition-all active:scale-95"
+                    title="ተመለስ (Close Video)"
+                  >
+                    <i className="fa-solid fa-xmark text-xs"></i>
+                    <span>ተመለስ</span>
+                  </button>
+                </div>
               ) : (
                 <div 
                   onClick={() => setPlayingInternational(true)}
