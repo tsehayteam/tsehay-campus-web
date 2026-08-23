@@ -27,11 +27,40 @@ export async function validateReferralCode(
 
   const cleanCode = inputCode.trim().toUpperCase();
 
-  try {
-    const codeRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'referral_codes', cleanCode);
-    const codeSnap = await getDoc(codeRef);
+    let data: PromoCode | null = null;
+    let foundId = cleanCode;
 
-    if (!codeSnap.exists()) {
+    try {
+      const codeRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'referral_codes', cleanCode);
+      const codeSnap = await getDoc(codeRef);
+      if (codeSnap.exists()) {
+        data = codeSnap.data() as PromoCode;
+        foundId = codeSnap.id;
+      }
+    } catch (clientErr) {
+      console.warn("Client referral code check fallback to API:", clientErr);
+    }
+
+    // Fallback to Server API if client read was blocked or not found
+    if (!data) {
+      try {
+        const res = await fetch('/api/admin/referral-codes');
+        if (res.ok) {
+          const json = await res.json();
+          if (json.codes && Array.isArray(json.codes)) {
+            const match = json.codes.find((c: any) => c.code?.toUpperCase() === cleanCode || c.id?.toUpperCase() === cleanCode);
+            if (match) {
+              data = match;
+              foundId = match.id || cleanCode;
+            }
+          }
+        }
+      } catch (apiErr) {
+        console.warn("API referral codes validation fetch fallback:", apiErr);
+      }
+    }
+
+    if (!data) {
       return { 
         isValid: false, 
         discountPercent: 0, 
@@ -39,8 +68,6 @@ export async function validateReferralCode(
         message: 'ትክክል ያልሆነ ኮድ' 
       };
     }
-
-    const data = codeSnap.data() as PromoCode;
 
     if (!data.isActive) {
       return { 
@@ -71,7 +98,7 @@ export async function validateReferralCode(
       message: isFree 
         ? '100% ነፃ መመዝገቢያ ቅናሽ ተደርጓል! 🎉' 
         : `${discountPercent}% ቅናሽ ተደርጓል! 🎉`,
-      data: { id: codeSnap.id, ...data }
+      data: { id: foundId, ...data }
     };
   } catch (error) {
     console.error("Promo code validation error:", error);

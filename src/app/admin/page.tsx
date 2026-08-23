@@ -205,11 +205,48 @@ export default function AdminDashboard() {
       console.warn("Portfolio video Firestore sync:", err);
     });
 
+    // 1. Instant local storage cache for Promo Codes
+    try {
+      const cachedRef = localStorage.getItem('tsehay_referral_codes_cache');
+      if (cachedRef) {
+        const parsed = JSON.parse(cachedRef);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setReferralCodes(parsed);
+        }
+      }
+    } catch (e) {}
+
+    // 2. Fetch Promo Codes from Server-Side Admin API
+    const fetchApiReferralCodes = async () => {
+      try {
+        const res = await fetch('/api/admin/referral-codes');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.codes && Array.isArray(data.codes)) {
+            setReferralCodes(data.codes);
+            try {
+              localStorage.setItem('tsehay_referral_codes_cache', JSON.stringify(data.codes));
+            } catch (e) {}
+          }
+        }
+      } catch (err) {
+        console.warn("API referral codes sync fallback:", err);
+      }
+    };
+    fetchApiReferralCodes();
+
     const refQuery = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'referral_codes'));
     const unsubscribeReferrals = onSnapshot(refQuery, (snapshot) => {
-      setReferralCodes(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      if (!snapshot.empty) {
+        const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setReferralCodes(list);
+        try {
+          localStorage.setItem('tsehay_referral_codes_cache', JSON.stringify(list));
+        } catch (e) {}
+      }
     }, (err) => {
-      console.warn("Referral codes sync:", err);
+      console.warn("Referral codes sync fallback:", err);
+      fetchApiReferralCodes();
     });
 
     return () => {
@@ -249,10 +286,14 @@ export default function AdminDashboard() {
       createdAt: new Date().toISOString()
     };
 
-    // 1. Optimistic UI update
+    // 1. Optimistic UI update & Local Cache persistence
     setReferralCodes(prev => {
       const filtered = prev.filter(c => c.id !== cleanCode);
-      return [newCodeObject, ...filtered];
+      const updated = [newCodeObject, ...filtered];
+      try {
+        localStorage.setItem('tsehay_referral_codes_cache', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
     });
 
     try {
@@ -273,7 +314,7 @@ export default function AdminDashboard() {
       }
 
       // 3. Robust Server-Side Admin API write (bypasses security rules constraints)
-      await fetch('/api/admin/referral-codes', {
+      const res = await fetch('/api/admin/referral-codes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -284,6 +325,20 @@ export default function AdminDashboard() {
           isActive: true
         })
       });
+
+      if (res.ok) {
+        const json = await res.json();
+        if (json.data) {
+          setReferralCodes(prev => {
+            const filtered = prev.filter(c => c.id !== cleanCode);
+            const updated = [json.data, ...filtered];
+            try {
+              localStorage.setItem('tsehay_referral_codes_cache', JSON.stringify(updated));
+            } catch (e) {}
+            return updated;
+          });
+        }
+      }
 
       setNewCodeName('');
       setNewCodeDesc('');
@@ -303,8 +358,14 @@ export default function AdminDashboard() {
   const handleToggleReferralStatus = async (codeItem: any) => {
     const updatedStatus = !codeItem.isActive;
 
-    // 1. Optimistic UI update
-    setReferralCodes(prev => prev.map(c => c.id === codeItem.id ? { ...c, isActive: updatedStatus } : c));
+    // 1. Optimistic UI update & Local Cache
+    setReferralCodes(prev => {
+      const updated = prev.map(c => c.id === codeItem.id ? { ...c, isActive: updatedStatus } : c);
+      try {
+        localStorage.setItem('tsehay_referral_codes_cache', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
 
     try {
       // 2. Direct client write
@@ -331,8 +392,14 @@ export default function AdminDashboard() {
 
   const handleDeleteReferralCode = async (codeId: string) => {
     if (window.confirm(`እርግጠኛ ነዎት [${codeId}] የቅናሽ ኮዱን ማጥፋት ይፈልጋሉ?`)) {
-      // 1. Optimistic UI update
-      setReferralCodes(prev => prev.filter(c => c.id !== codeId));
+      // 1. Optimistic UI update & Local Cache
+      setReferralCodes(prev => {
+        const updated = prev.filter(c => c.id !== codeId);
+        try {
+          localStorage.setItem('tsehay_referral_codes_cache', JSON.stringify(updated));
+        } catch (e) {}
+        return updated;
+      });
 
       try {
         // 2. Direct client delete

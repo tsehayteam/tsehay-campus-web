@@ -1,6 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase/admin';
 
+export async function GET() {
+  try {
+    if (adminDb) {
+      const snap = await adminDb
+        .collection('artifacts')
+        .doc('tsehaycampus-e1a6d')
+        .collection('public')
+        .doc('data')
+        .collection('referral_codes')
+        .get();
+
+      const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      return NextResponse.json({ success: true, codes: list });
+    }
+
+    return NextResponse.json({ success: true, codes: [] });
+  } catch (error: any) {
+    console.error('Error fetching referral codes in API route:', error);
+    return NextResponse.json({ error: error.message || 'Internal server error', codes: [] }, { status: 500 });
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -21,7 +43,8 @@ export async function POST(req: NextRequest) {
         .collection('referral_codes')
         .doc(cleanCode);
 
-      await codeRef.set({
+      const codeData = {
+        id: cleanCode,
         code: cleanCode,
         discountPercent: Number(discountPercent) || 0,
         targetCourseId: targetCourseId || 'all',
@@ -30,9 +53,11 @@ export async function POST(req: NextRequest) {
         usageCount: 0,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
-      }, { merge: true });
+      };
 
-      return NextResponse.json({ success: true, message: `Code ${cleanCode} saved successfully` });
+      await codeRef.set(codeData, { merge: true });
+
+      return NextResponse.json({ success: true, message: `Code ${cleanCode} saved successfully`, data: codeData });
     }
 
     return NextResponse.json({ success: true, message: 'Saved via client sync' });
