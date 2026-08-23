@@ -445,6 +445,39 @@ body {
   border-radius: 1px;
 }
 
+/* ==========================================================================
+   🔼 Distinct Ultra-Premium Curtain Roll-Up Handle Styling & Bob Animation
+   ========================================================================== */
+@keyframes rollUpNudgeUp {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3.5px);
+  }
+}
+
+.icon-rollup-bob {
+  animation: rollUpNudgeUp 1.8s ease-in-out infinite;
+  will-change: transform;
+}
+
+.curtain-rollup-handle {
+  background: rgba(3, 5, 9, 0.96);
+  border: 1.5px solid rgba(249, 176, 60, 0.65);
+  border-top: none;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.85), 0 0 22px rgba(249, 176, 60, 0.35);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.curtain-rollup-handle:hover {
+  border-color: #f9b03c;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.9), 0 0 30px rgba(249, 176, 60, 0.6);
+  transform: translate(-50%, 2px) scale(1.04);
+}
+
 .animate-pop-up-search {
   animation: popUpSearch 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.02s both;
   will-change: transform, opacity, filter;

@@ -300,17 +300,17 @@ export default function Navbar() {
             : '-translate-y-full opacity-0 pointer-events-none'
         }`}
       >
-        {/* Outer Frame Bottom Handle */}
+        {/* 🔼 SINGLE DISTINCT ULTRA-PREMIUM ROLL-UP TAB AT BOTTOM CENTER (ወደ ላይ ወደ ላይ የምትል አኒሜሽን) */}
         <button 
           type="button"
           onClick={closeCurtain}
-          className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-white dark:bg-[#030509] border-x border-b border-[#f9b03c]/70 hover:border-[#f9b03c] px-5 sm:px-6 py-1.5 rounded-b-2xl shadow-[0_8px_30px_rgba(0,0,0,0.6),0_0_15px_rgba(249,176,60,0.3)] flex items-center gap-2 text-gray-800 dark:text-gray-200 hover:text-[#f9b03c] transition-all cursor-pointer group/close active:scale-95 z-[10000]"
+          className="curtain-rollup-handle absolute -bottom-8 sm:-bottom-9 left-1/2 -translate-x-1/2 px-5 sm:px-6 py-1 sm:py-1.5 rounded-b-2xl flex items-center gap-2 text-white hover:text-[#f9b03c] cursor-pointer group active:scale-95 z-[10000]"
           title="ወደ ላይ መልሰህ እጠፍ (Roll Up Menu)"
         >
-          <div className="w-4 h-4 rounded-full bg-[#f9b03c] text-black flex items-center justify-center text-[9px] font-black shadow-sm group-hover/close:scale-110 transition-transform">
-            <i className="fa-solid fa-chevron-up group-hover/close:-translate-y-0.5 transition-transform"></i>
+          <div className="w-4 h-4 rounded-full bg-gradient-to-tr from-[#f9b03c] to-amber-400 text-black flex items-center justify-center text-[9px] font-black shadow-md">
+            <i className="fa-solid fa-chevron-up icon-rollup-bob"></i>
           </div>
-          <span className="text-[11px] font-black uppercase tracking-wider text-gray-800 dark:text-gray-200 group-hover/close:text-[#f9b03c]">
+          <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-gray-200 group-hover:text-[#f9b03c] font-heading">
             ወደ ላይ እጠፍ (Roll Up)
           </span>
         </button>
@@ -669,32 +669,17 @@ export default function Navbar() {
               </button>
             </div>
 
-            {/* 7. Staggered Item 7: Ultra-Sleek Login Action with "ወደ ላይ እጠፍ" Attached to its Bottom Edge */}
-            <div className="animate-nav-stagger-7 pt-0.5 space-y-1">
+            {/* 7. Staggered Item 7: Ultra-Sleek Single Login Action (Clean, No Duplicate Inline Buttons) */}
+            <div className="animate-nav-stagger-7 pt-0.5">
               {!mounted || !user ? (
-                <div className="space-y-1">
-                  <button 
-                    type="button" 
-                    onClick={() => { closeCurtain(); openAuthModal(false); }} 
-                    className="w-full btn-login-secondary font-black py-2.5 rounded-xl shadow-lg flex items-center justify-center gap-2 text-xs sm:text-sm cursor-pointer active:scale-95 group"
-                  >
-                    <i className="fa-solid fa-arrow-right-to-bracket text-[#f9b03c] icon-anim-login"></i>
-                    <span>{t('login') || 'ግባ (Login)'}</span>
-                  </button>
-
-                  {/* 🔼 Seamlessly Attached to the Bottom Edge of Login */}
-                  <button 
-                    type="button"
-                    onClick={closeCurtain}
-                    className="w-full py-1.5 px-3 rounded-lg bg-amber-500/10 dark:bg-amber-500/15 hover:bg-amber-500/25 border border-[#f9b03c]/40 hover:border-[#f9b03c] text-gray-900 dark:text-[#f9b03c] font-black text-[10px] shadow-sm flex items-center justify-center gap-1.5 cursor-pointer transition-all active:scale-95 group"
-                    title="ወደ ላይ መልሰህ እጠፍ (Roll Up Menu)"
-                  >
-                    <div className="w-3.5 h-3.5 rounded-full bg-[#f9b03c] text-black flex items-center justify-center text-[8px] font-black shadow-sm group-hover:scale-110 transition-transform">
-                      <i className="fa-solid fa-chevron-up"></i>
-                    </div>
-                    <span className="tracking-wider uppercase font-heading">ወደ ላይ እጠፍ (Roll Up)</span>
-                  </button>
-                </div>
+                <button 
+                  type="button" 
+                  onClick={() => { closeCurtain(); openAuthModal(false); }} 
+                  className="w-full btn-login-secondary font-black py-2.5 rounded-xl shadow-lg flex items-center justify-center gap-2 text-xs sm:text-sm cursor-pointer active:scale-95 group"
+                >
+                  <i className="fa-solid fa-arrow-right-to-bracket text-[#f9b03c] icon-anim-login"></i>
+                  <span>{t('login') || 'ግባ (Login)'}</span>
+                </button>
               ) : (
                 <div className="space-y-1.5 p-2 rounded-xl bg-gray-100/70 dark:bg-white/5 border border-gray-200 dark:border-white/10">
                   <div className="flex items-center gap-2">
@@ -741,19 +726,6 @@ export default function Navbar() {
                     className="w-full text-red-500 font-bold py-1 hover:bg-red-500/10 rounded-xl border border-red-500/30 transition cursor-pointer text-center flex items-center justify-center gap-1.5 text-xs"
                   >
                     <i className="fa-solid fa-arrow-right-from-bracket"></i> {t('logout') || 'ዘግተህ ውጣ (Logout)'}
-                  </button>
-
-                  {/* 🔼 Roll Up Tab on Bottom Edge of Logged-in Card */}
-                  <button 
-                    type="button"
-                    onClick={closeCurtain}
-                    className="w-full py-1.5 px-3 rounded-lg bg-amber-500/10 dark:bg-amber-500/15 hover:bg-amber-500/25 border border-[#f9b03c]/40 hover:border-[#f9b03c] text-gray-900 dark:text-[#f9b03c] font-black text-[10px] shadow-sm flex items-center justify-center gap-1.5 cursor-pointer transition-all active:scale-95 group"
-                    title="ወደ ላይ መልሰህ እጠፍ (Roll Up Menu)"
-                  >
-                    <div className="w-3.5 h-3.5 rounded-full bg-[#f9b03c] text-black flex items-center justify-center text-[8px] font-black shadow-sm group-hover:scale-110 transition-transform">
-                      <i className="fa-solid fa-chevron-up"></i>
-                    </div>
-                    <span className="tracking-wider uppercase font-heading">ወደ ላይ እጠፍ (Roll Up)</span>
                   </button>
                 </div>
               )}
