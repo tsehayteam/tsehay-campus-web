@@ -196,7 +196,6 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
     // 2. Handle 100% Free (Either Course Free or 100% Discount via Promo/Referral Code)
     if (isFreeAfterDiscount) {
       try {
-        // Record direct purchase/enrollment in Firestore
         const purchaseRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'purchased_courses', targetCourseId);
         await setDoc(purchaseRef, {
           courseId: targetCourseId,
@@ -208,12 +207,10 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
           status: 'active'
         }, { merge: true });
 
-        // If a referral code was used, record usage count
         if (appliedCode) {
           await recordReferralUsage(appliedCode);
         }
 
-        // Cache active course for zero-latency classroom view
         try {
           localStorage.setItem('tsehay_user_active_course', JSON.stringify(course));
           if (course.lessons && course.lessons.length > 0) {
@@ -221,7 +218,6 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
           }
         } catch (e) {}
 
-        // Notify free enrollment API in background
         try {
           const idToken = await user.getIdToken();
           fetch('/api/enroll-free', {
@@ -237,7 +233,6 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
           }).catch(e => console.warn("Background enrollment sync:", e));
         } catch (authErr) {}
 
-        // Redirect to dashboard
         if (typeof window !== 'undefined') {
           window.location.href = `/dashboard?courseId=${targetCourseId}&lesson=0`;
         }
@@ -316,23 +311,30 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
   const modalContent = (
     <div 
       id="payment-modal-backdrop" 
-      className="fixed inset-0 z-[99999999] w-screen h-screen bg-black/85 backdrop-blur-xl flex items-center justify-center p-3 sm:p-5 overflow-y-auto overscroll-contain animate-in fade-in duration-300"
+      className="fixed inset-0 z-[99999999] w-screen h-screen bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-hidden animate-[paymentBackdropFade_0.3s_ease-out_forwards]"
       onClick={(e) => { 
         if (e.target === e.currentTarget && !isPaying) handleClose(); 
       }}
     >
-      {/* Dead-Center Modal Card with Smooth Pop-In Animation */}
+      {/* 🌟 Ultra-Premium Centered Modal Card with Spring Pop Entrance */}
       <div 
-        className="bg-[#0b1329] text-white w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-[2rem] shadow-[0_25px_80px_rgba(0,0,0,0.95)] flex flex-col relative border border-gray-800/90 m-auto animate-[modalCenterPop_0.35s_cubic-bezier(0.16,1,0.3,1)_forwards]"
+        className="bg-[#0b0f19] text-white w-full max-w-lg max-h-[90vh] flex flex-col relative rounded-[2rem] border border-amber-400/30 shadow-[0_25px_90px_rgba(0,0,0,0.95)] overflow-hidden m-auto animate-[paymentModalPop_0.4s_cubic-bezier(0.16,1,0.3,1)_forwards]"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="p-5 sm:p-6 border-b border-gray-800/80 flex justify-between items-center bg-[#0d1735] sticky top-0 z-20">
+        {/* Top Glowing Golden Accent Line */}
+        <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-amber-400 via-[#f9b03c] to-yellow-300 shadow-[0_0_15px_rgba(249,176,60,0.8)] z-30" />
+
+        {/* Modal Header */}
+        <div className="px-5 py-4 sm:px-6 sm:py-5 border-b border-gray-800/80 flex justify-between items-center bg-[#0d1424] sticky top-0 z-20 backdrop-blur-lg">
           <div>
             <h3 className="font-black text-lg sm:text-xl font-heading text-white flex items-center gap-2">
-              <i className="fa-solid fa-shield-halved text-[#f9b03c]"></i> ደህንነቱ የተጠበቀ ክፍያ
+              <i className="fa-solid fa-shield-halved text-[#f9b03c]"></i> 
+              <span>ደህንነቱ የተጠበቀ ክፍያ</span>
             </h3>
-            <p className="text-xs text-emerald-400 font-bold mt-0.5">100% አስተማማኝ እና ፈጣን ማረጋገጫ</p>
+            <p className="text-xs text-emerald-400 font-bold mt-0.5 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span>100% አስተማማኝ እና ፈጣን ማረጋገጫ</span>
+            </p>
           </div>
           <button 
             type="button"
@@ -345,12 +347,14 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
           </button>
         </div>
         
-        <div className="p-5 sm:p-6 space-y-5">
-          {/* Course Info Card */}
-          <div className="flex items-center gap-3.5 bg-[#121e3d] p-3.5 sm:p-4 rounded-2xl border border-gray-800">
+        {/* Modal Scrollable Body */}
+        <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-5">
+          
+          {/* Selected Course Card */}
+          <div className="flex items-center gap-3.5 bg-[#121a2d] p-3.5 sm:p-4 rounded-2xl border border-gray-800/90 shadow-inner">
             <img 
               src={course.image || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1000&auto=format&fit=crop'} 
-              className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl object-cover shadow-sm border border-gray-700 shrink-0" 
+              className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl object-cover shadow-sm border border-gray-700/80 shrink-0" 
               alt={course.title} 
             />
             <div className="flex-1 min-w-0">
@@ -359,8 +363,8 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
             </div>
           </div>
 
-          {/* 🌟 PROMO CODE (የቅናሽ ኮድ) INPUT BOX */}
-          <div className="bg-[#121e3d]/80 p-3.5 sm:p-4 rounded-2xl border border-gray-800 space-y-2">
+          {/* 🌟 Promo Code Box */}
+          <div className="bg-[#121a2d]/80 p-3.5 sm:p-4 rounded-2xl border border-gray-800/90 space-y-2">
             <div className="flex items-center justify-between text-xs font-bold text-gray-300">
               <span className="flex items-center gap-1.5">
                 <i className="fa-solid fa-tag text-[#f9b03c]"></i>
@@ -379,7 +383,7 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
                 disabled={isPaying || !!appliedCode}
                 onChange={(e) => setReferralInput(e.target.value.toUpperCase().replace(/\s+/g, ''))}
                 onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); validateAndApplyCode(); } }}
-                className="flex-1 bg-[#0b1329] border border-gray-700 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-mono uppercase tracking-wider text-white outline-none focus:border-[#f9b03c] transition disabled:opacity-60"
+                className="flex-1 bg-[#080d1a] border border-gray-700/90 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm font-mono uppercase tracking-wider text-white outline-none focus:border-[#f9b03c] transition disabled:opacity-60"
               />
               {appliedCode ? (
                 <button
@@ -395,7 +399,7 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
                   type="button"
                   onClick={() => validateAndApplyCode()}
                   disabled={isValidatingCode || isPaying || !referralInput.trim()}
-                  className="bg-[#f9b03c] hover:bg-[#ffbe53] text-slate-950 font-black px-4 py-2.5 rounded-xl text-xs transition shadow-sm hover:shadow-[0_0_15px_rgba(249,176,60,0.3)] cursor-pointer disabled:opacity-50 shrink-0 active:scale-95"
+                  className="bg-gradient-to-r from-[#f9b03c] to-amber-400 hover:brightness-110 text-slate-950 font-black px-4 py-2.5 rounded-xl text-xs transition shadow-sm hover:shadow-[0_0_15px_rgba(249,176,60,0.3)] cursor-pointer disabled:opacity-50 shrink-0 active:scale-95"
                 >
                   {isValidatingCode ? <i className="fa-solid fa-spinner fa-spin"></i> : 'ተጠቀም (Apply)'}
                 </button>
@@ -410,8 +414,8 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
             )}
           </div>
 
-          {/* Total Calculation Display */}
-          <div className="flex justify-between items-center py-3 border-y border-gray-800">
+          {/* Dynamic Price Display */}
+          <div className="flex justify-between items-center py-3 border-y border-gray-800/80">
             <div>
               <span className="text-gray-300 font-bold text-xs sm:text-sm uppercase tracking-wider block">ጠቅላላ የሚከፈል</span>
               {appliedCode && discountPercent > 0 && !isOriginallyFree && (
@@ -432,14 +436,14 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
             </div>
           </div>
 
-          {/* Payment Methods (Always clearly displayed if not 100% free) */}
+          {/* Payment Methods (Clickable Cards with Hover Effects) */}
           {!isFreeAfterDiscount && (
             <div className="space-y-3">
               <h4 className="font-bold text-xs text-gray-400 uppercase tracking-wider">የክፍያ አማራጭ ይምረጡ</h4>
               
               {/* Option 1: LakiPay */}
               <label 
-                className={`payment-option flex items-center justify-between p-3.5 sm:p-4 rounded-2xl border cursor-pointer transition-all ${paymethod === 'lakipay' ? 'border-[#f9b03c] bg-amber-500/10 shadow-lg ring-2 ring-amber-500/40 scale-[1.01]' : 'border-gray-800 bg-[#121e3d] hover:bg-[#16254a]'}`}
+                className={`payment-option flex items-center justify-between p-3.5 sm:p-4 rounded-2xl border cursor-pointer transition-all duration-200 transform hover:-translate-y-0.5 ${paymethod === 'lakipay' ? 'border-[#f9b03c] bg-amber-500/10 shadow-[0_0_20px_rgba(249,176,60,0.2)] ring-2 ring-amber-500/40' : 'border-gray-800/90 bg-[#121a2d] hover:bg-[#16233d] hover:border-gray-700'}`}
               >
                 <div className="flex items-center gap-3 min-w-0 pr-2">
                   <input 
@@ -462,7 +466,7 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
 
               {/* Option 2: PayPal */}
               <label 
-                className={`payment-option flex items-center justify-between p-3.5 sm:p-4 rounded-2xl border cursor-pointer transition-all ${paymethod === 'paypal' ? 'border-blue-500 bg-blue-500/10 shadow-lg ring-2 ring-blue-500/40 scale-[1.01]' : 'border-gray-800 bg-[#121e3d] hover:bg-[#16254a]'}`}
+                className={`payment-option flex items-center justify-between p-3.5 sm:p-4 rounded-2xl border cursor-pointer transition-all duration-200 transform hover:-translate-y-0.5 ${paymethod === 'paypal' ? 'border-blue-500 bg-blue-500/10 shadow-[0_0_20px_rgba(59,130,246,0.2)] ring-2 ring-blue-500/40' : 'border-gray-800/90 bg-[#121a2d] hover:bg-[#16233d] hover:border-gray-700'}`}
               >
                 <div className="flex items-center gap-3 min-w-0 pr-2">
                   <input 
@@ -485,7 +489,7 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
 
               {/* Option 3: NOWPayments (Crypto) */}
               <label 
-                className={`payment-option flex items-center justify-between p-3.5 sm:p-4 rounded-2xl border cursor-pointer transition-all ${paymethod === 'crypto' || paymethod === 'nowpayments' ? 'border-cyan-500 bg-cyan-500/10 shadow-lg ring-2 ring-cyan-500/40 scale-[1.01]' : 'border-gray-800 bg-[#121e3d] hover:bg-[#16254a]'}`}
+                className={`payment-option flex items-center justify-between p-3.5 sm:p-4 rounded-2xl border cursor-pointer transition-all duration-200 transform hover:-translate-y-0.5 ${paymethod === 'crypto' || paymethod === 'nowpayments' ? 'border-cyan-500 bg-cyan-500/10 shadow-[0_0_20px_rgba(6,182,212,0.2)] ring-2 ring-cyan-500/40' : 'border-gray-800/90 bg-[#121a2d] hover:bg-[#16233d] hover:border-gray-700'}`}
               >
                 <div className="flex items-center gap-3 min-w-0 pr-2">
                   <input 
@@ -514,12 +518,12 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
             </div>
           )}
 
-          {/* Primary Proceed Button */}
+          {/* Primary Action Button */}
           <button 
             type="button"
             onClick={handlePayment} 
             disabled={isPaying} 
-            className="w-full bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#f9b03c] hover:brightness-110 text-slate-950 font-black py-4 rounded-2xl text-base transition-all shadow-lg hover:shadow-[0_0_25px_rgba(249,176,60,0.4)] flex items-center justify-center gap-2 group disabled:opacity-70 cursor-pointer active:scale-[0.98]"
+            className="w-full bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#f9b03c] hover:brightness-110 text-slate-950 font-black py-4 rounded-2xl text-base transition-all shadow-[0_0_25px_rgba(249,176,60,0.35)] hover:shadow-[0_0_35px_rgba(249,176,60,0.5)] flex items-center justify-center gap-2 group disabled:opacity-70 cursor-pointer active:scale-[0.98]"
           >
             {isPaying ? (
               <>
@@ -541,9 +545,14 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
         </div>
       </div>
 
+      {/* Cinematic Entrance CSS Keyframes */}
       <style dangerouslySetInnerHTML={{__html: `
-        @keyframes modalCenterPop {
-          0% { opacity: 0; transform: scale(0.92) translateY(12px); }
+        @keyframes paymentBackdropFade {
+          0% { opacity: 0; }
+          100% { opacity: 1; }
+        }
+        @keyframes paymentModalPop {
+          0% { opacity: 0; transform: scale(0.90) translateY(18px); }
           100% { opacity: 1; transform: scale(1) translateY(0); }
         }
       `}} />
