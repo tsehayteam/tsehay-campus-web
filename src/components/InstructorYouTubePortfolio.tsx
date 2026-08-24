@@ -64,10 +64,9 @@ export default function InstructorYouTubePortfolio() {
   const [playingLocal, setPlayingLocal] = useState(false);
   const [playingInternational, setPlayingInternational] = useState(false);
 
-  // 🌟 Dynamic Typewriter States
-  const fullDescText = 'እኛ በተግባር የምናስተዳድራቸውንና በውጤታማነታቸው የተረጋገጡትን የዩቲዩብ ቻናሎች (Faceless Channels) ይመልከቱ።';
+  // 🌟 Human-like Pencil Typewriter with Playful Eraser Corrections & Multi-Phrases
   const [typedDesc, setTypedDesc] = useState('');
-  const [descCursorVisible, setDescCursorVisible] = useState(true);
+  const [pencilAction, setPencilAction] = useState<'writing' | 'erasing' | 'paused' | 'thinking'>('writing');
 
   const localCardTitle = 'ሀገርኛ ቻናል (Domestic)';
   const [typedLocalTitle, setTypedLocalTitle] = useState('');
@@ -75,26 +74,125 @@ export default function InstructorYouTubePortfolio() {
   const intlCardTitle = 'ዓለም አቀፍ ቻናል (International)';
   const [typedIntlTitle, setTypedIntlTitle] = useState('');
 
-  // 1. Typewriter Animation for Description
+  // 1. Dynamic Pencil Typewriter Animation with Playful Typo Erasing
   useEffect(() => {
-    let index = 0;
-    setTypedDesc('');
-    const interval = setInterval(() => {
-      if (index <= fullDescText.length) {
-        setTypedDesc(fullDescText.slice(0, index));
-        index++;
-      } else {
-        clearInterval(interval);
-      }
-    }, 32);
+    let isCancelled = false;
+    let timeoutId: any = null;
 
-    const cursorInterval = setInterval(() => {
-      setDescCursorVisible((v) => !v);
-    }, 500);
+    const sleep = (ms: number) => new Promise(resolve => {
+      timeoutId = setTimeout(resolve, ms);
+    });
+
+    const typeWriterLoop = async () => {
+      while (!isCancelled) {
+        // --- SEQUENCE 1: Playful Typo -> Eraser Correction -> Accurate Line ---
+        const base1 = "እኛ በተግባር የምናስተዳድራቸውንና ";
+        const typo = "በድብቅ በሚስጥር... ቆይ ቆይ 😅";
+        const correct = "በውጤታማነታቸው የተረጋገጡትን የዩቲዩብ ቻናሎች (Faceless Channels) ይመልከቱ። ✨";
+
+        // 1. Type base phrase
+        setPencilAction('writing');
+        for (let i = 1; i <= base1.length; i++) {
+          if (isCancelled) return;
+          setTypedDesc(base1.slice(0, i));
+          await sleep(42 + Math.random() * 18);
+        }
+
+        // 2. Type funny typo/mistake
+        for (let i = 1; i <= typo.length; i++) {
+          if (isCancelled) return;
+          setTypedDesc(base1 + typo.slice(0, i));
+          await sleep(46 + Math.random() * 20);
+        }
+
+        // 3. Pause on typo (thinking / realization moment)
+        setPencilAction('thinking');
+        await sleep(950);
+
+        // 4. Erase the typo with pencil eraser
+        setPencilAction('erasing');
+        for (let i = typo.length; i >= 0; i--) {
+          if (isCancelled) return;
+          setTypedDesc(base1 + typo.slice(0, i));
+          await sleep(30);
+        }
+
+        await sleep(250);
+
+        // 5. Write the correct final phrase
+        setPencilAction('writing');
+        for (let i = 1; i <= correct.length; i++) {
+          if (isCancelled) return;
+          setTypedDesc(base1 + correct.slice(0, i));
+          await sleep(42 + Math.random() * 16);
+        }
+
+        // 6. Pause for students to read comfortably
+        setPencilAction('paused');
+        await sleep(3800);
+
+        // 7. Erase full line smoothly
+        setPencilAction('erasing');
+        const full1 = base1 + correct;
+        for (let i = full1.length; i >= 0; i -= 2) {
+          if (isCancelled) return;
+          setTypedDesc(full1.slice(0, Math.max(0, i)));
+          await sleep(18);
+        }
+        setTypedDesc('');
+        await sleep(350);
+
+        // --- SEQUENCE 2: Inspiring faceless revenue line ---
+        const text2 = "ያለምንም የፊት ገጽታ (100% Faceless) በቋሚነት ከፍተኛ ገቢ የሚያስገኙ የቀጥታ ማሳያዎች። 💎";
+        setPencilAction('writing');
+        for (let i = 1; i <= text2.length; i++) {
+          if (isCancelled) return;
+          setTypedDesc(text2.slice(0, i));
+          await sleep(42 + Math.random() * 15);
+        }
+
+        setPencilAction('paused');
+        await sleep(3500);
+
+        // Erase line 2
+        setPencilAction('erasing');
+        for (let i = text2.length; i >= 0; i -= 2) {
+          if (isCancelled) return;
+          setTypedDesc(text2.slice(0, Math.max(0, i)));
+          await sleep(18);
+        }
+        setTypedDesc('');
+        await sleep(350);
+
+        // --- SEQUENCE 3: Practical proof of success ---
+        const text3 = "ከዜሮ ተነስተው በዩቲዩብ ስኬታማ መሆን እንደሚቻል በተግባር የሚያሳዩ ቻናሎች! 🚀";
+        setPencilAction('writing');
+        for (let i = 1; i <= text3.length; i++) {
+          if (isCancelled) return;
+          setTypedDesc(text3.slice(0, i));
+          await sleep(42 + Math.random() * 15);
+        }
+
+        setPencilAction('paused');
+        await sleep(3500);
+
+        // Erase line 3
+        setPencilAction('erasing');
+        for (let i = text3.length; i >= 0; i -= 2) {
+          if (isCancelled) return;
+          setTypedDesc(text3.slice(0, Math.max(0, i)));
+          await sleep(18);
+        }
+        setTypedDesc('');
+        await sleep(350);
+      }
+    };
+
+    typeWriterLoop();
 
     return () => {
-      clearInterval(interval);
-      clearInterval(cursorInterval);
+      isCancelled = true;
+      if (timeoutId) clearTimeout(timeoutId);
     };
   }, []);
 
@@ -259,11 +357,32 @@ export default function InstructorYouTubePortfolio() {
             ቻናል ስኬት በተግባር
           </h2>
 
-          {/* Clean One-Line Typing Description */}
-          <div className="min-h-[1.75rem] flex items-center justify-center">
-            <p className="text-sm sm:text-base lg:text-[17px] text-slate-700 dark:text-[#cbd5e1] font-medium leading-relaxed max-w-4xl mx-auto px-2">
+          {/* Dynamic Pencil / Eraser Animated Typewriter Description */}
+          <div className="min-h-[2.5rem] sm:min-h-[2.2rem] flex items-center justify-center">
+            <p className="text-sm sm:text-base lg:text-[17px] text-slate-700 dark:text-[#cbd5e1] font-medium leading-relaxed max-w-4xl mx-auto px-2 flex items-center justify-center flex-wrap gap-1.5">
               <span>{typedDesc}</span>
-              <span className={`inline-block w-0.5 h-4 ml-0.5 bg-[#f9b03c] align-middle ${descCursorVisible ? 'opacity-100' : 'opacity-0'} transition-opacity duration-150`}></span>
+              
+              {/* Dynamic Pencil / Eraser Animation Cursor */}
+              <span className="inline-flex items-center ml-0.5 select-none align-middle">
+                {pencilAction === 'erasing' ? (
+                  <span className="inline-flex items-center gap-1 text-sm bg-pink-500/10 text-pink-400 border border-pink-500/20 px-2 py-0.5 rounded-full animate-pulse shadow-sm">
+                    <span className="inline-block text-base animate-bounce">🧹</span>
+                    <span className="text-[11px] font-black">በማረም ላይ...</span>
+                  </span>
+                ) : pencilAction === 'thinking' ? (
+                  <span className="inline-flex items-center gap-1 text-sm bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded-full animate-pulse shadow-sm">
+                    <span className="inline-block text-base animate-spin">🤔</span>
+                    <span className="text-[11px] font-black">ቆይ ቆይ...</span>
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center">
+                    <span className="inline-block text-base sm:text-lg text-[#f9b03c] animate-bounce origin-bottom drop-shadow-[0_0_8px_rgba(249,176,60,0.8)]">
+                      ✏️
+                    </span>
+                    <span className="inline-block w-0.5 h-4 ml-0.5 bg-[#f9b03c] animate-ping"></span>
+                  </span>
+                )}
+              </span>
             </p>
           </div>
 
