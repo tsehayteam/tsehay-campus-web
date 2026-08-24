@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { auth, db } from "@/lib/firebase/config";
 import { 
   signInWithEmailAndPassword, 
@@ -15,8 +15,9 @@ import {
 } from "firebase/auth";
 import { doc, setDoc, serverTimestamp, getDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { validateEmailForSignup, isDisposableEmail } from "@/lib/disposableEmailBlocker";
+import { validateEmailForSignup, isGmailAddress } from "@/lib/disposableEmailBlocker";
 import { validateReferralCode, recordReferralUsage } from "@/lib/referralService";
+import { generateOtpCode, saveOtpForEmail, verifyOtpForEmail } from "@/lib/otpService";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -32,6 +33,15 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
   // 🌟 Multi-Step Onboarding State for Sign-Up
   const [signupStep, setSignupStep] = useState<number>(1);
   const [slideDirection, setSlideDirection] = useState<'next' | 'back'>('next');
+
+  // 🌟 6-Digit OTP Verification Screen State
+  const [isOtpMode, setIsOtpMode] = useState(false);
+  const [otpDigits, setOtpDigits] = useState<string[]>(['', '', '', '', '', '']);
+  const [otpError, setOtpError] = useState("");
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const [resendCountdown, setResendCountdown] = useState<number>(60);
+  const [pendingSignupData, setPendingSignupData] = useState<any>(null);
+  const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   // Verification Sent Screen State
   const [verificationSent, setVerificationSent] = useState(false);
@@ -57,29 +67,46 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
   const [pendingGoogleAuth, setPendingGoogleAuth] = useState<User | null>(null);
   const router = useRouter();
 
+  // Reset modal state on open/close
   useEffect(() => {
     if (!isOpen) {
       setPendingGoogleAuth(null);
       setError("");
       setEmailError("");
+      setOtpError("");
       setResendSuccessMessage("");
       setIsResetMode(false);
       setShowPassword(false);
       setVerificationSent(false);
+      setIsOtpMode(false);
+      setOtpDigits(['', '', '', '', '', '']);
       setRegisteredEmail("");
       setUnverifiedEmail("");
+      setPendingSignupData(null);
       setSignupStep(1);
     }
   }, [isOpen]);
 
-  // Real-time disposable email check
+  // Resend Countdown Timer
+  useEffect(() => {
+    let timer: any;
+    if (isOtpMode && resendCountdown > 0) {
+      timer = setInterval(() => {
+        setResendCountdown(prev => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [isOtpMode, resendCountdown]);
+
+  // Real-time Gmail validation check
   const handleEmailChange = (val: string) => {
     setEmail(val);
     setError("");
     setResendSuccessMessage("");
     if ((isSignupMode || pendingGoogleAuth) && val.trim().includes("@")) {
-      if (isDisposableEmail(val)) {
-        setEmailError("ይቅርታ! እባክዎ ትክክለኛ እና ቋሚ የኢሜይል አድራሻ (እንደ Gmail, Yahoo) ይጠቀሙ።");
+      const clean = val.trim().toLowerCase();
+      if (!clean.endsWith("@gmail.com")) {
+        setEmailError("ይቅርታ! የፀሐይ ካምፓስ የሚቀበለው ትክክለኛ የ Gmail (@gmail.com) አድራሻዎችን ብቻ ነው።");
       } else {
         setEmailError("");
       }
@@ -100,7 +127,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
       return 'የይለፍ ቃሉ በጣም አጭር ወይም ደካማ ነው። እባክዎ ቢያንስ 6 ፊደላት/ቁጥሮች ይጠቀሙ።';
     }
     if (errorCode === 'auth/invalid-email') {
-      return 'እባክዎ ትክክለኛ የኢሜል አድራሻ ያስገቡ።';
+      return 'እባክዎ ትክክለኛ የ Gmail አድራሻ ያስገቡ።';
     }
     if (errorCode === 'auth/network-request-failed') {
       return 'የኢንተርኔት ግንኙነት ችግር አጋጥሟል። እባክዎ የኢንተርኔትዎን ሁኔታ አረጋግጠው በድጋሚ ይሞክሩ።';
@@ -138,40 +165,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
     }
   };
 
-  // Handle Resending Email Verification Link
-  const handleResendVerification = async () => {
-    const targetEmail = unverifiedEmail || registeredEmail || email;
-    if (!targetEmail || !password) {
-      setError("የማረጋገጫ ሊንክ በድጋሚ ለመላክ እባክዎ የይለፍ ቃልዎን ያስገቡ።");
-      return;
-    }
-
-    setIsResendingEmail(true);
-    setError("");
-    setResendSuccessMessage("");
-
-    try {
-      const cred = await signInWithEmailAndPassword(auth, targetEmail.trim(), password);
-      await sendEmailVerification(cred.user);
-      await signOut(auth);
-      setResendSuccessMessage(`አዲስ የማረጋገጫ ሊንክ ወደ ${targetEmail} በተሳካ ሁኔታ ተልኳል!`);
-    } catch (err: any) {
-      console.error("Resend verification error:", err);
-      setError(getFriendlyErrorMessage(err));
-    } finally {
-      setIsResendingEmail(false);
-    }
-  };
-
-  // Check if profile is complete in Firestore
-  const isProfileDataComplete = (data: any) => {
-    if (!data) return false;
-    const hasPhone = typeof data.phone === 'string' && data.phone.trim().length >= 7;
-    const hasCity = typeof data.city === 'string' && data.city.trim().length > 0;
-    return hasPhone && hasCity;
-  };
-
-  // Google Authentication Flow
+  // Google Authentication Flow (Enforcing @gmail.com)
   const handleGoogleAuth = async () => {
     setError("");
     setLoading(true);
@@ -179,6 +173,15 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
+      const userEmail = (user.email || "").trim().toLowerCase();
+
+      // STRICT CHECK: Ensure Google Account is @gmail.com
+      if (!userEmail.endsWith('@gmail.com')) {
+        await signOut(auth);
+        setError('ይቅርታ! የፀሐይ ካምፓስ የሚቀበለው ትክክለኛ የ Gmail (@gmail.com) አድራሻዎችን ብቻ ነው። እባክዎ በ @gmail.com አካውንትዎ ይግቡ።');
+        setLoading(false);
+        return;
+      }
 
       const docRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'profile', 'info');
       const docSnap = await getDoc(docRef);
@@ -242,7 +245,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
       }
       const emailValidation = validateEmailForSignup(cleanEmail);
       if (!emailValidation.isValid) {
-        setError(emailValidation.errorMessage || 'ይቅርታ! እባክዎ ትክክለኛ እና ቋሚ የኢሜይል አድራሻ (እንደ Gmail, Yahoo) ይጠቀሙ።');
+        setError(emailValidation.errorMessage || 'ይቅርታ! የፀሐይ ካምፓስ የሚቀበለው ትክክለኛ የ Gmail (@gmail.com) አድራሻዎችን ብቻ ነው።');
         return;
       }
       if (!password || password.length < 6) {
@@ -260,13 +263,139 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
     setSignupStep(prev => Math.max(1, prev - 1));
   };
 
+  // 🌟 Handle OTP 6-Digit Changes, Paste, and Auto-Advance
+  const handleOtpDigitChange = (index: number, val: string) => {
+    setOtpError("");
+    const cleanVal = val.replace(/[^0-9]/g, '').slice(-1);
+    const newDigits = [...otpDigits];
+    newDigits[index] = cleanVal;
+    setOtpDigits(newDigits);
+
+    // Auto-focus next box
+    if (cleanVal && index < 5) {
+      otpInputRefs.current[index + 1]?.focus();
+    }
+
+    // Auto-submit if all 6 filled
+    const fullCode = newDigits.join('');
+    if (fullCode.length === 6 && !newDigits.includes('')) {
+      handleVerifyOtpCode(fullCode);
+    }
+  };
+
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Backspace' && !otpDigits[index] && index > 0) {
+      otpInputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleOtpPaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData('text').replace(/[^0-9]/g, '').slice(0, 6);
+    if (pasted) {
+      const newDigits = ['', '', '', '', '', ''];
+      for (let i = 0; i < pasted.length; i++) {
+        newDigits[i] = pasted[i];
+      }
+      setOtpDigits(newDigits);
+      if (pasted.length === 6) {
+        handleVerifyOtpCode(pasted);
+      } else {
+        otpInputRefs.current[pasted.length]?.focus();
+      }
+    }
+  };
+
+  // 🌟 Verify 6-Digit OTP Code
+  const handleVerifyOtpCode = async (codeToVerify?: string) => {
+    const targetEmail = registeredEmail || email;
+    const code = (codeToVerify || otpDigits.join('')).trim();
+
+    if (!code || code.length !== 6) {
+      setOtpError('እባክዎ 6ቱን አሃዞች በትክክል ያስገቡ።');
+      return;
+    }
+
+    setIsVerifyingOtp(true);
+    setOtpError("");
+
+    try {
+      // 1. Verify via client/server OTP service
+      const res = await verifyOtpForEmail(targetEmail, code);
+
+      if (!res.success) {
+        setOtpError(res.message);
+        setIsVerifyingOtp(false);
+        return;
+      }
+
+      // 2. Complete Profile & Activate User if pending
+      if (pendingSignupData) {
+        const { cred, userData, password: pass } = pendingSignupData;
+        try {
+          await setDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', cred.user.uid, 'profile', 'info'), {
+            ...userData,
+            emailVerified: true
+          }, { merge: true });
+        } catch (e) {}
+
+        // Ensure active Firebase session
+        try {
+          await signInWithEmailAndPassword(auth, targetEmail, pass);
+        } catch (e) {}
+      }
+
+      setResendSuccessMessage("🎉 ኢሜልዎ በተሳካ ሁኔታ ተረጋግጧል! እንኳን ደህና መጡ!");
+      setTimeout(() => {
+        setIsOtpMode(false);
+        onClose();
+      }, 900);
+    } catch (err: any) {
+      console.error("OTP verification error:", err);
+      setOtpError("ኮዱን ማረጋገጥ አልተቻለም። እባክዎ በድጋሚ ይሞክሩ።");
+    } finally {
+      setIsVerifyingOtp(false);
+    }
+  };
+
+  // 🌟 Resend 6-Digit OTP Code
+  const handleResendOtpCode = async () => {
+    const targetEmail = registeredEmail || email;
+    if (!targetEmail) return;
+
+    setIsResendingEmail(true);
+    setOtpError("");
+    setResendSuccessMessage("");
+
+    try {
+      const newCode = generateOtpCode();
+      await saveOtpForEmail(targetEmail, newCode);
+
+      // Background API Dispatch
+      fetch('/api/auth/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: targetEmail })
+      }).catch(e => console.warn("Background OTP send:", e));
+
+      setResendCountdown(60);
+      setOtpDigits(['', '', '', '', '', '']);
+      setResendSuccessMessage(`አዲስ የ 6-አሃዝ ማረጋገጫ ኮድ ወደ ${targetEmail} ተልኳል!`);
+    } catch (err: any) {
+      console.error("Resend OTP error:", err);
+      setOtpError("አዲስ ኮድ መላክ አልተቻለም። እባክዎ በድጋሚ ይሞክሩ።");
+    } finally {
+      setIsResendingEmail(false);
+    }
+  };
+
   // Submit Handler: Email/Password (Login & Multi-Step Signup) and Google Profile Completion
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setResendSuccessMessage("");
 
-    const cleanEmail = (email || pendingGoogleAuth?.email || "").trim();
+    const cleanEmail = (email || pendingGoogleAuth?.email || "").trim().toLowerCase();
 
     // 1. Google Profile Completion submission
     if (pendingGoogleAuth) {
@@ -326,7 +455,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
       return;
     }
 
-    // 2. Email & Password Sign Up (Step 3 Final Submission)
+    // 2. Email & Password Sign Up (Step 3 Final Submission -> 6-Digit OTP Flow)
     if (isSignupMode) {
       if (signupStep < 3) {
         handleNextStep();
@@ -341,7 +470,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
 
       const emailValidation = validateEmailForSignup(cleanEmail);
       if (!emailValidation.isValid) {
-        setError(emailValidation.errorMessage || 'ይቅርታ! እባክዎ ትክክለኛ እና ቋሚ የኢሜይል አድራሻ (እንደ Gmail, Yahoo) ይጠቀሙ።');
+        setError(emailValidation.errorMessage || 'ይቅርታ! የፀሐይ ካምፓስ የሚቀበለው ትክክለኛ የ Gmail (@gmail.com) አድራሻዎችን ብቻ ነው።');
         setSignupStep(2);
         return;
       }
@@ -403,25 +532,35 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
         // Save Firestore profile info
         await setDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', cred.user.uid, 'profile', 'info'), userData, { merge: true });
 
-        // Send Email Verification Link
-        await sendEmailVerification(cred.user);
+        // 🌟 Generate & Save 6-Digit OTP Code
+        const otpCode = generateOtpCode();
+        await saveOtpForEmail(cleanEmail, otpCode);
 
-        // PREVENT PREMATURE LOGIN: Immediately Sign Out the unverified user!
-        await signOut(auth);
+        // Send via background API
+        fetch('/api/auth/send-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: cleanEmail })
+        }).catch(e => console.warn("Background OTP send:", e));
+
+        // Additional link backup
         try {
-          localStorage.removeItem('tsehay_auth_user_cache');
-          localStorage.removeItem('tsehay_auth_is_admin');
+          await sendEmailVerification(cred.user);
         } catch (e) {}
 
+        // Store credentials for verification completion
+        setPendingSignupData({ cred, userData, password });
         setRegisteredEmail(cleanEmail);
-        setVerificationSent(true);
+        setIsOtpMode(true);
+        setResendCountdown(60);
+        setOtpDigits(['', '', '', '', '', '']);
         setError("");
       } catch (err: any) {
         console.error("Email signup error:", err);
         const code = err?.code || '';
         if (code === 'auth/email-already-in-use') {
           setIsSignupMode(false);
-          setError('ይህ ኢሜል አስቀድሞ ተመዝግቧል! እባክዎ የይለፍ ቃልዎን አስገብተው በቀጥታ ይግቡ።');
+          setError('ይህ የ Gmail አድራሻ አስቀድሞ ተመዝግቧል! እባክዎ የይለፍ ቃልዎን አስገብተው በቀጥታ ይግቡ።');
         } else {
           setError(getFriendlyErrorMessage(err));
         }
@@ -431,9 +570,9 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
       return;
     }
 
-    // 3. Email & Password Login (Strict Email Verification Check)
+    // 3. Email & Password Login
     if (!cleanEmail) {
-      setError('እባክዎ የኢሜል አድራሻዎን ያስገቡ።');
+      setError('እባክዎ የ Gmail አድራሻዎን ያስገቡ።');
       return;
     }
     if (!password) {
@@ -444,19 +583,6 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
     setLoading(true);
     try {
       const cred = await signInWithEmailAndPassword(auth, cleanEmail, password);
-
-      // SECURITY CHECK: Enforce Email Verification on Login
-      if (!cred.user.emailVerified) {
-        await signOut(auth);
-        try {
-          localStorage.removeItem('tsehay_auth_user_cache');
-          localStorage.removeItem('tsehay_auth_is_admin');
-        } catch (e) {}
-        
-        setUnverifiedEmail(cleanEmail);
-        setError('እባክዎ መጀመሪያ ወደ ኢሜልዎ የተላከውን የማረጋገጫ ሊንክ (Verification Link) ተጭነው አካውንትዎን ያረጋግጡ።');
-        return;
-      }
 
       // Record last login in background
       setDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', cred.user.uid, 'profile', 'info'), {
@@ -469,7 +595,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
       console.error("Email login error:", err);
       const code = err?.code || '';
       if (code === 'auth/user-not-found' || code === 'auth/invalid-credential' || code === 'auth/wrong-password') {
-        setError('የተሳሳተ ኢሜል ወይም የይለፍ ቃል አስገብተዋል። አዲስ ከሆኑ "አዲስ ይመዝገቡ" የሚለውን ይጫኑ።');
+        setError('የተሳሳተ የ Gmail አድራሻ ወይም የይለፍ ቃል አስገብተዋል። አዲስ ከሆኑ "አዲስ ይመዝገቡ" የሚለውን ይጫኑ።');
       } else {
         setError(getFriendlyErrorMessage(err));
       }
@@ -501,8 +627,8 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
           </div>
 
           <h2 className="font-black font-heading text-lg sm:text-xl">
-            {verificationSent
-              ? 'ኢሜልዎን ያረጋግጡ'
+            {isOtpMode
+              ? 'የ 6-አሃዝ ማረጋገጫ ኮድ'
               : pendingGoogleAuth 
               ? 'ምዝገባዎን ያጠናቅቁ' 
               : isResetMode 
@@ -513,15 +639,15 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
           </h2>
           
           <p className="text-blue-100 dark:text-gray-400 text-xs sm:text-sm mt-0.5">
-            {verificationSent
-              ? 'የማረጋገጫ ሊንክ ወደ ኢሜልዎ ተልኳል'
+            {isOtpMode
+              ? 'ወደ Gmailዎ የተላከውን 6-አሃዝ ኮድ ያስገቡ'
               : pendingGoogleAuth 
               ? 'በ Google ተገናኝተዋል! የቀሩትን መረጃዎች ሞልተው ምዝገባዎን ያጠናቅቁ' 
               : isResetMode 
-              ? 'የኢሜል አድራሻዎን ያስገቡ፤ ሊንክ እንልክልዎታለን' 
+              ? 'የ Gmail አድራሻዎን ያስገቡ፤ ሊንክ እንልክልዎታለን' 
               : isSignupMode 
-              ? (signupStep === 1 ? 'ደረጃ 1፡ ስለ እርስዎ ይንገሩን 👋' : signupStep === 2 ? 'ደረጃ 2፡ የኢሜል እና የይለፍ ቃል 🔐' : 'ደረጃ 3፡ የመጨረሻ ማጠቃለያ 🚀')
-              : 'በ Google ወይም በኢሜል እና የይለፍ ቃል ይግቡ'}
+              ? (signupStep === 1 ? 'ደረጃ 1፡ ስለ እርስዎ ይንገሩን 👋' : signupStep === 2 ? 'ደረጃ 2፡ የ Gmail እና የይለፍ ቃል 🔐' : 'ደረጃ 3፡ የመጨረሻ ማጠቃለያ 🚀')
+              : 'በ Google ወይም በ Gmail እና የይለፍ ቃል ይግቡ'}
           </p>
         </div>
         
@@ -529,48 +655,98 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
         <div className="p-5 sm:p-7 overflow-y-auto custom-modal-scroll flex-1">
           
           {/* =========================================================================
-              ✨ 1. VERIFICATION EMAIL SENT SUCCESS SCREEN
+              🌟 1. DEDICATED 6-DIGIT OTP VERIFICATION SCREEN
               ========================================================================= */}
-          {verificationSent ? (
-            <div className="text-center py-4 space-y-5 animate-in fade-in zoom-in-95 duration-300">
-              <div className="w-20 h-20 bg-amber-500/10 border-2 border-[#f9b03c] rounded-3xl mx-auto flex items-center justify-center text-4xl text-[#f9b03c] shadow-[0_0_30px_rgba(249,176,60,0.3)]">
-                <i className="fa-solid fa-envelope-circle-check"></i>
+          {isOtpMode ? (
+            <div className="text-center py-2 space-y-5 animate-in fade-in zoom-in-95 duration-300">
+              <div className="w-20 h-20 bg-amber-500/10 border-2 border-[#f9b03c] rounded-3xl mx-auto flex items-center justify-center text-4xl text-[#f9b03c] shadow-[0_0_30px_rgba(249,176,60,0.35)] animate-pulse">
+                <i className="fa-solid fa-shield-halved"></i>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <h3 className="text-xl font-black font-heading text-dark dark:text-white">
-                  የማረጋገጫ ሊንክ ወደ ኢሜልዎ ተልኳል!
+                  ኢሜልዎን ያረጋግጡ
                 </h3>
-                <p className="text-sm text-gray-600 dark:text-slate-300 max-w-sm mx-auto leading-relaxed">
-                  አካውንትዎ እንዲነቃ ወደ ኢሜል አድራሻዎ (<span className="text-[#f9b03c] font-black">{registeredEmail}</span>) የተላከውን የማረጋገጫ ሊንክ ይጫኑ።
+                <p className="text-xs sm:text-sm text-gray-600 dark:text-slate-300 max-w-sm mx-auto leading-relaxed">
+                  ወደ Gmail አድራሻዎ (<span className="text-[#f9b03c] font-black">{registeredEmail}</span>) የ 6-አሃዝ ማረጋገጫ ኮድ ተልኳል።
                 </p>
               </div>
 
-              <div className="bg-[#030509] border border-white/[0.08] rounded-2xl p-4 text-xs text-slate-300 text-left space-y-2">
-                <p className="flex items-start gap-2">
-                  <i className="fa-solid fa-circle-info text-[#f9b03c] mt-0.5"></i>
-                  <span>ኢሜሉ በ Inbox ውስጥ ካልታየዎት እባክዎ <strong>Spam / Junk</strong> ፎልደርዎን ይመልከቱ።</span>
-                </p>
-                <p className="flex items-start gap-2">
-                  <i className="fa-solid fa-shield-halved text-[#3268ba] mt-0.5"></i>
-                  <span>ሊንኩን ከተጫኑ በኋላ በቀጥታ ወደ አካውንትዎ መግባት ይችላሉ።</span>
-                </p>
+              {/* 6-Digit Box Inputs */}
+              <div className="py-2">
+                <div className="flex items-center justify-center gap-2 sm:gap-3" onPaste={handleOtpPaste}>
+                  {otpDigits.map((digit, idx) => (
+                    <input
+                      key={idx}
+                      ref={(el) => { otpInputRefs.current[idx] = el; }}
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={1}
+                      value={digit}
+                      onChange={(e) => handleOtpDigitChange(idx, e.target.value)}
+                      onKeyDown={(e) => handleOtpKeyDown(idx, e)}
+                      autoFocus={idx === 0}
+                      className={`w-11 h-13 sm:w-12 sm:h-14 text-center text-2xl font-black rounded-2xl bg-gray-50 dark:bg-white/[0.05] border-2 outline-none transition-all ${
+                        digit 
+                          ? 'border-[#f9b03c] text-slate-950 dark:text-white bg-amber-400/10 shadow-[0_0_15px_rgba(249,176,60,0.3)]' 
+                          : 'border-gray-200 dark:border-white/10 text-slate-950 dark:text-white focus:border-[#f9b03c]'
+                      }`}
+                    />
+                  ))}
+                </div>
+
+                {otpError && (
+                  <p className="text-red-500 text-xs font-bold mt-3 animate-in fade-in">
+                    <i className="fa-solid fa-circle-exclamation mr-1.5"></i>
+                    {otpError}
+                  </p>
+                )}
+
+                {resendSuccessMessage && (
+                  <p className="text-emerald-500 text-xs font-bold mt-3 animate-in fade-in">
+                    <i className="fa-solid fa-circle-check mr-1.5"></i>
+                    {resendSuccessMessage}
+                  </p>
+                )}
               </div>
 
-              <div className="pt-3 space-y-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setVerificationSent(false);
-                    setIsSignupMode(false);
-                    setEmail(registeredEmail);
-                    setError("");
-                  }}
-                  className="w-full bg-[#f9b03c] hover:bg-[#ffbe53] text-slate-950 font-black py-3.5 rounded-2xl transition shadow-[0_0_20px_rgba(249,176,60,0.35)] cursor-pointer active:scale-[0.99]"
-                >
-                  <i className="fa-solid fa-right-to-bracket mr-2"></i>
-                  ወደ መግቢያ ተመለስ (Go to Login)
-                </button>
+              {/* Verify Button */}
+              <button
+                type="button"
+                onClick={() => handleVerifyOtpCode()}
+                disabled={isVerifyingOtp || otpDigits.join('').length !== 6}
+                className="w-full btn-buy-now-vibe py-3.5 rounded-2xl text-base transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 active:scale-[0.98] shadow-[0_0_30px_rgba(249,176,60,0.4)]"
+              >
+                {isVerifyingOtp ? (
+                  <>
+                    <i className="fa-solid fa-spinner fa-spin"></i>
+                    <span>በማረጋገጥ ላይ...</span>
+                  </>
+                ) : (
+                  <>
+                    <i className="fa-solid fa-circle-check"></i>
+                    <span>አካውንቴን አረጋግጥ (Verify & Activate)</span>
+                  </>
+                )}
+              </button>
+
+              {/* Resend Code Button & Countdown */}
+              <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 pt-2 border-t border-gray-100 dark:border-white/[0.08]">
+                <span>ኮዱ አልደረሰዎትም?</span>
+                {resendCountdown > 0 ? (
+                  <span className="font-bold text-amber-600 dark:text-[#f9b03c]">
+                    በድጋሚ ለመላክ {resendCountdown}s ይጠብቁ
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleResendOtpCode}
+                    disabled={isResendingEmail}
+                    className="font-black text-amber-600 dark:text-[#f9b03c] hover:underline cursor-pointer"
+                  >
+                    {isResendingEmail ? 'በመላክ ላይ...' : 'ኮዱን በድጋሚ ላክ (Resend Code)'}
+                  </button>
+                )}
               </div>
             </div>
           ) : (
@@ -780,15 +956,26 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
                     {signupStep === 2 && (
                       <>
                         <div>
-                          <label className="block text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
-                            ኢሜል አድራሻ (Email) <span className="text-red-500">*</span>
-                          </label>
+                          <div className="flex items-center justify-between mb-1.5">
+                            <label className="block text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-300">
+                              የ Gmail አድራሻ (Gmail Only) <span className="text-red-500">*</span>
+                            </label>
+                            {!email.includes('@') && email.trim().length > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => handleEmailChange(`${email.trim()}@gmail.com`)}
+                                className="text-[11px] font-black text-amber-600 dark:text-[#f9b03c] bg-amber-500/10 hover:bg-amber-500/20 px-2 py-0.5 rounded-md transition cursor-pointer"
+                              >
+                                + @gmail.com
+                              </button>
+                            )}
+                          </div>
                           <input 
                             type="email" 
                             value={email} 
                             onChange={(e) => handleEmailChange(e.target.value)} 
                             required 
-                            placeholder="email@gmail.com" 
+                            placeholder="yourname@gmail.com" 
                             className={`w-full bg-gray-50 dark:bg-white/[0.04] border rounded-xl py-3 px-4 text-sm outline-none transition dark:text-white ${
                               emailError 
                                 ? 'border-red-500 focus:border-red-500 bg-red-500/5' 
@@ -1016,15 +1203,26 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
                     {/* Email Input for Login and Reset */}
                     {!pendingGoogleAuth && (
                       <div>
-                        <label className="block text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
-                          ኢሜል (Email) <span className="text-red-500">*</span>
-                        </label>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <label className="block text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-300">
+                            የ Gmail አድራሻ (Gmail) <span className="text-red-500">*</span>
+                          </label>
+                          {!email.includes('@') && email.trim().length > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => handleEmailChange(`${email.trim()}@gmail.com`)}
+                              className="text-[11px] font-black text-amber-600 dark:text-[#f9b03c] bg-amber-500/10 hover:bg-amber-500/20 px-2 py-0.5 rounded-md transition cursor-pointer"
+                            >
+                              + @gmail.com
+                            </button>
+                          )}
+                        </div>
                         <input 
                           type="email" 
                           value={email} 
                           onChange={(e) => handleEmailChange(e.target.value)} 
                           required 
-                          placeholder="email@gmail.com" 
+                          placeholder="yourname@gmail.com" 
                           className="w-full bg-gray-50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/[0.1] rounded-xl py-3 px-4 text-sm outline-none focus:border-[#f9b03c] dark:text-white transition" 
                         />
                       </div>
