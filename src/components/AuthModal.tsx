@@ -28,6 +28,18 @@ interface AuthModalProps {
 
 export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMode }: AuthModalProps) {
   const [isResetMode, setIsResetMode] = useState(false);
+  const [resetStep, setResetStep] = useState<'request' | 'otp' | 'new_password' | 'success'>('request');
+  const [resetOtpDigits, setResetOtpDigits] = useState<string[]>(['', '', '', '', '', '']);
+  const [resetOtpError, setResetOtpError] = useState("");
+  const [isVerifyingResetOtp, setIsVerifyingResetOtp] = useState(false);
+  const [resetResendCountdown, setResetResendCountdown] = useState<number>(60);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isSubmittingNewPassword, setIsSubmittingNewPassword] = useState(false);
+  const resetOtpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
   const [showPassword, setShowPassword] = useState(false);
   
   // 🌟 Multi-Step Onboarding State for Sign-Up
@@ -74,8 +86,15 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
       setError("");
       setEmailError("");
       setOtpError("");
+      setResetOtpError("");
       setResendSuccessMessage("");
       setIsResetMode(false);
+      setResetStep('request');
+      setResetOtpDigits(['', '', '', '', '', '']);
+      setNewPassword("");
+      setConfirmPassword("");
+      setShowNewPassword(false);
+      setShowConfirmPassword(false);
       setShowPassword(false);
       setVerificationSent(false);
       setIsOtpMode(false);
@@ -87,16 +106,17 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
     }
   }, [isOpen]);
 
-  // Resend Countdown Timer
+  // Resend Countdown Timer (for Signup OTP and Reset Password OTP)
   useEffect(() => {
     let timer: any;
-    if (isOtpMode && resendCountdown > 0) {
+    if ((isOtpMode || (isResetMode && resetStep === 'otp')) && (resendCountdown > 0 || resetResendCountdown > 0)) {
       timer = setInterval(() => {
-        setResendCountdown(prev => prev - 1);
+        setResendCountdown(prev => Math.max(0, prev - 1));
+        setResetResendCountdown(prev => Math.max(0, prev - 1));
       }, 1000);
     }
     return () => clearInterval(timer);
-  }, [isOtpMode, resendCountdown]);
+  }, [isOtpMode, isResetMode, resetStep, resendCountdown, resetResendCountdown]);
 
   // Real-time Gmail validation check
   const handleEmailChange = (val: string) => {
@@ -385,7 +405,203 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
       console.error("Resend OTP error:", err);
       setOtpError("አዲስ ኮድ መላክ አልተቻለም። እባክዎ በድጋሚ ይሞክሩ።");
     } finally {
+  // 🌟 Handle Reset OTP 6-Digit Changes & Auto-Advance
+  const handleResetOtpDigitChange = (index: number, val: string) => {
+    setResetOtpError("");
+    const cleanVal = val.replace(/[^0-9]/g, '').slice(-1);
+    const newDigits = [...resetOtpDigits];
+    newDigits[index] = cleanVal;
+    setResetOtpDigits(newDigits);
+
+    if (cleanVal && index < 5) {
+      resetOtpInputRefs.current[index + 1]?.focus();
+    }
+
+    const fullCode = newDigits.join('');
+    if (fullCode.length === 6 && !newDigits.includes('')) {
+      handleVerifyResetOtpCode(fullCode);
+    }
+  };
+
+  const handleResetOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Backspace' && !resetOtpDigits[index] && index > 0) {
+      resetOtpInputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleResetOtpPaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData('text').replace(/[^0-9]/g, '').slice(0, 6);
+    if (pasted) {
+      const newDigits = ['', '', '', '', '', ''];
+      for (let i = 0; i < pasted.length; i++) {
+        newDigits[i] = pasted[i];
+      }
+      setResetOtpDigits(newDigits);
+      if (pasted.length === 6) {
+        handleVerifyResetOtpCode(pasted);
+      } else {
+        resetOtpInputRefs.current[pasted.length]?.focus();
+      }
+    }
+  };
+
+  // 🌟 Verify Reset 6-Digit OTP Code
+  const handleVerifyResetOtpCode = async (codeToVerify?: string) => {
+    const targetEmail = registeredEmail || email;
+    const code = (codeToVerify || resetOtpDigits.join('')).trim();
+
+    if (!code || code.length !== 6) {
+      setResetOtpError('እባክዎ 6ቱን አሃዞች በትክክል ያስገቡ።');
+      return;
+    }
+
+    setIsVerifyingResetOtp(true);
+    setResetOtpError("");
+
+    try {
+      const res = await fetch('/api/auth/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: targetEmail, code })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setResetStep('new_password');
+        setResetOtpError("");
+      } else {
+        setResetOtpError(data.error || 'የተሳሳተ የማረጋገጫ ኮድ ነው።');
+      }
+    } catch (err: any) {
+      setResetOtpError('ኮዱን ማረጋገጥ አልተቻለም። እባክዎ በድጋሚ ይሞክሩ።');
+    } finally {
+      setIsVerifyingResetOtp(false);
+    }
+  };
+
+  // 🌟 Resend Reset 6-Digit OTP Code
+  const handleResendResetOtpCode = async () => {
+    const targetEmail = registeredEmail || email;
+    if (!targetEmail) return;
+
+    setIsResendingEmail(true);
+    setResetOtpError("");
+    setResendSuccessMessage("");
+
+    try {
+      const newCode = generateOtpCode();
+      await saveOtpForEmail(targetEmail, newCode);
+
+      fetch('/api/auth/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: targetEmail })
+      }).catch(e => console.warn("Background OTP send:", e));
+
+      setResetResendCountdown(60);
+      setResetOtpDigits(['', '', '', '', '', '']);
+      setResendSuccessMessage(`አዲስ የ 6-አሃዝ ማረጋገጫ ኮድ ወደ ${targetEmail} ተልኳል!`);
+    } catch (err: any) {
+      setResetOtpError("አዲስ ኮድ መላክ አልተቻለም። እባክዎ በድጋሚ ይሞክሩ።");
+    } finally {
       setIsResendingEmail(false);
+    }
+  };
+
+  // 🌟 Send Reset Code (Step 1 -> Step 2)
+  const handleSendResetCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail) {
+      setError('እባክዎ የ Gmail አድራሻዎን ያስገቡ።');
+      return;
+    }
+    if (!cleanEmail.endsWith('@gmail.com') || cleanEmail.split('@')[0].length < 3) {
+      setError('ይቅርታ! የፀሐይ ካምፓስ የሚቀበለው ትክክለኛ የ Gmail (@gmail.com) አድራሻዎችን ብቻ ነው።');
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+    setResendSuccessMessage("");
+
+    try {
+      const code = generateOtpCode();
+      await saveOtpForEmail(cleanEmail, code);
+
+      await fetch('/api/auth/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: cleanEmail })
+      });
+
+      // Firebase password reset email backup
+      sendPasswordResetEmail(auth, cleanEmail).catch(() => {});
+
+      setRegisteredEmail(cleanEmail);
+      setResetStep('otp');
+      setResetResendCountdown(60);
+      setResetOtpDigits(['', '', '', '', '', '']);
+    } catch (err: any) {
+      console.error("Error sending reset code:", err);
+      setError('የማረጋገጫ ኮድ መላክ አልተቻለም። እባክዎ በድጋሚ ይሞክሩ።');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 🌟 Save New Password (Step 3 -> Step 4 / Complete)
+  const handleSaveNewPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanPass = newPassword.trim();
+    const cleanConfirm = confirmPassword.trim();
+    const targetEmail = (registeredEmail || email).trim().toLowerCase();
+
+    if (!cleanPass || cleanPass.length < 6) {
+      setError('አዲሱ የይለፍ ቃል ቢያንስ 6 ፊደላት ወይም ቁጥሮች መሆን አለበት።');
+      return;
+    }
+    if (cleanPass !== cleanConfirm) {
+      setError('ያስገቧቸው የይለፍ ቃሎች አይመሳሰሉም (Passwords do not match)።');
+      return;
+    }
+
+    setIsSubmittingNewPassword(true);
+    setError("");
+
+    try {
+      const res = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: targetEmail,
+          code: resetOtpDigits.join(''),
+          newPassword: cleanPass
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setError(data.error || 'የይለፍ ቃል መቀየር አልተቻለም።');
+        setIsSubmittingNewPassword(false);
+        return;
+      }
+
+      // Auto sign-in with newly set password
+      try {
+        await signInWithEmailAndPassword(auth, targetEmail, cleanPass);
+      } catch (e) {}
+
+      setResetStep('success');
+      setTimeout(() => {
+        setIsResetMode(false);
+        onClose();
+      }, 1600);
+    } catch (err: any) {
+      console.error("Save new password error:", err);
+      setError('የይለፍ ቃል መቀየር አልተቻለም። እባክዎ በድጋሚ ይሞክሩ።');
+    } finally {
+      setIsSubmittingNewPassword(false);
     }
   };
 
@@ -394,6 +610,15 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
     e.preventDefault();
     setError("");
     setResendSuccessMessage("");
+
+    if (isResetMode) {
+      if (resetStep === 'request') {
+        handleSendResetCode(e);
+      } else if (resetStep === 'new_password') {
+        handleSaveNewPassword(e);
+      }
+      return;
+    }
 
     const cleanEmail = (email || pendingGoogleAuth?.email || "").trim().toLowerCase();
 
@@ -629,10 +854,10 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
           <h2 className="font-black font-heading text-lg sm:text-xl">
             {isOtpMode
               ? 'የ 6-አሃዝ ማረጋገጫ ኮድ'
+              : isResetMode
+              ? (resetStep === 'request' ? 'የይለፍ ቃል መቀየሪያ' : resetStep === 'otp' ? 'የ 6-አሃዝ ማረጋገጫ ኮድ' : resetStep === 'new_password' ? 'አዲስ የይለፍ ቃል ይፍጠሩ' : 'ተጠናቋል! 🎉')
               : pendingGoogleAuth 
               ? 'ምዝገባዎን ያጠናቅቁ' 
-              : isResetMode 
-              ? 'የይለፍ ቃል መቀየሪያ' 
               : isSignupMode 
               ? `ወደ ካምፓስ ይቀላቀሉ (${signupStep}/3)` 
               : 'ወደ ካምፓስ ይግቡ'}
@@ -641,10 +866,10 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
           <p className="text-blue-100 dark:text-gray-400 text-xs sm:text-sm mt-0.5">
             {isOtpMode
               ? 'ወደ Gmailዎ የተላከውን 6-አሃዝ ኮድ ያስገቡ'
+              : isResetMode
+              ? (resetStep === 'request' ? 'የ Gmail አድራሻዎን ያስገቡ፤ 6-አሃዝ የማረጋገጫ ኮድ እንልክልዎታለን' : resetStep === 'otp' ? `ወደ ${registeredEmail || email} የተላከውን 6-አሃዝ ኮድ ያስገቡ` : resetStep === 'new_password' ? 'እባክዎ አዲሱን የይለፍ ቃልዎን አስገብተው ያረጋግጡ' : 'የይለፍ ቃልዎ በተሳካ ሁኔታ ተቀይሯል!')
               : pendingGoogleAuth 
               ? 'በ Google ተገናኝተዋል! የቀሩትን መረጃዎች ሞልተው ምዝገባዎን ያጠናቅቁ' 
-              : isResetMode 
-              ? 'የ Gmail አድራሻዎን ያስገቡ፤ ሊንክ እንልክልዎታለን' 
               : isSignupMode 
               ? (signupStep === 1 ? 'ደረጃ 1፡ ስለ እርስዎ ይንገሩን 👋' : signupStep === 2 ? 'ደረጃ 2፡ የ Gmail እና የይለፍ ቃል 🔐' : 'ደረጃ 3፡ የመጨረሻ ማጠቃለያ 🚀')
               : 'በ Google ወይም በ Gmail እና የይለፍ ቃል ይግቡ'}
@@ -655,9 +880,291 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
         <div className="p-5 sm:p-7 overflow-y-auto custom-modal-scroll flex-1">
           
           {/* =========================================================================
-              🌟 1. DEDICATED 6-DIGIT OTP VERIFICATION SCREEN
+              🌟 0. DEDICATED PASSWORD RESET FLOW (Request -> OTP -> New Password -> Success)
               ========================================================================= */}
-          {isOtpMode ? (
+          {isResetMode ? (
+            <div className="space-y-5 animate-in fade-in zoom-in-95 duration-300 py-1">
+              
+              {/* Step 1: Request OTP Code */}
+              {resetStep === 'request' && (
+                <form onSubmit={handleSendResetCode} className="space-y-4">
+                  <div className="text-center space-y-2 mb-2">
+                    <div className="w-16 h-16 bg-amber-500/10 border-2 border-[#f9b03c] rounded-2xl mx-auto flex items-center justify-center text-3xl text-[#f9b03c] shadow-[0_0_25px_rgba(249,176,60,0.3)]">
+                      <i className="fa-solid fa-key"></i>
+                    </div>
+                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">
+                      የይለፍ ቃልዎን ለመቀየር የተመዘገቡበትን የ Gmail አድራሻ ያስገቡ።
+                    </p>
+                  </div>
+
+                  {error && (
+                    <div className="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 text-xs sm:text-sm p-3.5 rounded-2xl font-bold text-center animate-in fade-in">
+                      <i className="fa-solid fa-circle-exclamation mr-2"></i>
+                      {error}
+                    </div>
+                  )}
+
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="block text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-300">
+                        የ Gmail አድራሻ (Gmail) <span className="text-red-500">*</span>
+                      </label>
+                      {!email.includes('@') && email.trim().length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => handleEmailChange(`${email.trim()}@gmail.com`)}
+                          className="text-[11px] font-black text-amber-600 dark:text-[#f9b03c] bg-amber-500/10 hover:bg-amber-500/20 px-2 py-0.5 rounded-md transition cursor-pointer"
+                        >
+                          + @gmail.com
+                        </button>
+                      )}
+                    </div>
+                    <input 
+                      type="email" 
+                      value={email} 
+                      onChange={(e) => handleEmailChange(e.target.value)} 
+                      required 
+                      autoFocus
+                      placeholder="yourname@gmail.com" 
+                      className="w-full bg-gray-50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/[0.1] rounded-xl py-3 px-4 text-sm outline-none focus:border-[#f9b03c] dark:text-white transition" 
+                    />
+                  </div>
+
+                  <button 
+                    type="submit" 
+                    disabled={loading || !email.trim()} 
+                    className="w-full bg-[#f9b03c] hover:bg-[#ffbe53] text-black font-black py-3.5 rounded-2xl transition shadow-[0_0_20px_rgba(249,176,60,0.35)] mt-4 flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99] disabled:opacity-50"
+                  >
+                    {loading ? (
+                      <>
+                        <i className="fa-solid fa-spinner fa-spin"></i>
+                        <span>ኮዱን በመላክ ላይ...</span>
+                      </>
+                    ) : (
+                      <>
+                        <i className="fa-solid fa-paper-plane"></i>
+                        <span>የማረጋገጫ ኮድ ላክ (Send Code)</span>
+                      </>
+                    )}
+                  </button>
+
+                  <button 
+                    type="button" 
+                    onClick={() => { setIsResetMode(false); setError(""); }} 
+                    className="w-full text-center text-xs font-bold text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white transition pt-2 cursor-pointer"
+                  >
+                    <i className="fa-solid fa-arrow-left mr-1"></i> ወደ መግቢያ ተመለስ (Back to Login)
+                  </button>
+                </form>
+              )}
+
+              {/* Step 2: Enter 6-Digit OTP Code */}
+              {resetStep === 'otp' && (
+                <div className="text-center py-2 space-y-5">
+                  <div className="w-18 h-18 bg-amber-500/10 border-2 border-[#f9b03c] rounded-3xl mx-auto flex items-center justify-center text-3xl text-[#f9b03c] shadow-[0_0_30px_rgba(249,176,60,0.35)] animate-pulse">
+                    <i className="fa-solid fa-shield-halved"></i>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <h3 className="text-lg font-black font-heading text-dark dark:text-white">
+                      የማረጋገጫ ኮድ ያስገቡ
+                    </h3>
+                    <p className="text-xs text-gray-600 dark:text-slate-300 max-w-sm mx-auto leading-relaxed">
+                      ወደ Gmail አድራሻዎ (<span className="text-[#f9b03c] font-black">{registeredEmail || email}</span>) የተላከውን 6-አሃዝ ኮድ ያስገቡ።
+                    </p>
+                  </div>
+
+                  {/* 6-Digit Box Inputs */}
+                  <div className="py-2">
+                    <div className="flex items-center justify-center gap-2 sm:gap-3" onPaste={handleResetOtpPaste}>
+                      {resetOtpDigits.map((digit, idx) => (
+                        <input
+                          key={idx}
+                          ref={(el) => { resetOtpInputRefs.current[idx] = el; }}
+                          type="text"
+                          inputMode="numeric"
+                          maxLength={1}
+                          value={digit}
+                          onChange={(e) => handleResetOtpDigitChange(idx, e.target.value)}
+                          onKeyDown={(e) => handleResetOtpKeyDown(idx, e)}
+                          autoFocus={idx === 0}
+                          className={`w-11 h-13 sm:w-12 sm:h-14 text-center text-2xl font-black rounded-2xl bg-gray-50 dark:bg-white/[0.05] border-2 outline-none transition-all ${
+                            digit 
+                              ? 'border-[#f9b03c] text-slate-950 dark:text-white bg-amber-400/10 shadow-[0_0_15px_rgba(249,176,60,0.3)]' 
+                              : 'border-gray-200 dark:border-white/10 text-slate-950 dark:text-white focus:border-[#f9b03c]'
+                          }`}
+                        />
+                      ))}
+                    </div>
+
+                    {resetOtpError && (
+                      <p className="text-red-500 text-xs font-bold mt-3 animate-in fade-in">
+                        <i className="fa-solid fa-circle-exclamation mr-1.5"></i>
+                        {resetOtpError}
+                      </p>
+                    )}
+
+                    {resendSuccessMessage && (
+                      <p className="text-emerald-500 text-xs font-bold mt-3 animate-in fade-in">
+                        <i className="fa-solid fa-circle-check mr-1.5"></i>
+                        {resendSuccessMessage}
+                      </p>
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handleVerifyResetOtpCode()}
+                    disabled={isVerifyingResetOtp || resetOtpDigits.join('').length !== 6}
+                    className="w-full btn-buy-now-vibe py-3.5 rounded-2xl text-sm sm:text-base transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 active:scale-[0.98] shadow-[0_0_30px_rgba(249,176,60,0.4)]"
+                  >
+                    {isVerifyingResetOtp ? (
+                      <>
+                        <i className="fa-solid fa-spinner fa-spin"></i>
+                        <span>በማረጋገጥ ላይ...</span>
+                      </>
+                    ) : (
+                      <>
+                        <i className="fa-solid fa-circle-check"></i>
+                        <span>ኮዱን አረጋግጥ (Verify Code)</span>
+                      </>
+                    )}
+                  </button>
+
+                  <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 pt-2 border-t border-gray-100 dark:border-white/[0.08]">
+                    <button
+                      type="button"
+                      onClick={() => setResetStep('request')}
+                      className="text-gray-400 hover:text-gray-200 cursor-pointer"
+                    >
+                      ← ኢሜል ቀይር
+                    </button>
+                    {resetResendCountdown > 0 ? (
+                      <span className="font-bold text-amber-600 dark:text-[#f9b03c]">
+                        በድጋሚ ለመላክ {resetResendCountdown}s ይጠብቁ
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleResendResetOtpCode}
+                        disabled={isResendingEmail}
+                        className="font-black text-amber-600 dark:text-[#f9b03c] hover:underline cursor-pointer"
+                      >
+                        {isResendingEmail ? 'በመላክ ላይ...' : 'ኮዱን በድጋሚ ላክ'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Step 3: Enter New Password */}
+              {resetStep === 'new_password' && (
+                <form onSubmit={handleSaveNewPassword} className="space-y-4">
+                  <div className="text-center space-y-1 mb-3">
+                    <div className="w-16 h-16 bg-emerald-500/10 border-2 border-emerald-500 rounded-2xl mx-auto flex items-center justify-center text-3xl text-emerald-500 shadow-[0_0_25px_rgba(16,185,129,0.3)]">
+                      <i className="fa-solid fa-lock-open"></i>
+                    </div>
+                    <h3 className="text-base font-black text-dark dark:text-white">
+                      አዲስ የይለፍ ቃል ያስገቡ
+                    </h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      የማረጋገጫ ኮዱ ተረጋግጧል! አሁን አዲስ የይለፍ ቃል ይፍጠሩ።
+                    </p>
+                  </div>
+
+                  {error && (
+                    <div className="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 text-xs sm:text-sm p-3.5 rounded-2xl font-bold text-center animate-in fade-in">
+                      <i className="fa-solid fa-circle-exclamation mr-2"></i>
+                      {error}
+                    </div>
+                  )}
+
+                  {/* New Password */}
+                  <div>
+                    <label className="block text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
+                      አዲስ የይለፍ ቃል (New Password) <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <input 
+                        type={showNewPassword ? "text" : "password"} 
+                        value={newPassword} 
+                        onChange={(e) => setNewPassword(e.target.value)} 
+                        required 
+                        autoFocus
+                        placeholder="ቢያንስ 6 ፊደላት ወይም ቁጥሮች" 
+                        className="w-full bg-gray-50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/[0.1] rounded-xl py-3 pl-4 pr-11 text-sm outline-none focus:border-[#f9b03c] dark:text-white transition" 
+                      />
+                      <button 
+                        type="button" 
+                        onClick={() => setShowNewPassword(!showNewPassword)} 
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition text-sm p-1 cursor-pointer"
+                      >
+                        <i className={`fa-solid ${showNewPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Confirm Password */}
+                  <div>
+                    <label className="block text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
+                      የይለፍ ቃል ማረጋገጫ (Confirm Password) <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <input 
+                        type={showConfirmPassword ? "text" : "password"} 
+                        value={confirmPassword} 
+                        onChange={(e) => setConfirmPassword(e.target.value)} 
+                        required 
+                        placeholder="የይለፍ ቃሉን በድጋሚ ያስገቡ" 
+                        className="w-full bg-gray-50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/[0.1] rounded-xl py-3 pl-4 pr-11 text-sm outline-none focus:border-[#f9b03c] dark:text-white transition" 
+                      />
+                      <button 
+                        type="button" 
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)} 
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition text-sm p-1 cursor-pointer"
+                      >
+                        <i className={`fa-solid ${showConfirmPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                      </button>
+                    </div>
+                  </div>
+
+                  <button 
+                    type="submit" 
+                    disabled={isSubmittingNewPassword || !newPassword || !confirmPassword} 
+                    className="w-full bg-[#f9b03c] hover:bg-[#ffbe53] text-black font-black py-3.5 rounded-2xl transition shadow-[0_0_20px_rgba(249,176,60,0.35)] mt-4 flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99] disabled:opacity-50"
+                  >
+                    {isSubmittingNewPassword ? (
+                      <>
+                        <i className="fa-solid fa-spinner fa-spin"></i>
+                        <span>የይለፍ ቃል በመቀየር ላይ...</span>
+                      </>
+                    ) : (
+                      <>
+                        <i className="fa-solid fa-check"></i>
+                        <span>የይለፍ ቃል ቀይር እና ግባ (Save & Login)</span>
+                      </>
+                    )}
+                  </button>
+                </form>
+              )}
+
+              {/* Step 4: Success */}
+              {resetStep === 'success' && (
+                <div className="text-center py-6 space-y-4">
+                  <div className="w-20 h-20 bg-emerald-500/10 border-2 border-emerald-500 rounded-3xl mx-auto flex items-center justify-center text-4xl text-emerald-500 shadow-[0_0_30px_rgba(16,185,129,0.4)] animate-bounce">
+                    <i className="fa-solid fa-check"></i>
+                  </div>
+                  <h3 className="text-xl font-black text-dark dark:text-white">
+                    የይለፍ ቃልዎ ተቀይሯል!
+                  </h3>
+                  <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-300">
+                    በአዲሱ የይለፍ ቃልዎ ወደ ካምፓስ ገብተዋል። ወደ ገጽዎ እየተመለሱ ነው...
+                  </p>
+                </div>
+              )}
+
+            </div>
+          ) : isOtpMode ? (
             <div className="text-center py-2 space-y-5 animate-in fade-in zoom-in-95 duration-300">
               <div className="w-20 h-20 bg-amber-500/10 border-2 border-[#f9b03c] rounded-3xl mx-auto flex items-center justify-center text-4xl text-[#f9b03c] shadow-[0_0_30px_rgba(249,176,60,0.35)] animate-pulse">
                 <i className="fa-solid fa-shield-halved"></i>
@@ -1255,11 +1762,16 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
                     )}
                     
                     {/* Forgot Password Link in Login Mode */}
-                    {!pendingGoogleAuth && !isResetMode && (
+                    {!pendingGoogleAuth && (
                       <div className="flex justify-end pt-0.5">
                         <button 
                           type="button" 
-                          onClick={() => setIsResetMode(true)} 
+                          onClick={() => {
+                            setIsResetMode(true);
+                            setResetStep('request');
+                            setError("");
+                            setEmailError("");
+                          }} 
                           className="text-xs font-bold text-[#f9b03c] hover:underline cursor-pointer"
                         >
                           የይለፍ ቃል ረሱ? (Forgot Password?)
@@ -1267,7 +1779,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
                       </div>
                     )}
 
-                    {/* Submit Button for Login / Google Completion / Reset */}
+                    {/* Submit Button for Login / Google Completion */}
                     <button 
                       type="submit" 
                       disabled={loading} 
@@ -1283,8 +1795,6 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
                           <i className="fa-solid fa-circle-check"></i>
                           <span>ምዝገባውን አጠናቅቅ (Complete Registration)</span>
                         </>
-                      ) : isResetMode ? (
-                        'ሊንክ ላክ (Send Link)'
                       ) : (
                         <>
                           <i className="fa-solid fa-right-to-bracket"></i>
@@ -1292,23 +1802,12 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
                         </>
                       )}
                     </button>
-
-                    {/* Back to Login from Reset Mode */}
-                    {isResetMode && (
-                      <button 
-                        type="button" 
-                        onClick={() => setIsResetMode(false)} 
-                        className="w-full text-center text-xs font-bold text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white transition pt-2 cursor-pointer"
-                      >
-                        <i className="fa-solid fa-arrow-left mr-1"></i> ወደ መግቢያ ተመለስ (Back to Login)
-                      </button>
-                    )}
                   </>
                 )}
               </form>
 
               {/* Bottom Switch between Login & Signup */}
-              {!isResetMode && !pendingGoogleAuth && (
+              {!pendingGoogleAuth && (
                 <div className="text-center mt-5 pt-4 border-t border-gray-100 dark:border-white/[0.08] text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                   {isSignupMode ? (
                     <p>
