@@ -7,6 +7,7 @@ import { doc, getDoc, collection, getDocs, query, orderBy, setDoc, serverTimesta
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter, useParams } from 'next/navigation';
+import Link from 'next/link';
 import PaymentModal from '@/components/PaymentModal';
 import RequireAuthModal from '@/components/RequireAuthModal';
 import Footer from '@/components/Footer';
@@ -55,13 +56,14 @@ export default function CoursePreviewPage() {
       const direct = list.find((c: any) => c.id === searchId);
       if (direct) return direct;
 
-      const lower = searchId.toLowerCase();
+      const lower = (searchId || '').toLowerCase();
 
-      // 2. Shein / Import match
-      if (lower.includes('shein') || lower.includes('import') || lower.includes('ኢምፖርት')) {
+      // 2. YouTube & Timestamp ID match (e.g. course_1784884212400)
+      if (lower.includes('youtube') || lower.includes('ዩቲዩብ') || lower.includes('video') || lower.startsWith('course_')) {
         const match = list.find((c: any) => 
-          (c.title && /shein|ኢምፖርት|import|sheen/i.test(c.title)) ||
-          (c.category && /shein|import|ecommerce/i.test(c.category))
+          (c.id && (c.id === searchId || c.id.startsWith('course_'))) ||
+          (c.title && /youtube|ዩቲዩብ|ቪዲዮ/i.test(c.title)) ||
+          (c.category && /youtube|ዩቲዩብ/i.test(c.category))
         );
         if (match) return match;
       }
@@ -75,11 +77,11 @@ export default function CoursePreviewPage() {
         if (match) return match;
       }
 
-      // 4. YouTube match
-      if (lower.includes('youtube') || lower.includes('ዩቲዩብ') || lower.includes('video')) {
+      // 4. Shein / Import match
+      if (lower.includes('shein') || lower.includes('import') || lower.includes('ኢምፖርት')) {
         const match = list.find((c: any) => 
-          (c.title && /youtube|ዩቲዩብ|ቪዲዮ/i.test(c.title)) ||
-          (c.category && /youtube|ዩቲዩብ/i.test(c.category))
+          (c.title && /shein|ኢምፖርት|import|sheen/i.test(c.title)) ||
+          (c.category && /shein|import|ecommerce/i.test(c.category))
         );
         if (match) return match;
       }
@@ -88,7 +90,8 @@ export default function CoursePreviewPage() {
       const titleMatch = list.find((c: any) => c.title && (c.title.toLowerCase().includes(lower) || lower.includes(c.title.toLowerCase())));
       if (titleMatch) return titleMatch;
 
-      return null;
+      // 6. Safe fallback to first active course
+      return list[0] || null;
     };
 
     // Load from cache immediately on client mount
@@ -349,25 +352,58 @@ export default function CoursePreviewPage() {
   const totalLessons = (modules || []).reduce((total, mod) => total + (mod?.lessons?.length || 0), 0);
   const isFreeCourse = course?.isFree || course?.price === 'Free' || course?.price === '0' || course?.price === 0;
 
-  if (loading) {
+  // 1. 🌟 Premium Shimmer Skeleton Loading State (Zero Outdated Flash)
+  if (loading && !course) {
     return (
-      <div className="min-h-screen pt-32 pb-20 flex justify-center items-center bg-gray-50 dark:bg-dark">
-        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+      <div className="min-h-screen bg-[#030509] text-white pt-28 pb-16 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row gap-10">
+          {/* Left Column Skeleton */}
+          <div className="w-full md:w-2/3 space-y-6 animate-pulse">
+            <div className="w-32 h-4 bg-slate-800 rounded-md"></div>
+            <div className="w-full h-12 bg-slate-800/80 rounded-xl"></div>
+            <div className="w-3/4 h-12 bg-slate-800/60 rounded-xl"></div>
+            <div className="space-y-2 pt-2">
+              <div className="w-full h-4 bg-slate-800/50 rounded"></div>
+              <div className="w-5/6 h-4 bg-slate-800/40 rounded"></div>
+            </div>
+            <div className="flex gap-4 pt-4">
+              <div className="w-24 h-6 bg-slate-800 rounded-full"></div>
+              <div className="w-36 h-6 bg-slate-800 rounded-full"></div>
+            </div>
+            <div className="w-full h-64 bg-slate-900/60 rounded-2xl border border-white/5 mt-10"></div>
+          </div>
+          {/* Right Column (Sidebar Card) Skeleton */}
+          <div className="w-full md:w-1/3 animate-pulse">
+            <div className="bg-[#050811] rounded-3xl p-6 border border-white/10 space-y-6 shadow-2xl">
+              <div className="aspect-video w-full bg-slate-800/70 rounded-2xl flex items-center justify-center">
+                <i className="fa-solid fa-play text-4xl text-slate-700"></i>
+              </div>
+              <div className="w-28 h-8 bg-slate-800 rounded-lg"></div>
+              <div className="w-full h-14 bg-amber-400/20 rounded-2xl"></div>
+              <div className="space-y-3 pt-4 border-t border-white/10">
+                <div className="w-full h-4 bg-slate-800/60 rounded"></div>
+                <div className="w-4/5 h-4 bg-slate-800/50 rounded"></div>
+                <div className="w-3/4 h-4 bg-slate-800/40 rounded"></div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
 
-  if (!course) {
+  // 2. Course Not Found Guard
+  if (!loading && !course) {
     return (
-      <div className="min-h-screen pt-32 pb-20 flex justify-center items-center bg-gray-50 dark:bg-dark text-center px-4">
-        <div className="max-w-md bg-white dark:bg-[#1c1d1f] p-8 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800">
-          <i className="fa-solid fa-triangle-exclamation text-6xl text-amber-500 mb-4"></i>
-          <h2 className="text-2xl font-black text-gray-800 dark:text-white mb-2">ኮርሱ አልተገኘም (Course Not Found)</h2>
-          <p className="text-gray-500 text-sm mb-6">የፈለጉት ኮርስ አልተገኘም ወይም ተወግዷል። እባክዎ ወደ ሁሉም ኮርሶች ይመለሱ።</p>
-          <button onClick={() => router.push('/courses')} className="bg-primary hover:bg-yellow-400 text-dark font-black px-6 py-3 rounded-xl transition">
-            ወደ ሁሉም ኮርሶች ይመለሱ
-          </button>
+      <div className="min-h-screen bg-[#030509] text-white flex flex-col items-center justify-center py-24 px-4 text-center">
+        <div className="w-20 h-20 bg-amber-500/10 border-2 border-[#f9b03c] rounded-3xl flex items-center justify-center text-4xl text-[#f9b03c] mb-6 shadow-[0_0_30px_rgba(249,176,60,0.3)]">
+          <i className="fa-solid fa-graduation-cap"></i>
         </div>
+        <h2 className="text-2xl sm:text-3xl font-black mb-3">ኮርሱ አልተገኘም (Course Not Found)</h2>
+        <p className="text-gray-400 max-w-md mb-8">የፈለጉት ኮርስ ሊሰረዝ ወይም ወደ ሌላ አድራሻ ተቀይሮ ሊሆን ይችላል።</p>
+        <Link href="/courses" className="btn-buy-now-vibe px-8 py-3.5 rounded-2xl font-black text-sm">
+          ሁሉንም ኮርሶች ይመልከቱ
+        </Link>
       </div>
     );
   }
@@ -470,61 +506,6 @@ export default function CoursePreviewPage() {
       </div>
     );
   };
-
-  // 🌟 Premium Shimmer Skeleton Loading State (Zero Outdated Flash)
-  if (loading && !course) {
-    return (
-      <div className="min-h-screen bg-[#030509] text-white pt-28 pb-16 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row gap-10">
-          {/* Left Column Skeleton */}
-          <div className="w-full md:w-2/3 space-y-6 animate-pulse">
-            <div className="w-32 h-4 bg-slate-800 rounded-md"></div>
-            <div className="w-full h-12 bg-slate-800/80 rounded-xl"></div>
-            <div className="w-3/4 h-12 bg-slate-800/60 rounded-xl"></div>
-            <div className="space-y-2 pt-2">
-              <div className="w-full h-4 bg-slate-800/50 rounded"></div>
-              <div className="w-5/6 h-4 bg-slate-800/40 rounded"></div>
-            </div>
-            <div className="flex gap-4 pt-4">
-              <div className="w-24 h-6 bg-slate-800 rounded-full"></div>
-              <div className="w-36 h-6 bg-slate-800 rounded-full"></div>
-            </div>
-            <div className="w-full h-64 bg-slate-900/60 rounded-2xl border border-white/5 mt-10"></div>
-          </div>
-          {/* Right Column (Sidebar Card) Skeleton */}
-          <div className="w-full md:w-1/3 animate-pulse">
-            <div className="bg-[#050811] rounded-3xl p-6 border border-white/10 space-y-6 shadow-2xl">
-              <div className="aspect-video w-full bg-slate-800/70 rounded-2xl flex items-center justify-center">
-                <i className="fa-solid fa-play text-4xl text-slate-700"></i>
-              </div>
-              <div className="w-28 h-8 bg-slate-800 rounded-lg"></div>
-              <div className="w-full h-14 bg-amber-400/20 rounded-2xl"></div>
-              <div className="space-y-3 pt-4 border-t border-white/10">
-                <div className="w-full h-4 bg-slate-800/60 rounded"></div>
-                <div className="w-4/5 h-4 bg-slate-800/50 rounded"></div>
-                <div className="w-3/4 h-4 bg-slate-800/40 rounded"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!loading && !course) {
-    return (
-      <div className="min-h-screen bg-[#030509] text-white flex flex-col items-center justify-center py-24 px-4 text-center">
-        <div className="w-20 h-20 bg-amber-500/10 border-2 border-[#f9b03c] rounded-3xl flex items-center justify-center text-4xl text-[#f9b03c] mb-6 shadow-[0_0_30px_rgba(249,176,60,0.3)]">
-          <i className="fa-solid fa-graduation-cap"></i>
-        </div>
-        <h2 className="text-2xl sm:text-3xl font-black mb-3">ኮርሱ አልተገኘም (Course Not Found)</h2>
-        <p className="text-gray-400 max-w-md mb-8">የፈለጉት ኮርስ ሊሰረዝ ወይም ወደ ሌላ አድራሻ ተቀይሮ ሊሆን ይችላል።</p>
-        <Link href="/courses" className="btn-buy-now-vibe px-8 py-3.5 rounded-2xl font-black text-sm">
-          ሁሉንም ኮርሶች ይመልከቱ
-        </Link>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-[#030509] text-white">
