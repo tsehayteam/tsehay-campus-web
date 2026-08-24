@@ -960,34 +960,67 @@ body {
    ========================================================================= */
 @keyframes buyPulseAura {
   0%, 100% {
-    box-shadow: 0 0 16px rgba(249, 176, 60, 0.4), 0 4px 14px rgba(0, 0, 0, 0.35);
+    box-shadow: 0 0 20px rgba(249, 176, 60, 0.45), 0 4px 14px rgba(0, 0, 0, 0.35);
     transform: scale(1);
   }
-  50% {
-    box-shadow: 0 0 38px rgba(249, 176, 60, 0.8), 0 0 18px rgba(255, 184, 77, 0.6), 0 6px 20px rgba(0, 0, 0, 0.45);
-    transform: scale(1.018);
+  30% {
+    box-shadow: 0 0 45px rgba(249, 176, 60, 0.85), 0 0 25px rgba(255, 184, 77, 0.7), 0 8px 24px rgba(0, 0, 0, 0.5);
+    transform: scale(1.025);
+  }
+  45% {
+    box-shadow: 0 0 28px rgba(249, 176, 60, 0.6), 0 4px 14px rgba(0, 0, 0, 0.35);
+    transform: scale(1.01);
+  }
+  60% {
+    box-shadow: 0 0 45px rgba(249, 176, 60, 0.85), 0 0 25px rgba(255, 184, 77, 0.7), 0 8px 24px rgba(0, 0, 0, 0.5);
+    transform: scale(1.025);
+  }
+  80% {
+    box-shadow: 0 0 20px rgba(249, 176, 60, 0.45), 0 4px 14px rgba(0, 0, 0, 0.35);
+    transform: scale(1);
   }
 }
 
 @keyframes buyShimmerSweep {
   0% {
-    transform: translateX(-150%) skewX(-20deg);
+    transform: translateX(-160%) skewX(-25deg);
   }
-  30%, 100% {
-    transform: translateX(250%) skewX(-20deg);
+  35%, 100% {
+    transform: translateX(260%) skewX(-25deg);
+  }
+}
+
+@keyframes buyIconBounce {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-2px) scale(1.15) rotate(-6deg);
+  }
+}
+
+@keyframes liveBlinkDot {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.35;
+    transform: scale(0.85);
   }
 }
 
 .btn-buy-now-vibe {
   position: relative;
   overflow: hidden;
-  background: linear-gradient(135deg, #f9b03c 0%, #ffd066 50%, #f9b03c 100%);
+  background: linear-gradient(135deg, #f9b03c 0%, #ffe082 45%, #f9b03c 100%);
   color: #030509 !important;
   font-weight: 900 !important;
   letter-spacing: -0.01em;
-  animation: buyPulseAura 2.8s ease-in-out infinite;
+  animation: buyPulseAura 2.6s ease-in-out infinite;
   transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   z-index: 1;
+  border: 1px solid rgba(255, 255, 255, 0.4);
 }
 
 .btn-buy-now-vibe::before {
@@ -995,38 +1028,44 @@ body {
   position: absolute;
   top: 0;
   left: 0;
-  width: 60%;
+  width: 65%;
   height: 100%;
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(255, 255, 255, 0.7),
+    rgba(255, 255, 255, 0.85),
     transparent
   );
-  transform: translateX(-150%) skewX(-20deg);
-  animation: buyShimmerSweep 3s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  transform: translateX(-160%) skewX(-25deg);
+  animation: buyShimmerSweep 2.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
   pointer-events: none;
   z-index: 2;
 }
 
 .btn-buy-now-vibe:hover {
-  transform: translateY(-2.5px) scale(1.035) !important;
-  box-shadow: 0 0 45px rgba(249, 176, 60, 0.95), 0 0 25px rgba(255, 210, 90, 0.85), 0 10px 30px rgba(0, 0, 0, 0.5) !important;
-  background: linear-gradient(135deg, #ffbe4d 0%, #fff0b3 50%, #f9b03c 100%) !important;
+  transform: translateY(-3px) scale(1.04) !important;
+  box-shadow: 0 0 55px rgba(249, 176, 60, 1), 0 0 30px rgba(255, 215, 100, 0.9), 0 12px 35px rgba(0, 0, 0, 0.6) !important;
+  background: linear-gradient(135deg, #ffc14d 0%, #ffffff 50%, #f9b03c 100%) !important;
 }
 
 .btn-buy-now-vibe:active {
-  transform: translateY(0) scale(0.97) !important;
+  transform: translateY(0) scale(0.96) !important;
+}
+
+.btn-buy-now-vibe .buy-icon-animated {
+  animation: buyIconBounce 2.2s infinite ease-in-out;
+  display: inline-block;
 }
 
 .btn-shimmer-interactive {
   position: relative;
   overflow: hidden;
-  background: linear-gradient(135deg, #f9b03c 0%, #fbbf24 50%, #f59e0b 100%);
+  background: linear-gradient(135deg, #f9b03c 0%, #fbbf24 45%, #f59e0b 100%);
   color: #030509 !important;
   font-weight: 900 !important;
-  box-shadow: 0 0 18px rgba(249, 176, 60, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 0 20px rgba(249, 176, 60, 0.45), 0 2px 8px rgba(0, 0, 0, 0.2);
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid rgba(255, 255, 255, 0.25);
 }
 
 .btn-shimmer-interactive::before {
@@ -1034,26 +1073,30 @@ body {
   position: absolute;
   top: 0;
   left: 0;
-  width: 50%;
+  width: 55%;
   height: 100%;
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(255, 255, 255, 0.55),
+    rgba(255, 255, 255, 0.7),
     transparent
   );
-  transform: translateX(-150%) skewX(-20deg);
-  animation: buyShimmerSweep 3.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  transform: translateX(-160%) skewX(-25deg);
+  animation: buyShimmerSweep 3.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
   pointer-events: none;
 }
 
 .btn-shimmer-interactive:hover {
-  transform: translateY(-2px) scale(1.04) !important;
-  box-shadow: 0 0 32px rgba(249, 176, 60, 0.75), 0 4px 15px rgba(0, 0, 0, 0.35) !important;
+  transform: translateY(-2.5px) scale(1.05) !important;
+  box-shadow: 0 0 40px rgba(249, 176, 60, 0.85), 0 6px 18px rgba(0, 0, 0, 0.4) !important;
 }
 
 .btn-shimmer-interactive:active {
-  transform: scale(0.96) !important;
+  transform: scale(0.95) !important;
+}
+
+.live-blink-dot {
+  animation: liveBlinkDot 1.4s infinite ease-in-out;
 }
 
 .hero-video-glow {

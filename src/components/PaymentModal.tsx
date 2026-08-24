@@ -552,7 +552,7 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
               type="button"
               onClick={handlePayment} 
               disabled={isPaying} 
-              className="w-full btn-buy-now-vibe py-4 rounded-2xl text-base transition-all flex items-center justify-center gap-2.5 group disabled:opacity-70 cursor-pointer active:scale-[0.98]"
+              className="w-full btn-buy-now-vibe py-4 rounded-2xl text-base transition-all flex items-center justify-center gap-2.5 group disabled:opacity-70 cursor-pointer active:scale-[0.98] shadow-[0_0_40px_rgba(249,176,60,0.6)]"
             >
               {isPaying ? (
                 <>
@@ -561,13 +561,14 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
                 </>
               ) : isFreeAfterDiscount ? (
                 <>
-                  <i className="fa-solid fa-gift text-lg group-hover:rotate-12 transition-transform"></i>
+                  <i className="fa-solid fa-gift text-lg buy-icon-animated"></i>
                   <span className="font-black">በነፃ ይመዝገቡ (Enroll 100% Free) 🎉</span>
                 </>
               ) : (
                 <>
+                  <i className="fa-solid fa-lock text-xs text-slate-950/80 mr-0.5"></i>
                   <span className="font-black">ወደ ክፍያ ይቀጥሉ ({finalPrice.toLocaleString()} ETB)</span> 
-                  <i className="fa-solid fa-arrow-up-right-from-square group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform"></i>
+                  <i className="fa-solid fa-arrow-right text-xs group-hover:translate-x-1 transition-transform"></i>
                 </>
               )}
             </button>

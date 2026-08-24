@@ -1011,13 +1011,26 @@ export default function CoursePreviewPage() {
             <div className="p-6">
               <div className="mb-4">
                 {isFreeCourse ? (
-                  <span className="text-4xl font-black text-dark dark:text-white">FREE</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-4xl font-black text-dark dark:text-white">FREE</span>
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs font-black">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 live-blink-dot"></span>
+                      100% ነፃ
+                    </span>
+                  </div>
                 ) : (
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-4xl font-black text-dark dark:text-white">{formatPrice(course?.price)} ETB</span>
-                    {(course?.originalPrice || course?.oldPrice) && (
-                      <span className="text-lg text-gray-500 line-through">{formatPrice(course.originalPrice || course.oldPrice)} ETB</span>
-                    )}
+                  <div>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-4xl font-black text-dark dark:text-white">{formatPrice(course?.price)} ETB</span>
+                      {(course?.originalPrice || course?.oldPrice) && (
+                        <span className="text-lg text-gray-500 line-through">{formatPrice(course.originalPrice || course.oldPrice)} ETB</span>
+                      )}
+                    </div>
+                    {/* Live Urgency / Special Offer Badge */}
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-400/10 dark:bg-amber-400/15 border border-amber-400/30 text-amber-800 dark:text-[#f9b03c] text-[11px] font-black mt-2">
+                      <span className="w-2 h-2 rounded-full bg-[#f9b03c] live-blink-dot"></span>
+                      <span>⚡ ፈጣን መዳረሻ • INSTANT LIFETIME ACCESS</span>
+                    </div>
                   </div>
                 )}
               </div>
@@ -1028,7 +1041,7 @@ export default function CoursePreviewPage() {
                   <button 
                     onClick={handleEnrollClick} 
                     disabled={isEnrolling}
-                    className="w-full btn-buy-now-vibe py-4 rounded-xl text-lg flex items-center justify-center gap-2.5 cursor-pointer active:scale-[0.98] disabled:opacity-60 group shadow-[0_0_30px_rgba(249,176,60,0.5)]"
+                    className="w-full btn-buy-now-vibe py-4 rounded-2xl text-lg flex items-center justify-center gap-2.5 cursor-pointer active:scale-[0.98] disabled:opacity-60 group shadow-[0_0_35px_rgba(249,176,60,0.6)]"
                   >
                     {isEnrolling ? (
                       <>
@@ -1037,7 +1050,7 @@ export default function CoursePreviewPage() {
                       </>
                     ) : (
                       <>
-                        <i className="fa-solid fa-gift text-xl group-hover:rotate-12 transition-transform"></i>
+                        <i className="fa-solid fa-gift text-xl buy-icon-animated"></i>
                         <span>በነፃ ይመዝገቡ (Enroll Free)</span>
                       </>
                     )}
@@ -1045,17 +1058,18 @@ export default function CoursePreviewPage() {
                 ) : (
                   <button 
                     onClick={handleBuyClick} 
-                    className="w-full btn-buy-now-vibe py-4 rounded-xl text-lg flex items-center justify-center gap-2.5 cursor-pointer active:scale-[0.98] group shadow-[0_0_30px_rgba(249,176,60,0.5)]"
+                    className="w-full btn-buy-now-vibe py-4 rounded-2xl text-lg flex items-center justify-center gap-2.5 cursor-pointer active:scale-[0.98] group shadow-[0_0_40px_rgba(249,176,60,0.7)]"
                   >
-                    <i className="fa-solid fa-cart-shopping text-xl group-hover:scale-110 group-hover:-rotate-6 transition-transform"></i>
+                    <i className="fa-solid fa-cart-shopping text-xl buy-icon-animated"></i>
                     <span>አሁኑኑ ይግዙ (Buy Now)</span>
-                    <i className="fa-solid fa-bolt text-xs group-hover:translate-x-1 transition-transform ml-1"></i>
+                    <i className="fa-solid fa-bolt text-xs group-hover:translate-x-1.5 transition-transform ml-1 text-slate-950"></i>
                   </button>
                 )}
               </div>
 
-              <div className="text-xs text-center text-gray-500 mb-6">
-                30-Day Money-Back Guarantee
+              <div className="text-xs text-center text-gray-500 dark:text-gray-400 mb-6 flex items-center justify-center gap-1.5">
+                <i className="fa-solid fa-shield-halved text-emerald-500"></i>
+                <span>የተጠበቀ እና አስተማማኝ ግዢ (100% Secure Checkout)</span>
               </div>
 
               {/* Includes */}
@@ -1098,9 +1112,12 @@ export default function CoursePreviewPage() {
       </div>
 
       {/* Udacity-Style Mobile Sticky Enrollment Bottom Bar */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#0d0d0d]/95 backdrop-blur-xl border-t border-white/10 p-3 px-4 flex items-center justify-between shadow-[0_-4px_25px_rgba(0,0,0,0.6)]">
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#0d0d0d]/95 backdrop-blur-xl border-t border-amber-400/20 p-3 px-4 flex items-center justify-between shadow-[0_-8px_30px_rgba(0,0,0,0.8)]">
         <div>
-          <span className="text-[10px] text-gray-400 font-bold block uppercase tracking-wider">የኮርስ ዋጋ</span>
+          <div className="flex items-center gap-1.5 mb-0.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#f9b03c] live-blink-dot"></span>
+            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">የኮርስ ዋጋ</span>
+          </div>
           <div className="flex items-center gap-2">
             <span className="text-lg font-black text-white">
               {course?.isFree || course?.price === 'Free' || course?.price === '0' || course?.price === 0 ? 'ነፃ (Free)' : `${formatPrice(course?.price)} ብር`}
@@ -1116,7 +1133,7 @@ export default function CoursePreviewPage() {
         <button 
           onClick={isFreeCourse ? handleEnrollClick : handleBuyClick} 
           disabled={isEnrolling}
-          className="btn-buy-now-vibe px-6 py-3 rounded-xl text-sm flex items-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50 group"
+          className="btn-buy-now-vibe px-6 py-3 rounded-xl text-sm flex items-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50 group shadow-lg"
         >
           {isEnrolling ? (
             <>
@@ -1125,14 +1142,14 @@ export default function CoursePreviewPage() {
             </>
           ) : isFreeCourse ? (
             <>
-              <i className="fa-solid fa-gift text-xs group-hover:rotate-12 transition-transform"></i>
+              <i className="fa-solid fa-gift text-xs buy-icon-animated"></i>
               <span>በነፃ ይጀምሩ</span>
               <i className="fa-solid fa-arrow-right text-xs group-hover:translate-x-0.5 transition-transform"></i>
             </>
           ) : (
             <>
-              <i className="fa-solid fa-cart-shopping text-xs group-hover:scale-110 transition-transform"></i>
-              <span>አሁኑኑ ይመዝገቡ</span>
+              <i className="fa-solid fa-cart-shopping text-xs buy-icon-animated"></i>
+              <span>አሁኑኑ ይግዙ</span>
               <i className="fa-solid fa-arrow-right text-xs group-hover:translate-x-0.5 transition-transform"></i>
             </>
           )}

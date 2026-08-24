@@ -336,12 +336,12 @@ export default function Courses() {
                         <button 
                           onClick={() => openPaymentModal(course)} 
                           disabled={isEnrolling} 
-                          className="btn-shimmer-interactive px-4 py-2.5 rounded-xl flex items-center gap-2 transition-all text-xs cursor-pointer active:scale-95 disabled:opacity-50 group font-black shadow-md"
+                          className="btn-shimmer-interactive px-4 py-2.5 rounded-xl flex items-center gap-2 transition-all text-xs cursor-pointer active:scale-95 disabled:opacity-50 group font-black shadow-lg"
                         >
                           {(course.isFree || course.price === 0 || course.price === '0' || course.price === 'Free') ? (
                             <>{isEnrolling ? 'እባክዎ ይጠብቁ...' : t('btn_go_to_class')} <i className="fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform"></i></>
                           ) : (
-                            <>{t('btn_buy_course')} <i className="fa-solid fa-cart-shopping group-hover:scale-110 group-hover:-rotate-6 transition-transform"></i></>
+                            <>{t('btn_buy_course')} <i className="fa-solid fa-cart-shopping buy-icon-animated group-hover:scale-110 group-hover:-rotate-6 transition-transform"></i></>
                           )}
                         </button>
                       </div>

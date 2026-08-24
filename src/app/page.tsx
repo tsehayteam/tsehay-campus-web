@@ -701,8 +701,13 @@ export default function Home() {
                                         </div>
                                     )}
                                 </div>
-                                <div className="w-11 h-11 rounded-full bg-slate-100 dark:bg-white/[0.05] border border-gray-200/80 dark:border-white/[0.08] text-slate-700 dark:text-white flex items-center justify-center group-hover:bg-[#f9b03c] group-hover:text-slate-950 group-hover:border-[#f9b03c] group-hover:rotate-[-45deg] transition-all duration-300 shadow-sm">
-                                    <i className="fa-solid fa-arrow-right text-base"></i>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs font-black text-[#f9b03c] opacity-0 group-hover:opacity-100 transition-opacity duration-300 hidden sm:inline-block">
+                                        {(course.isFree || course.price === 0 || course.price === '0' || course.price === 'Free') ? 'በነፃ ይጀምሩ' : 'አሁኑኑ ይግዙ'}
+                                    </span>
+                                    <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-white/[0.05] border border-gray-200/80 dark:border-white/[0.08] text-slate-700 dark:text-white flex items-center justify-center group-hover:bg-[#f9b03c] group-hover:text-slate-950 group-hover:border-[#f9b03c] group-hover:rotate-[-45deg] transition-all duration-300 shadow-sm group-hover:shadow-[0_0_20px_rgba(249,176,60,0.6)]">
+                                        <i className="fa-solid fa-arrow-right text-sm"></i>
+                                    </div>
                                 </div>
                             </div>
                         </div>
