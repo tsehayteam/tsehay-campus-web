@@ -12,6 +12,7 @@ import SmartSearchInput from '@/components/SmartSearchInput';
 import YouTubeVideoSlider from '@/components/YouTubeVideoSlider';
 import SynthesiaAiChatDemo from '@/components/SynthesiaAiChatDemo';
 import InstructorYouTubePortfolio from '@/components/InstructorYouTubePortfolio';
+import CourseCardSkeleton from '@/components/CourseCardSkeleton';
 import { getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl } from '@/lib/courseCache';
 
 const PARTNER_BRANDS = [
@@ -254,8 +255,20 @@ function MagneticLink({ children, className, href, ...props }: any) {
 export default function Home() {
   const { user } = useAuth();
   const router = useRouter();
-  const [courses, setCourses] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [courses, setCourses] = useState<any[]>(() => {
+    try {
+      return getCachedCourses();
+    } catch (e) {
+      return [];
+    }
+  });
+  const [loading, setLoading] = useState<boolean>(() => {
+    try {
+      return getCachedCourses().length === 0;
+    } catch (e) {
+      return true;
+    }
+  });
   const [hasPurchasedCourses, setHasPurchasedCourses] = useState<boolean | null>(null);
   
   // FAQ state
@@ -303,12 +316,6 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    // Instant cache fallback on client mount
-    try {
-      const cached = getCachedCourses();
-      if (cached.length > 0) setCourses(cached);
-    } catch (e) {}
-
     // Fetch courses for landing page with real-time updates
     const q = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -590,10 +597,9 @@ export default function Home() {
                 </p>
             </div>
 
-            {loading ? (
-                <div className="flex flex-col items-center justify-center py-20 w-full scrolly-reveal">
-                    <div className="w-12 h-12 border-4 border-[#f9b03c] border-t-transparent rounded-full animate-spin mb-4"></div>
-                    <p className="text-gray-500 dark:text-gray-400 font-bold tracking-widest uppercase text-xs sm:text-sm">{t('loading_courses')}</p>
+            {loading && courses.length === 0 ? (
+                <div className="w-full scrolly-reveal">
+                    <CourseCardSkeleton count={3} />
                 </div>
             ) : courses.length === 0 ? (
                 <div className="text-center py-16 w-full scrolly-reveal">

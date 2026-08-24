@@ -9,10 +9,9 @@ import { db } from '@/lib/firebase/config';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 const DEFAULT_COURSES = [
-  'ዲጂታል ማርኬቲንግ እና የኦንላይን ቢዝነስ ማስተርክላስ (Digital Marketing)',
-  'ከቻይና 1688 እቃ ማስመጣት እና ኢ-ኮሜርስ (China 1688 Importation)',
-  'የፌስቡክ እና የቲክቶክ ማስታወቂያ ስልጠና (FB & TikTok Ads)',
-  'ክሪፕቶ ከረንሲ እና የፋይናንስ ትሬዲንግ (Crypto & Financial Markets)',
+  'የዩቲዩብ ስኬት ሚስጥሮች (YouTube Secrets Masterclass)',
+  'ዲጂታል ማርኬቲንግ ለጀማሪዎች (Digital Marketing Beginner)',
+  'ፕሮፌሽናል ዲጂታል ማርኬቲንግ ማስተር ክላስ (Pro Digital Marketing)',
   'በ AI የታገዘ የቢዝነስ እና የኮንቴንት ማበልፀጊያ (AI for Business)',
 ];
 

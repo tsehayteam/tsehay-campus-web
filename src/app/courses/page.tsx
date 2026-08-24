@@ -11,12 +11,25 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 
 import SmartSearchInput from '@/components/SmartSearchInput';
+import CourseCardSkeleton from '@/components/CourseCardSkeleton';
 import { searchCourses } from '@/lib/smartSearch';
 import { getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl } from '@/lib/courseCache';
 
 export default function Courses() {
-  const [courses, setCourses] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [courses, setCourses] = useState<any[]>(() => {
+    try {
+      return getCachedCourses();
+    } catch (e) {
+      return [];
+    }
+  });
+  const [loading, setLoading] = useState<boolean>(() => {
+    try {
+      return getCachedCourses().length === 0;
+    } catch (e) {
+      return true;
+    }
+  });
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [isEnrolling, setIsEnrolling] = useState(false);
   const [showRequireAuthModal, setShowRequireAuthModal] = useState(false);
@@ -30,12 +43,6 @@ export default function Courses() {
   const [selectedCategory, setSelectedCategory] = useState("All");
 
   useEffect(() => {
-    // Instant cache fallback on client mount
-    try {
-      const cached = getCachedCourses();
-      if (cached.length > 0) setCourses(cached);
-    } catch (e) {}
-
     // Fetch courses from Firestore in real-time
     const q = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -209,10 +216,9 @@ export default function Courses() {
         
         <section className="py-6 sm:py-12 relative">
           <div className="max-w-[1350px] mx-auto px-4 sm:px-6 lg:px-8">
-            {loading ? (
-              <div className="flex flex-col items-center justify-center py-20">
-                <div className="w-12 h-12 border-4 border-[#f9b03c] border-t-transparent rounded-full animate-spin mb-4"></div>
-                <p className="text-gray-500 font-bold tracking-widest uppercase text-xs sm:text-sm">{t('loading_courses_2')}</p>
+            {loading && courses.length === 0 ? (
+              <div className="w-full">
+                <CourseCardSkeleton count={6} />
               </div>
             ) : filteredCourses.length === 0 ? (
               <div className="text-center py-20">
