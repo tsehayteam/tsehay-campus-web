@@ -18,12 +18,14 @@ export function extractYouTubeId(urlOrId: string): string {
   if (!urlOrId) return '';
   const trimmed = urlOrId.trim();
   if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) return trimmed;
-  const matchWatch = trimmed.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
+  const matchWatch = trimmed.match(/[?&]v=([a-zA-Z0-9_-]{11})/i);
   if (matchWatch && matchWatch[1]) return matchWatch[1];
-  const matchYoutu = trimmed.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/);
+  const matchYoutu = trimmed.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/i);
   if (matchYoutu && matchYoutu[1]) return matchYoutu[1];
-  const matchEmbed = trimmed.match(/(?:embed|shorts|live)\/([a-zA-Z0-9_-]{11})/);
-  if (matchEmbed && matchEmbed[1]) return matchEmbed[1];
+  const matchPath = trimmed.match(/(?:embed|shorts|live|v)\/([a-zA-Z0-9_-]{11})/i);
+  if (matchPath && matchPath[1]) return matchPath[1];
+  const matchAny11 = trimmed.match(/(?:[=/&?]|^)([a-zA-Z0-9_-]{11})(?:[?&/#]|$)/);
+  if (matchAny11 && matchAny11[1]) return matchAny11[1];
   return trimmed;
 }
 
@@ -37,45 +39,53 @@ const DEFAULT_VIDEOS: YouTubeItem[] = [
   {
     id: 'yt-1',
     title: 'ተግባራዊ የቲክቶክ እና የዲጂታል ገበያ ማስተርክላስ',
-    youtubeUrl: 'https://youtube.com/@eyoubsahle?si=p29sAFFmLagXd52X',
+    youtubeUrl: 'https://www.youtube.com/watch?v=B-s71n0dHUk',
     youtubeId: 'B-s71n0dHUk',
-    videoSrc: '/assets/videos/Marketing and psyco.mp4',
-    thumbnail: '/assets/eyob_new.png',
+    thumbnail: 'https://img.youtube.com/vi/B-s71n0dHUk/hqdefault.jpg',
   },
   {
     id: 'yt-2',
     title: 'የስኬት ሚስጥሮች - ከዜሮ ወደ ከፍተኛ ገቢ መድረሻ',
-    youtubeUrl: 'https://youtube.com/@eyoubsahle?si=p29sAFFmLagXd52X',
+    youtubeUrl: 'https://www.youtube.com/watch?v=mgdOMtW6J8k',
     youtubeId: 'mgdOMtW6J8k',
-    videoSrc: '/assets/videos/Tsehay.mp4',
-    thumbnail: '/assets/hero-bg-new.jpg',
+    thumbnail: 'https://img.youtube.com/vi/mgdOMtW6J8k/hqdefault.jpg',
   },
   {
     id: 'yt-3',
     title: 'የዩቲዩብ ስኬት ሚስጥሮች እና ገቢ ማግኛ መንገዶች',
-    youtubeUrl: 'https://youtube.com/@eyoubsahle?si=p29sAFFmLagXd52X',
+    youtubeUrl: 'https://www.youtube.com/watch?v=B-s71n0dHUk',
     youtubeId: 'B-s71n0dHUk',
-    videoSrc: '/assets/for_landing_page_first.mp4',
-    thumbnail: '/assets/eyob_new2.png',
+    thumbnail: 'https://img.youtube.com/vi/B-s71n0dHUk/hqdefault.jpg',
   },
   {
     id: 'yt-4',
     title: 'የሼን (Shein) ኢምፖርት ቢዝነስ አሰራር',
-    youtubeUrl: 'https://youtube.com/@eyoubsahle?si=p29sAFFmLagXd52X',
+    youtubeUrl: 'https://www.youtube.com/watch?v=mgdOMtW6J8k',
     youtubeId: 'mgdOMtW6J8k',
-    thumbnail: 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?auto=format&fit=crop&w=1200&q=80',
+    thumbnail: 'https://img.youtube.com/vi/mgdOMtW6J8k/hqdefault.jpg',
   },
   {
     id: 'yt-5',
     title: 'ዲጂታል ማርኬቲንግ እና AI ለጀማሪዎች',
-    youtubeUrl: 'https://youtube.com/@eyoubsahle?si=p29sAFFmLagXd52X',
+    youtubeUrl: 'https://www.youtube.com/watch?v=B-s71n0dHUk',
     youtubeId: 'B-s71n0dHUk',
-    thumbnail: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1200&q=80',
+    thumbnail: 'https://img.youtube.com/vi/B-s71n0dHUk/hqdefault.jpg',
   },
 ];
 
 export default function YouTubeVideoSlider() {
-  const [videos, setVideos] = useState<YouTubeItem[]>(DEFAULT_VIDEOS);
+  const [videos, setVideos] = useState<YouTubeItem[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('tsehay_youtube_videos_cache');
+        if (cached) {
+          const list = JSON.parse(cached);
+          if (Array.isArray(list) && list.length > 0) return list;
+        }
+      } catch (e) {}
+    }
+    return DEFAULT_VIDEOS;
+  });
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isMuted, setIsMuted] = useState(true);
   const [isGridView, setIsGridView] = useState(false);
@@ -96,7 +106,7 @@ export default function YouTubeVideoSlider() {
             return {
               id: doc.id,
               title: data.title || 'ነፃ የዩቲዩብ ስልጠና',
-              youtubeUrl: data.youtubeUrl || `https://www.youtube.com/watch?v=${yId}`,
+              youtubeUrl: data.youtubeUrl || (yId ? `https://www.youtube.com/watch?v=${yId}` : ''),
               youtubeId: yId,
               thumbnail: data.thumbnail || getYouTubeThumbnail(yId, data.thumbnail),
               videoSrc: data.videoSrc || '',
@@ -104,6 +114,9 @@ export default function YouTubeVideoSlider() {
             };
           });
           setVideos(list);
+          try {
+            localStorage.setItem('tsehay_youtube_videos_cache', JSON.stringify(list));
+          } catch (e) {}
         }
       }, (error) => {
         console.warn("Firestore youtube_videos listener fallback:", error);
@@ -436,22 +449,22 @@ export default function YouTubeVideoSlider() {
             className="relative w-full max-w-5xl aspect-video rounded-2xl sm:rounded-3xl overflow-hidden shadow-[0_0_80px_rgba(0,0,0,0.95),0_0_40px_rgba(249,176,60,0.2)] border border-white/15 bg-black"
             onClick={(e) => e.stopPropagation()}
           >
-            {selectedModalVideo.videoSrc ? (
+            {(selectedModalVideo.youtubeId || selectedModalVideo.youtubeUrl) ? (
+              <iframe
+                src={`https://www.youtube.com/embed/${selectedModalVideo.youtubeId || extractYouTubeId(selectedModalVideo.youtubeUrl)}?autoplay=1&rel=0&modestbranding=1&cc_load_policy=0&cc_lang_pref=off&iv_load_policy=3&playsinline=1&controls=1&hl=en&enablejsapi=1`}
+                title="Tsehay Campus Video"
+                className="w-full h-full border-0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+              ></iframe>
+            ) : selectedModalVideo.videoSrc ? (
               <video
                 src={selectedModalVideo.videoSrc}
                 controls
                 autoPlay
                 className="w-full h-full object-contain"
               />
-            ) : (
-              <iframe
-                src={`https://www.youtube.com/embed/${selectedModalVideo.youtubeId || extractYouTubeId(selectedModalVideo.youtubeUrl)}?autoplay=1&rel=0&modestbranding=1&cc_load_policy=0&cc_lang_pref=off&iv_load_policy=3&playsinline=1&controls=1&hl=en`}
-                title="Tsehay Campus Video"
-                className="w-full h-full border-0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowFullScreen
-              ></iframe>
-            )}
+            ) : null}
           </div>
         </div>
       )}

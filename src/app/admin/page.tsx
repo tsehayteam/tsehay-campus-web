@@ -28,12 +28,14 @@ export function extractYouTubeId(urlOrId: string): string {
   if (!urlOrId) return '';
   const trimmed = urlOrId.trim();
   if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) return trimmed;
-  const matchWatch = trimmed.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
+  const matchWatch = trimmed.match(/[?&]v=([a-zA-Z0-9_-]{11})/i);
   if (matchWatch && matchWatch[1]) return matchWatch[1];
-  const matchYoutu = trimmed.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/);
+  const matchYoutu = trimmed.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/i);
   if (matchYoutu && matchYoutu[1]) return matchYoutu[1];
-  const matchEmbed = trimmed.match(/(?:embed|shorts|live)\/([a-zA-Z0-9_-]{11})/);
-  if (matchEmbed && matchEmbed[1]) return matchEmbed[1];
+  const matchPath = trimmed.match(/(?:embed|shorts|live|v)\/([a-zA-Z0-9_-]{11})/i);
+  if (matchPath && matchPath[1]) return matchPath[1];
+  const matchAny11 = trimmed.match(/(?:[=/&?]|^)([a-zA-Z0-9_-]{11})(?:[?&/#]|$)/);
+  if (matchAny11 && matchAny11[1]) return matchAny11[1];
   return trimmed;
 }
 
@@ -2062,24 +2064,48 @@ export default function AdminDashboard() {
                       className="w-full bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm font-mono text-dark dark:text-white outline-none focus:border-[#3268ba] focus:ring-2 focus:ring-[#3268ba]/20 transition"
                     />
 
-                    {/* Auto-Thumbnail Live Preview for Local Video */}
+                    {/* Auto-Thumbnail & Live Video Player Preview for Local Video */}
                     {(() => {
                       const yId = extractYouTubeId(portfolioLocalUrl);
                       if (yId) {
                         return (
-                          <div className="flex items-center gap-4 bg-white dark:bg-slate-800 p-3 rounded-xl border border-gray-100 dark:border-slate-700">
-                            <img 
-                              src={`https://img.youtube.com/vi/${yId}/hqdefault.jpg`} 
-                              alt="Local Thumbnail" 
-                              className="w-28 h-16 object-cover rounded-lg shadow-sm border border-black/10 dark:border-white/10"
-                              onError={(e) => { e.currentTarget.src = `https://img.youtube.com/vi/${yId}/default.jpg`; }}
-                            />
-                            <div className="text-xs space-y-1">
-                              <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
-                                <i className="fa-solid fa-circle-check"></i>
-                                <span>ራስ-ሰር ፎቶ (Auto-Thumbnail Generated)</span>
-                              </span>
-                              <p className="font-mono text-gray-500 dark:text-gray-400">Video ID: <strong className="text-slate-800 dark:text-slate-200">{yId}</strong></p>
+                          <div className="space-y-3 bg-white dark:bg-slate-800 p-4 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm">
+                            <div className="flex flex-wrap items-center justify-between gap-3">
+                              <div className="flex items-center gap-3">
+                                <img 
+                                  src={`https://img.youtube.com/vi/${yId}/hqdefault.jpg`} 
+                                  alt="Local Thumbnail" 
+                                  className="w-24 h-14 object-cover rounded-xl shadow-sm border border-black/10 dark:border-white/10"
+                                  onError={(e) => { e.currentTarget.src = `https://img.youtube.com/vi/${yId}/default.jpg`; }}
+                                />
+                                <div className="text-xs space-y-1">
+                                  <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1.5">
+                                    <i className="fa-solid fa-circle-check"></i>
+                                    <span>ትክክለኛ ቪዲዮ ተገኝቷል (Valid Video)</span>
+                                  </span>
+                                  <p className="font-mono text-gray-500 dark:text-gray-400">ID: <strong className="text-slate-800 dark:text-slate-200">{yId}</strong></p>
+                                </div>
+                              </div>
+                              <a
+                                href={`https://www.youtube.com/watch?v=${yId}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs font-bold bg-gray-100 dark:bg-slate-700 hover:bg-[#3268ba] hover:text-white px-3 py-1.5 rounded-xl transition flex items-center gap-1.5"
+                              >
+                                <i className="fa-brands fa-youtube text-red-500"></i>
+                                <span>በ YouTube ክፈት</span>
+                              </a>
+                            </div>
+
+                            {/* Embedded Live Preview Iframe */}
+                            <div className="aspect-video w-full rounded-xl overflow-hidden bg-black border border-gray-200 dark:border-slate-700">
+                              <iframe
+                                src={`https://www.youtube.com/embed/${yId}?rel=0&modestbranding=1&controls=1`}
+                                title="Local Video Live Preview"
+                                className="w-full h-full border-0"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowFullScreen
+                              ></iframe>
                             </div>
                           </div>
                         );
@@ -2109,24 +2135,48 @@ export default function AdminDashboard() {
                       className="w-full bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm font-mono text-dark dark:text-white outline-none focus:border-[#f9b03c] focus:ring-2 focus:ring-[#f9b03c]/20 transition"
                     />
 
-                    {/* Auto-Thumbnail Live Preview for International Video */}
+                    {/* Auto-Thumbnail & Live Video Player Preview for International Video */}
                     {(() => {
                       const yId = extractYouTubeId(portfolioInternationalUrl);
                       if (yId) {
                         return (
-                          <div className="flex items-center gap-4 bg-white dark:bg-slate-800 p-3 rounded-xl border border-gray-100 dark:border-slate-700">
-                            <img 
-                              src={`https://img.youtube.com/vi/${yId}/hqdefault.jpg`} 
-                              alt="International Thumbnail" 
-                              className="w-28 h-16 object-cover rounded-lg shadow-sm border border-black/10 dark:border-white/10"
-                              onError={(e) => { e.currentTarget.src = `https://img.youtube.com/vi/${yId}/default.jpg`; }}
-                            />
-                            <div className="text-xs space-y-1">
-                              <span className="text-amber-700 dark:text-[#f9b03c] font-bold flex items-center gap-1">
-                                <i className="fa-solid fa-circle-check"></i>
-                                <span>ራስ-ሰር ፎቶ (Auto-Thumbnail Generated)</span>
-                              </span>
-                              <p className="font-mono text-gray-500 dark:text-gray-400">Video ID: <strong className="text-slate-800 dark:text-slate-200">{yId}</strong></p>
+                          <div className="space-y-3 bg-white dark:bg-slate-800 p-4 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm">
+                            <div className="flex flex-wrap items-center justify-between gap-3">
+                              <div className="flex items-center gap-3">
+                                <img 
+                                  src={`https://img.youtube.com/vi/${yId}/hqdefault.jpg`} 
+                                  alt="International Thumbnail" 
+                                  className="w-24 h-14 object-cover rounded-xl shadow-sm border border-black/10 dark:border-white/10"
+                                  onError={(e) => { e.currentTarget.src = `https://img.youtube.com/vi/${yId}/default.jpg`; }}
+                                />
+                                <div className="text-xs space-y-1">
+                                  <span className="text-amber-700 dark:text-[#f9b03c] font-bold flex items-center gap-1.5">
+                                    <i className="fa-solid fa-circle-check"></i>
+                                    <span>ትክክለኛ ቪዲዮ ተገኝቷል (Valid Video)</span>
+                                  </span>
+                                  <p className="font-mono text-gray-500 dark:text-gray-400">ID: <strong className="text-slate-800 dark:text-slate-200">{yId}</strong></p>
+                                </div>
+                              </div>
+                              <a
+                                href={`https://www.youtube.com/watch?v=${yId}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs font-bold bg-gray-100 dark:bg-slate-700 hover:bg-[#f9b03c] hover:text-black px-3 py-1.5 rounded-xl transition flex items-center gap-1.5"
+                              >
+                                <i className="fa-brands fa-youtube text-red-500"></i>
+                                <span>በ YouTube ክፈት</span>
+                              </a>
+                            </div>
+
+                            {/* Embedded Live Preview Iframe */}
+                            <div className="aspect-video w-full rounded-xl overflow-hidden bg-black border border-gray-200 dark:border-slate-700">
+                              <iframe
+                                src={`https://www.youtube.com/embed/${yId}?rel=0&modestbranding=1&controls=1`}
+                                title="International Video Live Preview"
+                                className="w-full h-full border-0"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowFullScreen
+                              ></iframe>
                             </div>
                           </div>
                         );

@@ -11,17 +11,17 @@ export function extractYouTubeId(urlOrId: string): string {
   // 1. Direct 11-character video ID
   if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) return trimmed;
   
-  // 2. Standard watch URL (e.g., youtube.com/watch?v=...)
-  const matchWatch = trimmed.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
-  if (matchWatch && matchWatch[1]) return matchWatch[1];
-  
-  // 3. Shortened youtu.be URL
-  const matchYoutu = trimmed.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/);
+  // 2. youtu.be/ID (e.g. https://youtu.be/mgdOMtW6J8k?si=123)
+  const matchYoutu = trimmed.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/i);
   if (matchYoutu && matchYoutu[1]) return matchYoutu[1];
   
-  // 4. Embed, Shorts, or Live URL
-  const matchEmbed = trimmed.match(/(?:embed|shorts|live)\/([a-zA-Z0-9_-]{11})/);
-  if (matchEmbed && matchEmbed[1]) return matchEmbed[1];
+  // 3. Standard watch URL (e.g., youtube.com/watch?v=...)
+  const matchWatch = trimmed.match(/[?&]v=([a-zA-Z0-9_-]{11})/i);
+  if (matchWatch && matchWatch[1]) return matchWatch[1];
+  
+  // 4. Embed, Shorts, Live, or v URL
+  const matchPath = trimmed.match(/(?:embed|shorts|live|v)\/([a-zA-Z0-9_-]{11})/i);
+  if (matchPath && matchPath[1]) return matchPath[1];
   
   // 5. Generic extraction fallback
   const matchAny11 = trimmed.match(/(?:[=/&?]|^)([a-zA-Z0-9_-]{11})(?:[?&/#]|$)/);
@@ -225,8 +225,8 @@ export default function InstructorYouTubePortfolio() {
   const localVideoId = extractYouTubeId(localVideoUrl) || 'mgdOMtW6J8k';
   const internationalVideoId = extractYouTubeId(internationalVideoUrl) || 'B-s71n0dHUk';
 
-  const localEmbedUrl = `https://www.youtube-nocookie.com/embed/${localVideoId}?autoplay=1&rel=0&modestbranding=1&controls=1&showinfo=0&iv_load_policy=3&cc_load_policy=0&playsinline=1`;
-  const internationalEmbedUrl = `https://www.youtube-nocookie.com/embed/${internationalVideoId}?autoplay=1&rel=0&modestbranding=1&controls=1&showinfo=0&iv_load_policy=3&cc_load_policy=0&playsinline=1&loop=1&playlist=${internationalVideoId}`;
+  const localEmbedUrl = `https://www.youtube.com/embed/${localVideoId}?autoplay=1&rel=0&modestbranding=1&controls=1&showinfo=0&iv_load_policy=3&cc_load_policy=0&playsinline=1&enablejsapi=1`;
+  const internationalEmbedUrl = `https://www.youtube.com/embed/${internationalVideoId}?autoplay=1&rel=0&modestbranding=1&controls=1&showinfo=0&iv_load_policy=3&cc_load_policy=0&playsinline=1&enablejsapi=1`;
 
   return (
     <section id="instructor-portfolio" className="relative py-16 sm:py-24 overflow-hidden bg-slate-900/60 dark:bg-[#030509]/95 border-b border-gray-200/80 dark:border-white/10">
@@ -341,11 +341,11 @@ export default function InstructorYouTubePortfolio() {
                   >
                     {/* 100% Crisp Thumbnail without Obstruction */}
                     <img
-                      src={`https://img.youtube.com/vi/${localVideoId}/maxresdefault.jpg`}
+                      src={`https://img.youtube.com/vi/${localVideoId}/hqdefault.jpg`}
                       alt="ሀገርኛ ዩቲዩብ ቻናል"
                       className="absolute inset-0 w-full h-full object-cover group-hover/thumb:scale-[1.03] transition-transform duration-500"
                       onError={(e) => {
-                        (e.target as HTMLImageElement).src = `https://img.youtube.com/vi/${localVideoId}/hqdefault.jpg`;
+                        (e.target as HTMLImageElement).src = `https://img.youtube.com/vi/${localVideoId}/default.jpg`;
                       }}
                     />
 
@@ -427,11 +427,11 @@ export default function InstructorYouTubePortfolio() {
                   >
                     {/* 100% Crisp Thumbnail without Obstruction */}
                     <img
-                      src={`https://img.youtube.com/vi/${internationalVideoId}/maxresdefault.jpg`}
+                      src={`https://img.youtube.com/vi/${internationalVideoId}/hqdefault.jpg`}
                       alt="ዓለም አቀፍ ዩቲዩብ ቻናል"
                       className="absolute inset-0 w-full h-full object-cover group-hover/thumb:scale-[1.03] transition-transform duration-500"
                       onError={(e) => {
-                        (e.target as HTMLImageElement).src = `https://img.youtube.com/vi/${internationalVideoId}/hqdefault.jpg`;
+                        (e.target as HTMLImageElement).src = `https://img.youtube.com/vi/${internationalVideoId}/default.jpg`;
                       }}
                     />
 
