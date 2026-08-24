@@ -8,6 +8,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter, useParams } from 'next/navigation';
 import PaymentModal from '@/components/PaymentModal';
+import RequireAuthModal from '@/components/RequireAuthModal';
 import Footer from '@/components/Footer';
 import dynamic from 'next/dynamic';
 import { getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl } from '@/lib/courseCache';
@@ -35,6 +36,7 @@ export default function CoursePreviewPage() {
   // Payment/Enrollment states
   const [isEnrolling, setIsEnrolling] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showRequireAuthModal, setShowRequireAuthModal] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [activeVideoUrl, setActiveVideoUrl] = useState<string | null>(null);
 
@@ -222,9 +224,62 @@ export default function CoursePreviewPage() {
     }));
   };
 
+  // 🌟 Seamless Post-Login Action Continuity: Automatically resume Buy/Enroll where user left off!
+  useEffect(() => {
+    if (user && course) {
+      try {
+        const savedRaw = sessionStorage.getItem('tsehay_pending_course_action');
+        if (savedRaw) {
+          const saved = JSON.parse(savedRaw);
+          if (saved.courseId === course.id) {
+            sessionStorage.removeItem('tsehay_pending_course_action');
+            setShowRequireAuthModal(false);
+            if (saved.type === 'buy') {
+              setShowPaymentModal(true);
+            } else if (saved.type === 'enroll_free') {
+              handleEnroll();
+            }
+          }
+        }
+      } catch (e) {
+        console.warn("Error restoring pending course action:", e);
+      }
+    }
+  }, [user, course]);
+
+  const handleBuyClick = () => {
+    if (!user) {
+      try {
+        sessionStorage.setItem('tsehay_pending_course_action', JSON.stringify({
+          type: 'buy',
+          courseId: course?.id,
+          courseTitle: course?.title || 'ይህ ኮርስ'
+        }));
+      } catch (e) {}
+      setShowRequireAuthModal(true);
+      return;
+    }
+    setShowPaymentModal(true);
+  };
+
+  const handleEnrollClick = () => {
+    if (!user) {
+      try {
+        sessionStorage.setItem('tsehay_pending_course_action', JSON.stringify({
+          type: 'enroll_free',
+          courseId: course?.id,
+          courseTitle: course?.title || 'ይህ ኮርስ'
+        }));
+      } catch (e) {}
+      setShowRequireAuthModal(true);
+      return;
+    }
+    handleEnroll();
+  };
+
   const handleEnroll = async () => {
     if (!user) {
-      window.dispatchEvent(new CustomEvent('open-auth-modal'));
+      handleEnrollClick();
       return;
     }
 
@@ -971,18 +1026,30 @@ export default function CoursePreviewPage() {
               <div className="flex flex-col gap-3 mb-6">
                 {isFreeCourse ? (
                   <button 
-                    onClick={handleEnroll} 
+                    onClick={handleEnrollClick} 
                     disabled={isEnrolling}
-                    className="w-full bg-primary hover:bg-yellow-400 text-dark font-black py-3.5 rounded-xl transition-all duration-300 text-lg shadow-[0_0_20px_rgba(249,176,60,0.3)] hover:shadow-[0_0_30px_rgba(249,176,60,0.5)] transform hover:-translate-y-1"
+                    className="w-full btn-buy-now-vibe py-4 rounded-xl text-lg flex items-center justify-center gap-2.5 cursor-pointer active:scale-[0.98] disabled:opacity-60 group shadow-[0_0_30px_rgba(249,176,60,0.5)]"
                   >
-                    {isEnrolling ? 'Processing...' : 'Enroll Now'}
+                    {isEnrolling ? (
+                      <>
+                        <i className="fa-solid fa-spinner animate-spin text-slate-950"></i>
+                        <span>በማስኬድ ላይ...</span>
+                      </>
+                    ) : (
+                      <>
+                        <i className="fa-solid fa-gift text-xl group-hover:rotate-12 transition-transform"></i>
+                        <span>በነፃ ይመዝገቡ (Enroll Free)</span>
+                      </>
+                    )}
                   </button>
                 ) : (
                   <button 
-                    onClick={() => setShowPaymentModal(true)}
-                    className="w-full bg-primary hover:bg-yellow-400 text-dark font-black py-3.5 rounded-xl transition-all duration-300 text-lg shadow-[0_0_20px_rgba(249,176,60,0.3)] hover:shadow-[0_0_30px_rgba(249,176,60,0.5)] transform hover:-translate-y-1"
+                    onClick={handleBuyClick} 
+                    className="w-full btn-buy-now-vibe py-4 rounded-xl text-lg flex items-center justify-center gap-2.5 cursor-pointer active:scale-[0.98] group shadow-[0_0_30px_rgba(249,176,60,0.5)]"
                   >
-                    Buy now
+                    <i className="fa-solid fa-cart-shopping text-xl group-hover:scale-110 group-hover:-rotate-6 transition-transform"></i>
+                    <span>አሁኑኑ ይግዙ (Buy Now)</span>
+                    <i className="fa-solid fa-bolt text-xs group-hover:translate-x-1 transition-transform ml-1"></i>
                   </button>
                 )}
               </div>
@@ -1047,9 +1114,9 @@ export default function CoursePreviewPage() {
         </div>
 
         <button 
-          onClick={isFreeCourse ? handleEnroll : () => setShowPaymentModal(true)} 
+          onClick={isFreeCourse ? handleEnrollClick : handleBuyClick} 
           disabled={isEnrolling}
-          className="bg-primary hover:bg-yellow-400 text-dark font-black px-6 py-3 rounded-xl transition shadow-lg text-sm flex items-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
+          className="btn-buy-now-vibe px-6 py-3 rounded-xl text-sm flex items-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50 group"
         >
           {isEnrolling ? (
             <>
@@ -1058,13 +1125,15 @@ export default function CoursePreviewPage() {
             </>
           ) : isFreeCourse ? (
             <>
-              <span>አሁኑኑ በነፃ ይጀምሩ</span>
-              <i className="fa-solid fa-arrow-right text-xs"></i>
+              <i className="fa-solid fa-gift text-xs group-hover:rotate-12 transition-transform"></i>
+              <span>በነፃ ይጀምሩ</span>
+              <i className="fa-solid fa-arrow-right text-xs group-hover:translate-x-0.5 transition-transform"></i>
             </>
           ) : (
             <>
+              <i className="fa-solid fa-cart-shopping text-xs group-hover:scale-110 transition-transform"></i>
               <span>አሁኑኑ ይመዝገቡ</span>
-              <i className="fa-solid fa-arrow-right text-xs"></i>
+              <i className="fa-solid fa-arrow-right text-xs group-hover:translate-x-0.5 transition-transform"></i>
             </>
           )}
         </button>
@@ -1073,6 +1142,21 @@ export default function CoursePreviewPage() {
       {showPaymentModal && (
         <PaymentModal course={course} onClose={() => setShowPaymentModal(false)} />
       )}
+
+      {/* 🌟 Dedicated Friendly Authentication Required Modal */}
+      <RequireAuthModal
+        isOpen={showRequireAuthModal}
+        onClose={() => setShowRequireAuthModal(false)}
+        courseTitle={course?.title}
+        courseImage={course?.image}
+        isFree={isFreeCourse}
+        onContinueAuth={(isSignup) => {
+          setShowRequireAuthModal(false);
+          window.dispatchEvent(new CustomEvent('open-auth-modal', { 
+            detail: { isSignupMode: isSignup, isSignUp: isSignup } 
+          }));
+        }}
+      />
       
       <Footer />
     </div>

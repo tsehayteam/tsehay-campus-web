@@ -178,14 +178,22 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
 
     // 1. Authentication Check
     if (!user) {
-      setError("ክፍያውን ለመፈጸም እባክዎ አስቀድመው ይግቡ።");
       setIsPaying(false);
+      try {
+        sessionStorage.setItem('tsehay_pending_course_action', JSON.stringify({
+          type: 'buy',
+          courseId: course?.id,
+          courseTitle: course?.title,
+          course: course
+        }));
+      } catch (e) {}
+
       if (typeof window !== 'undefined') {
         const globalWin = window as any;
         if (typeof globalWin.openAuthModal === 'function') {
           globalWin.openAuthModal(false);
         } else {
-          window.dispatchEvent(new CustomEvent('open-auth-modal', { detail: { isSignUp: false } }));
+          window.dispatchEvent(new CustomEvent('open-auth-modal', { detail: { isSignUp: false, isSignupMode: false } }));
         }
       }
       return;
@@ -544,21 +552,21 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
               type="button"
               onClick={handlePayment} 
               disabled={isPaying} 
-              className="w-full bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#f9b03c] hover:brightness-110 text-slate-950 font-black py-4 rounded-2xl text-base transition-all shadow-[0_0_25px_rgba(249,176,60,0.35)] hover:shadow-[0_0_35px_rgba(249,176,60,0.5)] flex items-center justify-center gap-2 group disabled:opacity-70 cursor-pointer active:scale-[0.98]"
+              className="w-full btn-buy-now-vibe py-4 rounded-2xl text-base transition-all flex items-center justify-center gap-2.5 group disabled:opacity-70 cursor-pointer active:scale-[0.98]"
             >
               {isPaying ? (
                 <>
                   <div className="w-5 h-5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin"></div>
-                  <span>በማስኬድ ላይ...</span>
+                  <span className="font-black">በማስኬድ ላይ... (Processing...)</span>
                 </>
               ) : isFreeAfterDiscount ? (
                 <>
-                  <i className="fa-solid fa-gift text-lg"></i>
-                  <span>በነፃ ይመዝገቡ (Enroll 100% Free) 🎉</span>
+                  <i className="fa-solid fa-gift text-lg group-hover:rotate-12 transition-transform"></i>
+                  <span className="font-black">በነፃ ይመዝገቡ (Enroll 100% Free) 🎉</span>
                 </>
               ) : (
                 <>
-                  <span>ወደ ክፍያ ይቀጥሉ ({finalPrice.toLocaleString()} ETB)</span> 
+                  <span className="font-black">ወደ ክፍያ ይቀጥሉ ({finalPrice.toLocaleString()} ETB)</span> 
                   <i className="fa-solid fa-arrow-up-right-from-square group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform"></i>
                 </>
               )}

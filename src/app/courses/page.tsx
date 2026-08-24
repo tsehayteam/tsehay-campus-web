@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { db } from '@/lib/firebase/config';
 import { collection, onSnapshot, query, orderBy, doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import PaymentModal from '@/components/PaymentModal';
+import RequireAuthModal from '@/components/RequireAuthModal';
 import { useLanguage } from '@/context/LanguageContext';
 import Footer from '@/components/Footer';
 import { useAuth } from '@/context/AuthContext';
@@ -18,6 +19,8 @@ export default function Courses() {
   const [loading, setLoading] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [isEnrolling, setIsEnrolling] = useState(false);
+  const [showRequireAuthModal, setShowRequireAuthModal] = useState(false);
+  const [authCourseTarget, setAuthCourseTarget] = useState<any>(null);
   const { t } = useLanguage();
   const { user } = useAuth();
   const router = useRouter();
@@ -53,14 +56,43 @@ export default function Courses() {
     return () => unsubscribe();
   }, []);
 
+  // 🌟 Seamless Post-Login Action Continuity: Automatically resume Buy/Enroll where user left off!
+  useEffect(() => {
+    if (user && courses.length > 0) {
+      try {
+        const savedRaw = sessionStorage.getItem('tsehay_pending_course_action');
+        if (savedRaw) {
+          const saved = JSON.parse(savedRaw);
+          const found = courses.find((c: any) => c.id === saved.courseId) || saved.course;
+          if (found) {
+            sessionStorage.removeItem('tsehay_pending_course_action');
+            setShowRequireAuthModal(false);
+            setAuthCourseTarget(null);
+            openPaymentModal(found);
+          }
+        }
+      } catch (e) {
+        console.warn("Error restoring pending course action:", e);
+      }
+    }
+  }, [user, courses]);
+
   const openPaymentModal = async (course) => {
     const isFree = course.isFree || course.price === 'Free' || course.price === '0' || course.price === 0;
     
-    if (isFree) {
-      if (!user) {
-        window.dispatchEvent(new CustomEvent('open-auth-modal'));
-        return;
-      }
+    if (!user) {
+      try {
+        sessionStorage.setItem('tsehay_pending_course_action', JSON.stringify({
+          type: isFree ? 'enroll_free' : 'buy',
+          courseId: course.id,
+          courseTitle: course.title,
+          course: course
+        }));
+      } catch (e) {}
+      setAuthCourseTarget(course);
+      setShowRequireAuthModal(true);
+      return;
+    }
       setIsEnrolling(true);
       try {
         // 1. Direct resilient client-side Firestore registration
@@ -304,12 +336,12 @@ export default function Courses() {
                         <button 
                           onClick={() => openPaymentModal(course)} 
                           disabled={isEnrolling} 
-                          className="bg-gradient-to-r from-[#f9b03c] to-amber-500 hover:from-amber-400 hover:to-[#f9b03c] text-slate-950 font-black px-4 py-2.5 rounded-xl flex items-center gap-2 transition-all shadow-md hover:shadow-[0_0_20px_rgba(249,176,60,0.4)] disabled:opacity-50 text-xs cursor-pointer active:scale-95"
+                          className="btn-shimmer-interactive px-4 py-2.5 rounded-xl flex items-center gap-2 transition-all text-xs cursor-pointer active:scale-95 disabled:opacity-50 group font-black shadow-md"
                         >
                           {(course.isFree || course.price === 0 || course.price === '0' || course.price === 'Free') ? (
-                            <>{isEnrolling ? 'እባክዎ ይጠብቁ...' : t('btn_go_to_class')} <i className="fa-solid fa-arrow-right"></i></>
+                            <>{isEnrolling ? 'እባክዎ ይጠብቁ...' : t('btn_go_to_class')} <i className="fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform"></i></>
                           ) : (
-                            <>{t('btn_buy_course')} <i className="fa-solid fa-cart-shopping"></i></>
+                            <>{t('btn_buy_course')} <i className="fa-solid fa-cart-shopping group-hover:scale-110 group-hover:-rotate-6 transition-transform"></i></>
                           )}
                         </button>
                       </div>
@@ -329,6 +361,21 @@ export default function Courses() {
       {selectedCourse && (
         <PaymentModal course={selectedCourse} onClose={closePaymentModal} />
       )}
+
+      {/* 🌟 Dedicated Friendly Authentication Required Modal */}
+      <RequireAuthModal
+        isOpen={showRequireAuthModal}
+        onClose={() => { setShowRequireAuthModal(false); setAuthCourseTarget(null); }}
+        courseTitle={authCourseTarget?.title}
+        courseImage={authCourseTarget?.image}
+        isFree={authCourseTarget?.isFree || authCourseTarget?.price === 'Free' || authCourseTarget?.price === '0' || authCourseTarget?.price === 0}
+        onContinueAuth={(isSignup) => {
+          setShowRequireAuthModal(false);
+          window.dispatchEvent(new CustomEvent('open-auth-modal', { 
+            detail: { isSignupMode: isSignup, isSignUp: isSignup } 
+          }));
+        }}
+      />
     </React.Fragment>
   );
 }
