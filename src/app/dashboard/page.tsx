@@ -1111,7 +1111,6 @@ function StudentDashboardContent() {
     }, 400);
   };
 
-  const [savedAiNotes, setSavedAiNotes] = useState<Record<number, boolean>>({});
 
   // Persistent Tsehay AI Chat Sync across sessions & devices
   useEffect(() => {
