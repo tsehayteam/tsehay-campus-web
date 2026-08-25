@@ -26,6 +26,10 @@ interface AuthModalProps {
   setIsSignupMode: (val: boolean) => void;
 }
 
+const isProfileDataComplete = (data: any): boolean => {
+  return Boolean(data && (data.name || data.fullName) && (data.phone || data.phoneNumber));
+};
+
 export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMode }: AuthModalProps) {
   const [isResetMode, setIsResetMode] = useState(false);
   const [resetStep, setResetStep] = useState<'request' | 'otp' | 'new_password' | 'success'>('request');
