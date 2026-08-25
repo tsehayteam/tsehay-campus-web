@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import React, { useState, useEffect } from 'react';
 import { db, auth } from '@/lib/firebase/config';
 import { collection, onSnapshot, doc, setDoc, deleteDoc, serverTimestamp, query, orderBy, collectionGroup } from 'firebase/firestore';
@@ -1069,8 +1069,8 @@ export default function AdminDashboard() {
           <button onClick={() => setActiveTab('referrals')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition ${activeTab === 'referrals' ? 'bg-[#f9b03c]/15 dark:bg-slate-700/50 text-[#f9b03c]' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700/30'}`}>
             <i className="fa-solid fa-tag text-[#f9b03c] text-lg"></i> Promo Codes (የቅናሽ ኮዶች)
           </button>
-          <button onClick={() => setActiveTab('portfolio')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition ${activeTab === 'portfolio' ? 'bg-[#f9b03c]/15 dark:bg-slate-700/50 text-[#f9b03c]' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700/30'}`}>
-            <i className="fa-solid fa-briefcase text-[#f9b03c] text-lg"></i> የፖርትፎሊዮ ቪዲዮዎች
+          <button onClick={() => setActiveTab("portfolio")} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-black transition ${activeTab === "portfolio" ? "bg-[#f9b03c]/20 dark:bg-slate-700/60 text-[#f9b03c] border-l-4 border-[#f9b03c]" : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700/30"}`}
+            <i className="fa-brands fa-youtube text-red-500 text-xl"></i> <span>የ YouTube Portfolio (የስራ ማሳያ)</span>
           </button>
           <button onClick={() => setActiveTab('youtube')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition ${activeTab === 'youtube' ? 'bg-red-50 dark:bg-slate-700/50 text-red-600 dark:text-red-400' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700/30'}`}>
             <i className="fa-brands fa-youtube text-red-500 text-lg"></i> ነጻ የዩቲዩብ ቪዲዮዎች
@@ -1124,7 +1124,7 @@ export default function AdminDashboard() {
              {activeTab === 'dashboard' && 'አጠቃላይ መረጃ'}
              {activeTab === 'courses' && 'ኮርሶች ማስተዳደሪያ'}
              {activeTab === 'referrals' && 'የሪፈራል እና የቅናሽ ኮዶች ማስተዳደሪያ (Referral & Promo Codes)'}
-             {activeTab === 'portfolio' && 'የአሰልጣኙ ዩቲዩብ ፖርትፎሊዮ ማስተዳደሪያ (Instructor YouTube Portfolio)'}
+             {activeTab === "portfolio" && "የ YouTube Portfolio ማስተዳደሪያ (Instructor YouTube Portfolio)"}
              {activeTab === 'youtube' && 'ነጻ የዩቲዩብ ቪዲዮዎች ማስተዳደሪያ (YouTube Videos)'}
              {activeTab === 'about_video' && 'ስለ እኛ ገጽ ቪዲዮ ፕሌየር ማስተዳደሪያ (About Page Video Player)'}
              {activeTab === 'students' && 'የተማሪዎች አስተዳደር'}
@@ -2029,8 +2029,8 @@ export default function AdminDashboard() {
                       <i className="fa-solid fa-briefcase"></i>
                     </div>
                     <div>
-                      <h3 className="text-xl font-black text-dark dark:text-white">የአሰልጣኙ የተግባር ስራዎች (YouTube Portfolio Management)</h3>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">በዋናው ገጽ (Landing Page) ላይ የሚታዩትን የሀገር ውስጥ እና የአለም አቀፍ ቻናል ቪዲዮዎችን እዚህ ያስተዳድሩ</p>
+                      <h3 className="text-xl font-black text-dark dark:text-white">🎬 የ YouTube Portfolio ማስተዳደሪያ (Instructor YouTube Portfolio)</h3>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">በዋናው Landing Page ላይ የሚታዩትን ሁለቱን የዩቲዩብ ቪዲዮዎች (የሀገር ውስጥ እና የዓለም አቀፍ) እዚህ ያስገቡ። እዚህ የሚቀይሩት ወዲያውኑ በ Landing Page ላይ በቀጥታ ይታያል!</p>
                     </div>
                   </div>
                   {portfolioSavedMessage && (
