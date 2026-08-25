@@ -20,7 +20,6 @@ export default function FloatingAIButton() {
   const pathname = usePathname();
 
   const [isOpen, setIsOpen] = useState(false);
-  const [isMinimized, setIsMinimized] = useState(false);
   const [courses, setCourses] = useState<any[]>([]);
   const [selectedCourse, setSelectedCourse] = useState<any>(null);
 
@@ -106,17 +105,17 @@ export default function FloatingAIButton() {
 
   // Auto scroll to bottom
   useEffect(() => {
-    if (isOpen && !isMinimized) {
+    if (isOpen) {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [messages, isOpen, isMinimized, isLoading]);
+  }, [messages, isOpen, isLoading]);
 
   // Focus input when opened
   useEffect(() => {
-    if (isOpen && !isMinimized) {
+    if (isOpen) {
       setTimeout(() => inputRef.current?.focus(), 150);
     }
-  }, [isOpen, isMinimized]);
+  }, [isOpen]);
 
   // 4. Voice Recording / Speech-to-Text Setup
   const startVoiceRecording = () => {
@@ -389,9 +388,7 @@ export default function FloatingAIButton() {
 
       {/* 🌟 1. EXPANDABLE CHAT MODAL / DRAWER WITH LUXURY WALLPAPER PATTERN */}
       {isOpen && (
-        <div className={`mb-4 w-[92vw] sm:w-[420px] md:w-[450px] bg-[#070b14]/95 backdrop-blur-3xl border border-white/20 rounded-3xl shadow-[0_25px_80px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden transition-all duration-300 relative ${
-          isMinimized ? 'h-16' : 'h-[600px] sm:h-[640px] max-h-[85vh]'
-        }`}>
+        <div className="mb-4 w-[92vw] sm:w-[420px] md:w-[450px] bg-[#070b14]/95 backdrop-blur-3xl border border-white/20 rounded-3xl shadow-[0_25px_80px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden transition-all duration-300 relative h-[600px] sm:h-[640px] max-h-[85vh] animate-in fade-in slide-in-from-bottom-4 duration-200">
           
           {/* Subtle Glowing Background Mesh & Luxury Pattern */}
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(249,176,60,0.12),transparent_50%),radial-gradient(ellipse_at_bottom_left,rgba(50,104,186,0.15),transparent_50%)] pointer-events-none" />
@@ -458,6 +455,7 @@ export default function FloatingAIButton() {
             {/* Window Controls */}
             <div className="flex items-center gap-1.5">
               <button 
+                type="button"
                 onClick={handleClearChat}
                 className="w-8 h-8 rounded-xl bg-white/5 hover:bg-white/15 text-gray-300 hover:text-white flex items-center justify-center text-xs transition cursor-pointer"
                 title="ታሪክ አፅዳ (Clear Chat)"
@@ -465,15 +463,19 @@ export default function FloatingAIButton() {
                 <i className="fa-solid fa-trash-can text-xs"></i>
               </button>
 
+              {/* Minimize Button (Smoothly collapses back to the compact circular floating launcher button) */}
               <button 
-                onClick={() => setIsMinimized(prev => !prev)}
+                type="button"
+                onClick={() => setIsOpen(false)}
                 className="w-8 h-8 rounded-xl bg-white/5 hover:bg-white/15 text-gray-300 hover:text-white flex items-center justify-center text-xs transition cursor-pointer"
-                title={isMinimized ? "አስፋ" : "አሳንስ"}
+                title="አሳንስ (Minimize)"
               >
-                <i className={`fa-solid ${isMinimized ? 'fa-up-right-and-down-left-from-center' : 'fa-minus'} text-xs`}></i>
+                <i className="fa-solid fa-minus text-xs"></i>
               </button>
 
+              {/* Close Button */}
               <button 
+                type="button"
                 onClick={() => setIsOpen(false)}
                 className="w-8 h-8 rounded-xl bg-red-500/15 hover:bg-red-500 text-red-400 hover:text-white flex items-center justify-center text-xs transition cursor-pointer"
                 title="ዝጋ (Close)"
@@ -483,10 +485,8 @@ export default function FloatingAIButton() {
             </div>
           </div>
 
-          {!isMinimized && (
-            <>
-              {/* Course Context Switcher Pill */}
-              <div className="relative px-4 py-2 bg-white/[0.03] border-b border-white/[0.06] flex items-center justify-between gap-2 overflow-x-auto no-scrollbar z-10">
+          {/* Course Context Switcher Pill */}
+          <div className="relative px-4 py-2 bg-white/[0.03] border-b border-white/[0.06] flex items-center justify-between gap-2 overflow-x-auto no-scrollbar z-10">
                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider shrink-0 flex items-center gap-1">
                   <i className="fa-solid fa-sliders text-[#f9b03c]"></i>
                   <span>የትኩረት አቅጣጫ፦</span>
@@ -717,16 +717,14 @@ export default function FloatingAIButton() {
                   )}
                 </button>
               </form>
-            </>
-          )}
-
         </div>
       )}
 
       {/* 🌟 2. FLOATING LAUNCHER BUTTON WITH GLOWING RADIAL PULSE */}
       {!isOpen && (
         <button
-          onClick={() => { setIsOpen(true); setIsMinimized(false); }}
+          type="button"
+          onClick={() => setIsOpen(true)}
           className="group relative flex items-center gap-3 bg-gradient-to-r from-[#0d1527] via-[#13203f] to-[#0d1527] border border-[#f9b03c]/40 hover:border-[#f9b03c] p-2.5 sm:px-4 sm:py-3 rounded-full shadow-[0_10px_35px_rgba(0,0,0,0.6)] hover:shadow-[0_0_35px_rgba(249,176,60,0.45)] transition-all duration-300 active:scale-90 hover:-translate-y-1 cursor-pointer"
           title="Tsehay AI Assistant ን ክፈት"
         >
