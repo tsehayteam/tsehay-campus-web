@@ -36,6 +36,7 @@ export default function FloatingAIButton() {
   const [isLoading, setIsLoading] = useState(false);
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
   const [noteSavedIdx, setNoteSavedIdx] = useState<number | null>(null);
+  const [showConfirmClear, setShowConfirmClear] = useState(false);
 
   // 🎙️ Voice Recording & Speech-to-Text States
   const [isRecordingVoice, setIsRecordingVoice] = useState(false);
@@ -333,12 +334,15 @@ export default function FloatingAIButton() {
       setNoteSavedIdx(idx);
       setTimeout(() => setNoteSavedIdx(null), 2500);
     } catch (e) {
-      alert('ማስታወሻውን ማስቀመጥ አልተቻለም።');
+      console.warn('Note save error:', e);
     }
   };
 
-  const handleClearChat = async () => {
-    if (!confirm('የ Tsehay AI ቻት ታሪክዎን ማጽዳት ይፈልጋሉ?')) return;
+  const handleClearChat = () => {
+    setShowConfirmClear(true);
+  };
+
+  const performClearChat = async () => {
     const initialGreeting: Message[] = [{
       role: 'ai',
       text: 'ሰላም! እኔ Tsehay AI ነኝ። የፀሐይ ካምፓስ ይፋዊ AI ረዳትዎ እና የመማሪያ ጓደኛዎ። ዛሬ በምን ልርዳዎት? ✨',
@@ -353,6 +357,7 @@ export default function FloatingAIButton() {
         await setDoc(docRef, { messages: initialGreeting, updatedAt: serverTimestamp() });
       } catch (e) {}
     }
+    setShowConfirmClear(false);
   };
 
   // Quick Action Prompts
@@ -384,6 +389,38 @@ export default function FloatingAIButton() {
           {/* Subtle Glowing Background Mesh & Luxury Pattern */}
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(249,176,60,0.12),transparent_50%),radial-gradient(ellipse_at_bottom_left,rgba(50,104,186,0.15),transparent_50%)] pointer-events-none" />
           <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none" />
+
+          {/* 🛡️ Custom Sleek Branded Confirmation Modal (Replaces ugly browser window.confirm) */}
+          {showConfirmClear && (
+            <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
+              <div className="relative bg-[#0b1222] border border-white/20 rounded-3xl p-5 w-full max-w-[290px] shadow-[0_20px_50px_rgba(0,0,0,0.9)] text-center space-y-3.5 animate-in zoom-in-95 duration-200">
+                <div className="w-12 h-12 rounded-2xl bg-red-500/15 text-red-400 text-xl flex items-center justify-center mx-auto border border-red-500/30 shadow-inner">
+                  <i className="fa-solid fa-trash-can"></i>
+                </div>
+                <div>
+                  <h4 className="font-heading font-black text-white text-sm">ታሪክ ማጽዳት ይፈልጋሉ?</h4>
+                  <p className="text-[11px] text-gray-400 mt-1 leading-relaxed">የ Tsehay AI የውይይት ታሪክ ሙሉ በሙሉ ይሰረዛል።</p>
+                </div>
+                <div className="flex items-center gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmClear(false)}
+                    className="flex-1 py-2.5 px-3 rounded-xl bg-white/10 hover:bg-white/15 text-gray-300 font-bold text-xs transition cursor-pointer active:scale-95"
+                  >
+                    ተመለስ
+                  </button>
+                  <button
+                    type="button"
+                    onClick={performClearChat}
+                    className="flex-1 py-2.5 px-3 rounded-xl bg-gradient-to-r from-red-500 to-rose-600 hover:brightness-110 text-white font-black text-xs transition shadow-lg shadow-red-500/30 cursor-pointer active:scale-95 flex items-center justify-center gap-1.5"
+                  >
+                    <i className="fa-solid fa-trash-can text-[11px]"></i>
+                    <span>አጥፋ</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Header Bar */}
           <div className="relative px-5 py-3.5 bg-gradient-to-r from-[#0b1329]/90 via-[#0f1b38]/90 to-[#0b1329]/90 border-b border-white/10 flex items-center justify-between shrink-0 z-10">

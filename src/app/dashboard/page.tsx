@@ -299,6 +299,7 @@ function StudentDashboardContent() {
   const [aiAttachedImage, setAiAttachedImage] = useState<string | null>(null);
   const [isAiVoiceRecording, setIsAiVoiceRecording] = useState(false);
   const [aiRecordingSeconds, setAiRecordingSeconds] = useState(0);
+  const [showDashboardClearAiModal, setShowDashboardClearAiModal] = useState(false);
   const aiRecognitionRef = useRef<any>(null);
   const aiTimerRef = useRef<any>(null);
   const aiFileInputRef = useRef<HTMLInputElement>(null);
@@ -1276,8 +1277,11 @@ function StudentDashboardContent() {
     }
   };
 
-  const handleClearAiChat = async () => {
-    if (!confirm('የ Tsehay AI ቻት ታሪክዎን ማጥፋት እርግጠኛ ነዎት? (ከጠፋ በኋላ አይመለስም)')) return;
+  const handleClearAiChat = () => {
+    setShowDashboardClearAiModal(true);
+  };
+
+  const performClearAiChat = async () => {
     const defaultGreeting = [{ role: 'ai', text: "ሰላም! እኔ Tsehay AI ነኝ። የትምህርት ጥያቄዎች ካሉዎት እባክዎ ይጠይቁኝ!" }];
     setChatMessages(defaultGreeting);
     if (user?.uid) {
@@ -1288,6 +1292,7 @@ function StudentDashboardContent() {
         await setDoc(chatHistoryRef, { messages: defaultGreeting, updatedAt: serverTimestamp() });
       } catch (e) {}
     }
+    setShowDashboardClearAiModal(false);
   };
 
   useEffect(() => {
@@ -3200,6 +3205,38 @@ ${customAdminPrompt}
                  {/* Subtle Glowing Background Mesh & Luxury Wallpaper Pattern */}
                  <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(249,176,60,0.08),transparent_50%),radial-gradient(ellipse_at_bottom_left,rgba(50,104,186,0.12),transparent_50%)] pointer-events-none" />
                  <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none" />
+
+                 {/* 🛡️ Custom Sleek Branded Confirmation Modal */}
+                 {showDashboardClearAiModal && (
+                   <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
+                     <div className="relative bg-white dark:bg-[#0b1222] border border-gray-200 dark:border-white/20 rounded-3xl p-6 w-full max-w-[320px] shadow-[0_20px_50px_rgba(0,0,0,0.9)] text-center space-y-4 animate-in zoom-in-95 duration-200">
+                       <div className="w-14 h-14 rounded-2xl bg-red-500/15 text-red-500 text-2xl flex items-center justify-center mx-auto border border-red-500/30 shadow-inner">
+                         <i className="fa-solid fa-trash-can"></i>
+                       </div>
+                       <div>
+                         <h4 className="font-heading font-black text-dark dark:text-white text-base">ታሪክ ማጽዳት ይፈልጋሉ?</h4>
+                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">የ Tsehay AI የውይይት ታሪክ ሙሉ በሙሉ ይሰረዛል።</p>
+                       </div>
+                       <div className="flex items-center gap-2.5 pt-1">
+                         <button
+                           type="button"
+                           onClick={() => setShowDashboardClearAiModal(false)}
+                           className="flex-1 py-2.5 px-4 rounded-xl bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/15 text-gray-700 dark:text-gray-200 font-bold text-xs transition cursor-pointer active:scale-95"
+                         >
+                           ተመለስ
+                         </button>
+                         <button
+                           type="button"
+                           onClick={performClearAiChat}
+                           className="flex-1 py-2.5 px-4 rounded-xl bg-gradient-to-r from-red-500 to-rose-600 hover:brightness-110 text-white font-black text-xs transition shadow-lg shadow-red-500/30 cursor-pointer active:scale-95 flex items-center justify-center gap-1.5"
+                         >
+                           <i className="fa-solid fa-trash-can text-xs"></i>
+                           <span>አጥፋ</span>
+                         </button>
+                       </div>
+                     </div>
+                   </div>
+                 )}
 
                  {/* Top Header with Course Specialization Indicator */}
                  <div className="relative z-10 flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 dark:border-white/10 pb-4 mb-3">
