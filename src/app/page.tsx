@@ -331,8 +331,7 @@ export default function Home() {
         <div 
           className="terafab-hero-bg" 
           style={{
-            backgroundImage: "url('/assets/hero-bg-new.jpg')",
-            transform: `translate3d(0, ${heroParallaxY}px, 0)`
+            backgroundImage: "url('/assets/hero-bg-new.jpg')"
           }}
         ></div>
         {/* Deep Void Black Vignette */}
