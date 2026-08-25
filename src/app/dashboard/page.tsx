@@ -378,7 +378,7 @@ function StudentDashboardContent() {
   };
 
   const startLessonVoiceRecording = () => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
       alert("ይቅርታ፣ የእርስዎ ብሮውዘር Voice Recognition አይደግፍም።");
@@ -386,14 +386,26 @@ function StudentDashboardContent() {
     }
     try {
       const rec = new SpeechRecognition();
-      rec.lang = 'am-ET';
+      rec.lang = "am-ET";
       rec.continuous = true;
       rec.interimResults = true;
+
+      let baseText = "";
+      setLessonAiQuery(prev => {
+        baseText = prev || "";
+        return prev;
+      });
+
       rec.onstart = () => setIsLessonVoiceRecording(true);
       rec.onresult = (e: any) => {
-        let text = '';
-        for (let i = e.resultIndex; i < e.results.length; i++) text += e.results[i][0].transcript;
-        if (text) setLessonAiQuery(prev => (prev ? `${prev} ` : '') + text.trim());
+        let fullText = "";
+        for (let i = 0; i < e.results.length; i++) {
+          fullText += e.results[i][0].transcript;
+        }
+        fullText = fullText.trim();
+        if (fullText) {
+          setLessonAiQuery(baseText ? `${baseText} ${fullText}` : fullText);
+        }
       };
       rec.onerror = () => setIsLessonVoiceRecording(false);
       rec.onend = () => setIsLessonVoiceRecording(false);
@@ -1147,7 +1159,7 @@ function StudentDashboardContent() {
   }, [user]);
 
   const startAiVoiceRecording = () => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
       alert("ይቅርታ፣ የእርስዎ ብሮውዘር Voice Recognition አይደግፍም። እባክዎ Chrome ወይም Safari ይጠቀሙ።");
@@ -1156,12 +1168,18 @@ function StudentDashboardContent() {
 
     try {
       const recognition = new SpeechRecognition();
-      recognition.lang = 'am-ET';
+      recognition.lang = "am-ET";
       recognition.continuous = true;
       recognition.interimResults = true;
 
+      let baseText = "";
+      setChatInput(prev => {
+        baseText = prev || "";
+        return prev;
+      });
+
       recognition.onstart = () => {
-        setIsAiVoiceRecording(true);
+        setIsAiVoiceRecording(true)
         setAiRecordingSeconds(0);
         aiTimerRef.current = setInterval(() => {
           setAiRecordingSeconds(prev => prev + 1);
@@ -1169,12 +1187,13 @@ function StudentDashboardContent() {
       };
 
       recognition.onresult = (event: any) => {
-        let currentTranscript = '';
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          currentTranscript += event.results[i][0].transcript;
+        let fullTranscript = "";
+        for (let i = 0; i < event.results.length; i++) {
+          fullTranscript += event.results[i][0].transcript;
         }
-        if (currentTranscript) {
-          setChatInput(prev => (prev ? `${prev} ` : '') + currentTranscript.trim());
+        fullTranscript = fullTranscript.trim();
+        if (fullTranscript) {
+          setChatInput(baseText ? `${baseText} ${fullTranscript}` : fullTranscript);
         }
       };
 
