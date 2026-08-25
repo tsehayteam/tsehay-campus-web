@@ -294,6 +294,8 @@ function StudentDashboardContent() {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<any>(null);
   const [isChatLoading, setIsChatLoading] = useState(false);
+  const [selectedAiCourse, setSelectedAiCourse] = useState<any>(null);
+  const [copiedMsgIdx, setCopiedMsgIdx] = useState<number | null>(null);
   const [currentVideoPlayedFraction, setCurrentVideoPlayedFraction] = useState(0);
 
   // Enterprise Classroom States
@@ -1057,12 +1059,14 @@ function StudentDashboardContent() {
     return () => { isMounted = false; };
   }, [user]);
 
-  const handleSendAiMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!chatInput.trim()) return;
+  const handleSendAiMessage = async (e?: React.FormEvent, customPrompt?: string) => {
+    if (e) e.preventDefault();
+    const queryText = (customPrompt || chatInput).trim();
+    if (!queryText || isChatLoading) return;
 
-    const userMsg = chatInput.trim();
-    const newMsgs = [...chatMessages, { role: 'user', text: userMsg }];
+    const userMsg = queryText;
+    const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const newMsgs = [...chatMessages, { role: 'user', text: userMsg, timestamp: nowTime }];
     setChatMessages(newMsgs);
     setChatInput('');
     setIsChatLoading(true);
@@ -1077,16 +1081,33 @@ function StudentDashboardContent() {
       })();
     }
 
+    const courseToUse = selectedAiCourse || activeCourse;
+    const courseContext = courseToUse ? {
+      courseTitle: courseToUse.title,
+      courseId: courseToUse.id,
+      category: courseToUse.category,
+      lessonTitle: activeLesson?.title || 'Course Overview',
+      lessonDesc: activeLesson?.desc || courseToUse.desc || '',
+      courseAiPrompt: courseToUse.aiPrompt || '',
+      whatYouWillLearn: Array.isArray(courseToUse.whatYouWillLearn) 
+        ? courseToUse.whatYouWillLearn.join(', ') 
+        : (courseToUse.whatYouWillLearn || '')
+    } : undefined;
+
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: userMsg })
+        body: JSON.stringify({ prompt: userMsg, courseContext })
       });
       const data = await response.json();
       const reply = data.reply || data.error || "ይቅርታ፣ አሁን ላይ መመለስ አልቻልኩም።";
-      const finalMsgs = [...newMsgs, { role: 'ai', text: reply }];
+      const finalMsgs = [
+        ...newMsgs, 
+        { role: 'ai', text: reply, timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }
+      ];
       setChatMessages(finalMsgs);
+      setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
 
       if (user?.uid) {
         try { localStorage.setItem(`tsehay-ai-chat_${user.uid}`, JSON.stringify(finalMsgs)); } catch (e) {}
@@ -1098,7 +1119,7 @@ function StudentDashboardContent() {
         }
       }
     } catch (error: any) {
-      const errorMsgs = [...newMsgs, { role: 'ai', text: "ይቅርታ፣ የሲስተም ችግር አጋጥሟል! እባክዎ ትንሽ ቆይተው እንደገና ይሞክሩ።" }];
+      const errorMsgs = [...newMsgs, { role: 'ai', text: "ይቅርታ፣ የሲስተም ችግር አጋጥሟል! እባክዎ ትንሽ ቆይተው እንደገና ይሞክሩ።", timestamp: nowTime }];
       setChatMessages(errorMsgs);
     } finally {
       setIsChatLoading(false);
@@ -3015,46 +3036,111 @@ ${customAdminPrompt}
 
         {currentView === 'ai' && (
           <div className="max-w-4xl mx-auto py-4 space-y-4">
-             <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 md:p-8 shadow-md border border-slate-200 dark:border-slate-700 flex flex-col h-[calc(100vh-180px)] min-h-[500px] overflow-hidden">
-                 {/* Human AI Assistant Header */}
-                 <div className="flex items-center justify-between border-b border-gray-100 dark:border-slate-700 pb-4 mb-4">
-                     <div className="flex items-center gap-3.5">
+             <div className="bg-white dark:bg-slate-900/90 backdrop-blur-2xl rounded-3xl p-4 sm:p-6 md:p-8 shadow-xl border border-slate-200 dark:border-white/10 flex flex-col h-[calc(100vh-170px)] min-h-[540px] overflow-hidden">
+                 
+                 {/* Top Header with Course Specialization Indicator */}
+                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 dark:border-white/10 pb-4 mb-3">
+                     <div className="flex items-center gap-3">
                          <div className="relative">
-                           <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-amber-400 to-yellow-300 text-dark flex items-center justify-center text-2xl shadow-lg border-2 border-white dark:border-slate-700 animate-pulse-glow">
-                               <i className="fa-solid fa-user-astronaut text-xl text-dark"></i>
+                           <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-200 text-slate-950 flex items-center justify-center text-xl font-black shadow-[0_0_20px_rgba(249,176,60,0.4)] border border-white/20">
+                               <i className="fa-solid fa-robot"></i>
                            </div>
-                           <span className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-2 border-white dark:border-slate-800 rounded-full"></span>
+                           <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 border-2 border-white dark:border-slate-900 rounded-full animate-pulse"></span>
                          </div>
                          <div>
                              <div className="flex items-center gap-2">
-                               <h2 className="text-xl font-black font-heading text-dark dark:text-white">Tsehay AI Assistant</h2>
-                               <span className="bg-primary/20 text-amber-800 dark:text-primary text-[10px] font-black px-2.5 py-0.5 rounded-full border border-primary/30">
-                                 👋 ምን ላግዛችሁ?
+                               <h2 className="text-base sm:text-lg font-black font-heading text-dark dark:text-white">Tsehay AI Tutor</h2>
+                               <span className="bg-[#f9b03c]/20 text-amber-800 dark:text-[#f9b03c] text-[10px] font-black px-2.5 py-0.5 rounded-full border border-[#f9b03c]/30 flex items-center gap-1">
+                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
+                                 <span>24/7 LIVE</span>
                                </span>
                              </div>
-                             <p className="text-xs text-gray-500 dark:text-gray-400 font-bold mt-0.5">ትምህርታዊ ጥያቄዎችዎን በፍጥነት የሚመልስ የእርስዎ AI ረዳት</p>
+                             <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+                               {selectedAiCourse ? `የትኩረት መስክ: ${selectedAiCourse.title}` : 'አጠቃላይ የትምህርት AI ረዳት'}
+                             </p>
                          </div>
                      </div>
-                     <button onClick={handleClearAiChat} className="text-xs bg-red-50 text-red-600 dark:bg-red-950/30 dark:text-red-400 font-bold px-3 py-2 rounded-xl hover:bg-red-100 transition shrink-0 cursor-pointer">
-                         <i className="fa-solid fa-trash mr-1"></i> ታሪክ አፅዳ
-                     </button>
+
+                     {/* Course Selector Dropdown & Clear Chat Action */}
+                     <div className="flex items-center gap-2">
+                       <select
+                         value={selectedAiCourse?.id || ''}
+                         onChange={(e) => {
+                           const cId = e.target.value;
+                           const match = courses.find(c => c.id === cId);
+                           setSelectedAiCourse(match || null);
+                         }}
+                         className="bg-gray-100 dark:bg-slate-800 text-xs font-bold text-dark dark:text-[#f9b03c] border border-gray-200 dark:border-white/10 rounded-xl px-3 py-1.5 outline-none focus:border-[#f9b03c] transition max-w-[200px] truncate cursor-pointer"
+                       >
+                         <option value="" className="bg-white dark:bg-slate-900 text-dark dark:text-white">🌐 አጠቃላይ (General Campus AI)</option>
+                         {courses.map(c => (
+                           <option key={c.id} value={c.id} className="bg-white dark:bg-slate-900 text-dark dark:text-white">
+                             📚 {c.title}
+                           </option>
+                         ))}
+                       </select>
+
+                       <button 
+                         onClick={handleClearAiChat} 
+                         className="text-xs bg-red-50 text-red-600 dark:bg-red-950/30 dark:text-red-400 font-bold px-3 py-1.5 rounded-xl hover:bg-red-100 transition shrink-0 cursor-pointer flex items-center gap-1"
+                         title="ታሪክ አፅዳ"
+                       >
+                         <i className="fa-solid fa-trash-can text-xs"></i>
+                         <span className="hidden sm:inline">አፅዳ</span>
+                       </button>
+                     </div>
                  </div>
 
-                 {/* Chat Body */}
-                 <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-slate-900/50 rounded-2xl border border-gray-100 dark:border-slate-700">
-                     {chatMessages.map((m: any, i: number) => (
-                         <div key={i} className={`flex flex-col ${m.role === 'user' ? 'items-end' : 'items-start'}`}>
-                             <div className={`max-w-[80%] p-4 rounded-2xl text-sm leading-relaxed ${m.role === 'user' ? 'bg-secondary text-white rounded-br-none' : 'bg-white dark:bg-slate-700 dark:text-white text-dark shadow-sm rounded-bl-none border border-gray-100 dark:border-slate-600'}`}>
-                                 {m.text}
+                 {/* Chat Messages Body */}
+                 <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-4 bg-gray-50 dark:bg-slate-950/60 rounded-2xl border border-gray-100 dark:border-white/5">
+                     {chatMessages.map((m: any, i: number) => {
+                       const isUser = m.role === 'user';
+                       return (
+                         <div key={i} className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} animate-in fade-in slide-in-from-bottom-2 duration-300`}>
+                             <div className="flex items-end gap-2 max-w-[92%] sm:max-w-[84%]">
+                               {!isUser && (
+                                 <div className="w-7 h-7 rounded-xl bg-[#f9b03c]/20 text-[#f9b03c] border border-[#f9b03c]/30 flex items-center justify-center shrink-0 mb-1 text-xs">
+                                   <i className="fa-solid fa-robot"></i>
+                                 </div>
+                               )}
+
+                               <div className={`p-3.5 sm:p-4 rounded-2xl text-xs sm:text-sm leading-relaxed shadow-sm break-words ${
+                                 isUser 
+                                   ? 'bg-gradient-to-r from-[#f9b03c] to-amber-400 text-slate-950 font-bold rounded-br-none shadow-[0_4px_20px_rgba(249,176,60,0.2)]' 
+                                   : 'bg-white dark:bg-[#0c1222] dark:text-slate-100 text-slate-900 shadow-sm rounded-bl-none border border-gray-200 dark:border-white/10 font-normal'
+                               }`}>
+                                   <div className="whitespace-pre-wrap font-body">
+                                     {m.text}
+                                   </div>
+
+                                   <div className={`flex items-center justify-end gap-1 mt-2 text-[10px] ${isUser ? 'text-slate-900/80 font-bold' : 'text-gray-400'}`}>
+                                     <span>{m.timestamp || 'አሁን'}</span>
+                                     {isUser && <i className="fa-solid fa-check-double text-[10px] text-slate-900"></i>}
+                                   </div>
+                               </div>
                              </div>
-                             {m.role !== 'user' && i > 0 && (
-                                 <div className="flex items-center gap-2 mt-2 flex-wrap">
+
+                             {/* Action buttons under AI response */}
+                             {!isUser && i > 0 && (
+                                 <div className="flex items-center gap-2 mt-1.5 ml-9 flex-wrap">
+                                     <button
+                                         onClick={() => {
+                                             navigator.clipboard.writeText(m.text);
+                                             setCopiedMsgIdx(i);
+                                             setTimeout(() => setCopiedMsgIdx(null), 2000);
+                                         }}
+                                         className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/15 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-white/10 flex items-center gap-1 transition cursor-pointer"
+                                     >
+                                         <i className={`fa-solid ${copiedMsgIdx === i ? 'fa-check text-emerald-500' : 'fa-copy'}`}></i>
+                                         <span>{copiedMsgIdx === i ? '✓ ተገልብጧል' : 'ኮፒ'}</span>
+                                     </button>
+
                                      <button 
                                          onClick={() => {
                                              handleSaveNote(m.text);
                                              setSavedAiNotes(prev => ({ ...prev, [i]: true }));
                                          }} 
-                                         className={`text-[11px] font-black px-3 py-1.5 rounded-lg border flex items-center gap-1.5 transition-all shadow-xs cursor-pointer ${
+                                         className={`text-[11px] font-black px-3 py-1 rounded-lg border flex items-center gap-1.5 transition-all shadow-xs cursor-pointer ${
                                              savedAiNotes[i]
                                                  ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/40'
                                                  : 'bg-amber-400/20 hover:bg-amber-400 dark:bg-amber-500/20 dark:hover:bg-amber-400 text-amber-800 dark:text-amber-300 hover:text-dark border-amber-400/40'
@@ -3063,13 +3149,14 @@ ${customAdminPrompt}
                                          <i className={`fa-solid ${savedAiNotes[i] ? 'fa-circle-check text-emerald-600 dark:text-emerald-400' : 'fa-bookmark text-[10px]'}`}></i> 
                                          <span>{savedAiNotes[i] ? '✓ ወደ ማስታወሻ ተመዝግቧል' : 'ወደ ማስታወሻ አድ አድርግ'}</span>
                                      </button>
+
                                      {savedAiNotes[i] && (
                                          <button
                                              onClick={() => {
                                                  setCurrentView('classroom');
                                                  setActiveTab('notes');
                                              }}
-                                             className="text-[11px] font-bold text-secondary dark:text-primary hover:underline flex items-center gap-1 cursor-pointer bg-primary/10 px-2.5 py-1 rounded-lg border border-primary/20"
+                                             className="text-[11px] font-bold text-secondary dark:text-primary hover:underline flex items-center gap-1 cursor-pointer bg-primary/10 px-2 py-0.5 rounded-lg border border-primary/20"
                                          >
                                              <span>ማስታወሻዎችን እይ</span>
                                              <i className="fa-solid fa-arrow-right text-[10px]"></i>
@@ -3078,30 +3165,70 @@ ${customAdminPrompt}
                                  </div>
                              )}
                          </div>
-                     ))}
+                       );
+                     })}
+
                      {isChatLoading && (
-                         <div className="flex justify-start">
-                             <div className="bg-white dark:bg-slate-700 border border-gray-100 dark:border-slate-600 rounded-2xl p-4 shadow-sm flex gap-2 items-center">
-                                 <div className="w-2.5 h-2.5 rounded-full bg-primary animate-bounce"></div>
-                                 <div className="w-2.5 h-2.5 rounded-full bg-primary animate-bounce" style={{animationDelay: '0.2s'}}></div>
-                                 <div className="w-2.5 h-2.5 rounded-full bg-primary animate-bounce" style={{animationDelay: '0.4s'}}></div>
+                         <div className="flex items-center gap-2 ml-2 text-xs">
+                             <div className="w-7 h-7 rounded-xl bg-[#f9b03c]/20 text-[#f9b03c] border border-[#f9b03c]/30 flex items-center justify-center shrink-0">
+                               <i className="fa-solid fa-robot text-xs animate-spin"></i>
+                             </div>
+                             <div className="bg-white dark:bg-[#0c1222] border border-gray-200 dark:border-white/10 rounded-2xl p-3.5 shadow-sm flex items-center gap-2 rounded-bl-none">
+                                 <div className="w-2 h-2 rounded-full bg-[#f9b03c] animate-bounce"></div>
+                                 <div className="w-2 h-2 rounded-full bg-[#f9b03c] animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                                 <div className="w-2 h-2 rounded-full bg-[#f9b03c] animate-bounce" style={{animationDelay: '0.4s'}}></div>
+                                 <span className="text-[11px] font-bold text-[#f9b03c] ml-1">Tsehay AI እየጻፈ ነው...</span>
                              </div>
                          </div>
                      )}
+                     <div ref={chatEndRef} />
                  </div>
 
-                 {/* Input Bar */}
-                 <form onSubmit={handleSendAiMessage} className="mt-4 flex gap-2">
+                 {/* Quick Action Suggestion Chips */}
+                 <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
+                     {[
+                       { label: '💡 የኮርስ ማጠቃለያ', prompt: selectedAiCourse ? `የ"${selectedAiCourse.title}" ኮርስ ዋና ዋና ነጥቦችን አጠቃልልልኝ` : 'የኮርሶቹን ዋና ዋና ጥቅሞች አጠቃልልልኝ' },
+                       { label: '🚀 የተግባር እርምጃዎች', prompt: selectedAiCourse ? `በ"${selectedAiCourse.title}" የተማርነውን በኢትዮጵያ ውስጥ በተግባር እንዴት ልተግብረው?` : 'የተማርኩትን ወደ ተግባራዊ ገቢ እንዴት እቀይረዋለሁ?' },
+                       { label: '❓ ለጀማሪ አብራራልኝ', prompt: 'ያልገባኝን ነገር በቀላል እና ግልጽ በሆነ አማርኛ ደረጃ በደረጃ አብራራልኝ' },
+                       { label: '📝 የፈተና ጥያቄ አዘጋጅልኝ', prompt: 'እውቀቴን ለመፈተሽ 3 ተግባራዊ ጥያቄዎችን አዘጋጅተህ ጠይቀኝ' }
+                     ].map((item, idx) => (
+                       <button
+                         key={idx}
+                         type="button"
+                         onClick={() => handleSendAiMessage(undefined, item.prompt)}
+                         className="text-[11px] font-bold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-white/5 hover:bg-[#f9b03c] dark:hover:bg-[#f9b03c] hover:text-slate-950 dark:hover:text-slate-950 px-3 py-1 rounded-full border border-gray-200 dark:border-white/10 transition-all duration-150 active:scale-95 whitespace-nowrap shrink-0 cursor-pointer"
+                       >
+                         {item.label}
+                       </button>
+                     ))}
+                 </div>
+
+                 {/* Input Bar with Tactile Button Micro-Interactions */}
+                 <form onSubmit={(e) => handleSendAiMessage(e)} className="flex gap-2">
                      <input 
                          type="text" 
                          value={chatInput}
                          onChange={e => setChatInput(e.target.value)}
-                         placeholder="ለ Tsehay AI ጥያቄዎን እዚህ ይጻፉ..." 
-                         className="flex-1 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm outline-none focus:border-primary text-dark dark:text-white transition"
+                         placeholder={selectedAiCourse ? `ስለ ${selectedAiCourse.title} ለ Tsehay AI ጥያቄዎን እዚህ ይጻፉ...` : "ለ Tsehay AI ማንኛውንም ጥያቄ እዚህ ይጻፉ..."}
+                         className="flex-1 bg-gray-50 dark:bg-slate-950/80 border border-gray-200 dark:border-white/15 rounded-2xl px-4 py-3 text-xs sm:text-sm outline-none focus:border-[#f9b03c] text-dark dark:text-white placeholder-gray-400 transition"
                      />
-                     <button type="submit" className="px-6 bg-primary text-dark font-black rounded-xl hover:bg-yellow-400 transition shadow-sm flex items-center gap-2">
-                         <i className="fa-solid fa-paper-plane"></i>
-                         <span>ላክ</span>
+                     <button 
+                         type="submit" 
+                         disabled={!chatInput.trim() || isChatLoading}
+                         className={`px-5 sm:px-6 rounded-2xl font-black text-xs sm:text-sm flex items-center justify-center gap-2 transition-all duration-200 cursor-pointer shadow-md active:scale-90 ${
+                           chatInput.trim() && !isChatLoading
+                             ? 'bg-gradient-to-r from-[#f9b03c] to-amber-400 text-slate-950 shadow-[0_0_20px_rgba(249,176,60,0.4)] hover:brightness-110'
+                             : 'bg-gray-200 dark:bg-white/10 text-gray-400 cursor-not-allowed'
+                         }`}
+                     >
+                         {isChatLoading ? (
+                           <div className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin"></div>
+                         ) : (
+                           <>
+                             <i className="fa-solid fa-paper-plane text-xs"></i>
+                             <span>ላክ</span>
+                           </>
+                         )}
                      </button>
                  </form>
              </div>
@@ -3433,92 +3560,113 @@ ${customAdminPrompt}
 
       {/* In-Lesson Contextual AI Tutor Modal */}
       {showLessonAiModal && (
-          <div className="fixed inset-0 z-[10000] bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-              <div className="bg-slate-900 border border-slate-700 text-white w-full max-w-xl rounded-3xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden animate-in zoom-in-95 duration-200">
+          <div className="fixed inset-0 z-[10000] bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4">
+              <div className="bg-[#070b14]/95 backdrop-blur-2xl border border-white/15 text-white w-full max-w-xl rounded-3xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden animate-in zoom-in-95 duration-200">
                   {/* Header */}
-                  <div className="p-4 sm:p-5 border-b border-slate-800 bg-slate-950 flex items-center justify-between">
+                  <div className="p-4 sm:p-5 border-b border-white/10 bg-gradient-to-r from-[#0b1329] via-[#0f1b38] to-[#0b1329] flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-2xl bg-amber-400 text-slate-950 flex items-center justify-center text-lg font-black shadow-md">
-                              <i className="fa-solid fa-user-astronaut"></i>
+                          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-200 text-slate-950 flex items-center justify-center text-lg font-black shadow-[0_0_15px_rgba(249,176,60,0.4)]">
+                              <i className="fa-solid fa-robot"></i>
                           </div>
                           <div>
-                              <h4 className="font-black text-sm sm:text-base">ስለዚህ ትምህርት ፀሐይን ጠይቁ</h4>
-                              <p className="text-[11px] text-amber-400 font-bold truncate max-w-xs sm:max-w-sm">
-                                  {activeLesson?.title || activeCourse?.title}
+                              <h4 className="font-black text-sm sm:text-base flex items-center gap-2">
+                                <span>ስለዚህ ትምህርት Tsehay AI ን ይጠይቁ</span>
+                                <span className="text-[9px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.5 rounded-full font-black">ACTIVE</span>
+                              </h4>
+                              <p className="text-[11px] text-[#f9b03c] font-bold truncate max-w-xs sm:max-w-sm">
+                                  📚 {activeLesson?.title || activeCourse?.title}
                               </p>
                           </div>
                       </div>
                       <button
                           onClick={() => setShowLessonAiModal(false)}
-                          className="text-gray-400 hover:text-white p-2 rounded-full hover:bg-slate-800 text-lg transition cursor-pointer"
+                          className="w-8 h-8 rounded-xl bg-white/5 hover:bg-red-500 text-gray-400 hover:text-white flex items-center justify-center text-sm transition cursor-pointer"
+                          title="ዝጋ (Close)"
                       >
                           ✕
                       </button>
                   </div>
 
                   {/* Chat Body */}
-                  <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-[260px] max-h-[400px]">
+                  <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-[260px] max-h-[420px] bg-[#050811]/60">
                       {lessonAiMessages.length === 0 ? (
-                          <div className="text-center py-8 text-gray-400 space-y-3">
-                              <i className="fa-solid fa-wand-magic-sparkles text-3xl text-amber-400 animate-pulse"></i>
+                          <div className="text-center py-8 text-gray-300 space-y-3">
+                              <div className="w-14 h-14 rounded-3xl bg-[#f9b03c]/10 text-[#f9b03c] mx-auto flex items-center justify-center text-2xl border border-[#f9b03c]/20 shadow-inner">
+                                <i className="fa-solid fa-wand-magic-sparkles animate-pulse"></i>
+                              </div>
                               <p className="text-xs sm:text-sm font-bold">ስለዚህ ሌሰን ያልገባዎትን ነገር ወይም ጥያቄ ፀሐይን ይጠይቁ!</p>
                               <div className="flex flex-wrap gap-2 justify-center pt-2">
                                   <button
-                                      onClick={() => handleAskLessonAi(`ይህንን ትምህርት ("${activeLesson?.title}") በምሳሌ በአጭሩ አስረዳኝ።`)}
-                                      className="text-[11px] bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 px-3 py-1.5 rounded-full transition cursor-pointer"
+                                      onClick={() => handleAskLessonAi(`ይህንን ትምህርት ("${activeLesson?.title || activeCourse?.title}") በምሳሌ በአጭሩ አስረዳኝ።`)}
+                                      className="text-[11px] font-bold bg-white/5 hover:bg-[#f9b03c] text-gray-200 hover:text-slate-950 border border-white/10 px-3 py-1.5 rounded-full transition-all duration-150 active:scale-95 cursor-pointer"
                                   >
                                       💡 በምሳሌ አስረዳኝ
                                   </button>
                                   <button
                                       onClick={() => handleAskLessonAi(`በዚህ ሌሰን ላይ የተማርነውን በገቢ ለመቀየር ምን ምን እርምጃዎችን መውሰድ አለብኝ?`)}
-                                      className="text-[11px] bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 px-3 py-1.5 rounded-full transition cursor-pointer"
+                                      className="text-[11px] font-bold bg-white/5 hover:bg-[#f9b03c] text-gray-200 hover:text-slate-950 border border-white/10 px-3 py-1.5 rounded-full transition-all duration-150 active:scale-95 cursor-pointer"
                                   >
                                       🚀 ተግባራዊ እርምጃዎች
                                   </button>
                               </div>
                           </div>
                       ) : (
-                          lessonAiMessages.map((msg, idx) => (
-                              <div
-                                  key={idx}
-                                  className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                              >
-                                  <div
-                                      className={`max-w-[85%] p-3.5 rounded-2xl text-xs sm:text-sm leading-relaxed ${
-                                          msg.role === 'user'
-                                              ? 'bg-amber-500 text-slate-950 font-bold rounded-tr-none'
-                                              : 'bg-slate-800 text-gray-100 border border-slate-700 rounded-tl-none font-body whitespace-pre-wrap'
-                                      }`}
-                                  >
-                                      {msg.text}
-                                  </div>
-                              </div>
-                          ))
+                          lessonAiMessages.map((msg, idx) => {
+                              const isUser = msg.role === 'user';
+                              return (
+                                <div
+                                    key={idx}
+                                    className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} animate-in fade-in slide-in-from-bottom-2 duration-300`}
+                                >
+                                    <div className="flex items-end gap-2 max-w-[88%]">
+                                        {!isUser && (
+                                          <div className="w-6 h-6 rounded-lg bg-[#f9b03c]/20 text-[#f9b03c] border border-[#f9b03c]/30 flex items-center justify-center shrink-0 mb-1 text-[10px]">
+                                            <i className="fa-solid fa-robot"></i>
+                                          </div>
+                                        )}
+                                        <div
+                                            className={`p-3.5 rounded-2xl text-xs sm:text-sm leading-relaxed shadow-sm break-words ${
+                                                isUser
+                                                    ? 'bg-gradient-to-r from-[#f9b03c] to-amber-400 text-slate-950 font-bold rounded-br-none shadow-[0_4px_20px_rgba(249,176,60,0.2)]'
+                                                    : 'bg-[#0f1629] text-gray-100 border border-white/10 rounded-bl-none font-body whitespace-pre-wrap'
+                                            }`}
+                                        >
+                                            {msg.text}
+                                        </div>
+                                    </div>
+                                </div>
+                              );
+                          })
                       )}
                       {isLessonAiLoading && (
-                          <div className="flex justify-start">
-                              <div className="bg-slate-800 text-amber-400 p-3 rounded-2xl rounded-tl-none text-xs flex items-center gap-2 border border-slate-700">
-                                  <div className="w-3.5 h-3.5 border-2 border-amber-400 border-t-transparent rounded-full animate-spin"></div>
-                                  <span>Tsehay AI እያሰላሰለ ነው...</span>
+                          <div className="flex items-center gap-2 ml-2 text-xs">
+                              <div className="w-6 h-6 rounded-lg bg-[#f9b03c]/20 text-[#f9b03c] border border-[#f9b03c]/30 flex items-center justify-center shrink-0 text-[10px]">
+                                <i className="fa-solid fa-robot animate-spin"></i>
+                              </div>
+                              <div className="bg-[#0f1629] p-3 rounded-2xl border border-white/10 rounded-bl-none flex items-center gap-2">
+                                  <div className="w-2 h-2 rounded-full bg-[#f9b03c] animate-bounce"></div>
+                                  <div className="w-2 h-2 rounded-full bg-[#f9b03c] animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                                  <div className="w-2 h-2 rounded-full bg-[#f9b03c] animate-bounce" style={{animationDelay: '0.4s'}}></div>
+                                  <span className="text-[11px] font-bold text-[#f9b03c] ml-1">Tsehay AI እያሰላሰለ ነው...</span>
                               </div>
                           </div>
                       )}
                   </div>
 
                   {/* Input Bar */}
-                  <div className="p-3 bg-slate-950 border-t border-slate-800 flex items-center gap-2">
+                  <div className="p-3 bg-gradient-to-t from-[#060a14] to-[#0c1222] border-t border-white/10 flex items-center gap-2">
                       <input
                           type="text"
                           value={lessonAiQuery}
                           onChange={(e) => setLessonAiQuery(e.target.value)}
                           onKeyDown={(e) => { if (e.key === 'Enter') handleAskLessonAi(); }}
-                          placeholder="ጥያቄዎን እዚህ ይፃፉ..."
-                          className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white placeholder-gray-500 outline-none focus:border-amber-400"
+                          placeholder="ስለዚህ ትምህርት ጥያቄዎን እዚህ ይፃፉ..."
+                          className="flex-1 bg-white/5 border border-white/15 rounded-2xl px-4 py-2.5 text-xs sm:text-sm text-white placeholder-gray-400 outline-none focus:border-[#f9b03c] transition"
                       />
                       <button
                           onClick={() => handleAskLessonAi()}
                           disabled={isLessonAiLoading || !lessonAiQuery.trim()}
-                          className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-black px-4 py-2.5 rounded-xl text-xs transition disabled:opacity-50 flex items-center gap-1.5 cursor-pointer active:scale-95"
+                          className="h-10 px-5 bg-gradient-to-r from-[#f9b03c] to-amber-400 hover:brightness-110 text-slate-950 font-black rounded-2xl text-xs transition disabled:opacity-40 flex items-center justify-center gap-1.5 cursor-pointer shadow-md active:scale-90"
                       >
                           <span>ላክ</span>
                           <i className="fa-solid fa-paper-plane text-xs"></i>
