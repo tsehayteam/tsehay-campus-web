@@ -15,7 +15,7 @@ export default function About() {
       <main className="min-h-screen flex flex-col bg-[#030509] text-slate-100 transition-colors duration-300 relative overflow-hidden">
         
         {/* =========================================================================
-            🌟 CRITICAL FIX 3: 3D PARTICLE NETWORK & MESH GRADIENT BACKGROUND
+            🌟 3D PARTICLE NETWORK & MESH GRADIENT CANVAS BACKGROUND
            ========================================================================= */}
         <About3DParticleMeshCanvas />
 
@@ -249,7 +249,7 @@ export default function About() {
             </div>
 
             {/* =========================================================================
-                4. OUR TEAM (የአመራር ቡድን / Our Team) - SPARKLING PROFILE CARDS
+                🌟 4. OUR TEAM (የአመራር ቡድን / Our Team) - DISTINCT ELEGANT GLASSMORPHISM
                ========================================================================= */}
             <div>
               <div className="text-center max-w-3xl mx-auto mb-10 sm:mb-14">
@@ -265,56 +265,86 @@ export default function About() {
               <div className="flex flex-wrap justify-center gap-8 max-w-4xl mx-auto">
                 
                 {/* Eyoub Sahle */}
-                <div className="relative p-[2px] rounded-3xl group hover:-translate-y-2 transition-all duration-500 w-full sm:w-[380px]">
-                  <div className="absolute inset-0 bg-gradient-to-b from-[#f9b03c]/50 via-transparent to-transparent opacity-50 group-hover:opacity-100 transition duration-500 rounded-3xl" />
-                  
-                  <span className="absolute -top-1 -left-1 w-2.5 h-2.5 bg-[#f9b03c] rounded-full shadow-[0_0_8px_#f9b03c] animate-ping opacity-75 pointer-events-none" />
-                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#f9b03c] rounded-full shadow-[0_0_8px_#f9b03c] pointer-events-none" />
-                  <span className="absolute -bottom-1 -left-1 w-2.5 h-2.5 bg-[#f9b03c] rounded-full shadow-[0_0_8px_#f9b03c] pointer-events-none" />
-                  <span className="absolute -bottom-1 -right-1 w-2.5 h-2.5 bg-[#f9b03c] rounded-full shadow-[0_0_8px_#f9b03c] animate-ping opacity-75 delay-500 pointer-events-none" />
-                  
-                  <div className="relative rounded-[22px] bg-slate-900/90 backdrop-blur-xl p-8 text-center border border-white/10 group-hover:border-[#f9b03c]/40 shadow-xl flex flex-col items-center">
-                    <div className="w-28 h-28 rounded-full overflow-hidden mb-5 bg-gray-800 border-3 border-[#f9b03c]/40 shadow-[0_0_25px_rgba(249,176,60,0.35)] group-hover:scale-105 transition duration-300">
-                      <img 
-                        src="/assets/eyob_white.jpg" 
-                        alt="Eyoub Sahle" 
-                        className="w-full h-full object-cover" 
-                        onError={(e) => { e.currentTarget.src='https://ui-avatars.com/api/?name=Eyoub+Sahle&background=000000&color=fff&size=160'; }} 
-                      />
+                <div className="group relative w-full sm:w-[380px] rounded-[24px] overflow-hidden transition-all duration-500 hover:scale-[1.02] hover:-translate-y-1">
+                  <div 
+                    className="relative rounded-[24px] p-8 sm:p-10 text-center flex flex-col items-center transition-all duration-500 h-full"
+                    style={{
+                      backdropFilter: 'blur(16px)',
+                      WebkitBackdropFilter: 'blur(16px)',
+                      background: 'rgba(255, 255, 255, 0.02)',
+                      border: '1px solid rgba(255, 255, 255, 0.05)',
+                    }}
+                  >
+                    {/* Soft Golden Yellow Spotlight Fading in on Hover */}
+                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(249,176,60,0.16),transparent_70%)] opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none rounded-[24px]" />
+                    
+                    {/* Hover Border Transition */}
+                    <div className="absolute inset-0 rounded-[24px] border border-transparent group-hover:border-[rgba(249,176,60,0.6)] transition-colors duration-500 pointer-events-none" />
+
+                    {/* Circular Avatar Photo */}
+                    <div className="relative mb-6">
+                      <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden border-2 border-[#f9b03c]/50 group-hover:border-[#f9b03c] group-hover:shadow-[0_0_25px_rgba(249,176,60,0.4)] transition-all duration-500 bg-slate-900">
+                        <img 
+                          src="/assets/eyob_white.jpg" 
+                          alt="Eyoub Sahle" 
+                          className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105" 
+                          onError={(e) => { e.currentTarget.src='https://ui-avatars.com/api/?name=Eyoub+Sahle&background=000000&color=fff&size=160'; }} 
+                        />
+                      </div>
                     </div>
                     
-                    <h3 className="font-black text-white text-xl mb-1.5 notranslate whitespace-nowrap">
+                    {/* Crisp Typography */}
+                    <h3 className="font-bold text-white text-xl sm:text-2xl mb-2 notranslate whitespace-nowrap tracking-tight">
                       ኢዮብ ሳህሌ (Eyoub Sahle)
                     </h3>
-                    <p className="text-xs text-[#f9b03c] font-black uppercase tracking-wider">ባለቤት እና ዋና አሰልጣኝ</p>
-                    <p className="text-xs text-gray-400 font-bold mt-0.5">Owner & Lead Instructor</p>
+                    <p className="text-sm font-bold text-[#f9b03c] tracking-wide mb-1">
+                      ባለቤት እና ዋና አሰልጣኝ
+                    </p>
+                    <p className="text-xs font-semibold text-[#5a93e8] tracking-wider uppercase">
+                      Owner & Lead Instructor
+                    </p>
                   </div>
                 </div>
 
                 {/* Ribka Teshome */}
-                <div className="relative p-[2px] rounded-3xl group hover:-translate-y-2 transition-all duration-500 w-full sm:w-[380px]">
-                  <div className="absolute inset-0 bg-gradient-to-b from-[#3268ba]/50 via-transparent to-transparent opacity-50 group-hover:opacity-100 transition duration-500 rounded-3xl" />
-                  
-                  <span className="absolute -top-1 -left-1 w-2.5 h-2.5 bg-[#5a93e8] rounded-full shadow-[0_0_8px_#3268ba] animate-ping opacity-75 pointer-events-none" />
-                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#5a93e8] rounded-full shadow-[0_0_8px_#3268ba] pointer-events-none" />
-                  <span className="absolute -bottom-1 -left-1 w-2.5 h-2.5 bg-[#5a93e8] rounded-full shadow-[0_0_8px_#3268ba] pointer-events-none" />
-                  <span className="absolute -bottom-1 -right-1 w-2.5 h-2.5 bg-[#5a93e8] rounded-full shadow-[0_0_8px_#3268ba] animate-ping opacity-75 delay-500 pointer-events-none" />
-                  
-                  <div className="relative rounded-[22px] bg-slate-900/90 backdrop-blur-xl p-8 text-center border border-white/10 group-hover:border-[#3268ba]/40 shadow-xl flex flex-col items-center">
-                    <div className="w-28 h-28 rounded-full overflow-hidden mb-5 bg-gray-800 border-3 border-[#3268ba]/40 shadow-[0_0_25px_rgba(50,104,186,0.35)] group-hover:scale-105 transition duration-300">
-                      <img 
-                        src="/assets/ribka2.jpg" 
-                        alt="Ribka Teshome" 
-                        className="w-full h-full object-cover" 
-                        onError={(e) => { e.currentTarget.src='https://ui-avatars.com/api/?name=Ribka+Teshome&background=000000&color=fff&size=160'; }} 
-                      />
+                <div className="group relative w-full sm:w-[380px] rounded-[24px] overflow-hidden transition-all duration-500 hover:scale-[1.02] hover:-translate-y-1">
+                  <div 
+                    className="relative rounded-[24px] p-8 sm:p-10 text-center flex flex-col items-center transition-all duration-500 h-full"
+                    style={{
+                      backdropFilter: 'blur(16px)',
+                      WebkitBackdropFilter: 'blur(16px)',
+                      background: 'rgba(255, 255, 255, 0.02)',
+                      border: '1px solid rgba(255, 255, 255, 0.05)',
+                    }}
+                  >
+                    {/* Soft Golden Yellow Spotlight Fading in on Hover */}
+                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(249,176,60,0.16),transparent_70%)] opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none rounded-[24px]" />
+                    
+                    {/* Hover Border Transition */}
+                    <div className="absolute inset-0 rounded-[24px] border border-transparent group-hover:border-[rgba(249,176,60,0.6)] transition-colors duration-500 pointer-events-none" />
+
+                    {/* Circular Avatar Photo */}
+                    <div className="relative mb-6">
+                      <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden border-2 border-[#f9b03c]/50 group-hover:border-[#f9b03c] group-hover:shadow-[0_0_25px_rgba(249,176,60,0.4)] transition-all duration-500 bg-slate-900">
+                        <img 
+                          src="/assets/ribka2.jpg" 
+                          alt="Ribka Teshome" 
+                          className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105" 
+                          onError={(e) => { e.currentTarget.src='https://ui-avatars.com/api/?name=Ribka+Teshome&background=000000&color=fff&size=160'; }} 
+                        />
+                      </div>
                     </div>
                     
-                    <h3 className="font-black text-white text-xl mb-1.5 notranslate whitespace-nowrap">
+                    {/* Crisp Typography */}
+                    <h3 className="font-bold text-white text-xl sm:text-2xl mb-2 notranslate whitespace-nowrap tracking-tight">
                       ርብቃ ተሾመ (Ribka Teshome)
                     </h3>
-                    <p className="text-xs text-[#5a93e8] font-black uppercase tracking-wider">ዋና ስራ አስኪያጅ</p>
-                    <p className="text-xs text-gray-400 font-bold mt-0.5">General Manager</p>
+                    <p className="text-sm font-bold text-[#f9b03c] tracking-wide mb-1">
+                      ዋና ስራ አስኪያጅ
+                    </p>
+                    <p className="text-xs font-semibold text-[#5a93e8] tracking-wider uppercase">
+                      General Manager
+                    </p>
                   </div>
                 </div>
 
@@ -419,11 +449,8 @@ function About3DParticleMeshCanvas() {
       });
     }
 
-    let angle = 0;
-
     const render = () => {
       ctx.clearRect(0, 0, width, height);
-      angle += 0.0015;
 
       // Update and draw particles
       for (let i = 0; i < particles.length; i++) {
@@ -866,7 +893,7 @@ function AboutSingleCleanPhoto() {
           borderRadius: '16px',
           backdropFilter: 'blur(16px)',
           WebkitBackdropFilter: 'blur(16px)',
-          background: 'rgba(255, 255, 255, 0.03)',
+          background: 'rgba(255, 255, 255, 0.02)',
           border: '1px solid rgba(255, 255, 255, 0.08)',
         }}
         className="group relative w-full aspect-[16/9] sm:aspect-[21/9] rounded-[16px] overflow-hidden cursor-pointer shadow-[0_10px_35px_rgba(0,0,0,0.5)] hover:shadow-[0_15px_45px_rgba(249,176,60,0.25)] hover:border-[#f9b03c]/50 transition-all duration-500 transform hover:-translate-y-1.5 hover:scale-[1.01]"
