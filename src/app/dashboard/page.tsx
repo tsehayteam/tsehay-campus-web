@@ -300,6 +300,31 @@ function StudentDashboardContent() {
   const [isAiVoiceRecording, setIsAiVoiceRecording] = useState(false);
   const [aiRecordingSeconds, setAiRecordingSeconds] = useState(0);
   const [showDashboardClearAiModal, setShowDashboardClearAiModal] = useState(false);
+  
+  // 🗑️ Tsehay AI 15-Day Recycle Bin State
+  const [showAiTrashModal, setShowAiTrashModal] = useState(false);
+  const [aiTrashList, setAiTrashList] = useState<Array<{
+    id: string;
+    deletedAt: string;
+    expiresAt: string;
+    courseTitle?: string;
+    preview: string;
+    messages: any[];
+  }>>(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const cached = localStorage.getItem('tsehay_ai_chat_trash');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed)) {
+          const now = Date.now();
+          return parsed.filter(item => new Date(item.expiresAt).getTime() > now);
+        }
+      }
+    } catch (e) {}
+    return [];
+  });
+
   const [savedAiNotes, setSavedAiNotes] = useState<{ [msgIdx: number]: boolean }>({});
   const [savedAiNoteIds, setSavedAiNoteIds] = useState<{ [msgIdx: number]: string }>({});
   const [highlightedNoteId, setHighlightedNoteId] = useState<string | null>(null);
@@ -1124,12 +1149,12 @@ function StudentDashboardContent() {
   };
 
 
-  // Persistent Tsehay AI Chat Sync across sessions & devices
+  // Persistent Tsehay AI Chat Sync & 15-Day Trash Auto-Purge across sessions & devices
   useEffect(() => {
     if (!user) return;
     let isMounted = true;
 
-    // Load cached chat from localStorage immediately
+    // 1. Load cached chat from localStorage immediately
     try {
       const saved = localStorage.getItem(`tsehay-ai-chat_${user.uid}`) || localStorage.getItem('tsehay-ai-chat');
       if (saved && isMounted) {
@@ -1140,20 +1165,52 @@ function StudentDashboardContent() {
       }
     } catch (e) {}
 
-    // Load permanent chat from Firestore
-    const fetchChatHistory = async () => {
+    // 2. Load cached trash from localStorage & auto-purge expired (> 15 days)
+    try {
+      const savedTrash = localStorage.getItem(`tsehay_ai_chat_trash_${user.uid}`) || localStorage.getItem('tsehay_ai_chat_trash');
+      if (savedTrash && isMounted) {
+        const parsedTrash = JSON.parse(savedTrash);
+        if (Array.isArray(parsedTrash)) {
+          const now = Date.now();
+          const clean = parsedTrash.filter((item: any) => new Date(item.expiresAt).getTime() > now);
+          setAiTrashList(clean);
+        }
+      }
+    } catch (e) {}
+
+    // 3. Load permanent chat and trash from Firestore
+    const fetchChatAndTrashHistory = async () => {
       try {
+        // Chat History
         const chatHistoryRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'ai_chat', 'history');
         const snap = await getDoc(chatHistoryRef);
         if (isMounted && snap.exists() && Array.isArray(snap.data().messages) && snap.data().messages.length > 0) {
           setChatMessages(snap.data().messages);
           try { localStorage.setItem(`tsehay-ai-chat_${user.uid}`, JSON.stringify(snap.data().messages)); } catch (e) {}
         }
+
+        // Trash History with 15-day Auto-Purge
+        const trashDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'ai_chat', 'trash');
+        const trashSnap = await getDoc(trashDocRef);
+        if (isMounted && trashSnap.exists() && Array.isArray(trashSnap.data().items)) {
+          const now = Date.now();
+          const validItems = trashSnap.data().items.filter((item: any) => new Date(item.expiresAt).getTime() > now);
+          setAiTrashList(validItems);
+          try {
+            localStorage.setItem(`tsehay_ai_chat_trash_${user.uid}`, JSON.stringify(validItems));
+            localStorage.setItem('tsehay_ai_chat_trash', JSON.stringify(validItems));
+          } catch (e) {}
+
+          // If expired items were removed, sync back to Firestore
+          if (validItems.length !== trashSnap.data().items.length) {
+            setDoc(trashDocRef, { items: validItems, updatedAt: serverTimestamp() }).catch(() => {});
+          }
+        }
       } catch (err) {
-        console.warn("Could not load AI chat history from Firestore:", err);
+        console.warn("Could not load AI chat history or trash from Firestore:", err);
       }
     };
-    fetchChatHistory();
+    fetchChatAndTrashHistory();
 
     return () => { isMounted = false; };
   }, [user]);
@@ -1322,11 +1379,43 @@ function StudentDashboardContent() {
     setShowDashboardClearAiModal(true);
   };
 
+  const saveTrashList = async (updatedList: any[]) => {
+    const now = Date.now();
+    const cleanList = updatedList.filter(item => new Date(item.expiresAt).getTime() > now);
+    setAiTrashList(cleanList);
+    try {
+      localStorage.setItem('tsehay_ai_chat_trash', JSON.stringify(cleanList));
+      if (user?.uid) {
+        localStorage.setItem(`tsehay_ai_chat_trash_${user.uid}`, JSON.stringify(cleanList));
+        const trashDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'ai_chat', 'trash');
+        await setDoc(trashDocRef, { items: cleanList, updatedAt: serverTimestamp() });
+      }
+    } catch (e) {}
+  };
+
   const performClearAiChat = async () => {
     // 1. Immediately dismiss modal so view returns to chat instantly
     setShowDashboardClearAiModal(false);
+
+    // 2. If there are user messages in the current conversation, archive it into 15-Day Trash / Recycle Bin
+    const hasUserMessages = chatMessages.some(m => m.role === 'user');
+    if (hasUserMessages && chatMessages.length > 1) {
+      const firstUserMsg = chatMessages.find(m => m.role === 'user')?.text || '';
+      const previewText = firstUserMsg.length > 90 ? firstUserMsg.slice(0, 90) + '...' : firstUserMsg || 'የውይይት ታሪክ';
+      const now = Date.now();
+      const trashedItem = {
+        id: `trash_${now}_${Math.random().toString(36).substring(2, 6)}`,
+        deletedAt: new Date(now).toISOString(),
+        expiresAt: new Date(now + 15 * 24 * 60 * 60 * 1000).toISOString(),
+        courseTitle: selectedAiCourse?.title || 'አጠቃላይ (General)',
+        preview: previewText,
+        messages: [...chatMessages],
+      };
+      const updatedTrash = [trashedItem, ...aiTrashList.filter(item => new Date(item.expiresAt).getTime() > now)];
+      saveTrashList(updatedTrash);
+    }
     
-    // 2. Reset chat states
+    // 3. Reset chat states to fresh greeting
     const defaultGreeting = [{ role: 'ai', text: "ሰላም! እኔ Tsehay AI ነኝ። የትምህርት ጥያቄዎች ካሉዎት እባክዎ ይጠይቁኝ!" }];
     setChatMessages(defaultGreeting);
     setChatInput("");
@@ -1335,7 +1424,7 @@ function StudentDashboardContent() {
     setSavedAiNotes({});
     setSavedAiNoteIds({});
 
-    // 3. Clear local storage and Firestore history asynchronously
+    // 4. Clear local storage and Firestore active chat history asynchronously
     if (user?.uid) {
       try { localStorage.removeItem(`tsehay-ai-chat_${user.uid}`); } catch (e) {}
       try { localStorage.removeItem('tsehay-ai-chat'); } catch (e) {}
@@ -1344,6 +1433,31 @@ function StudentDashboardContent() {
         await setDoc(chatHistoryRef, { messages: defaultGreeting, updatedAt: serverTimestamp() });
       } catch (e) {}
     }
+  };
+
+  const handleRestoreTrashChat = (trashed: any) => {
+    if (!trashed || !Array.isArray(trashed.messages)) return;
+    setChatMessages(trashed.messages);
+    if (user?.uid) {
+      try { localStorage.setItem(`tsehay-ai-chat_${user.uid}`, JSON.stringify(trashed.messages)); } catch (e) {}
+      try {
+        const chatHistoryRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'ai_chat', 'history');
+        setDoc(chatHistoryRef, { messages: trashed.messages, updatedAt: serverTimestamp() }).catch(() => {});
+      } catch (e) {}
+    }
+    // Remove from trash upon restore
+    const updated = aiTrashList.filter(t => t.id !== trashed.id);
+    saveTrashList(updated);
+    setShowAiTrashModal(false);
+  };
+
+  const handleDeleteTrashItem = (id: string) => {
+    const updated = aiTrashList.filter(t => t.id !== id);
+    saveTrashList(updated);
+  };
+
+  const handleEmptyTrash = () => {
+    saveTrashList([]);
   };
 
   useEffect(() => {
@@ -3331,7 +3445,6 @@ ${customAdminPrompt}
                                       <span className="text-xs font-bold text-gray-400 block mb-1">የተላከው ጥያቄ፦</span>
                                       <p className="text-sm font-body text-dark dark:text-white whitespace-pre-wrap">{ticket.message}</p>
                                   </div>
-
                                   {ticket.replies && ticket.replies.length > 0 && (
                                       <div className="pl-4 border-l-3 border-emerald-500 space-y-2 mt-3">
                                           {ticket.replies.map((reply: any, rIdx: number) => (
@@ -3379,7 +3492,9 @@ ${customAdminPrompt}
                        </div>
                        <div>
                          <h4 className="font-heading font-black text-dark dark:text-white text-base">ታሪክ ማጽዳት ይፈልጋሉ?</h4>
-                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">የ Tsehay AI የውይይት ታሪክ ሙሉ በሙሉ ይሰረዛል።</p>
+                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
+                            የአሁኑ የውይይት ታሪክ ወደ <span className="text-[#f9b03c] font-bold">የ 15 ቀናት ቆሻሻ መጣያ (Trash)</span> ይዛወራል።
+                          </p>
                        </div>
                        <div className="flex items-center gap-2.5 pt-1">
                          <button
@@ -3402,6 +3517,114 @@ ${customAdminPrompt}
                    </div>
                  )}
 
+                  {/* 🗑️ 15-Day Recycle Bin Modal (Restore & Auto-Purge Manager) */}
+                  {showAiTrashModal && (
+                    <div className="absolute inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
+                      <div className="relative bg-white dark:bg-[#0b1222] border border-gray-200 dark:border-white/20 rounded-3xl p-5 sm:p-6 w-full max-w-lg shadow-[0_25px_60px_rgba(0,0,0,0.9)] flex flex-col max-h-[85vh] overflow-hidden animate-in zoom-in-95 duration-200">
+                        {/* Modal Header */}
+                        <div className="flex items-center justify-between border-b border-gray-100 dark:border-white/10 pb-4 mb-3">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-10 h-10 rounded-xl bg-[#f9b03c]/15 text-[#f9b03c] border border-[#f9b03c]/30 flex items-center justify-center text-lg">
+                              <i className="fa-solid fa-recycle"></i>
+                            </div>
+                            <div>
+                              <h4 className="font-heading font-black text-dark dark:text-white text-base">የቆሻሻ መጣያ (የ 15 ቀናት ማቆያ)</h4>
+                              <p className="text-[11px] text-gray-500 dark:text-gray-400">የተሰረዙ ውይይቶች ለ 15 ቀናት ተቀምጠው በራሳቸው ይጠፋሉ።</p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setShowAiTrashModal(false)}
+                            className="w-8 h-8 rounded-full bg-gray-100 dark:bg-white/10 text-gray-500 hover:text-dark dark:hover:text-white flex items-center justify-center transition cursor-pointer"
+                          >
+                            <i className="fa-solid fa-xmark text-sm"></i>
+                          </button>
+                        </div>
+
+                        {/* Trash Items List */}
+                        <div className="flex-1 overflow-y-auto space-y-3 py-2 pr-1">
+                          {aiTrashList.length === 0 ? (
+                            <div className="text-center py-12 px-4 space-y-2">
+                              <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-white/5 text-gray-400 flex items-center justify-center mx-auto text-xl">
+                                <i className="fa-solid fa-folder-open"></i>
+                              </div>
+                              <p className="text-sm font-bold text-dark dark:text-white">በቆሻሻ መጣያው ውስጥ ምንም ውይይት የለም</p>
+                              <p className="text-xs text-gray-400">የሚያጸዷቸው ውይይቶች እዚህ ለ 15 ቀናት ተቀምጠው ይቆያሉ።</p>
+                            </div>
+                          ) : (
+                            aiTrashList.map((item) => {
+                              const daysLeft = Math.max(0, Math.ceil((new Date(item.expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
+                              return (
+                                <div key={item.id} className="p-3.5 rounded-2xl bg-gray-50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/10 hover:border-[#f9b03c]/40 transition-all space-y-2.5">
+                                  <div className="flex items-center justify-between gap-2">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-md bg-[#3268ba]/15 text-[#5a93e8] border border-[#3268ba]/30">
+                                        {item.courseTitle || 'አጠቃላይ'}
+                                      </span>
+                                      <span className="text-[10px] text-gray-400 font-medium">
+                                        {new Date(item.deletedAt).toLocaleDateString('am-ET')}
+                                      </span>
+                                    </div>
+                                    <span className="text-[10px] font-black text-[#f9b03c] bg-[#f9b03c]/10 border border-[#f9b03c]/25 px-2 py-0.5 rounded-full">
+                                      ⏳ ከ {daysLeft} ቀን በኋላ ይጠፋል
+                                    </span>
+                                  </div>
+
+                                  <p className="text-xs text-slate-700 dark:text-slate-300 line-clamp-2 leading-relaxed">
+                                    "{item.preview}"
+                                  </p>
+
+                                  <div className="flex items-center justify-between pt-1 border-t border-gray-200/50 dark:border-white/5">
+                                    <span className="text-[10px] text-gray-400 font-medium">
+                                      {item.messages.length} መልዕክቶች
+                                    </span>
+                                    <div className="flex items-center gap-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => handleDeleteTrashItem(item.id)}
+                                        className="text-[11px] text-red-500 hover:text-red-600 dark:hover:text-red-400 font-bold px-2 py-1 rounded-lg hover:bg-red-500/10 transition cursor-pointer"
+                                      >
+                                        በቋሚነት አጥፋ
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleRestoreTrashChat(item)}
+                                        className="text-[11px] bg-[#f9b03c] hover:bg-[#e59b2b] text-slate-950 font-black px-3 py-1 rounded-lg transition shadow-xs cursor-pointer flex items-center gap-1 active:scale-95"
+                                      >
+                                        <i className="fa-solid fa-rotate-left text-[10px]"></i>
+                                        <span>ወደ ቻት መልስ</span>
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+
+                        {/* Modal Footer Toolbar */}
+                        <div className="flex items-center justify-between border-t border-gray-100 dark:border-white/10 pt-3 mt-2">
+                          {aiTrashList.length > 0 ? (
+                            <button
+                              type="button"
+                              onClick={handleEmptyTrash}
+                              className="text-xs text-red-500 hover:text-red-600 font-bold hover:underline cursor-pointer flex items-center gap-1"
+                            >
+                              <i className="fa-solid fa-trash-can text-[10px]"></i>
+                              <span>ሁሉንም ባዶ አድርግ</span>
+                            </button>
+                          ) : <div />}
+                          <button
+                            type="button"
+                            onClick={() => setShowAiTrashModal(false)}
+                            className="px-4 py-2 rounded-xl bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/15 text-xs font-bold text-dark dark:text-white transition cursor-pointer"
+                          >
+                            ዝጋ
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                  {/* Top Header with Course Specialization Indicator */}
                  <div className="relative z-10 flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 dark:border-white/10 pb-4 mb-3">
                      <div className="flex items-center gap-3">
@@ -3409,13 +3632,13 @@ ${customAdminPrompt}
                            <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-200 text-slate-950 flex items-center justify-center text-xl font-black shadow-[0_0_20px_rgba(249,176,60,0.4)] border border-white/20">
                                <i className="fa-solid fa-robot"></i>
                            </div>
-                           <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 border-2 border-white dark:border-slate-900 rounded-full animate-pulse"></span>
+                            <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-[#f9b03c] border-2 border-white dark:border-slate-900 rounded-full animate-pulse shadow-[0_0_8px_#f9b03c]"></span>
                          </div>
                          <div>
                              <div className="flex items-center gap-2">
                                <h2 className="text-base sm:text-lg font-black font-heading text-dark dark:text-white">Tsehay AI Tutor</h2>
                                <span className="bg-[#f9b03c]/20 text-amber-800 dark:text-[#f9b03c] text-[10px] font-black px-2.5 py-0.5 rounded-full border border-[#f9b03c]/30 flex items-center gap-1">
-                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
+                                  <span className="w-1.5 h-1.5 rounded-full bg-[#f9b03c] animate-ping"></span>
                                  <span>24/7 LIVE</span>
                                </span>
                              </div>
@@ -3444,6 +3667,21 @@ ${customAdminPrompt}
                          ))}
                        </select>
 
+                        {/* Subtle 15-Day Trash / Recycle Bin Icon Button */}
+                        <button 
+                          type="button"
+                          onClick={() => setShowAiTrashModal(true)} 
+                          className="relative text-xs bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.06] dark:hover:bg-white/10 text-slate-700 dark:text-slate-300 font-bold px-2.5 sm:px-3 py-1.5 rounded-xl transition shrink-0 cursor-pointer flex items-center gap-1.5 border border-slate-200 dark:border-white/10"
+                          title="የቆሻሻ መጣያ (የ 15 ቀናት ማቆያ)"
+                        >
+                          <i className="fa-solid fa-recycle text-[#f9b03c] text-xs"></i>
+                          <span className="hidden md:inline">ቆሻሻ መጣያ</span>
+                          {aiTrashList.length > 0 && (
+                            <span className="w-4 h-4 rounded-full bg-[#f9b03c] text-slate-950 font-black text-[9px] flex items-center justify-center shadow-xs">
+                              {aiTrashList.length}
+                            </span>
+                          )}
+                        </button>
                        <button 
                          onClick={handleClearAiChat} 
                          className="text-xs bg-red-50 text-red-600 dark:bg-red-950/30 dark:text-red-400 font-bold px-3 py-1.5 rounded-xl hover:bg-red-100 transition shrink-0 cursor-pointer flex items-center gap-1"
