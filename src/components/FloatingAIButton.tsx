@@ -27,7 +27,7 @@ export default function FloatingAIButton() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'ai',
-      text: 'ሰላም! እኔ Tsehay AI ነኝ። የፀሐይ ካምፓስ ይፋዊ AI ረዳትዎ እና የመማሪያ ጓደኛዎ። ዛሬ በምን ልርዳዎት? ስለ ኮርሶች፣ ስለ ስልጠናዎች፣ ስለ ክፍያ ወይም ስለ ትምህርቶች ማንኛውንም ጥያቄ በጽሑፍ፣ በድምፅ (Voice) ወይም በፎቶ/ስክሪንሾት ይጠይቁኝ! ✨',
+      text: 'ሰላም! እንኳን ወደ ፀሐይ ካምፓስ በደህና መጡ! ዛሬ ስለ ስልጠናዎቻችን፣ ስለ ዩቲዩብ ስኬት፣ ስለ ምዝገባ ወይም ስለ ኮርሶች በምን ልርዳዎት? ማንኛውንም ጥያቄ በጽሑፍ፣ በድምፅ (Voice) ወይም በስክሪንሾት መጠየቅ ይችላሉ! ✨',
       timestamp: 'አሁን'
     }
   ]);
@@ -352,7 +352,7 @@ export default function FloatingAIButton() {
   const performClearChat = async () => {
     const initialGreeting: Message[] = [{
       role: 'ai',
-      text: 'ሰላም! እኔ Tsehay AI ነኝ። የፀሐይ ካምፓስ ይፋዊ AI ረዳትዎ እና የመማሪያ ጓደኛዎ። ዛሬ በምን ልርዳዎት? ✨',
+      text: 'ሰላም! እንኳን ወደ ፀሐይ ካምፓስ በደህና መጡ! ዛሬ በምን ልርዳዎት? ✨',
       timestamp: 'አሁን'
     }];
     setMessages(initialGreeting);
