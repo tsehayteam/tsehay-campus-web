@@ -275,10 +275,9 @@ export default function Home() {
   
   // FAQ state
   const [openFaqId, setOpenFaqId] = useState<number | null>(null);
+  const [isAiActive, setIsAiActive] = useState(false);
 
   const { t } = useLanguage();
-
-
 
   useEffect(() => {
     // Force scroll to top on initial load
@@ -305,18 +304,41 @@ export default function Home() {
     });
 
     const registerElements = () => {
-      const revealElements = document.querySelectorAll('.scrolly-reveal, .scrolly-card');
+      const revealElements = document.querySelectorAll('.scrolly-reveal, .scrolly-card, .terafab-ai-box');
       revealElements.forEach((el) => observer.observe(el));
     };
 
     registerElements();
+
+    // Specific AI Section Observer to gate typing animation until entrance completes
+    const aiEl = document.getElementById('ai-feature');
+    let aiTimeout: NodeJS.Timeout;
+    const aiObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-visible');
+          aiTimeout = setTimeout(() => setIsAiActive(true), 500);
+        } else {
+          const rect = entry.boundingClientRect;
+          if (rect.top > window.innerHeight + 50 || rect.bottom < -50) {
+            entry.target.classList.remove('is-visible');
+            clearTimeout(aiTimeout);
+            setIsAiActive(false);
+          }
+        }
+      });
+    }, { threshold: 0.12 });
+
+    if (aiEl) aiObserver.observe(aiEl);
 
     // Re-register dynamically rendered items (courses, cards)
     const timer = setTimeout(registerElements, 350);
 
     return () => {
       clearTimeout(timer);
+      clearTimeout(aiTimeout);
       observer.disconnect();
+      aiObserver.disconnect();
     };
   }, [courses.length]);
 
@@ -711,8 +733,8 @@ export default function Home() {
     </section>
 
     
-    {/* SECTION 1: INTERACTIVE "TSEHAY AI" DEMO (Synthesia.io Style Split 50/50 Screen with 3D Depth) */}
-    <section id="ai-feature" className="relative py-20 lg:py-28 overflow-hidden bg-[#030509]/80 border-y border-white/10 scrolly-reveal">
+    {/* SECTION 1: INTERACTIVE "TSEHAY AI" DEMO (Synthesia.io Style Split 50/50 Screen with 3D Depth & Staggered Cascade) */}
+    <section id="ai-feature" className="relative py-20 lg:py-28 overflow-hidden bg-[#030509]/80 border-y border-white/10 terafab-ai-box">
         {/* Subtle Stardust Mesh Background */}
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-15 mix-blend-overlay pointer-events-none"></div>
         <div className="absolute top-1/4 -left-32 w-96 h-96 bg-[#f9b03c]/10 rounded-full blur-[140px] pointer-events-none"></div>
@@ -722,22 +744,25 @@ export default function Home() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
                 {/* Left Side: Bold High-Converting Punchy Typography */}
                 <div className="flex flex-col text-left">
-                    <div className="inline-flex items-center gap-2 bg-[#f9b03c]/10 border border-[#f9b03c]/25 px-3.5 py-1 rounded-full mb-4 w-fit shadow-[0_0_20px_rgba(249,176,60,0.2)]">
+                    {/* Item 1: Badge */}
+                    <div className="terafab-ai-item delay-1 inline-flex items-center gap-2 bg-[#f9b03c]/10 border border-[#f9b03c]/25 px-3.5 py-1 rounded-full mb-4 w-fit shadow-[0_0_20px_rgba(249,176,60,0.2)]">
                         <span className="w-2 h-2 rounded-full bg-[#f9b03c] animate-pulse"></span>
                         <span className="text-xs font-black uppercase tracking-widest text-[#f9b03c]">24/7 የግል AI ረዳት</span>
                     </div>
 
-                    <h2 className="text-3xl sm:text-4xl lg:text-[2.75rem] font-black font-heading text-slate-900 dark:text-white mb-4 leading-[1.18] tracking-tight">
+                    {/* Item 2: Heading */}
+                    <h2 className="terafab-ai-item delay-2 text-3xl sm:text-4xl lg:text-[2.75rem] font-black font-heading text-slate-900 dark:text-white mb-4 leading-[1.18] tracking-tight">
                         ጥያቄዎችዎን በቅጽበት የሚመልስ <span className="hero-headline-shift">የግል AI መምህር</span>
                     </h2>
 
-                    <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 font-body mb-6 leading-relaxed max-w-xl">
+                    {/* Item 3: Subtitle */}
+                    <p className="terafab-ai-item delay-3 text-sm sm:text-base text-slate-600 dark:text-slate-300 font-body mb-6 leading-relaxed max-w-xl">
                         በኮርሶችዎ ውስጥ ለሚገጥምዎት ማንኛውም ጥያቄ በሰከንዶች ውስጥ ተግባራዊ መፍትሄ፣ የቢዝነስ ስትራቴጂ እና ደረጃ በደረጃ መመሪያ የሚሰጥ የእርስዎ 24/7 ረዳት።
                     </p>
 
-                    {/* Value Prop Bullet Checklist - Compact & Direct with 3D Depth */}
+                    {/* Value Prop Bullet Checklist - Items 4, 5, 6 */}
                     <div className="space-y-3 mb-7">
-                        <div className="scrolly-card scrolly-stagger-1 flex items-center gap-3 p-2.5 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:border-[#f9b03c]/40 transition-colors">
+                        <div className="terafab-ai-item delay-4 flex items-center gap-3 p-2.5 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:border-[#f9b03c]/40 transition-colors">
                             <div className="w-8 h-8 rounded-lg bg-[#f9b03c]/15 text-[#f9b03c] border border-[#f9b03c]/30 flex items-center justify-center text-xs shrink-0 shadow-xs">
                                 <i className="fa-solid fa-bolt"></i>
                             </div>
@@ -746,7 +771,7 @@ export default function Home() {
                             </span>
                         </div>
 
-                        <div className="scrolly-card scrolly-stagger-2 flex items-center gap-3 p-2.5 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:border-[#3268ba]/40 transition-colors">
+                        <div className="terafab-ai-item delay-5 flex items-center gap-3 p-2.5 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:border-[#3268ba]/40 transition-colors">
                             <div className="w-8 h-8 rounded-lg bg-[#3268ba]/20 text-[#5a93e8] border border-[#3268ba]/35 flex items-center justify-center text-xs shrink-0 shadow-xs">
                                 <i className="fa-solid fa-bullseye"></i>
                             </div>
@@ -755,7 +780,7 @@ export default function Home() {
                             </span>
                         </div>
 
-                        <div className="scrolly-card scrolly-stagger-3 flex items-center gap-3 p-2.5 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:border-[#f9b03c]/40 transition-colors">
+                        <div className="terafab-ai-item delay-6 flex items-center gap-3 p-2.5 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:border-[#f9b03c]/40 transition-colors">
                             <div className="w-8 h-8 rounded-lg bg-[#f9b03c]/15 text-[#f9b03c] border border-[#f9b03c]/30 flex items-center justify-center text-xs shrink-0 shadow-xs">
                                 <i className="fa-solid fa-comments"></i>
                             </div>
@@ -765,8 +790,8 @@ export default function Home() {
                         </div>
                     </div>
 
-                    {/* CTA Buttons */}
-                    <div className="flex flex-col sm:flex-row items-center gap-4">
+                    {/* Item 7: CTA Buttons */}
+                    <div className="terafab-ai-item delay-7 flex flex-col sm:flex-row items-center gap-4">
                         <MagneticButton 
                             onClick={() => { document.getElementById('courses')?.scrollIntoView({behavior: 'smooth'}) }} 
                             className="group terafab-btn-primary w-full sm:w-auto px-7 py-3 rounded-xl flex items-center justify-center gap-2.5 text-xs sm:text-sm font-black cursor-pointer shadow-[0_0_25px_rgba(249,176,60,0.35)]"
@@ -781,9 +806,9 @@ export default function Home() {
                 </div>
 
                 {/* Right Side: Synthesia-Style Interactive Live Typewriter Glassmorphism Mockup with 3D Tilt */}
-                <div className="w-full flex justify-center scrolly-card scrolly-stagger-2">
+                <div className="w-full flex justify-center terafab-ai-item delay-4">
                     <Tilt3DCard maxTilt={8} scale={1.02} perspective={1200} className="w-full max-w-xl">
-                        <SynthesiaAiChatDemo />
+                        <SynthesiaAiChatDemo isActive={isAiActive} />
                     </Tilt3DCard>
                 </div>
             </div>

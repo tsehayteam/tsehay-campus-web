@@ -1235,6 +1235,83 @@ img, video, canvas {
 }
 
 /* ==========================================================================
+   🤖 Interactive AI Sandbox: Terafab Scrollytelling Entrance
+   ========================================================================== */
+
+.terafab-ai-box {
+  opacity: 0;
+  transform: scale(0.92) translateY(36px);
+  filter: blur(8px);
+  transition: opacity 0.95s cubic-bezier(0.16, 1, 0.3, 1), transform 0.95s cubic-bezier(0.16, 1, 0.3, 1), filter 0.95s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform, filter;
+}
+
+.terafab-ai-box.is-visible {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+  filter: blur(0px);
+}
+
+.terafab-ai-item {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+.terafab-ai-box.is-visible .terafab-ai-item {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.terafab-ai-item.delay-1 { transition-delay: 0.10s; }
+.terafab-ai-item.delay-2 { transition-delay: 0.20s; }
+.terafab-ai-item.delay-3 { transition-delay: 0.30s; }
+.terafab-ai-item.delay-4 { transition-delay: 0.40s; }
+.terafab-ai-item.delay-5 { transition-delay: 0.50s; }
+.terafab-ai-item.delay-6 { transition-delay: 0.60s; }
+.terafab-ai-item.delay-7 { transition-delay: 0.70s; }
+
+/* ==========================================================================
+   🌊 Footer Cascading / Ripple Entrance & Interactive Magnetic Effects
+   ========================================================================== */
+
+.footer-cascade-col {
+  opacity: 0;
+  transform: translateY(40px) scale(0.96);
+  transition: opacity 0.85s cubic-bezier(0.16, 1, 0.3, 1), transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+.footer-cascade-active .footer-cascade-col {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.footer-delay-1 { transition-delay: 0.08s; }
+.footer-delay-2 { transition-delay: 0.22s; }
+.footer-delay-3 { transition-delay: 0.36s; }
+.footer-delay-4 { transition-delay: 0.50s; }
+.footer-delay-5 { transition-delay: 0.65s; }
+
+/* Smooth 360 Logo Rotation */
+.footer-logo-rotate {
+  transition: transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.group:hover .footer-logo-rotate {
+  transform: rotate(360deg);
+}
+
+/* Magnetic Social Media Hover Glow */
+.footer-social-magnetic {
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.35s ease, border-color 0.35s ease, color 0.35s ease, background-color 0.35s ease;
+}
+.footer-social-magnetic:hover {
+  transform: scale(1.22) translateY(-4px);
+  box-shadow: 0 0 20px rgba(249, 176, 60, 0.6), 0 8px 16px rgba(0, 0, 0, 0.4);
+}
+
+/* ==========================================================================
    ✨ Hero Video Floating Badges (Pop-in Entrance & Brand Glow)
    ========================================================================== */
 

@@ -50,7 +50,11 @@ export const SCENARIOS: QuestionScenario[] = [
   }
 ];
 
-export default function SynthesiaAiChatDemo() {
+interface SynthesiaAiChatDemoProps {
+  isActive?: boolean;
+}
+
+export default function SynthesiaAiChatDemo({ isActive = true }: SynthesiaAiChatDemoProps) {
   const router = useRouter();
   const [coursesList, setCoursesList] = useState<any[]>([]);
   const [scenarioIndex, setScenarioIndex] = useState(0);
@@ -87,8 +91,20 @@ export default function SynthesiaAiChatDemo() {
     fetchLiveCourses();
   }, []);
 
-  // ✍️ Engaging and readable typing animation cadence
+  // Reset or pause when inactive
   useEffect(() => {
+    if (!isActive) {
+      setDisplayedQuestion('');
+      setDisplayedResponse('');
+      setIsAiThinking(false);
+      setPhase('typing_question');
+    }
+  }, [isActive]);
+
+  // ✍️ Engaging and readable typing animation cadence (only starts when section is active in viewport)
+  useEffect(() => {
+    if (!isActive) return;
+
     let timeout: NodeJS.Timeout;
     const currentQ = currentScenario.question;
     const currentR = currentScenario.response;
