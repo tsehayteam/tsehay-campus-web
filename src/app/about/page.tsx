@@ -4,7 +4,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
 import Footer from '@/components/Footer';
 import { db } from '@/lib/firebase/config';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, collection, query, orderBy } from 'firebase/firestore';
 import { parseVideoEmbedUrl, parseImageUrl } from '@/lib/videoParser';
 
 export default function About() {
@@ -33,14 +33,20 @@ export default function About() {
             </div>
 
             {/* =========================================================================
-                🌟 ULTRA-MINIMALIST SINGLE-CARD VIDEO PRESENTATION (CLEAN FOCUS)
+                🌟 SECTION 1: INSTRUCTOR VIDEO REEL & COMMUNITY PHOTOS
                ========================================================================= */}
-            <div>
-              <MinimalistSingleVideoCard />
+            <div className="space-y-12">
+              
+              {/* 1. Instructor Video Reel (Single Focused Glassmorphism Card) */}
+              <InstructorVideoCard />
+
+              {/* 2. Tsehay Team / Community Photo Gallery (Clean Grid / Flex) */}
+              <CommunityPhotoGallery />
+
             </div>
 
             {/* =========================================================================
-                1. OUR STORY (የእኛ ታሪክ) - 4-CORNER SPARKLING BORDER CARD
+                2. OUR STORY (የእኛ ታሪክ) - 4-CORNER SPARKLING BORDER CARD
                ========================================================================= */}
             <div className="max-w-4xl mx-auto">
               <div className="relative p-[2px] rounded-3xl group hover:-translate-y-1 transition-all duration-500">
@@ -112,7 +118,7 @@ export default function About() {
             </div>
 
             {/* =========================================================================
-                2. MISSION (ተልዕኳችን) - 4-CORNER SPARKLING LUXURY CARD
+                3. MISSION (ተልዕኳችን) - 4-CORNER SPARKLING LUXURY CARD
                ========================================================================= */}
             <div className="max-w-4xl mx-auto">
               <div className="relative p-[2px] rounded-3xl group hover:-translate-y-1 transition-all duration-500">
@@ -142,7 +148,7 @@ export default function About() {
             </div>
 
             {/* =========================================================================
-                3. WHY TSEHAY CAMPUS (ለምን ፀሐይ ካምፓስ?) - 3 SPARKLING PILLAR CARDS
+                4. WHY TSEHAY CAMPUS (ለምን ፀሐይ ካምፓስ?) - 3 SPARKLING PILLAR CARDS
                ========================================================================= */}
             <div>
               <div className="text-center max-w-3xl mx-auto mb-10 sm:mb-14">
@@ -215,7 +221,7 @@ export default function About() {
             </div>
 
             {/* =========================================================================
-                4. OUR TEAM (የፀሐይ ካምፓስ ቡድኖች) - SPARKLING CORNER PROFILE CARDS
+                5. OUR TEAM (የፀሐይ ካምፓስ ቡድኖች) - SPARKLING CORNER PROFILE CARDS
                ========================================================================= */}
             <div>
               <div className="text-center max-w-3xl mx-auto mb-10 sm:mb-14">
@@ -292,9 +298,9 @@ export default function About() {
 }
 
 // =========================================================================
-// 🌟 ULTRA-MINIMALIST SINGLE-CARD VIDEO COMPONENT (CLEAN GLASSMORPHISM FOCUS)
+// 🌟 1. INSTRUCTOR VIDEO REEL (SINGLE LARGE GLASSMORPHISM CARD)
 // =========================================================================
-function MinimalistSingleVideoCard() {
+function InstructorVideoCard() {
   const cardRef = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -322,7 +328,7 @@ function MinimalistSingleVideoCard() {
     };
   });
 
-  // ScrollTrigger / Intersection Observer for smooth entrance animation
+  // Entrance animation observer
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -373,9 +379,7 @@ function MinimalistSingleVideoCard() {
     : '/assets/about_video_cover.jpg';
 
   return (
-    <div className="flex justify-center items-center py-4 sm:py-8 select-none">
-      
-      {/* 🌟 Single Focused Glassmorphism Card */}
+    <div className="flex justify-center items-center select-none">
       <div 
         ref={cardRef}
         className={`relative w-full max-w-4xl rounded-[20px] overflow-hidden group cursor-pointer transition-all duration-700 ease-out hover:-translate-y-1 ${
@@ -392,7 +396,7 @@ function MinimalistSingleVideoCard() {
         {/* Subtle Golden Yellow Pulsing Glow */}
         <div className="absolute inset-0 rounded-[20px] shadow-[0_0_35px_rgba(249,176,60,0.22)] group-hover:shadow-[0_0_55px_rgba(249,176,60,0.4)] transition-shadow duration-500 pointer-events-none" />
 
-        {/* Video Player & Large Thumbnail */}
+        {/* Video Frame */}
         <div className="relative aspect-video w-full overflow-hidden bg-black flex items-center justify-center">
           {!isPlaying ? (
             <div 
@@ -458,6 +462,149 @@ function MinimalistSingleVideoCard() {
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+// =========================================================================
+// 🌟 2. TSEHAY TEAM / COMMUNITY PHOTOS GALLERY (CLEAN GRID / FLEX)
+// =========================================================================
+interface PhotoItem {
+  id: string;
+  src: string;
+  title: string;
+  tag: string;
+}
+
+const DEFAULT_COMMUNITY_PHOTOS: PhotoItem[] = [
+  { 
+    id: 'p1', 
+    src: 'https://i.postimg.cc/qvqt1bJK/about-photo-1.jpg', 
+    title: 'የተግባር ስልጠና ክፍለ-ጊዜ በካምፓሳችን', 
+    tag: 'ስልጠና' 
+  },
+  { 
+    id: 'p2', 
+    src: 'https://images.unsplash.com/photo-1531482615713-2afd69097998?q=80&w=800&auto=format&fit=crop', 
+    title: 'የተማሪዎች የቡድን ውይይት እና የፕሮጀክት ስራ', 
+    tag: 'የቡድን ስራ' 
+  },
+  { 
+    id: 'p3', 
+    src: 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?q=80&w=800&auto=format&fit=crop', 
+    title: 'የሰርተፊኬት አሰጣጥ እና የስኬት በዓል', 
+    tag: 'ምረቃ' 
+  },
+  { 
+    id: 'p4', 
+    src: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=800&auto=format&fit=crop', 
+    title: 'ዘመናዊ የቴክኖሎጂ እና የ AI መማሪያ ማዕከል', 
+    tag: 'ቴክኖሎጂ' 
+  },
+  { 
+    id: 'p5', 
+    src: 'https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=800&auto=format&fit=crop', 
+    title: 'ከባለሙያዎች ጋር የሚደረግ የተግባር ምክክር', 
+    tag: 'ምክክር' 
+  }
+];
+
+function CommunityPhotoGallery() {
+  const [photos, setPhotos] = useState<PhotoItem[]>(DEFAULT_COMMUNITY_PHOTOS);
+  const [selectedPhoto, setSelectedPhoto] = useState<PhotoItem | null>(null);
+
+  // Sync dynamic photos from Firestore if available
+  useEffect(() => {
+    try {
+      const q = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'about_photos'), orderBy('order', 'asc'));
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        if (!snapshot.empty) {
+          const list: PhotoItem[] = snapshot.docs.map((d) => ({
+            id: d.id,
+            src: d.data().src || d.data().imageUrl || 'https://i.postimg.cc/qvqt1bJK/about-photo-1.jpg',
+            title: d.data().title || 'Tsehay Community Moment',
+            tag: d.data().tag || 'Community'
+          }));
+          if (list.length > 0) setPhotos(list);
+        }
+      });
+      return () => unsubscribe();
+    } catch (e) {
+      console.warn("Community photos listener error:", e);
+    }
+  }, []);
+
+  return (
+    <div className="max-w-5xl mx-auto pt-4">
+      {/* Clean Grid of Photos */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+        {photos.map((photo) => (
+          <div
+            key={photo.id}
+            onClick={() => setSelectedPhoto(photo)}
+            className="group relative aspect-[4/3] rounded-[12px] overflow-hidden cursor-pointer bg-slate-900 border border-white/[0.08] hover:border-[#f9b03c]/60 shadow-lg hover:shadow-[0_8px_25px_rgba(249,176,60,0.25)] transition-all duration-300 transform hover:scale-[1.03] hover:-translate-y-[3px]"
+            title="ሙሉውን ምስል ለማየት ይጫኑ"
+          >
+            <img
+              src={photo.src}
+              alt={photo.title}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=800&auto=format&fit=crop';
+              }}
+            />
+            
+            {/* Subtle Gradient Overlay */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent opacity-80 group-hover:opacity-40 transition-opacity duration-300" />
+            
+            {/* Tag Badge */}
+            <div className="absolute bottom-2 left-2 right-2 pointer-events-none">
+              <span className="text-[10px] font-black uppercase text-white/90 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded-md border border-white/10 truncate block">
+                {photo.tag}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Lightbox Modal */}
+      {selectedPhoto && (
+        <div
+          className="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onClick={() => setSelectedPhoto(null)}
+        >
+          <div
+            className="relative max-w-4xl w-full bg-slate-900 rounded-2xl overflow-hidden border border-white/20 shadow-2xl p-4 space-y-3"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-2">
+              <span className="text-xs font-black uppercase text-[#f9b03c] bg-[#f9b03c]/10 border border-[#f9b03c]/30 px-2.5 py-1 rounded-md">
+                {selectedPhoto.tag}
+              </span>
+              <button
+                type="button"
+                onClick={() => setSelectedPhoto(null)}
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition cursor-pointer"
+                aria-label="Close"
+              >
+                <i className="fa-solid fa-xmark text-sm"></i>
+              </button>
+            </div>
+
+            <div className="rounded-xl overflow-hidden max-h-[75vh] flex items-center justify-center bg-black">
+              <img
+                src={selectedPhoto.src}
+                alt={selectedPhoto.title}
+                className="max-h-[75vh] w-auto object-contain"
+              />
+            </div>
+
+            <p className="text-center text-sm font-bold text-white px-2">
+              {selectedPhoto.title}
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
