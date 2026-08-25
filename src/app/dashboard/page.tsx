@@ -300,6 +300,7 @@ function StudentDashboardContent() {
   const [isAiVoiceRecording, setIsAiVoiceRecording] = useState(false);
   const [aiRecordingSeconds, setAiRecordingSeconds] = useState(0);
   const [showDashboardClearAiModal, setShowDashboardClearAiModal] = useState(false);
+  const [isNavDrawerExpanded, setIsNavDrawerExpanded] = useState(true);
   
   // 🗑️ Tsehay AI 15-Day Recycle Bin State
   const [showAiTrashModal, setShowAiTrashModal] = useState(false);
@@ -1812,194 +1813,231 @@ ${customAdminPrompt}
           </div>
         </div>
 
-        <nav className="flex-1 overflow-x-auto md:overflow-y-auto py-3 md:py-4 px-3 space-y-1.5 font-body no-scrollbar w-full flex flex-row md:flex-col gap-2 md:gap-1.5 items-center md:items-stretch">
+        <nav className="flex-1 overflow-x-auto md:overflow-y-auto py-2 md:py-3 px-3 space-y-1 font-body no-scrollbar w-full flex flex-row md:flex-col gap-2 md:gap-0 items-center md:items-stretch">
           
-          {/* 🌟 PRESTIGIOUS UNIFIED LMS NAVIGATION HEADER (NO BLINKING DOTS) */}
-          <div className="hidden lg:flex items-center justify-between px-3 pt-1 pb-2.5 mb-1 border-b border-white/[0.06]">
-            <span className="text-xs font-black uppercase tracking-wider text-slate-400 dark:text-slate-300 flex items-center gap-2 font-heading">
-              <i className="fa-solid fa-compass text-[#f9b03c] text-xs"></i>
-              <span>{t('main_menu') || 'ዋና ማውጫ'}</span>
-            </span>
-            <span className="text-[9px] uppercase tracking-widest bg-[#f9b03c]/15 text-[#f9b03c] font-black px-2 py-0.5 rounded-full border border-[#f9b03c]/30 shadow-xs">
-              LMS
-            </span>
+          {/* 🌟 INTERACTIVE ACCORDION TOGGLE (እንደ ማውጫ ዝርግት እና ጥቅልል የሚል) */}
+          <div className="hidden lg:block w-full mb-2">
+            <button
+              type="button"
+              onClick={() => setIsNavDrawerExpanded(prev => !prev)}
+              className="w-full flex items-center justify-between p-2.5 rounded-2xl bg-white/[0.05] hover:bg-white/[0.09] border border-white/10 hover:border-[#f9b03c]/40 transition-all duration-300 group cursor-pointer shadow-xs active:scale-[0.98]"
+              title={isNavDrawerExpanded ? "ማውጫውን እጠፍ (Collapse Menu)" : "ማውጫውን ዘርጋ (Expand Menu)"}
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-xl bg-[#f9b03c]/15 text-[#f9b03c] border border-[#f9b03c]/30 flex items-center justify-center text-xs shadow-xs">
+                  <i className="fa-solid fa-compass"></i>
+                </div>
+                <div className="text-left">
+                  <span className="font-heading font-black text-xs text-white uppercase tracking-wider block leading-tight">
+                    {t('main_menu') || 'ዋና ማውጫ'}
+                  </span>
+                  <span className="text-[10px] text-[#f9b03c] font-black block leading-tight mt-0.5">
+                    {currentView === 'classroom' && '• መማሪያ ክፍል'}
+                    {currentView === 'courses' && '• የእኔ ኮርሶች'}
+                    {currentView === 'messages' && '• መልዕክቶች'}
+                    {currentView === 'ai' && '• Tsehay AI'}
+                    {currentView === 'certificates' && '• ሰርተፊኬት'}
+                    {currentView === 'settings' && '• ማስተካከያ'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black text-[#f9b03c] bg-[#f9b03c]/15 px-2 py-0.5 rounded-full border border-[#f9b03c]/30">
+                  {isNavDrawerExpanded ? 'ዝርግት' : 'ጥቅልል'}
+                </span>
+                <div className={`w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-slate-300 group-hover:text-white transition-transform duration-300 ${
+                  isNavDrawerExpanded ? 'rotate-180 text-[#f9b03c] bg-[#f9b03c]/25' : ''
+                }`}>
+                  <i className="fa-solid fa-chevron-down text-[10px]"></i>
+                </div>
+              </div>
+            </button>
           </div>
 
-          {/* 1. Classroom (መማሪያ ክፍል) */}
-          <button 
-            onClick={() => setCurrentView('classroom')} 
-            className={`flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-auto md:w-full text-left text-sm cursor-pointer ${
-              currentView === 'classroom' 
-                ? 'bg-gradient-to-r from-[#3268ba] via-[#3b75d6] to-[#254f8e] text-white shadow-lg shadow-[#3268ba]/30 font-extrabold scale-[1.01] border border-white/20' 
-                : 'text-slate-700 dark:text-slate-300 hover:bg-[#3268ba]/10 dark:hover:bg-white/[0.06] hover:text-[#3268ba] dark:hover:text-white border border-transparent'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <span className={`w-8 h-8 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 ${
-                currentView === 'classroom'
-                  ? 'bg-white/20 text-white shadow-inner'
-                  : 'bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-400 group-hover:bg-[#3268ba]/20 group-hover:text-[#3268ba] dark:group-hover:text-[#5a93e8]'
-              }`}>
-                <i className="fa-solid fa-graduation-cap text-xs"></i>
-              </span>
-              <span className="whitespace-nowrap md:whitespace-normal md:hidden lg:block font-bold">
-                {t('classroom')}
-              </span>
-            </div>
-            {currentView === 'classroom' && (
-              <i className="hidden lg:block fa-solid fa-chevron-right text-xs text-white/80 animate-in fade-in slide-in-from-left-1 duration-200"></i>
-            )}
-          </button>
-          
-          {/* 2. My Courses (የእኔ ኮርሶች) */}
-          <button 
-            onClick={() => setCurrentView('courses')} 
-            className={`flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-auto md:w-full text-left text-sm cursor-pointer ${
-              currentView === 'courses' 
-                ? 'bg-gradient-to-r from-[#3268ba] via-[#3b75d6] to-[#254f8e] text-white shadow-lg shadow-[#3268ba]/30 font-extrabold scale-[1.01] border border-white/20' 
-                : 'text-slate-700 dark:text-slate-300 hover:bg-[#3268ba]/10 dark:hover:bg-white/[0.06] hover:text-[#3268ba] dark:hover:text-white border border-transparent'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <span className={`w-8 h-8 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 ${
-                currentView === 'courses'
-                  ? 'bg-white/20 text-white shadow-inner'
-                  : 'bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-400 group-hover:bg-[#3268ba]/20 group-hover:text-[#3268ba] dark:group-hover:text-[#5a93e8]'
-              }`}>
-                <i className="fa-solid fa-book-bookmark text-xs"></i>
-              </span>
-              <span className="whitespace-nowrap md:whitespace-normal md:hidden lg:block font-bold">
-                {t('my_courses')}
-              </span>
-            </div>
-            {currentView === 'courses' ? (
-              <i className="hidden lg:block fa-solid fa-chevron-right text-xs text-white/80 animate-in fade-in slide-in-from-left-1 duration-200"></i>
-            ) : (
-              courses.length > 0 && (
-                <span className="hidden lg:inline-flex text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200/60 dark:bg-white/10 text-slate-600 dark:text-slate-300">
-                  {courses.length}
-                </span>
-              )
-            )}
-          </button>
+          {/* 🌟 UNIFIED ACCORDION ITEMS CONTAINER (SMOOTH EXPAND / COLLAPSE) */}
+          <div className={`space-y-1.5 w-full transition-all duration-300 flex flex-row md:flex-col gap-2 md:gap-1.5 items-center md:items-stretch overflow-hidden ${
+            isNavDrawerExpanded 
+              ? 'max-h-[600px] opacity-100 py-0.5' 
+              : 'max-h-0 lg:max-h-0 opacity-0 pointer-events-none lg:pointer-events-none'
+          }`}>
 
-          {/* 3. Messages & Support (መልዕክቶች እና ድጋፍ) */}
-          <button 
-            onClick={() => setCurrentView('messages')} 
-            className={`flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-auto md:w-full text-left text-sm cursor-pointer ${
-              currentView === 'messages' 
-                ? 'bg-gradient-to-r from-[#3268ba] via-[#3b75d6] to-[#254f8e] text-white shadow-lg shadow-[#3268ba]/30 font-extrabold scale-[1.01] border border-white/20' 
-                : 'text-slate-700 dark:text-slate-300 hover:bg-[#3268ba]/10 dark:hover:bg-white/[0.06] hover:text-[#3268ba] dark:hover:text-white border border-transparent'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <span className={`w-8 h-8 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 ${
-                currentView === 'messages'
-                  ? 'bg-white/20 text-white shadow-inner'
-                  : 'bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-400 group-hover:bg-[#3268ba]/20 group-hover:text-[#3268ba] dark:group-hover:text-[#5a93e8]'
-              }`}>
-                <i className="fa-solid fa-headset text-xs"></i>
-              </span>
-              <span className="whitespace-nowrap md:whitespace-normal md:hidden lg:block font-bold">
-                {t('messages')}
-              </span>
-            </div>
-            {currentView === 'messages' ? (
-              <i className="hidden lg:block fa-solid fa-chevron-right text-xs text-white/80 animate-in fade-in slide-in-from-left-1 duration-200"></i>
-            ) : (
-              <span className="hidden lg:inline-flex text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#3268ba]/15 text-[#5a93e8] border border-[#3268ba]/30">
-                Live
-              </span>
-            )}
-          </button>
-
-          {/* 4. Tsehay AI Tutor - Elevated Spotlight Gold Brand Item */}
-          <button 
-            onClick={() => setCurrentView('ai')} 
-            className={`flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-auto md:w-full text-left text-sm cursor-pointer ${
-              currentView === 'ai' 
-                ? 'bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#e59b2b] text-slate-950 shadow-xl shadow-[#f9b03c]/35 font-black border border-white/30 scale-[1.02]' 
-                : 'text-slate-800 dark:text-slate-100 bg-[#f9b03c]/[0.08] hover:bg-[#f9b03c]/15 border border-[#f9b03c]/30 hover:border-[#f9b03c]/60 shadow-[0_0_18px_rgba(249,176,60,0.12)]'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <span className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-300 group-hover:scale-110 ${
-                  currentView === 'ai'
-                    ? 'bg-slate-950 text-[#f9b03c] shadow-inner'
-                    : 'bg-[#f9b03c]/20 text-[#f9b03c] border border-[#f9b03c]/40 group-hover:bg-[#f9b03c] group-hover:text-slate-950'
+            {/* 1. Classroom (መማሪያ ክፍል) */}
+            <button 
+              onClick={() => setCurrentView('classroom')} 
+              className={`flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-auto md:w-full text-left text-sm cursor-pointer ${
+                currentView === 'classroom' 
+                  ? 'bg-gradient-to-r from-[#3268ba] via-[#3b75d6] to-[#254f8e] text-white shadow-lg shadow-[#3268ba]/35 font-black scale-[1.01] border border-white/20' 
+                  : 'text-white hover:bg-white/[0.08] hover:text-[#f9b03c] border border-transparent font-black'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <span className={`w-8 h-8 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 ${
+                  currentView === 'classroom'
+                    ? 'bg-white/20 text-white shadow-inner'
+                    : 'bg-white/[0.08] text-white group-hover:bg-[#3268ba]/20 group-hover:text-[#5a93e8]'
                 }`}>
-                  <i className="fa-solid fa-robot text-sm"></i>
+                  <i className="fa-solid fa-graduation-cap text-xs"></i>
                 </span>
-                {/* Clean Steady Gold Glow Status Dot */}
-                <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-[#f9b03c] border-2 border-white dark:border-slate-900 rounded-full shadow-[0_0_8px_#f9b03c]"></span>
-              </div>
-              <div className="flex flex-col">
-                <span className="whitespace-nowrap md:whitespace-normal md:hidden lg:block font-heading font-black text-sm tracking-tight">
-                  Tsehay AI
+                <span className="whitespace-nowrap md:whitespace-normal md:hidden lg:block font-black text-sm tracking-tight drop-shadow-xs">
+                  {t('classroom')}
                 </span>
               </div>
-            </div>
-            <span className={`hidden lg:inline-flex text-[9px] uppercase tracking-wider font-black px-2 py-0.5 rounded-full border transition-all ${
-              currentView === 'ai'
-                ? 'bg-slate-950/80 text-[#f9b03c] border-slate-900/30'
-                : 'bg-[#f9b03c]/20 text-[#f9b03c] border-[#f9b03c]/40 group-hover:bg-[#f9b03c] group-hover:text-slate-950'
-            }`}>
-              24/7 AI
-            </span>
-          </button>
-          
-          {/* 5. Certificates (የብቃት ሰርተፊኬት) */}
-          <button 
-            onClick={() => setCurrentView('certificates')} 
-            className={`flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-auto md:w-full text-left text-sm cursor-pointer ${
-              currentView === 'certificates' 
-                ? 'bg-gradient-to-r from-[#3268ba] via-[#3b75d6] to-[#254f8e] text-white shadow-lg shadow-[#3268ba]/30 font-extrabold scale-[1.01] border border-white/20' 
-                : 'text-slate-700 dark:text-slate-300 hover:bg-[#3268ba]/10 dark:hover:bg-white/[0.06] hover:text-[#3268ba] dark:hover:text-white border border-transparent'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <span className={`w-8 h-8 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 ${
-                currentView === 'certificates'
-                  ? 'bg-white/20 text-white shadow-inner'
-                  : 'bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-400 group-hover:bg-[#3268ba]/20 group-hover:text-[#3268ba] dark:group-hover:text-[#5a93e8]'
+              {currentView === 'classroom' && (
+                <i className="hidden lg:block fa-solid fa-chevron-right text-xs text-white/80 animate-in fade-in slide-in-from-left-1 duration-200"></i>
+              )}
+            </button>
+            
+            {/* 2. My Courses (የእኔ ኮርሶች) */}
+            <button 
+              onClick={() => setCurrentView('courses')} 
+              className={`flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-auto md:w-full text-left text-sm cursor-pointer ${
+                currentView === 'courses' 
+                  ? 'bg-gradient-to-r from-[#3268ba] via-[#3b75d6] to-[#254f8e] text-white shadow-lg shadow-[#3268ba]/35 font-black scale-[1.01] border border-white/20' 
+                  : 'text-white hover:bg-white/[0.08] hover:text-[#f9b03c] border border-transparent font-black'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <span className={`w-8 h-8 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 ${
+                  currentView === 'courses'
+                    ? 'bg-white/20 text-white shadow-inner'
+                    : 'bg-white/[0.08] text-white group-hover:bg-[#3268ba]/20 group-hover:text-[#5a93e8]'
+                }`}>
+                  <i className="fa-solid fa-book-bookmark text-xs"></i>
+                </span>
+                <span className="whitespace-nowrap md:whitespace-normal md:hidden lg:block font-black text-sm tracking-tight drop-shadow-xs">
+                  {t('my_courses')}
+                </span>
+              </div>
+              {currentView === 'courses' ? (
+                <i className="hidden lg:block fa-solid fa-chevron-right text-xs text-white/80 animate-in fade-in slide-in-from-left-1 duration-200"></i>
+              ) : (
+                courses.length > 0 && (
+                  <span className="hidden lg:inline-flex text-[10px] font-black px-2 py-0.5 rounded-full bg-white/15 text-white">
+                    {courses.length}
+                  </span>
+                )
+              )}
+            </button>
+
+            {/* 3. Messages & Support (መልዕክቶች እና ድጋፍ) */}
+            <button 
+              onClick={() => setCurrentView('messages')} 
+              className={`flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-auto md:w-full text-left text-sm cursor-pointer ${
+                currentView === 'messages' 
+                  ? 'bg-gradient-to-r from-[#3268ba] via-[#3b75d6] to-[#254f8e] text-white shadow-lg shadow-[#3268ba]/35 font-black scale-[1.01] border border-white/20' 
+                  : 'text-white hover:bg-white/[0.08] hover:text-[#f9b03c] border border-transparent font-black'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <span className={`w-8 h-8 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 ${
+                  currentView === 'messages'
+                    ? 'bg-white/20 text-white shadow-inner'
+                    : 'bg-white/[0.08] text-white group-hover:bg-[#3268ba]/20 group-hover:text-[#5a93e8]'
+                }`}>
+                  <i className="fa-solid fa-headset text-xs"></i>
+                </span>
+                <span className="whitespace-nowrap md:whitespace-normal md:hidden lg:block font-black text-sm tracking-tight drop-shadow-xs">
+                  {t('messages')}
+                </span>
+              </div>
+              {currentView === 'messages' ? (
+                <i className="hidden lg:block fa-solid fa-chevron-right text-xs text-white/80 animate-in fade-in slide-in-from-left-1 duration-200"></i>
+              ) : (
+                <span className="hidden lg:inline-flex text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#3268ba]/20 text-[#5a93e8] border border-[#3268ba]/30">
+                  Live
+                </span>
+              )}
+            </button>
+
+            {/* 4. Tsehay AI Tutor - Elevated Spotlight Gold Brand Item */}
+            <button 
+              onClick={() => setCurrentView('ai')} 
+              className={`flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-auto md:w-full text-left text-sm cursor-pointer ${
+                currentView === 'ai' 
+                  ? 'bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#e59b2b] text-slate-950 shadow-xl shadow-[#f9b03c]/40 font-black border border-white/30 scale-[1.02]' 
+                  : 'text-white bg-[#f9b03c]/[0.09] hover:bg-[#f9b03c]/20 border border-[#f9b03c]/35 hover:border-[#f9b03c]/60 shadow-[0_0_18px_rgba(249,176,60,0.15)] font-black'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <span className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-300 group-hover:scale-110 ${
+                    currentView === 'ai'
+                      ? 'bg-slate-950 text-[#f9b03c] shadow-inner'
+                      : 'bg-[#f9b03c]/20 text-[#f9b03c] border border-[#f9b03c]/40 group-hover:bg-[#f9b03c] group-hover:text-slate-950'
+                  }`}>
+                    <i className="fa-solid fa-robot text-sm"></i>
+                  </span>
+                  {/* Clean Steady Gold Glow Status Dot */}
+                  <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-[#f9b03c] border-2 border-white dark:border-slate-900 rounded-full shadow-[0_0_8px_#f9b03c]"></span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="whitespace-nowrap md:whitespace-normal md:hidden lg:block font-heading font-black text-sm tracking-tight drop-shadow-xs">
+                    Tsehay AI
+                  </span>
+                </div>
+              </div>
+              <span className={`hidden lg:inline-flex text-[9px] uppercase tracking-wider font-black px-2 py-0.5 rounded-full border transition-all ${
+                currentView === 'ai'
+                  ? 'bg-slate-950/80 text-[#f9b03c] border-slate-900/30'
+                  : 'bg-[#f9b03c]/20 text-[#f9b03c] border-[#f9b03c]/40 group-hover:bg-[#f9b03c] group-hover:text-slate-950'
               }`}>
-                <i className="fa-solid fa-award text-sm"></i>
+                24/7 AI
               </span>
-              <span className="whitespace-nowrap md:whitespace-normal md:hidden lg:block font-bold">
-                {t('certificates')}
-              </span>
-            </div>
-            {currentView === 'certificates' && (
-              <i className="hidden lg:block fa-solid fa-chevron-right text-xs text-white/80 animate-in fade-in slide-in-from-left-1 duration-200"></i>
-            )}
-          </button>
-          
-          {/* 6. Settings (መገለጫ እና ማስተካከያ) */}
-          <button 
-            onClick={() => setCurrentView('settings')} 
-            className={`flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-auto md:w-full text-left text-sm cursor-pointer ${
-              currentView === 'settings' 
-                ? 'bg-gradient-to-r from-[#3268ba] via-blue-600 to-[#254f8e] text-white shadow-md shadow-[#3268ba]/25 font-extrabold scale-[1.01]' 
-                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <span className={`w-8 h-8 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 ${
-                currentView === 'settings'
-                  ? 'bg-white/20 text-white shadow-inner'
-                  : 'bg-slate-100 dark:bg-slate-800/90 text-slate-500 dark:text-slate-400 group-hover:bg-[#3268ba]/20 group-hover:text-[#5a93e8]'
-              }`}>
-                <i className="fa-solid fa-gear text-sm"></i>
-              </span>
-              <span className="whitespace-nowrap md:whitespace-normal md:hidden lg:block font-bold">
-                {t('settings')}
-              </span>
-            </div>
-            {currentView === 'settings' && (
-              <i className="hidden lg:block fa-solid fa-chevron-right text-xs text-white/80"></i>
-            )}
-          </button>
+            </button>
+            
+            {/* 5. Certificates (የብቃት ሰርተፊኬት) */}
+            <button 
+              onClick={() => setCurrentView('certificates')} 
+              className={`flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-auto md:w-full text-left text-sm cursor-pointer ${
+                currentView === 'certificates' 
+                  ? 'bg-gradient-to-r from-[#3268ba] via-[#3b75d6] to-[#254f8e] text-white shadow-lg shadow-[#3268ba]/35 font-black scale-[1.01] border border-white/20' 
+                  : 'text-white hover:bg-white/[0.08] hover:text-[#f9b03c] border border-transparent font-black'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <span className={`w-8 h-8 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 ${
+                  currentView === 'certificates'
+                    ? 'bg-white/20 text-white shadow-inner'
+                    : 'bg-white/[0.08] text-white group-hover:bg-[#3268ba]/20 group-hover:text-[#5a93e8]'
+                }`}>
+                  <i className="fa-solid fa-award text-sm"></i>
+                </span>
+                <span className="whitespace-nowrap md:whitespace-normal md:hidden lg:block font-black text-sm tracking-tight drop-shadow-xs">
+                  {t('certificates')}
+                </span>
+              </div>
+              {currentView === 'certificates' && (
+                <i className="hidden lg:block fa-solid fa-chevron-right text-xs text-white/80 animate-in fade-in slide-in-from-left-1 duration-200"></i>
+              )}
+            </button>
+            
+            {/* 6. Settings (መገለጫ እና ማስተካከያ) */}
+            <button 
+              onClick={() => setCurrentView('settings')} 
+              className={`flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-auto md:w-full text-left text-sm cursor-pointer ${
+                currentView === 'settings' 
+                  ? 'bg-gradient-to-r from-[#3268ba] via-[#3b75d6] to-[#254f8e] text-white shadow-lg shadow-[#3268ba]/35 font-black scale-[1.01] border border-white/20' 
+                  : 'text-white hover:bg-white/[0.08] hover:text-[#f9b03c] border border-transparent font-black'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <span className={`w-8 h-8 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 ${
+                  currentView === 'settings'
+                    ? 'bg-white/20 text-white shadow-inner'
+                    : 'bg-white/[0.08] text-white group-hover:bg-[#3268ba]/20 group-hover:text-[#5a93e8]'
+                }`}>
+                  <i className="fa-solid fa-sliders text-sm"></i>
+                </span>
+                <span className="whitespace-nowrap md:whitespace-normal md:hidden lg:block font-black text-sm tracking-tight drop-shadow-xs">
+                  {t('settings')}
+                </span>
+              </div>
+              {currentView === 'settings' && (
+                <i className="hidden lg:block fa-solid fa-chevron-right text-xs text-white/80 animate-in fade-in slide-in-from-left-1 duration-200"></i>
+              )}
+            </button>
+          </div>
         </nav>
 
         <div className="hidden md:block p-4 w-full border-t border-slate-100 dark:border-slate-700">
