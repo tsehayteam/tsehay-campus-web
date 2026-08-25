@@ -38,13 +38,32 @@ export default function About() {
             </div>
 
             {/* =========================================================================
-                1. OUR STORY (የእኛ ታሪክ) - ELEGANT CARD WITH ANIMATED ACCENTS
+                1. OUR STORY (የእኛ ታሪክ) - 4-CORNER SPARKLING BORDER CARD WITH MICRO-MOTION
                ========================================================================= */}
             <div className="max-w-4xl mx-auto">
-              <div className="relative p-[1px] rounded-3xl overflow-hidden group">
-                <div className="absolute inset-0 bg-gradient-to-r from-[#f9b03c]/30 via-[#3268ba]/30 to-[#f9b03c]/30 rounded-3xl opacity-50 group-hover:opacity-100 transition duration-500 blur-sm" />
+              <div className="relative p-[2px] rounded-3xl group hover:-translate-y-1.5 transition-all duration-500">
+                {/* Flowing Gradient Border */}
+                <div className="absolute inset-0 bg-gradient-to-r from-[#f9b03c]/50 via-[#3268ba]/50 to-[#f9b03c]/50 rounded-3xl opacity-60 group-hover:opacity-100 transition duration-500 blur-xs" />
                 
-                <div className="relative rounded-[23px] bg-white/80 dark:bg-slate-900/90 backdrop-blur-xl p-6 sm:p-10 border border-gray-200/80 dark:border-white/10 shadow-xl">
+                {/* ✨ 4 SPARKLING CORNER FLARES (ብልጭ የሚሉ 4 ማዕዘናት) */}
+                <div className="absolute -top-1.5 -left-1.5 z-20 pointer-events-none">
+                  <span className="absolute w-4 h-4 bg-[#f9b03c] rounded-full animate-ping opacity-75"></span>
+                  <span className="block w-3 h-3 bg-[#f9b03c] rounded-full border-2 border-white dark:border-slate-900 shadow-[0_0_12px_#f9b03c]"></span>
+                </div>
+                <div className="absolute -top-1.5 -right-1.5 z-20 pointer-events-none">
+                  <span className="absolute w-4 h-4 bg-[#3268ba] rounded-full animate-ping opacity-75 delay-300"></span>
+                  <span className="block w-3 h-3 bg-[#5a93e8] rounded-full border-2 border-white dark:border-slate-900 shadow-[0_0_12px_#3268ba]"></span>
+                </div>
+                <div className="absolute -bottom-1.5 -left-1.5 z-20 pointer-events-none">
+                  <span className="absolute w-4 h-4 bg-[#3268ba] rounded-full animate-ping opacity-75 delay-500"></span>
+                  <span className="block w-3 h-3 bg-[#5a93e8] rounded-full border-2 border-white dark:border-slate-900 shadow-[0_0_12px_#3268ba]"></span>
+                </div>
+                <div className="absolute -bottom-1.5 -right-1.5 z-20 pointer-events-none">
+                  <span className="absolute w-4 h-4 bg-[#f9b03c] rounded-full animate-ping opacity-75 delay-700"></span>
+                  <span className="block w-3 h-3 bg-[#f9b03c] rounded-full border-2 border-white dark:border-slate-900 shadow-[0_0_12px_#f9b03c]"></span>
+                </div>
+                
+                <div className="relative rounded-[22px] bg-white/90 dark:bg-slate-900/95 backdrop-blur-xl p-6 sm:p-10 border border-gray-200/80 dark:border-white/10 shadow-2xl">
                   
                   <div className="flex items-center gap-3 mb-6">
                     <div className="w-12 h-12 rounded-2xl bg-[#f9b03c]/15 text-[#f9b03c] border border-[#f9b03c]/30 flex items-center justify-center text-xl shadow-[0_0_20px_rgba(249,176,60,0.25)]">
@@ -68,7 +87,7 @@ export default function About() {
 
                   {/* Stats Pill Badges */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6 border-t border-gray-100 dark:border-white/10">
-                    <div className="flex items-center gap-3 p-3 rounded-2xl bg-gray-50 dark:bg-white/[0.03] border border-gray-100 dark:border-white/5">
+                    <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-gray-50 dark:bg-white/[0.03] border border-gray-100 dark:border-white/5 hover:border-[#f9b03c]/40 transition">
                       <div className="w-10 h-10 rounded-xl bg-[#f9b03c]/15 text-[#f9b03c] flex items-center justify-center font-bold text-lg">
                         <i className="fa-solid fa-graduation-cap text-base"></i>
                       </div>
@@ -78,7 +97,7 @@ export default function About() {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-3 p-3 rounded-2xl bg-gray-50 dark:bg-white/[0.03] border border-gray-100 dark:border-white/5">
+                    <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-gray-50 dark:bg-white/[0.03] border border-gray-100 dark:border-white/5 hover:border-[#3268ba]/40 transition">
                       <div className="w-10 h-10 rounded-xl bg-[#3268ba]/15 text-[#5a93e8] flex items-center justify-center font-bold text-lg">
                         <i className="fa-solid fa-laptop-code text-base"></i>
                       </div>
@@ -88,7 +107,7 @@ export default function About() {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-3 p-3 rounded-2xl bg-gray-50 dark:bg-white/[0.03] border border-gray-100 dark:border-white/5">
+                    <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-gray-50 dark:bg-white/[0.03] border border-gray-100 dark:border-white/5 hover:border-emerald-500/40 transition">
                       <div className="w-10 h-10 rounded-xl bg-emerald-500/15 text-emerald-500 flex items-center justify-center font-bold text-lg">
                         <i className="fa-solid fa-brain text-base"></i>
                       </div>
@@ -104,16 +123,33 @@ export default function About() {
             </div>
 
             {/* =========================================================================
-                2. MISSION (ተልዕኳችን) - CLEAN STATIC LUXURY CARD (SPINNING BEAM REMOVED)
+                2. MISSION (ተልዕኳችን) - 4-CORNER SPARKLING LUXURY CARD
                ========================================================================= */}
             <div className="max-w-4xl mx-auto">
-              <div className="relative rounded-3xl overflow-hidden group text-center border-2 border-[#f9b03c]/35 dark:border-[#f9b03c]/30 shadow-[0_0_35px_rgba(249,176,60,0.12)]">
+              <div className="relative p-[2px] rounded-3xl group hover:-translate-y-1.5 transition-all duration-500">
+                {/* Flowing Gradient Border */}
+                <div className="absolute inset-0 bg-gradient-to-r from-[#f9b03c]/60 via-[#ffe066]/40 to-[#3268ba]/60 rounded-3xl opacity-60 group-hover:opacity-100 transition duration-500 blur-xs" />
                 
-                {/* Subtle static ambient glow behind card */}
-                <div className="absolute inset-0 bg-gradient-to-b from-[#f9b03c]/10 via-transparent to-[#3268ba]/10 pointer-events-none" />
+                {/* ✨ 4 SPARKLING CORNER FLARES */}
+                <div className="absolute -top-1.5 -left-1.5 z-20 pointer-events-none">
+                  <span className="absolute w-4 h-4 bg-[#f9b03c] rounded-full animate-ping opacity-75"></span>
+                  <span className="block w-3 h-3 bg-[#f9b03c] rounded-full border-2 border-white dark:border-slate-900 shadow-[0_0_12px_#f9b03c]"></span>
+                </div>
+                <div className="absolute -top-1.5 -right-1.5 z-20 pointer-events-none">
+                  <span className="absolute w-4 h-4 bg-[#f9b03c] rounded-full animate-ping opacity-75 delay-200"></span>
+                  <span className="block w-3 h-3 bg-amber-400 rounded-full border-2 border-white dark:border-slate-900 shadow-[0_0_12px_#f9b03c]"></span>
+                </div>
+                <div className="absolute -bottom-1.5 -left-1.5 z-20 pointer-events-none">
+                  <span className="absolute w-4 h-4 bg-[#3268ba] rounded-full animate-ping opacity-75 delay-400"></span>
+                  <span className="block w-3 h-3 bg-[#5a93e8] rounded-full border-2 border-white dark:border-slate-900 shadow-[0_0_12px_#3268ba]"></span>
+                </div>
+                <div className="absolute -bottom-1.5 -right-1.5 z-20 pointer-events-none">
+                  <span className="absolute w-4 h-4 bg-[#f9b03c] rounded-full animate-ping opacity-75 delay-600"></span>
+                  <span className="block w-3 h-3 bg-[#f9b03c] rounded-full border-2 border-white dark:border-slate-900 shadow-[0_0_12px_#f9b03c]"></span>
+                </div>
 
-                <div className="relative rounded-3xl bg-white/90 dark:bg-slate-900/95 backdrop-blur-xl p-8 sm:p-12">
-                  <div className="w-14 h-14 mx-auto rounded-2xl bg-[#f9b03c]/15 text-[#f9b03c] border border-[#f9b03c]/30 flex items-center justify-center text-2xl mb-4 shadow-[0_0_25px_rgba(249,176,60,0.25)]">
+                <div className="relative rounded-[22px] bg-white/90 dark:bg-slate-900/95 backdrop-blur-xl p-8 sm:p-12 text-center shadow-2xl">
+                  <div className="w-14 h-14 mx-auto rounded-2xl bg-[#f9b03c]/15 text-[#f9b03c] border border-[#f9b03c]/30 flex items-center justify-center text-2xl mb-4 shadow-[0_0_25px_rgba(249,176,60,0.25)] group-hover:scale-110 transition duration-300">
                     <i className="fa-solid fa-bullseye"></i>
                   </div>
                   
@@ -130,7 +166,7 @@ export default function About() {
             </div>
 
             {/* =========================================================================
-                3. WHY TSEHAY CAMPUS (ለምን ፀሐይ ካምፓስ?) - 3 INTERACTIVE PILLAR CARDS
+                3. WHY TSEHAY CAMPUS (ለምን ፀሐይ ካምፓስ?) - 3 SPARKLING PILLAR CARDS
                ========================================================================= */}
             <div>
               <div className="text-center max-w-3xl mx-auto mb-10 sm:mb-14">
@@ -146,9 +182,16 @@ export default function About() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
                 
                 {/* Pillar 1 */}
-                <div className="relative p-[1px] rounded-3xl overflow-hidden group hover:-translate-y-2.5 transition-all duration-500">
-                  <div className="absolute inset-0 bg-gradient-to-b from-[#f9b03c]/40 via-transparent to-transparent opacity-40 group-hover:opacity-100 transition duration-500" />
-                  <div className="relative rounded-[23px] bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-8 h-full flex flex-col justify-between border border-gray-100 dark:border-white/10 group-hover:border-[#f9b03c]/40 transition duration-500 shadow-md group-hover:shadow-2xl group-hover:shadow-[#f9b03c]/15">
+                <div className="relative p-[2px] rounded-3xl group hover:-translate-y-2 transition-all duration-500">
+                  <div className="absolute inset-0 bg-gradient-to-b from-[#f9b03c]/50 via-transparent to-transparent opacity-50 group-hover:opacity-100 transition duration-500 rounded-3xl" />
+                  
+                  {/* Sparkling Corner Flares */}
+                  <span className="absolute -top-1 -left-1 w-2.5 h-2.5 bg-[#f9b03c] rounded-full shadow-[0_0_8px_#f9b03c] animate-ping opacity-75 pointer-events-none" />
+                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#f9b03c] rounded-full shadow-[0_0_8px_#f9b03c] pointer-events-none" />
+                  <span className="absolute -bottom-1 -left-1 w-2.5 h-2.5 bg-[#f9b03c] rounded-full shadow-[0_0_8px_#f9b03c] pointer-events-none" />
+                  <span className="absolute -bottom-1 -right-1 w-2.5 h-2.5 bg-[#f9b03c] rounded-full shadow-[0_0_8px_#f9b03c] animate-ping opacity-75 delay-500 pointer-events-none" />
+                  
+                  <div className="relative rounded-[22px] bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-8 h-full flex flex-col justify-between border border-gray-100 dark:border-white/10 group-hover:border-[#f9b03c]/50 transition duration-500 shadow-xl group-hover:shadow-2xl group-hover:shadow-[#f9b03c]/20">
                     <div>
                       <div className="w-16 h-16 rounded-2xl bg-[#f9b03c]/15 text-[#f9b03c] border border-[#f9b03c]/30 flex items-center justify-center text-2xl mb-6 shadow-[0_0_20px_rgba(249,176,60,0.2)] group-hover:scale-110 transition duration-300">
                         <i className="fa-solid fa-chart-line"></i>
@@ -160,9 +203,16 @@ export default function About() {
                 </div>
 
                 {/* Pillar 2 */}
-                <div className="relative p-[1px] rounded-3xl overflow-hidden group hover:-translate-y-2.5 transition-all duration-500">
-                  <div className="absolute inset-0 bg-gradient-to-b from-[#3268ba]/40 via-transparent to-transparent opacity-40 group-hover:opacity-100 transition duration-500" />
-                  <div className="relative rounded-[23px] bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-8 h-full flex flex-col justify-between border border-gray-100 dark:border-white/10 group-hover:border-[#3268ba]/40 transition duration-500 shadow-md group-hover:shadow-2xl group-hover:shadow-[#3268ba]/15">
+                <div className="relative p-[2px] rounded-3xl group hover:-translate-y-2 transition-all duration-500">
+                  <div className="absolute inset-0 bg-gradient-to-b from-[#3268ba]/50 via-transparent to-transparent opacity-50 group-hover:opacity-100 transition duration-500 rounded-3xl" />
+                  
+                  {/* Sparkling Corner Flares */}
+                  <span className="absolute -top-1 -left-1 w-2.5 h-2.5 bg-[#5a93e8] rounded-full shadow-[0_0_8px_#3268ba] animate-ping opacity-75 pointer-events-none" />
+                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#5a93e8] rounded-full shadow-[0_0_8px_#3268ba] pointer-events-none" />
+                  <span className="absolute -bottom-1 -left-1 w-2.5 h-2.5 bg-[#5a93e8] rounded-full shadow-[0_0_8px_#3268ba] pointer-events-none" />
+                  <span className="absolute -bottom-1 -right-1 w-2.5 h-2.5 bg-[#5a93e8] rounded-full shadow-[0_0_8px_#3268ba] animate-ping opacity-75 delay-500 pointer-events-none" />
+                  
+                  <div className="relative rounded-[22px] bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-8 h-full flex flex-col justify-between border border-gray-100 dark:border-white/10 group-hover:border-[#3268ba]/50 transition duration-500 shadow-xl group-hover:shadow-2xl group-hover:shadow-[#3268ba]/20">
                     <div>
                       <div className="w-16 h-16 rounded-2xl bg-[#3268ba]/15 text-[#5a93e8] border border-[#3268ba]/30 flex items-center justify-center text-2xl mb-6 shadow-[0_0_20px_rgba(50,104,186,0.2)] group-hover:scale-110 transition duration-300">
                         <i className="fa-solid fa-people-group"></i>
@@ -174,9 +224,16 @@ export default function About() {
                 </div>
 
                 {/* Pillar 3 */}
-                <div className="relative p-[1px] rounded-3xl overflow-hidden group hover:-translate-y-2.5 transition-all duration-500">
-                  <div className="absolute inset-0 bg-gradient-to-b from-[#f9b03c]/40 via-transparent to-transparent opacity-40 group-hover:opacity-100 transition duration-500" />
-                  <div className="relative rounded-[23px] bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-8 h-full flex flex-col justify-between border border-gray-100 dark:border-white/10 group-hover:border-[#f9b03c]/40 transition duration-500 shadow-md group-hover:shadow-2xl group-hover:shadow-[#f9b03c]/15">
+                <div className="relative p-[2px] rounded-3xl group hover:-translate-y-2 transition-all duration-500">
+                  <div className="absolute inset-0 bg-gradient-to-b from-[#f9b03c]/50 via-transparent to-transparent opacity-50 group-hover:opacity-100 transition duration-500 rounded-3xl" />
+                  
+                  {/* Sparkling Corner Flares */}
+                  <span className="absolute -top-1 -left-1 w-2.5 h-2.5 bg-[#f9b03c] rounded-full shadow-[0_0_8px_#f9b03c] animate-ping opacity-75 pointer-events-none" />
+                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#f9b03c] rounded-full shadow-[0_0_8px_#f9b03c] pointer-events-none" />
+                  <span className="absolute -bottom-1 -left-1 w-2.5 h-2.5 bg-[#f9b03c] rounded-full shadow-[0_0_8px_#f9b03c] pointer-events-none" />
+                  <span className="absolute -bottom-1 -right-1 w-2.5 h-2.5 bg-[#f9b03c] rounded-full shadow-[0_0_8px_#f9b03c] animate-ping opacity-75 delay-500 pointer-events-none" />
+                  
+                  <div className="relative rounded-[22px] bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-8 h-full flex flex-col justify-between border border-gray-100 dark:border-white/10 group-hover:border-[#f9b03c]/50 transition duration-500 shadow-xl group-hover:shadow-2xl group-hover:shadow-[#f9b03c]/20">
                     <div>
                       <div className="w-16 h-16 rounded-2xl bg-[#f9b03c]/15 text-[#f9b03c] border border-[#f9b03c]/30 flex items-center justify-center text-2xl mb-6 shadow-[0_0_20px_rgba(249,176,60,0.2)] group-hover:scale-110 transition duration-300">
                         <i className="fa-solid fa-wand-magic-sparkles"></i>
@@ -191,7 +248,7 @@ export default function About() {
             </div>
 
             {/* =========================================================================
-                4. OUR TEAM (የፀሐይ ካምፓስ ቡድኖች) - WIDE CLEAN SINGLE-LINE CARDS
+                4. OUR TEAM (የፀሐይ ካምፓስ ቡድኖች) - SPARKLING CORNER PROFILE CARDS
                ========================================================================= */}
             <div>
               <div className="text-center max-w-3xl mx-auto mb-10 sm:mb-14">
@@ -207,10 +264,16 @@ export default function About() {
               <div className="flex flex-wrap justify-center gap-8 max-w-4xl mx-auto">
                 
                 {/* Eyoub Sahle */}
-                <div className="relative p-[1px] rounded-3xl overflow-hidden group hover:-translate-y-2.5 transition-all duration-500 w-full sm:w-[380px]">
-                  <div className="absolute inset-0 bg-gradient-to-b from-[#f9b03c]/40 via-transparent to-transparent opacity-50 group-hover:opacity-100 transition duration-500" />
+                <div className="relative p-[2px] rounded-3xl group hover:-translate-y-2 transition-all duration-500 w-full sm:w-[380px]">
+                  <div className="absolute inset-0 bg-gradient-to-b from-[#f9b03c]/50 via-transparent to-transparent opacity-50 group-hover:opacity-100 transition duration-500 rounded-3xl" />
                   
-                  <div className="relative rounded-[23px] bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-8 text-center border border-gray-100 dark:border-white/10 group-hover:border-[#f9b03c]/40 shadow-xl flex flex-col items-center">
+                  {/* Sparkling Corner Flares */}
+                  <span className="absolute -top-1 -left-1 w-2.5 h-2.5 bg-[#f9b03c] rounded-full shadow-[0_0_8px_#f9b03c] animate-ping opacity-75 pointer-events-none" />
+                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#f9b03c] rounded-full shadow-[0_0_8px_#f9b03c] pointer-events-none" />
+                  <span className="absolute -bottom-1 -left-1 w-2.5 h-2.5 bg-[#f9b03c] rounded-full shadow-[0_0_8px_#f9b03c] pointer-events-none" />
+                  <span className="absolute -bottom-1 -right-1 w-2.5 h-2.5 bg-[#f9b03c] rounded-full shadow-[0_0_8px_#f9b03c] animate-ping opacity-75 delay-500 pointer-events-none" />
+                  
+                  <div className="relative rounded-[22px] bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-8 text-center border border-gray-100 dark:border-white/10 group-hover:border-[#f9b03c]/40 shadow-xl flex flex-col items-center">
                     <div className="w-28 h-28 rounded-full overflow-hidden mb-5 bg-gray-100 dark:bg-gray-800 border-3 border-[#f9b03c]/40 shadow-[0_0_25px_rgba(249,176,60,0.35)] group-hover:scale-105 transition duration-300">
                       <img 
                         src="/assets/eyob_white.jpg" 
@@ -229,10 +292,16 @@ export default function About() {
                 </div>
 
                 {/* Ribka Teshome */}
-                <div className="relative p-[1px] rounded-3xl overflow-hidden group hover:-translate-y-2.5 transition-all duration-500 w-full sm:w-[380px]">
-                  <div className="absolute inset-0 bg-gradient-to-b from-[#3268ba]/40 via-transparent to-transparent opacity-50 group-hover:opacity-100 transition duration-500" />
+                <div className="relative p-[2px] rounded-3xl group hover:-translate-y-2 transition-all duration-500 w-full sm:w-[380px]">
+                  <div className="absolute inset-0 bg-gradient-to-b from-[#3268ba]/50 via-transparent to-transparent opacity-50 group-hover:opacity-100 transition duration-500 rounded-3xl" />
                   
-                  <div className="relative rounded-[23px] bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-8 text-center border border-gray-100 dark:border-white/10 group-hover:border-[#3268ba]/40 shadow-xl flex flex-col items-center">
+                  {/* Sparkling Corner Flares */}
+                  <span className="absolute -top-1 -left-1 w-2.5 h-2.5 bg-[#5a93e8] rounded-full shadow-[0_0_8px_#3268ba] animate-ping opacity-75 pointer-events-none" />
+                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#5a93e8] rounded-full shadow-[0_0_8px_#3268ba] pointer-events-none" />
+                  <span className="absolute -bottom-1 -left-1 w-2.5 h-2.5 bg-[#5a93e8] rounded-full shadow-[0_0_8px_#3268ba] pointer-events-none" />
+                  <span className="absolute -bottom-1 -right-1 w-2.5 h-2.5 bg-[#5a93e8] rounded-full shadow-[0_0_8px_#3268ba] animate-ping opacity-75 delay-500 pointer-events-none" />
+                  
+                  <div className="relative rounded-[22px] bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-8 text-center border border-gray-100 dark:border-white/10 group-hover:border-[#3268ba]/40 shadow-xl flex flex-col items-center">
                     <div className="w-28 h-28 rounded-full overflow-hidden mb-5 bg-gray-100 dark:bg-gray-800 border-3 border-[#3268ba]/40 shadow-[0_0_25px_rgba(50,104,186,0.35)] group-hover:scale-105 transition duration-300">
                       <img 
                         src="/assets/ribka2.jpg" 
@@ -254,7 +323,7 @@ export default function About() {
             </div>
 
             {/* =========================================================================
-                5. REELS & PHOTOS (የካምፓሳችን አጫጭር ቪዲዮዎች እና ምስሎች) - INTERACTIVE CAROUSELS
+                5. REELS & PHOTOS - YOUTUBE-STYLE SINGLE-SLIDE SHOWCASE CAROUSELS
                ========================================================================= */}
             <div className="space-y-16">
               <div className="text-center max-w-3xl mx-auto">
@@ -270,11 +339,11 @@ export default function About() {
                 </p>
               </div>
 
-              {/* A. Interactive Short Videos (Reels) Slider */}
-              <AboutReelsSlider />
+              {/* A. YouTube-Style Single-Slide Short Videos Showcase */}
+              <AboutReelsSingleShowcase />
 
-              {/* B. Interactive Campus Moments Photo Slider */}
-              <AboutPhotosSlider />
+              {/* B. YouTube-Style Single-Slide Campus Photos Showcase */}
+              <AboutPhotosSingleShowcase />
             </div>
 
           </div>
@@ -422,7 +491,7 @@ function AboutHeroPlayer() {
 }
 
 // =========================================================================
-// 🌟 INTERACTIVE SHORT VIDEOS / REELS SLIDER (YOUTUBE-STYLE NEXT/PREV CAROUSEL)
+// 🌟 YOUTUBE-STYLE SINGLE-SLIDE REELS SHOWCASE (1 VIDEO AT A TIME)
 // =========================================================================
 interface ReelItem {
   id: string;
@@ -435,7 +504,7 @@ interface ReelItem {
 const DEFAULT_REELS: ReelItem[] = [
   { 
     id: 'reel-1', 
-    title: 'ስለ ፀሐይ ካምፓስ አጠቃላይ እንቅስቃሴ', 
+    title: 'ስለ ፀሐይ ካምፓስ አጠቃላይ እንቅስቃሴ እና ራዕይ', 
     tag: 'Tsehay Campus Live',
     src: '/assets/videos/Tsehay.mp4',
     thumbnail: '/assets/about_video_cover.jpg'
@@ -446,30 +515,17 @@ const DEFAULT_REELS: ReelItem[] = [
     tag: 'Marketing & Psychology',
     src: '/assets/videos/Marketing%20and%20psyco.mp4',
     thumbnail: '/assets/hero-bg-new.jpg'
-  },
-  {
-    id: 'reel-3',
-    title: 'ተግባራዊ የቲክቶክ እና የኢኮሜርስ ገቢ ማግኛ ማስተርክላስ',
-    tag: 'TikTok & E-Commerce',
-    src: '/assets/videos/Tsehay.mp4',
-    thumbnail: 'https://img.youtube.com/vi/B-s71n0dHUk/hqdefault.jpg'
-  },
-  {
-    id: 'reel-4',
-    title: 'የስኬት ጉዞ እና የተማሪዎች የፈጠራ ስራዎች ማሳያ',
-    tag: 'Student Projects',
-    src: '/assets/videos/Marketing%20and%20psyco.mp4',
-    thumbnail: 'https://img.youtube.com/vi/mgdOMtW6J8k/hqdefault.jpg'
   }
 ];
 
-function AboutReelsSlider() {
-  const scrollRef = useRef<HTMLDivElement>(null);
+function AboutReelsSingleShowcase() {
   const [reels, setReels] = useState<ReelItem[]>(DEFAULT_REELS);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const touchStartX = useRef<number | null>(null);
 
-  // Sync real-time dynamic reels from Firestore if available
+  // Sync dynamic reels from Firestore if available
   useEffect(() => {
     try {
       const q = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'about_reels'), orderBy('order', 'asc'));
@@ -493,24 +549,33 @@ function AboutReelsSlider() {
     }
   }, []);
 
-  const scrollToIndex = (index: number) => {
-    const nextIdx = Math.max(0, Math.min(index, reels.length - 1));
-    setCurrentIndex(nextIdx);
-    if (scrollRef.current) {
-      const container = scrollRef.current;
-      const child = container.children[nextIdx] as HTMLElement;
-      if (child) {
-        child.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-      }
-    }
-  };
+  const currentReel = reels[currentIndex] || reels[0];
 
   const handlePrev = () => {
-    scrollToIndex(currentIndex === 0 ? reels.length - 1 : currentIndex - 1);
+    if (videoRef.current) {
+      videoRef.current.pause();
+      setIsPlaying(false);
+    }
+    setCurrentIndex((prev) => (prev === 0 ? reels.length - 1 : prev - 1));
   };
 
   const handleNext = () => {
-    scrollToIndex(currentIndex === reels.length - 1 ? 0 : currentIndex + 1);
+    if (videoRef.current) {
+      videoRef.current.pause();
+      setIsPlaying(false);
+    }
+    setCurrentIndex((prev) => (prev === reels.length - 1 ? 0 : prev + 1));
+  };
+
+  const togglePlay = () => {
+    const v = videoRef.current;
+    if (!v) return;
+    if (v.paused) {
+      v.play().then(() => setIsPlaying(true)).catch(() => {});
+    } else {
+      v.pause();
+      setIsPlaying(false);
+    }
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -520,19 +585,16 @@ function AboutReelsSlider() {
   const handleTouchEnd = (e: React.TouchEvent) => {
     if (touchStartX.current === null) return;
     const diff = touchStartX.current - e.changedTouches[0].clientX;
-    if (diff > 50) {
-      handleNext();
-    } else if (diff < -50) {
-      handlePrev();
-    }
+    if (diff > 50) handleNext();
+    else if (diff < -50) handlePrev();
     touchStartX.current = null;
   };
 
   return (
-    <div className="relative max-w-5xl mx-auto">
-      {/* Header & Controls Toolbar */}
-      <div className="flex items-center justify-between mb-5 px-3">
-        <div className="flex items-center gap-3">
+    <div className="relative max-w-2xl mx-auto px-2">
+      {/* Top Header Controls */}
+      <div className="flex items-center justify-between mb-4 px-2">
+        <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-xl bg-[#f9b03c]/15 text-[#f9b03c] border border-[#f9b03c]/30 flex items-center justify-center text-sm shadow-[0_0_12px_rgba(249,176,60,0.25)]">
             <i className="fa-solid fa-clapperboard"></i>
           </div>
@@ -541,7 +603,7 @@ function AboutReelsSlider() {
               አጫጭር ቪዲዮዎች (Short Video Highlights)
             </span>
             <span className="text-[11px] text-gray-400 font-bold">
-              {currentIndex + 1} / {reels.length} ቪዲዮዎች
+              ቪዲዮ {currentIndex + 1} ከ {reels.length}
             </span>
           </div>
         </div>
@@ -569,44 +631,120 @@ function AboutReelsSlider() {
         </div>
       </div>
 
-      {/* Horizontal Carousel Container */}
+      {/* 🌟 Single Center-Stage YouTube Video Player */}
       <div 
-        ref={scrollRef}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
-        className="flex gap-6 overflow-x-auto no-scrollbar scroll-smooth snap-x snap-mandatory py-4 px-2"
+        className="relative rounded-[2.5rem] p-[2px] overflow-hidden group shadow-2xl"
       >
-        {reels.map((reel, idx) => {
-          const isActive = idx === currentIndex;
-          return (
-            <div 
-              key={reel.id} 
-              className={`snap-center shrink-0 w-[270px] sm:w-[310px] transition-all duration-500 ${
-                isActive ? 'scale-100 opacity-100 z-10' : 'scale-[0.97] opacity-85 hover:opacity-100'
-              }`}
-              onClick={() => setCurrentIndex(idx)}
-            >
-              <AboutShortVideo 
-                src={reel.src} 
-                title={reel.title} 
-                tag={reel.tag} 
-                isActive={isActive} 
-              />
+        {/* Animated Glowing Border */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#f9b03c]/60 via-[#ffe066]/30 to-[#3268ba]/60 rounded-[2.5rem] opacity-75 group-hover:opacity-100 transition duration-500 blur-xs" />
+        
+        {/* 4 Sparkling Corner Nodes */}
+        <span className="absolute top-2 left-2 w-3 h-3 bg-[#f9b03c] rounded-full shadow-[0_0_10px_#f9b03c] animate-ping opacity-75 pointer-events-none z-30" />
+        <span className="absolute top-2 right-2 w-3 h-3 bg-[#3268ba] rounded-full shadow-[0_0_10px_#3268ba] animate-ping opacity-75 delay-300 pointer-events-none z-30" />
+        <span className="absolute bottom-2 left-2 w-3 h-3 bg-[#3268ba] rounded-full shadow-[0_0_10px_#3268ba] animate-ping opacity-75 delay-500 pointer-events-none z-30" />
+        <span className="absolute bottom-2 right-2 w-3 h-3 bg-[#f9b03c] rounded-full shadow-[0_0_10px_#f9b03c] animate-ping opacity-75 delay-700 pointer-events-none z-30" />
+
+        <div 
+          onClick={togglePlay}
+          className="relative rounded-[calc(2.5rem-2px)] overflow-hidden bg-black aspect-[9/14] sm:aspect-[4/5] md:aspect-video flex items-center justify-center cursor-pointer select-none"
+        >
+          <video
+            key={currentReel.src}
+            ref={videoRef}
+            src={currentReel.src}
+            playsInline
+            webkit-playsinline="true"
+            disablePictureInPicture
+            controlsList="nodownload noremoteplayback"
+            preload="auto"
+            onPlay={() => setIsPlaying(true)}
+            onPause={() => setIsPlaying(false)}
+            onEnded={() => {
+              setIsPlaying(false);
+              handleNext();
+            }}
+            className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-700 pointer-events-none"
+          />
+
+          {/* Vignette Overlays */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-black/40 pointer-events-none" />
+
+          {/* Top Tag & Slide Badge */}
+          <div className="absolute top-5 left-5 right-5 z-20 flex items-center justify-between pointer-events-none">
+            <span className="text-[11px] font-black uppercase px-3 py-1 rounded-full bg-black/60 text-[#f9b03c] border border-[#f9b03c]/30 backdrop-blur-md shadow-md">
+              {currentReel.tag}
+            </span>
+            <span className="text-[11px] font-black px-2.5 py-1 rounded-full bg-black/60 text-white border border-white/20 backdrop-blur-md">
+              {currentIndex + 1} / {reels.length}
+            </span>
+          </div>
+
+          {/* Center Play/Pause Button */}
+          <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none transition-all duration-300 transform ${
+            isPlaying ? 'opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-100' : 'opacity-100 scale-100'
+          }`}>
+            <div className={`w-18 h-18 sm:w-20 sm:h-20 rounded-full flex items-center justify-center backdrop-blur-md transition-all duration-300 ${
+              isPlaying 
+                ? 'bg-black/75 border-2 border-[#f9b03c] text-[#f9b03c]' 
+                : 'bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 shadow-[0_0_40px_rgba(249,176,60,0.85)] group-hover:scale-110'
+            }`}>
+              {isPlaying ? (
+                <i className="fa-solid fa-pause text-2xl"></i>
+              ) : (
+                <i className="fa-solid fa-play text-2xl ml-1"></i>
+              )}
             </div>
-          );
-        })}
+          </div>
+
+          {/* Bottom Title & Control Guidance */}
+          <div className="absolute bottom-5 left-5 right-5 z-20 pointer-events-none space-y-1">
+            <h4 className="text-base sm:text-xl font-black text-white leading-snug drop-shadow-md">
+              {currentReel.title}
+            </h4>
+            <p className="text-xs text-[#f9b03c] font-bold flex items-center gap-1.5">
+              <i className="fa-solid fa-play text-[9px]"></i>
+              <span>{isPlaying ? 'በመጫወት ላይ... (ለማቆም ይጫኑ)' : 'ለማጫወት ይጫኑ (ወደ ጎን በማንሸራተት ቀጣዩን ይመልከቱ)'}</span>
+            </p>
+          </div>
+
+          {/* Floating On-Video Prev/Next Arrow Overlays */}
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); handlePrev(); }}
+            className="absolute left-3 top-1/2 -translate-y-1/2 z-30 w-11 h-11 rounded-full bg-black/60 hover:bg-[#f9b03c] text-white hover:text-slate-950 border border-white/20 hover:border-[#f9b03c] backdrop-blur-md flex items-center justify-center transition-all duration-300 shadow-xl cursor-pointer active:scale-90"
+            title="ወደ ኋላ"
+          >
+            <i className="fa-solid fa-chevron-left text-sm"></i>
+          </button>
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); handleNext(); }}
+            className="absolute right-3 top-1/2 -translate-y-1/2 z-30 w-11 h-11 rounded-full bg-black/60 hover:bg-[#f9b03c] text-white hover:text-slate-950 border border-white/20 hover:border-[#f9b03c] backdrop-blur-md flex items-center justify-center transition-all duration-300 shadow-xl cursor-pointer active:scale-90"
+            title="ቀጣይ"
+          >
+            <i className="fa-solid fa-chevron-right text-sm"></i>
+          </button>
+        </div>
       </div>
 
-      {/* Dots Indicator */}
-      <div className="flex items-center justify-center gap-2 pt-4">
+      {/* Bottom Dots Indicator */}
+      <div className="flex items-center justify-center gap-2 pt-5">
         {reels.map((_, i) => (
           <button
             key={i}
             type="button"
-            onClick={() => scrollToIndex(i)}
+            onClick={() => {
+              if (videoRef.current) {
+                videoRef.current.pause();
+                setIsPlaying(false);
+              }
+              setCurrentIndex(i);
+            }}
             className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${
               i === currentIndex 
-                ? 'w-7 bg-[#f9b03c] shadow-[0_0_10px_#f9b03c]' 
+                ? 'w-8 bg-[#f9b03c] shadow-[0_0_12px_#f9b03c]' 
                 : 'w-2 bg-gray-300 dark:bg-white/20 hover:bg-gray-400 dark:hover:bg-white/40'
             }`}
             aria-label={`Go to video ${i + 1}`}
@@ -618,132 +756,7 @@ function AboutReelsSlider() {
 }
 
 // =========================================================================
-// 🌟 CLEAN VERTICAL REEL COMPONENT WITH INTERACTIVE PLAYER & TITLE
-// =========================================================================
-function AboutShortVideo({ src, title, tag, isActive }: { src: string; title: string; tag: string; isActive: boolean }) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-
-  useEffect(() => {
-    const handlePauseOthers = (e: any) => {
-      if (e.detail?.id !== src && videoRef.current && !videoRef.current.paused) {
-        videoRef.current.pause();
-        setIsPlaying(false);
-      }
-    };
-    window.addEventListener('tsehay_pause_other_videos', handlePauseOthers);
-    return () => window.removeEventListener('tsehay_pause_other_videos', handlePauseOthers);
-  }, [src]);
-
-  // Pause video if user slides away from this item
-  useEffect(() => {
-    if (!isActive && videoRef.current && !videoRef.current.paused) {
-      videoRef.current.pause();
-      setIsPlaying(false);
-    }
-  }, [isActive]);
-
-  const togglePlayPause = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    const video = videoRef.current;
-    if (!video) return;
-
-    if (video.paused) {
-      window.dispatchEvent(new CustomEvent('tsehay_pause_other_videos', { detail: { id: src } }));
-      video.muted = false;
-      video.volume = 1.0;
-      video.play().then(() => {
-        setIsPlaying(true);
-      }).catch(() => {
-        video.muted = true;
-        video.play().then(() => setIsPlaying(true)).catch(() => {});
-      });
-    } else {
-      video.pause();
-      setIsPlaying(false);
-    }
-  };
-
-  return (
-    <div 
-      ref={containerRef}
-      onClick={togglePlayPause}
-      className={`rounded-3xl overflow-hidden shadow-2xl group aspect-[9/16] bg-slate-950 relative cursor-pointer select-none border transition-all duration-300 ${
-        isActive 
-          ? 'border-[#f9b03c]/60 shadow-[0_0_35px_rgba(249,176,60,0.25)]' 
-          : 'border-gray-200 dark:border-white/10'
-      }`}
-      title={isPlaying ? "ለማቆም ይጫኑ (Click to Pause)" : "ለማጫወት ይጫኑ (Click to Play)"}
-    >
-      <video
-        ref={videoRef}
-        playsInline
-        webkit-playsinline="true"
-        disablePictureInPicture
-        controlsList="nodownload noremoteplayback"
-        preload="metadata"
-        onPlay={() => setIsPlaying(true)}
-        onPause={() => setIsPlaying(false)}
-        onEnded={() => {
-          setIsPlaying(false);
-          if (videoRef.current) {
-            videoRef.current.currentTime = 0;
-          }
-        }}
-        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 pointer-events-none"
-      >
-        <source src={src} type="video/mp4" />
-      </video>
-
-      {/* Gradient Vignette Overlays */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/15 to-black/40 pointer-events-none"></div>
-
-      {/* Top Tag */}
-      <div className="absolute top-4 left-4 right-4 z-20 flex items-center justify-between pointer-events-none">
-        <span className="text-[10px] font-black uppercase px-2.5 py-1 rounded-full bg-black/60 text-[#f9b03c] border border-[#f9b03c]/30 backdrop-blur-md">
-          {tag}
-        </span>
-        <div className="w-6 h-6 rounded-full bg-black/50 backdrop-blur-md text-white flex items-center justify-center text-[10px]">
-          <i className="fa-solid fa-volume-high"></i>
-        </div>
-      </div>
-
-      {/* Bottom Title Info */}
-      <div className="absolute bottom-4 left-4 right-4 z-20 pointer-events-none space-y-1">
-        <h4 className="text-sm font-bold text-white leading-snug line-clamp-2 drop-shadow-md">
-          {title}
-        </h4>
-        <p className="text-[11px] text-[#f9b03c] font-semibold flex items-center gap-1.5">
-          <i className="fa-solid fa-play text-[8px]"></i>
-          <span>{isPlaying ? 'በመጫወት ላይ...' : 'ለማጫወት ይጫኑ'}</span>
-        </p>
-      </div>
-
-      {/* Play / Pause Animated Center Icon */}
-      <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none transition-all duration-300 transform ${
-        isPlaying 
-          ? 'opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-100' 
-          : 'opacity-100 scale-100'
-      }`}>
-        <div className={`w-16 h-16 sm:w-18 sm:h-18 rounded-full flex items-center justify-center shadow-[0_0_35px_rgba(249,176,60,0.6)] backdrop-blur-md transition-all duration-300 ${
-          isPlaying 
-            ? 'bg-black/75 border-2 border-[#f9b03c] text-[#f9b03c]' 
-            : 'bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 group-hover:scale-110 shadow-[0_0_40px_rgba(249,176,60,0.8)]'
-        }`}>
-          {isPlaying ? (
-            <i className="fa-solid fa-pause text-2xl"></i>
-          ) : (
-            <i className="fa-solid fa-play text-2xl ml-1"></i>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// =========================================================================
-// 🌟 INTERACTIVE CAMPUS PHOTOS SLIDER (YOUTUBE-STYLE NEXT/PREV CAROUSEL)
+// 🌟 YOUTUBE-STYLE SINGLE-SLIDE CAMPUS PHOTOS SHOWCASE (1 PHOTO AT A TIME)
 // =========================================================================
 interface PhotoItem {
   id: string;
@@ -785,8 +798,7 @@ const DEFAULT_PHOTOS: PhotoItem[] = [
   }
 ];
 
-function AboutPhotosSlider() {
-  const scrollRef = useRef<HTMLDivElement>(null);
+function AboutPhotosSingleShowcase() {
   const [photos, setPhotos] = useState<PhotoItem[]>(DEFAULT_PHOTOS);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedLightboxPhoto, setSelectedLightboxPhoto] = useState<PhotoItem | null>(null);
@@ -815,24 +827,14 @@ function AboutPhotosSlider() {
     }
   }, []);
 
-  const scrollToIndex = (index: number) => {
-    const nextIdx = Math.max(0, Math.min(index, photos.length - 1));
-    setCurrentIndex(nextIdx);
-    if (scrollRef.current) {
-      const container = scrollRef.current;
-      const child = container.children[nextIdx] as HTMLElement;
-      if (child) {
-        child.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-      }
-    }
-  };
+  const currentPhoto = photos[currentIndex] || photos[0];
 
   const handlePrev = () => {
-    scrollToIndex(currentIndex === 0 ? photos.length - 1 : currentIndex - 1);
+    setCurrentIndex((prev) => (prev === 0 ? photos.length - 1 : prev - 1));
   };
 
   const handleNext = () => {
-    scrollToIndex(currentIndex === photos.length - 1 ? 0 : currentIndex + 1);
+    setCurrentIndex((prev) => (prev === photos.length - 1 ? 0 : prev + 1));
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -842,19 +844,16 @@ function AboutPhotosSlider() {
   const handleTouchEnd = (e: React.TouchEvent) => {
     if (touchStartX.current === null) return;
     const diff = touchStartX.current - e.changedTouches[0].clientX;
-    if (diff > 50) {
-      handleNext();
-    } else if (diff < -50) {
-      handlePrev();
-    }
+    if (diff > 50) handleNext();
+    else if (diff < -50) handlePrev();
     touchStartX.current = null;
   };
 
   return (
-    <div className="relative max-w-5xl mx-auto pt-8 border-t border-gray-100 dark:border-white/5">
+    <div className="relative max-w-4xl mx-auto pt-8 border-t border-gray-100 dark:border-white/5">
       {/* Header & Controls Toolbar */}
-      <div className="flex items-center justify-between mb-5 px-3">
-        <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between mb-4 px-2">
+        <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-xl bg-[#3268ba]/15 text-[#5a93e8] border border-[#3268ba]/30 flex items-center justify-center text-sm shadow-[0_0_12px_rgba(50,104,186,0.25)]">
             <i className="fa-solid fa-images"></i>
           </div>
@@ -863,7 +862,7 @@ function AboutPhotosSlider() {
               የካምፓሳችን ምስሎች (Campus Photo Gallery)
             </span>
             <span className="text-[11px] text-gray-400 font-bold">
-              {currentIndex + 1} / {photos.length} ምስሎች
+              ምስል {currentIndex + 1} ከ {photos.length}
             </span>
           </div>
         </div>
@@ -891,86 +890,99 @@ function AboutPhotosSlider() {
         </div>
       </div>
 
-      {/* Horizontal Photos Container */}
+      {/* 🌟 Single Center-Stage Photo Frame */}
       <div 
-        ref={scrollRef}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
-        className="flex gap-6 overflow-x-auto no-scrollbar scroll-smooth snap-x snap-mandatory py-4 px-2"
+        className="relative rounded-[2.5rem] p-[2px] overflow-hidden group shadow-2xl"
       >
-        {photos.map((photo, idx) => {
-          const isActive = idx === currentIndex;
-          return (
-            <div 
-              key={photo.id} 
-              onClick={() => {
-                setCurrentIndex(idx);
-                setSelectedLightboxPhoto(photo);
-              }}
-              className={`snap-center shrink-0 w-full sm:w-[480px] md:w-[560px] rounded-3xl overflow-hidden shadow-2xl group h-64 sm:h-80 md:h-[340px] bg-slate-950 relative border cursor-pointer transition-all duration-500 ${
-                isActive 
-                  ? 'border-[#3268ba]/60 shadow-[0_0_35px_rgba(50,104,186,0.25)] scale-100' 
-                  : 'border-gray-200 dark:border-white/10 scale-[0.98] opacity-85 hover:opacity-100'
-              }`}
-            >
-              <img 
-                src={photo.src} 
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out" 
-                alt={photo.title} 
-                onError={(e) => { e.currentTarget.src='https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=800&auto=format&fit=crop'; }} 
-              />
+        {/* Animated Flowing Border */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#3268ba]/60 via-[#5a93e8]/40 to-[#f9b03c]/60 rounded-[2.5rem] opacity-75 group-hover:opacity-100 transition duration-500 blur-xs" />
+        
+        {/* 4 Sparkling Corner Nodes */}
+        <span className="absolute top-2 left-2 w-3 h-3 bg-[#5a93e8] rounded-full shadow-[0_0_10px_#3268ba] animate-ping opacity-75 pointer-events-none z-30" />
+        <span className="absolute top-2 right-2 w-3 h-3 bg-[#f9b03c] rounded-full shadow-[0_0_10px_#f9b03c] animate-ping opacity-75 delay-300 pointer-events-none z-30" />
+        <span className="absolute bottom-2 left-2 w-3 h-3 bg-[#f9b03c] rounded-full shadow-[0_0_10px_#f9b03c] animate-ping opacity-75 delay-500 pointer-events-none z-30" />
+        <span className="absolute bottom-2 right-2 w-3 h-3 bg-[#5a93e8] rounded-full shadow-[0_0_10px_#3268ba] animate-ping opacity-75 delay-700 pointer-events-none z-30" />
 
-              {/* Gradient Overlays */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-black/30 pointer-events-none"></div>
+        <div 
+          onClick={() => setSelectedLightboxPhoto(currentPhoto)}
+          className="relative rounded-[calc(2.5rem-2px)] overflow-hidden bg-slate-950 aspect-[4/3] sm:aspect-[16/10] md:aspect-video flex items-center justify-center cursor-pointer select-none"
+        >
+          <img 
+            key={currentPhoto.src}
+            src={currentPhoto.src} 
+            alt={currentPhoto.title} 
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out" 
+            onError={(e) => { e.currentTarget.src='https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=800&auto=format&fit=crop'; }} 
+          />
 
-              {/* Tag Badge */}
-              <div className="absolute top-4 left-4 z-20 pointer-events-none">
-                <span className="text-[10px] font-black uppercase px-2.5 py-1 rounded-full bg-black/60 text-[#5a93e8] border border-[#3268ba]/30 backdrop-blur-md">
-                  {photo.tag}
-                </span>
-              </div>
+          {/* Vignette Overlays */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/15 to-black/30 pointer-events-none"></div>
 
-              {/* Expand Icon */}
-              <div className="absolute top-4 right-4 z-20 w-8 h-8 rounded-full bg-black/60 backdrop-blur-md text-white flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <i className="fa-solid fa-expand"></i>
-              </div>
-
-              {/* Bottom Caption */}
-              <div className="absolute bottom-4 left-4 right-4 z-20 pointer-events-none space-y-1">
-                <h4 className="text-base sm:text-lg font-bold text-white leading-snug drop-shadow-md">
-                  {photo.title}
-                </h4>
-                <p className="text-xs text-[#5a93e8] font-semibold flex items-center gap-1.5">
-                  <i className="fa-solid fa-image text-[10px]"></i>
-                  <span>ሙሉውን ለማየት ይጫኑ (Click to Expand)</span>
-                </p>
-              </div>
+          {/* Tag & Fullscreen Badge */}
+          <div className="absolute top-5 left-5 right-5 z-20 flex items-center justify-between pointer-events-none">
+            <span className="text-[11px] font-black uppercase px-3 py-1 rounded-full bg-black/60 text-[#5a93e8] border border-[#3268ba]/30 backdrop-blur-md shadow-md">
+              {currentPhoto.tag}
+            </span>
+            <div className="w-9 h-9 rounded-full bg-black/60 backdrop-blur-md text-white flex items-center justify-center text-xs shadow-md">
+              <i className="fa-solid fa-expand"></i>
             </div>
-          );
-        })}
+          </div>
+
+          {/* Bottom Title Info */}
+          <div className="absolute bottom-5 left-5 right-5 z-20 pointer-events-none space-y-1">
+            <h4 className="text-base sm:text-2xl font-black text-white leading-snug drop-shadow-md">
+              {currentPhoto.title}
+            </h4>
+            <p className="text-xs text-[#5a93e8] font-bold flex items-center gap-1.5">
+              <i className="fa-solid fa-image text-[10px]"></i>
+              <span>ሙሉውን ለማየት ይጫኑ (ወደ ጎን በማንሸራተት ቀጣዩን ይመልከቱ)</span>
+            </p>
+          </div>
+
+          {/* Floating On-Photo Prev/Next Arrow Overlays */}
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); handlePrev(); }}
+            className="absolute left-3 top-1/2 -translate-y-1/2 z-30 w-11 h-11 rounded-full bg-black/60 hover:bg-[#3268ba] text-white border border-white/20 hover:border-[#3268ba] backdrop-blur-md flex items-center justify-center transition-all duration-300 shadow-xl cursor-pointer active:scale-90"
+            title="ወደ ኋላ"
+          >
+            <i className="fa-solid fa-chevron-left text-sm"></i>
+          </button>
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); handleNext(); }}
+            className="absolute right-3 top-1/2 -translate-y-1/2 z-30 w-11 h-11 rounded-full bg-black/60 hover:bg-[#3268ba] text-white border border-white/20 hover:border-[#3268ba] backdrop-blur-md flex items-center justify-center transition-all duration-300 shadow-xl cursor-pointer active:scale-90"
+            title="ቀጣይ"
+          >
+            <i className="fa-solid fa-chevron-right text-sm"></i>
+          </button>
+        </div>
       </div>
 
-      {/* Dots Indicator */}
-      <div className="flex items-center justify-center gap-2 pt-4">
-        {photos.map((_, i) => (
+      {/* Thumbnail Selector Bar */}
+      <div className="flex items-center justify-center gap-3 pt-5 overflow-x-auto no-scrollbar px-2">
+        {photos.map((photo, i) => (
           <button
-            key={i}
+            key={photo.id}
             type="button"
-            onClick={() => scrollToIndex(i)}
-            className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${
+            onClick={() => setCurrentIndex(i)}
+            className={`relative rounded-xl overflow-hidden shrink-0 w-16 h-12 sm:w-20 sm:h-14 border-2 transition-all duration-300 cursor-pointer ${
               i === currentIndex 
-                ? 'w-7 bg-[#3268ba] shadow-[0_0_10px_#3268ba]' 
-                : 'w-2 bg-gray-300 dark:bg-white/20 hover:bg-gray-400 dark:hover:bg-white/40'
+                ? 'border-[#3268ba] scale-105 shadow-[0_0_15px_rgba(50,104,186,0.6)] ring-2 ring-[#3268ba]/40' 
+                : 'border-transparent opacity-60 hover:opacity-100'
             }`}
-            aria-label={`Go to photo ${i + 1}`}
-          />
+          >
+            <img src={photo.src} alt={photo.title} className="w-full h-full object-cover" />
+          </button>
         ))}
       </div>
 
       {/* Lightbox Modal */}
       {selectedLightboxPhoto && (
         <div 
-          className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200"
+          className="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200"
           onClick={() => setSelectedLightboxPhoto(null)}
         >
           <div 
@@ -995,11 +1007,11 @@ function AboutPhotosSlider() {
               </button>
             </div>
 
-            <div className="rounded-2xl overflow-hidden max-h-[70vh] flex items-center justify-center bg-black">
+            <div className="rounded-2xl overflow-hidden max-h-[75vh] flex items-center justify-center bg-black">
               <img 
                 src={selectedLightboxPhoto.src} 
                 alt={selectedLightboxPhoto.title}
-                className="max-h-[70vh] w-auto object-contain"
+                className="max-h-[75vh] w-auto object-contain"
               />
             </div>
           </div>
