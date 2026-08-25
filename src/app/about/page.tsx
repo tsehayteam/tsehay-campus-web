@@ -12,17 +12,17 @@ export default function About() {
 
   return (
     <>
-      <main className="min-h-screen flex flex-col bg-white dark:bg-[#030509] text-slate-900 dark:text-slate-100 transition-colors duration-300 relative overflow-hidden">
+      <main className="min-h-screen flex flex-col bg-white dark:bg-[#070b14] text-slate-900 dark:text-slate-100 transition-colors duration-300 relative overflow-hidden">
         
-        {/* Deep Void Stardust Mesh Background & Ambient Lighting */}
+        {/* Subtle 3D Stardust Mesh Background & Ambient Lighting (Matching Landing Page) */}
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-15 mix-blend-overlay pointer-events-none" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(50,104,186,0.12),transparent_55%),radial-gradient(ellipse_at_bottom_right,rgba(249,176,60,0.12),transparent_55%)] pointer-events-none" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(50,104,186,0.12),transparent_50%),radial-gradient(ellipse_at_bottom_right,rgba(249,176,60,0.12),transparent_50%)] pointer-events-none" />
         <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[850px] h-[500px] bg-gradient-to-b from-[#3268ba]/15 via-[#f9b03c]/12 to-transparent rounded-full blur-[150px] pointer-events-none -z-10" />
         <div className="absolute top-[35%] -left-36 w-[450px] h-[450px] bg-[#3268ba]/12 rounded-full blur-[160px] pointer-events-none -z-10" />
         <div className="absolute top-[65%] -right-36 w-[450px] h-[450px] bg-[#f9b03c]/12 rounded-full blur-[160px] pointer-events-none -z-10" />
 
         <section id="about" className="pt-28 sm:pt-36 pb-24 relative z-10 flex-1">
-          <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8 space-y-16 sm:space-y-24">
+          <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8 space-y-20 sm:space-y-28">
             
             {/* Header Title */}
             <div className="text-center">
@@ -32,31 +32,36 @@ export default function About() {
               <div className="w-24 h-1 bg-gradient-to-r from-transparent via-[#f9b03c] to-transparent mx-auto rounded-full shadow-[0_0_12px_rgba(249,176,60,0.6)]" />
             </div>
 
-            {/* =========================================================================
-                🌟 SECTION 1: INSTRUCTOR VIDEO REEL & COMMUNITY PHOTOS
-               ========================================================================= */}
-            <div className="space-y-12">
-              
-              {/* 1. Instructor Video Reel (Single Focused Glassmorphism Card) */}
-              <InstructorVideoCard />
-
-              {/* 2. Tsehay Team / Community Photo Gallery (Clean Grid / Flex) */}
-              <CommunityPhotoGallery />
-
+            {/* Main Video Presentation */}
+            <div>
+              <AboutHeroPlayer />
             </div>
 
             {/* =========================================================================
-                2. OUR STORY (የእኛ ታሪክ) - 4-CORNER SPARKLING BORDER CARD
+                1. OUR STORY (የእኛ ታሪክ) - 4-CORNER SPARKLING BORDER CARD WITH MICRO-MOTION
                ========================================================================= */}
             <div className="max-w-4xl mx-auto">
-              <div className="relative p-[2px] rounded-3xl group hover:-translate-y-1 transition-all duration-500">
-                <div className="absolute inset-0 bg-gradient-to-r from-[#f9b03c]/40 via-[#3268ba]/40 to-[#f9b03c]/40 rounded-3xl opacity-50 group-hover:opacity-90 transition duration-500 blur-xs" />
+              <div className="relative p-[2px] rounded-3xl group hover:-translate-y-1.5 transition-all duration-500">
+                {/* Flowing Gradient Border */}
+                <div className="absolute inset-0 bg-gradient-to-r from-[#f9b03c]/50 via-[#3268ba]/50 to-[#f9b03c]/50 rounded-3xl opacity-60 group-hover:opacity-100 transition duration-500 blur-xs" />
                 
-                {/* 4 Sparkling Corner Flares */}
-                <span className="absolute -top-1 -left-1 w-2.5 h-2.5 bg-[#f9b03c] rounded-full shadow-[0_0_8px_#f9b03c] animate-ping opacity-75 pointer-events-none" />
-                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#3268ba] rounded-full shadow-[0_0_8px_#3268ba] pointer-events-none" />
-                <span className="absolute -bottom-1 -left-1 w-2.5 h-2.5 bg-[#3268ba] rounded-full shadow-[0_0_8px_#3268ba] pointer-events-none" />
-                <span className="absolute -bottom-1 -right-1 w-2.5 h-2.5 bg-[#f9b03c] rounded-full shadow-[0_0_8px_#f9b03c] animate-ping opacity-75 delay-500 pointer-events-none" />
+                {/* ✨ 4 SPARKLING CORNER FLARES (ብልጭ የሚሉ 4 ማዕዘናት) */}
+                <div className="absolute -top-1.5 -left-1.5 z-20 pointer-events-none">
+                  <span className="absolute w-4 h-4 bg-[#f9b03c] rounded-full animate-ping opacity-75"></span>
+                  <span className="block w-3 h-3 bg-[#f9b03c] rounded-full border-2 border-white dark:border-slate-900 shadow-[0_0_12px_#f9b03c]"></span>
+                </div>
+                <div className="absolute -top-1.5 -right-1.5 z-20 pointer-events-none">
+                  <span className="absolute w-4 h-4 bg-[#3268ba] rounded-full animate-ping opacity-75 delay-300"></span>
+                  <span className="block w-3 h-3 bg-[#5a93e8] rounded-full border-2 border-white dark:border-slate-900 shadow-[0_0_12px_#3268ba]"></span>
+                </div>
+                <div className="absolute -bottom-1.5 -left-1.5 z-20 pointer-events-none">
+                  <span className="absolute w-4 h-4 bg-[#3268ba] rounded-full animate-ping opacity-75 delay-500"></span>
+                  <span className="block w-3 h-3 bg-[#5a93e8] rounded-full border-2 border-white dark:border-slate-900 shadow-[0_0_12px_#3268ba]"></span>
+                </div>
+                <div className="absolute -bottom-1.5 -right-1.5 z-20 pointer-events-none">
+                  <span className="absolute w-4 h-4 bg-[#f9b03c] rounded-full animate-ping opacity-75 delay-700"></span>
+                  <span className="block w-3 h-3 bg-[#f9b03c] rounded-full border-2 border-white dark:border-slate-900 shadow-[0_0_12px_#f9b03c]"></span>
+                </div>
                 
                 <div className="relative rounded-[22px] bg-white/90 dark:bg-slate-900/95 backdrop-blur-xl p-6 sm:p-10 border border-gray-200/80 dark:border-white/10 shadow-2xl">
                   
@@ -118,17 +123,30 @@ export default function About() {
             </div>
 
             {/* =========================================================================
-                3. MISSION (ተልዕኳችን) - 4-CORNER SPARKLING LUXURY CARD
+                2. MISSION (ተልዕኳችን) - 4-CORNER SPARKLING LUXURY CARD
                ========================================================================= */}
             <div className="max-w-4xl mx-auto">
-              <div className="relative p-[2px] rounded-3xl group hover:-translate-y-1 transition-all duration-500">
-                <div className="absolute inset-0 bg-gradient-to-r from-[#f9b03c]/50 via-[#ffe066]/30 to-[#3268ba]/50 rounded-3xl opacity-50 group-hover:opacity-90 transition duration-500 blur-xs" />
+              <div className="relative p-[2px] rounded-3xl group hover:-translate-y-1.5 transition-all duration-500">
+                {/* Flowing Gradient Border */}
+                <div className="absolute inset-0 bg-gradient-to-r from-[#f9b03c]/60 via-[#ffe066]/40 to-[#3268ba]/60 rounded-3xl opacity-60 group-hover:opacity-100 transition duration-500 blur-xs" />
                 
-                {/* 4 Sparkling Corner Flares */}
-                <span className="absolute -top-1 -left-1 w-2.5 h-2.5 bg-[#f9b03c] rounded-full shadow-[0_0_8px_#f9b03c] animate-ping opacity-75 pointer-events-none" />
-                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#f9b03c] rounded-full shadow-[0_0_8px_#f9b03c] pointer-events-none" />
-                <span className="absolute -bottom-1 -left-1 w-2.5 h-2.5 bg-[#3268ba] rounded-full shadow-[0_0_8px_#3268ba] pointer-events-none" />
-                <span className="absolute -bottom-1 -right-1 w-2.5 h-2.5 bg-[#f9b03c] rounded-full shadow-[0_0_8px_#f9b03c] animate-ping opacity-75 delay-500 pointer-events-none" />
+                {/* ✨ 4 SPARKLING CORNER FLARES */}
+                <div className="absolute -top-1.5 -left-1.5 z-20 pointer-events-none">
+                  <span className="absolute w-4 h-4 bg-[#f9b03c] rounded-full animate-ping opacity-75"></span>
+                  <span className="block w-3 h-3 bg-[#f9b03c] rounded-full border-2 border-white dark:border-slate-900 shadow-[0_0_12px_#f9b03c]"></span>
+                </div>
+                <div className="absolute -top-1.5 -right-1.5 z-20 pointer-events-none">
+                  <span className="absolute w-4 h-4 bg-[#f9b03c] rounded-full animate-ping opacity-75 delay-200"></span>
+                  <span className="block w-3 h-3 bg-amber-400 rounded-full border-2 border-white dark:border-slate-900 shadow-[0_0_12px_#f9b03c]"></span>
+                </div>
+                <div className="absolute -bottom-1.5 -left-1.5 z-20 pointer-events-none">
+                  <span className="absolute w-4 h-4 bg-[#3268ba] rounded-full animate-ping opacity-75 delay-400"></span>
+                  <span className="block w-3 h-3 bg-[#5a93e8] rounded-full border-2 border-white dark:border-slate-900 shadow-[0_0_12px_#3268ba]"></span>
+                </div>
+                <div className="absolute -bottom-1.5 -right-1.5 z-20 pointer-events-none">
+                  <span className="absolute w-4 h-4 bg-[#f9b03c] rounded-full animate-ping opacity-75 delay-600"></span>
+                  <span className="block w-3 h-3 bg-[#f9b03c] rounded-full border-2 border-white dark:border-slate-900 shadow-[0_0_12px_#f9b03c]"></span>
+                </div>
 
                 <div className="relative rounded-[22px] bg-white/90 dark:bg-slate-900/95 backdrop-blur-xl p-8 sm:p-12 text-center shadow-2xl">
                   <div className="w-14 h-14 mx-auto rounded-2xl bg-[#f9b03c]/15 text-[#f9b03c] border border-[#f9b03c]/30 flex items-center justify-center text-2xl mb-4 shadow-[0_0_25px_rgba(249,176,60,0.25)] group-hover:scale-110 transition duration-300">
@@ -148,7 +166,7 @@ export default function About() {
             </div>
 
             {/* =========================================================================
-                4. WHY TSEHAY CAMPUS (ለምን ፀሐይ ካምፓስ?) - 3 SPARKLING PILLAR CARDS
+                3. WHY TSEHAY CAMPUS (ለምን ፀሐይ ካምፓስ?) - 3 SPARKLING PILLAR CARDS
                ========================================================================= */}
             <div>
               <div className="text-center max-w-3xl mx-auto mb-10 sm:mb-14">
@@ -164,13 +182,16 @@ export default function About() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
                 
                 {/* Pillar 1 */}
-                <div className="relative p-[2px] rounded-3xl group hover:-translate-y-1.5 transition-all duration-500">
-                  <div className="absolute inset-0 bg-gradient-to-b from-[#f9b03c]/40 via-transparent to-transparent opacity-40 group-hover:opacity-100 transition duration-500 rounded-3xl" />
+                <div className="relative p-[2px] rounded-3xl group hover:-translate-y-2 transition-all duration-500">
+                  <div className="absolute inset-0 bg-gradient-to-b from-[#f9b03c]/50 via-transparent to-transparent opacity-50 group-hover:opacity-100 transition duration-500 rounded-3xl" />
                   
-                  <span className="absolute -top-1 -left-1 w-2.5 h-2.5 bg-[#f9b03c] rounded-full shadow-[0_0_8px_#f9b03c] pointer-events-none" />
-                  <span className="absolute -bottom-1 -right-1 w-2.5 h-2.5 bg-[#f9b03c] rounded-full shadow-[0_0_8px_#f9b03c] pointer-events-none" />
+                  {/* Sparkling Corner Flares */}
+                  <span className="absolute -top-1 -left-1 w-2.5 h-2.5 bg-[#f9b03c] rounded-full shadow-[0_0_8px_#f9b03c] animate-ping opacity-75 pointer-events-none" />
+                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#f9b03c] rounded-full shadow-[0_0_8px_#f9b03c] pointer-events-none" />
+                  <span className="absolute -bottom-1 -left-1 w-2.5 h-2.5 bg-[#f9b03c] rounded-full shadow-[0_0_8px_#f9b03c] pointer-events-none" />
+                  <span className="absolute -bottom-1 -right-1 w-2.5 h-2.5 bg-[#f9b03c] rounded-full shadow-[0_0_8px_#f9b03c] animate-ping opacity-75 delay-500 pointer-events-none" />
                   
-                  <div className="relative rounded-[22px] bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-8 h-full flex flex-col justify-between border border-gray-100 dark:border-white/10 group-hover:border-[#f9b03c]/50 transition duration-500 shadow-xl">
+                  <div className="relative rounded-[22px] bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-8 h-full flex flex-col justify-between border border-gray-100 dark:border-white/10 group-hover:border-[#f9b03c]/50 transition duration-500 shadow-xl group-hover:shadow-2xl group-hover:shadow-[#f9b03c]/20">
                     <div>
                       <div className="w-16 h-16 rounded-2xl bg-[#f9b03c]/15 text-[#f9b03c] border border-[#f9b03c]/30 flex items-center justify-center text-2xl mb-6 shadow-[0_0_20px_rgba(249,176,60,0.2)] group-hover:scale-110 transition duration-300">
                         <i className="fa-solid fa-chart-line"></i>
@@ -182,13 +203,16 @@ export default function About() {
                 </div>
 
                 {/* Pillar 2 */}
-                <div className="relative p-[2px] rounded-3xl group hover:-translate-y-1.5 transition-all duration-500">
-                  <div className="absolute inset-0 bg-gradient-to-b from-[#3268ba]/40 via-transparent to-transparent opacity-40 group-hover:opacity-100 transition duration-500 rounded-3xl" />
+                <div className="relative p-[2px] rounded-3xl group hover:-translate-y-2 transition-all duration-500">
+                  <div className="absolute inset-0 bg-gradient-to-b from-[#3268ba]/50 via-transparent to-transparent opacity-50 group-hover:opacity-100 transition duration-500 rounded-3xl" />
                   
-                  <span className="absolute -top-1 -left-1 w-2.5 h-2.5 bg-[#5a93e8] rounded-full shadow-[0_0_8px_#3268ba] pointer-events-none" />
-                  <span className="absolute -bottom-1 -right-1 w-2.5 h-2.5 bg-[#5a93e8] rounded-full shadow-[0_0_8px_#3268ba] pointer-events-none" />
+                  {/* Sparkling Corner Flares */}
+                  <span className="absolute -top-1 -left-1 w-2.5 h-2.5 bg-[#5a93e8] rounded-full shadow-[0_0_8px_#3268ba] animate-ping opacity-75 pointer-events-none" />
+                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#5a93e8] rounded-full shadow-[0_0_8px_#3268ba] pointer-events-none" />
+                  <span className="absolute -bottom-1 -left-1 w-2.5 h-2.5 bg-[#5a93e8] rounded-full shadow-[0_0_8px_#3268ba] pointer-events-none" />
+                  <span className="absolute -bottom-1 -right-1 w-2.5 h-2.5 bg-[#5a93e8] rounded-full shadow-[0_0_8px_#3268ba] animate-ping opacity-75 delay-500 pointer-events-none" />
                   
-                  <div className="relative rounded-[22px] bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-8 h-full flex flex-col justify-between border border-gray-100 dark:border-white/10 group-hover:border-[#3268ba]/50 transition duration-500 shadow-xl">
+                  <div className="relative rounded-[22px] bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-8 h-full flex flex-col justify-between border border-gray-100 dark:border-white/10 group-hover:border-[#3268ba]/50 transition duration-500 shadow-xl group-hover:shadow-2xl group-hover:shadow-[#3268ba]/20">
                     <div>
                       <div className="w-16 h-16 rounded-2xl bg-[#3268ba]/15 text-[#5a93e8] border border-[#3268ba]/30 flex items-center justify-center text-2xl mb-6 shadow-[0_0_20px_rgba(50,104,186,0.2)] group-hover:scale-110 transition duration-300">
                         <i className="fa-solid fa-people-group"></i>
@@ -200,13 +224,16 @@ export default function About() {
                 </div>
 
                 {/* Pillar 3 */}
-                <div className="relative p-[2px] rounded-3xl group hover:-translate-y-1.5 transition-all duration-500">
-                  <div className="absolute inset-0 bg-gradient-to-b from-[#f9b03c]/40 via-transparent to-transparent opacity-40 group-hover:opacity-100 transition duration-500 rounded-3xl" />
+                <div className="relative p-[2px] rounded-3xl group hover:-translate-y-2 transition-all duration-500">
+                  <div className="absolute inset-0 bg-gradient-to-b from-[#f9b03c]/50 via-transparent to-transparent opacity-50 group-hover:opacity-100 transition duration-500 rounded-3xl" />
                   
-                  <span className="absolute -top-1 -left-1 w-2.5 h-2.5 bg-[#f9b03c] rounded-full shadow-[0_0_8px_#f9b03c] pointer-events-none" />
-                  <span className="absolute -bottom-1 -right-1 w-2.5 h-2.5 bg-[#f9b03c] rounded-full shadow-[0_0_8px_#f9b03c] pointer-events-none" />
+                  {/* Sparkling Corner Flares */}
+                  <span className="absolute -top-1 -left-1 w-2.5 h-2.5 bg-[#f9b03c] rounded-full shadow-[0_0_8px_#f9b03c] animate-ping opacity-75 pointer-events-none" />
+                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#f9b03c] rounded-full shadow-[0_0_8px_#f9b03c] pointer-events-none" />
+                  <span className="absolute -bottom-1 -left-1 w-2.5 h-2.5 bg-[#f9b03c] rounded-full shadow-[0_0_8px_#f9b03c] pointer-events-none" />
+                  <span className="absolute -bottom-1 -right-1 w-2.5 h-2.5 bg-[#f9b03c] rounded-full shadow-[0_0_8px_#f9b03c] animate-ping opacity-75 delay-500 pointer-events-none" />
                   
-                  <div className="relative rounded-[22px] bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-8 h-full flex flex-col justify-between border border-gray-100 dark:border-white/10 group-hover:border-[#f9b03c]/50 transition duration-500 shadow-xl">
+                  <div className="relative rounded-[22px] bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-8 h-full flex flex-col justify-between border border-gray-100 dark:border-white/10 group-hover:border-[#f9b03c]/50 transition duration-500 shadow-xl group-hover:shadow-2xl group-hover:shadow-[#f9b03c]/20">
                     <div>
                       <div className="w-16 h-16 rounded-2xl bg-[#f9b03c]/15 text-[#f9b03c] border border-[#f9b03c]/30 flex items-center justify-center text-2xl mb-6 shadow-[0_0_20px_rgba(249,176,60,0.2)] group-hover:scale-110 transition duration-300">
                         <i className="fa-solid fa-wand-magic-sparkles"></i>
@@ -221,7 +248,7 @@ export default function About() {
             </div>
 
             {/* =========================================================================
-                5. OUR TEAM (የፀሐይ ካምፓስ ቡድኖች) - SPARKLING CORNER PROFILE CARDS
+                4. OUR TEAM (የፀሐይ ካምፓስ ቡድኖች) - SPARKLING CORNER PROFILE CARDS
                ========================================================================= */}
             <div>
               <div className="text-center max-w-3xl mx-auto mb-10 sm:mb-14">
@@ -237,11 +264,14 @@ export default function About() {
               <div className="flex flex-wrap justify-center gap-8 max-w-4xl mx-auto">
                 
                 {/* Eyoub Sahle */}
-                <div className="relative p-[2px] rounded-3xl group hover:-translate-y-1.5 transition-all duration-500 w-full sm:w-[380px]">
-                  <div className="absolute inset-0 bg-gradient-to-b from-[#f9b03c]/40 via-transparent to-transparent opacity-40 group-hover:opacity-100 transition duration-500 rounded-3xl" />
+                <div className="relative p-[2px] rounded-3xl group hover:-translate-y-2 transition-all duration-500 w-full sm:w-[380px]">
+                  <div className="absolute inset-0 bg-gradient-to-b from-[#f9b03c]/50 via-transparent to-transparent opacity-50 group-hover:opacity-100 transition duration-500 rounded-3xl" />
                   
-                  <span className="absolute -top-1 -left-1 w-2.5 h-2.5 bg-[#f9b03c] rounded-full shadow-[0_0_8px_#f9b03c] pointer-events-none" />
-                  <span className="absolute -bottom-1 -right-1 w-2.5 h-2.5 bg-[#f9b03c] rounded-full shadow-[0_0_8px_#f9b03c] pointer-events-none" />
+                  {/* Sparkling Corner Flares */}
+                  <span className="absolute -top-1 -left-1 w-2.5 h-2.5 bg-[#f9b03c] rounded-full shadow-[0_0_8px_#f9b03c] animate-ping opacity-75 pointer-events-none" />
+                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#f9b03c] rounded-full shadow-[0_0_8px_#f9b03c] pointer-events-none" />
+                  <span className="absolute -bottom-1 -left-1 w-2.5 h-2.5 bg-[#f9b03c] rounded-full shadow-[0_0_8px_#f9b03c] pointer-events-none" />
+                  <span className="absolute -bottom-1 -right-1 w-2.5 h-2.5 bg-[#f9b03c] rounded-full shadow-[0_0_8px_#f9b03c] animate-ping opacity-75 delay-500 pointer-events-none" />
                   
                   <div className="relative rounded-[22px] bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-8 text-center border border-gray-100 dark:border-white/10 group-hover:border-[#f9b03c]/40 shadow-xl flex flex-col items-center">
                     <div className="w-28 h-28 rounded-full overflow-hidden mb-5 bg-gray-100 dark:bg-gray-800 border-3 border-[#f9b03c]/40 shadow-[0_0_25px_rgba(249,176,60,0.35)] group-hover:scale-105 transition duration-300">
@@ -262,11 +292,14 @@ export default function About() {
                 </div>
 
                 {/* Ribka Teshome */}
-                <div className="relative p-[2px] rounded-3xl group hover:-translate-y-1.5 transition-all duration-500 w-full sm:w-[380px]">
-                  <div className="absolute inset-0 bg-gradient-to-b from-[#3268ba]/40 via-transparent to-transparent opacity-40 group-hover:opacity-100 transition duration-500 rounded-3xl" />
+                <div className="relative p-[2px] rounded-3xl group hover:-translate-y-2 transition-all duration-500 w-full sm:w-[380px]">
+                  <div className="absolute inset-0 bg-gradient-to-b from-[#3268ba]/50 via-transparent to-transparent opacity-50 group-hover:opacity-100 transition duration-500 rounded-3xl" />
                   
-                  <span className="absolute -top-1 -left-1 w-2.5 h-2.5 bg-[#5a93e8] rounded-full shadow-[0_0_8px_#3268ba] pointer-events-none" />
-                  <span className="absolute -bottom-1 -right-1 w-2.5 h-2.5 bg-[#5a93e8] rounded-full shadow-[0_0_8px_#3268ba] pointer-events-none" />
+                  {/* Sparkling Corner Flares */}
+                  <span className="absolute -top-1 -left-1 w-2.5 h-2.5 bg-[#5a93e8] rounded-full shadow-[0_0_8px_#3268ba] animate-ping opacity-75 pointer-events-none" />
+                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#5a93e8] rounded-full shadow-[0_0_8px_#3268ba] pointer-events-none" />
+                  <span className="absolute -bottom-1 -left-1 w-2.5 h-2.5 bg-[#5a93e8] rounded-full shadow-[0_0_8px_#3268ba] pointer-events-none" />
+                  <span className="absolute -bottom-1 -right-1 w-2.5 h-2.5 bg-[#5a93e8] rounded-full shadow-[0_0_8px_#3268ba] animate-ping opacity-75 delay-500 pointer-events-none" />
                   
                   <div className="relative rounded-[22px] bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-8 text-center border border-gray-100 dark:border-white/10 group-hover:border-[#3268ba]/40 shadow-xl flex flex-col items-center">
                     <div className="w-28 h-28 rounded-full overflow-hidden mb-5 bg-gray-100 dark:bg-gray-800 border-3 border-[#3268ba]/40 shadow-[0_0_25px_rgba(50,104,186,0.35)] group-hover:scale-105 transition duration-300">
@@ -289,6 +322,30 @@ export default function About() {
               </div>
             </div>
 
+            {/* =========================================================================
+                5. REELS & PHOTOS (የካምፓሳችን አጫጭር ቪዲዮዎች እና ምስሎች) - YOUTUBE STYLE
+               ========================================================================= */}
+            <div className="space-y-16">
+              <div className="text-center max-w-3xl mx-auto">
+                <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#f9b03c]/10 border border-[#f9b03c]/30 text-[#f9b03c] text-xs font-bold mb-3">
+                  <i className="fa-solid fa-film text-[10px]"></i>
+                  <span>ቅንጭብ ማሳያዎች</span>
+                </div>
+                <h2 className="text-2xl sm:text-4xl font-black font-heading text-slate-900 dark:text-white">
+                  የካምፓሳችን አጫጭር ቪዲዮዎች እና ምስሎች
+                </h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 font-medium">
+                  ከተግባራዊ እንቅስቃሴዎቻችን እና ከስልጠና ክፍለ-ጊዜዎቻችን የተወሰዱ
+                </p>
+              </div>
+
+              {/* A. YouTube-Style Single-Slide Short Videos Showcase */}
+              <AboutReelsSingleShowcase />
+
+              {/* B. YouTube-Style Single-Slide Campus Photos Showcase */}
+              <AboutPhotosSingleShowcase />
+            </div>
+
           </div>
         </section>
       </main>
@@ -298,13 +355,9 @@ export default function About() {
 }
 
 // =========================================================================
-// 🌟 1. INSTRUCTOR VIDEO REEL (SINGLE LARGE GLASSMORPHISM CARD)
+// 🌟 DYNAMIC HERO VIDEO PLAYER WITH ROTATING LIGHT BEAM & INSTANT THUMBNAIL
 // =========================================================================
-function InstructorVideoCard() {
-  const cardRef = useRef<HTMLDivElement>(null);
-  const [isVisible, setIsVisible] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
-
+function AboutHeroPlayer() {
   const [videoData, setVideoData] = useState<{ videoUrl: string; title: string; thumbnail: string }>(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -327,26 +380,8 @@ function InstructorVideoCard() {
       thumbnail: '/assets/about_video_cover.jpg'
     };
   });
+  const [isPlaying, setIsPlaying] = useState(false);
 
-  // Entrance animation observer
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-        }
-      },
-      { threshold: 0.15 }
-    );
-
-    if (cardRef.current) {
-      observer.observe(cardRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, []);
-
-  // Real-time Firestore sync
   useEffect(() => {
     try {
       const docRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'site_settings', 'about_video');
@@ -365,51 +400,41 @@ function InstructorVideoCard() {
             } catch (e) {}
           }
         }
+      }, (err) => {
+        console.warn("About video listener error:", err);
       });
       return () => unsubscribe();
     } catch (e) {
-      console.warn("About video listener error:", e);
+      console.warn("About video listener setup error:", e);
     }
   }, []);
 
   const parsed = parseVideoEmbedUrl(videoData.videoUrl, true);
   const customThumb = videoData.thumbnail?.trim();
+  
   const activeThumbnail = customThumb 
     ? parseImageUrl(customThumb) 
     : '/assets/about_video_cover.jpg';
 
   return (
-    <div className="flex justify-center items-center select-none">
-      <div 
-        ref={cardRef}
-        className={`relative w-full max-w-4xl rounded-[20px] overflow-hidden group cursor-pointer transition-all duration-700 ease-out hover:-translate-y-1 ${
-          isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
-        }`}
-        style={{
-          backdropFilter: 'blur(16px)',
-          WebkitBackdropFilter: 'blur(16px)',
-          background: 'rgba(255, 255, 255, 0.03)',
-          border: '1px solid rgba(255, 255, 255, 0.05)',
-          borderRadius: '20px',
-        }}
-      >
-        {/* Subtle Golden Yellow Pulsing Glow */}
-        <div className="absolute inset-0 rounded-[20px] shadow-[0_0_35px_rgba(249,176,60,0.22)] group-hover:shadow-[0_0_55px_rgba(249,176,60,0.4)] transition-shadow duration-500 pointer-events-none" />
+    <div className="max-w-4xl mx-auto">
+      <div className="relative rounded-[2.5rem] p-[2px] overflow-hidden group shadow-2xl">
+        
+        {/* Animated Rotating Light Beam Frame (ጨረር ፍሬም) */}
+        <div className="absolute inset-[-200%] bg-[conic-gradient(from_0deg,transparent_0deg,transparent_270deg,#f9b03c_320deg,#ffe066_355deg,#ffffff_360deg)] animate-border-beam opacity-85 group-hover:opacity-100 pointer-events-none" />
 
-        {/* Video Frame */}
-        <div className="relative aspect-video w-full overflow-hidden bg-black flex items-center justify-center">
+        <div className="relative rounded-[calc(2.5rem-2px)] overflow-hidden bg-black aspect-video flex items-center justify-center">
           {!isPlaying ? (
             <div 
               onClick={() => {
                 if (videoData.videoUrl) setIsPlaying(true);
               }}
-              className="absolute inset-0 w-full h-full flex items-center justify-center"
+              className="absolute inset-0 w-full h-full z-10 cursor-pointer overflow-hidden select-none flex items-center justify-center"
               role="button"
               tabIndex={0}
               onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && videoData.videoUrl) setIsPlaying(true); }}
-              aria-label="Play video"
+              aria-label="ቪዲዮውን ለማጫወት ይጫኑ"
             >
-              {/* Large Clear Thumbnail */}
               <img 
                 src={activeThumbnail} 
                 alt="Tsehay Campus Video" 
@@ -419,13 +444,12 @@ function InstructorVideoCard() {
                 }}
               />
 
-              {/* Gentle Vignette */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30 group-hover:bg-black/20 transition-colors duration-500 pointer-events-none" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/30 group-hover:bg-black/10 transition-colors duration-500"></div>
 
-              {/* Centered Golden Yellow Play Button */}
+              {/* Glowing Interactive Play Button */}
               <div className="relative z-20 flex items-center justify-center pointer-events-none">
-                <span className="absolute w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-[#f9b03c]/35 animate-ping pointer-events-none"></span>
-                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 flex items-center justify-center text-3xl sm:text-4xl shadow-[0_0_40px_rgba(249,176,60,0.85)] group-hover:scale-110 group-hover:shadow-[0_0_60px_rgba(249,176,60,1)] transition-all duration-300">
+                <span className="absolute w-24 h-24 rounded-full bg-[#f9b03c]/40 animate-ping pointer-events-none"></span>
+                <div className="w-18 h-18 sm:w-22 sm:h-22 rounded-full bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 flex items-center justify-center text-2xl sm:text-3xl shadow-[0_0_40px_rgba(249,176,60,0.75)] group-hover:scale-110 group-hover:shadow-[0_0_60px_rgba(249,176,60,0.95)] transition-all duration-300">
                   <i className="fa-solid fa-play ml-1.5"></i>
                 </div>
               </div>
@@ -451,7 +475,7 @@ function InstructorVideoCard() {
                   id="about-youtube-player" 
                   className="w-full h-full" 
                   src={parsed.src}
-                  title={videoData.title || "Tsehay Campus Presentation"} 
+                  title={videoData.title || "Tsehay Campus Introduction"} 
                   frameBorder="0" 
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen" 
                   allowFullScreen
@@ -467,7 +491,272 @@ function InstructorVideoCard() {
 }
 
 // =========================================================================
-// 🌟 2. TSEHAY TEAM / COMMUNITY PHOTOS GALLERY (CLEAN GRID / FLEX)
+// 🌟 YOUTUBE-STYLE SINGLE-SLIDE REELS SHOWCASE (1 VIDEO AT A TIME)
+// =========================================================================
+interface ReelItem {
+  id: string;
+  title: string;
+  tag: string;
+  src: string;
+  thumbnail?: string;
+}
+
+const DEFAULT_REELS: ReelItem[] = [
+  { 
+    id: 'reel-1', 
+    title: 'ስለ ፀሐይ ካምፓስ አጠቃላይ እንቅስቃሴ እና ራዕይ', 
+    tag: 'Tsehay Campus Live',
+    src: '/assets/videos/Tsehay.mp4',
+    thumbnail: '/assets/about_video_cover.jpg'
+  },
+  { 
+    id: 'reel-2', 
+    title: 'የዲጂታል ማርኬቲንግ እና ስነ-ልቦና ተግባራዊ ስልጠና', 
+    tag: 'Marketing & Psychology',
+    src: '/assets/videos/Marketing%20and%20psyco.mp4',
+    thumbnail: '/assets/hero-bg-new.jpg'
+  }
+];
+
+function AboutReelsSingleShowcase() {
+  const [reels, setReels] = useState<ReelItem[]>(DEFAULT_REELS);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const touchStartX = useRef<number | null>(null);
+
+  // Sync dynamic reels from Firestore if available
+  useEffect(() => {
+    try {
+      const q = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'about_reels'), orderBy('order', 'asc'));
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        if (!snapshot.empty) {
+          const list: ReelItem[] = snapshot.docs.map((d) => ({
+            id: d.id,
+            title: d.data().title || 'Tsehay Reel',
+            tag: d.data().tag || 'Reels',
+            src: d.data().src || d.data().videoUrl || '/assets/videos/Tsehay.mp4',
+            thumbnail: d.data().thumbnail || '/assets/about_video_cover.jpg'
+          }));
+          setReels(list);
+        }
+      }, (err) => {
+        console.warn("About reels listener error:", err);
+      });
+      return () => unsubscribe();
+    } catch (e) {
+      console.warn("About reels setup error:", e);
+    }
+  }, []);
+
+  const currentReel = reels[currentIndex] || reels[0];
+
+  const handlePrev = () => {
+    if (videoRef.current) {
+      videoRef.current.pause();
+      setIsPlaying(false);
+    }
+    setCurrentIndex((prev) => (prev === 0 ? reels.length - 1 : prev - 1));
+  };
+
+  const handleNext = () => {
+    if (videoRef.current) {
+      videoRef.current.pause();
+      setIsPlaying(false);
+    }
+    setCurrentIndex((prev) => (prev === reels.length - 1 ? 0 : prev + 1));
+  };
+
+  const togglePlay = () => {
+    const v = videoRef.current;
+    if (!v) return;
+    if (v.paused) {
+      v.play().then(() => setIsPlaying(true)).catch(() => {});
+    } else {
+      v.pause();
+      setIsPlaying(false);
+    }
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null) return;
+    const diff = touchStartX.current - e.changedTouches[0].clientX;
+    if (diff > 50) handleNext();
+    else if (diff < -50) handlePrev();
+    touchStartX.current = null;
+  };
+
+  return (
+    <div className="relative max-w-2xl mx-auto px-2">
+      {/* Top Header Controls */}
+      <div className="flex items-center justify-between mb-4 px-2">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-[#f9b03c]/15 text-[#f9b03c] border border-[#f9b03c]/30 flex items-center justify-center text-sm shadow-[0_0_12px_rgba(249,176,60,0.25)]">
+            <i className="fa-solid fa-clapperboard"></i>
+          </div>
+          <div>
+            <span className="text-xs font-black text-[#f9b03c] uppercase tracking-wider block">
+              አጫጭር ቪዲዮዎች (Short Video Highlights)
+            </span>
+            <span className="text-[11px] text-gray-400 font-bold">
+              ቪዲዮ {currentIndex + 1} ከ {reels.length}
+            </span>
+          </div>
+        </div>
+
+        {/* Next / Prev Navigation Buttons */}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handlePrev}
+            className="w-10 h-10 rounded-2xl bg-white dark:bg-slate-900 hover:bg-[#f9b03c] hover:text-slate-950 text-slate-700 dark:text-slate-200 border border-gray-200 dark:border-white/10 flex items-center justify-center transition-all duration-300 shadow-lg cursor-pointer active:scale-90 hover:shadow-[0_0_20px_rgba(249,176,60,0.4)]"
+            title="ወደ ኋላ (Previous Video)"
+            aria-label="Previous Video"
+          >
+            <i className="fa-solid fa-chevron-left text-sm"></i>
+          </button>
+          <button
+            type="button"
+            onClick={handleNext}
+            className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#f9b03c] to-amber-400 hover:brightness-110 text-slate-950 font-black flex items-center justify-center transition-all duration-300 shadow-lg shadow-[#f9b03c]/25 cursor-pointer active:scale-90 hover:shadow-[0_0_25px_rgba(249,176,60,0.6)]"
+            title="ቀጣይ ቪዲዮ (Next Video)"
+            aria-label="Next Video"
+          >
+            <i className="fa-solid fa-chevron-right text-sm"></i>
+          </button>
+        </div>
+      </div>
+
+      {/* 🌟 Single Center-Stage YouTube Video Player */}
+      <div 
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        className="relative rounded-[2.5rem] p-[2px] overflow-hidden group shadow-2xl"
+      >
+        {/* Animated Glowing Border */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#f9b03c]/60 via-[#ffe066]/30 to-[#3268ba]/60 rounded-[2.5rem] opacity-75 group-hover:opacity-100 transition duration-500 blur-xs" />
+        
+        {/* 4 Sparkling Corner Nodes */}
+        <span className="absolute top-2 left-2 w-3 h-3 bg-[#f9b03c] rounded-full shadow-[0_0_10px_#f9b03c] animate-ping opacity-75 pointer-events-none z-30" />
+        <span className="absolute top-2 right-2 w-3 h-3 bg-[#3268ba] rounded-full shadow-[0_0_10px_#3268ba] animate-ping opacity-75 delay-300 pointer-events-none z-30" />
+        <span className="absolute bottom-2 left-2 w-3 h-3 bg-[#3268ba] rounded-full shadow-[0_0_10px_#3268ba] animate-ping opacity-75 delay-500 pointer-events-none z-30" />
+        <span className="absolute bottom-2 right-2 w-3 h-3 bg-[#f9b03c] rounded-full shadow-[0_0_10px_#f9b03c] animate-ping opacity-75 delay-700 pointer-events-none z-30" />
+
+        <div 
+          onClick={togglePlay}
+          className="relative rounded-[calc(2.5rem-2px)] overflow-hidden bg-black aspect-[9/14] sm:aspect-[4/5] md:aspect-video flex items-center justify-center cursor-pointer select-none"
+        >
+          <video
+            key={currentReel.src}
+            ref={videoRef}
+            src={currentReel.src}
+            playsInline
+            webkit-playsinline="true"
+            disablePictureInPicture
+            controlsList="nodownload noremoteplayback"
+            preload="auto"
+            onPlay={() => setIsPlaying(true)}
+            onPause={() => setIsPlaying(false)}
+            onEnded={() => {
+              setIsPlaying(false);
+              handleNext();
+            }}
+            className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-700 pointer-events-none"
+          />
+
+          {/* Vignette Overlays */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-black/40 pointer-events-none" />
+
+          {/* Top Tag & Slide Badge */}
+          <div className="absolute top-5 left-5 right-5 z-20 flex items-center justify-between pointer-events-none">
+            <span className="text-[11px] font-black uppercase px-3 py-1 rounded-full bg-black/60 text-[#f9b03c] border border-[#f9b03c]/30 backdrop-blur-md shadow-md">
+              {currentReel.tag}
+            </span>
+            <span className="text-[11px] font-black px-2.5 py-1 rounded-full bg-black/60 text-white border border-white/20 backdrop-blur-md">
+              {currentIndex + 1} / {reels.length}
+            </span>
+          </div>
+
+          {/* Center Play/Pause Button */}
+          <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none transition-all duration-300 transform ${
+            isPlaying ? 'opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-100' : 'opacity-100 scale-100'
+          }`}>
+            <div className={`w-18 h-18 sm:w-20 sm:h-20 rounded-full flex items-center justify-center backdrop-blur-md transition-all duration-300 ${
+              isPlaying 
+                ? 'bg-black/75 border-2 border-[#f9b03c] text-[#f9b03c]' 
+                : 'bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 shadow-[0_0_40px_rgba(249,176,60,0.85)] group-hover:scale-110'
+            }`}>
+              {isPlaying ? (
+                <i className="fa-solid fa-pause text-2xl"></i>
+              ) : (
+                <i className="fa-solid fa-play text-2xl ml-1"></i>
+              )}
+            </div>
+          </div>
+
+          {/* Bottom Title & Control Guidance */}
+          <div className="absolute bottom-5 left-5 right-5 z-20 pointer-events-none space-y-1">
+            <h4 className="text-base sm:text-xl font-black text-white leading-snug drop-shadow-md">
+              {currentReel.title}
+            </h4>
+            <p className="text-xs text-[#f9b03c] font-bold flex items-center gap-1.5">
+              <i className="fa-solid fa-play text-[9px]"></i>
+              <span>{isPlaying ? 'በመጫወት ላይ... (ለማቆም ይጫኑ)' : 'ለማጫወት ይጫኑ (ወደ ጎን በማንሸራተት ቀጣዩን ይመልከቱ)'}</span>
+            </p>
+          </div>
+
+          {/* Floating On-Video Prev/Next Arrow Overlays */}
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); handlePrev(); }}
+            className="absolute left-3 top-1/2 -translate-y-1/2 z-30 w-11 h-11 rounded-full bg-black/60 hover:bg-[#f9b03c] text-white hover:text-slate-950 border border-white/20 hover:border-[#f9b03c] backdrop-blur-md flex items-center justify-center transition-all duration-300 shadow-xl cursor-pointer active:scale-90"
+            title="ወደ ኋላ"
+          >
+            <i className="fa-solid fa-chevron-left text-sm"></i>
+          </button>
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); handleNext(); }}
+            className="absolute right-3 top-1/2 -translate-y-1/2 z-30 w-11 h-11 rounded-full bg-black/60 hover:bg-[#f9b03c] text-white hover:text-slate-950 border border-white/20 hover:border-[#f9b03c] backdrop-blur-md flex items-center justify-center transition-all duration-300 shadow-xl cursor-pointer active:scale-90"
+            title="ቀጣይ"
+          >
+            <i className="fa-solid fa-chevron-right text-sm"></i>
+          </button>
+        </div>
+      </div>
+
+      {/* Bottom Dots Indicator */}
+      <div className="flex items-center justify-center gap-2 pt-5">
+        {reels.map((_, i) => (
+          <button
+            key={i}
+            type="button"
+            onClick={() => {
+              if (videoRef.current) {
+                videoRef.current.pause();
+                setIsPlaying(false);
+              }
+              setCurrentIndex(i);
+            }}
+            className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${
+              i === currentIndex 
+                ? 'w-8 bg-[#f9b03c] shadow-[0_0_12px_#f9b03c]' 
+                : 'w-2 bg-gray-300 dark:bg-white/20 hover:bg-gray-400 dark:hover:bg-white/40'
+            }`}
+            aria-label={`Go to video ${i + 1}`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// =========================================================================
+// 🌟 YOUTUBE-STYLE SINGLE-SLIDE CAMPUS PHOTOS SHOWCASE (1 PHOTO AT A TIME)
 // =========================================================================
 interface PhotoItem {
   id: string;
@@ -476,44 +765,46 @@ interface PhotoItem {
   tag: string;
 }
 
-const DEFAULT_COMMUNITY_PHOTOS: PhotoItem[] = [
+const DEFAULT_PHOTOS: PhotoItem[] = [
   { 
     id: 'p1', 
     src: 'https://i.postimg.cc/qvqt1bJK/about-photo-1.jpg', 
     title: 'የተግባር ስልጠና ክፍለ-ጊዜ በካምፓሳችን', 
-    tag: 'ስልጠና' 
+    tag: 'Hands-on Workshop' 
   },
   { 
     id: 'p2', 
-    src: 'https://images.unsplash.com/photo-1531482615713-2afd69097998?q=80&w=800&auto=format&fit=crop', 
+    src: 'https://images.unsplash.com/photo-1531482615713-2afd69097998?q=80&w=1200&auto=format&fit=crop', 
     title: 'የተማሪዎች የቡድን ውይይት እና የፕሮጀክት ስራ', 
-    tag: 'የቡድን ስራ' 
+    tag: 'Collaborative Projects' 
   },
   { 
     id: 'p3', 
-    src: 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?q=80&w=800&auto=format&fit=crop', 
+    src: 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?q=80&w=1200&auto=format&fit=crop', 
     title: 'የሰርተፊኬት አሰጣጥ እና የስኬት በዓል', 
-    tag: 'ምረቃ' 
+    tag: 'Graduation & Awards' 
   },
   { 
     id: 'p4', 
-    src: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=800&auto=format&fit=crop', 
+    src: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=1200&auto=format&fit=crop', 
     title: 'ዘመናዊ የቴክኖሎጂ እና የ AI መማሪያ ማዕከል', 
-    tag: 'ቴክኖሎጂ' 
+    tag: 'Tech Hub' 
   },
   { 
     id: 'p5', 
-    src: 'https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=800&auto=format&fit=crop', 
+    src: 'https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=1200&auto=format&fit=crop', 
     title: 'ከባለሙያዎች ጋር የሚደረግ የተግባር ምክክር', 
-    tag: 'ምክክር' 
+    tag: 'Mentorship Session' 
   }
 ];
 
-function CommunityPhotoGallery() {
-  const [photos, setPhotos] = useState<PhotoItem[]>(DEFAULT_COMMUNITY_PHOTOS);
-  const [selectedPhoto, setSelectedPhoto] = useState<PhotoItem | null>(null);
+function AboutPhotosSingleShowcase() {
+  const [photos, setPhotos] = useState<PhotoItem[]>(DEFAULT_PHOTOS);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [selectedLightboxPhoto, setSelectedLightboxPhoto] = useState<PhotoItem | null>(null);
+  const touchStartX = useRef<number | null>(null);
 
-  // Sync dynamic photos from Firestore if available
+  // Sync real-time photos from Firestore if available
   useEffect(() => {
     try {
       const q = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'about_photos'), orderBy('order', 'asc'));
@@ -522,86 +813,207 @@ function CommunityPhotoGallery() {
           const list: PhotoItem[] = snapshot.docs.map((d) => ({
             id: d.id,
             src: d.data().src || d.data().imageUrl || 'https://i.postimg.cc/qvqt1bJK/about-photo-1.jpg',
-            title: d.data().title || 'Tsehay Community Moment',
-            tag: d.data().tag || 'Community'
+            title: d.data().title || 'Tsehay Campus Moment',
+            tag: d.data().tag || 'Campus'
           }));
-          if (list.length > 0) setPhotos(list);
+          setPhotos(list);
         }
+      }, (err) => {
+        console.warn("About photos listener error:", err);
       });
       return () => unsubscribe();
     } catch (e) {
-      console.warn("Community photos listener error:", e);
+      console.warn("About photos setup error:", e);
     }
   }, []);
 
+  const currentPhoto = photos[currentIndex] || photos[0];
+
+  const handlePrev = () => {
+    setCurrentIndex((prev) => (prev === 0 ? photos.length - 1 : prev - 1));
+  };
+
+  const handleNext = () => {
+    setCurrentIndex((prev) => (prev === photos.length - 1 ? 0 : prev + 1));
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null) return;
+    const diff = touchStartX.current - e.changedTouches[0].clientX;
+    if (diff > 50) handleNext();
+    else if (diff < -50) handlePrev();
+    touchStartX.current = null;
+  };
+
   return (
-    <div className="max-w-5xl mx-auto pt-4">
-      {/* Clean Grid of Photos */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
-        {photos.map((photo) => (
-          <div
-            key={photo.id}
-            onClick={() => setSelectedPhoto(photo)}
-            className="group relative aspect-[4/3] rounded-[12px] overflow-hidden cursor-pointer bg-slate-900 border border-white/[0.08] hover:border-[#f9b03c]/60 shadow-lg hover:shadow-[0_8px_25px_rgba(249,176,60,0.25)] transition-all duration-300 transform hover:scale-[1.03] hover:-translate-y-[3px]"
-            title="ሙሉውን ምስል ለማየት ይጫኑ"
+    <div className="relative max-w-4xl mx-auto pt-8 border-t border-gray-100 dark:border-white/5">
+      {/* Header & Controls Toolbar */}
+      <div className="flex items-center justify-between mb-4 px-2">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-[#3268ba]/15 text-[#5a93e8] border border-[#3268ba]/30 flex items-center justify-center text-sm shadow-[0_0_12px_rgba(50,104,186,0.25)]">
+            <i className="fa-solid fa-images"></i>
+          </div>
+          <div>
+            <span className="text-xs font-black text-[#3268ba] dark:text-[#5a93e8] uppercase tracking-wider block">
+              የካምፓሳችን ምስሎች (Campus Photo Gallery)
+            </span>
+            <span className="text-[11px] text-gray-400 font-bold">
+              ምስል {currentIndex + 1} ከ {photos.length}
+            </span>
+          </div>
+        </div>
+
+        {/* Next / Prev Navigation Buttons */}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handlePrev}
+            className="w-10 h-10 rounded-2xl bg-white dark:bg-slate-900 hover:bg-[#3268ba] hover:text-white text-slate-700 dark:text-slate-200 border border-gray-200 dark:border-white/10 flex items-center justify-center transition-all duration-300 shadow-lg cursor-pointer active:scale-90 hover:shadow-[0_0_20px_rgba(50,104,186,0.4)]"
+            title="ወደ ኋላ (Previous Photo)"
+            aria-label="Previous Photo"
           >
-            <img
-              src={photo.src}
-              alt={photo.title}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=800&auto=format&fit=crop';
-              }}
-            />
-            
-            {/* Subtle Gradient Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent opacity-80 group-hover:opacity-40 transition-opacity duration-300" />
-            
-            {/* Tag Badge */}
-            <div className="absolute bottom-2 left-2 right-2 pointer-events-none">
-              <span className="text-[10px] font-black uppercase text-white/90 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded-md border border-white/10 truncate block">
-                {photo.tag}
-              </span>
+            <i className="fa-solid fa-chevron-left text-sm"></i>
+          </button>
+          <button
+            type="button"
+            onClick={handleNext}
+            className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#3268ba] to-blue-500 hover:brightness-110 text-white font-black flex items-center justify-center transition-all duration-300 shadow-lg shadow-[#3268ba]/25 cursor-pointer active:scale-90 hover:shadow-[0_0_25px_rgba(50,104,186,0.6)]"
+            title="ቀጣይ ምስል (Next Photo)"
+            aria-label="Next Photo"
+          >
+            <i className="fa-solid fa-chevron-right text-sm"></i>
+          </button>
+        </div>
+      </div>
+
+      {/* 🌟 Single Center-Stage Photo Frame */}
+      <div 
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        className="relative rounded-[2.5rem] p-[2px] overflow-hidden group shadow-2xl"
+      >
+        {/* Animated Flowing Border */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#3268ba]/60 via-[#5a93e8]/40 to-[#f9b03c]/60 rounded-[2.5rem] opacity-75 group-hover:opacity-100 transition duration-500 blur-xs" />
+        
+        {/* 4 Sparkling Corner Nodes */}
+        <span className="absolute top-2 left-2 w-3 h-3 bg-[#5a93e8] rounded-full shadow-[0_0_10px_#3268ba] animate-ping opacity-75 pointer-events-none z-30" />
+        <span className="absolute top-2 right-2 w-3 h-3 bg-[#f9b03c] rounded-full shadow-[0_0_10px_#f9b03c] animate-ping opacity-75 delay-300 pointer-events-none z-30" />
+        <span className="absolute bottom-2 left-2 w-3 h-3 bg-[#f9b03c] rounded-full shadow-[0_0_10px_#f9b03c] animate-ping opacity-75 delay-500 pointer-events-none z-30" />
+        <span className="absolute bottom-2 right-2 w-3 h-3 bg-[#5a93e8] rounded-full shadow-[0_0_10px_#3268ba] animate-ping opacity-75 delay-700 pointer-events-none z-30" />
+
+        <div 
+          onClick={() => setSelectedLightboxPhoto(currentPhoto)}
+          className="relative rounded-[calc(2.5rem-2px)] overflow-hidden bg-slate-950 aspect-[4/3] sm:aspect-[16/10] md:aspect-video flex items-center justify-center cursor-pointer select-none"
+        >
+          <img 
+            key={currentPhoto.src}
+            src={currentPhoto.src} 
+            alt={currentPhoto.title} 
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out" 
+            onError={(e) => { e.currentTarget.src='https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=800&auto=format&fit=crop'; }} 
+          />
+
+          {/* Vignette Overlays */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/15 to-black/30 pointer-events-none"></div>
+
+          {/* Tag & Fullscreen Badge */}
+          <div className="absolute top-5 left-5 right-5 z-20 flex items-center justify-between pointer-events-none">
+            <span className="text-[11px] font-black uppercase px-3 py-1 rounded-full bg-black/60 text-[#5a93e8] border border-[#3268ba]/30 backdrop-blur-md shadow-md">
+              {currentPhoto.tag}
+            </span>
+            <div className="w-9 h-9 rounded-full bg-black/60 backdrop-blur-md text-white flex items-center justify-center text-xs shadow-md">
+              <i className="fa-solid fa-expand"></i>
             </div>
           </div>
+
+          {/* Bottom Title Info */}
+          <div className="absolute bottom-5 left-5 right-5 z-20 pointer-events-none space-y-1">
+            <h4 className="text-base sm:text-2xl font-black text-white leading-snug drop-shadow-md">
+              {currentPhoto.title}
+            </h4>
+            <p className="text-xs text-[#5a93e8] font-bold flex items-center gap-1.5">
+              <i className="fa-solid fa-image text-[10px]"></i>
+              <span>ሙሉውን ለማየት ይጫኑ (ወደ ጎን በማንሸራተት ቀጣዩን ይመልከቱ)</span>
+            </p>
+          </div>
+
+          {/* Floating On-Photo Prev/Next Arrow Overlays */}
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); handlePrev(); }}
+            className="absolute left-3 top-1/2 -translate-y-1/2 z-30 w-11 h-11 rounded-full bg-black/60 hover:bg-[#3268ba] text-white border border-white/20 hover:border-[#3268ba] backdrop-blur-md flex items-center justify-center transition-all duration-300 shadow-xl cursor-pointer active:scale-90"
+            title="ወደ ኋላ"
+          >
+            <i className="fa-solid fa-chevron-left text-sm"></i>
+          </button>
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); handleNext(); }}
+            className="absolute right-3 top-1/2 -translate-y-1/2 z-30 w-11 h-11 rounded-full bg-black/60 hover:bg-[#3268ba] text-white border border-white/20 hover:border-[#3268ba] backdrop-blur-md flex items-center justify-center transition-all duration-300 shadow-xl cursor-pointer active:scale-90"
+            title="ቀጣይ"
+          >
+            <i className="fa-solid fa-chevron-right text-sm"></i>
+          </button>
+        </div>
+      </div>
+
+      {/* Thumbnail Selector Bar */}
+      <div className="flex items-center justify-center gap-3 pt-5 overflow-x-auto no-scrollbar px-2">
+        {photos.map((photo, i) => (
+          <button
+            key={photo.id}
+            type="button"
+            onClick={() => setCurrentIndex(i)}
+            className={`relative rounded-xl overflow-hidden shrink-0 w-16 h-12 sm:w-20 sm:h-14 border-2 transition-all duration-300 cursor-pointer ${
+              i === currentIndex 
+                ? 'border-[#3268ba] scale-105 shadow-[0_0_15px_rgba(50,104,186,0.6)] ring-2 ring-[#3268ba]/40' 
+                : 'border-transparent opacity-60 hover:opacity-100'
+            }`}
+          >
+            <img src={photo.src} alt={photo.title} className="w-full h-full object-cover" />
+          </button>
         ))}
       </div>
 
       {/* Lightbox Modal */}
-      {selectedPhoto && (
-        <div
+      {selectedLightboxPhoto && (
+        <div 
           className="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200"
-          onClick={() => setSelectedPhoto(null)}
+          onClick={() => setSelectedLightboxPhoto(null)}
         >
-          <div
-            className="relative max-w-4xl w-full bg-slate-900 rounded-2xl overflow-hidden border border-white/20 shadow-2xl p-4 space-y-3"
+          <div 
+            className="relative max-w-4xl w-full bg-slate-900 rounded-3xl overflow-hidden border border-white/20 shadow-2xl space-y-3 p-3 sm:p-4"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-2">
-              <span className="text-xs font-black uppercase text-[#f9b03c] bg-[#f9b03c]/10 border border-[#f9b03c]/30 px-2.5 py-1 rounded-md">
-                {selectedPhoto.tag}
-              </span>
+            <div className="flex items-center justify-between px-2 pt-1">
+              <div>
+                <span className="text-[10px] font-black uppercase text-[#5a93e8] bg-[#3268ba]/20 px-2 py-0.5 rounded-md border border-[#3268ba]/30">
+                  {selectedLightboxPhoto.tag}
+                </span>
+                <h3 className="text-base font-bold text-white mt-1">
+                  {selectedLightboxPhoto.title}
+                </h3>
+              </div>
               <button
                 type="button"
-                onClick={() => setSelectedPhoto(null)}
-                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition cursor-pointer"
-                aria-label="Close"
+                onClick={() => setSelectedLightboxPhoto(null)}
+                className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition cursor-pointer"
               >
-                <i className="fa-solid fa-xmark text-sm"></i>
+                <i className="fa-solid fa-xmark text-base"></i>
               </button>
             </div>
 
-            <div className="rounded-xl overflow-hidden max-h-[75vh] flex items-center justify-center bg-black">
-              <img
-                src={selectedPhoto.src}
-                alt={selectedPhoto.title}
+            <div className="rounded-2xl overflow-hidden max-h-[75vh] flex items-center justify-center bg-black">
+              <img 
+                src={selectedLightboxPhoto.src} 
+                alt={selectedLightboxPhoto.title}
                 className="max-h-[75vh] w-auto object-contain"
               />
             </div>
-
-            <p className="text-center text-sm font-bold text-white px-2">
-              {selectedPhoto.title}
-            </p>
           </div>
         </div>
       )}
