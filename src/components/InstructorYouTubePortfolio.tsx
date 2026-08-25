@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { db } from '@/lib/firebase/config';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 
 export function extractYouTubeId(urlOrId: string): string {
   if (!urlOrId) return '';
@@ -30,11 +30,38 @@ export function extractYouTubeId(urlOrId: string): string {
   return trimmed;
 }
 
-export default function InstructorYouTubePortfolio() {
-  const [localVideoUrl, setLocalVideoUrl] = useState<string>('');
-  const [internationalVideoUrl, setInternationalVideoUrl] = useState<string>('');
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+const FALLBACK_LOCAL_URL = 'https://www.youtube.com/watch?v=mgdOMtW6J8k';
+const FALLBACK_INTERNATIONAL_URL = 'https://www.youtube.com/watch?v=B-s71n0dHUk';
 
+export default function InstructorYouTubePortfolio() {
+  // Synchronously initialize with cache or fallback
+  const [localVideoUrl, setLocalVideoUrl] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('tsehay_youtube_portfolio_cache');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed?.localVideoUrl) return parsed.localVideoUrl;
+        }
+      } catch (e) {}
+    }
+    return FALLBACK_LOCAL_URL;
+  });
+
+  const [internationalVideoUrl, setInternationalVideoUrl] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('tsehay_youtube_portfolio_cache');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed?.internationalVideoUrl) return parsed.internationalVideoUrl;
+        }
+      } catch (e) {}
+    }
+    return FALLBACK_INTERNATIONAL_URL;
+  });
+
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [playingLocal, setPlayingLocal] = useState(false);
   const [playingInternational, setPlayingInternational] = useState(false);
 
@@ -190,106 +217,126 @@ export default function InstructorYouTubePortfolio() {
     };
   }, []);
 
-  // 3. Dynamic Real-time Firestore & API Sync
+  // 3. Robust Real-time Firestore & API Sync
   useEffect(() => {
     let isMounted = true;
 
-    // A. Read cached values initially
-    try {
-      const cached = localStorage.getItem('tsehay_youtube_portfolio_cache');
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        if (parsed.localVideoUrl) setLocalVideoUrl(parsed.localVideoUrl);
-        if (parsed.internationalVideoUrl) setInternationalVideoUrl(parsed.internationalVideoUrl);
-        if (parsed.localVideoUrl || parsed.internationalVideoUrl) setIsLoading(false);
-      }
-    } catch (e) {}
-
-    // B. Fetch from Server Admin API
-    const fetchApiSettings = async () => {
+    // A. Direct initial getDoc & API fetch
+    const fetchPortfolioData = async () => {
       try {
-        const res = await fetch('/api/admin/site-settings?settingKey=youtube_portfolio');
-        if (res.ok && isMounted) {
-          const json = await res.json();
-          if (json.data) {
-            const lUrl = json.data.localVideoUrl || '';
-            const iUrl = json.data.internationalVideoUrl || '';
-            if (lUrl) setLocalVideoUrl(lUrl);
-            if (iUrl) setInternationalVideoUrl(iUrl);
-            if (lUrl || iUrl) setIsLoading(false);
-
+        // Try direct Firestore getDoc first
+        try {
+          const docRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'site_settings', 'youtube_portfolio');
+          const snap = await getDoc(docRef);
+          if (snap.exists() && isMounted) {
+            const data = snap.data();
+            if (data?.localVideoUrl) setLocalVideoUrl(data.localVideoUrl);
+            if (data?.internationalVideoUrl) setInternationalVideoUrl(data.internationalVideoUrl);
             try {
               localStorage.setItem('tsehay_youtube_portfolio_cache', JSON.stringify({
-                localVideoUrl: lUrl,
-                internationalVideoUrl: iUrl
+                localVideoUrl: data.localVideoUrl || FALLBACK_LOCAL_URL,
+                internationalVideoUrl: data.internationalVideoUrl || FALLBACK_INTERNATIONAL_URL
+              }));
+            } catch (e) {}
+          }
+        } catch (dbErr) {
+          console.warn("Direct Firestore getDoc warning:", dbErr);
+        }
+
+        // Try API fallback
+        try {
+          const res = await fetch('/api/admin/site-settings?settingKey=youtube_portfolio');
+          if (res.ok && isMounted) {
+            const json = await res.json();
+            if (json.data) {
+              const lUrl = json.data.localVideoUrl || '';
+              const iUrl = json.data.internationalVideoUrl || '';
+              if (lUrl) setLocalVideoUrl(lUrl);
+              if (iUrl) setInternationalVideoUrl(iUrl);
+              try {
+                localStorage.setItem('tsehay_youtube_portfolio_cache', JSON.stringify({
+                  localVideoUrl: lUrl || FALLBACK_LOCAL_URL,
+                  internationalVideoUrl: iUrl || FALLBACK_INTERNATIONAL_URL
+                }));
+              } catch (e) {}
+            }
+          }
+        } catch (apiErr) {
+          console.warn("API site-settings fetch warning:", apiErr);
+        }
+      } catch (err) {
+        console.error("Error fetching portfolio settings:", err);
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    fetchPortfolioData();
+
+    // B. Real-time Firestore snapshot listeners
+    let unsubscribe1 = () => {};
+    let unsubscribe2 = () => {};
+
+    try {
+      const portfolioDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'site_settings', 'youtube_portfolio');
+      unsubscribe1 = onSnapshot(portfolioDocRef, (docSnap) => {
+        if (docSnap.exists() && isMounted) {
+          const data = docSnap.data();
+          if (data) {
+            if (data.localVideoUrl) setLocalVideoUrl(data.localVideoUrl);
+            if (data.internationalVideoUrl) setInternationalVideoUrl(data.internationalVideoUrl);
+            setIsLoading(false);
+            try {
+              localStorage.setItem('tsehay_youtube_portfolio_cache', JSON.stringify({
+                localVideoUrl: data.localVideoUrl || FALLBACK_LOCAL_URL,
+                internationalVideoUrl: data.internationalVideoUrl || FALLBACK_INTERNATIONAL_URL
               }));
             } catch (e) {}
           }
         }
-      } catch (err) {
-        console.warn("API site-settings fetch fallback:", err);
-      }
-    };
-    fetchApiSettings();
+      }, (err) => {
+        console.warn("Nested Firestore snapshot warning:", err);
+        if (isMounted) setIsLoading(false);
+      });
+    } catch (e) {}
 
-    // C. Real-time Firestore snapshot listener
-    const portfolioDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'site_settings', 'youtube_portfolio');
-    const unsubscribe1 = onSnapshot(portfolioDocRef, (docSnap) => {
-      if (docSnap.exists() && isMounted) {
-        const data = docSnap.data();
-        if (data) {
-          const lUrl = data.localVideoUrl || '';
-          const iUrl = data.internationalVideoUrl || '';
-          if (lUrl) setLocalVideoUrl(lUrl);
-          if (iUrl) setInternationalVideoUrl(iUrl);
-          if (lUrl || iUrl) setIsLoading(false);
-
-          try {
-            localStorage.setItem('tsehay_youtube_portfolio_cache', JSON.stringify({
-              localVideoUrl: lUrl,
-              internationalVideoUrl: iUrl
-            }));
-          } catch (e) {}
+    try {
+      const rootDocRef = doc(db, 'site_settings', 'youtube_portfolio');
+      unsubscribe2 = onSnapshot(rootDocRef, (docSnap) => {
+        if (docSnap.exists() && isMounted) {
+          const data = docSnap.data();
+          if (data) {
+            if (data.localVideoUrl) setLocalVideoUrl(data.localVideoUrl);
+            if (data.internationalVideoUrl) setInternationalVideoUrl(data.internationalVideoUrl);
+            setIsLoading(false);
+            try {
+              localStorage.setItem('tsehay_youtube_portfolio_cache', JSON.stringify({
+                localVideoUrl: data.localVideoUrl || FALLBACK_LOCAL_URL,
+                internationalVideoUrl: data.internationalVideoUrl || FALLBACK_INTERNATIONAL_URL
+              }));
+            } catch (e) {}
+          }
         }
-      }
-    }, (err) => {
-      console.warn("YouTube portfolio nested Firestore sync warning:", err);
-    });
+      }, (err) => {
+        console.warn("Root Firestore snapshot warning:", err);
+        if (isMounted) setIsLoading(false);
+      });
+    } catch (e) {}
 
-    const rootDocRef = doc(db, 'site_settings', 'youtube_portfolio');
-    const unsubscribe2 = onSnapshot(rootDocRef, (docSnap) => {
-      if (docSnap.exists() && isMounted) {
-        const data = docSnap.data();
-        if (data) {
-          const lUrl = data.localVideoUrl || '';
-          const iUrl = data.internationalVideoUrl || '';
-          if (lUrl) setLocalVideoUrl(lUrl);
-          if (iUrl) setInternationalVideoUrl(iUrl);
-          if (lUrl || iUrl) setIsLoading(false);
-
-          try {
-            localStorage.setItem('tsehay_youtube_portfolio_cache', JSON.stringify({
-              localVideoUrl: lUrl,
-              internationalVideoUrl: iUrl
-            }));
-          } catch (e) {}
-        }
-      }
-    }, (err) => {
-      console.warn("YouTube portfolio root Firestore sync warning:", err);
-    });
-
-    // D. Storage & Custom Event listeners
+    // C. Storage & Custom Event listeners for immediate multi-tab sync
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'tsehay_youtube_portfolio_cache' && e.newValue && isMounted) {
         try {
           const parsed = JSON.parse(e.newValue);
-          if (parsed.localVideoUrl) setLocalVideoUrl(parsed.localVideoUrl);
-          if (parsed.internationalVideoUrl) setInternationalVideoUrl(parsed.internationalVideoUrl);
+          if (parsed?.localVideoUrl) setLocalVideoUrl(parsed.localVideoUrl);
+          if (parsed?.internationalVideoUrl) setInternationalVideoUrl(parsed.internationalVideoUrl);
           setIsLoading(false);
         } catch (err) {}
       }
     };
+
     const handleCustomUpdate = (e: Event) => {
       const customEvt = e as CustomEvent;
       if (customEvt.detail && isMounted) {
@@ -298,6 +345,7 @@ export default function InstructorYouTubePortfolio() {
         setIsLoading(false);
       }
     };
+
     window.addEventListener('storage', handleStorageChange);
     window.addEventListener('tsehay_portfolio_updated', handleCustomUpdate);
 
@@ -310,15 +358,11 @@ export default function InstructorYouTubePortfolio() {
     };
   }, []);
 
-  const localVideoId = extractYouTubeId(localVideoUrl);
-  const internationalVideoId = extractYouTubeId(internationalVideoUrl);
+  const localVideoId = extractYouTubeId(localVideoUrl) || 'mgdOMtW6J8k';
+  const internationalVideoId = extractYouTubeId(internationalVideoUrl) || 'B-s71n0dHUk';
 
-  const localEmbedUrl = localVideoId 
-    ? `https://www.youtube.com/embed/${localVideoId}?autoplay=1&rel=0&modestbranding=1&controls=1&showinfo=0&iv_load_policy=3&cc_load_policy=0&playsinline=1&enablejsapi=1`
-    : '';
-  const internationalEmbedUrl = internationalVideoId 
-    ? `https://www.youtube.com/embed/${internationalVideoId}?autoplay=1&rel=0&modestbranding=1&controls=1&showinfo=0&iv_load_policy=3&cc_load_policy=0&playsinline=1&enablejsapi=1`
-    : '';
+  const localEmbedUrl = `https://www.youtube.com/embed/${localVideoId}?autoplay=1&rel=0&modestbranding=1&controls=1&showinfo=0&iv_load_policy=3&cc_load_policy=0&playsinline=1&enablejsapi=1`;
+  const internationalEmbedUrl = `https://www.youtube.com/embed/${internationalVideoId}?autoplay=1&rel=0&modestbranding=1&controls=1&showinfo=0&iv_load_policy=3&cc_load_policy=0&playsinline=1&enablejsapi=1`;
 
   return (
     <section id="instructor-portfolio" className="relative py-16 sm:py-24 overflow-hidden bg-slate-900/60 dark:bg-[#030509]/95 border-b border-gray-200/80 dark:border-white/10">
@@ -436,28 +480,20 @@ export default function InstructorYouTubePortfolio() {
                     className="w-full h-full absolute inset-0 cursor-pointer group/thumb flex items-center justify-center overflow-hidden bg-slate-950"
                     title="ቪዲዮውን ለማጫወት ይጫኑ (Click to Play)"
                   >
-                    {localVideoId ? (
-                      <img
-                        src={`https://img.youtube.com/vi/${localVideoId}/hqdefault.jpg`}
-                        alt="ሀገርኛ ዩቲዩብ ቻናል"
-                        className="absolute inset-0 w-full h-full object-cover group-hover/thumb:scale-[1.03] transition-transform duration-500"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = `https://img.youtube.com/vi/${localVideoId}/default.jpg`;
-                        }}
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-slate-900 flex items-center justify-center text-gray-500 text-xs">
-                        ቪዲዮ አልተመረጠም
-                      </div>
-                    )}
+                    <img
+                      src={`https://img.youtube.com/vi/${localVideoId}/hqdefault.jpg`}
+                      alt="ሀገርኛ ዩቲዩብ ቻናል"
+                      className="absolute inset-0 w-full h-full object-cover group-hover/thumb:scale-[1.03] transition-transform duration-500"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = `https://img.youtube.com/vi/${localVideoId}/default.jpg`;
+                      }}
+                    />
 
-                    {localVideoId && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover/thumb:bg-black/30 transition-colors duration-300">
-                        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[#f9b03c] text-slate-950 flex items-center justify-center text-2xl shadow-[0_0_35px_rgba(249,176,60,0.85)] opacity-0 scale-75 group-hover/thumb:opacity-100 group-hover/thumb:scale-100 transition-all duration-300 pointer-events-none">
-                          <i className="fa-solid fa-play ml-1"></i>
-                        </div>
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover/thumb:bg-black/30 transition-colors duration-300">
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[#f9b03c] text-slate-950 flex items-center justify-center text-2xl shadow-[0_0_35px_rgba(249,176,60,0.85)] opacity-0 scale-75 group-hover/thumb:opacity-100 group-hover/thumb:scale-100 transition-all duration-300 pointer-events-none">
+                        <i className="fa-solid fa-play ml-1"></i>
                       </div>
-                    )}
+                    </div>
                   </div>
                 )}
               </div>
@@ -522,28 +558,20 @@ export default function InstructorYouTubePortfolio() {
                     className="w-full h-full absolute inset-0 cursor-pointer group/thumb flex items-center justify-center overflow-hidden bg-slate-950"
                     title="ቪዲዮውን ለማጫወት ይጫኑ (Click to Play)"
                   >
-                    {internationalVideoId ? (
-                      <img
-                        src={`https://img.youtube.com/vi/${internationalVideoId}/hqdefault.jpg`}
-                        alt="ዓለም አቀፍ ዩቲዩብ ቻናል"
-                        className="absolute inset-0 w-full h-full object-cover group-hover/thumb:scale-[1.03] transition-transform duration-500"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = `https://img.youtube.com/vi/${internationalVideoId}/default.jpg`;
-                        }}
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-slate-900 flex items-center justify-center text-gray-500 text-xs">
-                        ቪዲዮ አልተመረጠም
-                      </div>
-                    )}
+                    <img
+                      src={`https://img.youtube.com/vi/${internationalVideoId}/hqdefault.jpg`}
+                      alt="ዓለም አቀፍ ዩቲዩብ ቻናል"
+                      className="absolute inset-0 w-full h-full object-cover group-hover/thumb:scale-[1.03] transition-transform duration-500"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = `https://img.youtube.com/vi/${internationalVideoId}/default.jpg`;
+                      }}
+                    />
 
-                    {internationalVideoId && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover/thumb:bg-black/30 transition-colors duration-300">
-                        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[#f9b03c] text-slate-950 flex items-center justify-center text-2xl shadow-[0_0_35px_rgba(249,176,60,0.85)] opacity-0 scale-75 group-hover/thumb:opacity-100 group-hover/thumb:scale-100 transition-all duration-300 pointer-events-none">
-                          <i className="fa-solid fa-play ml-1"></i>
-                        </div>
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover/thumb:bg-black/30 transition-colors duration-300">
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[#f9b03c] text-slate-950 flex items-center justify-center text-2xl shadow-[0_0_35px_rgba(249,176,60,0.85)] opacity-0 scale-75 group-hover/thumb:opacity-100 group-hover/thumb:scale-100 transition-all duration-300 pointer-events-none">
+                        <i className="fa-solid fa-play ml-1"></i>
                       </div>
-                    )}
+                    </div>
                   </div>
                 )}
               </div>
