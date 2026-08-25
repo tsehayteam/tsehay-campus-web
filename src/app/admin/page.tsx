@@ -69,7 +69,7 @@ export default function AdminDashboard() {
   // About Video State
   const [aboutVideoUrl, setAboutVideoUrl] = useState('https://www.youtube.com/embed/mgdOMtW6J8k');
   const [aboutVideoTitle, setAboutVideoTitle] = useState('Tsehay Campus Introduction');
-  const [aboutVideoThumbnail, setAboutVideoThumbnail] = useState('');
+  const [aboutVideoThumbnail, setAboutVideoThumbnail] = useState('/assets/about_video_cover.jpg');
   const [aboutPreviewMode, setAboutPreviewMode] = useState<'thumbnail' | 'player'>('thumbnail');
   const [isSavingAboutVideo, setIsSavingAboutVideo] = useState(false);
   const [aboutVideoSavedMessage, setAboutVideoSavedMessage] = useState('');

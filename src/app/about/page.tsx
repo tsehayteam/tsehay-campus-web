@@ -311,7 +311,7 @@ function AboutHeroPlayer() {
             return {
               videoUrl: parsed.videoUrl || 'https://www.youtube.com/watch?v=mgdOMtW6J8k',
               title: parsed.title || 'ስለ ፀሐይ ካምፓስ',
-              thumbnail: parsed.thumbnail || ''
+              thumbnail: parsed.thumbnail || '/assets/about_video_cover.jpg'
             };
           }
         }
@@ -320,7 +320,7 @@ function AboutHeroPlayer() {
     return {
       videoUrl: 'https://www.youtube.com/watch?v=mgdOMtW6J8k',
       title: 'ስለ ፀሐይ ካምፓስ',
-      thumbnail: ''
+      thumbnail: '/assets/about_video_cover.jpg'
     };
   });
   const [isPlaying, setIsPlaying] = useState(false);
@@ -335,7 +335,7 @@ function AboutHeroPlayer() {
             const nextData = {
               videoUrl: data.videoUrl || 'https://www.youtube.com/watch?v=mgdOMtW6J8k',
               title: data.title || 'ስለ ፀሐይ ካምፓስ',
-              thumbnail: data.thumbnail || ''
+              thumbnail: data.thumbnail || '/assets/about_video_cover.jpg'
             };
             setVideoData(nextData);
             try {
@@ -353,12 +353,11 @@ function AboutHeroPlayer() {
   }, []);
 
   const parsed = parseVideoEmbedUrl(videoData.videoUrl, true);
-  const yId = extractYouTubeId(videoData.videoUrl) || 'mgdOMtW6J8k';
   const customThumb = videoData.thumbnail?.trim();
   
   const activeThumbnail = customThumb 
     ? parseImageUrl(customThumb) 
-    : (yId ? `https://img.youtube.com/vi/${yId}/maxresdefault.jpg` : 'https://i.postimg.cc/qvqt1bJK/about-photo-1.jpg');
+    : '/assets/about_video_cover.jpg';
 
   return (
     <div className="max-w-4xl mx-auto mb-16">
@@ -384,7 +383,7 @@ function AboutHeroPlayer() {
                 alt="Tsehay Campus Video" 
                 className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
                 onError={(e) => { 
-                  (e.target as HTMLImageElement).src = `https://img.youtube.com/vi/${yId}/hqdefault.jpg`; 
+                  (e.target as HTMLImageElement).src = '/assets/about_video_cover.jpg'; 
                 }}
               />
 
