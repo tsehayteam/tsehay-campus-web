@@ -479,7 +479,7 @@ export default function Home() {
         `}} />
     </section>
 
-    <section id="features" className="py-24 relative overflow-hidden bg-slate-50/50 dark:bg-[#030509] border-b border-gray-200/80 dark:border-white/[0.06] transition-colors duration-300">
+    <section id="features" className="py-24 relative overflow-hidden bg-slate-50/40 dark:bg-transparent border-b border-gray-200/80 dark:border-white/[0.06] transition-colors duration-300">
         <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
             <div className="absolute -top-32 -left-32 w-[500px] h-[500px] bg-[#f9b03c]/10 dark:bg-[#f9b03c]/5 rounded-full blur-[120px]"></div>
             <div className="absolute top-1/2 -right-32 w-[500px] h-[500px] bg-[#3268ba]/10 dark:bg-[#3268ba]/5 rounded-full blur-[120px]"></div>
@@ -567,7 +567,7 @@ export default function Home() {
     </section>
 
     
-    <section id="courses" className="py-20 sm:py-28 bg-slate-50/50 dark:bg-[#030509] border-b border-gray-200/80 dark:border-white/[0.06] transition-colors duration-300 relative overflow-hidden">
+    <section id="courses" className="py-20 sm:py-28 bg-slate-50/40 dark:bg-transparent border-b border-gray-200/80 dark:border-white/[0.06] transition-colors duration-300 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#f9b03c]/5 rounded-full blur-[140px] pointer-events-none"></div>
         <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-[#3268ba]/5 rounded-full blur-[140px] pointer-events-none"></div>
 
@@ -797,7 +797,7 @@ export default function Home() {
     {/* Instructor's YouTube Portfolio (2-Column Terafab Glassmorphism Section) */}
     <InstructorYouTubePortfolio />
     
-    <section id="faq" className="py-16 bg-slate-50 dark:bg-darkCard border-b border-gray-200 dark:border-gray-800 transition-colors duration-300 scrolly-reveal">
+    <section id="faq" className="py-16 bg-slate-50/40 dark:bg-transparent border-b border-gray-200 dark:border-gray-800 transition-colors duration-300 scrolly-reveal">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-10">
                 <h2 className="font-heading font-black text-3xl sm:text-4xl text-dark dark:text-white mb-3">{t('faq_title')}</h2>

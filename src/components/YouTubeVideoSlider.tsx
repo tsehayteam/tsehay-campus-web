@@ -182,7 +182,7 @@ export default function YouTubeVideoSlider() {
   }
 
   return (
-    <section id="youtube-section" className="bg-[#050810] py-14 sm:py-24 text-white relative overflow-hidden border-b border-white/5 select-none">
+    <section id="youtube-section" className="bg-[#050810]/75 backdrop-blur-xs py-14 sm:py-24 text-white relative overflow-hidden border-b border-white/5 select-none">
       {/* Background Ambient Glows */}
       <div 
         className="absolute inset-0 opacity-15 pointer-events-none"

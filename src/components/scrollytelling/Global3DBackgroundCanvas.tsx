@@ -42,9 +42,9 @@ export default function Global3DBackgroundCanvas() {
     window.addEventListener('resize', handleResize, { passive: true });
 
     // 3D Particle Space
-    const PARTICLE_COUNT = 115;
-    const FOV = 390;
-    const DEPTH = 1900;
+    const PARTICLE_COUNT = 135;
+    const FOV = 400;
+    const DEPTH = 2000;
 
     interface Node3D {
       x: number;
@@ -61,11 +61,11 @@ export default function Global3DBackgroundCanvas() {
 
     const nodes: Node3D[] = [];
     const colors = [
-      { fill: '#f9b03c', glow: 'rgba(249, 176, 60, 0.85)' },
-      { fill: '#3268ba', glow: 'rgba(50, 104, 186, 0.85)' },
-      { fill: '#f9b03c', glow: 'rgba(249, 176, 60, 0.85)' },
-      { fill: '#5a93e8', glow: 'rgba(90, 147, 232, 0.8)' },
-      { fill: '#ffffff', glow: 'rgba(255, 255, 255, 0.7)' },
+      { fill: '#f9b03c', glow: 'rgba(249, 176, 60, 0.9)' },
+      { fill: '#3268ba', glow: 'rgba(50, 104, 186, 0.9)' },
+      { fill: '#f9b03c', glow: 'rgba(249, 176, 60, 0.9)' },
+      { fill: '#5a93e8', glow: 'rgba(90, 147, 232, 0.85)' },
+      { fill: '#ffffff', glow: 'rgba(255, 255, 255, 0.8)' },
     ];
 
     for (let i = 0; i < PARTICLE_COUNT; i++) {
@@ -76,7 +76,7 @@ export default function Global3DBackgroundCanvas() {
         y: (Math.random() - 0.5) * height * 2.2,
         z: zVal,
         baseZ: zVal,
-        size: Math.random() * 2.2 + 1.2,
+        size: Math.random() * 2.4 + 1.2,
         color: col.fill,
         glowColor: col.glow,
         speedX: (Math.random() - 0.5) * 0.35,
@@ -97,6 +97,7 @@ export default function Global3DBackgroundCanvas() {
       targetScrollProgress = window.scrollY / maxScroll;
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
 
     const handleMouseMove = (e: MouseEvent) => {
       targetMouseX = (e.clientX / width - 0.5) * 35;

@@ -344,7 +344,7 @@ export default function InstructorYouTubePortfolio() {
   const intlThumb = `https://img.youtube.com/vi/${intlId}/hqdefault.jpg`;
 
   return (
-    <section id="instructor-portfolio" className="relative py-16 sm:py-24 overflow-hidden bg-slate-900/60 dark:bg-[#030509]/95 border-b border-gray-200/80 dark:border-white/10">
+    <section id="instructor-portfolio" className="relative py-16 sm:py-24 overflow-hidden bg-slate-900/40 dark:bg-[#030509]/70 backdrop-blur-xs border-b border-gray-200/80 dark:border-white/10">
       
       {/* Subtle Background Glows */}
       <div className="absolute top-1/3 -left-32 w-96 h-96 bg-[#3268ba]/15 rounded-full blur-[140px] pointer-events-none" />
