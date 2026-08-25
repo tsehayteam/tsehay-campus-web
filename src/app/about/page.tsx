@@ -5,7 +5,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import Footer from '@/components/Footer';
 import { db } from '@/lib/firebase/config';
 import { doc, onSnapshot } from 'firebase/firestore';
-import { parseVideoEmbedUrl, extractYouTubeId, parseImageUrl } from '@/lib/videoParser';
+import { parseVideoEmbedUrl, parseImageUrl } from '@/lib/videoParser';
 
 export default function About() {
   const { t, lang } = useLanguage();
@@ -16,22 +16,14 @@ export default function About() {
         
         {/* Subtle Background Glows */}
         <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[800px] h-[450px] bg-gradient-to-b from-[#3268ba]/10 via-[#f9b03c]/10 to-transparent rounded-full blur-[140px] pointer-events-none -z-10" />
-        <div className="absolute top-[50%] -left-32 w-96 h-96 bg-[#3268ba]/10 rounded-full blur-[140px] pointer-events-none -z-10" />
-        <div className="absolute top-[75%] -right-32 w-96 h-96 bg-[#f9b03c]/10 rounded-full blur-[140px] pointer-events-none -z-10" />
+        <div className="absolute top-[40%] -left-32 w-96 h-96 bg-[#3268ba]/10 rounded-full blur-[140px] pointer-events-none -z-10" />
+        <div className="absolute top-[70%] -right-32 w-96 h-96 bg-[#f9b03c]/10 rounded-full blur-[140px] pointer-events-none -z-10" />
 
         <section id="about" className="pt-28 sm:pt-36 pb-24 relative z-10 flex-1">
-          <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8 space-y-20 sm:space-y-28">
             
-            {/* Header Title */}
-            <div className="text-center mb-12 sm:mb-16">
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#f9b03c]/10 border border-[#f9b03c]/35 text-[#f9b03c] text-xs font-black mb-4 shadow-[0_0_20px_rgba(249,176,60,0.2)] animate-pulse">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#f9b03c] opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#f9b03c]"></span>
-                </span>
-                <span>✨ ፀሐይ ካምፓስ • TSEHAY CAMPUS ✨</span>
-              </div>
-
+            {/* Header Title (Clean, Direct without ping badge) */}
+            <div className="text-center">
               <h1 className="font-heading font-black text-3xl sm:text-5xl lg:text-6xl text-slate-900 dark:text-white mb-4 tracking-tight">
                 {t('about_us_page')}
               </h1>
@@ -39,12 +31,14 @@ export default function About() {
             </div>
 
             {/* Main Video Presentation with Animated Rotating Light Beam */}
-            <AboutHeroPlayer />
+            <div>
+              <AboutHeroPlayer />
+            </div>
 
             {/* =========================================================================
                 1. OUR STORY (የእኛ ታሪክ) - ELEGANT CARD WITH ANIMATED ACCENTS
                ========================================================================= */}
-            <div className="max-w-4xl mx-auto mb-20 sm:mb-24">
+            <div className="max-w-4xl mx-auto">
               <div className="relative p-[1px] rounded-3xl overflow-hidden group">
                 <div className="absolute inset-0 bg-gradient-to-r from-[#f9b03c]/30 via-[#3268ba]/30 to-[#f9b03c]/30 rounded-3xl opacity-50 group-hover:opacity-100 transition duration-500 blur-sm" />
                 
@@ -108,13 +102,15 @@ export default function About() {
             </div>
 
             {/* =========================================================================
-                2. MISSION (ተልዕኳችን) - SPOTLIGHT VISION CARD
+                2. MISSION (ተልዕኳችን) - SPOTLIGHT VISION CARD WITH ROTATING BORDER BEAM
                ========================================================================= */}
-            <div className="max-w-4xl mx-auto mb-20 sm:mb-24">
+            <div className="max-w-4xl mx-auto">
               <div className="relative p-[1px] rounded-3xl overflow-hidden group text-center">
-                <div className="absolute inset-0 bg-[conic-gradient(from_0deg,transparent_0deg,transparent_270deg,#f9b03c_320deg,#ffe066_355deg,#ffffff_360deg)] animate-border-beam opacity-60 pointer-events-none" />
+                
+                {/* Rotating Border Beam on ተልዕኳችን */}
+                <div className="absolute inset-[-200%] bg-[conic-gradient(from_0deg,transparent_0deg,transparent_270deg,#f9b03c_320deg,#ffe066_355deg,#ffffff_360deg)] animate-border-beam opacity-75 pointer-events-none" />
 
-                <div className="relative rounded-[23px] bg-white/80 dark:bg-slate-900/90 backdrop-blur-xl p-8 sm:p-12 border border-gray-200/80 dark:border-white/10 shadow-xl">
+                <div className="relative rounded-[23px] bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-8 sm:p-12 border border-gray-200/80 dark:border-white/10 shadow-xl">
                   <div className="w-14 h-14 mx-auto rounded-2xl bg-[#f9b03c]/15 text-[#f9b03c] border border-[#f9b03c]/30 flex items-center justify-center text-2xl mb-4 shadow-[0_0_25px_rgba(249,176,60,0.3)]">
                     <i className="fa-solid fa-bullseye"></i>
                   </div>
@@ -134,7 +130,7 @@ export default function About() {
             {/* =========================================================================
                 3. WHY TSEHAY CAMPUS (ለምን ፀሐይ ካምፓስ?) - 3 INTERACTIVE PILLAR CARDS
                ========================================================================= */}
-            <div className="mb-20 sm:mb-24">
+            <div>
               <div className="text-center max-w-3xl mx-auto mb-10 sm:mb-14">
                 <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#f9b03c]/10 border border-[#f9b03c]/30 text-[#f9b03c] text-xs font-bold mb-3">
                   <i className="fa-solid fa-star text-[10px]"></i>
@@ -195,7 +191,7 @@ export default function About() {
             {/* =========================================================================
                 4. OUR TEAM (የፀሐይ ካምፓስ ቡድኖች) - WIDE CLEAN SINGLE-LINE CARDS
                ========================================================================= */}
-            <div className="mb-20 sm:mb-24">
+            <div>
               <div className="text-center max-w-3xl mx-auto mb-10 sm:mb-14">
                 <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#f9b03c]/10 border border-[#f9b03c]/30 text-[#f9b03c] text-xs font-bold mb-3">
                   <i className="fa-solid fa-users text-[10px]"></i>
@@ -230,7 +226,7 @@ export default function About() {
                   </div>
                 </div>
 
-                {/* Ribka Teshome (Single continuous line without wrapping) */}
+                {/* Ribka Teshome */}
                 <div className="relative p-[1px] rounded-3xl overflow-hidden group hover:-translate-y-2.5 transition-all duration-500 w-full sm:w-[380px]">
                   <div className="absolute inset-0 bg-gradient-to-b from-[#3268ba]/40 via-transparent to-transparent opacity-50 group-hover:opacity-100 transition duration-500" />
                   
@@ -256,10 +252,10 @@ export default function About() {
             </div>
 
             {/* =========================================================================
-                5. REELS & PHOTOS (የካምፓሳችን አጫጭር ቪዲዮዎች እና ምስሎች)
+                5. REELS & PHOTOS (የካምፓሳችን አጫጭር ቪዲዮዎች እና ምስሎች) - HORIZONTAL SLIDERS
                ========================================================================= */}
-            <div className="space-y-8 mt-16 sm:mt-24">
-              <div className="text-center mb-8 sm:mb-12">
+            <div className="space-y-12">
+              <div className="text-center max-w-3xl mx-auto">
                 <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#f9b03c]/10 border border-[#f9b03c]/30 text-[#f9b03c] text-xs font-bold mb-3">
                   <i className="fa-solid fa-film text-[10px]"></i>
                   <span>ቅንጭብ ማሳያዎች</span>
@@ -272,21 +268,11 @@ export default function About() {
                 </p>
               </div>
 
-              {/* Short Vertical Videos (2 Unique Clean Videos) */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
-                <AboutShortVideo src="/assets/videos/Tsehay.mp4" title="ፀሐይ ካምፓስ በጨረፍታ" />
-                <AboutShortVideo src="/assets/videos/Marketing%20and%20psyco.mp4" title="የማርኬቲንግ እና ስኬት ሚስጥሮች" />
-              </div>
+              {/* A. Horizontal Vertical Reels Slider */}
+              <AboutReelsSlider />
 
-              {/* Banner Style Team Photo */}
-              <div className="rounded-3xl overflow-hidden shadow-2xl group w-full h-64 md:h-96 bg-black relative border border-gray-200 dark:border-white/10 max-w-4xl mx-auto mt-8">
-                <img 
-                  src="https://i.postimg.cc/qvqt1bJK/about-photo-1.jpg" 
-                  className="w-full h-full object-cover group-hover:scale-105 transition duration-700" 
-                  alt="Tsehay Campus Team" 
-                  onError={(e) => { e.currentTarget.src='https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=800&auto=format&fit=crop'; }} 
-                />
-              </div>
+              {/* B. Horizontal Campus Photo Gallery Slider */}
+              <AboutPhotosSlider />
             </div>
 
           </div>
@@ -360,7 +346,7 @@ function AboutHeroPlayer() {
     : '/assets/about_video_cover.jpg';
 
   return (
-    <div className="max-w-4xl mx-auto mb-16">
+    <div className="max-w-4xl mx-auto">
       <div className="relative rounded-[2.5rem] p-[2px] overflow-hidden group shadow-2xl">
         
         {/* Animated Rotating Light Beam Frame (ጨረር ፍሬም) */}
@@ -434,9 +420,70 @@ function AboutHeroPlayer() {
 }
 
 // =========================================================================
-// 🌟 CLEAN VERTICAL REEL CARD
+// 🌟 HORIZONTAL REELS SLIDER (LIKE FREE YOUTUBE VIDEOS CAROUSEL)
 // =========================================================================
-function AboutShortVideo({ src, title }: { src: string; title?: string }) {
+function AboutReelsSlider() {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const reels = [
+    { id: 'reel-1', src: '/assets/videos/Tsehay.mp4' },
+    { id: 'reel-2', src: '/assets/videos/Marketing%20and%20psyco.mp4' }
+  ];
+
+  const scroll = (direction: 'left' | 'right') => {
+    if (scrollRef.current) {
+      const offset = direction === 'left' ? -320 : 320;
+      scrollRef.current.scrollBy({ left: offset, behavior: 'smooth' });
+    }
+  };
+
+  return (
+    <div className="relative max-w-4xl mx-auto">
+      {/* Slider Controls */}
+      <div className="flex items-center justify-between mb-4 px-2">
+        <span className="text-xs font-bold text-[#f9b03c] uppercase tracking-wider flex items-center gap-2">
+          <i className="fa-solid fa-play text-[10px]"></i>
+          <span>አጫጭር ቪዲዮዎች</span>
+        </span>
+
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => scroll('left')}
+            className="w-9 h-9 rounded-full bg-white dark:bg-slate-800 hover:bg-[#f9b03c] hover:text-slate-950 text-slate-700 dark:text-slate-300 border border-gray-200 dark:border-white/10 flex items-center justify-center transition shadow-md cursor-pointer active:scale-95"
+            title="ወደ ግራ (Scroll Left)"
+          >
+            <i className="fa-solid fa-chevron-left text-xs"></i>
+          </button>
+          <button
+            type="button"
+            onClick={() => scroll('right')}
+            className="w-9 h-9 rounded-full bg-white dark:bg-slate-800 hover:bg-[#f9b03c] hover:text-slate-950 text-slate-700 dark:text-slate-300 border border-gray-200 dark:border-white/10 flex items-center justify-center transition shadow-md cursor-pointer active:scale-95"
+            title="ወደ ቀኝ (Scroll Right)"
+          >
+            <i className="fa-solid fa-chevron-right text-xs"></i>
+          </button>
+        </div>
+      </div>
+
+      {/* Horizontal Reels Container */}
+      <div 
+        ref={scrollRef}
+        className="flex gap-6 overflow-x-auto no-scrollbar scroll-smooth snap-x snap-mandatory py-2 px-1"
+      >
+        {reels.map((reel) => (
+          <div key={reel.id} className="snap-center shrink-0 w-[270px] sm:w-[300px]">
+            <AboutShortVideo src={reel.src} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// =========================================================================
+// 🌟 CLEAN VERTICAL REEL COMPONENT (WITHOUT TEXT OVERLAY BADGE)
+// =========================================================================
+function AboutShortVideo({ src }: { src: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -496,21 +543,13 @@ function AboutShortVideo({ src, title }: { src: string; title?: string }) {
           }
         }}
         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 pointer-events-none"
-        style={{ transform: 'translateZ(0)', backfaceVisibility: 'hidden' }}
       >
         <source src={src} type="video/mp4" />
       </video>
 
-      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20 pointer-events-none"></div>
+      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 pointer-events-none"></div>
 
-      {title && (
-        <div className="absolute top-4 left-4 right-4 z-10 pointer-events-none">
-          <span className="inline-block px-3 py-1 rounded-full bg-black/70 backdrop-blur-md text-[11px] font-bold text-white border border-white/20 shadow-md">
-            {title}
-          </span>
-        </div>
-      )}
-
+      {/* Play / Pause Animated Icon */}
       <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none transition-all duration-300 transform ${
         isPlaying 
           ? 'opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-100' 
@@ -527,6 +566,75 @@ function AboutShortVideo({ src, title }: { src: string; title?: string }) {
             <i className="fa-solid fa-play text-2xl ml-1"></i>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+// =========================================================================
+// 🌟 HORIZONTAL CAMPUS PHOTOS SLIDER (EXPANDABLE PHOTO GALLERY)
+// =========================================================================
+function AboutPhotosSlider() {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const photos = [
+    { id: 'p1', src: 'https://i.postimg.cc/qvqt1bJK/about-photo-1.jpg', alt: 'Tsehay Campus Community' }
+  ];
+
+  const scroll = (direction: 'left' | 'right') => {
+    if (scrollRef.current) {
+      const offset = direction === 'left' ? -380 : 380;
+      scrollRef.current.scrollBy({ left: offset, behavior: 'smooth' });
+    }
+  };
+
+  return (
+    <div className="relative max-w-4xl mx-auto pt-6">
+      <div className="flex items-center justify-between mb-4 px-2">
+        <span className="text-xs font-bold text-[#3268ba] dark:text-[#5a93e8] uppercase tracking-wider flex items-center gap-2">
+          <i className="fa-solid fa-images text-[10px]"></i>
+          <span>የካምፓሳችን ምስሎች</span>
+        </span>
+
+        {photos.length > 1 && (
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => scroll('left')}
+              className="w-9 h-9 rounded-full bg-white dark:bg-slate-800 hover:bg-[#3268ba] hover:text-white text-slate-700 dark:text-slate-300 border border-gray-200 dark:border-white/10 flex items-center justify-center transition shadow-md cursor-pointer active:scale-95"
+              title="ወደ ግራ"
+            >
+              <i className="fa-solid fa-chevron-left text-xs"></i>
+            </button>
+            <button
+              type="button"
+              onClick={() => scroll('right')}
+              className="w-9 h-9 rounded-full bg-white dark:bg-slate-800 hover:bg-[#3268ba] hover:text-white text-slate-700 dark:text-slate-300 border border-gray-200 dark:border-white/10 flex items-center justify-center transition shadow-md cursor-pointer active:scale-95"
+              title="ወደ ቀኝ"
+            >
+              <i className="fa-solid fa-chevron-right text-xs"></i>
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Horizontal Photos Container */}
+      <div 
+        ref={scrollRef}
+        className="flex gap-6 overflow-x-auto no-scrollbar scroll-smooth snap-x snap-mandatory py-2 px-1"
+      >
+        {photos.map((photo) => (
+          <div 
+            key={photo.id} 
+            className="snap-center shrink-0 w-full rounded-3xl overflow-hidden shadow-2xl group h-64 sm:h-80 md:h-96 bg-black relative border border-gray-200 dark:border-white/10"
+          >
+            <img 
+              src={photo.src} 
+              className="w-full h-full object-cover group-hover:scale-105 transition duration-700" 
+              alt={photo.alt} 
+              onError={(e) => { e.currentTarget.src='https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=800&auto=format&fit=crop'; }} 
+            />
+          </div>
+        ))}
       </div>
     </div>
   );
