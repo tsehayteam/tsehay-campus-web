@@ -1815,42 +1815,45 @@ ${customAdminPrompt}
 
         <nav className="flex-1 overflow-x-auto md:overflow-y-auto py-2 md:py-3 px-3 space-y-1 font-body no-scrollbar w-full flex flex-row md:flex-col gap-2 md:gap-0 items-center md:items-stretch">
           
-          {/* 🌟 INTERACTIVE ACCORDION TOGGLE (እንደ ማውጫ ዝርግት እና ጥቅልል የሚል) */}
+          {/* 🌟 INTERACTIVE ACCORDION TOGGLE (እንደ ዋና መነሻ ማውጫ vibe ያለው - ወደ ላይ እጠፍ / ዘርጋ) */}
           <div className="hidden lg:block w-full mb-2">
             <button
               type="button"
               onClick={() => setIsNavDrawerExpanded(prev => !prev)}
-              className="w-full flex items-center justify-between p-2.5 rounded-2xl bg-white/[0.05] hover:bg-white/[0.09] border border-white/10 hover:border-[#f9b03c]/40 transition-all duration-300 group cursor-pointer shadow-xs active:scale-[0.98]"
-              title={isNavDrawerExpanded ? "ማውጫውን እጠፍ (Collapse Menu)" : "ማውጫውን ዘርጋ (Expand Menu)"}
+              className="w-full flex items-center justify-between p-2.5 rounded-2xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 hover:border-[#f9b03c]/40 transition-all duration-300 group cursor-pointer shadow-xs active:scale-[0.98]"
+              title={isNavDrawerExpanded ? "ወደ ላይ እጠፍ (Roll Up Menu)" : "ዋና ሜኑን ዘርጋ (Expand Menu)"}
             >
               <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-xl bg-[#f9b03c]/15 text-[#f9b03c] border border-[#f9b03c]/30 flex items-center justify-center text-xs shadow-xs">
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#f9b03c]/20 to-amber-400/10 text-[#f9b03c] border border-[#f9b03c]/35 flex items-center justify-center text-xs shadow-xs group-hover:scale-105 transition-transform">
                   <i className="fa-solid fa-compass"></i>
                 </div>
                 <div className="text-left">
-                  <span className="font-heading font-black text-xs text-white uppercase tracking-wider block leading-tight">
-                    {t('main_menu') || 'ዋና ማውጫ'}
+                  <span className="font-heading font-black text-xs sm:text-[13px] text-white tracking-wide block leading-tight">
+                    {t('main_menu') || 'ዋና ሜኑ'}
                   </span>
                   <span className="text-[10px] text-[#f9b03c] font-black block leading-tight mt-0.5">
                     {currentView === 'classroom' && '• መማሪያ ክፍል'}
                     {currentView === 'courses' && '• የእኔ ኮርሶች'}
                     {currentView === 'messages' && '• መልዕክቶች'}
-                    {currentView === 'ai' && '• Tsehay AI'}
+                    {currentView === 'ai' && '• AI ረዳት'}
                     {currentView === 'certificates' && '• ሰርተፊኬት'}
                     {currentView === 'settings' && '• ማስተካከያ'}
                   </span>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-black text-[#f9b03c] bg-[#f9b03c]/15 px-2 py-0.5 rounded-full border border-[#f9b03c]/30">
-                  {isNavDrawerExpanded ? 'ዝርግት' : 'ጥቅልል'}
-                </span>
-                <div className={`w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-slate-300 group-hover:text-white transition-transform duration-300 ${
-                  isNavDrawerExpanded ? 'rotate-180 text-[#f9b03c] bg-[#f9b03c]/25' : ''
-                }`}>
-                  <i className="fa-solid fa-chevron-down text-[10px]"></i>
-                </div>
+              <div className="flex items-center gap-1.5">
+                {isNavDrawerExpanded ? (
+                  <span className="text-[10px] font-black text-slate-950 bg-gradient-to-r from-[#f9b03c] to-amber-300 px-2.5 py-1 rounded-full shadow-[0_0_12px_rgba(249,176,60,0.5)] flex items-center gap-1.5 transition-all">
+                    <i className="fa-solid fa-chevron-up text-[9px]"></i>
+                    <span>ወደ ላይ እጠፍ</span>
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-black text-slate-300 bg-white/10 px-2.5 py-1 rounded-full border border-white/10 group-hover:text-[#f9b03c] group-hover:border-[#f9b03c]/40 group-hover:bg-[#f9b03c]/15 flex items-center gap-1.5 transition-all">
+                    <i className="fa-solid fa-chevron-down text-[9px]"></i>
+                    <span>ዘርጋ</span>
+                  </span>
+                )}
               </div>
             </button>
           </div>
@@ -2037,6 +2040,21 @@ ${customAdminPrompt}
                 <i className="hidden lg:block fa-solid fa-chevron-right text-xs text-white/80 animate-in fade-in slide-in-from-left-1 duration-200"></i>
               )}
             </button>
+
+            {/* 🔼 Mini Roll-Up Tab at the bottom of the menu for effortless collapsing */}
+            <div className="hidden lg:flex justify-center pt-2 pb-1">
+              <button
+                type="button"
+                onClick={() => setIsNavDrawerExpanded(false)}
+                className="px-3.5 py-1 rounded-full bg-white/[0.04] hover:bg-[#f9b03c]/20 border border-white/10 hover:border-[#f9b03c]/40 text-slate-400 hover:text-[#f9b03c] text-[10px] font-black flex items-center gap-1.5 transition-all duration-300 cursor-pointer shadow-xs active:scale-95 group"
+                title="ወደ ላይ መልሰህ እጠፍ (Roll Up Menu)"
+              >
+                <div className="w-3.5 h-3.5 rounded-full bg-[#f9b03c]/20 group-hover:bg-[#f9b03c] group-hover:text-slate-950 text-[#f9b03c] flex items-center justify-center text-[8px] transition-colors">
+                  <i className="fa-solid fa-chevron-up"></i>
+                </div>
+                <span>ወደ ላይ እጠፍ (Roll Up)</span>
+              </button>
+            </div>
           </div>
         </nav>
 
