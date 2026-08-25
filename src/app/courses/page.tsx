@@ -180,7 +180,7 @@ export default function Courses() {
 
   return (
     <React.Fragment>
-      <main className="min-h-screen flex flex-col bg-[#030509] text-slate-100 transition-colors duration-300 relative overflow-hidden">
+      <main className="min-h-screen flex flex-col bg-[#030509] text-slate-100 transition-colors duration-300 relative overflow-hidden animate-in fade-in duration-700">
         
         {/* =========================================================================
             🌟 3D PARTICLE NETWORK & MESH GRADIENT CANVAS BACKGROUND (TERAFAB AESTHETIC)
@@ -188,20 +188,20 @@ export default function Courses() {
         <Courses3DParticleMeshCanvas />
 
         {/* Deep Void Stardust Mesh & Subtle Ambient Lighting Atmosphere */}
-        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-12 mix-blend-overlay pointer-events-none z-0" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(50,104,186,0.15),transparent_55%),radial-gradient(ellipse_at_bottom_right,rgba(249,176,60,0.12),transparent_55%)] pointer-events-none z-0" />
-        <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[850px] h-[550px] bg-gradient-to-b from-[#3268ba]/20 via-[#f9b03c]/10 to-transparent rounded-full blur-[160px] pointer-events-none -z-10 animate-pulse" />
+        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-15 mix-blend-overlay pointer-events-none z-0" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(50,104,186,0.16),transparent_55%),radial-gradient(ellipse_at_bottom_right,rgba(249,176,60,0.14),transparent_55%)] pointer-events-none z-0" />
+        <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[850px] h-[550px] bg-gradient-to-b from-[#3268ba]/20 via-[#f9b03c]/12 to-transparent rounded-full blur-[160px] pointer-events-none -z-10 animate-pulse" />
         <div className="absolute top-[35%] -left-36 w-[500px] h-[500px] bg-[#3268ba]/15 rounded-full blur-[160px] pointer-events-none -z-10" />
         <div className="absolute top-[65%] -right-36 w-[500px] h-[500px] bg-[#f9b03c]/12 rounded-full blur-[160px] pointer-events-none -z-10" />
 
         {/* =========================================================================
             🌟 HERO TITLE, SEARCH & FUTURISTIC GLASS FILTER SECTION
            ========================================================================= */}
-        <section className="relative border-b border-white/[0.06] pt-14 pb-12 lg:pt-20 lg:pb-16 transition-colors duration-300 z-10">
+        <section className="relative border-b border-white/[0.06] pt-16 pb-12 lg:pt-24 lg:pb-16 transition-colors duration-300 z-10">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
             
             {/* Glowing Category Badge */}
-            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-400/15 via-[#f9b03c]/10 to-amber-400/15 border border-[#f9b03c]/30 text-[#f9b03c] font-black px-5 py-2 rounded-full text-xs sm:text-sm mb-6 shadow-[0_0_20px_rgba(249,176,60,0.15)] backdrop-blur-md">
+            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-400/15 via-[#f9b03c]/10 to-amber-400/15 border border-[#f9b03c]/30 text-[#f9b03c] font-black px-5 py-2 rounded-full text-xs sm:text-sm mb-6 shadow-[0_0_20px_rgba(249,176,60,0.2)] backdrop-blur-md">
               <i className="fa-solid fa-graduation-cap text-[#f9b03c]"></i> {t('courses_badge')}
             </div>
 
@@ -230,7 +230,7 @@ export default function Courses() {
 
             {/* Futuristic Glassmorphic Category Filter Tabs */}
             <div 
-              className="inline-flex flex-wrap justify-center items-center gap-2 sm:gap-2.5 p-2 sm:p-2.5 rounded-3xl bg-slate-900/60 backdrop-blur-2xl border border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.5)]"
+              className="inline-flex flex-wrap justify-center items-center gap-2 sm:gap-2.5 p-2 sm:p-2.5 rounded-3xl bg-slate-900/70 backdrop-blur-2xl border border-white/10 shadow-[0_10px_35px_rgba(0,0,0,0.5)]"
               style={{
                 backdropFilter: 'blur(16px)',
                 WebkitBackdropFilter: 'blur(16px)',
@@ -249,7 +249,7 @@ export default function Courses() {
                 {t('cat_all')}
               </button>
 
-              {/* Free Filter (Brand Royal Blue) */}
+              {/* Free Filter (Brand Royal Blue - NO GREEN) */}
               <button 
                 type="button"
                 onClick={() => setSelectedCategory('Free')} 
@@ -342,7 +342,7 @@ export default function Courses() {
                 <CourseCardSkeleton count={6} />
               </div>
             ) : filteredCourses.length === 0 ? (
-              <div className="text-center py-24 rounded-3xl bg-slate-900/40 border border-white/10 backdrop-blur-xl p-8 max-w-xl mx-auto">
+              <div className="text-center py-24 rounded-3xl bg-slate-900/40 border border-white/10 backdrop-blur-xl p-8 max-w-xl mx-auto shadow-2xl">
                 <i className="fa-solid fa-folder-open text-6xl text-[#f9b03c]/60 mb-4 animate-bounce"></i>
                 <h3 className="text-xl font-bold text-slate-200 mb-2">{t('no_courses_found')}</h3>
                 <p className="text-sm text-slate-400">እባክዎ ሌላ ምድብ ወይም የፍለጋ ቃል ይሞክሩ</p>
@@ -364,9 +364,9 @@ export default function Courses() {
                       glare={true}
                       className="h-full group"
                     >
-                      {/* Premium Glassmorphic Card Container */}
+                      {/* Premium Glassmorphic Card Container with Smooth Hover translateY(-8px) & Golden Aura */}
                       <div 
-                        className="h-full course-card bg-slate-900/80 backdrop-blur-2xl rounded-3xl overflow-hidden flex flex-col justify-between border border-white/[0.08] hover:border-[#f9b03c]/70 shadow-[0_15px_35px_rgba(0,0,0,0.6)] hover:shadow-[0_25px_60px_rgba(249,176,60,0.22),0_0_35px_rgba(50,104,186,0.15)] transition-all duration-500 cursor-pointer relative"
+                        className="h-full course-card bg-slate-900/80 backdrop-blur-2xl rounded-3xl overflow-hidden flex flex-col justify-between border border-white/[0.08] hover:border-[#f9b03c]/70 shadow-[0_15px_35px_rgba(0,0,0,0.6)] hover:shadow-[0_25px_60px_rgba(249,176,60,0.25),0_0_35px_rgba(50,104,186,0.18)] transition-all duration-500 cursor-pointer relative hover:-translate-y-2"
                         style={{ 
                           backdropFilter: 'blur(16px)',
                           WebkitBackdropFilter: 'blur(16px)',
@@ -438,7 +438,7 @@ export default function Courses() {
                             >
                               <div className="flex items-center gap-2 text-xs text-slate-400 font-semibold">
                                 <div className="w-6 h-6 rounded-full bg-[#f9b03c]/15 text-[#f9b03c] flex items-center justify-center text-[11px]">
-                                  <i className="fa-solid fa-chalkboard-user"></i>
+                                   <i className="fa-solid fa-chalkboard-user"></i>
                                 </div>
                                 <span>{course.instructor || 'Eyoub Sahle'}</span>
                               </div>
@@ -504,7 +504,7 @@ export default function Courses() {
                           <div className="flex items-center gap-2">
                             <a 
                               href={`/courses/${course.id}`} 
-                              className="bg-white/[0.05] hover:bg-white/10 text-white text-xs font-bold px-3.5 py-2.5 rounded-xl transition border border-white/10 flex items-center gap-1.5"
+                              className="bg-white/[0.05] hover:bg-white/10 text-white text-xs font-bold px-3.5 py-2.5 rounded-xl transition border border-white/10 flex items-center gap-1.5 cursor-pointer hover:border-[#f9b03c]/40"
                             >
                               <i className="fa-solid fa-eye text-[#f9b03c]"></i>
                               <span>ይመልከቱ</span>
@@ -581,7 +581,7 @@ function Courses3DParticleMeshCanvas() {
     };
     window.addEventListener('resize', handleResize);
 
-    const particleCount = Math.min(Math.floor((width * height) / 22000), 65);
+    const particleCount = Math.min(Math.floor((width * height) / 20000), 75);
     const particles: Array<{
       x: number;
       y: number;
@@ -642,8 +642,8 @@ function Courses3DParticleMeshCanvas() {
           const dy = p.y - p2.y;
           const dist = Math.sqrt(dx * dx + dy * dy);
 
-          if (dist < 130) {
-            const lineAlpha = (1 - dist / 130) * 0.18;
+          if (dist < 135) {
+            const lineAlpha = (1 - dist / 135) * 0.2;
             ctx.beginPath();
             ctx.moveTo(p.x, p.y);
             ctx.lineTo(p2.x, p2.y);
