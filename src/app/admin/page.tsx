@@ -85,7 +85,7 @@ export default function AdminDashboard() {
         }
       } catch (e) {}
     }
-    return 'https://www.youtube.com/watch?v=mgdOMtW6J8k';
+    return 'https://www.youtube.com/watch?v=h9JsGCkd_4o';
   });
 
   const [portfolioInternationalUrl, setPortfolioInternationalUrl] = useState<string>(() => {
@@ -98,7 +98,7 @@ export default function AdminDashboard() {
         }
       } catch (e) {}
     }
-    return 'https://www.youtube.com/watch?v=B-s71n0dHUk';
+    return 'https://www.youtube.com/watch?v=icbzxQv-m3g';
   });
 
   const [isSavingPortfolio, setIsSavingPortfolio] = useState(false);

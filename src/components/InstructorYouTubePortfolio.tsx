@@ -16,7 +16,7 @@ export function extractYouTubeId(urlOrId: string): string {
   const matchWatch = trimmed.match(/[?&]v=([a-zA-Z0-9_-]{11})/i);
   if (matchWatch && matchWatch[1]) return matchWatch[1];
   
-  // youtu.be/ID
+  // youtu.be/ID (e.g. youtu.be/h9JsGCkd_4o)
   const matchYoutu = trimmed.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/i);
   if (matchYoutu && matchYoutu[1]) return matchYoutu[1];
   
@@ -31,8 +31,8 @@ export function extractYouTubeId(urlOrId: string): string {
   return trimmed;
 }
 
-export const DEFAULT_PORTFOLIO_LOCAL = 'https://www.youtube.com/watch?v=mgdOMtW6J8k';
-export const DEFAULT_PORTFOLIO_INTL = 'https://www.youtube.com/watch?v=B-s71n0dHUk';
+export const DEFAULT_PORTFOLIO_LOCAL = 'https://www.youtube.com/watch?v=h9JsGCkd_4o';
+export const DEFAULT_PORTFOLIO_INTL = 'https://www.youtube.com/watch?v=icbzxQv-m3g';
 
 export default function InstructorYouTubePortfolio() {
   // Synchronously initialize with cached settings or verified portfolio videos
@@ -221,11 +221,10 @@ export default function InstructorYouTubePortfolio() {
     };
   }, []);
 
-  // 3. Robust Real-time Firestore & Admin Sync (Works like Free YouTube Videos slider)
+  // 3. Robust Real-time Firestore & Admin Sync (Matches Free YouTube Videos Slider)
   useEffect(() => {
     let isMounted = true;
 
-    // A. Fetch once from Firestore / API
     const fetchPortfolio = async () => {
       try {
         let fetchedLocal = '';
@@ -262,7 +261,6 @@ export default function InstructorYouTubePortfolio() {
 
     fetchPortfolio();
 
-    // B. Real-time Firestore onSnapshot listener
     let unsubscribe = () => {};
     try {
       const docRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'site_settings', 'youtube_portfolio');
@@ -281,7 +279,6 @@ export default function InstructorYouTubePortfolio() {
       });
     } catch (e) {}
 
-    // C. Listen for admin live updates across tabs
     const handleStorage = (e: StorageEvent) => {
       if (e.key === 'tsehay_youtube_portfolio_cache' && e.newValue && isMounted) {
         try {
@@ -310,8 +307,8 @@ export default function InstructorYouTubePortfolio() {
     };
   }, []);
 
-  const localId = extractYouTubeId(localVideoUrl) || 'mgdOMtW6J8k';
-  const intlId = extractYouTubeId(internationalVideoUrl) || 'B-s71n0dHUk';
+  const localId = extractYouTubeId(localVideoUrl) || 'h9JsGCkd_4o';
+  const intlId = extractYouTubeId(internationalVideoUrl) || 'icbzxQv-m3g';
 
   const localThumb = `https://img.youtube.com/vi/${localId}/hqdefault.jpg`;
   const intlThumb = `https://img.youtube.com/vi/${intlId}/hqdefault.jpg`;
@@ -507,7 +504,7 @@ export default function InstructorYouTubePortfolio() {
       </div>
 
       {/* =========================================================================
-          HIGH-DEFINITION CINEMA MODAL PLAYER (MATCHES FREE YOUTUBE VIDEOS SLIDER)
+          HIGH-DEFINITION CINEMA MODAL PLAYER
          ========================================================================= */}
       {activeModalVideo && (
         <div
@@ -528,7 +525,7 @@ export default function InstructorYouTubePortfolio() {
             <i className="fa-solid fa-xmark text-lg sm:text-xl"></i>
           </button>
 
-          {/* Pure Cinema Video Frame */}
+          {/* Cinema Video Frame */}
           <div
             className="relative w-full max-w-5xl aspect-video rounded-2xl sm:rounded-3xl overflow-hidden shadow-[0_0_80px_rgba(0,0,0,0.95),0_0_40px_rgba(249,176,60,0.25)] border border-white/15 bg-black"
             onClick={(e) => e.stopPropagation()}
