@@ -793,15 +793,16 @@ body {
 
 .course-card:hover,
 .scrolly-card:hover {
-  transform: translateY(-6px) scale(1.008);
-  box-shadow: 0 20px 40px -10px rgba(50, 104, 186, 0.2), 0 10px 20px -8px rgba(249, 176, 60, 0.15);
-  border-color: rgba(249, 176, 60, 0.6) !important;
+  transform: translateY(-8px);
+  box-shadow: 0 25px 50px -10px rgba(249, 176, 60, 0.22), 0 0 35px rgba(50, 104, 186, 0.15);
+  border-color: rgba(249, 176, 60, 0.65) !important;
 }
 
 .dark .course-card:hover,
 .dark .scrolly-card:hover {
-  box-shadow: 0 20px 40px -10px rgba(249, 176, 60, 0.18), 0 10px 20px -8px rgba(0, 0, 0, 0.8);
-  border-color: rgba(249, 176, 60, 0.7) !important;
+  transform: translateY(-8px);
+  box-shadow: 0 25px 50px -10px rgba(249, 176, 60, 0.25), 0 0 35px rgba(249, 176, 60, 0.15), 0 10px 25px -5px rgba(0, 0, 0, 0.8);
+  border-color: rgba(249, 176, 60, 0.75) !important;
 }
 
 /* ==========================================================================
