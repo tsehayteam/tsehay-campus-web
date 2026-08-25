@@ -527,18 +527,6 @@ export default function InstructorYouTubePortfolio() {
             </div>
           </Tilt3DCard>
 
-        </div>ity-100 scale-75 group-hover/thumb:scale-100 transition-all duration-300 pointer-events-none">
-                    <span className="absolute w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-[#f9b03c]/40 animate-ping pointer-events-none"></span>
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 flex items-center justify-center text-2xl sm:text-3xl shadow-[0_0_35px_rgba(249,176,60,0.9)]">
-                      <i className="fa-solid fa-play ml-1"></i>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-            </div>
-          </div>
-
         </div>
       </div>
 
