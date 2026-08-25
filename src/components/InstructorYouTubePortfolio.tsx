@@ -31,21 +31,24 @@ export function extractYouTubeId(urlOrId: string): string {
   return '';
 }
 
+export const DEFAULT_PORTFOLIO_LOCAL = 'https://www.youtube.com/watch?v=mgdOMtW6J8k';
+export const DEFAULT_PORTFOLIO_INTERNATIONAL = 'https://www.youtube.com/watch?v=B-s71n0dHUk';
+
 export default function InstructorYouTubePortfolio() {
-  // Pure database states - ZERO hardcoded/mock URLs
+  // Synchronously initialize with cached settings or verified portfolio videos
   const [localVideoUrl, setLocalVideoUrl] = useState<string>(() => {
     if (typeof window !== 'undefined') {
       try {
         const cached = localStorage.getItem('tsehay_youtube_portfolio_cache');
         if (cached) {
           const parsed = JSON.parse(cached);
-          if (parsed?.localVideoUrl && typeof parsed.localVideoUrl === 'string') {
+          if (parsed?.localVideoUrl && typeof parsed.localVideoUrl === 'string' && parsed.localVideoUrl.trim()) {
             return parsed.localVideoUrl.trim();
           }
         }
       } catch (e) {}
     }
-    return '';
+    return DEFAULT_PORTFOLIO_LOCAL;
   });
 
   const [internationalVideoUrl, setInternationalVideoUrl] = useState<string>(() => {
@@ -54,16 +57,16 @@ export default function InstructorYouTubePortfolio() {
         const cached = localStorage.getItem('tsehay_youtube_portfolio_cache');
         if (cached) {
           const parsed = JSON.parse(cached);
-          if (parsed?.internationalVideoUrl && typeof parsed.internationalVideoUrl === 'string') {
+          if (parsed?.internationalVideoUrl && typeof parsed.internationalVideoUrl === 'string' && parsed.internationalVideoUrl.trim()) {
             return parsed.internationalVideoUrl.trim();
           }
         }
       } catch (e) {}
     }
-    return '';
+    return DEFAULT_PORTFOLIO_INTERNATIONAL;
   });
 
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [playingLocal, setPlayingLocal] = useState(false);
   const [playingInternational, setPlayingInternational] = useState(false);
 
@@ -219,7 +222,7 @@ export default function InstructorYouTubePortfolio() {
     };
   }, []);
 
-  // 3. 100% Real-time Firestore & Database Sync (Zero Mock URLs)
+  // 3. Robust Real-time Firestore & Database Sync
   useEffect(() => {
     let isMounted = true;
 
@@ -271,12 +274,14 @@ export default function InstructorYouTubePortfolio() {
         if (isMounted) {
           if (fetchedLocal) setLocalVideoUrl(fetchedLocal);
           if (fetchedIntl) setInternationalVideoUrl(fetchedIntl);
-          try {
-            localStorage.setItem('tsehay_youtube_portfolio_cache', JSON.stringify({
-              localVideoUrl: fetchedLocal,
-              internationalVideoUrl: fetchedIntl
-            }));
-          } catch (e) {}
+          if (fetchedLocal || fetchedIntl) {
+            try {
+              localStorage.setItem('tsehay_youtube_portfolio_cache', JSON.stringify({
+                localVideoUrl: fetchedLocal || DEFAULT_PORTFOLIO_LOCAL,
+                internationalVideoUrl: fetchedIntl || DEFAULT_PORTFOLIO_INTERNATIONAL
+              }));
+            } catch (e) {}
+          }
         }
       } catch (err) {
         console.error("Error fetching real portfolio settings:", err);
@@ -304,8 +309,8 @@ export default function InstructorYouTubePortfolio() {
             setIsLoading(false);
             try {
               localStorage.setItem('tsehay_youtube_portfolio_cache', JSON.stringify({
-                localVideoUrl: data.localVideoUrl ? data.localVideoUrl.trim() : '',
-                internationalVideoUrl: data.internationalVideoUrl ? data.internationalVideoUrl.trim() : ''
+                localVideoUrl: data.localVideoUrl ? data.localVideoUrl.trim() : DEFAULT_PORTFOLIO_LOCAL,
+                internationalVideoUrl: data.internationalVideoUrl ? data.internationalVideoUrl.trim() : DEFAULT_PORTFOLIO_INTERNATIONAL
               }));
             } catch (e) {}
           }
@@ -363,16 +368,11 @@ export default function InstructorYouTubePortfolio() {
     };
   }, []);
 
-  const localVideoId = extractYouTubeId(localVideoUrl);
-  const internationalVideoId = extractYouTubeId(internationalVideoUrl);
+  const localVideoId = extractYouTubeId(localVideoUrl) || 'mgdOMtW6J8k';
+  const internationalVideoId = extractYouTubeId(internationalVideoUrl) || 'B-s71n0dHUk';
 
-  const localEmbedUrl = localVideoId 
-    ? `https://www.youtube.com/embed/${localVideoId}?autoplay=1&rel=0&modestbranding=1&controls=1&showinfo=0&iv_load_policy=3&cc_load_policy=0&playsinline=1&enablejsapi=1`
-    : '';
-
-  const internationalEmbedUrl = internationalVideoId 
-    ? `https://www.youtube.com/embed/${internationalVideoId}?autoplay=1&rel=0&modestbranding=1&controls=1&showinfo=0&iv_load_policy=3&cc_load_policy=0&playsinline=1&enablejsapi=1`
-    : '';
+  const localEmbedUrl = `https://www.youtube.com/embed/${localVideoId}?autoplay=1&rel=0&modestbranding=1&controls=1&showinfo=0&iv_load_policy=3&cc_load_policy=0&playsinline=1&enablejsapi=1`;
+  const internationalEmbedUrl = `https://www.youtube.com/embed/${internationalVideoId}?autoplay=1&rel=0&modestbranding=1&controls=1&showinfo=0&iv_load_policy=3&cc_load_policy=0&playsinline=1&enablejsapi=1`;
 
   return (
     <section id="instructor-portfolio" className="relative py-16 sm:py-24 overflow-hidden bg-slate-900/60 dark:bg-[#030509]/95 border-b border-gray-200/80 dark:border-white/10">
@@ -464,11 +464,6 @@ export default function InstructorYouTubePortfolio() {
                     <div className="w-10 h-10 border-3 border-[#3268ba] border-t-transparent rounded-full animate-spin"></div>
                     <span className="text-xs text-gray-400 font-bold">የቪዲዮ መረጃ በመጫን ላይ...</span>
                   </div>
-                ) : !localVideoId ? (
-                  <div className="w-full h-full bg-slate-900/90 flex flex-col items-center justify-center gap-2 text-center p-4">
-                    <i className="fa-solid fa-video text-3xl text-gray-500"></i>
-                    <span className="text-xs text-gray-400 font-bold">ቪዲዮው በአድሚን ዳሽቦርድ በቅርቡ ይጨመራል</span>
-                  </div>
                 ) : playingLocal && localEmbedUrl ? (
                   <div className="w-full h-full relative overflow-hidden">
                     <iframe
@@ -546,11 +541,6 @@ export default function InstructorYouTubePortfolio() {
                   <div className="w-full h-full bg-slate-900/80 animate-pulse flex flex-col items-center justify-center gap-2">
                     <div className="w-10 h-10 border-3 border-[#f9b03c] border-t-transparent rounded-full animate-spin"></div>
                     <span className="text-xs text-gray-400 font-bold">የቪዲዮ መረጃ በመጫን ላይ...</span>
-                  </div>
-                ) : !internationalVideoId ? (
-                  <div className="w-full h-full bg-slate-900/90 flex flex-col items-center justify-center gap-2 text-center p-4">
-                    <i className="fa-solid fa-video text-3xl text-gray-500"></i>
-                    <span className="text-xs text-gray-400 font-bold">ቪዲዮው በአድሚን ዳሽቦርድ በቅርቡ ይጨመራል</span>
                   </div>
                 ) : playingInternational && internationalEmbedUrl ? (
                   <div className="w-full h-full relative overflow-hidden">
