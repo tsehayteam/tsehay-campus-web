@@ -246,15 +246,10 @@ export default function Navbar() {
         sessionStorage.clear();
       } catch (e) {}
       setShowProfileDropdown(false);
-      if (pathname?.startsWith('/dashboard') || pathname?.startsWith('/admin')) {
-        router.push('/');
-      }
+    if (pathname?.startsWith('/dashboard') || pathname?.startsWith('/admin')) {
+      router.push('/');
     }
   };
-
-  if (pathname?.startsWith('/admin')) {
-    return null;
-  }
 
   const isHome = pathname === '/';
   const isAbout = pathname === '/about';
@@ -262,65 +257,87 @@ export default function Navbar() {
 
   return (
     <>
-      {/* 1. ✨ Floating Minimalist Pull Tab Handle (Visible when Curtain is Rolled Up) */}
+      {/* 1. ✨ Floating Center-Aligned Trigger Button (Visible when Curtain is Rolled Up) */}
       <div 
         onClick={openCurtain}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
-        className={`fixed top-0 left-1/2 -translate-x-1/2 z-[9990] cursor-pointer select-none transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+        className={`fixed top-0 left-0 right-0 mx-auto w-fit z-[9990] flex justify-center cursor-pointer select-none transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
           isCurtainOpen 
             ? 'opacity-0 -translate-y-full pointer-events-none' 
             : 'opacity-100 translate-y-0'
         }`}
-        title="ማውጫውን ለመክፈት ይጫኑ (Click to Open Menu)"
+        style={{
+          margin: '0 auto',
+          display: 'flex',
+          justifyContent: 'center',
+          left: 0,
+          right: 0,
+          top: 0,
+        }}
+        title="ዋና ማውጫ / Menu (Click to Open Menu)"
       >
-        <div className="bg-white/95 dark:bg-[#030509]/95 hover:bg-white dark:hover:bg-[#080d1a] backdrop-blur-2xl border-x border-b border-black/10 dark:border-white/10 hover:border-[#f9b03c]/60 px-5 sm:px-6 py-2 rounded-b-2xl shadow-[0_4px_25px_rgba(0,0,0,0.4),0_0_15px_rgba(249,176,60,0.2)] flex items-center gap-2.5 group transition-all duration-300 hover:py-2.5 hover:px-7 active:scale-95">
-          {/* Compass Icon */}
-          <div className="w-5 h-5 rounded-full bg-[#f9b03c]/15 border border-[#f9b03c]/40 flex items-center justify-center text-[#f9b03c] text-[11px] shadow-sm group-hover:scale-110 group-hover:rotate-12 transition-transform">
+        <div 
+          className="bg-[#030509]/95 dark:bg-[#030509]/95 hover:bg-[#080d1a] border-x border-b border-[#f9b03c]/45 hover:border-[#f9b03c] px-6 sm:px-8 py-2 sm:py-2.5 rounded-b-2xl flex items-center gap-2.5 sm:gap-3 group transition-all duration-300 active:scale-95 cursor-pointer"
+          style={{
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+            boxShadow: '0 0 25px rgba(249, 176, 60, 0.35), 0 8px 30px rgba(0, 0, 0, 0.8)',
+          }}
+        >
+          {/* Glowing Compass Icon */}
+          <div className="w-5 h-5 rounded-full bg-[#f9b03c]/20 border border-[#f9b03c]/50 flex items-center justify-center text-[#f9b03c] text-[11px] shadow-[0_0_10px_rgba(249,176,60,0.4)] group-hover:scale-110 group-hover:rotate-12 transition-transform">
             <i className="fa-solid fa-compass"></i>
           </div>
 
           {/* Label Text */}
-          <span className="text-xs font-bold tracking-wide text-gray-800 dark:text-gray-200 group-hover:text-[#f9b03c] transition-colors whitespace-nowrap flex items-center gap-1.5 font-heading">
+          <span className="text-xs sm:text-[13px] font-black tracking-wide text-white group-hover:text-[#f9b03c] transition-colors whitespace-nowrap flex items-center gap-1.5 font-heading">
             <i className="fa-solid fa-bars text-[11px] text-[#f9b03c]"></i>
-            <span>ማውጫ / መነሻ (Menu)</span>
+            <span>ዋና ማውጫ / Menu</span>
           </span>
 
-          <i className="fa-solid fa-chevron-down text-[10px] text-[#f9b03c] transition-transform group-hover:translate-y-0.5"></i>
+          <i className="fa-solid fa-chevron-down text-[10px] text-[#f9b03c] transition-transform duration-300 group-hover:translate-y-0.5"></i>
         </div>
       </div>
 
       {/* 2. Backdrop Overlay when Curtain is Expanded (Clicking outside closes it smoothly) */}
       <div 
         onClick={closeCurtain}
-        className={`fixed inset-0 z-[9995] bg-black/60 backdrop-blur-[4px] transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+        className={`fixed inset-0 z-[9995] bg-black/65 backdrop-blur-[6px] transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
           isCurtainOpen 
             ? 'opacity-100 pointer-events-auto' 
             : 'opacity-0 pointer-events-none'
         }`}
       />
 
-      {/* 3. 🚀 Sliding Curtain Navbar (እንደ መጋረጃ የሚወርድ እና የሚጠቀለል ተንሸራታች) */}
+      {/* 3. 🚀 Sliding Curtain Navbar (Smooth Drop-down with Heavy Glassmorphism & High Z-Index) */}
       <nav 
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
-        className={`fixed top-0 left-0 right-0 w-full z-[9999] glass-nav border-b border-black/5 dark:border-white/[0.06] shadow-[0_12px_45px_rgba(0,0,0,0.65)] curtain-nav-transition transform select-none ${
+        className={`fixed top-0 left-0 right-0 w-full z-[9999] shadow-[0_20px_60px_rgba(0,0,0,0.85)] select-none transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
           isCurtainOpen 
-            ? 'translate-y-0 opacity-100' 
+            ? 'translate-y-0 opacity-100 pointer-events-auto' 
             : '-translate-y-full opacity-0 pointer-events-none'
         }`}
+        style={{
+          backdropFilter: 'blur(25px)',
+          WebkitBackdropFilter: 'blur(25px)',
+          background: 'rgba(3, 5, 9, 0.9)',
+          borderBottom: '1px solid rgba(249, 176, 60, 0.2)',
+          willChange: 'transform, opacity',
+        }}
       >
-        {/* 🔼 SINGLE DISTINCT ULTRA-PREMIUM ROLL-UP TAB AT BOTTOM CENTER (Secondary Brand Color: Royal Blue with Golden/White Contrast) */}
+        {/* 🔼 SINGLE DISTINCT ULTRA-PREMIUM ROLL-UP TAB AT BOTTOM CENTER */}
         <button 
           type="button"
           onClick={closeCurtain}
-          className="curtain-rollup-handle px-5 sm:px-6 py-1 sm:py-1.5 rounded-b-2xl flex items-center gap-2 text-white hover:text-white cursor-pointer group active:scale-95 z-[10000]"
+          className="curtain-rollup-handle px-5 sm:px-6 py-1.5 sm:py-2 rounded-b-2xl flex items-center gap-2 text-white hover:text-white cursor-pointer group active:scale-95 z-[10000]"
           title="ወደ ላይ መልሰህ እጠፍ (Roll Up Menu)"
         >
-          <div className="w-4 h-4 rounded-full bg-gradient-to-tr from-[#f9b03c] to-amber-300 text-black flex items-center justify-center text-[10px] font-black shadow-md shrink-0">
-            <i className="fa-solid fa-chevron-up text-[10px] font-black"></i>
+          <div className="w-4 h-4 rounded-full bg-gradient-to-tr from-[#f9b03c] to-amber-300 text-black flex items-center justify-center text-[10px] font-black shadow-[0_0_10px_rgba(249,176,60,0.5)] shrink-0 group-hover:scale-110 transition-transform">
+            <i className="fa-solid fa-chevron-up text-[9px] font-black"></i>
           </div>
-          <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-white group-hover:text-amber-300 font-heading transition-colors">
+          <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-white group-hover:text-[#f9b03c] font-heading transition-colors">
             ወደ ላይ እጠፍ (Roll Up)
           </span>
         </button>
