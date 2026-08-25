@@ -14,9 +14,7 @@ import Footer from '@/components/Footer';
 import dynamic from 'next/dynamic';
 import { getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl } from '@/lib/courseCache';
 
-const ReactPlayer = dynamic(() => import('react-player'), { ssr: false });
-
-export default function CoursePreviewPage() {
+function CoursePreviewContent() {
   const routeParams = useParams();
   const rawId = routeParams?.id || '';
   const id = typeof rawId === 'string' ? rawId : Array.isArray(rawId) ? rawId[0] : '';
@@ -1215,3 +1213,47 @@ export default function CoursePreviewPage() {
     </div>
   );
 }
+
+class CourseErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean }> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: any, errorInfo: any) {
+    console.error("CoursePreview error caught:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-[#030509] text-white flex flex-col items-center justify-center py-24 px-4 text-center">
+          <div className="w-20 h-20 bg-amber-500/10 border-2 border-[#f9b03c] rounded-3xl flex items-center justify-center text-4xl text-[#f9b03c] mb-6 shadow-[0_0_30px_rgba(249,176,60,0.3)]">
+            <i className="fa-solid fa-graduation-cap"></i>
+          </div>
+          <h2 className="text-2xl sm:text-3xl font-black mb-3">ኮርሱን መጫን አልተቻለም (Course Error)</h2>
+          <p className="text-gray-400 max-w-md mb-8">እባክዎ እንደገና ይሞክሩ ወይም ወደ ሁሉም ኮርሶች ይመለሱ።</p>
+          <div className="flex items-center gap-4">
+            <a href="/courses" className="btn-buy-now-vibe px-8 py-3.5 rounded-2xl font-black text-sm">
+              ሁሉንም ኮርሶች ይመልከቱ
+            </a>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+export default function CoursePreviewPage() {
+  return (
+    <CourseErrorBoundary>
+      <CoursePreviewContent />
+    </CourseErrorBoundary>
+  );
+}
+
