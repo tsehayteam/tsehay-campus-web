@@ -413,6 +413,34 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
     }
   };
 
+  // 🌟 Resend Verification for Unverified Email
+  const handleResendVerification = async () => {
+    const target = unverifiedEmail || registeredEmail || email;
+    if (!target) return;
+    setIsResendingEmail(true);
+    setError("");
+    setResendSuccessMessage("");
+    try {
+      const newCode = generateOtpCode();
+      await saveOtpForEmail(target, newCode);
+      fetch('/api/auth/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: target })
+      }).catch(e => console.warn("Background OTP send:", e));
+
+      setRegisteredEmail(target);
+      setOtpDigits(['', '', '', '', '', '']);
+      setIsOtpMode(true);
+      setResendSuccessMessage(`የማረጋገጫ ኮድ ወደ ${target} ተልኳል!`);
+    } catch (err: any) {
+      console.error("Resend verification error:", err);
+      setError("የማረጋገጫ ኮድ መላክ አልተቻለም። እባክዎ በድጋሚ ይሞክሩ።");
+    } finally {
+      setIsResendingEmail(false);
+    }
+  };
+
   // 🌟 Handle Reset OTP 6-Digit Changes & Auto-Advance
   const handleResetOtpDigitChange = (index: number, val: string) => {
     setResetOtpError("");
