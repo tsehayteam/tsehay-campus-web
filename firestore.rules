@@ -57,6 +57,11 @@ service cloud.firestore {
       match /public/data/courses/{courseId} {
         allow read: if true;
         allow write: if isAdmin();
+
+        match /{sub=**} {
+          allow read: if true;
+          allow write: if isAdmin();
+        }
       }
 
       match /public/data/site_settings/{settingKey} {

@@ -471,6 +471,7 @@ function CoursePreviewContent() {
   // Course rating
   const courseRatingScore = Number(course?.ratingAvg || course?.rating || 4.9);
   const courseRatingFormatted = courseRatingScore.toFixed(1);
+  const ratingAvgFormatted = courseRatingFormatted;
 
   // Course reviews and students
   const courseReviewsCount = Number(course?.ratingCount || course?.reviewsCount || (totalReviews > 0 ? Math.max(1, Math.round(totalReviews / Math.max(1, instructorCoursesCount))) : 18));
