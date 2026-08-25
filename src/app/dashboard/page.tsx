@@ -2329,32 +2329,109 @@ ${customAdminPrompt}
                     })()}
 
                     {/* Tabs */}
-                    <div id="classroom-tabs-section" className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden min-h-[300px] scroll-mt-6">
-                        <div className="flex overflow-x-auto border-b border-gray-200 dark:border-slate-700 no-scrollbar bg-gray-50/50 dark:bg-slate-800/50 px-2 pt-2">
-                            <button onClick={() => setActiveTab('syllabus')} className={`lg:hidden px-4 sm:px-6 py-3.5 sm:py-4 font-heading text-xs sm:text-[15px] font-bold whitespace-nowrap flex items-center gap-1.5 shrink-0 ${activeTab === 'syllabus' ? 'text-dark dark:text-primary border-b-2 border-primary font-black' : 'text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white'}`}>
-                                <i className="fa-solid fa-list-ol text-primary"></i> <span>ትምህርቶች (Syllabus)</span>
+                    <div id="classroom-tabs-section" className="bg-white dark:bg-[#070b14]/95 backdrop-blur-3xl rounded-3xl shadow-xl border border-gray-200 dark:border-white/10 overflow-hidden min-h-[300px] scroll-mt-6">
+                        <div className="flex overflow-x-auto border-b border-gray-200 dark:border-white/10 no-scrollbar bg-gray-50/80 dark:bg-[#0b1222]/90 px-3 pt-3 gap-1.5 sm:gap-2">
+                            <button 
+                                onClick={() => setActiveTab("syllabus")} 
+                                className={`lg:hidden px-4 sm:px-5 py-3 rounded-t-2xl font-heading text-xs sm:text-[14px] font-black whitespace-nowrap flex items-center gap-2 shrink-0 transition-all duration-200 cursor-pointer active:scale-95 group ${
+                                    activeTab === "syllabus" 
+                                        ? "bg-gradient-to-b from-[#f9b03c]/20 via-[#f9b03c]/10 to-transparent text-amber-900 dark:text-[#f9b03c] border-b-[3px] border-[#f9b03c] shadow-[inset_0_-2px_8px_rgba(249,176,60,0.35)]" 
+                                        : "text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 border-b-[3px] border-transparent font-bold"
+                                }`}
+                            >
+                                <i className="fa-solid fa-list-ol text-amber-400 text-sm group-hover:scale-110 transition-transform"></i> 
+                                <span>ትምህርቶች (Syllabus)</span>
                             </button>
-                            <button onClick={() => setActiveTab('overview')} className={`px-4 sm:px-6 py-3.5 sm:py-4 font-heading text-xs sm:text-[15px] font-bold whitespace-nowrap shrink-0 ${activeTab === 'overview' ? 'text-dark dark:text-white border-b-2 border-secondary dark:border-primary' : 'text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white'}`}>{t('overview')}</button>
-                            <button onClick={() => setActiveTab('resources')} className={`px-4 sm:px-6 py-3.5 sm:py-4 font-heading text-xs sm:text-[15px] whitespace-nowrap flex items-center gap-1.5 shrink-0 ${activeTab === 'resources' ? 'font-bold text-dark dark:text-white border-b-2 border-secondary dark:border-primary' : 'text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white'}`}>
-                                <i className="fa-solid fa-folder-open text-amber-500"></i> <span>ፋይሎች (Resources)</span>
+
+                            <button 
+                                onClick={() => setActiveTab("overview")} 
+                                className={`px-4 sm:px-5 py-3 rounded-t-2xl font-heading text-xs sm:text-[14px] font-black whitespace-nowrap flex items-center gap-2 shrink-0 transition-all duration-200 cursor-pointer active:scale-95 group ${
+                                    activeTab === "overview" 
+                                        ? "bg-gradient-to-b from-[#f9b03c]/20 via-[#f9b03c]/10 to-transparent text-amber-900 dark:text-[#f9b03c] border-b-[3px] border-[#f9b03c] shadow-[inset_0_-2px_8px_rgba(249,176,60,0.35)]" 
+                                        : "text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 border-b-[3px] border-transparent font-bold"
+                                }`}
+                            >
+                                <i className="fa-solid fa-compass text-sky-400 text-sm group-hover:scale-110 transition-transform"></i>
+                                <span>{t("overview")}</span>
                             </button>
-                            <button onClick={() => setActiveTab('notes')} className={`px-4 sm:px-6 py-3.5 sm:py-4 font-heading text-xs sm:text-[15px] whitespace-nowrap flex items-center gap-1.5 shrink-0 ${activeTab === 'notes' ? 'font-bold text-dark dark:text-white border-b-2 border-secondary dark:border-primary' : 'text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white'}`}>
-                                <i className="fa-regular fa-pen-to-square"></i> {t('notes')}
+
+                            <button 
+                                onClick={() => setActiveTab("resources")} 
+                                className={`px-4 sm:px-5 py-3 rounded-t-2xl font-heading text-xs sm:text-[14px] font-black whitespace-nowrap flex items-center gap-2 shrink-0 transition-all duration-200 cursor-pointer active:scale-95 group ${
+                                    activeTab === "resources" 
+                                        ? "bg-gradient-to-b from-[#f9b03c]/20 via-[#f9b03c]/10 to-transparent text-amber-900 dark:text-[#f9b03c] border-b-[3px] border-[#f9b03c] shadow-[inset_0_-2px_8px_rgba(249,176,60,0.35)]" 
+                                        : "text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 border-b-[3px] border-transparent font-bold"
+                                }`}
+                            >
+                                <i className="fa-solid fa-folder-open text-amber-500 text-sm group-hover:scale-110 transition-transform"></i> 
+                                <span>ፋይሎች (Resources)</span>
                             </button>
-                            <button onClick={() => setActiveTab('qa')} className={`px-4 sm:px-6 py-3.5 sm:py-4 font-heading text-xs sm:text-[15px] whitespace-nowrap flex items-center gap-1.5 shrink-0 ${activeTab === 'qa' ? 'font-bold text-dark dark:text-white border-b-2 border-secondary dark:border-primary' : 'text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white'}`}>
-                                {t('qa')} <i className="fa-regular fa-comments"></i>
+
+                            <button 
+                                onClick={() => setActiveTab("notes")} 
+                                className={`px-4 sm:px-5 py-3 rounded-t-2xl font-heading text-xs sm:text-[14px] font-black whitespace-nowrap flex items-center gap-2 shrink-0 transition-all duration-200 cursor-pointer active:scale-95 group ${
+                                    activeTab === "notes" 
+                                        ? "bg-gradient-to-b from-[#f9b03c]/20 via-[#f9b03c]/10 to-transparent text-amber-900 dark:text-[#f9b03c] border-b-[3px] border-[#f9b03c] shadow-[inset_0_-2px_8px_rgba(249,176,60,0.35)]" 
+                                        : "text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 border-b-[3px] border-transparent font-bold"
+                                }`}
+                            >
+                                <i className="fa-solid fa-feather-pointed text-emerald-400 text-sm group-hover:scale-110 transition-transform"></i> 
+                                <span>{t("notes")}</span>
+                                {studentNotes.length > 0 && (
+                                    <span className="text-[10px] bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.2 rounded-full font-black">
+                                        {studentNotes.length}
+                                    </span>
+                                )}
                             </button>
-                            <button onClick={() => setActiveTab('community')} className={`px-4 sm:px-6 py-3.5 sm:py-4 font-heading text-xs sm:text-[15px] whitespace-nowrap flex items-center gap-1.5 shrink-0 ${activeTab === 'community' ? 'font-bold text-dark dark:text-white border-b-2 border-secondary dark:border-primary' : 'text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white'}`}>
-                                <i className="fa-brands fa-telegram text-[#26A5E4]"></i> <span>VIP ማህበረሰብ</span>
+
+                            <button 
+                                onClick={() => setActiveTab("qa")} 
+                                className={`px-4 sm:px-5 py-3 rounded-t-2xl font-heading text-xs sm:text-[14px] font-black whitespace-nowrap flex items-center gap-2 shrink-0 transition-all duration-200 cursor-pointer active:scale-95 group ${
+                                    activeTab === "qa" 
+                                        ? "bg-gradient-to-b from-[#f9b03c]/20 via-[#f9b03c]/10 to-transparent text-amber-900 dark:text-[#f9b03c] border-b-[3px] border-[#f9b03c] shadow-[inset_0_-2px_8px_rgba(249,176,60,0.35)]" 
+                                        : "text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 border-b-[3px] border-transparent font-bold"
+                                }`}
+                            >
+                                <i className="fa-solid fa-comments text-violet-400 text-sm group-hover:scale-110 transition-transform"></i>
+                                <span>{t("qa")}</span>
                             </button>
-                            <button onClick={() => setActiveTab('quiz')} className={`px-4 sm:px-6 py-3.5 sm:py-4 font-heading text-xs sm:text-[15px] whitespace-nowrap flex items-center gap-1.5 shrink-0 ${activeTab === 'quiz' ? 'font-bold text-dark dark:text-white border-b-2 border-secondary dark:border-primary' : 'text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white'}`}>
-                                {t('quiz')} <i className="fa-solid fa-list-check"></i>
+
+                            <button 
+                                onClick={() => setActiveTab("community")} 
+                                className={`px-4 sm:px-5 py-3 rounded-t-2xl font-heading text-xs sm:text-[14px] font-black whitespace-nowrap flex items-center gap-2 shrink-0 transition-all duration-200 cursor-pointer active:scale-95 group ${
+                                    activeTab === "community" 
+                                        ? "bg-gradient-to-b from-[#f9b03c]/20 via-[#f9b03c]/10 to-transparent text-amber-900 dark:text-[#f9b03c] border-b-[3px] border-[#f9b03c] shadow-[inset_0_-2px_8px_rgba(249,176,60,0.35)]" 
+                                        : "text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 border-b-[3px] border-transparent font-bold"
+                                }`}
+                            >
+                                <i className="fa-brands fa-telegram text-[#26A5E4] text-base group-hover:scale-110 transition-transform"></i> 
+                                <span>VIP ማህበረሰብ</span>
                             </button>
-                            <button onClick={() => setActiveTab('certificate')} className={`px-4 sm:px-6 py-3.5 sm:py-4 font-heading text-xs sm:text-[15px] whitespace-nowrap flex items-center gap-1.5 shrink-0 ${activeTab === 'certificate' ? 'font-bold text-dark dark:text-white border-b-2 border-secondary dark:border-primary' : 'text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white'}`}>
-                                {t('certificate')} <i className="fa-solid fa-award text-primary"></i>
+
+                            <button 
+                                onClick={() => setActiveTab("quiz")} 
+                                className={`px-4 sm:px-5 py-3 rounded-t-2xl font-heading text-xs sm:text-[14px] font-black whitespace-nowrap flex items-center gap-2 shrink-0 transition-all duration-200 cursor-pointer active:scale-95 group ${
+                                    activeTab === "quiz" 
+                                        ? "bg-gradient-to-b from-[#f9b03c]/20 via-[#f9b03c]/10 to-transparent text-amber-900 dark:text-[#f9b03c] border-b-[3px] border-[#f9b03c] shadow-[inset_0_-2px_8px_rgba(249,176,60,0.35)]" 
+                                        : "text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 border-b-[3px] border-transparent font-bold"
+                                }`}
+                            >
+                                <i className="fa-solid fa-clipboard-question text-rose-400 text-sm group-hover:scale-110 transition-transform"></i>
+                                <span>{t("quiz")}</span>
+                            </button>
+
+                            <button 
+                                onClick={() => setActiveTab("certificate")} 
+                                className={`px-4 sm:px-5 py-3 rounded-t-2xl font-heading text-xs sm:text-[14px] font-black whitespace-nowrap flex items-center gap-2 shrink-0 transition-all duration-200 cursor-pointer active:scale-95 group ${
+                                    activeTab === "certificate" 
+                                        ? "bg-gradient-to-b from-[#f9b03c]/20 via-[#f9b03c]/10 to-transparent text-amber-900 dark:text-[#f9b03c] border-b-[3px] border-[#f9b03c] shadow-[inset_0_-2px_8px_rgba(249,176,60,0.35)]" 
+                                        : "text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 border-b-[3px] border-transparent font-bold"
+                                }`}
+                            >
+                                <i className="fa-solid fa-award text-[#f9b03c] text-sm group-hover:scale-110 transition-transform"></i>
+                                <span>{t("certificate")}</span>
                             </button>
                         </div>
-                        
                         <div className="p-4 sm:p-6 lg:p-8">
                             {activeTab === 'syllabus' && (
                                 <div className="space-y-4">
@@ -2796,63 +2873,70 @@ ${customAdminPrompt}
                                 </div>
                             )}
 
-                            {activeTab === 'qa' && (
-                                <div className="p-4">
-                                    <div className="flex flex-col min-h-[420px] bg-gray-50 dark:bg-slate-800/80 rounded-2xl border border-gray-200 dark:border-slate-700 overflow-hidden relative shadow-sm">
-                                        <div className="bg-gradient-to-r from-secondary to-slate-800 text-white p-4 font-bold flex items-center justify-between shadow-sm z-10">
+                            {activeTab === "qa" && (
+                                <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                                    <div className="flex flex-col min-h-[460px] bg-white dark:bg-[#070b14]/95 backdrop-blur-3xl rounded-3xl border border-gray-200 dark:border-white/10 overflow-hidden relative shadow-2xl">
+                                        {/* Header */}
+                                        <div className="bg-gradient-to-r from-[#0b1329] via-[#0f1b38] to-[#0b1329] text-white p-4 sm:p-5 border-b border-white/10 flex items-center justify-between shadow-md z-10">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-9 h-9 rounded-full bg-primary/20 flex items-center justify-center text-primary">
-                                                    <i className="fa-solid fa-chalkboard-user text-lg"></i>
+                                                <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-200 text-slate-950 flex items-center justify-center text-lg font-black shadow-[0_0_15px_rgba(249,176,60,0.4)]">
+                                                    <i className="fa-solid fa-chalkboard-user"></i>
                                                 </div>
                                                 <div>
-                                                    <h3 className="font-heading font-black text-sm">ከመምህሩ ጋር ጥያቄና መልስ (Ask Instructor)</h3>
+                                                    <h3 className="font-heading font-black text-sm sm:text-base text-white">ከመምህሩ ጋር ጥያቄና መልስ (Ask Instructor)</h3>
                                                     <p className="text-[11px] text-gray-300 font-normal">ለዚህ ኮርስ ያሎትን ጥያቄ፣ ፎቶ አሊያም ድምፅ ለአስተማሪው ያስገቡ</p>
                                                 </div>
                                             </div>
-                                            <span className="text-[11px] bg-primary text-dark font-black px-3 py-1 rounded-full">
-                                                {activeCourse?.instructor || 'Eyoub Sahle'}
-                                            </span>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-[11px] bg-gradient-to-r from-[#f9b03c] to-amber-400 text-slate-950 font-black px-3.5 py-1.5 rounded-full shadow-md flex items-center gap-1.5">
+                                                    <i className="fa-solid fa-circle-check text-slate-950 text-[10px]"></i>
+                                                    <span>{activeCourse?.instructor || "Eyoub Sahle"}</span>
+                                                </span>
+                                            </div>
                                         </div>
                                         
-                                        <div className="flex-1 overflow-y-auto p-4 space-y-4 max-h-[380px]">
+                                        {/* Messages Body */}
+                                        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 max-h-[400px]">
                                             {studentTickets.filter((t: any) => !activeCourse || t.courseId === activeCourse.id).length === 0 ? (
-                                                <div className="text-center py-12 bg-white dark:bg-slate-900/40 rounded-xl border border-dashed border-gray-200 dark:border-slate-700">
-                                                    <i className="fa-solid fa-messages text-4xl text-gray-300 dark:text-gray-600 mb-3 block"></i>
-                                                    <p className="text-sm font-bold text-gray-600 dark:text-gray-300">ለዚህ ኮርስ እስካሁን ምንም ጥያቄ አልላኩም።</p>
+                                                <div className="text-center py-16 bg-gray-50/60 dark:bg-[#0c1428]/60 rounded-2xl border border-dashed border-gray-200 dark:border-white/10 my-4">
+                                                    <div className="w-14 h-14 rounded-2xl bg-[#f9b03c]/15 text-[#f9b03c] text-2xl flex items-center justify-center mx-auto mb-3 border border-[#f9b03c]/25 shadow-inner">
+                                                        <i className="fa-solid fa-comments"></i>
+                                                    </div>
+                                                    <p className="text-sm font-black text-dark dark:text-white">ለዚህ ኮርስ እስካሁን ምንም ጥያቄ አልላኩም።</p>
                                                     <p className="text-xs text-gray-400 mt-1">ያልገባዎትን ነገር ፅፈው ወይም በፎቶ/በድምፅ ለአስተማሪው መላክ ይችላሉ።</p>
                                                 </div>
                                             ) : (
                                                 studentTickets.filter((t: any) => !activeCourse || t.courseId === activeCourse.id).map((ticket: any) => (
-                                                    <div key={ticket.id} className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl p-4 shadow-xs space-y-3">
+                                                    <div key={ticket.id} className="bg-white dark:bg-[#0c1428] border border-gray-200 dark:border-white/10 rounded-2xl p-4 shadow-sm space-y-3">
                                                         <div className="flex justify-between items-start">
                                                             <div className="flex items-center gap-2">
-                                                                <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                                                                <span className="w-2 h-2 rounded-full bg-[#f9b03c] animate-pulse"></span>
                                                                 <span className="text-xs font-bold text-dark dark:text-white">እርስዎ የጠየቁት ጥያቄ፦</span>
                                                             </div>
-                                                            <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${ticket.status === 'replied' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'}`}>
-                                                                {ticket.status === 'replied' ? '✓ መልስ ተሰጥቷል' : '⏳ በመጠባበቅ ላይ'}
+                                                            <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full ${ticket.status === "replied" ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30" : "bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30"}`}>
+                                                                {ticket.status === "replied" ? "✓ መልስ ተሰጥቷል" : "⏳ በመጠባበቅ ላይ"}
                                                             </span>
                                                         </div>
 
                                                         {ticket.message && (
-                                                            <p className="text-sm text-gray-800 dark:text-gray-200 bg-gray-50 dark:bg-slate-800/80 p-3 rounded-lg border border-gray-100 dark:border-slate-700 font-body">
+                                                            <p className="text-sm text-gray-800 dark:text-gray-200 bg-gray-50 dark:bg-black/30 p-3 rounded-xl border border-gray-100 dark:border-white/5 font-body leading-relaxed">
                                                                 {ticket.message}
                                                             </p>
                                                         )}
 
                                                         {ticket.attachment && (
                                                             <div className="mt-2">
-                                                                {ticket.attachment.type === 'image' && (
-                                                                    <img src={ticket.attachment.url} alt={ticket.attachment.name} className="max-w-[280px] max-h-[220px] rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm cursor-pointer hover:scale-[1.02] transition" />
+                                                                {ticket.attachment.type === "image" && (
+                                                                    <img src={ticket.attachment.url} alt={ticket.attachment.name} className="max-w-[280px] max-h-[220px] rounded-xl border border-gray-200 dark:border-white/10 shadow-sm cursor-pointer hover:scale-[1.02] transition" />
                                                                 )}
-                                                                {ticket.attachment.type === 'document' && (
-                                                                    <a href={ticket.attachment.url} download={ticket.attachment.name} className="inline-flex items-center gap-2 bg-blue-50 dark:bg-slate-800 text-blue-700 dark:text-blue-300 px-3 py-2 rounded-xl border border-blue-200 dark:border-slate-700 text-xs font-bold hover:underline">
+                                                                {ticket.attachment.type === "document" && (
+                                                                    <a href={ticket.attachment.url} download={ticket.attachment.name} className="inline-flex items-center gap-2 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 px-3 py-2 rounded-xl border border-blue-200 dark:border-blue-900/40 text-xs font-bold hover:underline">
                                                                         <i className="fa-solid fa-file-pdf text-red-500 text-base"></i>
                                                                         <span>{ticket.attachment.name}</span>
                                                                     </a>
                                                                 )}
-                                                                {ticket.attachment.type === 'audio' && (
-                                                                    <div className="p-2 bg-slate-100 dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 inline-flex items-center gap-2">
+                                                                {ticket.attachment.type === "audio" && (
+                                                                    <div className="p-2 bg-slate-100 dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-white/10 inline-flex items-center gap-2">
                                                                         <i className="fa-solid fa-microphone text-amber-500 text-sm"></i>
                                                                         <audio controls src={ticket.attachment.url} className="h-8 max-w-[260px]"></audio>
                                                                     </div>
@@ -2861,12 +2945,12 @@ ${customAdminPrompt}
                                                         )}
 
                                                         {ticket.replies && ticket.replies.length > 0 ? (
-                                                            <div className="mt-3 pl-3 border-l-2 border-primary space-y-2">
+                                                            <div className="mt-3 pl-3 border-l-2 border-[#f9b03c] space-y-2">
                                                                 {ticket.replies.map((reply: any, rIdx: number) => (
-                                                                    <div key={rIdx} className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/40 p-3 rounded-lg">
+                                                                    <div key={rIdx} className="bg-emerald-500/10 border border-emerald-500/20 p-3.5 rounded-xl">
                                                                         <div className="flex items-center gap-2 mb-1">
-                                                                            <i className="fa-solid fa-user-tie text-emerald-600 dark:text-emerald-400 text-xs"></i>
-                                                                            <span className="text-xs font-black text-emerald-700 dark:text-emerald-300">የመምህሩ መልስ፦</span>
+                                                                            <i className="fa-solid fa-user-tie text-emerald-500 text-xs"></i>
+                                                                            <span className="text-xs font-black text-emerald-600 dark:text-emerald-400">የመምህሩ መልስ፦</span>
                                                                         </div>
                                                                         <p className="text-sm text-slate-700 dark:text-slate-200 font-body leading-relaxed">
                                                                             {reply.message}
@@ -2882,7 +2966,8 @@ ${customAdminPrompt}
                                             )}
                                         </div>
 
-                                        <div className="p-3 bg-white dark:bg-slate-900 border-t border-gray-200 dark:border-slate-700">
+                                        {/* Input Box Footer */}
+                                        <div className="p-3.5 bg-gray-50 dark:bg-[#0b1222] border-t border-gray-200 dark:border-white/10">
                                             {questionSentMessage && (
                                                 <div className="mb-2 text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 animate-bounce">
                                                     <i className="fa-solid fa-circle-check"></i>
@@ -2891,45 +2976,45 @@ ${customAdminPrompt}
                                             )}
                                             
                                             {qaAttachment && (
-                                                <div className="mb-2 p-2 bg-primary/10 border border-primary/30 rounded-xl flex items-center justify-between text-xs font-bold">
+                                                <div className="mb-2 p-2 bg-[#f9b03c]/10 border border-[#f9b03c]/30 rounded-xl flex items-center justify-between text-xs font-bold">
                                                     <div className="flex items-center gap-2">
-                                                        <i className={`fa-solid ${qaAttachment.type === 'image' ? 'fa-image text-emerald-500' : qaAttachment.type === 'audio' ? 'fa-microphone text-amber-500' : 'fa-file-pdf text-red-500'}`}></i>
+                                                        <i className={`fa-solid ${qaAttachment.type === "image" ? "fa-image text-emerald-500" : qaAttachment.type === "audio" ? "fa-microphone text-amber-500" : "fa-file-pdf text-red-500"}`}></i>
                                                         <span className="truncate max-w-[220px] text-dark dark:text-white">{qaAttachment.name}</span>
                                                     </div>
-                                                    <button onClick={() => setQaAttachment(null)} className="text-gray-400 hover:text-red-500 p-1">
+                                                    <button onClick={() => setQaAttachment(null)} className="text-gray-400 hover:text-red-500 p-1 cursor-pointer">
                                                         <i className="fa-solid fa-xmark"></i>
                                                     </button>
                                                 </div>
                                             )}
 
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex items-center gap-2 bg-white dark:bg-[#070b14] border border-gray-200 dark:border-white/15 rounded-2xl p-1.5 pl-2.5 focus-within:border-[#f9b03c] shadow-inner transition">
                                                 <div className="relative">
                                                     <button 
-                                                        type="button"
+                                                        type="button" 
                                                         onClick={() => setShowAttachmentMenu(prev => !prev)} 
-                                                        className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:bg-primary hover:text-dark flex items-center justify-center font-bold text-lg transition"
+                                                        className="w-9 h-9 rounded-xl bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-300 hover:bg-[#f9b03c] hover:text-slate-950 flex items-center justify-center font-bold text-base transition cursor-pointer active:scale-95"
                                                         title="ፋይል/ፎቶ/ድምፅ አያይዝ (Attach File)"
                                                     >
                                                         <i className="fa-solid fa-paperclip"></i>
                                                     </button>
 
                                                     {showAttachmentMenu && (
-                                                        <div className="absolute bottom-12 left-0 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl shadow-xl p-2 z-50 flex flex-col gap-1 w-48 animate-in slide-in-from-bottom-2">
-                                                            <label className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-xs font-bold text-dark dark:text-white">
-                                                                <i className="fa-solid fa-image text-emerald-500 text-sm"></i> ፎቶ / ስክሪንሾት
-                                                                <input type="file" accept="image/*" onChange={(e) => handleQaFileUpload(e, 'image')} className="hidden" />
+                                                        <div className="absolute bottom-12 left-0 bg-white dark:bg-[#0c1428] border border-gray-200 dark:border-white/15 rounded-2xl shadow-2xl p-2 z-50 flex flex-col gap-1 w-52 animate-in slide-in-from-bottom-2">
+                                                            <label className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 cursor-pointer text-xs font-bold text-dark dark:text-white transition">
+                                                                <i className="fa-solid fa-image text-emerald-400 text-sm"></i> ፎቶ / ስክሪንሾት
+                                                                <input type="file" accept="image/*" onChange={(e) => handleQaFileUpload(e, "image")} className="hidden" />
                                                             </label>
-                                                            <label className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700 cursor-pointer text-xs font-bold text-dark dark:text-white">
-                                                                <i className="fa-solid fa-file-pdf text-red-500 text-sm"></i> ሰነድ / PDF / ፋይል
-                                                                <input type="file" accept=".pdf,.doc,.docx,.txt,.zip" onChange={(e) => handleQaFileUpload(e, 'document')} className="hidden" />
+                                                            <label className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 cursor-pointer text-xs font-bold text-dark dark:text-white transition">
+                                                                <i className="fa-solid fa-file-pdf text-red-400 text-sm"></i> ሰነድ / PDF / ፋይል
+                                                                <input type="file" accept=".pdf,.doc,.docx,.txt,.zip" onChange={(e) => handleQaFileUpload(e, "document")} className="hidden" />
                                                             </label>
                                                             {isRecordingVoice ? (
-                                                                <button onClick={handleStopVoiceRecord} className="flex items-center gap-2.5 p-2 rounded-xl bg-red-500 text-white text-xs font-bold w-full">
+                                                                <button onClick={handleStopVoiceRecord} className="flex items-center gap-2.5 p-2 rounded-xl bg-red-500 text-white text-xs font-bold w-full transition">
                                                                     <i className="fa-solid fa-stop animate-pulse"></i> ቅዳ አቁም (Stop Voice)
                                                                 </button>
                                                             ) : (
-                                                                <button onClick={handleStartVoiceRecord} className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-700 text-xs font-bold text-dark dark:text-white w-full">
-                                                                    <i className="fa-solid fa-microphone text-amber-500 text-sm"></i> ድምፅ መቅጃ (Voice)
+                                                                <button onClick={handleStartVoiceRecord} className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 text-xs font-bold text-dark dark:text-white w-full transition">
+                                                                    <i className="fa-solid fa-microphone text-[#f9b03c] text-sm"></i> ድምፅ መቅጃ (Voice)
                                                                 </button>
                                                             )}
                                                         </div>
@@ -2941,15 +3026,15 @@ ${customAdminPrompt}
                                                     type="text" 
                                                     value={questionInput}
                                                     onChange={e => setQuestionInput(e.target.value)}
-                                                    onKeyDown={e => e.key === 'Enter' && handleAskAdmin()}
+                                                    onKeyDown={e => e.key === "Enter" && handleAskAdmin()}
                                                     placeholder="ለኮርሱ መምህር የሚያስተላልፉትን ጥያቄ እዚህ ይፃፉ..." 
-                                                    className="flex-1 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary text-dark dark:text-white transition"
+                                                    className="flex-1 bg-transparent px-2 py-2 text-xs sm:text-sm outline-none text-dark dark:text-white"
                                                 />
                                                 <button 
                                                     onClick={handleAskAdmin} 
-                                                    className="px-5 h-10 bg-primary text-dark font-black rounded-xl flex items-center justify-center gap-2 hover:bg-yellow-400 transition shadow-sm shrink-0 text-sm whitespace-nowrap"
+                                                    className="px-5 py-2.5 bg-gradient-to-r from-[#f9b03c] to-amber-400 hover:brightness-110 text-slate-950 font-black rounded-xl flex items-center justify-center gap-2 transition shadow-md shrink-0 text-xs cursor-pointer active:scale-95"
                                                 >
-                                                    <i className="fa-solid fa-paper-plane"></i>
+                                                    <i className="fa-solid fa-paper-plane text-xs"></i>
                                                     <span>ለአስተማሪ ላክ</span>
                                                 </button>
                                             </div>
