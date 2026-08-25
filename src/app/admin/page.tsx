@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import React, { useState, useEffect } from 'react';
 import { db, auth } from '@/lib/firebase/config';
 import { collection, onSnapshot, doc, setDoc, deleteDoc, serverTimestamp, query, orderBy, collectionGroup } from 'firebase/firestore';
@@ -1069,7 +1069,7 @@ export default function AdminDashboard() {
           <button onClick={() => setActiveTab('referrals')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition ${activeTab === 'referrals' ? 'bg-[#f9b03c]/15 dark:bg-slate-700/50 text-[#f9b03c]' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700/30'}`}>
             <i className="fa-solid fa-tag text-[#f9b03c] text-lg"></i> Promo Codes (የቅናሽ ኮዶች)
           </button>
-          <button onClick={() => setActiveTab("portfolio")} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-black transition ${activeTab === "portfolio" ? "bg-[#f9b03c]/20 dark:bg-slate-700/60 text-[#f9b03c] border-l-4 border-[#f9b03c]" : "text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700/30"}`}
+          <button onClick={() => setActiveTab('portfolio')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-black transition ${activeTab === 'portfolio' ? 'bg-[#f9b03c]/20 dark:bg-slate-700/60 text-[#f9b03c] border-l-4 border-[#f9b03c]' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700/30'}`}>
             <i className="fa-brands fa-youtube text-red-500 text-xl"></i> <span>የ YouTube Portfolio (የስራ ማሳያ)</span>
           </button>
           <button onClick={() => setActiveTab('youtube')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition ${activeTab === 'youtube' ? 'bg-red-50 dark:bg-slate-700/50 text-red-600 dark:text-red-400' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700/30'}`}>
