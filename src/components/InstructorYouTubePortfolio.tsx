@@ -1,75 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { db } from '@/lib/firebase/config';
-import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 
-export function extractYouTubeId(urlOrId: string): string {
-  if (!urlOrId || typeof urlOrId !== 'string') return '';
-  const trimmed = urlOrId.trim();
-  if (!trimmed) return '';
-  
-  // 1. Direct 11-character video ID
-  if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) return trimmed;
-  
-  // 2. youtu.be/ID (e.g. https://youtu.be/abc12345678?si=123)
-  const matchYoutu = trimmed.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/i);
-  if (matchYoutu && matchYoutu[1]) return matchYoutu[1];
-  
-  // 3. Standard watch URL (e.g., youtube.com/watch?v=abc12345678)
-  const matchWatch = trimmed.match(/[?&]v=([a-zA-Z0-9_-]{11})/i);
-  if (matchWatch && matchWatch[1]) return matchWatch[1];
-  
-  // 4. Embed, Shorts, Live, or v URL
-  const matchPath = trimmed.match(/(?:embed|shorts|live|v)\/([a-zA-Z0-9_-]{11})/i);
-  if (matchPath && matchPath[1]) return matchPath[1];
-  
-  // 5. Generic extraction fallback
-  const matchAny11 = trimmed.match(/(?:[=/&?]|^)([a-zA-Z0-9_-]{11})(?:[?&/#]|$)/);
-  if (matchAny11 && matchAny11[1]) return matchAny11[1];
-  
-  return '';
-}
-
-export const DEFAULT_PORTFOLIO_LOCAL = 'https://www.youtube.com/watch?v=mgdOMtW6J8k';
-export const DEFAULT_PORTFOLIO_INTERNATIONAL = 'https://www.youtube.com/watch?v=B-s71n0dHUk';
+const LOCAL_EMBED_URL = 'https://www.youtube.com/embed/l592Q0zJq2M?modestbranding=1&rel=0&controls=1&showinfo=0';
+const INTERNATIONAL_EMBED_URL = 'https://www.youtube.com/embed/Z0oYJ8z0i3s?modestbranding=1&rel=0&controls=1&showinfo=0';
 
 export default function InstructorYouTubePortfolio() {
-  // Synchronously initialize with cached settings or verified portfolio videos
-  const [localVideoUrl, setLocalVideoUrl] = useState<string>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const cached = localStorage.getItem('tsehay_youtube_portfolio_cache');
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          if (parsed?.localVideoUrl && typeof parsed.localVideoUrl === 'string' && parsed.localVideoUrl.trim()) {
-            return parsed.localVideoUrl.trim();
-          }
-        }
-      } catch (e) {}
-    }
-    return DEFAULT_PORTFOLIO_LOCAL;
-  });
-
-  const [internationalVideoUrl, setInternationalVideoUrl] = useState<string>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const cached = localStorage.getItem('tsehay_youtube_portfolio_cache');
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          if (parsed?.internationalVideoUrl && typeof parsed.internationalVideoUrl === 'string' && parsed.internationalVideoUrl.trim()) {
-            return parsed.internationalVideoUrl.trim();
-          }
-        }
-      } catch (e) {}
-    }
-    return DEFAULT_PORTFOLIO_INTERNATIONAL;
-  });
-
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [playingLocal, setPlayingLocal] = useState(false);
-  const [playingInternational, setPlayingInternational] = useState(false);
-
   // 🌟 Human-like Pencil Typewriter with Playful Eraser Corrections & Multi-Phrases
   const [typedDesc, setTypedDesc] = useState('');
   const [pencilAction, setPencilAction] = useState<'writing' | 'erasing' | 'paused' | 'thinking'>('writing');
@@ -222,158 +158,6 @@ export default function InstructorYouTubePortfolio() {
     };
   }, []);
 
-  // 3. Robust Real-time Firestore & Database Sync
-  useEffect(() => {
-    let isMounted = true;
-
-    const fetchPortfolioData = async () => {
-      try {
-        let fetchedLocal = '';
-        let fetchedIntl = '';
-
-        // 1. Check direct Firestore nested document
-        try {
-          const docRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'site_settings', 'youtube_portfolio');
-          const snap = await getDoc(docRef);
-          if (snap.exists()) {
-            const data = snap.data();
-            if (data?.localVideoUrl) fetchedLocal = data.localVideoUrl.trim();
-            if (data?.internationalVideoUrl) fetchedIntl = data.internationalVideoUrl.trim();
-          }
-        } catch (dbErr) {
-          console.warn("Direct Firestore portfolio fetch warning:", dbErr);
-        }
-
-        // 2. Check root Firestore document fallback
-        if (!fetchedLocal || !fetchedIntl) {
-          try {
-            const rootRef = doc(db, 'site_settings', 'youtube_portfolio');
-            const rootSnap = await getDoc(rootRef);
-            if (rootSnap.exists()) {
-              const rData = rootSnap.data();
-              if (rData?.localVideoUrl && !fetchedLocal) fetchedLocal = rData.localVideoUrl.trim();
-              if (rData?.internationalVideoUrl && !fetchedIntl) fetchedIntl = rData.internationalVideoUrl.trim();
-            }
-          } catch (rErr) {}
-        }
-
-        // 3. Check Server API fallback
-        if (!fetchedLocal || !fetchedIntl) {
-          try {
-            const res = await fetch('/api/admin/site-settings?settingKey=youtube_portfolio');
-            if (res.ok) {
-              const json = await res.json();
-              if (json?.data) {
-                if (json.data.localVideoUrl && !fetchedLocal) fetchedLocal = json.data.localVideoUrl.trim();
-                if (json.data.internationalVideoUrl && !fetchedIntl) fetchedIntl = json.data.internationalVideoUrl.trim();
-              }
-            }
-          } catch (apiErr) {}
-        }
-
-        if (isMounted) {
-          if (fetchedLocal) setLocalVideoUrl(fetchedLocal);
-          if (fetchedIntl) setInternationalVideoUrl(fetchedIntl);
-          if (fetchedLocal || fetchedIntl) {
-            try {
-              localStorage.setItem('tsehay_youtube_portfolio_cache', JSON.stringify({
-                localVideoUrl: fetchedLocal || DEFAULT_PORTFOLIO_LOCAL,
-                internationalVideoUrl: fetchedIntl || DEFAULT_PORTFOLIO_INTERNATIONAL
-              }));
-            } catch (e) {}
-          }
-        }
-      } catch (err) {
-        console.error("Error fetching real portfolio settings:", err);
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    fetchPortfolioData();
-
-    // 4. Real-time Firestore Listeners (Instant live sync on Admin save)
-    let unsubscribe1 = () => {};
-    let unsubscribe2 = () => {};
-
-    try {
-      const portfolioDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'site_settings', 'youtube_portfolio');
-      unsubscribe1 = onSnapshot(portfolioDocRef, (docSnap) => {
-        if (docSnap.exists() && isMounted) {
-          const data = docSnap.data();
-          if (data) {
-            if (data.localVideoUrl) setLocalVideoUrl(data.localVideoUrl.trim());
-            if (data.internationalVideoUrl) setInternationalVideoUrl(data.internationalVideoUrl.trim());
-            setIsLoading(false);
-            try {
-              localStorage.setItem('tsehay_youtube_portfolio_cache', JSON.stringify({
-                localVideoUrl: data.localVideoUrl ? data.localVideoUrl.trim() : DEFAULT_PORTFOLIO_LOCAL,
-                internationalVideoUrl: data.internationalVideoUrl ? data.internationalVideoUrl.trim() : DEFAULT_PORTFOLIO_INTERNATIONAL
-              }));
-            } catch (e) {}
-          }
-        }
-      }, (err) => {
-        console.warn("Firestore snapshot error:", err);
-        if (isMounted) setIsLoading(false);
-      });
-    } catch (e) {}
-
-    try {
-      const rootDocRef = doc(db, 'site_settings', 'youtube_portfolio');
-      unsubscribe2 = onSnapshot(rootDocRef, (docSnap) => {
-        if (docSnap.exists() && isMounted) {
-          const data = docSnap.data();
-          if (data) {
-            if (data.localVideoUrl) setLocalVideoUrl(data.localVideoUrl.trim());
-            if (data.internationalVideoUrl) setInternationalVideoUrl(data.internationalVideoUrl.trim());
-            setIsLoading(false);
-          }
-        }
-      });
-    } catch (e) {}
-
-    // 5. Multi-tab local storage and custom event listeners
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'tsehay_youtube_portfolio_cache' && e.newValue && isMounted) {
-        try {
-          const parsed = JSON.parse(e.newValue);
-          if (parsed?.localVideoUrl) setLocalVideoUrl(parsed.localVideoUrl);
-          if (parsed?.internationalVideoUrl) setInternationalVideoUrl(parsed.internationalVideoUrl);
-          setIsLoading(false);
-        } catch (err) {}
-      }
-    };
-
-    const handleCustomUpdate = (e: Event) => {
-      const customEvt = e as CustomEvent;
-      if (customEvt.detail && isMounted) {
-        if (customEvt.detail.localVideoUrl) setLocalVideoUrl(customEvt.detail.localVideoUrl);
-        if (customEvt.detail.internationalVideoUrl) setInternationalVideoUrl(customEvt.detail.internationalVideoUrl);
-        setIsLoading(false);
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('tsehay_portfolio_updated', handleCustomUpdate);
-
-    return () => {
-      isMounted = false;
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('tsehay_portfolio_updated', handleCustomUpdate);
-      unsubscribe1();
-      unsubscribe2();
-    };
-  }, []);
-
-  const localVideoId = extractYouTubeId(localVideoUrl) || 'mgdOMtW6J8k';
-  const internationalVideoId = extractYouTubeId(internationalVideoUrl) || 'B-s71n0dHUk';
-
-  const localEmbedUrl = `https://www.youtube.com/embed/${localVideoId}?autoplay=1&rel=0&modestbranding=1&controls=1&showinfo=0&iv_load_policy=3&cc_load_policy=0&playsinline=1&enablejsapi=1`;
-  const internationalEmbedUrl = `https://www.youtube.com/embed/${internationalVideoId}?autoplay=1&rel=0&modestbranding=1&controls=1&showinfo=0&iv_load_policy=3&cc_load_policy=0&playsinline=1&enablejsapi=1`;
-
   return (
     <section id="instructor-portfolio" className="relative py-16 sm:py-24 overflow-hidden bg-slate-900/60 dark:bg-[#030509]/95 border-b border-gray-200/80 dark:border-white/10">
       
@@ -459,53 +243,13 @@ export default function InstructorYouTubePortfolio() {
               </div>
 
               <div className="relative aspect-video w-full overflow-hidden bg-black flex items-center justify-center">
-                {isLoading && !localVideoId ? (
-                  <div className="w-full h-full bg-slate-900/80 animate-pulse flex flex-col items-center justify-center gap-2">
-                    <div className="w-10 h-10 border-3 border-[#3268ba] border-t-transparent rounded-full animate-spin"></div>
-                    <span className="text-xs text-gray-400 font-bold">የቪዲዮ መረጃ በመጫን ላይ...</span>
-                  </div>
-                ) : playingLocal && localEmbedUrl ? (
-                  <div className="w-full h-full relative overflow-hidden">
-                    <iframe
-                      src={localEmbedUrl}
-                      title="ሀገርኛ ዩቲዩብ ቻናል"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
-                      allowFullScreen
-                      className="w-full h-full border-0 absolute inset-0 z-10 pointer-events-auto"
-                    />
-
-                    <button 
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); setPlayingLocal(false); }}
-                      className="absolute top-2.5 right-2.5 z-40 bg-black/85 hover:bg-black text-white hover:text-[#f9b03c] text-xs font-bold px-3 py-1.5 rounded-full backdrop-blur-md border border-white/25 flex items-center gap-1.5 shadow-xl cursor-pointer transition-all active:scale-95"
-                      title="ተመለስ (Close Video)"
-                    >
-                      <i className="fa-solid fa-xmark text-xs"></i>
-                      <span>ዝጋ (Close)</span>
-                    </button>
-                  </div>
-                ) : (
-                  <div 
-                    onClick={() => { if (localVideoId) setPlayingLocal(true); }}
-                    className="w-full h-full absolute inset-0 cursor-pointer group/thumb flex items-center justify-center overflow-hidden bg-slate-950"
-                    title="ቪዲዮውን ለማጫወት ይጫኑ (Click to Play)"
-                  >
-                    <img
-                      src={`https://img.youtube.com/vi/${localVideoId}/hqdefault.jpg`}
-                      alt="ሀገርኛ ዩቲዩብ ቻናል"
-                      className="absolute inset-0 w-full h-full object-cover group-hover/thumb:scale-[1.03] transition-transform duration-500"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = `https://img.youtube.com/vi/${localVideoId}/default.jpg`;
-                      }}
-                    />
-
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover/thumb:bg-black/30 transition-colors duration-300">
-                      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[#f9b03c] text-slate-950 flex items-center justify-center text-2xl shadow-[0_0_35px_rgba(249,176,60,0.85)] opacity-0 scale-75 group-hover/thumb:opacity-100 group-hover/thumb:scale-100 transition-all duration-300 pointer-events-none">
-                        <i className="fa-solid fa-play ml-1"></i>
-                      </div>
-                    </div>
-                  </div>
-                )}
+                <iframe
+                  src={LOCAL_EMBED_URL}
+                  title="ሀገርኛ ዩቲዩብ ቻናል"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+                  allowFullScreen
+                  className="w-full h-full border-0 absolute inset-0 z-10"
+                />
               </div>
 
             </div>
@@ -537,53 +281,13 @@ export default function InstructorYouTubePortfolio() {
               </div>
 
               <div className="relative aspect-video w-full overflow-hidden bg-black flex items-center justify-center">
-                {isLoading && !internationalVideoId ? (
-                  <div className="w-full h-full bg-slate-900/80 animate-pulse flex flex-col items-center justify-center gap-2">
-                    <div className="w-10 h-10 border-3 border-[#f9b03c] border-t-transparent rounded-full animate-spin"></div>
-                    <span className="text-xs text-gray-400 font-bold">የቪዲዮ መረጃ በመጫን ላይ...</span>
-                  </div>
-                ) : playingInternational && internationalEmbedUrl ? (
-                  <div className="w-full h-full relative overflow-hidden">
-                    <iframe
-                      src={internationalEmbedUrl}
-                      title="ዓለም አቀፍ ዩቲዩብ ቻናል"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
-                      allowFullScreen
-                      className="w-full h-full border-0 absolute inset-0 z-10 pointer-events-auto"
-                    />
-
-                    <button 
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); setPlayingInternational(false); }}
-                      className="absolute top-2.5 right-2.5 z-40 bg-black/85 hover:bg-black text-white hover:text-[#f9b03c] text-xs font-bold px-3 py-1.5 rounded-full backdrop-blur-md border border-white/25 flex items-center gap-1.5 shadow-xl cursor-pointer transition-all active:scale-95"
-                      title="ተመለስ (Close Video)"
-                    >
-                      <i className="fa-solid fa-xmark text-xs"></i>
-                      <span>ዝጋ (Close)</span>
-                    </button>
-                  </div>
-                ) : (
-                  <div 
-                    onClick={() => { if (internationalVideoId) setPlayingInternational(true); }}
-                    className="w-full h-full absolute inset-0 cursor-pointer group/thumb flex items-center justify-center overflow-hidden bg-slate-950"
-                    title="ቪዲዮውን ለማጫወት ይጫኑ (Click to Play)"
-                  >
-                    <img
-                      src={`https://img.youtube.com/vi/${internationalVideoId}/hqdefault.jpg`}
-                      alt="ዓለም አቀፍ ዩቲዩብ ቻናል"
-                      className="absolute inset-0 w-full h-full object-cover group-hover/thumb:scale-[1.03] transition-transform duration-500"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = `https://img.youtube.com/vi/${internationalVideoId}/default.jpg`;
-                      }}
-                    />
-
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover/thumb:bg-black/30 transition-colors duration-300">
-                      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[#f9b03c] text-slate-950 flex items-center justify-center text-2xl shadow-[0_0_35px_rgba(249,176,60,0.85)] opacity-0 scale-75 group-hover/thumb:opacity-100 group-hover/thumb:scale-100 transition-all duration-300 pointer-events-none">
-                        <i className="fa-solid fa-play ml-1"></i>
-                      </div>
-                    </div>
-                  </div>
-                )}
+                <iframe
+                  src={INTERNATIONAL_EMBED_URL}
+                  title="ዓለም አቀፍ ዩቲዩብ ቻናል"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+                  allowFullScreen
+                  className="w-full h-full border-0 absolute inset-0 z-10"
+                />
               </div>
 
             </div>
