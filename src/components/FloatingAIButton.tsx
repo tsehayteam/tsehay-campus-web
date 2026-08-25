@@ -557,11 +557,22 @@ export default function FloatingAIButton() {
 
                           <button 
                             onClick={() => handleSaveToNotes(m.text, idx)}
-                            className="text-[10px] bg-[#f9b03c]/10 hover:bg-[#f9b03c]/20 text-[#f9b03c] px-2.5 py-1 rounded-lg border border-[#f9b03c]/20 flex items-center gap-1 transition cursor-pointer"
+                            className="text-[10px] bg-[#f9b03c]/10 hover:bg-[#f9b03c]/20 text-[#f9b03c] px-2.5 py-1 rounded-lg border border-[#f9b03c]/20 flex items-center gap-1 transition cursor-pointer active:scale-95"
                           >
                             <i className={`fa-solid ${noteSavedIdx === idx ? 'fa-circle-check text-emerald-400' : 'fa-bookmark'}`}></i>
-                            <span>{noteSavedIdx === idx ? '✓ ተመዝግቧል' : 'ማስታወሻ'}</span>
+                            <span>{noteSavedIdx === idx ? '✓ ተመዝግቧል' : 'ወደ ማስታወሻ አድ'}</span>
                           </button>
+
+                          {noteSavedIdx === idx && (
+                            <a
+                              href="/dashboard?view=classroom&tab=notes"
+                              onClick={() => setIsOpen(false)}
+                              className="text-[10px] bg-primary/20 hover:bg-primary/30 text-amber-300 font-bold px-2 py-1 rounded-lg border border-primary/30 flex items-center gap-1 transition cursor-pointer active:scale-95"
+                            >
+                              <span>ማስታወሻዎችን እይ</span>
+                              <i className="fa-solid fa-arrow-right text-[8px]"></i>
+                            </a>
+                          )}
                         </div>
                       )}
                     </div>

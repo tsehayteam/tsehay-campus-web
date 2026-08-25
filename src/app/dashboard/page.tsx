@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import React, { useEffect, useState, useRef, Suspense } from 'react';
 import { db, auth } from '@/lib/firebase/config';
 import { collection, getDocs, query, orderBy, doc, getDoc, updateDoc, setDoc, serverTimestamp, where, onSnapshot } from 'firebase/firestore';
@@ -300,6 +300,10 @@ function StudentDashboardContent() {
   const [isAiVoiceRecording, setIsAiVoiceRecording] = useState(false);
   const [aiRecordingSeconds, setAiRecordingSeconds] = useState(0);
   const [showDashboardClearAiModal, setShowDashboardClearAiModal] = useState(false);
+  const [savedAiNotes, setSavedAiNotes] = useState<{ [msgIdx: number]: boolean }>({});
+  const [savedAiNoteIds, setSavedAiNoteIds] = useState<{ [msgIdx: number]: string }>({});
+  const [highlightedNoteId, setHighlightedNoteId] = useState<string | null>(null);
+  const [copiedNoteId, setCopiedNoteId] = useState<string | null>(null);
   const aiRecognitionRef = useRef<any>(null);
   const aiTimerRef = useRef<any>(null);
   const aiFileInputRef = useRef<HTMLInputElement>(null);
@@ -892,6 +896,25 @@ function StudentDashboardContent() {
       } catch (err) {
         console.warn("Error persisting note to Firestore:", err);
       }
+    }
+
+    return newNote.id;
+  };
+
+  const handleViewSavedNote = (noteId?: string) => {
+    setCurrentView('classroom');
+    setActiveTab('notes');
+    if (noteId) {
+      setHighlightedNoteId(noteId);
+      setTimeout(() => {
+        const el = document.getElementById(`student-note-${noteId}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 350);
+      setTimeout(() => {
+        setHighlightedNoteId(null);
+      }, 7000);
     }
   };
 
@@ -2709,45 +2732,64 @@ ${customAdminPrompt}
                                             </div>
                                         ) : (
                                             <div className="space-y-3">
-                                                {studentNotes.map((note) => (
-                                                    <div key={note.id} className="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-gray-200 dark:border-slate-700 shadow-sm relative group hover:border-primary/50 transition">
-                                                        <div className="flex justify-between items-start mb-3 gap-2 flex-wrap">
-                                                            <div className="flex items-center gap-2 flex-wrap">
-                                                                <span className={`text-[11px] font-black px-3 py-1 rounded-full flex items-center gap-1.5 shadow-xs ${
-                                                                    note.source === 'ai' || (note.lessonTitle && note.lessonTitle.includes('Tsehay AI'))
-                                                                        ? 'bg-amber-400/20 text-amber-800 dark:text-amber-300 border border-amber-400/30'
-                                                                        : 'bg-primary/20 text-dark dark:text-primary border border-primary/30'
-                                                                }`}>
-                                                                    <i className={`fa-solid ${note.source === 'ai' || (note.lessonTitle && note.lessonTitle.includes('Tsehay AI')) ? 'fa-robot text-primary' : 'fa-bookmark text-primary'} text-[11px]`}></i>
-                                                                    <span>{note.lessonTitle || activeCourse?.title || 'ማስታወሻ'}</span>
-                                                                </span>
+                                                {studentNotes.map((note) => {
+                                                    const isHighlighted = highlightedNoteId === note.id || (highlightedNoteId && note.id.includes(highlightedNoteId));
+                                                    return (
+                                                        <div 
+                                                            key={note.id} 
+                                                            id={`student-note-${note.id}`}
+                                                            className={`p-5 rounded-2xl border transition-all duration-500 relative group ${
+                                                                isHighlighted
+                                                                    ? 'anim-blink-gold border-[#f9b03c] bg-amber-400/15 dark:bg-amber-500/20'
+                                                                    : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 shadow-sm hover:border-primary/50'
+                                                            }`}
+                                                        >
+                                                            <div className="flex justify-between items-start mb-3 gap-2 flex-wrap">
+                                                                <div className="flex items-center gap-2 flex-wrap">
+                                                                    <span className={`text-[11px] font-black px-3 py-1 rounded-full flex items-center gap-1.5 shadow-xs ${
+                                                                        note.source === 'ai' || (note.lessonTitle && note.lessonTitle.includes('Tsehay AI'))
+                                                                            ? 'bg-amber-400/20 text-amber-800 dark:text-amber-300 border border-amber-400/30'
+                                                                            : 'bg-primary/20 text-dark dark:text-primary border border-primary/30'
+                                                                    }`}>
+                                                                        <i className={`fa-solid ${note.source === 'ai' || (note.lessonTitle && note.lessonTitle.includes('Tsehay AI')) ? 'fa-robot text-primary' : 'fa-bookmark text-primary'} text-[11px]`}></i>
+                                                                        <span>{note.lessonTitle || activeCourse?.title || 'ማስታወሻ'}</span>
+                                                                    </span>
+
+                                                                    {isHighlighted && (
+                                                                        <span className="text-[10px] bg-gradient-to-r from-[#f9b03c] to-amber-400 text-slate-950 font-black px-2.5 py-0.5 rounded-full shadow-md animate-bounce flex items-center gap-1">
+                                                                            ✨ አዲስ የተጨመረ ማስታወሻ
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="text-[10px] text-gray-400 font-bold">{note.createdAt}</span>
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            navigator.clipboard.writeText(note.text);
+                                                                            setCopiedNoteId(note.id);
+                                                                            setTimeout(() => setCopiedNoteId(null), 2000);
+                                                                        }}
+                                                                        className="h-7 px-2 rounded-lg bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-600 dark:text-gray-300 transition flex items-center gap-1 text-xs cursor-pointer"
+                                                                        title="ኮፒ አድርግ (Copy)"
+                                                                    >
+                                                                        <i className={`fa-solid ${copiedNoteId === note.id ? 'fa-check text-emerald-500' : 'fa-copy'}`}></i>
+                                                                        {copiedNoteId === note.id && <span className="text-[10px] font-bold text-emerald-500">ተገልብጧል</span>}
+                                                                    </button>
+                                                                    <button 
+                                                                        onClick={() => handleDeleteNote(note.id)} 
+                                                                        className="w-7 h-7 rounded-lg bg-red-50 dark:bg-red-950/30 hover:bg-red-100 text-red-500 transition flex items-center justify-center text-xs cursor-pointer" 
+                                                                        title="ሰርዝ (Delete Note)"
+                                                                    >
+                                                                        <i className="fa-solid fa-trash-can"></i>
+                                                                    </button>
+                                                                </div>
                                                             </div>
-                                                            <div className="flex items-center gap-2">
-                                                                <span className="text-[10px] text-gray-400 font-bold">{note.createdAt}</span>
-                                                                <button
-                                                                    onClick={() => {
-                                                                        navigator.clipboard.writeText(note.text);
-                                                                        alert('ማስታወሻው ኮፒ ተደርጓል! (Note Copied)');
-                                                                    }}
-                                                                    className="w-7 h-7 rounded-lg bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-500 dark:text-gray-300 transition flex items-center justify-center text-xs cursor-pointer"
-                                                                    title="ኮፒ አድርግ (Copy)"
-                                                                >
-                                                                    <i className="fa-solid fa-copy"></i>
-                                                                </button>
-                                                                <button 
-                                                                    onClick={() => handleDeleteNote(note.id)} 
-                                                                    className="w-7 h-7 rounded-lg bg-red-50 dark:bg-red-950/30 hover:bg-red-100 text-red-500 transition flex items-center justify-center text-xs cursor-pointer" 
-                                                                    title="ሰርዝ (Delete Note)"
-                                                                >
-                                                                    <i className="fa-solid fa-trash-can"></i>
-                                                                </button>
-                                                            </div>
+                                                            <p className="text-sm text-gray-800 dark:text-gray-200 font-body leading-relaxed whitespace-pre-wrap">
+                                                                {note.text}
+                                                            </p>
                                                         </div>
-                                                        <p className="text-sm text-gray-800 dark:text-gray-200 font-body leading-relaxed whitespace-pre-wrap">
-                                                            {note.text}
-                                                        </p>
-                                                    </div>
-                                                ))}
+                                                    );
+                                                })}
                                             </div>
                                         )}
                                     </div>
@@ -3342,33 +3384,33 @@ ${customAdminPrompt}
                                          <span>{copiedMsgIdx === i ? '✓ ተገልብጧል' : 'ኮፒ'}</span>
                                      </button>
 
-                                     <button 
-                                         onClick={() => {
-                                             handleSaveNote(m.text);
-                                             setSavedAiNotes(prev => ({ ...prev, [i]: true }));
-                                         }} 
-                                         className={`text-[11px] font-black px-3 py-1 rounded-lg border flex items-center gap-1.5 transition-all shadow-xs cursor-pointer ${
-                                             savedAiNotes[i]
-                                                 ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/40'
-                                                 : 'bg-amber-400/20 hover:bg-amber-400 dark:bg-amber-500/20 dark:hover:bg-amber-400 text-amber-800 dark:text-amber-300 hover:text-dark border-amber-400/40'
-                                         }`}
-                                     >
-                                         <i className={`fa-solid ${savedAiNotes[i] ? 'fa-circle-check text-emerald-600 dark:text-emerald-400' : 'fa-bookmark text-[10px]'}`}></i> 
-                                         <span>{savedAiNotes[i] ? '✓ ወደ ማስታወሻ ተመዝግቧል' : 'ወደ ማስታወሻ አድ አድርግ'}</span>
-                                     </button>
+                                      <button 
+                                          onClick={async () => {
+                                              const noteId = await handleSaveNote(m.text);
+                                              setSavedAiNotes(prev => ({ ...prev, [i]: true }));
+                                              if (noteId) {
+                                                  setSavedAiNoteIds(prev => ({ ...prev, [i]: noteId }));
+                                              }
+                                          }} 
+                                          className={`text-[11px] font-black px-3 py-1 rounded-lg border flex items-center gap-1.5 transition-all shadow-xs cursor-pointer active:scale-95 ${
+                                              savedAiNotes[i]
+                                                  ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/40"
+                                                  : "bg-amber-400/20 hover:bg-amber-400 dark:bg-amber-500/20 dark:hover:bg-amber-400 text-amber-800 dark:text-amber-300 hover:text-dark border-amber-400/40"
+                                          }`}
+                                      >
+                                          <i className={`fa-solid ${savedAiNotes[i] ? "fa-circle-check text-emerald-600 dark:text-emerald-400" : "fa-bookmark text-[10px]"}`}></i> 
+                                          <span>{savedAiNotes[i] ? "✓ ወደ ማስታወሻ ተመዝግቧል" : "ወደ ማስታወሻ አድ አድርግ"}</span>
+                                      </button>
 
-                                     {savedAiNotes[i] && (
-                                         <button
-                                             onClick={() => {
-                                                 setCurrentView('classroom');
-                                                 setActiveTab('notes');
-                                             }}
-                                             className="text-[11px] font-bold text-secondary dark:text-primary hover:underline flex items-center gap-1 cursor-pointer bg-primary/10 px-2 py-0.5 rounded-lg border border-primary/20"
-                                         >
-                                             <span>ማስታወሻዎችን እይ</span>
-                                             <i className="fa-solid fa-arrow-right text-[10px]"></i>
-                                         </button>
-                                     )}
+                                      {savedAiNotes[i] && (
+                                          <button
+                                              onClick={() => handleViewSavedNote(savedAiNoteIds[i])}
+                                              className="text-[11px] font-bold text-secondary dark:text-primary hover:underline flex items-center gap-1.5 cursor-pointer bg-primary/15 hover:bg-primary/25 px-2.5 py-1 rounded-lg border border-primary/30 transition-all duration-150 active:scale-95 shadow-xs"
+                                          >
+                                              <span>ማስታወሻዎችን እይ</span>
+                                              <i className="fa-solid fa-arrow-right text-[10px]"></i>
+                                          </button>
+                                      )}
                                  </div>
                              )}
                          </div>

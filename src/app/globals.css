@@ -1755,3 +1755,24 @@ img, video, canvas {
   transform: translateZ(0);
   backface-visibility: hidden;
 }
+
+/* =========================================================================
+   ✨ SAVED NOTE BLINKING HIGHLIGHT BOX (Visual Pulse Confirmation)
+   ========================================================================= */
+@keyframes blinkGoldBox {
+  0%, 100% {
+    border-color: #f9b03c;
+    box-shadow: 0 0 35px rgba(249, 176, 60, 0.8), inset 0 0 15px rgba(249, 176, 60, 0.2);
+    transform: scale(1.02);
+  }
+  50% {
+    border-color: rgba(255, 255, 255, 0.8);
+    box-shadow: 0 0 12px rgba(249, 176, 60, 0.35), inset 0 0 5px rgba(249, 176, 60, 0.1);
+    transform: scale(1.0);
+  }
+}
+
+.anim-blink-gold {
+  animation: blinkGoldBox 1.1s ease-in-out infinite;
+  border-width: 2px !important;
+}
