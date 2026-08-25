@@ -276,18 +276,7 @@ export default function Home() {
 
   const { t } = useLanguage();
 
-  // Smooth Scroll Parallax for Hero Background
-  const [heroParallaxY, setHeroParallaxY] = useState(0);
 
-  useEffect(() => {
-    const handleScroll = () => {
-      if (window.scrollY < window.innerHeight * 1.5) {
-        setHeroParallaxY(window.scrollY * 0.24);
-      }
-    };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
 
   useEffect(() => {
     // Force scroll to top on initial load
