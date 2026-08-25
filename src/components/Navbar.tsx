@@ -452,7 +452,7 @@ export default function Navbar() {
                 <span className="text-xs font-black tracking-wide text-slate-900 dark:text-white group-hover:text-[#f9b03c] transition-colors">
                   Tsehay AI
                 </span>
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse ml-0.5"></span>
+                <span className="w-1.5 h-1.5 rounded-full bg-[#f9b03c] shadow-[0_0_8px_#f9b03c] ml-0.5 animate-pulse"></span>
               </button>
 
               {/* Install App Quick Trigger */}
