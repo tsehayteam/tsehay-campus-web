@@ -12,12 +12,17 @@ export default function About() {
 
   return (
     <>
-      <main className="min-h-screen flex flex-col bg-white dark:bg-[#030509] text-slate-900 dark:text-slate-100 transition-colors duration-300 relative overflow-hidden">
+      <main className="min-h-screen flex flex-col bg-[#030509] text-slate-100 transition-colors duration-300 relative overflow-hidden">
         
+        {/* =========================================================================
+            🌟 CRITICAL FIX 3: 3D PARTICLE NETWORK & MESH GRADIENT BACKGROUND
+           ========================================================================= */}
+        <About3DParticleMeshCanvas />
+
         {/* Deep Void Stardust Mesh Background & Ambient Lighting */}
-        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-15 mix-blend-overlay pointer-events-none" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(50,104,186,0.12),transparent_55%),radial-gradient(ellipse_at_bottom_right,rgba(249,176,60,0.12),transparent_55%)] pointer-events-none" />
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[850px] h-[500px] bg-gradient-to-b from-[#3268ba]/15 via-[#f9b03c]/12 to-transparent rounded-full blur-[150px] pointer-events-none -z-10" />
+        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-15 mix-blend-overlay pointer-events-none z-0" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(50,104,186,0.14),transparent_55%),radial-gradient(ellipse_at_bottom_right,rgba(249,176,60,0.12),transparent_55%)] pointer-events-none z-0" />
+        <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[850px] h-[500px] bg-gradient-to-b from-[#3268ba]/15 via-[#f9b03c]/10 to-transparent rounded-full blur-[160px] pointer-events-none -z-10" />
         <div className="absolute top-[35%] -left-36 w-[450px] h-[450px] bg-[#3268ba]/12 rounded-full blur-[160px] pointer-events-none -z-10" />
         <div className="absolute top-[65%] -right-36 w-[450px] h-[450px] bg-[#f9b03c]/12 rounded-full blur-[160px] pointer-events-none -z-10" />
 
@@ -26,15 +31,13 @@ export default function About() {
             
             {/* Header Title */}
             <div className="text-center">
-              <h1 className="font-heading font-black text-3xl sm:text-5xl lg:text-6xl text-slate-900 dark:text-white mb-4 tracking-tight">
+              <h1 className="font-heading font-black text-3xl sm:text-5xl lg:text-6xl text-white mb-4 tracking-tight">
                 {t('about_us_page')}
               </h1>
               <div className="w-24 h-1 bg-gradient-to-r from-transparent via-[#f9b03c] to-transparent mx-auto rounded-full shadow-[0_0_12px_rgba(249,176,60,0.6)]" />
             </div>
 
-            {/* =========================================================================
-                🌟 CRITICAL FIX 1: MAIN INTRO VIDEO WITH ROTATING CONIC-GRADIENT GLOWING BORDER
-               ========================================================================= */}
+            {/* Main Intro Video With Rotating Conic-Gradient Glowing Border (20px) */}
             <div>
               <AboutHeroPlayer />
             </div>
@@ -47,25 +50,25 @@ export default function About() {
                 {/* Flowing Gradient Border */}
                 <div className="absolute inset-0 bg-gradient-to-r from-[#f9b03c]/50 via-[#3268ba]/50 to-[#f9b03c]/50 rounded-3xl opacity-60 group-hover:opacity-100 transition duration-500 blur-xs" />
                 
-                {/* ✨ 4 SPARKLING CORNER FLARES */}
+                {/* ✨ 4 Sparkling Corner Flares */}
                 <div className="absolute -top-1.5 -left-1.5 z-20 pointer-events-none">
                   <span className="absolute w-4 h-4 bg-[#f9b03c] rounded-full animate-ping opacity-75"></span>
-                  <span className="block w-3 h-3 bg-[#f9b03c] rounded-full border-2 border-white dark:border-slate-900 shadow-[0_0_12px_#f9b03c]"></span>
+                  <span className="block w-3 h-3 bg-[#f9b03c] rounded-full border-2 border-slate-900 shadow-[0_0_12px_#f9b03c]"></span>
                 </div>
                 <div className="absolute -top-1.5 -right-1.5 z-20 pointer-events-none">
                   <span className="absolute w-4 h-4 bg-[#3268ba] rounded-full animate-ping opacity-75 delay-300"></span>
-                  <span className="block w-3 h-3 bg-[#5a93e8] rounded-full border-2 border-white dark:border-slate-900 shadow-[0_0_12px_#3268ba]"></span>
+                  <span className="block w-3 h-3 bg-[#5a93e8] rounded-full border-2 border-slate-900 shadow-[0_0_12px_#3268ba]"></span>
                 </div>
                 <div className="absolute -bottom-1.5 -left-1.5 z-20 pointer-events-none">
                   <span className="absolute w-4 h-4 bg-[#3268ba] rounded-full animate-ping opacity-75 delay-500"></span>
-                  <span className="block w-3 h-3 bg-[#5a93e8] rounded-full border-2 border-white dark:border-slate-900 shadow-[0_0_12px_#3268ba]"></span>
+                  <span className="block w-3 h-3 bg-[#5a93e8] rounded-full border-2 border-slate-900 shadow-[0_0_12px_#3268ba]"></span>
                 </div>
                 <div className="absolute -bottom-1.5 -right-1.5 z-20 pointer-events-none">
                   <span className="absolute w-4 h-4 bg-[#f9b03c] rounded-full animate-ping opacity-75 delay-700"></span>
-                  <span className="block w-3 h-3 bg-[#f9b03c] rounded-full border-2 border-white dark:border-slate-900 shadow-[0_0_12px_#f9b03c]"></span>
+                  <span className="block w-3 h-3 bg-[#f9b03c] rounded-full border-2 border-slate-900 shadow-[0_0_12px_#f9b03c]"></span>
                 </div>
                 
-                <div className="relative rounded-[22px] bg-white/90 dark:bg-slate-900/95 backdrop-blur-xl p-6 sm:p-10 border border-gray-200/80 dark:border-white/10 shadow-2xl">
+                <div className="relative rounded-[22px] bg-slate-900/95 backdrop-blur-xl p-6 sm:p-10 border border-white/10 shadow-2xl">
                   
                   <div className="flex items-center gap-3 mb-6">
                     <div className="w-12 h-12 rounded-2xl bg-[#f9b03c]/15 text-[#f9b03c] border border-[#f9b03c]/30 flex items-center justify-center text-xl shadow-[0_0_20px_rgba(249,176,60,0.25)]">
@@ -73,49 +76,49 @@ export default function About() {
                     </div>
                     <div>
                       <span className="text-xs font-bold text-[#f9b03c] tracking-widest uppercase block">ታሪካችን</span>
-                      <h2 className="text-2xl sm:text-3xl font-black font-heading text-slate-900 dark:text-white">
+                      <h2 className="text-2xl sm:text-3xl font-black font-heading text-white">
                         {t('our_story_title')}
                       </h2>
                     </div>
                   </div>
 
-                  <p className="text-gray-700 dark:text-slate-300 font-body leading-relaxed text-base sm:text-[17px] mb-4">
+                  <p className="text-slate-300 font-body leading-relaxed text-base sm:text-[17px] mb-4">
                     {t('our_story_p1')}
                   </p>
                   
-                  <p className="text-gray-700 dark:text-slate-300 font-body leading-relaxed text-base sm:text-[17px] mb-8">
+                  <p className="text-slate-300 font-body leading-relaxed text-base sm:text-[17px] mb-8">
                     {t('our_story_p2')}
                   </p>
 
                   {/* Stats Pill Badges */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6 border-t border-gray-100 dark:border-white/10">
-                    <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-gray-50 dark:bg-white/[0.03] border border-gray-100 dark:border-white/5 hover:border-[#f9b03c]/40 transition">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6 border-t border-white/10">
+                    <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-white/[0.03] border border-white/5 hover:border-[#f9b03c]/40 transition">
                       <div className="w-10 h-10 rounded-xl bg-[#f9b03c]/15 text-[#f9b03c] flex items-center justify-center font-bold text-lg">
                         <i className="fa-solid fa-graduation-cap text-base"></i>
                       </div>
                       <div>
-                        <h4 className="text-2xl font-black text-slate-900 dark:text-white leading-none">500+</h4>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider mt-1">{t('stat_students')}</p>
+                        <h4 className="text-2xl font-black text-white leading-none">500+</h4>
+                        <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mt-1">{t('stat_students')}</p>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-gray-50 dark:bg-white/[0.03] border border-gray-100 dark:border-white/5 hover:border-[#3268ba]/40 transition">
+                    <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-white/[0.03] border border-white/5 hover:border-[#3268ba]/40 transition">
                       <div className="w-10 h-10 rounded-xl bg-[#3268ba]/15 text-[#5a93e8] flex items-center justify-center font-bold text-lg">
                         <i className="fa-solid fa-laptop-code text-base"></i>
                       </div>
                       <div>
-                        <h4 className="text-2xl font-black text-slate-900 dark:text-white leading-none">100%</h4>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider mt-1">{t('stat_practical')}</p>
+                        <h4 className="text-2xl font-black text-white leading-none">100%</h4>
+                        <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mt-1">{t('stat_practical')}</p>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-gray-50 dark:bg-white/[0.03] border border-gray-100 dark:border-white/5 hover:border-emerald-500/40 transition">
+                    <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-white/[0.03] border border-white/5 hover:border-emerald-500/40 transition">
                       <div className="w-10 h-10 rounded-xl bg-emerald-500/15 text-emerald-500 flex items-center justify-center font-bold text-lg">
                         <i className="fa-solid fa-brain text-base"></i>
                       </div>
                       <div>
-                        <h4 className="text-2xl font-black text-slate-900 dark:text-white leading-none">24/7</h4>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider mt-1">{t('stat_ai')}</p>
+                        <h4 className="text-2xl font-black text-white leading-none">24/7</h4>
+                        <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mt-1">{t('stat_ai')}</p>
                       </div>
                     </div>
                   </div>
@@ -134,32 +137,32 @@ export default function About() {
                 {/* 4 Sparkling Corner Flares */}
                 <div className="absolute -top-1.5 -left-1.5 z-20 pointer-events-none">
                   <span className="absolute w-4 h-4 bg-[#f9b03c] rounded-full animate-ping opacity-75"></span>
-                  <span className="block w-3 h-3 bg-[#f9b03c] rounded-full border-2 border-white dark:border-slate-900 shadow-[0_0_12px_#f9b03c]"></span>
+                  <span className="block w-3 h-3 bg-[#f9b03c] rounded-full border-2 border-slate-900 shadow-[0_0_12px_#f9b03c]"></span>
                 </div>
                 <div className="absolute -top-1.5 -right-1.5 z-20 pointer-events-none">
                   <span className="absolute w-4 h-4 bg-[#f9b03c] rounded-full animate-ping opacity-75 delay-200"></span>
-                  <span className="block w-3 h-3 bg-amber-400 rounded-full border-2 border-white dark:border-slate-900 shadow-[0_0_12px_#f9b03c]"></span>
+                  <span className="block w-3 h-3 bg-amber-400 rounded-full border-2 border-slate-900 shadow-[0_0_12px_#f9b03c]"></span>
                 </div>
                 <div className="absolute -bottom-1.5 -left-1.5 z-20 pointer-events-none">
                   <span className="absolute w-4 h-4 bg-[#3268ba] rounded-full animate-ping opacity-75 delay-400"></span>
-                  <span className="block w-3 h-3 bg-[#5a93e8] rounded-full border-2 border-white dark:border-slate-900 shadow-[0_0_12px_#3268ba]"></span>
+                  <span className="block w-3 h-3 bg-[#5a93e8] rounded-full border-2 border-slate-900 shadow-[0_0_12px_#3268ba]"></span>
                 </div>
                 <div className="absolute -bottom-1.5 -right-1.5 z-20 pointer-events-none">
                   <span className="absolute w-4 h-4 bg-[#f9b03c] rounded-full animate-ping opacity-75 delay-600"></span>
-                  <span className="block w-3 h-3 bg-[#f9b03c] rounded-full border-2 border-white dark:border-slate-900 shadow-[0_0_12px_#f9b03c]"></span>
+                  <span className="block w-3 h-3 bg-[#f9b03c] rounded-full border-2 border-slate-900 shadow-[0_0_12px_#f9b03c]"></span>
                 </div>
 
-                <div className="relative rounded-[22px] bg-white/90 dark:bg-slate-900/95 backdrop-blur-xl p-8 sm:p-12 text-center shadow-2xl">
+                <div className="relative rounded-[22px] bg-slate-900/95 backdrop-blur-xl p-8 sm:p-12 text-center shadow-2xl">
                   <div className="w-14 h-14 mx-auto rounded-2xl bg-[#f9b03c]/15 text-[#f9b03c] border border-[#f9b03c]/30 flex items-center justify-center text-2xl mb-4 shadow-[0_0_25px_rgba(249,176,60,0.25)] group-hover:scale-110 transition duration-300">
                     <i className="fa-solid fa-bullseye"></i>
                   </div>
                   
                   <span className="text-xs font-bold text-[#f9b03c] tracking-widest uppercase block mb-1">ራዕይ እና ዓላማ</span>
-                  <h2 className="text-2xl sm:text-3xl font-black font-heading text-slate-900 dark:text-white mb-4">
+                  <h2 className="text-2xl sm:text-3xl font-black font-heading text-white mb-4">
                     {t('mission_title')}
                   </h2>
 
-                  <p className="text-lg sm:text-2xl font-bold text-slate-800 dark:text-slate-200 leading-relaxed max-w-2xl mx-auto">
+                  <p className="text-lg sm:text-2xl font-bold text-slate-200 leading-relaxed max-w-2xl mx-auto">
                     {t('mission_desc')}
                   </p>
                 </div>
@@ -175,7 +178,7 @@ export default function About() {
                   <i className="fa-solid fa-star text-[10px]"></i>
                   <span>ልዩ ጥንካሬዎች</span>
                 </div>
-                <h2 className="text-2xl sm:text-4xl font-black font-heading text-slate-900 dark:text-white">
+                <h2 className="text-2xl sm:text-4xl font-black font-heading text-white">
                   {t('what_we_do_title')}
                 </h2>
               </div>
@@ -191,13 +194,13 @@ export default function About() {
                   <span className="absolute -bottom-1 -left-1 w-2.5 h-2.5 bg-[#f9b03c] rounded-full shadow-[0_0_8px_#f9b03c] pointer-events-none" />
                   <span className="absolute -bottom-1 -right-1 w-2.5 h-2.5 bg-[#f9b03c] rounded-full shadow-[0_0_8px_#f9b03c] animate-ping opacity-75 delay-500 pointer-events-none" />
                   
-                  <div className="relative rounded-[22px] bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-8 h-full flex flex-col justify-between border border-gray-100 dark:border-white/10 group-hover:border-[#f9b03c]/50 transition duration-500 shadow-xl group-hover:shadow-2xl group-hover:shadow-[#f9b03c]/20">
+                  <div className="relative rounded-[22px] bg-slate-900/90 backdrop-blur-xl p-8 h-full flex flex-col justify-between border border-white/10 group-hover:border-[#f9b03c]/50 transition duration-500 shadow-xl group-hover:shadow-2xl group-hover:shadow-[#f9b03c]/20">
                     <div>
                       <div className="w-16 h-16 rounded-2xl bg-[#f9b03c]/15 text-[#f9b03c] border border-[#f9b03c]/30 flex items-center justify-center text-2xl mb-6 shadow-[0_0_20px_rgba(249,176,60,0.2)] group-hover:scale-110 transition duration-300">
                         <i className="fa-solid fa-chart-line"></i>
                       </div>
-                      <h3 className="font-bold text-slate-900 dark:text-white text-xl mb-3 font-heading leading-snug">{t('wwd_1_title')}</h3>
-                      <p className="text-sm text-gray-600 dark:text-slate-300 leading-relaxed">{t('wwd_1_desc')}</p>
+                      <h3 className="font-bold text-white text-xl mb-3 font-heading leading-snug">{t('wwd_1_title')}</h3>
+                      <p className="text-sm text-slate-300 leading-relaxed">{t('wwd_1_desc')}</p>
                     </div>
                   </div>
                 </div>
@@ -211,13 +214,13 @@ export default function About() {
                   <span className="absolute -bottom-1 -left-1 w-2.5 h-2.5 bg-[#5a93e8] rounded-full shadow-[0_0_8px_#3268ba] pointer-events-none" />
                   <span className="absolute -bottom-1 -right-1 w-2.5 h-2.5 bg-[#5a93e8] rounded-full shadow-[0_0_8px_#3268ba] animate-ping opacity-75 delay-500 pointer-events-none" />
                   
-                  <div className="relative rounded-[22px] bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-8 h-full flex flex-col justify-between border border-gray-100 dark:border-white/10 group-hover:border-[#3268ba]/50 transition duration-500 shadow-xl group-hover:shadow-2xl group-hover:shadow-[#3268ba]/20">
+                  <div className="relative rounded-[22px] bg-slate-900/90 backdrop-blur-xl p-8 h-full flex flex-col justify-between border border-white/10 group-hover:border-[#3268ba]/50 transition duration-500 shadow-xl group-hover:shadow-2xl group-hover:shadow-[#3268ba]/20">
                     <div>
                       <div className="w-16 h-16 rounded-2xl bg-[#3268ba]/15 text-[#5a93e8] border border-[#3268ba]/30 flex items-center justify-center text-2xl mb-6 shadow-[0_0_20px_rgba(50,104,186,0.2)] group-hover:scale-110 transition duration-300">
                         <i className="fa-solid fa-people-group"></i>
                       </div>
-                      <h3 className="font-bold text-slate-900 dark:text-white text-xl mb-3 font-heading leading-snug">{t('wwd_2_title')}</h3>
-                      <p className="text-sm text-gray-600 dark:text-slate-300 leading-relaxed">{t('wwd_2_desc')}</p>
+                      <h3 className="font-bold text-white text-xl mb-3 font-heading leading-snug">{t('wwd_2_title')}</h3>
+                      <p className="text-sm text-slate-300 leading-relaxed">{t('wwd_2_desc')}</p>
                     </div>
                   </div>
                 </div>
@@ -231,13 +234,13 @@ export default function About() {
                   <span className="absolute -bottom-1 -left-1 w-2.5 h-2.5 bg-[#f9b03c] rounded-full shadow-[0_0_8px_#f9b03c] pointer-events-none" />
                   <span className="absolute -bottom-1 -right-1 w-2.5 h-2.5 bg-[#f9b03c] rounded-full shadow-[0_0_8px_#f9b03c] animate-ping opacity-75 delay-500 pointer-events-none" />
                   
-                  <div className="relative rounded-[22px] bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-8 h-full flex flex-col justify-between border border-gray-100 dark:border-white/10 group-hover:border-[#f9b03c]/50 transition duration-500 shadow-xl group-hover:shadow-2xl group-hover:shadow-[#f9b03c]/20">
+                  <div className="relative rounded-[22px] bg-slate-900/90 backdrop-blur-xl p-8 h-full flex flex-col justify-between border border-white/10 group-hover:border-[#f9b03c]/50 transition duration-500 shadow-xl group-hover:shadow-2xl group-hover:shadow-[#f9b03c]/20">
                     <div>
                       <div className="w-16 h-16 rounded-2xl bg-[#f9b03c]/15 text-[#f9b03c] border border-[#f9b03c]/30 flex items-center justify-center text-2xl mb-6 shadow-[0_0_20px_rgba(249,176,60,0.2)] group-hover:scale-110 transition duration-300">
                         <i className="fa-solid fa-wand-magic-sparkles"></i>
                       </div>
-                      <h3 className="font-bold text-slate-900 dark:text-white text-xl mb-3 font-heading leading-snug">{t('wwd_3_title')}</h3>
-                      <p className="text-sm text-gray-600 dark:text-slate-300 leading-relaxed">{t('wwd_3_desc')}</p>
+                      <h3 className="font-bold text-white text-xl mb-3 font-heading leading-snug">{t('wwd_3_title')}</h3>
+                      <p className="text-sm text-slate-300 leading-relaxed">{t('wwd_3_desc')}</p>
                     </div>
                   </div>
                 </div>
@@ -254,7 +257,7 @@ export default function About() {
                   <i className="fa-solid fa-users text-[10px]"></i>
                   <span>የአመራር ቡድን</span>
                 </div>
-                <h2 className="text-2xl sm:text-4xl font-black font-heading text-slate-900 dark:text-white">
+                <h2 className="text-2xl sm:text-4xl font-black font-heading text-white">
                   {t('our_team_title')}
                 </h2>
               </div>
@@ -270,8 +273,8 @@ export default function About() {
                   <span className="absolute -bottom-1 -left-1 w-2.5 h-2.5 bg-[#f9b03c] rounded-full shadow-[0_0_8px_#f9b03c] pointer-events-none" />
                   <span className="absolute -bottom-1 -right-1 w-2.5 h-2.5 bg-[#f9b03c] rounded-full shadow-[0_0_8px_#f9b03c] animate-ping opacity-75 delay-500 pointer-events-none" />
                   
-                  <div className="relative rounded-[22px] bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-8 text-center border border-gray-100 dark:border-white/10 group-hover:border-[#f9b03c]/40 shadow-xl flex flex-col items-center">
-                    <div className="w-28 h-28 rounded-full overflow-hidden mb-5 bg-gray-100 dark:bg-gray-800 border-3 border-[#f9b03c]/40 shadow-[0_0_25px_rgba(249,176,60,0.35)] group-hover:scale-105 transition duration-300">
+                  <div className="relative rounded-[22px] bg-slate-900/90 backdrop-blur-xl p-8 text-center border border-white/10 group-hover:border-[#f9b03c]/40 shadow-xl flex flex-col items-center">
+                    <div className="w-28 h-28 rounded-full overflow-hidden mb-5 bg-gray-800 border-3 border-[#f9b03c]/40 shadow-[0_0_25px_rgba(249,176,60,0.35)] group-hover:scale-105 transition duration-300">
                       <img 
                         src="/assets/eyob_white.jpg" 
                         alt="Eyoub Sahle" 
@@ -280,11 +283,11 @@ export default function About() {
                       />
                     </div>
                     
-                    <h3 className="font-black text-slate-900 dark:text-white text-xl mb-1.5 notranslate whitespace-nowrap">
+                    <h3 className="font-black text-white text-xl mb-1.5 notranslate whitespace-nowrap">
                       ኢዮብ ሳህሌ (Eyoub Sahle)
                     </h3>
                     <p className="text-xs text-[#f9b03c] font-black uppercase tracking-wider">ባለቤት እና ዋና አሰልጣኝ</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 font-bold mt-0.5">Owner & Lead Instructor</p>
+                    <p className="text-xs text-gray-400 font-bold mt-0.5">Owner & Lead Instructor</p>
                   </div>
                 </div>
 
@@ -297,8 +300,8 @@ export default function About() {
                   <span className="absolute -bottom-1 -left-1 w-2.5 h-2.5 bg-[#5a93e8] rounded-full shadow-[0_0_8px_#3268ba] pointer-events-none" />
                   <span className="absolute -bottom-1 -right-1 w-2.5 h-2.5 bg-[#5a93e8] rounded-full shadow-[0_0_8px_#3268ba] animate-ping opacity-75 delay-500 pointer-events-none" />
                   
-                  <div className="relative rounded-[22px] bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-8 text-center border border-gray-100 dark:border-white/10 group-hover:border-[#3268ba]/40 shadow-xl flex flex-col items-center">
-                    <div className="w-28 h-28 rounded-full overflow-hidden mb-5 bg-gray-100 dark:bg-gray-800 border-3 border-[#3268ba]/40 shadow-[0_0_25px_rgba(50,104,186,0.35)] group-hover:scale-105 transition duration-300">
+                  <div className="relative rounded-[22px] bg-slate-900/90 backdrop-blur-xl p-8 text-center border border-white/10 group-hover:border-[#3268ba]/40 shadow-xl flex flex-col items-center">
+                    <div className="w-28 h-28 rounded-full overflow-hidden mb-5 bg-gray-800 border-3 border-[#3268ba]/40 shadow-[0_0_25px_rgba(50,104,186,0.35)] group-hover:scale-105 transition duration-300">
                       <img 
                         src="/assets/ribka2.jpg" 
                         alt="Ribka Teshome" 
@@ -307,11 +310,11 @@ export default function About() {
                       />
                     </div>
                     
-                    <h3 className="font-black text-slate-900 dark:text-white text-xl mb-1.5 notranslate whitespace-nowrap">
+                    <h3 className="font-black text-white text-xl mb-1.5 notranslate whitespace-nowrap">
                       ርብቃ ተሾመ (Ribka Teshome)
                     </h3>
-                    <p className="text-xs text-[#3268ba] dark:text-[#5a93e8] font-black uppercase tracking-wider">ዋና ስራ አስኪያጅ</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 font-bold mt-0.5">General Manager</p>
+                    <p className="text-xs text-[#5a93e8] font-black uppercase tracking-wider">ዋና ስራ አስኪያጅ</p>
+                    <p className="text-xs text-gray-400 font-bold mt-0.5">General Manager</p>
                   </div>
                 </div>
 
@@ -319,45 +322,42 @@ export default function About() {
             </div>
 
             {/* =========================================================================
-                🌟 CRITICAL FIX 2: SHORT VIDEO REELS (የካምፓሳችን አጫጭር ቪዲዮዎች)
+                🌟 CRITICAL FIX 1: HORIZONTAL VIDEO REELS CAROUSEL / SLIDER
                ========================================================================= */}
-            <div className="space-y-10 pt-4">
+            <div className="space-y-8 pt-4">
               <div className="text-center max-w-3xl mx-auto">
                 <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#f9b03c]/10 border border-[#f9b03c]/30 text-[#f9b03c] text-xs font-bold mb-3 shadow-[0_0_15px_rgba(249,176,60,0.15)]">
                   <i className="fa-solid fa-clapperboard text-[11px]"></i>
                   <span>አጫጭር ቪዲዮዎች • Short Reels</span>
                 </div>
-                <h2 className="text-2xl sm:text-4xl font-black font-heading text-slate-900 dark:text-white tracking-tight">
+                <h2 className="text-2xl sm:text-4xl font-black font-heading text-white tracking-tight">
                   የካምፓሳችን አጫጭር ቪዲዮዎች
                 </h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 font-medium">
+                <p className="text-sm text-gray-400 mt-2 font-medium">
                   ተግባራዊ የቪዲዮ ትምህርቶች እና የክፍለ-ጊዜ ማሳያዎች
                 </p>
               </div>
 
-              {/* 2 Side-by-Side 9:16 Glassmorphism Video Cards */}
-              <AboutShortReelsGrid />
+              {/* Horizontally Scrolling TikTok / Shorts Carousel Container */}
+              <AboutHorizontalReelsSlider />
             </div>
 
             {/* =========================================================================
-                🌟 CRITICAL FIX 2: COMMUNITY TRAINING PHOTOS (በስልጠና ላይ ያሉ)
+                🌟 CRITICAL FIX 2: SINGLE CLEAN COMMUNITY PHOTO (NO TEXT OVERLAYS)
                ========================================================================= */}
-            <div className="space-y-10 pt-8 border-t border-gray-100 dark:border-white/5">
+            <div className="space-y-8 pt-8 border-t border-white/5">
               <div className="text-center max-w-3xl mx-auto">
                 <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#3268ba]/10 border border-[#3268ba]/30 text-[#5a93e8] text-xs font-bold mb-3 shadow-[0_0_15px_rgba(50,104,186,0.15)]">
                   <i className="fa-solid fa-camera-retro text-[11px]"></i>
                   <span>የስልጠና ማህበረሰብ • Campus Community</span>
                 </div>
-                <h2 className="text-2xl sm:text-4xl font-black font-heading text-slate-900 dark:text-white tracking-tight">
+                <h2 className="text-2xl sm:text-4xl font-black font-heading text-white tracking-tight">
                   በስልጠና ላይ ያሉ
                 </h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 font-medium">
-                  ከተግባራዊ የስልጠና ክፍለ-ጊዜዎቻችን እና የተማሪዎች የቡድን ስራ የተወሰዱ ምስሎች
-                </p>
               </div>
 
-              {/* Horizontal Scroll / Flex Grid of Training Photos */}
-              <AboutTrainingPhotosGrid />
+              {/* Single High-Quality Focused Community Photo Card */}
+              <AboutSingleCleanPhoto />
             </div>
 
           </div>
@@ -369,7 +369,131 @@ export default function About() {
 }
 
 // =========================================================================
-// 🌟 1. MAIN INTRO VIDEO WITH ROTATING CONIC-GRADIENT GLOWING BORDER (20px)
+// 🌟 3D PARTICLE NETWORK & MESH GRADIENT CANVAS (MATCHING LANDING PAGE)
+// =========================================================================
+function About3DParticleMeshCanvas() {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let animId: number;
+    let width = (canvas.width = window.innerWidth);
+    let height = (canvas.height = window.innerHeight);
+
+    const handleResize = () => {
+      if (!canvas) return;
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+    };
+    window.addEventListener('resize', handleResize);
+
+    // Particle nodes
+    const particleCount = Math.min(Math.floor((width * height) / 22000), 65);
+    const particles: Array<{
+      x: number;
+      y: number;
+      z: number;
+      vx: number;
+      vy: number;
+      vz: number;
+      radius: number;
+      color: string;
+    }> = [];
+
+    const colors = ['#f9b03c', '#3268ba', '#5a93e8', '#ffe066'];
+
+    for (let i = 0; i < particleCount; i++) {
+      particles.push({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        z: Math.random() * 400 - 200,
+        vx: (Math.random() - 0.5) * 0.45,
+        vy: (Math.random() - 0.5) * 0.45,
+        vz: (Math.random() - 0.5) * 0.3,
+        radius: Math.random() * 1.8 + 1,
+        color: colors[Math.floor(Math.random() * colors.length)]
+      });
+    }
+
+    let angle = 0;
+
+    const render = () => {
+      ctx.clearRect(0, 0, width, height);
+      angle += 0.0015;
+
+      // Update and draw particles
+      for (let i = 0; i < particles.length; i++) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.z += p.vz;
+
+        if (p.x < 0) p.x = width;
+        if (p.x > width) p.x = 0;
+        if (p.y < 0) p.y = height;
+        if (p.y > height) p.y = 0;
+        if (p.z < -200) p.z = 200;
+        if (p.z > 200) p.z = -200;
+
+        const scale = 300 / (300 + p.z);
+        const alpha = Math.max(0.15, Math.min(0.7, (p.z + 200) / 400)) * 0.65;
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius * scale, 0, Math.PI * 2);
+        ctx.fillStyle = p.color;
+        ctx.globalAlpha = alpha;
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = p.color;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+
+        // Draw connecting constellation lines
+        for (let j = i + 1; j < particles.length; j++) {
+          const p2 = particles[j];
+          const dx = p.x - p2.x;
+          const dy = p.y - p2.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+
+          if (dist < 130) {
+            const lineAlpha = (1 - dist / 130) * 0.18;
+            ctx.beginPath();
+            ctx.moveTo(p.x, p.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.strokeStyle = '#f9b03c';
+            ctx.globalAlpha = lineAlpha;
+            ctx.lineWidth = 0.75;
+            ctx.stroke();
+          }
+        }
+      }
+
+      ctx.globalAlpha = 1;
+      animId = requestAnimationFrame(render);
+    };
+
+    render();
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      cancelAnimationFrame(animId);
+    };
+  }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="fixed inset-0 w-full h-full pointer-events-none -z-10 opacity-70"
+      style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh' }}
+    />
+  );
+}
+
+// =========================================================================
+// 🌟 1. HERO VIDEO PLAYER WITH ROTATING CONIC-GRADIENT BORDER (20px)
 // =========================================================================
 function AboutHeroPlayer() {
   const [videoData, setVideoData] = useState<{ videoUrl: string; title: string; thumbnail: string }>(() => {
@@ -432,7 +556,7 @@ function AboutHeroPlayer() {
 
   return (
     <div className="max-w-4xl mx-auto">
-      {/* Container with exact border-radius: 20px, overflow: hidden, relative, and animated gradient rotating border */}
+      {/* Container with border-radius: 20px, overflow: hidden, relative, and animated gradient rotating border */}
       <div 
         className="relative rounded-[20px] p-[2.5px] overflow-hidden group shadow-[0_0_40px_rgba(249,176,60,0.25)] hover:shadow-[0_0_60px_rgba(249,176,60,0.45)] transition-shadow duration-500"
         style={{ borderRadius: '20px' }}
@@ -512,7 +636,7 @@ function AboutHeroPlayer() {
 }
 
 // =========================================================================
-// 🌟 2. SHORT VIDEOS (የካምፓሳችን አጫጭር ቪዲዮዎች) - 2 SIDE-BY-SIDE 9:16 CARDS
+// 🌟 2. HORIZONTAL VIDEO REELS CAROUSEL / SLIDER (TIKTOK/SHORTS STYLE)
 // =========================================================================
 interface ShortReel {
   id: string;
@@ -539,9 +663,10 @@ const DEFAULT_REELS: ShortReel[] = [
   }
 ];
 
-function AboutShortReelsGrid() {
+function AboutHorizontalReelsSlider() {
   const [reels, setReels] = useState<ShortReel[]>(DEFAULT_REELS);
   const [playingId, setPlayingId] = useState<string | null>(null);
+  const sliderRef = useRef<HTMLDivElement | null>(null);
   const videoRefs = useRef<{ [key: string]: HTMLVideoElement | null }>({});
 
   useEffect(() => {
@@ -556,12 +681,24 @@ function AboutShortReelsGrid() {
             src: d.data().src || d.data().videoUrl || '/assets/videos/Tsehay.mp4',
             thumbnail: d.data().thumbnail || '/assets/about_video_cover.jpg'
           }));
-          if (list.length > 0) setReels(list.slice(0, 2));
+          if (list.length > 0) setReels(list);
         }
       });
       return () => unsubscribe();
     } catch (e) {}
   }, []);
+
+  const slideLeft = () => {
+    if (sliderRef.current) {
+      sliderRef.current.scrollBy({ left: -320, behavior: 'smooth' });
+    }
+  };
+
+  const slideRight = () => {
+    if (sliderRef.current) {
+      sliderRef.current.scrollBy({ left: 320, behavior: 'smooth' });
+    }
+  };
 
   const togglePlay = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -569,7 +706,6 @@ function AboutShortReelsGrid() {
     if (!vid) return;
 
     if (vid.paused) {
-      // Pause other videos
       Object.entries(videoRefs.current).forEach(([k, v]) => {
         if (k !== id && v && !v.paused) v.pause();
       });
@@ -585,140 +721,136 @@ function AboutShortReelsGrid() {
   };
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 lg:gap-8 max-w-3xl mx-auto">
-      {reels.map((reel) => {
-        const isPlaying = playingId === reel.id;
+    <div className="relative max-w-4xl mx-auto group/carousel">
+      
+      {/* Navigation Arrows for Smooth Scroll */}
+      <button
+        type="button"
+        onClick={slideLeft}
+        className="absolute -left-4 sm:-left-6 top-1/2 -translate-y-1/2 z-30 w-11 h-11 rounded-full bg-slate-900/90 hover:bg-[#f9b03c] text-white hover:text-slate-950 border border-white/20 hover:border-[#f9b03c] backdrop-blur-md flex items-center justify-center transition-all duration-300 shadow-2xl cursor-pointer active:scale-90"
+        title="ወደ ኋላ"
+        aria-label="Scroll left"
+      >
+        <i className="fa-solid fa-chevron-left text-sm"></i>
+      </button>
 
-        return (
-          <div
-            key={reel.id}
-            onClick={(e) => togglePlay(reel.id, e)}
-            style={{
-              backdropFilter: 'blur(16px)',
-              WebkitBackdropFilter: 'blur(16px)',
-              background: 'rgba(255, 255, 255, 0.03)',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              borderRadius: '16px'
-            }}
-            className="group relative aspect-[9/16] rounded-[16px] overflow-hidden cursor-pointer shadow-xl hover:shadow-[0_0_35px_rgba(249,176,60,0.3)] hover:border-[#f9b03c]/60 transition-all duration-500 transform hover:scale-[1.02] bg-slate-950"
-          >
-            {/* Video Player */}
-            <video
-              ref={(el) => { videoRefs.current[reel.id] = el; }}
-              src={reel.src}
-              playsInline
-              webkit-playsinline="true"
-              disablePictureInPicture
-              controlsList="nodownload noremoteplayback"
-              preload="metadata"
-              onEnded={() => setPlayingId(null)}
-              className="w-full h-full object-cover pointer-events-none"
-            />
+      <button
+        type="button"
+        onClick={slideRight}
+        className="absolute -right-4 sm:-right-6 top-1/2 -translate-y-1/2 z-30 w-11 h-11 rounded-full bg-slate-900/90 hover:bg-[#f9b03c] text-white hover:text-slate-950 border border-white/20 hover:border-[#f9b03c] backdrop-blur-md flex items-center justify-center transition-all duration-300 shadow-2xl cursor-pointer active:scale-90"
+        title="ቀጣይ"
+        aria-label="Scroll right"
+      >
+        <i className="fa-solid fa-chevron-right text-sm"></i>
+      </button>
 
-            {/* Vignette Overlays */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-black/40 pointer-events-none" />
+      {/* Horizontal Carousel Container - Hidden Scrollbar */}
+      <div
+        ref={sliderRef}
+        className="flex gap-6 sm:gap-8 overflow-x-auto py-4 px-2 select-none scroll-smooth"
+        style={{
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none',
+        }}
+      >
+        {reels.map((reel) => {
+          const isPlaying = playingId === reel.id;
 
-            {/* Top Tag */}
-            <div className="absolute top-4 left-4 right-4 z-20 flex items-center justify-between pointer-events-none">
-              <span className="text-[10px] font-black uppercase px-2.5 py-1 rounded-full bg-black/65 text-[#f9b03c] border border-[#f9b03c]/35 backdrop-blur-md">
-                {reel.tag}
-              </span>
-              <div className="w-7 h-7 rounded-full bg-black/60 backdrop-blur-md text-white flex items-center justify-center text-xs">
-                <i className="fa-solid fa-volume-high text-[10px]"></i>
+          return (
+            <div
+              key={reel.id}
+              onClick={(e) => togglePlay(reel.id, e)}
+              style={{
+                backdropFilter: 'blur(16px)',
+                WebkitBackdropFilter: 'blur(16px)',
+                background: 'rgba(255, 255, 255, 0.03)',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+                borderRadius: '16px',
+              }}
+              className="group/card relative w-[260px] sm:w-[300px] shrink-0 aspect-[9/16] rounded-[16px] overflow-hidden cursor-pointer shadow-xl hover:shadow-[0_0_35px_rgba(249,176,60,0.35)] hover:border-[#f9b03c]/60 transition-all duration-500 transform hover:scale-[1.02] bg-slate-950"
+            >
+              {/* Video Element */}
+              <video
+                ref={(el) => { videoRefs.current[reel.id] = el; }}
+                src={reel.src}
+                playsInline
+                webkit-playsinline="true"
+                disablePictureInPicture
+                controlsList="nodownload noremoteplayback"
+                preload="metadata"
+                onEnded={() => setPlayingId(null)}
+                className="w-full h-full object-cover pointer-events-none"
+              />
+
+              {/* Vignette Overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/15 to-black/35 pointer-events-none" />
+
+              {/* Top Tag */}
+              <div className="absolute top-4 left-4 right-4 z-20 flex items-center justify-between pointer-events-none">
+                <span className="text-[10px] font-black uppercase px-2.5 py-1 rounded-full bg-black/65 text-[#f9b03c] border border-[#f9b03c]/35 backdrop-blur-md">
+                  {reel.tag}
+                </span>
+                <div className="w-7 h-7 rounded-full bg-black/60 backdrop-blur-md text-white flex items-center justify-center text-xs">
+                  <i className="fa-solid fa-volume-high text-[10px]"></i>
+                </div>
+              </div>
+
+              {/* Centered Golden Yellow Play Button */}
+              <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
+                <div className={`w-16 h-16 rounded-full flex items-center justify-center backdrop-blur-md transition-all duration-300 ${
+                  isPlaying 
+                    ? 'bg-black/75 border-2 border-[#f9b03c] text-[#f9b03c] opacity-0 group-hover/card:opacity-100' 
+                    : 'bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 shadow-[0_0_35px_rgba(249,176,60,0.85)] group-hover/card:scale-110'
+                }`}>
+                  {isPlaying ? (
+                    <i className="fa-solid fa-pause text-2xl"></i>
+                  ) : (
+                    <i className="fa-solid fa-play text-2xl ml-1"></i>
+                  )}
+                </div>
+              </div>
+
+              {/* Bottom Title Info */}
+              <div className="absolute bottom-4 left-4 right-4 z-20 pointer-events-none space-y-1">
+                <h4 className="text-sm sm:text-base font-black text-white leading-snug drop-shadow-md line-clamp-2">
+                  {reel.title}
+                </h4>
+                <p className="text-[11px] text-[#f9b03c] font-bold flex items-center gap-1.5">
+                  <i className="fa-solid fa-play text-[9px]"></i>
+                  <span>{isPlaying ? 'በመጫወት ላይ...' : 'ለማጫወት ይጫኑ'}</span>
+                </p>
               </div>
             </div>
+          );
+        })}
+      </div>
 
-            {/* Center Golden Play / Pause Button */}
-            <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
-              <div className={`w-16 h-16 rounded-full flex items-center justify-center backdrop-blur-md transition-all duration-300 ${
-                isPlaying 
-                  ? 'bg-black/75 border-2 border-[#f9b03c] text-[#f9b03c] opacity-0 group-hover:opacity-100' 
-                  : 'bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 shadow-[0_0_35px_rgba(249,176,60,0.85)] group-hover:scale-110'
-              }`}>
-                {isPlaying ? (
-                  <i className="fa-solid fa-pause text-2xl"></i>
-                ) : (
-                  <i className="fa-solid fa-play text-2xl ml-1"></i>
-                )}
-              </div>
-            </div>
-
-            {/* Bottom Title & Play Prompt */}
-            <div className="absolute bottom-4 left-4 right-4 z-20 pointer-events-none space-y-1">
-              <h4 className="text-sm sm:text-base font-black text-white leading-snug drop-shadow-md line-clamp-2">
-                {reel.title}
-              </h4>
-              <p className="text-[11px] text-[#f9b03c] font-bold flex items-center gap-1.5">
-                <i className="fa-solid fa-play text-[9px]"></i>
-                <span>{isPlaying ? 'በመጫወት ላይ... (ለማቆም ይጫኑ)' : 'ለማጫወት ይጫኑ'}</span>
-              </p>
-            </div>
-          </div>
-        );
-      })}
+      <style dangerouslySetInnerHTML={{__html: `
+        /* Hide scrollbar for Chrome, Safari and Opera */
+        div::-webkit-scrollbar {
+          display: none;
+        }
+      `}} />
     </div>
   );
 }
 
 // =========================================================================
-// 🌟 3. COMMUNITY TRAINING PHOTOS (በስልጠና ላይ ያሉ) - 12px BORDER RADIUS & HOVER
+// 🌟 3. SINGLE CLEAN COMMUNITY PHOTO (NO TEXT OVERLAYS, 16px BORDER RADIUS)
 // =========================================================================
-interface TrainingPhoto {
-  id: string;
-  src: string;
-  title: string;
-  tag: string;
-}
-
-const DEFAULT_TRAINING_PHOTOS: TrainingPhoto[] = [
-  {
-    id: 'p1',
-    src: 'https://i.postimg.cc/qvqt1bJK/about-photo-1.jpg',
-    title: 'የተግባር ስልጠና ክፍለ-ጊዜ በካምፓሳችን',
-    tag: 'የተግባር ስልጠና'
-  },
-  {
-    id: 'p2',
-    src: 'https://images.unsplash.com/photo-1531482615713-2afd69097998?q=80&w=800&auto=format&fit=crop',
-    title: 'የተማሪዎች የቡድን ውይይት እና የፕሮጀክት ስራ',
-    tag: 'የቡድን ስራ'
-  },
-  {
-    id: 'p3',
-    src: 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?q=80&w=800&auto=format&fit=crop',
-    title: 'የሰርተፊኬት አሰጣጥ እና የስኬት በዓል',
-    tag: 'የስኬት በዓል'
-  },
-  {
-    id: 'p4',
-    src: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=800&auto=format&fit=crop',
-    title: 'ዘመናዊ የቴክኖሎጂ እና የ AI መማሪያ ማዕከል',
-    tag: 'ቴክኖሎጂ'
-  },
-  {
-    id: 'p5',
-    src: 'https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=800&auto=format&fit=crop',
-    title: 'ከባለሙያዎች ጋር የሚደረግ የተግባር ምክክር',
-    tag: 'ምክክር'
-  }
-];
-
-function AboutTrainingPhotosGrid() {
-  const [photos, setPhotos] = useState<TrainingPhoto[]>(DEFAULT_TRAINING_PHOTOS);
-  const [selectedPhoto, setSelectedPhoto] = useState<TrainingPhoto | null>(null);
+function AboutSingleCleanPhoto() {
+  const [photoSrc, setPhotoSrc] = useState<string>('https://i.postimg.cc/qvqt1bJK/about-photo-1.jpg');
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
 
   useEffect(() => {
     try {
       const q = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'about_photos'), orderBy('order', 'asc'));
       const unsubscribe = onSnapshot(q, (snapshot) => {
         if (!snapshot.empty) {
-          const list: TrainingPhoto[] = snapshot.docs.map((d) => ({
-            id: d.id,
-            src: d.data().src || d.data().imageUrl || 'https://i.postimg.cc/qvqt1bJK/about-photo-1.jpg',
-            title: d.data().title || 'Tsehay Campus Moment',
-            tag: d.data().tag || 'Community'
-          }));
-          if (list.length > 0) setPhotos(list);
+          const firstDoc = snapshot.docs[0].data();
+          if (firstDoc && (firstDoc.src || firstDoc.imageUrl)) {
+            setPhotoSrc(firstDoc.src || firstDoc.imageUrl);
+          }
         }
       });
       return () => unsubscribe();
@@ -726,56 +858,47 @@ function AboutTrainingPhotosGrid() {
   }, []);
 
   return (
-    <div className="max-w-5xl mx-auto">
-      {/* Horizontal Flex / Grid Gallery */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 sm:gap-4">
-        {photos.map((photo) => (
-          <div
-            key={photo.id}
-            onClick={() => setSelectedPhoto(photo)}
-            style={{ borderRadius: '12px' }}
-            className="group relative aspect-[4/3] rounded-[12px] overflow-hidden cursor-pointer bg-slate-900 border border-white/[0.08] hover:border-[#f9b03c]/60 shadow-lg hover:shadow-[0_8px_25px_rgba(249,176,60,0.25)] transition-all duration-300 transform hover:scale-[1.03] hover:-translate-y-[3px]"
-            title="ሙሉውን ምስል ለማየት ይጫኑ"
-          >
-            <img
-              src={photo.src}
-              alt={photo.title}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=800&auto=format&fit=crop';
-              }}
-            />
-            
-            {/* Subtle Gradient Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-85 group-hover:opacity-45 transition-opacity duration-300" />
-            
-            {/* Tag Badge */}
-            <div className="absolute bottom-2 left-2 right-2 pointer-events-none">
-              <span className="text-[10px] font-black uppercase text-white/90 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded-md border border-white/10 truncate block">
-                {photo.tag}
-              </span>
-            </div>
-          </div>
-        ))}
+    <div className="max-w-4xl mx-auto flex justify-center">
+      {/* Single Pure Photo Card without any textual clutter */}
+      <div
+        onClick={() => setIsLightboxOpen(true)}
+        style={{
+          borderRadius: '16px',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+          background: 'rgba(255, 255, 255, 0.03)',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+        }}
+        className="group relative w-full aspect-[16/9] sm:aspect-[21/9] rounded-[16px] overflow-hidden cursor-pointer shadow-[0_10px_35px_rgba(0,0,0,0.5)] hover:shadow-[0_15px_45px_rgba(249,176,60,0.25)] hover:border-[#f9b03c]/50 transition-all duration-500 transform hover:-translate-y-1.5 hover:scale-[1.01]"
+        title="ምስሉን በትልቁ ለማየት ይጫኑ"
+      >
+        <img
+          src={photoSrc}
+          alt="Tsehay Campus Community"
+          className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+          onError={(e) => {
+            (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=1200&auto=format&fit=crop';
+          }}
+        />
+
+        {/* Subtle Ambient Hover Glow */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
       </div>
 
-      {/* Lightbox Modal */}
-      {selectedPhoto && (
+      {/* Clean Lightbox Modal */}
+      {isLightboxOpen && (
         <div
           className="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200"
-          onClick={() => setSelectedPhoto(null)}
+          onClick={() => setIsLightboxOpen(false)}
         >
           <div
-            className="relative max-w-4xl w-full bg-slate-900 rounded-2xl overflow-hidden border border-white/20 shadow-2xl p-4 space-y-3"
+            className="relative max-w-5xl w-full bg-slate-900 rounded-2xl overflow-hidden border border-white/20 shadow-2xl p-3"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-2">
-              <span className="text-xs font-black uppercase text-[#f9b03c] bg-[#f9b03c]/10 border border-[#f9b03c]/30 px-2.5 py-1 rounded-md">
-                {selectedPhoto.tag}
-              </span>
+            <div className="flex justify-end pb-2">
               <button
                 type="button"
-                onClick={() => setSelectedPhoto(null)}
+                onClick={() => setIsLightboxOpen(false)}
                 className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition cursor-pointer"
                 aria-label="Close"
               >
@@ -783,17 +906,13 @@ function AboutTrainingPhotosGrid() {
               </button>
             </div>
 
-            <div className="rounded-xl overflow-hidden max-h-[75vh] flex items-center justify-center bg-black">
+            <div className="rounded-xl overflow-hidden max-h-[80vh] flex items-center justify-center bg-black">
               <img
-                src={selectedPhoto.src}
-                alt={selectedPhoto.title}
-                className="max-h-[75vh] w-auto object-contain"
+                src={photoSrc}
+                alt="Tsehay Campus Community High-Res"
+                className="max-h-[80vh] w-auto object-contain"
               />
             </div>
-
-            <p className="text-center text-sm font-bold text-white px-2">
-              {selectedPhoto.title}
-            </p>
           </div>
         </div>
       )}
