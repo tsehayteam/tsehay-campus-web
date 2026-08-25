@@ -100,6 +100,8 @@ export default function Courses() {
       setShowRequireAuthModal(true);
       return;
     }
+
+    if (isFree) {
       setIsEnrolling(true);
       try {
         // 1. Direct resilient client-side Firestore registration

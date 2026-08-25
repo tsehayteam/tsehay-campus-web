@@ -405,6 +405,10 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
       console.error("Resend OTP error:", err);
       setOtpError("አዲስ ኮድ መላክ አልተቻለም። እባክዎ በድጋሚ ይሞክሩ።");
     } finally {
+      setIsResendingEmail(false);
+    }
+  };
+
   // 🌟 Handle Reset OTP 6-Digit Changes & Auto-Advance
   const handleResetOtpDigitChange = (index: number, val: string) => {
     setResetOtpError("");
