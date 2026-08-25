@@ -1,11 +1,74 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { db } from '@/lib/firebase/config';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 
-const EMBED_URL_LOCAL = 'https://www.youtube.com/embed/SJxFzEx3gAWNJRy68?modestbranding=1&rel=0&controls=1&showinfo=0';
-const EMBED_URL_INTL = 'https://www.youtube.com/embed/SJxFzEx3gAWNJRy68?modestbranding=1&rel=0&controls=1&showinfo=0';
+export function extractYouTubeId(urlOrId: string): string {
+  if (!urlOrId || typeof urlOrId !== 'string') return '';
+  const trimmed = urlOrId.trim();
+  if (!trimmed) return '';
+  
+  // Direct 11-character video ID
+  if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) return trimmed;
+  
+  // Standard watch URL (e.g. youtube.com/watch?v=...)
+  const matchWatch = trimmed.match(/[?&]v=([a-zA-Z0-9_-]{11})/i);
+  if (matchWatch && matchWatch[1]) return matchWatch[1];
+  
+  // youtu.be/ID
+  const matchYoutu = trimmed.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/i);
+  if (matchYoutu && matchYoutu[1]) return matchYoutu[1];
+  
+  // Embed, Shorts, Live, or v URL
+  const matchPath = trimmed.match(/(?:embed|shorts|live|v)\/([a-zA-Z0-9_-]{11})/i);
+  if (matchPath && matchPath[1]) return matchPath[1];
+  
+  // Generic extraction fallback
+  const matchAny11 = trimmed.match(/(?:[=/&?]|^)([a-zA-Z0-9_-]{11})(?:[?&/#]|$)/);
+  if (matchAny11 && matchAny11[1]) return matchAny11[1];
+  
+  return trimmed;
+}
+
+export const DEFAULT_PORTFOLIO_LOCAL = 'https://www.youtube.com/watch?v=mgdOMtW6J8k';
+export const DEFAULT_PORTFOLIO_INTL = 'https://www.youtube.com/watch?v=B-s71n0dHUk';
 
 export default function InstructorYouTubePortfolio() {
+  // Synchronously initialize with cached settings or verified portfolio videos
+  const [localVideoUrl, setLocalVideoUrl] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('tsehay_youtube_portfolio_cache');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed?.localVideoUrl && typeof parsed.localVideoUrl === 'string' && parsed.localVideoUrl.trim()) {
+            return parsed.localVideoUrl.trim();
+          }
+        }
+      } catch (e) {}
+    }
+    return DEFAULT_PORTFOLIO_LOCAL;
+  });
+
+  const [internationalVideoUrl, setInternationalVideoUrl] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('tsehay_youtube_portfolio_cache');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed?.internationalVideoUrl && typeof parsed.internationalVideoUrl === 'string' && parsed.internationalVideoUrl.trim()) {
+            return parsed.internationalVideoUrl.trim();
+          }
+        }
+      } catch (e) {}
+    }
+    return DEFAULT_PORTFOLIO_INTL;
+  });
+
+  // Modal Cinema Player State
+  const [activeModalVideo, setActiveModalVideo] = useState<{ id: string; title: string; url: string } | null>(null);
+
   // 🌟 Human-like Pencil Typewriter with Playful Eraser Corrections & Multi-Phrases
   const [typedDesc, setTypedDesc] = useState('');
   const [pencilAction, setPencilAction] = useState<'writing' | 'erasing' | 'paused' | 'thinking'>('writing');
@@ -158,6 +221,101 @@ export default function InstructorYouTubePortfolio() {
     };
   }, []);
 
+  // 3. Robust Real-time Firestore & Admin Sync (Works like Free YouTube Videos slider)
+  useEffect(() => {
+    let isMounted = true;
+
+    // A. Fetch once from Firestore / API
+    const fetchPortfolio = async () => {
+      try {
+        let fetchedLocal = '';
+        let fetchedIntl = '';
+
+        try {
+          const docRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'site_settings', 'youtube_portfolio');
+          const snap = await getDoc(docRef);
+          if (snap.exists()) {
+            const data = snap.data();
+            if (data?.localVideoUrl) fetchedLocal = data.localVideoUrl.trim();
+            if (data?.internationalVideoUrl) fetchedIntl = data.internationalVideoUrl.trim();
+          }
+        } catch (e) {}
+
+        if (!fetchedLocal || !fetchedIntl) {
+          try {
+            const rootRef = doc(db, 'site_settings', 'youtube_portfolio');
+            const rootSnap = await getDoc(rootRef);
+            if (rootSnap.exists()) {
+              const rData = rootSnap.data();
+              if (rData?.localVideoUrl && !fetchedLocal) fetchedLocal = rData.localVideoUrl.trim();
+              if (rData?.internationalVideoUrl && !fetchedIntl) fetchedIntl = rData.internationalVideoUrl.trim();
+            }
+          } catch (e) {}
+        }
+
+        if (isMounted) {
+          if (fetchedLocal) setLocalVideoUrl(fetchedLocal);
+          if (fetchedIntl) setInternationalVideoUrl(fetchedIntl);
+        }
+      } catch (err) {}
+    };
+
+    fetchPortfolio();
+
+    // B. Real-time Firestore onSnapshot listener
+    let unsubscribe = () => {};
+    try {
+      const docRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'site_settings', 'youtube_portfolio');
+      unsubscribe = onSnapshot(docRef, (snap) => {
+        if (snap.exists() && isMounted) {
+          const data = snap.data();
+          if (data?.localVideoUrl) setLocalVideoUrl(data.localVideoUrl.trim());
+          if (data?.internationalVideoUrl) setInternationalVideoUrl(data.internationalVideoUrl.trim());
+          try {
+            localStorage.setItem('tsehay_youtube_portfolio_cache', JSON.stringify({
+              localVideoUrl: data.localVideoUrl || DEFAULT_PORTFOLIO_LOCAL,
+              internationalVideoUrl: data.internationalVideoUrl || DEFAULT_PORTFOLIO_INTL
+            }));
+          } catch (e) {}
+        }
+      });
+    } catch (e) {}
+
+    // C. Listen for admin live updates across tabs
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === 'tsehay_youtube_portfolio_cache' && e.newValue && isMounted) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (parsed?.localVideoUrl) setLocalVideoUrl(parsed.localVideoUrl);
+          if (parsed?.internationalVideoUrl) setInternationalVideoUrl(parsed.internationalVideoUrl);
+        } catch (err) {}
+      }
+    };
+
+    const handleCustom = (e: any) => {
+      if (e.detail && isMounted) {
+        if (e.detail.localVideoUrl) setLocalVideoUrl(e.detail.localVideoUrl);
+        if (e.detail.internationalVideoUrl) setInternationalVideoUrl(e.detail.internationalVideoUrl);
+      }
+    };
+
+    window.addEventListener('storage', handleStorage);
+    window.addEventListener('tsehay_portfolio_updated', handleCustom);
+
+    return () => {
+      isMounted = false;
+      unsubscribe();
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('tsehay_portfolio_updated', handleCustom);
+    };
+  }, []);
+
+  const localId = extractYouTubeId(localVideoUrl) || 'mgdOMtW6J8k';
+  const intlId = extractYouTubeId(internationalVideoUrl) || 'B-s71n0dHUk';
+
+  const localThumb = `https://img.youtube.com/vi/${localId}/hqdefault.jpg`;
+  const intlThumb = `https://img.youtube.com/vi/${intlId}/hqdefault.jpg`;
+
   return (
     <section id="instructor-portfolio" className="relative py-16 sm:py-24 overflow-hidden bg-slate-900/60 dark:bg-[#030509]/95 border-b border-gray-200/80 dark:border-white/10">
       
@@ -242,19 +400,40 @@ export default function InstructorYouTubePortfolio() {
                 </div>
               </div>
 
-              <div className="relative aspect-video w-full overflow-hidden bg-black flex items-center justify-center">
-                <iframe
-                  src={EMBED_URL_LOCAL}
-                  title="ሀገርኛ ዩቲዩብ ቻናል"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
-                  allowFullScreen
-                  className="w-full h-full border-0 absolute inset-0 z-10"
+              {/* Clickable Card Video Thumbnail */}
+              <div 
+                onClick={() => {
+                  setActiveModalVideo({
+                    id: localId,
+                    title: 'ሀገርኛ የዩቲዩብ ቻናል (Domestic Portfolio)',
+                    url: `https://www.youtube.com/watch?v=${localId}`
+                  });
+                }}
+                className="relative aspect-video w-full overflow-hidden bg-black flex items-center justify-center group/thumb cursor-pointer select-none"
+                title="ቪዲዮውን ለማጫወት ይጫኑ (Click to Play)"
+              >
+                <img
+                  src={localThumb}
+                  alt="ሀገርኛ ዩቲዩብ ቻናል"
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover/thumb:scale-105"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = '/assets/hero-bg-new.jpg';
+                  }}
                 />
-                {/* Top overlay to protect title clicks */}
-                <div 
-                  className="absolute top-0 inset-x-0 h-16 z-20 pointer-events-none"
-                  aria-hidden="true"
-                />
+
+                <div className="absolute inset-0 bg-black/25 group-hover/thumb:bg-black/40 transition-colors duration-300 flex items-center justify-center">
+                  <div className="relative flex items-center justify-center">
+                    <span className="absolute w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-[#3268ba]/40 animate-ping pointer-events-none"></span>
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-tr from-[#3268ba] via-blue-500 to-cyan-400 text-white flex items-center justify-center text-2xl sm:text-3xl shadow-[0_0_35px_rgba(50,104,186,0.85)] group-hover/thumb:scale-110 transition-all duration-300">
+                      <i className="fa-solid fa-play ml-1"></i>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="absolute bottom-3 right-3 bg-black/85 backdrop-blur-md border border-white/20 px-3 py-1 rounded-full text-[11px] font-bold text-white flex items-center gap-1.5 shadow-lg group-hover/thumb:border-[#5a93e8] group-hover/thumb:text-[#5a93e8] transition-colors">
+                  <i className="fa-brands fa-youtube text-red-500 text-sm"></i>
+                  <span>በቀጥታ ይመልከቱ</span>
+                </div>
               </div>
 
             </div>
@@ -285,19 +464,40 @@ export default function InstructorYouTubePortfolio() {
                 </div>
               </div>
 
-              <div className="relative aspect-video w-full overflow-hidden bg-black flex items-center justify-center">
-                <iframe
-                  src={EMBED_URL_INTL}
-                  title="ዓለም አቀፍ ዩቲዩብ ቻናል"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
-                  allowFullScreen
-                  className="w-full h-full border-0 absolute inset-0 z-10"
+              {/* Clickable Card Video Thumbnail */}
+              <div 
+                onClick={() => {
+                  setActiveModalVideo({
+                    id: intlId,
+                    title: 'ዓለም አቀፍ የዩቲዩብ ቻናል (International Portfolio)',
+                    url: `https://www.youtube.com/watch?v=${intlId}`
+                  });
+                }}
+                className="relative aspect-video w-full overflow-hidden bg-black flex items-center justify-center group/thumb cursor-pointer select-none"
+                title="ቪዲዮውን ለማጫወት ይጫኑ (Click to Play)"
+              >
+                <img
+                  src={intlThumb}
+                  alt="ዓለም አቀፍ ዩቲዩብ ቻናል"
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover/thumb:scale-105"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = '/assets/hero-bg-new.jpg';
+                  }}
                 />
-                {/* Top overlay to protect title clicks */}
-                <div 
-                  className="absolute top-0 inset-x-0 h-16 z-20 pointer-events-none"
-                  aria-hidden="true"
-                />
+
+                <div className="absolute inset-0 bg-black/25 group-hover/thumb:bg-black/40 transition-colors duration-300 flex items-center justify-center">
+                  <div className="relative flex items-center justify-center">
+                    <span className="absolute w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-[#f9b03c]/40 animate-ping pointer-events-none"></span>
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 flex items-center justify-center text-2xl sm:text-3xl shadow-[0_0_35px_rgba(249,176,60,0.85)] group-hover/thumb:scale-110 transition-all duration-300">
+                      <i className="fa-solid fa-play ml-1"></i>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="absolute bottom-3 right-3 bg-black/85 backdrop-blur-md border border-white/20 px-3 py-1 rounded-full text-[11px] font-bold text-white flex items-center gap-1.5 shadow-lg group-hover/thumb:border-[#f9b03c]/60 group-hover/thumb:text-[#f9b03c] transition-colors">
+                  <i className="fa-brands fa-youtube text-red-500 text-sm"></i>
+                  <span>በቀጥታ ይመልከቱ</span>
+                </div>
               </div>
 
             </div>
@@ -305,6 +505,45 @@ export default function InstructorYouTubePortfolio() {
 
         </div>
       </div>
+
+      {/* =========================================================================
+          HIGH-DEFINITION CINEMA MODAL PLAYER (MATCHES FREE YOUTUBE VIDEOS SLIDER)
+         ========================================================================= */}
+      {activeModalVideo && (
+        <div
+          className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-xl flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-300"
+          onClick={() => setActiveModalVideo(null)}
+        >
+          {/* Close Button */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setActiveModalVideo(null);
+            }}
+            className="fixed top-4 right-4 sm:top-6 sm:right-8 z-50 w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-white/10 hover:bg-white/25 text-white flex items-center justify-center transition-all duration-300 border border-white/20 hover:scale-110 shadow-[0_0_25px_rgba(0,0,0,0.8)] backdrop-blur-md cursor-pointer"
+            title="ዝጋ (Close)"
+            aria-label="Close video player"
+          >
+            <i className="fa-solid fa-xmark text-lg sm:text-xl"></i>
+          </button>
+
+          {/* Pure Cinema Video Frame */}
+          <div
+            className="relative w-full max-w-5xl aspect-video rounded-2xl sm:rounded-3xl overflow-hidden shadow-[0_0_80px_rgba(0,0,0,0.95),0_0_40px_rgba(249,176,60,0.25)] border border-white/15 bg-black"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <iframe
+              src={`https://www.youtube.com/embed/${activeModalVideo.id}?autoplay=1&rel=0&modestbranding=1&controls=1&showinfo=0&iv_load_policy=3&playsinline=1&enablejsapi=1`}
+              title={activeModalVideo.title}
+              className="w-full h-full border-0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+              allowFullScreen
+            ></iframe>
+          </div>
+        </div>
+      )}
+
     </section>
   );
 }
