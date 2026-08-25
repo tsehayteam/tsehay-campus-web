@@ -19,11 +19,11 @@ export default function FloatingAIButton() {
   const { user } = useAuth();
   const pathname = usePathname();
 
-  // 🛡️ Floating AI Tutor Widget is strictly active ONLY inside the student classroom & learning dashboard
+  // 🛡️ Floating AI Tutor Widget is strictly active ONLY inside the active student learning classroom / dashboard
   const isClassroomOrDashboard = Boolean(
     pathname && (
       pathname.startsWith('/dashboard') ||
-      (pathname.startsWith('/courses/') && pathname !== '/courses')
+      pathname.startsWith('/classroom')
     )
   );
 
