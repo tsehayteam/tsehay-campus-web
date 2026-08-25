@@ -249,7 +249,7 @@ export default function About() {
             </div>
 
             {/* =========================================================================
-                🌟 4. OUR TEAM (የአመራር ቡድን / Our Team) - DISTINCT ELEGANT GLASSMORPHISM
+                4. OUR TEAM (የአመራር ቡድን / Our Team) - DISTINCT ELEGANT GLASSMORPHISM
                ========================================================================= */}
             <div>
               <div className="text-center max-w-3xl mx-auto mb-10 sm:mb-14">
@@ -352,7 +352,7 @@ export default function About() {
             </div>
 
             {/* =========================================================================
-                🌟 CRITICAL FIX 1: HORIZONTAL VIDEO REELS CAROUSEL / SLIDER
+                🌟 CRITICAL FIX: ULTRA-MINIMALIST SINGLE VIDEO REELS SLIDER (INFINITE LOOP)
                ========================================================================= */}
             <div className="space-y-8 pt-4">
               <div className="text-center max-w-3xl mx-auto">
@@ -363,17 +363,14 @@ export default function About() {
                 <h2 className="text-2xl sm:text-4xl font-black font-heading text-white tracking-tight">
                   የካምፓሳችን አጫጭር ቪዲዮዎች
                 </h2>
-                <p className="text-sm text-gray-400 mt-2 font-medium">
-                  ተግባራዊ የቪዲዮ ትምህርቶች እና የክፍለ-ጊዜ ማሳያዎች
-                </p>
               </div>
 
-              {/* Horizontally Scrolling TikTok / Shorts Carousel Container */}
-              <AboutHorizontalReelsSlider />
+              {/* Single Video Card Carousel with Sleek Glassmorphism Navigation */}
+              <AboutSingleReelSlider />
             </div>
 
             {/* =========================================================================
-                🌟 CRITICAL FIX 2: SINGLE CLEAN COMMUNITY PHOTO (NO TEXT OVERLAYS)
+                🌟 SINGLE CLEAN COMMUNITY PHOTO (NO TEXT OVERLAYS)
                ========================================================================= */}
             <div className="space-y-8 pt-8 border-t border-white/5">
               <div className="text-center max-w-3xl mx-auto">
@@ -421,7 +418,6 @@ function About3DParticleMeshCanvas() {
     };
     window.addEventListener('resize', handleResize);
 
-    // Particle nodes
     const particleCount = Math.min(Math.floor((width * height) / 22000), 65);
     const particles: Array<{
       x: number;
@@ -452,7 +448,6 @@ function About3DParticleMeshCanvas() {
     const render = () => {
       ctx.clearRect(0, 0, width, height);
 
-      // Update and draw particles
       for (let i = 0; i < particles.length; i++) {
         const p = particles[i];
         p.x += p.vx;
@@ -478,7 +473,6 @@ function About3DParticleMeshCanvas() {
         ctx.fill();
         ctx.shadowBlur = 0;
 
-        // Draw connecting constellation lines
         for (let j = i + 1; j < particles.length; j++) {
           const p2 = particles[j];
           const dx = p.x - p2.x;
@@ -583,13 +577,10 @@ function AboutHeroPlayer() {
 
   return (
     <div className="max-w-4xl mx-auto">
-      {/* Container with border-radius: 20px, overflow: hidden, relative, and animated gradient rotating border */}
       <div 
         className="relative rounded-[20px] p-[2.5px] overflow-hidden group shadow-[0_0_40px_rgba(249,176,60,0.25)] hover:shadow-[0_0_60px_rgba(249,176,60,0.45)] transition-shadow duration-500"
         style={{ borderRadius: '20px' }}
       >
-        
-        {/* Animated Conic-Gradient Light Beam with Golden Yellow (#f9b03c) & Royal Blue (#3268ba) */}
         <div className="absolute inset-[-200%] bg-[conic-gradient(from_0deg,transparent_0deg,transparent_200deg,#3268ba_270deg,#5a93e8_300deg,#f9b03c_330deg,#ffe066_355deg,#ffffff_360deg)] animate-border-beam opacity-90 group-hover:opacity-100 pointer-events-none" />
 
         <div 
@@ -663,12 +654,10 @@ function AboutHeroPlayer() {
 }
 
 // =========================================================================
-// 🌟 2. HORIZONTAL VIDEO REELS CAROUSEL / SLIDER (TIKTOK/SHORTS STYLE)
+// 🌟 2. ULTRA-MINIMALIST SINGLE VIDEO REEL SLIDER (INFINITE LOOPING)
 // =========================================================================
 interface ShortReel {
   id: string;
-  title: string;
-  tag: string;
   src: string;
   thumbnail: string;
 }
@@ -676,25 +665,21 @@ interface ShortReel {
 const DEFAULT_REELS: ShortReel[] = [
   {
     id: 'reel-1',
-    title: 'ስለ ፀሐይ ካምፓስ አጠቃላይ እንቅስቃሴ እና ራዕይ',
-    tag: 'Tsehay Campus Live',
     src: '/assets/videos/Tsehay.mp4',
     thumbnail: '/assets/about_video_cover.jpg'
   },
   {
     id: 'reel-2',
-    title: 'የዲጂታል ማርኬቲንግ እና ስነ-ልቦና ተግባራዊ ስልጠና',
-    tag: 'Marketing & Psychology',
     src: '/assets/videos/Marketing%20and%20psyco.mp4',
     thumbnail: '/assets/hero-bg-new.jpg'
   }
 ];
 
-function AboutHorizontalReelsSlider() {
+function AboutSingleReelSlider() {
   const [reels, setReels] = useState<ShortReel[]>(DEFAULT_REELS);
-  const [playingId, setPlayingId] = useState<string | null>(null);
-  const sliderRef = useRef<HTMLDivElement | null>(null);
-  const videoRefs = useRef<{ [key: string]: HTMLVideoElement | null }>({});
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   useEffect(() => {
     try {
@@ -703,8 +688,6 @@ function AboutHorizontalReelsSlider() {
         if (!snapshot.empty) {
           const list: ShortReel[] = snapshot.docs.map((d) => ({
             id: d.id,
-            title: d.data().title || 'Tsehay Reel',
-            tag: d.data().tag || 'Reels',
             src: d.data().src || d.data().videoUrl || '/assets/videos/Tsehay.mp4',
             thumbnail: d.data().thumbnail || '/assets/about_video_cover.jpg'
           }));
@@ -715,149 +698,116 @@ function AboutHorizontalReelsSlider() {
     } catch (e) {}
   }, []);
 
-  const slideLeft = () => {
-    if (sliderRef.current) {
-      sliderRef.current.scrollBy({ left: -320, behavior: 'smooth' });
+  const handlePrev = () => {
+    if (videoRef.current) {
+      videoRef.current.pause();
+      setIsPlaying(false);
     }
+    setCurrentIndex((prev) => (prev === 0 ? reels.length - 1 : prev - 1));
   };
 
-  const slideRight = () => {
-    if (sliderRef.current) {
-      sliderRef.current.scrollBy({ left: 320, behavior: 'smooth' });
+  const handleNext = () => {
+    if (videoRef.current) {
+      videoRef.current.pause();
+      setIsPlaying(false);
     }
+    setCurrentIndex((prev) => (prev + 1) % reels.length);
   };
 
-  const togglePlay = (id: string, e: React.MouseEvent) => {
+  const togglePlay = (e: React.MouseEvent) => {
     e.stopPropagation();
-    const vid = videoRefs.current[id];
+    const vid = videoRef.current;
     if (!vid) return;
 
     if (vid.paused) {
-      Object.entries(videoRefs.current).forEach(([k, v]) => {
-        if (k !== id && v && !v.paused) v.pause();
-      });
       vid.muted = false;
-      vid.play().then(() => setPlayingId(id)).catch(() => {
+      vid.play().then(() => setIsPlaying(true)).catch(() => {
         vid.muted = true;
-        vid.play().then(() => setPlayingId(id)).catch(() => {});
+        vid.play().then(() => setIsPlaying(true)).catch(() => {});
       });
     } else {
       vid.pause();
-      setPlayingId(null);
+      setIsPlaying(false);
     }
   };
 
+  const currentReel = reels[currentIndex] || reels[0];
+
   return (
-    <div className="relative max-w-4xl mx-auto group/carousel">
+    <div className="relative max-w-sm sm:max-w-md mx-auto flex items-center justify-center select-none py-2">
       
-      {/* Navigation Arrows for Smooth Scroll */}
+      {/* Sleek Glassmorphism Previous (<) Button */}
       <button
         type="button"
-        onClick={slideLeft}
-        className="absolute -left-4 sm:-left-6 top-1/2 -translate-y-1/2 z-30 w-11 h-11 rounded-full bg-slate-900/90 hover:bg-[#f9b03c] text-white hover:text-slate-950 border border-white/20 hover:border-[#f9b03c] backdrop-blur-md flex items-center justify-center transition-all duration-300 shadow-2xl cursor-pointer active:scale-90"
-        title="ወደ ኋላ"
-        aria-label="Scroll left"
+        onClick={handlePrev}
+        className="absolute -left-5 sm:-left-12 md:-left-16 top-1/2 -translate-y-1/2 z-30 w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-slate-900/85 hover:bg-[#f9b03c] text-white hover:text-slate-950 border border-white/15 hover:border-[#f9b03c] backdrop-blur-xl flex items-center justify-center transition-all duration-300 shadow-2xl cursor-pointer active:scale-90 hover:scale-110 hover:shadow-[0_0_25px_rgba(249,176,60,0.5)]"
+        title="ወደ ኋላ (Previous)"
+        aria-label="Previous Video"
       >
-        <i className="fa-solid fa-chevron-left text-sm"></i>
+        <i className="fa-solid fa-chevron-left text-sm sm:text-base"></i>
       </button>
 
+      {/* Sleek Glassmorphism Next (>) Button */}
       <button
         type="button"
-        onClick={slideRight}
-        className="absolute -right-4 sm:-right-6 top-1/2 -translate-y-1/2 z-30 w-11 h-11 rounded-full bg-slate-900/90 hover:bg-[#f9b03c] text-white hover:text-slate-950 border border-white/20 hover:border-[#f9b03c] backdrop-blur-md flex items-center justify-center transition-all duration-300 shadow-2xl cursor-pointer active:scale-90"
-        title="ቀጣይ"
-        aria-label="Scroll right"
+        onClick={handleNext}
+        className="absolute -right-5 sm:-right-12 md:-right-16 top-1/2 -translate-y-1/2 z-30 w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-slate-900/85 hover:bg-[#f9b03c] text-white hover:text-slate-950 border border-white/15 hover:border-[#f9b03c] backdrop-blur-xl flex items-center justify-center transition-all duration-300 shadow-2xl cursor-pointer active:scale-90 hover:scale-110 hover:shadow-[0_0_25px_rgba(249,176,60,0.5)]"
+        title="ቀጣይ (Next)"
+        aria-label="Next Video"
       >
-        <i className="fa-solid fa-chevron-right text-sm"></i>
+        <i className="fa-solid fa-chevron-right text-sm sm:text-base"></i>
       </button>
 
-      {/* Horizontal Carousel Container - Hidden Scrollbar */}
+      {/* 🌟 Single Perfectly Centered Video Reel Card (Pure & Clean - Zero Text Overlay) */}
       <div
-        ref={sliderRef}
-        className="flex gap-6 sm:gap-8 overflow-x-auto py-4 px-2 select-none scroll-smooth"
+        key={currentReel.src}
+        onClick={togglePlay}
         style={{
-          scrollbarWidth: 'none',
-          msOverflowStyle: 'none',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+          background: 'rgba(255, 255, 255, 0.03)',
+          border: '1px solid rgba(255, 255, 255, 0.05)',
+          borderRadius: '16px',
         }}
+        className="group relative w-full aspect-[9/16] rounded-[16px] overflow-hidden cursor-pointer shadow-[0_10px_40px_rgba(0,0,0,0.8)] hover:shadow-[0_0_40px_rgba(249,176,60,0.3)] hover:border-[#f9b03c]/60 transition-all duration-500 transform hover:scale-[1.01] bg-slate-950"
       >
-        {reels.map((reel) => {
-          const isPlaying = playingId === reel.id;
+        {/* Video Element */}
+        <video
+          ref={videoRef}
+          src={currentReel.src}
+          playsInline
+          webkit-playsinline="true"
+          disablePictureInPicture
+          controlsList="nodownload noremoteplayback"
+          preload="auto"
+          onEnded={() => {
+            setIsPlaying(false);
+            handleNext();
+          }}
+          className="w-full h-full object-cover pointer-events-none"
+        />
 
-          return (
-            <div
-              key={reel.id}
-              onClick={(e) => togglePlay(reel.id, e)}
-              style={{
-                backdropFilter: 'blur(16px)',
-                WebkitBackdropFilter: 'blur(16px)',
-                background: 'rgba(255, 255, 255, 0.03)',
-                border: '1px solid rgba(255, 255, 255, 0.08)',
-                borderRadius: '16px',
-              }}
-              className="group/card relative w-[260px] sm:w-[300px] shrink-0 aspect-[9/16] rounded-[16px] overflow-hidden cursor-pointer shadow-xl hover:shadow-[0_0_35px_rgba(249,176,60,0.35)] hover:border-[#f9b03c]/60 transition-all duration-500 transform hover:scale-[1.02] bg-slate-950"
-            >
-              {/* Video Element */}
-              <video
-                ref={(el) => { videoRefs.current[reel.id] = el; }}
-                src={reel.src}
-                playsInline
-                webkit-playsinline="true"
-                disablePictureInPicture
-                controlsList="nodownload noremoteplayback"
-                preload="metadata"
-                onEnded={() => setPlayingId(null)}
-                className="w-full h-full object-cover pointer-events-none"
-              />
+        {/* Subtle Ambient Vignette Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 pointer-events-none" />
 
-              {/* Vignette Overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/15 to-black/35 pointer-events-none" />
-
-              {/* Top Tag */}
-              <div className="absolute top-4 left-4 right-4 z-20 flex items-center justify-between pointer-events-none">
-                <span className="text-[10px] font-black uppercase px-2.5 py-1 rounded-full bg-black/65 text-[#f9b03c] border border-[#f9b03c]/35 backdrop-blur-md">
-                  {reel.tag}
-                </span>
-                <div className="w-7 h-7 rounded-full bg-black/60 backdrop-blur-md text-white flex items-center justify-center text-xs">
-                  <i className="fa-solid fa-volume-high text-[10px]"></i>
-                </div>
-              </div>
-
-              {/* Centered Golden Yellow Play Button */}
-              <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
-                <div className={`w-16 h-16 rounded-full flex items-center justify-center backdrop-blur-md transition-all duration-300 ${
-                  isPlaying 
-                    ? 'bg-black/75 border-2 border-[#f9b03c] text-[#f9b03c] opacity-0 group-hover/card:opacity-100' 
-                    : 'bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 shadow-[0_0_35px_rgba(249,176,60,0.85)] group-hover/card:scale-110'
-                }`}>
-                  {isPlaying ? (
-                    <i className="fa-solid fa-pause text-2xl"></i>
-                  ) : (
-                    <i className="fa-solid fa-play text-2xl ml-1"></i>
-                  )}
-                </div>
-              </div>
-
-              {/* Bottom Title Info */}
-              <div className="absolute bottom-4 left-4 right-4 z-20 pointer-events-none space-y-1">
-                <h4 className="text-sm sm:text-base font-black text-white leading-snug drop-shadow-md line-clamp-2">
-                  {reel.title}
-                </h4>
-                <p className="text-[11px] text-[#f9b03c] font-bold flex items-center gap-1.5">
-                  <i className="fa-solid fa-play text-[9px]"></i>
-                  <span>{isPlaying ? 'በመጫወት ላይ...' : 'ለማጫወት ይጫኑ'}</span>
-                </p>
-              </div>
-            </div>
-          );
-        })}
+        {/* 🌟 Centered Golden Yellow Play Button (Only element on the thumbnail) */}
+        <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
+          {!isPlaying && (
+            <span className="absolute w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-[#f9b03c]/35 animate-ping pointer-events-none"></span>
+          )}
+          <div className={`w-18 h-18 sm:w-20 sm:h-20 rounded-full flex items-center justify-center backdrop-blur-md transition-all duration-300 ${
+            isPlaying 
+              ? 'bg-black/75 border-2 border-[#f9b03c] text-[#f9b03c] opacity-0 group-hover:opacity-100' 
+              : 'bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 shadow-[0_0_40px_rgba(249,176,60,0.85)] group-hover:scale-110'
+          }`}>
+            {isPlaying ? (
+              <i className="fa-solid fa-pause text-2xl"></i>
+            ) : (
+              <i className="fa-solid fa-play text-2xl ml-1"></i>
+            )}
+          </div>
+        </div>
       </div>
-
-      <style dangerouslySetInnerHTML={{__html: `
-        /* Hide scrollbar for Chrome, Safari and Opera */
-        div::-webkit-scrollbar {
-          display: none;
-        }
-      `}} />
     </div>
   );
 }
