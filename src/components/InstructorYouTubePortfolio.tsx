@@ -5,17 +5,18 @@ import { db } from '@/lib/firebase/config';
 import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 
 export function extractYouTubeId(urlOrId: string): string {
-  if (!urlOrId) return '';
+  if (!urlOrId || typeof urlOrId !== 'string') return '';
   const trimmed = urlOrId.trim();
+  if (!trimmed) return '';
   
   // 1. Direct 11-character video ID
   if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) return trimmed;
   
-  // 2. youtu.be/ID (e.g. https://youtu.be/mgdOMtW6J8k?si=123)
+  // 2. youtu.be/ID (e.g. https://youtu.be/abc12345678?si=123)
   const matchYoutu = trimmed.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/i);
   if (matchYoutu && matchYoutu[1]) return matchYoutu[1];
   
-  // 3. Standard watch URL (e.g., youtube.com/watch?v=...)
+  // 3. Standard watch URL (e.g., youtube.com/watch?v=abc12345678)
   const matchWatch = trimmed.match(/[?&]v=([a-zA-Z0-9_-]{11})/i);
   if (matchWatch && matchWatch[1]) return matchWatch[1];
   
@@ -27,25 +28,24 @@ export function extractYouTubeId(urlOrId: string): string {
   const matchAny11 = trimmed.match(/(?:[=/&?]|^)([a-zA-Z0-9_-]{11})(?:[?&/#]|$)/);
   if (matchAny11 && matchAny11[1]) return matchAny11[1];
   
-  return trimmed;
+  return '';
 }
 
-const FALLBACK_LOCAL_URL = 'https://www.youtube.com/watch?v=mgdOMtW6J8k';
-const FALLBACK_INTERNATIONAL_URL = 'https://www.youtube.com/watch?v=B-s71n0dHUk';
-
 export default function InstructorYouTubePortfolio() {
-  // Synchronously initialize with cache or fallback
+  // Pure database states - ZERO hardcoded/mock URLs
   const [localVideoUrl, setLocalVideoUrl] = useState<string>(() => {
     if (typeof window !== 'undefined') {
       try {
         const cached = localStorage.getItem('tsehay_youtube_portfolio_cache');
         if (cached) {
           const parsed = JSON.parse(cached);
-          if (parsed?.localVideoUrl) return parsed.localVideoUrl;
+          if (parsed?.localVideoUrl && typeof parsed.localVideoUrl === 'string') {
+            return parsed.localVideoUrl.trim();
+          }
         }
       } catch (e) {}
     }
-    return FALLBACK_LOCAL_URL;
+    return '';
   });
 
   const [internationalVideoUrl, setInternationalVideoUrl] = useState<string>(() => {
@@ -54,14 +54,16 @@ export default function InstructorYouTubePortfolio() {
         const cached = localStorage.getItem('tsehay_youtube_portfolio_cache');
         if (cached) {
           const parsed = JSON.parse(cached);
-          if (parsed?.internationalVideoUrl) return parsed.internationalVideoUrl;
+          if (parsed?.internationalVideoUrl && typeof parsed.internationalVideoUrl === 'string') {
+            return parsed.internationalVideoUrl.trim();
+          }
         }
       } catch (e) {}
     }
-    return FALLBACK_INTERNATIONAL_URL;
+    return '';
   });
 
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [playingLocal, setPlayingLocal] = useState(false);
   const [playingInternational, setPlayingInternational] = useState(false);
 
@@ -217,55 +219,67 @@ export default function InstructorYouTubePortfolio() {
     };
   }, []);
 
-  // 3. Robust Real-time Firestore & API Sync
+  // 3. 100% Real-time Firestore & Database Sync (Zero Mock URLs)
   useEffect(() => {
     let isMounted = true;
 
-    // A. Direct initial getDoc & API fetch
     const fetchPortfolioData = async () => {
       try {
-        // Try direct Firestore getDoc first
+        let fetchedLocal = '';
+        let fetchedIntl = '';
+
+        // 1. Check direct Firestore nested document
         try {
           const docRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'site_settings', 'youtube_portfolio');
           const snap = await getDoc(docRef);
-          if (snap.exists() && isMounted) {
+          if (snap.exists()) {
             const data = snap.data();
-            if (data?.localVideoUrl) setLocalVideoUrl(data.localVideoUrl);
-            if (data?.internationalVideoUrl) setInternationalVideoUrl(data.internationalVideoUrl);
-            try {
-              localStorage.setItem('tsehay_youtube_portfolio_cache', JSON.stringify({
-                localVideoUrl: data.localVideoUrl || FALLBACK_LOCAL_URL,
-                internationalVideoUrl: data.internationalVideoUrl || FALLBACK_INTERNATIONAL_URL
-              }));
-            } catch (e) {}
+            if (data?.localVideoUrl) fetchedLocal = data.localVideoUrl.trim();
+            if (data?.internationalVideoUrl) fetchedIntl = data.internationalVideoUrl.trim();
           }
         } catch (dbErr) {
-          console.warn("Direct Firestore getDoc warning:", dbErr);
+          console.warn("Direct Firestore portfolio fetch warning:", dbErr);
         }
 
-        // Try API fallback
-        try {
-          const res = await fetch('/api/admin/site-settings?settingKey=youtube_portfolio');
-          if (res.ok && isMounted) {
-            const json = await res.json();
-            if (json.data) {
-              const lUrl = json.data.localVideoUrl || '';
-              const iUrl = json.data.internationalVideoUrl || '';
-              if (lUrl) setLocalVideoUrl(lUrl);
-              if (iUrl) setInternationalVideoUrl(iUrl);
-              try {
-                localStorage.setItem('tsehay_youtube_portfolio_cache', JSON.stringify({
-                  localVideoUrl: lUrl || FALLBACK_LOCAL_URL,
-                  internationalVideoUrl: iUrl || FALLBACK_INTERNATIONAL_URL
-                }));
-              } catch (e) {}
+        // 2. Check root Firestore document fallback
+        if (!fetchedLocal || !fetchedIntl) {
+          try {
+            const rootRef = doc(db, 'site_settings', 'youtube_portfolio');
+            const rootSnap = await getDoc(rootRef);
+            if (rootSnap.exists()) {
+              const rData = rootSnap.data();
+              if (rData?.localVideoUrl && !fetchedLocal) fetchedLocal = rData.localVideoUrl.trim();
+              if (rData?.internationalVideoUrl && !fetchedIntl) fetchedIntl = rData.internationalVideoUrl.trim();
             }
-          }
-        } catch (apiErr) {
-          console.warn("API site-settings fetch warning:", apiErr);
+          } catch (rErr) {}
+        }
+
+        // 3. Check Server API fallback
+        if (!fetchedLocal || !fetchedIntl) {
+          try {
+            const res = await fetch('/api/admin/site-settings?settingKey=youtube_portfolio');
+            if (res.ok) {
+              const json = await res.json();
+              if (json?.data) {
+                if (json.data.localVideoUrl && !fetchedLocal) fetchedLocal = json.data.localVideoUrl.trim();
+                if (json.data.internationalVideoUrl && !fetchedIntl) fetchedIntl = json.data.internationalVideoUrl.trim();
+              }
+            }
+          } catch (apiErr) {}
+        }
+
+        if (isMounted) {
+          if (fetchedLocal) setLocalVideoUrl(fetchedLocal);
+          if (fetchedIntl) setInternationalVideoUrl(fetchedIntl);
+          try {
+            localStorage.setItem('tsehay_youtube_portfolio_cache', JSON.stringify({
+              localVideoUrl: fetchedLocal,
+              internationalVideoUrl: fetchedIntl
+            }));
+          } catch (e) {}
         }
       } catch (err) {
-        console.error("Error fetching portfolio settings:", err);
+        console.error("Error fetching real portfolio settings:", err);
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -275,7 +289,7 @@ export default function InstructorYouTubePortfolio() {
 
     fetchPortfolioData();
 
-    // B. Real-time Firestore snapshot listeners
+    // 4. Real-time Firestore Listeners (Instant live sync on Admin save)
     let unsubscribe1 = () => {};
     let unsubscribe2 = () => {};
 
@@ -285,19 +299,19 @@ export default function InstructorYouTubePortfolio() {
         if (docSnap.exists() && isMounted) {
           const data = docSnap.data();
           if (data) {
-            if (data.localVideoUrl) setLocalVideoUrl(data.localVideoUrl);
-            if (data.internationalVideoUrl) setInternationalVideoUrl(data.internationalVideoUrl);
+            if (data.localVideoUrl) setLocalVideoUrl(data.localVideoUrl.trim());
+            if (data.internationalVideoUrl) setInternationalVideoUrl(data.internationalVideoUrl.trim());
             setIsLoading(false);
             try {
               localStorage.setItem('tsehay_youtube_portfolio_cache', JSON.stringify({
-                localVideoUrl: data.localVideoUrl || FALLBACK_LOCAL_URL,
-                internationalVideoUrl: data.internationalVideoUrl || FALLBACK_INTERNATIONAL_URL
+                localVideoUrl: data.localVideoUrl ? data.localVideoUrl.trim() : '',
+                internationalVideoUrl: data.internationalVideoUrl ? data.internationalVideoUrl.trim() : ''
               }));
             } catch (e) {}
           }
         }
       }, (err) => {
-        console.warn("Nested Firestore snapshot warning:", err);
+        console.warn("Firestore snapshot error:", err);
         if (isMounted) setIsLoading(false);
       });
     } catch (e) {}
@@ -308,24 +322,15 @@ export default function InstructorYouTubePortfolio() {
         if (docSnap.exists() && isMounted) {
           const data = docSnap.data();
           if (data) {
-            if (data.localVideoUrl) setLocalVideoUrl(data.localVideoUrl);
-            if (data.internationalVideoUrl) setInternationalVideoUrl(data.internationalVideoUrl);
+            if (data.localVideoUrl) setLocalVideoUrl(data.localVideoUrl.trim());
+            if (data.internationalVideoUrl) setInternationalVideoUrl(data.internationalVideoUrl.trim());
             setIsLoading(false);
-            try {
-              localStorage.setItem('tsehay_youtube_portfolio_cache', JSON.stringify({
-                localVideoUrl: data.localVideoUrl || FALLBACK_LOCAL_URL,
-                internationalVideoUrl: data.internationalVideoUrl || FALLBACK_INTERNATIONAL_URL
-              }));
-            } catch (e) {}
           }
         }
-      }, (err) => {
-        console.warn("Root Firestore snapshot warning:", err);
-        if (isMounted) setIsLoading(false);
       });
     } catch (e) {}
 
-    // C. Storage & Custom Event listeners for immediate multi-tab sync
+    // 5. Multi-tab local storage and custom event listeners
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'tsehay_youtube_portfolio_cache' && e.newValue && isMounted) {
         try {
@@ -358,11 +363,16 @@ export default function InstructorYouTubePortfolio() {
     };
   }, []);
 
-  const localVideoId = extractYouTubeId(localVideoUrl) || 'mgdOMtW6J8k';
-  const internationalVideoId = extractYouTubeId(internationalVideoUrl) || 'B-s71n0dHUk';
+  const localVideoId = extractYouTubeId(localVideoUrl);
+  const internationalVideoId = extractYouTubeId(internationalVideoUrl);
 
-  const localEmbedUrl = `https://www.youtube.com/embed/${localVideoId}?autoplay=1&rel=0&modestbranding=1&controls=1&showinfo=0&iv_load_policy=3&cc_load_policy=0&playsinline=1&enablejsapi=1`;
-  const internationalEmbedUrl = `https://www.youtube.com/embed/${internationalVideoId}?autoplay=1&rel=0&modestbranding=1&controls=1&showinfo=0&iv_load_policy=3&cc_load_policy=0&playsinline=1&enablejsapi=1`;
+  const localEmbedUrl = localVideoId 
+    ? `https://www.youtube.com/embed/${localVideoId}?autoplay=1&rel=0&modestbranding=1&controls=1&showinfo=0&iv_load_policy=3&cc_load_policy=0&playsinline=1&enablejsapi=1`
+    : '';
+
+  const internationalEmbedUrl = internationalVideoId 
+    ? `https://www.youtube.com/embed/${internationalVideoId}?autoplay=1&rel=0&modestbranding=1&controls=1&showinfo=0&iv_load_policy=3&cc_load_policy=0&playsinline=1&enablejsapi=1`
+    : '';
 
   return (
     <section id="instructor-portfolio" className="relative py-16 sm:py-24 overflow-hidden bg-slate-900/60 dark:bg-[#030509]/95 border-b border-gray-200/80 dark:border-white/10">
@@ -454,6 +464,11 @@ export default function InstructorYouTubePortfolio() {
                     <div className="w-10 h-10 border-3 border-[#3268ba] border-t-transparent rounded-full animate-spin"></div>
                     <span className="text-xs text-gray-400 font-bold">የቪዲዮ መረጃ በመጫን ላይ...</span>
                   </div>
+                ) : !localVideoId ? (
+                  <div className="w-full h-full bg-slate-900/90 flex flex-col items-center justify-center gap-2 text-center p-4">
+                    <i className="fa-solid fa-video text-3xl text-gray-500"></i>
+                    <span className="text-xs text-gray-400 font-bold">ቪዲዮው በአድሚን ዳሽቦርድ በቅርቡ ይጨመራል</span>
+                  </div>
                 ) : playingLocal && localEmbedUrl ? (
                   <div className="w-full h-full relative overflow-hidden">
                     <iframe
@@ -531,6 +546,11 @@ export default function InstructorYouTubePortfolio() {
                   <div className="w-full h-full bg-slate-900/80 animate-pulse flex flex-col items-center justify-center gap-2">
                     <div className="w-10 h-10 border-3 border-[#f9b03c] border-t-transparent rounded-full animate-spin"></div>
                     <span className="text-xs text-gray-400 font-bold">የቪዲዮ መረጃ በመጫን ላይ...</span>
+                  </div>
+                ) : !internationalVideoId ? (
+                  <div className="w-full h-full bg-slate-900/90 flex flex-col items-center justify-center gap-2 text-center p-4">
+                    <i className="fa-solid fa-video text-3xl text-gray-500"></i>
+                    <span className="text-xs text-gray-400 font-bold">ቪዲዮው በአድሚን ዳሽቦርድ በቅርቡ ይጨመራል</span>
                   </div>
                 ) : playingInternational && internationalEmbedUrl ? (
                   <div className="w-full h-full relative overflow-hidden">
