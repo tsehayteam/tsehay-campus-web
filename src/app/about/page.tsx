@@ -12,143 +12,274 @@ export default function About() {
 
   return (
     <>
-      <main className="min-h-screen flex flex-col bg-white dark:bg-dark">
-        <section id="about" className="pt-28 sm:pt-36 pb-24 relative overflow-hidden bg-gradient-to-b from-white to-slate-50 dark:from-dark dark:to-darkCard border-b border-gray-200 dark:border-gray-800 transition-colors duration-300 flex-1">
+      <main className="min-h-screen flex flex-col bg-white dark:bg-[#070b14] text-slate-900 dark:text-slate-100 transition-colors duration-300 relative overflow-hidden">
+        
+        {/* Subtle Background Glows */}
+        <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[800px] h-[450px] bg-gradient-to-b from-[#3268ba]/10 via-[#f9b03c]/10 to-transparent rounded-full blur-[140px] pointer-events-none -z-10" />
+        <div className="absolute top-[50%] -left-32 w-96 h-96 bg-[#3268ba]/10 rounded-full blur-[140px] pointer-events-none -z-10" />
+        <div className="absolute top-[75%] -right-32 w-96 h-96 bg-[#f9b03c]/10 rounded-full blur-[140px] pointer-events-none -z-10" />
 
-          <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <section id="about" className="pt-28 sm:pt-36 pb-24 relative z-10 flex-1">
+          <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8">
+            
             {/* Header Title */}
             <div className="text-center mb-12 sm:mb-16">
-              <h2 className="font-heading font-black text-3xl sm:text-5xl text-dark dark:text-white mb-4">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#f9b03c]/10 border border-[#f9b03c]/35 text-[#f9b03c] text-xs font-black mb-4 shadow-[0_0_20px_rgba(249,176,60,0.2)] animate-pulse">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#f9b03c] opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#f9b03c]"></span>
+                </span>
+                <span>✨ ፀሐይ ካምፓስ • TSEHAY CAMPUS ✨</span>
+              </div>
+
+              <h1 className="font-heading font-black text-3xl sm:text-5xl lg:text-6xl text-slate-900 dark:text-white mb-4 tracking-tight">
                 {t('about_us_page')}
-              </h2>
-              <div className="w-20 h-1.5 bg-primary mx-auto rounded-full"></div>
+              </h1>
+              <div className="w-24 h-1 bg-gradient-to-r from-transparent via-[#f9b03c] to-transparent mx-auto rounded-full shadow-[0_0_12px_rgba(249,176,60,0.6)]" />
             </div>
 
-            {/* Main Video Presentation with Animated Light Beam (እሷ ትቅር የተባለችው የምትሽከረከረው የጨረር ፍሬም) */}
+            {/* Main Video Presentation with Animated Rotating Light Beam */}
             <AboutHeroPlayer />
 
-            {/* Our Story */}
+            {/* =========================================================================
+                1. OUR STORY (የእኛ ታሪክ) - ELEGANT CARD WITH ANIMATED ACCENTS
+               ========================================================================= */}
             <div className="max-w-4xl mx-auto mb-20 sm:mb-24">
-              <h3 className="text-2xl font-bold font-heading text-primary mb-4">{t('our_story_title')}</h3>
-              <p className="text-gray-600 dark:text-gray-300 font-body leading-relaxed text-base mb-4">
-                {t('our_story_p1')}
-              </p>
-              <p className="text-gray-600 dark:text-gray-300 font-body leading-relaxed text-base mb-8">
-                {t('our_story_p2')}
-              </p>
-              <div className="flex flex-wrap gap-8">
-                <div>
-                  <h4 className="text-3xl font-black text-dark dark:text-white">500+</h4>
-                  <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mt-1 border-l-2 border-primary pl-2">{t('stat_students')}</p>
-                </div>
-                <div>
-                  <h4 className="text-3xl font-black text-dark dark:text-white">100%</h4>
-                  <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mt-1 border-l-2 border-secondary pl-2">{t('stat_practical')}</p>
-                </div>
-                <div>
-                  <h4 className="text-3xl font-black text-dark dark:text-white">24/7</h4>
-                  <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mt-1 border-l-2 border-success pl-2">{t('stat_ai')}</p>
+              <div className="relative p-[1px] rounded-3xl overflow-hidden group">
+                <div className="absolute inset-0 bg-gradient-to-r from-[#f9b03c]/30 via-[#3268ba]/30 to-[#f9b03c]/30 rounded-3xl opacity-50 group-hover:opacity-100 transition duration-500 blur-sm" />
+                
+                <div className="relative rounded-[23px] bg-white/80 dark:bg-slate-900/90 backdrop-blur-xl p-6 sm:p-10 border border-gray-200/80 dark:border-white/10 shadow-xl">
+                  
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-12 h-12 rounded-2xl bg-[#f9b03c]/15 text-[#f9b03c] border border-[#f9b03c]/30 flex items-center justify-center text-xl shadow-[0_0_20px_rgba(249,176,60,0.25)]">
+                      <i className="fa-solid fa-book-open-reader"></i>
+                    </div>
+                    <div>
+                      <span className="text-xs font-bold text-[#f9b03c] tracking-widest uppercase block">ታሪካችን</span>
+                      <h2 className="text-2xl sm:text-3xl font-black font-heading text-slate-900 dark:text-white">
+                        {t('our_story_title')}
+                      </h2>
+                    </div>
+                  </div>
+
+                  <p className="text-gray-700 dark:text-slate-300 font-body leading-relaxed text-base sm:text-[17px] mb-4">
+                    {t('our_story_p1')}
+                  </p>
+                  
+                  <p className="text-gray-700 dark:text-slate-300 font-body leading-relaxed text-base sm:text-[17px] mb-8">
+                    {t('our_story_p2')}
+                  </p>
+
+                  {/* Stats Pill Badges */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6 border-t border-gray-100 dark:border-white/10">
+                    <div className="flex items-center gap-3 p-3 rounded-2xl bg-gray-50 dark:bg-white/[0.03] border border-gray-100 dark:border-white/5">
+                      <div className="w-10 h-10 rounded-xl bg-[#f9b03c]/15 text-[#f9b03c] flex items-center justify-center font-bold text-lg">
+                        <i className="fa-solid fa-graduation-cap text-base"></i>
+                      </div>
+                      <div>
+                        <h4 className="text-2xl font-black text-slate-900 dark:text-white leading-none">500+</h4>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider mt-1">{t('stat_students')}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 p-3 rounded-2xl bg-gray-50 dark:bg-white/[0.03] border border-gray-100 dark:border-white/5">
+                      <div className="w-10 h-10 rounded-xl bg-[#3268ba]/15 text-[#5a93e8] flex items-center justify-center font-bold text-lg">
+                        <i className="fa-solid fa-laptop-code text-base"></i>
+                      </div>
+                      <div>
+                        <h4 className="text-2xl font-black text-slate-900 dark:text-white leading-none">100%</h4>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider mt-1">{t('stat_practical')}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 p-3 rounded-2xl bg-gray-50 dark:bg-white/[0.03] border border-gray-100 dark:border-white/5">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-500/15 text-emerald-500 flex items-center justify-center font-bold text-lg">
+                        <i className="fa-solid fa-brain text-base"></i>
+                      </div>
+                      <div>
+                        <h4 className="text-2xl font-black text-slate-900 dark:text-white leading-none">24/7</h4>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider mt-1">{t('stat_ai')}</p>
+                      </div>
+                    </div>
+                  </div>
+
                 </div>
               </div>
             </div>
 
-            {/* Mission */}
-            <div className="max-w-3xl mx-auto mb-20 sm:mb-24 text-center">
-              <h3 className="text-2xl font-bold font-heading text-primary mb-4">{t('mission_title')}</h3>
-              <p className="text-xl sm:text-2xl font-bold text-dark dark:text-white leading-relaxed">
-                {t('mission_desc')}
-              </p>
-            </div>
+            {/* =========================================================================
+                2. MISSION (ተልዕኳችን) - SPOTLIGHT VISION CARD
+               ========================================================================= */}
+            <div className="max-w-4xl mx-auto mb-20 sm:mb-24">
+              <div className="relative p-[1px] rounded-3xl overflow-hidden group text-center">
+                <div className="absolute inset-0 bg-[conic-gradient(from_0deg,transparent_0deg,transparent_270deg,#f9b03c_320deg,#ffe066_355deg,#ffffff_360deg)] animate-border-beam opacity-60 pointer-events-none" />
 
-            {/* What We Do / Why Tsehay Campus Cards */}
-            <div className="mb-20 sm:mb-24">
-              <h3 className="text-2xl sm:text-3xl font-extrabold font-heading text-primary mb-8 text-center">
-                {t('what_we_do_title')}
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Card 1 */}
-                <div className="bg-white dark:bg-dark border border-gray-100 dark:border-gray-800 p-8 rounded-2xl text-center hover:-translate-y-3 transition-all duration-500 shadow-md hover:shadow-2xl hover:shadow-[#f9b03c]/20 hover:border-[#f9b03c]/40 cursor-pointer">
-                  <div className="w-16 h-16 mx-auto bg-[#f9b03c]/10 text-[#f9b03c] rounded-2xl flex items-center justify-center text-2xl mb-6 shadow-sm">
-                    <i className="fa-solid fa-chart-line"></i>
+                <div className="relative rounded-[23px] bg-white/80 dark:bg-slate-900/90 backdrop-blur-xl p-8 sm:p-12 border border-gray-200/80 dark:border-white/10 shadow-xl">
+                  <div className="w-14 h-14 mx-auto rounded-2xl bg-[#f9b03c]/15 text-[#f9b03c] border border-[#f9b03c]/30 flex items-center justify-center text-2xl mb-4 shadow-[0_0_25px_rgba(249,176,60,0.3)]">
+                    <i className="fa-solid fa-bullseye"></i>
                   </div>
-                  <h4 className="font-bold text-dark dark:text-white text-lg mb-3 leading-snug">{t('wwd_1_title')}</h4>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">{t('wwd_1_desc')}</p>
-                </div>
+                  
+                  <span className="text-xs font-bold text-[#f9b03c] tracking-widest uppercase block mb-1">ራዕይ እና ዓላማ</span>
+                  <h2 className="text-2xl sm:text-3xl font-black font-heading text-slate-900 dark:text-white mb-4">
+                    {t('mission_title')}
+                  </h2>
 
-                {/* Card 2 */}
-                <div className="bg-white dark:bg-dark border border-gray-100 dark:border-gray-800 p-8 rounded-2xl text-center hover:-translate-y-3 transition-all duration-500 shadow-md hover:shadow-2xl hover:shadow-[#3268ba]/20 hover:border-[#3268ba]/40 cursor-pointer">
-                  <div className="w-16 h-16 mx-auto bg-[#3268ba]/10 text-[#3268ba] rounded-2xl flex items-center justify-center text-2xl mb-6 shadow-sm">
-                    <i className="fa-solid fa-people-group"></i>
-                  </div>
-                  <h4 className="font-bold text-dark dark:text-white text-lg mb-3 leading-snug">{t('wwd_2_title')}</h4>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">{t('wwd_2_desc')}</p>
-                </div>
-
-                {/* Card 3 */}
-                <div className="bg-white dark:bg-dark border border-gray-100 dark:border-gray-800 p-8 rounded-2xl text-center hover:-translate-y-3 transition-all duration-500 shadow-md hover:shadow-2xl hover:shadow-[#f9b03c]/20 hover:border-[#f9b03c]/40 cursor-pointer">
-                  <div className="w-16 h-16 mx-auto bg-[#f9b03c]/10 text-[#f9b03c] rounded-2xl flex items-center justify-center text-2xl mb-6 shadow-sm">
-                    <i className="fa-solid fa-wand-magic-sparkles"></i>
-                  </div>
-                  <h4 className="font-bold text-dark dark:text-white text-lg mb-3 leading-snug">{t('wwd_3_title')}</h4>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">{t('wwd_3_desc')}</p>
+                  <p className="text-lg sm:text-2xl font-bold text-slate-800 dark:text-slate-200 leading-relaxed max-w-2xl mx-auto">
+                    {t('mission_desc')}
+                  </p>
                 </div>
               </div>
             </div>
 
-            {/* Our Team (የፀሐይ ካምፓስ ቡድኖች) */}
+            {/* =========================================================================
+                3. WHY TSEHAY CAMPUS (ለምን ፀሐይ ካምፓስ?) - 3 INTERACTIVE PILLAR CARDS
+               ========================================================================= */}
             <div className="mb-20 sm:mb-24">
-              <h3 className="text-2xl font-bold font-heading text-primary mb-8 text-center">{t('our_team_title')}</h3>
-              <div className="flex flex-wrap justify-center gap-6">
+              <div className="text-center max-w-3xl mx-auto mb-10 sm:mb-14">
+                <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#f9b03c]/10 border border-[#f9b03c]/30 text-[#f9b03c] text-xs font-bold mb-3">
+                  <i className="fa-solid fa-star text-[10px]"></i>
+                  <span>ልዩ ጥንካሬዎች</span>
+                </div>
+                <h2 className="text-2xl sm:text-4xl font-black font-heading text-slate-900 dark:text-white">
+                  {t('what_we_do_title')}
+                </h2>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
+                
+                {/* Pillar 1 */}
+                <div className="relative p-[1px] rounded-3xl overflow-hidden group hover:-translate-y-2.5 transition-all duration-500">
+                  <div className="absolute inset-0 bg-gradient-to-b from-[#f9b03c]/40 via-transparent to-transparent opacity-40 group-hover:opacity-100 transition duration-500" />
+                  <div className="relative rounded-[23px] bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-8 h-full flex flex-col justify-between border border-gray-100 dark:border-white/10 group-hover:border-[#f9b03c]/40 transition duration-500 shadow-md group-hover:shadow-2xl group-hover:shadow-[#f9b03c]/15">
+                    <div>
+                      <div className="w-16 h-16 rounded-2xl bg-[#f9b03c]/15 text-[#f9b03c] border border-[#f9b03c]/30 flex items-center justify-center text-2xl mb-6 shadow-[0_0_20px_rgba(249,176,60,0.2)] group-hover:scale-110 transition duration-300">
+                        <i className="fa-solid fa-chart-line"></i>
+                      </div>
+                      <h3 className="font-bold text-slate-900 dark:text-white text-xl mb-3 font-heading leading-snug">{t('wwd_1_title')}</h3>
+                      <p className="text-sm text-gray-600 dark:text-slate-300 leading-relaxed">{t('wwd_1_desc')}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Pillar 2 */}
+                <div className="relative p-[1px] rounded-3xl overflow-hidden group hover:-translate-y-2.5 transition-all duration-500">
+                  <div className="absolute inset-0 bg-gradient-to-b from-[#3268ba]/40 via-transparent to-transparent opacity-40 group-hover:opacity-100 transition duration-500" />
+                  <div className="relative rounded-[23px] bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-8 h-full flex flex-col justify-between border border-gray-100 dark:border-white/10 group-hover:border-[#3268ba]/40 transition duration-500 shadow-md group-hover:shadow-2xl group-hover:shadow-[#3268ba]/15">
+                    <div>
+                      <div className="w-16 h-16 rounded-2xl bg-[#3268ba]/15 text-[#5a93e8] border border-[#3268ba]/30 flex items-center justify-center text-2xl mb-6 shadow-[0_0_20px_rgba(50,104,186,0.2)] group-hover:scale-110 transition duration-300">
+                        <i className="fa-solid fa-people-group"></i>
+                      </div>
+                      <h3 className="font-bold text-slate-900 dark:text-white text-xl mb-3 font-heading leading-snug">{t('wwd_2_title')}</h3>
+                      <p className="text-sm text-gray-600 dark:text-slate-300 leading-relaxed">{t('wwd_2_desc')}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Pillar 3 */}
+                <div className="relative p-[1px] rounded-3xl overflow-hidden group hover:-translate-y-2.5 transition-all duration-500">
+                  <div className="absolute inset-0 bg-gradient-to-b from-[#f9b03c]/40 via-transparent to-transparent opacity-40 group-hover:opacity-100 transition duration-500" />
+                  <div className="relative rounded-[23px] bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-8 h-full flex flex-col justify-between border border-gray-100 dark:border-white/10 group-hover:border-[#f9b03c]/40 transition duration-500 shadow-md group-hover:shadow-2xl group-hover:shadow-[#f9b03c]/15">
+                    <div>
+                      <div className="w-16 h-16 rounded-2xl bg-[#f9b03c]/15 text-[#f9b03c] border border-[#f9b03c]/30 flex items-center justify-center text-2xl mb-6 shadow-[0_0_20px_rgba(249,176,60,0.2)] group-hover:scale-110 transition duration-300">
+                        <i className="fa-solid fa-wand-magic-sparkles"></i>
+                      </div>
+                      <h3 className="font-bold text-slate-900 dark:text-white text-xl mb-3 font-heading leading-snug">{t('wwd_3_title')}</h3>
+                      <p className="text-sm text-gray-600 dark:text-slate-300 leading-relaxed">{t('wwd_3_desc')}</p>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            {/* =========================================================================
+                4. OUR TEAM (የፀሐይ ካምፓስ ቡድኖች) - WIDE CLEAN SINGLE-LINE CARDS
+               ========================================================================= */}
+            <div className="mb-20 sm:mb-24">
+              <div className="text-center max-w-3xl mx-auto mb-10 sm:mb-14">
+                <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#f9b03c]/10 border border-[#f9b03c]/30 text-[#f9b03c] text-xs font-bold mb-3">
+                  <i className="fa-solid fa-users text-[10px]"></i>
+                  <span>የአመራር ቡድን</span>
+                </div>
+                <h2 className="text-2xl sm:text-4xl font-black font-heading text-slate-900 dark:text-white">
+                  {t('our_team_title')}
+                </h2>
+              </div>
+
+              <div className="flex flex-wrap justify-center gap-8 max-w-4xl mx-auto">
                 
                 {/* Eyoub Sahle */}
-                <div className="bg-white dark:bg-dark border border-gray-100 dark:border-gray-800 p-8 rounded-2xl text-center hover:-translate-y-3 transition-all duration-500 shadow-md hover:shadow-2xl hover:shadow-primary/20 hover:border-primary/40 cursor-pointer w-full sm:w-72">
-                  <div className="w-28 h-28 mx-auto rounded-full overflow-hidden mb-4 bg-gray-100 dark:bg-gray-800 border-2 border-primary/30 shadow-md">
-                    <img 
-                      src="/assets/eyob_white.jpg" 
-                      alt="Eyoub Sahle" 
-                      className="w-full h-full object-cover" 
-                      onError={(e) => { e.currentTarget.src='https://ui-avatars.com/api/?name=Eyoub+Sahle&background=000000&color=fff&size=128'; }} 
-                    />
+                <div className="relative p-[1px] rounded-3xl overflow-hidden group hover:-translate-y-2.5 transition-all duration-500 w-full sm:w-[380px]">
+                  <div className="absolute inset-0 bg-gradient-to-b from-[#f9b03c]/40 via-transparent to-transparent opacity-50 group-hover:opacity-100 transition duration-500" />
+                  
+                  <div className="relative rounded-[23px] bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-8 text-center border border-gray-100 dark:border-white/10 group-hover:border-[#f9b03c]/40 shadow-xl flex flex-col items-center">
+                    <div className="w-28 h-28 rounded-full overflow-hidden mb-5 bg-gray-100 dark:bg-gray-800 border-3 border-[#f9b03c]/40 shadow-[0_0_25px_rgba(249,176,60,0.35)] group-hover:scale-105 transition duration-300">
+                      <img 
+                        src="/assets/eyob_white.jpg" 
+                        alt="Eyoub Sahle" 
+                        className="w-full h-full object-cover" 
+                        onError={(e) => { e.currentTarget.src='https://ui-avatars.com/api/?name=Eyoub+Sahle&background=000000&color=fff&size=160'; }} 
+                      />
+                    </div>
+                    
+                    <h3 className="font-black text-slate-900 dark:text-white text-xl mb-1.5 notranslate whitespace-nowrap">
+                      ኢዮብ ሳህሌ (Eyoub Sahle)
+                    </h3>
+                    <p className="text-xs text-[#f9b03c] font-black uppercase tracking-wider">ባለቤት እና ዋና አሰልጣኝ</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 font-bold mt-0.5">Owner & Lead Instructor</p>
                   </div>
-                  <h4 className="font-bold text-dark dark:text-white text-lg notranslate">ኢዮብ ሳህሌ (Eyoub Sahle)</h4>
-                  <p className="text-xs text-primary font-bold mt-1 uppercase tracking-wide">ባለቤት እና ዋና አሰልጣኝ</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Owner & Lead Instructor</p>
                 </div>
 
-                {/* Ribka Teshome */}
-                <div className="bg-white dark:bg-dark border border-gray-100 dark:border-gray-800 p-8 rounded-2xl text-center hover:-translate-y-3 transition-all duration-500 shadow-md hover:shadow-2xl hover:shadow-primary/20 hover:border-primary/40 cursor-pointer w-full sm:w-72">
-                  <div className="w-28 h-28 mx-auto rounded-full overflow-hidden mb-4 bg-gray-100 dark:bg-gray-800 border-2 border-secondary/30 shadow-md">
-                    <img 
-                      src="/assets/ribka2.jpg" 
-                      alt="Ribka Teshome" 
-                      className="w-full h-full object-cover" 
-                      onError={(e) => { e.currentTarget.src='https://ui-avatars.com/api/?name=Ribka+Teshome&background=000000&color=fff&size=128'; }} 
-                    />
+                {/* Ribka Teshome (Single continuous line without wrapping) */}
+                <div className="relative p-[1px] rounded-3xl overflow-hidden group hover:-translate-y-2.5 transition-all duration-500 w-full sm:w-[380px]">
+                  <div className="absolute inset-0 bg-gradient-to-b from-[#3268ba]/40 via-transparent to-transparent opacity-50 group-hover:opacity-100 transition duration-500" />
+                  
+                  <div className="relative rounded-[23px] bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-8 text-center border border-gray-100 dark:border-white/10 group-hover:border-[#3268ba]/40 shadow-xl flex flex-col items-center">
+                    <div className="w-28 h-28 rounded-full overflow-hidden mb-5 bg-gray-100 dark:bg-gray-800 border-3 border-[#3268ba]/40 shadow-[0_0_25px_rgba(50,104,186,0.35)] group-hover:scale-105 transition duration-300">
+                      <img 
+                        src="/assets/ribka2.jpg" 
+                        alt="Ribka Teshome" 
+                        className="w-full h-full object-cover" 
+                        onError={(e) => { e.currentTarget.src='https://ui-avatars.com/api/?name=Ribka+Teshome&background=000000&color=fff&size=160'; }} 
+                      />
+                    </div>
+                    
+                    <h3 className="font-black text-slate-900 dark:text-white text-xl mb-1.5 notranslate whitespace-nowrap">
+                      ርብቃ ተሾመ (Ribka Teshome)
+                    </h3>
+                    <p className="text-xs text-[#3268ba] dark:text-[#5a93e8] font-black uppercase tracking-wider">ዋና ስራ አስኪያጅ</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 font-bold mt-0.5">General Manager</p>
                   </div>
-                  <h4 className="font-bold text-dark dark:text-white text-lg notranslate">ርብቃ ተሾመ (Ribka Teshome)</h4>
-                  <p className="text-xs text-secondary dark:text-primary font-bold mt-1 uppercase tracking-wide">ዋና ስራ አስኪያጅ</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">General Manager</p>
                 </div>
 
               </div>
             </div>
 
-            {/* Video Reels & Team/Community Photo Showcase */}
+            {/* =========================================================================
+                5. REELS & PHOTOS (የካምፓሳችን አጫጭር ቪዲዮዎች እና ምስሎች)
+               ========================================================================= */}
             <div className="space-y-8 mt-16 sm:mt-24">
               <div className="text-center mb-8 sm:mb-12">
-                <h3 className="text-2xl sm:text-3xl font-black text-primary font-heading">
-                  {t('about_reels_title')}
-                </h3>
+                <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#f9b03c]/10 border border-[#f9b03c]/30 text-[#f9b03c] text-xs font-bold mb-3">
+                  <i className="fa-solid fa-film text-[10px]"></i>
+                  <span>ቅንጭብ ማሳያዎች</span>
+                </div>
+                <h2 className="text-2xl sm:text-4xl font-black font-heading text-slate-900 dark:text-white">
+                  የካምፓሳችን አጫጭር ቪዲዮዎች እና ምስሎች
+                </h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 font-medium">
+                  ከተግባራዊ እንቅስቃሴዎቻችን እና ከስልጠና ክፍለ-ጊዜዎቻችን የተወሰዱ
+                </p>
               </div>
 
               {/* Short Vertical Videos (2 Unique Clean Videos) */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
-                <AboutShortVideo src="/assets/videos/Tsehay.mp4" />
-                <AboutShortVideo src="/assets/videos/Marketing%20and%20psyco.mp4" />
+                <AboutShortVideo src="/assets/videos/Tsehay.mp4" title="ፀሐይ ካምፓስ በጨረፍታ" />
+                <AboutShortVideo src="/assets/videos/Marketing%20and%20psyco.mp4" title="የማርኬቲንግ እና ስኬት ሚስጥሮች" />
               </div>
 
               {/* Banner Style Team Photo */}
-              <div className="rounded-3xl overflow-hidden shadow-xl group w-full h-64 md:h-96 bg-black relative border border-gray-100 dark:border-gray-800 max-w-4xl mx-auto mt-8">
+              <div className="rounded-3xl overflow-hidden shadow-2xl group w-full h-64 md:h-96 bg-black relative border border-gray-200 dark:border-white/10 max-w-4xl mx-auto mt-8">
                 <img 
                   src="https://i.postimg.cc/qvqt1bJK/about-photo-1.jpg" 
                   className="w-full h-full object-cover group-hover:scale-105 transition duration-700" 
@@ -166,6 +297,9 @@ export default function About() {
   );
 }
 
+// =========================================================================
+// 🌟 DYNAMIC HERO VIDEO PLAYER WITH ROTATING LIGHT BEAM & INSTANT THUMBNAIL
+// =========================================================================
 function AboutHeroPlayer() {
   const [videoData, setVideoData] = useState<{ videoUrl: string; title: string; thumbnail: string }>(() => {
     if (typeof window !== 'undefined') {
@@ -175,8 +309,8 @@ function AboutHeroPlayer() {
           const parsed = JSON.parse(cached);
           if (parsed && typeof parsed === 'object' && (parsed.videoUrl || parsed.thumbnail)) {
             return {
-              videoUrl: parsed.videoUrl || '',
-              title: parsed.title || '',
+              videoUrl: parsed.videoUrl || 'https://www.youtube.com/watch?v=mgdOMtW6J8k',
+              title: parsed.title || 'ስለ ፀሐይ ካምፓስ',
               thumbnail: parsed.thumbnail || ''
             };
           }
@@ -184,8 +318,8 @@ function AboutHeroPlayer() {
       } catch (e) {}
     }
     return {
-      videoUrl: '',
-      title: '',
+      videoUrl: 'https://www.youtube.com/watch?v=mgdOMtW6J8k',
+      title: 'ስለ ፀሐይ ካምፓስ',
       thumbnail: ''
     };
   });
@@ -199,8 +333,8 @@ function AboutHeroPlayer() {
           const data = docSnap.data();
           if (data) {
             const nextData = {
-              videoUrl: data.videoUrl || '',
-              title: data.title || '',
+              videoUrl: data.videoUrl || 'https://www.youtube.com/watch?v=mgdOMtW6J8k',
+              title: data.title || 'ስለ ፀሐይ ካምፓስ',
               thumbnail: data.thumbnail || ''
             };
             setVideoData(nextData);
@@ -219,19 +353,19 @@ function AboutHeroPlayer() {
   }, []);
 
   const parsed = parseVideoEmbedUrl(videoData.videoUrl, true);
-  const yId = extractYouTubeId(videoData.videoUrl);
+  const yId = extractYouTubeId(videoData.videoUrl) || 'mgdOMtW6J8k';
   const customThumb = videoData.thumbnail?.trim();
   
   const activeThumbnail = customThumb 
     ? parseImageUrl(customThumb) 
-    : (yId ? `https://img.youtube.com/vi/${yId}/maxresdefault.jpg` : '/assets/hero-bg-new.jpg');
+    : (yId ? `https://img.youtube.com/vi/${yId}/maxresdefault.jpg` : 'https://i.postimg.cc/qvqt1bJK/about-photo-1.jpg');
 
   return (
     <div className="max-w-4xl mx-auto mb-16">
       <div className="relative rounded-[2.5rem] p-[2px] overflow-hidden group shadow-2xl">
         
-        {/* Animated Rotating Light Beam Frame (እሷ ትቅር የተባለችው) */}
-        <div className="absolute inset-0 bg-[conic-gradient(from_0deg,transparent_0deg,transparent_270deg,#f9b03c_320deg,#ffe066_355deg,#ffffff_360deg)] animate-border-beam opacity-80 group-hover:opacity-100 pointer-events-none" />
+        {/* Animated Rotating Light Beam Frame (ጨረር ፍሬም) */}
+        <div className="absolute inset-[-200%] bg-[conic-gradient(from_0deg,transparent_0deg,transparent_270deg,#f9b03c_320deg,#ffe066_355deg,#ffffff_360deg)] animate-border-beam opacity-85 group-hover:opacity-100 pointer-events-none" />
 
         <div className="relative rounded-[calc(2.5rem-2px)] overflow-hidden bg-black aspect-video flex items-center justify-center">
           {!isPlaying ? (
@@ -249,7 +383,9 @@ function AboutHeroPlayer() {
                 src={activeThumbnail} 
                 alt="Tsehay Campus Video" 
                 className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
-                onError={(e) => { (e.target as HTMLImageElement).src = '/assets/hero-bg-new.jpg'; }}
+                onError={(e) => { 
+                  (e.target as HTMLImageElement).src = `https://img.youtube.com/vi/${yId}/hqdefault.jpg`; 
+                }}
               />
 
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/30 group-hover:bg-black/10 transition-colors duration-500"></div>
@@ -298,7 +434,10 @@ function AboutHeroPlayer() {
   );
 }
 
-function AboutShortVideo({ src }: { src: string }) {
+// =========================================================================
+// 🌟 CLEAN VERTICAL REEL CARD
+// =========================================================================
+function AboutShortVideo({ src, title }: { src: string; title?: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -358,11 +497,20 @@ function AboutShortVideo({ src }: { src: string }) {
           }
         }}
         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 pointer-events-none"
+        style={{ transform: 'translateZ(0)', backfaceVisibility: 'hidden' }}
       >
         <source src={src} type="video/mp4" />
       </video>
 
       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20 pointer-events-none"></div>
+
+      {title && (
+        <div className="absolute top-4 left-4 right-4 z-10 pointer-events-none">
+          <span className="inline-block px-3 py-1 rounded-full bg-black/70 backdrop-blur-md text-[11px] font-bold text-white border border-white/20 shadow-md">
+            {title}
+          </span>
+        </div>
+      )}
 
       <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none transition-all duration-300 transform ${
         isPlaying 
