@@ -132,28 +132,14 @@ export default function Hero3DPopoutStage({
         </div>
 
         {/* ------------------------------------------------------------------ */}
-        {/* 🎆 3D ANAMORPHIC POP-OUT ELEMENTS (Floating outside the frame!)     */}
+        {/* 🎆 ANAMORPHIC DEPTH BADGES (Floating smoothly outside the frame)   */}
         {/* ------------------------------------------------------------------ */}
 
-        {/* 1. TOP-CENTER 3D POP-OUT: "3D LIVE INTERACTIVE EXPERIENCE" HOLOGRAM PIN */}
-        <div 
-          className="absolute -top-4 left-1/2 -translate-x-1/2 z-30 pointer-events-none flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-950/90 border border-[#f9b03c]/70 shadow-[0_10px_35px_rgba(249,176,60,0.45)] backdrop-blur-xl transition-transform duration-300"
-          style={{
-            transform: 'translate3d(-50%, 0, 95px)',
-          }}
-        >
-          <span className="w-2 h-2 rounded-full bg-[#f9b03c] shadow-[0_0_10px_#f9b03c] animate-ping" />
-          <span className="text-[10px] sm:text-xs font-black tracking-widest uppercase text-white drop-shadow-md font-mono flex items-center gap-1.5">
-            <i className="fa-solid fa-cube text-[#f9b03c]"></i>
-            <span>3D INTERACTIVE IMMERSIVE EXPERIENCE</span>
-          </span>
-        </div>
-
-        {/* 2. BOTTOM-LEFT 3D POP-OUT: ACCREDITED CERTIFICATE BADGE */}
+        {/* 1. BOTTOM-LEFT POP-OUT: ACCREDITED CERTIFICATE BADGE */}
         <div 
           className="hidden sm:flex absolute -bottom-6 -left-6 lg:-left-10 z-30 p-3.5 sm:p-4 rounded-2xl items-center gap-3.5 bg-gradient-to-br from-slate-950/95 via-slate-900/90 to-black/95 border-2 border-[#f9b03c]/60 shadow-[0_20px_50px_rgba(0,0,0,0.9),0_0_30px_rgba(249,176,60,0.35)] backdrop-blur-2xl transition-transform duration-300 group hover:scale-105 pointer-events-auto"
           style={{
-            transform: 'translate3d(0, 0, 80px)',
+            transform: 'translate3d(0, 0, 75px)',
           }}
         >
           {/* Holographic Glowing Seal */}
@@ -172,11 +158,11 @@ export default function Hero3DPopoutStage({
           </div>
         </div>
 
-        {/* 3. TOP-RIGHT 3D POP-OUT: ACTIVE STUDENTS COUNTER WITH RADAR WAVES */}
+        {/* 2. TOP-RIGHT POP-OUT: ACTIVE STUDENTS COUNTER WITH RADAR WAVES */}
         <div 
           className="hidden sm:flex absolute -top-6 -right-6 lg:-right-10 z-30 p-3.5 sm:p-4 rounded-2xl items-center gap-3.5 bg-gradient-to-br from-slate-950/95 via-slate-900/90 to-[#071328]/95 border-2 border-[#3268ba]/70 shadow-[0_20px_50px_rgba(0,0,0,0.9),0_0_30px_rgba(50,104,186,0.45)] backdrop-blur-2xl transition-transform duration-300 group hover:scale-105 pointer-events-auto"
           style={{
-            transform: 'translate3d(0, 0, 85px)',
+            transform: 'translate3d(0, 0, 80px)',
           }}
         >
           <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-[#3268ba] via-blue-500 to-cyan-300 text-white flex items-center justify-center text-xl font-black shadow-[0_0_20px_rgba(50,104,186,0.7)] shrink-0">
@@ -192,15 +178,6 @@ export default function Hero3DPopoutStage({
               <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399] animate-pulse" />
             </p>
           </div>
-        </div>
-
-        {/* 4. BOTTOM-RIGHT 3D POP-OUT: 3D CYBER BADGE (Mobile + Desktop) */}
-        <div 
-          className="absolute -bottom-3 right-3 sm:-bottom-4 sm:right-6 z-30 px-3 py-1 rounded-lg bg-black/80 border border-white/20 text-white font-mono text-[9px] sm:text-[10px] tracking-wider uppercase backdrop-blur-md flex items-center gap-1.5 shadow-lg"
-          style={{ transform: 'translate3d(0, 0, 60px)' }}
-        >
-          <i className="fa-solid fa-vr-cardboard text-[#f9b03c]"></i>
-          <span>TSEHAY 3D DEPTH ENGINE</span>
         </div>
       </div>
     </div>

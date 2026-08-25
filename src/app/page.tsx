@@ -15,7 +15,6 @@ import InstructorYouTubePortfolio from '@/components/InstructorYouTubePortfolio'
 import CourseCardSkeleton from '@/components/CourseCardSkeleton';
 import { getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl } from '@/lib/courseCache';
 import Hero3DPopoutStage from '@/components/3d/Hero3DPopoutStage';
-import Interactive3DHologramMatrix from '@/components/3d/Interactive3DHologramMatrix';
 import Tilt3DCard from '@/components/3d/Tilt3DCard';
 
 const PARTNER_BRANDS = [
@@ -285,27 +284,41 @@ export default function Home() {
     // Force scroll to top on initial load
     window.scrollTo(0, 0);
 
-    // Scrollytelling Reveal Observer
-    const observerCallback: IntersectionObserverCallback = (entries, observer) => {
+    // Terafab.ai Bidirectional Scrollytelling Reveal Observer
+    const observerCallback: IntersectionObserverCallback = (entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
           entry.target.classList.add('is-visible');
+        } else {
+          // Gracefully reset when scrolled out of viewport so it re-triggers sequentially on reverse scroll
+          const rect = entry.boundingClientRect;
+          if (rect.top > window.innerHeight + 50 || rect.bottom < -50) {
+            entry.target.classList.remove('is-visible');
+          }
         }
       });
     };
 
     const observer = new IntersectionObserver(observerCallback, {
-      threshold: 0.12,
-      rootMargin: '0px 0px -50px 0px'
+      threshold: 0.08,
+      rootMargin: '0px 0px -25px 0px'
     });
 
-    const revealElements = document.querySelectorAll('.scrolly-reveal');
-    revealElements.forEach((el) => observer.observe(el));
+    const registerElements = () => {
+      const revealElements = document.querySelectorAll('.scrolly-reveal, .scrolly-card');
+      revealElements.forEach((el) => observer.observe(el));
+    };
+
+    registerElements();
+
+    // Re-register dynamically rendered items (courses, cards)
+    const timer = setTimeout(registerElements, 350);
 
     return () => {
+      clearTimeout(timer);
       observer.disconnect();
     };
-  }, []);
+  }, [courses.length]);
 
   useEffect(() => {
     // Fetch courses for landing page with real-time updates
@@ -544,9 +557,6 @@ export default function Home() {
             </div>
         </div>
     </section>
-
-    {/* 🌟 3D Interactive Holographic Learning Matrix Showcase */}
-    <Interactive3DHologramMatrix />
 
     
     <section id="courses" className="py-20 sm:py-28 bg-slate-50/40 dark:bg-transparent border-b border-gray-200/80 dark:border-white/[0.06] transition-colors duration-300 relative overflow-hidden">

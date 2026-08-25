@@ -1186,21 +1186,35 @@ img, video, canvas {
    ========================================================================== */
 
 .scrolly-reveal {
-  opacity: 1 !important;
-  transform: none !important;
+  opacity: 0;
+  transform: translateY(28px) scale(0.98);
+  transition: opacity 0.85s cubic-bezier(0.16, 1, 0.3, 1), transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+.scrolly-reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
 }
 
 .scrolly-card {
-  opacity: 1 !important;
-  transform: none;
+  opacity: 0;
+  transform: translateY(32px) scale(0.97);
+  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
 }
 
-.scrolly-stagger-1 { transition-delay: 0.05s; }
-.scrolly-stagger-2 { transition-delay: 0.18s; }
-.scrolly-stagger-3 { transition-delay: 0.32s; }
-.scrolly-stagger-4 { transition-delay: 0.45s; }
-.scrolly-stagger-5 { transition-delay: 0.58s; }
-.scrolly-stagger-6 { transition-delay: 0.70s; }
+.scrolly-card.is-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.scrolly-stagger-1 { transition-delay: 0.08s; }
+.scrolly-stagger-2 { transition-delay: 0.22s; }
+.scrolly-stagger-3 { transition-delay: 0.36s; }
+.scrolly-stagger-4 { transition-delay: 0.50s; }
+.scrolly-stagger-5 { transition-delay: 0.62s; }
+.scrolly-stagger-6 { transition-delay: 0.74s; }
 
 /* Subtle continuous glowing pulse for main headline badge */
 @keyframes headlineGlowPulse {
