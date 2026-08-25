@@ -246,8 +246,9 @@ export default function Navbar() {
         sessionStorage.clear();
       } catch (e) {}
       setShowProfileDropdown(false);
-    if (pathname?.startsWith('/dashboard') || pathname?.startsWith('/admin')) {
-      router.push('/');
+      if (pathname?.startsWith('/dashboard') || pathname?.startsWith('/admin')) {
+        router.push('/');
+      }
     }
   };
 
