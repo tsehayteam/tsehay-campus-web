@@ -146,11 +146,10 @@ export default function Hero3DPopoutStage({
           </div>
           <div className="text-left pr-2">
             <p className="text-[10px] text-amber-300/90 font-mono font-bold uppercase tracking-wider leading-none mb-1 flex items-center gap-1">
-              <i className="fa-solid fa-shield-halved text-[9px]"></i>
-              {t('recognized_cert') || 'የተረጋገጠ'}
+              {t('practical_learning_badge') || '🎓 ከተግባራዊ ትምህርት ጋር'}
             </p>
             <p className="text-white font-black text-sm tracking-tight drop-shadow-md">
-              እውቅና ያለው ሰርተፍኬት
+              {t('recognized_cert') || 'እውቅና ያለው ሰርተፍኬት'}
             </p>
           </div>
         </div>
@@ -162,11 +161,11 @@ export default function Hero3DPopoutStage({
             transform: 'translate3d(0, 0, 80px)',
           }}
         >
-          <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-[#3268ba] via-blue-500 to-cyan-300 text-white flex items-center justify-center text-xl font-black shadow-[0_0_20px_rgba(50,104,186,0.7)] shrink-0">
+          <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-[#1e4585] via-[#3268ba] to-[#3a75d2] text-white flex items-center justify-center text-xl font-black shadow-[0_0_20px_rgba(50,104,186,0.6)] shrink-0">
             <i className="fa-solid fa-users-viewfinder"></i>
           </div>
           <div className="text-left pr-2">
-            <p className="text-[10px] text-cyan-300/90 font-mono font-bold uppercase tracking-wider leading-none mb-1 flex items-center gap-1">
+            <p className="text-[10px] text-blue-200/90 font-mono font-bold uppercase tracking-wider leading-none mb-1 flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
               {t('students') || 'ተማሪዎች'}
             </p>
