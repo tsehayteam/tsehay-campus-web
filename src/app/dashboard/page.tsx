@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import React, { useEffect, useState, useRef, Suspense } from 'react';
 import { db, auth } from '@/lib/firebase/config';
 import { collection, getDocs, query, orderBy, doc, getDoc, updateDoc, setDoc, serverTimestamp, where, onSnapshot } from 'firebase/firestore';
@@ -1323,8 +1323,19 @@ function StudentDashboardContent() {
   };
 
   const performClearAiChat = async () => {
+    // 1. Immediately dismiss modal so view returns to chat instantly
+    setShowDashboardClearAiModal(false);
+    
+    // 2. Reset chat states
     const defaultGreeting = [{ role: 'ai', text: "ሰላም! እኔ Tsehay AI ነኝ። የትምህርት ጥያቄዎች ካሉዎት እባክዎ ይጠይቁኝ!" }];
     setChatMessages(defaultGreeting);
+    setChatInput("");
+    setAiAttachedImage(null);
+    setIsChatLoading(false);
+    setSavedAiNotes({});
+    setSavedAiNoteIds({});
+
+    // 3. Clear local storage and Firestore history asynchronously
     if (user?.uid) {
       try { localStorage.removeItem(`tsehay-ai-chat_${user.uid}`); } catch (e) {}
       try { localStorage.removeItem('tsehay-ai-chat'); } catch (e) {}
@@ -1333,7 +1344,6 @@ function StudentDashboardContent() {
         await setDoc(chatHistoryRef, { messages: defaultGreeting, updatedAt: serverTimestamp() });
       } catch (e) {}
     }
-    setShowDashboardClearAiModal(false);
   };
 
   useEffect(() => {
@@ -1784,43 +1794,52 @@ ${customAdminPrompt}
             <div className="h-px bg-slate-200/80 dark:bg-slate-700/60"></div>
           </div>
 
-          {/* SECTION 2: መሳሪያዎች (Tools & Resources - Emerald/Teal Theme) */}
+          {/* SECTION 2: መሳሪያዎች (Tools & Resources - Royal Blue & Gold Luxury Theme) */}
           <div className="hidden lg:flex items-center justify-between px-3 pt-1 pb-2 mb-1">
-            <span className="text-[11px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400 flex items-center gap-2 font-heading">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span className="text-[11px] font-black uppercase tracking-wider text-[#f9b03c] flex items-center gap-2 font-heading">
+              <span className="w-2 h-2 rounded-full bg-[#f9b03c] animate-pulse"></span>
               {t('tools')}
             </span>
-            <span className="text-[9px] uppercase tracking-widest bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-black px-2 py-0.5 rounded-full border border-emerald-500/20">
+            <span className="text-[9px] uppercase tracking-widest bg-[#f9b03c]/10 text-[#f9b03c] font-black px-2 py-0.5 rounded-full border border-[#f9b03c]/20">
               Tools
             </span>
           </div>
 
-          {/* Tsehay AI Button */}
+          {/* Tsehay AI Button - High-Visibility Brand Focal Point */}
           <button 
             onClick={() => setCurrentView('ai')} 
             className={`flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-auto md:w-full text-left text-sm cursor-pointer ${
               currentView === 'ai' 
-                ? 'bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 text-white shadow-md shadow-emerald-500/25 font-extrabold scale-[1.01]' 
-                : 'text-slate-600 dark:text-slate-300 hover:bg-emerald-500/10 dark:hover:bg-emerald-500/10 hover:text-emerald-700 dark:hover:text-emerald-300'
+                ? 'bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#e59b2b] text-slate-950 shadow-lg shadow-[#f9b03c]/30 font-black border border-white/30 scale-[1.02]' 
+                : 'text-slate-800 dark:text-slate-100 bg-[#f9b03c]/[0.06] hover:bg-[#f9b03c]/15 border border-[#f9b03c]/30 hover:border-[#f9b03c]/60 shadow-[0_0_16px_rgba(249,176,60,0.12)]'
             }`}
           >
             <div className="flex items-center gap-3">
               <div className="relative">
-                <span className={`w-8 h-8 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 ${
+                <span className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-300 group-hover:scale-110 ${
                   currentView === 'ai'
-                    ? 'bg-white/20 text-white shadow-inner'
-                    : 'bg-slate-100 dark:bg-slate-800/90 text-emerald-500 dark:text-emerald-400 group-hover:bg-emerald-500/20 group-hover:text-emerald-400'
+                    ? 'bg-slate-950 text-[#f9b03c] shadow-inner'
+                    : 'bg-[#f9b03c]/15 text-[#f9b03c] border border-[#f9b03c]/30 group-hover:bg-[#f9b03c] group-hover:text-slate-950'
                 }`}>
                   <i className="fa-solid fa-robot text-sm"></i>
                 </span>
-                {/* Bold, prominent blinking online status indicator dot */}
-                <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-400 rounded-full animate-ping opacity-90"></span>
-                <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-white dark:border-slate-800 rounded-full shadow-[0_0_10px_#10b981] animate-pulse"></span>
+                {/* Secondary Brand Color (Golden Yellow #f9b03c) Blinking Online Status Indicator */}
+                <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-[#f9b03c] rounded-full animate-ping opacity-90"></span>
+                <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-[#f9b03c] border-2 border-white dark:border-slate-800 rounded-full shadow-[0_0_12px_#f9b03c] animate-pulse"></span>
               </div>
-              <span className="whitespace-nowrap md:whitespace-normal md:hidden lg:block font-heading font-black">
-                Tsehay AI
-              </span>
+              <div className="flex flex-col">
+                <span className="whitespace-nowrap md:whitespace-normal md:hidden lg:block font-heading font-black text-sm tracking-tight">
+                  Tsehay AI
+                </span>
+              </div>
             </div>
+            <span className={`hidden lg:inline-flex text-[9px] uppercase tracking-wider font-black px-2 py-0.5 rounded-full border transition-all ${
+              currentView === 'ai'
+                ? 'bg-slate-950/80 text-[#f9b03c] border-slate-900/30'
+                : 'bg-[#f9b03c]/20 text-[#f9b03c] border-[#f9b03c]/40 group-hover:bg-[#f9b03c] group-hover:text-slate-950'
+            }`}>
+              24/7 AI
+            </span>
           </button>
           
           {/* Certificates Button */}
@@ -1828,15 +1847,15 @@ ${customAdminPrompt}
             onClick={() => setCurrentView('certificates')} 
             className={`flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-auto md:w-full text-left text-sm cursor-pointer ${
               currentView === 'certificates' 
-                ? 'bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 text-white shadow-md shadow-emerald-500/25 font-extrabold scale-[1.01]' 
-                : 'text-slate-600 dark:text-slate-300 hover:bg-emerald-500/10 dark:hover:bg-emerald-500/10 hover:text-emerald-700 dark:hover:text-emerald-300'
+                ? 'bg-gradient-to-r from-[#3268ba] via-blue-600 to-[#254f8e] text-white shadow-md shadow-[#3268ba]/25 font-extrabold scale-[1.01]' 
+                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
             <div className="flex items-center gap-3">
               <span className={`w-8 h-8 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 ${
                 currentView === 'certificates'
                   ? 'bg-white/20 text-white shadow-inner'
-                  : 'bg-slate-100 dark:bg-slate-800/90 text-slate-500 dark:text-slate-400 group-hover:bg-emerald-500/20 group-hover:text-emerald-400'
+                  : 'bg-slate-100 dark:bg-slate-800/90 text-slate-500 dark:text-slate-400 group-hover:bg-[#3268ba]/20 group-hover:text-[#5a93e8]'
               }`}>
                 <i className="fa-solid fa-award text-sm"></i>
               </span>
@@ -1854,15 +1873,15 @@ ${customAdminPrompt}
             onClick={() => setCurrentView('settings')} 
             className={`flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-auto md:w-full text-left text-sm cursor-pointer ${
               currentView === 'settings' 
-                ? 'bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 text-white shadow-md shadow-emerald-500/25 font-extrabold scale-[1.01]' 
-                : 'text-slate-600 dark:text-slate-300 hover:bg-emerald-500/10 dark:hover:bg-emerald-500/10 hover:text-emerald-700 dark:hover:text-emerald-300'
+                ? 'bg-gradient-to-r from-[#3268ba] via-blue-600 to-[#254f8e] text-white shadow-md shadow-[#3268ba]/25 font-extrabold scale-[1.01]' 
+                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
             <div className="flex items-center gap-3">
               <span className={`w-8 h-8 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 ${
                 currentView === 'settings'
                   ? 'bg-white/20 text-white shadow-inner'
-                  : 'bg-slate-100 dark:bg-slate-800/90 text-slate-500 dark:text-slate-400 group-hover:bg-emerald-500/20 group-hover:text-emerald-400'
+                  : 'bg-slate-100 dark:bg-slate-800/90 text-slate-500 dark:text-slate-400 group-hover:bg-[#3268ba]/20 group-hover:text-[#5a93e8]'
               }`}>
                 <i className="fa-solid fa-gear text-sm"></i>
               </span>
