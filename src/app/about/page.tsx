@@ -679,11 +679,18 @@ function AboutSingleReelSlider() {
   const [reels, setReels] = useState<ShortReel[]>(DEFAULT_REELS);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isSliding, setIsSliding] = useState(false);
+  const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('right');
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const touchStartX = useRef<number | null>(null);
+  const touchEndX = useRef<number | null>(null);
 
   useEffect(() => {
     try {
-      const q = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'about_reels'), orderBy('order', 'asc'));
+      const q = query(
+        collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'about_reels'),
+        orderBy('order', 'asc')
+      );
       const unsubscribe = onSnapshot(q, (snapshot) => {
         if (!snapshot.empty) {
           const list: ShortReel[] = snapshot.docs.map((d) => ({
@@ -698,20 +705,30 @@ function AboutSingleReelSlider() {
     } catch (e) {}
   }, []);
 
-  const handlePrev = () => {
+  const changeSlide = (newIndex: number, direction: 'left' | 'right') => {
+    if (isSliding) return;
     if (videoRef.current) {
       videoRef.current.pause();
       setIsPlaying(false);
     }
-    setCurrentIndex((prev) => (prev === 0 ? reels.length - 1 : prev - 1));
+    setSlideDirection(direction);
+    setIsSliding(true);
+    setCurrentIndex(newIndex);
+    setTimeout(() => {
+      setIsSliding(false);
+    }, 350);
   };
 
-  const handleNext = () => {
-    if (videoRef.current) {
-      videoRef.current.pause();
-      setIsPlaying(false);
-    }
-    setCurrentIndex((prev) => (prev + 1) % reels.length);
+  const handlePrev = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    const nextIdx = (currentIndex - 1 + reels.length) % reels.length;
+    changeSlide(nextIdx, 'left');
+  };
+
+  const handleNext = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    const nextIdx = (currentIndex + 1) % reels.length;
+    changeSlide(nextIdx, 'right');
   };
 
   const togglePlay = (e: React.MouseEvent) => {
@@ -731,83 +748,135 @@ function AboutSingleReelSlider() {
     }
   };
 
+  // Touch handlers for mobile swipe navigation
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.targetTouches[0].clientX;
+    touchEndX.current = null;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchEndX.current = e.targetTouches[0].clientX;
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStartX.current || !touchEndX.current) return;
+    const distance = touchStartX.current - touchEndX.current;
+    const minSwipeDistance = 45;
+    if (distance > minSwipeDistance) {
+      handleNext();
+    } else if (distance < -minSwipeDistance) {
+      handlePrev();
+    }
+    touchStartX.current = null;
+    touchEndX.current = null;
+  };
+
   const currentReel = reels[currentIndex] || reels[0];
 
   return (
-    <div className="relative max-w-sm sm:max-w-md mx-auto flex items-center justify-center select-none py-2">
+    <div className="relative max-w-sm sm:max-w-md mx-auto flex flex-col items-center justify-center select-none py-2">
       
-      {/* Sleek Glassmorphism Previous (<) Button */}
-      <button
-        type="button"
-        onClick={handlePrev}
-        className="absolute -left-5 sm:-left-12 md:-left-16 top-1/2 -translate-y-1/2 z-30 w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-slate-900/85 hover:bg-[#f9b03c] text-white hover:text-slate-950 border border-white/15 hover:border-[#f9b03c] backdrop-blur-xl flex items-center justify-center transition-all duration-300 shadow-2xl cursor-pointer active:scale-90 hover:scale-110 hover:shadow-[0_0_25px_rgba(249,176,60,0.5)]"
-        title="ወደ ኋላ (Previous)"
-        aria-label="Previous Video"
+      {/* Slider Viewport Container */}
+      <div 
+        className="relative w-full flex items-center justify-center"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
       >
-        <i className="fa-solid fa-chevron-left text-sm sm:text-base"></i>
-      </button>
+        {/* Sleek Glassmorphism Previous (<) Button */}
+        <button
+          type="button"
+          onClick={handlePrev}
+          className="absolute -left-4 sm:-left-12 md:-left-16 top-1/2 -translate-y-1/2 z-30 w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-slate-900/85 hover:bg-[#f9b03c] text-white hover:text-slate-950 border border-white/10 hover:border-[#f9b03c] backdrop-blur-xl flex items-center justify-center transition-all duration-300 shadow-[0_8px_32px_rgba(0,0,0,0.6)] cursor-pointer active:scale-90 hover:scale-110 hover:shadow-[0_0_30px_rgba(249,176,60,0.6)]"
+          title="ወደ ኋላ (Previous)"
+          aria-label="Previous Video"
+        >
+          <i className="fa-solid fa-chevron-left text-sm sm:text-base"></i>
+        </button>
 
-      {/* Sleek Glassmorphism Next (>) Button */}
-      <button
-        type="button"
-        onClick={handleNext}
-        className="absolute -right-5 sm:-right-12 md:-right-16 top-1/2 -translate-y-1/2 z-30 w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-slate-900/85 hover:bg-[#f9b03c] text-white hover:text-slate-950 border border-white/15 hover:border-[#f9b03c] backdrop-blur-xl flex items-center justify-center transition-all duration-300 shadow-2xl cursor-pointer active:scale-90 hover:scale-110 hover:shadow-[0_0_25px_rgba(249,176,60,0.5)]"
-        title="ቀጣይ (Next)"
-        aria-label="Next Video"
-      >
-        <i className="fa-solid fa-chevron-right text-sm sm:text-base"></i>
-      </button>
+        {/* Sleek Glassmorphism Next (>) Button */}
+        <button
+          type="button"
+          onClick={handleNext}
+          className="absolute -right-4 sm:-right-12 md:-right-16 top-1/2 -translate-y-1/2 z-30 w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-slate-900/85 hover:bg-[#f9b03c] text-white hover:text-slate-950 border border-white/10 hover:border-[#f9b03c] backdrop-blur-xl flex items-center justify-center transition-all duration-300 shadow-[0_8px_32px_rgba(0,0,0,0.6)] cursor-pointer active:scale-90 hover:scale-110 hover:shadow-[0_0_30px_rgba(249,176,60,0.6)]"
+          title="ቀጣይ (Next)"
+          aria-label="Next Video"
+        >
+          <i className="fa-solid fa-chevron-right text-sm sm:text-base"></i>
+        </button>
 
-      {/* 🌟 Single Perfectly Centered Video Reel Card (Pure & Clean - Zero Text Overlay) */}
-      <div
-        key={currentReel.src}
-        onClick={togglePlay}
-        style={{
-          backdropFilter: 'blur(16px)',
-          WebkitBackdropFilter: 'blur(16px)',
-          background: 'rgba(255, 255, 255, 0.03)',
-          border: '1px solid rgba(255, 255, 255, 0.05)',
-          borderRadius: '16px',
-        }}
-        className="group relative w-full aspect-[9/16] rounded-[16px] overflow-hidden cursor-pointer shadow-[0_10px_40px_rgba(0,0,0,0.8)] hover:shadow-[0_0_40px_rgba(249,176,60,0.3)] hover:border-[#f9b03c]/60 transition-all duration-500 transform hover:scale-[1.01] bg-slate-950"
-      >
-        {/* Video Element */}
-        <video
-          ref={videoRef}
-          src={currentReel.src}
-          playsInline
-          webkit-playsinline="true"
-          disablePictureInPicture
-          controlsList="nodownload noremoteplayback"
-          preload="auto"
-          onEnded={() => {
-            setIsPlaying(false);
-            handleNext();
+        {/* 🌟 Single Perfectly Centered Video Reel Card (Pure & Clean - Zero Text Overlay) */}
+        <div
+          key={currentReel.id + '-' + currentIndex}
+          onClick={togglePlay}
+          style={{
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
+            background: 'rgba(255, 255, 255, 0.03)',
+            border: '1px solid rgba(255, 255, 255, 0.05)',
+            borderRadius: '16px',
           }}
-          className="w-full h-full object-cover pointer-events-none"
-        />
+          className={`group relative w-full aspect-[9/16] rounded-[16px] overflow-hidden cursor-pointer shadow-[0_12px_45px_rgba(0,0,0,0.85)] hover:shadow-[0_0_40px_rgba(249,176,60,0.3)] hover:border-[#f9b03c]/60 transition-all duration-500 transform hover:scale-[1.01] bg-slate-950 ${
+            isSliding ? 'opacity-90 scale-[0.98]' : 'opacity-100 scale-100'
+          }`}
+        >
+          {/* Video Element */}
+          <video
+            ref={videoRef}
+            src={currentReel.src}
+            playsInline
+            webkit-playsinline="true"
+            disablePictureInPicture
+            controlsList="nodownload noremoteplayback"
+            preload="auto"
+            onEnded={() => {
+              setIsPlaying(false);
+              handleNext();
+            }}
+            className="w-full h-full object-cover pointer-events-none"
+          />
 
-        {/* Subtle Ambient Vignette Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 pointer-events-none" />
+          {/* Subtle Ambient Vignette Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 pointer-events-none" />
 
-        {/* 🌟 Centered Golden Yellow Play Button (Only element on the thumbnail) */}
-        <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
-          {!isPlaying && (
-            <span className="absolute w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-[#f9b03c]/35 animate-ping pointer-events-none"></span>
-          )}
-          <div className={`w-18 h-18 sm:w-20 sm:h-20 rounded-full flex items-center justify-center backdrop-blur-md transition-all duration-300 ${
-            isPlaying 
-              ? 'bg-black/75 border-2 border-[#f9b03c] text-[#f9b03c] opacity-0 group-hover:opacity-100' 
-              : 'bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 shadow-[0_0_40px_rgba(249,176,60,0.85)] group-hover:scale-110'
-          }`}>
-            {isPlaying ? (
-              <i className="fa-solid fa-pause text-2xl"></i>
-            ) : (
-              <i className="fa-solid fa-play text-2xl ml-1"></i>
+          {/* 🌟 Centered Golden Yellow Play Button (Only element on the thumbnail) */}
+          <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
+            {!isPlaying && (
+              <span className="absolute w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-[#f9b03c]/35 animate-ping pointer-events-none"></span>
             )}
+            <div className={`w-18 h-18 sm:w-20 sm:h-20 rounded-full flex items-center justify-center backdrop-blur-md transition-all duration-300 ${
+              isPlaying 
+                ? 'bg-black/75 border-2 border-[#f9b03c] text-[#f9b03c] opacity-0 group-hover:opacity-100' 
+                : 'bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 shadow-[0_0_40px_rgba(249,176,60,0.85)] group-hover:scale-110'
+            }`}>
+              {isPlaying ? (
+                <i className="fa-solid fa-pause text-2xl"></i>
+              ) : (
+                <i className="fa-solid fa-play text-2xl ml-1"></i>
+              )}
+            </div>
           </div>
         </div>
       </div>
+
+      {/* 🌟 Minimalist Glassmorphism Dot Pagination Indicators */}
+      {reels.length > 1 && (
+        <div className="flex items-center justify-center gap-2.5 mt-5 z-20">
+          {reels.map((_, idx) => (
+            <button
+              key={idx}
+              type="button"
+              onClick={() => changeSlide(idx, idx > currentIndex ? 'right' : 'left')}
+              className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${
+                idx === currentIndex
+                  ? 'w-7 bg-gradient-to-r from-[#f9b03c] to-amber-300 shadow-[0_0_12px_rgba(249,176,60,0.8)]'
+                  : 'w-2 bg-white/20 hover:bg-white/40'
+              }`}
+              aria-label={`Go to slide ${idx + 1}`}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
