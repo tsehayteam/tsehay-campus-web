@@ -1812,120 +1812,114 @@ ${customAdminPrompt}
           </div>
         </div>
 
-        <nav className="flex-1 overflow-x-auto md:overflow-y-auto py-3 md:py-4 px-3 space-y-1.5 font-body no-scrollbar w-full flex flex-row md:flex-col gap-2 md:gap-0 items-center md:items-stretch">
+        <nav className="flex-1 overflow-x-auto md:overflow-y-auto py-3 md:py-4 px-3 space-y-1.5 font-body no-scrollbar w-full flex flex-row md:flex-col gap-2 md:gap-1.5 items-center md:items-stretch">
           
-          {/* SECTION 1: ዋና ሜኑ (Main Menu - Core Navigation) */}
-          <div className="hidden lg:flex items-center justify-between px-3 pt-1 pb-2 mb-1">
-            <span className="text-[11px] font-black uppercase tracking-wider text-amber-500 dark:text-primary flex items-center gap-2 font-heading">
-              <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
-              {t('main_menu')}
+          {/* 🌟 PRESTIGIOUS UNIFIED LMS NAVIGATION HEADER (NO BLINKING DOTS) */}
+          <div className="hidden lg:flex items-center justify-between px-3 pt-1 pb-2.5 mb-1 border-b border-white/[0.06]">
+            <span className="text-xs font-black uppercase tracking-wider text-slate-400 dark:text-slate-300 flex items-center gap-2 font-heading">
+              <i className="fa-solid fa-compass text-[#f9b03c] text-xs"></i>
+              <span>{t('main_menu') || 'ዋና ማውጫ'}</span>
             </span>
-            <span className="text-[9px] uppercase tracking-widest bg-amber-500/10 dark:bg-primary/15 text-amber-600 dark:text-primary font-black px-2 py-0.5 rounded-full border border-amber-500/20 dark:border-primary/30">
-              Core
+            <span className="text-[9px] uppercase tracking-widest bg-[#f9b03c]/15 text-[#f9b03c] font-black px-2 py-0.5 rounded-full border border-[#f9b03c]/30 shadow-xs">
+              LMS
             </span>
           </div>
 
-          {/* Classroom Button */}
+          {/* 1. Classroom (መማሪያ ክፍል) */}
           <button 
             onClick={() => setCurrentView('classroom')} 
             className={`flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-auto md:w-full text-left text-sm cursor-pointer ${
               currentView === 'classroom' 
-                ? 'bg-gradient-to-r from-amber-400 via-primary to-yellow-400 text-dark shadow-md shadow-primary/25 font-extrabold scale-[1.01]' 
-                : 'text-slate-600 dark:text-slate-300 hover:bg-amber-500/10 dark:hover:bg-amber-500/10 hover:text-amber-600 dark:hover:text-amber-400'
+                ? 'bg-gradient-to-r from-[#3268ba] via-[#3b75d6] to-[#254f8e] text-white shadow-lg shadow-[#3268ba]/30 font-extrabold scale-[1.01] border border-white/20' 
+                : 'text-slate-700 dark:text-slate-300 hover:bg-[#3268ba]/10 dark:hover:bg-white/[0.06] hover:text-[#3268ba] dark:hover:text-white border border-transparent'
             }`}
           >
             <div className="flex items-center gap-3">
               <span className={`w-8 h-8 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 ${
                 currentView === 'classroom'
-                  ? 'bg-dark/15 text-dark shadow-inner'
-                  : 'bg-slate-100 dark:bg-slate-800/90 text-slate-500 dark:text-slate-400 group-hover:bg-primary/20 group-hover:text-primary'
+                  ? 'bg-white/20 text-white shadow-inner'
+                  : 'bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-400 group-hover:bg-[#3268ba]/20 group-hover:text-[#3268ba] dark:group-hover:text-[#5a93e8]'
               }`}>
-                <i className="fa-solid fa-play text-xs"></i>
+                <i className="fa-solid fa-graduation-cap text-xs"></i>
               </span>
               <span className="whitespace-nowrap md:whitespace-normal md:hidden lg:block font-bold">
                 {t('classroom')}
               </span>
             </div>
             {currentView === 'classroom' && (
-              <i className="hidden lg:block fa-solid fa-chevron-right text-xs text-dark/70"></i>
+              <i className="hidden lg:block fa-solid fa-chevron-right text-xs text-white/80 animate-in fade-in slide-in-from-left-1 duration-200"></i>
             )}
           </button>
           
-          {/* My Courses Button */}
+          {/* 2. My Courses (የእኔ ኮርሶች) */}
           <button 
             onClick={() => setCurrentView('courses')} 
             className={`flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-auto md:w-full text-left text-sm cursor-pointer ${
               currentView === 'courses' 
-                ? 'bg-gradient-to-r from-amber-400 via-primary to-yellow-400 text-dark shadow-md shadow-primary/25 font-extrabold scale-[1.01]' 
-                : 'text-slate-600 dark:text-slate-300 hover:bg-amber-500/10 dark:hover:bg-amber-500/10 hover:text-amber-600 dark:hover:text-amber-400'
+                ? 'bg-gradient-to-r from-[#3268ba] via-[#3b75d6] to-[#254f8e] text-white shadow-lg shadow-[#3268ba]/30 font-extrabold scale-[1.01] border border-white/20' 
+                : 'text-slate-700 dark:text-slate-300 hover:bg-[#3268ba]/10 dark:hover:bg-white/[0.06] hover:text-[#3268ba] dark:hover:text-white border border-transparent'
             }`}
           >
             <div className="flex items-center gap-3">
               <span className={`w-8 h-8 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 ${
                 currentView === 'courses'
-                  ? 'bg-dark/15 text-dark shadow-inner'
-                  : 'bg-slate-100 dark:bg-slate-800/90 text-slate-500 dark:text-slate-400 group-hover:bg-primary/20 group-hover:text-primary'
+                  ? 'bg-white/20 text-white shadow-inner'
+                  : 'bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-400 group-hover:bg-[#3268ba]/20 group-hover:text-[#3268ba] dark:group-hover:text-[#5a93e8]'
               }`}>
-                <i className="fa-solid fa-layer-group text-xs"></i>
+                <i className="fa-solid fa-book-bookmark text-xs"></i>
               </span>
               <span className="whitespace-nowrap md:whitespace-normal md:hidden lg:block font-bold">
                 {t('my_courses')}
               </span>
             </div>
-            {currentView === 'courses' && (
-              <i className="hidden lg:block fa-solid fa-chevron-right text-xs text-dark/70"></i>
+            {currentView === 'courses' ? (
+              <i className="hidden lg:block fa-solid fa-chevron-right text-xs text-white/80 animate-in fade-in slide-in-from-left-1 duration-200"></i>
+            ) : (
+              courses.length > 0 && (
+                <span className="hidden lg:inline-flex text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200/60 dark:bg-white/10 text-slate-600 dark:text-slate-300">
+                  {courses.length}
+                </span>
+              )
             )}
           </button>
 
-          {/* Messages Button */}
+          {/* 3. Messages & Support (መልዕክቶች እና ድጋፍ) */}
           <button 
             onClick={() => setCurrentView('messages')} 
             className={`flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-auto md:w-full text-left text-sm cursor-pointer ${
               currentView === 'messages' 
-                ? 'bg-gradient-to-r from-amber-400 via-primary to-yellow-400 text-dark shadow-md shadow-primary/25 font-extrabold scale-[1.01]' 
-                : 'text-slate-600 dark:text-slate-300 hover:bg-amber-500/10 dark:hover:bg-amber-500/10 hover:text-amber-600 dark:hover:text-amber-400'
+                ? 'bg-gradient-to-r from-[#3268ba] via-[#3b75d6] to-[#254f8e] text-white shadow-lg shadow-[#3268ba]/30 font-extrabold scale-[1.01] border border-white/20' 
+                : 'text-slate-700 dark:text-slate-300 hover:bg-[#3268ba]/10 dark:hover:bg-white/[0.06] hover:text-[#3268ba] dark:hover:text-white border border-transparent'
             }`}
           >
             <div className="flex items-center gap-3">
               <span className={`w-8 h-8 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 ${
                 currentView === 'messages'
-                  ? 'bg-dark/15 text-dark shadow-inner'
-                  : 'bg-slate-100 dark:bg-slate-800/90 text-slate-500 dark:text-slate-400 group-hover:bg-primary/20 group-hover:text-primary'
+                  ? 'bg-white/20 text-white shadow-inner'
+                  : 'bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-400 group-hover:bg-[#3268ba]/20 group-hover:text-[#3268ba] dark:group-hover:text-[#5a93e8]'
               }`}>
-                <i className="fa-solid fa-comments text-xs"></i>
+                <i className="fa-solid fa-headset text-xs"></i>
               </span>
               <span className="whitespace-nowrap md:whitespace-normal md:hidden lg:block font-bold">
                 {t('messages')}
               </span>
             </div>
-            {currentView === 'messages' && (
-              <i className="hidden lg:block fa-solid fa-chevron-right text-xs text-dark/70"></i>
+            {currentView === 'messages' ? (
+              <i className="hidden lg:block fa-solid fa-chevron-right text-xs text-white/80 animate-in fade-in slide-in-from-left-1 duration-200"></i>
+            ) : (
+              <span className="hidden lg:inline-flex text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#3268ba]/15 text-[#5a93e8] border border-[#3268ba]/30">
+                Live
+              </span>
             )}
           </button>
 
-          {/* SECTION DIVIDER & SPACING */}
-          <div className="hidden lg:block my-4 px-2">
-            <div className="h-px bg-slate-200/80 dark:bg-slate-700/60"></div>
-          </div>
-
-          {/* SECTION 2: መሳሪያዎች (Tools & Resources - Royal Blue & Gold Luxury Theme) */}
-          <div className="hidden lg:flex items-center justify-between px-3 pt-1 pb-2 mb-1">
-            <span className="text-[11px] font-black uppercase tracking-wider text-[#f9b03c] flex items-center gap-2 font-heading">
-              <span className="w-2 h-2 rounded-full bg-[#f9b03c] animate-pulse"></span>
-              {t('tools')}
-            </span>
-            <span className="text-[9px] uppercase tracking-widest bg-[#f9b03c]/10 text-[#f9b03c] font-black px-2 py-0.5 rounded-full border border-[#f9b03c]/20">
-              Tools
-            </span>
-          </div>
-
-          {/* Tsehay AI Button - High-Visibility Brand Focal Point */}
+          {/* 4. Tsehay AI Tutor - Elevated Spotlight Gold Brand Item */}
           <button 
             onClick={() => setCurrentView('ai')} 
             className={`flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-auto md:w-full text-left text-sm cursor-pointer ${
               currentView === 'ai' 
-                ? 'bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#e59b2b] text-slate-950 shadow-lg shadow-[#f9b03c]/30 font-black border border-white/30 scale-[1.02]' 
-                : 'text-slate-800 dark:text-slate-100 bg-[#f9b03c]/[0.06] hover:bg-[#f9b03c]/15 border border-[#f9b03c]/30 hover:border-[#f9b03c]/60 shadow-[0_0_16px_rgba(249,176,60,0.12)]'
+                ? 'bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#e59b2b] text-slate-950 shadow-xl shadow-[#f9b03c]/35 font-black border border-white/30 scale-[1.02]' 
+                : 'text-slate-800 dark:text-slate-100 bg-[#f9b03c]/[0.08] hover:bg-[#f9b03c]/15 border border-[#f9b03c]/30 hover:border-[#f9b03c]/60 shadow-[0_0_18px_rgba(249,176,60,0.12)]'
             }`}
           >
             <div className="flex items-center gap-3">
@@ -1933,13 +1927,12 @@ ${customAdminPrompt}
                 <span className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-300 group-hover:scale-110 ${
                   currentView === 'ai'
                     ? 'bg-slate-950 text-[#f9b03c] shadow-inner'
-                    : 'bg-[#f9b03c]/15 text-[#f9b03c] border border-[#f9b03c]/30 group-hover:bg-[#f9b03c] group-hover:text-slate-950'
+                    : 'bg-[#f9b03c]/20 text-[#f9b03c] border border-[#f9b03c]/40 group-hover:bg-[#f9b03c] group-hover:text-slate-950'
                 }`}>
                   <i className="fa-solid fa-robot text-sm"></i>
                 </span>
-                {/* Secondary Brand Color (Golden Yellow #f9b03c) Blinking Online Status Indicator */}
-                <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-[#f9b03c] rounded-full animate-ping opacity-90"></span>
-                <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-[#f9b03c] border-2 border-white dark:border-slate-800 rounded-full shadow-[0_0_12px_#f9b03c] animate-pulse"></span>
+                {/* Clean Steady Gold Glow Status Dot */}
+                <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-[#f9b03c] border-2 border-white dark:border-slate-900 rounded-full shadow-[0_0_8px_#f9b03c]"></span>
               </div>
               <div className="flex flex-col">
                 <span className="whitespace-nowrap md:whitespace-normal md:hidden lg:block font-heading font-black text-sm tracking-tight">
@@ -1956,20 +1949,20 @@ ${customAdminPrompt}
             </span>
           </button>
           
-          {/* Certificates Button */}
+          {/* 5. Certificates (የብቃት ሰርተፊኬት) */}
           <button 
             onClick={() => setCurrentView('certificates')} 
             className={`flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-auto md:w-full text-left text-sm cursor-pointer ${
               currentView === 'certificates' 
-                ? 'bg-gradient-to-r from-[#3268ba] via-blue-600 to-[#254f8e] text-white shadow-md shadow-[#3268ba]/25 font-extrabold scale-[1.01]' 
-                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white'
+                ? 'bg-gradient-to-r from-[#3268ba] via-[#3b75d6] to-[#254f8e] text-white shadow-lg shadow-[#3268ba]/30 font-extrabold scale-[1.01] border border-white/20' 
+                : 'text-slate-700 dark:text-slate-300 hover:bg-[#3268ba]/10 dark:hover:bg-white/[0.06] hover:text-[#3268ba] dark:hover:text-white border border-transparent'
             }`}
           >
             <div className="flex items-center gap-3">
               <span className={`w-8 h-8 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 ${
                 currentView === 'certificates'
                   ? 'bg-white/20 text-white shadow-inner'
-                  : 'bg-slate-100 dark:bg-slate-800/90 text-slate-500 dark:text-slate-400 group-hover:bg-[#3268ba]/20 group-hover:text-[#5a93e8]'
+                  : 'bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-400 group-hover:bg-[#3268ba]/20 group-hover:text-[#3268ba] dark:group-hover:text-[#5a93e8]'
               }`}>
                 <i className="fa-solid fa-award text-sm"></i>
               </span>
@@ -1978,11 +1971,11 @@ ${customAdminPrompt}
               </span>
             </div>
             {currentView === 'certificates' && (
-              <i className="hidden lg:block fa-solid fa-chevron-right text-xs text-white/80"></i>
+              <i className="hidden lg:block fa-solid fa-chevron-right text-xs text-white/80 animate-in fade-in slide-in-from-left-1 duration-200"></i>
             )}
           </button>
           
-          {/* Settings Button */}
+          {/* 6. Settings (መገለጫ እና ማስተካከያ) */}
           <button 
             onClick={() => setCurrentView('settings')} 
             className={`flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-auto md:w-full text-left text-sm cursor-pointer ${
