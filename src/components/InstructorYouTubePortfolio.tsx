@@ -2,8 +2,14 @@
 
 import React, { useState, useEffect } from 'react';
 
-const LOCAL_EMBED_URL = 'https://www.youtube.com/embed/l592Q0zJq2M?modestbranding=1&rel=0&controls=1&showinfo=0';
-const INTERNATIONAL_EMBED_URL = 'https://www.youtube.com/embed/Z0oYJ8z0i3s?modestbranding=1&rel=0&controls=1&showinfo=0';
+const LOCAL_VIDEO_ID = 'l592Q0zJq2M';
+const INTERNATIONAL_VIDEO_ID = 'Z0oYJ8z0i3s';
+
+const LOCAL_WATCH_URL = `https://www.youtube.com/watch?v=${LOCAL_VIDEO_ID}`;
+const INTERNATIONAL_WATCH_URL = `https://www.youtube.com/watch?v=${INTERNATIONAL_VIDEO_ID}`;
+
+const LOCAL_THUMBNAIL = `https://img.youtube.com/vi/${LOCAL_VIDEO_ID}/maxresdefault.jpg`;
+const INTERNATIONAL_THUMBNAIL = `https://img.youtube.com/vi/${INTERNATIONAL_VIDEO_ID}/maxresdefault.jpg`;
 
 export default function InstructorYouTubePortfolio() {
   // 🌟 Human-like Pencil Typewriter with Playful Eraser Corrections & Multi-Phrases
@@ -242,15 +248,42 @@ export default function InstructorYouTubePortfolio() {
                 </div>
               </div>
 
-              <div className="relative aspect-video w-full overflow-hidden bg-black flex items-center justify-center">
-                <iframe
-                  src={LOCAL_EMBED_URL}
-                  title="ሀገርኛ ዩቲዩብ ቻናል"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
-                  allowFullScreen
-                  className="w-full h-full border-0 absolute inset-0 z-10"
+              {/* Clickable Thumbnail with Centered Golden Play Button */}
+              <a
+                href={LOCAL_WATCH_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="relative aspect-video w-full overflow-hidden bg-black flex items-center justify-center group/thumb cursor-pointer block"
+                title="በ YouTube ለመመልከት ይጫኑ (Watch on YouTube)"
+              >
+                <img
+                  src={LOCAL_THUMBNAIL}
+                  alt="ሀገርኛ ዩቲዩብ ቻናል"
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover/thumb:scale-105"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = `https://img.youtube.com/vi/${LOCAL_VIDEO_ID}/hqdefault.jpg`;
+                  }}
                 />
-              </div>
+
+                {/* Subtle dark overlay on hover */}
+                <div className="absolute inset-0 bg-black/20 group-hover/thumb:bg-black/40 transition-colors duration-300 flex items-center justify-center">
+                  
+                  {/* Glowing Golden Yellow Play Button */}
+                  <div className="relative flex items-center justify-center">
+                    <span className="absolute w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-[#f9b03c]/40 animate-ping pointer-events-none"></span>
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 flex items-center justify-center text-2xl sm:text-3xl shadow-[0_0_35px_rgba(249,176,60,0.85)] group-hover/thumb:scale-110 group-hover/thumb:shadow-[0_0_50px_rgba(249,176,60,1)] transition-all duration-300">
+                      <i className="fa-solid fa-play ml-1"></i>
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* Bottom Pill Badge */}
+                <div className="absolute bottom-3 right-3 bg-black/85 backdrop-blur-md border border-white/20 px-3 py-1 rounded-full text-[11px] font-bold text-white flex items-center gap-1.5 shadow-lg group-hover/thumb:border-[#f9b03c]/60 group-hover/thumb:text-[#f9b03c] transition-colors">
+                  <i className="fa-brands fa-youtube text-red-500 text-sm"></i>
+                  <span>በ YouTube ይመልከቱ</span>
+                </div>
+              </a>
 
             </div>
           </div>
@@ -280,15 +313,42 @@ export default function InstructorYouTubePortfolio() {
                 </div>
               </div>
 
-              <div className="relative aspect-video w-full overflow-hidden bg-black flex items-center justify-center">
-                <iframe
-                  src={INTERNATIONAL_EMBED_URL}
-                  title="ዓለም አቀፍ ዩቲዩብ ቻናል"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
-                  allowFullScreen
-                  className="w-full h-full border-0 absolute inset-0 z-10"
+              {/* Clickable Thumbnail with Centered Golden Play Button */}
+              <a
+                href={INTERNATIONAL_WATCH_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="relative aspect-video w-full overflow-hidden bg-black flex items-center justify-center group/thumb cursor-pointer block"
+                title="በ YouTube ለመመልከት ይጫኑ (Watch on YouTube)"
+              >
+                <img
+                  src={INTERNATIONAL_THUMBNAIL}
+                  alt="ዓለም አቀፍ ዩቲዩብ ቻናል"
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover/thumb:scale-105"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = `https://img.youtube.com/vi/${INTERNATIONAL_VIDEO_ID}/hqdefault.jpg`;
+                  }}
                 />
-              </div>
+
+                {/* Subtle dark overlay on hover */}
+                <div className="absolute inset-0 bg-black/20 group-hover/thumb:bg-black/40 transition-colors duration-300 flex items-center justify-center">
+                  
+                  {/* Glowing Golden Yellow Play Button */}
+                  <div className="relative flex items-center justify-center">
+                    <span className="absolute w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-[#f9b03c]/40 animate-ping pointer-events-none"></span>
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 flex items-center justify-center text-2xl sm:text-3xl shadow-[0_0_35px_rgba(249,176,60,0.85)] group-hover/thumb:scale-110 group-hover/thumb:shadow-[0_0_50px_rgba(249,176,60,1)] transition-all duration-300">
+                      <i className="fa-solid fa-play ml-1"></i>
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* Bottom Pill Badge */}
+                <div className="absolute bottom-3 right-3 bg-black/85 backdrop-blur-md border border-white/20 px-3 py-1 rounded-full text-[11px] font-bold text-white flex items-center gap-1.5 shadow-lg group-hover/thumb:border-[#f9b03c]/60 group-hover/thumb:text-[#f9b03c] transition-colors">
+                  <i className="fa-brands fa-youtube text-red-500 text-sm"></i>
+                  <span>በ YouTube ይመልከቱ</span>
+                </div>
+              </a>
 
             </div>
           </div>
