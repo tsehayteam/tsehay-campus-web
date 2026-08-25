@@ -288,7 +288,7 @@ function StudentDashboardContent() {
   };
 
   const [chatInput, setChatInput] = useState("");
-  const [chatMessages, setChatMessages] = useState([
+  const [chatMessages, setChatMessages] = useState<any[]>([
     { role: 'ai', text: "ሰላም! እኔ Tsehay AI ነኝ። የትምህርት ጥያቄዎች ካሉዎት እባክዎ ይጠይቁኝ!" }
   ]);
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -296,6 +296,12 @@ function StudentDashboardContent() {
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [selectedAiCourse, setSelectedAiCourse] = useState<any>(null);
   const [copiedMsgIdx, setCopiedMsgIdx] = useState<number | null>(null);
+  const [aiAttachedImage, setAiAttachedImage] = useState<string | null>(null);
+  const [isAiVoiceRecording, setIsAiVoiceRecording] = useState(false);
+  const [aiRecordingSeconds, setAiRecordingSeconds] = useState(0);
+  const aiRecognitionRef = useRef<any>(null);
+  const aiTimerRef = useRef<any>(null);
+  const aiFileInputRef = useRef<HTMLInputElement>(null);
   const [currentVideoPlayedFraction, setCurrentVideoPlayedFraction] = useState(0);
 
   // Enterprise Classroom States
@@ -305,8 +311,12 @@ function StudentDashboardContent() {
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [showLessonAiModal, setShowLessonAiModal] = useState(false);
   const [lessonAiQuery, setLessonAiQuery] = useState('');
-  const [lessonAiMessages, setLessonAiMessages] = useState<Array<{ role: 'user' | 'ai'; text: string }>>([]);
+  const [lessonAiMessages, setLessonAiMessages] = useState<Array<{ role: 'user' | 'ai'; text: string; image?: string }>>([]);
   const [isLessonAiLoading, setIsLessonAiLoading] = useState(false);
+  const [lessonAiAttachedImage, setLessonAiAttachedImage] = useState<string | null>(null);
+  const [isLessonVoiceRecording, setIsLessonVoiceRecording] = useState(false);
+  const lessonFileInputRef = useRef<HTMLInputElement>(null);
+  const lessonVoiceRecRef = useRef<any>(null);
 
   // Auto-Resume Timestamp Tracker
   useEffect(() => {
@@ -362,13 +372,64 @@ function StudentDashboardContent() {
     }
   };
 
-  const handleAskLessonAi = async (customPrompt?: string) => {
-    const queryText = customPrompt || lessonAiQuery;
-    if (!queryText.trim() || isLessonAiLoading) return;
+  const startLessonVoiceRecording = () => {
+    if (typeof window === 'undefined') return;
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("ይቅርታ፣ የእርስዎ ብሮውዘር Voice Recognition አይደግፍም።");
+      return;
+    }
+    try {
+      const rec = new SpeechRecognition();
+      rec.lang = 'am-ET';
+      rec.continuous = true;
+      rec.interimResults = true;
+      rec.onstart = () => setIsLessonVoiceRecording(true);
+      rec.onresult = (e: any) => {
+        let text = '';
+        for (let i = e.resultIndex; i < e.results.length; i++) text += e.results[i][0].transcript;
+        if (text) setLessonAiQuery(prev => (prev ? `${prev} ` : '') + text.trim());
+      };
+      rec.onerror = () => setIsLessonVoiceRecording(false);
+      rec.onend = () => setIsLessonVoiceRecording(false);
+      rec.start();
+      lessonVoiceRecRef.current = rec;
+    } catch (e) {
+      setIsLessonVoiceRecording(false);
+    }
+  };
 
-    const userMsg = { role: 'user' as const, text: queryText };
+  const stopLessonVoiceRecording = () => {
+    if (lessonVoiceRecRef.current) {
+      try { lessonVoiceRecRef.current.stop(); } catch (e) {}
+      lessonVoiceRecRef.current = null;
+    }
+    setIsLessonVoiceRecording(false);
+  };
+
+  const handleLessonImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      alert('እባክዎ ትክክለኛ የፎቶ ፋይል ይምረጡ።');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setLessonAiAttachedImage(event.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleAskLessonAi = async (customPrompt?: string) => {
+    const queryText = (customPrompt || lessonAiQuery).trim();
+    const imageToSend = lessonAiAttachedImage;
+    if ((!queryText && !imageToSend) || isLessonAiLoading) return;
+
+    const userMsg = { role: 'user' as const, text: queryText || "📸 ፎቶ ተያይዟል", image: imageToSend || undefined };
     setLessonAiMessages(prev => [...prev, userMsg]);
     setLessonAiQuery('');
+    setLessonAiAttachedImage(null);
     setIsLessonAiLoading(true);
 
     try {
@@ -377,8 +438,11 @@ function StudentDashboardContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           prompt: queryText,
+          image: imageToSend,
           courseContext: {
             courseTitle: activeCourse?.title,
+            courseId: activeCourse?.id,
+            category: activeCourse?.category,
             lessonTitle: activeLesson?.title,
             lessonDesc: activeLesson?.desc || activeCourse?.desc,
             courseAiPrompt: activeCourse?.aiPrompt,
@@ -1059,16 +1123,102 @@ function StudentDashboardContent() {
     return () => { isMounted = false; };
   }, [user]);
 
+  const startAiVoiceRecording = () => {
+    if (typeof window === 'undefined') return;
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("ይቅርታ፣ የእርስዎ ብሮውዘር Voice Recognition አይደግፍም። እባክዎ Chrome ወይም Safari ይጠቀሙ።");
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'am-ET';
+      recognition.continuous = true;
+      recognition.interimResults = true;
+
+      recognition.onstart = () => {
+        setIsAiVoiceRecording(true);
+        setAiRecordingSeconds(0);
+        aiTimerRef.current = setInterval(() => {
+          setAiRecordingSeconds(prev => prev + 1);
+        }, 1000);
+      };
+
+      recognition.onresult = (event: any) => {
+        let currentTranscript = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          currentTranscript += event.results[i][0].transcript;
+        }
+        if (currentTranscript) {
+          setChatInput(prev => (prev ? `${prev} ` : '') + currentTranscript.trim());
+        }
+      };
+
+      recognition.onerror = (event: any) => {
+        console.warn("Voice speech recognition error:", event.error);
+        stopAiVoiceRecording();
+      };
+
+      recognition.onend = () => {
+        stopAiVoiceRecording();
+      };
+
+      recognition.start();
+      aiRecognitionRef.current = recognition;
+    } catch (err) {
+      console.warn("Could not start voice recognition:", err);
+      setIsAiVoiceRecording(false);
+    }
+  };
+
+  const stopAiVoiceRecording = () => {
+    if (aiRecognitionRef.current) {
+      try { aiRecognitionRef.current.stop(); } catch (e) {}
+      aiRecognitionRef.current = null;
+    }
+    if (aiTimerRef.current) {
+      clearInterval(aiTimerRef.current);
+      aiTimerRef.current = null;
+    }
+    setIsAiVoiceRecording(false);
+    setAiRecordingSeconds(0);
+  };
+
+  const handleAiImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('እባክዎ ትክክለኛ የፎቶ ፋይል (PNG, JPG, JPEG, WebP) ይምረጡ።');
+      return;
+    }
+
+    if (file.size > 8 * 1024 * 1024) {
+      alert('የፎቶው መጠን ከ 8MB በታች መሆን አለበት።');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64 = event.target?.result as string;
+      setAiAttachedImage(base64);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSendAiMessage = async (e?: React.FormEvent, customPrompt?: string) => {
     if (e) e.preventDefault();
     const queryText = (customPrompt || chatInput).trim();
-    if (!queryText || isChatLoading) return;
+    const imageToSend = aiAttachedImage;
+    if ((!queryText && !imageToSend) || isChatLoading) return;
 
-    const userMsg = queryText;
+    const userMsg = queryText || (imageToSend ? "📸 ፎቶ ተያይዟል" : "");
     const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const newMsgs = [...chatMessages, { role: 'user', text: userMsg, timestamp: nowTime }];
+    const newMsgs = [...chatMessages, { role: 'user', text: userMsg, image: imageToSend || undefined, timestamp: nowTime }];
     setChatMessages(newMsgs);
     setChatInput('');
+    setAiAttachedImage(null);
     setIsChatLoading(true);
 
     if (user?.uid) {
@@ -1098,7 +1248,7 @@ function StudentDashboardContent() {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: userMsg, courseContext })
+        body: JSON.stringify({ prompt: queryText, image: imageToSend, courseContext })
       });
       const data = await response.json();
       const reply = data.reply || data.error || "ይቅርታ፣ አሁን ላይ መመለስ አልቻልኩም።";
@@ -3036,10 +3186,23 @@ ${customAdminPrompt}
 
         {currentView === 'ai' && (
           <div className="max-w-4xl mx-auto py-4 space-y-4">
-             <div className="bg-white dark:bg-slate-900/90 backdrop-blur-2xl rounded-3xl p-4 sm:p-6 md:p-8 shadow-xl border border-slate-200 dark:border-white/10 flex flex-col h-[calc(100vh-170px)] min-h-[540px] overflow-hidden">
+             {/* Hidden File Input for Image Attachment */}
+             <input 
+               ref={aiFileInputRef}
+               type="file"
+               accept="image/*"
+               onChange={handleAiImageUpload}
+               className="hidden"
+             />
+
+             <div className="relative bg-white dark:bg-[#070b14]/95 backdrop-blur-3xl rounded-3xl p-4 sm:p-6 md:p-8 shadow-2xl border border-slate-200 dark:border-white/10 flex flex-col h-[calc(100vh-170px)] min-h-[560px] overflow-hidden">
                  
+                 {/* Subtle Glowing Background Mesh & Luxury Wallpaper Pattern */}
+                 <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(249,176,60,0.08),transparent_50%),radial-gradient(ellipse_at_bottom_left,rgba(50,104,186,0.12),transparent_50%)] pointer-events-none" />
+                 <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none" />
+
                  {/* Top Header with Course Specialization Indicator */}
-                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 dark:border-white/10 pb-4 mb-3">
+                 <div className="relative z-10 flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 dark:border-white/10 pb-4 mb-3">
                      <div className="flex items-center gap-3">
                          <div className="relative">
                            <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-200 text-slate-950 flex items-center justify-center text-xl font-black shadow-[0_0_20px_rgba(249,176,60,0.4)] border border-white/20">
@@ -3056,7 +3219,7 @@ ${customAdminPrompt}
                                </span>
                              </div>
                              <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
-                               {selectedAiCourse ? `የትኩረት መስክ: ${selectedAiCourse.title}` : 'አጠቃላይ የትምህርት AI ረዳት'}
+                               {selectedAiCourse ? `የትኩረት መስክ: ${selectedAiCourse.title}` : 'አጠቃላይ የትምህርት AI ረዳት (General Campus AI)'}
                              </p>
                          </div>
                      </div>
@@ -3092,7 +3255,7 @@ ${customAdminPrompt}
                  </div>
 
                  {/* Chat Messages Body */}
-                 <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-4 bg-gray-50 dark:bg-slate-950/60 rounded-2xl border border-gray-100 dark:border-white/5">
+                 <div className="relative z-10 flex-1 overflow-y-auto p-3 sm:p-4 space-y-4 bg-gray-50/80 dark:bg-slate-950/60 rounded-2xl border border-gray-100 dark:border-white/5">
                      {chatMessages.map((m: any, i: number) => {
                        const isUser = m.role === 'user';
                        return (
@@ -3109,6 +3272,13 @@ ${customAdminPrompt}
                                    ? 'bg-gradient-to-r from-[#f9b03c] to-amber-400 text-slate-950 font-bold rounded-br-none shadow-[0_4px_20px_rgba(249,176,60,0.2)]' 
                                    : 'bg-white dark:bg-[#0c1222] dark:text-slate-100 text-slate-900 shadow-sm rounded-bl-none border border-gray-200 dark:border-white/10 font-normal'
                                }`}>
+                                   {/* Render attached image inside bubble if present */}
+                                   {m.image && (
+                                     <div className="mb-2.5 rounded-xl overflow-hidden border border-black/10 dark:border-white/10 shadow-sm">
+                                       <img src={m.image} alt="User Upload" className="w-full max-h-56 object-cover cursor-pointer hover:scale-105 transition-transform" />
+                                     </div>
+                                   )}
+
                                    <div className="whitespace-pre-wrap font-body">
                                      {m.text}
                                    </div>
@@ -3184,8 +3354,48 @@ ${customAdminPrompt}
                      <div ref={chatEndRef} />
                  </div>
 
+                 {/* Live Attached Image Thumbnail Preview */}
+                 {aiAttachedImage && (
+                   <div className="relative z-10 px-4 py-2 bg-gray-100 dark:bg-[#0c1326] border border-gray-200 dark:border-white/10 rounded-2xl flex items-center justify-between animate-in fade-in slide-in-from-bottom-1 my-1">
+                     <div className="flex items-center gap-2.5">
+                       <img src={aiAttachedImage} alt="Preview" className="w-12 h-12 object-cover rounded-xl border border-[#f9b03c]/50 shadow-sm" />
+                       <div className="text-xs">
+                         <span className="font-bold text-dark dark:text-white block">ፎቶ ተያይዟል (Attached Photo)</span>
+                         <span className="text-[10px] text-emerald-600 dark:text-emerald-400">✓ ለ AIው ትንታኔ ተዘጋጅቷል</span>
+                       </div>
+                     </div>
+                     <button 
+                       onClick={() => setAiAttachedImage(null)}
+                       className="w-7 h-7 rounded-full bg-red-500/20 hover:bg-red-500 text-red-500 hover:text-white flex items-center justify-center text-xs transition cursor-pointer"
+                       title="ፎቶውን አስወግድ"
+                     >
+                       <i className="fa-solid fa-xmark"></i>
+                     </button>
+                   </div>
+                 )}
+
+                 {/* Voice Recording Waveform Bar */}
+                 {isAiVoiceRecording && (
+                   <div className="relative z-10 px-4 py-3 bg-gradient-to-r from-red-950/90 via-[#1a0b18] to-red-950/90 border border-red-500/30 rounded-2xl flex items-center justify-between animate-pulse my-1">
+                     <div className="flex items-center gap-3">
+                       <span className="relative flex h-3 w-3">
+                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
+                         <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                       </span>
+                       <span className="text-xs font-bold text-red-400">ድምፅዎን እያዳመጥኩ ነው... ({aiRecordingSeconds}s)</span>
+                     </div>
+                     <button 
+                       onClick={stopAiVoiceRecording}
+                       className="bg-red-500 hover:bg-red-600 text-white text-xs font-black px-3 py-1 rounded-xl transition cursor-pointer flex items-center gap-1.5"
+                     >
+                       <i className="fa-solid fa-stop"></i>
+                       <span>አቁም</span>
+                     </button>
+                   </div>
+                 )}
+
                  {/* Quick Action Suggestion Chips */}
-                 <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
+                 <div className="relative z-10 flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
                      {[
                        { label: '💡 የኮርስ ማጠቃለያ', prompt: selectedAiCourse ? `የ"${selectedAiCourse.title}" ኮርስ ዋና ዋና ነጥቦችን አጠቃልልልኝ` : 'የኮርሶቹን ዋና ዋና ጥቅሞች አጠቃልልልኝ' },
                        { label: '🚀 የተግባር እርምጃዎች', prompt: selectedAiCourse ? `በ"${selectedAiCourse.title}" የተማርነውን በኢትዮጵያ ውስጥ በተግባር እንዴት ልተግብረው?` : 'የተማርኩትን ወደ ተግባራዊ ገቢ እንዴት እቀይረዋለሁ?' },
@@ -3203,8 +3413,32 @@ ${customAdminPrompt}
                      ))}
                  </div>
 
-                 {/* Input Bar with Tactile Button Micro-Interactions */}
-                 <form onSubmit={(e) => handleSendAiMessage(e)} className="flex gap-2">
+                 {/* Input Bar with Voice & Image Attachment Actions */}
+                 <form onSubmit={(e) => handleSendAiMessage(e)} className="relative z-10 flex items-center gap-2">
+                     {/* Photo Upload Button */}
+                     <button
+                       type="button"
+                       onClick={() => aiFileInputRef.current?.click()}
+                       className="w-11 h-11 rounded-2xl bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/15 text-gray-600 dark:text-gray-300 hover:text-[#f9b03c] border border-gray-200 dark:border-white/15 flex items-center justify-center transition active:scale-90 cursor-pointer shrink-0"
+                       title="ፎቶ / ስክሪንሾት አያይዝ"
+                     >
+                       <i className="fa-solid fa-paperclip text-sm"></i>
+                     </button>
+
+                     {/* Voice Record Button */}
+                     <button
+                       type="button"
+                       onClick={isAiVoiceRecording ? stopAiVoiceRecording : startAiVoiceRecording}
+                       className={`w-11 h-11 rounded-2xl border flex items-center justify-center transition active:scale-90 cursor-pointer shrink-0 ${
+                         isAiVoiceRecording 
+                           ? 'bg-red-500 text-white border-red-400 animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.6)]' 
+                           : 'bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/15 text-gray-600 dark:text-gray-300 hover:text-[#f9b03c] border-gray-200 dark:border-white/15'
+                       }`}
+                       title={isAiVoiceRecording ? "መቅዳት አቁም" : "በድምፅ ተናገር (Speak via Voice)"}
+                     >
+                       <i className={`fa-solid ${isAiVoiceRecording ? 'fa-stop' : 'fa-microphone'} text-sm`}></i>
+                     </button>
+
                      <input 
                          type="text" 
                          value={chatInput}
@@ -3214,9 +3448,9 @@ ${customAdminPrompt}
                      />
                      <button 
                          type="submit" 
-                         disabled={!chatInput.trim() || isChatLoading}
-                         className={`px-5 sm:px-6 rounded-2xl font-black text-xs sm:text-sm flex items-center justify-center gap-2 transition-all duration-200 cursor-pointer shadow-md active:scale-90 ${
-                           chatInput.trim() && !isChatLoading
+                         disabled={(!chatInput.trim() && !aiAttachedImage) || isChatLoading}
+                         className={`px-5 sm:px-6 h-11 rounded-2xl font-black text-xs sm:text-sm flex items-center justify-center gap-2 transition-all duration-200 cursor-pointer shadow-md active:scale-90 ${
+                           (chatInput.trim() || aiAttachedImage) && !isChatLoading
                              ? 'bg-gradient-to-r from-[#f9b03c] to-amber-400 text-slate-950 shadow-[0_0_20px_rgba(249,176,60,0.4)] hover:brightness-110'
                              : 'bg-gray-200 dark:bg-white/10 text-gray-400 cursor-not-allowed'
                          }`}
@@ -3561,9 +3795,22 @@ ${customAdminPrompt}
       {/* In-Lesson Contextual AI Tutor Modal */}
       {showLessonAiModal && (
           <div className="fixed inset-0 z-[10000] bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4">
-              <div className="bg-[#070b14]/95 backdrop-blur-2xl border border-white/15 text-white w-full max-w-xl rounded-3xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden animate-in zoom-in-95 duration-200">
+              {/* Hidden File Input for Lesson AI Image Attachment */}
+              <input 
+                ref={lessonFileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleLessonImageUpload}
+                className="hidden"
+              />
+
+              <div className="relative bg-[#070b14]/95 backdrop-blur-3xl border border-white/15 text-white w-full max-w-xl rounded-3xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden animate-in zoom-in-95 duration-200">
+                  {/* Subtle Wallpaper Pattern */}
+                  <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(249,176,60,0.08),transparent_50%),radial-gradient(ellipse_at_bottom_left,rgba(50,104,186,0.12),transparent_50%)] pointer-events-none" />
+                  <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none" />
+
                   {/* Header */}
-                  <div className="p-4 sm:p-5 border-b border-white/10 bg-gradient-to-r from-[#0b1329] via-[#0f1b38] to-[#0b1329] flex items-center justify-between">
+                  <div className="relative z-10 p-4 sm:p-5 border-b border-white/10 bg-gradient-to-r from-[#0b1329] via-[#0f1b38] to-[#0b1329] flex items-center justify-between">
                       <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-200 text-slate-950 flex items-center justify-center text-lg font-black shadow-[0_0_15px_rgba(249,176,60,0.4)]">
                               <i className="fa-solid fa-robot"></i>
@@ -3588,7 +3835,7 @@ ${customAdminPrompt}
                   </div>
 
                   {/* Chat Body */}
-                  <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-[260px] max-h-[420px] bg-[#050811]/60">
+                  <div className="relative z-10 flex-1 overflow-y-auto p-4 space-y-3 min-h-[260px] max-h-[420px] bg-[#050811]/60">
                       {lessonAiMessages.length === 0 ? (
                           <div className="text-center py-8 text-gray-300 space-y-3">
                               <div className="w-14 h-14 rounded-3xl bg-[#f9b03c]/10 text-[#f9b03c] mx-auto flex items-center justify-center text-2xl border border-[#f9b03c]/20 shadow-inner">
@@ -3631,6 +3878,13 @@ ${customAdminPrompt}
                                                     : 'bg-[#0f1629] text-gray-100 border border-white/10 rounded-bl-none font-body whitespace-pre-wrap'
                                             }`}
                                         >
+                                            {/* Render attached image inside bubble if present */}
+                                            {msg.image && (
+                                              <div className="mb-2 rounded-xl overflow-hidden border border-black/10 dark:border-white/10 shadow-sm">
+                                                <img src={msg.image} alt="User Upload" className="w-full max-h-48 object-cover cursor-pointer" />
+                                              </div>
+                                            )}
+
                                             {msg.text}
                                         </div>
                                     </div>
@@ -3653,8 +3907,62 @@ ${customAdminPrompt}
                       )}
                   </div>
 
+                  {/* Attached Image Preview inside Modal */}
+                  {lessonAiAttachedImage && (
+                    <div className="relative z-10 px-4 py-2 bg-[#0c1326] border-t border-white/10 flex items-center justify-between animate-in fade-in">
+                      <div className="flex items-center gap-2.5">
+                        <img src={lessonAiAttachedImage} alt="Preview" className="w-10 h-10 object-cover rounded-xl border border-[#f9b03c]/50" />
+                        <span className="text-xs font-bold text-white">📸 ፎቶ ተያይዟል</span>
+                      </div>
+                      <button 
+                        onClick={() => setLessonAiAttachedImage(null)}
+                        className="w-6 h-6 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center text-xs cursor-pointer hover:bg-red-500 hover:text-white transition"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Voice Recording Waveform inside Modal */}
+                  {isLessonVoiceRecording && (
+                    <div className="relative z-10 px-4 py-2.5 bg-red-950/90 border-t border-red-500/30 flex items-center justify-between animate-pulse">
+                      <div className="flex items-center gap-2 text-xs text-red-400 font-bold">
+                        <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping"></span>
+                        <span>ድምፅዎን እያዳመጥኩ ነው...</span>
+                      </div>
+                      <button 
+                        onClick={stopLessonVoiceRecording}
+                        className="bg-red-500 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg cursor-pointer"
+                      >
+                        አቁም
+                      </button>
+                    </div>
+                  )}
+
                   {/* Input Bar */}
-                  <div className="p-3 bg-gradient-to-t from-[#060a14] to-[#0c1222] border-t border-white/10 flex items-center gap-2">
+                  <div className="relative z-10 p-3 bg-gradient-to-t from-[#060a14] to-[#0c1222] border-t border-white/10 flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => lessonFileInputRef.current?.click()}
+                        className="w-10 h-10 rounded-2xl bg-white/5 hover:bg-white/15 text-gray-300 hover:text-[#f9b03c] border border-white/15 flex items-center justify-center transition active:scale-90 cursor-pointer shrink-0"
+                        title="ፎቶ / ስክሪንሾት አያይዝ"
+                      >
+                        <i className="fa-solid fa-paperclip text-sm"></i>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={isLessonVoiceRecording ? stopLessonVoiceRecording : startLessonVoiceRecording}
+                        className={`w-10 h-10 rounded-2xl border flex items-center justify-center transition active:scale-90 cursor-pointer shrink-0 ${
+                          isLessonVoiceRecording 
+                            ? 'bg-red-500 text-white border-red-400 animate-pulse' 
+                            : 'bg-white/5 hover:bg-white/15 text-gray-300 hover:text-[#f9b03c] border-white/15'
+                        }`}
+                        title={isLessonVoiceRecording ? "መቅዳት አቁም" : "በድምፅ ተናገር"}
+                      >
+                        <i className={`fa-solid ${isLessonVoiceRecording ? 'fa-stop' : 'fa-microphone'} text-sm`}></i>
+                      </button>
+
                       <input
                           type="text"
                           value={lessonAiQuery}
@@ -3665,8 +3973,8 @@ ${customAdminPrompt}
                       />
                       <button
                           onClick={() => handleAskLessonAi()}
-                          disabled={isLessonAiLoading || !lessonAiQuery.trim()}
-                          className="h-10 px-5 bg-gradient-to-r from-[#f9b03c] to-amber-400 hover:brightness-110 text-slate-950 font-black rounded-2xl text-xs transition disabled:opacity-40 flex items-center justify-center gap-1.5 cursor-pointer shadow-md active:scale-90"
+                          disabled={isLessonAiLoading || (!lessonAiQuery.trim() && !lessonAiAttachedImage)}
+                          className="h-10 px-5 bg-gradient-to-r from-[#f9b03c] to-amber-400 hover:brightness-110 text-slate-950 font-black rounded-2xl text-xs transition disabled:opacity-40 flex items-center justify-center gap-1.5 cursor-pointer shadow-md active:scale-90 shrink-0"
                       >
                           <span>ላክ</span>
                           <i className="fa-solid fa-paper-plane text-xs"></i>

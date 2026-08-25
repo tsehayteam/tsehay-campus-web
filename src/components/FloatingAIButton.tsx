@@ -9,6 +9,8 @@ import { collection, doc, getDocs, getDoc, setDoc, serverTimestamp } from 'fireb
 interface Message {
   role: 'user' | 'ai';
   text: string;
+  image?: string;
+  audioUrl?: string;
   timestamp?: string;
   copied?: boolean;
 }
@@ -25,14 +27,22 @@ export default function FloatingAIButton() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'ai',
-      text: 'ሰላም! እኔ Tsehay AI ነኝ። የፀሐይ ካምፓስ ይፋዊ AI ረዳትዎ እና የመማሪያ ጓደኛዎ። ዛሬ በምን ልርዳዎት? ስለ ኮርሶች፣ ስለ ስልጠናዎች፣ ስለ ክፍያ ወይም ስለ ትምህርቶች ማንኛውንም ጥያቄ ይጠይቁኝ! ✨',
+      text: 'ሰላም! እኔ Tsehay AI ነኝ። የፀሐይ ካምፓስ ይፋዊ AI ረዳትዎ እና የመማሪያ ጓደኛዎ። ዛሬ በምን ልርዳዎት? ስለ ኮርሶች፣ ስለ ስልጠናዎች፣ ስለ ክፍያ ወይም ስለ ትምህርቶች ማንኛውንም ጥያቄ በጽሑፍ፣ በድምፅ (Voice) ወይም በፎቶ/ስክሪንሾት ይጠይቁኝ! ✨',
       timestamp: 'አሁን'
     }
   ]);
   const [input, setInput] = useState('');
+  const [attachedImage, setAttachedImage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
   const [noteSavedIdx, setNoteSavedIdx] = useState<number | null>(null);
+
+  // 🎙️ Voice Recording & Speech-to-Text States
+  const [isRecordingVoice, setIsRecordingVoice] = useState(false);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  const recognitionRef = useRef<any>(null);
+  const recordingTimerRef = useRef<any>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -107,6 +117,93 @@ export default function FloatingAIButton() {
     }
   }, [isOpen, isMinimized]);
 
+  // 4. Voice Recording / Speech-to-Text Setup
+  const startVoiceRecording = () => {
+    if (typeof window === 'undefined') return;
+
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("ይቅርታ፣ የእርስዎ ብሮውዘር Voice Recognition አይደግፍም። እባክዎ Chrome ወይም Safari ይጠቀሙ።");
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'am-ET';
+      recognition.continuous = true;
+      recognition.interimResults = true;
+
+      recognition.onstart = () => {
+        setIsRecordingVoice(true);
+        setRecordingDuration(0);
+        recordingTimerRef.current = setInterval(() => {
+          setRecordingDuration(prev => prev + 1);
+        }, 1000);
+      };
+
+      recognition.onresult = (event: any) => {
+        let currentTranscript = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          currentTranscript += event.results[i][0].transcript;
+        }
+        if (currentTranscript) {
+          setInput(prev => (prev ? `${prev} ` : '') + currentTranscript.trim());
+        }
+      };
+
+      recognition.onerror = (event: any) => {
+        console.warn("Voice speech recognition event error:", event.error);
+        stopVoiceRecording();
+      };
+
+      recognition.onend = () => {
+        stopVoiceRecording();
+      };
+
+      recognition.start();
+      recognitionRef.current = recognition;
+    } catch (err) {
+      console.warn("Could not start voice recognition:", err);
+      setIsRecordingVoice(false);
+    }
+  };
+
+  const stopVoiceRecording = () => {
+    if (recognitionRef.current) {
+      try { recognitionRef.current.stop(); } catch (e) {}
+      recognitionRef.current = null;
+    }
+    if (recordingTimerRef.current) {
+      clearInterval(recordingTimerRef.current);
+      recordingTimerRef.current = null;
+    }
+    setIsRecordingVoice(false);
+    setRecordingDuration(0);
+  };
+
+  // 5. Image Attachment Handler
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('እባክዎ ትክክለኛ የፎቶ ፋይል (PNG, JPG, JPEG, WebP) ይምረጡ።');
+      return;
+    }
+
+    if (file.size > 8 * 1024 * 1024) {
+      alert('የፎቶው መጠን ከ 8MB በታች መሆን አለበት።');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64 = event.target?.result as string;
+      setAttachedImage(base64);
+    };
+    reader.readAsDataURL(file);
+  };
+
   // Subtle web audio pop feedback
   const playSoundEffect = (type: 'send' | 'receive') => {
     try {
@@ -137,18 +234,25 @@ export default function FloatingAIButton() {
 
   const handleSendMessage = async (textToSend?: string) => {
     const rawText = (textToSend || input).trim();
-    if (!rawText || isLoading) return;
+    const imageToSend = attachedImage;
+    if ((!rawText && !imageToSend) || isLoading) return;
 
     playSoundEffect('send');
 
     const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const newMsgs: Message[] = [
       ...messages,
-      { role: 'user', text: rawText, timestamp: nowTime }
+      { 
+        role: 'user', 
+        text: rawText || (imageToSend ? "📸 ፎቶ ተያይዟል" : ""), 
+        image: imageToSend || undefined,
+        timestamp: nowTime 
+      }
     ];
 
     setMessages(newMsgs);
     setInput('');
+    setAttachedImage(null);
     setIsLoading(true);
 
     const storageKey = user?.uid ? `tsehay_floating_ai_${user.uid}` : 'tsehay_floating_ai_guest';
@@ -170,6 +274,7 @@ export default function FloatingAIButton() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           prompt: rawText,
+          image: imageToSend,
           courseContext
         })
       });
@@ -261,17 +366,30 @@ export default function FloatingAIButton() {
   return (
     <div className="fixed bottom-6 right-6 z-50 font-body select-none">
       
-      {/* 🌟 1. EXPANDABLE CHAT MODAL / DRAWER */}
+      {/* Hidden File Input for Image Upload */}
+      <input 
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleImageUpload}
+        className="hidden"
+      />
+
+      {/* 🌟 1. EXPANDABLE CHAT MODAL / DRAWER WITH LUXURY WALLPAPER PATTERN */}
       {isOpen && (
-        <div className={`mb-4 w-[92vw] sm:w-[410px] md:w-[440px] bg-[#070b14]/95 dark:bg-[#070b14]/95 backdrop-blur-2xl border border-white/15 rounded-3xl shadow-[0_25px_70px_rgba(0,0,0,0.65)] flex flex-col overflow-hidden transition-all duration-300 ${
-          isMinimized ? 'h-16' : 'h-[580px] sm:h-[620px] max-h-[82vh]'
+        <div className={`mb-4 w-[92vw] sm:w-[420px] md:w-[450px] bg-[#070b14]/95 backdrop-blur-3xl border border-white/20 rounded-3xl shadow-[0_25px_80px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden transition-all duration-300 relative ${
+          isMinimized ? 'h-16' : 'h-[600px] sm:h-[640px] max-h-[85vh]'
         }`}>
           
+          {/* Subtle Glowing Background Mesh & Luxury Pattern */}
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(249,176,60,0.12),transparent_50%),radial-gradient(ellipse_at_bottom_left,rgba(50,104,186,0.15),transparent_50%)] pointer-events-none" />
+          <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none" />
+
           {/* Header Bar */}
-          <div className="px-5 py-3.5 bg-gradient-to-r from-[#0b1329] via-[#0f1b38] to-[#0b1329] border-b border-white/10 flex items-center justify-between shrink-0">
+          <div className="relative px-5 py-3.5 bg-gradient-to-r from-[#0b1329]/90 via-[#0f1b38]/90 to-[#0b1329]/90 border-b border-white/10 flex items-center justify-between shrink-0 z-10">
             <div className="flex items-center gap-3">
               <div className="relative">
-                <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-200 text-slate-950 flex items-center justify-center font-black shadow-[0_0_15px_rgba(249,176,60,0.4)]">
+                <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-200 text-slate-950 flex items-center justify-center font-black shadow-[0_0_20px_rgba(249,176,60,0.5)] border border-white/30">
                   <i className="fa-solid fa-robot text-lg"></i>
                 </div>
                 <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 border-2 border-[#0b1329] rounded-full animate-pulse"></span>
@@ -282,13 +400,13 @@ export default function FloatingAIButton() {
                   <h3 className="font-heading font-black text-sm text-white tracking-wide">
                     Tsehay AI Tutor
                   </h3>
-                  <span className="text-[10px] bg-[#f9b03c]/20 text-[#f9b03c] font-black px-2 py-0.5 rounded-full border border-[#f9b03c]/30">
-                    24/7 LIVE
+                  <span className="text-[9px] bg-[#f9b03c]/20 text-[#f9b03c] font-black px-2 py-0.5 rounded-full border border-[#f9b03c]/30 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                    <span>24/7 LIVE</span>
                   </span>
                 </div>
-                <p className="text-[11px] text-emerald-400 font-bold flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
-                  <span>{selectedCourse ? selectedCourse.title : 'የፀሐይ ካምፓስ AI ረዳት'}</span>
+                <p className="text-[11px] text-emerald-400 font-bold flex items-center gap-1.5 truncate max-w-[170px] sm:max-w-[200px]">
+                  <span>{selectedCourse ? `📚 ${selectedCourse.title}` : 'የፀሐይ ካምፓስ AI ረዳት'}</span>
                 </p>
               </div>
             </div>
@@ -324,7 +442,7 @@ export default function FloatingAIButton() {
           {!isMinimized && (
             <>
               {/* Course Context Switcher Pill */}
-              <div className="px-4 py-2 bg-white/[0.03] border-b border-white/[0.06] flex items-center justify-between gap-2 overflow-x-auto no-scrollbar">
+              <div className="relative px-4 py-2 bg-white/[0.03] border-b border-white/[0.06] flex items-center justify-between gap-2 overflow-x-auto no-scrollbar z-10">
                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider shrink-0 flex items-center gap-1">
                   <i className="fa-solid fa-sliders text-[#f9b03c]"></i>
                   <span>የትኩረት አቅጣጫ፦</span>
@@ -337,7 +455,7 @@ export default function FloatingAIButton() {
                     const found = courses.find(c => c.id === cId);
                     setSelectedCourse(found || null);
                   }}
-                  className="bg-[#0f172a] text-xs font-bold text-[#f9b03c] border border-white/15 rounded-xl px-2.5 py-1 outline-none focus:border-[#f9b03c] transition shrink-0 cursor-pointer max-w-[210px] truncate"
+                  className="bg-[#0f172a] text-xs font-bold text-[#f9b03c] border border-white/15 rounded-xl px-2.5 py-1 outline-none focus:border-[#f9b03c] transition shrink-0 cursor-pointer max-w-[220px] truncate"
                 >
                   <option value="" className="bg-slate-900 text-white">🌐 አጠቃላይ (General Campus AI)</option>
                   {courses.map(c => (
@@ -349,7 +467,7 @@ export default function FloatingAIButton() {
               </div>
 
               {/* Messages Body */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4 text-xs">
+              <div className="relative flex-1 overflow-y-auto p-4 space-y-4 text-xs z-10">
                 {messages.map((m, idx) => {
                   const isUser = m.role === 'user';
                   return (
@@ -357,7 +475,7 @@ export default function FloatingAIButton() {
                       key={idx} 
                       className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} animate-in fade-in slide-in-from-bottom-2 duration-300`}
                     >
-                      <div className="flex items-end gap-2 max-w-[88%]">
+                      <div className="flex items-end gap-2 max-w-[90%] sm:max-w-[86%]">
                         {!isUser && (
                           <div className="w-7 h-7 rounded-xl bg-[#f9b03c]/20 text-[#f9b03c] border border-[#f9b03c]/30 flex items-center justify-center shrink-0 mb-1">
                             <i className="fa-solid fa-robot text-xs"></i>
@@ -365,12 +483,19 @@ export default function FloatingAIButton() {
                         )}
 
                         <div 
-                          className={`p-3.5 rounded-2xl text-xs sm:text-[13px] leading-relaxed shadow-sm break-words ${
+                          className={`p-3.5 sm:p-4 rounded-2xl text-xs sm:text-[13px] leading-relaxed shadow-sm break-words ${
                             isUser
-                              ? 'bg-gradient-to-r from-[#f9b03c] to-amber-400 text-slate-950 font-bold rounded-br-none shadow-[0_4px_20px_rgba(249,176,60,0.25)]'
-                              : 'bg-[#0f1629]/95 text-slate-100 border border-white/10 rounded-bl-none font-medium'
+                              ? 'bg-gradient-to-r from-[#f9b03c] to-amber-400 text-slate-950 font-bold rounded-br-none shadow-[0_4px_25px_rgba(249,176,60,0.28)]'
+                              : 'bg-[#0f1629]/95 text-slate-100 border border-white/15 rounded-bl-none font-medium'
                           }`}
                         >
+                          {/* Render Attached Image if Present */}
+                          {m.image && (
+                            <div className="mb-2.5 rounded-xl overflow-hidden border border-black/20 dark:border-white/20 shadow-md">
+                              <img src={m.image} alt="User Attachment" className="w-full max-h-48 object-cover cursor-pointer hover:scale-105 transition-transform" />
+                            </div>
+                          )}
+
                           <div className="whitespace-pre-wrap font-body">
                             {m.text}
                           </div>
@@ -424,8 +549,48 @@ export default function FloatingAIButton() {
                 <div ref={messagesEndRef} />
               </div>
 
+              {/* Live Attached Image Thumbnail Preview */}
+              {attachedImage && (
+                <div className="relative px-4 py-2 bg-[#0c1326] border-t border-white/10 flex items-center justify-between z-10 animate-in fade-in slide-in-from-bottom-1">
+                  <div className="flex items-center gap-2.5">
+                    <img src={attachedImage} alt="Attachment Preview" className="w-12 h-12 object-cover rounded-xl border border-[#f9b03c]/50 shadow-sm" />
+                    <div className="text-xs">
+                      <span className="font-bold text-white block">ፎቶ ተያይዟል (Attached Photo)</span>
+                      <span className="text-[10px] text-emerald-400">✓ ለ AIው ትንታኔ ተዘጋጅቷል</span>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => setAttachedImage(null)}
+                    className="w-7 h-7 rounded-full bg-red-500/20 hover:bg-red-500 text-red-400 hover:text-white flex items-center justify-center text-xs transition cursor-pointer"
+                    title="ፎቶውን አስወግድ"
+                  >
+                    <i className="fa-solid fa-xmark"></i>
+                  </button>
+                </div>
+              )}
+
+              {/* Voice Recording Waveform Bar (When actively recording voice) */}
+              {isRecordingVoice && (
+                <div className="relative px-4 py-3 bg-gradient-to-r from-red-950/90 via-[#1a0b18] to-red-950/90 border-t border-red-500/30 flex items-center justify-between z-10 animate-pulse">
+                  <div className="flex items-center gap-3">
+                    <span className="relative flex h-3 w-3">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                    </span>
+                    <span className="text-xs font-bold text-red-400">ድምፅዎን እያዳመጥኩ ነው... ({recordingDuration}s)</span>
+                  </div>
+                  <button 
+                    onClick={stopVoiceRecording}
+                    className="bg-red-500 hover:bg-red-600 text-white text-xs font-black px-3 py-1 rounded-xl transition cursor-pointer flex items-center gap-1.5"
+                  >
+                    <i className="fa-solid fa-stop"></i>
+                    <span>አቁም</span>
+                  </button>
+                </div>
+              )}
+
               {/* Quick Action Suggestion Pills */}
-              <div className="px-3 py-2 bg-black/40 border-t border-white/10 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+              <div className="relative px-3 py-2 bg-black/40 border-t border-white/10 flex items-center gap-1.5 overflow-x-auto no-scrollbar z-10">
                 {quickPrompts.map((qp, i) => (
                   <button
                     key={i}
@@ -437,26 +602,51 @@ export default function FloatingAIButton() {
                 ))}
               </div>
 
-              {/* Input & Animated Send Button */}
+              {/* Input Bar with Voice & Image Attachment Actions */}
               <form 
                 onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }}
-                className="p-3 bg-gradient-to-t from-[#060a14] to-[#0c1222] border-t border-white/10 flex items-center gap-2"
+                className="relative p-3 bg-gradient-to-t from-[#060a14] to-[#0c1222] border-t border-white/10 flex items-center gap-2 z-10"
               >
+                {/* Photo Upload Button */}
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-10 h-10 rounded-2xl bg-white/5 hover:bg-white/15 text-gray-300 hover:text-[#f9b03c] border border-white/15 flex items-center justify-center transition active:scale-90 cursor-pointer shrink-0"
+                  title="ፎቶ / ስክሪንሾት አያይዝ (Attach Photo/Screenshot)"
+                >
+                  <i className="fa-solid fa-paperclip text-sm"></i>
+                </button>
+
+                {/* Voice Record Button */}
+                <button
+                  type="button"
+                  onClick={isRecordingVoice ? stopVoiceRecording : startVoiceRecording}
+                  className={`w-10 h-10 rounded-2xl border flex items-center justify-center transition active:scale-90 cursor-pointer shrink-0 ${
+                    isRecordingVoice 
+                      ? 'bg-red-500 text-white border-red-400 animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.6)]' 
+                      : 'bg-white/5 hover:bg-white/15 text-gray-300 hover:text-amber-400 border-white/15'
+                  }`}
+                  title={isRecordingVoice ? "መቅዳት አቁም (Stop Voice)" : "በድምፅ ተናገር (Speak via Voice)"}
+                >
+                  <i className={`fa-solid ${isRecordingVoice ? 'fa-stop' : 'fa-microphone'} text-sm`}></i>
+                </button>
+
+                {/* Text Input */}
                 <input
                   ref={inputRef}
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   placeholder={selectedCourse ? `ስለ ${selectedCourse.title} ይጠይቁ...` : "ጥያቄዎን እዚህ ይጻፉ..."}
-                  className="flex-1 bg-white/5 border border-white/15 focus:border-[#f9b03c] focus:ring-1 focus:ring-[#f9b03c]/30 rounded-2xl px-4 py-2.5 text-xs sm:text-sm text-white placeholder-gray-400 outline-none transition"
+                  className="flex-1 bg-white/5 border border-white/15 focus:border-[#f9b03c] focus:ring-1 focus:ring-[#f9b03c]/30 rounded-2xl px-3.5 py-2.5 text-xs sm:text-sm text-white placeholder-gray-400 outline-none transition"
                 />
 
                 {/* Tactile Send Button with Micro-Interaction (active:scale-90) */}
                 <button
                   type="submit"
-                  disabled={!input.trim() || isLoading}
-                  className={`h-10 px-4 rounded-2xl font-black text-xs flex items-center justify-center gap-2 transition-all duration-200 cursor-pointer shadow-lg active:scale-90 ${
-                    input.trim() && !isLoading
+                  disabled={(!input.trim() && !attachedImage) || isLoading}
+                  className={`h-10 px-4 rounded-2xl font-black text-xs flex items-center justify-center gap-2 transition-all duration-200 cursor-pointer shadow-lg active:scale-90 shrink-0 ${
+                    (input.trim() || attachedImage) && !isLoading
                       ? 'bg-gradient-to-r from-[#f9b03c] to-amber-400 text-slate-950 shadow-[0_0_20px_rgba(249,176,60,0.5)] hover:brightness-110'
                       : 'bg-white/10 text-gray-500 cursor-not-allowed'
                   }`}
@@ -485,18 +675,15 @@ export default function FloatingAIButton() {
           className="group relative flex items-center gap-3 bg-gradient-to-r from-[#0d1527] via-[#13203f] to-[#0d1527] border border-[#f9b03c]/40 hover:border-[#f9b03c] p-2.5 sm:px-4 sm:py-3 rounded-full shadow-[0_10px_35px_rgba(0,0,0,0.6)] hover:shadow-[0_0_35px_rgba(249,176,60,0.45)] transition-all duration-300 active:scale-90 hover:-translate-y-1 cursor-pointer"
           title="Tsehay AI Assistant ን ክፈት"
         >
-          {/* Animated Laser Border Beam Glow */}
           <span className="absolute -inset-0.5 rounded-full bg-gradient-to-r from-[#3268ba] via-[#f9b03c] to-[#3268ba] opacity-40 group-hover:opacity-100 blur-sm transition duration-500 animate-pulse pointer-events-none"></span>
 
           <div className="relative flex items-center gap-3">
-            {/* Robot Avatar Icon with Pulse */}
             <div className="relative w-10 h-10 rounded-full bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-200 text-slate-950 flex items-center justify-center font-black text-lg shadow-md group-hover:scale-105 transition-transform">
               <i className="fa-solid fa-robot"></i>
               <span className="absolute top-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-[#0d1527] rounded-full animate-ping"></span>
               <span className="absolute top-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-[#0d1527] rounded-full"></span>
             </div>
 
-            {/* Amharic Label on Desktop */}
             <div className="hidden sm:flex flex-col text-left pr-2">
               <span className="font-heading font-black text-xs text-white tracking-wide group-hover:text-[#f9b03c] transition-colors flex items-center gap-1.5">
                 <span>Tsehay AI</span>

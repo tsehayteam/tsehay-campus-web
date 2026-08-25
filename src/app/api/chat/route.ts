@@ -2,21 +2,25 @@
 import { NextResponse } from 'next/server';
 
 const RATE_LIMIT_WINDOW_MS = 60000;
-const MAX_REQUESTS_PER_WINDOW = 30;
+const MAX_REQUESTS_PER_WINDOW = 40;
 
-function getSmartFallbackReply(userPrompt: string, courseContext?: any): string {
+function getSmartFallbackReply(userPrompt: string, courseContext?: any, hasImage?: boolean): string {
     const p = (userPrompt || '').toLowerCase().trim();
     const courseTitle = (courseContext?.courseTitle || '').toLowerCase();
     const isDigitalMarketing = courseTitle.includes('digital') || courseTitle.includes('marketing') || courseTitle.includes('ማርኬቲንግ');
     const isYouTube = courseTitle.includes('youtube') || courseTitle.includes('ዩቲዩብ');
     const isShein = courseTitle.includes('shein') || courseTitle.includes('ሺን') || courseTitle.includes('ሼን') || courseTitle.includes('import') || courseTitle.includes('ኢምፖርት');
 
+    if (hasImage) {
+        return `የላኩትን ፎቶ/ስክሪንሾት ተመልክቻለሁ! 📸\n\nበፎቶው ላይ የሚታየውን ነጥብ በተመለከተ፦\n1. በ${courseContext?.courseTitle || 'ትምህርቱ'} መሰረት ዋናው ትኩረት የተግባር ቅደም ተከተሎችን በአግባቡ መከተል ነው።\n2. ለየት ያለ የስህተት መልዕክት (Error) ወይም ጥያቄ ካለዎት፣ ጥያቄዎን በድምፅ ወይም በጽሑፍ አብራርተው ይጠይቁኝ እና ደረጃ በደረጃ እንፈታዋለን! ✨`;
+    }
+
     // 1. Greetings & Warm Welcomes
     if (p.includes('selam') || p.includes('ሰላም') || p.includes('hello') || p.includes('hi') || p.includes('hey') || p.includes('እንዴት') || p.includes('ጤና ይስጥልኝ') || p.includes('teneystlgn') || p.includes('morning') || p.includes('afternoon') || p.includes('tsehay ai') || p.includes('who are you') || p.includes('ማን ነህ') || p.includes('ማነህ')) {
         if (courseContext?.courseTitle) {
-            return `ሰላም! እኔ Tsehay AI ነኝ — የ"${courseContext.courseTitle}" ኮርስ የእርስዎ የግል AI መማሪያ ረዳት። ዛሬ በምን ልርዳዎት? ስለ ትምህርቱ፣ ስለ ተግባራዊ ልምምዱ ወይም ያልገባዎትን ማንኛውንም ጥያቄ ይጠይቁኝ! ✨`;
+            return `ሰላም! እኔ Tsehay AI ነኝ — የ"${courseContext.courseTitle}" ኮርስ የእርስዎ የግል AI መማሪያ ረዳት። ዛሬ በምን ልርዳዎት? ስለ ትምህርቱ፣ ስለ ተግባራዊ ልምምዱ ወይም ያልገባዎትን ማንኛውንም ጥያቄ በጽሑፍ፣ በድምፅ (Voice) ወይም በፎቶ/ስክሪንሾት ይጠይቁኝ! ✨`;
         }
-        return "ሰላም! እኔ Tsehay AI (የፀሐይ ካምፓስ ይፋዊ AI ረዳት) ነኝ። እንኳን ደህና መጡ! ዛሬ በምን ልርዳዎት? ስለ ኮርሶቻችን፣ ስለ ክፍያ፣ ስለ ሰርተፊኬት ወይም ስለ ትምህርቶች ማንኛውንም ጥያቄ መጠየቅ ይችላሉ።";
+        return "ሰላም! እኔ Tsehay AI (የፀሐይ ካምፓስ ይፋዊ AI ረዳት) ነኝ። እንኳን ደህና መጡ! ዛሬ በምን ልርዳዎት? ስለ ኮርሶቻችን፣ ስለ ክፍያ፣ ስለ ሰርተፊኬት ወይም ስለ ትምህርቶች ማንኛውንም ጥያቄ በጽሑፍ ወይም በድምፅ መጠየቅ ይችላሉ።";
     }
 
     // 2. Founder / Instructor
@@ -130,10 +134,10 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { prompt, courseContext } = reqBody;
+    const { prompt, courseContext, image } = reqBody;
     
-    if (!prompt) {
-        return NextResponse.json({ reply: getSmartFallbackReply("", courseContext) }, { status: 200 });
+    if (!prompt && !image) {
+        return NextResponse.json({ reply: getSmartFallbackReply("", courseContext, false) }, { status: 200 });
     }
 
     const apiKeys = [
@@ -161,9 +165,10 @@ ${courseContext.courseAiPrompt ? `[ADMIN / INSTRUCTOR CUSTOM DIRECTIVE FOR THIS 
 ${courseContext.whatYouWillLearn ? `[COURSE OBJECTIVES]:\n${courseContext.whatYouWillLearn}` : ''}
 
 [SUBJECT-SPECIFIC FOCUS RULES]
-1. ACADEMIC & SKILLS QUESTIONS: Whenever the student asks questions related to "${courseContext.courseTitle}", provide deep, step-by-step, actionable, expert guidance with practical real-world examples in natural Amharic.
-2. OFF-TOPIC QUESTIONS: If the student asks something completely unrelated to education, business, technology, or this course, politely acknowledge it and steer them back to the active course topic.
-3. PLATFORM & FOUNDER QUESTIONS: You are always authorized to answer general questions about Tsehay Campus, the founder Eyoub Sahle, pricing, payments (LakiPay/Telebirr), certificates, and support (@TsehayTeam).
+1. ACADEMIC & SKILLS QUESTIONS: Whenever the student asks questions or attaches screenshots/photos related to "${courseContext.courseTitle}", provide deep, step-by-step, actionable, expert guidance with practical real-world examples in natural Amharic.
+2. PHOTO / SCREENSHOT ANALYSIS: If an image or screenshot is attached, carefully inspect it, diagnose any errors, examine UI elements, and explain the solution clearly.
+3. OFF-TOPIC QUESTIONS: If the student asks something completely unrelated to education, business, technology, or this course, politely acknowledge it and steer them back to the active course topic.
+4. PLATFORM & FOUNDER QUESTIONS: You are always authorized to answer general questions about Tsehay Campus, the founder Eyoub Sahle, pricing, payments (LakiPay/Telebirr), certificates, and support (@TsehayTeam).
 `;
     }
 
@@ -171,6 +176,7 @@ ${courseContext.whatYouWillLearn ? `[COURSE OBJECTIVES]:\n${courseContext.whatYo
 ${contextualCourseSection}
 [CONVERSATION & RESPONSE STYLE]
 - Primary language is Amharic (አማርኛ). If greeted or asked in English, answer in polished, professional English.
+- MULTIMODAL CAPABILITY: You can analyze attached images, code screenshots, marketing charts, Shein products, and assignments in full detail.
 - FORMATTING: Use structured bullet points, numbered steps, bold highlights, and clean paragraphs so students can easily follow and take notes.
 - ENCOURAGING TONE: Be supportive and motivate students on their learning journey.
 
@@ -198,11 +204,30 @@ You are an expert educational and support assistant for the Tsehay Campus E-Lear
 ${DEFAULT_SYSTEM_INSTRUCTION}
 [END DYNAMIC CONTEXT]`;
 
+    // 📸 Build user parts with Multimodal Image Support
+    const userParts: any[] = [];
+
+    if (image && typeof image === 'string' && image.includes('base64,')) {
+        const matches = image.match(/^data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+);base64,(.+)$/);
+        if (matches && matches[1] && matches[2]) {
+            userParts.push({
+                inlineData: {
+                    mimeType: matches[1],
+                    data: matches[2]
+                }
+            });
+        }
+    }
+
+    userParts.push({
+        text: prompt || (image ? "እባክዎ ይህንን የተያያዘ ፎቶ ወይም ስክሪንሾት ተመልክተው ዝርዝር ትንታኔ እና ተግባራዊ መልስ ይስጡኝ።" : "ሰላም")
+    });
+
     const payload = { 
         systemInstruction: {
             parts: [{ text: ENFORCED_SYSTEM_INSTRUCTION }]
         },
-        contents: [{ role: "user", parts: [{ text: prompt }] }]
+        contents: [{ role: "user", parts: userParts }]
     };
 
     const models = [
@@ -253,13 +278,13 @@ ${DEFAULT_SYSTEM_INSTRUCTION}
     }
 
     if (!success || !replyText) {
-        replyText = getSmartFallbackReply(prompt, courseContext);
+        replyText = getSmartFallbackReply(prompt, courseContext, Boolean(image));
     }
 
     return NextResponse.json({ reply: replyText }, { status: 200 });
   } catch (error) {
     console.error("Internal API Chat Error:", error);
-    const fallbackReply = getSmartFallbackReply(reqBody?.prompt || '', reqBody?.courseContext);
+    const fallbackReply = getSmartFallbackReply(reqBody?.prompt || '', reqBody?.courseContext, Boolean(reqBody?.image));
     return NextResponse.json({ reply: fallbackReply }, { status: 200 });
   }
 }
