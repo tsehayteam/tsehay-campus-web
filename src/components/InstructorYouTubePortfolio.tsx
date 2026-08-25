@@ -66,7 +66,7 @@ export default function InstructorYouTubePortfolio() {
     return DEFAULT_PORTFOLIO_INTL;
   });
 
-  // Modal Cinema Player State
+  // Fullscreen Cinema Modal Player State
   const [activeModalVideo, setActiveModalVideo] = useState<{ id: string; title: string; url: string } | null>(null);
 
   // 🌟 Human-like Pencil Typewriter with Playful Eraser Corrections & Multi-Phrases
@@ -307,6 +307,17 @@ export default function InstructorYouTubePortfolio() {
     };
   }, []);
 
+  // Listen for Escape key to close modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setActiveModalVideo(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   const localId = extractYouTubeId(localVideoUrl) || 'h9JsGCkd_4o';
   const intlId = extractYouTubeId(internationalVideoUrl) || 'icbzxQv-m3g';
 
@@ -332,11 +343,11 @@ export default function InstructorYouTubePortfolio() {
             <span className="tracking-wide">✨ 100% FACELESS • በተግባር የተረጋገጠ የስኬት ማረጋገጫ ✨</span>
           </div>
 
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black font-heading text-slate-900 dark:text-white mb-4 tracking-tight">
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#f9b03c] via-amber-200 to-[#f9b03c] animate-gradient-x drop-shadow-[0_0_25px_rgba(249,176,60,0.45)]">
-              የዩቲዩብ
-            </span>{' '}
-            ቻናል ስኬት በተግባር
+          {/* Glowing Animated Shimmer Title (ብልጭ ወደ ግራና ቀኝ የሚንቀሳቀስ ደማቅ ከለር) */}
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black font-heading mb-4 tracking-tight">
+            <span className="portfolio-shimmer-title">
+              የዩቲዩብ ቻናል ስኬት በተግባር
+            </span>
           </h2>
 
           <div className="min-h-[2.5rem] sm:min-h-[2.2rem] flex items-center justify-center">
@@ -390,14 +401,9 @@ export default function InstructorYouTubePortfolio() {
                     <span className="inline-block w-1.5 h-3.5 ml-1 bg-[#3268ba] animate-cursor-blink align-middle"></span>
                   </span>
                 </div>
-
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#3268ba]/15 border border-[#3268ba]/40 text-[#3268ba] dark:text-[#7bb0ff] text-xs font-black shadow-sm animate-pulse">
-                  <i className="fa-solid fa-circle text-[7px] text-red-500 animate-ping"></i>
-                  <span>LIVE • FACELESS</span>
-                </div>
               </div>
 
-              {/* Clickable Card Video Thumbnail */}
+              {/* Clickable Card Video Thumbnail (Clean with Play Button on Hover) */}
               <div 
                 onClick={() => {
                   setActiveModalVideo({
@@ -407,7 +413,7 @@ export default function InstructorYouTubePortfolio() {
                   });
                 }}
                 className="relative aspect-video w-full overflow-hidden bg-black flex items-center justify-center group/thumb cursor-pointer select-none"
-                title="ቪዲዮውን ለማጫወት ይጫኑ (Click to Play)"
+                title="ቪዲዮውን በሙሉ ስክሪን ለማጫወት ይጫኑ (Click to Play Fullscreen)"
               >
                 <img
                   src={localThumb}
@@ -418,18 +424,14 @@ export default function InstructorYouTubePortfolio() {
                   }}
                 />
 
-                <div className="absolute inset-0 bg-black/25 group-hover/thumb:bg-black/40 transition-colors duration-300 flex items-center justify-center">
-                  <div className="relative flex items-center justify-center">
+                {/* Play Button ONLY Appears on Hover so Thumbnail is 100% Clean by Default */}
+                <div className="absolute inset-0 bg-black/0 group-hover/thumb:bg-black/40 transition-colors duration-300 flex items-center justify-center">
+                  <div className="relative flex items-center justify-center opacity-0 group-hover/thumb:opacity-100 scale-75 group-hover/thumb:scale-100 transition-all duration-300 pointer-events-none">
                     <span className="absolute w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-[#3268ba]/40 animate-ping pointer-events-none"></span>
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-tr from-[#3268ba] via-blue-500 to-cyan-400 text-white flex items-center justify-center text-2xl sm:text-3xl shadow-[0_0_35px_rgba(50,104,186,0.85)] group-hover/thumb:scale-110 transition-all duration-300">
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-tr from-[#3268ba] via-blue-500 to-cyan-400 text-white flex items-center justify-center text-2xl sm:text-3xl shadow-[0_0_35px_rgba(50,104,186,0.9)]">
                       <i className="fa-solid fa-play ml-1"></i>
                     </div>
                   </div>
-                </div>
-
-                <div className="absolute bottom-3 right-3 bg-black/85 backdrop-blur-md border border-white/20 px-3 py-1 rounded-full text-[11px] font-bold text-white flex items-center gap-1.5 shadow-lg group-hover/thumb:border-[#5a93e8] group-hover/thumb:text-[#5a93e8] transition-colors">
-                  <i className="fa-brands fa-youtube text-red-500 text-sm"></i>
-                  <span>በቀጥታ ይመልከቱ</span>
                 </div>
               </div>
 
@@ -454,14 +456,9 @@ export default function InstructorYouTubePortfolio() {
                     <span className="inline-block w-1.5 h-3.5 ml-1 bg-[#f9b03c] animate-cursor-blink align-middle"></span>
                   </span>
                 </div>
-
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#f9b03c]/15 border border-[#f9b03c]/40 text-amber-800 dark:text-[#f9b03c] text-xs font-black shadow-sm animate-pulse">
-                  <i className="fa-solid fa-bolt text-[8px] text-[#f9b03c] animate-bounce"></i>
-                  <span>GLOBAL • REACH</span>
-                </div>
               </div>
 
-              {/* Clickable Card Video Thumbnail */}
+              {/* Clickable Card Video Thumbnail (Clean with Play Button on Hover) */}
               <div 
                 onClick={() => {
                   setActiveModalVideo({
@@ -471,7 +468,7 @@ export default function InstructorYouTubePortfolio() {
                   });
                 }}
                 className="relative aspect-video w-full overflow-hidden bg-black flex items-center justify-center group/thumb cursor-pointer select-none"
-                title="ቪዲዮውን ለማጫወት ይጫኑ (Click to Play)"
+                title="ቪዲዮውን በሙሉ ስክሪን ለማጫወት ይጫኑ (Click to Play Fullscreen)"
               >
                 <img
                   src={intlThumb}
@@ -482,18 +479,14 @@ export default function InstructorYouTubePortfolio() {
                   }}
                 />
 
-                <div className="absolute inset-0 bg-black/25 group-hover/thumb:bg-black/40 transition-colors duration-300 flex items-center justify-center">
-                  <div className="relative flex items-center justify-center">
+                {/* Play Button ONLY Appears on Hover so Thumbnail is 100% Clean by Default */}
+                <div className="absolute inset-0 bg-black/0 group-hover/thumb:bg-black/40 transition-colors duration-300 flex items-center justify-center">
+                  <div className="relative flex items-center justify-center opacity-0 group-hover/thumb:opacity-100 scale-75 group-hover/thumb:scale-100 transition-all duration-300 pointer-events-none">
                     <span className="absolute w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-[#f9b03c]/40 animate-ping pointer-events-none"></span>
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 flex items-center justify-center text-2xl sm:text-3xl shadow-[0_0_35px_rgba(249,176,60,0.85)] group-hover/thumb:scale-110 transition-all duration-300">
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 flex items-center justify-center text-2xl sm:text-3xl shadow-[0_0_35px_rgba(249,176,60,0.9)]">
                       <i className="fa-solid fa-play ml-1"></i>
                     </div>
                   </div>
-                </div>
-
-                <div className="absolute bottom-3 right-3 bg-black/85 backdrop-blur-md border border-white/20 px-3 py-1 rounded-full text-[11px] font-bold text-white flex items-center gap-1.5 shadow-lg group-hover/thumb:border-[#f9b03c]/60 group-hover/thumb:text-[#f9b03c] transition-colors">
-                  <i className="fa-brands fa-youtube text-red-500 text-sm"></i>
-                  <span>በቀጥታ ይመልከቱ</span>
                 </div>
               </div>
 
@@ -504,11 +497,11 @@ export default function InstructorYouTubePortfolio() {
       </div>
 
       {/* =========================================================================
-          HIGH-DEFINITION CINEMA MODAL PLAYER
+          DISTRACTION-FREE FULLSCREEN CINEMA PLAYER (CLEAN, ZERO-SUBTITLES, FULL-WIDTH)
          ========================================================================= */}
       {activeModalVideo && (
         <div
-          className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-xl flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-300"
+          className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-2xl flex items-center justify-center p-2 sm:p-6 lg:p-8 animate-in fade-in duration-300"
           onClick={() => setActiveModalVideo(null)}
         >
           {/* Close Button */}
@@ -518,20 +511,20 @@ export default function InstructorYouTubePortfolio() {
               e.stopPropagation();
               setActiveModalVideo(null);
             }}
-            className="fixed top-4 right-4 sm:top-6 sm:right-8 z-50 w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-white/10 hover:bg-white/25 text-white flex items-center justify-center transition-all duration-300 border border-white/20 hover:scale-110 shadow-[0_0_25px_rgba(0,0,0,0.8)] backdrop-blur-md cursor-pointer"
+            className="fixed top-4 right-4 sm:top-6 sm:right-8 z-[110] w-12 h-12 rounded-full bg-white/10 hover:bg-white/25 text-white flex items-center justify-center transition-all duration-300 border border-white/20 hover:scale-110 shadow-[0_0_30px_rgba(0,0,0,0.9)] backdrop-blur-md cursor-pointer"
             title="ዝጋ (Close)"
             aria-label="Close video player"
           >
-            <i className="fa-solid fa-xmark text-lg sm:text-xl"></i>
+            <i className="fa-solid fa-xmark text-xl"></i>
           </button>
 
-          {/* Cinema Video Frame */}
+          {/* Fullscreen Video Frame */}
           <div
-            className="relative w-full max-w-5xl aspect-video rounded-2xl sm:rounded-3xl overflow-hidden shadow-[0_0_80px_rgba(0,0,0,0.95),0_0_40px_rgba(249,176,60,0.25)] border border-white/15 bg-black"
+            className="relative w-full max-w-6xl aspect-video rounded-2xl sm:rounded-3xl overflow-hidden shadow-[0_0_100px_rgba(0,0,0,1),0_0_50px_rgba(249,176,60,0.3)] border border-white/15 bg-black"
             onClick={(e) => e.stopPropagation()}
           >
             <iframe
-              src={`https://www.youtube.com/embed/${activeModalVideo.id}?autoplay=1&rel=0&modestbranding=1&controls=1&showinfo=0&iv_load_policy=3&playsinline=1&enablejsapi=1`}
+              src={`https://www.youtube.com/embed/${activeModalVideo.id}?autoplay=1&rel=0&modestbranding=1&controls=1&showinfo=0&cc_load_policy=0&iv_load_policy=3&playsinline=1&enablejsapi=1`}
               title={activeModalVideo.title}
               className="w-full h-full border-0"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
@@ -540,6 +533,23 @@ export default function InstructorYouTubePortfolio() {
           </div>
         </div>
       )}
+
+      {/* Embedded CSS for Title Shimmer Animation */}
+      <style dangerouslySetInnerHTML={{__html: `
+        .portfolio-shimmer-title {
+          background: linear-gradient(90deg, #f9b03c 0%, #ffe066 20%, #3268ba 45%, #5a93e8 55%, #f9b03c 80%, #ffe066 100%);
+          background-size: 250% auto;
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          animation: portfolioShimmer 4.5s linear infinite;
+          filter: drop-shadow(0 0 25px rgba(249, 176, 60, 0.45));
+          display: inline-block;
+        }
+        @keyframes portfolioShimmer {
+          0% { background-position: 0% 50%; }
+          100% { background-position: 250% 50%; }
+        }
+      `}} />
 
     </section>
   );
