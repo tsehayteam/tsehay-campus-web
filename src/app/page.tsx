@@ -16,6 +16,7 @@ import CourseCardSkeleton from '@/components/CourseCardSkeleton';
 import { getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl } from '@/lib/courseCache';
 import Hero3DPopoutStage from '@/components/3d/Hero3DPopoutStage';
 import Tilt3DCard from '@/components/3d/Tilt3DCard';
+import { scrollTriggerEngine } from '@/lib/scrollTriggerEngine';
 
 const PARTNER_BRANDS = [
   {
@@ -280,66 +281,27 @@ export default function Home() {
   const { t } = useLanguage();
 
   useEffect(() => {
-    // Force scroll to top on initial load
-    window.scrollTo(0, 0);
+    // Force scroll to top on fresh load if desired
+    if (typeof window !== 'undefined' && !window.location.hash) {
+      window.scrollTo(0, 0);
+    }
 
-    // Terafab.ai Bidirectional Scrollytelling Reveal Observer
-    const observerCallback: IntersectionObserverCallback = (entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('is-visible');
-        } else {
-          // Gracefully reset when scrolled out of viewport so it re-triggers sequentially on reverse scroll
-          const rect = entry.boundingClientRect;
-          if (rect.top > window.innerHeight + 50 || rect.bottom < -50) {
-            entry.target.classList.remove('is-visible');
-          }
-        }
-      });
-    };
-
-    const observer = new IntersectionObserver(observerCallback, {
-      threshold: 0.08,
-      rootMargin: '0px 0px -25px 0px'
+    // Initialize Unbreakable Silicon Valley ScrollTrigger Engine
+    scrollTriggerEngine.init({
+      onAiActiveChange: (isActive) => {
+        setIsAiActive(isActive);
+      }
     });
 
-    const registerElements = () => {
-      const revealElements = document.querySelectorAll('.scrolly-reveal, .scrolly-card, .terafab-ai-box');
-      revealElements.forEach((el) => observer.observe(el));
-    };
-
-    registerElements();
-
-    // Specific AI Section Observer to gate typing animation until entrance completes
-    const aiEl = document.getElementById('ai-feature');
-    let aiTimeout: NodeJS.Timeout;
-    const aiObserver = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('is-visible');
-          aiTimeout = setTimeout(() => setIsAiActive(true), 500);
-        } else {
-          const rect = entry.boundingClientRect;
-          if (rect.top > window.innerHeight + 50 || rect.bottom < -50) {
-            entry.target.classList.remove('is-visible');
-            clearTimeout(aiTimeout);
-            setIsAiActive(false);
-          }
-        }
-      });
-    }, { threshold: 0.12 });
-
-    if (aiEl) aiObserver.observe(aiEl);
-
-    // Re-register dynamically rendered items (courses, cards)
-    const timer = setTimeout(registerElements, 350);
-
     return () => {
-      clearTimeout(timer);
-      clearTimeout(aiTimeout);
-      observer.disconnect();
-      aiObserver.disconnect();
+      scrollTriggerEngine.cleanup();
     };
+  }, []);
+
+  useEffect(() => {
+    if (courses.length > 0) {
+      scrollTriggerEngine.refresh();
+    }
   }, [courses.length]);
 
   useEffect(() => {

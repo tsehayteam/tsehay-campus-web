@@ -144,7 +144,7 @@ export default function SynthesiaAiChatDemo({ isActive = true }: SynthesiaAiChat
     }
 
     return () => clearTimeout(timeout);
-  }, [phase, displayedQuestion, displayedResponse, currentScenario]);
+  }, [phase, displayedQuestion, displayedResponse, currentScenario, isActive]);
 
   // Smooth scroll within container
   useEffect(() => {

@@ -15,6 +15,16 @@ export default function Footer() {
         const el = footerRef.current;
         if (!el) return;
 
+        const checkVisibility = () => {
+            const rect = el.getBoundingClientRect();
+            const vh = window.innerHeight;
+            if (rect.top < vh - 20 && rect.bottom > 20) {
+                setIsFooterVisible(true);
+            } else if (rect.top > vh + 50 || rect.bottom < -50) {
+                setIsFooterVisible(false);
+            }
+        };
+
         const observer = new IntersectionObserver((entries) => {
             entries.forEach((entry) => {
                 if (entry.isIntersecting) {
@@ -27,12 +37,21 @@ export default function Footer() {
                 }
             });
         }, {
-            threshold: 0.08,
-            rootMargin: '0px 0px -30px 0px'
+            threshold: 0.05,
+            rootMargin: '0px 0px -20px 0px'
         });
 
         observer.observe(el);
-        return () => observer.disconnect();
+        checkVisibility();
+
+        window.addEventListener('scroll', checkVisibility, { passive: true });
+        window.addEventListener('resize', checkVisibility, { passive: true });
+
+        return () => {
+            observer.disconnect();
+            window.removeEventListener('scroll', checkVisibility);
+            window.removeEventListener('resize', checkVisibility);
+        };
     }, []);
 
     const navigateToSection = (hash: string) => {
