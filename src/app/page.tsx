@@ -544,19 +544,25 @@ export default function Home() {
 
     
     <section id="courses" className="py-20 sm:py-28 bg-slate-50/40 dark:bg-transparent border-b border-gray-200/80 dark:border-white/[0.06] transition-colors duration-300 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#f9b03c]/5 rounded-full blur-[140px] pointer-events-none"></div>
-        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-[#3268ba]/5 rounded-full blur-[140px] pointer-events-none"></div>
+        {/* 🌟 3D Deep Atmospheric Background Aura & Cyber Mesh */}
+        <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
+            <div className="absolute -top-32 -right-32 w-[600px] h-[600px] bg-gradient-to-bl from-[#f9b03c]/15 via-[#f9b03c]/5 to-transparent rounded-full blur-[140px] animate-pulse"></div>
+            <div className="absolute -bottom-32 -left-32 w-[600px] h-[600px] bg-gradient-to-tr from-[#3268ba]/20 via-[#3268ba]/8 to-transparent rounded-full blur-[140px]"></div>
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-[radial-gradient(ellipse_at_center,rgba(50,104,186,0.08),rgba(249,176,60,0.05),transparent_70%)] blur-[100px]"></div>
+            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.035] dark:opacity-[0.02]"></div>
+        </div>
 
         <div className="max-w-[1300px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-            <div className="flex flex-col items-center text-center mb-12 sm:mb-16 gap-3 scrolly-reveal">
-                <div className="inline-flex items-center gap-2 bg-amber-400/10 dark:bg-amber-400/5 border border-amber-400/20 px-4 py-1.5 rounded-full">
-                    <span className="w-2 h-2 rounded-full bg-[#f9b03c] animate-pulse"></span>
+            <div className="flex flex-col items-center text-center mb-14 sm:mb-18 gap-3 scrolly-reveal">
+                <div className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-400/15 via-[#f9b03c]/10 to-amber-400/15 border border-[#f9b03c]/30 px-5 py-2 rounded-full shadow-[0_0_20px_rgba(249,176,60,0.15)] backdrop-blur-md">
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#f9b03c] shadow-[0_0_8px_#f9b03c] animate-pulse"></span>
                     <span className="text-xs font-black uppercase tracking-widest text-[#f9b03c]">FEATURED MASTERCLASSES</span>
                 </div>
-                <h2 className="font-heading font-black text-3xl sm:text-5xl text-slate-900 dark:text-white">
+                <h2 className="font-heading font-black text-3xl sm:text-5xl lg:text-6xl text-slate-900 dark:text-white tracking-tight">
                     {t('popular_courses')}
                 </h2>
-                <p className="text-gray-600 dark:text-[#8a95a5] font-body text-base sm:text-lg max-w-2xl">
+                <div className="w-24 h-1.5 bg-gradient-to-r from-transparent via-[#f9b03c] to-transparent mx-auto rounded-full shadow-[0_0_12px_rgba(249,176,60,0.6)]"></div>
+                <p className="text-gray-600 dark:text-[#8a95a5] font-body text-base sm:text-lg max-w-2xl mt-1">
                     {t('popular_courses_desc')}
                 </p>
             </div>
@@ -579,19 +585,24 @@ export default function Home() {
                     {courses.slice(0, 6).map((course, index) => (
                         <Tilt3DCard
                             key={course.id}
-                            maxTilt={8}
-                            scale={1.015}
-                            perspective={1000}
+                            maxTilt={12}
+                            scale={1.025}
+                            perspective={1100}
+                            glare={true}
                             onClick={() => window.location.href=`/courses/${course.id}`}
-                            className="cursor-pointer"
+                            className="cursor-pointer group"
                         >
                             <div 
                                 data-scrolly-order={index + 1}
-                                className="h-full course-card bg-white/80 dark:bg-white/[0.02] backdrop-blur-xl rounded-2xl overflow-hidden flex flex-col justify-between border border-gray-200/80 dark:border-white/[0.05] shadow-[0_10px_30px_rgba(0,0,0,0.5)] group active:scale-98"
+                                className="h-full course-card bg-white/90 dark:bg-slate-900/70 backdrop-blur-2xl rounded-3xl overflow-hidden flex flex-col justify-between border border-gray-200/80 dark:border-white/[0.08] hover:border-[#f9b03c]/60 dark:hover:border-[#f9b03c]/60 shadow-[0_15px_35px_rgba(0,0,0,0.08)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)] hover:shadow-[0_30px_70px_rgba(249,176,60,0.22),0_0_30px_rgba(50,104,186,0.15)] transition-all duration-500 relative"
+                                style={{ transformStyle: 'preserve-3d' }}
                             >
                                 <div>
-                                    {/* Thumbnail Wrapper: 100% full view, non-cropped with ambient glow */}
-                                    <div className="relative aspect-video w-full overflow-hidden bg-slate-950 flex items-center justify-center">
+                                    {/* Thumbnail Wrapper with 3D Z-Popout */}
+                                    <div 
+                                        className="relative aspect-video w-full overflow-hidden bg-slate-950 flex items-center justify-center m-0"
+                                        style={{ transform: 'translateZ(30px)' }}
+                                    >
                                         <img 
                                             src={formatDriveImageUrl(course.image) || `https://placehold.co/600x400/3268BA/FFFFFF?text=${encodeURIComponent(course.title || 'Tsehay Campus')}&font=Montserrat`} 
                                             alt="" 
@@ -601,55 +612,86 @@ export default function Home() {
                                         <img 
                                             src={formatDriveImageUrl(course.image) || `https://placehold.co/600x400/3268BA/FFFFFF?text=${encodeURIComponent(course.title || 'Tsehay Campus')}&font=Montserrat`} 
                                             alt={course.title} 
-                                            className="relative z-10 w-full h-full object-contain p-2 group-hover:scale-[1.03] transition-transform duration-500" 
+                                            className="relative z-10 w-full h-full object-contain p-2 group-hover:scale-[1.04] transition-transform duration-500" 
                                         />
                                         
-                                        {/* Badges - Royal Blue / Gold only (NO GREEN) */}
+                                        {/* Floating Popout Badges */}
                                         {(!course.isFree && course.price !== 0 && course.price !== '0' && course.price !== 'Free') ? (
-                                            <div className="absolute top-3 right-3 z-20 bg-gradient-to-r from-[#f9b03c] to-amber-500 text-slate-950 text-[11px] font-black px-3.5 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg" style={{ transform: 'translateZ(30px)' }}>
-                                                 PREMIUM
+                                            <div 
+                                                className="absolute top-3.5 right-3.5 z-20 bg-gradient-to-r from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 text-[11px] font-black px-3.5 py-1.5 rounded-full flex items-center gap-1.5 shadow-[0_4px_15px_rgba(249,176,60,0.5)] border border-amber-200/50" 
+                                                style={{ transform: 'translateZ(45px)' }}
+                                            >
+                                                <i className="fa-solid fa-crown text-[10px]"></i> PREMIUM
                                             </div>
                                         ) : (
-                                            <div className="absolute top-3 right-3 z-20 bg-[#3268ba]/90 text-white text-[11px] font-black px-3.5 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg backdrop-blur-md border border-white/20" style={{ transform: 'translateZ(30px)' }}>
+                                            <div 
+                                                className="absolute top-3.5 right-3.5 z-20 bg-[#3268ba] text-white text-[11px] font-black px-3.5 py-1.5 rounded-full flex items-center gap-1.5 shadow-[0_4px_15px_rgba(50,104,186,0.6)] backdrop-blur-md border border-white/25" 
+                                                style={{ transform: 'translateZ(45px)' }}
+                                            >
                                                 <i className="fa-solid fa-sparkles text-[10px] text-[#f9b03c]"></i> FREE
+                                            </div>
+                                        )}
+
+                                        {/* Category Badge on Image */}
+                                        {course.category && (
+                                            <div 
+                                                className="absolute bottom-3.5 left-3.5 z-20 bg-[#030509]/85 backdrop-blur-md text-[#f9b03c] border border-white/15 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider shadow-md"
+                                                style={{ transform: 'translateZ(40px)' }}
+                                            >
+                                                {course.category}
                                             </div>
                                         )}
                                     </div>
 
-                                    {/* Content Details (24px padding for breathing room) */}
+                                    {/* Content Details */}
                                     <div className="p-6 sm:p-7">
-                                        {/* Category Tag */}
-                                        <span className="text-[11px] font-black uppercase tracking-wider text-[#f9b03c] inline-block mb-2">
-                                            {course.category || 'DIGITAL SKILLS'}
-                                        </span>
-
-                                        {/* Title - Bold & Crisp White */}
-                                        <h3 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mb-2.5 line-clamp-2 leading-snug group-hover:text-[#f9b03c] transition-colors font-heading">
+                                        {/* Title */}
+                                        <h3 
+                                            className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mb-3 line-clamp-2 leading-snug group-hover:text-[#f9b03c] transition-colors font-heading"
+                                            style={{ transform: 'translateZ(25px)' }}
+                                        >
                                             {course.title || t('course_unknown')}
                                         </h3>
 
-                                        {/* Instructor Info */}
-                                        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-[#8a95a5] font-semibold mb-3.5">
-                                            <i className="fa-solid fa-chalkboard-user text-[#f9b03c]"></i>
-                                            <span>{course.instructor || 'Eyoub Sahle'}</span>
+                                        {/* Instructor & Rating Info */}
+                                        <div 
+                                            className="flex items-center justify-between gap-2 mb-3.5"
+                                            style={{ transform: 'translateZ(22px)' }}
+                                        >
+                                            <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-[#8a95a5] font-semibold">
+                                                <div className="w-6 h-6 rounded-full bg-[#f9b03c]/15 text-[#f9b03c] flex items-center justify-center text-[11px]">
+                                                    <i className="fa-solid fa-chalkboard-user"></i>
+                                                </div>
+                                                <span>{course.instructor || 'Eyoub Sahle'}</span>
+                                            </div>
+                                            <div className="flex items-center gap-1 bg-[#f9b03c]/15 text-[#f9b03c] font-black px-2.5 py-0.5 rounded-full text-xs border border-[#f9b03c]/30 shadow-xs">
+                                                <i className="fa-solid fa-star text-[10px]"></i>
+                                                <span>{course.ratingAvg || '4.9'}</span>
+                                            </div>
                                         </div>
 
                                         {/* Description */}
-                                        <p className="text-gray-600 dark:text-[#a0aec0] text-xs sm:text-[13.5px] leading-relaxed line-clamp-3 mb-5">
+                                        <p 
+                                            className="text-gray-600 dark:text-[#a0aec0] text-xs sm:text-[13.5px] leading-relaxed line-clamp-3 mb-5 font-body"
+                                            style={{ transform: 'translateZ(15px)' }}
+                                        >
                                             {formatCourseDesc(course) || t('course_desc_placeholder')}
                                         </p>
                                         
-                                        {/* Meta capsules */}
-                                        <div className="flex flex-wrap gap-2 mb-2">
-                                            <div className="flex items-center gap-1.5 bg-gray-100/80 dark:bg-white/[0.04] text-gray-600 dark:text-gray-300 text-xs font-semibold px-3 py-1 rounded-full border border-gray-200/60 dark:border-white/[0.06]">
+                                        {/* Meta Capsules */}
+                                        <div 
+                                            className="flex flex-wrap gap-2 mb-2"
+                                            style={{ transform: 'translateZ(20px)' }}
+                                        >
+                                            <div className="flex items-center gap-1.5 bg-gray-100/90 dark:bg-white/[0.05] text-gray-700 dark:text-gray-300 text-xs font-semibold px-3 py-1 rounded-full border border-gray-200/80 dark:border-white/[0.08] backdrop-blur-md">
                                                 <i className="fa-regular fa-clock text-[#f9b03c] text-[10px]"></i>
                                                 <span>{course.duration || '00:50:00'}</span>
                                             </div>
-                                            <div className="flex items-center gap-1.5 bg-gray-100/80 dark:bg-white/[0.04] text-gray-600 dark:text-gray-300 text-xs font-semibold px-3 py-1 rounded-full border border-gray-200/60 dark:border-white/[0.06]">
+                                            <div className="flex items-center gap-1.5 bg-gray-100/90 dark:bg-white/[0.05] text-gray-700 dark:text-gray-300 text-xs font-semibold px-3 py-1 rounded-full border border-gray-200/80 dark:border-white/[0.08] backdrop-blur-md">
                                                 <i className="fa-solid fa-layer-group text-[#f9b03c] text-[10px]"></i>
                                                 <span>{course.lessons?.length || 0} {t('course_lessons')}</span>
                                             </div>
-                                            <div className="flex items-center gap-1.5 bg-gray-100/80 dark:bg-white/[0.04] text-gray-600 dark:text-gray-300 text-xs font-semibold px-3 py-1 rounded-full border border-gray-200/60 dark:border-white/[0.06]">
+                                            <div className="flex items-center gap-1.5 bg-gray-100/90 dark:bg-white/[0.05] text-gray-700 dark:text-gray-300 text-xs font-semibold px-3 py-1 rounded-full border border-gray-200/80 dark:border-white/[0.08] backdrop-blur-md">
                                                 <i className="fa-solid fa-signal text-[#f9b03c] text-[10px]"></i>
                                                 <span>{course.level || 'ጀማሪ'}</span>
                                             </div>
@@ -657,8 +699,11 @@ export default function Home() {
                                     </div>
                                 </div>
 
-                                {/* Price & CTA Row (Bottom) */}
-                                <div className="px-6 sm:px-7 pb-6 sm:pb-7 pt-4 border-t border-gray-100 dark:border-white/[0.06] flex items-center justify-between mt-auto">
+                                {/* Price & CTA Row (Bottom) with 3D Depth */}
+                                <div 
+                                    className="px-6 sm:px-7 pb-6 sm:pb-7 pt-4 border-t border-gray-100 dark:border-white/[0.06] flex items-center justify-between mt-auto bg-slate-50/50 dark:bg-white/[0.01]"
+                                    style={{ transform: 'translateZ(32px)' }}
+                                >
                                     <div>
                                         {(course.isFree || course.price === 0 || course.price === '0' || course.price === 'Free') ? (
                                             <span className="text-xl sm:text-2xl font-black text-[#f9b03c] tracking-tight">
@@ -681,7 +726,7 @@ export default function Home() {
                                         <span className="text-xs font-black text-[#f9b03c] opacity-0 group-hover:opacity-100 transition-opacity duration-300 hidden sm:inline-block">
                                             {(course.isFree || course.price === 0 || course.price === '0' || course.price === 'Free') ? 'በነፃ ይጀምሩ' : 'አሁኑኑ ይግዙ'}
                                         </span>
-                                        <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-white/[0.05] border border-gray-200/80 dark:border-white/[0.08] text-slate-700 dark:text-white flex items-center justify-center group-hover:bg-[#f9b03c] group-hover:text-slate-950 group-hover:border-[#f9b03c] group-hover:rotate-[-45deg] transition-all duration-300 shadow-sm group-hover:shadow-[0_0_20px_rgba(249,176,60,0.6)]">
+                                        <div className="w-10 h-10 rounded-2xl bg-[#3268ba]/10 dark:bg-white/[0.06] border border-[#3268ba]/30 dark:border-white/[0.1] text-secondary dark:text-white flex items-center justify-center group-hover:bg-[#f9b03c] group-hover:text-slate-950 group-hover:border-[#f9b03c] group-hover:rotate-[-45deg] transition-all duration-300 shadow-sm group-hover:shadow-[0_0_20px_rgba(249,176,60,0.6)]">
                                             <i className="fa-solid fa-arrow-right text-sm"></i>
                                         </div>
                                     </div>
@@ -691,6 +736,18 @@ export default function Home() {
                     ))}
                 </div>
             )}
+
+            {/* 🌟 3D "Explore All Courses" CTA Banner */}
+            <div className="mt-14 sm:mt-18 text-center scrolly-reveal">
+                <a 
+                    href="/courses"
+                    className="inline-flex items-center gap-3 px-8 sm:px-10 py-4 sm:py-4.5 rounded-2xl bg-gradient-to-r from-[#3268ba] via-[#25549c] to-[#3268ba] text-white font-black text-sm sm:text-base border-2 border-white/20 hover:border-[#f9b03c] shadow-[0_15px_40px_rgba(50,104,186,0.35)] hover:shadow-[0_20px_50px_rgba(249,176,60,0.4)] transition-all duration-300 hover:scale-105 group cursor-pointer"
+                >
+                    <i className="fa-solid fa-layer-group text-[#f9b03c] text-lg group-hover:rotate-12 transition-transform"></i>
+                    <span>{t('all_courses') || 'ሁሉንም ኮርሶች ያስሱ'}</span>
+                    <i className="fa-solid fa-arrow-right text-xs group-hover:translate-x-1.5 transition-transform"></i>
+                </a>
+            </div>
         </div>
     </section>
 
