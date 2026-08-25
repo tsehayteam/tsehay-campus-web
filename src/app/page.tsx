@@ -711,7 +711,7 @@ export default function Home() {
     </section>
 
     
-    {/* SECTION 1: INTERACTIVE "TSEHAY AI" DEMO (Synthesia.io Style Split 50/50 Screen) */}
+    {/* SECTION 1: INTERACTIVE "TSEHAY AI" DEMO (Synthesia.io Style Split 50/50 Screen with 3D Depth) */}
     <section id="ai-feature" className="relative py-20 lg:py-28 overflow-hidden bg-[#030509]/80 border-y border-white/10 scrolly-reveal">
         {/* Subtle Stardust Mesh Background */}
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-15 mix-blend-overlay pointer-events-none"></div>
@@ -722,7 +722,7 @@ export default function Home() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
                 {/* Left Side: Bold High-Converting Punchy Typography */}
                 <div className="flex flex-col text-left">
-                    <div className="inline-flex items-center gap-2 bg-[#f9b03c]/10 border border-[#f9b03c]/25 px-3.5 py-1 rounded-full mb-4 w-fit">
+                    <div className="inline-flex items-center gap-2 bg-[#f9b03c]/10 border border-[#f9b03c]/25 px-3.5 py-1 rounded-full mb-4 w-fit shadow-[0_0_20px_rgba(249,176,60,0.2)]">
                         <span className="w-2 h-2 rounded-full bg-[#f9b03c] animate-pulse"></span>
                         <span className="text-xs font-black uppercase tracking-widest text-[#f9b03c]">24/7 የግል AI ረዳት</span>
                     </div>
@@ -735,10 +735,10 @@ export default function Home() {
                         በኮርሶችዎ ውስጥ ለሚገጥምዎት ማንኛውም ጥያቄ በሰከንዶች ውስጥ ተግባራዊ መፍትሄ፣ የቢዝነስ ስትራቴጂ እና ደረጃ በደረጃ መመሪያ የሚሰጥ የእርስዎ 24/7 ረዳት።
                     </p>
 
-                    {/* Value Prop Bullet Checklist - Compact & Direct */}
+                    {/* Value Prop Bullet Checklist - Compact & Direct with 3D Depth */}
                     <div className="space-y-3 mb-7">
-                        <div className="flex items-center gap-3">
-                            <div className="w-7 h-7 rounded-lg bg-[#f9b03c]/15 text-[#f9b03c] border border-[#f9b03c]/30 flex items-center justify-center text-xs shrink-0 shadow-xs">
+                        <div className="scrolly-card scrolly-stagger-1 flex items-center gap-3 p-2.5 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:border-[#f9b03c]/40 transition-colors">
+                            <div className="w-8 h-8 rounded-lg bg-[#f9b03c]/15 text-[#f9b03c] border border-[#f9b03c]/30 flex items-center justify-center text-xs shrink-0 shadow-xs">
                                 <i className="fa-solid fa-bolt"></i>
                             </div>
                             <span className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200">
@@ -746,8 +746,8 @@ export default function Home() {
                             </span>
                         </div>
 
-                        <div className="flex items-center gap-3">
-                            <div className="w-7 h-7 rounded-lg bg-[#3268ba]/20 text-[#5a93e8] border border-[#3268ba]/35 flex items-center justify-center text-xs shrink-0 shadow-xs">
+                        <div className="scrolly-card scrolly-stagger-2 flex items-center gap-3 p-2.5 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:border-[#3268ba]/40 transition-colors">
+                            <div className="w-8 h-8 rounded-lg bg-[#3268ba]/20 text-[#5a93e8] border border-[#3268ba]/35 flex items-center justify-center text-xs shrink-0 shadow-xs">
                                 <i className="fa-solid fa-bullseye"></i>
                             </div>
                             <span className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200">
@@ -755,8 +755,8 @@ export default function Home() {
                             </span>
                         </div>
 
-                        <div className="flex items-center gap-3">
-                            <div className="w-7 h-7 rounded-lg bg-[#f9b03c]/15 text-[#f9b03c] border border-[#f9b03c]/30 flex items-center justify-center text-xs shrink-0 shadow-xs">
+                        <div className="scrolly-card scrolly-stagger-3 flex items-center gap-3 p-2.5 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:border-[#f9b03c]/40 transition-colors">
+                            <div className="w-8 h-8 rounded-lg bg-[#f9b03c]/15 text-[#f9b03c] border border-[#f9b03c]/30 flex items-center justify-center text-xs shrink-0 shadow-xs">
                                 <i className="fa-solid fa-comments"></i>
                             </div>
                             <span className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200">
@@ -780,9 +780,11 @@ export default function Home() {
                     </div>
                 </div>
 
-                {/* Right Side: Synthesia-Style Interactive Live Typewriter Glassmorphism Mockup */}
-                <div className="w-full flex justify-center">
-                    <SynthesiaAiChatDemo />
+                {/* Right Side: Synthesia-Style Interactive Live Typewriter Glassmorphism Mockup with 3D Tilt */}
+                <div className="w-full flex justify-center scrolly-card scrolly-stagger-2">
+                    <Tilt3DCard maxTilt={8} scale={1.02} perspective={1200} className="w-full max-w-xl">
+                        <SynthesiaAiChatDemo />
+                    </Tilt3DCard>
                 </div>
             </div>
         </div>

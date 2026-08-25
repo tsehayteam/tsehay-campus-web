@@ -124,9 +124,6 @@ export default function Hero3DPopoutStage({
             }}
           />
 
-          {/* Anamorphic Hologram Scanner Laser Line */}
-          <div className="absolute inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-[#f9b03c] to-transparent shadow-[0_0_15px_#f9b03c] opacity-75 pointer-events-none animate-scan-laser" />
-
           {/* Video bottom subtle gradient */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-black/20 pointer-events-none" />
         </div>

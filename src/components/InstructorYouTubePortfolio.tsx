@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { db } from '@/lib/firebase/config';
 import { doc, getDoc, onSnapshot } from 'firebase/firestore';
+import Tilt3DCard from '@/components/3d/Tilt3DCard';
 
 export function extractYouTubeId(urlOrId: string): string {
   if (!urlOrId || typeof urlOrId !== 'string') return '';
@@ -403,104 +404,130 @@ export default function InstructorYouTubePortfolio() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-7 sm:gap-8 lg:gap-10">
           
           {/* CARD 1: HAGERIGNA CHANNEL */}
-          <div className="relative p-[2px] rounded-2xl sm:rounded-3xl overflow-hidden group transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_20px_50px_rgba(50,104,186,0.35)] flex flex-col">
-            <div className="absolute inset-[-200%] animate-border-beam bg-[conic-gradient(from_0deg,transparent_0deg,transparent_270deg,#3268ba_320deg,#00f2fe_355deg,#ffffff_360deg)] pointer-events-none opacity-85 group-hover:opacity-100 transition-opacity duration-300" />
+          <Tilt3DCard
+            maxTilt={10}
+            perspective={1200}
+            scale={1.02}
+            className="scrolly-card scrolly-stagger-1"
+          >
+            <div className="relative p-[2px] rounded-2xl sm:rounded-3xl overflow-hidden group transition-all duration-500 hover:shadow-[0_20px_50px_rgba(50,104,186,0.35)] flex flex-col h-full">
+              <div className="absolute inset-[-200%] animate-border-beam bg-[conic-gradient(from_0deg,transparent_0deg,transparent_270deg,#3268ba_320deg,#00f2fe_355deg,#ffffff_360deg)] pointer-events-none opacity-85 group-hover:opacity-100 transition-opacity duration-300" />
 
-            <div className="relative w-full h-full rounded-[calc(1rem-1px)] sm:rounded-[calc(1.5rem-2px)] bg-white/95 dark:bg-[#070b14]/95 backdrop-blur-2xl flex flex-col justify-between overflow-hidden z-10">
-              
-              <div className="px-5 py-4 flex items-center justify-between border-b border-gray-100 dark:border-white/[0.08] bg-gray-50/70 dark:bg-white/[0.03]">
-                <div className="flex items-center gap-3">
-                  <span className="relative flex h-3.5 w-3.5 items-center justify-center">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#3268ba] opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-[#3268ba] shadow-[0_0_12px_#3268ba]"></span>
-                  </span>
-                  
-                  <span className="text-base sm:text-lg font-black text-slate-900 dark:text-white font-heading tracking-wide group-hover:text-[#5a93e8] transition-colors duration-300">
-                    {typedLocalTitle || 'ሀገርኛ ቻናል'}
-                    <span className="inline-block w-1.5 h-3.5 ml-1 bg-[#3268ba] animate-cursor-blink align-middle"></span>
-                  </span>
+              <div className="relative w-full h-full rounded-[calc(1rem-1px)] sm:rounded-[calc(1.5rem-2px)] bg-white/95 dark:bg-[#070b14]/95 backdrop-blur-2xl flex flex-col justify-between overflow-hidden z-10">
+                
+                <div className="px-5 py-4 flex items-center justify-between border-b border-gray-100 dark:border-white/[0.08] bg-gray-50/70 dark:bg-white/[0.03]">
+                  <div className="flex items-center gap-3" style={{ transform: 'translateZ(25px)' }}>
+                    <span className="relative flex h-3.5 w-3.5 items-center justify-center">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#3268ba] opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-3 w-3 bg-[#3268ba] shadow-[0_0_12px_#3268ba]"></span>
+                    </span>
+                    
+                    <span className="text-base sm:text-lg font-black text-slate-900 dark:text-white font-heading tracking-wide group-hover:text-[#5a93e8] transition-colors duration-300">
+                      {typedLocalTitle || 'ሀገርኛ ቻናል'}
+                      <span className="inline-block w-1.5 h-3.5 ml-1 bg-[#3268ba] animate-cursor-blink align-middle"></span>
+                    </span>
+                  </div>
                 </div>
-              </div>
 
-              {/* Clickable Card Video Thumbnail (Clean with Play Button on Hover) */}
-              <div 
-                onClick={() => {
-                  setActiveModalVideo({
-                    id: localId,
-                    title: 'ሀገርኛ የዩቲዩብ ቻናል (Domestic Portfolio)',
-                    url: `https://www.youtube.com/watch?v=${localId}`
-                  });
-                }}
-                className="relative aspect-video w-full overflow-hidden bg-black flex items-center justify-center group/thumb cursor-pointer select-none"
-                title="ቪዲዮውን በሙሉ ስክሪን ለማጫወት ይጫኑ (Click to Play Fullscreen)"
-              >
-                <img
-                  src={localThumb}
-                  alt="ሀገርኛ ዩቲዩብ ቻናል"
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover/thumb:scale-105"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = '/assets/hero-bg-new.jpg';
+                {/* Clickable Card Video Thumbnail (Clean with Play Button on Hover) */}
+                <div 
+                  onClick={() => {
+                    setActiveModalVideo({
+                      id: localId,
+                      title: 'ሀገርኛ የዩቲዩብ ቻናል (Domestic Portfolio)',
+                      url: `https://www.youtube.com/watch?v=${localId}`
+                    });
                   }}
-                />
+                  className="relative aspect-video w-full overflow-hidden bg-black flex items-center justify-center group/thumb cursor-pointer select-none"
+                  title="ቪዲዮውን በሙሉ ስክሪን ለማጫወት ይጫኑ (Click to Play Fullscreen)"
+                >
+                  <img
+                    src={localThumb}
+                    alt="ሀገርኛ ዩቲዩብ ቻናል"
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover/thumb:scale-105"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = '/assets/hero-bg-new.jpg';
+                    }}
+                  />
 
-                {/* Play Button ONLY Appears on Hover so Thumbnail is 100% Clean by Default */}
-                <div className="absolute inset-0 bg-black/0 group-hover/thumb:bg-black/40 transition-colors duration-300 flex items-center justify-center">
-                  <div className="relative flex items-center justify-center opacity-0 group-hover/thumb:opacity-100 scale-75 group-hover/thumb:scale-100 transition-all duration-300 pointer-events-none">
-                    <span className="absolute w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-[#3268ba]/40 animate-ping pointer-events-none"></span>
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-tr from-[#3268ba] via-blue-500 to-cyan-400 text-white flex items-center justify-center text-2xl sm:text-3xl shadow-[0_0_35px_rgba(50,104,186,0.9)]">
-                      <i className="fa-solid fa-play ml-1"></i>
+                  {/* Play Button ONLY Appears on Hover so Thumbnail is 100% Clean by Default */}
+                  <div className="absolute inset-0 bg-black/0 group-hover/thumb:bg-black/40 transition-colors duration-300 flex items-center justify-center">
+                    <div className="relative flex items-center justify-center opacity-0 group-hover/thumb:opacity-100 scale-75 group-hover/thumb:scale-100 transition-all duration-300 pointer-events-none">
+                      <span className="absolute w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-[#3268ba]/40 animate-ping pointer-events-none"></span>
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-tr from-[#3268ba] via-blue-500 to-cyan-400 text-white flex items-center justify-center text-2xl sm:text-3xl shadow-[0_0_35px_rgba(50,104,186,0.9)]">
+                        <i className="fa-solid fa-play ml-1"></i>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
 
+              </div>
             </div>
-          </div>
+          </Tilt3DCard>
 
           {/* CARD 2: INTERNATIONAL CHANNEL */}
-          <div className="relative p-[2px] rounded-2xl sm:rounded-3xl overflow-hidden group transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_20px_50px_rgba(249,176,60,0.35)] flex flex-col">
-            <div className="absolute inset-[-200%] animate-border-beam bg-[conic-gradient(from_0deg,transparent_0deg,transparent_270deg,#f9b03c_320deg,#ffe066_355deg,#ffffff_360deg)] pointer-events-none opacity-85 group-hover:opacity-100 transition-opacity duration-300" />
+          <Tilt3DCard
+            maxTilt={10}
+            perspective={1200}
+            scale={1.02}
+            className="scrolly-card scrolly-stagger-2"
+          >
+            <div className="relative p-[2px] rounded-2xl sm:rounded-3xl overflow-hidden group transition-all duration-500 hover:shadow-[0_20px_50px_rgba(249,176,60,0.35)] flex flex-col h-full">
+              <div className="absolute inset-[-200%] animate-border-beam bg-[conic-gradient(from_0deg,transparent_0deg,transparent_270deg,#f9b03c_320deg,#ffe066_355deg,#ffffff_360deg)] pointer-events-none opacity-85 group-hover:opacity-100 transition-opacity duration-300" />
 
-            <div className="relative w-full h-full rounded-[calc(1rem-1px)] sm:rounded-[calc(1.5rem-2px)] bg-white/95 dark:bg-[#070b14]/95 backdrop-blur-2xl flex flex-col justify-between overflow-hidden z-10">
-              
-              <div className="px-5 py-4 flex items-center justify-between border-b border-gray-100 dark:border-white/[0.08] bg-gray-50/70 dark:bg-white/[0.03]">
-                <div className="flex items-center gap-3">
-                  <span className="relative flex h-3.5 w-3.5 items-center justify-center">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#f9b03c] opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-[#f9b03c] shadow-[0_0_12px_#f9b03c]"></span>
-                  </span>
-                  
-                  <span className="text-base sm:text-lg font-black text-slate-900 dark:text-white font-heading tracking-wide group-hover:text-[#f9b03c] transition-colors duration-300">
-                    {typedIntlTitle || 'ዓለም አቀፍ ቻናል'}
-                    <span className="inline-block w-1.5 h-3.5 ml-1 bg-[#f9b03c] animate-cursor-blink align-middle"></span>
-                  </span>
+              <div className="relative w-full h-full rounded-[calc(1rem-1px)] sm:rounded-[calc(1.5rem-2px)] bg-white/95 dark:bg-[#070b14]/95 backdrop-blur-2xl flex flex-col justify-between overflow-hidden z-10">
+                
+                <div className="px-5 py-4 flex items-center justify-between border-b border-gray-100 dark:border-white/[0.08] bg-gray-50/70 dark:bg-white/[0.03]">
+                  <div className="flex items-center gap-3" style={{ transform: 'translateZ(25px)' }}>
+                    <span className="relative flex h-3.5 w-3.5 items-center justify-center">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#f9b03c] opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-3 w-3 bg-[#f9b03c] shadow-[0_0_12px_#f9b03c]"></span>
+                    </span>
+                    
+                    <span className="text-base sm:text-lg font-black text-slate-900 dark:text-white font-heading tracking-wide group-hover:text-[#f9b03c] transition-colors duration-300">
+                      {typedIntlTitle || 'ዓለም አቀፍ ቻናል'}
+                      <span className="inline-block w-1.5 h-3.5 ml-1 bg-[#f9b03c] animate-cursor-blink align-middle"></span>
+                    </span>
+                  </div>
                 </div>
-              </div>
 
-              {/* Clickable Card Video Thumbnail (Clean with Play Button on Hover) */}
-              <div 
-                onClick={() => {
-                  setActiveModalVideo({
-                    id: intlId,
-                    title: 'ዓለም አቀፍ የዩቲዩብ ቻናል (International Portfolio)',
-                    url: `https://www.youtube.com/watch?v=${intlId}`
-                  });
-                }}
-                className="relative aspect-video w-full overflow-hidden bg-black flex items-center justify-center group/thumb cursor-pointer select-none"
-                title="ቪዲዮውን በሙሉ ስክሪን ለማጫወት ይጫኑ (Click to Play Fullscreen)"
-              >
-                <img
-                  src={intlThumb}
-                  alt="ዓለም አቀፍ ዩቲዩብ ቻናል"
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover/thumb:scale-105"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = '/assets/hero-bg-new.jpg';
+                {/* Clickable Card Video Thumbnail (Clean with Play Button on Hover) */}
+                <div 
+                  onClick={() => {
+                    setActiveModalVideo({
+                      id: intlId,
+                      title: 'ዓለም አቀፍ የዩቲዩብ ቻናል (International Portfolio)',
+                      url: `https://www.youtube.com/watch?v=${intlId}`
+                    });
                   }}
-                />
+                  className="relative aspect-video w-full overflow-hidden bg-black flex items-center justify-center group/thumb cursor-pointer select-none"
+                  title="ቪዲዮውን በሙሉ ስክሪን ለማጫወት ይጫኑ (Click to Play Fullscreen)"
+                >
+                  <img
+                    src={intlThumb}
+                    alt="ዓለም አቀፍ ዩቲዩብ ቻናል"
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover/thumb:scale-105"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = '/assets/hero-bg-new.jpg';
+                    }}
+                  />
 
-                {/* Play Button ONLY Appears on Hover so Thumbnail is 100% Clean by Default */}
-                <div className="absolute inset-0 bg-black/0 group-hover/thumb:bg-black/40 transition-colors duration-300 flex items-center justify-center">
-                  <div className="relative flex items-center justify-center opacity-0 group-hover/thumb:opacity-100 scale-75 group-hover/thumb:scale-100 transition-all duration-300 pointer-events-none">
+                  {/* Play Button ONLY Appears on Hover so Thumbnail is 100% Clean by Default */}
+                  <div className="absolute inset-0 bg-black/0 group-hover/thumb:bg-black/40 transition-colors duration-300 flex items-center justify-center">
+                    <div className="relative flex items-center justify-center opacity-0 group-hover/thumb:opacity-100 scale-75 group-hover/thumb:scale-100 transition-all duration-300 pointer-events-none">
+                      <span className="absolute w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-[#f9b03c]/40 animate-ping pointer-events-none"></span>
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 flex items-center justify-center text-2xl sm:text-3xl shadow-[0_0_35px_rgba(249,176,60,0.9)]">
+                        <i className="fa-solid fa-play ml-1"></i>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </Tilt3DCard>
+
+        </div>ity-100 scale-75 group-hover/thumb:scale-100 transition-all duration-300 pointer-events-none">
                     <span className="absolute w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-[#f9b03c]/40 animate-ping pointer-events-none"></span>
                     <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 flex items-center justify-center text-2xl sm:text-3xl shadow-[0_0_35px_rgba(249,176,60,0.9)]">
                       <i className="fa-solid fa-play ml-1"></i>
