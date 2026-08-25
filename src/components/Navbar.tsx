@@ -427,7 +427,7 @@ export default function Navbar() {
             
             {/* Desktop Right Action Items */}
             <div key={`desktop-actions-${animationKey}`} className="hidden md:flex items-center gap-2 lg:gap-3 font-heading text-sm">
-              {/* Premium AI Feature Pill Button */}
+              {/* Premium AI Feature Pill Button (Consistent Robot Icon & Distinctive Golden Glow) */}
               <button 
                 type="button"
                 onClick={() => {
@@ -443,11 +443,16 @@ export default function Navbar() {
                     }, 350);
                   }
                 }} 
-                className="terafab-ai-btn flex items-center gap-2 px-3.5 py-1.5 rounded-full text-gray-900 dark:text-white font-bold text-xs cursor-pointer notranslate active:scale-[0.98] anim-nav-ai group"
-                title="Tsehay AI 24/7 የግል መምህር"
+                className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-[#f9b03c]/15 via-amber-400/20 to-[#f9b03c]/15 hover:from-[#f9b03c]/25 hover:to-amber-400/30 border border-[#f9b03c]/50 hover:border-[#f9b03c] shadow-[0_0_15px_rgba(249,176,60,0.25)] hover:shadow-[0_0_25px_rgba(249,176,60,0.45)] text-slate-900 dark:text-white font-bold text-xs cursor-pointer notranslate transition-all duration-300 hover:scale-[1.03] active:scale-[0.98] anim-nav-ai group"
+                title="Tsehay AI 24/7 የግል መምህር (Classroom AI Assistant)"
               >
-                <i className="fa-solid fa-wand-magic-sparkles text-[#f9b03c] text-xs icon-anim-sparkle group-hover:rotate-12 transition-transform"></i> 
-                <span className="text-xs font-black tracking-wide">Tsehay AI</span>
+                <div className="w-5 h-5 rounded-md bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-200 text-slate-950 flex items-center justify-center font-black shadow-xs shrink-0 group-hover:rotate-12 transition-transform duration-300">
+                  <i className="fa-solid fa-robot text-[10px]"></i>
+                </div>
+                <span className="text-xs font-black tracking-wide text-slate-900 dark:text-white group-hover:text-[#f9b03c] transition-colors">
+                  Tsehay AI
+                </span>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse ml-0.5"></span>
               </button>
 
               {/* Install App Quick Trigger */}
@@ -635,22 +640,27 @@ export default function Navbar() {
               </button>
             </div>
 
-            {/* 5. Staggered Item 5: Tsehay AI */}
+            {/* 5. Staggered Item 5: Tsehay AI (Consistent Robot Icon & Highlighted Golden Border) */}
             <div className="animate-nav-stagger-5">
               <button 
                 type="button" 
                 onClick={() => { closeCurtain(); navigateTo('/#ai-feature'); }} 
-                className="w-full flex items-center justify-between px-3 py-2 rounded-xl mobile-nav-card text-left cursor-pointer group"
+                className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-gradient-to-r from-[#f9b03c]/10 via-amber-500/15 to-[#f9b03c]/10 border border-[#f9b03c]/40 text-left cursor-pointer group shadow-sm transition-all duration-300 active:scale-[0.98]"
               >
                 <div className="flex items-center gap-2.5">
-                  <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-gradient-to-tr from-amber-500/20 to-orange-500/20 border border-amber-500/40 text-amber-500 shadow-sm transition-transform group-hover:scale-110">
-                    <i className="fa-solid fa-wand-magic-sparkles text-xs icon-anim-ai"></i>
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-200 text-slate-950 shadow-md font-black transition-transform group-hover:scale-110">
+                    <i className="fa-solid fa-robot text-xs"></i>
                   </div>
-                  <span className="text-xs sm:text-sm font-black text-gray-900 dark:text-white notranslate">
-                    Tsehay AI
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs sm:text-sm font-black text-gray-900 dark:text-white notranslate">
+                      Tsehay AI
+                    </span>
+                    <span className="text-[9px] bg-[#f9b03c]/20 text-[#f9b03c] font-black px-1.5 py-0.2 rounded-md border border-[#f9b03c]/30">
+                      24/7 AI
+                    </span>
+                  </div>
                 </div>
-                <i className="fa-solid fa-chevron-right text-[11px] text-gray-400 group-hover:text-[#f9b03c] group-hover:translate-x-0.5 transition-all"></i>
+                <i className="fa-solid fa-chevron-right text-[11px] text-[#f9b03c] group-hover:translate-x-0.5 transition-all"></i>
               </button>
             </div>
 
