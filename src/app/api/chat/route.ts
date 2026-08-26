@@ -2,17 +2,20 @@
 import { NextResponse } from 'next/server';
 
 const RATE_LIMIT_WINDOW_MS = 60000;
-const MAX_REQUESTS_PER_WINDOW = 40;
+const MAX_REQUESTS_PER_WINDOW = 60;
 
 function getSmartFallbackReply(userPrompt: string, courseContext?: any, hasImage?: boolean, hasAudio?: boolean): string {
     const p = (userPrompt || '').toLowerCase().trim();
     const courseTitle = (courseContext?.courseTitle || '').toLowerCase();
-    const isDigitalMarketing = courseTitle.includes('digital') || courseTitle.includes('marketing') || courseTitle.includes('ማርኬቲንግ');
-    const isYouTube = courseTitle.includes('youtube') || courseTitle.includes('ዩቲዩብ');
-    const isShein = courseTitle.includes('shein') || courseTitle.includes('ሺን') || courseTitle.includes('ሼን') || courseTitle.includes('import') || courseTitle.includes('ኢምፖርት');
+    const activeLesson = (courseContext?.lessonTitle || '').toLowerCase();
+    const isDigitalMarketing = courseTitle.includes('digital') || courseTitle.includes('marketing') || courseTitle.includes('ማርኬቲንግ') || p.includes('digital') || p.includes('marketing') || p.includes('ማርኬቲንግ');
+    const isYouTube = courseTitle.includes('youtube') || courseTitle.includes('ዩቲዩብ') || courseTitle.includes('ዩቱብ') || p.includes('youtube') || p.includes('ዩቲዩብ') || p.includes('ዩቱብ') || p.includes('ቻናል') || p.includes('ቪዲዮ');
+    const isShein = courseTitle.includes('shein') || courseTitle.includes('ሺን') || courseTitle.includes('ሼን') || courseTitle.includes('import') || courseTitle.includes('ኢምፖርት') || p.includes('shein') || p.includes('ሺን') || p.includes('ሼን') || p.includes('import') || p.includes('ኢምፖርት');
+    const isCrypto = courseTitle.includes('crypto') || courseTitle.includes('ክሪፕቶ') || p.includes('crypto') || p.includes('ክሪፕቶ') || p.includes('ቢትኮይን') || p.includes('bitcoin') || p.includes('trading') || p.includes('ትሬዲንግ');
+    const isCoding = courseTitle.includes('web') || courseTitle.includes('code') || courseTitle.includes('coding') || courseTitle.includes('ዴቨሎፕመንት') || p.includes('web') || p.includes('code') || p.includes('coding') || p.includes('html') || p.includes('javascript') || p.includes('ፕሮግራሚንግ') || p.includes('ኮዲንግ');
 
     if (hasImage) {
-        return `የላኩትን ፎቶ/ስክሪንሾት ተመልክቼዋለሁ! 📸\n\nበፎቶው ላይ የሚታየውን ነጥብ በተመለከተ፦\n1. በ${courseContext?.courseTitle || 'ትምህርቱ'} መሰረት ዋናው ትኩረት የተግባር ቅደም ተከተሎችን በአግባቡ መከተል ነው።\n2. ለየት ያለ የስህተት መልዕክት (Error) ወይም ጥያቄ ካለዎት፣ ጥያቄዎን በድምፅ ወይም በጽሑፍ አብራርተው ይጠይቁኝ እና ደረጃ በደረጃ እንፈታዋለን! ✨`;
+        return `የላኩትን ፎቶ/ስክሪንሾት ተመልክቼዋለሁ! 📸\n\nበምስሉ ላይ የሚታየውን ነጥብ በተመለከተ፦\n1. በ${courseContext?.courseTitle || 'ትምህርቱ'} መሰረት ዋናው ትኩረት የተግባር ቅደም ተከተሎችን በአግባቡ መከተል ነው።\n2. ለየት ያለ የስህተት መልዕክት (Error) ካጋጠመዎት፣ ጥያቄዎን በዝርዝር በጽሑፍ ወይም በድምፅ ይጠይቁኝ እና ደረጃ በደረጃ እንፈታዋለን! ✨`;
     }
 
     if (hasAudio && !p) {
@@ -25,82 +28,117 @@ function getSmartFallbackReply(userPrompt: string, courseContext?: any, hasImage
                        p.includes('calculus') || p.includes('ማትሪክ') || p.includes('matrix') || p.includes('ዩኒቨርሲቲ') ||
                        p.includes('essay') || p.includes('ግጥም') || p.includes('poem');
 
-    if (isOffTopic && !isYouTube && !isDigitalMarketing && !isShein) {
+    if (isOffTopic && !isYouTube && !isDigitalMarketing && !isShein && !isCrypto && !isCoding) {
         return "ይቅርታ፣ እኔ የተዘጋጀሁት ስለ ፀሐይ ካምፓስ ስልጠናዎች፣ የዩቲዩብ ስኬት እና የዲጂታል ክህሎቶች እርስዎን ለመርዳት ብቻ ነው። ስለ ካምፓሳችን ኮርሶች፣ ምዝገባ ወይም አሰራር ማንኛውንም ጥያቄ ካለዎት በደስታ እመልስልዎታለሁ! ✨";
     }
 
     // 2. Greetings
     if (
-        p.includes('ሰላም') || p.includes('እንዴት') || p.includes('ጤና ይስጥልኝ') || 
-        p.includes('hello') || p.includes('hi') || p.includes('hey') || p.includes('how are you')
+        p === 'ሰላም' || p === 'ሰላም ነው' || p === 'ጤና ይስጥልኝ' || p === 'እንዴት ነህ' || p === 'እንዴት ነሽ' ||
+        p.startsWith('ሰላም') || p.startsWith('hello') || p.startsWith('hi') || p.startsWith('hey')
     ) {
         if (courseContext?.courseTitle) {
-            return `ሰላም! እንኳን ደህና መጡ! በ"${courseContext.courseTitle}" ስልጠና ዙሪያ ዛሬ በምን ልርዳዎት? ያልገባዎትን ማንኛውንም ነጥብ በጽሑፍ ወይም በድምፅ ይጠይቁኝ! ✨`;
+            return `ሰላም! እንኳን ደህና መጡ! 🌟\n\nበ**"${courseContext.courseTitle}"** ስልጠና ዙሪያ ዛሬ በምን ልርዳዎት? ያልገባዎትን ማንኛውንም ፅንሰ ሀሳብ፣ ተግባራዊ እርምጃ ወይም የቪዲዮ ትምህርት ነጥብ ይጠይቁኝ!`;
         }
-        return "ሰላም! እኔ ፀሐይ ነኝ፤ እንኳን ደህና መጡ! ዛሬ ስለ ፀሐይ ካምፓስ ስልጠናዎች፣ የዩቲዩብ ስኬት፣ የሼን ቢዝነስ ወይም ስለ ምዝገባ በምን ልርዳዎት? ✨";
+        return "ሰላም! እኔ **ፀሐይ AI** ነኝ፤ ወደ ፀሐይ ካምፓስ እንኳን ደህና መጡ! ☀️\n\nዛሬ በምን ልርዳዎት? ስለ ስልጠናዎቻችን (የዩቲዩብ ስኬት፣ የሼን ቢዝነስ፣ ዲጂታል ማርኬቲንግ)፣ ክፍያና ምዝገባ ወይም ሰርተፊኬት ማንኛውንም ጥያቄ በጽሁፍም ሆነ በድምፅ መጠየቅ ይችላሉ።";
     }
 
-    // 3. Address & Location (አድራሻ)
-    if (p.includes('አድራሻ') || p.includes('ቢሮ') || p.includes('ቦሌ የት') || p.includes('የካምፓሱ አድራሻ') || p.includes('location') || p.includes('address')) {
-        return "የፀሐይ ካምፓስ አድራሻ፦ **ቦሌ፣ አዲስ አበባ፣ ኢትዮጵያ** ነው። በአካልም ሆነ በኦንላይን ተግባራዊ ስልጠናዎችን እንሰጣለን። 📍";
+    // 3. YouTube Secrets Masterclass & Channel Creation
+    if (isYouTube) {
+        return `📹 **የዩቲዩብ ስኬት ሚስጥሮች (YouTube Secrets Masterclass)**\n\n` +
+               `ይህ ስልጠና በኢትዮጵያ ውስጥ እና በዓለም አቀፍ ደረጃ አትራፊ የዩቲዩብ ቻናል ለመገንባት የሚያስፈልጉ ተግባራዊ ሚስጥሮችን ያካትታል፦\n\n` +
+               `• **ዋጋ**፦ 5,500 ብር (አንድ ጊዜ የሚከፈል)\n` +
+               `• **ዋና ዋና ትምህርቶች**፦\n` +
+               `  1. **Faceless Channels**፦ ፊት እና ማንነት ሳያሳዩ በ AI ድምፅ እና ቪዲዮ ከፍተኛ እይታ የሚስቡ ቪዲዮዎችን ማዘጋጀት\n` +
+               `  2. **Algorithm & SEO**፦ ቪዲዮዎችን በዩቲዩብ ፍለጋ እና Suggestion ላይ በቀላሉ እንዲወጡ የማድረጊያ ዘዴዎች\n` +
+               `  3. **High-CTR Thumbnails**፦ ተመልካች ሳይወድ በግድ የሚጫናቸው ታምብኔሎች (Cover Images) አሰራር\n` +
+               `  4. **Monetization & Payouts**፦ 1,000 Subscribers እና 4,000 Watch Hours በአጭር ጊዜ ማሟላት እና ከኢትዮጵያ ሆነው በዶላር ገቢ ማውጣት\n\n` +
+               `🎁 **ልዩ ስጦታ**፦ የተሟላ የአማርኛ የዩቲዩብ ማስተርክላስ E-Book በነፃ ተካቷል!\n\n` +
+               `ለመመዝገብ በቴሌብር፣ በሲቢኢ ብር ወይም በLakiPay መክፈል ይችላሉ።`;
     }
 
-    // 4. Phone, Contact & Social Media
-    if (p.includes('ስልክ') || p.includes('phone') || p.includes('contact') || p.includes('ቴሌግራም') || p.includes('telegram') || p.includes('ዋትስአፕ') || p.includes('whatsapp') || p.includes('መደወል') || p.includes('ማናገር')) {
-        return "እኛን ለማግኘት፦\n• **ስልክ ቁጥር**፦ 0980209090 (0980-20-90-90)\n• **ቴሌግራም**፦ @TsehayTeam\n• **ዋትስአፕ**፦ +251980209090\n• **ዩቲዩብ**፦ @eyoubsahle\n• **ቲክቶክ**፦ @eyoubsahle";
+    // 4. Shein Import Business
+    if (isShein) {
+        return `🛍️ **የሼን ኢምፖርት ቢዝነስ (Shein Import Business)**\n\n` +
+               `ከሼን (SHEIN) በቀጥታ ተፈላጊ እቃዎችን በማስመጣት በኢትዮጵያ ውስጥ ከፍተኛ ትርፍ የሚያገኙበት የተሟላ ስልጠና፦\n\n` +
+               `• **ዋጋ**፦ 4,500 ብር\n` +
+               `• **ዋና ዋና ትምህርቶች**፦\n` +
+               `  1. **ምርጥ እቃዎችን መምረጥ**፦ በኢትዮጵያ ገበያ ተፈላጊ እና ፈጣን ሽያጭ ያላቸውን ልብሶችና እቃዎች መለየት\n` +
+               `  2. **የክፍያ ዘዴዎች (Card & Dollar Payments)**፦ በኢትዮጵያ ውስጥ ሆነው በቀላሉ በዶላር እና በኦንላይን ካርዶች ክፍያ መፈጸም\n` +
+               `  3. **ካርጎ እና ማጓጓዣ (Shipping & Customs)**፦ የጉምሩክ እና የትራንስፖርት ወጪን በእጅጉ መቀነሻ ስልቶች\n` +
+               `  4. **የሽያጭ ማስተዋወቅ (Marketing)**፦ በ TikTok እና በ Telegram ቻናሎች እቃዎችን በከፍተኛ ትርፍ መሸጫ ዘዴዎች\n\n` +
+               `ለመመዝገብ ከፈለጉ "ኮርሶች" ገጽ ላይ በመግባት በቴሌብር ወይም በባንክ ክፍያ ፈጽመው ወዲያውኑ መማር መጀመር ይችላሉ!`;
     }
 
-    // 5. Founder / Instructor (Eyoub Sahle)
+    // 5. Digital Marketing (Free Course)
+    if (isDigitalMarketing) {
+        return `🚀 **የዲጂታል ማርኬቲንግ ስልጠና (Digital Marketing Mastery)**\n\n` +
+               `• **ዋጋ**፦ 100% ነፃ (FREE)\n` +
+               `• **የስልጠናው ይዘቶች**፦\n` +
+               `  - የፌስቡክ እና የኢንስታግራም ማስታወቂያዎችን (Meta Ads) ውጤታማ በሆነ መንገድ ማስኬድ\n` +
+               `  - የይዘት ስልት (Content Strategy) እና የደንበኞችን ቁጥር በኦንላይን ማሳደግ\n` +
+               `  - የጉግል ፍለጋ ማሻሻያ (SEO) እና የዲጂታል ሽያጭ መጨመሪያ ስልቶች\n\n` +
+               `ይህንን ስልጠና አሁኑኑ በነፃ ገብተው መከታተል እና ሰርተፊኬት ማግኘት ይችላሉ!`;
+    }
+
+    // 6. Web Development & Coding
+    if (isCoding) {
+        return `💻 **ዌብ ዴቨሎፕመንት እና ኮዲንግ (Web Development Mastery)**\n\n` +
+               `ከጀማሪ እስከ ፕሮፌሽናል ዘመናዊ ዌብሳይቶችን እና አፕሊኬሽኖችን መገንባት የሚያስችል ስልጠና፦\n` +
+               `• HTML5, CSS3, Tailwind CSS እና Responsive Design\n` +
+               `• JavaScript, React, Next.js እና ዘመናዊ የFrontend ቴክኖሎጂዎች\n` +
+               `• የዳታቤዝ አያያዝ እና የዌብሳይት ሆስቲንግ ስራዎች።`;
+    }
+
+    // 7. Crypto Trading Mastery
+    if (isCrypto) {
+        return `📈 **የክሪፕቶ ግብይት ስልጠና (Crypto Trading Mastery)**\n\n` +
+               `በ Bitcoin እና በ Altcoins ግብይት ዓለም አቀፍ የገበያ ትንተና በማድረግ ትርፋማ መሆን የሚያስችል ስልጠና፦\n` +
+               `• Technical & Fundamental Analysis\n` +
+               `• Risk Management እና የካፒታል ጥበቃ\n` +
+               `• Binance እና የክሪፕቶ ዋሌቶች አጠቃቀም።`;
+    }
+
+    // 8. Payments & Registration (ቴሌብር፣ ሲቢኢ፣ LakiPay፣ PayPal)
+    if (p.includes('pay') || p.includes('ክፍያ') || p.includes('ቴሌብር') || p.includes('telebirr') || p.includes('ባንክ') || p.includes('cbe') || p.includes('lakipay') || p.includes('ዋጋ') || p.includes('price') || p.includes('ብር') || p.includes('ገንዘብ') || p.includes('ምዝገባ') || p.includes('መመዝገብ') || p.includes('እንዴት ልክፈል')) {
+        return `💳 **የክፍያ እና የምዝገባ መንገዶች**\n\n` +
+               `ለማንኛውም ኮርስ መመዝገብ በጣም ፈጣን እና ቀላል ነው፦\n\n` +
+               `1. **በሀገር ውስጥ (Domestic)**፦\n` +
+               `   • በ **LakiPay** አማካኝነት በ **ቴሌብር (Telebirr)**፣ በ **ሲቢኢ ብር (CBE Birr)** ወይም በሞባይል ባንኪንግ በቀጥታ በራስ-ሰር መክፈል ይችላሉ።\n` +
+               `2. **ከሀገር ውጭ (International / Diaspora)**፦\n` +
+               `   • በ **PayPal**፣ በ **Credit/Debit Card (Visa/Mastercard)** ወይም በ **Crypto** መክፈል ይችላሉ።\n\n` +
+               `⚡ ክፍያውን እንደፈጸሙ የኮርሱ ቪዲዮዎች እና ማቴሪያሎች ወዲያውኑ ይከፈቱልዎታል!`;
+    }
+
+    // 9. Certificates & Quizzes
+    if (p.includes('ሰርተፊኬት') || p.includes('certif') || p.includes('ማስረጃ') || p.includes('ሰርተፍኬት') || p.includes('ፈተና') || p.includes('quiz')) {
+        return `📜 **ይፋዊ ዲጂታል ሰርተፊኬት (Certificate of Completion)**\n\n` +
+               `አዎ! የኮርሱን የቪዲዮ ትምህርቶች ተከታትለው ሲያጠናቅቁ እና የማጠቃለያ ፈተናውን (Quiz) 80%+ ውጤት ሲያመጡ፦\n` +
+               `• ስምዎ፣ የኮርሱ ርዕስ እና የካምፓሱ ይፋዊ ማህተም ያረፈበት **ዲጂታል ሰርተፊኬት** ወዲያውኑ በነፃ ይሰጥዎታል።\n` +
+               `• ሰርተፊኬቱን ማውረድ (Download) እና በ LinkedIn ወይም በ CV ላይ መጠቀም ይችላሉ! 🎓`;
+    }
+
+    // 10. Contact, Support, Telegram, Phone & Location
+    if (p.includes('ስልክ') || p.includes('phone') || p.includes('contact') || p.includes('ቴሌግራም') || p.includes('telegram') || p.includes('ዋትስአፕ') || p.includes('whatsapp') || p.includes('መደወል') || p.includes('ማናገር') || p.includes('አድራሻ') || p.includes('ቢሮ') || p.includes('ቦሌ') || p.includes('location')) {
+        return `📞 **የፀሐይ ካምፓስ አድራሻ እና የእውቂያ መንገዶች**\n\n` +
+               `• **አድራሻ**፦ ቦሌ፣ አዲስ አበባ፣ ኢትዮጵያ (Bole, Addis Ababa, Ethiopia)\n` +
+               `• **ስልክ ቁጥር**፦ **0980209090** (0980-20-90-90 / +251980209090)\n` +
+               `• **ቴሌግራም**፦ **@TsehayTeam** (https://t.me/tsehaycampus)\n` +
+               `• **ዋትስአፕ**፦ **+251980209090**\n` +
+               `• **ዩቲዩብ ቻናል**፦ **@eyoubsahle** (youtube.com/@eyoubsahle)\n` +
+               `• **ቲክቶክ**፦ **@eyoubsahle**`;
+    }
+
+    // 11. Founder / Instructor (Eyoub Sahle)
     if (p.includes('founder') || p.includes('መስራች') || p.includes('eyoub') || p.includes('እዮብ') || p.includes('ኢዮብ') || p.includes('ባለቤት') || p.includes('tsehay digital') || p.includes('ፀሐይ ዲጂታል') || p.includes('አስተማሪ') || p.includes('አሰልጣኝ')) {
-        return "የፀሐይ ካምፓስ (Tsehay Campus) መስራችና ዋና አሰልጣኝ **ኢዮብ ሳህሌ (Eyoub Sahle)** ነው። እሱ በኢትዮጵያ ውስጥ በዲጂታል ማርኬቲንግ እና በዩቲዩብ ቻናሎች ስኬት በርካታ ተማሪዎችን ያፈራ የTsehay Digital መስራች ነው።";
-    }
-    
-    // 6. Payments & Registration
-    if (p.includes('pay') || p.includes('ክፍያ') || p.includes('ቴሌብር') || p.includes('telebirr') || p.includes('ባንክ') || p.includes('cbe') || p.includes('lakipay') || p.includes('ዋጋ') || p.includes('price') || p.includes('ብር') || p.includes('ገንዘብ') || p.includes('ምዝገባ') || p.includes('መመዝገብ')) {
-        return "ለፀሐይ ካምፓስ ኮርሶች መመዝገብ እና ክፍያ መፈጸም በጣም ቀላል ነው፦\n\n" +
-               "1. **በሀገር ውስጥ (Domestic)**፦ በLakiPay አማካኝነት በቴሌብር (Telebirr)፣ በሲቢኢ ብር (CBE Birr) ወይም በሞባይል ባንኪንግ በቀጥታ መክፈል ይችላሉ።\n" +
-               "2. **ከሀገር ውጭ (International / Diaspora)**፦ በPayPal፣ በክሬዲት/ዴቢት ካርድ (Mastercard/Visa) ወይም በክሪፕቶ ከረንሲ መክፈል ይችላሉ።\n\n" +
-               "ክፍያውን እንደፈጸሙ የኮርሱ መማሪያ ቪዲዮዎች ወዲያውኑ ይከፈቱልዎታል! 🚀";
-    }
-    
-    // 7. Certificates
-    if (p.includes('ሰርተፊኬት') || p.includes('certif') || p.includes('ማስረጃ') || p.includes('ሰርተፍኬት')) {
-        return "አዎ! ማንኛውንም ኮርስ በተሳካ ሁኔታ አጠናቀው የኮርስ ማጠቃለያ ፈተናውን (Quiz) ሲያልፉ፣ ስምዎ እና የካምፓሱ ማህተም ያረፈበት ይፋዊ **ዲጂታል ሰርተፊኬት (Digital Certificate of Completion)** ወዲያውኑ በነጻ ይሰጥዎታል! 📜✨";
+        return `👨‍🏫 **ስለ አሰልጣኙ (ኢዮብ ሳህሌ / Eyoub Sahle)**\n\n` +
+               `የፀሐይ ካምፓስ (Tsehay Campus) መስራች እና ዋና አሰልጣኝ **ኢዮብ ሳህሌ (Eyoub Sahle)** ነው።\n` +
+               `እሱ በኢትዮጵያ ውስጥ በዲጂታል ማርኬቲንግ እና በዩቲዩብ ቻናሎች ስኬት በርካታ ተማሪዎችን ያፈራ፣ የ Tsehay Digital መስራች እና የ 100k+ ተከታዮች ያሉት የዩቲዩብ ባለሙያ ነው።`;
     }
 
-    // 8. Course-Specific Guidance
-    if (isShein || p.includes('shein') || p.includes('ሺን') || p.includes('ሼን') || p.includes('import') || p.includes('ኢምፖርት')) {
-        return "የሼን ኢምፖርት ቢዝነስ (Shein Import Business) ስልጠና፦\n\n" +
-               "• **ዋጋ**፦ 4,500 ብር\n" +
-               "• **የስልጠናው ዋና ዋና ትኩረቶች**፦\n" +
-               "  - ከሼን በአነስተኛ ካፒታል ተፈላጊ እቃዎችን መርጦ ማዘዝ\n" +
-               "  - የዶላር እና የካርድ ክፍያ ዘዴዎችን በኢትዮጵያ ውስጥ ማመቻቸት\n" +
-               "  - የጉምሩክ እና የካርጎ ወጪን በከፍተኛ ሁኔታ መቀነስ\n" +
-               "  - በማህበራዊ ሚዲያ (TikTok & Telegram) እቃዎችን በከፍተኛ ትርፍ መሸጫ ስልቶች።";
-    }
-
-    if (isYouTube || p.includes('youtube') || p.includes('ዩቲዩብ') || p.includes('ዩቱብ')) {
-        return "የዩቲዩብ ስኬት ሚስጥሮች (YouTube Secrets Masterclass)፦\n\n" +
-               "• **ዋጋ**፦ 5,500 ብር\n" +
-               "• **የስልጠናው ዋና ዋና ትኩረቶች**፦\n" +
-               "  - ፊት ሳይታይ (100% Faceless Channels) አትራፊ ቪዲዮዎችን ማዘጋጀት\n" +
-               "  - የYouTube Algorithm እና የSEO ሚስጥሮች\n" +
-               "  - ተመልካችን የሚስቡ CTR ጨማሪ ታምብኔሎችን መስራት\n" +
-               "  - ከኢትዮጵያ ሆነው በቋሚነት በዶላር ገቢ ማግኛ እና ማውጫ ስልቶች።\n" +
-               "• ስልጠናው ነፃ የአማርኛ ኢ-ቡክ (E-Book) ያካትታል።";
-    }
-
-    if (isDigitalMarketing || p.includes('marketing') || p.includes('ማርኬቲንግ') || p.includes('digital') || p.includes('ዲጂታል')) {
-        return "የዲጂታል ማርኬቲንግ ኮርስ (Digital Marketing)፦\n\n" +
-               "• **ዋጋ**፦ 100% ነፃ (FREE)\n" +
-               "• **የስልጠናው ዋና ዋና ትኩረቶች**፦\n" +
-               "  - የፌስቡክ እና የኢንስታግራም ማስታወቂያዎች (Meta Ads)\n" +
-               "  - SEO (የጉግል ፍለጋ ደረጃ ማሳደጊያ)\n" +
-               "  - የይዘት ስልት (Content Strategy) እና የኦንላይን ሽያጭ መጨመሪያ መንገዶች።";
-    }
-
+    // 12. Active Lesson context query
     if (courseContext?.courseTitle) {
-        return `በ"${courseContext.courseTitle}" ስልጠና ውስጥ ያሉትን ዋና ዋና ደረጃዎች በተግባር መተግበር እና የተሰጡትን የመማሪያ ማስታወሻዎች መከታተል ወሳኝ ነው። ተጨማሪ ዝርዝር ማብራሪያ ወይም የደረጃ በደረጃ መመሪያ ከፈለጉ ጥያቄዎን በዝርዝር ይጻፉልኝ ወይም በድምፅ ይላኩልኝ! 💡`;
+        return `በ**"${courseContext.courseTitle}"** ስልጠና ውስጥ ያሉትን ዋና ዋና ደረጃዎች በተግባር መተግበር እና የተሰጡትን የመማሪያ ማስታወሻዎች መከታተል ወሳኝ ነው።\n\nተጨማሪ ዝርዝር ማብራሪያ ወይም የደረጃ በደረጃ መመሪያ ከፈለጉ ጥያቄዎን በዝርዝር ይጻፉልኝ ወይም በድምፅ ይላኩልኝ! 💡`;
     }
 
     return "ስለ ፀሐይ ካምፓስ ስልጠናዎች፣ አድራሻችን (ቦሌ፣ አዲስ አበባ)፣ ክፍያና ምዝገባ ማንኛውንም ጥያቄ መጠየቅ ይችላሉ። በስልክ 0980209090 ወይም በቴሌግራም በ @TsehayTeam ያግኙን። ✨";
@@ -220,42 +258,37 @@ export async function POST(req: Request) {
 `;
     }
 
-    const DEFAULT_SYSTEM_INSTRUCTION = `You are "Tsehay AI" (ፀሐይ AI), the smart virtual mentor and assistant for Tsehay Campus (ፀሐይ ካምፓስ) and lead instructor Eyoub Sahle (ኢዮብ ሳህሌ). 
+    const DEFAULT_SYSTEM_INSTRUCTION = `You are "Tsehay AI" (ፀሐይ AI), the official AI mentor and assistant for Tsehay Campus (ፀሐይ ካምፓስ) and lead instructor Eyoub Sahle (ኢዮብ ሳህሌ). 
 
-[PERSONA & CONVERSATIONAL STYLE]
-- You are warm, encouraging, concise, highly intelligent, and practical.
-- If the user speaks or writes in Amharic -> answer in natural, authentic Amharic (አማርኛ).
-- If the user speaks or writes in English -> answer in clear, friendly English.
-- Multimodal Audio Input: When audio is provided, listen to the speaker's voice naturally (like Google AI Studio), comprehend their spoken words, and reply directly without mentioning technical audio formats.
-- CRITICAL: Keep replies direct and actionable. NEVER repeat introductory phrases or produce robotic boilerplate loops.
+[CONVERSATION & TONE RULES]
+- Speak with warmth, expertise, friendliness, and clarity.
+- When the user asks in Amharic (አማርኛ) -> respond in rich, natural, fluent Amharic. Use bolding and structured bullet points for readability.
+- When the user asks in English -> respond in clear, professional, fluent English.
+- For text questions, provide complete, helpful, thorough answers with practical guidance.
+- For voice input, comprehend the speaker's audio directly and answer conversationally.
+- Never repeat robotic intros or produce boilerplate loops.
 
-[PLATFORM FACTS & VERIFIED INFORMATION]
+[PLATFORM INFORMATION]
 - Platform: Tsehay Campus (ፀሐይ ካምፓስ) - tsehaycampus.com
-- Location: ቦሌ፣ አዲስ አበባ፣ ኢትዮጵያ (Bole, Addis Ababa, Ethiopia).
-- Contact & WhatsApp: 0980209090 (+251980209090)
-- Telegram Channel / Support: @TsehayTeam
+- Location: ቦሌ፣ አዲስ አበባ፣ ኢትዮጵያ (Bole, Addis Ababa, Ethiopia)
+- Phone & WhatsApp: 0980209090 (+251980209090)
+- Telegram Support: @TsehayTeam
 - Founder & Lead Instructor: Eyoub Sahle (ኢዮብ ሳህሌ)
-- Courses:
+- Course Offerings:
   1. Shein Import Business (የሼን ኢምፖርት ቢዝነስ) - 4,500 ETB
-  2. YouTube Secrets Masterclass (የዩቲዩብ ስኬት ሚስጥሮች) - 5,500 ETB
-  3. Digital Marketing Mastery (ዲጂታል ማርኬቲንግ) - FREE
-  4. Web Development & Coding
-  5. Crypto Trading Mastery
-- Payments: Telebirr, CBE Birr, LakiPay (Domestic); PayPal, Credit Cards, Crypto (International).
-- Certificates: Official Digital Certificate given upon completing lessons and the quiz.
+  2. YouTube Secrets Masterclass & Monetization (የዩቲዩብ ስኬት ሚስጥሮች) - 5,500 ETB (includes free Amharic E-Book)
+  3. Digital Marketing Mastery (ዲጂታል ማርኬቲንግ) - 100% FREE
+  4. Web Development & Coding (ዌብ ዴቨሎፕመንት)
+  5. Crypto Trading Mastery (የክሪፕቶ ግብይት)
+- Payment Methods: Telebirr (ቴሌብር), CBE Birr (ሲቢኢ ብር), LakiPay (Domestic); PayPal, Credit/Debit Cards, Crypto (International).
+- Certification: Free official Digital Certificate of Completion upon finishing lessons and passing the quiz.
 
 ${contextualCourseSection}`;
-
-    const ENFORCED_SYSTEM_INSTRUCTION = `[CRITICAL INSTRUCTION]
-You are Tsehay AI. Give helpful, friendly, natural answers. Do not repeat words.
-[DYNAMIC CONTEXT]
-${DEFAULT_SYSTEM_INSTRUCTION}
-[END DYNAMIC CONTEXT]`;
 
     // 🎙️ / 📸 Build user parts with Native Multimodal Audio & Image Support
     const userParts: any[] = [];
 
-    // 1. Process Multimodal Direct Audio (Base64 WebM / MP4 / WAV / OGG)
+    // 1. Process Multimodal Direct Audio (Base64)
     if (audio && typeof audio === 'string' && audio.includes('base64,')) {
         const matches = audio.match(/^data:([a-zA-Z0-9\/+-]+);base64,(.+)$/);
         if (matches && matches[1] && matches[2]) {
@@ -290,9 +323,14 @@ ${DEFAULT_SYSTEM_INSTRUCTION}
 
     const payload = { 
         systemInstruction: {
-            parts: [{ text: ENFORCED_SYSTEM_INSTRUCTION }]
+            parts: [{ text: DEFAULT_SYSTEM_INSTRUCTION }]
         },
-        contents: [{ role: "user", parts: userParts }]
+        contents: [{ role: "user", parts: userParts }],
+        generationConfig: {
+            temperature: 0.7,
+            topP: 0.95,
+            maxOutputTokens: 2048
+        }
     };
 
     const models = [
