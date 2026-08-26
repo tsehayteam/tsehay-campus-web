@@ -123,14 +123,137 @@ export default function AdminDashboard() {
     status: 'upcoming'
   });
 
-  // 🛡️ Comprehensive Admin Authorization Verifier
-  const isAuthorizedAdmin = (): boolean => {
-    if (contextIsAdmin) return true;
+  // 🔒 Strict Admin 2FA State & Handlers
+  const STRICT_ADMIN_EMAIL = 'eyoubsahle@gmail.com';
+  const [is2faVerified, setIs2faVerified] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return !!sessionStorage.getItem('tsehay_admin_2fa_token');
+    }
+    return false;
+  });
+  const [twoFactorCode, setTwoFactorCode] = useState('');
+  const [isSending2faOtp, setIsSending2faOtp] = useState(false);
+  const [isVerifying2faOtp, setIsVerifying2faOtp] = useState(false);
+  const [otpError, setOtpError] = useState<string | null>(null);
+  const [otpSuccessMsg, setOtpSuccessMsg] = useState<string | null>(null);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [redirectCountdown, setRedirectCountdown] = useState(3);
+  const otpAutoSentRef = React.useRef(false);
+
+  // Cooldown countdown timer
+  useEffect(() => {
+    if (resendCooldown > 0) {
+      const timer = setTimeout(() => setResendCooldown(c => c - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [resendCooldown]);
+
+  // Auto-send 2FA code if logged in as eyoubsahle@gmail.com but unverified
+  useEffect(() => {
     const currentUser = auth.currentUser || user;
-    if (currentUser?.email && isEmailAdmin(currentUser.email)) {
+    const currentEmail = currentUser?.email?.toLowerCase().trim();
+    if (currentEmail === STRICT_ADMIN_EMAIL && !is2faVerified && !otpAutoSentRef.current) {
+      otpAutoSentRef.current = true;
+      handleSend2faOtp();
+    }
+  }, [user, is2faVerified]);
+
+  // Auto-redirect unauthorized students to /dashboard
+  useEffect(() => {
+    const currentUser = auth.currentUser || user;
+    const currentEmail = currentUser?.email?.toLowerCase().trim();
+    if (currentUser && currentEmail && currentEmail !== STRICT_ADMIN_EMAIL) {
+      const timer = setInterval(() => {
+        setRedirectCountdown(prev => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            router.push('/dashboard');
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [user, router]);
+
+  // Send 2FA OTP Code
+  const handleSend2faOtp = async (isManual = false) => {
+    setIsSending2faOtp(true);
+    setOtpError(null);
+    if (isManual) setOtpSuccessMsg(null);
+
+    try {
+      const res = await fetch('/api/admin/verify-2fa', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'send', email: STRICT_ADMIN_EMAIL })
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setOtpSuccessMsg('የ 6-አሃዝ ማረጋገጫ ኮድ ወደ eyoubsahle@gmail.com ተልኳል!');
+        setResendCooldown(60);
+      } else {
+        setOtpError(data.error || 'ኮዱን መላክ አልተቻለም፤ እባክዎ በድጋሚ ይሞክሩ።');
+      }
+    } catch (e: any) {
+      setOtpError('የኔትወርክ ስህተት አጋጥሟል።');
+    } finally {
+      setIsSending2faOtp(false);
+    }
+  };
+
+  // Verify 2FA OTP Code
+  const handleVerify2faOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (twoFactorCode.trim().length !== 6) {
+      setOtpError('እባክዎ ባለ 6-አሃዝ ኮድ ያስገቡ።');
+      return;
+    }
+
+    setIsVerifying2faOtp(true);
+    setOtpError(null);
+
+    try {
+      const res = await fetch('/api/admin/verify-2fa', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'verify',
+          email: STRICT_ADMIN_EMAIL,
+          code: twoFactorCode.trim()
+        })
+      });
+
+      const data = await res.json();
+      if (data.success && data.token) {
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('tsehay_admin_2fa_token', data.token);
+          localStorage.setItem('adminAuth', 'true');
+          localStorage.setItem('adminEmail', STRICT_ADMIN_EMAIL);
+        }
+        setIs2faVerified(true);
+        setIsAuthenticated(true);
+        setOtpSuccessMsg('ማረጋገጫው ተሳክቷል!');
+      } else {
+        setOtpError(data.error || 'የተሳሳተ ኮድ አስገብተዋል። እባክዎ በድጋሚ ይሞክሩ።');
+      }
+    } catch (err: any) {
+      setOtpError('የማረጋገጫ ስህተት አጋጥሟል።');
+    } finally {
+      setIsVerifying2faOtp(false);
+    }
+  };
+
+  // 🛡️ Comprehensive Admin Authorization Verifier (Strict 2FA Guard)
+  const isAuthorizedAdmin = (): boolean => {
+    const currentUser = auth.currentUser || user;
+    const currentEmail = currentUser?.email?.toLowerCase().trim();
+    if (currentEmail === STRICT_ADMIN_EMAIL && is2faVerified) {
       return true;
     }
-    if (typeof window !== 'undefined' && localStorage.getItem('adminAuth') === 'true') {
+    if (typeof window !== 'undefined' && sessionStorage.getItem('tsehay_admin_2fa_token')) {
       return true;
     }
     return false;
@@ -851,22 +974,26 @@ export default function AdminDashboard() {
     const cleanEmail = email.trim().toLowerCase();
     const cleanPass = password.trim();
 
-    // Verify Access Code 'Eyoub TC' or standard password 'admin123'
+    // 🛡️ Strict Email Check: Only eyoubsahle@gmail.com is allowed
+    if (cleanEmail !== STRICT_ADMIN_EMAIL) {
+      setLoginError('ይቅርታ! የአድሚን ዳሽቦርድ የሚፈቀደው ለ eyoubsahle@gmail.com ብቻ ነው።');
+      return;
+    }
+
     const isAccessCode = cleanPass.toLowerCase() === 'eyoub tc' || cleanPass.replace(/\s+/g, '').toLowerCase() === 'eyoubtc';
-    const isDefaultAdmin = isEmailAdmin(cleanEmail) && cleanPass === 'admin123';
+    const isDefaultAdmin = cleanPass === 'admin123' || cleanPass.length >= 6;
 
     if (isAccessCode || isDefaultAdmin) { 
       try {
-        const authEmail = cleanEmail || 'admin@tsehaycampus.com';
         const fallbackPassword = 'TsehayAdmin2025!Sec';
         try {
-          await signInWithEmailAndPassword(auth, authEmail, cleanPass === 'admin123' ? 'admin123' : fallbackPassword);
+          await signInWithEmailAndPassword(auth, cleanEmail, cleanPass === 'admin123' || isAccessCode ? fallbackPassword : cleanPass);
         } catch (authError: any) {
           if (authError.code === 'auth/user-not-found' || authError.code === 'auth/invalid-credential' || authError.code === 'auth/wrong-password') {
             try {
-              await createUserWithEmailAndPassword(auth, authEmail, fallbackPassword);
+              await createUserWithEmailAndPassword(auth, cleanEmail, fallbackPassword);
             } catch (createError: any) {
-              // Account exists or created, proceed
+              // Account exists, proceed
             }
           }
         }
@@ -874,12 +1001,12 @@ export default function AdminDashboard() {
         console.warn("Auth Firebase network sync warning:", error);
       }
 
-      localStorage.setItem('adminAuth', 'true');
-      localStorage.setItem('adminEmail', cleanEmail || 'admin@tsehaycampus.com');
       setIsAuthenticated(true);
       setLoginError('');
+      // Trigger 2FA OTP sending to eyoubsahle@gmail.com
+      handleSend2faOtp(true);
     } else {
-      setLoginError('የተሳሳተ የመዳረሻ ኮድ (Access Code) ወይም የይለፍ ቃል። ትክክለኛውን ኮድ ያስገቡ።');
+      setLoginError('የተሳሳተ የመዳረሻ ኮድ (Access Code) ወይም የይለፍ ቃል።');
     }
   };
 
@@ -889,9 +1016,14 @@ export default function AdminDashboard() {
     } catch(e) {
       console.error(e);
     }
-    localStorage.removeItem('adminAuth');
-    localStorage.removeItem('adminEmail');
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('tsehay_admin_2fa_token');
+      localStorage.removeItem('adminAuth');
+      localStorage.removeItem('adminEmail');
+    }
+    setIs2faVerified(false);
     setIsAuthenticated(false);
+    router.push('/dashboard');
   };
 
   const handleUpdateAdminProfile = async () => {
@@ -1603,56 +1735,245 @@ export default function AdminDashboard() {
     }
   };
 
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-dark flex flex-col items-center justify-center p-4 relative overflow-hidden -mt-20 z-[60]">
-        {/* Background blobs for art */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-primary/20 rounded-full blur-[100px]"></div>
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-secondary/20 rounded-full blur-[100px]"></div>
+  // 🛡️ SECURITY BARRIER 1: Check authenticated user identity
+  const currentUser = auth.currentUser || user;
+  const currentEmail = currentUser?.email?.toLowerCase().trim() || (typeof window !== 'undefined' ? localStorage.getItem('adminEmail')?.toLowerCase().trim() : '');
 
-        <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-10 rounded-[2rem] w-full max-w-md relative z-10 shadow-2xl">
+  // 1. Normal Student logged in (email !== 'eyoubsahle@gmail.com') -> RENDER 403 ACCESS DENIED
+  if (currentUser && currentEmail && currentEmail !== STRICT_ADMIN_EMAIL) {
+    return (
+      <div className="min-h-screen bg-[#06090e] text-white flex flex-col items-center justify-center p-4 relative overflow-hidden -mt-20 z-[9999]">
+        {/* Ambient Red Alert Glow */}
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-red-600/15 rounded-full blur-[140px] pointer-events-none" />
+
+        <div 
+          className="relative max-w-lg w-full rounded-[2.5rem] p-8 sm:p-10 text-center animate-in zoom-in-95 duration-200"
+          style={{
+            background: 'rgba(12, 16, 23, 0.95)',
+            backdropFilter: 'blur(25px)',
+            border: '2px solid rgba(239, 68, 68, 0.4)',
+            boxShadow: '0 30px 100px rgba(0,0,0,0.9), 0 0 50px rgba(239,68,68,0.25)'
+          }}
+        >
+          {/* Lock Icon Badge */}
+          <div className="w-20 h-20 rounded-3xl bg-red-500/15 border-2 border-red-500/40 text-red-400 flex items-center justify-center text-3xl mx-auto mb-6 shadow-[0_0_30px_rgba(239,68,68,0.4)] animate-pulse">
+            <i className="fa-solid fa-shield-halved"></i>
+          </div>
+
+          <div className="inline-block px-4 py-1.5 rounded-full bg-red-500/15 border border-red-500/30 text-red-400 text-xs font-black uppercase tracking-widest mb-3">
+            403 • ACCESS DENIED
+          </div>
+
+          <h2 className="text-2xl sm:text-3xl font-black font-heading text-white mb-3 tracking-tight">
+            መዳረሻ ተከልክሏል (Access Denied)
+          </h2>
+
+          <p className="text-slate-300 text-sm sm:text-base leading-relaxed mb-6 font-body">
+            ይቅርታ፣ ወደዚህ ገጽ ለመግባት የአድሚን ፈቃድ የለዎትም። ይህ የመቆጣጠሪያ ዳሽቦርድ ለተፈቀደላቸው የሲስተም አድሚኖች (<span className="text-[#f9b03c] font-bold">eyoubsahle@gmail.com</span>) ብቻ የተዘጋጀ ነው።
+          </p>
+
+          {/* Current account pill */}
+          <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/10 text-xs text-slate-400 mb-8 flex items-center justify-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-amber-400"></span>
+            <span>የገቡበት አካውንት፡ <strong className="text-white">{currentEmail}</strong></span>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="space-y-3">
+            <button
+              type="button"
+              onClick={() => router.push('/dashboard')}
+              className="w-full btn-buy-now-vibe py-4 rounded-xl text-sm font-black flex items-center justify-center gap-2 cursor-pointer active:scale-98 shadow-lg"
+            >
+              <i className="fa-solid fa-graduation-cap"></i>
+              <span>ወደ ተማሪ ዳሽቦርድ ተመለስ (Go to Dashboard)</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="w-full py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs text-slate-400 hover:text-white transition cursor-pointer"
+            >
+              በሌላ አካውንት ለመግባት ውጣ (Sign Out)
+            </button>
+          </div>
+
+          <p className="text-[11px] text-slate-500 mt-6">
+            በ {redirectCountdown} ሰከንድ ውስጥ በራስ-ሰር ወደ ተማሪ ዳሽቦርድ ይዛወራሉ...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // 2. Not Logged In -> Show Admin Login Form requiring eyoubsahle@gmail.com
+  if (!isAuthenticated && (!currentUser || currentEmail !== STRICT_ADMIN_EMAIL)) {
+    return (
+      <div className="min-h-screen bg-[#06090e] text-white flex flex-col items-center justify-center p-4 relative overflow-hidden -mt-20 z-[60]">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-[#f9b03c]/10 rounded-full blur-[140px] pointer-events-none"></div>
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-blue-600/10 rounded-full blur-[140px] pointer-events-none"></div>
+
+        <div 
+          className="relative max-w-md w-full rounded-[2.5rem] p-8 sm:p-10 text-white shadow-2xl animate-in zoom-in-95 duration-200"
+          style={{
+            background: 'rgba(12, 16, 23, 0.95)',
+            backdropFilter: 'blur(25px)',
+            border: '2px solid rgba(249, 176, 60, 0.4)',
+            boxShadow: '0 30px 100px rgba(0,0,0,0.9), 0 0 40px rgba(249,176,60,0.15)'
+          }}
+        >
           <div className="text-center mb-8 flex flex-col items-center">
-            <img src="/tc-logo.jpg" alt="Tsehay Campus Logo" className="h-16 w-auto object-contain mb-6 bg-white p-2 rounded-xl" />
-            <h1 className="text-4xl font-black text-white mb-2 font-heading tracking-tight">Tsehay <span className="text-primary">Admin</span></h1>
-            <p className="text-gray-400">ወደ መቆጣጠሪያ ዳሽቦርድ ይግቡ</p>
+            <div className="bg-white p-2 rounded-2xl mb-4 shadow-md">
+              <img src="/tc-logo.jpg" alt="Tsehay Campus Logo" className="h-14 w-auto object-contain" />
+            </div>
+            <div className="inline-block px-3 py-1 rounded-full bg-amber-400/10 border border-amber-400/30 text-[#f9b03c] text-[11px] font-black uppercase tracking-wider mb-2">
+              🔒 2-Step Secure Gateway
+            </div>
+            <h1 className="text-3xl font-black text-white font-heading tracking-tight">Tsehay <span className="text-[#f9b03c]">Admin</span></h1>
+            <p className="text-gray-400 text-xs mt-1">የአድሚን መግቢያ እና የ 2FA ማረጋገጫ</p>
           </div>
           
           {loginError && (
-            <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl mb-6 text-sm text-center font-bold">
+            <div className="bg-red-500/10 border border-red-500/30 text-red-400 p-3.5 rounded-xl mb-6 text-xs text-center font-bold">
               {loginError}
             </div>
           )}
 
-          <form onSubmit={handleLogin} className="space-y-5">
+          <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="text-xs font-bold text-gray-300 uppercase tracking-wider mb-2 block">የአድሚን ኢሜል (Email)</label>
+              <label className="text-xs font-bold text-gray-300 uppercase tracking-wider mb-1.5 block">የአድሚን ኢሜል (Admin Email)</label>
               <input 
                 type="email" 
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-black/40 border border-white/15 rounded-xl px-5 py-3.5 text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-sm placeholder:text-gray-500"
-                placeholder="ማንኛውንም ኢሜል ያስገቡ (e.g. eyoub@gmail.com)"
+                className="w-full bg-black/50 border border-white/15 rounded-xl px-4 py-3 text-white outline-none focus:border-[#f9b03c] transition text-xs font-medium"
+                placeholder="eyoubsahle@gmail.com"
                 required
               />
             </div>
             <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-xs font-bold text-gray-300 uppercase tracking-wider block">የመዳረሻ ኮድ / የይለፍ ቃል (Access Code)</label>
-              </div>
+              <label className="text-xs font-bold text-gray-300 uppercase tracking-wider mb-1.5 block">የይለፍ ቃል ወይም የመዳረሻ ኮድ (Access Code)</label>
               <input 
                 type="password" 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-black/40 border border-white/15 rounded-xl px-5 py-3.5 text-white outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-sm placeholder:text-gray-500 font-mono tracking-wider"
-                placeholder="የመዳረሻ ኮድ (Access Code) እዚህ ያስገቡ..."
+                className="w-full bg-black/50 border border-white/15 rounded-xl px-4 py-3 text-white outline-none focus:border-[#f9b03c] transition text-xs font-mono"
+                placeholder="የይለፍ ቃልዎን ወይም 'Eyoub TC' ያስገቡ..."
                 required
               />
             </div>
-            <button type="submit" className="w-full bg-primary text-dark font-black py-4 rounded-xl hover:bg-yellow-400 transition-all shadow-lg hover:shadow-primary/30 cursor-pointer text-base mt-2 flex items-center justify-center gap-2">
+            <button type="submit" className="w-full btn-buy-now-vibe py-4 rounded-xl font-black text-sm cursor-pointer active:scale-98 shadow-lg flex items-center justify-center gap-2 mt-2">
               <i className="fa-solid fa-shield-halved"></i>
-              <span>ወደ አድሚን ዳሽቦርድ ግባ (Log in)</span>
+              <span>ቀጥል (Proceed to 2FA Code)</span>
             </button>
           </form>
+        </div>
+      </div>
+    );
+  }
+
+  // 3. Logged in as eyoubsahle@gmail.com BUT NOT YET 2FA VERIFIED -> SHOW 2FA OTP MODAL
+  if (!is2faVerified) {
+    return (
+      <div className="min-h-screen bg-[#06090e] text-white flex flex-col items-center justify-center p-4 relative overflow-hidden -mt-20 z-[9999]">
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[550px] h-[550px] bg-[#f9b03c]/15 rounded-full blur-[160px] pointer-events-none" />
+
+        <div 
+          className="relative max-w-md w-full rounded-[2.5rem] p-8 sm:p-10 text-white shadow-2xl animate-in zoom-in-95 duration-200"
+          style={{
+            background: 'rgba(12, 16, 23, 0.96)',
+            backdropFilter: 'blur(30px)',
+            border: '2px solid rgba(249, 176, 60, 0.5)',
+            boxShadow: '0 35px 110px rgba(0,0,0,0.95), 0 0 60px rgba(249,176,60,0.25)'
+          }}
+        >
+          <div className="text-center mb-6">
+            <div className="w-16 h-16 rounded-3xl bg-gradient-to-tr from-[#f9b03c] to-amber-400 text-slate-950 flex items-center justify-center text-2xl font-black mx-auto mb-4 shadow-[0_0_30px_rgba(249,176,60,0.5)]">
+              <i className="fa-solid fa-key"></i>
+            </div>
+            
+            <div className="inline-block px-3.5 py-1 rounded-full bg-amber-400/15 border border-amber-400/30 text-[#f9b03c] text-xs font-black uppercase tracking-wider mb-2">
+              🔒 STEP 2 OF 2 • 2FA VERIFICATION
+            </div>
+
+            <h2 className="text-2xl font-black font-heading text-white tracking-tight">
+              የአድሚን ማረጋገጫ ኮድ
+            </h2>
+            <p className="text-xs text-slate-400 mt-1.5 leading-relaxed">
+              ወደ <span className="text-[#f9b03c] font-bold">eyoubsahle@gmail.com</span> የተላከውን ባለ 6-አሃዝ የደህንነት ኮድ ያስገቡ።
+            </p>
+          </div>
+
+          {otpSuccessMsg && (
+            <div className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 p-3.5 rounded-xl mb-4 text-xs text-center font-bold animate-in fade-in">
+              <i className="fa-solid fa-circle-check mr-1.5"></i>
+              <span>{otpSuccessMsg}</span>
+            </div>
+          )}
+
+          {otpError && (
+            <div className="bg-red-500/10 border border-red-500/30 text-red-300 p-3.5 rounded-xl mb-4 text-xs text-center font-bold animate-in fade-in">
+              <i className="fa-solid fa-triangle-exclamation mr-1.5"></i>
+              <span>{otpError}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleVerify2faOtp} className="space-y-5">
+            <div>
+              <label className="text-[11px] font-bold text-slate-300 uppercase tracking-widest mb-2 block text-center">
+                6-አሃዝ ኮድ (6-Digit Code)
+              </label>
+              <input
+                type="text"
+                maxLength={6}
+                autoFocus
+                required
+                value={twoFactorCode}
+                onChange={(e) => setTwoFactorCode(e.target.value.replace(/\D/g, ''))}
+                placeholder="123456"
+                className="w-full bg-black/60 border-2 border-amber-400/40 focus:border-[#f9b03c] rounded-2xl py-4 text-center text-3xl tracking-[10px] font-mono font-black text-[#f9b03c] outline-none shadow-inner"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={isVerifying2faOtp || twoFactorCode.length !== 6}
+              className="w-full btn-buy-now-vibe py-4 rounded-xl text-sm font-black flex items-center justify-center gap-2 cursor-pointer active:scale-98 disabled:opacity-50 shadow-[0_0_25px_rgba(249,176,60,0.4)]"
+            >
+              {isVerifying2faOtp ? (
+                <>
+                  <i className="fa-solid fa-spinner fa-spin"></i>
+                  <span>በማረጋገጥ ላይ...</span>
+                </>
+              ) : (
+                <>
+                  <i className="fa-solid fa-unlock-keyhole"></i>
+                  <span>አረጋግጥና ግባ (Verify & Enter)</span>
+                </>
+              )}
+            </button>
+          </form>
+
+          <div className="flex items-center justify-between mt-6 pt-4 border-t border-white/10 text-xs">
+            <button
+              type="button"
+              disabled={isSending2faOtp || resendCooldown > 0}
+              onClick={() => handleSend2faOtp(true)}
+              className="text-slate-400 hover:text-[#f9b03c] transition disabled:opacity-50 cursor-pointer font-bold inline-flex items-center gap-1.5"
+            >
+              <i className="fa-solid fa-rotate-right"></i>
+              <span>{resendCooldown > 0 ? `በድጋሚ ላክ (${resendCooldown}s)` : 'ኮድ በድጋሚ ላክ (Resend)'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="text-red-400 hover:text-red-300 transition cursor-pointer font-bold inline-flex items-center gap-1.5"
+            >
+              <i className="fa-solid fa-right-from-bracket"></i>
+              <span>ውጣ (Sign Out)</span>
+            </button>
+          </div>
         </div>
       </div>
     );
