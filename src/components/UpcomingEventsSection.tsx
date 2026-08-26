@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { TsehayEvent, EventTicket, DEFAULT_EVENTS, getCachedEvents, getRemainingSeats } from '@/lib/eventCache';
 import { useAuth } from '@/context/AuthContext';
 import DigitalTicketModal from '@/components/DigitalTicketModal';
@@ -267,11 +268,11 @@ export default function UpcomingEventsSection() {
 
                 <div>
                   {/* Event Thumbnail & Badges */}
-                  <div className="relative h-48 rounded-2xl overflow-hidden mb-5 border border-white/10">
+                  <Link href={`/events/${event.slug || event.id}`} className="block relative h-48 rounded-2xl overflow-hidden mb-5 border border-white/10 group/img">
                     <img 
                       src={event.image || 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?q=80&w=1000'} 
                       alt={event.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      className="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-500"
                     />
                     
                     {/* Top Status Capsules */}
@@ -287,7 +288,7 @@ export default function UpcomingEventsSection() {
                         {event.price === 0 || event.isFree ? '100% ነፃ (FREE)' : `${event.price.toLocaleString()} ብር`}
                       </span>
                     </div>
-                  </div>
+                  </Link>
 
                   {/* Date & Time Capsule */}
                   <div className="flex items-center gap-3 text-xs text-slate-300 mb-3 font-semibold">
@@ -302,9 +303,11 @@ export default function UpcomingEventsSection() {
                   </div>
 
                   {/* Title */}
-                  <h3 className="text-lg sm:text-xl font-bold text-white font-heading line-clamp-2 mb-2.5 group-hover:text-[#f9b03c] transition-colors">
-                    {event.title}
-                  </h3>
+                  <Link href={`/events/${event.slug || event.id}`} className="block">
+                    <h3 className="text-lg sm:text-xl font-bold text-white font-heading line-clamp-2 mb-2.5 group-hover:text-[#f9b03c] transition-colors">
+                      {event.title}
+                    </h3>
+                  </Link>
 
                   {/* Description */}
                   <p className="text-xs sm:text-sm text-slate-300 line-clamp-3 leading-relaxed mb-4 font-body">
@@ -339,15 +342,25 @@ export default function UpcomingEventsSection() {
                     </div>
                   </div>
 
-                  {/* Action Button */}
-                  <button
-                    type="button"
-                    onClick={() => handleOpenBooking(event)}
-                    className="w-full btn-buy-now-vibe py-3.5 rounded-2xl text-sm font-black flex items-center justify-center gap-2 cursor-pointer active:scale-98 group/btn shadow-[0_0_25px_rgba(249,176,60,0.3)] hover:shadow-[0_0_35px_rgba(249,176,60,0.6)] transition-all"
-                  >
-                    <span>{event.price === 0 || event.isFree ? 'በነፃ ትኬት ይቁረጡ (Register Free)' : 'ትኬት ይቁረጡ (Buy Ticket)'}</span>
-                    <i className="fa-solid fa-ticket text-xs group-hover/btn:translate-x-1 transition-transform"></i>
-                  </button>
+                  {/* Action Buttons Row */}
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleOpenBooking(event)}
+                      className="flex-1 btn-buy-now-vibe py-3.5 rounded-2xl text-xs sm:text-sm font-black flex items-center justify-center gap-1.5 cursor-pointer active:scale-98 group/btn shadow-[0_0_25px_rgba(249,176,60,0.3)] hover:shadow-[0_0_35px_rgba(249,176,60,0.6)] transition-all"
+                    >
+                      <span>{event.price === 0 || event.isFree ? 'በነፃ ይመዝገቡ' : 'ትኬት ይቁረጡ'}</span>
+                      <i className="fa-solid fa-ticket text-xs group-hover/btn:translate-x-1 transition-transform"></i>
+                    </button>
+
+                    <Link
+                      href={`/events/${event.slug || event.id}`}
+                      className="px-3.5 py-3.5 rounded-2xl bg-white/5 hover:bg-white/15 border border-white/10 text-slate-300 hover:text-white transition flex items-center justify-center text-xs font-bold shrink-0"
+                      title="ሙሉ ዝርዝር እይ"
+                    >
+                      <i className="fa-solid fa-arrow-up-right-from-square text-xs text-[#f9b03c]"></i>
+                    </Link>
+                  </div>
                 </div>
               </div>
             );

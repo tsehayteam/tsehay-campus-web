@@ -6,7 +6,7 @@ import { collection, onSnapshot, doc, setDoc, deleteDoc, serverTimestamp, query,
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile, sendPasswordResetEmail } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { DEFAULT_COURSES, getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl } from '@/lib/courseCache';
-import { DEFAULT_EVENTS, getCachedEvents, saveCachedEvents, getRemainingSeats, TsehayEvent, EventTicket } from '@/lib/eventCache';
+import { DEFAULT_EVENTS, getCachedEvents, saveCachedEvents, getRemainingSeats, generateEventSlug, TsehayEvent, EventTicket } from '@/lib/eventCache';
 import AdminQrScanner from '@/components/AdminQrScanner';
 
 import { parseVideoEmbedUrl, parseImageUrl } from '@/lib/videoParser';
@@ -103,6 +103,7 @@ export default function AdminDashboard() {
   const [isSavingEvent, setIsSavingEvent] = useState(false);
   const [eventSuccessMsg, setEventSuccessMsg] = useState('');
   const [eventForm, setEventForm] = useState({
+    slug: '',
     title: '',
     titleEn: '',
     description: '',
@@ -110,6 +111,8 @@ export default function AdminDashboard() {
     time: '',
     location: '',
     isOnline: false,
+    meetingLink: '',
+    mapsUrl: '',
     capacity: 100,
     price: 0,
     isFree: false,
@@ -1479,6 +1482,7 @@ export default function AdminDashboard() {
   const openAddEventModal = () => {
     setEditingEvent(null);
     setEventForm({
+      slug: '',
       title: '',
       titleEn: '',
       description: '',
@@ -1486,6 +1490,8 @@ export default function AdminDashboard() {
       time: '',
       location: '',
       isOnline: false,
+      meetingLink: '',
+      mapsUrl: '',
       capacity: 100,
       price: 0,
       isFree: false,
@@ -1502,6 +1508,7 @@ export default function AdminDashboard() {
   const openEditEventModal = (event: TsehayEvent) => {
     setEditingEvent(event);
     setEventForm({
+      slug: event.slug || '',
       title: event.title || '',
       titleEn: event.titleEn || '',
       description: event.description || '',
@@ -1509,6 +1516,8 @@ export default function AdminDashboard() {
       time: event.time || '',
       location: event.location || '',
       isOnline: event.isOnline || false,
+      meetingLink: event.meetingLink || '',
+      mapsUrl: event.mapsUrl || '',
       capacity: event.capacity || 100,
       price: event.price || 0,
       isFree: event.isFree || event.price === 0,
@@ -1532,15 +1541,21 @@ export default function AdminDashboard() {
     setIsSavingEvent(true);
     try {
       const eventId = editingEvent ? editingEvent.id : `evt_${Date.now()}`;
+      const cleanSlug = (eventForm.slug || '').trim() || generateEventSlug(eventForm.title, eventId);
       const payload: TsehayEvent = {
         id: eventId,
+        slug: cleanSlug,
         title: eventForm.title,
         titleEn: eventForm.titleEn,
         description: eventForm.description,
         date: eventForm.date,
         time: eventForm.time,
-        location: eventForm.location,
+        location: eventForm.isOnline 
+          ? (eventForm.location || 'Online Google Meet') 
+          : (eventForm.location || 'Bole, Addis Ababa'),
         isOnline: Boolean(eventForm.isOnline),
+        meetingLink: eventForm.meetingLink || '',
+        mapsUrl: eventForm.mapsUrl || '',
         capacity: Number(eventForm.capacity) || 100,
         registeredCount: editingEvent ? (editingEvent.registeredCount || 0) : 0,
         price: eventForm.isFree ? 0 : Number(eventForm.price) || 0,
@@ -2122,6 +2137,15 @@ export default function AdminDashboard() {
                             </td>
                             <td className="p-4 text-right">
                               <div className="flex items-center justify-end gap-2">
+                                <a
+                                  href={`/events/${event.slug || event.id}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-500/10 text-[#f9b03c] hover:bg-[#f9b03c] hover:text-slate-950 transition flex items-center justify-center cursor-pointer"
+                                  title="የክንውኑን ገጽ እይ (View Public Page)"
+                                >
+                                  <i className="fa-solid fa-arrow-up-right-from-square text-xs"></i>
+                                </a>
                                 <button
                                   type="button"
                                   onClick={() => openEditEventModal(event)}
@@ -3962,16 +3986,99 @@ export default function AdminDashboard() {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold mb-1">ቦታ / አዳራሽ (Location / Venue) *</label>
-                  <input
-                    type="text"
-                    required
-                    value={eventForm.location}
-                    onChange={(e) => setEventForm({ ...eventForm, location: e.target.value })}
-                    placeholder="ለምሳሌ፡ ቦሌ፣ ፍሬንድሺፕ ህንጻ፣ አዲስ አበባ"
-                    className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-dark dark:text-white outline-none focus:border-[#f9b03c]"
-                  />
+                {/* Event Type Toggle */}
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-bold mb-1.5">የክንውኑ አይነት (Event Type) *</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setEventForm({ ...eventForm, isOnline: false })}
+                      className={`p-3 rounded-xl border text-xs font-black flex items-center justify-center gap-2 cursor-pointer transition ${
+                        !eventForm.isOnline
+                          ? 'bg-amber-400/20 border-[#f9b03c] text-dark dark:text-[#f9b03c]'
+                          : 'bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-700 text-gray-500 hover:border-gray-300'
+                      }`}
+                    >
+                      <i className="fa-solid fa-location-dot"></i>
+                      <span>በአካል የሚካሄድ (In-Person)</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setEventForm({ ...eventForm, isOnline: true })}
+                      className={`p-3 rounded-xl border text-xs font-black flex items-center justify-center gap-2 cursor-pointer transition ${
+                        eventForm.isOnline
+                          ? 'bg-blue-500/20 border-blue-400 text-blue-400'
+                          : 'bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-700 text-gray-500 hover:border-gray-300'
+                      }`}
+                    >
+                      <i className="fa-solid fa-video"></i>
+                      <span>ኦንላይን (Online Google Meet)</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Conditional Fields based on Event Type */}
+                {eventForm.isOnline ? (
+                  <div className="sm:col-span-2 animate-in fade-in duration-150">
+                    <label className="block text-xs font-bold mb-1 text-blue-400">የጎግል ሚት ሊንክ (Google Meet Link) *</label>
+                    <div className="relative">
+                      <input
+                        type="url"
+                        required={eventForm.isOnline}
+                        value={eventForm.meetingLink}
+                        onChange={(e) => setEventForm({ ...eventForm, meetingLink: e.target.value })}
+                        placeholder="https://meet.google.com/abc-defg-hij"
+                        className="w-full bg-gray-50 dark:bg-slate-900 border border-blue-400/40 rounded-xl px-4 py-2.5 text-xs text-dark dark:text-white outline-none focus:border-blue-400 font-mono"
+                      />
+                      <span className="absolute right-3 top-2.5 text-blue-400 text-sm">
+                        <i className="fa-solid fa-video"></i>
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-gray-400 mt-1">ይህ ሊንክ ተጠቃሚው ሲመዘገብ በቀጥታ ወደ ኢሜይሉ ይላካል።</p>
+                  </div>
+                ) : (
+                  <>
+                    <div>
+                      <label className="block text-xs font-bold mb-1">ቦታ / አዳራሽ (Location / Venue) *</label>
+                      <input
+                        type="text"
+                        required={!eventForm.isOnline}
+                        value={eventForm.location}
+                        onChange={(e) => setEventForm({ ...eventForm, location: e.target.value })}
+                        placeholder="ለምሳሌ፡ ቦሌ፣ ስካይላይት ሆቴል፣ አዲስ አበባ"
+                        className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-dark dark:text-white outline-none focus:border-[#f9b03c]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold mb-1">የቦታው ጎግል ካርታ ሊንክ (Google Maps Link)</label>
+                      <input
+                        type="url"
+                        value={eventForm.mapsUrl}
+                        onChange={(e) => setEventForm({ ...eventForm, mapsUrl: e.target.value })}
+                        placeholder="https://maps.google.com/?q=..."
+                        className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-dark dark:text-white outline-none focus:border-[#f9b03c] font-mono"
+                      />
+                    </div>
+                  </>
+                )}
+
+                {/* Custom URL Slug */}
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-bold mb-1">የክንውን ሊንክ ስም (Custom URL Slug)</label>
+                  <div className="flex items-center">
+                    <span className="bg-gray-100 dark:bg-slate-700 text-gray-500 px-3 py-2.5 rounded-l-xl text-xs border border-r-0 border-gray-200 dark:border-slate-700 font-mono">
+                      /events/
+                    </span>
+                    <input
+                      type="text"
+                      value={eventForm.slug}
+                      onChange={(e) => setEventForm({ ...eventForm, slug: e.target.value })}
+                      placeholder="youtube-masterclass (ባዶ ከሆነ በራሱ ይዘጋጃል)"
+                      className="flex-1 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-r-xl px-4 py-2.5 text-xs text-dark dark:text-white outline-none focus:border-[#f9b03c] font-mono"
+                    />
+                  </div>
                 </div>
 
                 <div>
@@ -4000,7 +4107,7 @@ export default function AdminDashboard() {
                   />
                 </div>
 
-                <div className="flex items-center gap-4 pt-6">
+                <div className="flex items-center gap-4 pt-6 sm:col-span-2">
                   <label className="flex items-center gap-2 cursor-pointer text-xs font-bold">
                     <input
                       type="checkbox"
@@ -4009,16 +4116,6 @@ export default function AdminDashboard() {
                       className="w-4 h-4 rounded text-amber-500"
                     />
                     <span>100% ነፃ ክንውን (Free Event)</span>
-                  </label>
-
-                  <label className="flex items-center gap-2 cursor-pointer text-xs font-bold">
-                    <input
-                      type="checkbox"
-                      checked={eventForm.isOnline}
-                      onChange={(e) => setEventForm({ ...eventForm, isOnline: e.target.checked })}
-                      className="w-4 h-4 rounded text-amber-500"
-                    />
-                    <span>ኦንላይን / ቨርቹዋል (Online Event)</span>
                   </label>
                 </div>
 

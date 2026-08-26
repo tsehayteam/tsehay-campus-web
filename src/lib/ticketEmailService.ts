@@ -13,11 +13,71 @@ export async function sendTicketEmail(ticket: EventTicket): Promise<{ success: b
   const eventTitle = ticket.eventTitle || 'Tsehay Campus Live Event';
   const eventDate = ticket.eventDate || 'Upcoming';
   const eventTime = ticket.eventTime || '02:00 PM';
-  const eventLocation = ticket.eventLocation || 'Bole, Addis Ababa, Ethiopia';
+  const eventLocation = ticket.eventLocation || (ticket.isOnline ? 'Online Google Meet' : 'Bole, Addis Ababa, Ethiopia');
   const ticketId = ticket.ticketId || `TC-EVT-${Date.now().toString(36).toUpperCase()}`;
   const tier = ticket.tier || 'General Admission';
   const pricePaid = ticket.pricePaid === 0 ? 'ነፃ (Free)' : `${ticket.pricePaid?.toLocaleString()} ብር`;
   const websiteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://tsehaycampus.com';
+  const isOnline = !!ticket.isOnline || eventLocation.toLowerCase().includes('online') || eventLocation.toLowerCase().includes('meet');
+  const meetingLink = ticket.meetingLink || 'https://meet.google.com/tsehay-live';
+  const mapsUrl = ticket.mapsUrl || 'https://maps.google.com/?q=Bole+Addis+Ababa';
+
+  // Dynamic In-Person vs Online Content Section
+  let mainActionSection = '';
+
+  if (isOnline) {
+    // 🎥 ONLINE EVENT TEMPLATE: Prominent Google Meet Join Link (No Door QR)
+    mainActionSection = `
+      <!-- Online Google Meet Join Section -->
+      <tr>
+        <td style="padding: 15px 28px;">
+          <div style="background: rgba(16, 185, 129, 0.08); border: 2px solid #10b981; border-radius: 20px; padding: 22px; text-align: center;">
+            <div style="display: inline-block; background: #10b981; color: #022c22; font-size: 11px; font-weight: 900; padding: 4px 14px; border-radius: 100px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;">
+              🎥 ONLINE GOOGLE MEET LINK
+            </div>
+            <h3 style="color: #ffffff; font-size: 18px; font-weight: 900; margin: 0 0 8px 0;">የቀጥታ ስብሰባ መግቢያ ሊንክዎ</h3>
+            <p style="color: #94a3b8; font-size: 12px; margin: 0 0 18px 0; line-height: 1.5;">በስልጠናው ቀን በቀጥታ ከታች ያለውን አዝራር በመጫን ስብሰባውን ይቀላቀሉ።</p>
+            
+            <a href="${meetingLink}" target="_blank" style="display: block; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; font-weight: 900; font-size: 15px; padding: 15px 28px; text-decoration: none; border-radius: 14px; text-align: center; box-shadow: 0 10px 25px rgba(16, 185, 129, 0.35); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px;">
+              🌐 የቀጥታ ስብሰባውን ይቀላቀሉ (Join Meeting)
+            </a>
+
+            <div style="background: #06090e; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 10px; word-break: break-all;">
+              <span style="font-size: 11px; color: #64748b; display: block; margin-bottom: 2px;">ወይም ይህን ሊንክ ኮፒ ያድርጉ፡</span>
+              <a href="${meetingLink}" target="_blank" style="color: #38bdf8; font-size: 12px; text-decoration: underline; font-family: monospace;">${meetingLink}</a>
+            </div>
+          </div>
+        </td>
+      </tr>
+    `;
+  } else {
+    // 📍 IN-PERSON EVENT TEMPLATE: Scannable Door Pass + Google Maps Navigation Link
+    mainActionSection = `
+      <!-- In-Person Door QR Pass -->
+      <tr>
+        <td align="center" style="padding: 15px 28px;">
+          <div style="background: #ffffff; border-radius: 20px; padding: 22px 24px; text-align: center; color: #0c1017; box-shadow: 0 15px 35px rgba(0,0,0,0.5);">
+            <p style="margin: 0 0 8px 0; font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 1.5px; color: #475569;">
+              የበር ላይ ማረጋገጫ ኮድ (Door Verification Pass)
+            </p>
+            <div style="font-family: monospace; font-size: 26px; font-weight: 900; letter-spacing: 3px; color: #0f172a; padding: 12px; background: #f8fafc; border: 2px dashed #cbd5e1; border-radius: 12px; margin-bottom: 8px;">
+              ${ticketId}
+            </div>
+            <p style="margin: 0; font-size: 11px; color: #64748b;">በመግቢያው በር ላይ ይህንን የትኬት ቁጥር ወይም ዲጂታል ፓስዎን ያሳዩ።</p>
+          </div>
+        </td>
+      </tr>
+
+      <!-- Google Maps Navigation Button -->
+      <tr>
+        <td align="center" style="padding: 5px 28px 15px;">
+          <a href="${mapsUrl}" target="_blank" style="display: inline-block; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); color: #f9b03c; font-weight: 700; font-size: 12px; padding: 10px 20px; text-decoration: none; border-radius: 10px;">
+            📍 የአዳራሹን አድራሻ በ Google Maps ይመልከቱ (Open in Maps)
+          </a>
+        </td>
+      </tr>
+    `;
+  }
 
   const htmlEmail = `
   <!DOCTYPE html>
@@ -37,10 +97,10 @@ export async function sendTicketEmail(ticket: EventTicket): Promise<{ success: b
             <img src="${websiteUrl}/tc-logo.jpg" alt="Tsehay Campus Logo" width="140" style="display: block; max-width: 140px; height: auto;" />
           </div>
           <div style="display: inline-block; background: rgba(249, 176, 60, 0.15); border: 1px solid #f9b03c; color: #f9b03c; font-size: 11px; font-weight: 800; padding: 4px 12px; border-radius: 100px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">
-            OFFICIAL EVENT PASS • ይፋዊ የመግቢያ ትኬት
+            ${isOnline ? '🌐 ONLINE WORKSHOP PASS' : '📍 IN-PERSON EVENT PASS'}
           </div>
           <h1 style="color: #ffffff; font-size: 22px; font-weight: 900; margin: 10px 0 5px; line-height: 1.3;">
-            እንኳን ደስ አለዎት! ቲኬትዎ ተቆርጧል።
+            ${isOnline ? 'እንኳን ደስ አለዎት! የኦንላይን ምዝገባዎ ተረጋግጧል።' : 'እንኳን ደስ አለዎት! ቲኬትዎ ተቆርጧል።'}
           </h1>
           <p style="color: #94a3b8; font-size: 13px; margin: 0;">የተከበሩ ${attendeeName}፣ ለዝግጅቱ ያለዎት ምዝገባ በተሳካ ሁኔታ ተረጋግጧል።</p>
         </td>
@@ -72,7 +132,7 @@ export async function sendTicketEmail(ticket: EventTicket): Promise<{ success: b
             </tr>
 
             <tr>
-              <td style="padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 12px; color: #94a3b8; text-transform: uppercase; font-weight: 600;">ቦታ / አዳራሽ (Location)</td>
+              <td style="padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 12px; color: #94a3b8; text-transform: uppercase; font-weight: 600;">ፎርማት / ቦታ (Format)</td>
               <td align="right" style="padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 13px; color: #ffffff; font-weight: 700;">${eventLocation}</td>
             </tr>
 
@@ -90,18 +150,7 @@ export async function sendTicketEmail(ticket: EventTicket): Promise<{ success: b
         </td>
       </tr>
 
-      <!-- QR & Door Code Block -->
-      <tr>
-        <td align="center" style="padding: 15px 28px;">
-          <div style="background: #ffffff; border-radius: 16px; padding: 18px 24px; text-align: center; color: #0c1017;">
-            <p style="margin: 0 0 8px 0; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #475569;">የበር ላይ ማረጋገጫ ኮድ (Door Verification Pass)</p>
-            <div style="font-family: monospace; font-size: 24px; font-weight: 900; letter-spacing: 3px; color: #0f172a; padding: 10px; background: #f8fafc; border: 2px dashed #cbd5e1; border-radius: 10px; margin-bottom: 6px;">
-              ${ticketId}
-            </div>
-            <p style="margin: 0; font-size: 11px; color: #64748b;">በመግቢያው በር ላይ ይህንን የትኬት ቁጥር ወይም የዲጂታል ፓስዎን ያሳዩ።</p>
-          </div>
-        </td>
-      </tr>
+      ${mainActionSection}
 
       <!-- Golden CTA Button -->
       <tr>
@@ -142,7 +191,7 @@ export async function sendTicketEmail(ticket: EventTicket): Promise<{ success: b
       body: JSON.stringify({
         from: fromEmail,
         to: [ticket.attendeeEmail],
-        subject: `የእርስዎ ቲኬት ዝጁ ነው! (Your Ticket is Ready) - Tsehay Campus`,
+        subject: `የእርስዎ ቲኬት ዝግጁ ነው! (Your Ticket is Ready) - Tsehay Campus`,
         html: htmlEmail
       })
     });
@@ -153,7 +202,7 @@ export async function sendTicketEmail(ticket: EventTicket): Promise<{ success: b
 
     const errorJson = await res.json().catch(() => ({}));
 
-    // 2. If domain verification failed on custom domain, fallback to onboarding@resend.dev
+    // 2. Fallback to onboarding@resend.dev if custom domain is unverified
     if (res.status === 403 || (errorJson.message && errorJson.message.includes('domain'))) {
       const fallbackRes = await fetch('https://api.resend.com/emails', {
         method: 'POST',

@@ -29,11 +29,15 @@ export async function POST(req: NextRequest) {
     }
 
     // Lookup event details from fallback cache or body
-    const matchedEvent = DEFAULT_EVENTS.find(e => e.id === eventId);
+    const matchedEvent = DEFAULT_EVENTS.find(e => e.id === eventId || e.slug === eventId || e.slug === body.eventSlug);
     const eventTitle = body.eventTitle || body.title || matchedEvent?.title || 'Tsehay Campus Live Workshop';
     const eventDate = body.eventDate || body.date || matchedEvent?.date || new Date().toLocaleDateString();
     const eventTime = body.eventTime || body.time || matchedEvent?.time || '02:00 PM';
-    const eventLocation = body.eventLocation || body.location || matchedEvent?.location || 'Addis Ababa, Ethiopia';
+    const isOnline = body.isOnline !== undefined ? Boolean(body.isOnline) : (matchedEvent?.isOnline || false);
+    const meetingLink = body.meetingLink || matchedEvent?.meetingLink || '';
+    const mapsUrl = body.mapsUrl || matchedEvent?.mapsUrl || '';
+    const eventLocation = body.eventLocation || body.location || (isOnline ? 'Online Google Meet' : (matchedEvent?.location || 'Addis Ababa, Ethiopia'));
+    const eventSlug = body.eventSlug || matchedEvent?.slug || '';
 
     // Generate unique Ticket ID (e.g. TC-EVT-XXXX-YYYY / TKT-XXXXX)
     const randomHex = Math.random().toString(36).substring(2, 6).toUpperCase();
@@ -44,19 +48,25 @@ export async function POST(req: NextRequest) {
     const qrPayload = JSON.stringify({
       tId: ticketId,
       eId: eventId,
+      slug: eventSlug,
       name: attendeeName,
       email: attendeeEmail,
       tier: tier,
+      isOnline,
       v: '1.0'
     });
 
     const ticket: EventTicket = {
       ticketId,
       eventId,
+      eventSlug,
       eventTitle,
       eventDate,
       eventTime,
       eventLocation,
+      isOnline,
+      meetingLink,
+      mapsUrl,
       attendeeName,
       attendeeEmail,
       attendeePhone,
