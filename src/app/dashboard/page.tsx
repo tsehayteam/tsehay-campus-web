@@ -3890,7 +3890,7 @@ ${customAdminPrompt}
                        <span className="text-xs font-bold text-red-400">ድምፅዎን እያዳመጥኩ ነው... ({aiRecordingSeconds}s)</span>
                      </div>
                      <button 
-                       onClick={stopAiVoiceRecording}
+                       onClick={() => stopAiVoiceRecording(false)}
                        className="bg-red-500 hover:bg-red-600 text-white text-xs font-black px-3 py-1 rounded-xl transition cursor-pointer flex items-center gap-1.5"
                      >
                        <i className="fa-solid fa-stop"></i>
@@ -3933,7 +3933,7 @@ ${customAdminPrompt}
                      {/* Voice Record Button */}
                      <button
                        type="button"
-                       onClick={isAiVoiceRecording ? stopAiVoiceRecording : startAiVoiceRecording}
+                       onClick={isAiVoiceRecording ? () => stopAiVoiceRecording(true) : () => startAiVoiceRecording()}
                        className={`w-11 h-11 rounded-2xl border flex items-center justify-center transition active:scale-90 cursor-pointer shrink-0 ${
                          isAiVoiceRecording 
                            ? 'bg-red-500 text-white border-red-400 animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.6)]' 
