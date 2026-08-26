@@ -74,6 +74,33 @@ function autoCorrectAmharicSpeech(rawText: string, isEnglishMode: boolean = fals
   const isPureEnglish = /^[a-zA-Z\s0-9?,.!'":;@#$%\^&*()_\-+=\[\]{}]+$/.test(text);
   const isEnglishEffective = isEnglishMode || isPureEnglish;
 
+  // 0. Language Switch Commands
+  // English Switch: "በእንግሊዘኛ ተናገሪ", "በእንግሊዘኛ አውሪ", "እንግሊዘኛ", "speak in english", "switch to english"
+  if (
+    /በእንግሊዘኛ\s*ተናገሪ|በእንግሊዘኛ\s*አውሪ|በእንግሊዘኛ|እንግሊዘኛ\s*ቀይሪ|ወደ\s*እንግሊዘኛ/i.test(normalized) ||
+    /speak in english|switch to english|talk in english|english please|change to english/i.test(text)
+  ) {
+    return {
+      corrected: 'Switch to English Language',
+      raw: text,
+      detectedIntent: 'switch_to_english',
+      isEnglishLanguageDetected: true
+    };
+  }
+
+  // Amharic Switch: "በአማርኛ ተናገሪ", "በአማርኛ አውሪ", "አማርኛ", "speak in amharic", "switch to amharic"
+  if (
+    /በአማርኛ\s*ተናገሪ|በአማርኛ\s*አውሪ|በአማርኛ|አማርኛ\s*ቀይሪ|ወደ\s*አማርኛ/i.test(normalized) ||
+    /speak in amharic|switch to amharic|talk in amharic|amharic please|change to amharic/i.test(text)
+  ) {
+    return {
+      corrected: 'ወደ አማርኛ ቋንቋ ቀይሪ',
+      raw: text,
+      detectedIntent: 'switch_to_amharic',
+      isEnglishLanguageDetected: false
+    };
+  }
+
   // 1. Home Page Corruptions: "ወደ ሄብ ሄጅ", "ሄብ ሄጅ", "ሄብ ፔጅ", "ሂብ ፔጅ", "ሄም ፔጅ", "ኦም ፔጅ", "ወደ ሆም", "ወደ ሄብ", "ወደ ሂብ", "ወደ ዋና"
   if (
     /ሄብ\s*ሄጅ|ሄብ\s*ፔጅ|ሂብ\s*ፔጅ|ሄም\s*ፔጅ|ሂም\s*ፔጅ|ኦም\s*ፔጅ|ሆም\s*ፔጅ|ሆምፔጅ|ወደ\s*ሄብ|ወደ\s*ሂብ|ወደ\s*ሆም|ወደ\s*ዋና|ዋናው\s*ገጽ|መነሻ/i.test(normalized) ||
@@ -491,7 +518,6 @@ export default function TsehayVoiceAssistant() {
       selectedLangRef.current = 'en';
     }
 
-    const isEng = selectedLangRef.current === 'en';
     const intent = forcedIntent || correctionResult.detectedIntent;
     const cleanText = correctionResult.corrected;
 
@@ -499,6 +525,30 @@ export default function TsehayVoiceAssistant() {
     setTranscript(cleanText);
     setInterimTranscript('');
 
+    // Handle Voice-Triggered Language Switch Commands
+    if (intent === 'switch_to_english') {
+      setSelectedLang('en');
+      selectedLangRef.current = 'en';
+      const msg = 'Switched to English language! How can I assist you today?';
+      setAiResponse(msg);
+      setStatusMessage('Switched to English');
+      playSciFiSound('success');
+      speakVoice(msg, () => resumeListeningForNextTurn());
+      return;
+    }
+
+    if (intent === 'switch_to_amharic') {
+      setSelectedLang('am');
+      selectedLangRef.current = 'am';
+      const msg = 'ወደ አማርኛ ቋንቋ ተቀይሯል! ምን ልርዳዎት?';
+      setAiResponse(msg);
+      setStatusMessage('ወደ አማርኛ ተቀይሯል');
+      playSciFiSound('success');
+      speakVoice(msg, () => resumeListeningForNextTurn());
+      return;
+    }
+
+    const isEng = selectedLangRef.current === 'en';
     setStatusMessage(isEng ? 'Executing command...' : 'ትእዛዝዎን በማከናወን ላይ...');
     playSciFiSound('success');
 
@@ -834,7 +884,11 @@ export default function TsehayVoiceAssistant() {
   };
 
   // Open Assistant Flow
-  const openAssistant = useCallback(() => {
+  const openAssistant = useCallback((initialLang?: 'am' | 'en') => {
+    if (initialLang) {
+      setSelectedLang(initialLang);
+      selectedLangRef.current = initialLang;
+    }
     setIsOpen(true);
     isOpenRef.current = true;
     setTranscript('');
@@ -845,7 +899,7 @@ export default function TsehayVoiceAssistant() {
     setStatusMessage(isEng ? 'Hello! How can I help you today?' : 'ሰላም! ምን ልርዳዎት?');
     playSciFiSound('activate');
 
-    const greeting = isEng ? 'Hello! How can I help you today?' : 'ሰላም፣ ምን ልርዳዎት?';
+    const greeting = isEng ? 'Hello! How can I help you today?' : 'ሰላም! ምን ልርዳዎት?';
     speakVoice(greeting, () => {
       startSpeechRecognition();
     });
@@ -860,7 +914,7 @@ export default function TsehayVoiceAssistant() {
     }
   };
 
-  // 👂 Wake Word Listener ("ፀሐይ", "Hey Tsehay", etc.)
+  // 👂 Ultra-Resilient Background Standby Wake Word Listener ("ፀሐይ", "Hey Tsehay", etc.)
   useEffect(() => {
     if (typeof window === 'undefined' || !isStandbyActive) {
       if (standbyRecognitionRef.current) {
@@ -870,6 +924,7 @@ export default function TsehayVoiceAssistant() {
       return;
     }
 
+    // If modal is open, standby is paused in favor of active modal listener
     if (isOpen) {
       if (standbyRecognitionRef.current) {
         try { standbyRecognitionRef.current.abort(); } catch (e) {}
@@ -883,68 +938,83 @@ export default function TsehayVoiceAssistant() {
     if (!SpeechRecognition) return;
 
     let isRestarting = false;
+    let retryTimer: NodeJS.Timeout | null = null;
 
     const startStandby = () => {
       if (isOpenRef.current || !isStandbyActive) return;
       try {
         if (standbyRecognitionRef.current) {
           try { standbyRecognitionRef.current.abort(); } catch (e) {}
+          standbyRecognitionRef.current = null;
         }
 
         const standby = new SpeechRecognition();
-        standby.lang = selectedLang === 'en' ? 'en-US' : 'am-ET';
+        standby.lang = selectedLangRef.current === 'en' ? 'en-US' : 'am-ET';
         standby.continuous = true;
         standby.interimResults = true;
-        standby.maxAlternatives = 1;
+        standby.maxAlternatives = 2;
 
         standby.onresult = (event: SpeechRecognitionEvent) => {
           let heard = '';
           for (let i = event.resultIndex; i < event.results.length; ++i) {
-            heard += event.results[i][0].transcript.toLowerCase();
+            heard += event.results[i][0].transcript.toLowerCase() + ' ';
           }
+          heard = heard.trim();
 
           const normHeard = normalizeAmharicPhonetics(heard);
 
-          const isWakeWord = 
-            /ጸሀይ|ጸሐይ|ፀሀይ|ፀሐይ|ሰላም ጸሀይ|ሰላም ፀሐይ|ሄይ ጸሀይ|ሄይ ፀሐይ|hey tsehay|tsehay ai|tsehay|hello tsehay|hi tsehay/i.test(normHeard) ||
-            /hey tsehay|tsehay|hello tsehay/i.test(heard);
+          // 1. Check for English Wake Word
+          const isEngWake = /hey\s*tsehay|hello\s*tsehay|hi\s*tsehay|tsehay\s*ai|hey\s*tsahay|hello\s*tsahay/i.test(heard);
 
-          if (isWakeWord) {
+          // 2. Check for Amharic or General "ፀሐይ" Wake Word
+          const isAmWake = 
+            /ጸሀይ|ጸሐይ|ፀሀይ|ፀሐይ|ፀሀዬ|ፀሐዬ|ጸሃዬ|ሰላም\s*ጸ|ሰላም\s*ፀ|ሄይ\s*ጸ|ሄይ\s*ፀ|tsehay|tsahay/i.test(normHeard) ||
+            /tsehay|tsahay/i.test(heard);
+
+          if (isEngWake || isAmWake) {
             try { standby.abort(); } catch(e) {}
-            openAssistant();
+            standbyRecognitionRef.current = null;
+            openAssistant(isEngWake ? 'en' : 'am');
           }
         };
 
-        standby.onerror = () => {};
+        standby.onerror = () => {
+          // Keep listening resiliently on network/no-speech errors
+        };
 
         standby.onend = () => {
           if (isStandbyActive && !isOpenRef.current && !isRestarting) {
             isRestarting = true;
-            setTimeout(() => {
+            if (retryTimer) clearTimeout(retryTimer);
+            retryTimer = setTimeout(() => {
               isRestarting = false;
-              startStandby();
-            }, 500);
+              if (isStandbyActive && !isOpenRef.current) {
+                startStandby();
+              }
+            }, 300);
           }
         };
 
         standbyRecognitionRef.current = standby;
         standby.start();
       } catch (e) {
-        setTimeout(() => {
+        if (retryTimer) clearTimeout(retryTimer);
+        retryTimer = setTimeout(() => {
           if (isStandbyActive && !isOpenRef.current) startStandby();
-        }, 800);
+        }, 600);
       }
     };
 
     startStandby();
 
     return () => {
+      if (retryTimer) clearTimeout(retryTimer);
       if (standbyRecognitionRef.current) {
         try { standbyRecognitionRef.current.abort(); } catch (e) {}
         standbyRecognitionRef.current = null;
       }
     };
-  }, [isStandbyActive, isOpen, openAssistant, selectedLang]);
+  }, [isStandbyActive, isOpen, openAssistant]);
 
   // ⌨️ Keyboard Shortcut Listener
   useEffect(() => {
