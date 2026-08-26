@@ -181,9 +181,10 @@ export async function POST(req: Request) {
 
     const apiKeys = [
         process.env.GEMINI_API_KEY,
-        process.env.GENINI_API_KEY,
         process.env.GOOGLE_API_KEY,
+        process.env.NEXT_PUBLIC_GEMINI_API_KEY,
         process.env.GOOGLE_GENAI_API_KEY,
+        process.env.GENINI_API_KEY,
         process.env.GEMINI_KEY,
         process.env.GENINI_KEY,
     ].filter(Boolean);
@@ -202,7 +203,8 @@ export async function POST(req: Request) {
 
 [PERSONA & HUMAN TONE]
 - You talk and think like an authentic, highly knowledgeable, warm, and helpful Ethiopian mentor.
-- Respond concisely, naturally, and directly in pure, fluent Amharic (or English if prompted in English).
+- If the user writes or speaks in Amharic -> respond in pure, fluent, natural Amharic.
+- If the user writes or speaks in English -> respond in clear, fluent, professional English.
 - CRITICAL: NEVER repeat words, phrases, or robotic introductions. Jump straight into the helpful response!
 
 [COMPREHENSIVE WEBSITE INFORMATION & VERIFIED PLATFORM FACTS]
@@ -219,7 +221,7 @@ export async function POST(req: Request) {
 
 [COURSE CATALOG & PRICING]
 1. Shein Import Business (የሼን ኢምፖርት ቢዝነስ) - 4,500 ETB (4,500 ብር)
-2. YouTube Secrets Masterclass & Monetization (የዩቲዩብ ስኬት ሚስጥሮች) - 900 ETB / 5,500 ETB (includes free Amharic E-Book)
+2. YouTube Secrets Masterclass & Monetization (የዩቲዩብ ስኬት ሚስጥሮች) - 5,500 ETB (5,500 ብር) (includes free Amharic E-Book)
 3. Digital Marketing & Social Media (ዲጂታል ማርኬቲንግ) - 100% FREE (ነፃ)
 4. Web Development & Coding (ዌብ ዴቨሎፕመንት)
 5. Crypto Trading Mastery (የክሪፕቶ ግብይት)
