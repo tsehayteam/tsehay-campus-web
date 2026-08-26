@@ -10,9 +10,23 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Missing text parameter' }, { status: 400 });
     }
 
-    const cleanText = text.trim().slice(0, 200); // Limit length for speed & safety
+    // Clean text thoroughly from markdown, asterisks, repeated whitespaces, etc.
+    let cleanText = text
+      .replace(/[*_~`#\n\r[\]()<>]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
 
-    // Google Translate TTS endpoint with Amharic (am) voice engine
+    // Limit to 220 chars for instantaneous TTS streaming
+    if (cleanText.length > 220) {
+      // Cut at last punctuation/sentence break
+      const lastPeriod = cleanText.slice(0, 220).lastIndexOf('።');
+      const lastComma = cleanText.slice(0, 220).lastIndexOf('፣');
+      const lastSpace = cleanText.slice(0, 220).lastIndexOf(' ');
+      const cutIdx = lastPeriod > 100 ? lastPeriod + 1 : lastComma > 100 ? lastComma + 1 : lastSpace > 100 ? lastSpace : 220;
+      cleanText = cleanText.slice(0, cutIdx);
+    }
+
+    // Google Translate TTS endpoint with authentic Amharic (am) voice engine
     const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(cleanText)}&tl=${encodeURIComponent(lang)}&client=tw-ob`;
 
     const response = await fetch(ttsUrl, {
