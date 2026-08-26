@@ -112,8 +112,8 @@ export default function InstructorYouTubePortfolio() {
       while (!isCancelled) {
         // --- SEQUENCE 1: Playful Typo -> Eraser Correction -> Accurate Line ---
         const base1 = "እኛ በተግባር የምናስተዳድራቸውንና ";
-        const typo = "በድብቅ በሚስጥር... ቆይ ቆይ 😅";
-        const correct = "በውጤታማነታቸው የተረጋገጡትን የዩቲዩብ ቻናሎች (Faceless Channels) ይመልከቱ። ✨";
+        const typo = "በድብቅ በሚስጥር... ቆይ ቆይ...";
+        const correct = "በውጤታማነታቸው የተረጋገጡትን የዩቲዩብ ቻናሎች (Faceless Channels) ይመልከቱ።";
 
         setPencilAction('writing');
         for (let i = 1; i <= base1.length; i++) {
@@ -161,7 +161,7 @@ export default function InstructorYouTubePortfolio() {
         await sleep(350);
 
         // --- SEQUENCE 2: Inspiring faceless revenue line ---
-        const text2 = "ያለምንም የፊት ገጽታ (100% Faceless) በቋሚነት ከፍተኛ ገቢ የሚያስገኙ የቀጥታ ማሳያዎች። 💎";
+        const text2 = "ያለምንም የፊት ገጽታ (100% Faceless) በቋሚነት ከፍተኛ ገቢ የሚያስገኙ የቀጥታ ማሳያዎች።";
         setPencilAction('writing');
         for (let i = 1; i <= text2.length; i++) {
           if (isCancelled) return;
@@ -355,12 +355,16 @@ export default function InstructorYouTubePortfolio() {
         
         {/* SECTION HEADER */}
         <div className="text-center max-w-5xl mx-auto mb-12 sm:mb-16">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#f9b03c]/10 border border-[#f9b03c]/35 text-[#f9b03c] text-xs font-black mb-4 shadow-[0_0_20px_rgba(249,176,60,0.25)] animate-pulse">
+          <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-gradient-to-r from-[#f9b03c]/15 via-amber-500/10 to-[#f9b03c]/15 border border-[#f9b03c]/35 text-[#f9b03c] text-xs font-black mb-4 shadow-[0_0_25px_rgba(249,176,60,0.25)]">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#f9b03c] opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#f9b03c]"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#f9b03c] shadow-[0_0_8px_#f9b03c]"></span>
             </span>
-            <span className="tracking-wide">✨ 100% FACELESS • በተግባር የተረጋገጠ የስኬት ማረጋገጫ ✨</span>
+            <span className="tracking-wider uppercase font-bold">100% FACELESS • በተግባር የተረጋገጠ የስኬት ማረጋገጫ</span>
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#f9b03c] opacity-75" style={{ animationDelay: '0.5s' }}></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#f9b03c] shadow-[0_0_8px_#f9b03c]"></span>
+            </span>
           </div>
 
           {/* Glowing Animated Shimmer Title (ብልጭ ወደ ግራና ቀኝ የሚንቀሳቀስ ደማቅ ከለር) */}
