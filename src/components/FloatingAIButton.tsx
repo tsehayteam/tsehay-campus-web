@@ -39,6 +39,7 @@ export default function FloatingAIButton() {
 
   // 🎙️ Voice Recording & Auto-Send States
   const [isRecordingVoice, setIsRecordingVoice] = useState(false);
+  const isRecordingVoiceRef = useRef<boolean>(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [playingAudioIdx, setPlayingAudioIdx] = useState<number | null>(null);
   const recognitionRef = useRef<any>(null);
@@ -266,6 +267,7 @@ export default function FloatingAIButton() {
       };
 
       mediaRecorder.onstart = () => {
+        isRecordingVoiceRef.current = true;
         setIsRecordingVoice(true);
         setRecordingDuration(0);
         if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
@@ -296,6 +298,12 @@ export default function FloatingAIButton() {
               setInput(fullTranscript.trim());
             }
           };
+          // Keep recognition alive in background if user pauses
+          recognition.onend = () => {
+            if (isRecordingVoiceRef.current) {
+              try { recognition.start(); } catch (e) {}
+            }
+          };
           recognition.start();
           recognitionRef.current = recognition;
         } catch (e) {}
@@ -303,16 +311,20 @@ export default function FloatingAIButton() {
     } catch (err) {
       console.warn("Could not start voice media recorder:", err);
       alert('እባክዎ የማይክሮፎን ፈቃድ ይስጡ (Please allow microphone access in browser settings).');
+      isRecordingVoiceRef.current = false;
       setIsRecordingVoice(false);
     }
   };
 
   const stopVoiceRecordingWithoutSend = () => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-      try {
-        mediaRecorderRef.current.stop();
-        mediaRecorderRef.current.stream.getTracks().forEach(t => t.stop());
-      } catch (e) {}
+    isRecordingVoiceRef.current = false;
+    if (mediaRecorderRef.current) {
+      if (mediaRecorderRef.current.state !== 'inactive') {
+        try {
+          mediaRecorderRef.current.stop();
+          mediaRecorderRef.current.stream.getTracks().forEach(t => t.stop());
+        } catch (e) {}
+      }
       mediaRecorderRef.current = null;
     }
     if (recognitionRef.current) {
@@ -330,6 +342,7 @@ export default function FloatingAIButton() {
   // 🚀 Stop and Send Directly to Gemini Multimodal Audio
   const stopAndSendVoice = async () => {
     const textPrompt = (voiceTranscriptRef.current || input).trim();
+    isRecordingVoiceRef.current = false;
     
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       const recorder = mediaRecorderRef.current;
@@ -351,7 +364,22 @@ export default function FloatingAIButton() {
           if (textPrompt) handleSendMessage(textPrompt);
         }
       };
-      stopVoiceRecordingWithoutSend();
+
+      try {
+        recorder.stop();
+      } catch (e) {}
+      mediaRecorderRef.current = null;
+
+      if (recognitionRef.current) {
+        try { recognitionRef.current.stop(); } catch (e) {}
+        recognitionRef.current = null;
+      }
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+        recordingTimerRef.current = null;
+      }
+      setIsRecordingVoice(false);
+      setRecordingDuration(0);
       return;
     }
 

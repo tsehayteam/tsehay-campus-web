@@ -1219,6 +1219,7 @@ function StudentDashboardContent() {
   const aiVoiceTranscriptRef = useRef<string>('');
   const aiMediaRecorderRef = useRef<MediaRecorder | null>(null);
   const aiAudioChunksRef = useRef<Blob[]>([]);
+  const aiIsRecordingRef = useRef<boolean>(false);
 
   const startAiVoiceRecording = async () => {
     if (typeof window === "undefined") return;
@@ -1246,6 +1247,7 @@ function StudentDashboardContent() {
       };
 
       mediaRecorder.onstart = () => {
+        aiIsRecordingRef.current = true;
         setIsAiVoiceRecording(true);
         setAiRecordingSeconds(0);
         if (aiTimerRef.current) clearInterval(aiTimerRef.current);
@@ -1276,6 +1278,12 @@ function StudentDashboardContent() {
               setChatInput(fullTranscript.trim());
             }
           };
+          // Auto-restart recognition in background if user pauses
+          recognition.onend = () => {
+            if (aiIsRecordingRef.current) {
+              try { recognition.start(); } catch (e) {}
+            }
+          };
           recognition.start();
           aiRecognitionRef.current = recognition;
         } catch (e) {}
@@ -1283,12 +1291,14 @@ function StudentDashboardContent() {
     } catch (err) {
       console.warn("Could not start AI voice media recorder:", err);
       alert('እባክዎ የማይክሮፎን ፈቃድ ይስጡ (Please allow microphone access in browser settings).');
+      aiIsRecordingRef.current = false;
       setIsAiVoiceRecording(false);
     }
   };
 
   const stopAiVoiceRecording = (shouldSend: boolean = true) => {
     const spoken = (aiVoiceTranscriptRef.current || chatInput).trim();
+    aiIsRecordingRef.current = false;
     
     if (aiMediaRecorderRef.current && aiMediaRecorderRef.current.state !== 'inactive') {
       const recorder = aiMediaRecorderRef.current;
@@ -1313,7 +1323,6 @@ function StudentDashboardContent() {
 
       try {
         recorder.stop();
-        recorder.stream.getTracks().forEach(t => t.stop());
       } catch (e) {}
       aiMediaRecorderRef.current = null;
     } else {

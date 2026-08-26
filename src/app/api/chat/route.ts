@@ -357,6 +357,9 @@ ${contextualCourseSection}`;
         for (const model of models) {
             try {
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${cleanedKey}`;
+                
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 12000);
 
                 const response = await fetch(apiUrl, {
                     method: 'POST',
@@ -364,8 +367,10 @@ ${contextualCourseSection}`;
                         'Content-Type': 'application/json',
                         'x-goog-api-key': cleanedKey
                     },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify(payload),
+                    signal: controller.signal
                 });
+                clearTimeout(timeoutId);
 
                 if (response.ok) {
                     const data = await response.json();
