@@ -5,9 +5,18 @@ const RATE_LIMIT_WINDOW_MS = 60000;
 const MAX_REQUESTS_PER_WINDOW = 60;
 
 function getSmartFallbackReply(userPrompt: string, courseContext?: any, hasImage?: boolean, hasAudio?: boolean): string {
-    const p = (userPrompt || '').toLowerCase().trim();
+    const raw = (userPrompt || '').trim();
+    const p = raw.toLowerCase();
     const courseTitle = (courseContext?.courseTitle || '').toLowerCase();
     const activeLesson = (courseContext?.lessonTitle || '').toLowerCase();
+
+    // 🌐 STRICT AUTOMATIC LANGUAGE DETECTION
+    const hasEthiopic = /[\u1200-\u137F]/.test(raw);
+    const isEnglish = !hasEthiopic && (
+      /[a-zA-Z]{2,}/.test(raw) || 
+      /^(hi|hello|hey|help|how|what|who|where|can|why|is|tell|price|cost|course|youtube|shein|marketing|pay|payment|certificate|contact|admin|owner|enroll|register)/i.test(p)
+    );
+
     const isDigitalMarketing = courseTitle.includes('digital') || courseTitle.includes('marketing') || courseTitle.includes('ማርኬቲንግ') || p.includes('digital') || p.includes('marketing') || p.includes('ማርኬቲንግ');
     const isYouTube = courseTitle.includes('youtube') || courseTitle.includes('ዩቲዩብ') || courseTitle.includes('ዩቱብ') || p.includes('youtube') || p.includes('ዩቲዩብ') || p.includes('ዩቱብ') || p.includes('ቻናል') || p.includes('ቪዲዮ');
     const isShein = courseTitle.includes('shein') || courseTitle.includes('ሺን') || courseTitle.includes('ሼን') || courseTitle.includes('import') || courseTitle.includes('ኢምፖርት') || p.includes('shein') || p.includes('ሺን') || p.includes('ሼን') || p.includes('import') || p.includes('ኢምፖርት');
@@ -15,20 +24,29 @@ function getSmartFallbackReply(userPrompt: string, courseContext?: any, hasImage
     const isCoding = courseTitle.includes('web') || courseTitle.includes('code') || courseTitle.includes('coding') || courseTitle.includes('ዴቨሎፕመንት') || p.includes('web') || p.includes('code') || p.includes('coding') || p.includes('html') || p.includes('javascript') || p.includes('ፕሮግራሚንግ') || p.includes('ኮዲንግ');
 
     if (hasImage) {
+        if (isEnglish) {
+            return `I have reviewed your attached screenshot/image! 📸\n\nRegarding the topic shown:\n1. In line with ${courseContext?.courseTitle || 'the course curriculum'}, the primary focus is following the step-by-step practical implementation.\n2. If you encountered a specific error or issue, feel free to describe it in detail via text or voice, and we will solve it together! ✨`;
+        }
         return `የላኩትን ፎቶ/ስክሪንሾት ተመልክቼዋለሁ! 📸\n\nበምስሉ ላይ የሚታየውን ነጥብ በተመለከተ፦\n1. በ${courseContext?.courseTitle || 'ትምህርቱ'} መሰረት ዋናው ትኩረት የተግባር ቅደም ተከተሎችን በአግባቡ መከተል ነው።\n2. ለየት ያለ የስህተት መልዕክት (Error) ካጋጠመዎት፣ ጥያቄዎን በዝርዝር በጽሑፍ ወይም በድምፅ ይጠይቁኝ እና ደረጃ በደረጃ እንፈታዋለን! ✨`;
     }
 
     if (hasAudio && !p) {
+        if (isEnglish) {
+            return "I received and listened to your voice message! 🎙️ I am happy to answer any questions about Tsehay Campus courses, registration, video lessons, or certificates. Feel free to continue via text or voice!";
+        }
         return "የላኩልኝን የድምፅ መልዕክት አዳምጫለሁ! 🎙️ ስለ ፀሐይ ካምፓስ ስልጠናዎች፣ ምዝገባ ወይም ስለ ቪዲዮ ትምህርቶች ማንኛውንም ጥያቄ በደስታ እመልሳለሁ። በጽሑፍም ሆነ በድምፅ መቀጠል ይችላሉ!";
     }
 
-    // 1. Off-Topic / Unrelated Queries Guardrail
+    // 1. Off-Topic Guardrail
     const isOffTopic = p.includes('assignment') || p.includes('አሳይመንት') || p.includes('homework') || p.includes('ሆምወርክ') || 
                        p.includes('physics') || p.includes('ፊዚክስ') || p.includes('chemistry') || p.includes('ኬሚስትሪ') || 
                        p.includes('calculus') || p.includes('ማትሪክ') || p.includes('matrix') || p.includes('ዩኒቨርሲቲ') ||
                        p.includes('essay') || p.includes('ግጥም') || p.includes('poem');
 
     if (isOffTopic && !isYouTube && !isDigitalMarketing && !isShein && !isCrypto && !isCoding) {
+        if (isEnglish) {
+            return "I am designed specifically to assist you with Tsehay Campus courses, YouTube channel creation, and digital business skills. If you have any questions regarding our courses, payments, or enrollment, I'd be glad to help! ✨";
+        }
         return "ይቅርታ፣ እኔ የተዘጋጀሁት ስለ ፀሐይ ካምፓስ ስልጠናዎች፣ የዩቲዩብ ስኬት እና የዲጂታል ክህሎቶች እርስዎን ለመርዳት ብቻ ነው። ስለ ካምፓሳችን ኮርሶች፣ ምዝገባ ወይም አሰራር ማንኛውንም ጥያቄ ካለዎት በደስታ እመልስልዎታለሁ! ✨";
     }
 
@@ -37,6 +55,13 @@ function getSmartFallbackReply(userPrompt: string, courseContext?: any, hasImage
         p === 'ሰላም' || p === 'ሰላም ነው' || p === 'ጤና ይስጥልኝ' || p === 'እንዴት ነህ' || p === 'እንዴት ነሽ' ||
         p.startsWith('ሰላም') || p.startsWith('hello') || p.startsWith('hi') || p.startsWith('hey')
     ) {
+        if (isEnglish) {
+            if (courseContext?.courseTitle) {
+                return `Hello! Welcome! 🌟\n\nHow can I help you today regarding the **"${courseContext.courseTitle}"** course? Feel free to ask any conceptual, practical, or technical questions!`;
+            }
+            return "Hello! I am **Tsehay AI**, your personal virtual tutor and guide for Tsehay Campus! ☀️\n\nHow can I assist you today? You can ask me anything about our courses (YouTube Secrets Masterclass, Shein Import Business, Digital Marketing), payments, registration, or official certificates!";
+        }
+
         if (courseContext?.courseTitle) {
             return `ሰላም! እንኳን ደህና መጡ! 🌟\n\nበ**"${courseContext.courseTitle}"** ስልጠና ዙሪያ ዛሬ በምን ልርዳዎት? ያልገባዎትን ማንኛውንም ፅንሰ ሀሳብ፣ ተግባራዊ እርምጃ ወይም የቪዲዮ ትምህርት ነጥብ ይጠይቁኝ!`;
         }
@@ -45,6 +70,18 @@ function getSmartFallbackReply(userPrompt: string, courseContext?: any, hasImage
 
     // 3. YouTube Secrets Masterclass & Channel Creation
     if (isYouTube) {
+        if (isEnglish) {
+            return `📹 **YouTube Secrets Masterclass & Monetization**\n\n` +
+                   `This practical training covers everything needed to build a highly lucrative YouTube channel from Ethiopia or globally:\n\n` +
+                   `• **Price**: 5,500 ETB (One-time payment)\n` +
+                   `• **Core Modules**:\n` +
+                   `  1. **Faceless Channels**: Creating high-view AI videos without showing your face\n` +
+                   `  2. **Algorithm & SEO**: Getting your videos ranked on YouTube Search and Recommended\n` +
+                   `  3. **High-CTR Thumbnails**: Designing irresistible thumbnails that drive viral click rates\n` +
+                   `  4. **Monetization & Payouts**: Reaching 1,000 Subscribers & 4,000 Watch Hours fast, and withdrawing earnings in USD\n\n` +
+                   `🎁 **Bonus**: Full Amharic YouTube Masterclass E-Book included for free!\n\n` +
+                   `Enroll now via Telebirr, CBE Birr, LakiPay, or PayPal/Cards!`;
+        }
         return `📹 **የዩቲዩብ ስኬት ሚስጥሮች (YouTube Secrets Masterclass)**\n\n` +
                `ይህ ስልጠና በኢትዮጵያ ውስጥ እና በዓለም አቀፍ ደረጃ አትራፊ የዩቲዩብ ቻናል ለመገንባት የሚያስፈልጉ ተግባራዊ ሚስጥሮችን ያካትታል፦\n\n` +
                `• **ዋጋ**፦ 5,500 ብር (አንድ ጊዜ የሚከፈል)\n` +
@@ -59,6 +96,17 @@ function getSmartFallbackReply(userPrompt: string, courseContext?: any, hasImage
 
     // 4. Shein Import Business
     if (isShein) {
+        if (isEnglish) {
+            return `🛍️ **Shein Import & E-Commerce Mastery**\n\n` +
+                   `Learn how to import high-demand products directly from SHEIN and make profitable returns in Ethiopia:\n\n` +
+                   `• **Price**: 4,500 ETB\n` +
+                   `• **Curriculum**:\n` +
+                   `  1. **Product Sourcing**: Identifying fast-moving, high-margin clothing & accessories\n` +
+                   `  2. **Online Card Payments**: Making dollar payments smoothly from Ethiopia\n` +
+                   `  3. **Cargo & Logistics**: Minimizing customs, tax, and freight fees\n` +
+                   `  4. **TikTok & Telegram Marketing**: Selling items rapidly with premium profits\n\n` +
+                   `Visit the Courses page to enroll and start learning instantly!`;
+        }
         return `🛍️ **የሼን ኢምፖርት ቢዝነስ (Shein Import Business)**\n\n` +
                `ከሼን (SHEIN) በቀጥታ ተፈላጊ እቃዎችን በማስመጣት በኢትዮጵያ ውስጥ ከፍተኛ ትርፍ የሚያገኙበት የተሟላ ስልጠና፦\n\n` +
                `• **ዋጋ**፦ 4,500 ብር\n` +
@@ -72,6 +120,15 @@ function getSmartFallbackReply(userPrompt: string, courseContext?: any, hasImage
 
     // 5. Digital Marketing (Free Course)
     if (isDigitalMarketing) {
+        if (isEnglish) {
+            return `🚀 **Digital Marketing Mastery (100% FREE)**\n\n` +
+                   `• **Price**: 100% Free\n` +
+                   `• **Course Highlights**:\n` +
+                   `  - High-performing Meta Ads (Facebook & Instagram)\n` +
+                   `  - Strategic Content Planning & Online Audience Growth\n` +
+                   `  - Search Engine Optimization (SEO) & Sales Conversion Optimization\n\n` +
+                   `Enroll now for free and earn your Certificate of Completion!`;
+        }
         return `🚀 **የዲጂታል ማርኬቲንግ ስልጠና (Digital Marketing Mastery)**\n\n` +
                `• **ዋጋ**፦ 100% ነፃ (FREE)\n` +
                `• **የስልጠናው ይዘቶች**፦\n` +
@@ -83,6 +140,13 @@ function getSmartFallbackReply(userPrompt: string, courseContext?: any, hasImage
 
     // 6. Web Development & Coding
     if (isCoding) {
+        if (isEnglish) {
+            return `💻 **Web Development & Coding Mastery**\n\n` +
+                   `Learn to build responsive, modern full-stack web applications from scratch:\n` +
+                   `• HTML5, CSS3, Tailwind CSS & Responsive Layouts\n` +
+                   `• JavaScript, React, Next.js & Modern Frontend Frameworks\n` +
+                   `• Database Management, REST APIs, and Cloud Deployment.`;
+        }
         return `💻 **ዌብ ዴቨሎፕመንት እና ኮዲንግ (Web Development Mastery)**\n\n` +
                `ከጀማሪ እስከ ፕሮፌሽናል ዘመናዊ ዌብሳይቶችን እና አፕሊኬሽኖችን መገንባት የሚያስችል ስልጠና፦\n` +
                `• HTML5, CSS3, Tailwind CSS እና Responsive Design\n` +
@@ -92,6 +156,13 @@ function getSmartFallbackReply(userPrompt: string, courseContext?: any, hasImage
 
     // 7. Crypto Trading Mastery
     if (isCrypto) {
+        if (isEnglish) {
+            return `📈 **Crypto Trading Mastery**\n\n` +
+                   `Master profitable trading strategies on Bitcoin and Altcoins with global market analysis:\n` +
+                   `• Technical & Fundamental Chart Analysis\n` +
+                   `• Risk Management & Capital Preservation\n` +
+                   `• Binance, Exchanges, and Secure Crypto Wallets.`;
+        }
         return `📈 **የክሪፕቶ ግብይት ስልጠና (Crypto Trading Mastery)**\n\n` +
                `በ Bitcoin እና በ Altcoins ግብይት ዓለም አቀፍ የገበያ ትንተና በማድረግ ትርፋማ መሆን የሚያስችል ስልጠና፦\n` +
                `• Technical & Fundamental Analysis\n` +
@@ -99,8 +170,17 @@ function getSmartFallbackReply(userPrompt: string, courseContext?: any, hasImage
                `• Binance እና የክሪፕቶ ዋሌቶች አጠቃቀም።`;
     }
 
-    // 8. Payments & Registration (ቴሌብር፣ ሲቢኢ፣ LakiPay፣ PayPal)
-    if (p.includes('pay') || p.includes('ክፍያ') || p.includes('ቴሌብር') || p.includes('telebirr') || p.includes('ባንክ') || p.includes('cbe') || p.includes('lakipay') || p.includes('ዋጋ') || p.includes('price') || p.includes('ብር') || p.includes('ገንዘብ') || p.includes('ምዝገባ') || p.includes('መመዝገብ') || p.includes('እንዴት ልክፈል')) {
+    // 8. Payments & Registration
+    if (p.includes('pay') || p.includes('ክፍያ') || p.includes('ቴሌብር') || p.includes('telebirr') || p.includes('ባንክ') || p.includes('cbe') || p.includes('lakipay') || p.includes('ዋጋ') || p.includes('price') || p.includes('ብር') || p.includes('ገንዘብ') || p.includes('ምዝገባ') || p.includes('መመዝገብ') || p.includes('እንዴት ልክፈል') || p.includes('how to pay')) {
+        if (isEnglish) {
+            return `💳 **Payment & Registration Methods**\n\n` +
+                   `Enrolling in any course is instant and straightforward:\n\n` +
+                   `1. **Domestic (In Ethiopia)**:\n` +
+                   `   • Pay directly and automatically via **Telebirr**, **CBE Birr**, or Mobile Banking through **LakiPay**.\n` +
+                   `2. **International / Diaspora**:\n` +
+                   `   • Pay securely via **PayPal**, **Visa / Mastercard (Credit/Debit)**, or **Crypto**.\n\n` +
+                   `⚡ Course lessons unlock automatically and immediately upon payment confirmation!`;
+        }
         return `💳 **የክፍያ እና የምዝገባ መንገዶች**\n\n` +
                `ለማንኛውም ኮርስ መመዝገብ በጣም ፈጣን እና ቀላል ነው፦\n\n` +
                `1. **በሀገር ውስጥ (Domestic)**፦\n` +
@@ -112,6 +192,12 @@ function getSmartFallbackReply(userPrompt: string, courseContext?: any, hasImage
 
     // 9. Certificates & Quizzes
     if (p.includes('ሰርተፊኬት') || p.includes('certif') || p.includes('ማስረጃ') || p.includes('ሰርተፍኬት') || p.includes('ፈተና') || p.includes('quiz')) {
+        if (isEnglish) {
+            return `📜 **Official Digital Certificate of Completion**\n\n` +
+                   `Yes! Once you complete the video curriculum and achieve 80%+ on the final assessment quiz:\n` +
+                   `• An official **Digital Certificate** with your name, the course title, and verified Tsehay Campus seal will be issued immediately for free.\n` +
+                   `• You can download and share it on LinkedIn, CVs, and portfolios! 🎓`;
+        }
         return `📜 **ይፋዊ ዲጂታል ሰርተፊኬት (Certificate of Completion)**\n\n` +
                `አዎ! የኮርሱን የቪዲዮ ትምህርቶች ተከታትለው ሲያጠናቅቁ እና የማጠቃለያ ፈተናውን (Quiz) 80%+ ውጤት ሲያመጡ፦\n` +
                `• ስምዎ፣ የኮርሱ ርዕስ እና የካምፓሱ ይፋዊ ማህተም ያረፈበት **ዲጂታል ሰርተፊኬት** ወዲያውኑ በነፃ ይሰጥዎታል።\n` +
@@ -120,6 +206,15 @@ function getSmartFallbackReply(userPrompt: string, courseContext?: any, hasImage
 
     // 10. Contact, Support, Telegram, Phone & Location
     if (p.includes('ስልክ') || p.includes('phone') || p.includes('contact') || p.includes('ቴሌግራም') || p.includes('telegram') || p.includes('ዋትስአፕ') || p.includes('whatsapp') || p.includes('መደወል') || p.includes('ማናገር') || p.includes('አድራሻ') || p.includes('ቢሮ') || p.includes('ቦሌ') || p.includes('location')) {
+        if (isEnglish) {
+            return `📞 **Tsehay Campus Contact & Support Information**\n\n` +
+                   `• **Location**: Bole, Addis Ababa, Ethiopia\n` +
+                   `• **Phone & WhatsApp**: **0980209090** (+251980209090)\n` +
+                   `• **Telegram Support**: **@TsehayTeam** (https://t.me/tsehaycampus)\n` +
+                   `• **WhatsApp**: **+251980209090**\n` +
+                   `• **YouTube Channel**: **@eyoubsahle** (youtube.com/@eyoubsahle)\n` +
+                   `• **TikTok**: **@eyoubsahle**`;
+        }
         return `📞 **የፀሐይ ካምፓስ አድራሻ እና የእውቂያ መንገዶች**\n\n` +
                `• **አድራሻ**፦ ቦሌ፣ አዲስ አበባ፣ ኢትዮጵያ (Bole, Addis Ababa, Ethiopia)\n` +
                `• **ስልክ ቁጥር**፦ **0980209090** (0980-20-90-90 / +251980209090)\n` +
@@ -130,7 +225,12 @@ function getSmartFallbackReply(userPrompt: string, courseContext?: any, hasImage
     }
 
     // 11. Founder / Instructor (Eyoub Sahle)
-    if (p.includes('founder') || p.includes('መስራች') || p.includes('eyoub') || p.includes('እዮብ') || p.includes('ኢዮብ') || p.includes('ባለቤት') || p.includes('tsehay digital') || p.includes('ፀሐይ ዲጂታል') || p.includes('አስተማሪ') || p.includes('አሰልጣኝ')) {
+    if (p.includes('founder') || p.includes('መስራች') || p.includes('eyoub') || p.includes('እዮብ') || p.includes('ኢዮብ') || p.includes('ባለቤት') || p.includes('tsehay digital') || p.includes('ፀሐይ ዲጂታል') || p.includes('አስተማሪ') || p.includes('አሰልጣኝ') || p.includes('instructor') || p.includes('teacher')) {
+        if (isEnglish) {
+            return `👨‍🏫 **About the Lead Instructor (Eyoub Sahle)**\n\n` +
+                   `The founder and lead instructor of Tsehay Campus is **Eyoub Sahle**.\n` +
+                   `He is the founder of Tsehay Digital, a respected digital entrepreneur, and seasoned YouTube creator with over 100k+ subscribers who has empowered hundreds of students into successful digital businesses.`;
+        }
         return `👨‍🏫 **ስለ አሰልጣኙ (ኢዮብ ሳህሌ / Eyoub Sahle)**\n\n` +
                `የፀሐይ ካምፓስ (Tsehay Campus) መስራች እና ዋና አሰልጣኝ **ኢዮብ ሳህሌ (Eyoub Sahle)** ነው።\n` +
                `እሱ በኢትዮጵያ ውስጥ በዲጂታል ማርኬቲንግ እና በዩቲዩብ ቻናሎች ስኬት በርካታ ተማሪዎችን ያፈራ፣ የ Tsehay Digital መስራች እና የ 100k+ ተከታዮች ያሉት የዩቲዩብ ባለሙያ ነው።`;
@@ -138,9 +238,15 @@ function getSmartFallbackReply(userPrompt: string, courseContext?: any, hasImage
 
     // 12. Active Lesson context query
     if (courseContext?.courseTitle) {
+        if (isEnglish) {
+            return `Practicing the step-by-step concepts taught in **"${courseContext.courseTitle}"** is key to mastering this subject.\n\nIf you need detailed guidance, explanation of a specific technique, or help with any lesson, feel free to ask via text or voice! 💡`;
+        }
         return `በ**"${courseContext.courseTitle}"** ስልጠና ውስጥ ያሉትን ዋና ዋና ደረጃዎች በተግባር መተግበር እና የተሰጡትን የመማሪያ ማስታወሻዎች መከታተል ወሳኝ ነው።\n\nተጨማሪ ዝርዝር ማብራሪያ ወይም የደረጃ በደረጃ መመሪያ ከፈለጉ ጥያቄዎን በዝርዝር ይጻፉልኝ ወይም በድምፅ ይላኩልኝ! 💡`;
     }
 
+    if (isEnglish) {
+        return "Feel free to ask any question about Tsehay Campus courses, our location (Bole, Addis Ababa), payments, and enrollment. Reach our team on phone at 0980209090 or Telegram @TsehayTeam. ✨";
+    }
     return "ስለ ፀሐይ ካምፓስ ስልጠናዎች፣ አድራሻችን (ቦሌ፣ አዲስ አበባ)፣ ክፍያና ምዝገባ ማንኛውንም ጥያቄ መጠየቅ ይችላሉ። በስልክ 0980209090 ወይም በቴሌግራም በ @TsehayTeam ያግኙን። ✨";
 }
 
@@ -260,16 +366,18 @@ export async function POST(req: Request) {
 
     const DEFAULT_SYSTEM_INSTRUCTION = `You are "Tsehay AI" (ፀሐይ AI), the smart, world-class virtual mentor and assistant for Tsehay Campus (ፀሐይ ካምፓስ) and lead mentor Eyoub Sahle (ኢዮብ ሳህሌ).
 
-[CRITICAL LANGUAGE DETECTION & ADAPTATION]
-- If the user communicates in Amharic (አማርኛ) -> You MUST respond entirely in natural, fluent, engaging Amharic.
-- If the user communicates in English -> You MUST respond entirely in polished, friendly, professional English.
-- Seamlessly adapt to the user's language automatically.
+[CRITICAL STRICT RULE: AUTOMATIC LANGUAGE DETECTION & MIRRORING]
+- ALWAYS analyze the user's input language (text or spoken voice).
+- If the user writes or speaks in AMHARIC (አማርኛ) -> You MUST respond 100% in natural, fluent, engaging Amharic.
+- If the user writes or speaks in ENGLISH -> You MUST respond 100% in polished, friendly, professional English.
+- If the user uses mixed terms, prioritize the primary intent and respond cleanly.
+- NEVER reply in English if the user asked in Amharic. NEVER reply in Amharic if the user asked in English!
 
 [BEAUTIFUL STRUCTURE & AESTHETIC FORMATTING RULES]
 - Structure all answers with high visual quality:
-  1. Use clear, tasteful markdown headings (e.g., "### 🌟 የኮርሱ አጠቃላይ ገጽታ" or "### 💡 ዋና ዋና ደረጃዎች").
-  2. Use structured bullet points with bold keywords: "• **ቁልፍ ነጥብ፦** ማብራሪያ...".
-  3. Use numbered lists for sequential steps: "1. **ደረጃ አንድ**፦ ...".
+  1. Use clear, tasteful markdown headings (e.g., "### 🌟 Overview" / "### 🌟 የኮርሱ አጠቃላይ ገጽታ").
+  2. Use structured bullet points with bold keywords: "• **Key Point / ቁልፍ ነጥብ፦** Explanation...".
+  3. Use numbered lists for sequential steps: "1. **Step 1 / ደረጃ አንድ**፦ ...".
   4. Include vibrant, tasteful emojis (✨, 🚀, 💡, 📚, 🎬, 💳, 📜, 📞, 🌟) to make the text lively and readable.
   5. Never produce a wall of unformatted text or robotic boilerplate repetitions.
 
