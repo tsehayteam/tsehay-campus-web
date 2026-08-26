@@ -31,7 +31,7 @@ export default function TsehayVoiceAssistant() {
   const [transcript, setTranscript] = useState('');
   const [interimTranscript, setInterimTranscript] = useState('');
   const [aiResponse, setAiResponse] = useState('');
-  const [statusMessage, setStatusMessage] = useState('ለመጀመር ይናገሩ ወይም ማይክሮፎኑን ይጫኑ');
+  const [statusMessage, setStatusMessage] = useState('ሰላም! ጥያቄዎን ወይም ትእዛዝዎን ይናገሩ...');
   const [micVolume, setMicVolume] = useState(0);
   const [isAiProcessing, setIsAiProcessing] = useState(false);
   const [isStandbyActive, setIsStandbyActive] = useState<boolean>(() => {
@@ -52,8 +52,10 @@ export default function TsehayVoiceAssistant() {
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const activeTranscriptRef = useRef<string>('');
+  const isOpenRef = useRef<boolean>(false);
+  isOpenRef.current = isOpen;
 
-  // 🔊 Futuristic Sci-Fi Audio Chimes Synthesis (Web Audio API)
+  // 🔊 Tsehay Futuristic Audio Chimes Synthesis (Web Audio API)
   const playSciFiSound = useCallback((type: 'activate' | 'success' | 'close' | 'error') => {
     try {
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
@@ -68,16 +70,16 @@ export default function TsehayVoiceAssistant() {
       const now = ctx.currentTime;
 
       if (type === 'activate') {
-        // Gemini / Siri style rising dual-tone chime
+        // Tsehay Gold rising dual-tone chime
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(440, now);
-        osc.frequency.exponentialRampToValueAtTime(880, now + 0.16);
-        gain.gain.setValueAtTime(0.1, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+        osc.frequency.setValueAtTime(480, now);
+        osc.frequency.exponentialRampToValueAtTime(960, now + 0.16);
+        gain.gain.setValueAtTime(0.12, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.32);
         osc.start(now);
-        osc.stop(now + 0.3);
+        osc.stop(now + 0.32);
       } else if (type === 'success') {
-        // Futuristic success chord
+        // Tsehay success chord
         osc.type = 'triangle';
         osc.frequency.setValueAtTime(587.33, now);
         osc.frequency.setValueAtTime(880, now + 0.08);
@@ -87,7 +89,7 @@ export default function TsehayVoiceAssistant() {
         osc.start(now);
         osc.stop(now + 0.4);
       } else if (type === 'close') {
-        // Soft descending exit tone
+        // Soft exit tone
         osc.type = 'sine';
         osc.frequency.setValueAtTime(650, now);
         osc.frequency.exponentialRampToValueAtTime(320, now + 0.16);
@@ -96,7 +98,7 @@ export default function TsehayVoiceAssistant() {
         osc.start(now);
         osc.stop(now + 0.22);
       } else if (type === 'error') {
-        // Error warning tone
+        // Error tone
         osc.type = 'sawtooth';
         osc.frequency.setValueAtTime(220, now);
         osc.frequency.setValueAtTime(180, now + 0.1);
@@ -108,7 +110,7 @@ export default function TsehayVoiceAssistant() {
     } catch (e) {}
   }, []);
 
-  // 🗣️ Native Audible Amharic Voice Output (Natural TTS Engine with Play/Pause support)
+  // 🗣️ Native Audible Amharic Voice Output (Natural TTS Engine with Continuous Next-Turn listening)
   const speakVoice = useCallback((text: string, onEnd?: () => void) => {
     if (typeof window === 'undefined') {
       if (onEnd) onEnd();
@@ -116,7 +118,7 @@ export default function TsehayVoiceAssistant() {
     }
 
     try {
-      // 1. Stop any pending audio or browser speech
+      // 1. Stop any pending audio
       if (currentAudioRef.current) {
         currentAudioRef.current.pause();
         currentAudioRef.current = null;
@@ -135,38 +137,32 @@ export default function TsehayVoiceAssistant() {
       const audio = new Audio(ttsUrl);
       currentAudioRef.current = audio;
 
-      audio.onended = () => {
+      const handleAudioEnd = () => {
         setIsSpeaking(false);
         setIsAudioPaused(false);
         currentAudioRef.current = null;
-        if (onEnd) onEnd();
+        if (onEnd) {
+          onEnd();
+        }
       };
 
+      audio.onended = handleAudioEnd;
+
       audio.onerror = () => {
-        // Fallback to Web Speech API SpeechSynthesis if network stream fails
+        // Fallback to Web Speech API SpeechSynthesis
         try {
           if (window.speechSynthesis) {
             const utterance = new SpeechSynthesisUtterance(cleanText);
             utterance.lang = 'am-ET';
             utterance.rate = 0.95;
             utterance.pitch = 1.05;
-            utterance.onend = () => {
-              setIsSpeaking(false);
-              setIsAudioPaused(false);
-              if (onEnd) onEnd();
-            };
-            utterance.onerror = () => {
-              setIsSpeaking(false);
-              setIsAudioPaused(false);
-              if (onEnd) onEnd();
-            };
+            utterance.onend = handleAudioEnd;
+            utterance.onerror = handleAudioEnd;
             window.speechSynthesis.speak(utterance);
             return;
           }
         } catch (e) {}
-        setIsSpeaking(false);
-        setIsAudioPaused(false);
-        if (onEnd) onEnd();
+        handleAudioEnd();
       };
 
       audio.play().catch(() => {
@@ -174,18 +170,14 @@ export default function TsehayVoiceAssistant() {
           if (window.speechSynthesis) {
             const utterance = new SpeechSynthesisUtterance(cleanText);
             utterance.lang = 'am-ET';
-            utterance.onend = () => { setIsSpeaking(false); setIsAudioPaused(false); onEnd?.(); };
-            utterance.onerror = () => { setIsSpeaking(false); setIsAudioPaused(false); onEnd?.(); };
+            utterance.onend = handleAudioEnd;
+            utterance.onerror = handleAudioEnd;
             window.speechSynthesis.speak(utterance);
           } else {
-            setIsSpeaking(false);
-            setIsAudioPaused(false);
-            if (onEnd) onEnd();
+            handleAudioEnd();
           }
         } catch (e) {
-          setIsSpeaking(false);
-          setIsAudioPaused(false);
-          if (onEnd) onEnd();
+          handleAudioEnd();
         }
       });
     } catch (e) {
@@ -265,7 +257,7 @@ export default function TsehayVoiceAssistant() {
     setMicVolume(0);
   };
 
-  // 🧠 Intelligent Voice Command Router & Full Amharic Multi-turn Conversation
+  // 🧠 Comprehensive Tsehay Campus Knowledge Base & Voice Router
   const handleVoiceCommand = useCallback(async (spokenText: string) => {
     if (!spokenText.trim()) return;
 
@@ -277,14 +269,15 @@ export default function TsehayVoiceAssistant() {
     setStatusMessage('ምላሽ በማዘጋጀት ላይ...');
     playSciFiSound('success');
 
-    // 1. All Courses Command ("ወደ ኮርሶች ውሰደኝ" / "ኮርሶችን አሳየኝ")
+    // 1. All Courses & Learning Catalog ("ወደ ኮርሶች ውሰደኝ" / "ስልጠናዎችን አሳየኝ")
     if (
       normalized.includes('ኮርስ') ||
       normalized.includes('ኮርሶች') ||
-      normalized.includes('ትምህርት') ||
-      normalized.includes('ትምህርቶች') ||
       normalized.includes('ስልጠና') ||
       normalized.includes('ስልጠናዎች') ||
+      normalized.includes('ትምህርት') ||
+      normalized.includes('ትምህርቶች') ||
+      normalized.includes('ካታሎግ') ||
       normalized.includes('courses') ||
       normalized.includes('course')
     ) {
@@ -292,11 +285,45 @@ export default function TsehayVoiceAssistant() {
       setAiResponse(msg);
       speakVoice(msg, () => {
         router.push('/courses');
+        resumeListeningForNextTurn();
       });
       return;
     }
 
-    // 2. Checkout / Payment / Pricing Command ("ክፍያ እንዴት ነው?")
+    // 2. Shein Import Business Course ("የሼን ስልጠና" / "ኢምፖርት")
+    if (
+      normalized.includes('ሼን') ||
+      normalized.includes('ሺን') ||
+      normalized.includes('shein') ||
+      normalized.includes('ኢምፖርት') ||
+      normalized.includes('import')
+    ) {
+      const msg = 'የሼን (Shein) ኢምፖርት ቢዝነስ ስልጠና በአነስተኛ ካፒታል እቃዎችን ከሼን በቀጥታ አዘው በኢትዮጵያ የሚሸጡበትን ዘዴ ያስተምራል። ዋጋው 4,500 ብር ነው። ወደ ኮርሱ እየወሰድኩዎት ነው።';
+      setAiResponse(msg);
+      speakVoice(msg, () => {
+        router.push('/courses');
+        resumeListeningForNextTurn();
+      });
+      return;
+    }
+
+    // 3. YouTube Success Course ("የዩቲዩብ ስልጠና" / "ዩቲዩብ ቻናል")
+    if (
+      normalized.includes('ዩቲዩብ ስልጠና') ||
+      normalized.includes('ዩቲዩብ ኮርስ') ||
+      normalized.includes('youtube course') ||
+      normalized.includes('youtube mastery')
+    ) {
+      const msg = 'የዩቲዩብ ስልጠናችን የዩቲዩብ ቻናል ከዜሮ ከፍተው በኢትዮጵያና በዓለም አቀፍ ደረጃ በዶላር ገቢ የሚያገኙበትን የተሟላ መንገድ ያስተምራል።';
+      setAiResponse(msg);
+      speakVoice(msg, () => {
+        router.push('/courses');
+        resumeListeningForNextTurn();
+      });
+      return;
+    }
+
+    // 4. Payments, Pricing & Checkout ("ክፍያ እንዴት ነው?" / "ዋጋው ስንት ነው?")
     if (
       normalized.includes('ክፍያ') ||
       normalized.includes('መክፈል') ||
@@ -305,21 +332,25 @@ export default function TsehayVoiceAssistant() {
       normalized.includes('ታሪፍ') ||
       normalized.includes('መግዛት') ||
       normalized.includes('ቴሌብር') ||
+      normalized.includes('ባንክ') ||
+      normalized.includes('cbe') ||
+      normalized.includes('lakipay') ||
+      normalized.includes('paypal') ||
       normalized.includes('pay') ||
       normalized.includes('payment') ||
       normalized.includes('checkout') ||
-      normalized.includes('price') ||
-      normalized.includes('pricing')
+      normalized.includes('price')
     ) {
-      const msg = 'እሺ፣ የክፍያ አማራጮችን ከፍቼልዎታለሁ። በቴሌብር፣ በሲቢኢ ወይም በካርድ መክፈል ይችላሉ።';
+      const msg = 'እሺ፣ የክፍያ አማራጮችን ከፍቼልዎታለሁ። በቴሌብር፣ በሲቢኢ ብር፣ በ PayPal ወይም በካርድ መክፈል ይችላሉ።';
       setAiResponse(msg);
       speakVoice(msg, () => {
         window.dispatchEvent(new CustomEvent('open-payment-modal'));
+        resumeListeningForNextTurn();
       });
       return;
     }
 
-    // 3. Login / Register Command ("ግባ" ወይም "ሎጊን አድርግ" / "ተመዝገብ")
+    // 5. Login / Register / Auth Modal ("ግባ" / "ሎጊን አድርግ" / "ተመዝገብ")
     if (
       normalized.includes('ግባ') ||
       normalized.includes('ሎጊን') ||
@@ -328,81 +359,40 @@ export default function TsehayVoiceAssistant() {
       normalized.includes('ምዝገባ') ||
       normalized.includes('ይመዝገቡ') ||
       normalized.includes('መለያ') ||
+      normalized.includes('አካውንት') ||
       normalized.includes('login') ||
       normalized.includes('sign in') ||
       normalized.includes('sign up') ||
       normalized.includes('register')
     ) {
-      const isSignup = normalized.includes('ተመዝገብ') || normalized.includes('ምዝገባ') || normalized.includes('sign up') || normalized.includes('register');
-      const msg = isSignup ? 'እሺ፣ የመመዝገቢያ ገጽ ከፍቼልዎታለሁ።' : 'እሺ፣ የመግቢያ ገጽ ከፍቼልዎታለሁ።';
+      const isSignup = normalized.includes('ተመዝገብ') || normalized.includes('ምዝገባ') || normalized.includes('sign up') || normalized.includes('register') || normalized.includes('አካውንት');
+      const msg = isSignup ? 'እሺ፣ የመመዝገቢያ መስኮት ከፍቼልዎታለሁ።' : 'እሺ፣ የመግቢያ (Login) መስኮት ከፍቼልዎታለሁ።';
       setAiResponse(msg);
       speakVoice(msg, () => {
         window.dispatchEvent(new CustomEvent('open-auth-modal', { detail: { isSignupMode: isSignup, isSignUp: isSignup } }));
+        resumeListeningForNextTurn();
       });
       return;
     }
 
-    // 4. Home Page Command ("መነሻ" / "ወደ ቤት")
+    // 6. Certificates & Verification ("ሰርተፊኬት" / "የምስክር ወረቀት")
     if (
-      normalized.includes('መነሻ') ||
-      normalized.includes('ዋና ገጽ') ||
-      normalized.includes('ወደ ቤት') ||
-      normalized.includes('ሆም') ||
-      normalized.includes('home') ||
-      normalized.includes('main page')
+      normalized.includes('ሰርተፊኬት') ||
+      normalized.includes('ሰርተፍኬት') ||
+      normalized.includes('ማረጋገጫ') ||
+      normalized.includes('የምስክር ወረቀት') ||
+      normalized.includes('certificate')
     ) {
-      const msg = 'እሺ፣ ወደ ዋናው መነሻ ገጽ እየወሰድኩዎት ነው።';
+      const msg = 'አዎ! ማንኛውንም ኮርስ አጠናቀው ፈተናውን ሲያልፉ ይፋዊ ዲጂታል ሰርተፊኬት በነፃ ይሰጥዎታል። ወደ ሰርተፊኬት ማረጋገጫ ገጽ እየወሰድኩዎት ነው።';
       setAiResponse(msg);
       speakVoice(msg, () => {
-        if (pathname === '/') {
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        } else {
-          router.push('/');
-        }
+        router.push('/certificate');
+        resumeListeningForNextTurn();
       });
       return;
     }
 
-    // 5. YouTube Videos Showcase Command ("ነፃ የዩቲዩብ ቪዲዮዎች")
-    if (
-      normalized.includes('ዩቲዩብ') ||
-      normalized.includes('youtube') ||
-      normalized.includes('ቪዲዮ') ||
-      normalized.includes('ቪዲዮዎች') ||
-      normalized.includes('ነፃ ቪዲዮ')
-    ) {
-      const msg = 'እሺ፣ ነፃ የዩቲዩብ ስልጠናዎችንና ቪዲዮዎችን ይመልከቱ።';
-      setAiResponse(msg);
-      speakVoice(msg, () => {
-        const ytSection = document.getElementById('youtube-videos-section');
-        if (ytSection) {
-          ytSection.scrollIntoView({ behavior: 'smooth' });
-        } else {
-          router.push('/#youtube-videos-section');
-        }
-      });
-      return;
-    }
-
-    // 6. About Us Command ("ስለ እኛ" / "ስለ ፀሐይ ካምፓስ")
-    if (
-      normalized.includes('ስለ እኛ') ||
-      normalized.includes('ስለ እናንተ') ||
-      normalized.includes('ስለ ካምፓሱ') ||
-      normalized.includes('ስለ ፀሐይ') ||
-      normalized.includes('ማናችሁ') ||
-      normalized.includes('about') ||
-      normalized.includes('about us')
-    ) {
-      const msg = 'እሺ፣ ስለ ፀሐይ ካምፓስ ዝርዝር መረጃ ወደያዘው ገጽ እየወሰድኩዎት ነው።';
-      setAiResponse(msg);
-      speakVoice(msg, () => {
-        router.push('/about');
-      });
-      return;
-    }
-
-    // 7. Classroom / Dashboard Command ("መማሪያ ክፍል")
+    // 7. Dashboard / My Classroom ("መማሪያ ክፍል" / "ዳሽቦርድ")
     if (
       normalized.includes('መማሪያ') ||
       normalized.includes('ክፍል') ||
@@ -416,20 +406,86 @@ export default function TsehayVoiceAssistant() {
       setAiResponse(msg);
       speakVoice(msg, () => {
         router.push('/dashboard');
+        resumeListeningForNextTurn();
       });
       return;
     }
 
-    // 8. Full Multi-Turn Conversational Amharic AI Response (Gemini Engine)
+    // 8. Free YouTube Videos Showcase ("ነፃ ቪዲዮዎች" / "ነፃ የዩቲዩብ ትምህርቶች")
+    if (
+      normalized.includes('ነፃ ቪዲዮ') ||
+      normalized.includes('ነጻ ቪዲዮ') ||
+      normalized.includes('ቪዲዮዎች') ||
+      normalized.includes('ዩቲዩብ') ||
+      normalized.includes('youtube')
+    ) {
+      const msg = 'እሺ፣ በድረ-ገጻችን ላይ የሚገኙ ነፃ የዩቲዩብ ቪዲዮዎችን ይመልከቱ።';
+      setAiResponse(msg);
+      speakVoice(msg, () => {
+        const ytSection = document.getElementById('youtube-videos-section');
+        if (ytSection) {
+          ytSection.scrollIntoView({ behavior: 'smooth' });
+        } else {
+          router.push('/#youtube-videos-section');
+        }
+        resumeListeningForNextTurn();
+      });
+      return;
+    }
+
+    // 9. About Us & Founder Eyoub Sahle ("ስለ ፀሐይ ካምፓስ" / "ኢዮብ ሳህሌ ማን ነው?")
+    if (
+      normalized.includes('ስለ እኛ') ||
+      normalized.includes('ስለ እናንተ') ||
+      normalized.includes('ስለ ካምፓሱ') ||
+      normalized.includes('ስለ ፀሐይ') ||
+      normalized.includes('ማናችሁ') ||
+      normalized.includes('ኢዮብ') ||
+      normalized.includes('እዮብ') ||
+      normalized.includes('መስራች') ||
+      normalized.includes('founder') ||
+      normalized.includes('about')
+    ) {
+      const msg = 'የፀሐይ ካምፓስ መስራችና ዋና አሰልጣኝ ኢዮብ ሳህሌ (Eyoub Sahle) ነው። ስለ ፀሐይ ካምፓስ ሙሉ መረጃ ወደያዘው ገጽ እየወሰድኩዎት ነው።';
+      setAiResponse(msg);
+      speakVoice(msg, () => {
+        router.push('/about');
+        resumeListeningForNextTurn();
+      });
+      return;
+    }
+
+    // 10. Home Page ("ወደ መነሻ ገጽ" / "ወደ ቤት")
+    if (
+      normalized.includes('መነሻ') ||
+      normalized.includes('ዋና ገጽ') ||
+      normalized.includes('ወደ ቤት') ||
+      normalized.includes('ሆም') ||
+      normalized.includes('home')
+    ) {
+      const msg = 'እሺ፣ ወደ ዋናው መነሻ ገጽ እየወሰድኩዎት ነው።';
+      setAiResponse(msg);
+      speakVoice(msg, () => {
+        if (pathname === '/') {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else {
+          router.push('/');
+        }
+        resumeListeningForNextTurn();
+      });
+      return;
+    }
+
+    // 11. Multi-Turn Intelligent Conversational AI Query (Queries Tsehay AI Chat Engine)
     setIsAiProcessing(true);
-    setStatusMessage('Tsehay AI መልስ በማመንጨት ላይ...');
+    setStatusMessage('ፀሐይ AI መልስ በማዘጋጀት ላይ...');
 
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          prompt: `User voice query: "${spokenText}". Answer concisely in 1 to 2 clear, natural Amharic sentences. Be warm, direct and helpful.`,
+          prompt: `You are Tsehay Voice AI, the official voice assistant for Tsehay Campus. The user said: "${spokenText}". Provide a friendly, concise, natural 1-2 sentence response in pure Amharic.`,
         }),
       });
 
@@ -437,22 +493,42 @@ export default function TsehayVoiceAssistant() {
         const data = await response.json();
         const reply = data.reply || data.text || 'ጥያቄዎ ደርሶኛል! ተጨማሪ መረጃ ለማግኘት በቻት ሊያናግሩን ይችላሉ።';
         setAiResponse(reply);
-        speakVoice(reply);
+        speakVoice(reply, () => {
+          resumeListeningForNextTurn();
+        });
       } else {
-        const defaultReply = 'ጥያቄዎ ደርሶኛል! ስለ ፀሐይ ካምፓስ ኮርሶች፣ ዋጋ እና ምዝገባ በዝርዝር የኮርሶች ገጻችንን ይመልከቱ።';
+        const defaultReply = 'ጥያቄዎ ደርሶኛል! ስለ ፀሐይ ካምፓስ ስልጠናዎች፣ ክፍያና ምዝገባ በዝርዝር የኮርሶች ገጻችንን ይመልከቱ።';
         setAiResponse(defaultReply);
-        speakVoice(defaultReply);
+        speakVoice(defaultReply, () => {
+          resumeListeningForNextTurn();
+        });
       }
     } catch (e) {
-      const fallbackReply = 'ጥያቄዎ ደርሶኛል! ለተጨማሪ ዝርዝር የኮርሶች ገጻችንን መመልከት ወይም በቻት መፃፍ ይችላሉ።';
+      const fallbackReply = 'ጥያቄዎ ደርሶኛል! ለተጨማሪ ዝርዝር የኮርሶች ገጻችንን መመልከት ወይም በቻት መጠየቅ ይችላሉ።';
       setAiResponse(fallbackReply);
-      speakVoice(fallbackReply);
+      speakVoice(fallbackReply, () => {
+        resumeListeningForNextTurn();
+      });
     } finally {
       setIsAiProcessing(false);
     }
   }, [pathname, router, speakVoice, playSciFiSound]);
 
-  // 🎙️ Speech Recognition Engine Initialization (Active Mode with Gemini-style Pause/Silence Detection)
+  // 🔄 Continuous Listening for Next Turn (So Tsehay ALWAYS answers every subsequent question!)
+  const resumeListeningForNextTurn = () => {
+    if (!isOpenRef.current) return;
+    setStatusMessage('እየሰማሁ ነው... ቀጣይ ጥያቄዎን ይናገሩ');
+    setTranscript('');
+    setInterimTranscript('');
+    activeTranscriptRef.current = '';
+    setTimeout(() => {
+      if (isOpenRef.current) {
+        startSpeechRecognition();
+      }
+    }, 400);
+  };
+
+  // 🎙️ Speech Recognition Engine Initialization (Active Mode with Turn-Taking Silence Detection)
   const startSpeechRecognition = useCallback(() => {
     const win = window as unknown as IWindow;
     const SpeechRecognition = win.SpeechRecognition || win.webkitSpeechRecognition;
@@ -466,6 +542,7 @@ export default function TsehayVoiceAssistant() {
     try {
       if (recognitionRef.current) {
         try { recognitionRef.current.abort(); } catch (e) {}
+        recognitionRef.current = null;
       }
 
       const recognition = new SpeechRecognition();
@@ -477,9 +554,6 @@ export default function TsehayVoiceAssistant() {
       recognition.onstart = () => {
         setIsListening(true);
         setStatusMessage('እየሰማሁ ነው... (Listening...)');
-        setTranscript('');
-        setInterimTranscript('');
-        activeTranscriptRef.current = '';
         setupAudioAnalyser();
       };
 
@@ -508,9 +582,8 @@ export default function TsehayVoiceAssistant() {
           setInterimTranscript('');
         }
 
-        // ⏱️ Gemini Live Style VAD (Voice Activity Detection):
-        // When the user stops speaking / pauses for 1.8 seconds ("ሁለት ሶስት ሰከንድ ዝም ካልኩት"),
-        // it automatically transitions to answering mode!
+        // ⏱️ Silence & Pause Detection:
+        // When user finishes speaking / pauses for 1.6s, automatically transition to answering!
         if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
         if (fullCurrent.length > 0) {
           silenceTimerRef.current = setTimeout(() => {
@@ -518,24 +591,23 @@ export default function TsehayVoiceAssistant() {
             if (spokenToProcess.trim()) {
               handleVoiceCommand(spokenToProcess);
             }
-          }, 1800);
+          }, 1600);
         }
       };
 
       recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-        console.warn('Speech recognition error event:', event.error);
         if (event.error === 'not-allowed') {
           setStatusMessage('የማይክሮፎን ፈቃድ አልተሰጠም። እባክዎ ማይክሮፎን ይፍቀዱ።');
           playSciFiSound('error');
           setIsListening(false);
           stopAudioAnalyser();
         } else if (event.error === 'no-speech') {
-          setStatusMessage('ምንም ድምፅ አልተሰማም። ማይክሮፎኑን በመጫን እንደገና ይናገሩ...');
+          // Keep listening or prompt
         }
       };
 
       recognition.onend = () => {
-        if (isListening) {
+        if (isOpenRef.current && isListening) {
           setIsListening(false);
           stopAudioAnalyser();
         }
@@ -574,12 +646,15 @@ export default function TsehayVoiceAssistant() {
         setStatusMessage('ማዳመጥ ቆሟል (Listening paused)');
       }
     } else {
-      // If AI is speaking, stop speaking and start listening
+      // Start listening
       if (currentAudioRef.current) {
         currentAudioRef.current.pause();
         setIsSpeaking(false);
         setIsAudioPaused(false);
       }
+      setTranscript('');
+      setInterimTranscript('');
+      activeTranscriptRef.current = '';
       startSpeechRecognition();
     }
   };
@@ -587,13 +662,15 @@ export default function TsehayVoiceAssistant() {
   // Open Assistant Flow
   const openAssistant = useCallback(() => {
     setIsOpen(true);
+    isOpenRef.current = true;
     setTranscript('');
     setInterimTranscript('');
+    activeTranscriptRef.current = '';
     setAiResponse('');
     setStatusMessage('ሰላም፣ ምን ልርዳዎት?');
     playSciFiSound('activate');
 
-    // 🔊 Greet in natural Amharic
+    // 🔊 Greet in natural Amharic, then start listening
     speakVoice('ሰላም፣ ምን ልርዳዎት?', () => {
       startSpeechRecognition();
     });
@@ -613,6 +690,7 @@ export default function TsehayVoiceAssistant() {
     setIsSpeaking(false);
     setIsAudioPaused(false);
     setIsOpen(false);
+    isOpenRef.current = false;
   }, [playSciFiSound]);
 
   // Toggle Assistant Button
@@ -624,9 +702,18 @@ export default function TsehayVoiceAssistant() {
     }
   };
 
-  // 👂 🌟 "Hey Siri" Style Standby Wake Word Listener Engine ("Hey Tsehay", "ሰላም ፀሐይ")
+  // 👂 🌟 Rock-Solid Persistent "Hey Tsehay" / "ሰላም ፀሐይ" Standby Wake Word Listener Engine
   useEffect(() => {
-    if (typeof window === 'undefined' || !isStandbyActive || isOpen) {
+    if (typeof window === 'undefined' || !isStandbyActive) {
+      if (standbyRecognitionRef.current) {
+        try { standbyRecognitionRef.current.abort(); } catch (e) {}
+        standbyRecognitionRef.current = null;
+      }
+      return;
+    }
+
+    if (isOpen) {
+      // When modal is open, active recognition takes over
       if (standbyRecognitionRef.current) {
         try { standbyRecognitionRef.current.abort(); } catch (e) {}
         standbyRecognitionRef.current = null;
@@ -641,8 +728,12 @@ export default function TsehayVoiceAssistant() {
     let isRestarting = false;
 
     const startStandby = () => {
-      if (isOpen || !isStandbyActive) return;
+      if (isOpenRef.current || !isStandbyActive) return;
       try {
+        if (standbyRecognitionRef.current) {
+          try { standbyRecognitionRef.current.abort(); } catch (e) {}
+        }
+
         const standby = new SpeechRecognition();
         standby.lang = 'am-ET';
         standby.continuous = true;
@@ -655,6 +746,7 @@ export default function TsehayVoiceAssistant() {
             heard += event.results[i][0].transcript.toLowerCase();
           }
 
+          // Broad Wake Word Matching (Supports all variations of Tsehay in Amharic & English)
           const isWakeWord = 
             heard.includes('hey tsehay') ||
             heard.includes('hay tsehay') ||
@@ -677,25 +769,26 @@ export default function TsehayVoiceAssistant() {
         };
 
         standby.onerror = (err: SpeechRecognitionErrorEvent) => {
-          if (err.error !== 'no-speech') {
-            console.debug('Standby listener event:', err.error);
-          }
+          // Expected on silence; continuous restart handled below
         };
 
         standby.onend = () => {
-          if (isStandbyActive && !isOpen && !isRestarting) {
+          if (isStandbyActive && !isOpenRef.current && !isRestarting) {
             isRestarting = true;
             setTimeout(() => {
               isRestarting = false;
               startStandby();
-            }, 800);
+            }, 600);
           }
         };
 
         standbyRecognitionRef.current = standby;
         standby.start();
       } catch (e) {
-        console.debug('Standby start deferred:', e);
+        // Retry
+        setTimeout(() => {
+          if (isStandbyActive && !isOpenRef.current) startStandby();
+        }, 1000);
       }
     };
 
@@ -724,7 +817,7 @@ export default function TsehayVoiceAssistant() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, toggleAssistant, closeAssistant]);
 
-  // 🎨 Gemini Live Aurora Glowing Sound Waves (Canvas Render)
+  // 🎨 Tsehay Golden Aurora Glowing Wave Visualizer (Canvas Render)
   useEffect(() => {
     if (!isOpen) {
       if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
@@ -745,15 +838,15 @@ export default function TsehayVoiceAssistant() {
       const height = canvas.height;
       const centerY = height / 2;
 
-      // Gemini dynamic amplitude
-      const dynamicAmp = isListening ? 16 + micVolume * 45 : isSpeaking && !isAudioPaused ? 22 : 6;
+      // Tsehay dynamic wave amplitude
+      const dynamicAmp = isListening ? 18 + micVolume * 45 : isSpeaking && !isAudioPaused ? 24 : 6;
 
-      // Google Gemini 4-Color Glowing Aurora Sound Waves
+      // Tsehay Brand Glowing Gold / Amber Waves
       const waves = [
-        { color: 'rgba(56, 189, 248, 0.95)', lineWidth: 3.0, freq: 0.024, speed: 0.08, ampMult: 1.0 }, // Cyan
-        { color: 'rgba(99, 102, 241, 0.9)', lineWidth: 2.5, freq: 0.019, speed: -0.06, ampMult: 0.8 },  // Indigo
-        { color: 'rgba(168, 85, 247, 0.85)', lineWidth: 2.2, freq: 0.028, speed: 0.09, ampMult: 0.65 }, // Purple
-        { color: 'rgba(245, 158, 11, 0.8)', lineWidth: 2.0, freq: 0.016, speed: -0.05, ampMult: 0.5 },  // Amber
+        { color: 'rgba(249, 176, 60, 0.95)', lineWidth: 3.2, freq: 0.024, speed: 0.08, ampMult: 1.0 },  // Tsehay Gold
+        { color: 'rgba(245, 158, 11, 0.9)', lineWidth: 2.6, freq: 0.019, speed: -0.06, ampMult: 0.8 },   // Amber
+        { color: 'rgba(251, 191, 36, 0.85)', lineWidth: 2.2, freq: 0.028, speed: 0.09, ampMult: 0.65 }, // Light Gold
+        { color: 'rgba(255, 255, 255, 0.6)', lineWidth: 1.8, freq: 0.016, speed: -0.05, ampMult: 0.45 }, // Pure White Glint
       ];
 
       waves.forEach((w) => {
@@ -795,24 +888,24 @@ export default function TsehayVoiceAssistant() {
 
   return (
     <>
-      {/* 🌟 1. PERSISTENT FLOATING MICROPHONE TRIGGER BUTTON */}
+      {/* 🌟 1. FLOATING TSEHAY MICROPHONE TRIGGER BUTTON (Positioned cleanly at bottom-right with Gold Pulse) */}
       <div 
-        className="fixed bottom-6 right-20 sm:bottom-6 sm:right-48 md:sm:right-52 z-[9985] flex flex-col items-end gap-2 select-none"
+        className="fixed bottom-6 right-6 sm:bottom-8 sm:right-8 z-[9985] flex flex-col items-end gap-2 select-none"
         style={{ willChange: 'transform' }}
       >
         <button
           type="button"
           onClick={toggleAssistant}
-          aria-label="Tsehay Voice Assistant (Hello Tsehay)"
-          className={`relative group flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 rounded-full shadow-[0_0_25px_rgba(56,189,248,0.4)] transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-90 cursor-pointer ${
+          aria-label="ፀሐይ AI ድምፅ ረዳት (Tsehay Voice AI)"
+          className={`relative group flex items-center justify-center w-13 h-13 sm:w-14 sm:h-14 rounded-full shadow-[0_0_25px_rgba(249,176,60,0.5)] transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-90 cursor-pointer ${
             isOpen 
-              ? 'bg-gradient-to-tr from-cyan-500 via-indigo-500 to-[#f9b03c] scale-105 border-2 border-white'
-              : 'bg-gradient-to-tr from-[#030509] via-[#080d1a] to-[#121c33] border-2 border-cyan-400/60 hover:border-cyan-400 hover:scale-110'
+              ? 'bg-gradient-to-tr from-red-500 via-amber-500 to-[#f9b03c] scale-105 border-2 border-white'
+              : 'bg-gradient-to-tr from-[#0b132b] via-[#1c2541] to-[#030509] border-2 border-[#f9b03c]/70 hover:border-[#f9b03c] hover:scale-110'
           }`}
-          title='Hello Tsehay (ድምፅ አውጋኝ AI) - ይናገሩ: "Hey Tsehay" ወይም "ሰላም ፀሐይ"'
+          title='ፀሐይ AI (ድምፅ አውጋኝ) - ይናገሩ: "ሰላም ፀሐይ" ወይም "Hey Tsehay"'
         >
-          {/* Animated Pulsing Aurora Glow */}
-          <span className="absolute -inset-1.5 rounded-full bg-gradient-to-r from-cyan-400 via-purple-500 to-[#f9b03c] opacity-40 blur-md group-hover:opacity-80 transition-opacity animate-pulse" />
+          {/* Animated Pulsing Gold Aura */}
+          <span className="absolute -inset-1.5 rounded-full bg-gradient-to-r from-[#f9b03c] via-amber-300 to-yellow-500 opacity-50 blur-md group-hover:opacity-90 transition-opacity animate-pulse" />
 
           {/* Center Microphone Icon */}
           <div className="relative z-10 flex items-center justify-center text-white">
@@ -820,10 +913,10 @@ export default function TsehayVoiceAssistant() {
               <i className="fa-solid fa-xmark text-lg text-white"></i>
             ) : (
               <div className="flex items-center justify-center relative">
-                <i className="fa-solid fa-microphone text-base sm:text-lg text-cyan-400 group-hover:scale-110 transition-transform duration-300"></i>
+                <i className="fa-solid fa-microphone text-lg text-[#f9b03c] group-hover:scale-110 transition-transform duration-300"></i>
                 <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-cyan-400"></span>
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#f9b03c] opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#f9b03c]"></span>
                 </span>
               </div>
             )}
@@ -831,21 +924,21 @@ export default function TsehayVoiceAssistant() {
         </button>
       </div>
 
-      {/* 🔮 2. GEMINI LIVE STYLE FLOATING BOTTOM CARD (Non-intrusive, Compact & Interactive) */}
+      {/* 🔮 2. TSEHAY VOICE AI COMPACT FLOATING BOTTOM-CENTER HUD CARD */}
       {isOpen && (
         <div 
-          className="fixed bottom-6 right-4 sm:right-8 w-[94vw] max-w-lg z-[9990] flex flex-col items-center animate-in slide-in-from-bottom-6 duration-300 pointer-events-auto"
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[92vw] max-w-md z-[9990] flex flex-col items-center animate-in slide-in-from-bottom-6 duration-300 pointer-events-auto"
         >
-          {/* Glassmorphic Gemini Pill Card */}
+          {/* Compact Glassmorphic Card in Tsehay Gold Branding */}
           <div 
-            className="w-full rounded-3xl p-5 sm:p-6 bg-slate-950/95 border border-cyan-500/30 shadow-[0_12px_45px_rgba(0,0,0,0.8),0_0_40px_rgba(56,189,248,0.2)] flex flex-col relative overflow-hidden backdrop-blur-2xl"
+            className="w-full rounded-3xl p-5 bg-slate-950/95 border border-[#f9b03c]/40 shadow-[0_15px_50px_rgba(0,0,0,0.85),0_0_40px_rgba(249,176,60,0.25)] flex flex-col relative overflow-hidden backdrop-blur-2xl"
           >
-            {/* Top Bar: Gemini Live Badge, Standby Indicator & Controls */}
-            <div className="w-full flex items-center justify-between mb-2.5">
+            {/* Top Bar: Tsehay Voice AI Branding, Standby Wake Indicator & Close */}
+            <div className="w-full flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-gradient-to-r from-cyan-500/20 to-purple-500/20 text-cyan-300 border border-cyan-500/30">
-                  <i className="fa-solid fa-sparkles text-xs text-cyan-400"></i>
-                  <span>Gemini Voice AI</span>
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-[#f9b03c]/20 text-[#f9b03c] border border-[#f9b03c]/40">
+                  <i className="fa-solid fa-sun text-xs text-[#f9b03c] animate-spin-slow"></i>
+                  <span>ፀሐይ AI (Voice AI)</span>
                 </span>
 
                 {/* Standby Wake toggle badge */}
@@ -861,42 +954,40 @@ export default function TsehayVoiceAssistant() {
                       ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
                       : 'bg-white/5 text-gray-400 border-white/10'
                   }`}
-                  title='Auto Wake ("Hey Tsehay")'
+                  title='Auto Wake ("ሰላም ፀሐይ")'
                 >
                   <span className={`w-1.5 h-1.5 rounded-full ${isStandbyActive ? 'bg-emerald-400 animate-pulse' : 'bg-gray-500'}`} />
-                  <span>{isStandbyActive ? 'Hey Tsehay ON' : 'OFF'}</span>
+                  <span>{isStandbyActive ? 'ሰላም ፀሐይ ON' : 'OFF'}</span>
                 </button>
               </div>
 
-              <div className="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={closeAssistant}
-                  className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 text-gray-300 hover:text-white flex items-center justify-center transition cursor-pointer"
-                  title="ዝጋ (Close)"
-                >
-                  <i className="fa-solid fa-xmark text-xs"></i>
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={closeAssistant}
+                className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 text-gray-300 hover:text-white flex items-center justify-center transition cursor-pointer"
+                title="ዝጋ (Close)"
+              >
+                <i className="fa-solid fa-xmark text-xs"></i>
+              </button>
             </div>
 
-            {/* Gemini 4-Color Aurora Wave Visualizer */}
-            <div className="w-full h-16 sm:h-20 flex items-center justify-center relative my-1">
+            {/* Tsehay Gold Glowing Wave Visualizer */}
+            <div className="w-full h-14 sm:h-16 flex items-center justify-center relative my-1">
               <canvas
                 ref={canvasRef}
-                width={460}
-                height={80}
-                className="w-full h-full object-contain filter drop-shadow-[0_0_10px_rgba(56,189,248,0.4)]"
+                width={440}
+                height={70}
+                className="w-full h-full object-contain filter drop-shadow-[0_0_10px_rgba(249,176,60,0.5)]"
               />
             </div>
 
             {/* Live Transcription & Spoken Response Bubble */}
-            <div className="w-full min-h-[50px] flex flex-col justify-center my-1.5 px-1">
+            <div className="w-full min-h-[48px] flex flex-col justify-center my-1.5 px-1">
               {transcript || interimTranscript ? (
                 <div className="bg-white/5 border border-white/10 rounded-2xl p-2.5 mb-2">
                   <p className="text-xs sm:text-sm font-bold text-white leading-relaxed">
-                    <span className="text-cyan-400 font-extrabold mr-1">እርስዎ:</span>
-                    "{transcript} <span className="text-cyan-300 animate-pulse">{interimTranscript}</span>"
+                    <span className="text-[#f9b03c] font-extrabold mr-1">እርስዎ:</span>
+                    "{transcript} <span className="text-amber-300 animate-pulse">{interimTranscript}</span>"
                   </p>
                 </div>
               ) : (
@@ -907,10 +998,10 @@ export default function TsehayVoiceAssistant() {
                 </div>
               )}
 
-              {/* AI Spoken Answer with Live Voice Wave Indicator */}
+              {/* AI Spoken Answer Bubble with Audio Indicator */}
               {aiResponse && (
-                <div className="p-3 rounded-2xl bg-gradient-to-r from-cyan-950/80 via-slate-900/90 to-purple-950/80 border border-cyan-500/40 text-cyan-200 text-xs sm:text-sm font-bold flex items-start gap-2.5 animate-in fade-in shadow-md">
-                  <div className="w-6 h-6 rounded-lg bg-cyan-500/20 flex items-center justify-center text-cyan-400 shrink-0 mt-0.5">
+                <div className="p-3 rounded-2xl bg-gradient-to-r from-amber-950/80 via-slate-900/90 to-amber-950/80 border border-amber-500/40 text-amber-200 text-xs sm:text-sm font-bold flex items-start gap-2.5 animate-in fade-in shadow-md">
+                  <div className="w-6 h-6 rounded-lg bg-amber-500/20 flex items-center justify-center text-[#f9b03c] shrink-0 mt-0.5">
                     <i className={`fa-solid ${isSpeaking && !isAudioPaused ? 'fa-volume-high animate-bounce' : isAudioPaused ? 'fa-pause' : 'fa-check'} text-xs`}></i>
                   </div>
                   <span className="text-left flex-1 leading-relaxed">{aiResponse}</span>
@@ -918,9 +1009,9 @@ export default function TsehayVoiceAssistant() {
               )}
             </div>
 
-            {/* Gemini Live Control Deck: [Pause/Play Audio] | [Mic Stop/Listen] | [Quick Actions] */}
-            <div className="w-full flex items-center justify-between gap-3 mt-2 pt-3 border-t border-white/10">
-              {/* Left: Pause / Resume Audio Button */}
+            {/* Control Deck: [Pause/Play Voice] | [Mic Toggle / Answer Now] */}
+            <div className="w-full flex items-center justify-between gap-3 mt-1 pt-2.5 border-t border-white/10">
+              {/* Pause / Resume Audio Button */}
               <button
                 type="button"
                 onClick={togglePlayPauseAudio}
@@ -937,19 +1028,19 @@ export default function TsehayVoiceAssistant() {
                 <span>{isSpeaking && !isAudioPaused ? 'Pause Voice' : isAudioPaused ? 'Resume Voice' : 'Play Voice'}</span>
               </button>
 
-              {/* Center / Right: Microphone Action Button */}
+              {/* Microphone Action Button */}
               <button
                 type="button"
                 onClick={handleMicToggle}
-                className={`flex items-center gap-2.5 px-5 py-2.5 rounded-2xl text-xs font-black transition-all duration-300 cursor-pointer shadow-lg active:scale-95 ${
+                className={`flex items-center gap-2 px-4 py-2 rounded-2xl text-xs font-black transition-all duration-300 cursor-pointer shadow-lg active:scale-95 ${
                   isListening
                     ? 'bg-gradient-to-r from-red-500 to-amber-500 text-white shadow-[0_0_20px_rgba(239,68,68,0.5)] animate-pulse'
-                    : 'bg-gradient-to-r from-cyan-500 via-indigo-500 to-[#f9b03c] text-slate-950 shadow-[0_0_20px_rgba(56,189,248,0.4)] hover:scale-105'
+                    : 'bg-gradient-to-r from-[#f9b03c] via-amber-400 to-yellow-500 text-slate-950 shadow-[0_0_20px_rgba(249,176,60,0.5)] hover:scale-105'
                 }`}
                 title={isListening ? 'ማዳመጥ አቁም እና መልሱን ተቀበል (Stop & Answer)' : 'ማዳመጥ ጀምር (Start Speaking)'}
               >
                 <i className={`fa-solid ${isListening ? 'fa-microphone-lines' : 'fa-microphone'} text-sm`}></i>
-                <span>{isListening ? 'ጨርሻለሁ (Answer Now)' : 'ተናገር (Speak)'}</span>
+                <span>{isListening ? 'ጨርሻለሁ (Answer)' : 'ተናገር (Speak)'}</span>
               </button>
             </div>
           </div>
