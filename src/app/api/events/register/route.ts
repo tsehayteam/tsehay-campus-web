@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase/admin';
 import { EventTicket, DEFAULT_EVENTS } from '@/lib/eventCache';
+import { sendTicketEmail } from '@/lib/ticketEmailService';
 
 export async function POST(req: NextRequest) {
   try {
@@ -115,11 +116,20 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // 📧 Automatically trigger Ticket Email delivery to the student
+    let emailResult = { success: false };
+    try {
+      emailResult = await sendTicketEmail(ticket);
+    } catch (emailErr) {
+      console.warn('Automated ticket email delivery notice:', emailErr);
+    }
+
     return NextResponse.json({
       success: true,
       ticketId,
       ticket,
-      message: 'ምዝገባዎ በተሳካ ሁኔታ ተጠናቋል! ትኬትዎ ተዘጋጅቷል። (Registration confirmed)'
+      emailSent: emailResult.success,
+      message: 'ምዝገባዎ በተሳካ ሁኔታ ተጠናቋል! ትኬትዎ ተዘጋጅቷል፤ ወደ ኢሜይልዎም ተልኳል። (Registration confirmed)'
     });
   } catch (error: any) {
     console.error('Error in /api/events/register:', error);

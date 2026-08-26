@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase/admin';
 import { EventTicket, DEFAULT_EVENTS } from '@/lib/eventCache';
+import { sendTicketEmail } from '@/lib/ticketEmailService';
 
 export async function GET(req: NextRequest) {
   try {
@@ -124,7 +125,7 @@ export async function POST(req: NextRequest) {
           .doc(ticketId)
           .set({ ...newTicket, registeredAt: new Date().toISOString() });
 
-        // 2. Save to user's ticket sub-collection
+        // 3. User sub-collection
         if (userId && !userId.startsWith('anon_')) {
           await adminDb
             .collection('artifacts')
@@ -140,10 +141,18 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // 📧 Trigger automated email delivery
+    let emailSent = false;
+    try {
+      const emailResult = await sendTicketEmail(newTicket);
+      emailSent = emailResult.success;
+    } catch (e) {}
+
     return NextResponse.json({
       success: true,
       ticketId,
       ticket: newTicket,
+      emailSent,
       message: 'ትኬቱ በተሳካ ሁኔታ ተዘጋጅቷል (Ticket generated successfully)'
     });
   } catch (error: any) {
