@@ -3584,7 +3584,7 @@ ${customAdminPrompt}
 
              <div className="relative bg-white dark:bg-[#070b14]/95 backdrop-blur-3xl rounded-3xl p-4 sm:p-6 md:p-8 shadow-2xl border border-slate-200 dark:border-white/10 flex flex-col h-[calc(100vh-170px)] min-h-[560px] overflow-hidden">
                  
-                 {/* Subtle Glowing Background Mesh & Luxury Wallpaper Pattern */}
+                 {/* Subtle Glowing Background Mesh */}
                  <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(249,176,60,0.08),transparent_50%),radial-gradient(ellipse_at_bottom_left,rgba(50,104,186,0.12),transparent_50%)] pointer-events-none" />
                  <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none" />
 
@@ -3730,25 +3730,40 @@ ${customAdminPrompt}
                       </div>
                     </div>
                   )}
+
                  {/* Top Header with Course Specialization Indicator */}
                  <div className="relative z-10 flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 dark:border-white/10 pb-4 mb-3">
                      <div className="flex items-center gap-3">
                          <div className="relative">
-                           <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-200 text-slate-950 flex items-center justify-center text-xl font-black shadow-[0_0_20px_rgba(249,176,60,0.4)] border border-white/20">
+                           <div className="w-12 h-12 rounded-2xl overflow-hidden bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-200 p-[2px] shadow-[0_0_20px_rgba(249,176,60,0.4)] border border-white/20 flex items-center justify-center shrink-0">
+                             <img 
+                               src="/assets/eyob_new.png" 
+                               alt="ኢዮብ ሳህሌ (Eyoub Sahle)" 
+                               className="w-full h-full object-cover rounded-[14px]"
+                               onError={(e: any) => {
+                                 e.target.style.display = 'none';
+                                 e.target.nextSibling && (e.target.nextSibling.style.display = 'flex');
+                               }}
+                             />
+                             <div className="hidden w-full h-full rounded-[14px] bg-slate-900 text-[#f9b03c] items-center justify-center text-lg font-black">
                                <i className="fa-solid fa-robot"></i>
+                             </div>
                            </div>
-                            <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-[#f9b03c] border-2 border-white dark:border-slate-900 rounded-full animate-pulse shadow-[0_0_8px_#f9b03c]"></span>
+                           <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 border-2 border-white dark:border-slate-900 rounded-full animate-pulse shadow-[0_0_8px_#10b981]"></span>
                          </div>
                          <div>
                              <div className="flex items-center gap-2">
-                               <h2 className="text-base sm:text-lg font-black font-heading text-dark dark:text-white">Tsehay AI Tutor</h2>
-                               <span className="bg-[#f9b03c]/20 text-amber-800 dark:text-[#f9b03c] text-[10px] font-black px-2.5 py-0.5 rounded-full border border-[#f9b03c]/30 flex items-center gap-1">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-[#f9b03c] animate-ping"></span>
+                               <h2 className="text-base sm:text-lg font-black font-heading text-dark dark:text-white flex items-center gap-1.5">
+                                 <span>ኢዮብ ሳህሌ</span>
+                                 <span className="text-xs text-[#f9b03c] font-bold">| Tsehay AI Mentor</span>
+                               </h2>
+                               <span className="bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 text-[10px] font-black px-2.5 py-0.5 rounded-full border border-emerald-500/30 flex items-center gap-1">
+                                 <i className="fa-solid fa-circle-check text-[9px]"></i>
                                  <span>24/7 LIVE</span>
                                </span>
                              </div>
-                             <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
-                               {selectedAiCourse ? `የትኩረት መስክ: ${selectedAiCourse.title}` : 'አጠቃላይ የትምህርት AI ረዳት (General Campus AI)'}
+                             <p className="text-xs text-amber-700 dark:text-amber-300 font-semibold">
+                               {selectedAiCourse ? `የትኩረት መስክ: 📚 ${selectedAiCourse.title}` : '🌟 አጠቃላይ የካምፓስ AI ረዳት (General Campus AI)'}
                              </p>
                          </div>
                      </div>
@@ -3804,14 +3819,14 @@ ${customAdminPrompt}
                        const isUser = m.role === 'user';
                        return (
                          <div key={i} className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} animate-in fade-in slide-in-from-bottom-2 duration-300`}>
-                             <div className="flex items-end gap-2 max-w-[92%] sm:max-w-[84%]">
+                             <div className="flex items-end gap-2 max-w-[92%] sm:max-w-[88%]">
                                {!isUser && (
-                                 <div className="w-7 h-7 rounded-xl bg-[#f9b03c]/20 text-[#f9b03c] border border-[#f9b03c]/30 flex items-center justify-center shrink-0 mb-1 text-xs">
-                                   <i className="fa-solid fa-robot"></i>
+                                 <div className="w-7 h-7 rounded-xl overflow-hidden bg-gradient-to-tr from-[#f9b03c] to-amber-400 p-[1px] shrink-0 mb-1 shadow-sm">
+                                   <img src="/assets/eyob_new.png" alt="AI Mentor" className="w-full h-full object-cover rounded-[10px]" onError={(e: any) => { e.target.src = "https://api.dicebear.com/7.x/bottts/svg?seed=Felix"; }} />
                                  </div>
                                )}
 
-                               <div className={`p-3.5 sm:p-4 rounded-2xl text-xs sm:text-sm leading-relaxed shadow-sm break-words ${
+                               <div className={`p-3.5 sm:p-4 rounded-2xl text-xs sm:text-[13px] leading-relaxed shadow-sm break-words ${
                                  isUser 
                                    ? 'bg-gradient-to-r from-[#f9b03c] to-amber-400 text-slate-950 font-bold rounded-br-none shadow-[0_4px_20px_rgba(249,176,60,0.2)]' 
                                    : 'bg-white dark:bg-[#0c1222] dark:text-slate-100 text-slate-900 shadow-sm rounded-bl-none border border-gray-200 dark:border-white/10 font-normal'
@@ -3884,14 +3899,14 @@ ${customAdminPrompt}
 
                      {isChatLoading && (
                          <div className="flex items-center gap-2 ml-2 text-xs">
-                             <div className="w-7 h-7 rounded-xl bg-[#f9b03c]/20 text-[#f9b03c] border border-[#f9b03c]/30 flex items-center justify-center shrink-0">
-                               <i className="fa-solid fa-robot text-xs animate-spin"></i>
+                             <div className="w-7 h-7 rounded-xl overflow-hidden bg-gradient-to-tr from-[#f9b03c] to-amber-400 p-[1px] shrink-0 shadow-sm">
+                               <img src="/assets/eyob_new.png" alt="AI Mentor" className="w-full h-full object-cover rounded-[10px]" />
                              </div>
                              <div className="bg-white dark:bg-[#0c1222] border border-gray-200 dark:border-white/10 rounded-2xl p-3.5 shadow-sm flex items-center gap-2 rounded-bl-none">
                                  <div className="w-2 h-2 rounded-full bg-[#f9b03c] animate-bounce"></div>
                                  <div className="w-2 h-2 rounded-full bg-[#f9b03c] animate-bounce" style={{animationDelay: '0.2s'}}></div>
                                  <div className="w-2 h-2 rounded-full bg-[#f9b03c] animate-bounce" style={{animationDelay: '0.4s'}}></div>
-                                 <span className="text-[11px] font-bold text-[#f9b03c] ml-1">Tsehay AI እየጻፈ ነው...</span>
+                                 <span className="text-[11px] font-bold text-[#f9b03c] ml-1">ኢዮብ ሳህሌ (AI) እየጻፈ ነው...</span>
                              </div>
                          </div>
                      )}
@@ -3918,26 +3933,6 @@ ${customAdminPrompt}
                    </div>
                  )}
 
-                 {/* Voice Recording Waveform Bar */}
-                 {isAiVoiceRecording && (
-                   <div className="relative z-10 px-4 py-3 bg-gradient-to-r from-red-950/90 via-[#1a0b18] to-red-950/90 border border-red-500/30 rounded-2xl flex items-center justify-between animate-pulse my-1">
-                     <div className="flex items-center gap-3">
-                       <span className="relative flex h-3 w-3">
-                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
-                         <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
-                       </span>
-                       <span className="text-xs font-bold text-red-400">ድምፅዎን እያዳመጥኩ ነው... ({aiRecordingSeconds}s)</span>
-                     </div>
-                     <button 
-                       onClick={() => stopAiVoiceRecording(false)}
-                       className="bg-red-500 hover:bg-red-600 text-white text-xs font-black px-3 py-1 rounded-xl transition cursor-pointer flex items-center gap-1.5"
-                     >
-                       <i className="fa-solid fa-stop"></i>
-                       <span>አቁም</span>
-                     </button>
-                   </div>
-                 )}
-
                  {/* Quick Action Suggestion Chips */}
                  <div className="relative z-10 flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
                      {[
@@ -3957,58 +3952,96 @@ ${customAdminPrompt}
                      ))}
                  </div>
 
-                 {/* Input Bar with Voice & Image Attachment Actions */}
-                 <form onSubmit={(e) => handleSendAiMessage(e)} className="relative z-10 flex items-center gap-2">
-                     {/* Photo Upload Button */}
-                     <button
-                       type="button"
-                       onClick={() => aiFileInputRef.current?.click()}
-                       className="w-11 h-11 rounded-2xl bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/15 text-gray-600 dark:text-gray-300 hover:text-[#f9b03c] border border-gray-200 dark:border-white/15 flex items-center justify-center transition active:scale-90 cursor-pointer shrink-0"
-                       title="ፎቶ / ስክሪንሾት አያይዝ"
-                     >
-                       <i className="fa-solid fa-paperclip text-sm"></i>
-                     </button>
+                 {/* 🌟 UNIFIED INPUT BAR (Smoothly toggles between Typing & Voice Recording) */}
+                 <div className="relative z-10">
+                   {isAiVoiceRecording ? (
+                     /* Unified Voice Recording State */
+                     <div className="flex items-center justify-between gap-2 bg-gradient-to-r from-red-950/90 via-[#220d28] to-amber-950/80 border border-red-500/40 rounded-2xl px-4 py-2.5 animate-in fade-in duration-200 shadow-[0_0_20px_rgba(239,68,68,0.25)]">
+                       <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                         <span className="relative flex h-3 w-3 shrink-0">
+                           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
+                           <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                         </span>
+                         <div className="flex flex-col min-w-0">
+                           <span className="text-[11px] font-black text-amber-300 flex items-center gap-1">
+                             <span>ድምፅዎን እያዳመጥኩ ነው...</span>
+                             <span className="text-white bg-red-500/30 px-1.5 py-0.2 rounded-md font-mono">{aiRecordingSeconds}s</span>
+                           </span>
+                           <span className="text-xs text-white/90 font-medium truncate">
+                             {chatInput || aiVoiceTranscriptRef.current || 'ተናገሩ...'}
+                           </span>
+                         </div>
+                       </div>
 
-                     {/* Voice Record Button */}
-                     <button
-                       type="button"
-                       onClick={isAiVoiceRecording ? () => stopAiVoiceRecording(true) : () => startAiVoiceRecording()}
-                       className={`w-11 h-11 rounded-2xl border flex items-center justify-center transition active:scale-90 cursor-pointer shrink-0 ${
-                         isAiVoiceRecording 
-                           ? 'bg-red-500 text-white border-red-400 animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.6)]' 
-                           : 'bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/15 text-gray-600 dark:text-gray-300 hover:text-[#f9b03c] border-gray-200 dark:border-white/15'
-                       }`}
-                       title={isAiVoiceRecording ? "መቅዳት አቁም" : "በድምፅ ተናገር (Speak via Voice)"}
-                     >
-                       <i className={`fa-solid ${isAiVoiceRecording ? 'fa-stop' : 'fa-microphone'} text-sm`}></i>
-                     </button>
+                       <div className="flex items-center gap-2 shrink-0">
+                         <button 
+                           type="button"
+                           onClick={() => stopAiVoiceRecording(false)}
+                           className="bg-white/10 hover:bg-white/20 text-gray-300 text-xs font-bold px-3 py-2 rounded-xl transition cursor-pointer"
+                         >
+                           ሰርዝ
+                         </button>
+                         <button 
+                           type="button"
+                           onClick={() => stopAiVoiceRecording(true)}
+                           className="bg-gradient-to-r from-[#f9b03c] via-amber-400 to-yellow-300 hover:brightness-110 text-slate-950 text-xs font-black px-4 py-2 rounded-xl transition cursor-pointer shadow-lg shadow-[#f9b03c]/30 flex items-center gap-1.5 active:scale-95"
+                         >
+                           <i className="fa-solid fa-paper-plane text-[11px]"></i>
+                           <span>ላክ (Send)</span>
+                         </button>
+                       </div>
+                     </div>
+                   ) : (
+                     /* Unified Typing State */
+                     <form onSubmit={(e) => handleSendAiMessage(e)} className="flex items-center gap-2">
+                       {/* Photo Upload Button */}
+                       <button
+                         type="button"
+                         onClick={() => aiFileInputRef.current?.click()}
+                         className="w-11 h-11 rounded-2xl bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/15 text-gray-600 dark:text-gray-300 hover:text-[#f9b03c] border border-gray-200 dark:border-white/15 flex items-center justify-center transition active:scale-90 cursor-pointer shrink-0"
+                         title="ፎቶ / ስክሪንሾት አያይዝ"
+                       >
+                         <i className="fa-solid fa-paperclip text-sm"></i>
+                       </button>
 
-                     <input 
-                         type="text" 
-                         value={chatInput}
-                         onChange={e => setChatInput(e.target.value)}
-                         placeholder={selectedAiCourse ? `ስለ ${selectedAiCourse.title} ለ Tsehay AI ጥያቄዎን እዚህ ይጻፉ...` : "ለ Tsehay AI ማንኛውንም ጥያቄ እዚህ ይጻፉ..."}
-                         className="flex-1 bg-gray-50 dark:bg-slate-950/80 border border-gray-200 dark:border-white/15 rounded-2xl px-4 py-3 text-xs sm:text-sm outline-none focus:border-[#f9b03c] text-dark dark:text-white placeholder-gray-400 transition"
-                     />
-                     <button 
-                         type="submit" 
-                         disabled={(!chatInput.trim() && !aiAttachedImage) || isChatLoading}
-                         className={`px-5 sm:px-6 h-11 rounded-2xl font-black text-xs sm:text-sm flex items-center justify-center gap-2 transition-all duration-200 cursor-pointer shadow-md active:scale-90 ${
-                           (chatInput.trim() || aiAttachedImage) && !isChatLoading
-                             ? 'bg-gradient-to-r from-[#f9b03c] to-amber-400 text-slate-950 shadow-[0_0_20px_rgba(249,176,60,0.4)] hover:brightness-110'
-                             : 'bg-gray-200 dark:bg-white/10 text-gray-400 cursor-not-allowed'
-                         }`}
-                     >
-                         {isChatLoading ? (
-                           <div className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin"></div>
-                         ) : (
-                           <>
-                             <i className="fa-solid fa-paper-plane text-xs"></i>
-                             <span>ላክ</span>
-                           </>
-                         )}
-                     </button>
-                 </form>
+                       {/* Voice Record Trigger */}
+                       <button
+                         type="button"
+                         onClick={() => startAiVoiceRecording()}
+                         className="w-11 h-11 rounded-2xl bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/15 text-gray-600 dark:text-gray-300 hover:text-amber-400 border border-gray-200 dark:border-white/15 flex items-center justify-center transition active:scale-90 cursor-pointer shrink-0"
+                         title="በድምፅ ተናገር (Speak via Voice)"
+                       >
+                         <i className="fa-solid fa-microphone text-sm"></i>
+                       </button>
+
+                       <input 
+                           type="text" 
+                           value={chatInput}
+                           onChange={e => setChatInput(e.target.value)}
+                           placeholder={selectedAiCourse ? `ስለ ${selectedAiCourse.title} ለ Tsehay AI ጥያቄዎን እዚህ ይጻፉ...` : "ለ Tsehay AI ማንኛውንም ጥያቄ እዚህ ይጻፉ..."}
+                           className="flex-1 bg-gray-50 dark:bg-slate-950/80 border border-gray-200 dark:border-white/15 rounded-2xl px-4 py-3 text-xs sm:text-sm outline-none focus:border-[#f9b03c] text-dark dark:text-white placeholder-gray-400 transition"
+                       />
+                       <button 
+                           type="submit" 
+                           disabled={(!chatInput.trim() && !aiAttachedImage) || isChatLoading}
+                           className={`px-5 sm:px-6 h-11 rounded-2xl font-black text-xs sm:text-sm flex items-center justify-center gap-2 transition-all duration-200 cursor-pointer shadow-md active:scale-90 ${
+                             (chatInput.trim() || aiAttachedImage) && !isChatLoading
+                               ? 'bg-gradient-to-r from-[#f9b03c] to-amber-400 text-slate-950 shadow-[0_0_20px_rgba(249,176,60,0.4)] hover:brightness-110'
+                               : 'bg-gray-200 dark:bg-white/10 text-gray-400 cursor-not-allowed'
+                           }`}
+                       >
+                           {isChatLoading ? (
+                             <div className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin"></div>
+                           ) : (
+                             <>
+                               <i className="fa-solid fa-paper-plane text-xs"></i>
+                               <span>ላክ</span>
+                             </>
+                           )}
+                       </button>
+                     </form>
+                   )}
+                 </div>
              </div>
           </div>
         )}
