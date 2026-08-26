@@ -99,7 +99,7 @@ function autoCorrectAmharicSpeech(rawText: string, isEnglishMode: boolean = fals
     };
   }
 
-  // 1. Common Greetings & Small Talk (MUST BE HANDLED BEFORE ANY KEYWORD MATCHING)
+  // 1. Common Greetings & Small Talk
   if (
     /^(ሰላም|ሰላም\s*ነው|እንዴት\s*ነሽ|እንዴት\s*ነህ|ደህና\s*ነሽ|ደህና\s*ነህ|ጤና\s*ይስጥልኝ|እንደምን\s*አለሽ|ሰላም\s*ጸ|ሰላም\s*ፀ|ሄይ\s*ጸ|ሄይ\s*ፀ|ጸሀይ|ፀሐይ)$/i.test(normalized) ||
     /^(hi|hello|hey|hey there|how are you|how do you do|good morning|good afternoon|good evening)$/i.test(text)
@@ -217,7 +217,7 @@ function autoCorrectAmharicSpeech(rawText: string, isEnglishMode: boolean = fals
     };
   }
 
-  // 10. Location & Address (Strict matching so it doesn't trigger on random questions)
+  // 10. Location & Address
   if (
     /አድራሻችሁ\s*የት\s*ነው|የካምፓሱ\s*አድራሻ|ቦሌ\s*የት\s*ጋ|ቢሮአችሁ\s*የት\s*ነው|አድራሻ\s*የት\s*ነው/i.test(normalized) ||
     /where is your office|where are you located|what is your address|campus address/i.test(text)
@@ -230,7 +230,7 @@ function autoCorrectAmharicSpeech(rawText: string, isEnglishMode: boolean = fals
     };
   }
 
-  // 11. Phone & Contact (Strict matching)
+  // 11. Phone & Contact
   if (
     /ስልክ\s*ቁጥር|እንዴት\s*ልደውል|የስልክ\s*ቁጥር\s*ስንት\s*ነው|እንዴት\s*ላግኛችሁ/i.test(normalized) ||
     /phone number|contact number|how can i contact you|call number/i.test(text)
@@ -243,7 +243,7 @@ function autoCorrectAmharicSpeech(rawText: string, isEnglishMode: boolean = fals
     };
   }
 
-  // 12. Founder & Instructor (Strict matching)
+  // 12. Founder & Instructor
   if (
     /መስራች\s*ማን\s*ነው|ማን\s*ነው\s*የከፈተው|አስተማሪው\s*ማን\s*ነው|ስለ\s*ኢዮብ\s*ሳህሌ/i.test(normalized) ||
     /who is the founder|who created tsehay campus|who is eyoub sahle/i.test(text)
@@ -294,6 +294,7 @@ export default function TsehayVoiceAssistant() {
   const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const captionDismissTimerRef = useRef<NodeJS.Timeout | null>(null);
   const activeTranscriptRef = useRef<string>('');
+  const wasInterruptedRef = useRef<boolean>(false);
   const isOpenRef = useRef<boolean>(false);
   const isSpeakingRef = useRef<boolean>(false);
   const selectedLangRef = useRef<'am' | 'en'>('am');
@@ -345,7 +346,7 @@ export default function TsehayVoiceAssistant() {
     } catch (e) {}
   }, []);
 
-  // 🛑 Instant Voice Output Termination (For Barge-in / Interruption)
+  // 🛑 Instant Voice Output Termination (Gemini Live Barge-In Cutoff)
   const stopVoiceOutput = useCallback(() => {
     if (captionDismissTimerRef.current) {
       clearTimeout(captionDismissTimerRef.current);
@@ -380,6 +381,7 @@ export default function TsehayVoiceAssistant() {
     stopVoiceOutput();
     setIsOpen(false);
     isOpenRef.current = false;
+    wasInterruptedRef.current = false;
   }, [playSciFiSound, stopVoiceOutput]);
 
   // 🗣️ Voice Output (Native Amharic 'am' or English 'en')
@@ -403,6 +405,12 @@ export default function TsehayVoiceAssistant() {
       const ttsUrl = `/api/ai/tts?text=${encodedText}&lang=${currentLang}`;
       const audio = new Audio(ttsUrl);
       currentAudioRef.current = audio;
+
+      // 🎙️ FULL-DUPLEX PARALLEL LISTENING:
+      // Ensure speech recognition stays actively listening while AI speaks so any barge-in is instant!
+      if (isOpenRef.current && !recognitionRef.current) {
+        startSpeechRecognition();
+      }
 
       const handleAudioEnd = () => {
         setIsSpeaking(false);
@@ -450,7 +458,7 @@ export default function TsehayVoiceAssistant() {
     }
   };
 
-  // 🎙️ Setup Microphone Volume Analyser (Live Wave + Ultra-Sensitive Interruption)
+  // 🎙️ Setup Microphone Volume Analyser (Live Wave + 0ms Barge-In Trigger)
   const setupAudioAnalyser = async () => {
     try {
       if (!navigator.mediaDevices?.getUserMedia) return;
@@ -482,13 +490,14 @@ export default function TsehayVoiceAssistant() {
         const normalizedVol = Math.min(average / 60, 2.0);
         setMicVolume(normalizedVol);
 
-        // 🛑 ULTRA-FAST BARGE-IN INTERRUPTION:
-        if (isSpeakingRef.current && normalizedVol > 0.20) {
+        // 🛑 GEMINI LIVE BARGE-IN: As soon as user speaks (volume > 0.16), stop AI voice immediately!
+        if (isSpeakingRef.current && normalizedVol > 0.16) {
           stopVoiceOutput();
-          setStatusMessage(selectedLangRef.current === 'en' ? 'Listening...' : 'እየሰማሁ ነው...');
+          wasInterruptedRef.current = true;
+          setStatusMessage(selectedLangRef.current === 'en' ? 'Understood! Listening...' : 'እሺ፣ እያዳመጥኩ ነው...');
         }
 
-        if (isListening) {
+        if (isListening || isSpeakingRef.current) {
           requestAnimationFrame(updateVolume);
         }
       };
@@ -509,7 +518,7 @@ export default function TsehayVoiceAssistant() {
     setMicVolume(0);
   };
 
-  // 🧠 High-Accuracy Semantic Voice Router (Supports all Amharic dialects and English)
+  // 🧠 High-Accuracy Semantic Voice Router (Gemini-Live Conversational Resolution)
   const handleVoiceCommand = useCallback(async (spokenText: string, forcedIntent?: string) => {
     if (!spokenText.trim()) return;
 
@@ -527,12 +536,21 @@ export default function TsehayVoiceAssistant() {
       selectedLangRef.current = 'en';
     }
 
+    const isInterrupted = wasInterruptedRef.current;
+    wasInterruptedRef.current = false;
+
     const intent = forcedIntent || correctionResult.detectedIntent;
     const cleanText = correctionResult.corrected;
 
     // Update UI transcript to show the clean, auto-corrected text
     setTranscript(cleanText);
     setInterimTranscript('');
+
+    // Conversational Interruption Bridge (like Gemini: "እሺ፣ ተረድቻለሁ! ..." or "Understood! ...")
+    const isEng = selectedLangRef.current === 'en';
+    const interruptPrefix = isInterrupted 
+      ? (isEng ? 'Understood! ' : 'እሺ፣ ተረድቻለሁ! ') 
+      : '';
 
     // Handle Voice-Triggered Language Switch Commands
     if (intent === 'switch_to_english') {
@@ -559,10 +577,9 @@ export default function TsehayVoiceAssistant() {
 
     // Handle Contextual Greetings
     if (intent === 'greeting') {
-      const isEng = selectedLangRef.current === 'en';
-      const msg = isEng 
+      const msg = interruptPrefix + (isEng 
         ? "Hello! I'm Tsehay AI, doing great! How can I assist you today?"
-        : "ሰላም! እኔ ፀሐይ ነኝ፤ በጣም ደህና ነኝ፣ እርስዎስ እንዴት ኖት? ዛሬ በምን ልርዳዎት?";
+        : "ሰላም! እኔ ፀሐይ ነኝ፤ በጣም ደህና ነኝ፣ እርስዎስ እንዴት ኖት? ዛሬ በምን ልርዳዎት?");
       setAiResponse(msg);
       setStatusMessage(isEng ? 'Hello!' : 'ሰላም!');
       playSciFiSound('success');
@@ -572,10 +589,9 @@ export default function TsehayVoiceAssistant() {
 
     // Handle Gratitude
     if (intent === 'gratitude') {
-      const isEng = selectedLangRef.current === 'en';
-      const msg = isEng 
+      const msg = interruptPrefix + (isEng 
         ? "You're very welcome! Always here to assist you. Is there anything else you need?"
-        : "ምንም አይደል! ሁሌም እርስዎን ለመርዳት በደስታ ዝግጁ ነኝ። ሌላ ልርዳዎት የምችለው ነገር አለ?";
+        : "ምንም አይደል! ሁሌም እርስዎን ለመርዳት በደስታ ዝግጁ ነኝ። ሌላ ልርዳዎት የምችለው ነገር አለ?");
       setAiResponse(msg);
       playSciFiSound('success');
       speakVoice(msg, () => resumeListeningForNextTurn());
@@ -584,25 +600,23 @@ export default function TsehayVoiceAssistant() {
 
     // Handle Identity
     if (intent === 'identity') {
-      const isEng = selectedLangRef.current === 'en';
-      const msg = isEng 
+      const msg = interruptPrefix + (isEng 
         ? "I am Tsehay AI, your voice assistant for Tsehay Campus. I can guide you through our courses, payments, certificates, and learning tools."
-        : "እኔ ፀሐይ AI እባላለሁ፤ የፀሐይ ካምፓስ ብልህ የድምፅ ረዳት ነኝ። ስለ ኮርሶቻችን፣ ክፍያ፣ እና የትምህርት አጠቃቀም ማንኛውንም ጥያቄ መመለስ እችላለሁ።";
+        : "እኔ ፀሐይ AI እባላለሁ፤ የፀሐይ ካምፓስ ብልህ የድምፅ ረዳት ነኝ። ስለ ኮርሶቻችን፣ ክፍያ፣ እና የትምህርት አጠቃቀም ማንኛውንም ጥያቄ መመለስ እችላለሁ።");
       setAiResponse(msg);
       playSciFiSound('success');
       speakVoice(msg, () => resumeListeningForNextTurn());
       return;
     }
 
-    const isEng = selectedLangRef.current === 'en';
     setStatusMessage(isEng ? 'Processing...' : 'ትእዛዝዎን በማከናወን ላይ...');
     playSciFiSound('success');
 
     // 1. Navigation: Home Page (ወደ ዋናው ገጽ / መነሻ / ወደ ሆም ፔጅ)
     if (intent === 'home') {
-      const msg = isEng 
+      const msg = interruptPrefix + (isEng 
         ? 'Taking you to the home page.' 
-        : 'ወደ ዋናው መነሻ ገጽ (Home Page) እየወሰድኩዎት ነው።';
+        : 'ወደ ዋናው መነሻ ገጽ (Home Page) እየወሰድኩዎት ነው።');
       setAiResponse(msg);
       speakVoice(msg, () => {
         if (pathname === '/') {
@@ -617,9 +631,9 @@ export default function TsehayVoiceAssistant() {
 
     // 2. Navigation: All Courses (ኮርሶች / ስልጠናዎች)
     if (intent === 'courses') {
-      const msg = isEng 
+      const msg = interruptPrefix + (isEng 
         ? 'Taking you to our complete course catalog.' 
-        : 'ወደ ኮርሶች ዝርዝር እየወሰድኩዎት ነው። የሼን ኢምፖርት፣ የዩቲዩብ ስኬት እና የዲጂታል ማርኬቲንግ ስልጠናዎችን ይመልከቱ።';
+        : 'ወደ ኮርሶች ዝርዝር እየወሰድኩዎት ነው። የሼን ኢምፖርት፣ የዩቲዩብ ስኬት እና የዲጂታል ማርኬቲንግ ስልጠናዎችን ይመልከቱ።');
       setAiResponse(msg);
       speakVoice(msg, () => {
         router.push('/courses');
@@ -630,9 +644,9 @@ export default function TsehayVoiceAssistant() {
 
     // 3. Navigation: Payments & Checkout Modal (ክፍያ / ቴሌብር / ባንክ)
     if (intent === 'payment') {
-      const msg = isEng 
+      const msg = interruptPrefix + (isEng 
         ? 'Opening payment options. You can pay with Telebirr, CBE Birr, LakiPay, PayPal, or Cards.' 
-        : 'የክፍያ አማራጮችን ከፍቼልዎታለሁ። በቴሌብር፣ በሲቢኢ ብር (CBE Birr)፣ በLakiPay ወይም በካርድ መክፈል ይችላሉ።';
+        : 'የክፍያ አማራጮችን ከፍቼልዎታለሁ። በቴሌብር፣ በሲቢኢ ብር (CBE Birr)፣ በLakiPay ወይም በካርድ መክፈል ይችላሉ።');
       setAiResponse(msg);
       speakVoice(msg, () => {
         window.dispatchEvent(new CustomEvent('open-payment-modal'));
@@ -644,9 +658,9 @@ export default function TsehayVoiceAssistant() {
     // 4. Navigation: Login / Register Modal (ግባ / ተመዝገብ / አካውንት)
     if (intent === 'login' || intent === 'signup') {
       const isSignup = intent === 'signup';
-      const msg = isEng 
+      const msg = interruptPrefix + (isEng 
         ? (isSignup ? 'Opening the student registration window.' : 'Opening the login window.') 
-        : (isSignup ? 'የመመዝገቢያ መስኮት ከፍቼልዎታለሁ።' : 'የመግቢያ መስኮት ከፍቼልዎታለሁ።');
+        : (isSignup ? 'የመመዝገቢያ መስኮት ከፍቼልዎታለሁ።' : 'የመግቢያ መስኮት ከፍቼልዎታለሁ።'));
       setAiResponse(msg);
       speakVoice(msg, () => {
         window.dispatchEvent(new CustomEvent('open-auth-modal', { detail: { isSignupMode: isSignup, isSignUp: isSignup } }));
@@ -657,9 +671,9 @@ export default function TsehayVoiceAssistant() {
 
     // 5. Info Q&A: Address & Location (አድራሻ / የት ነው ያላችሁት?)
     if (intent === 'address') {
-      const msg = isEng 
+      const msg = interruptPrefix + (isEng 
         ? 'Our address is Bole, Addis Ababa, Ethiopia. We provide both online AI-assisted courses and practical training.' 
-        : 'አድራሻችን ቦሌ፣ አዲስ አበባ፣ ኢትዮጵያ ነው። በአካልም ሆነ በኦንላይን ስልጠናዎችን እንሰጣለን።';
+        : 'አድራሻችን ቦሌ፣ አዲስ አበባ፣ ኢትዮጵያ ነው። በአካልም ሆነ በኦንላይን ስልጠናዎችን እንሰጣለን።');
       setAiResponse(msg);
       speakVoice(msg, () => resumeListeningForNextTurn());
       return;
@@ -667,9 +681,9 @@ export default function TsehayVoiceAssistant() {
 
     // 6. Info Q&A: Phone Numbers & Contact (ስልክ ቁጥር / እንዴት ላግኛችሁ?)
     if (intent === 'phone') {
-      const msg = isEng 
+      const msg = interruptPrefix + (isEng 
         ? 'You can reach us by phone at 0980209090 (+251980209090), via WhatsApp, or on Telegram @TsehayTeam.' 
-        : 'በስልክ ቁጥር 0980209090፣ በዋትስአፕ ወይም በቴሌግራም @TsehayTeam በቀጥታ ሊያገኙን ይችላሉ።';
+        : 'በስልክ ቁጥር 0980209090፣ በዋትስአፕ ወይም በቴሌግራም @TsehayTeam በቀጥታ ሊያገኙን ይችላሉ።');
       setAiResponse(msg);
       speakVoice(msg, () => resumeListeningForNextTurn());
       return;
@@ -677,9 +691,9 @@ export default function TsehayVoiceAssistant() {
 
     // 7. Info Q&A: Founder & Instructor Eyoub Sahle (መስራች / ኢዮብ ሳህሌ)
     if (intent === 'founder') {
-      const msg = isEng 
+      const msg = interruptPrefix + (isEng 
         ? 'The founder and lead instructor of Tsehay Campus is Eyoub Sahle, founder of Tsehay Digital and professional digital marketer.' 
-        : 'የፀሐይ ካምፓስ መስራችና ዋና አሰልጣኝ ኢዮብ ሳህሌ (Eyoub Sahle) ነው። እሱ በዲጂታል ማርኬቲንግና በዩቲዩብ በርካታ ተማሪዎችን ያፈራ የTsehay Digital መስራች ነው።';
+        : 'የፀሐይ ካምፓስ መስራችና ዋና አሰልጣኝ ኢዮብ ሳህሌ (Eyoub Sahle) ነው። እሱ በዲጂታል ማርኬቲንግና በዩቲዩብ በርካታ ተማሪዎችን ያፈራ የTsehay Digital መስራች ነው።');
       setAiResponse(msg);
       speakVoice(msg, () => resumeListeningForNextTurn());
       return;
@@ -687,9 +701,9 @@ export default function TsehayVoiceAssistant() {
 
     // 8. Info Q&A: Shein Import Business Course (የሼን ስልጠና)
     if (intent === 'shein') {
-      const msg = isEng 
+      const msg = interruptPrefix + (isEng 
         ? 'The Shein Import Business course teaches you how to order profitable products directly from Shein to Ethiopia. Price is 4,500 ETB.' 
-        : 'የሼን ኢምፖርት ቢዝነስ ስልጠና በአነስተኛ ካፒታል እቃዎችን ከሼን አዘው በኢትዮጵያ የሚሸጡበትን መንገድ ያስተምራል። ዋጋው 4,500 ብር ነው።';
+        : 'የሼን ኢምፖርት ቢዝነስ ስልጠና በአነስተኛ ካፒታል እቃዎችን ከሼን አዘው በኢትዮጵያ የሚሸጡበትን መንገድ ያስተምራል። ዋጋው 4,500 ብር ነው።');
       setAiResponse(msg);
       speakVoice(msg, () => resumeListeningForNextTurn());
       return;
@@ -697,9 +711,9 @@ export default function TsehayVoiceAssistant() {
 
     // 9. Info Q&A: YouTube Success Course (የዩቲዩብ ስልጠና)
     if (intent === 'youtube') {
-      const msg = isEng 
+      const msg = interruptPrefix + (isEng 
         ? 'Our YouTube Mastery course teaches you how to launch channels from scratch and earn in USD. Price is 5,500 ETB.' 
-        : 'የዩቲዩብ ስልጠናችን የዩቲዩብ ቻናል ከዜሮ ከፍተው በዶላር ገቢ የሚያገኙበትን የተሟላ መንገድ ያስተምራል። ዋጋው 5,500 ብር ነው።';
+        : 'የዩቲዩብ ስልጠናችን የዩቲዩብ ቻናል ከዜሮ ከፍተው በዶላር ገቢ የሚያገኙበትን የተሟላ መንገድ ያስተምራል። ዋጋው 5,500 ብር ነው።');
       setAiResponse(msg);
       speakVoice(msg, () => resumeListeningForNextTurn());
       return;
@@ -720,20 +734,21 @@ export default function TsehayVoiceAssistant() {
 
       if (response.ok) {
         const data = await response.json();
-        let reply = (data.reply || data.text || (isEng ? 'Your question was received! Feel free to ask anything else.' : 'ጥያቄዎ ደርሶኛል! ተጨማሪ ማንኛውንም ጥያቄ መጠየቅ ይችላሉ።')).replace(/[*_#]/g, '').trim();
+        let rawReply = (data.reply || data.text || (isEng ? 'Your question was received! Feel free to ask anything else.' : 'ጥያቄዎ ደርሶኛል! ተጨማሪ ማንኛውንም ጥያቄ መጠየቅ ይችላሉ።')).replace(/[*_#]/g, '').trim();
+        let reply = interruptPrefix + rawReply;
         setAiResponse(reply);
         speakVoice(reply, () => resumeListeningForNextTurn());
       } else {
-        const defaultReply = isEng 
+        const defaultReply = interruptPrefix + (isEng 
           ? 'Got it! Explore our courses catalog or contact us at 0980209090.' 
-          : 'ጥያቄዎ ደርሶኛል! ስለ ፀሐይ ካምፓስ ስልጠናዎች፣ ክፍያና ምዝገባ በዝርዝር የኮርሶች ገጻችንን ይመልከቱ።';
+          : 'ጥያቄዎ ደርሶኛል! ስለ ፀሐይ ካምፓስ ስልጠናዎች፣ ክፍያና ምዝገባ በዝርዝር የኮርሶች ገጻችንን ይመልከቱ።');
         setAiResponse(defaultReply);
         speakVoice(defaultReply, () => resumeListeningForNextTurn());
       }
     } catch (e) {
-      const fallbackReply = isEng 
+      const fallbackReply = interruptPrefix + (isEng 
         ? 'Thank you! For more details, browse our courses or call 0980209090.' 
-        : 'ጥያቄዎ ደርሶኛል! ለተጨማሪ ዝርዝር የኮርሶች ገጻችንን መመልከት ወይም በ 0980209090 መደወል ይችላሉ።';
+        : 'ጥያቄዎ ደርሶኛል! ለተጨማሪ ዝርዝር የኮርሶች ገጻችንን መመልከት ወይም በ 0980209090 መደወል ይችላሉ።');
       setAiResponse(fallbackReply);
       speakVoice(fallbackReply, () => resumeListeningForNextTurn());
     } finally {
@@ -785,14 +800,18 @@ export default function TsehayVoiceAssistant() {
 
       recognition.onstart = () => {
         setIsListening(true);
-        setStatusMessage(selectedLangRef.current === 'en' ? 'Listening...' : 'እየሰማሁ ነው...');
+        if (!isSpeakingRef.current) {
+          setStatusMessage(selectedLangRef.current === 'en' ? 'Listening...' : 'እየሰማሁ ነው...');
+        }
         setupAudioAnalyser();
       };
 
       recognition.onresult = (event: SpeechRecognitionEvent) => {
-        // 🛑 IMMEDIATE BARGE-IN: If speech is heard while AI is speaking, interrupt AI immediately!
+        // 🛑 IMMEDIATE GEMINI LIVE BARGE-IN: If speech is heard while AI is speaking, interrupt AI audio instantly!
         if (isSpeakingRef.current) {
           stopVoiceOutput();
+          wasInterruptedRef.current = true;
+          setStatusMessage(selectedLangRef.current === 'en' ? 'Understood! Listening...' : 'እሺ፣ እያዳመጥኩ ነው...');
         }
 
         let rawFinalStr = '';
@@ -870,6 +889,7 @@ export default function TsehayVoiceAssistant() {
     // If AI is speaking, tapping immediately interrupts AI voice
     if (isSpeaking) {
       stopVoiceOutput();
+      wasInterruptedRef.current = true;
     }
 
     if (isListening) {
