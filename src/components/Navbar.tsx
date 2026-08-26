@@ -658,27 +658,22 @@ export default function Navbar() {
               </button>
             </div>
 
-            {/* 5. Staggered Item 5: Tsehay AI (Consistent Robot Icon & Highlighted Golden Border) */}
+            {/* 5. Staggered Item 5: Tsehay AI (Clean Standard Nav Card) */}
             <div className="animate-nav-stagger-5">
               <button 
                 type="button" 
                 onClick={() => { closeCurtain(); navigateTo('/#ai-feature'); }} 
-                className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-gradient-to-r from-[#f9b03c]/10 via-amber-500/15 to-[#f9b03c]/10 border border-[#f9b03c]/40 text-left cursor-pointer group shadow-sm transition-all duration-300 active:scale-[0.98]"
+                className="w-full flex items-center justify-between px-3 py-2 rounded-xl mobile-nav-card text-left cursor-pointer group"
               >
                 <div className="flex items-center gap-2.5">
-                  <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-200 text-slate-950 shadow-md font-black transition-transform group-hover:scale-110">
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-gray-100 dark:bg-white/10 text-[#f9b03c] transition-transform group-hover:scale-110">
                     <i className="fa-solid fa-robot text-xs"></i>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs sm:text-sm font-black text-gray-900 dark:text-white notranslate">
-                      Tsehay AI
-                    </span>
-                    <span className="text-[9px] bg-[#f9b03c]/20 text-[#f9b03c] font-black px-1.5 py-0.2 rounded-md border border-[#f9b03c]/30">
-                      24/7
-                    </span>
-                  </div>
+                  <span className="text-xs sm:text-sm font-bold text-gray-900 dark:text-white notranslate">
+                    Tsehay AI
+                  </span>
                 </div>
-                <i className="fa-solid fa-chevron-right text-[11px] text-[#f9b03c] group-hover:translate-x-0.5 transition-all"></i>
+                <i className="fa-solid fa-chevron-right text-[11px] text-gray-400 group-hover:text-[#f9b03c] group-hover:translate-x-0.5 transition-all"></i>
               </button>
             </div>
 

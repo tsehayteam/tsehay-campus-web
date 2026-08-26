@@ -81,7 +81,7 @@ export default function SmartSearchInput({
             placeholder={placeholder}
             className={
               compact 
-                ? "w-full bg-slate-900/80 dark:bg-slate-950/80 backdrop-blur-xl border border-white/10 shadow-[0_0_14px_rgba(0,0,0,0.4)] focus:border-[#f9b03c] focus:ring-1 focus:ring-[#f9b03c]/40 focus:shadow-[0_0_20px_rgba(249,176,60,0.3)] rounded-xl py-2 pl-9 pr-8 text-white font-medium outline-none transition-all duration-300 text-xs placeholder:text-gray-400"
+                ? "w-full bg-slate-900/80 dark:bg-slate-950/80 backdrop-blur-xl border-2 border-[#f9b03c]/70 shadow-[0_0_14px_rgba(249,176,60,0.35)] animate-pulse focus:animate-none focus:border-[#f9b03c] focus:ring-1 focus:ring-[#f9b03c]/50 rounded-xl py-2 pl-9 pr-8 text-white font-medium outline-none transition-all duration-300 text-xs placeholder:text-gray-300"
                 : "w-full bg-slate-900/70 dark:bg-[#0b0f19]/70 backdrop-blur-2xl border border-white/10 rounded-2xl py-4 sm:py-4.5 pl-13 sm:pl-14 pr-12 text-white font-medium outline-none focus:border-[#f9b03c] focus:ring-2 focus:ring-[#f9b03c]/25 focus:shadow-[0_0_30px_rgba(249,176,60,0.25)] transition-all duration-300 text-sm sm:text-base placeholder:font-normal placeholder:text-gray-400 shadow-[0_8px_30px_rgba(0,0,0,0.4)]"
             }
             style={{
@@ -90,22 +90,15 @@ export default function SmartSearchInput({
             }}
           />
 
-          {query ? (
+          {query && (
             <button 
-              type="button"
+              type="button" 
               onClick={() => setQuery('')} 
               className={`absolute ${compact ? 'right-3 text-xs' : 'right-5 text-sm'} top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#f9b03c] transition-colors cursor-pointer p-1`}
               aria-label="Clear search"
             >
               <i className="fa-solid fa-xmark"></i>
             </button>
-          ) : (
-            <div className={`absolute ${compact ? 'right-3' : 'right-4'} top-1/2 -translate-y-1/2 flex items-center pointer-events-none z-10`}>
-              <span className="relative flex h-2 w-2 sm:h-2.5 sm:w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#f9b03c] opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 sm:h-2.5 sm:w-2.5 bg-[#f9b03c] shadow-[0_0_8px_#f9b03c]"></span>
-              </span>
-            </div>
           )}
         </div>
       </div>
