@@ -280,11 +280,9 @@ export default function FloatingAIButton() {
           alert('እባክዎ የማይክሮፎን ፈቃድ ይስጡ (Please allow microphone access in browser settings).');
           stopVoiceRecordingWithoutSend();
         }
-        // Do not abort on 'no-speech' or 'network' to allow the user to speak
       };
 
       recognition.onend = () => {
-        // If recording was active, grab whatever text was transcribed
         if (voiceTranscriptRef.current.trim()) {
           setInput(voiceTranscriptRef.current.trim());
         }
@@ -701,27 +699,32 @@ export default function FloatingAIButton() {
           {/* 🎙️ Voice Recording Waveform Bar with Instant Send & Cancel */}
           {isRecordingVoice && (
             <div className="relative px-4 py-3 bg-gradient-to-r from-red-950 via-[#1e0d22] to-amber-950/90 border-t border-red-500/40 flex items-center justify-between z-10 animate-in slide-in-from-bottom-2">
-              <div className="flex items-center gap-2.5">
-                <span className="relative flex h-3 w-3">
+              <div className="flex items-center gap-2.5 min-w-0 flex-1 mr-2">
+                <span className="relative flex h-3 w-3 shrink-0">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
                 </span>
-                <span className="text-xs font-black text-amber-300">ድምፅዎን እያዳመጥኩ ነው... ({recordingDuration}s)</span>
+                <div className="flex flex-col min-w-0">
+                  <span className="text-[11px] font-black text-amber-300">ድምፅዎን እያዳመጥኩ ነው... ({recordingDuration}s)</span>
+                  <span className="text-xs text-white font-bold truncate">
+                    {input || voiceTranscriptRef.current || 'እየተናገሩ...'}
+                  </span>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 shrink-0">
                 <button 
                   type="button"
                   onClick={stopVoiceRecordingWithoutSend}
-                  className="bg-white/10 hover:bg-white/20 text-gray-300 text-xs font-bold px-2.5 py-1 rounded-xl transition cursor-pointer"
+                  className="bg-white/10 hover:bg-white/20 text-gray-300 text-xs font-bold px-2.5 py-1.5 rounded-xl transition cursor-pointer"
                 >
                   ሰርዝ
                 </button>
                 <button 
                   type="button"
                   onClick={stopAndSendVoice}
-                  className="bg-gradient-to-r from-[#f9b03c] to-amber-500 text-slate-950 text-xs font-black px-3.5 py-1 rounded-xl transition cursor-pointer shadow-md flex items-center gap-1.5 active:scale-95"
+                  className="bg-gradient-to-r from-[#f9b03c] via-amber-400 to-yellow-300 hover:brightness-110 text-slate-950 text-xs font-black px-4 py-1.5 rounded-xl transition cursor-pointer shadow-md flex items-center gap-1.5 active:scale-95 shadow-[0_0_15px_rgba(249,176,60,0.5)]"
                 >
-                  <i className="fa-solid fa-paper-plane text-[10px]"></i>
+                  <i className="fa-solid fa-paper-plane text-[11px]"></i>
                   <span>ላክ (Send)</span>
                 </button>
               </div>
