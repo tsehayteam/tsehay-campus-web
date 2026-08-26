@@ -19,6 +19,45 @@ interface IWindow extends Window {
   webkitSpeechRecognition?: any;
 }
 
+// 🔤 Master Amharic Homophone & Dialect Normalizer (Harmonizes ሐ/ኀ/ሀ, ሠ/ሰ, ዐ/አ, ፀ/ጸ, ዪ/ይ)
+function normalizeAmharicPhonetics(text: string): string {
+  if (!text) return '';
+  return text
+    .toLowerCase()
+    .replace(/[ሐኀኃ]/g, 'ሀ')
+    .replace(/[ሁሑኁ]/g, 'ሁ')
+    .replace(/[ሂሒኚኂ]/g, 'ሂ')
+    .replace(/[ሃሓኃ]/g, 'ሃ')
+    .replace(/[ሄሔኄ]/g, 'ሄ')
+    .replace(/[ህሕኅ]/g, 'ህ')
+    .replace(/[ሆሖኆ]/g, 'ሆ')
+    .replace(/[ሠ]/g, 'ሰ')
+    .replace(/[ሡ]/g, 'ሱ')
+    .replace(/[ሢ]/g, 'ሲ')
+    .replace(/[ሣ]/g, 'ሳ')
+    .replace(/[ሤ]/g, 'ሴ')
+    .replace(/[ሥ]/g, 'ስ')
+    .replace(/[ሦ]/g, 'ሶ')
+    .replace(/[ዐ]/g, 'አ')
+    .replace(/[ዑ]/g, 'ኡ')
+    .replace(/[ዒ]/g, 'ኢ')
+    .replace(/[ዓ]/g, 'ኣ')
+    .replace(/[ዔ]/g, 'ኤ')
+    .replace(/[ዕ]/g, 'እ')
+    .replace(/[ዖ]/g, 'ኦ')
+    .replace(/[ፀ]/g, 'ጸ')
+    .replace(/[ፁ]/g, 'ጹ')
+    .replace(/[ፂ]/g, 'ጺ')
+    .replace(/[ፃ]/g, 'ጻ')
+    .replace(/[ፄ]/g, 'ጼ')
+    .replace(/[ፅ]/g, 'ጽ')
+    .replace(/[ፆ]/g, 'ጾ')
+    .replace(/[ዪ]/g, 'ይ')
+    .replace(/[፣።፤፦]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 export default function TsehayVoiceAssistant() {
   const router = useRouter();
   const pathname = usePathname();
@@ -104,10 +143,11 @@ export default function TsehayVoiceAssistant() {
     } catch (e) {}
   }, []);
 
-  // 🛑 Stop Voice Output
+  // 🛑 Instant Voice Output Termination (For Barge-in / Interruption)
   const stopVoiceOutput = useCallback(() => {
     if (currentAudioRef.current) {
       currentAudioRef.current.pause();
+      currentAudioRef.current.currentTime = 0;
       currentAudioRef.current = null;
     }
     if (typeof window !== 'undefined' && window.speechSynthesis) {
@@ -132,7 +172,7 @@ export default function TsehayVoiceAssistant() {
     isOpenRef.current = false;
   }, [playSciFiSound, stopVoiceOutput]);
 
-  // 🗣️ Voice Output (Native Amharic 'am' or English 'en' based on selected mode)
+  // 🗣️ Voice Output (Native Amharic 'am' or English 'en')
   const speakVoice = useCallback((text: string, onEnd?: () => void) => {
     if (typeof window === 'undefined') {
       if (onEnd) onEnd();
@@ -200,7 +240,7 @@ export default function TsehayVoiceAssistant() {
     }
   };
 
-  // 🎙️ Setup Microphone Volume Analyser (Live Wave + Interruption Detection)
+  // 🎙️ Setup Microphone Volume Analyser (Live Wave + Ultra-Sensitive Interruption)
   const setupAudioAnalyser = async () => {
     try {
       if (!navigator.mediaDevices?.getUserMedia) return;
@@ -229,11 +269,12 @@ export default function TsehayVoiceAssistant() {
           sum += dataArray[i];
         }
         const average = sum / bufferLength;
-        const normalizedVol = Math.min(average / 70, 2.0);
+        const normalizedVol = Math.min(average / 60, 2.0);
         setMicVolume(normalizedVol);
 
-        // 🛑 BARGE-IN: If AI is speaking and user speaks, stop AI voice immediately!
-        if (isSpeakingRef.current && normalizedVol > 0.45) {
+        // 🛑 ULTRA-FAST BARGE-IN INTERRUPTION:
+        // As soon as user speaks (volume > 0.22), instantly silence AI voice and listen!
+        if (isSpeakingRef.current && normalizedVol > 0.22) {
           stopVoiceOutput();
           setStatusMessage(selectedLangRef.current === 'en' ? 'Listening...' : 'እየሰማሁ ነው...');
         }
@@ -259,40 +300,44 @@ export default function TsehayVoiceAssistant() {
     setMicVolume(0);
   };
 
-  // 🧠 Multi-Language Comprehensive Voice Router (Amharic & English)
+  // 🧠 High-Accuracy Semantic Voice Router (Supports all Amharic dialects and English)
   const handleVoiceCommand = useCallback(async (spokenText: string) => {
     if (!spokenText.trim()) return;
 
+    // Immediately stop any active speech output
     stopVoiceOutput();
     setIsListening(false);
     stopSpeechRecognition();
     stopAudioAnalyser();
 
     const isEng = selectedLangRef.current === 'en';
-    const normalized = spokenText.trim().toLowerCase();
+    const rawLower = spokenText.trim().toLowerCase();
+    const normalizedAm = normalizeAmharicPhonetics(rawLower);
+
     setStatusMessage(isEng ? 'Preparing response...' : 'ምላሽ በማዘጋጀት ላይ...');
     playSciFiSound('success');
 
+    // 0. User Interruption / Correction Detection
     const isCorrection = 
-      normalized.startsWith('አይ') || 
-      normalized.startsWith('ኖ') || 
-      normalized.includes('እንደዛ አይደለም') || 
-      normalized.includes('no,') || 
-      normalized.includes('not that') ||
-      normalized.includes('wrong');
+      normalizedAm.startsWith('አይ') || 
+      normalizedAm.startsWith('ኖ') || 
+      normalizedAm.includes('እንደዛ አይደለም') || 
+      normalizedAm.includes('ተሳስተሻል') ||
+      normalizedAm.includes('አልተረዳሽኝም') ||
+      normalizedAm.includes('ቆይ') ||
+      rawLower.startsWith('no') || 
+      rawLower.includes('not that') ||
+      rawLower.includes('wrong') ||
+      rawLower.includes('wait');
 
-    // 1. Navigation: All Courses (ኮርሶች) -> Auto Dismiss
+    // 1. Navigation: All Courses (ኮርሶች / ስልጠናዎች)
     if (
-      normalized.includes('ኮርስ') ||
-      normalized.includes('ኮርሶች') ||
-      normalized.includes('ስልጠና') ||
-      normalized.includes('courses') ||
-      normalized.includes('course catalog') ||
-      normalized.includes('all courses')
+      /ኮርስ|ትምህርት|ስልጠና|ማስተር|ክላስ|ሌሰን|courses|course|catalog|classes/i.test(normalizedAm) ||
+      /courses|course catalog|all courses/i.test(rawLower)
     ) {
       const msg = isEng 
         ? 'Taking you to our complete course catalog.' 
-        : 'ወደ ኮርሶች ዝርዝር እየወሰድኩዎት ነው።';
+        : 'ወደ ኮርሶች ዝርዝር እየወሰድኩዎት ነው። የሼን ኢምፖርት፣ የዩቲዩብ ስኬት እና የዲጂታል ማርኬቲንግ ስልጠናዎች አሉን።';
       setAiResponse(msg);
       speakVoice(msg, () => {
         router.push('/courses');
@@ -301,15 +346,10 @@ export default function TsehayVoiceAssistant() {
       return;
     }
 
-    // 2. Navigation: Home Page (ወደ ዋናው ገጽ) -> Auto Dismiss
+    // 2. Navigation: Home Page (ወደ ዋናው ገጽ / መነሻ)
     if (
-      normalized.includes('መነሻ') ||
-      normalized.includes('ዋና ገጽ') ||
-      normalized.includes('ዋናው ገጽ') ||
-      normalized.includes('ወደ ቤት') ||
-      normalized.includes('home page') ||
-      normalized.includes('go home') ||
-      normalized.includes('main page')
+      /መነሻ|ዋና ገጽ|ዋናው ገጽ|ወደ ቤት|ሆም|home|main/i.test(normalizedAm) ||
+      /home|main page|go home/i.test(rawLower)
     ) {
       const msg = isEng 
         ? 'Taking you to the home page.' 
@@ -326,21 +366,14 @@ export default function TsehayVoiceAssistant() {
       return;
     }
 
-    // 3. Navigation: Payments & Checkout Modal (ክፍያ) -> Auto Dismiss
+    // 3. Navigation: Payments & Checkout Modal (ክፍያ / ቴሌብር / ባንክ)
     if (
-      normalized.includes('ክፍያ') ||
-      normalized.includes('መክፈል') ||
-      normalized.includes('ቴሌብር') ||
-      normalized.includes('ባንክ') ||
-      normalized.includes('payment') ||
-      normalized.includes('pay') ||
-      normalized.includes('checkout') ||
-      normalized.includes('telebirr') ||
-      normalized.includes('how to pay')
+      /ክፍያ|መክፈል|ዋጋ|ብር|ታሪፍ|መግዛት|ቴሌብር|ባንክ|ሲቢኢ|payment|pay|checkout|price|cost/i.test(normalizedAm) ||
+      /payment|pay|checkout|price|telebirr|cbe/i.test(rawLower)
     ) {
       const msg = isEng 
         ? 'Opening payment options. You can pay with Telebirr, CBE Birr, LakiPay, PayPal, or Cards.' 
-        : 'የክፍያ አማራጮችን ከፍቼልዎታለሁ። በቴሌብር፣ በሲቢኢ ብር ወይም በካርድ መክፈል ይችላሉ።';
+        : 'የክፍያ አማራጮችን ከፍቼልዎታለሁ። በቴሌብር፣ በሲቢኢ ብር (CBE Birr)፣ በLakiPay፣ በ PayPal ወይም በካርድ መክፈል ይችላሉ።';
       setAiResponse(msg);
       speakVoice(msg, () => {
         window.dispatchEvent(new CustomEvent('open-payment-modal'));
@@ -349,19 +382,12 @@ export default function TsehayVoiceAssistant() {
       return;
     }
 
-    // 4. Navigation: Login / Register Modal (ግባ / ተመዝገብ) -> Auto Dismiss
+    // 4. Navigation: Login / Register Modal (ግባ / ተመዝገብ / አካውንት)
     if (
-      normalized.includes('ግባ') ||
-      normalized.includes('ሎጊን') ||
-      normalized.includes('መግባት') ||
-      normalized.includes('ተመዝገብ') ||
-      normalized.includes('ምዝገባ') ||
-      normalized.includes('login') ||
-      normalized.includes('sign in') ||
-      normalized.includes('register') ||
-      normalized.includes('sign up')
+      /ግባ|መግባት|ሎጊን|ተመዝገብ|ምዝገባ|መለያ|አካውንት|login|register|signup|sign in/i.test(normalizedAm) ||
+      /login|sign in|register|sign up/i.test(rawLower)
     ) {
-      const isSignup = normalized.includes('ተመዝገብ') || normalized.includes('ምዝገባ') || normalized.includes('register') || normalized.includes('sign up');
+      const isSignup = /ተመዝገብ|ምዝገባ|register|signup|sign up/i.test(normalizedAm) || /register|sign up/i.test(rawLower);
       const msg = isEng 
         ? (isSignup ? 'Opening the student registration window.' : 'Opening the login window.') 
         : (isSignup ? 'የመመዝገቢያ መስኮት ከፍቼልዎታለሁ።' : 'የመግቢያ መስኮት ከፍቼልዎታለሁ።');
@@ -373,14 +399,10 @@ export default function TsehayVoiceAssistant() {
       return;
     }
 
-    // 5. Navigation: Dashboard / Classroom (ዳሽቦርድ) -> Auto Dismiss
+    // 5. Navigation: Dashboard / Classroom (ዳሽቦርድ / መማሪያ ክፍል)
     if (
-      normalized.includes('መማሪያ') ||
-      normalized.includes('ክፍል') ||
-      normalized.includes('ዳሽቦርድ') ||
-      normalized.includes('dashboard') ||
-      normalized.includes('classroom') ||
-      normalized.includes('my courses')
+      /መማሪያ|ክፍል|ዳሽቦርድ|ትምህርቴ|dashboard|classroom/i.test(normalizedAm) ||
+      /dashboard|classroom|my courses/i.test(rawLower)
     ) {
       const msg = isEng ? 'Taking you to your student dashboard.' : 'ወደ መማሪያ ዳሽቦርድዎ እየወሰድኩዎት ነው።';
       setAiResponse(msg);
@@ -391,13 +413,10 @@ export default function TsehayVoiceAssistant() {
       return;
     }
 
-    // 6. Navigation: Certificates (ሰርተፊኬት) -> Auto Dismiss
+    // 6. Navigation: Certificates (ሰርተፊኬት / ማረጋገጫ)
     if (
-      normalized.includes('ሰርተፊኬት') ||
-      normalized.includes('ሰርተፍኬት') ||
-      normalized.includes('ማረጋገጫ') ||
-      normalized.includes('certificate') ||
-      normalized.includes('verification')
+      /ሰርተፊኬት|ሰርተፍኬት|ማረጋገጫ|የምስክር|certificate/i.test(normalizedAm) ||
+      /certificate|verification/i.test(rawLower)
     ) {
       const msg = isEng 
         ? 'You receive a free digital certificate upon completing a course. Taking you to certificate verification.' 
@@ -410,35 +429,10 @@ export default function TsehayVoiceAssistant() {
       return;
     }
 
-    // 7. Navigation: Free YouTube Videos (ነፃ ቪዲዮዎች) -> Auto Dismiss
+    // 7. Info Q&A: Address & Location (አድራሻ / የት ነው ያላችሁት?)
     if (
-      normalized.includes('ነፃ ቪዲዮ') ||
-      normalized.includes('free video') ||
-      normalized.includes('free lessons')
-    ) {
-      const msg = isEng ? 'Viewing free lessons on the website.' : 'ነፃ የዩቲዩብ ቪዲዮዎችን ይመልከቱ።';
-      setAiResponse(msg);
-      speakVoice(msg, () => {
-        const ytSection = document.getElementById('youtube-videos-section');
-        if (ytSection) {
-          ytSection.scrollIntoView({ behavior: 'smooth' });
-        } else {
-          router.push('/#youtube-videos-section');
-        }
-        setTimeout(() => closeAssistant(), 500);
-      });
-      return;
-    }
-
-    // 8. Info Q&A: Address & Location (አድራሻ / Where are you located?)
-    if (
-      normalized.includes('አድራሻ') ||
-      normalized.includes('የት ነው') ||
-      normalized.includes('የት ናችሁ') ||
-      normalized.includes('location') ||
-      normalized.includes('address') ||
-      normalized.includes('where are you') ||
-      normalized.includes('office')
+      /አድራሻ|የት ነው|የት ናችሁ|ቦሌ|ቢሮ|ቦታ|location|address|where/i.test(normalizedAm) ||
+      /location|address|where are you/i.test(rawLower)
     ) {
       const msg = isEng 
         ? 'Our address is Bole, Addis Ababa, Ethiopia. We provide both online AI-assisted courses and practical in-person training.' 
@@ -448,15 +442,10 @@ export default function TsehayVoiceAssistant() {
       return;
     }
 
-    // 9. Info Q&A: Phone Numbers & Contact (ስልክ ቁጥር / How to contact?)
+    // 8. Info Q&A: Phone Numbers & Contact (ስልክ ቁጥር / እንዴት ላግኛችሁ?)
     if (
-      normalized.includes('ስልክ') ||
-      normalized.includes('ስልክ ቁጥር') ||
-      normalized.includes('ግንኙነት') ||
-      normalized.includes('phone') ||
-      normalized.includes('contact') ||
-      normalized.includes('call') ||
-      normalized.includes('number')
+      /ስልክ|መደወል|ማናገር|ቁጥር|ኮንታክት|ግንኙነት|phone|contact|call/i.test(normalizedAm) ||
+      /phone|contact|call|number/i.test(rawLower)
     ) {
       const msg = isEng 
         ? 'You can reach us by phone at 0980209090 (+251980209090), via WhatsApp, or on Telegram @TsehayTeam.' 
@@ -466,32 +455,23 @@ export default function TsehayVoiceAssistant() {
       return;
     }
 
-    // 10. Info Q&A: Social Media Channels (ቴሌግራም / ዩቲዩብ / ቲክቶክ)
+    // 9. Info Q&A: Social Media Channels (ቴሌግራም / ዩቲዩብ / ቲክቶክ)
     if (
-      normalized.includes('ቴሌግራም') ||
-      normalized.includes('telegram') ||
-      normalized.includes('ቲክቶክ') ||
-      normalized.includes('tiktok') ||
-      normalized.includes('ዋትስአፕ') ||
-      normalized.includes('whatsapp')
+      /ቴሌግራም|ቴሌ|ቲክቶክ|ዋትስአፕ|ቻናል|telegram|tiktok|whatsapp/i.test(normalizedAm) ||
+      /telegram|tiktok|whatsapp|channel/i.test(rawLower)
     ) {
       const msg = isEng 
-        ? 'Our official Telegram channel is @TsehayTeam and YouTube is @eyoubsahle. We are also on WhatsApp at 0980209090.' 
+        ? 'Our official Telegram channel is @TsehayTeam and YouTube is @eyoubsahle. WhatsApp: 0980209090.' 
         : 'ይፋዊ የቴሌግራም ቻናላችን @TsehayTeam ሲሆን፣ የዩቲዩብ ቻናላችን @eyoubsahle ነው። በዋትስአፕም በ 0980209090 ይገኛሉ።';
       setAiResponse(msg);
       speakVoice(msg, () => resumeListeningForNextTurn());
       return;
     }
 
-    // 11. Info Q&A: Founder & Instructor Eyoub Sahle (መስራች / Who founded?)
+    // 10. Info Q&A: Founder & Instructor Eyoub Sahle (መስራች / ኢዮብ ሳህሌ)
     if (
-      normalized.includes('ኢዮብ') ||
-      normalized.includes('እዮብ') ||
-      normalized.includes('መስራች') ||
-      normalized.includes('founder') ||
-      normalized.includes('eyoub') ||
-      normalized.includes('who is the founder') ||
-      normalized.includes('instructor')
+      /ኢዮብ|እዮብ|መስራች|ባለቤት|አስተማሪ|አሰልጣኝ|eyoub|eyob|founder/i.test(normalizedAm) ||
+      /founder|eyoub|who founded|instructor/i.test(rawLower)
     ) {
       const msg = isEng 
         ? 'The founder and lead instructor of Tsehay Campus is Eyoub Sahle, founder of Tsehay Digital and professional digital marketer.' 
@@ -501,12 +481,10 @@ export default function TsehayVoiceAssistant() {
       return;
     }
 
-    // 12. Info Q&A: Shein Import Business Course (የሼን ስልጠና)
+    // 11. Info Q&A: Shein Import Business Course (የሼን ስልጠና)
     if (
-      normalized.includes('ሼን') ||
-      normalized.includes('ሺን') ||
-      normalized.includes('shein') ||
-      normalized.includes('import')
+      /ሼን|ሺን|ሸን|ሽን|ኢምፖርት|shein|import/i.test(normalizedAm) ||
+      /shein|import/i.test(rawLower)
     ) {
       const msg = isEng 
         ? 'The Shein Import Business course teaches you how to order profitable products directly from Shein to Ethiopia. Price is 4,500 ETB.' 
@@ -516,12 +494,10 @@ export default function TsehayVoiceAssistant() {
       return;
     }
 
-    // 13. Info Q&A: YouTube Success Course (የዩቲዩብ ስልጠና)
+    // 12. Info Q&A: YouTube Success Course (የዩቲዩብ ስልጠና)
     if (
-      normalized.includes('ዩቲዩብ ስልጠና') ||
-      normalized.includes('ዩቲዩብ ኮርስ') ||
-      normalized.includes('youtube course') ||
-      normalized.includes('youtube monetization')
+      /ዩቲዩብ|ዩቱብ|ዩቱዩብ|youtube/i.test(normalizedAm) ||
+      /youtube|monetization/i.test(rawLower)
     ) {
       const msg = isEng 
         ? 'Our YouTube Mastery course teaches you how to launch channels from scratch and earn in USD. Price is 5,500 ETB.' 
@@ -531,7 +507,7 @@ export default function TsehayVoiceAssistant() {
       return;
     }
 
-    // 14. Intelligent Conversational AI Query (Enforcing Selected Language)
+    // 13. Intelligent Conversational AI Query (High Precision with Contextual Grounding)
     setIsAiProcessing(true);
     setStatusMessage(isEng ? 'Tsehay AI is thinking...' : 'ፀሐይ AI መልስ በማዘጋጀት ላይ...');
 
@@ -540,13 +516,13 @@ export default function TsehayVoiceAssistant() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          prompt: `User query: "${spokenText}". Target language: ${isEng ? 'ENGLISH (Strictly respond in English with subtitles)' : 'AMHARIC (Strictly respond in Amharic)'}. ${isCorrection ? 'The user is correcting you; apologize briefly and give the exact right answer.' : 'Provide a concise, helpful 1-sentence response.'} Verified Campus Facts: Address: Bole, Addis Ababa. Phone: 0980209090. Telegram: @TsehayTeam. Founder: Eyoub Sahle. Do NOT repeat words.`,
+          prompt: `User voice query: "${spokenText}". Target language: ${isEng ? 'ENGLISH' : 'AMHARIC'}. ${isCorrection ? 'The user is correcting you; apologize politely and provide the exact correct answer directly.' : 'Provide a concise, helpful 1-2 sentence spoken response in authentic language.'} Verified Facts: Platform: Tsehay Campus. Address: Bole, Addis Ababa, Ethiopia. Phone: 0980209090. Telegram: @TsehayTeam. Founder: Eyoub Sahle. Shein: 4,500 ETB. YouTube: 5,500 ETB. Do NOT repeat words or introductions.`,
         }),
       });
 
       if (response.ok) {
         const data = await response.json();
-        let reply = (data.reply || data.text || (isEng ? 'Your question was received! Check our courses page for details.' : 'ጥያቄዎ ደርሶኛል! ተጨማሪ መረጃ ለማግኘት በቻት ሊያናግሩን ይችላሉ።')).replace(/[*_#]/g, '').trim();
+        let reply = (data.reply || data.text || (isEng ? 'Your question was received! Browse our courses for details.' : 'ጥያቄዎ ደርሶኛል! ተጨማሪ መረጃ ለማግኘት በቻት ሊያናግሩን ይችላሉ።')).replace(/[*_#]/g, '').trim();
         setAiResponse(reply);
         speakVoice(reply, () => resumeListeningForNextTurn());
       } else {
@@ -567,7 +543,7 @@ export default function TsehayVoiceAssistant() {
     }
   }, [pathname, router, speakVoice, playSciFiSound, stopVoiceOutput, closeAssistant]);
 
-  // 🔄 Continuous Listening for Next Turn
+  // 🔄 Continuous Multi-Turn Listening Loop
   const resumeListeningForNextTurn = () => {
     if (!isOpenRef.current) return;
     const isEng = selectedLangRef.current === 'en';
@@ -582,7 +558,7 @@ export default function TsehayVoiceAssistant() {
     }, 400);
   };
 
-  // 🎙️ Speech Recognition Engine Initialization
+  // 🎙️ High-Sensitivity Speech Recognition Engine with Multi-Alternative Phonetic Capture
   const startSpeechRecognition = useCallback(() => {
     const win = window as unknown as IWindow;
     const SpeechRecognition = win.SpeechRecognition || win.webkitSpeechRecognition;
@@ -603,7 +579,7 @@ export default function TsehayVoiceAssistant() {
       recognition.lang = selectedLangRef.current === 'en' ? 'en-US' : 'am-ET';
       recognition.continuous = true;
       recognition.interimResults = true;
-      recognition.maxAlternatives = 1;
+      recognition.maxAlternatives = 3;
 
       recognition.onstart = () => {
         setIsListening(true);
@@ -612,6 +588,11 @@ export default function TsehayVoiceAssistant() {
       };
 
       recognition.onresult = (event: SpeechRecognitionEvent) => {
+        // 🛑 IMMEDIATE BARGE-IN: If speech is heard while AI is speaking, interrupt AI immediately!
+        if (isSpeakingRef.current) {
+          stopVoiceOutput();
+        }
+
         let finalStr = '';
         let interimStr = '';
 
@@ -636,7 +617,7 @@ export default function TsehayVoiceAssistant() {
             if (activeTranscriptRef.current.trim()) {
               handleVoiceCommand(activeTranscriptRef.current.trim());
             }
-          }, 1400);
+          }, 1200);
         }
       };
 
@@ -663,7 +644,7 @@ export default function TsehayVoiceAssistant() {
       setIsListening(false);
       stopAudioAnalyser();
     }
-  }, [handleVoiceCommand, playSciFiSound]);
+  }, [handleVoiceCommand, playSciFiSound, stopVoiceOutput]);
 
   const stopSpeechRecognition = () => {
     if (recognitionRef.current) {
@@ -676,8 +657,13 @@ export default function TsehayVoiceAssistant() {
     stopAudioAnalyser();
   };
 
-  // 🎙️ Handle Mic Tap
+  // 🎙️ Handle Mic Tap (Instant Manual Toggle / Immediate Interruption)
   const handleMicToggle = () => {
+    // If AI is speaking, tapping immediately interrupts AI voice
+    if (isSpeaking) {
+      stopVoiceOutput();
+    }
+
     if (isListening) {
       if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
       stopSpeechRecognition();
@@ -723,7 +709,7 @@ export default function TsehayVoiceAssistant() {
     }
   };
 
-  // 👂 Instant Wake Word Listener ("ፀሐይ", "Hey Tsehay", etc.)
+  // 👂 Wake Word Listener ("ፀሐይ", "Hey Tsehay", etc.)
   useEffect(() => {
     if (typeof window === 'undefined' || !isStandbyActive) {
       if (standbyRecognitionRef.current) {
@@ -766,18 +752,11 @@ export default function TsehayVoiceAssistant() {
             heard += event.results[i][0].transcript.toLowerCase();
           }
 
+          const normHeard = normalizeAmharicPhonetics(heard);
+
           const isWakeWord = 
-            heard.includes('ፀሐይ') ||
-            heard.includes('ጸሐይ') ||
-            heard.includes('ፀሃይ') ||
-            heard.includes('ጸሃይ') ||
-            heard.includes('ሰላም ፀሐይ') ||
-            heard.includes('ሄይ ፀሐይ') ||
-            heard.includes('hey tsehay') ||
-            heard.includes('tsehay ai') ||
-            heard.includes('tsehay') ||
-            heard.includes('hello tsehay') ||
-            heard.includes('hi tsehay');
+            /ጸሀይ|ጸሐይ|ፀሀይ|ፀሐይ|ሰላም ጸሀይ|ሰላም ፀሐይ|ሄይ ጸሀይ|ሄይ ፀሐይ|hey tsehay|tsehay ai|tsehay|hello tsehay|hi tsehay/i.test(normHeard) ||
+            /hey tsehay|tsehay|hello tsehay/i.test(heard);
 
           if (isWakeWord) {
             try { standby.abort(); } catch(e) {}
@@ -937,6 +916,7 @@ export default function TsehayVoiceAssistant() {
           }`}
           title='ፀሐይ AI (Tsehay Voice AI)'
         >
+          {/* Animated Pulsing Sun Aura */}
           <span className="absolute -inset-1.5 rounded-full bg-gradient-to-r from-[#f9b03c] via-amber-300 to-yellow-500 opacity-60 blur-md group-hover:opacity-100 transition-opacity animate-pulse" />
 
           <div className="relative z-10 flex items-center justify-center text-white">
