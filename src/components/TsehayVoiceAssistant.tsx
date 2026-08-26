@@ -407,7 +407,6 @@ export default function TsehayVoiceAssistant() {
       currentAudioRef.current = audio;
 
       // 🎙️ FULL-DUPLEX PARALLEL LISTENING:
-      // Ensure speech recognition stays actively listening while AI speaks so any barge-in is instant!
       if (isOpenRef.current && !recognitionRef.current) {
         startSpeechRecognition();
       }
@@ -487,10 +486,10 @@ export default function TsehayVoiceAssistant() {
           sum += dataArray[i];
         }
         const average = sum / bufferLength;
-        const normalizedVol = Math.min(average / 60, 2.0);
+        const normalizedVol = Math.min(average / 50, 2.5);
         setMicVolume(normalizedVol);
 
-        // 🛑 GEMINI LIVE BARGE-IN: As soon as user speaks (volume > 0.16), stop AI voice immediately!
+        // 🛑 GEMINI LIVE BARGE-IN: If speech detected while AI speaks, stop audio immediately
         if (isSpeakingRef.current && normalizedVol > 0.16) {
           stopVoiceOutput();
           wasInterruptedRef.current = true;
@@ -761,7 +760,6 @@ export default function TsehayVoiceAssistant() {
     if (!isOpenRef.current) return;
     const isEng = selectedLangRef.current === 'en';
 
-    // Auto-fade / clear previous speech & AI response captions after speech completion so screen stays pristine
     if (captionDismissTimerRef.current) clearTimeout(captionDismissTimerRef.current);
     captionDismissTimerRef.current = setTimeout(() => {
       if (isOpenRef.current && !isSpeakingRef.current) {
@@ -1006,9 +1004,7 @@ export default function TsehayVoiceAssistant() {
           }
         };
 
-        standby.onerror = () => {
-          // Keep listening resiliently on network/no-speech errors
-        };
+        standby.onerror = () => {};
 
         standby.onend = () => {
           if (isStandbyActive && !isOpenRef.current && !isRestarting) {
@@ -1059,7 +1055,7 @@ export default function TsehayVoiceAssistant() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, toggleAssistant, closeAssistant]);
 
-  // ☀️ 🎨 3D Holographic Sun Pulse Visualizer
+  // 🌊 🎨 Authentic Apple Siri Fluid Multi-Ribbon Waveform Visualizer
   useEffect(() => {
     if (!isOpen) {
       if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
@@ -1078,62 +1074,59 @@ export default function TsehayVoiceAssistant() {
 
       const width = canvas.width;
       const height = canvas.height;
-      const centerX = width / 2;
       const centerY = height / 2;
 
-      const energy = isListening ? 1.0 + micVolume * 1.8 : isSpeaking && !isAudioPaused ? 1.4 : 0.65;
-      const baseRadius = 15 * energy;
+      // Energy factor based on voice activity
+      const energy = isListening 
+        ? Math.max(0.4, micVolume * 1.6) 
+        : isSpeaking && !isAudioPaused 
+        ? 1.1 + Math.sin(step * 0.15) * 0.35
+        : 0.25;
 
-      // 1. Glowing Radial Bloom
-      const bloomGrad = ctx.createRadialGradient(centerX, centerY, 3, centerX, centerY, baseRadius * 2.5);
-      bloomGrad.addColorStop(0, 'rgba(255, 230, 109, 0.95)');
-      bloomGrad.addColorStop(0.4, 'rgba(249, 176, 60, 0.5)');
-      bloomGrad.addColorStop(1, 'rgba(245, 158, 11, 0)');
+      // Siri's 4 Iconic Chromatic Ribbons:
+      // 1. Electric Cyan (#00F0FF)
+      // 2. Neon Magenta (#FF2D55)
+      // 3. Electric Purple (#A855F7)
+      // 4. Solar Gold (#F59E0B)
+      const ribbons = [
+        { color: 'rgba(0, 240, 255, 0.75)', freq: 0.022, amp: 18 * energy, speed: 0.06, phase: 0 },
+        { color: 'rgba(255, 45, 85, 0.7)', freq: 0.018, amp: 22 * energy, speed: -0.05, phase: Math.PI / 3 },
+        { color: 'rgba(168, 85, 247, 0.8)', freq: 0.025, amp: 16 * energy, speed: 0.045, phase: Math.PI / 1.5 },
+        { color: 'rgba(245, 158, 11, 0.75)', freq: 0.015, amp: 14 * energy, speed: -0.04, phase: Math.PI }
+      ];
 
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, baseRadius * 2.5, 0, Math.PI * 2);
-      ctx.fillStyle = bloomGrad;
-      ctx.fill();
-
-      // 2. Radiating Solar Rays
-      const numRays = 16;
-      ctx.save();
-      ctx.translate(centerX, centerY);
-      for (let i = 0; i < numRays; i++) {
-        const angle = (i * Math.PI * 2) / numRays + step * 0.025;
-        const rayAmp = Math.sin(step * 0.1 + i * 1.5) * (5 * energy) + (9 * energy);
-        const startR = baseRadius * 0.9;
-        const endR = startR + rayAmp;
-
-        const x1 = Math.cos(angle) * startR;
-        const y1 = Math.sin(angle) * startR;
-        const x2 = Math.cos(angle) * endR;
-        const y2 = Math.sin(angle) * endR;
-
+      // Draw each smooth flowing sine wave ribbon
+      ribbons.forEach((ribbon) => {
         ctx.beginPath();
-        ctx.moveTo(x1, y1);
-        ctx.lineTo(x2, y2);
-        ctx.strokeStyle = i % 2 === 0 ? 'rgba(255, 214, 10, 0.85)' : 'rgba(249, 176, 60, 0.7)';
-        ctx.lineWidth = 2.0;
+        ctx.lineWidth = 3.0;
+        ctx.strokeStyle = ribbon.color;
+        ctx.shadowBlur = 14;
+        ctx.shadowColor = ribbon.color;
         ctx.lineCap = 'round';
-        ctx.shadowBlur = 8;
-        ctx.shadowColor = '#f9b03c';
-        ctx.stroke();
-      }
-      ctx.restore();
 
-      // 3. Central Solid Golden Sun Core
-      const coreGrad = ctx.createRadialGradient(centerX - 2, centerY - 2, 1, centerX, centerY, baseRadius);
-      coreGrad.addColorStop(0, '#ffffff');
-      coreGrad.addColorStop(0.35, '#ffea79');
-      coreGrad.addColorStop(0.75, '#f9b03c');
-      coreGrad.addColorStop(1, '#d97706');
+        for (let x = 0; x <= width; x += 3) {
+          // Windowing envelope (attenuate at left and right edges for fluid floating wave look)
+          const envelope = Math.sin((x / width) * Math.PI);
+          const y = centerY + Math.sin(x * ribbon.freq + step * ribbon.speed + ribbon.phase) * (ribbon.amp * envelope);
+
+          if (x === 0) {
+            ctx.moveTo(x, y);
+          } else {
+            ctx.lineTo(x, y);
+          }
+        }
+        ctx.stroke();
+      });
+
+      // Central glowing particle nodes
+      const glowGrad = ctx.createRadialGradient(width / 2, centerY, 0, width / 2, centerY, 40 * energy);
+      glowGrad.addColorStop(0, 'rgba(255, 255, 255, 0.5)');
+      glowGrad.addColorStop(0.5, 'rgba(0, 240, 255, 0.2)');
+      glowGrad.addColorStop(1, 'rgba(168, 85, 247, 0)');
 
       ctx.beginPath();
-      ctx.arc(centerX, centerY, baseRadius * 0.85, 0, Math.PI * 2);
-      ctx.fillStyle = coreGrad;
-      ctx.shadowBlur = 14;
-      ctx.shadowColor = '#f9b03c';
+      ctx.arc(width / 2, centerY, 40 * energy, 0, Math.PI * 2);
+      ctx.fillStyle = glowGrad;
       ctx.fill();
 
       step += 1;
@@ -1149,7 +1142,7 @@ export default function TsehayVoiceAssistant() {
 
   return (
     <>
-      {/* 🌟 1. FLOATING TSEHAY SUN BUTTON */}
+      {/* 🌟 1. APPLE SIRI GLOWING LUMINESCENT WAVE ORB (Floating Button) */}
       <div 
         className="fixed bottom-8 right-6 sm:bottom-10 sm:right-8 z-[9985] flex flex-col items-end gap-2 select-none"
         style={{ willChange: 'transform' }}
@@ -1157,48 +1150,59 @@ export default function TsehayVoiceAssistant() {
         <button
           type="button"
           onClick={toggleAssistant}
-          aria-label="ፀሐይ AI ድምፅ ረዳት (Tsehay Voice AI)"
-          className={`relative group flex items-center justify-center w-13 h-13 sm:w-14 sm:h-14 rounded-full shadow-[0_0_30px_rgba(249,176,60,0.55)] transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-90 cursor-pointer ${
+          aria-label="ፀሐይ Siri Voice AI"
+          className={`relative group flex items-center justify-center w-14 h-14 sm:w-15 sm:h-15 rounded-full transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] active:scale-90 cursor-pointer ${
             isOpen 
-              ? 'bg-gradient-to-tr from-red-500 via-amber-500 to-[#f9b03c] scale-105 border-2 border-white'
-              : 'bg-gradient-to-tr from-[#0b132b] via-[#1c2541] to-[#030509] border-2 border-[#f9b03c] hover:scale-110'
+              ? 'scale-105 shadow-[0_0_35px_rgba(255,45,85,0.7)]'
+              : 'hover:scale-110 shadow-[0_0_30px_rgba(0,240,255,0.45),0_0_20px_rgba(168,85,247,0.35)]'
           }`}
-          title='ፀሐይ AI (Tsehay Voice AI)'
+          title="Tsehay Siri Voice AI"
         >
-          {/* Animated Pulsing Sun Aura */}
-          <span className="absolute -inset-1.5 rounded-full bg-gradient-to-r from-[#f9b03c] via-amber-300 to-yellow-500 opacity-60 blur-md group-hover:opacity-100 transition-opacity animate-pulse" />
+          {/* Animated Multi-Color Apple Siri Halo Ring */}
+          <span 
+            className="absolute -inset-2 rounded-full bg-gradient-to-tr from-[#00f0ff] via-[#a855f7] via-[#ff2d55] to-[#f59e0b] opacity-75 blur-md group-hover:opacity-100 transition-opacity animate-spin-slow" 
+            style={{ animationDuration: '6s' }}
+          />
 
-          <div className="relative z-10 flex items-center justify-center text-white">
+          {/* Siri Glass Inner Sphere */}
+          <div className="relative z-10 w-full h-full rounded-full bg-black/90 backdrop-blur-xl border border-white/25 flex items-center justify-center overflow-hidden shadow-inner">
+            
+            {/* Dynamic Swirling Siri Waveform Core */}
+            <div className="absolute inset-0 bg-gradient-to-tr from-cyan-500/30 via-fuchsia-500/20 to-amber-500/20 animate-pulse" />
+
             {isOpen ? (
-              <i className="fa-solid fa-xmark text-lg text-white"></i>
+              <i className="fa-solid fa-xmark text-lg text-white relative z-20"></i>
             ) : (
-              <div className="flex items-center justify-center relative">
-                <i className="fa-solid fa-sun text-xl text-[#f9b03c] group-hover:rotate-45 transition-transform duration-500"></i>
-                <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#f9b03c] opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#f9b03c]"></span>
-                </span>
+              <div className="relative z-20 flex items-center justify-center gap-0.5">
+                {/* Modern Siri 5-Bar Dynamic Frequency Wave */}
+                <span className="w-1 h-3 rounded-full bg-[#00f0ff] animate-pulse"></span>
+                <span className="w-1 h-5 rounded-full bg-[#a855f7] animate-bounce" style={{ animationDelay: '0.1s' }}></span>
+                <span className="w-1 h-7 rounded-full bg-[#ff2d55] animate-pulse" style={{ animationDelay: '0.2s' }}></span>
+                <span className="w-1 h-5 rounded-full bg-[#f59e0b] animate-bounce" style={{ animationDelay: '0.3s' }}></span>
+                <span className="w-1 h-3 rounded-full bg-[#00f0ff] animate-pulse" style={{ animationDelay: '0.4s' }}></span>
               </div>
             )}
           </div>
         </button>
       </div>
 
-      {/* 🔮 2. FUTURISTIC 3D HOLOGRAPHIC VIDEO HUD CAPSULE */}
+      {/* 🔮 2. SLEEK APPLE SIRI DYNAMIC BOTTOM HUD CAPSULE & FLUID WAVEFORM */}
       {isOpen && (
         <div 
-          className="fixed bottom-24 sm:bottom-28 left-1/2 -translate-x-1/2 w-[90vw] sm:w-[360px] max-w-sm z-[9990] flex flex-col items-center animate-in slide-in-from-bottom-8 duration-300 pointer-events-auto"
+          className="fixed bottom-6 sm:bottom-8 left-1/2 -translate-x-1/2 w-[92vw] sm:w-[390px] max-w-md z-[9990] flex flex-col items-center animate-in slide-in-from-bottom-8 duration-300 pointer-events-auto"
         >
-          {/* Cybernetic 3D Glassmorphic Capsule with Shimmer Border */}
+          {/* iOS 18 Siri Glassmorphic Capsule */}
           <div 
-            className="w-full rounded-3xl p-4 bg-gradient-to-b from-slate-900/95 via-[#0b132b]/95 to-black/95 border border-[#f9b03c]/40 shadow-[0_15px_40px_rgba(0,0,0,0.85),inset_0_1px_1px_rgba(255,255,255,0.18),0_0_30px_rgba(249,176,60,0.2)] flex flex-col relative overflow-hidden backdrop-blur-2xl"
+            className="w-full rounded-[28px] p-4 bg-black/85 border border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.9),0_0_30px_rgba(0,240,255,0.25),0_0_30px_rgba(255,45,85,0.2)] flex flex-col relative overflow-hidden backdrop-blur-3xl"
           >
-            {/* Top Bar: Holographic Status & Language Switcher */}
-            <div className="w-full flex items-center justify-between mb-1.5">
+            {/* Top Bar: Siri Status, Language Switcher & Auto-Wake */}
+            <div className="w-full flex items-center justify-between mb-2">
               <div className="flex items-center gap-1.5">
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-black bg-[#f9b03c]/20 text-[#f9b03c] border border-[#f9b03c]/30 shadow-sm">
-                  <i className="fa-solid fa-sun text-[10px] text-[#f9b03c] animate-spin-slow"></i>
-                  <span>{selectedLang === 'en' ? 'Tsehay AI' : 'ፀሐይ AI'}</span>
+                
+                {/* Siri Dynamic Pill Badge */}
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-extrabold bg-gradient-to-r from-cyan-500/20 via-purple-500/20 to-pink-500/20 text-cyan-300 border border-cyan-400/30 shadow-sm">
+                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
+                  <span>{selectedLang === 'en' ? 'Tsehay Siri' : 'ፀሐይ Siri'}</span>
                 </span>
 
                 {/* Language Switcher Pill */}
@@ -1214,14 +1218,14 @@ export default function TsehayVoiceAssistant() {
                       setTimeout(() => startSpeechRecognition(), 200);
                     }
                   }}
-                  className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/10 hover:bg-white/20 text-gray-200 border border-white/15 transition cursor-pointer flex items-center gap-1"
+                  className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-white/10 hover:bg-white/20 text-gray-200 border border-white/15 transition cursor-pointer flex items-center gap-1"
                   title="Switch Language (አማርኛ / English)"
                 >
-                  <i className="fa-solid fa-globe text-[#f9b03c] text-[9px]"></i>
+                  <i className="fa-solid fa-globe text-cyan-400 text-[10px]"></i>
                   <span>{selectedLang === 'am' ? 'አማርኛ' : 'English'}</span>
                 </button>
 
-                {/* Standby Wake toggle badge */}
+                {/* Standby Auto-Wake badge */}
                 <button
                   type="button"
                   onClick={() => {
@@ -1229,7 +1233,7 @@ export default function TsehayVoiceAssistant() {
                     setIsStandbyActive(next);
                     try { localStorage.setItem('tsehay_voice_standby', next ? 'true' : 'false'); } catch (e) {}
                   }}
-                  className={`px-2 py-0.5 rounded-full text-[9px] font-bold border transition cursor-pointer flex items-center gap-1 ${
+                  className={`px-2 py-1 rounded-full text-[9px] font-bold border transition cursor-pointer flex items-center gap-1 ${
                     isStandbyActive
                       ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
                       : 'bg-white/5 text-gray-400 border-white/10'
@@ -1244,30 +1248,30 @@ export default function TsehayVoiceAssistant() {
               <button
                 type="button"
                 onClick={closeAssistant}
-                className="w-6 h-6 rounded-full bg-white/10 hover:bg-white/20 text-gray-300 hover:text-white flex items-center justify-center transition cursor-pointer"
+                className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 text-gray-300 hover:text-white flex items-center justify-center transition cursor-pointer"
                 title="Close"
               >
-                <i className="fa-solid fa-xmark text-[11px]"></i>
+                <i className="fa-solid fa-xmark text-xs"></i>
               </button>
             </div>
 
-            {/* Compact 3D Sun Pulse Visualizer */}
-            <div className="w-full h-14 flex items-center justify-center relative my-0.5">
+            {/* 🌊 Authentic Apple Siri Multi-Ribbon Sine Waveform Visualizer Canvas */}
+            <div className="w-full h-16 flex items-center justify-center relative my-1 overflow-hidden rounded-2xl bg-black/40 border border-white/5">
               <canvas
                 ref={canvasRef}
-                width={280}
-                height={65}
-                className="w-full h-full object-contain filter drop-shadow-[0_0_10px_rgba(249,176,60,0.6)]"
+                width={360}
+                height={70}
+                className="w-full h-full object-contain filter drop-shadow-[0_0_12px_rgba(0,240,255,0.7)]"
               />
             </div>
 
             {/* Live Subtitle Transcription & Spoken Response Bubble */}
-            <div className="w-full min-h-[38px] flex flex-col justify-center my-1 px-1">
+            <div className="w-full min-h-[38px] flex flex-col justify-center my-1.5 px-1">
               {transcript || interimTranscript ? (
-                <div className="bg-white/5 border border-white/10 rounded-xl p-2 mb-1.5 transition-all duration-300">
+                <div className="bg-white/[0.07] border border-white/15 rounded-2xl p-2.5 mb-1.5 transition-all duration-300">
                   <p className="text-xs font-bold text-white leading-relaxed">
-                    <span className="text-[#f9b03c] font-extrabold mr-1">{selectedLang === 'en' ? 'You:' : 'እርስዎ:'}</span>
-                    "{transcript} <span className="text-amber-300 animate-pulse">{interimTranscript}</span>"
+                    <span className="text-cyan-400 font-black mr-1">{selectedLang === 'en' ? 'You:' : 'እርስዎ:'}</span>
+                    "{transcript} <span className="text-pink-400 animate-pulse">{interimTranscript}</span>"
                   </p>
                 </div>
               ) : (
@@ -1280,8 +1284,8 @@ export default function TsehayVoiceAssistant() {
 
               {/* AI Spoken Answer Subtitle Bubble */}
               {aiResponse && (
-                <div className="p-2.5 rounded-xl bg-gradient-to-r from-amber-950/80 via-slate-900/90 to-amber-950/80 border border-amber-500/40 text-amber-200 text-xs font-bold flex items-start gap-2 animate-in fade-in duration-300 shadow-md">
-                  <div className="w-5 h-5 rounded-md bg-amber-500/20 flex items-center justify-center text-[#f9b03c] shrink-0 mt-0.5">
+                <div className="p-3 rounded-2xl bg-gradient-to-r from-purple-950/80 via-slate-900/90 to-cyan-950/80 border border-cyan-500/40 text-cyan-100 text-xs font-bold flex items-start gap-2.5 animate-in fade-in duration-300 shadow-lg">
+                  <div className="w-5 h-5 rounded-lg bg-cyan-500/20 flex items-center justify-center text-cyan-300 shrink-0 mt-0.5">
                     <i className={`fa-solid ${isSpeaking && !isAudioPaused ? 'fa-volume-high animate-bounce' : isAudioPaused ? 'fa-pause' : 'fa-check'} text-[10px]`}></i>
                   </div>
                   <span className="text-left flex-1 leading-relaxed">{aiResponse}</span>
@@ -1289,26 +1293,26 @@ export default function TsehayVoiceAssistant() {
               )}
             </div>
 
-            {/* 🛸 3. HIGH-TECH FUTURISTIC SCI-FI VIDEO HUD CONTROLS */}
+            {/* 🛸 3. APPLE SIRI HUD CONTROLS (Wave Toggle Deck & Mic Deck) */}
             <div className="w-full flex items-center justify-between gap-2.5 mt-1 pt-2.5 border-t border-white/10">
               
-              {/* ⏯️ Futuristic Sci-Fi Audio Wave / Pause / Play Deck */}
+              {/* ⏯️ Siri Audio Playback Deck */}
               <button
                 type="button"
                 onClick={togglePlayPauseAudio}
-                className={`relative group flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-2xl text-[11px] font-black transition-all duration-300 cursor-pointer overflow-hidden border ${
+                className={`relative group flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-2xl text-[11px] font-black transition-all duration-300 cursor-pointer overflow-hidden border ${
                   isSpeaking && !isAudioPaused
-                    ? 'bg-gradient-to-r from-amber-950/90 via-[#1c1505] to-amber-950/90 border-amber-500/60 text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.4)]'
+                    ? 'bg-gradient-to-r from-purple-950/90 to-pink-950/90 border-pink-500/60 text-pink-300 shadow-[0_0_15px_rgba(255,45,85,0.4)]'
                     : isAudioPaused
-                    ? 'bg-gradient-to-r from-emerald-950/90 via-[#071d13] to-emerald-950/90 border-emerald-500/60 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.4)]'
-                    : 'bg-gradient-to-r from-white/[0.04] to-white/[0.08] hover:bg-white/15 text-gray-300 border-white/15'
+                    ? 'bg-gradient-to-r from-cyan-950/90 to-blue-950/90 border-cyan-500/60 text-cyan-300 shadow-[0_0_15px_rgba(0,240,255,0.4)]'
+                    : 'bg-white/[0.05] hover:bg-white/15 text-gray-300 border-white/15'
                 }`}
                 title={isSpeaking && !isAudioPaused ? 'Pause Voice Playback' : 'Resume Voice Playback'}
               >
-                {/* Live Animated Audio Equalizer Bars */}
+                {/* Live Siri Equalizer Bars */}
                 <div className="flex items-center gap-0.5">
                   <span className={`w-0.5 rounded-full bg-current transition-all ${isSpeaking && !isAudioPaused ? 'h-3 animate-pulse' : 'h-1.5'}`}></span>
-                  <span className={`w-0.5 rounded-full bg-current transition-all ${isSpeaking && !isAudioPaused ? 'h-4 animate-bounce' : 'h-2'}`} style={{ animationDelay: '0.15s' }}></span>
+                  <span className={`w-0.5 rounded-full bg-current transition-all ${isSpeaking && !isAudioPaused ? 'h-4.5 animate-bounce' : 'h-2'}`} style={{ animationDelay: '0.15s' }}></span>
                   <span className={`w-0.5 rounded-full bg-current transition-all ${isSpeaking && !isAudioPaused ? 'h-2.5 animate-pulse' : 'h-1'}`} style={{ animationDelay: '0.3s' }}></span>
                 </div>
 
@@ -1318,21 +1322,20 @@ export default function TsehayVoiceAssistant() {
                 </div>
               </button>
 
-              {/* 🎙️ High-Tech Futuristic Holographic Video Mic Deck */}
+              {/* 🎙️ Apple Siri Dynamic Mic Deck */}
               <button
                 type="button"
                 onClick={handleMicToggle}
-                className={`relative group flex-1 flex items-center justify-center gap-2 px-3.5 py-2 rounded-2xl text-[11px] font-black transition-all duration-300 cursor-pointer overflow-hidden shadow-lg active:scale-95 border ${
+                className={`relative group flex-1 flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-2xl text-[11px] font-black transition-all duration-300 cursor-pointer overflow-hidden shadow-lg active:scale-95 border ${
                   isListening
-                    ? 'bg-gradient-to-r from-red-600 via-amber-500 to-red-600 text-white border-red-400 shadow-[0_0_20px_rgba(239,68,68,0.7)] animate-pulse'
-                    : 'bg-gradient-to-r from-[#f9b03c] via-amber-400 to-yellow-400 text-slate-950 border-amber-300 shadow-[0_0_20px_rgba(249,176,60,0.5)] hover:brightness-110 hover:scale-[1.02]'
+                    ? 'bg-gradient-to-r from-red-600 via-pink-600 to-purple-600 text-white border-pink-400 shadow-[0_0_25px_rgba(255,45,85,0.7)] animate-pulse'
+                    : 'bg-gradient-to-r from-[#00f0ff] via-[#a855f7] to-[#ff2d55] text-white border-cyan-300 shadow-[0_0_25px_rgba(0,240,255,0.5)] hover:brightness-110 hover:scale-[1.02]'
                 }`}
                 title={isListening ? 'Stop Listening & Get Answer' : 'Tap to Speak'}
               >
-                {/* Glowing Radar Shimmer */}
                 <div className="flex items-center gap-1.5">
-                  <i className={`fa-solid ${isListening ? 'fa-microphone-lines text-xs animate-bounce' : 'fa-microphone text-xs'}`}></i>
-                  <span>{isListening ? (selectedLang === 'en' ? 'Answer Now' : 'ጨርሻለሁ') : (selectedLang === 'en' ? 'Speak' : 'ተናገር')}</span>
+                  <i className={`fa-solid ${isListening ? 'fa-wave-square text-xs animate-bounce' : 'fa-microphone text-xs'}`}></i>
+                  <span>{isListening ? (selectedLang === 'en' ? 'Listening...' : 'እየሰማሁ ነው') : (selectedLang === 'en' ? 'Speak' : 'ተናገር')}</span>
                 </div>
               </button>
 
