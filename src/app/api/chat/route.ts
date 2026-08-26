@@ -26,15 +26,18 @@ function getSmartFallbackReply(userPrompt: string, courseContext?: any, hasImage
     }
 
     // 2. Greetings
-    if (p === 'selam' || p === 'ሰላም' || p === 'hello' || p === 'hi' || p === 'hey' || p === 'እንዴት ነህ' || p === 'እንዴት ነሽ' || p === 'ጤና ይስጥልኝ') {
+    if (
+        p.includes('ሰላም') || p.includes('እንዴት') || p.includes('ጤና ይስጥልኝ') || 
+        p.includes('hello') || p.includes('hi') || p.includes('hey') || p.includes('how are you')
+    ) {
         if (courseContext?.courseTitle) {
             return `ሰላም! እንኳን ደህና መጡ! በ"${courseContext.courseTitle}" ስልጠና ዙሪያ ዛሬ በምን ልርዳዎት? ያልገባዎትን ማንኛውንም ነጥብ በጽሑፍ ወይም በድምፅ ይጠይቁኝ! ✨`;
         }
-        return "ሰላም! እንኳን ደህና መጡ! ዛሬ ስለ ፀሐይ ካምፓስ ስልጠናዎች፣ የዩቲዩብ ስኬት፣ አድራሻችን ወይም ስለ ምዝገባ በምን ልርዳዎት? ✨";
+        return "ሰላም! እኔ ፀሐይ ነኝ፤ እንኳን ደህና መጡ! ዛሬ ስለ ፀሐይ ካምፓስ ስልጠናዎች፣ የዩቲዩብ ስኬት፣ የሼን ቢዝነስ ወይም ስለ ምዝገባ በምን ልርዳዎት? ✨";
     }
 
-    // 3. Address & Location (አድራሻ)
-    if (p.includes('አድራሻ') || p.includes('የት ነው') || p.includes('የት ናችሁ') || p.includes('ቦታ') || p.includes('ቢሮ') || p.includes('location') || p.includes('address')) {
+    // 3. Address & Location (አድራሻ) - Strict Matching
+    if (p.includes('አድራሻ') || p.includes('ቢሮ') || p.includes('ቦሌ የት') || p.includes('የካምፓሱ አድራሻ') || p.includes('location') || p.includes('address')) {
         return "የፀሐይ ካምፓስ አድራሻ፦ **ቦሌ፣ አዲስ አበባ፣ ኢትዮጵያ** ነው። በአካልም ሆነ በኦንላይን ተግባራዊ ስልጠናዎችን እንሰጣለን። 📍";
     }
 
@@ -74,7 +77,7 @@ function getSmartFallbackReply(userPrompt: string, courseContext?: any, hasImage
 
     if (isYouTube || p.includes('youtube') || p.includes('ዩቲዩብ') || p.includes('ዩቱብ')) {
         return "የዩቲዩብ ስኬት ሚስጥሮች (YouTube Secrets Masterclass)፦\n\n" +
-               "• **ዋጋ**፦ 900 ብር\n" +
+               "• **ዋጋ**፦ 5,500 ብር\n" +
                "• **የስልጠናው ዋና ዋና ትኩረቶች**፦\n" +
                "  - ፊት ሳይታይ (100% Faceless Channels) አትራፊ ቪዲዮዎችን ማዘጋጀት\n" +
                "  - የYouTube Algorithm እና የSEO ሚስጥሮች\n" +
