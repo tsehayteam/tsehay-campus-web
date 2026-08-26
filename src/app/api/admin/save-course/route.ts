@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb, adminAuth } from '@/lib/firebase/admin';
+import { DEFAULT_COURSES } from '@/lib/courseCache';
 
 const AUTHORIZED_ADMIN_EMAILS = [
   'admin@tsehaycampus.com',
@@ -15,7 +16,7 @@ export async function GET(req: NextRequest) {
     const courseId = searchParams.get('courseId') || searchParams.get('id');
 
     if (!adminDb) {
-      return NextResponse.json({ success: true, count: 0, courses: [] });
+      return NextResponse.json({ success: true, count: DEFAULT_COURSES.length, courses: DEFAULT_COURSES });
     }
 
     if (courseId) {
@@ -31,9 +32,17 @@ export async function GET(req: NextRequest) {
       if (snap.exists) {
         return NextResponse.json({ success: true, course: { id: snap.id, ...snap.data() } });
       }
+
+      // Check default courses by ID
+      const defaultMatch = DEFAULT_COURSES.find(c => c.id === courseId);
+      if (defaultMatch) {
+        return NextResponse.json({ success: true, course: defaultMatch });
+      }
+
       return NextResponse.json({ success: false, error: 'Course not found' }, { status: 404 });
     }
 
+    // 1. Try nested collection path
     const snapshot = await adminDb
       .collection('artifacts')
       .doc('tsehaycampus-e1a6d')
@@ -42,11 +51,27 @@ export async function GET(req: NextRequest) {
       .collection('courses')
       .get();
 
-    const courses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    let courses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    // 2. Try root collection path if nested is empty
+    if (courses.length === 0) {
+      try {
+        const rootSnap = await adminDb.collection('courses').get();
+        if (!rootSnap.empty) {
+          courses = rootSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        }
+      } catch (e) {}
+    }
+
+    // 3. Fallback to DEFAULT_COURSES so admin always has complete courses visible
+    if (courses.length === 0) {
+      courses = DEFAULT_COURSES;
+    }
+
     return NextResponse.json({ success: true, count: courses.length, courses });
   } catch (error: any) {
     console.error('Error fetching courses in /api/admin/save-course GET:', error);
-    return NextResponse.json({ success: true, count: 0, courses: [], error: error.message });
+    return NextResponse.json({ success: true, count: DEFAULT_COURSES.length, courses: DEFAULT_COURSES, error: error.message });
   }
 }
 

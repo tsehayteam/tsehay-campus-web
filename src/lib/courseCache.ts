@@ -5,20 +5,54 @@ export const DEFAULT_COURSES = [
     description: "ከዜሮ ተነስተው ስኬታማ እና ገቢ የሚያስገኝ የዩቲዩብ ቻናል ለመገንባት የሚያስፈልጉዎትን ሚስጥሮች፣ የቪዲዮ አሰራር፣ የ Thumbnail ዲዛይን፣ የ SEO እና የገቢ ማግኛ መንገዶችን ደረጃ በደረጃ በተግባር የሚያስተምር የተሟላ ማስተርክላስ።",
     desc: "ከዜሮ ተነስተው ስኬታማ እና ገቢ የሚያስገኝ የዩቲዩብ ቻናል ለመገንባት የሚያስፈልጉዎትን ሚስጥሮች፣ የቪዲዮ አሰራር፣ የ Thumbnail ዲዛይን፣ የ SEO እና የገቢ ማግኛ መንገዶችን ደረጃ በደረጃ በተግባር የሚያስተምር የተሟላ ማስተርክላስ።",
     price: 600,
+    oldPrice: 1200,
+    status: "Active",
     category: "YouTube",
+    level: "ጀማሪ (Beginner)",
     image: "/assets/hero-bg-new.jpg",
+    banner: "/assets/hero-bg-new.jpg",
+    video: "https://www.youtube.com/watch?v=mgdOMtW6J8k",
     instructor: "Eyoub Sahle",
     instructorTitle: "የቢዝነስ እና ዲጂታል ማርኬቲንግ ባለሙያ (Lead Instructor)",
     instructorImage: "https://drive.google.com/thumbnail?id=1rdjkUc6ZwK6NbbgHaZ-7BtEi8A9aA5Uq&sz=w1000",
+    instructorTelegram: "@EyoubSahle",
     instructorBio: "በኢ-ኮሜርስ፣ ዲጂታል ማርኬቲንግ እና ክሪፕቶ ከረንሲ ዘርፍ የብዙ አመታት የተግባር ልምድ ያለው እና በመቶዎች የሚቆጠሩ ተማሪዎችን ወደ ስኬት ያበቃ ባለሙያ።",
     students: 120,
     studentsCount: 120,
     rating: 4.9,
     ratingAvg: 4.9,
-    ratingCount: 1,
+    ratingCount: 28,
     instructorRatingAvg: 5.0,
     modulesCount: 8,
-    isPopular: true
+    isPopular: true,
+    aiPrompt: "You are Tsehay AI. Your job is to help students learning the YouTube Secrets Masterclass by Eyoub Sahle. Answer questions strictly related to YouTube creation, monetization, SEO, script writing, video editing, and faceless channels.",
+    whatYouWillLearn: [
+      "ከዜሮ ተነስቶ ስኬታማ የዩቲዩብ ቻናል አከፋፈት እና ሴቲንግ",
+      "ያለ ፊት ገጽታ (Faceless) ቪዲዮዎችን በ AI የማዘጋጀት ጥበብ",
+      "ከፍተኛ ተመልካች የሚስብ Thumbnail እና Title አሰራር",
+      "የዩቲዩብ አልጎሪዝም እና SEO ሚስጥሮች",
+      "የገቢ ማግኛ (Monetization) እና ክፍያ አወሳሰድ በኢትዮጵያ"
+    ],
+    requirements: [
+      "መሰረታዊ የኮምፒውተር ወይም የስልክ እውቀት",
+      "ስማርት ስልክ ወይም ላፕቶፕ",
+      "የኢንተርኔት ኮኔክሽን",
+      "የመማር ፍላጎት እና ትጋት"
+    ],
+    includes: [
+      "በቪዲዮ የተደገፈ ትምህርት (On-demand video)",
+      "የተግባር አሳይመንቶች እና ፕሮጀክቶች (Assignments & Projects)",
+      "በስልክ እና በቲቪ መጠቀም የሚያስችል (Access on mobile and TV)",
+      "የኮርስ ማጠናቀቂያ ሰርተፊኬት (Certificate of completion)",
+      "የሁልጊዜ መዳረሻ (Full lifetime access)"
+    ],
+    lessons: [
+      { title: "ክፍል 1: መግቢያ እና የዩቲዩብ መሰረታዊ እውነታዎች", duration: "08:30", video: "https://www.youtube.com/watch?v=mgdOMtW6J8k", desc: "የዩቲዩብ እድሎችና የኮርሱ አጠቃላይ ገለጻ", points: 20 },
+      { title: "ክፍል 2: አዋጭ ኒች (Profitable Niche) መምረጥ", duration: "12:45", video: "https://www.youtube.com/watch?v=mgdOMtW6J8k", desc: "ከፍተኛ ተከፋይ እና ተወዳጅ የሆኑ የዩቲዩብ ርዕሶችን የመምረጫ ስልቶች", points: 30 },
+      { title: "ክፍል 3: የ Faceless ቻናሎች ምስጢር እና የ AI መሳሪያዎች", duration: "15:20", video: "https://www.youtube.com/watch?v=mgdOMtW6J8k", desc: "ፊት ሳያሳዩ በ AI ድምጽና ምስል ቪዲዮዎችን መስራት", points: 50 },
+      { title: "ክፍል 4: ፕሮፌሽናል Thumbnail እና Title ዲዛይን", duration: "14:10", video: "https://www.youtube.com/watch?v=mgdOMtW6J8k", desc: "ተመልካች ክሊክ እንዲያደርግ የሚያስችሉ ስልቶች", points: 40 },
+      { title: "ክፍል 5: የዩቲዩብ SEO እና አልጎሪዝም ሃክ", duration: "18:00", video: "https://www.youtube.com/watch?v=mgdOMtW6J8k", desc: "ቪዲዮዎችዎ በሰርች እና በ Suggested እንዲመጡ ማድረግ", points: 60 }
+    ]
   },
   {
     id: "digital_marketing_free",
@@ -26,12 +60,18 @@ export const DEFAULT_COURSES = [
     description: "በዚህ ኮርስ የዲጂታል ማርኬቲንግ መሰረታዊ ሀሳቦችን፣ የሶሻል ሚዲያ አጠቃቀምን እና ቢዝነስዎን እንዴት ማሳደግ እንደሚችሉ ይማራሉ።",
     desc: "በዚህ ኮርስ የዲጂታል ማርኬቲንግ መሰረታዊ ሀሳቦችን፣ የሶሻል ሚዲያ አጠቃቀምን እና ቢዝነስዎን እንዴት ማሳደግ እንደሚችሉ ይማራሉ።",
     price: 0,
+    oldPrice: 4000,
+    status: "Active",
     isFree: true,
     category: "Marketing",
+    level: "ጀማሪ (Beginner)",
     image: "https://drive.google.com/thumbnail?id=1HZf1jV5AdSXyc7MJUf8vPgYm4z0-30O6&sz=w1000",
+    banner: "https://drive.google.com/thumbnail?id=1HZf1jV5AdSXyc7MJUf8vPgYm4z0-30O6&sz=w1000",
+    video: "https://www.youtube.com/embed/B-s71n0dHUk",
     instructor: "Eyoub Sahle",
     instructorTitle: "የቢዝነስ እና ዲጂታል ማርኬቲንግ ባለሙያ (Lead Instructor)",
     instructorImage: "https://drive.google.com/thumbnail?id=1rdjkUc6ZwK6NbbgHaZ-7BtEi8A9aA5Uq&sz=w1000",
+    instructorTelegram: "@EyoubSahle",
     instructorBio: "በኢ-ኮሜርስ፣ ዲጂታል ማርኬቲንግ እና ክሪፕቶ ከረንሲ ዘርፍ የብዙ አመታት የተግባር ልምድ ያለው እና በመቶዎች የሚቆጠሩ ተማሪዎችን ወደ ስኬት ያበቃ ባለሙያ።",
     students: 210,
     studentsCount: 210,
@@ -40,7 +80,31 @@ export const DEFAULT_COURSES = [
     ratingCount: 22,
     instructorRatingAvg: 4.9,
     modulesCount: 4,
-    isPopular: true
+    isPopular: true,
+    aiPrompt: "You are Tsehay AI. Your job is to help students learning the Digital Marketing course by Eyoub Sahle. Answer questions strictly related to marketing.",
+    whatYouWillLearn: [
+      "የዲጂታል ማርኬቲንግ መሰረታዊ መርሆች",
+      "ባህላዊ እና ዲጂታል ማርኬቲንግ ልዩነት",
+      "የሶሻል ሚዲያ ማርኬቲንግ አጠቃቀም",
+      "የፌስቡክ እና ቴሌግራም ገበያ ስልቶች"
+    ],
+    requirements: [
+      "ምንም ቅድመ ተሞክሮ አይጠይቅም",
+      "ስማርት ስልክ ወይም ኮምፒውተር",
+      "የኢንተርኔት ኮኔክሽን"
+    ],
+    includes: [
+      "በቪዲዮ የተደገፈ ትምህርት",
+      "የተግባር አሳይመንቶች",
+      "በስልክ መጠቀም የሚያስችል",
+      "የኮርስ ማጠናቀቂያ ሰርተፊኬት"
+    ],
+    lessons: [
+      { title: "የኮርስ ማስታወቂያ (Course Intro)", duration: "02:30", video: "https://www.youtube.com/embed/B-s71n0dHUk", desc: "የዲጂታል ማርኬቲንግ መግቢያ", points: 10 },
+      { title: "ባህላዊ vs ዲጂታል ማርኬቲንግ", duration: "05:15", video: "https://www.youtube.com/embed/B-s71n0dHUk", desc: "የሁለቱ የግብይት አይነቶች ልዩነት", points: 50 },
+      { title: "የዲጂታል ማርኬቲንግ አይነቶች ክፍል 1", duration: "10:00", video: "https://www.youtube.com/embed/B-s71n0dHUk", desc: "ዋና ዋና የዲጂታል ማርኬቲንግ መንገዶች", points: 100 },
+      { title: "በተግባር የተደገፈ የፌስቡክ ማስታወቂያ", duration: "15:20", video: "https://www.youtube.com/embed/B-s71n0dHUk", desc: "የፌስቡክ ማስታወቂያ አሰራር በተግባር", points: 100 }
+    ]
   },
   {
     id: "digital_marketing_pro",
@@ -48,11 +112,18 @@ export const DEFAULT_COURSES = [
     description: "ይህ የፕሮፌሽናል ዲጂታል ማርኬቲንግ ኮርስ ሲሆን ከጀማሪ እስከ አድቫንስድ ያሉትን ሁሉንም የዲጂታል ማርኬቲንግ አይነቶች በተግባር ይማሩበታል።",
     desc: "ይህ የፕሮፌሽናል ዲጂታል ማርኬቲንግ ኮርስ ሲሆን ከጀማሪ እስከ አድቫንስድ ያሉትን ሁሉንም የዲጂታል ማርኬቲንግ አይነቶች በተግባር ይማሩበታል።",
     price: 2500,
+    oldPrice: 5000,
+    status: "Active",
+    isFree: false,
     category: "Marketing",
+    level: "ከፍተኛ (Advanced)",
     image: "https://drive.google.com/thumbnail?id=1HZf1jV5AdSXyc7MJUf8vPgYm4z0-30O6&sz=w1000",
+    banner: "https://drive.google.com/thumbnail?id=1HZf1jV5AdSXyc7MJUf8vPgYm4z0-30O6&sz=w1000",
+    video: "https://www.youtube.com/embed/B-s71n0dHUk",
     instructor: "Eyoub Sahle",
     instructorTitle: "የቢዝነስ እና ዲጂታል ማርኬቲንግ ባለሙያ (Lead Instructor)",
     instructorImage: "https://drive.google.com/thumbnail?id=1rdjkUc6ZwK6NbbgHaZ-7BtEi8A9aA5Uq&sz=w1000",
+    instructorTelegram: "@EyoubSahle",
     instructorBio: "በኢ-ኮሜርስ፣ ዲጂታል ማርኬቲንግ እና ክሪፕቶ ከረንሲ ዘርፍ የብዙ አመታት የተግባር ልምድ ያለው እና በመቶዎች የሚቆጠሩ ተማሪዎችን ወደ ስኬት ያበቃ ባለሙያ።",
     students: 140,
     studentsCount: 140,
@@ -61,7 +132,30 @@ export const DEFAULT_COURSES = [
     ratingCount: 15,
     instructorRatingAvg: 4.9,
     modulesCount: 7,
-    isPopular: true
+    isPopular: true,
+    aiPrompt: "You are Tsehay AI for the Pro Digital Marketing class. Help students with advanced marketing concepts, Facebook Ads, Google Ads, and SEO.",
+    whatYouWillLearn: [
+      "የላቀ የ Facebook & Instagram Ads ስትራቴጂ",
+      "Google Ads እና የ YouTube Ads ማስታወቂያዎች",
+      "የሽያጭ ፋነል (Sales Funnel) እና Copywriting ጥበብ",
+      "የኢሜል ማርኬቲንግ እና አውቶሜሽን"
+    ],
+    requirements: [
+      "መሰረታዊ የዲጂታል ማርኬቲንግ ግንዛቤ",
+      "ኮምፒውተር ወይም ላፕቶፕ",
+      "የኢንተርኔት ግንኙነት"
+    ],
+    includes: [
+      "የላቁ የቪዲዮ ትምህርቶች",
+      "የቀጥታ ፕሮጀክት ድጋፍ",
+      "ሙሉ የህይወት ዘመን መዳረሻ",
+      "የተረጋገጠ ሰርተፊኬት"
+    ],
+    lessons: [
+      { title: "Introduction to Advanced Marketing", duration: "05:00", video: "https://www.youtube.com/embed/B-s71n0dHUk", desc: "Welcome to Pro Class", points: 50 },
+      { title: "Facebook Pixel and Conversion API", duration: "12:00", video: "https://www.youtube.com/embed/B-s71n0dHUk", desc: "Pixel setup and custom events", points: 80 },
+      { title: "Audience Targeting & Retargeting Mastery", duration: "14:30", video: "https://www.youtube.com/embed/B-s71n0dHUk", desc: "Creating high converting custom audiences", points: 90 }
+    ]
   }
 ];
 

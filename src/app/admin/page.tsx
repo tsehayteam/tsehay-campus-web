@@ -5,6 +5,7 @@ import { useAuth, ADMIN_EMAILS, isEmailAdmin } from '@/context/AuthContext';
 import { collection, onSnapshot, doc, setDoc, deleteDoc, serverTimestamp, query, orderBy, collectionGroup } from 'firebase/firestore';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile, sendPasswordResetEmail } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
+import { DEFAULT_COURSES, getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl } from '@/lib/courseCache';
 
 import { parseVideoEmbedUrl, parseImageUrl } from '@/lib/videoParser';
 
@@ -56,9 +57,14 @@ export default function AdminDashboard() {
           const parsed = JSON.parse(cached);
           if (Array.isArray(parsed) && parsed.length > 0) return parsed;
         }
+        const siteCached = localStorage.getItem('tsehay_courses_cache');
+        if (siteCached) {
+          const parsed = JSON.parse(siteCached);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
       } catch (e) {}
     }
-    return [];
+    return DEFAULT_COURSES;
   });
   const [youtubeVideos, setYoutubeVideos] = useState<any[]>(() => {
     if (typeof window !== 'undefined') {
@@ -228,7 +234,7 @@ export default function AdminDashboard() {
         const res = await fetch('/api/admin/save-course');
         if (res.ok) {
           const data = await res.json();
-          if (data.courses && Array.isArray(data.courses)) {
+          if (data.courses && Array.isArray(data.courses) && data.courses.length > 0) {
             setCourses(data.courses);
             try {
               localStorage.setItem('tsehay_admin_courses_cache', JSON.stringify(data.courses));
@@ -251,11 +257,15 @@ export default function AdminDashboard() {
       q, 
       (snapshot) => {
         try {
-          const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          setCourses(list);
-          try {
-            localStorage.setItem('tsehay_admin_courses_cache', JSON.stringify(list));
-          } catch (e) {}
+          if (!snapshot.empty) {
+            const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            if (list.length > 0) {
+              setCourses(list);
+              try {
+                localStorage.setItem('tsehay_admin_courses_cache', JSON.stringify(list));
+              } catch (e) {}
+            }
+          }
         } catch (err) {
           console.error("Error processing courses snapshot:", err);
         } finally {
@@ -1769,7 +1779,7 @@ export default function AdminDashboard() {
                     <tr key={course.id} className="border-b border-gray-50 dark:border-slate-700/50 hover:bg-gray-50 dark:hover:bg-slate-700/20 transition group">
                       <td className="p-4">
                         <div className="flex items-center gap-3">
-                          <img src={course.image || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1000'} className="w-12 h-12 rounded-lg object-cover" />
+                          <img src={formatDriveImageUrl(course.image) || course.image || '/assets/hero-bg-new.jpg'} className="w-12 h-12 rounded-xl object-cover border border-gray-200 dark:border-white/10 shrink-0 shadow-xs" alt={course.title} />
                           <div>
                             <p className="font-bold text-dark dark:text-white">{course.title}</p>
                             <p className="text-xs text-gray-500">{course.category}</p>
