@@ -63,6 +63,7 @@ interface SpeechCorrectionResult {
   corrected: string;
   raw: string;
   detectedIntent?: string;
+  isEnglishLanguageDetected?: boolean;
 }
 
 function autoCorrectAmharicSpeech(rawText: string, isEnglishMode: boolean = false): SpeechCorrectionResult {
@@ -70,28 +71,32 @@ function autoCorrectAmharicSpeech(rawText: string, isEnglishMode: boolean = fals
   
   const text = rawText.trim();
   const normalized = normalizeAmharicPhonetics(text);
+  const isPureEnglish = /^[a-zA-Z\s0-9?,.!'":;@#$%\^&*()_\-+=\[\]{}]+$/.test(text);
+  const isEnglishEffective = isEnglishMode || isPureEnglish;
 
   // 1. Home Page Corruptions: "ወደ ሄብ ሄጅ", "ሄብ ሄጅ", "ሄብ ፔጅ", "ሂብ ፔጅ", "ሄም ፔጅ", "ኦም ፔጅ", "ወደ ሆም", "ወደ ሄብ", "ወደ ሂብ", "ወደ ዋና"
   if (
     /ሄብ\s*ሄጅ|ሄብ\s*ፔጅ|ሂብ\s*ፔጅ|ሄም\s*ፔጅ|ሂም\s*ፔጅ|ኦም\s*ፔጅ|ሆም\s*ፔጅ|ሆምፔጅ|ወደ\s*ሄብ|ወደ\s*ሂብ|ወደ\s*ሆም|ወደ\s*ዋና|ዋናው\s*ገጽ|መነሻ/i.test(normalized) ||
-    /home|main|home page|go to home/i.test(text)
+    /home|main|home page|go to home|take me to home/i.test(text)
   ) {
     return {
-      corrected: isEnglishMode ? 'Go to Home Page' : 'ወደ ሆም ፔጅ ውሰደኝ',
+      corrected: isEnglishEffective ? 'Go to Home Page' : 'ወደ ሆም ፔጅ ውሰደኝ',
       raw: text,
-      detectedIntent: 'home'
+      detectedIntent: 'home',
+      isEnglishLanguageDetected: isPureEnglish
     };
   }
 
   // 2. All Courses Corruptions: "ወደ ኮርስ", "ወደ ኮርሶች", "ኮርስስ", "ኮርሶክ", "ኮርሰ", "ኮርሶችን", "ትምህርት", "ስልጠና"
   if (
     /ኮርስ|ኮርሶች|ኮርስስ|ኮርሶክ|ኮርሰ|ኮርሶችን|ስልጠና|ስልጠናዎች|ትምህርት|ክላስ|ሌሰን/i.test(normalized) ||
-    /courses|course catalog|all courses|show courses/i.test(text)
+    /courses|course catalog|all courses|show courses|view courses/i.test(text)
   ) {
     return {
-      corrected: isEnglishMode ? 'Show All Courses' : 'ወደ ኮርሶች ዝርዝር ውሰደኝ',
+      corrected: isEnglishEffective ? 'Show All Courses' : 'ወደ ኮርሶች ዝርዝር ውሰደኝ',
       raw: text,
-      detectedIntent: 'courses'
+      detectedIntent: 'courses',
+      isEnglishLanguageDetected: isPureEnglish
     };
   }
 
@@ -101,33 +106,36 @@ function autoCorrectAmharicSpeech(rawText: string, isEnglishMode: boolean = fals
     /shein|import/i.test(text)
   ) {
     return {
-      corrected: isEnglishMode ? 'Shein Import Course' : 'ስለ ሼን ኢምፖርት ስልጠና',
+      corrected: isEnglishEffective ? 'Shein Import Business Course' : 'ስለ ሼን ኢምፖርት ስልጠና',
       raw: text,
-      detectedIntent: 'shein'
+      detectedIntent: 'shein',
+      isEnglishLanguageDetected: isPureEnglish
     };
   }
 
   // 4. YouTube Success Corruptions: "ዩቲዩብ", "ዩቱብ", "ዩቱዩብ", "ዩትዩብ", "ዩቲብ", "ቪዲዮ", "ቻናል", "ዶላር"
   if (
     /ዩቲዩብ|ዩቱብ|ዩቱዩብ|ዩትዩብ|ዩቲብ|ቪዲዮ|ቻናል|ዶላር/i.test(normalized) ||
-    /youtube|monetization/i.test(text)
+    /youtube|monetization|channels/i.test(text)
   ) {
     return {
-      corrected: isEnglishMode ? 'YouTube Mastery Course' : 'ስለ ዩቲዩብ ስልጠና',
+      corrected: isEnglishEffective ? 'YouTube Mastery Course' : 'ስለ ዩቲዩብ ስልጠና',
       raw: text,
-      detectedIntent: 'youtube'
+      detectedIntent: 'youtube',
+      isEnglishLanguageDetected: isPureEnglish
     };
   }
 
   // 5. Payment & Checkout Corruptions: "ክፍያ", "መክፈል", "ቴሌብር", "ቴሌ ብር", "ቴሌበር", "ቴሊብር", "ባንክ", "ሲቢኢ", "ዋጋ", "ብር", "ስንት ነው"
   if (
     /ክፍያ|መክፈል|ዋጋ|ስንት\s*ነው|ብር|ታሪፍ|መግዛት|ቴሌብር|ቴሌ\s*ብር|ቴሌበር|ቴሊብር|ባንክ|ሲቢኢ|cbe/i.test(normalized) ||
-    /payment|pay|checkout|price|telebirr|cbe/i.test(text)
+    /payment|pay|checkout|price|cost|telebirr|cbe/i.test(text)
   ) {
     return {
-      corrected: isEnglishMode ? 'Payment Options & Pricing' : 'የክፍያ አማራጮችና ዋጋ',
+      corrected: isEnglishEffective ? 'Payment Options & Course Pricing' : 'የክፍያ አማራጮችና ዋጋ',
       raw: text,
-      detectedIntent: 'payment'
+      detectedIntent: 'payment',
+      isEnglishLanguageDetected: isPureEnglish
     };
   }
 
@@ -138,9 +146,10 @@ function autoCorrectAmharicSpeech(rawText: string, isEnglishMode: boolean = fals
   ) {
     const isSignup = /ተመዝገብ|ምዝገባ|register|signup/i.test(normalized) || /register|sign up/i.test(text);
     return {
-      corrected: isSignup ? (isEnglishMode ? 'Student Registration' : 'ተመዝገብ (Register)') : (isEnglishMode ? 'Login' : 'ግባ (Login)'),
+      corrected: isSignup ? (isEnglishEffective ? 'Student Registration' : 'ተመዝገብ (Register)') : (isEnglishEffective ? 'Login' : 'ግባ (Login)'),
       raw: text,
-      detectedIntent: isSignup ? 'signup' : 'login'
+      detectedIntent: isSignup ? 'signup' : 'login',
+      isEnglishLanguageDetected: isPureEnglish
     };
   }
 
@@ -150,9 +159,10 @@ function autoCorrectAmharicSpeech(rawText: string, isEnglishMode: boolean = fals
     /dashboard|classroom|my courses/i.test(text)
   ) {
     return {
-      corrected: isEnglishMode ? 'Open Dashboard' : 'ወደ መማሪያ ዳሽቦርድ ውሰደኝ',
+      corrected: isEnglishEffective ? 'Open Student Dashboard' : 'ወደ መማሪያ ዳሽቦርድ ውሰደኝ',
       raw: text,
-      detectedIntent: 'dashboard'
+      detectedIntent: 'dashboard',
+      isEnglishLanguageDetected: isPureEnglish
     };
   }
 
@@ -162,21 +172,23 @@ function autoCorrectAmharicSpeech(rawText: string, isEnglishMode: boolean = fals
     /certificate|verification/i.test(text)
   ) {
     return {
-      corrected: isEnglishMode ? 'Certificate Verification' : 'ስለ ሰርተፊኬት ማረጋገጫ',
+      corrected: isEnglishEffective ? 'Certificate Verification' : 'ስለ ሰርተፊኬት ማረጋገጫ',
       raw: text,
-      detectedIntent: 'certificate'
+      detectedIntent: 'certificate',
+      isEnglishLanguageDetected: isPureEnglish
     };
   }
 
   // 9. Location & Address Corruptions: "አድራሻ", "የት ነው", "የት ናችሁ", "ቦሌ", "ቢሮ", "ቦታ"
   if (
     /አድራሻ|የት\s*ነው|የት\s*ናችሁ|ቦሌ|ቢሮ|ቦታ|መገኛ/i.test(normalized) ||
-    /location|address|where/i.test(text)
+    /location|address|where are you/i.test(text)
   ) {
     return {
-      corrected: isEnglishMode ? 'Campus Location & Address' : 'የፀሐይ ካምፓስ አድራሻ የት ነው?',
+      corrected: isEnglishEffective ? 'Campus Location & Address' : 'የፀሐይ ካምፓስ አድራሻ የት ነው?',
       raw: text,
-      detectedIntent: 'address'
+      detectedIntent: 'address',
+      isEnglishLanguageDetected: isPureEnglish
     };
   }
 
@@ -186,9 +198,10 @@ function autoCorrectAmharicSpeech(rawText: string, isEnglishMode: boolean = fals
     /phone|contact|call|number/i.test(text)
   ) {
     return {
-      corrected: isEnglishMode ? 'Phone Number & Contact Info' : 'የስልክ ቁጥርና የግንኙነት መረጃ',
+      corrected: isEnglishEffective ? 'Phone Number & Contact Info' : 'የስልክ ቁጥርና የግንኙነት መረጃ',
       raw: text,
-      detectedIntent: 'phone'
+      detectedIntent: 'phone',
+      isEnglishLanguageDetected: isPureEnglish
     };
   }
 
@@ -198,14 +211,15 @@ function autoCorrectAmharicSpeech(rawText: string, isEnglishMode: boolean = fals
     /eyoub|eyob|founder|instructor/i.test(text)
   ) {
     return {
-      corrected: isEnglishMode ? 'About Founder Eyoub Sahle' : 'የፀሐይ ካምፓስ መስራች ማን ነው?',
+      corrected: isEnglishEffective ? 'About Founder Eyoub Sahle' : 'የፀሐይ ካምፓስ መስራች ማን ነው?',
       raw: text,
-      detectedIntent: 'founder'
+      detectedIntent: 'founder',
+      isEnglishLanguageDetected: isPureEnglish
     };
   }
 
   // Default clean normalized text
-  return { corrected: text, raw: text };
+  return { corrected: text, raw: text, isEnglishLanguageDetected: isPureEnglish };
 }
 
 export default function TsehayVoiceAssistant() {
@@ -241,6 +255,7 @@ export default function TsehayVoiceAssistant() {
   const analyserRef = useRef<AnalyserNode | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const captionDismissTimerRef = useRef<NodeJS.Timeout | null>(null);
   const activeTranscriptRef = useRef<string>('');
   const isOpenRef = useRef<boolean>(false);
   const isSpeakingRef = useRef<boolean>(false);
@@ -295,6 +310,10 @@ export default function TsehayVoiceAssistant() {
 
   // 🛑 Instant Voice Output Termination (For Barge-in / Interruption)
   const stopVoiceOutput = useCallback(() => {
+    if (captionDismissTimerRef.current) {
+      clearTimeout(captionDismissTimerRef.current);
+      captionDismissTimerRef.current = null;
+    }
     if (currentAudioRef.current) {
       currentAudioRef.current.pause();
       currentAudioRef.current.currentTime = 0;
@@ -311,6 +330,10 @@ export default function TsehayVoiceAssistant() {
   // Close Assistant Flow
   const closeAssistant = useCallback(() => {
     playSciFiSound('close');
+    if (captionDismissTimerRef.current) {
+      clearTimeout(captionDismissTimerRef.current);
+      captionDismissTimerRef.current = null;
+    }
     if (recognitionRef.current) {
       try { recognitionRef.current.stop(); } catch(e) {}
       recognitionRef.current = null;
@@ -460,8 +483,15 @@ export default function TsehayVoiceAssistant() {
     stopSpeechRecognition();
     stopAudioAnalyser();
 
+    const correctionResult = autoCorrectAmharicSpeech(spokenText, selectedLangRef.current === 'en');
+    
+    // Auto-switch to English if pure English was spoken
+    if (correctionResult.isEnglishLanguageDetected && selectedLangRef.current !== 'en') {
+      setSelectedLang('en');
+      selectedLangRef.current = 'en';
+    }
+
     const isEng = selectedLangRef.current === 'en';
-    const correctionResult = autoCorrectAmharicSpeech(spokenText, isEng);
     const intent = forcedIntent || correctionResult.detectedIntent;
     const cleanText = correctionResult.corrected;
 
@@ -652,20 +682,24 @@ export default function TsehayVoiceAssistant() {
     }
   }, [pathname, router, speakVoice, playSciFiSound, stopVoiceOutput, closeAssistant]);
 
-  // 🔄 Continuous Multi-Turn Listening Loop
-  const resumeListeningForNextTurn = () => {
+  // 🔄 Continuous Multi-Turn Listening Loop with Auto-Dismiss of Old Spoken Caption
+  const resumeListeningForNextTurn = useCallback(() => {
     if (!isOpenRef.current) return;
     const isEng = selectedLangRef.current === 'en';
-    setStatusMessage(isEng ? 'Listening... Speak your next question' : 'እየሰማሁ ነው... ቀጣይ ጥያቄዎን ይናገሩ');
-    setTranscript('');
-    setInterimTranscript('');
-    activeTranscriptRef.current = '';
-    setTimeout(() => {
+
+    // Auto-fade / clear previous speech & AI response captions after speech completion so screen stays pristine
+    if (captionDismissTimerRef.current) clearTimeout(captionDismissTimerRef.current);
+    captionDismissTimerRef.current = setTimeout(() => {
       if (isOpenRef.current && !isSpeakingRef.current) {
+        setAiResponse('');
+        setTranscript('');
+        setInterimTranscript('');
+        activeTranscriptRef.current = '';
+        setStatusMessage(isEng ? 'Listening... Ask your next question' : 'እየሰማሁ ነው... ቀጣይ ጥያቄዎን ይናገሩ');
         startSpeechRecognition();
       }
-    }, 400);
-  };
+    }, 1400);
+  }, []);
 
   // 🎙️ High-Sensitivity Speech Recognition Engine with Multi-Alternative Phonetic Capture & Auto-Correction
   const startSpeechRecognition = useCallback(() => {
@@ -1132,7 +1166,7 @@ export default function TsehayVoiceAssistant() {
             {/* Live Subtitle Transcription & Spoken Response Bubble */}
             <div className="w-full min-h-[38px] flex flex-col justify-center my-1 px-1">
               {transcript || interimTranscript ? (
-                <div className="bg-white/5 border border-white/10 rounded-xl p-2 mb-1.5">
+                <div className="bg-white/5 border border-white/10 rounded-xl p-2 mb-1.5 transition-all duration-300">
                   <p className="text-xs font-bold text-white leading-relaxed">
                     <span className="text-[#f9b03c] font-extrabold mr-1">{selectedLang === 'en' ? 'You:' : 'እርስዎ:'}</span>
                     "{transcript} <span className="text-amber-300 animate-pulse">{interimTranscript}</span>"
@@ -1148,7 +1182,7 @@ export default function TsehayVoiceAssistant() {
 
               {/* AI Spoken Answer Subtitle Bubble */}
               {aiResponse && (
-                <div className="p-2.5 rounded-xl bg-gradient-to-r from-amber-950/80 via-slate-900/90 to-amber-950/80 border border-amber-500/40 text-amber-200 text-xs font-bold flex items-start gap-2 animate-in fade-in shadow-md">
+                <div className="p-2.5 rounded-xl bg-gradient-to-r from-amber-950/80 via-slate-900/90 to-amber-950/80 border border-amber-500/40 text-amber-200 text-xs font-bold flex items-start gap-2 animate-in fade-in duration-300 shadow-md">
                   <div className="w-5 h-5 rounded-md bg-amber-500/20 flex items-center justify-center text-[#f9b03c] shrink-0 mt-0.5">
                     <i className={`fa-solid ${isSpeaking && !isAudioPaused ? 'fa-volume-high animate-bounce' : isAudioPaused ? 'fa-pause' : 'fa-check'} text-[10px]`}></i>
                   </div>
