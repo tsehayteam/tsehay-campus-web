@@ -231,7 +231,8 @@ export default function FloatingAIButton() {
   const startVoiceRecording = () => {
     if (typeof window === 'undefined') return;
 
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const win = window as any;
+    const SpeechRecognition = win.SpeechRecognition || win.webkitSpeechRecognition;
     if (!SpeechRecognition) {
       alert("ይቅርታ፣ የእርስዎ ብሮውዘር Voice Recognition አይደግፍም። Chrome ወይም Edge ይጠቀሙ።");
       return;
@@ -250,11 +251,12 @@ export default function FloatingAIButton() {
       recognition.lang = 'am-ET';
       recognition.continuous = true;
       recognition.interimResults = true;
-      recognition.maxAlternatives = 1;
+      recognition.maxAlternatives = 2;
 
       recognition.onstart = () => {
         setIsRecordingVoice(true);
         setRecordingDuration(0);
+        if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
         recordingTimerRef.current = setInterval(() => {
           setRecordingDuration(prev => prev + 1);
         }, 1000);
@@ -275,19 +277,16 @@ export default function FloatingAIButton() {
       recognition.onerror = (event: any) => {
         console.warn("Voice speech recognition event error:", event.error);
         if (event.error === 'not-allowed') {
-          alert('እባክዎ የማይክሮፎን ፈቃድ ይስጡ (Please allow microphone access).');
+          alert('እባክዎ የማይክሮፎን ፈቃድ ይስጡ (Please allow microphone access in browser settings).');
+          stopVoiceRecordingWithoutSend();
         }
-        stopVoiceRecordingWithoutSend();
+        // Do not abort on 'no-speech' or 'network' to allow the user to speak
       };
 
       recognition.onend = () => {
-        if (isRecordingVoice) {
-          // If auto-ended by browser, check if text was transcribed and send
-          const spoken = voiceTranscriptRef.current.trim();
-          stopVoiceRecordingWithoutSend();
-          if (spoken) {
-            handleSendMessage(spoken);
-          }
+        // If recording was active, grab whatever text was transcribed
+        if (voiceTranscriptRef.current.trim()) {
+          setInput(voiceTranscriptRef.current.trim());
         }
       };
 

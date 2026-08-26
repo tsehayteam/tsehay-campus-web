@@ -1220,7 +1220,8 @@ function StudentDashboardContent() {
 
   const startAiVoiceRecording = () => {
     if (typeof window === "undefined") return;
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const win = window as any;
+    const SpeechRecognition = win.SpeechRecognition || win.webkitSpeechRecognition;
     if (!SpeechRecognition) {
       alert("ይቅርታ፣ የእርስዎ ብሮውዘር Voice Recognition አይደግፍም። እባክዎ Chrome ወይም Edge ይጠቀሙ።");
       return;
@@ -1239,11 +1240,12 @@ function StudentDashboardContent() {
       recognition.lang = "am-ET";
       recognition.continuous = true;
       recognition.interimResults = true;
-      recognition.maxAlternatives = 1;
+      recognition.maxAlternatives = 2;
 
       recognition.onstart = () => {
         setIsAiVoiceRecording(true);
         setAiRecordingSeconds(0);
+        if (aiTimerRef.current) clearInterval(aiTimerRef.current);
         aiTimerRef.current = setInterval(() => {
           setAiRecordingSeconds(prev => prev + 1);
         }, 1000);
@@ -1263,16 +1265,15 @@ function StudentDashboardContent() {
 
       recognition.onerror = (event: any) => {
         console.warn("Voice speech recognition error:", event.error);
-        stopAiVoiceRecording(false);
+        if (event.error === 'not-allowed') {
+          alert('እባክዎ የማይክሮፎን ፈቃድ ይስጡ (Please allow microphone access in browser settings).');
+          stopAiVoiceRecording(false);
+        }
       };
 
       recognition.onend = () => {
-        if (isAiVoiceRecording) {
-          const spoken = aiVoiceTranscriptRef.current.trim();
-          stopAiVoiceRecording(false);
-          if (spoken) {
-            handleSendAiMessage(undefined, spoken);
-          }
+        if (aiVoiceTranscriptRef.current.trim()) {
+          setChatInput(aiVoiceTranscriptRef.current.trim());
         }
       };
 
