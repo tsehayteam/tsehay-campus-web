@@ -90,7 +90,7 @@ export default function SmartSearchInput({
             }}
           />
 
-          {query && (
+          {query ? (
             <button 
               type="button"
               onClick={() => setQuery('')} 
@@ -99,6 +99,13 @@ export default function SmartSearchInput({
             >
               <i className="fa-solid fa-xmark"></i>
             </button>
+          ) : (
+            <div className={`absolute ${compact ? 'right-3' : 'right-4'} top-1/2 -translate-y-1/2 flex items-center pointer-events-none z-10`}>
+              <span className="relative flex h-2 w-2 sm:h-2.5 sm:w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#f9b03c] opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 sm:h-2.5 sm:w-2.5 bg-[#f9b03c] shadow-[0_0_8px_#f9b03c]"></span>
+              </span>
+            </div>
           )}
         </div>
       </div>

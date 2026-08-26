@@ -674,7 +674,7 @@ export default function Navbar() {
                       Tsehay AI
                     </span>
                     <span className="text-[9px] bg-[#f9b03c]/20 text-[#f9b03c] font-black px-1.5 py-0.2 rounded-md border border-[#f9b03c]/30">
-                      24/7 AI
+                      24/7
                     </span>
                   </div>
                 </div>
