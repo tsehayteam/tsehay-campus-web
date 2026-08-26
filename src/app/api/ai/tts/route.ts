@@ -16,18 +16,27 @@ export async function GET(req: NextRequest) {
       .replace(/\s+/g, ' ')
       .trim();
 
-    // Limit to 220 chars for instantaneous TTS streaming
-    if (cleanText.length > 220) {
-      // Cut at last punctuation/sentence break
-      const lastPeriod = cleanText.slice(0, 220).lastIndexOf('።');
-      const lastComma = cleanText.slice(0, 220).lastIndexOf('፣');
-      const lastSpace = cleanText.slice(0, 220).lastIndexOf(' ');
-      const cutIdx = lastPeriod > 100 ? lastPeriod + 1 : lastComma > 100 ? lastComma + 1 : lastSpace > 100 ? lastSpace : 220;
+    // Limit to 260 chars for instantaneous TTS streaming
+    if (cleanText.length > 260) {
+      const lastEthPeriod = cleanText.slice(0, 260).lastIndexOf('።');
+      const lastPeriod = cleanText.slice(0, 260).lastIndexOf('.');
+      const lastEthComma = cleanText.slice(0, 260).lastIndexOf('፣');
+      const lastComma = cleanText.slice(0, 260).lastIndexOf(',');
+      const lastSpace = cleanText.slice(0, 260).lastIndexOf(' ');
+
+      const cutIdx = 
+        lastEthPeriod > 120 ? lastEthPeriod + 1 :
+        lastPeriod > 120 ? lastPeriod + 1 :
+        lastEthComma > 120 ? lastEthComma + 1 :
+        lastComma > 120 ? lastComma + 1 :
+        lastSpace > 120 ? lastSpace : 260;
+
       cleanText = cleanText.slice(0, cutIdx);
     }
 
-    // Google Translate TTS endpoint with authentic Amharic (am) voice engine
-    const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(cleanText)}&tl=${encodeURIComponent(lang)}&client=tw-ob`;
+    // Google Translate TTS endpoint with authentic Amharic ('am') or English ('en') voice engine
+    const targetLang = lang.startsWith('en') ? 'en' : 'am';
+    const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(cleanText)}&tl=${encodeURIComponent(targetLang)}&client=tw-ob`;
 
     const response = await fetch(ttsUrl, {
       headers: {
@@ -51,6 +60,6 @@ export async function GET(req: NextRequest) {
     });
   } catch (error: any) {
     console.error('TTS API error:', error);
-    return NextResponse.json({ error: error.message || 'Failed to synthesize Amharic speech' }, { status: 500 });
+    return NextResponse.json({ error: error.message || 'Failed to synthesize speech' }, { status: 500 });
   }
 }
