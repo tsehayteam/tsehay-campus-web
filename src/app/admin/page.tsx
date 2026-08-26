@@ -369,6 +369,20 @@ export default function AdminDashboard() {
       setTickets(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
 
+    // 🌟 Real-Time Firestore Listener for Event Registrations & Tickets
+    let unsubscribeEventRegs: any = null;
+    try {
+      const regCol = collection(db, 'event_registrations');
+      unsubscribeEventRegs = onSnapshot(regCol, (snapshot) => {
+        if (!snapshot.empty) {
+          const list = snapshot.docs.map(d => ({ ...d.data() }));
+          setEventTickets(list);
+        }
+      }, (err) => {
+        console.warn('Real-time event_registrations sync fallback:', err);
+      });
+    } catch (e) {}
+
     // 🌟 Live Events & QR Tickets Data Loader
     const fetchEventsData = async () => {
       try {
@@ -384,7 +398,13 @@ export default function AdminDashboard() {
         if (tickRes.ok) {
           const tickData = await tickRes.json();
           if (tickData.tickets && Array.isArray(tickData.tickets)) {
-            setEventTickets(tickData.tickets);
+            setEventTickets(prev => {
+              const merged = [...tickData.tickets];
+              prev.forEach(p => {
+                if (!merged.some(m => m.ticketId === p.ticketId)) merged.push(p);
+              });
+              return merged;
+            });
           }
         }
       } catch (e) {}
