@@ -1216,28 +1216,33 @@ function StudentDashboardContent() {
     return () => { isMounted = false; };
   }, [user]);
 
+  const aiVoiceTranscriptRef = useRef<string>('');
+
   const startAiVoiceRecording = () => {
     if (typeof window === "undefined") return;
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      alert("ይቅርታ፣ የእርስዎ ብሮውዘር Voice Recognition አይደግፍም። እባክዎ Chrome ወይም Safari ይጠቀሙ።");
+      alert("ይቅርታ፣ የእርስዎ ብሮውዘር Voice Recognition አይደግፍም። እባክዎ Chrome ወይም Edge ይጠቀሙ።");
       return;
     }
 
     try {
+      if (aiRecognitionRef.current) {
+        try { aiRecognitionRef.current.abort(); } catch (e) {}
+        aiRecognitionRef.current = null;
+      }
+
+      aiVoiceTranscriptRef.current = '';
+      setChatInput('');
+
       const recognition = new SpeechRecognition();
       recognition.lang = "am-ET";
       recognition.continuous = true;
       recognition.interimResults = true;
-
-      let baseText = "";
-      setChatInput(prev => {
-        baseText = prev || "";
-        return prev;
-      });
+      recognition.maxAlternatives = 1;
 
       recognition.onstart = () => {
-        setIsAiVoiceRecording(true)
+        setIsAiVoiceRecording(true);
         setAiRecordingSeconds(0);
         aiTimerRef.current = setInterval(() => {
           setAiRecordingSeconds(prev => prev + 1);
@@ -1247,21 +1252,28 @@ function StudentDashboardContent() {
       recognition.onresult = (event: any) => {
         let fullTranscript = "";
         for (let i = 0; i < event.results.length; i++) {
-          fullTranscript += event.results[i][0].transcript;
+          fullTranscript += event.results[i][0].transcript + ' ';
         }
         fullTranscript = fullTranscript.trim();
         if (fullTranscript) {
-          setChatInput(baseText ? `${baseText} ${fullTranscript}` : fullTranscript);
+          aiVoiceTranscriptRef.current = fullTranscript;
+          setChatInput(fullTranscript);
         }
       };
 
       recognition.onerror = (event: any) => {
         console.warn("Voice speech recognition error:", event.error);
-        stopAiVoiceRecording();
+        stopAiVoiceRecording(false);
       };
 
       recognition.onend = () => {
-        stopAiVoiceRecording();
+        if (isAiVoiceRecording) {
+          const spoken = aiVoiceTranscriptRef.current.trim();
+          stopAiVoiceRecording(false);
+          if (spoken) {
+            handleSendAiMessage(undefined, spoken);
+          }
+        }
       };
 
       recognition.start();
@@ -1272,7 +1284,8 @@ function StudentDashboardContent() {
     }
   };
 
-  const stopAiVoiceRecording = () => {
+  const stopAiVoiceRecording = (shouldSend: boolean = true) => {
+    const spoken = (aiVoiceTranscriptRef.current || chatInput).trim();
     if (aiRecognitionRef.current) {
       try { aiRecognitionRef.current.stop(); } catch (e) {}
       aiRecognitionRef.current = null;
@@ -1283,6 +1296,10 @@ function StudentDashboardContent() {
     }
     setIsAiVoiceRecording(false);
     setAiRecordingSeconds(0);
+
+    if (shouldSend && spoken) {
+      handleSendAiMessage(undefined, spoken);
+    }
   };
 
   const handleAiImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
