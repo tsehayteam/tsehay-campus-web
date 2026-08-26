@@ -6,6 +6,8 @@ import { collection, onSnapshot, doc, setDoc, deleteDoc, serverTimestamp, query,
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile, sendPasswordResetEmail } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { DEFAULT_COURSES, getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl } from '@/lib/courseCache';
+import { DEFAULT_EVENTS, getCachedEvents, saveCachedEvents, getRemainingSeats, TsehayEvent, EventTicket } from '@/lib/eventCache';
+import AdminQrScanner from '@/components/AdminQrScanner';
 
 import { parseVideoEmbedUrl, parseImageUrl } from '@/lib/videoParser';
 
@@ -90,6 +92,33 @@ export default function AdminDashboard() {
   const [payments, setPayments] = useState<any[]>([]);
   const [tickets, setTickets] = useState<any[]>([]);
   const router = useRouter();
+
+  // 🌟 Events & QR Tickets State
+  const [events, setEvents] = useState<TsehayEvent[]>(() => getCachedEvents());
+  const [eventTickets, setEventTickets] = useState<EventTicket[]>([]);
+  const [eventsSubTab, setEventsSubTab] = useState<'list' | 'tickets' | 'scanner'>('list');
+  const [ticketSearchTerm, setTicketSearchTerm] = useState('');
+  const [isEventModalOpen, setIsEventModalOpen] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<any>(null);
+  const [isSavingEvent, setIsSavingEvent] = useState(false);
+  const [eventSuccessMsg, setEventSuccessMsg] = useState('');
+  const [eventForm, setEventForm] = useState({
+    title: '',
+    titleEn: '',
+    description: '',
+    date: '',
+    time: '',
+    location: '',
+    isOnline: false,
+    capacity: 100,
+    price: 0,
+    isFree: false,
+    speaker: 'ኢዮብ ሳህሌ (Eyoub Sahle)',
+    speakerRole: 'የፀሐይ ካምፓስ መስራች እና የዩቲዩብ ስፔሻሊስት',
+    image: 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?q=80&w=1200',
+    tags: 'YouTube, Workshop',
+    status: 'upcoming'
+  });
 
   // 🛡️ Comprehensive Admin Authorization Verifier
   const isAuthorizedAdmin = (): boolean => {
@@ -339,6 +368,28 @@ export default function AdminDashboard() {
     const unsubscribeTickets = onSnapshot(tq, (snapshot) => {
       setTickets(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
+
+    // 🌟 Live Events & QR Tickets Data Loader
+    const fetchEventsData = async () => {
+      try {
+        const evRes = await fetch('/api/events');
+        if (evRes.ok) {
+          const evData = await evRes.json();
+          if (evData.events && Array.isArray(evData.events) && evData.events.length > 0) {
+            setEvents(evData.events);
+            saveCachedEvents(evData.events);
+          }
+        }
+        const tickRes = await fetch('/api/events/tickets');
+        if (tickRes.ok) {
+          const tickData = await tickRes.json();
+          if (tickData.tickets && Array.isArray(tickData.tickets)) {
+            setEventTickets(tickData.tickets);
+          }
+        }
+      } catch (e) {}
+    };
+    fetchEventsData();
 
     const aboutVidRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'site_settings', 'about_video');
     const unsubscribeAboutVideo = onSnapshot(aboutVidRef, (docSnap) => {
@@ -1404,6 +1455,119 @@ export default function AdminDashboard() {
     }
   };
 
+  // 🌟 Event CRUD Handlers
+  const openAddEventModal = () => {
+    setEditingEvent(null);
+    setEventForm({
+      title: '',
+      titleEn: '',
+      description: '',
+      date: '',
+      time: '',
+      location: '',
+      isOnline: false,
+      capacity: 100,
+      price: 0,
+      isFree: false,
+      speaker: 'ኢዮብ ሳህሌ (Eyoub Sahle)',
+      speakerRole: 'የፀሐይ ካምፓስ መስራች እና የዩቲዩብ ስፔሻሊስት',
+      image: 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?q=80&w=1200',
+      tags: 'YouTube, Workshop',
+      status: 'upcoming'
+    });
+    setEventSuccessMsg('');
+    setIsEventModalOpen(true);
+  };
+
+  const openEditEventModal = (event: TsehayEvent) => {
+    setEditingEvent(event);
+    setEventForm({
+      title: event.title || '',
+      titleEn: event.titleEn || '',
+      description: event.description || '',
+      date: event.date || '',
+      time: event.time || '',
+      location: event.location || '',
+      isOnline: event.isOnline || false,
+      capacity: event.capacity || 100,
+      price: event.price || 0,
+      isFree: event.isFree || event.price === 0,
+      speaker: event.speaker || 'ኢዮብ ሳህሌ',
+      speakerRole: event.speakerRole || 'Lead Mentor',
+      image: event.image || '',
+      tags: Array.isArray(event.tags) ? event.tags.join(', ') : (event.tags || ''),
+      status: event.status || 'upcoming'
+    });
+    setEventSuccessMsg('');
+    setIsEventModalOpen(true);
+  };
+
+  const handleSaveEvent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!eventForm.title.trim()) {
+      showToast('እባክዎ የክንውኑን ርዕስ ያስገቡ', 'error');
+      return;
+    }
+
+    setIsSavingEvent(true);
+    try {
+      const eventId = editingEvent ? editingEvent.id : `evt_${Date.now()}`;
+      const payload: TsehayEvent = {
+        id: eventId,
+        title: eventForm.title,
+        titleEn: eventForm.titleEn,
+        description: eventForm.description,
+        date: eventForm.date,
+        time: eventForm.time,
+        location: eventForm.location,
+        isOnline: Boolean(eventForm.isOnline),
+        capacity: Number(eventForm.capacity) || 100,
+        registeredCount: editingEvent ? (editingEvent.registeredCount || 0) : 0,
+        price: eventForm.isFree ? 0 : Number(eventForm.price) || 0,
+        isFree: Boolean(eventForm.isFree),
+        speaker: eventForm.speaker,
+        speakerRole: eventForm.speakerRole,
+        image: eventForm.image || 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?q=80&w=1200',
+        tags: typeof eventForm.tags === 'string' ? eventForm.tags.split(',').map(t => t.trim()).filter(Boolean) : eventForm.tags,
+        status: (eventForm.status as any) || 'upcoming'
+      };
+
+      const res = await fetch('/api/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ event: payload })
+      });
+
+      if (res.ok) {
+        if (editingEvent) {
+          setEvents(prev => prev.map(ev => ev.id === eventId ? payload : ev));
+        } else {
+          setEvents(prev => [payload, ...prev]);
+        }
+        saveCachedEvents(editingEvent ? events.map(ev => ev.id === eventId ? payload : ev) : [payload, ...events]);
+        setEventSuccessMsg('ክንውኑ በተሳካ ሁኔታ ተቀምጧል! (Event saved successfully)');
+        showToast('ክንውኑ በተሳካ ሁኔታ ተቀምጧል!', 'success');
+        setTimeout(() => setIsEventModalOpen(false), 1200);
+      } else {
+        throw new Error('Failed to save event');
+      }
+    } catch (err: any) {
+      showToast(err.message || 'Error saving event', 'error');
+    } finally {
+      setIsSavingEvent(false);
+    }
+  };
+
+  const handleDeleteEvent = async (id: string) => {
+    if (window.confirm("እርግጠኛ ነዎት ይህን ክስተት ማጥፋት ይፈልጋሉ?")) {
+      setEvents(prev => prev.filter(e => e.id !== id));
+      try {
+        await fetch(`/api/events?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+        showToast('ክስተቱ ተሰርዟል!', 'success');
+      } catch (e) {}
+    }
+  };
+
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-dark flex flex-col items-center justify-center p-4 relative overflow-hidden -mt-20 z-[60]">
@@ -1478,6 +1642,9 @@ export default function AdminDashboard() {
           <button onClick={() => setActiveTab('courses')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition ${activeTab === 'courses' ? 'bg-blue-50 dark:bg-slate-700/50 text-secondary dark:text-primary' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700/30'}`}>
             <i className="fa-solid fa-layer-group"></i> ኮርሶች (Courses)
           </button>
+          <button onClick={() => setActiveTab('events')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition ${activeTab === 'events' ? 'bg-[#f9b03c]/20 dark:bg-slate-700/60 text-[#f9b03c] border-l-4 border-[#f9b03c]' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700/30'}`}>
+            <i className="fa-solid fa-calendar-check text-[#f9b03c] text-lg"></i> ክንውኖች እና ትኬቶች (Events & QR)
+          </button>
           <button onClick={() => setActiveTab('referrals')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition ${activeTab === 'referrals' ? 'bg-[#f9b03c]/15 dark:bg-slate-700/50 text-[#f9b03c]' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700/30'}`}>
             <i className="fa-solid fa-tag text-[#f9b03c] text-lg"></i> Promo Codes (የቅናሽ ኮዶች)
           </button>
@@ -1535,6 +1702,7 @@ export default function AdminDashboard() {
           <h1 className="text-xl font-black text-dark dark:text-white">
              {activeTab === 'dashboard' && 'አጠቃላይ መረጃ'}
              {activeTab === 'courses' && 'ኮርሶች ማስተዳደሪያ'}
+             {activeTab === 'events' && 'የክንውኖች እና የትኬት አስተዳደር (Events, Tickets & QR Scanner)'}
              {activeTab === 'referrals' && 'የሪፈራል እና የቅናሽ ኮዶች ማስተዳደሪያ (Referral & Promo Codes)'}
              {activeTab === "portfolio" && "የ YouTube Portfolio ማስተዳደሪያ (Instructor YouTube Portfolio)"}
              {activeTab === 'youtube' && 'ነጻ የዩቲዩብ ቪዲዮዎች ማስተዳደሪያ (YouTube Videos)'}
@@ -1558,6 +1726,11 @@ export default function AdminDashboard() {
             {activeTab === 'courses' && (
               <button onClick={() => openForm()} className="bg-dark dark:bg-primary text-white dark:text-dark px-6 py-2 rounded-xl text-sm font-bold hover:bg-secondary dark:hover:bg-yellow-400 transition shadow-sm flex items-center gap-2 ml-2">
                 <i className="fa-solid fa-plus"></i> አዲስ ኮርስ ጨምር
+              </button>
+            )}
+            {activeTab === 'events' && eventsSubTab === 'list' && (
+              <button onClick={openAddEventModal} className="bg-gradient-to-r from-amber-500 to-[#f9b03c] text-slate-950 px-6 py-2 rounded-xl text-sm font-black hover:opacity-90 transition shadow-lg flex items-center gap-2 ml-2">
+                <i className="fa-solid fa-plus"></i> አዲስ ክስተት ጨምር
               </button>
             )}
             {activeTab === 'youtube' && (
@@ -1806,8 +1979,234 @@ export default function AdminDashboard() {
                   ))
                 )}
               </tbody>
-            </table>
           </div>
+          )}
+
+          {activeTab === 'events' && (
+            <div className="space-y-6">
+              
+              {/* Event Subtabs Bar */}
+              <div className="flex flex-wrap items-center justify-between gap-4 bg-white dark:bg-slate-800 p-3 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEventsSubTab('list')}
+                    className={`px-4 py-2 rounded-xl text-xs font-black transition flex items-center gap-2 cursor-pointer ${
+                      eventsSubTab === 'list'
+                        ? 'bg-gradient-to-r from-amber-500 to-[#f9b03c] text-slate-950 shadow-md'
+                        : 'bg-gray-100 dark:bg-slate-700/50 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    <i className="fa-solid fa-calendar-days"></i>
+                    <span>የክንውኖች ዝርዝር ({events.length})</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setEventsSubTab('tickets')}
+                    className={`px-4 py-2 rounded-xl text-xs font-black transition flex items-center gap-2 cursor-pointer ${
+                      eventsSubTab === 'tickets'
+                        ? 'bg-gradient-to-r from-amber-500 to-[#f9b03c] text-slate-950 shadow-md'
+                        : 'bg-gray-100 dark:bg-slate-700/50 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    <i className="fa-solid fa-ticket"></i>
+                    <span>የተቆረጡ ትኬቶች ({eventTickets.length})</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setEventsSubTab('scanner')}
+                    className={`px-4 py-2 rounded-xl text-xs font-black transition flex items-center gap-2 cursor-pointer ${
+                      eventsSubTab === 'scanner'
+                        ? 'bg-gradient-to-r from-amber-500 to-[#f9b03c] text-slate-950 shadow-md'
+                        : 'bg-gray-100 dark:bg-slate-700/50 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    <i className="fa-solid fa-qrcode text-sm"></i>
+                    <span>የበር ላይ QR ስካነር (Door Scanner)</span>
+                  </button>
+                </div>
+
+                {eventsSubTab === 'list' && (
+                  <button
+                    type="button"
+                    onClick={openAddEventModal}
+                    className="bg-gradient-to-r from-amber-500 to-[#f9b03c] text-slate-950 px-4 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 shadow-md hover:opacity-90 transition cursor-pointer"
+                  >
+                    <i className="fa-solid fa-plus"></i>
+                    <span>አዲስ ክስተት ጨምር</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Subtab 1: Events List */}
+              {eventsSubTab === 'list' && (
+                <div className="bg-white dark:bg-slate-800 rounded-3xl border border-gray-100 dark:border-slate-700 shadow-sm overflow-hidden">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-gray-50 dark:bg-slate-900 border-b border-gray-100 dark:border-slate-700">
+                        <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">ክንውን (Event)</th>
+                        <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">ቀን እና ሰዓት</th>
+                        <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">ቦታ / አዳራሽ</th>
+                        <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">የተያዙ ቦታዎች</th>
+                        <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">የቲኬት ዋጋ</th>
+                        <th className="p-4 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">እርምጃ</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {events.map((event) => {
+                        const remaining = getRemainingSeats(event);
+                        const percent = Math.min(100, Math.round(((event.registeredCount || 0) / (event.capacity || 100)) * 100));
+
+                        return (
+                          <tr key={event.id} className="border-b border-gray-50 dark:border-slate-700/50 hover:bg-gray-50 dark:hover:bg-slate-700/20 transition group">
+                            <td className="p-4">
+                              <div className="flex items-center gap-3">
+                                <img 
+                                  src={event.image || 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?q=80&w=1200'} 
+                                  className="w-12 h-12 rounded-xl object-cover border border-gray-200 dark:border-white/10 shrink-0" 
+                                  alt={event.title}
+                                />
+                                <div>
+                                  <p className="font-bold text-sm text-dark dark:text-white line-clamp-1">{event.title}</p>
+                                  <p className="text-xs text-gray-500 font-semibold">{event.speaker}</p>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="p-4 text-xs text-gray-700 dark:text-gray-300">
+                              <div className="font-bold">{event.date}</div>
+                              <div className="text-gray-500">{event.time}</div>
+                            </td>
+                            <td className="p-4 text-xs text-gray-700 dark:text-gray-300">
+                              <span className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-300 font-semibold">
+                                {event.isOnline ? '🌐 Virtual' : '📍 ' + event.location}
+                              </span>
+                            </td>
+                            <td className="p-4 text-xs">
+                              <div className="flex justify-between text-[11px] mb-1 font-bold">
+                                <span>{event.registeredCount || 0}/{event.capacity || 100}</span>
+                                <span className="text-[#f9b03c]">{remaining} ቀርቷል</span>
+                              </div>
+                              <div className="w-24 h-1.5 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                                <div className="h-full bg-[#f9b03c]" style={{ width: `${percent}%` }} />
+                              </div>
+                            </td>
+                            <td className="p-4 font-bold text-dark dark:text-white text-xs">
+                              {event.price === 0 || event.isFree ? (
+                                <span className="text-success">100% ነፃ</span>
+                              ) : (
+                                `${event.price.toLocaleString()} ብር`
+                              )}
+                            </td>
+                            <td className="p-4 text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => openEditEventModal(event)}
+                                  className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-slate-700 text-secondary dark:text-blue-400 hover:bg-secondary hover:text-white transition flex items-center justify-center cursor-pointer"
+                                  title="ክንውኑን አስተካክል"
+                                >
+                                  <i className="fa-solid fa-pen text-xs"></i>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteEvent(event.id)}
+                                  className="w-8 h-8 rounded-lg bg-red-50 dark:bg-red-500/10 text-danger hover:bg-danger hover:text-white transition flex items-center justify-center cursor-pointer"
+                                  title="ክንውኑን ሰርዝ"
+                                >
+                                  <i className="fa-solid fa-trash text-xs"></i>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* Subtab 2: Issued Tickets Table */}
+              {eventsSubTab === 'tickets' && (
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center bg-white dark:bg-slate-800 p-4 rounded-2xl border border-gray-100 dark:border-slate-700">
+                    <input
+                      type="text"
+                      value={ticketSearchTerm}
+                      onChange={(e) => setTicketSearchTerm(e.target.value)}
+                      placeholder="በተሳታፊ ስም ወይም በትኬት ቁጥር ፈልግ..."
+                      className="bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2 text-xs w-full max-w-sm text-dark dark:text-white outline-none focus:border-[#f9b03c]"
+                    />
+                    <span className="text-xs font-bold text-gray-500">
+                      ጠቅላላ ትኬቶች: {eventTickets.length}
+                    </span>
+                  </div>
+
+                  <div className="bg-white dark:bg-slate-800 rounded-3xl border border-gray-100 dark:border-slate-700 shadow-sm overflow-hidden">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-gray-50 dark:bg-slate-900 border-b border-gray-100 dark:border-slate-700">
+                          <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">የትኬት ቁጥር</th>
+                          <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">ተሳታፊ (Attendee)</th>
+                          <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">ክንውን (Event)</th>
+                          <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">ደረጃ (Tier)</th>
+                          <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">ሁኔታ</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {eventTickets
+                          .filter(t => 
+                            !ticketSearchTerm.trim() || 
+                            t.attendeeName.toLowerCase().includes(ticketSearchTerm.toLowerCase()) || 
+                            t.ticketId.toLowerCase().includes(ticketSearchTerm.toLowerCase())
+                          )
+                          .map((ticket) => (
+                            <tr key={ticket.ticketId} className="border-b border-gray-50 dark:border-slate-700/50 hover:bg-gray-50 dark:hover:bg-slate-700/20 transition">
+                              <td className="p-4 font-mono font-bold text-xs text-[#f9b03c]">
+                                {ticket.ticketId}
+                              </td>
+                              <td className="p-4">
+                                <div className="font-bold text-sm text-dark dark:text-white">{ticket.attendeeName}</div>
+                                <div className="text-xs text-gray-500">{ticket.attendeeEmail}</div>
+                              </td>
+                              <td className="p-4 text-xs font-semibold text-gray-700 dark:text-gray-300">
+                                {ticket.eventTitle}
+                              </td>
+                              <td className="p-4 text-xs">
+                                <span className="px-2.5 py-1 rounded-full bg-amber-400/10 border border-amber-400/30 text-[#f9b03c] font-black text-[10px]">
+                                  {ticket.tier || 'VIP'}
+                                </span>
+                              </td>
+                              <td className="p-4 text-xs">
+                                {ticket.isUsed ? (
+                                  <span className="px-2.5 py-1 rounded-full bg-red-500/10 text-red-400 border border-red-500/20 font-bold flex items-center gap-1 w-max">
+                                    <i className="fa-solid fa-circle-check"></i> ጥቅም ላይ የዋለ
+                                  </span>
+                                ) : (
+                                  <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 font-bold flex items-center gap-1 w-max">
+                                    <i className="fa-solid fa-clock"></i> ንቁ (Active Pass)
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* Subtab 3: Live QR Scanner */}
+              {eventsSubTab === 'scanner' && (
+                <AdminQrScanner
+                  onTicketScanned={(scannedTicket) => {
+                    setEventTickets(prev => prev.map(t => t.ticketId === scannedTicket.ticketId ? scannedTicket : t));
+                  }}
+                />
+              )}
+
+            </div>
           )}
 
           {activeTab === 'youtube' && (
@@ -3458,7 +3857,204 @@ export default function AdminDashboard() {
             </form>
           </div>
         </div>
+      {/* 🌟 Add/Edit Event Modal */}
+      {isEventModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-800 rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 border border-gray-100 dark:border-slate-700 shadow-2xl animate-in zoom-in-95 duration-200 text-dark dark:text-white">
+            
+            <div className="flex items-center justify-between pb-4 border-b border-gray-100 dark:border-slate-700 mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-[#f9b03c] text-slate-950 flex items-center justify-center text-lg shadow-md font-bold">
+                  <i className="fa-solid fa-calendar-plus"></i>
+                </div>
+                <div>
+                  <h3 className="text-lg font-black font-heading">
+                    {editingEvent ? 'ክንውን ማስተካከል (Edit Event)' : 'አዲስ የቀጥታ ክንውን ጨምር (Add New Event)'}
+                  </h3>
+                  <p className="text-xs text-gray-500">የቀጥታ ስልጠና ወይም ወርክሾፕ ዝርዝር መረጃዎችን ያስገቡ</p>
+                </div>
+              </div>
+              <button 
+                type="button"
+                onClick={() => setIsEventModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 flex items-center justify-center transition cursor-pointer"
+              >
+                <i className="fa-solid fa-xmark text-sm"></i>
+              </button>
+            </div>
+
+            {eventSuccessMsg && (
+              <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs mb-4">
+                {eventSuccessMsg}
+              </div>
+            )}
+
+            <form onSubmit={handleSaveEvent} className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-bold mb-1">የክንውኑ ርዕስ (Event Title - Amharic) *</label>
+                  <input
+                    type="text"
+                    required
+                    value={eventForm.title}
+                    onChange={(e) => setEventForm({ ...eventForm, title: e.target.value })}
+                    placeholder="ለምሳሌ፡ የ YouTube Masterclass የቀጥታ ስልጠና"
+                    className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-dark dark:text-white outline-none focus:border-[#f9b03c]"
+                  />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-bold mb-1">መግለጫ (Description) *</label>
+                  <textarea
+                    rows={3}
+                    required
+                    value={eventForm.description}
+                    onChange={(e) => setEventForm({ ...eventForm, description: e.target.value })}
+                    placeholder="ስለ ዝግጅቱ አጠር ያለ ማብራሪያ..."
+                    className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-dark dark:text-white outline-none focus:border-[#f9b03c]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold mb-1">ቀን (Date) *</label>
+                  <input
+                    type="text"
+                    required
+                    value={eventForm.date}
+                    onChange={(e) => setEventForm({ ...eventForm, date: e.target.value })}
+                    placeholder="ለምሳሌ፡ ጥቅምት 15, 2017"
+                    className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-dark dark:text-white outline-none focus:border-[#f9b03c]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold mb-1">ሰዓት (Time) *</label>
+                  <input
+                    type="text"
+                    required
+                    value={eventForm.time}
+                    onChange={(e) => setEventForm({ ...eventForm, time: e.target.value })}
+                    placeholder="ለምሳሌ፡ 08:00 PM (ከሰዓት 2:00)"
+                    className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-dark dark:text-white outline-none focus:border-[#f9b03c]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold mb-1">ቦታ / አዳራሽ (Location / Venue) *</label>
+                  <input
+                    type="text"
+                    required
+                    value={eventForm.location}
+                    onChange={(e) => setEventForm({ ...eventForm, location: e.target.value })}
+                    placeholder="ለምሳሌ፡ ቦሌ፣ ፍሬንድሺፕ ህንጻ፣ አዲስ አበባ"
+                    className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-dark dark:text-white outline-none focus:border-[#f9b03c]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold mb-1">የመያዝ አቅም (Seat Capacity) *</label>
+                  <input
+                    type="number"
+                    required
+                    min={1}
+                    value={eventForm.capacity}
+                    onChange={(e) => setEventForm({ ...eventForm, capacity: Number(e.target.value) })}
+                    placeholder="100"
+                    className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-dark dark:text-white outline-none focus:border-[#f9b03c]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold mb-1">የቲኬት ዋጋ በብር (Price in ETB)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    disabled={eventForm.isFree}
+                    value={eventForm.price}
+                    onChange={(e) => setEventForm({ ...eventForm, price: Number(e.target.value) })}
+                    placeholder="0"
+                    className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-dark dark:text-white outline-none focus:border-[#f9b03c] disabled:opacity-50"
+                  />
+                </div>
+
+                <div className="flex items-center gap-4 pt-6">
+                  <label className="flex items-center gap-2 cursor-pointer text-xs font-bold">
+                    <input
+                      type="checkbox"
+                      checked={eventForm.isFree}
+                      onChange={(e) => setEventForm({ ...eventForm, isFree: e.target.checked, price: e.target.checked ? 0 : eventForm.price })}
+                      className="w-4 h-4 rounded text-amber-500"
+                    />
+                    <span>100% ነፃ ክንውን (Free Event)</span>
+                  </label>
+
+                  <label className="flex items-center gap-2 cursor-pointer text-xs font-bold">
+                    <input
+                      type="checkbox"
+                      checked={eventForm.isOnline}
+                      onChange={(e) => setEventForm({ ...eventForm, isOnline: e.target.checked })}
+                      className="w-4 h-4 rounded text-amber-500"
+                    />
+                    <span>ኦንላይን / ቨርቹዋል (Online Event)</span>
+                  </label>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold mb-1">አቅራቢ / አስተማሪ (Speaker Name)</label>
+                  <input
+                    type="text"
+                    value={eventForm.speaker}
+                    onChange={(e) => setEventForm({ ...eventForm, speaker: e.target.value })}
+                    placeholder="ኢዮብ ሳህሌ (Eyoub Sahle)"
+                    className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-dark dark:text-white outline-none focus:border-[#f9b03c]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold mb-1">የባነር ፎቶ ሊንክ (Banner Image URL)</label>
+                  <input
+                    type="url"
+                    value={eventForm.image}
+                    onChange={(e) => setEventForm({ ...eventForm, image: e.target.value })}
+                    placeholder="https://images.unsplash.com/..."
+                    className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-dark dark:text-white outline-none focus:border-[#f9b03c]"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-4 border-t border-gray-100 dark:border-slate-700">
+                <button
+                  type="button"
+                  onClick={() => setIsEventModalOpen(false)}
+                  disabled={isSavingEvent}
+                  className="flex-1 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 font-bold py-3 rounded-xl transition text-xs cursor-pointer disabled:opacity-50"
+                >
+                  ሰርዝ (Cancel)
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingEvent}
+                  className="flex-1 bg-gradient-to-r from-amber-500 to-[#f9b03c] text-slate-950 font-black py-3 rounded-xl transition shadow-lg text-xs cursor-pointer active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {isSavingEvent ? (
+                    <>
+                      <i className="fa-solid fa-spinner fa-spin"></i>
+                      <span>በማስቀመጥ ላይ...</span>
+                    </>
+                  ) : (
+                    <>
+                      <i className="fa-solid fa-floppy-disk"></i>
+                      <span>ክንውኑን አስቀምጥ (Save Event)</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+
+          </div>
+        </div>
       )}
+
       {/* Premium Dark Mode Floating Toast Notification */}
       {courseToast && (
         <div className={`fixed bottom-6 right-6 z-[100] max-w-md p-4 rounded-2xl shadow-2xl backdrop-blur-xl border flex items-center gap-3 animate-in slide-in-from-bottom-5 duration-300 ${

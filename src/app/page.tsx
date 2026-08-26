@@ -12,6 +12,7 @@ import SmartSearchInput from '@/components/SmartSearchInput';
 import YouTubeVideoSlider from '@/components/YouTubeVideoSlider';
 import SynthesiaAiChatDemo from '@/components/SynthesiaAiChatDemo';
 import InstructorYouTubePortfolio from '@/components/InstructorYouTubePortfolio';
+import UpcomingEventsSection from '@/components/UpcomingEventsSection';
 import CourseCardSkeleton from '@/components/CourseCardSkeleton';
 import { getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl } from '@/lib/courseCache';
 import Hero3DPopoutStage from '@/components/3d/Hero3DPopoutStage';
@@ -841,6 +842,9 @@ export default function Home() {
 
     {/* Instructor's YouTube Portfolio (2-Column Terafab Glassmorphism Section) */}
     <InstructorYouTubePortfolio />
+    
+    {/* Upcoming Events & Workshops Section */}
+    <UpcomingEventsSection />
     
     <section id="faq" className="py-16 bg-slate-50/40 dark:bg-transparent border-b border-gray-200 dark:border-gray-800 transition-colors duration-300 scrolly-reveal">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
