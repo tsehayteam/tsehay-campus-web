@@ -94,8 +94,40 @@ export default function YouTubeVideoSlider() {
   const videoRefs = useRef<{ [key: string]: HTMLVideoElement | null }>({});
   const touchStartX = useRef<number | null>(null);
 
-  // Real-time Firestore sync for dynamic YouTube videos from Admin
+  // Real-time Firestore sync and server API fetch for dynamic YouTube videos from Admin
   useEffect(() => {
+    // 1. Fail-Safe Server API Fetch
+    const fetchApiVideos = async () => {
+      try {
+        const res = await fetch('/api/admin/youtube-videos');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.videos && Array.isArray(data.videos) && data.videos.length > 0) {
+            const list: YouTubeItem[] = data.videos.map((item: any) => {
+              const yId = item.youtubeId || extractYouTubeId(item.youtubeUrl || '');
+              return {
+                id: item.id,
+                title: item.title || 'ነፃ የዩቲዩብ ስልጠና',
+                youtubeUrl: item.youtubeUrl || (yId ? `https://www.youtube.com/watch?v=${yId}` : ''),
+                youtubeId: yId,
+                thumbnail: item.thumbnail || getYouTubeThumbnail(yId, item.thumbnail),
+                videoSrc: item.videoSrc || '',
+                order: item.order ?? 0,
+              };
+            });
+            setVideos(list);
+            try {
+              localStorage.setItem('tsehay_youtube_videos_cache', JSON.stringify(list));
+            } catch (e) {}
+          }
+        }
+      } catch (e) {
+        console.warn("API YouTube fallback error:", e);
+      }
+    };
+    fetchApiVideos();
+
+    // 2. Real-time Firestore snapshot listener
     try {
       const q = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'youtube_videos'), orderBy('order', 'asc'));
       const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -120,6 +152,7 @@ export default function YouTubeVideoSlider() {
         }
       }, (error) => {
         console.warn("Firestore youtube_videos listener fallback:", error);
+        fetchApiVideos();
       });
 
       return () => unsubscribe();

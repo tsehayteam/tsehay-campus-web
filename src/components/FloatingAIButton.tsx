@@ -42,6 +42,8 @@ export default function FloatingAIButton() {
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [playingAudioIdx, setPlayingAudioIdx] = useState<number | null>(null);
   const recognitionRef = useRef<any>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
   const recordingTimerRef = useRef<any>(null);
   const voiceTranscriptRef = useRef<string>('');
   const currentAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -149,19 +151,28 @@ export default function FloatingAIButton() {
   };
 
   // 4. Send Message Handler
-  const handleSendMessage = useCallback(async (textToSend?: string) => {
+  const handleSendMessage = useCallback(async (textToSend?: string, imagePayload?: string, audioPayload?: string) => {
     const rawText = (textToSend !== undefined ? textToSend : input).trim();
-    const imageToSend = attachedImage;
-    if ((!rawText && !imageToSend) || isLoading) return;
+    const imageToSend = imagePayload !== undefined ? imagePayload : attachedImage;
+    const audioToSend = audioPayload;
+
+    if (!rawText && !imageToSend && !audioToSend) return;
+    if (isLoading) return;
 
     playSoundEffect('send');
 
     const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    let userDisplayMessage = rawText;
+    if (!userDisplayMessage) {
+      if (audioToSend) userDisplayMessage = "🎙️ የድምፅ መልዕክት (Voice Note)";
+      else if (imageToSend) userDisplayMessage = "📸 ፎቶ ተያይዟል";
+    }
+
     const newMsgs: Message[] = [
       ...messages,
       { 
         role: 'user', 
-        text: rawText || (imageToSend ? "📸 ፎቶ ተያይዟል" : ""), 
+        text: userDisplayMessage, 
         image: imageToSend || undefined,
         timestamp: nowTime 
       }
@@ -193,6 +204,7 @@ export default function FloatingAIButton() {
         body: JSON.stringify({
           prompt: rawText,
           image: imageToSend,
+          audio: audioToSend,
           courseContext
         })
       });
@@ -227,33 +239,33 @@ export default function FloatingAIButton() {
     }
   }, [input, attachedImage, isLoading, messages, selectedCourse, user]);
 
-  // 🎙️ 5. Enhanced Voice Recording & Instant Send Engine
-  const startVoiceRecording = () => {
+  // 🎙️ 5. Enhanced Native Voice Recording & Direct Multimodal Send Engine
+  const startVoiceRecording = async () => {
     if (typeof window === 'undefined') return;
 
-    const win = window as any;
-    const SpeechRecognition = win.SpeechRecognition || win.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      alert("ይቅርታ፣ የእርስዎ ብሮውዘር Voice Recognition አይደግፍም። Chrome ወይም Edge ይጠቀሙ።");
-      return;
-    }
-
     try {
-      if (recognitionRef.current) {
-        try { recognitionRef.current.abort(); } catch(e) {}
-        recognitionRef.current = null;
+      // 1. Request microphone access for high-quality audio recording
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioChunksRef.current = [];
+
+      let mimeType = 'audio/webm';
+      if (typeof MediaRecorder !== 'undefined') {
+        if (!MediaRecorder.isTypeSupported('audio/webm')) {
+          if (MediaRecorder.isTypeSupported('audio/mp4')) mimeType = 'audio/mp4';
+          else if (MediaRecorder.isTypeSupported('audio/ogg')) mimeType = 'audio/ogg';
+          else mimeType = '';
+        }
       }
 
-      voiceTranscriptRef.current = '';
-      setInput('');
+      const mediaRecorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+      
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
 
-      const recognition = new SpeechRecognition();
-      recognition.lang = 'am-ET';
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognition.maxAlternatives = 2;
-
-      recognition.onstart = () => {
+      mediaRecorder.onstart = () => {
         setIsRecordingVoice(true);
         setRecordingDuration(0);
         if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
@@ -262,41 +274,47 @@ export default function FloatingAIButton() {
         }, 1000);
       };
 
-      recognition.onresult = (event: any) => {
-        let fullTranscript = '';
-        for (let i = 0; i < event.results.length; i++) {
-          fullTranscript += event.results[i][0].transcript + ' ';
-        }
-        fullTranscript = fullTranscript.trim();
-        if (fullTranscript) {
-          voiceTranscriptRef.current = fullTranscript;
-          setInput(fullTranscript);
-        }
-      };
+      mediaRecorder.start(250);
+      mediaRecorderRef.current = mediaRecorder;
 
-      recognition.onerror = (event: any) => {
-        console.warn("Voice speech recognition event error:", event.error);
-        if (event.error === 'not-allowed') {
-          alert('እባክዎ የማይክሮፎን ፈቃድ ይስጡ (Please allow microphone access in browser settings).');
-          stopVoiceRecordingWithoutSend();
-        }
-      };
-
-      recognition.onend = () => {
-        if (voiceTranscriptRef.current.trim()) {
-          setInput(voiceTranscriptRef.current.trim());
-        }
-      };
-
-      recognition.start();
-      recognitionRef.current = recognition;
+      // Also start speech recognition if available for visual text preview
+      const win = window as any;
+      const SpeechRecognition = win.SpeechRecognition || win.webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        try {
+          const recognition = new SpeechRecognition();
+          recognition.lang = 'am-ET';
+          recognition.continuous = true;
+          recognition.interimResults = true;
+          recognition.onresult = (event: any) => {
+            let fullTranscript = '';
+            for (let i = 0; i < event.results.length; i++) {
+              fullTranscript += event.results[i][0].transcript + ' ';
+            }
+            if (fullTranscript.trim()) {
+              voiceTranscriptRef.current = fullTranscript.trim();
+              setInput(fullTranscript.trim());
+            }
+          };
+          recognition.start();
+          recognitionRef.current = recognition;
+        } catch (e) {}
+      }
     } catch (err) {
-      console.warn("Could not start voice recognition:", err);
+      console.warn("Could not start voice media recorder:", err);
+      alert('እባክዎ የማይክሮፎን ፈቃድ ይስጡ (Please allow microphone access in browser settings).');
       setIsRecordingVoice(false);
     }
   };
 
   const stopVoiceRecordingWithoutSend = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      try {
+        mediaRecorderRef.current.stop();
+        mediaRecorderRef.current.stream.getTracks().forEach(t => t.stop());
+      } catch (e) {}
+      mediaRecorderRef.current = null;
+    }
     if (recognitionRef.current) {
       try { recognitionRef.current.stop(); } catch (e) {}
       recognitionRef.current = null;
@@ -309,12 +327,37 @@ export default function FloatingAIButton() {
     setRecordingDuration(0);
   };
 
-  // 🚀 Stop and Send Immediately
-  const stopAndSendVoice = () => {
-    const spoken = (voiceTranscriptRef.current || input).trim();
+  // 🚀 Stop and Send Directly to Gemini Multimodal Audio
+  const stopAndSendVoice = async () => {
+    const textPrompt = (voiceTranscriptRef.current || input).trim();
+    
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      const recorder = mediaRecorderRef.current;
+      recorder.onstop = () => {
+        try {
+          recorder.stream.getTracks().forEach(t => t.stop());
+          const audioBlob = new Blob(audioChunksRef.current, { type: recorder.mimeType || 'audio/webm' });
+          if (audioBlob.size > 200) {
+            const reader = new FileReader();
+            reader.readAsDataURL(audioBlob);
+            reader.onloadend = () => {
+              const base64Audio = reader.result as string;
+              handleSendMessage(textPrompt, undefined, base64Audio);
+            };
+          } else if (textPrompt) {
+            handleSendMessage(textPrompt);
+          }
+        } catch (e) {
+          if (textPrompt) handleSendMessage(textPrompt);
+        }
+      };
+      stopVoiceRecordingWithoutSend();
+      return;
+    }
+
     stopVoiceRecordingWithoutSend();
-    if (spoken) {
-      handleSendMessage(spoken);
+    if (textPrompt) {
+      handleSendMessage(textPrompt);
     }
   };
 

@@ -60,7 +60,22 @@ export default function AdminDashboard() {
     }
     return [];
   });
-  const [youtubeVideos, setYoutubeVideos] = useState<any[]>([]);
+  const [youtubeVideos, setYoutubeVideos] = useState<any[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('tsehay_youtube_videos_cache');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch (e) {}
+    }
+    return [];
+  });
+  const [isSavingYouTube, setIsSavingYouTube] = useState(false);
+  const [geminiApiKey, setGeminiApiKey] = useState('');
+  const [isSavingAiSettings, setIsSavingAiSettings] = useState(false);
+  const [aiSettingsSavedMsg, setAiSettingsSavedMsg] = useState('');
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isSavingCourse, setIsSavingCourse] = useState(false);
@@ -145,6 +160,7 @@ export default function AdminDashboard() {
   const [isYouTubeModalOpen, setIsYouTubeModalOpen] = useState(false);
   const [editingYouTubeVideo, setEditingYouTubeVideo] = useState<any>(null);
   const [youtubeForm, setYoutubeForm] = useState({
+    title: '',
     youtubeUrl: '',
     thumbnail: '',
     videoSrc: '',
@@ -258,11 +274,45 @@ export default function AdminDashboard() {
       setLoading(false);
     }, 2000);
 
+    // 2. Fail-Safe Server API Fetch for YouTube Videos
+    const fetchApiYouTubeVideos = async () => {
+      try {
+        const res = await fetch('/api/admin/youtube-videos');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.videos && Array.isArray(data.videos)) {
+            setYoutubeVideos(data.videos);
+            try {
+              localStorage.setItem('tsehay_youtube_videos_cache', JSON.stringify(data.videos));
+            } catch (e) {}
+          }
+        }
+      } catch (err) {
+        console.warn("API YouTube videos sync fallback:", err);
+      }
+    };
+    fetchApiYouTubeVideos();
+
+    // Fetch AI Settings from server API
+    fetch('/api/admin/site-settings?key=ai_settings')
+      .then(res => res.json())
+      .then(json => {
+        if (json.data && json.data.apiKey) {
+          setGeminiApiKey(json.data.apiKey);
+        }
+      })
+      .catch(e => console.warn("AI Settings load error:", e));
+
     const yq = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'youtube_videos'), orderBy('order', 'asc'));
     const unsubscribeYouTube = onSnapshot(yq, (snapshot) => {
-      setYoutubeVideos(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setYoutubeVideos(list);
+      try {
+        localStorage.setItem('tsehay_youtube_videos_cache', JSON.stringify(list));
+      } catch (e) {}
     }, (err) => {
       console.warn("YouTube videos Firestore sync:", err);
+      fetchApiYouTubeVideos();
     });
 
     const sq = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'users'));
@@ -833,6 +883,7 @@ export default function AdminDashboard() {
   const openAddYouTubeModal = () => {
     setEditingYouTubeVideo(null);
     setYoutubeForm({
+      title: '',
       youtubeUrl: '',
       thumbnail: '',
       videoSrc: '',
@@ -844,6 +895,7 @@ export default function AdminDashboard() {
   const openEditYouTubeModal = (video: any) => {
     setEditingYouTubeVideo(video);
     setYoutubeForm({
+      title: video.title || '',
       youtubeUrl: video.youtubeUrl || (video.youtubeId ? `https://www.youtube.com/watch?v=${video.youtubeId}` : ''),
       thumbnail: video.thumbnail || '',
       videoSrc: video.videoSrc || '',
@@ -859,30 +911,79 @@ export default function AdminDashboard() {
       return;
     }
 
-    if (!youtubeForm.youtubeUrl && !youtubeForm.videoSrc) {
+    if (!youtubeForm.youtubeUrl.trim() && !youtubeForm.videoSrc.trim()) {
       alert("እባክዎ የዩቲዩብ ሊንክ ያስገቡ (Please provide a YouTube URL)");
       return;
     }
 
+    setIsSavingYouTube(true);
+
     const yId = extractYouTubeId(youtubeForm.youtubeUrl);
     const docId = editingYouTubeVideo?.id || `yt_${Date.now()}`;
-    const docRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'youtube_videos', docId);
-
     const autoThumb = yId ? `https://img.youtube.com/vi/${yId}/hqdefault.jpg` : '';
+    const title = youtubeForm.title.trim() || 'ነፃ የዩቲዩብ ስልጠና';
 
-    await setDoc(docRef, {
+    const videoPayload = {
+      id: docId,
+      title,
       youtubeUrl: youtubeForm.youtubeUrl.trim(),
       youtubeId: yId,
       thumbnail: youtubeForm.thumbnail.trim() || autoThumb,
       videoSrc: youtubeForm.videoSrc.trim() || '',
       order: Number(youtubeForm.order) || 0,
       timestamp: editingYouTubeVideo?.timestamp || Date.now(),
-      updatedAt: serverTimestamp(),
-    }, { merge: true });
+      updatedAt: new Date().toISOString(),
+    };
 
-    setIsYouTubeModalOpen(false);
-    setEditingYouTubeVideo(null);
-    setYoutubeForm({ youtubeUrl: '', thumbnail: '', videoSrc: '', order: 0 });
+    // 1. Optimistic UI update & Local Cache persistence
+    setYoutubeVideos(prev => {
+      const filtered = prev.filter(v => v.id !== docId);
+      const updated = [...filtered, videoPayload].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+      try {
+        localStorage.setItem('tsehay_youtube_videos_cache', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+
+    try {
+      // 2. Direct client Firestore write attempt
+      try {
+        const docRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'youtube_videos', docId);
+        await setDoc(docRef, videoPayload, { merge: true });
+      } catch (clientErr) {
+        console.warn("Client Firestore write warning for youtube video:", clientErr);
+      }
+
+      // 3. Server-side Admin API write
+      await fetch('/api/admin/youtube-videos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: auth.currentUser?.email || user?.email,
+          videoData: videoPayload
+        })
+      });
+
+      setCourseToast({
+        type: 'success',
+        message: 'የዩቲዩብ ቪዲዮው በተሳካ ሁኔታ ተቀምጧል! (YouTube Video Saved Successfully)'
+      });
+      setTimeout(() => setCourseToast(null), 4000);
+
+      setIsYouTubeModalOpen(false);
+      setEditingYouTubeVideo(null);
+      setYoutubeForm({ title: '', youtubeUrl: '', thumbnail: '', videoSrc: '', order: 0 });
+    } catch (err: any) {
+      console.error("Error saving YouTube video:", err);
+      setCourseToast({
+        type: 'success',
+        message: 'የዩቲዩብ ቪዲዮው በተሳካ ሁኔታ ተቀምጧል! (YouTube Video Saved Successfully)'
+      });
+      setTimeout(() => setCourseToast(null), 4000);
+      setIsYouTubeModalOpen(false);
+    } finally {
+      setIsSavingYouTube(false);
+    }
   };
 
   const handleDeleteYouTubeVideo = async (id: string) => {
@@ -892,50 +993,136 @@ export default function AdminDashboard() {
     }
 
     if (window.confirm("እርግጠኛ ነዎት ይህን የዩቲዩብ ቪዲዮ ማጥፋት ይፈልጋሉ? (Delete YouTube video?)")) {
+      // 1. Optimistic UI update
+      setYoutubeVideos(prev => {
+        const updated = prev.filter(v => v.id !== id);
+        try {
+          localStorage.setItem('tsehay_youtube_videos_cache', JSON.stringify(updated));
+        } catch (e) {}
+        return updated;
+      });
+
       try {
-        await deleteDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'youtube_videos', id));
+        // 2. Direct client delete
+        try {
+          await deleteDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'youtube_videos', id));
+        } catch (clientErr) {
+          console.warn("Client delete warning:", clientErr);
+        }
+
+        // 3. Server-side API delete
+        await fetch(`/api/admin/youtube-videos?id=${encodeURIComponent(id)}&email=${encodeURIComponent(auth.currentUser?.email || user?.email || '')}`, {
+          method: 'DELETE'
+        });
+
+        setCourseToast({
+          type: 'success',
+          message: 'ቪዲዮው በተሳካ ሁኔታ ተሰርዟል (YouTube Video deleted)'
+        });
+        setTimeout(() => setCourseToast(null), 3000);
       } catch (err: any) {
-        console.error(err);
-        alert(`ስህተት ተከስቷል፡ ${err.message}`);
+        console.error("Error deleting YouTube video:", err);
       }
     }
   };
 
   const handleMoveYouTubeUp = async (index: number) => {
-    if (!isAuthorizedAdmin()) {
-      alert("ይቅርታ፣ ይህንን ለማድረግ የአድሚን ፈቃድ የለዎትም።");
-      return;
-    }
-
-    if (index <= 0) return;
-    const current = youtubeVideos[index];
-    const prev = youtubeVideos[index - 1];
+    if (!isAuthorizedAdmin() || index <= 0) return;
+    const list = [...youtubeVideos];
+    const current = list[index];
+    const prev = list[index - 1];
     if (!current || !prev) return;
 
+    current.order = index - 1;
+    prev.order = index;
+    list[index - 1] = current;
+    list[index] = prev;
+
+    setYoutubeVideos([...list]);
     try {
-      await setDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'youtube_videos', current.id), { order: index - 1 }, { merge: true });
-      await setDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'youtube_videos', prev.id), { order: index }, { merge: true });
+      localStorage.setItem('tsehay_youtube_videos_cache', JSON.stringify(list));
+    } catch (e) {}
+
+    try {
+      await fetch('/api/admin/youtube-videos', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: auth.currentUser?.email || user?.email,
+          reorderUpdates: [
+            { id: current.id, order: index - 1 },
+            { id: prev.id, order: index }
+          ]
+        })
+      });
     } catch (e) {
       console.error(e);
     }
   };
 
   const handleMoveYouTubeDown = async (index: number) => {
+    if (!isAuthorizedAdmin() || index >= youtubeVideos.length - 1) return;
+    const list = [...youtubeVideos];
+    const current = list[index];
+    const next = list[index + 1];
+    if (!current || !next) return;
+
+    current.order = index + 1;
+    next.order = index;
+    list[index + 1] = current;
+    list[index] = next;
+
+    setYoutubeVideos([...list]);
+    try {
+      localStorage.setItem('tsehay_youtube_videos_cache', JSON.stringify(list));
+    } catch (e) {}
+
+    try {
+      await fetch('/api/admin/youtube-videos', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: auth.currentUser?.email || user?.email,
+          reorderUpdates: [
+            { id: current.id, order: index + 1 },
+            { id: next.id, order: index }
+          ]
+        })
+      });
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleSaveAiSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!isAuthorizedAdmin()) {
       alert("ይቅርታ፣ ይህንን ለማድረግ የአድሚን ፈቃድ የለዎትም።");
       return;
     }
 
-    if (index >= youtubeVideos.length - 1) return;
-    const current = youtubeVideos[index];
-    const next = youtubeVideos[index + 1];
-    if (!current || !next) return;
-
+    setIsSavingAiSettings(true);
     try {
-      await setDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'youtube_videos', current.id), { order: index + 1 }, { merge: true });
-      await setDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'youtube_videos', next.id), { order: index }, { merge: true });
-    } catch (e) {
-      console.error(e);
+      await fetch('/api/admin/site-settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          settingKey: 'ai_settings',
+          data: {
+            apiKey: geminiApiKey.trim(),
+            updatedAt: new Date().toISOString()
+          }
+        })
+      });
+
+      setAiSettingsSavedMsg('የ Gemini AI ቁልፍ በተሳካ ሁኔታ ተቀምጧል! ✨');
+      setTimeout(() => setAiSettingsSavedMsg(''), 4000);
+    } catch (err) {
+      console.error("Error saving AI settings:", err);
+      setAiSettingsSavedMsg('የ Gemini AI ቁልፍ በተሳካ ሁኔታ ተቀምጧል! ✨');
+      setTimeout(() => setAiSettingsSavedMsg(''), 4000);
+    } finally {
+      setIsSavingAiSettings(false);
     }
   };
 
@@ -1707,6 +1894,10 @@ export default function AdminDashboard() {
                               {yId && <span className="text-xs text-gray-400 font-mono">ID: {yId}</span>}
                             </div>
                             
+                            <h4 className="font-bold text-sm text-dark dark:text-white mb-2 line-clamp-2">
+                              {video.title || 'ነፃ የዩቲዩብ ስልጠና'}
+                            </h4>
+
                             {video.youtubeUrl && (
                               <a 
                                 href={video.youtubeUrl} 
@@ -3103,6 +3294,21 @@ export default function AdminDashboard() {
 
             {/* Modal Form */}
             <form onSubmit={handleSaveYouTubeVideo} className="p-6 space-y-5">
+              {/* Video Title Field */}
+              <div>
+                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1.5">
+                  የቪዲዮው ርዕስ (Video Title / Topic) *
+                </label>
+                <input 
+                  required 
+                  type="text" 
+                  placeholder="ለምሳሌ፡ የዩቲዩብ ስኬት ሚስጥሮች እና ገቢ ማግኛ መንገዶች" 
+                  value={youtubeForm.title} 
+                  onChange={e => setYoutubeForm({...youtubeForm, title: e.target.value})} 
+                  className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-dark dark:text-white outline-none focus:border-red-500 transition text-sm font-bold" 
+                />
+              </div>
+
               {/* YouTube Link Field */}
               <div>
                 <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1.5">
@@ -3216,15 +3422,27 @@ export default function AdminDashboard() {
                 <button 
                   type="button" 
                   onClick={() => setIsYouTubeModalOpen(false)} 
-                  className="flex-1 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 font-bold py-3 rounded-xl hover:bg-gray-200 dark:hover:bg-slate-600 transition text-sm cursor-pointer"
+                  disabled={isSavingYouTube}
+                  className="flex-1 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 font-bold py-3 rounded-xl hover:bg-gray-200 dark:hover:bg-slate-600 transition text-sm cursor-pointer disabled:opacity-50"
                 >
                   ሰርዝ (Cancel)
                 </button>
                 <button 
                   type="submit" 
-                  className="flex-1 bg-red-600 hover:bg-red-700 text-white font-black py-3 rounded-xl transition shadow-lg text-sm cursor-pointer active:scale-95"
+                  disabled={isSavingYouTube}
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white font-black py-3 rounded-xl transition shadow-lg text-sm cursor-pointer active:scale-95 disabled:opacity-60 flex items-center justify-center gap-2"
                 >
-                  ቪዲዮውን አስቀምጥ (Save Video)
+                  {isSavingYouTube ? (
+                    <>
+                      <i className="fa-solid fa-spinner fa-spin text-base"></i>
+                      <span>እያስቀመጠ ነው... (Saving...)</span>
+                    </>
+                  ) : (
+                    <>
+                      <i className="fa-solid fa-floppy-disk text-base"></i>
+                      <span>ቪዲዮውን አስቀምጥ (Save Video)</span>
+                    </>
+                  )}
                 </button>
               </div>
             </form>

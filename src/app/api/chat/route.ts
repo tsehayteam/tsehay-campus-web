@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
 const RATE_LIMIT_WINDOW_MS = 60000;
 const MAX_REQUESTS_PER_WINDOW = 40;
 
-function getSmartFallbackReply(userPrompt: string, courseContext?: any, hasImage?: boolean): string {
+function getSmartFallbackReply(userPrompt: string, courseContext?: any, hasImage?: boolean, hasAudio?: boolean): string {
     const p = (userPrompt || '').toLowerCase().trim();
     const courseTitle = (courseContext?.courseTitle || '').toLowerCase();
     const isDigitalMarketing = courseTitle.includes('digital') || courseTitle.includes('marketing') || courseTitle.includes('ማርኬቲንግ');
@@ -13,6 +13,10 @@ function getSmartFallbackReply(userPrompt: string, courseContext?: any, hasImage
 
     if (hasImage) {
         return `የላኩትን ፎቶ/ስክሪንሾት ተመልክቼዋለሁ! 📸\n\nበፎቶው ላይ የሚታየውን ነጥብ በተመለከተ፦\n1. በ${courseContext?.courseTitle || 'ትምህርቱ'} መሰረት ዋናው ትኩረት የተግባር ቅደም ተከተሎችን በአግባቡ መከተል ነው።\n2. ለየት ያለ የስህተት መልዕክት (Error) ወይም ጥያቄ ካለዎት፣ ጥያቄዎን በድምፅ ወይም በጽሑፍ አብራርተው ይጠይቁኝ እና ደረጃ በደረጃ እንፈታዋለን! ✨`;
+    }
+
+    if (hasAudio && !p) {
+        return "የላኩልኝን የድምፅ መልዕክት አዳምጫለሁ! 🎙️ ስለ ፀሐይ ካምፓስ ስልጠናዎች፣ ምዝገባ ወይም ስለ ቪዲዮ ትምህርቶች ማንኛውንም ጥያቄ በደስታ እመልሳለሁ። በጽሑፍም ሆነ በድምፅ መቀጠል ይችላሉ!";
     }
 
     // 1. Off-Topic / Unrelated Queries Guardrail
@@ -36,12 +40,12 @@ function getSmartFallbackReply(userPrompt: string, courseContext?: any, hasImage
         return "ሰላም! እኔ ፀሐይ ነኝ፤ እንኳን ደህና መጡ! ዛሬ ስለ ፀሐይ ካምፓስ ስልጠናዎች፣ የዩቲዩብ ስኬት፣ የሼን ቢዝነስ ወይም ስለ ምዝገባ በምን ልርዳዎት? ✨";
     }
 
-    // 3. Address & Location (አድራሻ) - Strict Matching
+    // 3. Address & Location (አድራሻ)
     if (p.includes('አድራሻ') || p.includes('ቢሮ') || p.includes('ቦሌ የት') || p.includes('የካምፓሱ አድራሻ') || p.includes('location') || p.includes('address')) {
         return "የፀሐይ ካምፓስ አድራሻ፦ **ቦሌ፣ አዲስ አበባ፣ ኢትዮጵያ** ነው። በአካልም ሆነ በኦንላይን ተግባራዊ ስልጠናዎችን እንሰጣለን። 📍";
     }
 
-    // 4. Phone, Contact & Social Media (ስልክ ቁጥር፣ ቴሌግራም፣ ዋትስአፕ)
+    // 4. Phone, Contact & Social Media
     if (p.includes('ስልክ') || p.includes('phone') || p.includes('contact') || p.includes('ቴሌግራም') || p.includes('telegram') || p.includes('ዋትስአፕ') || p.includes('whatsapp') || p.includes('መደወል') || p.includes('ማናገር')) {
         return "እኛን ለማግኘት፦\n• **ስልክ ቁጥር**፦ 0980209090 (0980-20-90-90)\n• **ቴሌግራም**፦ @TsehayTeam\n• **ዋትስአፕ**፦ +251980209090\n• **ዩቲዩብ**፦ @eyoubsahle\n• **ቲክቶክ**፦ @eyoubsahle";
     }
@@ -51,7 +55,7 @@ function getSmartFallbackReply(userPrompt: string, courseContext?: any, hasImage
         return "የፀሐይ ካምፓስ (Tsehay Campus) መስራችና ዋና አሰልጣኝ **ኢዮብ ሳህሌ (Eyoub Sahle)** ነው። እሱ በኢትዮጵያ ውስጥ በዲጂታል ማርኬቲንግ እና በዩቲዩብ ቻናሎች ስኬት በርካታ ተማሪዎችን ያፈራ የTsehay Digital መስራች ነው።";
     }
     
-    // 6. Payments & Registration (LakiPay, Telebirr, CBE, PayPal, International)
+    // 6. Payments & Registration
     if (p.includes('pay') || p.includes('ክፍያ') || p.includes('ቴሌብር') || p.includes('telebirr') || p.includes('ባንክ') || p.includes('cbe') || p.includes('lakipay') || p.includes('ዋጋ') || p.includes('price') || p.includes('ብር') || p.includes('ገንዘብ') || p.includes('ምዝገባ') || p.includes('መመዝገብ')) {
         return "ለፀሐይ ካምፓስ ኮርሶች መመዝገብ እና ክፍያ መፈጸም በጣም ቀላል ነው፦\n\n" +
                "1. **በሀገር ውስጥ (Domestic)**፦ በLakiPay አማካኝነት በቴሌብር (Telebirr)፣ በሲቢኢ ብር (CBE Birr) ወይም በሞባይል ባንኪንግ በቀጥታ መክፈል ይችላሉ።\n" +
@@ -122,34 +126,32 @@ export async function POST(req: Request) {
   if (req.method === 'OPTIONS') return new NextResponse(null, { status: 200 });
   if (req.method !== 'POST') return NextResponse.json({ error: 'Method Not Allowed' }, { status: 405 });
 
-  // Security: Token Verification
+  // Security: Token Verification & Rate Limiting
   const authHeader = req.headers.get('authorization');
   let userId;
+  let adminDbInstance = null;
 
   try {
       const { adminAuth, adminDb } = await import('@/lib/firebase/admin');
-      
-      if (authHeader && authHeader.startsWith('Bearer ') && authHeader !== 'Bearer ') {
-          const idToken = authHeader.split('Bearer ')[1];
+      adminDbInstance = adminDb;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+          const token = authHeader.substring(7);
           try {
-              if (adminAuth) {
-                 const decodedToken = await adminAuth.verifyIdToken(idToken);
-                 userId = decodedToken.uid;
-              } else {
-                 userId = 'anonymous_user';
-              }
-          } catch (error) {
-              userId = 'anonymous_user';
+              const decodedToken = await adminAuth.verifyIdToken(token);
+              userId = decodedToken.uid;
+          } catch (e) {
+              console.warn("Invalid ID token provided in chat API, proceeding with rate limiter");
           }
-      } else {
-          userId = req.headers.get('x-forwarded-for') || 'anonymous_user';
       }
+      
+      // Fallback rate limiting key
+      const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'anonymous_ip';
+      userId = userId || `ip_${ip.split(',')[0].trim()}`;
 
-      // 🔒 Firestore-backed Rate Limiting
-      if (adminDb) {
-          const db = adminDb;
+      // Rate limit check
+      if (adminDbInstance) {
           const { FieldValue } = await import('firebase-admin/firestore');
-          const rateLimitRef = db.collection('artifacts').doc('tsehaycampus-e1a6d').collection('rate_limits').doc(userId);
+          const rateLimitRef = adminDbInstance.collection('artifacts').doc('tsehaycampus-e1a6d').collection('rate_limits').doc(userId);
           const rateDoc = await rateLimitRef.get();
           const now = Date.now();
           
@@ -173,13 +175,32 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { prompt, courseContext, image } = reqBody;
+    const { prompt, courseContext, image, audio } = reqBody;
     
-    if (!prompt && !image) {
-        return NextResponse.json({ reply: getSmartFallbackReply("", courseContext, false) }, { status: 200 });
+    if (!prompt && !image && !audio) {
+        return NextResponse.json({ reply: getSmartFallbackReply("", courseContext, false, false) }, { status: 200 });
+    }
+
+    // 🔑 Retrieve Gemini API Key dynamically from Firestore site settings or Environment variables
+    let dbApiKey = '';
+    try {
+        if (adminDbInstance) {
+            const nestedDoc = await adminDbInstance.collection('artifacts').doc('tsehaycampus-e1a6d').collection('public').doc('data').collection('site_settings').doc('ai_settings').get();
+            if (nestedDoc.exists && nestedDoc.data()?.apiKey) {
+                dbApiKey = nestedDoc.data().apiKey;
+            } else {
+                const rootDoc = await adminDbInstance.collection('site_settings').doc('ai_settings').get();
+                if (rootDoc.exists && rootDoc.data()?.apiKey) {
+                    dbApiKey = rootDoc.data().apiKey;
+                }
+            }
+        }
+    } catch (e) {
+        console.warn("Could not read dynamic AI settings from Firestore:", e);
     }
 
     const apiKeys = [
+        dbApiKey,
         process.env.GEMINI_API_KEY,
         process.env.GOOGLE_API_KEY,
         process.env.NEXT_PUBLIC_GEMINI_API_KEY,
@@ -199,68 +220,72 @@ export async function POST(req: Request) {
 `;
     }
 
-    const DEFAULT_SYSTEM_INSTRUCTION = `You are "Tsehay AI", the official intelligent AI assistant and virtual mentor of "Tsehay Campus" and founder/lead instructor Eyoub Sahle (ኢዮብ ሳህሌ). 
+    const DEFAULT_SYSTEM_INSTRUCTION = `You are "Tsehay AI" (ፀሐይ AI), the smart virtual mentor and assistant for Tsehay Campus (ፀሐይ ካምፓስ) and lead instructor Eyoub Sahle (ኢዮብ ሳህሌ). 
 
-[PERSONA & HUMAN TONE]
-- You talk and think like an authentic, highly knowledgeable, warm, and helpful Ethiopian mentor.
-- If the user writes or speaks in Amharic -> respond in pure, fluent, natural Amharic.
-- If the user writes or speaks in English -> respond in clear, fluent, professional English.
-- CRITICAL: NEVER repeat words, phrases, or robotic introductions. Jump straight into the helpful response!
+[PERSONA & CONVERSATIONAL STYLE]
+- You are warm, encouraging, concise, highly intelligent, and practical.
+- If the user speaks or writes in Amharic -> answer in natural, authentic Amharic (አማርኛ).
+- If the user speaks or writes in English -> answer in clear, friendly English.
+- Multimodal Audio Input: When audio is provided, listen to the speaker's voice naturally (like Google AI Studio), comprehend their spoken words, and reply directly without mentioning technical audio formats.
+- CRITICAL: Keep replies direct and actionable. NEVER repeat introductory phrases or produce robotic boilerplate loops.
 
-[COMPREHENSIVE WEBSITE INFORMATION & VERIFIED PLATFORM FACTS]
-- Platform Name: Tsehay Campus (ፀሐይ ካምፓስ)
-- Official Website: tsehaycampus.com
-- Location & Address: ቦሌ፣ አዲስ አበባ፣ ኢትዮጵያ (Bole, Addis Ababa, Ethiopia). We provide both online AI-assisted courses and practical in-person training.
-- Official Phone Number: 0980209090 (0980-20-90-90 / +251980209090)
-- Official WhatsApp: 0980209090 (+251980209090)
-- Official Telegram Channel: @TsehayTeam
-- Founder & Lead Instructor: Eyoub Sahle (ኢዮብ ሳህሌ) - Top Ethiopian Digital Marketer and YouTube Monetization Strategist.
-- General Manager: Ribka Teshome (ርብቃ ተሾመ).
-- YouTube Channel: youtube.com/@eyoubsahle (@eyoubsahle)
-- TikTok Channel: tiktok.com/@eyoubsahle (@eyoubsahle)
-
-[COURSE CATALOG & PRICING]
-1. Shein Import Business (የሼን ኢምፖርት ቢዝነስ) - 4,500 ETB (4,500 ብር)
-2. YouTube Secrets Masterclass & Monetization (የዩቲዩብ ስኬት ሚስጥሮች) - 5,500 ETB (5,500 ብር) (includes free Amharic E-Book)
-3. Digital Marketing & Social Media (ዲጂታል ማርኬቲንግ) - 100% FREE (ነፃ)
-4. Web Development & Coding (ዌብ ዴቨሎፕመንት)
-5. Crypto Trading Mastery (የክሪፕቶ ግብይት)
-6. Free YouTube Lessons (ነፃ የዩቲዩብ ቪዲዮዎች)
-
-[PAYMENTS, CERTIFICATES & SUPPORT]
-- Payment Methods: 
-  * Domestic: Telebirr (ቴሌብር), CBE Birr (ሲቢኢ ብር / የኢትዮጵያ ንግድ ባንክ), LakiPay
-  * International: PayPal, Credit/Debit cards (Visa/Mastercard), Crypto (NOWPayments)
-- Certification: Official Free Digital Certificate of Completion upon finishing lessons and passing the AI quiz with 80%+.
-- Support: 24/7 AI Tutor assistance + Telegram support @TsehayTeam + Phone 0980209090.
+[PLATFORM FACTS & VERIFIED INFORMATION]
+- Platform: Tsehay Campus (ፀሐይ ካምፓስ) - tsehaycampus.com
+- Location: ቦሌ፣ አዲስ አበባ፣ ኢትዮጵያ (Bole, Addis Ababa, Ethiopia).
+- Contact & WhatsApp: 0980209090 (+251980209090)
+- Telegram Channel / Support: @TsehayTeam
+- Founder & Lead Instructor: Eyoub Sahle (ኢዮብ ሳህሌ)
+- Courses:
+  1. Shein Import Business (የሼን ኢምፖርት ቢዝነስ) - 4,500 ETB
+  2. YouTube Secrets Masterclass (የዩቲዩብ ስኬት ሚስጥሮች) - 5,500 ETB
+  3. Digital Marketing Mastery (ዲጂታል ማርኬቲንግ) - FREE
+  4. Web Development & Coding
+  5. Crypto Trading Mastery
+- Payments: Telebirr, CBE Birr, LakiPay (Domestic); PayPal, Credit Cards, Crypto (International).
+- Certificates: Official Digital Certificate given upon completing lessons and the quiz.
 
 ${contextualCourseSection}`;
 
-    const ENFORCED_SYSTEM_INSTRUCTION = `[CRITICAL SECURITY RULES]
-You are the official voice assistant for Tsehay Campus. Keep answers concise (1-2 sentences for voice), warm, and accurate. Do not repeat words.
-[END SECURITY RULES]
-
+    const ENFORCED_SYSTEM_INSTRUCTION = `[CRITICAL INSTRUCTION]
+You are Tsehay AI. Give helpful, friendly, natural answers. Do not repeat words.
 [DYNAMIC CONTEXT]
 ${DEFAULT_SYSTEM_INSTRUCTION}
 [END DYNAMIC CONTEXT]`;
 
-    // 📸 Build user parts with Multimodal Image Support
+    // 🎙️ / 📸 Build user parts with Native Multimodal Audio & Image Support
     const userParts: any[] = [];
 
-    if (image && typeof image === 'string' && image.includes('base64,')) {
-        const matches = image.match(/^data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+);base64,(.+)$/);
+    // 1. Process Multimodal Direct Audio (Base64 WebM / MP4 / WAV / OGG)
+    if (audio && typeof audio === 'string' && audio.includes('base64,')) {
+        const matches = audio.match(/^data:([a-zA-Z0-9\/+-]+);base64,(.+)$/);
         if (matches && matches[1] && matches[2]) {
+            const rawMime = matches[1].split(';')[0];
             userParts.push({
                 inlineData: {
-                    mimeType: matches[1],
+                    mimeType: rawMime || "audio/webm",
                     data: matches[2]
                 }
             });
         }
     }
 
+    // 2. Process Multimodal Image (Base64)
+    if (image && typeof image === 'string' && image.includes('base64,')) {
+        const matches = image.match(/^data:([a-zA-Z0-9\/+-]+);base64,(.+)$/);
+        if (matches && matches[1] && matches[2]) {
+            userParts.push({
+                inlineData: {
+                    mimeType: matches[1].split(';')[0],
+                    data: matches[2]
+                }
+            });
+        }
+    }
+
+    // 3. User Text / Prompt
+    const defaultVoicePrompt = "Listen carefully to this spoken audio question in Amharic (or English). Understand what the user asked and give a direct, natural, friendly, accurate answer in the same language without repetitive intros.";
     userParts.push({
-        text: prompt || (image ? "እባክዎ ይህንን የተያያዘ ፎቶ ወይም ስክሪንሾት ተመልክተው ዝርዝር ትንታኔ እና ተግባራዊ መልስ ይስጡኝ።" : "ሰላም")
+        text: prompt || (audio ? defaultVoicePrompt : (image ? "እባክዎ ይህንን ፎቶ ተመልክተው ዝርዝር ማብራሪያ ይስጡኝ።" : "ሰላም"))
     });
 
     const payload = { 
@@ -271,19 +296,19 @@ ${DEFAULT_SYSTEM_INSTRUCTION}
     };
 
     const models = [
+        'gemini-2.5-flash',
+        'gemini-2.0-flash',
         'gemini-1.5-flash',
         'gemini-1.5-flash-latest',
-        'gemini-2.0-flash',
-        'gemini-2.0-flash-001',
-        'gemini-1.5-pro',
-        'gemini-2.5-flash'
+        'gemini-1.5-pro'
     ];
-    let lastErrorMsg = '';
-    let success = false;
     let replyText = '';
+    let success = false;
 
     for (const key of apiKeys) {
         const cleanedKey = key.trim().replace(/^["']|["']$/g, '');
+        if (!cleanedKey) continue;
+
         for (const model of models) {
             try {
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${cleanedKey}`;
@@ -306,7 +331,7 @@ ${DEFAULT_SYSTEM_INSTRUCTION}
                     }
                 }
             } catch (err: any) {
-                lastErrorMsg = err?.message || 'Network error';
+                console.warn(`Gemini API attempt with ${model} error:`, err?.message);
             }
         }
         if (success) break;
@@ -316,10 +341,10 @@ ${DEFAULT_SYSTEM_INSTRUCTION}
         return NextResponse.json({ reply: replyText }, { status: 200 });
     }
 
-    return NextResponse.json({ reply: getSmartFallbackReply(prompt, courseContext, Boolean(image)) }, { status: 200 });
+    return NextResponse.json({ reply: getSmartFallbackReply(prompt, courseContext, Boolean(image), Boolean(audio)) }, { status: 200 });
 
   } catch (error: any) {
     console.error("Chat API Critical Error:", error);
-    return NextResponse.json({ reply: getSmartFallbackReply(reqBody?.prompt || "", reqBody?.courseContext, false) }, { status: 200 });
+    return NextResponse.json({ reply: getSmartFallbackReply(reqBody?.prompt || "", reqBody?.courseContext, false, false) }, { status: 200 });
   }
 }

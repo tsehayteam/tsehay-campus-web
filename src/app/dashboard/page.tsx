@@ -1217,32 +1217,35 @@ function StudentDashboardContent() {
   }, [user]);
 
   const aiVoiceTranscriptRef = useRef<string>('');
+  const aiMediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const aiAudioChunksRef = useRef<Blob[]>([]);
 
-  const startAiVoiceRecording = () => {
+  const startAiVoiceRecording = async () => {
     if (typeof window === "undefined") return;
-    const win = window as any;
-    const SpeechRecognition = win.SpeechRecognition || win.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      alert("ይቅርታ፣ የእርስዎ ብሮውዘር Voice Recognition አይደግፍም። እባክዎ Chrome ወይም Edge ይጠቀሙ።");
-      return;
-    }
 
     try {
-      if (aiRecognitionRef.current) {
-        try { aiRecognitionRef.current.abort(); } catch (e) {}
-        aiRecognitionRef.current = null;
+      // 1. Capture microphone stream for direct multimodal audio
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      aiAudioChunksRef.current = [];
+
+      let mimeType = 'audio/webm';
+      if (typeof MediaRecorder !== 'undefined') {
+        if (!MediaRecorder.isTypeSupported('audio/webm')) {
+          if (MediaRecorder.isTypeSupported('audio/mp4')) mimeType = 'audio/mp4';
+          else if (MediaRecorder.isTypeSupported('audio/ogg')) mimeType = 'audio/ogg';
+          else mimeType = '';
+        }
       }
 
-      aiVoiceTranscriptRef.current = '';
-      setChatInput('');
+      const mediaRecorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+      
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) {
+          aiAudioChunksRef.current.push(event.data);
+        }
+      };
 
-      const recognition = new SpeechRecognition();
-      recognition.lang = "am-ET";
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognition.maxAlternatives = 2;
-
-      recognition.onstart = () => {
+      mediaRecorder.onstart = () => {
         setIsAiVoiceRecording(true);
         setAiRecordingSeconds(0);
         if (aiTimerRef.current) clearInterval(aiTimerRef.current);
@@ -1251,42 +1254,74 @@ function StudentDashboardContent() {
         }, 1000);
       };
 
-      recognition.onresult = (event: any) => {
-        let fullTranscript = "";
-        for (let i = 0; i < event.results.length; i++) {
-          fullTranscript += event.results[i][0].transcript + ' ';
-        }
-        fullTranscript = fullTranscript.trim();
-        if (fullTranscript) {
-          aiVoiceTranscriptRef.current = fullTranscript;
-          setChatInput(fullTranscript);
-        }
-      };
+      mediaRecorder.start(250);
+      aiMediaRecorderRef.current = mediaRecorder;
 
-      recognition.onerror = (event: any) => {
-        console.warn("Voice speech recognition error:", event.error);
-        if (event.error === 'not-allowed') {
-          alert('እባክዎ የማይክሮፎን ፈቃድ ይስጡ (Please allow microphone access in browser settings).');
-          stopAiVoiceRecording(false);
-        }
-      };
-
-      recognition.onend = () => {
-        if (aiVoiceTranscriptRef.current.trim()) {
-          setChatInput(aiVoiceTranscriptRef.current.trim());
-        }
-      };
-
-      recognition.start();
-      aiRecognitionRef.current = recognition;
+      // Also trigger SpeechRecognition if available for live visual preview
+      const win = window as any;
+      const SpeechRecognition = win.SpeechRecognition || win.webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        try {
+          const recognition = new SpeechRecognition();
+          recognition.lang = "am-ET";
+          recognition.continuous = true;
+          recognition.interimResults = true;
+          recognition.onresult = (event: any) => {
+            let fullTranscript = "";
+            for (let i = 0; i < event.results.length; i++) {
+              fullTranscript += event.results[i][0].transcript + ' ';
+            }
+            if (fullTranscript.trim()) {
+              aiVoiceTranscriptRef.current = fullTranscript.trim();
+              setChatInput(fullTranscript.trim());
+            }
+          };
+          recognition.start();
+          aiRecognitionRef.current = recognition;
+        } catch (e) {}
+      }
     } catch (err) {
-      console.warn("Could not start voice recognition:", err);
+      console.warn("Could not start AI voice media recorder:", err);
+      alert('እባክዎ የማይክሮፎን ፈቃድ ይስጡ (Please allow microphone access in browser settings).');
       setIsAiVoiceRecording(false);
     }
   };
 
   const stopAiVoiceRecording = (shouldSend: boolean = true) => {
     const spoken = (aiVoiceTranscriptRef.current || chatInput).trim();
+    
+    if (aiMediaRecorderRef.current && aiMediaRecorderRef.current.state !== 'inactive') {
+      const recorder = aiMediaRecorderRef.current;
+      recorder.onstop = () => {
+        try {
+          recorder.stream.getTracks().forEach(t => t.stop());
+          const audioBlob = new Blob(aiAudioChunksRef.current, { type: recorder.mimeType || 'audio/webm' });
+          if (shouldSend && audioBlob.size > 200) {
+            const reader = new FileReader();
+            reader.readAsDataURL(audioBlob);
+            reader.onloadend = () => {
+              const base64Audio = reader.result as string;
+              handleSendAiMessage(undefined, spoken, base64Audio);
+            };
+          } else if (shouldSend && spoken) {
+            handleSendAiMessage(undefined, spoken);
+          }
+        } catch (e) {
+          if (shouldSend && spoken) handleSendAiMessage(undefined, spoken);
+        }
+      };
+
+      try {
+        recorder.stop();
+        recorder.stream.getTracks().forEach(t => t.stop());
+      } catch (e) {}
+      aiMediaRecorderRef.current = null;
+    } else {
+      if (shouldSend && spoken) {
+        handleSendAiMessage(undefined, spoken);
+      }
+    }
+
     if (aiRecognitionRef.current) {
       try { aiRecognitionRef.current.stop(); } catch (e) {}
       aiRecognitionRef.current = null;
@@ -1297,10 +1332,6 @@ function StudentDashboardContent() {
     }
     setIsAiVoiceRecording(false);
     setAiRecordingSeconds(0);
-
-    if (shouldSend && spoken) {
-      handleSendAiMessage(undefined, spoken);
-    }
   };
 
   const handleAiImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1325,17 +1356,24 @@ function StudentDashboardContent() {
     reader.readAsDataURL(file);
   };
 
-  const handleSendAiMessage = async (e?: React.FormEvent, customPrompt?: string) => {
+  const handleSendAiMessage = async (e?: React.FormEvent, customPrompt?: string, customAudio?: string) => {
     if (e) e.preventDefault();
     const queryText = (customPrompt || chatInput).trim();
     const imageToSend = aiAttachedImage;
-    if ((!queryText && !imageToSend) || isChatLoading) return;
+    const audioToSend = customAudio;
+    if ((!queryText && !imageToSend && !audioToSend) || isChatLoading) return;
 
-    const userMsg = queryText || (imageToSend ? "📸 ፎቶ ተያይዟል" : "");
+    let userMsg = queryText;
+    if (!userMsg) {
+      if (audioToSend) userMsg = "🎙️ የድምፅ መልዕክት (Voice Note)";
+      else if (imageToSend) userMsg = "📸 ፎቶ ተያይዟል";
+    }
+
     const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const newMsgs = [...chatMessages, { role: 'user', text: userMsg, image: imageToSend || undefined, timestamp: nowTime }];
     setChatMessages(newMsgs);
     setChatInput('');
+    aiVoiceTranscriptRef.current = '';
     setAiAttachedImage(null);
     setIsChatLoading(true);
 
@@ -1366,7 +1404,7 @@ function StudentDashboardContent() {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: queryText, image: imageToSend, courseContext })
+        body: JSON.stringify({ prompt: queryText, image: imageToSend, audio: audioToSend, courseContext })
       });
       const data = await response.json();
       const reply = data.reply || data.error || "ይቅርታ፣ አሁን ላይ መመለስ አልቻልኩም።";
