@@ -1979,6 +1979,7 @@ export default function AdminDashboard() {
                   ))
                 )}
               </tbody>
+            </table>
           </div>
           )}
 
@@ -3857,6 +3858,8 @@ export default function AdminDashboard() {
             </form>
           </div>
         </div>
+      )}
+
       {/* 🌟 Add/Edit Event Modal */}
       {isEventModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
