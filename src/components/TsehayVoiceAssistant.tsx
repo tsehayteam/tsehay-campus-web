@@ -515,7 +515,54 @@ export default function TsehayVoiceAssistant() {
       return;
     }
 
-    // 14. Intelligent Conversational AI Query (Zero Repetition, Pure Amharic, Polite Correction handling)
+    // 14. Referral & Promo Codes (ሪፈራል / የቅናሽ ኮድ)
+    if (
+      normalized.includes('ሪፈራል') ||
+      normalized.includes('ቅናሽ') ||
+      normalized.includes('ኮድ') ||
+      normalized.includes('ፕሮሞ') ||
+      normalized.includes('referral') ||
+      normalized.includes('promo')
+    ) {
+      const msg = 'የሪፈራል እና የቅናሽ ኮዶችን በመጠቀም በቅናሽ መመዝገብ ይችላሉ። የቅናሽ መስኮቱን ከፍቼልዎታለሁ።';
+      setAiResponse(msg);
+      speakVoice(msg, () => {
+        window.dispatchEvent(new CustomEvent('open-referral-modal'));
+        resumeListeningForNextTurn();
+      });
+      return;
+    }
+
+    // 15. General Manager (ርብቃ ተሾመ / ስራ አስኪያጅ)
+    if (
+      normalized.includes('ርብቃ') ||
+      normalized.includes('ስራ አስኪያጅ') ||
+      normalized.includes('manager')
+    ) {
+      const msg = 'የፀሐይ ካምፓስ ዋና ስራ አስኪያጅ (General Manager) ርብቃ ተሾመ (Ribka Teshome) ናት።';
+      setAiResponse(msg);
+      speakVoice(msg, () => {
+        resumeListeningForNextTurn();
+      });
+      return;
+    }
+
+    // 16. Device & Requirements (ምን ያስፈልጋል? / እንዴት ልማር?)
+    if (
+      normalized.includes('ምን ያስፈልጋል') ||
+      normalized.includes('መሳሪያ') ||
+      normalized.includes('መስፈርት') ||
+      normalized.includes('ስልክ') && normalized.includes('ይሆናል')
+    ) {
+      const msg = 'ለመማር ስማርት ስልክ፣ የኢንተርኔት ግንኙነት እና የቴሌግራም አካውንት ብቻ በቂ ነው። ለኮምፒውተርም በጣም ምቹ ነው።';
+      setAiResponse(msg);
+      speakVoice(msg, () => {
+        resumeListeningForNextTurn();
+      });
+      return;
+    }
+
+    // 17. Intelligent Conversational AI Query (Zero Repetition, Pure Amharic, Polite Correction handling)
     setIsAiProcessing(true);
     setStatusMessage('ፀሐይ AI መልስ በማዘጋጀት ላይ...');
 
