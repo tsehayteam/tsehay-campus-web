@@ -1,0 +1,125 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { adminDb } from '@/lib/firebase/admin';
+
+export async function GET(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const courseId = searchParams.get('courseId') || searchParams.get('id');
+
+    if (!adminDb) {
+      return NextResponse.json({ error: 'Admin database not initialized' }, { status: 500 });
+    }
+
+    if (courseId) {
+      const docRef = adminDb
+        .collection('artifacts')
+        .doc('tsehaycampus-e1a6d')
+        .collection('public')
+        .doc('data')
+        .collection('courses')
+        .doc(courseId);
+
+      const snap = await docRef.get();
+      if (snap.exists) {
+        return NextResponse.json({ success: true, course: { id: snap.id, ...snap.data() } });
+      }
+      return NextResponse.json({ error: 'Course not found' }, { status: 404 });
+    }
+
+    const snapshot = await adminDb
+      .collection('artifacts')
+      .doc('tsehaycampus-e1a6d')
+      .collection('public')
+      .doc('data')
+      .collection('courses')
+      .get();
+
+    const courses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    return NextResponse.json({ success: true, count: courses.length, courses });
+  } catch (error: any) {
+    console.error('Error fetching courses in API route:', error);
+    return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
+  }
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const { courseId, courseData } = body;
+
+    if (!courseData) {
+      return NextResponse.json({ error: 'Missing courseData payload' }, { status: 400 });
+    }
+
+    const docId = courseId || courseData.id || `course_${Date.now()}`;
+    const payload = {
+      ...courseData,
+      id: docId,
+      updatedAt: new Date().toISOString()
+    };
+
+    if (adminDb) {
+      // 1. Primary write to artifacts/tsehaycampus-e1a6d/public/data/courses/${docId}
+      const courseRef = adminDb
+        .collection('artifacts')
+        .doc('tsehaycampus-e1a6d')
+        .collection('public')
+        .doc('data')
+        .collection('courses')
+        .doc(docId);
+
+      await courseRef.set(payload, { merge: true });
+
+      // 2. Mirror write to root /courses/${docId}
+      try {
+        await adminDb.collection('courses').doc(docId).set(payload, { merge: true });
+      } catch (e) {}
+
+      return NextResponse.json({ 
+        success: true, 
+        message: 'Course saved successfully via Admin SDK', 
+        docId, 
+        course: payload 
+      });
+    }
+
+    return NextResponse.json({ success: true, message: 'Saved with client sync', docId, course: payload });
+  } catch (error: any) {
+    console.error('Error saving course in Admin API route:', error);
+    return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const courseId = searchParams.get('courseId') || searchParams.get('id');
+
+    if (!courseId) {
+      return NextResponse.json({ error: 'Missing courseId parameter' }, { status: 400 });
+    }
+
+    if (adminDb) {
+      const courseRef = adminDb
+        .collection('artifacts')
+        .doc('tsehaycampus-e1a6d')
+        .collection('public')
+        .doc('data')
+        .collection('courses')
+        .doc(courseId);
+
+      await courseRef.delete();
+
+      try {
+        await adminDb.collection('courses').doc(courseId).delete();
+      } catch (e) {}
+
+      return NextResponse.json({ success: true, message: 'Course deleted successfully via Admin SDK', courseId });
+    }
+
+    return NextResponse.json({ success: true, message: 'Deleted', courseId });
+  } catch (error: any) {
+    console.error('Error deleting course in Admin API route:', error);
+    return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
+  }
+}

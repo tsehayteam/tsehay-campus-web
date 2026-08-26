@@ -16,6 +16,8 @@ export async function POST(request: Request) {
     const decodedToken = await adminAuth.verifyIdToken(idToken);
     const isAdmin = decodedToken.admin === true || 
                     decodedToken.email === 'admin@tsehaycampus.com' || 
+                    decodedToken.email === 'tsehayoperation@gmail.com' ||
+                    decodedToken.email === 'eyoubsahle@gmail.com' ||
                     decodedToken.email === 'habte@gmail.com' ||
                     decodedToken.email === 'cryptomaster758@gmail.com';
 

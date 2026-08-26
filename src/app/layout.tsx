@@ -8,6 +8,7 @@ import PaymentModal from "@/components/PaymentModal";
 import TermsModal from "@/components/TermsModal";
 import ContentProtection from "@/components/ContentProtection";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
+import FloatingAIButton from "@/components/FloatingAIButton";
 import TsehayVoiceAssistant from "@/components/TsehayVoiceAssistant";
 import { LanguageProvider } from "@/context/LanguageContext";
 import Global3DBackgroundCanvas from "@/components/scrollytelling/Global3DBackgroundCanvas";
@@ -193,6 +194,7 @@ export default function RootLayout({
               <TermsModal />
               <PaymentModal />
               <PWAInstallPrompt />
+              <FloatingAIButton />
               <TsehayVoiceAssistant />
             </SmoothScrollAndScrollyProvider>
           </AuthProvider>

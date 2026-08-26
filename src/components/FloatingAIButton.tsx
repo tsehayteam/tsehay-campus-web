@@ -27,10 +27,6 @@ export default function FloatingAIButton() {
     )
   );
 
-  if (!isClassroomOrDashboard) {
-    return null;
-  }
-
   const [isOpen, setIsOpen] = useState(false);
   const [courses, setCourses] = useState<any[]>([]);
   const [selectedCourse, setSelectedCourse] = useState<any>(null);
@@ -387,7 +383,7 @@ export default function FloatingAIButton() {
   ];
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 font-body select-none">
+    <div className="fixed bottom-6 right-6 z-[9980] font-body select-none">
       
       {/* Hidden File Input for Image Upload */}
       <input 
