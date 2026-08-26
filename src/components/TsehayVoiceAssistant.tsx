@@ -164,6 +164,19 @@ function autoCorrectAmharicSpeech(rawText: string, isEnglishMode: boolean = fals
     };
   }
 
+  // 5.1 Navigation: Admin Page (አድሚን / admin)
+  if (
+    /አድሚን|አድሚን\s*ገጽ|ወደ\s*አድሚን/i.test(normalized) ||
+    /admin|admin page|go to admin/i.test(text)
+  ) {
+    return {
+      corrected: isEnglishEffective ? 'Go to Admin Page' : 'ወደ አድሚን ገጽ ውሰደኝ',
+      raw: text,
+      detectedIntent: 'admin',
+      isEnglishLanguageDetected: isPureEnglish
+    };
+  }
+
   // 6. Shein Course Explicit Query
   if (
     /ስለ\s*ሼን|ስለ\s*ሸን|ስለ\s*ሺን|የሼን\s*ስልጠና|የሼን\s*ኮርስ|የሼን\s*ዋጋ|የሺን\s*ስልጠና|ሼን\s*ኢምፖርት/i.test(normalized) ||
@@ -636,6 +649,19 @@ export default function TsehayVoiceAssistant() {
       setAiResponse(msg);
       speakVoice(msg, () => {
         router.push('/courses');
+        setTimeout(() => closeAssistant(), 500);
+      });
+      return;
+    }
+
+    // 2.1 Navigation: Admin Dashboard (አድሚን / admin)
+    if (intent === 'admin') {
+      const msg = interruptPrefix + (isEng 
+        ? 'Taking you to the admin dashboard.' 
+        : 'ወደ አድሚን ገጽ እየወሰድኩዎት ነው።');
+      setAiResponse(msg);
+      speakVoice(msg, () => {
+        router.push('/admin');
         setTimeout(() => closeAssistant(), 500);
       });
       return;
