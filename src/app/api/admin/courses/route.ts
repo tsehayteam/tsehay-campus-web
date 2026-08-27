@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase/admin';
-import { DEFAULT_COURSES } from '@/lib/courseCache';
+import { DEFAULT_COURSES, generateCourseSlug, getCourseBySlugOrId } from '@/lib/courseCache';
 
 export async function GET(req: NextRequest) {
   try {
@@ -8,10 +8,15 @@ export async function GET(req: NextRequest) {
     const courseId = searchParams.get('courseId') || searchParams.get('id');
 
     if (!adminDb) {
+      if (courseId) {
+        const found = getCourseBySlugOrId(courseId, DEFAULT_COURSES);
+        return found ? NextResponse.json({ success: true, course: found }) : NextResponse.json({ error: 'Course not found' }, { status: 404 });
+      }
       return NextResponse.json({ success: true, count: DEFAULT_COURSES.length, courses: DEFAULT_COURSES });
     }
 
     if (courseId) {
+      // 1. Direct doc ID lookup
       const docRef = adminDb
         .collection('artifacts')
         .doc('tsehaycampus-e1a6d')
@@ -25,7 +30,23 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ success: true, course: { id: snap.id, ...snap.data() } });
       }
 
-      const defaultMatch = DEFAULT_COURSES.find(c => c.id === courseId);
+      // 2. Slug query lookup
+      const slugSnap = await adminDb
+        .collection('artifacts')
+        .doc('tsehaycampus-e1a6d')
+        .collection('public')
+        .doc('data')
+        .collection('courses')
+        .where('slug', '==', courseId.toLowerCase().trim())
+        .limit(1)
+        .get();
+
+      if (!slugSnap.empty) {
+        const doc = slugSnap.docs[0];
+        return NextResponse.json({ success: true, course: { id: doc.id, ...doc.data() } });
+      }
+
+      const defaultMatch = getCourseBySlugOrId(courseId, DEFAULT_COURSES);
       if (defaultMatch) {
         return NextResponse.json({ success: true, course: defaultMatch });
       }
@@ -73,9 +94,14 @@ export async function POST(req: NextRequest) {
     }
 
     const docId = courseId || courseData.id || `course_${Date.now()}`;
+    const slug = (courseData.slug && typeof courseData.slug === 'string' && courseData.slug.trim()) 
+      ? courseData.slug.trim().toLowerCase() 
+      : generateCourseSlug(courseData.title || docId);
+
     const payload = {
       ...courseData,
       id: docId,
+      slug,
       updatedAt: new Date().toISOString()
     };
 

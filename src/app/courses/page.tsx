@@ -15,7 +15,7 @@ import SmartSearchInput from '@/components/SmartSearchInput';
 import CourseCardSkeleton from '@/components/CourseCardSkeleton';
 import Tilt3DCard from '@/components/3d/Tilt3DCard';
 import { searchCourses } from '@/lib/smartSearch';
-import { getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl } from '@/lib/courseCache';
+import { getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl, getCourseSlug } from '@/lib/courseCache';
 
 export default function Courses() {
   const [courses, setCourses] = useState<any[]>(() => {
@@ -375,7 +375,7 @@ export default function Courses() {
                         <div>
                           {/* Thumbnail Wrapper: 100% full view with ambient glow & 1.05 scale hover zoom */}
                           <a 
-                            href={`/courses/${course.id}`} 
+                            href={`/courses/${getCourseSlug(course)}`} 
                             className="relative aspect-video w-full overflow-hidden bg-black flex items-center justify-center block cursor-pointer"
                             style={{ transform: 'translateZ(30px)' }}
                           >
@@ -421,7 +421,7 @@ export default function Courses() {
                           
                           {/* Content Details */}
                           <div className="p-6 sm:p-7">
-                            <a href={`/courses/${course.id}`}>
+                            <a href={`/courses/${getCourseSlug(course)}`}>
                               <h3 
                                 className="text-xl sm:text-2xl font-black text-white mb-3 line-clamp-2 leading-snug group-hover:text-[#f9b03c] transition-colors font-heading cursor-pointer tracking-tight"
                                 style={{ transform: 'translateZ(25px)' }}
@@ -502,7 +502,7 @@ export default function Courses() {
                           
                           <div className="flex items-center gap-2">
                             <a 
-                              href={`/courses/${course.id}`} 
+                              href={`/courses/${getCourseSlug(course)}`} 
                               className="bg-white/[0.05] hover:bg-white/10 text-white text-xs font-bold px-3.5 py-2.5 rounded-xl transition border border-white/10 flex items-center gap-1.5 cursor-pointer hover:border-[#f9b03c]/40"
                             >
                               <i className="fa-solid fa-eye text-[#f9b03c]"></i>

@@ -14,7 +14,7 @@ import SynthesiaAiChatDemo from '@/components/SynthesiaAiChatDemo';
 import InstructorYouTubePortfolio from '@/components/InstructorYouTubePortfolio';
 import UpcomingEventsSection from '@/components/UpcomingEventsSection';
 import CourseCardSkeleton from '@/components/CourseCardSkeleton';
-import { getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl } from '@/lib/courseCache';
+import { getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl, getCourseSlug } from '@/lib/courseCache';
 import Hero3DPopoutStage from '@/components/3d/Hero3DPopoutStage';
 import Tilt3DCard from '@/components/3d/Tilt3DCard';
 import { scrollTriggerEngine } from '@/lib/scrollTriggerEngine';
@@ -589,7 +589,7 @@ export default function Home() {
                             scale={1.025}
                             perspective={1100}
                             glare={true}
-                            onClick={() => window.location.href=`/courses/${course.id}`}
+                            onClick={() => window.location.href=`/courses/${getCourseSlug(course)}`}
                             className="cursor-pointer group"
                         >
                             <div 

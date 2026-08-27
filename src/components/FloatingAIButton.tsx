@@ -6,6 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase/config';
 import { collection, doc, getDocs, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import FormattedAiText from '@/components/FormattedAiText';
+import { getCourseBySlugOrId } from '@/lib/courseCache';
 
 interface Message {
   role: 'user' | 'ai';
@@ -74,9 +75,11 @@ export default function FloatingAIButton() {
   // 2. Detect course context from current URL pathname
   useEffect(() => {
     if (pathname && pathname.includes('/courses/') && courses.length > 0) {
-      const courseId = pathname.split('/courses/')[1]?.split('/')[0];
-      const match = courses.find(c => c.id === courseId);
-      if (match) setSelectedCourse(match);
+      const slugOrId = pathname.split('/courses/')[1]?.split('/')[0];
+      if (slugOrId) {
+        const match = getCourseBySlugOrId(slugOrId, courses);
+        if (match) setSelectedCourse(match);
+      }
     }
   }, [pathname, courses]);
 

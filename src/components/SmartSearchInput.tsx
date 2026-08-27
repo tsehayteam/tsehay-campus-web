@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { searchCourses } from '@/lib/smartSearch';
+import { getCourseSlug } from '@/lib/courseCache';
 
 interface SmartSearchInputProps {
   courses: any[];
@@ -53,9 +54,10 @@ export default function SmartSearchInput({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleSelectCourse = (courseId: string) => {
+  const handleSelectCourse = (course: any) => {
     setIsOpen(false);
-    router.push(`/courses/${courseId}`);
+    const targetSlug = getCourseSlug(course) || course.id;
+    router.push(`/courses/${targetSlug}`);
   };
 
   return (
@@ -132,7 +134,7 @@ export default function SmartSearchInput({
               {filteredResults.map(course => (
                 <div 
                   key={course.id}
-                  onClick={() => handleSelectCourse(course.id)}
+                  onClick={() => handleSelectCourse(course)}
                   className="p-3.5 hover:bg-[#f9b03c]/10 cursor-pointer transition-colors flex items-center justify-between group"
                 >
                   <div className="flex items-center gap-3.5">

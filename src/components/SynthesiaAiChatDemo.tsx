@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { getCachedCourses } from '@/lib/courseCache';
+import { getCachedCourses, getCourseSlug, getCourseBySlugOrId } from '@/lib/courseCache';
 import { db } from '@/lib/firebase/config';
 import { collection, getDocs, query } from 'firebase/firestore';
 
@@ -170,39 +170,21 @@ export default function SynthesiaAiChatDemo({ isActive = true }: SynthesiaAiChat
   };
 
   const getResolvedCourseId = (scenario: QuestionScenario): string => {
-    if (!coursesList || coursesList.length === 0) return scenario.id;
-
-    const direct = coursesList.find(c => c.id === scenario.courseId || c.id === scenario.id);
-    if (direct) return direct.id;
-
-    if (scenario.id === 'shein') {
-      const sheinCourse = coursesList.find(c => 
-        (c.title && /shein|ኢምፖርት|import|sheen/i.test(c.title)) ||
-        (c.category && /shein|import|ecommerce/i.test(c.category))
-      );
-      if (sheinCourse) return sheinCourse.id;
+    if (!coursesList || coursesList.length === 0) {
+      if (scenario.id === 'marketing') return 'digital-marketing';
+      if (scenario.id === 'shein') return 'shein-import-business';
+      if (scenario.id === 'youtube') return 'youtube-secrets-masterclass';
+      return scenario.id;
     }
 
-    if (scenario.id === 'marketing') {
-      const marketingCourse = coursesList.find(c => 
-        (c.title && /marketing|ማርኬቲንግ|ዲጂታል|social media|facebook/i.test(c.title)) ||
-        (c.category && /marketing|ማርኬቲንግ/i.test(c.category))
-      );
-      if (marketingCourse) return marketingCourse.id;
+    const matched = getCourseBySlugOrId(scenario.id, coursesList) ||
+                    getCourseBySlugOrId(scenario.courseTag, coursesList);
+
+    if (matched) {
+      return getCourseSlug(matched) || matched.id;
     }
 
-    if (scenario.id === 'youtube') {
-      const ytCourse = coursesList.find(c => 
-        (c.title && /youtube|ዩቲዩብ|ቪዲዮ/i.test(c.title)) ||
-        (c.category && /youtube|ዩቲዩብ/i.test(c.category))
-      );
-      if (ytCourse) return ytCourse.id;
-    }
-
-    const tagMatch = coursesList.find(c => c.title && (c.title.includes(scenario.courseTag) || scenario.courseTag.includes(c.title)));
-    if (tagMatch) return tagMatch.id;
-
-    return coursesList[0]?.id || scenario.id;
+    return coursesList[0] ? getCourseSlug(coursesList[0]) : scenario.id;
   };
 
   return (

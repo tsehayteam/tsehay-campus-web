@@ -1,6 +1,7 @@
 export const DEFAULT_COURSES = [
   {
     id: "course_1784885267254",
+    slug: "youtube-secrets-masterclass",
     title: "የዩቲዩብ ስኬት ሚስጥሮች (YouTube Secrets Masterclass)",
     description: "ከዜሮ ተነስተው ስኬታማ እና ገቢ የሚያስገኝ የዩቲዩብ ቻናል ለመገንባት የሚያስፈልጉዎትን ሚስጥሮች፣ የቪዲዮ አሰራር፣ የ Thumbnail ዲዛይን፣ የ SEO እና የገቢ ማግኛ መንገዶችን ደረጃ በደረጃ በተግባር የሚያስተምር የተሟላ ማስተርክላስ።",
     desc: "ከዜሮ ተነስተው ስኬታማ እና ገቢ የሚያስገኝ የዩቲዩብ ቻናል ለመገንባት የሚያስፈልጉዎትን ሚስጥሮች፣ የቪዲዮ አሰራር፣ የ Thumbnail ዲዛይን፣ የ SEO እና የገቢ ማግኛ መንገዶችን ደረጃ በደረጃ በተግባር የሚያስተምር የተሟላ ማስተርክላስ።",
@@ -56,6 +57,7 @@ export const DEFAULT_COURSES = [
   },
   {
     id: "digital_marketing_free",
+    slug: "digital-marketing",
     title: "ዲጂታል ማርኬቲንግ ለጀማሪዎች፡ ቢዝነስዎን በቀላሉ የሚያሳድጉበት መመሪያ",
     description: "በዚህ ኮርስ የዲጂታል ማርኬቲንግ መሰረታዊ ሀሳቦችን፣ የሶሻል ሚዲያ አጠቃቀምን እና ቢዝነስዎን እንዴት ማሳደግ እንደሚችሉ ይማራሉ።",
     desc: "በዚህ ኮርስ የዲጂታል ማርኬቲንግ መሰረታዊ ሀሳቦችን፣ የሶሻል ሚዲያ አጠቃቀምን እና ቢዝነስዎን እንዴት ማሳደግ እንደሚችሉ ይማራሉ።",
@@ -108,6 +110,7 @@ export const DEFAULT_COURSES = [
   },
   {
     id: "digital_marketing_pro",
+    slug: "digital-marketing-pro",
     title: "ፕሮፌሽናል ዲጂታል ማርኬቲንግ ማስተር ክላስ",
     description: "ይህ የፕሮፌሽናል ዲጂታል ማርኬቲንግ ኮርስ ሲሆን ከጀማሪ እስከ አድቫንስድ ያሉትን ሁሉንም የዲጂታል ማርኬቲንግ አይነቶች በተግባር ይማሩበታል።",
     desc: "ይህ የፕሮፌሽናል ዲጂታል ማርኬቲንግ ኮርስ ሲሆን ከጀማሪ እስከ አድቫንስድ ያሉትን ሁሉንም የዲጂታል ማርኬቲንግ አይነቶች በተግባር ይማሩበታል።",
@@ -158,6 +161,130 @@ export const DEFAULT_COURSES = [
     ]
   }
 ];
+
+/**
+ * Normalizes title / category / string into a clean, human-friendly URL slug
+ */
+export function generateCourseSlug(title: string): string {
+  if (!title) return '';
+  const lower = title.toLowerCase();
+  
+  if (lower.includes('shein') || lower.includes('ኢምፖርት') || lower.includes('import')) {
+    return 'shein-import-business';
+  }
+  if (lower.includes('youtube') || lower.includes('ዩቲዩብ')) {
+    return 'youtube-secrets-masterclass';
+  }
+  if (lower.includes('ዲጂታል') || lower.includes('marketing') || lower.includes('ማርኬቲንግ')) {
+    if (lower.includes('pro') || lower.includes('ፕሮፌሽናል') || lower.includes('advanced') || lower.includes('ከፍተኛ')) {
+      return 'digital-marketing-pro';
+    }
+    return 'digital-marketing';
+  }
+  if (lower.includes('crypto') || lower.includes('ክሪፕቶ')) {
+    return 'crypto-trading';
+  }
+  if (lower.includes('web') || lower.includes('ኮዲንግ') || lower.includes('coding')) {
+    return 'web-development';
+  }
+
+  // Extract English words if present
+  const latinOnly = title
+    .replace(/[^\w\s-]/g, ' ')
+    .trim()
+    .replace(/\s+/g, '-')
+    .toLowerCase();
+
+  if (latinOnly && latinOnly.length >= 3) {
+    return latinOnly;
+  }
+
+  return 'course-' + encodeURIComponent(title.slice(0, 15)).toLowerCase().replace(/%/g, '');
+}
+
+/**
+ * Returns the canonical clean slug for a course, falling back to clean generated slug or id
+ */
+export function getCourseSlug(course: any): string {
+  if (!course) return '';
+  if (course.slug && typeof course.slug === 'string' && course.slug.trim().length > 0) {
+    return course.slug.trim().toLowerCase();
+  }
+  if (course.title) {
+    return generateCourseSlug(course.title);
+  }
+  return course.id || '';
+}
+
+/**
+ * Resolves a course by slug, raw ID, or known aliases
+ */
+export function getCourseBySlugOrId(slugOrId: string, courses: any[]): any {
+  if (!slugOrId || !Array.isArray(courses) || courses.length === 0) return null;
+
+  const raw = decodeURIComponent(slugOrId).trim().toLowerCase();
+
+  // 1. Direct ID or explicit slug match
+  const directMatch = courses.find((c: any) => 
+    (c.id && c.id.toLowerCase() === raw) ||
+    (c.slug && c.slug.toLowerCase() === raw)
+  );
+  if (directMatch) return directMatch;
+
+  // 2. Computed slug match
+  const slugMatch = courses.find((c: any) => getCourseSlug(c) === raw);
+  if (slugMatch) return slugMatch;
+
+  // 3. Known Aliases
+  // Digital Marketing aliases
+  if (raw === 'digital-marketing' || raw === 'digital-marketing-free' || raw === 'marketing' || raw === 'digital_marketing_free' || raw.includes('digital-marketing')) {
+    const dm = courses.find((c: any) => 
+      c.id === 'digital_marketing_free' ||
+      c.id === 'course_1784495507314' ||
+      (c.title && (c.title.includes('ዲጂታል ማርኬቲንግ') || /digital marketing/i.test(c.title)))
+    );
+    if (dm) return dm;
+  }
+
+  // Shein aliases
+  if (raw === 'shein' || raw === 'shein-import' || raw === 'shein-import-business' || raw === 'ecommerce' || raw.includes('shein')) {
+    const shein = courses.find((c: any) => 
+      (c.title && (c.title.includes('ሼን') || /shein/i.test(c.title))) ||
+      (c.category && /shein/i.test(c.category))
+    );
+    if (shein) return shein;
+  }
+
+  // YouTube aliases
+  if (raw === 'youtube' || raw === 'youtube-secrets' || raw === 'youtube-masterclass' || raw === 'youtube-secrets-masterclass' || raw === 'course_1784885267254' || raw.includes('youtube')) {
+    const yt = courses.find((c: any) => 
+      c.id === 'course_1784885267254' ||
+      (c.title && (c.title.includes('ዩቲዩብ') || /youtube/i.test(c.title))) ||
+      (c.category && /youtube/i.test(c.category))
+    );
+    if (yt) return yt;
+  }
+
+  // Crypto aliases
+  if (raw === 'crypto' || raw === 'crypto-trading' || raw.includes('crypto')) {
+    const crypto = courses.find((c: any) => 
+      (c.title && (c.title.includes('ክሪፕቶ') || /crypto/i.test(c.title)))
+    );
+    if (crypto) return crypto;
+  }
+
+  // 4. Timestamp / numeric course ID partial match
+  if (raw.startsWith('course_') || raw.startsWith('course-')) {
+    const idMatch = courses.find((c: any) => c.id && c.id.toLowerCase().includes(raw));
+    if (idMatch) return idMatch;
+  }
+
+  // 5. Title substring search
+  const titleMatch = courses.find((c: any) => c.title && c.title.toLowerCase().includes(raw));
+  if (titleMatch) return titleMatch;
+
+  return null;
+}
 
 export function formatCourseDesc(course: any): string {
   const text = (course?.desc || course?.description || '').trim();

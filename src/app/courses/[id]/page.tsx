@@ -12,7 +12,7 @@ import PaymentModal from '@/components/PaymentModal';
 import RequireAuthModal from '@/components/RequireAuthModal';
 import Footer from '@/components/Footer';
 import dynamic from 'next/dynamic';
-import { getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl } from '@/lib/courseCache';
+import { getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl, getCourseSlug, getCourseBySlugOrId } from '@/lib/courseCache';
 
 function CoursePreviewContent() {
   const routeParams = useParams();
@@ -50,46 +50,7 @@ function CoursePreviewContent() {
     // Helper to find best matching course from a list
     const findMatchingCourse = (list: any[], searchId: string) => {
       if (!list || list.length === 0) return null;
-      // 1. Direct ID match
-      const direct = list.find((c: any) => c.id === searchId);
-      if (direct) return direct;
-
-      const lower = (searchId || '').toLowerCase();
-
-      // 2. YouTube & Timestamp ID match (e.g. course_1784884212400)
-      if (lower.includes('youtube') || lower.includes('ዩቲዩብ') || lower.includes('video') || lower.startsWith('course_')) {
-        const match = list.find((c: any) => 
-          (c.id && (c.id === searchId || c.id.startsWith('course_'))) ||
-          (c.title && /youtube|ዩቲዩብ|ቪዲዮ/i.test(c.title)) ||
-          (c.category && /youtube|ዩቲዩብ/i.test(c.category))
-        );
-        if (match) return match;
-      }
-
-      // 3. Digital Marketing match
-      if (lower.includes('marketing') || lower.includes('ማርኬቲንግ') || lower.includes('digital')) {
-        const match = list.find((c: any) => 
-          (c.title && /marketing|ማርኬቲንግ|ዲጂታል|social media|facebook/i.test(c.title)) ||
-          (c.category && /marketing|ማርኬቲንግ/i.test(c.category))
-        );
-        if (match) return match;
-      }
-
-      // 4. Shein / Import match
-      if (lower.includes('shein') || lower.includes('import') || lower.includes('ኢምፖርት')) {
-        const match = list.find((c: any) => 
-          (c.title && /shein|ኢምፖርት|import|sheen/i.test(c.title)) ||
-          (c.category && /shein|import|ecommerce/i.test(c.category))
-        );
-        if (match) return match;
-      }
-
-      // 5. Title substring match
-      const titleMatch = list.find((c: any) => c.title && (c.title.toLowerCase().includes(lower) || lower.includes(c.title.toLowerCase())));
-      if (titleMatch) return titleMatch;
-
-      // 6. Safe fallback to first active course
-      return list[0] || null;
+      return getCourseBySlugOrId(searchId, list) || list[0] || null;
     };
 
     // Load from cache immediately on client mount
@@ -130,7 +91,7 @@ function CoursePreviewContent() {
           }
         } catch (e) {}
 
-        // 2. Fetch all courses dynamically (also used for fallback resolution)
+        // 2. Fetch all courses dynamically (also used for slug/fallback resolution)
         let allList: any[] = [];
         try {
           const allCoursesQuery = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses'));
@@ -146,7 +107,7 @@ function CoursePreviewContent() {
           console.warn("All courses fetch fallback:", allErr);
         }
 
-        // If direct getDoc didn't find the course, use fuzzy keyword match from allList
+        // If direct getDoc didn't find the course by raw ID, resolve by slug or alias from allList
         if (!loadedCourseData && allList.length > 0) {
           const matched = findMatchingCourse(allList, id);
           if (matched) {
@@ -956,7 +917,7 @@ function CoursePreviewContent() {
                   {instructorCourses.filter(c => c.id !== course.id).slice(0, 6).map((otherCourse) => (
                     <div 
                       key={otherCourse.id} 
-                      onClick={() => router.push(`/courses/${otherCourse.id}`)}
+                      onClick={() => router.push(`/courses/${getCourseSlug(otherCourse)}`)}
                       className="p-4 rounded-xl border border-gray-200 dark:border-white/[0.06] hover:border-[#f9b03c]/50 dark:hover:border-[#f9b03c]/50 bg-white dark:bg-white/[0.03] backdrop-blur-md transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(249,176,60,0.15)] cursor-pointer flex flex-row gap-4 items-center group select-none"
                     >
                       {/* 150px 16:9 Thumbnail with overflow hidden */}
