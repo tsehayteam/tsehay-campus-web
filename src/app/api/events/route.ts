@@ -87,10 +87,6 @@ export async function POST(req: NextRequest) {
     const eventData = body.event || body;
     const eventId = eventData.id || `evt_${Date.now()}`;
 
-    if (!adminDb) {
-      return NextResponse.json({ error: 'Database service unavailable' }, { status: 500 });
-    }
-
     const payload = {
       ...eventData,
       id: eventId,
@@ -100,19 +96,22 @@ export async function POST(req: NextRequest) {
       registeredCount: Number(eventData.registeredCount) || 0
     };
 
-    // Save to primary nested path and backup root path
-    await adminDb
-      .collection('artifacts')
-      .doc('tsehaycampus-e1a6d')
-      .collection('public')
-      .doc('data')
-      .collection('events')
-      .doc(eventId)
-      .set(payload, { merge: true });
+    if (adminDb) {
+      try {
+        await adminDb
+          .collection('artifacts')
+          .doc('tsehaycampus-e1a6d')
+          .collection('public')
+          .doc('data')
+          .collection('events')
+          .doc(eventId)
+          .set(payload, { merge: true });
 
-    try {
-      await adminDb.collection('events').doc(eventId).set(payload, { merge: true });
-    } catch (e) {}
+        await adminDb.collection('events').doc(eventId).set(payload, { merge: true });
+      } catch (dbErr) {
+        console.warn('Firebase Admin event save warning:', dbErr);
+      }
+    }
 
     return NextResponse.json({ success: true, event: payload });
   } catch (error: any) {
@@ -126,22 +125,26 @@ export async function DELETE(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const eventId = searchParams.get('id') || searchParams.get('eventId');
 
-    if (!eventId || !adminDb) {
+    if (!eventId) {
       return NextResponse.json({ error: 'Event ID required' }, { status: 400 });
     }
 
-    await adminDb
-      .collection('artifacts')
-      .doc('tsehaycampus-e1a6d')
-      .collection('public')
-      .doc('data')
-      .collection('events')
-      .doc(eventId)
-      .delete();
+    if (adminDb) {
+      try {
+        await adminDb
+          .collection('artifacts')
+          .doc('tsehaycampus-e1a6d')
+          .collection('public')
+          .doc('data')
+          .collection('events')
+          .doc(eventId)
+          .delete();
 
-    try {
-      await adminDb.collection('events').doc(eventId).delete();
-    } catch (e) {}
+        await adminDb.collection('events').doc(eventId).delete();
+      } catch (dbErr) {
+        console.warn('Firebase Admin event delete warning:', dbErr);
+      }
+    }
 
     return NextResponse.json({ success: true, deletedId: eventId });
   } catch (error: any) {

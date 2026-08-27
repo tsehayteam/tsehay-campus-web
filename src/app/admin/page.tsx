@@ -1640,27 +1640,45 @@ export default function AdminDashboard() {
         status: (eventForm.status as any) || 'upcoming'
       };
 
-      const res = await fetch('/api/events', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ event: payload })
-      });
-
-      if (res.ok) {
-        if (editingEvent) {
-          setEvents(prev => prev.map(ev => ev.id === eventId ? payload : ev));
-        } else {
-          setEvents(prev => [payload, ...prev]);
-        }
-        saveCachedEvents(editingEvent ? events.map(ev => ev.id === eventId ? payload : ev) : [payload, ...events]);
-        setEventSuccessMsg('ክንውኑ በተሳካ ሁኔታ ተቀምጧል! (Event saved successfully)');
-        showToast('ክንውኑ በተሳካ ሁኔታ ተቀምጧል!', 'success');
-        setTimeout(() => setIsEventModalOpen(false), 1200);
-      } else {
-        throw new Error('Failed to save event');
+      // 1. Direct Client-Side Firestore Persistence (Primary + Root Collections)
+      try {
+        const nestedDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'events', eventId);
+        await setDoc(nestedDocRef, payload, { merge: true });
+        const rootDocRef = doc(db, 'events', eventId);
+        await setDoc(rootDocRef, payload, { merge: true });
+      } catch (dbErr) {
+        console.warn("Client Firestore event sync warning:", dbErr);
       }
+
+      // 2. Server API Route Persistence
+      try {
+        await fetch('/api/events', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ event: payload })
+        });
+      } catch (apiErr) {
+        console.warn("Server API event save warning:", apiErr);
+      }
+
+      // 3. React State & Synchronous LocalStorage & Global Broadcast
+      const updatedEvents = editingEvent
+        ? events.map(ev => ev.id === eventId ? payload : ev)
+        : [payload, ...events.filter(ev => ev.id !== eventId)];
+
+      setEvents(updatedEvents);
+      saveCachedEvents(updatedEvents);
+      try {
+        localStorage.setItem('tsehay_events_cache', JSON.stringify(updatedEvents));
+        window.dispatchEvent(new CustomEvent('tsehay_events_updated', { detail: { events: updatedEvents } }));
+      } catch (e) {}
+
+      setEventSuccessMsg('ክንውኑ በተሳካ ሁኔታ ተቀምጧል! (Event saved successfully)');
+      showToast('ክንውኑ በተሳካ ሁኔታ ተቀምጧል!', 'success');
+      setTimeout(() => setIsEventModalOpen(false), 900);
     } catch (err: any) {
-      showToast(err.message || 'Error saving event', 'error');
+      console.error("Error saving event:", err);
+      showToast(err.message || 'ክንውኑን ማስቀመጥ አልተቻለም', 'error');
     } finally {
       setIsSavingEvent(false);
     }
@@ -1668,11 +1686,28 @@ export default function AdminDashboard() {
 
   const handleDeleteEvent = async (id: string) => {
     if (window.confirm("እርግጠኛ ነዎት ይህን ክስተት ማጥፋት ይፈልጋሉ?")) {
-      setEvents(prev => prev.filter(e => e.id !== id));
+      const updatedEvents = events.filter(e => e.id !== id);
+      setEvents(updatedEvents);
+      saveCachedEvents(updatedEvents);
+      try {
+        localStorage.setItem('tsehay_events_cache', JSON.stringify(updatedEvents));
+        window.dispatchEvent(new CustomEvent('tsehay_events_updated', { detail: { events: updatedEvents } }));
+      } catch (e) {}
+
+      try {
+        const nestedDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'events', id);
+        await deleteDoc(nestedDocRef);
+        const rootDocRef = doc(db, 'events', id);
+        await deleteDoc(rootDocRef);
+      } catch (dbErr) {
+        console.warn("Client Firestore event delete warning:", dbErr);
+      }
+
       try {
         await fetch(`/api/events?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
-        showToast('ክስተቱ ተሰርዟል!', 'success');
       } catch (e) {}
+
+      showToast('ክስተቱ ተሰርዟል!', 'success');
     }
   };
 

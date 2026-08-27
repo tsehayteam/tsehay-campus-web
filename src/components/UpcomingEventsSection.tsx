@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { TsehayEvent, EventTicket, DEFAULT_EVENTS, getCachedEvents, getRemainingSeats } from '@/lib/eventCache';
 import { useAuth } from '@/context/AuthContext';
+import { db } from '@/lib/firebase/config';
+import { collection, onSnapshot } from 'firebase/firestore';
 import DigitalTicketModal from '@/components/DigitalTicketModal';
 
 export default function UpcomingEventsSection() {
@@ -24,8 +26,33 @@ export default function UpcomingEventsSection() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [bookingError, setBookingError] = useState<string | null>(null);
 
-  // Fetch live events from API
+  // 🌟 Live Real-time Events Listener (Firestore + Local Broadcast + API)
   useEffect(() => {
+    const handleEventsUpdate = (e: any) => {
+      if (e.detail?.events && Array.isArray(e.detail.events)) {
+        setEvents(e.detail.events);
+      }
+    };
+    window.addEventListener('tsehay_events_updated', handleEventsUpdate);
+
+    // 1. Live Firestore listener
+    let unsubNested: any = null;
+    try {
+      const nestedRef = collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'events');
+      unsubNested = onSnapshot(nestedRef, (snapshot) => {
+        if (!snapshot.empty) {
+          const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as TsehayEvent));
+          setEvents(list);
+          try {
+            localStorage.setItem('tsehay_events_cache', JSON.stringify(list));
+          } catch (e) {}
+        }
+      }, (err) => {
+        console.warn("Real-time events Firestore sync fallback:", err);
+      });
+    } catch (e) {}
+
+    // 2. Fetch live events from API
     const fetchEvents = async () => {
       try {
         const res = await fetch('/api/events');
@@ -43,6 +70,11 @@ export default function UpcomingEventsSection() {
       }
     };
     fetchEvents();
+
+    return () => {
+      window.removeEventListener('tsehay_events_updated', handleEventsUpdate);
+      if (unsubNested) unsubNested();
+    };
   }, []);
 
   // Update attendee form with user data

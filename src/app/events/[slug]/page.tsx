@@ -34,8 +34,16 @@ export default function EventDetailPage() {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
 
-  // Fetch from server API
+  // Fetch from server API & listen for real-time admin edits
   useEffect(() => {
+    const handleEventsUpdate = (e: any) => {
+      if (e.detail?.events && Array.isArray(e.detail.events)) {
+        const found = getEventBySlugOrId(slug, e.detail.events);
+        if (found) setEvent(found);
+      }
+    };
+    window.addEventListener('tsehay_events_updated', handleEventsUpdate);
+
     const loadEvent = async () => {
       try {
         const res = await fetch('/api/events');
@@ -55,6 +63,10 @@ export default function EventDetailPage() {
       }
     };
     loadEvent();
+
+    return () => {
+      window.removeEventListener('tsehay_events_updated', handleEventsUpdate);
+    };
   }, [slug]);
 
   // Sync user info
