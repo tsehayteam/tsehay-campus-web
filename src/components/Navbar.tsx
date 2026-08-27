@@ -255,6 +255,7 @@ export default function Navbar() {
   const isHome = pathname === '/';
   const isAbout = pathname === '/about';
   const isCourses = pathname?.startsWith('/courses');
+  const isMentorship = pathname === '/mentorship';
 
   return (
     <>
@@ -431,6 +432,22 @@ export default function Navbar() {
                 }`}
               >
                 {t('all_courses')}
+              </Link>
+
+              <Link 
+                href="/mentorship" 
+                onClick={() => {
+                  if (pathname === '/mentorship') {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }
+                }}
+                className={`py-2 text-[14px] lg:text-[15px] font-bold transition-all duration-300 anim-nav-link-4 ${
+                  isMentorship 
+                    ? 'terafab-nav-link-active' 
+                    : 'terafab-nav-link text-gray-700 dark:text-gray-300'
+                }`}
+              >
+                <span>ማማከር (Mentorship)</span>
               </Link>
             </div>
             
@@ -633,6 +650,25 @@ export default function Navbar() {
                   </div>
                   <span className="text-xs sm:text-sm font-bold text-gray-900 dark:text-white">
                     {t('all_courses') || 'ሁሉም ኮርሶች'}
+                  </span>
+                </div>
+                <i className="fa-solid fa-chevron-right text-[11px] text-gray-400 group-hover:text-[#f9b03c] group-hover:translate-x-0.5 transition-all"></i>
+              </button>
+            </div>
+
+            {/* 3.5. Staggered Item: Mentorship */}
+            <div className="animate-nav-stagger-3">
+              <button 
+                type="button" 
+                onClick={() => { closeCurtain(); navigateTo('/mentorship'); }} 
+                className="w-full flex items-center justify-between px-3 py-2 rounded-xl mobile-nav-card text-left cursor-pointer group bg-[#f9b03c]/5 border-amber-500/20"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-[#f9b03c]/20 text-[#f9b03c] transition-transform group-hover:scale-110">
+                    <i className="fa-solid fa-user-tie text-xs"></i>
+                  </div>
+                  <span className="text-xs sm:text-sm font-bold text-gray-900 dark:text-white">
+                    ማማከር (1-on-1 Mentorship)
                   </span>
                 </div>
                 <i className="fa-solid fa-chevron-right text-[11px] text-gray-400 group-hover:text-[#f9b03c] group-hover:translate-x-0.5 transition-all"></i>
