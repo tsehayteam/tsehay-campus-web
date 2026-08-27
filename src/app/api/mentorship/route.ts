@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/firebase';
-import { collection, addDoc } from 'firebase/firestore';
+import { adminDb } from '@/lib/firebase/admin';
 import { getMentorshipUserEmailHtml, getMentorshipAdminEmailHtml, MentorshipBooking } from '@/lib/premiumEmailTemplates';
 
 export const dynamic = 'force-dynamic';
@@ -31,8 +30,8 @@ export async function POST(req: Request) {
     // 1. Save booking to Firestore collection 'mentorship_bookings'
     let bookingId = `MNTR-${Date.now().toString(36).toUpperCase()}`;
     try {
-      if (db) {
-        const docRef = await addDoc(collection(db, 'mentorship_bookings'), {
+      if (adminDb && typeof adminDb.collection === 'function') {
+        const docRef = await adminDb.collection('mentorship_bookings').add({
           ...bookingData,
           status: 'confirmed',
           createdAtServer: new Date()

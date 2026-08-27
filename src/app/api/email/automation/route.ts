@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/firebase';
-import { collection, addDoc } from 'firebase/firestore';
+import { adminDb } from '@/lib/firebase/admin';
 import {
   getWelcomeEmailHtml,
   getCourseReminderEmailHtml,
@@ -116,8 +115,8 @@ export async function POST(req: Request) {
 
     // Log automation to Firestore
     try {
-      if (db) {
-        await addDoc(collection(db, 'email_campaign_logs'), {
+      if (adminDb && typeof adminDb.collection === 'function') {
+        await adminDb.collection('email_campaign_logs').add({
           type,
           recipientsCount: targetEmails.length,
           dispatchedCount,
