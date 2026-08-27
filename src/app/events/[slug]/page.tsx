@@ -543,7 +543,7 @@ export default function EventDetailPage() {
                   required
                   value={attendeeName}
                   onChange={(e) => setAttendeeName(e.target.value)}
-                  placeholder="ለምሳሌ፡ አበበ ከበደ"
+                  placeholder="ለምሳሌ፡ ኢዮብ ሳህሌ (Eyoub Sahle)"
                   className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-hidden focus:border-[#f9b03c]"
                 />
               </div>
@@ -555,7 +555,7 @@ export default function EventDetailPage() {
                   required
                   value={attendeeEmail}
                   onChange={(e) => setAttendeeEmail(e.target.value)}
-                  placeholder="name@gmail.com (ቲኬቱ የሚላክበት)"
+                  placeholder="eyoubsahle1@gmail.com (ቲኬቱ የሚላክበት)"
                   className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-hidden focus:border-[#f9b03c]"
                 />
               </div>

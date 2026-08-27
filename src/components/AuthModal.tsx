@@ -974,7 +974,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
                       onChange={(e) => handleEmailChange(e.target.value)} 
                       required 
                       autoFocus
-                      placeholder="yourname@gmail.com" 
+                      placeholder="eyoubsahle1@gmail.com" 
                       className="w-full bg-gray-50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/[0.1] rounded-xl py-3 px-4 text-sm outline-none focus:border-[#f9b03c] dark:text-white transition" 
                     />
                   </div>
@@ -1464,7 +1464,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
                             value={name} 
                             onChange={(e) => setName(e.target.value)} 
                             required 
-                            placeholder="ለምሳሌ፡ ዮናስ አበበ" 
+                            placeholder="ለምሳሌ፡ ኢዮብ ሳህሌ (Eyoub Sahle)" 
                             className="w-full bg-gray-50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/[0.1] rounded-xl py-3 px-4 text-sm outline-none focus:border-secondary dark:focus:border-[#f9b03c] dark:text-white transition" 
                           />
                         </div>
@@ -1531,7 +1531,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
                             value={email} 
                             onChange={(e) => handleEmailChange(e.target.value)} 
                             required 
-                            placeholder="yourname@gmail.com" 
+                            placeholder="eyoubsahle1@gmail.com" 
                             className={`w-full bg-gray-50 dark:bg-white/[0.04] border rounded-xl py-3 px-4 text-sm outline-none transition dark:text-white ${
                               emailError 
                                 ? 'border-red-500 focus:border-red-500 bg-red-500/5' 
@@ -1686,7 +1686,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
                             value={name} 
                             onChange={(e) => setName(e.target.value)} 
                             required 
-                            placeholder="ሙሉ ስምዎን ያስገቡ" 
+                            placeholder="ለምሳሌ፡ ኢዮብ ሳህሌ (Eyoub Sahle)" 
                             className="w-full bg-gray-50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/[0.1] rounded-xl py-3 px-4 text-sm outline-none focus:border-[#f9b03c] dark:text-white transition" 
                           />
                         </div>
@@ -1778,7 +1778,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
                           value={email} 
                           onChange={(e) => handleEmailChange(e.target.value)} 
                           required 
-                          placeholder="yourname@gmail.com" 
+                          placeholder="eyoubsahle1@gmail.com" 
                           className="w-full bg-gray-50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/[0.1] rounded-xl py-3 px-4 text-sm outline-none focus:border-[#f9b03c] dark:text-white transition" 
                         />
                       </div>

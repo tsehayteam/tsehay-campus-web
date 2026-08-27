@@ -286,7 +286,7 @@ export default function CertificateGeneratorPage() {
                 type="text"
                 value={studentName}
                 onChange={(e) => setStudentName(e.target.value)}
-                placeholder="उदा. Abebe Kebede / አበበ ከበደ"
+                placeholder="ለምሳሌ፡ Eyoub Sahle / ኢዮብ ሳህሌ"
                 className="w-full bg-white/[0.04] border border-white/[0.1] rounded-xl px-4 py-3.5 text-white font-semibold text-base focus:border-[#f9b03c] focus:ring-1 focus:ring-[#f9b03c] outline-none transition"
               />
             </div>

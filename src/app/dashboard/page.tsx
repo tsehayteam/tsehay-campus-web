@@ -4247,7 +4247,7 @@ ${customAdminPrompt}
                   type="text" 
                   value={settingsName} 
                   onChange={(e) => setSettingsName(e.target.value)} 
-                  placeholder="ሙሉ ስምዎን ያስገቡ (ለምሳሌ፦ ዮናስ ታደሰ)"
+                  placeholder="ሙሉ ስምዎን ያስገቡ (ለምሳሌ፦ ኢዮብ ሳህሌ)"
                   className="w-full p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-dark dark:text-white text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary transition font-medium" 
                 />
               </div>

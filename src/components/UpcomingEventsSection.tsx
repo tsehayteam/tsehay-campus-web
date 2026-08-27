@@ -439,7 +439,7 @@ export default function UpcomingEventsSection() {
                   required
                   value={attendeeName}
                   onChange={(e) => setAttendeeName(e.target.value)}
-                  placeholder="ለምሳሌ፡ አበበ ከበደ"
+                  placeholder="ለምሳሌ፡ ኢዮብ ሳህሌ (Eyoub Sahle)"
                   className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-hidden focus:border-[#f9b03c]"
                 />
               </div>
@@ -451,7 +451,7 @@ export default function UpcomingEventsSection() {
                   required
                   value={attendeeEmail}
                   onChange={(e) => setAttendeeEmail(e.target.value)}
-                  placeholder="name@gmail.com (ትኬቱ የሚላክበት)"
+                  placeholder="eyoubsahle1@gmail.com (ትኬቱ የሚላክበት)"
                   className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-hidden focus:border-[#f9b03c]"
                 />
               </div>

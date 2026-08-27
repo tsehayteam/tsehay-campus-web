@@ -2150,13 +2150,13 @@ export default function AdminDashboard() {
                 የአድሚን ማስተር ኮድ (Master Access Code)
               </label>
               <input
-                type="text"
+                type="password"
                 autoFocus
                 required
                 value={twoFactorCode}
                 onChange={(e) => setTwoFactorCode(e.target.value)}
-                placeholder="ማስተር ኮዱን እዚህ ያስገቡ (e.g. Eyoub TC)..."
-                className="w-full bg-black/60 border-2 border-amber-400/40 focus:border-[#f9b03c] rounded-2xl py-3.5 px-4 text-center text-lg font-bold text-[#f9b03c] outline-none shadow-inner"
+                placeholder="የማስተር ኮድዎን ያስገቡ..."
+                className="w-full bg-black/60 border-2 border-amber-400/40 focus:border-[#f9b03c] rounded-2xl py-3.5 px-4 text-center text-lg font-bold text-[#f9b03c] outline-none shadow-inner tracking-widest placeholder:text-gray-600 placeholder:tracking-normal placeholder:text-sm"
               />
             </div>
 
