@@ -654,24 +654,27 @@ function AboutHeroPlayer() {
 }
 
 // =========================================================================
-// 🌟 2. ULTRA-MINIMALIST SINGLE VIDEO REEL SLIDER (INFINITE LOOPING)
+// 🌟 2. ULTRA-FAST ZERO-LATENCY SHORT REELS SLIDER (INSTANT THUMBNAILS & SEAMLESS PLAY)
 // =========================================================================
 interface ShortReel {
   id: string;
   src: string;
   thumbnail: string;
+  title?: string;
 }
 
 const DEFAULT_REELS: ShortReel[] = [
   {
     id: 'reel-1',
     src: '/assets/videos/Tsehay.mp4',
-    thumbnail: '/assets/about_video_cover.jpg'
+    thumbnail: '/assets/about_video_cover.jpg',
+    title: 'የካምፓሳችን አጭር ቪዲዮ (Campus Reel 1)'
   },
   {
     id: 'reel-2',
     src: '/assets/videos/Marketing%20and%20psyco.mp4',
-    thumbnail: '/assets/hero-bg-new.jpg'
+    thumbnail: '/assets/hero-bg-new.jpg',
+    title: 'የማርኬቲንግ እና ሳይኮሎጂ ስልጠና (Campus Reel 2)'
   }
 ];
 
@@ -679,6 +682,7 @@ function AboutSingleReelSlider() {
   const [reels, setReels] = useState<ShortReel[]>(DEFAULT_REELS);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [isSliding, setIsSliding] = useState(false);
   const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('right');
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -696,7 +700,8 @@ function AboutSingleReelSlider() {
           const list: ShortReel[] = snapshot.docs.map((d) => ({
             id: d.id,
             src: d.data().src || d.data().videoUrl || '/assets/videos/Tsehay.mp4',
-            thumbnail: d.data().thumbnail || '/assets/about_video_cover.jpg'
+            thumbnail: d.data().thumbnail || (d.id === 'reel-2' ? '/assets/hero-bg-new.jpg' : '/assets/about_video_cover.jpg'),
+            title: d.data().title || ''
           }));
           if (list.length > 0) setReels(list);
         }
@@ -707,16 +712,21 @@ function AboutSingleReelSlider() {
 
   const changeSlide = (newIndex: number, direction: 'left' | 'right') => {
     if (isSliding) return;
+    
+    // Instantly stop video & show thumbnail for zero black screen
     if (videoRef.current) {
       videoRef.current.pause();
-      setIsPlaying(false);
+      videoRef.current.currentTime = 0;
     }
+    setIsPlaying(false);
+    setIsLoading(false);
     setSlideDirection(direction);
     setIsSliding(true);
     setCurrentIndex(newIndex);
+    
     setTimeout(() => {
       setIsSliding(false);
-    }, 350);
+    }, 280);
   };
 
   const handlePrev = (e?: React.MouseEvent) => {
@@ -737,11 +747,28 @@ function AboutSingleReelSlider() {
     if (!vid) return;
 
     if (vid.paused) {
+      setIsLoading(true);
       vid.muted = false;
-      vid.play().then(() => setIsPlaying(true)).catch(() => {
-        vid.muted = true;
-        vid.play().then(() => setIsPlaying(true)).catch(() => {});
-      });
+      const playPromise = vid.play();
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            setIsPlaying(true);
+            setIsLoading(false);
+          })
+          .catch((err) => {
+            console.warn("Autoplay with sound prevented, playing muted:", err);
+            vid.muted = true;
+            vid.play()
+              .then(() => {
+                setIsPlaying(true);
+                setIsLoading(false);
+              })
+              .catch(() => {
+                setIsLoading(false);
+              });
+          });
+      }
     } else {
       vid.pause();
       setIsPlaying(false);
@@ -787,7 +814,7 @@ function AboutSingleReelSlider() {
         <button
           type="button"
           onClick={handlePrev}
-          className="absolute -left-4 sm:-left-12 md:-left-16 top-1/2 -translate-y-1/2 z-30 w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-slate-900/85 hover:bg-[#f9b03c] text-white hover:text-slate-950 border border-white/10 hover:border-[#f9b03c] backdrop-blur-xl flex items-center justify-center transition-all duration-300 shadow-[0_8px_32px_rgba(0,0,0,0.6)] cursor-pointer active:scale-90 hover:scale-110 hover:shadow-[0_0_30px_rgba(249,176,60,0.6)]"
+          className="absolute -left-4 sm:-left-12 md:-left-16 top-1/2 -translate-y-1/2 z-30 w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-slate-900/90 hover:bg-[#f9b03c] text-white hover:text-slate-950 border border-white/15 hover:border-[#f9b03c] backdrop-blur-xl flex items-center justify-center transition-all duration-300 shadow-[0_8px_32px_rgba(0,0,0,0.6)] cursor-pointer active:scale-90 hover:scale-110 hover:shadow-[0_0_30px_rgba(249,176,60,0.6)]"
           title="ወደ ኋላ (Previous)"
           aria-label="Previous Video"
         >
@@ -798,14 +825,14 @@ function AboutSingleReelSlider() {
         <button
           type="button"
           onClick={handleNext}
-          className="absolute -right-4 sm:-right-12 md:-right-16 top-1/2 -translate-y-1/2 z-30 w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-slate-900/85 hover:bg-[#f9b03c] text-white hover:text-slate-950 border border-white/10 hover:border-[#f9b03c] backdrop-blur-xl flex items-center justify-center transition-all duration-300 shadow-[0_8px_32px_rgba(0,0,0,0.6)] cursor-pointer active:scale-90 hover:scale-110 hover:shadow-[0_0_30px_rgba(249,176,60,0.6)]"
+          className="absolute -right-4 sm:-right-12 md:-right-16 top-1/2 -translate-y-1/2 z-30 w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-slate-900/90 hover:bg-[#f9b03c] text-white hover:text-slate-950 border border-white/15 hover:border-[#f9b03c] backdrop-blur-xl flex items-center justify-center transition-all duration-300 shadow-[0_8px_32px_rgba(0,0,0,0.6)] cursor-pointer active:scale-90 hover:scale-110 hover:shadow-[0_0_30px_rgba(249,176,60,0.6)]"
           title="ቀጣይ (Next)"
           aria-label="Next Video"
         >
           <i className="fa-solid fa-chevron-right text-sm sm:text-base"></i>
         </button>
 
-        {/* 🌟 Single Perfectly Centered Video Reel Card (Pure & Clean - Zero Text Overlay) */}
+        {/* 🌟 Single Perfectly Centered Video Reel Card (Zero Black Flash, Instant Thumbnail) */}
         <div
           key={currentReel.id + '-' + currentIndex}
           onClick={togglePlay}
@@ -813,43 +840,70 @@ function AboutSingleReelSlider() {
             backdropFilter: 'blur(16px)',
             WebkitBackdropFilter: 'blur(16px)',
             background: 'rgba(255, 255, 255, 0.03)',
-            border: '1px solid rgba(255, 255, 255, 0.05)',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
             borderRadius: '16px',
           }}
           className={`group relative w-full aspect-[9/16] rounded-[16px] overflow-hidden cursor-pointer shadow-[0_12px_45px_rgba(0,0,0,0.85)] hover:shadow-[0_0_40px_rgba(249,176,60,0.3)] hover:border-[#f9b03c]/60 transition-all duration-500 transform hover:scale-[1.01] bg-slate-950 ${
             isSliding ? 'opacity-90 scale-[0.98]' : 'opacity-100 scale-100'
           }`}
         >
-          {/* Video Element */}
+          {/* 🌟 1. Instant Crisp Cover/Thumbnail Image (Visible immediately when not playing or loading) */}
+          <img
+            src={currentReel.thumbnail}
+            alt={currentReel.title || "Tsehay Campus Short Reel"}
+            loading="eager"
+            className={`absolute inset-0 w-full h-full object-cover z-10 transition-opacity duration-500 ease-out group-hover:scale-105 ${
+              isPlaying ? 'opacity-0 pointer-events-none' : 'opacity-100'
+            }`}
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).src = '/assets/about_video_cover.jpg';
+            }}
+          />
+
+          {/* 🌟 2. HTML5 Video Element with poster & auto playsInline */}
           <video
             ref={videoRef}
             src={currentReel.src}
+            poster={currentReel.thumbnail}
             playsInline
             webkit-playsinline="true"
             disablePictureInPicture
             controlsList="nodownload noremoteplayback"
-            preload="auto"
+            preload="metadata"
+            onPlay={() => setIsPlaying(true)}
+            onPause={() => setIsPlaying(false)}
             onEnded={() => {
               setIsPlaying(false);
               handleNext();
             }}
-            className="w-full h-full object-cover pointer-events-none"
+            className="w-full h-full object-cover"
           />
 
           {/* Subtle Ambient Vignette Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 pointer-events-none" />
+          <div className={`absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/30 z-15 pointer-events-none transition-opacity duration-300 ${isPlaying ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'}`} />
 
-          {/* 🌟 Centered Golden Yellow Play Button (Only element on the thumbnail) */}
+          {/* Reel Index Badge (e.g. 1 / 2) */}
+          <div className="absolute top-3.5 left-3.5 z-20 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-[11px] font-black text-amber-300 flex items-center gap-1.5 pointer-events-none">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#f9b03c] animate-pulse"></span>
+            <span>{currentIndex + 1} / {reels.length}</span>
+          </div>
+
+          {/* 🌟 3. Centered Golden Yellow Play / Pause Button with Pulse */}
           <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
-            {!isPlaying && (
+            {!isPlaying && !isLoading && (
               <span className="absolute w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-[#f9b03c]/35 animate-ping pointer-events-none"></span>
             )}
+            
             <div className={`w-18 h-18 sm:w-20 sm:h-20 rounded-full flex items-center justify-center backdrop-blur-md transition-all duration-300 ${
-              isPlaying 
-                ? 'bg-black/75 border-2 border-[#f9b03c] text-[#f9b03c] opacity-0 group-hover:opacity-100' 
-                : 'bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 shadow-[0_0_40px_rgba(249,176,60,0.85)] group-hover:scale-110'
+              isLoading
+                ? 'bg-black/80 border-2 border-[#f9b03c] text-[#f9b03c]'
+                : isPlaying 
+                  ? 'bg-black/75 border-2 border-[#f9b03c] text-[#f9b03c] opacity-0 group-hover:opacity-100' 
+                  : 'bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 shadow-[0_0_40px_rgba(249,176,60,0.85)] group-hover:scale-110'
             }`}>
-              {isPlaying ? (
+              {isLoading ? (
+                <i className="fa-solid fa-spinner fa-spin text-2xl"></i>
+              ) : isPlaying ? (
                 <i className="fa-solid fa-pause text-2xl"></i>
               ) : (
                 <i className="fa-solid fa-play text-2xl ml-1"></i>
@@ -867,10 +921,10 @@ function AboutSingleReelSlider() {
               key={idx}
               type="button"
               onClick={() => changeSlide(idx, idx > currentIndex ? 'right' : 'left')}
-              className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${
+              className={`h-2.5 rounded-full transition-all duration-300 cursor-pointer ${
                 idx === currentIndex
-                  ? 'w-7 bg-gradient-to-r from-[#f9b03c] to-amber-300 shadow-[0_0_12px_rgba(249,176,60,0.8)]'
-                  : 'w-2 bg-white/20 hover:bg-white/40'
+                  ? 'w-8 bg-gradient-to-r from-[#f9b03c] to-amber-300 shadow-[0_0_12px_rgba(249,176,60,0.8)]'
+                  : 'w-2.5 bg-white/20 hover:bg-white/40'
               }`}
               aria-label={`Go to slide ${idx + 1}`}
             />
