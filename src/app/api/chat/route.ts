@@ -4,24 +4,32 @@ import { NextResponse } from 'next/server';
 const RATE_LIMIT_WINDOW_MS = 60000;
 const MAX_REQUESTS_PER_WINDOW = 60;
 
-function getSmartFallbackReply(userPrompt: string, courseContext?: any, hasImage?: boolean, hasAudio?: boolean): string {
+function getSmartFallbackReply(userPrompt: string, courseContext?: any, hasImage?: boolean, hasAudio?: boolean, preferredLanguage?: string): string {
     const raw = (userPrompt || '').trim();
     const p = raw.toLowerCase();
     const courseTitle = (courseContext?.courseTitle || '').toLowerCase();
     const activeLesson = (courseContext?.lessonTitle || '').toLowerCase();
 
-    // 🌐 STRICT AUTOMATIC LANGUAGE DETECTION
+    // 🌐 STRICT LANGUAGE DETERMINATION
     const hasEthiopic = /[\u1200-\u137F]/.test(raw);
-    const isEnglish = !hasEthiopic && (
-      /[a-zA-Z]{2,}/.test(raw) || 
-      /^(hi|hello|hey|help|how|what|who|where|can|why|is|tell|price|cost|course|youtube|shein|marketing|pay|payment|certificate|contact|admin|owner|enroll|register)/i.test(p)
-    );
+    let isEnglish = false;
+    if (preferredLanguage === 'en') {
+      isEnglish = true;
+    } else if (preferredLanguage === 'am') {
+      isEnglish = false;
+    } else {
+      isEnglish = !hasEthiopic && (
+        /[a-zA-Z]{2,}/.test(raw) || 
+        /^(hi|hello|hey|help|how|what|who|where|can|why|is|tell|price|cost|course|youtube|shein|marketing|pay|payment|certificate|contact|admin|owner|enroll|register)/i.test(p)
+      );
+    }
 
     const isDigitalMarketing = courseTitle.includes('digital') || courseTitle.includes('marketing') || courseTitle.includes('ማርኬቲንግ') || p.includes('digital') || p.includes('marketing') || p.includes('ማርኬቲንግ');
     const isYouTube = courseTitle.includes('youtube') || courseTitle.includes('ዩቲዩብ') || courseTitle.includes('ዩቱብ') || p.includes('youtube') || p.includes('ዩቲዩብ') || p.includes('ዩቱብ') || p.includes('ቻናል') || p.includes('ቪዲዮ');
     const isShein = courseTitle.includes('shein') || courseTitle.includes('ሺን') || courseTitle.includes('ሼን') || courseTitle.includes('import') || courseTitle.includes('ኢምፖርት') || p.includes('shein') || p.includes('ሺን') || p.includes('ሼን') || p.includes('import') || p.includes('ኢምፖርት');
     const isCrypto = courseTitle.includes('crypto') || courseTitle.includes('ክሪፕቶ') || p.includes('crypto') || p.includes('ክሪፕቶ') || p.includes('ቢትኮይን') || p.includes('bitcoin') || p.includes('trading') || p.includes('ትሬዲንግ');
     const isCoding = courseTitle.includes('web') || courseTitle.includes('code') || courseTitle.includes('coding') || courseTitle.includes('ዴቨሎፕመንት') || p.includes('web') || p.includes('code') || p.includes('coding') || p.includes('html') || p.includes('javascript') || p.includes('ፕሮግራሚንግ') || p.includes('ኮዲንግ');
+    const isMentorship = p.includes('mentorship') || p.includes('ማማከር') || p.includes('ቀጠሮ') || p.includes('1-on-1') || p.includes('1-ለ-1') || p.includes('አማካሪ') || p.includes('consult');
 
     if (hasImage) {
         if (isEnglish) {
@@ -43,7 +51,7 @@ function getSmartFallbackReply(userPrompt: string, courseContext?: any, hasImage
                        p.includes('calculus') || p.includes('ማትሪክ') || p.includes('matrix') || p.includes('ዩኒቨርሲቲ') ||
                        p.includes('essay') || p.includes('ግጥም') || p.includes('poem');
 
-    if (isOffTopic && !isYouTube && !isDigitalMarketing && !isShein && !isCrypto && !isCoding) {
+    if (isOffTopic && !isYouTube && !isDigitalMarketing && !isShein && !isCrypto && !isCoding && !isMentorship) {
         if (isEnglish) {
             return "I am designed specifically to assist you with Tsehay Campus courses, YouTube channel creation, and digital business skills. If you have any questions regarding our courses, payments, or enrollment, I'd be glad to help! ✨";
         }
@@ -59,16 +67,32 @@ function getSmartFallbackReply(userPrompt: string, courseContext?: any, hasImage
             if (courseContext?.courseTitle) {
                 return `Hello! Welcome! 🌟\n\nHow can I help you today regarding the **"${courseContext.courseTitle}"** course? Feel free to ask any conceptual, practical, or technical questions!`;
             }
-            return "Hello! I am **Tsehay AI**, your personal virtual tutor and guide for Tsehay Campus! ☀️\n\nHow can I assist you today? You can ask me anything about our courses (YouTube Secrets Masterclass, Shein Import Business, Digital Marketing), payments, registration, or official certificates!";
+            return "Hello! I am **Tsehay AI**, your personal virtual tutor and guide for Tsehay Campus! ☀️\n\nHow can I assist you today? You can ask me anything about our courses (YouTube Secrets Masterclass, Shein Import Business, Digital Marketing), payments, registration, mentorship, or official certificates!";
         }
 
         if (courseContext?.courseTitle) {
             return `ሰላም! እንኳን ደህና መጡ! 🌟\n\nበ**"${courseContext.courseTitle}"** ስልጠና ዙሪያ ዛሬ በምን ልርዳዎት? ያልገባዎትን ማንኛውንም ፅንሰ ሀሳብ፣ ተግባራዊ እርምጃ ወይም የቪዲዮ ትምህርት ነጥብ ይጠይቁኝ!`;
         }
-        return "ሰላም! እኔ **ፀሐይ AI** ነኝ፤ ወደ ፀሐይ ካምፓስ እንኳን ደህና መጡ! ☀️\n\nዛሬ በምን ልርዳዎት? ስለ ስልጠናዎቻችን (የዩቲዩብ ስኬት፣ የሼን ቢዝነስ፣ ዲጂታል ማርኬቲንግ)፣ ክፍያና ምዝገባ ወይም ሰርተፊኬት ማንኛውንም ጥያቄ በጽሁፍም ሆነ በድምፅ መጠየቅ ይችላሉ።";
+        return "ሰላም! እኔ **ፀሐይ AI** ነኝ፤ ወደ ፀሐይ ካምፓስ እንኳን ደህና መጡ! ☀️\n\nዛሬ በምን ልርዳዎት? ስለ ስልጠናዎቻችን (የዩቲዩብ ስኬት፣ የሼን ቢዝነስ፣ ዲጂታል ማርኬቲንግ)፣ ክፍያና ምዝገባ፣ ማማከር ወይም ሰርተፊኬት ማንኛውንም ጥያቄ በጽሁፍም ሆነ በድምፅ መጠየቅ ይችላሉ።";
     }
 
-    // 3. YouTube Secrets Masterclass & Channel Creation
+    // 3. 1-on-1 Mentorship Booking
+    if (isMentorship) {
+        if (isEnglish) {
+            return `🤝 **1-on-1 Private Mentorship with Eyoub Sahle**\n\n` +
+                   `You can book a personal 1-on-1 mentorship session directly on Tsehay Campus:\n\n` +
+                   `• **Focus Areas**: YouTube Growth & Monetization, Shein & E-Commerce Business, Digital Marketing, or scaling an online venture.\n` +
+                   `• **Format**: 45-Minute private video consultation + custom action plan.\n` +
+                   `• **How to Book**: Navigate to the **/mentorship** page, select your preferred date & time, fill in your details, and submit! 🚀`;
+        }
+        return `🤝 **ከኢዮብ ሳህሌ ጋር የ 1-ለ-1 የቀጥታ የማማከር ክፍለ-ጊዜ (Mentorship)**\n\n` +
+               `በማንኛውም የኦንላይን ቢዝነስ ዙሪያ ከኢዮብ ሳህሌ ጋር በግል ተገናኝተው መማከር ይችላሉ፦\n\n` +
+               `• **የማማከሪያ ርዕሶች**፦ የዩቲዩብ ቻናል ስትራቴጂ፣ የሼን እና የኢ-ኮሜርስ ንግድ፣ ዲጂታል ማርኬቲንግ ወይም የኦንላይን ገቢ ማሳደግ።\n` +
+               `• **አካሄድ**፦ የ 45 ደቂቃ የቀጥታ የቪዲዮ ቆይታ እና ለቢዝነስዎ የሚሆን ልዩ የድርጊት መርሃግብር (Action Plan)።\n` +
+               `• **ቀጠሮ ለማስያዝ**፦ ወደ **/mentorship** ገጽ በመሄድ የቀንና ሰዓት ምርጫዎን ያስገቡና ቀጠሮ ይያዙ! 🚀`;
+    }
+
+    // 4. YouTube Secrets Masterclass & Channel Creation
     if (isYouTube) {
         if (isEnglish) {
             return `📹 **YouTube Secrets Masterclass & Monetization**\n\n` +
@@ -94,7 +118,7 @@ function getSmartFallbackReply(userPrompt: string, courseContext?: any, hasImage
                `ለመመዝገብ በቴሌብር፣ በሲቢኢ ብር ወይም በLakiPay መክፈል ይችላሉ።`;
     }
 
-    // 4. Shein Import Business
+    // 5. Shein Import Business
     if (isShein) {
         if (isEnglish) {
             return `🛍️ **Shein Import & E-Commerce Mastery**\n\n` +
@@ -118,7 +142,7 @@ function getSmartFallbackReply(userPrompt: string, courseContext?: any, hasImage
                `ለመመዝገብ ከፈለጉ "ኮርሶች" ገጽ ላይ በመግባት በቴሌብር ወይም በባንክ ክፍያ ፈጽመው ወዲያውኑ መማር መጀመር ይችላሉ!`;
     }
 
-    // 5. Digital Marketing (Free Course)
+    // 6. Digital Marketing (Free Course)
     if (isDigitalMarketing) {
         if (isEnglish) {
             return `🚀 **Digital Marketing Mastery (100% FREE)**\n\n` +
@@ -138,7 +162,7 @@ function getSmartFallbackReply(userPrompt: string, courseContext?: any, hasImage
                `ይህንን ስልጠና አሁኑኑ በነፃ ገብተው መከታተል እና ሰርተፊኬት ማግኘት ይችላሉ!`;
     }
 
-    // 6. Web Development & Coding
+    // 7. Web Development & Coding
     if (isCoding) {
         if (isEnglish) {
             return `💻 **Web Development & Coding Mastery**\n\n` +
@@ -154,7 +178,7 @@ function getSmartFallbackReply(userPrompt: string, courseContext?: any, hasImage
                `• የዳታቤዝ አያያዝ እና የዌብሳይት ሆስቲንግ ስራዎች።`;
     }
 
-    // 7. Crypto Trading Mastery
+    // 8. Crypto Trading Mastery
     if (isCrypto) {
         if (isEnglish) {
             return `📈 **Crypto Trading Mastery**\n\n` +
@@ -170,7 +194,7 @@ function getSmartFallbackReply(userPrompt: string, courseContext?: any, hasImage
                `• Binance እና የክሪፕቶ ዋሌቶች አጠቃቀም።`;
     }
 
-    // 8. Payments & Registration
+    // 9. Payments & Registration
     if (p.includes('pay') || p.includes('ክፍያ') || p.includes('ቴሌብር') || p.includes('telebirr') || p.includes('ባንክ') || p.includes('cbe') || p.includes('lakipay') || p.includes('ዋጋ') || p.includes('price') || p.includes('ብር') || p.includes('ገንዘብ') || p.includes('ምዝገባ') || p.includes('መመዝገብ') || p.includes('እንዴት ልክፈል') || p.includes('how to pay')) {
         if (isEnglish) {
             return `💳 **Payment & Registration Methods**\n\n` +
@@ -190,7 +214,7 @@ function getSmartFallbackReply(userPrompt: string, courseContext?: any, hasImage
                `⚡ ክፍያውን እንደፈጸሙ የኮርሱ ቪዲዮዎች እና ማቴሪያሎች ወዲያውኑ ይከፈቱልዎታል!`;
     }
 
-    // 9. Certificates & Quizzes
+    // 10. Certificates & Quizzes
     if (p.includes('ሰርተፊኬት') || p.includes('certif') || p.includes('ማስረጃ') || p.includes('ሰርተፍኬት') || p.includes('ፈተና') || p.includes('quiz')) {
         if (isEnglish) {
             return `📜 **Official Digital Certificate of Completion**\n\n` +
@@ -204,7 +228,7 @@ function getSmartFallbackReply(userPrompt: string, courseContext?: any, hasImage
                `• ሰርተፊኬቱን ማውረድ (Download) እና በ LinkedIn ወይም በ CV ላይ መጠቀም ይችላሉ! 🎓`;
     }
 
-    // 10. Contact, Support, Telegram, Phone & Location
+    // 11. Contact, Support, Telegram, Phone & Location
     if (p.includes('ስልክ') || p.includes('phone') || p.includes('contact') || p.includes('ቴሌግራም') || p.includes('telegram') || p.includes('ዋትስአፕ') || p.includes('whatsapp') || p.includes('መደወል') || p.includes('ማናገር') || p.includes('አድራሻ') || p.includes('ቢሮ') || p.includes('ቦሌ') || p.includes('location')) {
         if (isEnglish) {
             return `📞 **Tsehay Campus Contact & Support Information**\n\n` +
@@ -224,7 +248,7 @@ function getSmartFallbackReply(userPrompt: string, courseContext?: any, hasImage
                `• **ቲክቶክ**፦ **@eyoubsahle**`;
     }
 
-    // 11. Founder / Instructor (Eyoub Sahle)
+    // 12. Founder / Instructor (Eyoub Sahle)
     if (p.includes('founder') || p.includes('መስራች') || p.includes('eyoub') || p.includes('እዮብ') || p.includes('ኢዮብ') || p.includes('ባለቤት') || p.includes('tsehay digital') || p.includes('ፀሐይ ዲጂታል') || p.includes('አስተማሪ') || p.includes('አሰልጣኝ') || p.includes('instructor') || p.includes('teacher')) {
         if (isEnglish) {
             return `👨‍🏫 **About the Lead Instructor (Eyoub Sahle)**\n\n` +
@@ -236,7 +260,7 @@ function getSmartFallbackReply(userPrompt: string, courseContext?: any, hasImage
                `እሱ በኢትዮጵያ ውስጥ በዲጂታል ማርኬቲንግ እና በዩቲዩብ ቻናሎች ስኬት በርካታ ተማሪዎችን ያፈራ፣ የ Tsehay Digital መስራች እና የ 100k+ ተከታዮች ያሉት የዩቲዩብ ባለሙያ ነው።`;
     }
 
-    // 12. Active Lesson context query
+    // 13. Active Lesson context query
     if (courseContext?.courseTitle) {
         if (isEnglish) {
             return `Practicing the step-by-step concepts taught in **"${courseContext.courseTitle}"** is key to mastering this subject.\n\nIf you need detailed guidance, explanation of a specific technique, or help with any lesson, feel free to ask via text or voice! 💡`;
@@ -319,10 +343,10 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { prompt, courseContext, image, audio } = reqBody;
+    const { prompt, courseContext, image, audio, preferredLanguage } = reqBody;
     
     if (!prompt && !image && !audio) {
-        return NextResponse.json({ reply: getSmartFallbackReply("", courseContext, false, false) }, { status: 200 });
+        return NextResponse.json({ reply: getSmartFallbackReply("", courseContext, false, false, preferredLanguage) }, { status: 200 });
     }
 
     // 🔑 Retrieve Gemini API Key dynamically from Firestore site settings or Environment variables
@@ -364,14 +388,25 @@ export async function POST(req: Request) {
 `;
     }
 
+    const isEnglishMode = preferredLanguage === 'en';
+    const isAmharicMode = preferredLanguage === 'am';
+
+    let languageDirective = "";
+    if (isEnglishMode) {
+      languageDirective = `[STRICT LANGUAGE DIRECTIVE]
+- You MUST respond 100% in fluent, professional, engaging English.`;
+    } else if (isAmharicMode) {
+      languageDirective = `[STRICT LANGUAGE DIRECTIVE]
+- You MUST respond 100% in pure Amharic (አማርኛ) using Ge'ez Fidel script.
+- Even if the user types in English letters (e.g. "selam", "course", "shein endet new miyseraw"), understand their intent and ALWAYS answer in clear, beautiful Amharic (አማርኛ)!`;
+    } else {
+      languageDirective = `[LANGUAGE DIRECTIVE]
+- Match the user's language. If Amharic is used (or transliterated Amharic), reply in Amharic. If English is used, reply in English.`;
+    }
+
     const DEFAULT_SYSTEM_INSTRUCTION = `You are "Tsehay AI" (ፀሐይ AI), the smart, world-class virtual mentor and assistant for Tsehay Campus (ፀሐይ ካምፓስ) and lead mentor Eyoub Sahle (ኢዮብ ሳህሌ).
 
-[CRITICAL STRICT RULE: AUTOMATIC LANGUAGE DETECTION & MIRRORING]
-- ALWAYS analyze the user's input language (text or spoken voice).
-- If the user writes or speaks in AMHARIC (አማርኛ) -> You MUST respond 100% in natural, fluent, engaging Amharic.
-- If the user writes or speaks in ENGLISH -> You MUST respond 100% in polished, friendly, professional English.
-- If the user uses mixed terms, prioritize the primary intent and respond cleanly.
-- NEVER reply in English if the user asked in Amharic. NEVER reply in Amharic if the user asked in English!
+${languageDirective}
 
 [BEAUTIFUL STRUCTURE & AESTHETIC FORMATTING RULES]
 - Structure all answers with high visual quality:
@@ -393,6 +428,7 @@ export async function POST(req: Request) {
   3. **Digital Marketing Mastery (ዲጂታል ማርኬቲንግ)** - 100% FREE
   4. **Web Development & Coding (ዌብ ዴቨሎፕመንት)**
   5. **Crypto Trading Mastery (የክሪፕቶ ግብይት)**
+- 1-on-1 Mentorship: Available with Eyoub Sahle at /mentorship for 45-minute private strategy sessions.
 - Payment Methods: Telebirr (ቴሌብር), CBE Birr (ሲቢኢ ብር), LakiPay (Domestic); PayPal, Credit/Debit Cards, Crypto (International).
 - Certification: Free official Digital Certificate of Completion upon passing the quiz (80%+).
 

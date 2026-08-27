@@ -296,6 +296,7 @@ function StudentDashboardContent() {
   const playerRef = useRef<any>(null);
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [selectedAiCourse, setSelectedAiCourse] = useState<any>(null);
+  const [dashboardAiLang, setDashboardAiLang] = useState<'am' | 'en'>('am');
   const [copiedMsgIdx, setCopiedMsgIdx] = useState<number | null>(null);
   const [aiAttachedImage, setAiAttachedImage] = useState<string | null>(null);
   const [isAiVoiceRecording, setIsAiVoiceRecording] = useState(false);
@@ -326,6 +327,13 @@ function StudentDashboardContent() {
     } catch (e) {}
     return [];
   });
+
+  // Automatically sync selectedAiCourse when activeCourse changes
+  useEffect(() => {
+    if (activeCourse && !selectedAiCourse) {
+      setSelectedAiCourse(activeCourse);
+    }
+  }, [activeCourse]);
 
   const [savedAiNotes, setSavedAiNotes] = useState<{ [msgIdx: number]: boolean }>({});
   const [savedAiNoteIds, setSavedAiNoteIds] = useState<{ [msgIdx: number]: string }>({});
@@ -1405,10 +1413,16 @@ function StudentDashboardContent() {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: queryText, image: imageToSend, audio: audioToSend, courseContext })
+        body: JSON.stringify({ 
+          prompt: queryText, 
+          image: imageToSend, 
+          audio: audioToSend, 
+          courseContext,
+          preferredLanguage: dashboardAiLang
+        })
       });
       const data = await response.json();
-      const reply = data.reply || data.error || "ይቅርታ፣ አሁን ላይ መመለስ አልቻልኩም።";
+      const reply = data.reply || data.error || (dashboardAiLang === 'en' ? "Sorry, I am unable to answer right now." : "ይቅርታ፣ አሁን ላይ መመለስ አልቻልኩም።");
       const finalMsgs = [
         ...newMsgs, 
         { role: 'ai', text: reply, timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }

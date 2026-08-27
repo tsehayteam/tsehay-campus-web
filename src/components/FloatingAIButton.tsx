@@ -23,6 +23,7 @@ export default function FloatingAIButton() {
   const [isOpen, setIsOpen] = useState(false);
   const [courses, setCourses] = useState<any[]>([]);
   const [selectedCourse, setSelectedCourse] = useState<any>(null);
+  const [aiLang, setAiLang] = useState<'am' | 'en'>('am');
 
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -206,12 +207,13 @@ export default function FloatingAIButton() {
           prompt: rawText,
           image: imageToSend,
           audio: audioToSend,
-          courseContext
+          courseContext,
+          preferredLanguage: aiLang
         })
       });
 
       const data = await res.json();
-      const reply = data.reply || "ይቅርታ፣ አሁን ላይ ማስተናገድ አልቻልኩም። እባክዎ እንደገና ይሞክሩ።";
+      const reply = data.reply || (aiLang === 'en' ? "Sorry, I am unable to answer right now. Please try again." : "ይቅርታ፣ አሁን ላይ ማስተናገድ አልቻልኩም። እባክዎ እንደገና ይሞክሩ።");
 
       const finalMsgs: Message[] = [
         ...newMsgs,
@@ -232,13 +234,13 @@ export default function FloatingAIButton() {
     } catch (err) {
       const errMsgs: Message[] = [
         ...newMsgs,
-        { role: 'ai', text: "የኢንተርኔት ኮኔክሽን ችግር አጋጥሟል። እባክዎ ጥቂት ቆይተው እንደገና ይሞክሩ።", timestamp: nowTime }
+        { role: 'ai', text: aiLang === 'en' ? "Internet connection issue. Please try again shortly." : "የኢንተርኔት ኮኔክሽን ችግር አጋጥሟል። እባክዎ ጥቂት ቆይተው እንደገና ይሞክሩ።", timestamp: nowTime }
       ];
       setMessages(errMsgs);
     } finally {
       setIsLoading(false);
     }
-  }, [input, attachedImage, isLoading, messages, selectedCourse, user]);
+  }, [input, attachedImage, isLoading, messages, selectedCourse, user, aiLang]);
 
   // 🎙️ 5. Enhanced Native Voice Recording & Direct Multimodal Send Engine
   const startVoiceRecording = async () => {
@@ -483,11 +485,20 @@ export default function FloatingAIButton() {
     }
   };
 
-  const quickPrompts = [
-    { label: '💡 ስለ ካምፓሱ ስልጠናዎች', prompt: 'ስለ ፀሐይ ካምፓስ ኮርሶች፣ የትምህርት አሰጣጥ እና ጥቅሞች አጠቃላይ ማብራሪያ ስጠኝ።' },
-    { label: '🚀 ተግባራዊ አተገባበር', prompt: selectedCourse ? `በ"${selectedCourse.title}" ኮርስ የተማርነውን በኢትዮጵያ ውስጥ በተግባር እንዴት ልተግብረው?` : 'ከኮርሶቹ የምናገኘውን እውቀት በተግባር ወደ ገቢ እንዴት እንቀይረዋለን?' },
-    { label: '💳 የክፍያ እና ምዝገባ ሁኔታ', prompt: 'ለኮርሶቹ እንዴት በቴሌብር ወይም በባንክ እከፍላለሁ? የምዝገባው ሂደት እንዴት ነው?' },
-    { label: '📜 ሰርተፊኬት አሰጣጥ', prompt: 'ኮርስ ሳጠናቅቅ ሰርተፊኬት እንዴት ነው የማገኘው?' }
+  const quickPrompts = aiLang === 'am' ? [
+    { label: '💡 የኮርሶች ዝርዝር እና ዋጋ', prompt: 'በፀሐይ ካምፓስ (Tsehay Campus) ውስጥ ምን ምን ተግባራዊ ስልጠናዎች አሉ? የኮርሶቹ ዋጋ እና የስልጠናው ሂደትስ እንዴት ነው?' },
+    { label: '🛍️ የሼን ኢምፖርት ቢዝነስ', prompt: 'ከሼን (SHEIN) እና ከቻይና እቃዎችን በቀጥታ አስመጥቶ በኢትዮጵያ ውስጥ በከፍተኛ ትርፍ ለመሸጥ ምን ምን ነገሮች ያስፈልጋሉ? የዶላር ክፍያ እና ካርጎስ እንዴት ይሰራል?' },
+    { label: '🎬 የዩቲዩብ ስኬት እና ዶላር ገቢ', prompt: 'ፊት ሳያሳዩ (Faceless) በ AI በመታገዝ ከዩቲዩብ በወር ከ $1,000+ በላይ ዶላር ገቢ ለማግኘት የዩቲዩብ ስኬት ማስተርክላስ ምን ያስተምረኛል?' },
+    { label: '💳 ክፍያና ምዝገባ (ቴሌብር / CBE)', prompt: 'ለስልጠናዎች በቴሌብር (Telebirr)፣ በሲቢኢ ብር (CBE Birr) ወይም በባንክ እንዴት እከፍላለሁ? ከከፈልኩ በኋላ ወዲያውኑ እንዴት ነው ትምህርት የምጀምረው?' },
+    { label: '🤝 1-ለ-1 ማማከር (Mentorship)', prompt: 'ከኢዮብ ሳህሌ (Eyoub Sahle) ጋር የቀጥታ የ 1-ለ-1 የማማከር ቀጠሮ እንዴት ማስያዝ እችላለሁ? በምን ጉዳዮች ዙሪያ ማማከር እችላለሁ?' },
+    { label: '📜 የኮርስ ሰርተፊኬት', prompt: 'ኮርሱን ሳጠናቅቅ በኦንላይን የሚረጋገጥ (Verifiable QR) ይፋዊ ሰርተፊኬት እንዴት ነው የማገኘው?' }
+  ] : [
+    { label: '💡 Courses & Pricing', prompt: 'What practical courses are available on Tsehay Campus, and what are their respective fees and curriculum outlines?' },
+    { label: '🛍️ Shein Import Business', prompt: 'How does the Shein Import Business training work? What are the requirements for dollar payments, freight forwarding, and profitable local sales in Ethiopia?' },
+    { label: '🎬 YouTube Monetization', prompt: 'How does the YouTube Secrets Masterclass help me build a faceless AI YouTube channel and earn $1,000+/month from Ethiopia?' },
+    { label: '💳 Payment & Enrollment', prompt: 'How do I pay and enroll using Telebirr, CBE Birr, LakiPay, or International Cards? How fast do lessons unlock?' },
+    { label: '🤝 1-on-1 Mentorship', prompt: 'How can I schedule a 1-on-1 private strategy mentorship session with Eyoub Sahle?' },
+    { label: '📜 Official Certificate', prompt: 'How do I earn my accredited, verifiable digital Certificate of Completion once I finish the course?' }
   ];
 
   // 🚫 Completely remove Tsehay AI and its floating launcher icon from the Admin Dashboard
@@ -567,7 +578,7 @@ export default function FloatingAIButton() {
                   </span>
                 </div>
                 <p className="text-[11px] text-emerald-400 font-bold flex items-center gap-1.5 truncate max-w-[170px] sm:max-w-[200px]">
-                  <span>{selectedCourse ? `📚 ${selectedCourse.title}` : 'የፀሐይ ካምፓስ AI ረዳት'}</span>
+                  <span>{selectedCourse ? `📚 ${selectedCourse.title}` : (aiLang === 'am' ? 'የፀሐይ ካምፓስ AI ረዳት' : 'Tsehay Campus AI Assistant')}</span>
                 </p>
               </div>
             </div>
@@ -603,29 +614,43 @@ export default function FloatingAIButton() {
             </div>
           </div>
 
-          {/* Course Context Switcher Pill */}
-          <div className="relative px-4 py-2 bg-white/[0.03] border-b border-white/[0.06] flex items-center justify-between gap-2 overflow-x-auto no-scrollbar z-10">
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider shrink-0 flex items-center gap-1">
-              <i className="fa-solid fa-sliders text-[#f9b03c]"></i>
-              <span>የትኩረት አቅጣጫ፦</span>
-            </span>
-            
-            <select 
-              value={selectedCourse?.id || ''}
-              onChange={(e) => {
-                const cId = e.target.value;
-                const found = courses.find(c => c.id === cId);
-                setSelectedCourse(found || null);
-              }}
-              className="bg-[#0f172a] text-xs font-bold text-[#f9b03c] border border-white/15 rounded-xl px-2.5 py-1 outline-none focus:border-[#f9b03c] transition shrink-0 cursor-pointer max-w-[220px] truncate"
+          {/* 🌟 3D Highlighted Focus Area (የትኩረት አቅጣጫ) & Language Switcher Bar */}
+          <div className="relative px-3.5 py-2.5 bg-gradient-to-r from-[#0b1328] via-[#122042] to-[#0b1328] border-b border-[#f9b03c]/35 flex items-center justify-between gap-2 shadow-inner z-10">
+            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
+              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-gradient-to-r from-[#f9b03c]/25 via-amber-400/15 to-transparent text-[#f9b03c] border border-[#f9b03c]/50 text-[10px] sm:text-[11px] font-black tracking-wide shadow-[0_0_12px_rgba(249,176,60,0.25)] shrink-0">
+                <i className="fa-solid fa-crosshairs text-[10px] animate-pulse"></i>
+                <span className="hidden xs:inline">የትኩረት አቅጣጫ፦</span>
+                <span className="xs:hidden">ትኩረት፦</span>
+              </span>
+              
+              <select 
+                value={selectedCourse?.id || ''}
+                onChange={(e) => {
+                  const cId = e.target.value;
+                  const found = courses.find(c => c.id === cId);
+                  setSelectedCourse(found || null);
+                }}
+                className="bg-[#050811] text-[11px] sm:text-xs font-black text-[#f9b03c] border border-[#f9b03c]/45 hover:border-[#f9b03c] rounded-xl px-2 sm:px-2.5 py-1 outline-none focus:ring-2 focus:ring-[#f9b03c]/40 transition shrink-0 cursor-pointer max-w-[130px] sm:max-w-[170px] truncate shadow-sm"
+              >
+                <option value="" className="bg-[#0b1222] text-white">🌐 አጠቃላይ (General Campus)</option>
+                {courses.map(c => (
+                  <option key={c.id} value={c.id} className="bg-[#0b1222] text-white">
+                    📚 {c.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Language Switcher Pill (🇪🇹 አማ / 🇬🇧 EN) */}
+            <button
+              type="button"
+              onClick={() => setAiLang(prev => prev === 'am' ? 'en' : 'am')}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white/[0.08] hover:bg-[#f9b03c]/20 border border-white/20 hover:border-[#f9b03c]/60 text-white hover:text-[#f9b03c] font-black text-[11px] transition-all cursor-pointer shrink-0 shadow-sm active:scale-95"
+              title={aiLang === 'am' ? "Switch to English" : "ወደ አማርኛ ቀይር"}
             >
-              <option value="" className="bg-slate-900 text-white">🌐 አጠቃላይ (General Campus AI)</option>
-              {courses.map(c => (
-                <option key={c.id} value={c.id} className="bg-slate-900 text-white">
-                  📚 {c.title}
-                </option>
-              ))}
-            </select>
+              <i className="fa-solid fa-language text-xs text-[#f9b03c]"></i>
+              <span>{aiLang === 'am' ? '🇪🇹 አማ' : '🇬🇧 EN'}</span>
+            </button>
           </div>
 
           {/* Messages Body */}
