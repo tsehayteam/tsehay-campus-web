@@ -258,6 +258,11 @@ export default function Navbar() {
     }
   };
 
+  // 🚫 Hide public website navbar & "ዋና ማውጫ" curtain completely on Admin routes
+  if (pathname?.startsWith('/admin')) {
+    return null;
+  }
+
   const isHome = pathname === '/';
   const isAbout = pathname === '/about';
   const isCourses = pathname?.startsWith('/courses');
