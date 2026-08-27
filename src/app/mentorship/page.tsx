@@ -13,11 +13,23 @@ export default function MentorshipPage() {
   const [fullName, setFullName] = useState(user?.displayName || '');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState(user?.email || '');
-  const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('02:30 PM');
   const [topic, setTopic] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // 📅 Calculate Minimum Available Date (1 Week / 7 Days in the Future)
+  const getMinAvailableDate = () => {
+    const d = new Date();
+    d.setDate(d.getDate() + 7);
+    return d;
+  };
+
+  const minAvailableDate = getMinAvailableDate();
+  const minDateIso = minAvailableDate.toISOString().split('T')[0];
+
+  const [selectedDate, setSelectedDate] = useState<string>(minDateIso);
+  const [calendarMonth, setCalendarMonth] = useState<Date>(new Date(minAvailableDate.getFullYear(), minAvailableDate.getMonth(), 1));
 
   // Success Confirmation State
   const [confirmedBooking, setConfirmedBooking] = useState<{
@@ -38,16 +50,76 @@ export default function MentorshipPage() {
     }
   }, [user]);
 
-  // Quick date generator for the next 7 days
-  const upcomingDates = Array.from({ length: 5 }, (_, i) => {
+  // 🚀 Quick date chips starting strictly from 7 days out
+  const quickUpcomingDates = Array.from({ length: 6 }, (_, i) => {
     const d = new Date();
-    d.setDate(d.getDate() + i + 1);
+    d.setDate(d.getDate() + 7 + i);
     return {
       iso: d.toISOString().split('T')[0],
-      display: d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }),
-      amharicDay: ['እሁድ', 'ሰኞ', 'ማክሰኞ', 'ረቡዕ', 'ሐሙስ', 'አርብ', 'ቅዳሜ'][d.getDay()]
+      display: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      amharicDay: ['እሁድ', 'ሰኞ', 'ማክሰኞ', 'ረቡዕ', 'ሐሙስ', 'አርብ', 'ቅዳሜ'][d.getDay()],
+      rawDate: d
     };
   });
+
+  // Generate Month Grid for Interactive Glassmorphism Calendar
+  const renderCalendarDays = () => {
+    const year = calendarMonth.getFullYear();
+    const month = calendarMonth.getMonth();
+    const firstDayIndex = new Date(year, month, 1).getDay();
+    const totalDaysInMonth = new Date(year, month + 1, 0).getDate();
+
+    const days = [];
+    // Blank padding days
+    for (let i = 0; i < firstDayIndex; i++) {
+      days.push(<div key={`blank-${i}`} className="p-2" />);
+    }
+
+    // Actual calendar days
+    for (let dayNum = 1; dayNum <= totalDaysInMonth; dayNum++) {
+      const currentDayDate = new Date(year, month, dayNum);
+      const isoStr = currentDayDate.toISOString().split('T')[0];
+      
+      // Strict 7-day future rule
+      const isPastOrUnderOneWeek = currentDayDate < new Date(new Date().setHours(0,0,0,0) + 7 * 24 * 60 * 60 * 1000);
+      const isSelected = selectedDate === isoStr;
+
+      days.push(
+        <button
+          key={`day-${dayNum}`}
+          type="button"
+          disabled={isPastOrUnderOneWeek}
+          onClick={() => setSelectedDate(isoStr)}
+          className={`p-2 sm:p-2.5 rounded-xl text-center text-xs font-bold transition flex flex-col items-center justify-center relative ${
+            isPastOrUnderOneWeek
+              ? 'opacity-25 cursor-not-allowed bg-white/[0.02] text-slate-500'
+              : isSelected
+              ? 'bg-gradient-to-tr from-[#f9b03c] to-amber-300 text-slate-950 font-black shadow-[0_0_20px_rgba(249,176,60,0.5)] scale-105 z-10'
+              : 'bg-white/5 text-slate-300 hover:bg-[#3268ba]/20 hover:border-[#3268ba]/40 border border-white/5 cursor-pointer active:scale-95'
+          }`}
+        >
+          <span>{dayNum}</span>
+          {isSelected && (
+            <span className="w-1.5 h-1.5 rounded-full bg-slate-950 mt-0.5"></span>
+          )}
+        </button>
+      );
+    }
+    return days;
+  };
+
+  const nextMonth = () => {
+    setCalendarMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+  };
+
+  const prevMonth = () => {
+    const prev = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1);
+    // Don't go to past months before current min booking month
+    const minMonth = new Date(minAvailableDate.getFullYear(), minAvailableDate.getMonth(), 1);
+    if (prev >= minMonth) {
+      setCalendarMonth(prev);
+    }
+  };
 
   const timeSlots = [
     '10:00 AM (ረፋድ)',
@@ -74,6 +146,14 @@ export default function MentorshipPage() {
 
     if (!selectedDate) {
       setErrorMessage('እባክዎ የቀጠሮ ቀን ይምረጡ።');
+      return;
+    }
+
+    // Validate that selectedDate is at least 7 days ahead
+    const chosen = new Date(selectedDate);
+    const minD = new Date(new Date().setHours(0,0,0,0) + 7 * 24 * 60 * 60 * 1000);
+    if (chosen < minD) {
+      setErrorMessage('ማስታወሻ፡ የማማከር ቀጠሮዎች ቢያንስ ከአንድ ሳምንት (7 ቀናት) በኋላ ባሉት ቀናት ብቻ ክፍት ናቸው።');
       return;
     }
 
@@ -161,19 +241,18 @@ export default function MentorshipPage() {
                   boxShadow: '0 30px 80px rgba(0,0,0,0.9), 0 0 40px rgba(249,176,60,0.15)'
                 }}
               >
-                {/* Profile Header */}
+                {/* Profile Header with Eyoub Sahle Real Photo */}
                 <div className="flex items-center gap-4 mb-6">
                   <div className="relative">
                     <img 
-                      src="/eyoub-mentor.jpg" 
-                      alt="Eyoub Sahle" 
+                      src="/assets/eyob_white.jpg" 
+                      alt="ኢዮብ ሳህሌ (Eyoub Sahle)" 
                       onError={(e) => {
-                        // Fallback avatar
-                        (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=400';
+                        (e.target as HTMLImageElement).src = '/assets/eyob_new.png';
                       }}
-                      className="w-20 h-20 rounded-2xl object-cover border-2 border-[#f9b03c] shadow-[0_0_25px_rgba(249,176,60,0.35)]"
+                      className="w-24 h-24 rounded-2xl object-cover border-2 border-[#f9b03c] shadow-[0_0_30px_rgba(249,176,60,0.4)]"
                     />
-                    <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-emerald-500 border-2 border-slate-900 flex items-center justify-center text-[9px] text-white">
+                    <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-emerald-500 border-2 border-slate-900 flex items-center justify-center text-[10px] text-white">
                       <i className="fa-solid fa-check"></i>
                     </div>
                   </div>
@@ -181,6 +260,17 @@ export default function MentorshipPage() {
                     <h3 className="text-xl font-black font-heading text-white">ኢዮብ ሳህሌ (Eyoub Sahle)</h3>
                     <p className="text-xs text-[#f9b03c] font-bold">Founder & Lead Mentor @ Tsehay Campus</p>
                     <p className="text-[11px] text-slate-400 mt-0.5">Top Digital Entrepreneur & Creator</p>
+                  </div>
+                </div>
+
+                {/* Booking Advance Notice */}
+                <div className="p-3.5 rounded-2xl bg-amber-400/10 border border-amber-400/30 mb-6 text-xs text-amber-200 flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-amber-400/20 text-[#f9b03c] flex items-center justify-center text-sm shrink-0">
+                    <i className="fa-solid fa-calendar-days"></i>
+                  </div>
+                  <div>
+                    <p className="font-bold text-white">የሳምንት ቅድመ-ዝግጅት ቀጠሮ</p>
+                    <p className="text-[11px] text-slate-300 mt-0.5">ቀጠሮዎች ጥልቅ ዝግጅት እንዲደረግባቸው ቢያንስ ከአንድ ሳምንት (7 ቀናት) በኋላ ባሉት ቀናት ይያዛሉ።</p>
                   </div>
                 </div>
 
@@ -315,7 +405,7 @@ export default function MentorshipPage() {
                   <div className="flex items-center justify-between mb-6 pb-4 border-b border-white/10">
                     <div>
                       <h3 className="text-xl font-black font-heading text-white">የቀጠሮ ቅጽ (Book Your Slot)</h3>
-                      <p className="text-xs text-slate-400 mt-0.5">የሚመችዎትን ቀን እና ሰዓት ይምረጡ</p>
+                      <p className="text-xs text-slate-400 mt-0.5">ከአንድ ሳምንት በኋላ የሚመችዎትን ቀን እና ሰዓት ይምረጡ</p>
                     </div>
                     <div className="w-10 h-10 rounded-xl bg-[#f9b03c]/10 border border-[#f9b03c]/30 text-[#f9b03c] flex items-center justify-center text-sm font-black">
                       <i className="fa-regular fa-calendar-plus"></i>
@@ -323,8 +413,9 @@ export default function MentorshipPage() {
                   </div>
 
                   {errorMessage && (
-                    <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 text-xs text-red-300 mb-5">
-                      {errorMessage}
+                    <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 text-xs text-red-300 mb-5 flex items-center gap-2">
+                      <i className="fa-solid fa-triangle-exclamation"></i>
+                      <span>{errorMessage}</span>
                     </div>
                   )}
 
@@ -341,7 +432,7 @@ export default function MentorshipPage() {
                           required
                           value={fullName}
                           onChange={(e) => setFullName(e.target.value)}
-                          placeholder="ለምሳሌ፡ አበበ ከበደ"
+                          placeholder="ለምሳሌ፡ ኢዮብ ሳህሌ (Eyoub Sahle)"
                           className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#f9b03c] transition"
                         />
                       </div>
@@ -355,7 +446,7 @@ export default function MentorshipPage() {
                           required
                           value={phone}
                           onChange={(e) => setPhone(e.target.value)}
-                          placeholder="09... / +251..."
+                          placeholder="ለምሳሌ፡ 0911223344 / +251 911 223 344"
                           className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#f9b03c] transition"
                         />
                       </div>
@@ -371,47 +462,94 @@ export default function MentorshipPage() {
                         required
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        placeholder="name@gmail.com (የማረጋገጫ መልዕክት የሚላክበት)"
+                        placeholder="ለምሳሌ፡ info@tsehaycampus.com / student@gmail.com"
                         className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#f9b03c] transition"
                       />
                     </div>
 
-                    {/* Date Picker Selector */}
-                    <div>
-                      <label className="block text-xs font-bold text-slate-300 mb-1.5">
-                        የቀጠሮ ቀን ይምረጡ (Select Date) *
-                      </label>
-                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-2">
-                        {upcomingDates.map((item) => (
+                    {/* 🌟 Beautiful Interactive Glassmorphism Calendar (Starts 1-Week Out) */}
+                    <div className="pt-1">
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="block text-xs font-bold text-slate-300">
+                          የቀጠሮ ቀን ይምረጡ (Select Available Date) *
+                        </label>
+                        <span className="text-[11px] font-bold text-[#f9b03c] flex items-center gap-1">
+                          <i className="fa-solid fa-lock text-[10px]"></i> ከአንድ ሳምንት በኋላ ብቻ
+                        </span>
+                      </div>
+
+                      {/* Quick Date Chips (Days +7 to +12) */}
+                      <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-3">
+                        {quickUpcomingDates.map((item) => (
                           <button
                             key={item.iso}
                             type="button"
                             onClick={() => setSelectedDate(item.iso)}
-                            className={`p-2.5 rounded-xl border text-center transition cursor-pointer active:scale-95 ${
+                            className={`p-2 sm:p-2.5 rounded-xl border text-center transition cursor-pointer active:scale-95 ${
                               selectedDate === item.iso
-                                ? 'bg-amber-400/20 border-[#f9b03c] text-white shadow-[0_0_15px_rgba(249,176,60,0.3)]'
-                                : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'
+                                ? 'bg-gradient-to-tr from-[#f9b03c] to-amber-300 border-[#f9b03c] text-slate-950 font-black shadow-[0_0_15px_rgba(249,176,60,0.4)]'
+                                : 'bg-white/5 border-white/10 text-slate-300 hover:bg-white/10'
                             }`}
                           >
-                            <span className="block text-[10px] font-black text-[#f9b03c]">{item.amharicDay}</span>
-                            <span className="block text-xs font-black text-white mt-0.5">{item.display}</span>
+                            <span className={`block text-[10px] font-black ${selectedDate === item.iso ? 'text-slate-950' : 'text-[#f9b03c]'}`}>
+                              {item.amharicDay}
+                            </span>
+                            <span className="block text-xs font-black mt-0.5">{item.display}</span>
                           </button>
                         ))}
                       </div>
 
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-[11px] text-slate-400">ወይም የተለየ ቀን ይምረጡ፡</span>
-                        <input
-                          type="date"
-                          value={selectedDate}
-                          onChange={(e) => setSelectedDate(e.target.value)}
-                          className="bg-white/5 border border-white/10 rounded-lg px-2.5 py-1 text-xs text-white focus:outline-none focus:border-[#f9b03c]"
-                        />
+                      {/* Interactive Month Calendar Box */}
+                      <div className="bg-white/[0.02] border border-white/10 rounded-2xl p-4 sm:p-5">
+                        {/* Month Header Navigation */}
+                        <div className="flex items-center justify-between mb-4">
+                          <button
+                            type="button"
+                            onClick={prevMonth}
+                            className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-xs text-slate-300 transition"
+                          >
+                            <i className="fa-solid fa-chevron-left"></i>
+                          </button>
+
+                          <span className="text-xs font-black text-white tracking-wide uppercase">
+                            {calendarMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                          </span>
+
+                          <button
+                            type="button"
+                            onClick={nextMonth}
+                            className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-xs text-slate-300 transition"
+                          >
+                            <i className="fa-solid fa-chevron-right"></i>
+                          </button>
+                        </div>
+
+                        {/* Weekday Labels */}
+                        <div className="grid grid-cols-7 gap-1 text-center mb-2">
+                          {['እሁድ', 'ሰኞ', 'ማክ', 'ረቡዕ', 'ሐሙስ', 'አርብ', 'ቅዳሜ'].map((day) => (
+                            <span key={day} className="text-[10px] font-bold text-slate-400">
+                              {day}
+                            </span>
+                          ))}
+                        </div>
+
+                        {/* Calendar Days Grid */}
+                        <div className="grid grid-cols-7 gap-1">
+                          {renderCalendarDays()}
+                        </div>
+
+                        {/* Selected Date Indicator */}
+                        <div className="mt-3 pt-3 border-t border-white/5 flex items-center justify-between text-xs">
+                          <span className="text-slate-400">የተመረጠው ቀን፡</span>
+                          <span className="font-mono font-bold text-[#f9b03c] bg-amber-400/10 px-2.5 py-1 rounded-lg border border-amber-400/20">
+                            {selectedDate}
+                          </span>
+                        </div>
                       </div>
                     </div>
 
                     {/* Time Slot Picker */}
-                    <div>
+                    <div className="pt-1">
                       <label className="block text-xs font-bold text-slate-300 mb-1.5">
                         የሚመችዎ ሰዓት (Time Slot) *
                       </label>
@@ -423,7 +561,7 @@ export default function MentorshipPage() {
                             onClick={() => setSelectedTime(slot)}
                             className={`p-2.5 rounded-xl border text-center text-xs font-bold transition cursor-pointer active:scale-95 ${
                               selectedTime === slot
-                                ? 'bg-[#3268ba]/25 border-[#3268ba] text-white shadow-[0_0_15px_rgba(50,104,186,0.35)]'
+                                ? 'bg-[#3268ba]/30 border-[#3268ba] text-white shadow-[0_0_15px_rgba(50,104,186,0.35)]'
                                 : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'
                             }`}
                           >
@@ -434,7 +572,7 @@ export default function MentorshipPage() {
                     </div>
 
                     {/* Discussion Topic Textarea */}
-                    <div>
+                    <div className="pt-1">
                       <label className="block text-xs font-bold text-slate-300 mb-1.5">
                         ምን ማማከር ይፈልጋሉ? (What do you want to discuss?)
                       </label>
@@ -442,7 +580,7 @@ export default function MentorshipPage() {
                         rows={3}
                         value={topic}
                         onChange={(e) => setTopic(e.target.value)}
-                        placeholder="ስለ ዩቲዩብ ቻናሌ እድገት፣ ወይም ከቻይና እቃዎችን ስለማስመጣት ማማከር እፈልጋለሁ..."
+                        placeholder="ለምሳሌ፡ የዩቲዩብ ቻናል ስትራቴጂ እና የሞኒታይዜሽን እቅድ..."
                         className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-[#f9b03c] transition"
                       />
 
