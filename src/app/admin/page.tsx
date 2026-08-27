@@ -123,40 +123,23 @@ export default function AdminDashboard() {
     status: 'upcoming'
   });
 
-  // 🔒 Strict Admin 2FA State & Handlers
+  // 🔒 Strict Admin 2FA State & Master Code Handlers
   const STRICT_ADMIN_EMAIL = 'eyoubsahle@gmail.com';
   const [is2faVerified, setIs2faVerified] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
-      return !!sessionStorage.getItem('tsehay_admin_2fa_token');
+      return (
+        sessionStorage.getItem('tsehay_admin_verified') === 'true' ||
+        localStorage.getItem('tsehay_admin_verified') === 'true' ||
+        !!sessionStorage.getItem('tsehay_admin_2fa_token')
+      );
     }
     return false;
   });
   const [twoFactorCode, setTwoFactorCode] = useState('');
-  const [isSending2faOtp, setIsSending2faOtp] = useState(false);
   const [isVerifying2faOtp, setIsVerifying2faOtp] = useState(false);
   const [otpError, setOtpError] = useState<string | null>(null);
   const [otpSuccessMsg, setOtpSuccessMsg] = useState<string | null>(null);
-  const [resendCooldown, setResendCooldown] = useState(0);
   const [redirectCountdown, setRedirectCountdown] = useState(3);
-  const otpAutoSentRef = React.useRef(false);
-
-  // Cooldown countdown timer
-  useEffect(() => {
-    if (resendCooldown > 0) {
-      const timer = setTimeout(() => setResendCooldown(c => c - 1), 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [resendCooldown]);
-
-  // Auto-send 2FA code if logged in as eyoubsahle@gmail.com but unverified
-  useEffect(() => {
-    const currentUser = auth.currentUser || user;
-    const currentEmail = currentUser?.email?.toLowerCase().trim();
-    if (currentEmail === STRICT_ADMIN_EMAIL && !is2faVerified && !otpAutoSentRef.current) {
-      otpAutoSentRef.current = true;
-      handleSend2faOtp();
-    }
-  }, [user, is2faVerified]);
 
   // Auto-redirect unauthorized students to /dashboard
   useEffect(() => {
@@ -177,72 +160,28 @@ export default function AdminDashboard() {
     }
   }, [user, router]);
 
-  // Send 2FA OTP Code
-  const handleSend2faOtp = async (isManual = false) => {
-    setIsSending2faOtp(true);
-    setOtpError(null);
-    if (isManual) setOtpSuccessMsg(null);
-
-    try {
-      const res = await fetch('/api/admin/verify-2fa', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'send', email: STRICT_ADMIN_EMAIL })
-      });
-
-      const data = await res.json();
-      if (data.success) {
-        setOtpSuccessMsg('የ 6-አሃዝ ማረጋገጫ ኮድ ወደ eyoubsahle@gmail.com ተልኳል!');
-        setResendCooldown(60);
-      } else {
-        setOtpError(data.error || 'ኮዱን መላክ አልተቻለም፤ እባክዎ በድጋሚ ይሞክሩ።');
-      }
-    } catch (e: any) {
-      setOtpError('የኔትወርክ ስህተት አጋጥሟል።');
-    } finally {
-      setIsSending2faOtp(false);
-    }
-  };
-
-  // Verify 2FA OTP Code
-  const handleVerify2faOtp = async (e: React.FormEvent) => {
+  // 🔑 Master Access Code Verification ("Eyoub TC")
+  const handleVerify2faOtp = (e: React.FormEvent) => {
     e.preventDefault();
-    if (twoFactorCode.trim().length !== 6) {
-      setOtpError('እባክዎ ባለ 6-አሃዝ ኮድ ያስገቡ።');
-      return;
-    }
+    const cleanInput = twoFactorCode.trim();
 
-    setIsVerifying2faOtp(true);
-    setOtpError(null);
+    if (cleanInput === 'Eyoub TC') {
+      setIsVerifying2faOtp(true);
+      setOtpError(null);
+      setOtpSuccessMsg('ማረጋገጫው ተሳክቷል! ወደ አድሚን ዳሽቦርድ በመግባት ላይ...');
 
-    try {
-      const res = await fetch('/api/admin/verify-2fa', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'verify',
-          email: STRICT_ADMIN_EMAIL,
-          code: twoFactorCode.trim()
-        })
-      });
-
-      const data = await res.json();
-      if (data.success && data.token) {
-        if (typeof window !== 'undefined') {
-          sessionStorage.setItem('tsehay_admin_2fa_token', data.token);
-          localStorage.setItem('adminAuth', 'true');
-          localStorage.setItem('adminEmail', STRICT_ADMIN_EMAIL);
-        }
+      setTimeout(() => {
         setIs2faVerified(true);
         setIsAuthenticated(true);
-        setOtpSuccessMsg('ማረጋገጫው ተሳክቷል!');
-      } else {
-        setOtpError(data.error || 'የተሳሳተ ኮድ አስገብተዋል። እባክዎ በድጋሚ ይሞክሩ።');
-      }
-    } catch (err: any) {
-      setOtpError('የማረጋገጫ ስህተት አጋጥሟል።');
-    } finally {
-      setIsVerifying2faOtp(false);
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('tsehay_admin_verified', 'true');
+          localStorage.setItem('tsehay_admin_verified', 'true');
+          sessionStorage.setItem('tsehay_admin_2fa_token', `master_token_${Date.now()}`);
+        }
+        setIsVerifying2faOtp(false);
+      }, 350);
+    } else {
+      setOtpError('ኮዱ ትክክል አይደለም።');
     }
   };
 
@@ -253,7 +192,11 @@ export default function AdminDashboard() {
     if (currentEmail === STRICT_ADMIN_EMAIL && is2faVerified) {
       return true;
     }
-    if (typeof window !== 'undefined' && sessionStorage.getItem('tsehay_admin_2fa_token')) {
+    if (typeof window !== 'undefined' && (
+      sessionStorage.getItem('tsehay_admin_verified') === 'true' ||
+      localStorage.getItem('tsehay_admin_verified') === 'true' ||
+      sessionStorage.getItem('tsehay_admin_2fa_token')
+    )) {
       return true;
     }
     return false;
@@ -1893,14 +1836,14 @@ export default function AdminDashboard() {
             </div>
             
             <div className="inline-block px-3.5 py-1 rounded-full bg-amber-400/15 border border-amber-400/30 text-[#f9b03c] text-xs font-black uppercase tracking-wider mb-2">
-              🔒 STEP 2 OF 2 • 2FA VERIFICATION
+              🔒 MASTER ACCESS VERIFICATION
             </div>
 
             <h2 className="text-2xl font-black font-heading text-white tracking-tight">
               የአድሚን ማረጋገጫ ኮድ
             </h2>
             <p className="text-xs text-slate-400 mt-1.5 leading-relaxed">
-              ወደ <span className="text-[#f9b03c] font-bold">eyoubsahle@gmail.com</span> የተላከውን ባለ 6-አሃዝ የደህንነት ኮድ ያስገቡ።
+              ወደ አድሚን ዳሽቦርድ ለመግባት የአድሚን ማስተር ኮድዎን (Master Access Code) ያስገቡ።
             </p>
           </div>
 
@@ -1921,23 +1864,22 @@ export default function AdminDashboard() {
           <form onSubmit={handleVerify2faOtp} className="space-y-5">
             <div>
               <label className="text-[11px] font-bold text-slate-300 uppercase tracking-widest mb-2 block text-center">
-                6-አሃዝ ኮድ (6-Digit Code)
+                የአድሚን ማስተር ኮድ (Master Access Code)
               </label>
               <input
                 type="text"
-                maxLength={6}
                 autoFocus
                 required
                 value={twoFactorCode}
-                onChange={(e) => setTwoFactorCode(e.target.value.replace(/\D/g, ''))}
-                placeholder="123456"
-                className="w-full bg-black/60 border-2 border-amber-400/40 focus:border-[#f9b03c] rounded-2xl py-4 text-center text-3xl tracking-[10px] font-mono font-black text-[#f9b03c] outline-none shadow-inner"
+                onChange={(e) => setTwoFactorCode(e.target.value)}
+                placeholder="ማስተር ኮዱን እዚህ ያስገቡ (e.g. Eyoub TC)..."
+                className="w-full bg-black/60 border-2 border-amber-400/40 focus:border-[#f9b03c] rounded-2xl py-3.5 px-4 text-center text-lg font-bold text-[#f9b03c] outline-none shadow-inner"
               />
             </div>
 
             <button
               type="submit"
-              disabled={isVerifying2faOtp || twoFactorCode.length !== 6}
+              disabled={isVerifying2faOtp || !twoFactorCode.trim()}
               className="w-full btn-buy-now-vibe py-4 rounded-xl text-sm font-black flex items-center justify-center gap-2 cursor-pointer active:scale-98 disabled:opacity-50 shadow-[0_0_25px_rgba(249,176,60,0.4)]"
             >
               {isVerifying2faOtp ? (
@@ -1948,23 +1890,13 @@ export default function AdminDashboard() {
               ) : (
                 <>
                   <i className="fa-solid fa-unlock-keyhole"></i>
-                  <span>አረጋግጥና ግባ (Verify & Enter)</span>
+                  <span>አረጋግጥና ግባ (Verify & Enter Dashboard)</span>
                 </>
               )}
             </button>
           </form>
 
-          <div className="flex items-center justify-between mt-6 pt-4 border-t border-white/10 text-xs">
-            <button
-              type="button"
-              disabled={isSending2faOtp || resendCooldown > 0}
-              onClick={() => handleSend2faOtp(true)}
-              className="text-slate-400 hover:text-[#f9b03c] transition disabled:opacity-50 cursor-pointer font-bold inline-flex items-center gap-1.5"
-            >
-              <i className="fa-solid fa-rotate-right"></i>
-              <span>{resendCooldown > 0 ? `በድጋሚ ላክ (${resendCooldown}s)` : 'ኮድ በድጋሚ ላክ (Resend)'}</span>
-            </button>
-
+          <div className="flex items-center justify-center mt-6 pt-4 border-t border-white/10 text-xs">
             <button
               type="button"
               onClick={handleLogout}
