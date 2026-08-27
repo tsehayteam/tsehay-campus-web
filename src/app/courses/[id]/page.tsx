@@ -231,17 +231,6 @@ function CoursePreviewContent() {
   }, [user, course]);
 
   const handleBuyClick = () => {
-    if (!user) {
-      try {
-        sessionStorage.setItem('tsehay_pending_course_action', JSON.stringify({
-          type: 'buy',
-          courseId: course?.id,
-          courseTitle: course?.title || 'ይህ ኮርስ'
-        }));
-      } catch (e) {}
-      setShowRequireAuthModal(true);
-      return;
-    }
     setShowPaymentModal(true);
   };
 

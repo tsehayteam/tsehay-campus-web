@@ -86,24 +86,24 @@ export default function Courses() {
     }
   }, [user, courses]);
 
-  const openPaymentModal = async (course) => {
+  const openPaymentModal = async (course: any) => {
     const isFree = course.isFree || course.price === 'Free' || course.price === '0' || course.price === 0;
     
-    if (!user) {
-      try {
-        sessionStorage.setItem('tsehay_pending_course_action', JSON.stringify({
-          type: isFree ? 'enroll_free' : 'buy',
-          courseId: course.id,
-          courseTitle: course.title,
-          course: course
-        }));
-      } catch (e) {}
-      setAuthCourseTarget(course);
-      setShowRequireAuthModal(true);
-      return;
-    }
-
     if (isFree) {
+      if (!user) {
+        try {
+          sessionStorage.setItem('tsehay_pending_course_action', JSON.stringify({
+            type: 'enroll_free',
+            courseId: course.id,
+            courseTitle: course.title,
+            course: course
+          }));
+        } catch (e) {}
+        setAuthCourseTarget(course);
+        setShowRequireAuthModal(true);
+        return;
+      }
+
       setIsEnrolling(true);
       try {
         // 1. Direct resilient client-side Firestore registration
@@ -160,6 +160,7 @@ export default function Courses() {
          setIsEnrolling(false);
       }
     } else {
+      // Paid course -> Open payment modal directly for instant checkout
       setSelectedCourse(course);
     }
   };
