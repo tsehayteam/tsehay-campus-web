@@ -6,6 +6,7 @@ import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import DigitalTicketModal from '@/components/DigitalTicketModal';
+import ShareEventModal from '@/components/ShareEventModal';
 import { TsehayEvent, EventTicket, DEFAULT_EVENTS, getCachedEvents, getEventBySlugOrId, getRemainingSeats } from '@/lib/eventCache';
 import { useAuth } from '@/context/AuthContext';
 
@@ -27,9 +28,10 @@ export default function EventDetailPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [bookingError, setBookingError] = useState<string | null>(null);
 
-  // Active Ticket Pass Modal State
+  // Active Ticket Pass Modal & Share Modal State
   const [activeTicket, setActiveTicket] = useState<EventTicket | null>(null);
   const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
 
   // Fetch from server API
@@ -63,13 +65,105 @@ export default function EventDetailPage() {
     }
   }, [user]);
 
-  const handleShareLink = () => {
-    if (typeof window !== 'undefined') {
-      navigator.clipboard.writeText(window.location.href);
-      setCopySuccess(true);
-      setTimeout(() => setCopySuccess(false), 2500);
+  // 🌟 Issue Confirmed Ticket & Trigger Email Pass
+  const issueConfirmedTicket = async (customPayload?: any) => {
+    if (!event) return null;
+
+    const payload = customPayload || {
+      eventId: event.id,
+      eventSlug: event.slug,
+      eventTitle: event.title,
+      eventDate: event.date,
+      eventTime: event.time,
+      eventLocation: event.location,
+      isOnline: event.isOnline,
+      meetingLink: event.meetingLink,
+      mapsUrl: event.mapsUrl,
+      name: attendeeName.trim(),
+      email: attendeeEmail.trim(),
+      phone: attendeePhone.trim(),
+      attendeeName: attendeeName.trim(),
+      attendeeEmail: attendeeEmail.trim(),
+      attendeePhone: attendeePhone.trim(),
+      userId: user?.uid || `guest_${Date.now()}`,
+      pricePaid: event.price || 0,
+      paymentMethod: event.price === 0 || event.isFree ? 'free' : selectedPaymentMethod,
+      tier: event.price > 1200 ? 'VIP Pass' : 'General Admission'
+    };
+
+    let ticketObj: EventTicket | null = null;
+
+    try {
+      const res = await fetch('/api/events/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        const data = await res.json();
+        if (data && (data.ticket || data.ticketId)) {
+          ticketObj = data.ticket;
+        }
+      }
+    } catch (apiErr) {
+      console.warn('API register error:', apiErr);
     }
+
+    if (!ticketObj) {
+      const timeHex = Date.now().toString(36).substring(4).toUpperCase();
+      const randHex = Math.random().toString(36).substring(2, 6).toUpperCase();
+      const localId = `TC-EVT-${timeHex}-${randHex}`;
+      ticketObj = {
+        ticketId: localId,
+        eventId: event.id,
+        eventSlug: event.slug,
+        eventTitle: event.title,
+        eventDate: event.date,
+        eventTime: event.time,
+        eventLocation: event.location,
+        isOnline: event.isOnline,
+        meetingLink: event.meetingLink,
+        mapsUrl: event.mapsUrl,
+        attendeeName: payload.attendeeName,
+        attendeeEmail: payload.attendeeEmail,
+        attendeePhone: payload.attendeePhone,
+        userId: payload.userId,
+        tier: payload.tier as any,
+        pricePaid: event.price || 0,
+        paymentMethod: payload.paymentMethod,
+        qrCodeData: JSON.stringify({ tId: localId, eId: event.id, name: payload.attendeeName }),
+        isUsed: false,
+        usedAt: null,
+        issuedAt: new Date().toISOString()
+      };
+    }
+
+    setActiveTicket(ticketObj);
+    setIsBookingOpen(false);
+    setIsTicketModalOpen(true);
+    return ticketObj;
   };
+
+  // 🌟 Post-Payment Return Listener (Auto-issue ticket after successful LakiPay redirect)
+  useEffect(() => {
+    if (typeof window !== 'undefined' && event) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const isSuccess = urlParams.get('payment') === 'success' || urlParams.get('status') === 'success';
+      const storedPending = sessionStorage.getItem('tsehay_pending_event_reg');
+      
+      if (isSuccess && storedPending) {
+        try {
+          const pendingData = JSON.parse(storedPending);
+          if (pendingData.eventId === event.id || pendingData.eventSlug === event.slug) {
+            sessionStorage.removeItem('tsehay_pending_event_reg');
+            issueConfirmedTicket(pendingData);
+          }
+        } catch (e) {}
+      }
+    }
+  }, [event]);
 
   const handleConfirmBooking = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,83 +178,9 @@ export default function EventDetailPage() {
     setBookingError(null);
 
     try {
-      // 1. If paid event, trigger payment gateway checkout
+      // 1. If paid event: Initiate Payment Gateway (LakiPay / PayPal)
       if (event.price > 0 && !event.isFree) {
-        try {
-          const checkoutRes = await fetch('/api/initiate-payment', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              courseId: event.id,
-              title: event.title,
-              price: event.price,
-              userEmail: attendeeEmail.trim(),
-              userId: user?.uid || 'guest_user',
-              paymethod: selectedPaymentMethod
-            })
-          });
-
-          if (checkoutRes.ok) {
-            const checkoutData = await checkoutRes.json().catch(() => null);
-            if (checkoutData && checkoutData.checkoutUrl) {
-              window.location.href = checkoutData.checkoutUrl;
-              return;
-            }
-          }
-        } catch (checkoutErr) {
-          console.warn('Payment redirect notice:', checkoutErr);
-        }
-      }
-
-      // 2. Issue confirmed ticket pass
-      const registerPayload = {
-        eventId: event.id,
-        eventSlug: event.slug,
-        eventTitle: event.title,
-        eventDate: event.date,
-        eventTime: event.time,
-        eventLocation: event.location,
-        isOnline: event.isOnline,
-        meetingLink: event.meetingLink,
-        mapsUrl: event.mapsUrl,
-        name: attendeeName.trim(),
-        email: attendeeEmail.trim(),
-        phone: attendeePhone.trim(),
-        attendeeName: attendeeName.trim(),
-        attendeeEmail: attendeeEmail.trim(),
-        attendeePhone: attendeePhone.trim(),
-        userId: user?.uid || `guest_${Date.now()}`,
-        pricePaid: event.price || 0,
-        paymentMethod: event.price === 0 || event.isFree ? 'free' : selectedPaymentMethod,
-        tier: event.price > 1200 ? 'VIP Pass' : 'General Admission'
-      };
-
-      let ticketObj: EventTicket | null = null;
-
-      try {
-        const res = await fetch('/api/events/register', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(registerPayload)
-        });
-
-        const contentType = res.headers.get('content-type') || '';
-        if (contentType.includes('application/json')) {
-          const data = await res.json();
-          if (data && (data.ticket || data.ticketId)) {
-            ticketObj = data.ticket;
-          }
-        }
-      } catch (apiErr) {
-        console.warn('API register error:', apiErr);
-      }
-
-      if (!ticketObj) {
-        const timeHex = Date.now().toString(36).substring(4).toUpperCase();
-        const randHex = Math.random().toString(36).substring(2, 6).toUpperCase();
-        const localId = `TC-EVT-${timeHex}-${randHex}`;
-        ticketObj = {
-          ticketId: localId,
+        const pendingPayload = {
           eventId: event.id,
           eventSlug: event.slug,
           eventTitle: event.title,
@@ -170,23 +190,47 @@ export default function EventDetailPage() {
           isOnline: event.isOnline,
           meetingLink: event.meetingLink,
           mapsUrl: event.mapsUrl,
+          name: attendeeName.trim(),
+          email: attendeeEmail.trim(),
+          phone: attendeePhone.trim(),
           attendeeName: attendeeName.trim(),
           attendeeEmail: attendeeEmail.trim(),
           attendeePhone: attendeePhone.trim(),
           userId: user?.uid || `guest_${Date.now()}`,
-          tier: registerPayload.tier as any,
-          pricePaid: event.price || 0,
-          paymentMethod: 'free',
-          qrCodeData: JSON.stringify({ tId: localId, eId: event.id, name: attendeeName.trim() }),
-          isUsed: false,
-          usedAt: null,
-          issuedAt: new Date().toISOString()
+          pricePaid: event.price,
+          paymentMethod: selectedPaymentMethod,
+          tier: event.price > 1200 ? 'VIP Pass' : 'General Admission'
         };
+
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('tsehay_pending_event_reg', JSON.stringify(pendingPayload));
+        }
+
+        const checkoutRes = await fetch('/api/initiate-payment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            courseId: event.id,
+            title: event.title,
+            price: event.price,
+            userEmail: attendeeEmail.trim(),
+            userId: user?.uid || 'guest_user',
+            paymethod: selectedPaymentMethod,
+            returnUrl: typeof window !== 'undefined' ? `${window.location.origin}/events/${event.slug || event.id}?payment=success` : undefined
+          })
+        });
+
+        if (checkoutRes.ok) {
+          const checkoutData = await checkoutRes.json().catch(() => null);
+          if (checkoutData && checkoutData.checkoutUrl) {
+            window.location.href = checkoutData.checkoutUrl;
+            return;
+          }
+        }
       }
 
-      setActiveTicket(ticketObj);
-      setIsBookingOpen(false);
-      setIsTicketModalOpen(true);
+      // 2. If free event: Immediately issue confirmed ticket pass & send email
+      await issueConfirmedTicket();
     } catch (err: any) {
       console.error('Booking confirmation error:', err);
       setBookingError(err?.message || 'ትኬቱን ማዘጋጀት አልተቻለም፤ እባክዎ በድጋሚ ይሞክሩ።');
@@ -251,11 +295,12 @@ export default function EventDetailPage() {
 
             <button
               type="button"
-              onClick={handleShareLink}
-              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/5 hover:bg-white/15 border border-white/10 text-xs text-slate-300 transition cursor-pointer"
+              onClick={() => setIsShareModalOpen(true)}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#3268ba] hover:bg-[#254f8e] text-white text-xs font-black transition shadow-[0_0_20px_rgba(50,104,186,0.4)] border border-[#4a85df]/50 cursor-pointer active:scale-95"
+              title="ክንውኑን አጋራ (Share Event)"
             >
-              <i className={copySuccess ? "fa-solid fa-check text-emerald-400" : "fa-solid fa-share-nodes text-[#f9b03c]"}></i>
-              <span>{copySuccess ? 'ሊንኩ ኮፒ ተደርጓል! (Copied)' : 'ሊንኩን አጋራ (Share Link)'}</span>
+              <i className="fa-solid fa-share-nodes text-white text-xs"></i>
+              <span>አጋራ (Share Event)</span>
             </button>
           </div>
 
@@ -397,11 +442,12 @@ export default function EventDetailPage() {
 
                     <button
                       type="button"
-                      onClick={handleShareLink}
-                      className="w-full sm:w-auto px-5 py-4 rounded-2xl bg-white/5 hover:bg-white/15 border border-white/10 text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition active:scale-95"
+                      onClick={() => setIsShareModalOpen(true)}
+                      className="w-full sm:w-auto px-7 py-4 rounded-2xl bg-[#3268ba] hover:bg-[#254f8e] text-white text-sm font-black flex items-center justify-center gap-2.5 cursor-pointer transition active:scale-95 shadow-[0_0_25px_rgba(50,104,186,0.4)] border border-[#4a85df]/50"
+                      title="ይህንን ክንውን አጋራ (Share Event)"
                     >
-                      <i className="fa-solid fa-share-nodes text-[#f9b03c]"></i>
-                      <span>አጋራ</span>
+                      <i className="fa-solid fa-share-nodes text-base"></i>
+                      <span>አጋራ (Share)</span>
                     </button>
                   </div>
                 </div>
@@ -592,6 +638,16 @@ export default function EventDetailPage() {
         isOpen={isTicketModalOpen}
         onClose={() => setIsTicketModalOpen(false)}
         ticket={activeTicket}
+      />
+
+      {/* Sleek Glassmorphism Share Modal */}
+      <ShareEventModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        eventTitle={event.title}
+        eventSlug={event.slug || event.id}
+        eventDate={event.date}
+        eventLocation={event.location}
       />
 
       <Footer />
