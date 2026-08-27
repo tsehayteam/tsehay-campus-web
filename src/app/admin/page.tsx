@@ -501,7 +501,7 @@ export default function AdminDashboard() {
       const regCol = collection(db, 'event_registrations');
       unsubscribeEventRegs = onSnapshot(regCol, (snapshot) => {
         if (!snapshot.empty) {
-          const list = snapshot.docs.map(d => ({ ...d.data() }));
+          const list = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as unknown as EventTicket));
           setEventTickets(list);
         }
       }, (err) => {
