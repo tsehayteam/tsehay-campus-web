@@ -462,7 +462,7 @@ export default function Navbar() {
                     : 'terafab-nav-link text-gray-700 dark:text-gray-300'
                 }`}
               >
-                <span>ማማከር (Mentorship)</span>
+                <span>{t('mentorship') || (lang === 'en' ? 'Mentorship' : 'ማማከር')}</span>
               </Link>
             </div>
             
@@ -683,7 +683,7 @@ export default function Navbar() {
                     <i className="fa-solid fa-user-tie text-xs"></i>
                   </div>
                   <span className="text-xs sm:text-sm font-bold text-gray-900 dark:text-white">
-                    ማማከር (1-on-1 Mentorship)
+                    {t('mentorship') || (lang === 'en' ? 'Mentorship' : 'ማማከር')}
                   </span>
                 </div>
                 <i className="fa-solid fa-chevron-right text-[11px] text-gray-400 group-hover:text-[#f9b03c] group-hover:translate-x-0.5 transition-all"></i>

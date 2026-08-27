@@ -15,6 +15,7 @@ const translations: Record<string, Record<Language, string>> = {
   'slide_menu': { am: 'ተንሸራታች ማውጫ', en: 'Slide Menu' },
   'about_us': { am: 'ስለ እኛ', en: 'About Us' },
   'all_courses': { am: 'ሁሉም ኮርሶች', en: 'All Courses' },
+  'mentorship': { am: 'ማማከር', en: 'Mentorship' },
   'search_placeholder': { am: 'ኮርሶችን ይፈልጉ...', en: 'Search courses...' },
   'login': { am: 'ግባ (Login)', en: 'Login' },
   'register': { am: 'አዲስ ይመዝገቡ', en: 'Register Now' },
