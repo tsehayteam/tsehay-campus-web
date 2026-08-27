@@ -490,6 +490,11 @@ export default function FloatingAIButton() {
     { label: '📜 ሰርተፊኬት አሰጣጥ', prompt: 'ኮርስ ሳጠናቅቅ ሰርተፊኬት እንዴት ነው የማገኘው?' }
   ];
 
+  // 🚫 Completely remove Tsehay AI and its floating launcher icon from the Admin Dashboard
+  if (pathname?.startsWith('/admin')) {
+    return null;
+  }
+
   return (
     <div className="fixed bottom-6 right-6 z-[9980] font-body select-none">
       
