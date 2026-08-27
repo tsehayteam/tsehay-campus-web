@@ -59,8 +59,7 @@ export function CourseCardSkeletonItem() {
 export default function CourseCardSkeleton({ count = 3 }: CourseCardSkeletonProps) {
   return (
     <div 
-      className="grid gap-7 sm:gap-8 w-full" 
-      style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))' }}
+      className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 w-full max-w-full" 
     >
       {Array.from({ length: count }).map((_, i) => (
         <CourseCardSkeletonItem key={i} />

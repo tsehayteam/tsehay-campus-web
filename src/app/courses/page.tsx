@@ -349,8 +349,7 @@ export default function Courses() {
               </div>
             ) : (
               <div 
-                className="grid gap-7 sm:gap-8"
-                style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))' }}
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 w-full max-w-full"
               >
                 {filteredCourses.map((course) => {
                   const isFree = course.isFree || course.price === 'Free' || course.price === '0' || course.price === 0;

@@ -264,27 +264,18 @@ export default function Navbar() {
         onClick={openCurtain}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
-        className={`fixed top-0 left-0 right-0 mx-auto w-fit z-[9990] flex justify-center cursor-pointer select-none transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+        className={`fixed top-0 left-0 right-0 w-full z-[9990] flex justify-center pointer-events-none select-none transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
           isCurtainOpen 
-            ? 'opacity-0 -translate-y-full pointer-events-none' 
+            ? 'opacity-0 -translate-y-full' 
             : 'opacity-100 translate-y-0'
         }`}
-        style={{
-          margin: '0 auto',
-          display: 'flex',
-          justifyContent: 'center',
-          left: 0,
-          right: 0,
-          top: 0,
-        }}
         title="ዋና ማውጫ / Menu (Click to Open Menu)"
       >
         <div 
-          className="bg-[#030509]/95 dark:bg-[#030509]/95 hover:bg-[#080d1a] border-x border-b border-[#f9b03c]/45 hover:border-[#f9b03c] px-6 sm:px-8 py-2 sm:py-2.5 rounded-b-2xl flex items-center gap-2.5 sm:gap-3 group transition-all duration-300 active:scale-95 cursor-pointer"
+          className="pointer-events-auto bg-[#030509]/95 dark:bg-[#030509]/95 hover:bg-[#080d1a] border-x border-b border-[#f9b03c]/45 hover:border-[#f9b03c] px-6 sm:px-8 py-2 sm:py-2.5 rounded-b-2xl flex items-center gap-2.5 sm:gap-3 group transition-all duration-300 active:scale-95 cursor-pointer shadow-[0_0_25px_rgba(249,176,60,0.35),0_8px_30px_rgba(0,0,0,0.8)]"
           style={{
             backdropFilter: 'blur(20px)',
             WebkitBackdropFilter: 'blur(20px)',
-            boxShadow: '0 0 25px rgba(249, 176, 60, 0.35), 0 8px 30px rgba(0, 0, 0, 0.8)',
           }}
         >
           {/* Glowing Compass Icon */}
@@ -316,7 +307,7 @@ export default function Navbar() {
       <nav 
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
-        className={`fixed top-0 left-0 right-0 w-full z-[9999] shadow-[0_20px_60px_rgba(0,0,0,0.85)] select-none transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+        className={`fixed top-0 left-0 right-0 w-full max-w-full z-[9999] shadow-[0_20px_60px_rgba(0,0,0,0.85)] select-none transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
           isCurtainOpen 
             ? 'translate-y-0 opacity-100 pointer-events-auto' 
             : '-translate-y-full opacity-0 pointer-events-none'
@@ -330,19 +321,21 @@ export default function Navbar() {
         }}
       >
         {/* 🔼 SINGLE DISTINCT ULTRA-PREMIUM ROLL-UP TAB AT BOTTOM CENTER */}
-        <button 
-          type="button"
-          onClick={closeCurtain}
-          className="curtain-rollup-handle px-5 sm:px-6 py-1.5 sm:py-2 rounded-b-2xl flex items-center gap-2 text-white hover:text-white cursor-pointer group active:scale-95 z-[10000]"
-          title="ወደ ላይ መልሰህ እጠፍ (Roll Up Menu)"
-        >
-          <div className="w-4 h-4 rounded-full bg-gradient-to-tr from-[#f9b03c] to-amber-300 text-black flex items-center justify-center text-[10px] font-black shadow-[0_0_10px_rgba(249,176,60,0.5)] shrink-0 group-hover:scale-110 transition-transform">
-            <i className="fa-solid fa-chevron-up text-[9px] font-black"></i>
-          </div>
-          <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-white group-hover:text-[#f9b03c] font-heading transition-colors">
-            ወደ ላይ እጠፍ (Roll Up)
-          </span>
-        </button>
+        <div className="absolute -bottom-8 left-0 right-0 w-full flex justify-center pointer-events-none z-[10000]">
+          <button 
+            type="button"
+            onClick={closeCurtain}
+            className="curtain-rollup-handle pointer-events-auto px-5 sm:px-6 py-1.5 sm:py-2 rounded-b-2xl flex items-center gap-2 text-white hover:text-white cursor-pointer group active:scale-95 shadow-[0_10px_30px_rgba(0,0,0,0.85),0_0_22px_rgba(249,176,60,0.35)]"
+            title="ወደ ላይ መልሰህ እጠፍ (Roll Up Menu)"
+          >
+            <div className="w-4 h-4 rounded-full bg-gradient-to-tr from-[#f9b03c] to-amber-300 text-black flex items-center justify-center text-[10px] font-black shadow-[0_0_10px_rgba(249,176,60,0.5)] shrink-0 group-hover:scale-110 transition-transform">
+              <i className="fa-solid fa-chevron-up text-[9px] font-black"></i>
+            </div>
+            <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-white group-hover:text-[#f9b03c] font-heading transition-colors">
+              ወደ ላይ እጠፍ (Roll Up)
+            </span>
+          </button>
+        </div>
 
         {/* Navbar Inner Content */}
         <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8">

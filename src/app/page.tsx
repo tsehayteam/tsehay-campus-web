@@ -579,9 +579,8 @@ export default function Home() {
                 </div>
             ) : (
                 <div 
-                    className="grid gap-7 sm:gap-8" 
+                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 w-full max-w-full" 
                     id="courseList"
-                    style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))' }}
                 >
                     {courses.slice(0, 6).map((course, index) => (
                         <Tilt3DCard

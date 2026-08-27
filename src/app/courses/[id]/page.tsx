@@ -1,4 +1,4 @@
-﻿// @ts-nocheck
+// @ts-nocheck
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -951,8 +951,7 @@ function CoursePreviewContent() {
                 </h4>
                 
                 <div 
-                  className="grid gap-5"
-                  style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))' }}
+                  className="grid grid-cols-1 md:grid-cols-2 gap-5 w-full max-w-full"
                 >
                   {instructorCourses.filter(c => c.id !== course.id).slice(0, 6).map((otherCourse) => (
                     <div 
