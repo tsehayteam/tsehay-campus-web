@@ -107,8 +107,11 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // State 2: ALREADY USED
-    if (ticketData.isUsed) {
+    const action = body.action || 'check_in';
+    const isReset = action === 'reset';
+
+    // State 2: ALREADY USED (Only if scanning to check-in and not explicit reset)
+    if (ticketData.isUsed && !isReset && !body.action) {
       const usedTimeStr = ticketData.usedAt ? new Date(ticketData.usedAt).toLocaleTimeString() : 'ቀደም ብሎ';
       return NextResponse.json({
         success: false,
@@ -118,12 +121,14 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // State 3: SUCCESS (VALID)
-    const usedTimestamp = new Date().toISOString();
+    // State 3: SUCCESS (VALID / CHECKED IN or RESET)
+    const usedTimestamp = isReset ? null : new Date().toISOString();
     const updatePayload = {
-      isUsed: true,
+      isUsed: !isReset,
+      checkedIn: !isReset,
       usedAt: usedTimestamp,
-      verifiedBy: adminEmail
+      verifiedBy: isReset ? null : adminEmail,
+      status: isReset ? 'confirmed' : 'checked_in'
     };
 
     if (matchedDocRef) {
@@ -144,16 +149,16 @@ export async function POST(req: NextRequest) {
 
     const updatedTicket = {
       ...ticketData,
-      isUsed: true,
-      usedAt: usedTimestamp,
-      verifiedBy: adminEmail
+      ...updatePayload
     };
 
     return NextResponse.json({
       success: true,
-      status: 'verified_success',
+      status: isReset ? 'reset_success' : 'verified_success',
       ticket: updatedTicket,
-      message: 'ትክክለኛ ቲኬት! ተማሪውን ማሳለፍ ይችላሉ (Valid Ticket, Access Granted).'
+      message: isReset 
+        ? 'የቲኬት ሁኔታው ወደ ያልተጠቀመ ተመልሷል (Ticket reset to active).' 
+        : 'ተሳታፊው መገኘታቸው ተረጋግጧል (Attendee checked in / Access Granted).'
     });
 
   } catch (error: any) {

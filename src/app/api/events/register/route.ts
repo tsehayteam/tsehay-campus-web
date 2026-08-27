@@ -121,6 +121,24 @@ export async function POST(req: NextRequest) {
             .doc(ticketId)
             .set(ticket);
         }
+
+        // 4. Increment Event registeredCount in real-time
+        if (eventId && !eventId.startsWith('evt_fallback')) {
+          try {
+            const { FieldValue } = await import('firebase-admin/firestore');
+            const inc = FieldValue.increment(1);
+
+            const eventRefRoot = adminDb.collection('events').doc(eventId);
+            const eventRefArtifact = adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('public').doc('data').collection('events').doc(eventId);
+
+            await Promise.allSettled([
+              eventRefRoot.set({ registeredCount: inc }, { merge: true }),
+              eventRefArtifact.set({ registeredCount: inc }, { merge: true })
+            ]);
+          } catch (incErr) {
+            console.warn('Event registeredCount increment notice:', incErr);
+          }
+        }
       } catch (dbErr) {
         console.warn('Firestore event registration save notice:', dbErr);
       }

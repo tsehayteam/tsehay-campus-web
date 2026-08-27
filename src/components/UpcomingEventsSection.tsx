@@ -27,6 +27,8 @@ export default function UpcomingEventsSection() {
   const [bookingError, setBookingError] = useState<string | null>(null);
 
   // 🌟 Live Real-time Events Listener (Firestore + Local Broadcast + API)
+  const [registrationsCountByEvent, setRegistrationsCountByEvent] = useState<Record<string, number>>({});
+
   useEffect(() => {
     const handleEventsUpdate = (e: any) => {
       if (e.detail?.events && Array.isArray(e.detail.events)) {
@@ -35,7 +37,7 @@ export default function UpcomingEventsSection() {
     };
     window.addEventListener('tsehay_events_updated', handleEventsUpdate);
 
-    // 1. Live Firestore listener
+    // 1. Live Firestore listener for events
     let unsubNested: any = null;
     try {
       const nestedRef = collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'events');
@@ -52,7 +54,29 @@ export default function UpcomingEventsSection() {
       });
     } catch (e) {}
 
-    // 2. Fetch live events from API
+    // 2. Live Firestore listener for event registrations to accurately decrement seats
+    let unsubRegs: any = null;
+    try {
+      const regsRef = collection(db, 'event_registrations');
+      unsubRegs = onSnapshot(regsRef, (snapshot) => {
+        const counts: Record<string, number> = {};
+        snapshot.docs.forEach(doc => {
+          const d = doc.data();
+          const eId = d.eventId || d.eventSlug;
+          if (eId) {
+            counts[eId] = (counts[eId] || 0) + 1;
+          }
+          if (d.eventSlug && d.eventSlug !== eId) {
+            counts[d.eventSlug] = (counts[d.eventSlug] || 0) + 1;
+          }
+        });
+        setRegistrationsCountByEvent(counts);
+      }, (err) => {
+        console.warn("Event registrations sync notice:", err);
+      });
+    } catch (e) {}
+
+    // 3. Fetch live events from API
     const fetchEvents = async () => {
       try {
         const res = await fetch('/api/events');
@@ -74,6 +98,7 @@ export default function UpcomingEventsSection() {
     return () => {
       window.removeEventListener('tsehay_events_updated', handleEventsUpdate);
       if (unsubNested) unsubNested();
+      if (unsubRegs) unsubRegs();
     };
   }, []);
 
@@ -281,8 +306,15 @@ export default function UpcomingEventsSection() {
         {/* Event Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {events.map((event) => {
-            const remainingSeats = getRemainingSeats(event);
-            const percentTaken = Math.min(100, Math.round(((event.registeredCount || 0) / (event.capacity || 100)) * 100));
+            const liveRegCount = Math.max(
+              Number(event.registeredCount) || 0,
+              registrationsCountByEvent[event.id] || 0,
+              event.slug ? (registrationsCountByEvent[event.slug] || 0) : 0
+            );
+            const capacity = Number(event.capacity) || 100;
+            const remainingSeats = Math.max(0, capacity - liveRegCount);
+            const isSoldOut = remainingSeats <= 0;
+            const percentTaken = Math.min(100, Math.round((liveRegCount / capacity) * 100));
 
             return (
               <div 
@@ -291,12 +323,12 @@ export default function UpcomingEventsSection() {
                 style={{
                   background: 'rgba(255, 255, 255, 0.03)',
                   backdropFilter: 'blur(20px)',
-                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  border: isSoldOut ? '1px solid rgba(239, 68, 68, 0.25)' : '1px solid rgba(255, 255, 255, 0.08)',
                   boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5)'
                 }}
               >
                 {/* Golden Hover Glow Border Layer */}
-                <div className="absolute inset-0 rounded-3xl border-2 border-transparent group-hover:border-amber-400/40 transition-colors duration-300 pointer-events-none" />
+                <div className={`absolute inset-0 rounded-3xl border-2 border-transparent transition-colors duration-300 pointer-events-none ${isSoldOut ? 'group-hover:border-red-500/30' : 'group-hover:border-amber-400/40'}`} />
 
                 <div>
                   {/* Event Thumbnail & Badges */}
@@ -308,10 +340,15 @@ export default function UpcomingEventsSection() {
                     />
                     
                     {/* Top Status Capsules */}
-                    <div className="absolute top-3 left-3 flex items-center gap-2">
+                    <div className="absolute top-3 left-3 flex flex-wrap items-center gap-2">
                       <span className="px-3 py-1 rounded-full bg-black/70 backdrop-blur-md text-[#f9b03c] border border-amber-400/30 text-xs font-black">
                         {event.isOnline ? '🌐 Virtual Live Stream' : '📍 In-Person (አካል)'}
                       </span>
+                      {isSoldOut && (
+                        <span className="px-2.5 py-1 rounded-full bg-red-600/90 text-white text-[10px] font-black tracking-wider uppercase shadow-md animate-pulse">
+                          ❌ አልቋል (Sold Out)
+                        </span>
+                      )}
                     </div>
 
                     {/* Price Tag */}
@@ -364,11 +401,15 @@ export default function UpcomingEventsSection() {
                   <div className="mb-4">
                     <div className="flex justify-between text-[11px] font-bold mb-1.5">
                       <span className="text-slate-300">የተያዙ ቦታዎች ({percentTaken}%)</span>
-                      <span className="text-[#f9b03c]">{remainingSeats} ቦታዎች ብቻ ቀርተዋል!</span>
+                      {isSoldOut ? (
+                        <span className="text-red-400 font-black">ትኬቱ ሙሉ በሙሉ አልቋል!</span>
+                      ) : (
+                        <span className="text-[#f9b03c]">{remainingSeats} ቦታዎች ብቻ ቀርተዋል!</span>
+                      )}
                     </div>
                     <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
                       <div 
-                        className="h-full bg-gradient-to-r from-amber-500 to-[#f9b03c] rounded-full transition-all duration-1000"
+                        className={`h-full rounded-full transition-all duration-1000 ${isSoldOut ? 'bg-red-500' : 'bg-gradient-to-r from-amber-500 to-[#f9b03c]'}`}
                         style={{ width: `${percentTaken}%` }}
                       />
                     </div>
@@ -378,11 +419,16 @@ export default function UpcomingEventsSection() {
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
-                      onClick={() => handleOpenBooking(event)}
-                      className="flex-1 btn-buy-now-vibe py-3.5 rounded-2xl text-xs sm:text-sm font-black flex items-center justify-center gap-1.5 cursor-pointer active:scale-98 group/btn shadow-[0_0_25px_rgba(249,176,60,0.3)] hover:shadow-[0_0_35px_rgba(249,176,60,0.6)] transition-all"
+                      disabled={isSoldOut}
+                      onClick={() => !isSoldOut && handleOpenBooking(event)}
+                      className={`flex-1 py-3.5 rounded-2xl text-xs sm:text-sm font-black flex items-center justify-center gap-1.5 transition-all ${
+                        isSoldOut
+                          ? 'bg-slate-800/80 text-slate-500 border border-white/5 cursor-not-allowed'
+                          : 'btn-buy-now-vibe cursor-pointer active:scale-98 group/btn shadow-[0_0_25px_rgba(249,176,60,0.3)] hover:shadow-[0_0_35px_rgba(249,176,60,0.6)]'
+                      }`}
                     >
-                      <span>{event.price === 0 || event.isFree ? 'በነፃ ይመዝገቡ' : 'ትኬት ይቁረጡ'}</span>
-                      <i className="fa-solid fa-ticket text-xs group-hover/btn:translate-x-1 transition-transform"></i>
+                      <span>{isSoldOut ? 'ትኬቱ አልቋል (Sold Out)' : (event.price === 0 || event.isFree ? 'በነፃ ይመዝገቡ' : 'ትኬት ይቁረጡ')}</span>
+                      <i className={`fa-solid ${isSoldOut ? 'fa-lock' : 'fa-ticket'} text-xs ${!isSoldOut ? 'group-hover/btn:translate-x-1 transition-transform' : ''}`}></i>
                     </button>
 
                     <Link

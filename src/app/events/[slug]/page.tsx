@@ -10,6 +10,9 @@ import ShareEventModal from '@/components/ShareEventModal';
 import { TsehayEvent, EventTicket, DEFAULT_EVENTS, getCachedEvents, getEventBySlugOrId, getRemainingSeats, formatDriveImageUrl } from '@/lib/eventCache';
 import { useAuth } from '@/context/AuthContext';
 
+import { db } from '@/lib/firebase/config';
+import { collection, doc, onSnapshot } from 'firebase/firestore';
+
 export default function EventDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -17,6 +20,7 @@ export default function EventDetailPage() {
   const { user } = useAuth();
 
   const [event, setEvent] = useState<TsehayEvent | null>(() => getEventBySlugOrId(slug, getCachedEvents()));
+  const [liveRegistrationsCount, setLiveRegistrationsCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
 
   // Booking & Payment Modal State
@@ -34,7 +38,7 @@ export default function EventDetailPage() {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
 
-  // Fetch from server API & listen for real-time admin edits
+  // Fetch from server API & listen for real-time admin edits and registrations
   useEffect(() => {
     const handleEventsUpdate = (e: any) => {
       if (e.detail?.events && Array.isArray(e.detail.events)) {
@@ -43,6 +47,35 @@ export default function EventDetailPage() {
       }
     };
     window.addEventListener('tsehay_events_updated', handleEventsUpdate);
+
+    // 1. Live Firestore Event Listener
+    let unsubEvent: any = null;
+    try {
+      const eventsRef = collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'events');
+      unsubEvent = onSnapshot(eventsRef, (snapshot) => {
+        if (!snapshot.empty) {
+          const list = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as TsehayEvent));
+          const found = getEventBySlugOrId(slug, list);
+          if (found) setEvent(found);
+        }
+      }, (err) => {});
+    } catch (e) {}
+
+    // 2. Live Firestore Event Registrations Listener
+    let unsubRegs: any = null;
+    try {
+      const regsRef = collection(db, 'event_registrations');
+      unsubRegs = onSnapshot(regsRef, (snapshot) => {
+        let count = 0;
+        snapshot.docs.forEach(d => {
+          const r = d.data();
+          if (r.eventSlug === slug || (event && (r.eventId === event.id || r.eventSlug === event.slug))) {
+            count++;
+          }
+        });
+        setLiveRegistrationsCount(count);
+      }, (err) => {});
+    } catch (e) {}
 
     const loadEvent = async () => {
       try {
@@ -66,8 +99,10 @@ export default function EventDetailPage() {
 
     return () => {
       window.removeEventListener('tsehay_events_updated', handleEventsUpdate);
+      if (unsubEvent) unsubEvent();
+      if (unsubRegs) unsubRegs();
     };
-  }, [slug]);
+  }, [slug, event?.id]);
 
   // Sync user info
   useEffect(() => {
@@ -279,8 +314,14 @@ export default function EventDetailPage() {
     );
   }
 
-  const remainingSeats = getRemainingSeats(event);
-  const percentTaken = Math.min(100, Math.round(((event.registeredCount || 0) / (event.capacity || 100)) * 100));
+  const effectiveRegCount = Math.max(
+    Number(event.registeredCount) || 0,
+    liveRegistrationsCount
+  );
+  const capacity = Number(event.capacity) || 100;
+  const remainingSeats = Math.max(0, capacity - effectiveRegCount);
+  const isSoldOut = remainingSeats <= 0;
+  const percentTaken = Math.min(100, Math.round((effectiveRegCount / capacity) * 100));
 
   return (
     <div className="min-h-screen bg-[#06090e] text-white flex flex-col justify-between selection:bg-[#f9b03c] selection:text-black">
@@ -319,7 +360,7 @@ export default function EventDetailPage() {
             style={{
               background: 'rgba(3, 5, 9, 0.9)',
               backdropFilter: 'blur(20px)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
+              border: isSoldOut ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid rgba(255, 255, 255, 0.1)',
               boxShadow: '0 30px 100px rgba(0,0,0,0.85), 0 0 50px rgba(249,176,60,0.1)'
             }}
           >
@@ -330,15 +371,13 @@ export default function EventDetailPage() {
                 <span>ይፋዊ የቀጥታ ዝግጅት • Official Event</span>
               </span>
 
-              {event.isOnline ? (
-                <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-blue-500/15 border border-blue-500/30 text-blue-400 text-xs font-black">
-                  <i className="fa-solid fa-video"></i>
-                  <span>Online Google Meet (የቀጥታ ስብሰባ)</span>
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-black">
-                  <i className="fa-solid fa-location-dot"></i>
-                  <span>In-Person (በአካል የሚካሄድ)</span>
+              <span className="px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-slate-300 text-xs font-bold">
+                {event.isOnline ? '🌐 Virtual Live Stream (Online)' : `📍 በአካል (${event.location})`}
+              </span>
+
+              {isSoldOut && (
+                <span className="px-3 py-1.5 rounded-full bg-red-600 text-white text-xs font-black uppercase tracking-wider animate-pulse shadow-lg">
+                  ❌ ትኬቱ አልቋል (Sold Out)
                 </span>
               )}
             </div>
@@ -425,11 +464,15 @@ export default function EventDetailPage() {
                   <div>
                     <div className="flex justify-between text-xs font-bold mb-1.5">
                       <span className="text-slate-300">የተያዙ ቦታዎች ({percentTaken}%)</span>
-                      <span className="text-[#f9b03c]">{remainingSeats} ቦታዎች ብቻ ቀርተዋል!</span>
+                      {isSoldOut ? (
+                        <span className="text-red-400 font-black">ትኬቱ ሙሉ በሙሉ አልቋል!</span>
+                      ) : (
+                        <span className="text-[#f9b03c]">{remainingSeats} ቦታዎች ብቻ ቀርተዋል!</span>
+                      )}
                     </div>
                     <div className="w-full h-2.5 bg-white/10 rounded-full overflow-hidden">
                       <div 
-                        className="h-full bg-gradient-to-r from-amber-500 to-[#f9b03c] rounded-full transition-all duration-1000"
+                        className={`h-full rounded-full transition-all duration-1000 ${isSoldOut ? 'bg-red-500' : 'bg-gradient-to-r from-amber-500 to-[#f9b03c]'}`}
                         style={{ width: `${percentTaken}%` }}
                       />
                     </div>
@@ -438,12 +481,19 @@ export default function EventDetailPage() {
                   <div className="flex flex-col sm:flex-row items-center gap-4 pt-2">
                     <button
                       type="button"
-                      onClick={() => setIsBookingOpen(true)}
-                      className="w-full sm:flex-1 btn-buy-now-vibe py-4 rounded-2xl text-base font-black flex items-center justify-center gap-2.5 cursor-pointer active:scale-98 shadow-[0_0_35px_rgba(249,176,60,0.4)]"
+                      disabled={isSoldOut}
+                      onClick={() => !isSoldOut && setIsBookingOpen(true)}
+                      className={`w-full sm:flex-1 py-4 rounded-2xl text-base font-black flex items-center justify-center gap-2.5 transition-all ${
+                        isSoldOut 
+                          ? 'bg-slate-800/80 text-slate-500 border border-white/5 cursor-not-allowed'
+                          : 'btn-buy-now-vibe cursor-pointer active:scale-98 shadow-[0_0_35px_rgba(249,176,60,0.4)]'
+                      }`}
                     >
-                      <i className="fa-solid fa-ticket text-lg"></i>
+                      <i className={`fa-solid ${isSoldOut ? 'fa-lock' : 'fa-ticket'} text-lg`}></i>
                       <span>
-                        {event.price === 0 || event.isFree 
+                        {isSoldOut 
+                          ? 'ትኬቱ አልቋል (Sold Out)'
+                          : event.price === 0 || event.isFree 
                           ? 'በነፃ ትኬት ይቁረጡ (Register Free)' 
                           : `ትኬት ይቁረጡ • ${event.price.toLocaleString()} ብር`}
                       </span>

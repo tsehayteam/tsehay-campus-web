@@ -105,6 +105,9 @@ export default function AdminDashboard() {
   const [eventTickets, setEventTickets] = useState<EventTicket[]>([]);
   const [eventsSubTab, setEventsSubTab] = useState<'list' | 'tickets' | 'scanner'>('list');
   const [ticketSearchTerm, setTicketSearchTerm] = useState('');
+  const [ticketFilterStatus, setTicketFilterStatus] = useState<'all' | 'attended' | 'pending' | 'online' | 'in_person'>('all');
+  const [ticketSelectedEventId, setTicketSelectedEventId] = useState<string>('all');
+  const [isUpdatingTicketStatus, setIsUpdatingTicketStatus] = useState<string | null>(null);
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<any>(null);
   const [isSavingEvent, setIsSavingEvent] = useState(false);
@@ -496,6 +499,95 @@ export default function AdminDashboard() {
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
     link.setAttribute("download", `tsehay_campus_students_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // 🌟 Toggle Ticket Attendance (Checked-In / Confirmed vs Pending)
+  const handleToggleTicketAttendance = async (ticket: EventTicket) => {
+    const isCurrentlyAttended = Boolean(ticket.isUsed || (ticket as any).checkedIn);
+    const action = isCurrentlyAttended ? 'reset' : 'check_in';
+    const nowIso = new Date().toISOString();
+
+    setIsUpdatingTicketStatus(ticket.ticketId);
+
+    // Optimistic UI state update
+    setEventTickets(prev => prev.map(t => {
+      if (t.ticketId === ticket.ticketId) {
+        return {
+          ...t,
+          isUsed: !isCurrentlyAttended,
+          checkedIn: !isCurrentlyAttended,
+          usedAt: !isCurrentlyAttended ? nowIso : null,
+          verifiedBy: !isCurrentlyAttended ? 'Admin Manual Check-in' : null,
+          status: !isCurrentlyAttended ? 'checked_in' : 'confirmed'
+        } as EventTicket;
+      }
+      return t;
+    }));
+
+    try {
+      await fetch('/api/events/verify-ticket', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ticketId: ticket.ticketId,
+          action,
+          adminEmail: 'Admin Panel'
+        })
+      });
+
+      // Mirror directly in Firestore
+      try {
+        const updatePayload = {
+          isUsed: !isCurrentlyAttended,
+          checkedIn: !isCurrentlyAttended,
+          usedAt: !isCurrentlyAttended ? nowIso : null,
+          verifiedBy: !isCurrentlyAttended ? 'Admin Manual Check-in' : null,
+          status: !isCurrentlyAttended ? 'checked_in' : 'confirmed'
+        };
+        const ref1 = doc(db, 'event_registrations', ticket.ticketId);
+        const ref2 = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'event_tickets', ticket.ticketId);
+        await Promise.allSettled([
+          setDoc(ref1, updatePayload, { merge: true }),
+          setDoc(ref2, updatePayload, { merge: true })
+        ]);
+      } catch (fErr) {}
+    } catch (err) {
+      console.error('Error toggling ticket attendance:', err);
+    } finally {
+      setIsUpdatingTicketStatus(null);
+    }
+  };
+
+  // 🌟 Export Event Tickets & Attendees CSV
+  const exportEventTicketsCSV = () => {
+    if (eventTickets.length === 0) {
+      alert('ምንም የተቆረጠ ትኬት አልተገኘም (No event tickets to export).');
+      return;
+    }
+
+    const headers = ['Ticket ID', 'Attendee Name', 'Email', 'Phone', 'Event Title', 'Format', 'Tier', 'Price Paid (ETB)', 'Attendance Status', 'Checked-In Time', 'Registration Date'];
+    const rows = eventTickets.map(t => [
+      `"${t.ticketId || ''}"`,
+      `"${(t.attendeeName || '').replace(/"/g, '""')}"`,
+      `"${t.attendeeEmail || ''}"`,
+      `"${t.attendeePhone || ''}"`,
+      `"${(t.eventTitle || '').replace(/"/g, '""')}"`,
+      `"${t.isOnline ? 'Virtual Online' : 'In-Person'}"`,
+      `"${t.tier || 'General'}"`,
+      `"${t.pricePaid || 0}"`,
+      `"${t.isUsed || (t as any).checkedIn ? 'ተገኝተዋል (Attended)' : 'ያልተገኙ (Pending)'}"`,
+      `"${t.usedAt ? new Date(t.usedAt).toLocaleString() : '-'}"`,
+      `"${t.issuedAt ? new Date(t.issuedAt).toLocaleDateString() : '-'}"`
+    ]);
+
+    const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `TsehayCampus_Event_Attendees_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -2830,75 +2922,356 @@ export default function AdminDashboard() {
                 </div>
               )}
 
-              {/* Subtab 2: Issued Tickets Table */}
-              {eventsSubTab === 'tickets' && (
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center bg-white dark:bg-slate-800 p-4 rounded-2xl border border-gray-100 dark:border-slate-700">
-                    <input
-                      type="text"
-                      value={ticketSearchTerm}
-                      onChange={(e) => setTicketSearchTerm(e.target.value)}
-                      placeholder="በተሳታፊ ስም ወይም በትኬት ቁጥር ፈልግ..."
-                      className="bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2 text-xs w-full max-w-sm text-dark dark:text-white outline-none focus:border-[#f9b03c]"
-                    />
-                    <span className="text-xs font-bold text-gray-500">
-                      ጠቅላላ ትኬቶች: {eventTickets.length}
-                    </span>
-                  </div>
+              {/* Subtab 2: Issued Tickets & Attendees Management Table */}
+              {eventsSubTab === 'tickets' && (() => {
+                const totalTicketsCount = eventTickets.length;
+                const attendedTickets = eventTickets.filter(t => Boolean(t.isUsed || (t as any).checkedIn));
+                const pendingTickets = eventTickets.filter(t => !Boolean(t.isUsed || (t as any).checkedIn));
+                const onlineTickets = eventTickets.filter(t => t.isOnline);
+                const inPersonTickets = eventTickets.filter(t => !t.isOnline);
+                const totalRevenue = eventTickets.reduce((acc, t) => acc + (Number(t.pricePaid) || 0), 0);
 
-                  <div className="bg-white dark:bg-slate-800 rounded-3xl border border-gray-100 dark:border-slate-700 shadow-sm overflow-hidden">
-                    <table className="w-full text-left border-collapse">
-                      <thead>
-                        <tr className="bg-gray-50 dark:bg-slate-900 border-b border-gray-100 dark:border-slate-700">
-                          <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">የትኬት ቁጥር</th>
-                          <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">ተሳታፊ (Attendee)</th>
-                          <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">ክንውን (Event)</th>
-                          <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">ደረጃ (Tier)</th>
-                          <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">ሁኔታ</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {eventTickets
-                          .filter(t => 
-                            !ticketSearchTerm.trim() || 
-                            t.attendeeName.toLowerCase().includes(ticketSearchTerm.toLowerCase()) || 
-                            t.ticketId.toLowerCase().includes(ticketSearchTerm.toLowerCase())
-                          )
-                          .map((ticket) => (
-                            <tr key={ticket.ticketId} className="border-b border-gray-50 dark:border-slate-700/50 hover:bg-gray-50 dark:hover:bg-slate-700/20 transition">
-                              <td className="p-4 font-mono font-bold text-xs text-[#f9b03c]">
-                                {ticket.ticketId}
-                              </td>
-                              <td className="p-4">
-                                <div className="font-bold text-sm text-dark dark:text-white">{ticket.attendeeName}</div>
-                                <div className="text-xs text-gray-500">{ticket.attendeeEmail}</div>
-                              </td>
-                              <td className="p-4 text-xs font-semibold text-gray-700 dark:text-gray-300">
-                                {ticket.eventTitle}
-                              </td>
-                              <td className="p-4 text-xs">
-                                <span className="px-2.5 py-1 rounded-full bg-amber-400/10 border border-amber-400/30 text-[#f9b03c] font-black text-[10px]">
-                                  {ticket.tier || 'VIP'}
-                                </span>
-                              </td>
-                              <td className="p-4 text-xs">
-                                {ticket.isUsed ? (
-                                  <span className="px-2.5 py-1 rounded-full bg-red-500/10 text-red-400 border border-red-500/20 font-bold flex items-center gap-1 w-max">
-                                    <i className="fa-solid fa-circle-check"></i> ጥቅም ላይ የዋለ
-                                  </span>
-                                ) : (
-                                  <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 font-bold flex items-center gap-1 w-max">
-                                    <i className="fa-solid fa-clock"></i> ንቁ (Active Pass)
-                                  </span>
-                                )}
-                              </td>
+                const filteredTickets = eventTickets.filter(t => {
+                  // Search query filter
+                  const q = ticketSearchTerm.trim().toLowerCase();
+                  if (q) {
+                    const matchName = (t.attendeeName || '').toLowerCase().includes(q);
+                    const matchEmail = (t.attendeeEmail || '').toLowerCase().includes(q);
+                    const matchPhone = (t.attendeePhone || '').toLowerCase().includes(q);
+                    const matchTicketId = (t.ticketId || '').toLowerCase().includes(q);
+                    const matchTitle = (t.eventTitle || '').toLowerCase().includes(q);
+                    if (!matchName && !matchEmail && !matchPhone && !matchTicketId && !matchTitle) {
+                      return false;
+                    }
+                  }
+
+                  // Event dropdown filter
+                  if (ticketSelectedEventId !== 'all') {
+                    if (t.eventId !== ticketSelectedEventId && t.eventSlug !== ticketSelectedEventId) {
+                      return false;
+                    }
+                  }
+
+                  // Status filter tabs
+                  const isAttended = Boolean(t.isUsed || (t as any).checkedIn);
+                  if (ticketFilterStatus === 'attended' && !isAttended) return false;
+                  if (ticketFilterStatus === 'pending' && isAttended) return false;
+                  if (ticketFilterStatus === 'online' && !t.isOnline) return false;
+                  if (ticketFilterStatus === 'in_person' && t.isOnline) return false;
+
+                  return true;
+                });
+
+                return (
+                  <div className="space-y-6">
+                    {/* 🌟 1. KPI Metrics Grid for Event Tickets */}
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                      <div className="bg-white dark:bg-slate-800/90 border border-gray-100 dark:border-slate-700/60 rounded-2xl p-4 shadow-sm">
+                        <div className="flex items-center justify-between text-xs font-bold text-gray-500 dark:text-gray-400 mb-2">
+                          <span>ጠቅላላ ትኬቶች (Total)</span>
+                          <i className="fa-solid fa-ticket text-amber-500 text-base"></i>
+                        </div>
+                        <p className="text-2xl font-black text-dark dark:text-white font-heading">{totalTicketsCount}</p>
+                        <p className="text-[11px] text-gray-400 mt-1">የተመዘገቡ ተሳታፊዎች</p>
+                      </div>
+
+                      <div className="bg-white dark:bg-slate-800/90 border border-emerald-500/20 rounded-2xl p-4 shadow-sm bg-gradient-to-br from-emerald-500/5 to-transparent">
+                        <div className="flex items-center justify-between text-xs font-bold text-emerald-600 dark:text-emerald-400 mb-2">
+                          <span>ተገኝተዋል (Checked-In)</span>
+                          <i className="fa-solid fa-circle-check text-emerald-500 text-base"></i>
+                        </div>
+                        <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-heading">{attendedTickets.length}</p>
+                        <p className="text-[11px] text-emerald-600/70 dark:text-emerald-400/70 mt-1">
+                          {totalTicketsCount > 0 ? Math.round((attendedTickets.length / totalTicketsCount) * 100) : 0}% የመገኘት ምጣኔ
+                        </p>
+                      </div>
+
+                      <div className="bg-white dark:bg-slate-800/90 border border-amber-500/20 rounded-2xl p-4 shadow-sm bg-gradient-to-br from-amber-500/5 to-transparent">
+                        <div className="flex items-center justify-between text-xs font-bold text-amber-600 dark:text-amber-400 mb-2">
+                          <span>ያልተገኙ (Pending)</span>
+                          <i className="fa-solid fa-clock text-amber-500 text-base"></i>
+                        </div>
+                        <p className="text-2xl font-black text-amber-600 dark:text-amber-400 font-heading">{pendingTickets.length}</p>
+                        <p className="text-[11px] text-amber-600/70 dark:text-amber-400/70 mt-1">በመጠባበቅ ላይ ያሉ</p>
+                      </div>
+
+                      <div className="bg-white dark:bg-slate-800/90 border border-blue-500/20 rounded-2xl p-4 shadow-sm bg-gradient-to-br from-blue-500/5 to-transparent">
+                        <div className="flex items-center justify-between text-xs font-bold text-blue-600 dark:text-blue-400 mb-2">
+                          <span>የትኬት ገቢ (Revenue)</span>
+                          <i className="fa-solid fa-coins text-blue-500 text-base"></i>
+                        </div>
+                        <p className="text-2xl font-black text-blue-600 dark:text-blue-400 font-heading">{totalRevenue.toLocaleString()} ETB</p>
+                        <p className="text-[11px] text-blue-600/70 dark:text-blue-400/70 mt-1">{onlineTickets.length} ኦንላይን • {inPersonTickets.length} በአካል</p>
+                      </div>
+                    </div>
+
+                    {/* 🌟 2. Filter & Actions Toolbar */}
+                    <div className="bg-white dark:bg-slate-800 p-4 rounded-3xl border border-gray-100 dark:border-slate-700 shadow-sm space-y-4">
+                      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+                        {/* Search Input */}
+                        <div className="relative flex-1 max-w-md">
+                          <i className="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                          <input
+                            type="text"
+                            value={ticketSearchTerm}
+                            onChange={(e) => setTicketSearchTerm(e.target.value)}
+                            placeholder="በተሳታፊ ስም፣ ኢሜይል፣ ስልክ ወይም ትኬት ቁጥር ፈልግ..."
+                            className="bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl pl-9 pr-4 py-2.5 text-xs w-full text-dark dark:text-white outline-none focus:border-[#f9b03c]"
+                          />
+                        </div>
+
+                        {/* Event Selector & Export Button */}
+                        <div className="flex flex-wrap items-center gap-3">
+                          <select
+                            value={ticketSelectedEventId}
+                            onChange={(e) => setTicketSelectedEventId(e.target.value)}
+                            className="bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-dark dark:text-white outline-none focus:border-[#f9b03c] cursor-pointer"
+                          >
+                            <option value="all">ሁሉም ዝግጅቶች / Events ({events.length})</option>
+                            {events.map((ev) => (
+                              <option key={ev.id} value={ev.id}>
+                                {ev.title}
+                              </option>
+                            ))}
+                          </select>
+
+                          <button
+                            type="button"
+                            onClick={exportEventTicketsCSV}
+                            className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 text-xs font-bold transition flex items-center gap-2 cursor-pointer active:scale-95"
+                          >
+                            <i className="fa-solid fa-file-csv text-emerald-500"></i>
+                            <span>CSV አውርድ</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Filter Tabs */}
+                      <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-gray-100 dark:border-slate-700/60">
+                        <button
+                          type="button"
+                          onClick={() => setTicketFilterStatus('all')}
+                          className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition cursor-pointer ${
+                            ticketFilterStatus === 'all'
+                              ? 'bg-[#f9b03c] text-slate-950 shadow-sm'
+                              : 'bg-gray-100 dark:bg-slate-700/50 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700'
+                          }`}
+                        >
+                          ሁሉም ({totalTicketsCount})
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setTicketFilterStatus('attended')}
+                          className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition cursor-pointer ${
+                            ticketFilterStatus === 'attended'
+                              ? 'bg-emerald-500 text-white shadow-sm'
+                              : 'bg-gray-100 dark:bg-slate-700/50 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700'
+                          }`}
+                        >
+                          ✅ ተገኝተዋል ({attendedTickets.length})
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setTicketFilterStatus('pending')}
+                          className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition cursor-pointer ${
+                            ticketFilterStatus === 'pending'
+                              ? 'bg-amber-500 text-slate-950 shadow-sm'
+                              : 'bg-gray-100 dark:bg-slate-700/50 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700'
+                          }`}
+                        >
+                          ⏳ ያልተገኙ ({pendingTickets.length})
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setTicketFilterStatus('online')}
+                          className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition cursor-pointer ${
+                            ticketFilterStatus === 'online'
+                              ? 'bg-blue-500 text-white shadow-sm'
+                              : 'bg-gray-100 dark:bg-slate-700/50 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700'
+                          }`}
+                        >
+                          🌐 ኦንላይን ({onlineTickets.length})
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setTicketFilterStatus('in_person')}
+                          className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition cursor-pointer ${
+                            ticketFilterStatus === 'in_person'
+                              ? 'bg-purple-500 text-white shadow-sm'
+                              : 'bg-gray-100 dark:bg-slate-700/50 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700'
+                          }`}
+                        >
+                          📍 በአካል ({inPersonTickets.length})
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* 🌟 3. Comprehensive Attendees Table */}
+                    <div className="bg-white dark:bg-slate-800 rounded-3xl border border-gray-100 dark:border-slate-700 shadow-sm overflow-hidden">
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                          <thead>
+                            <tr className="bg-gray-50 dark:bg-slate-900 border-b border-gray-100 dark:border-slate-700">
+                              <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">የትኬት ቁጥር</th>
+                              <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">ተሳታፊ (Attendee)</th>
+                              <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">ክንውን / ፎርማት</th>
+                              <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">ደረጃ እና ክፍያ</th>
+                              <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">የተመዘገበበት ቀን</th>
+                              <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">የመገኘት ሁኔታ</th>
+                              <th className="p-4 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">እርምጃ</th>
                             </tr>
-                          ))}
-                      </tbody>
-                    </table>
+                          </thead>
+                          <tbody>
+                            {filteredTickets.length === 0 ? (
+                              <tr>
+                                <td colSpan={7} className="p-12 text-center text-gray-400 text-xs font-bold">
+                                  ምንም የተገኘ የተቆረጠ ትኬት የለም (No tickets found).
+                                </td>
+                              </tr>
+                            ) : (
+                              filteredTickets.map((ticket) => {
+                                const isAttended = Boolean(ticket.isUsed || (ticket as any).checkedIn);
+                                const isUpdating = isUpdatingTicketStatus === ticket.ticketId;
+                                const cleanPhone = (ticket.attendeePhone || '').replace(/[^0-9+]/g, '');
+
+                                return (
+                                  <tr key={ticket.ticketId} className="border-b border-gray-50 dark:border-slate-700/50 hover:bg-gray-50 dark:hover:bg-slate-700/20 transition group">
+                                    {/* Ticket ID */}
+                                    <td className="p-4">
+                                      <div className="flex items-center gap-2">
+                                        <div className="w-7 h-7 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-[#f9b03c] text-xs">
+                                          <i className="fa-solid fa-qrcode"></i>
+                                        </div>
+                                        <span className="font-mono font-bold text-xs text-[#f9b03c]">
+                                          {ticket.ticketId}
+                                        </span>
+                                      </div>
+                                    </td>
+
+                                    {/* Attendee Info */}
+                                    <td className="p-4">
+                                      <div className="font-bold text-sm text-dark dark:text-white flex items-center gap-2">
+                                        <span>{ticket.attendeeName}</span>
+                                        {ticket.attendeePhone && (
+                                          <a
+                                            href={`https://wa.me/${cleanPhone.startsWith('0') ? '251' + cleanPhone.substring(1) : cleanPhone.replace('+', '')}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-emerald-500 hover:text-emerald-400 text-xs"
+                                            title="WhatsApp መልዕክት ላክ"
+                                          >
+                                            <i className="fa-brands fa-whatsapp"></i>
+                                          </a>
+                                        )}
+                                      </div>
+                                      <div className="text-xs text-gray-500 dark:text-gray-400 flex flex-wrap items-center gap-2 mt-0.5">
+                                        <span>{ticket.attendeeEmail}</span>
+                                        {ticket.attendeePhone && (
+                                          <>
+                                            <span>•</span>
+                                            <span className="font-mono text-gray-400">{ticket.attendeePhone}</span>
+                                          </>
+                                        )}
+                                      </div>
+                                    </td>
+
+                                    {/* Event & Format */}
+                                    <td className="p-4">
+                                      <p className="font-semibold text-xs text-dark dark:text-white line-clamp-1 max-w-[200px]">
+                                        {ticket.eventTitle}
+                                      </p>
+                                      <span className={`inline-block mt-1 px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                                        ticket.isOnline
+                                          ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+                                          : 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
+                                      }`}>
+                                        {ticket.isOnline ? '🌐 Virtual Live' : '📍 በአካል (In-Person)'}
+                                      </span>
+                                    </td>
+
+                                    {/* Tier & Price */}
+                                    <td className="p-4 text-xs">
+                                      <span className="px-2.5 py-1 rounded-full bg-amber-400/10 border border-amber-400/30 text-[#f9b03c] font-black text-[10px] inline-block mb-1">
+                                        {ticket.tier || 'VIP Pass'}
+                                      </span>
+                                      <div className="font-bold text-gray-700 dark:text-gray-300">
+                                        {ticket.pricePaid === 0 ? (
+                                          <span className="text-emerald-500 font-bold">100% ነፃ</span>
+                                        ) : (
+                                          `${Number(ticket.pricePaid || 0).toLocaleString()} ETB`
+                                        )}
+                                      </div>
+                                    </td>
+
+                                    {/* Date Registered */}
+                                    <td className="p-4 text-xs text-gray-500 dark:text-gray-400">
+                                      <div>{ticket.issuedAt ? new Date(ticket.issuedAt).toLocaleDateString() : '-'}</div>
+                                      <div className="text-[10px] text-gray-400">{ticket.issuedAt ? new Date(ticket.issuedAt).toLocaleTimeString() : ''}</div>
+                                    </td>
+
+                                    {/* Attendance Status Badge */}
+                                    <td className="p-4 text-xs">
+                                      {isAttended ? (
+                                        <div>
+                                          <span className="px-3 py-1.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-black flex items-center gap-1.5 w-max">
+                                            <i className="fa-solid fa-circle-check"></i> ተገኝተዋል (Attended)
+                                          </span>
+                                          {ticket.usedAt && (
+                                            <p className="text-[10px] text-emerald-400/70 mt-1 pl-1">
+                                              {new Date(ticket.usedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            </p>
+                                          )}
+                                        </div>
+                                      ) : (
+                                        <span className="px-3 py-1.5 rounded-full bg-amber-500/15 text-[#f9b03c] border border-amber-500/30 font-black flex items-center gap-1.5 w-max">
+                                          <i className="fa-solid fa-clock"></i> አልተገኙም (Pending)
+                                        </span>
+                                      )}
+                                    </td>
+
+                                    {/* Interactive Check-In / Confirmation Button */}
+                                    <td className="p-4 text-right">
+                                      <button
+                                        type="button"
+                                        disabled={isUpdating}
+                                        onClick={() => handleToggleTicketAttendance(ticket)}
+                                        className={`px-3.5 py-2 rounded-xl text-xs font-black transition flex items-center gap-1.5 ml-auto cursor-pointer active:scale-95 disabled:opacity-50 ${
+                                          isAttended
+                                            ? 'bg-slate-100 hover:bg-red-500/15 dark:bg-slate-700/80 dark:hover:bg-red-500/20 text-gray-600 hover:text-red-500 dark:text-slate-300 dark:hover:text-red-400 border border-gray-200 dark:border-white/10 hover:border-red-500/30'
+                                            : 'bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white shadow-[0_0_15px_rgba(16,185,129,0.35)]'
+                                        }`}
+                                        title={isAttended ? "መውጣቱን ወይም በስህተት መመዝገቡን ሰርዝ (Reset Status)" : "ተሳታፊው መገኘታቸውን አረጋግጥ (Confirm Attendance)"}
+                                      >
+                                        {isUpdating ? (
+                                          <i className="fa-solid fa-spinner fa-spin text-xs"></i>
+                                        ) : isAttended ? (
+                                          <>
+                                            <i className="fa-solid fa-rotate-left text-xs"></i>
+                                            <span>ሰርዝ</span>
+                                          </>
+                                        ) : (
+                                          <>
+                                            <i className="fa-solid fa-user-check text-xs"></i>
+                                            <span>መገኘታቸውን አረጋግጥ</span>
+                                          </>
+                                        )}
+                                      </button>
+                                    </td>
+                                  </tr>
+                                );
+                              })
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
               {/* Subtab 3: Live QR Scanner */}
               {eventsSubTab === 'scanner' && (
