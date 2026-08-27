@@ -251,7 +251,6 @@ export default function EventDetailPage() {
   if (!event) {
     return (
       <div className="min-h-screen bg-[#06090e] text-white flex flex-col justify-between">
-        <Navbar />
         <div className="max-w-xl mx-auto text-center px-4 py-32">
           <div className="w-16 h-16 rounded-2xl bg-amber-400/10 border border-amber-400/30 text-[#f9b03c] flex items-center justify-center text-2xl mx-auto mb-4">
             <i className="fa-solid fa-calendar-xmark"></i>
@@ -273,8 +272,6 @@ export default function EventDetailPage() {
 
   return (
     <div className="min-h-screen bg-[#06090e] text-white flex flex-col justify-between selection:bg-[#f9b03c] selection:text-black">
-      <Navbar />
-
       <main className="flex-1 pt-24 pb-20 relative overflow-hidden">
         
         {/* Ambient Glows */}

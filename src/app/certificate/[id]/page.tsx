@@ -162,8 +162,6 @@ export default function PublicCertificateVerificationPage({ params }: PageProps)
 
   return (
     <div className="min-h-screen bg-[#03060f] text-white flex flex-col selection:bg-[#f9b03c] selection:text-black">
-      <Navbar />
-
       <main className="flex-1 py-12 sm:py-20 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
         {/* Background Ambient Glows */}
         <div className="absolute top-1/4 -left-40 w-96 h-96 bg-[#3268ba]/15 rounded-full blur-[140px] pointer-events-none" />

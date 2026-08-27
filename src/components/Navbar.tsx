@@ -261,18 +261,27 @@ export default function Navbar() {
     <>
       {/* 1. ✨ Floating Center-Aligned Trigger Button (Visible when Curtain is Rolled Up) */}
       <div 
-        onClick={openCurtain}
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-        className={`fixed top-0 left-0 right-0 w-full z-[9990] flex justify-center pointer-events-none select-none transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+        className={`fixed top-0 z-[9990] flex justify-center pointer-events-none select-none transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
           isCurtainOpen 
-            ? 'opacity-0 -translate-y-full' 
+            ? 'opacity-0 -translate-y-full pointer-events-none' 
             : 'opacity-100 translate-y-0'
         }`}
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: '50%',
+          transform: isCurtainOpen ? 'translate(-50%, -100%)' : 'translate(-50%, 0)',
+          width: 'max-content',
+          zIndex: 9990,
+        }}
         title="ዋና ማውጫ / Menu (Click to Open Menu)"
       >
-        <div 
-          className="pointer-events-auto bg-[#030509]/95 dark:bg-[#030509]/95 hover:bg-[#080d1a] border-x border-b border-[#f9b03c]/45 hover:border-[#f9b03c] px-6 sm:px-8 py-2 sm:py-2.5 rounded-b-2xl flex items-center gap-2.5 sm:gap-3 group transition-all duration-300 active:scale-95 cursor-pointer shadow-[0_0_25px_rgba(249,176,60,0.35),0_8px_30px_rgba(0,0,0,0.8)]"
+        <button
+          type="button"
+          onClick={openCurtain}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          className="pointer-events-auto bg-[#030509]/95 dark:bg-[#030509]/95 hover:bg-[#080d1a] border-x border-b border-[#f9b03c]/45 hover:border-[#f9b03c] px-6 sm:px-8 py-2 sm:py-2.5 rounded-b-2xl flex items-center gap-2.5 sm:gap-3 group transition-all duration-300 active:scale-95 cursor-pointer shadow-[0_0_25px_rgba(249,176,60,0.35),0_8px_30px_rgba(0,0,0,0.8)] whitespace-nowrap"
           style={{
             backdropFilter: 'blur(20px)',
             WebkitBackdropFilter: 'blur(20px)',
@@ -290,7 +299,7 @@ export default function Navbar() {
           </span>
 
           <i className="fa-solid fa-chevron-down text-[10px] text-[#f9b03c] transition-transform duration-300 group-hover:translate-y-0.5"></i>
-        </div>
+        </button>
       </div>
 
       {/* 2. Backdrop Overlay when Curtain is Expanded (Clicking outside closes it smoothly) */}
@@ -321,11 +330,20 @@ export default function Navbar() {
         }}
       >
         {/* 🔼 SINGLE DISTINCT ULTRA-PREMIUM ROLL-UP TAB AT BOTTOM CENTER */}
-        <div className="absolute -bottom-8 left-0 right-0 w-full flex justify-center pointer-events-none z-[10000]">
+        <div 
+          className="absolute -bottom-8 flex justify-center pointer-events-none z-[10000]"
+          style={{
+            position: 'absolute',
+            left: '50%',
+            bottom: '-32px',
+            transform: 'translateX(-50%)',
+            width: 'max-content',
+          }}
+        >
           <button 
             type="button"
             onClick={closeCurtain}
-            className="curtain-rollup-handle pointer-events-auto px-5 sm:px-6 py-1.5 sm:py-2 rounded-b-2xl flex items-center gap-2 text-white hover:text-white cursor-pointer group active:scale-95 shadow-[0_10px_30px_rgba(0,0,0,0.85),0_0_22px_rgba(249,176,60,0.35)]"
+            className="curtain-rollup-handle pointer-events-auto px-5 sm:px-6 py-1.5 sm:py-2 rounded-b-2xl flex items-center gap-2 text-white hover:text-white cursor-pointer group active:scale-95 shadow-[0_10px_30px_rgba(0,0,0,0.85),0_0_22px_rgba(249,176,60,0.35)] whitespace-nowrap"
             title="ወደ ላይ መልሰህ እጠፍ (Roll Up Menu)"
           >
             <div className="w-4 h-4 rounded-full bg-gradient-to-tr from-[#f9b03c] to-amber-300 text-black flex items-center justify-center text-[10px] font-black shadow-[0_0_10px_rgba(249,176,60,0.5)] shrink-0 group-hover:scale-110 transition-transform">
