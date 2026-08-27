@@ -1635,7 +1635,7 @@ export default function AdminDashboard() {
         isFree: Boolean(eventForm.isFree),
         speaker: eventForm.speaker,
         speakerRole: eventForm.speakerRole,
-        image: eventForm.image || 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?q=80&w=1200',
+        image: formatDriveImageUrl(eventForm.image) || (eventForm.image || '').trim() || 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?q=80&w=1200',
         tags: typeof eventForm.tags === 'string' ? eventForm.tags.split(',').map(t => t.trim()).filter(Boolean) : eventForm.tags,
         status: (eventForm.status as any) || 'upcoming'
       };
@@ -2386,7 +2386,7 @@ export default function AdminDashboard() {
                             <td className="p-4">
                               <div className="flex items-center gap-3">
                                 <img 
-                                  src={event.image || 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?q=80&w=1200'} 
+                                  src={formatDriveImageUrl(event.image) || event.image || 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?q=80&w=1200'} 
                                   className="w-12 h-12 rounded-xl object-cover border border-gray-200 dark:border-white/10 shrink-0" 
                                   alt={event.title}
                                 />
@@ -4417,15 +4417,46 @@ export default function AdminDashboard() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold mb-1">የባነር ፎቶ ሊንክ (Banner Image URL)</label>
+                  <label className="block text-xs font-bold mb-1 flex items-center justify-between">
+                    <span>የባነር ፎቶ ሊንክ (Banner Image / Google Drive URL)</span>
+                    <span className="text-[10px] text-amber-500 font-normal">Google Drive ሊንክ ይቀበላል</span>
+                  </label>
                   <input
-                    type="url"
+                    type="text"
                     value={eventForm.image}
                     onChange={(e) => setEventForm({ ...eventForm, image: e.target.value })}
-                    placeholder="https://images.unsplash.com/..."
+                    placeholder="https://drive.google.com/file/d/... ወይም የምስል ሊንክ"
                     className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-dark dark:text-white outline-none focus:border-[#f9b03c]"
                   />
+                  <p className="text-[10px] text-gray-400 mt-1">
+                    ማስታወሻ፡ የ Google Drive ሊንክ ቢያስገቡም ስርዓቱ ወዲያውኑ ወደ ቀጥታ ምስል ይቀይረዋል።
+                  </p>
                 </div>
+
+                {/* Live 16:9 Banner Image Preview */}
+                {eventForm.image && (
+                  <div className="sm:col-span-2 bg-slate-900/80 p-3.5 rounded-2xl border border-white/10">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-bold text-gray-300 flex items-center gap-1.5">
+                        <i className="fa-regular fa-image text-[#f9b03c]"></i>
+                        የባነር ምስል ቅድመ-እይታ (Live Banner Preview)
+                      </span>
+                      <span className="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-bold px-2 py-0.5 rounded-full">
+                        ተዘጋጅቷል
+                      </span>
+                    </div>
+                    <div className="relative aspect-video w-full rounded-xl overflow-hidden bg-black border border-white/10">
+                      <img 
+                        src={formatDriveImageUrl(eventForm.image) || eventForm.image} 
+                        alt="Event Banner Preview" 
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?q=80&w=1200';
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="flex gap-3 pt-4 border-t border-gray-100 dark:border-slate-700">

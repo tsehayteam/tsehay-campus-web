@@ -47,6 +47,17 @@ export interface EventTicket {
   issuedAt: string;
 }
 
+export function formatDriveImageUrl(url: any): string {
+  if (!url || typeof url !== 'string') return '';
+  const clean = url.trim();
+  if (!clean) return '';
+  const match = clean.match(/(?:file\/d\/|id=|thumbnail\?id=|\/d\/)([a-zA-Z0-9_-]{20,})/);
+  if (match && match[1]) {
+    return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w1200`;
+  }
+  return clean;
+}
+
 export function generateEventSlug(title: string, fallbackId?: string): string {
   if (!title) return fallbackId || `event-${Date.now().toString(36)}`;
   
@@ -140,7 +151,12 @@ export function getCachedEvents(): TsehayEvent[] {
     const cached = localStorage.getItem(EVENTS_CACHE_KEY);
     if (cached) {
       const parsed = JSON.parse(cached);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed.map((e: any) => ({
+          ...e,
+          image: formatDriveImageUrl(e.image) || e.image
+        }));
+      }
     }
   } catch (e) {
     console.warn("Events cache load error:", e);
@@ -151,7 +167,11 @@ export function getCachedEvents(): TsehayEvent[] {
 export function saveCachedEvents(events: TsehayEvent[]): void {
   if (typeof window === 'undefined') return;
   try {
-    localStorage.setItem(EVENTS_CACHE_KEY, JSON.stringify(events));
+    const sanitized = events.map(e => ({
+      ...e,
+      image: formatDriveImageUrl(e.image) || e.image
+    }));
+    localStorage.setItem(EVENTS_CACHE_KEY, JSON.stringify(sanitized));
   } catch (e) {
     console.warn("Events cache save error:", e);
   }

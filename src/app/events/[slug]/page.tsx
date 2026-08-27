@@ -7,7 +7,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import DigitalTicketModal from '@/components/DigitalTicketModal';
 import ShareEventModal from '@/components/ShareEventModal';
-import { TsehayEvent, EventTicket, DEFAULT_EVENTS, getCachedEvents, getEventBySlugOrId, getRemainingSeats } from '@/lib/eventCache';
+import { TsehayEvent, EventTicket, DEFAULT_EVENTS, getCachedEvents, getEventBySlugOrId, getRemainingSeats, formatDriveImageUrl } from '@/lib/eventCache';
 import { useAuth } from '@/context/AuthContext';
 
 export default function EventDetailPage() {
@@ -467,7 +467,7 @@ export default function EventDetailPage() {
               <div className="lg:col-span-5">
                 <div className="relative rounded-3xl overflow-hidden border-2 border-white/15 shadow-[0_20px_60px_rgba(0,0,0,0.9)] group">
                   <img
-                    src={event.image || 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?q=80&w=1200'}
+                    src={formatDriveImageUrl(event.image) || event.image || 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?q=80&w=1200'}
                     alt={event.title}
                     className="w-full aspect-[4/3] object-cover group-hover:scale-105 transition-transform duration-700"
                   />

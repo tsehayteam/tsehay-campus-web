@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase/admin';
-import { DEFAULT_EVENTS, TsehayEvent } from '@/lib/eventCache';
+import { DEFAULT_EVENTS, TsehayEvent, formatDriveImageUrl } from '@/lib/eventCache';
 
 const AUTHORIZED_ADMIN_EMAILS = [
   'admin@tsehaycampus.com',
@@ -17,10 +17,17 @@ export async function GET(req: NextRequest) {
 
     if (!adminDb) {
       if (eventId) {
-        const found = DEFAULT_EVENTS.find(e => e.id === eventId);
-        return NextResponse.json({ success: true, event: found || null });
+        const found = DEFAULT_EVENTS.find(e => e.id === eventId || e.slug === eventId);
+        return NextResponse.json({ 
+          success: true, 
+          event: found ? { ...found, image: formatDriveImageUrl(found.image) || found.image } : null 
+        });
       }
-      return NextResponse.json({ success: true, events: DEFAULT_EVENTS, count: DEFAULT_EVENTS.length });
+      return NextResponse.json({ 
+        success: true, 
+        events: DEFAULT_EVENTS.map(e => ({ ...e, image: formatDriveImageUrl(e.image) || e.image })), 
+        count: DEFAULT_EVENTS.length 
+      });
     }
 
     if (eventId) {
@@ -39,15 +46,20 @@ export async function GET(req: NextRequest) {
       }
 
       if (snap.exists) {
-        return NextResponse.json({ success: true, event: { id: snap.id, ...snap.data() } });
+        const evData: any = { id: snap.id, ...snap.data() };
+        evData.image = formatDriveImageUrl(evData.image) || evData.image;
+        return NextResponse.json({ success: true, event: evData });
       }
 
-      const defaultMatch = DEFAULT_EVENTS.find(e => e.id === eventId);
+      const defaultMatch = DEFAULT_EVENTS.find(e => e.id === eventId || e.slug === eventId);
       if (defaultMatch) {
-        return NextResponse.json({ success: true, event: defaultMatch });
+        return NextResponse.json({ 
+          success: true, 
+          event: { ...defaultMatch, image: formatDriveImageUrl(defaultMatch.image) || defaultMatch.image } 
+        });
       }
 
-      return NextResponse.json({ success: false, error: 'Event not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Event not found' }, { status: 404 });
     }
 
     // List all events
@@ -74,6 +86,11 @@ export async function GET(req: NextRequest) {
       events = DEFAULT_EVENTS;
     }
 
+    events = events.map(e => ({
+      ...e,
+      image: formatDriveImageUrl(e.image) || e.image
+    }));
+
     return NextResponse.json({ success: true, events, count: events.length });
   } catch (error: any) {
     console.error('Error fetching events:', error);
@@ -86,10 +103,13 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const eventData = body.event || body;
     const eventId = eventData.id || `evt_${Date.now()}`;
+    const rawImage = eventData.image || '';
+    const formattedImage = formatDriveImageUrl(rawImage) || rawImage || 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?q=80&w=1200';
 
     const payload = {
       ...eventData,
       id: eventId,
+      image: formattedImage,
       updatedAt: new Date().toISOString(),
       capacity: Number(eventData.capacity) || 100,
       price: Number(eventData.price) || 0,

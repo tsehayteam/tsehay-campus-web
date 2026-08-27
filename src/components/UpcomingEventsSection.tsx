@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { TsehayEvent, EventTicket, DEFAULT_EVENTS, getCachedEvents, getRemainingSeats } from '@/lib/eventCache';
+import { TsehayEvent, EventTicket, DEFAULT_EVENTS, getCachedEvents, getRemainingSeats, formatDriveImageUrl } from '@/lib/eventCache';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase/config';
 import { collection, onSnapshot } from 'firebase/firestore';
@@ -302,7 +302,7 @@ export default function UpcomingEventsSection() {
                   {/* Event Thumbnail & Badges */}
                   <Link href={`/events/${event.slug || event.id}`} className="block relative h-48 rounded-2xl overflow-hidden mb-5 border border-white/10 group/img">
                     <img 
-                      src={event.image || 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?q=80&w=1000'} 
+                      src={formatDriveImageUrl(event.image) || event.image || 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?q=80&w=1000'} 
                       alt={event.title}
                       className="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-500"
                     />
