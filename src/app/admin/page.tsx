@@ -1,11 +1,11 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { db, auth } from '@/lib/firebase/config';
 import { useAuth, ADMIN_EMAILS, isEmailAdmin } from '@/context/AuthContext';
 import { collection, onSnapshot, doc, setDoc, deleteDoc, serverTimestamp, query, orderBy, collectionGroup } from 'firebase/firestore';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile, sendPasswordResetEmail } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
-import { DEFAULT_COURSES, getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl } from '@/lib/courseCache';
+import { DEFAULT_COURSES, getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl, getCourseSlug, getCourseBySlugOrId } from '@/lib/courseCache';
 import { DEFAULT_EVENTS, getCachedEvents, saveCachedEvents, getRemainingSeats, generateEventSlug, TsehayEvent, EventTicket } from '@/lib/eventCache';
 import AdminQrScanner from '@/components/AdminQrScanner';
 
@@ -88,9 +88,16 @@ export default function AdminDashboard() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isSavingCourse, setIsSavingCourse] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [students, setStudents] = useState<any[]>([]);
+  
+  // 🌟 Unified Multi-Source Student & User State
+  const [rawProfiles, setRawProfiles] = useState<any[]>([]);
+  const [rawUsers, setRawUsers] = useState<any[]>([]);
   const [payments, setPayments] = useState<any[]>([]);
   const [tickets, setTickets] = useState<any[]>([]);
+  const [studentSearchTerm, setStudentSearchTerm] = useState('');
+  const [studentFilterStatus, setStudentFilterStatus] = useState<'all' | 'paid' | 'free' | 'event'>('all');
+  const [selectedStudentForDetail, setSelectedStudentForDetail] = useState<any | null>(null);
+  const [sidebarMobileOpen, setSidebarMobileOpen] = useState(false);
   const router = useRouter();
 
   // 🌟 Events & QR Tickets State
@@ -309,6 +316,191 @@ export default function AdminDashboard() {
   const [lessonForm, setLessonForm] = useState({ title: '', duration: '', video: '', desc: '', points: 0 });
   const [editingLessonIdx, setEditingLessonIdx] = useState<number | null>(null);
 
+  // 🌟 Unified Student Master Aggregator (Combines Profiles, Auth, Purchases, and Tickets)
+  const students = useMemo(() => {
+    const map = new Map<string, any>();
+
+    const getOrCreate = (key: string, defaultData?: any) => {
+      if (!key) return null;
+      const cleanKey = key.trim();
+      if (!map.has(cleanKey)) {
+        map.set(cleanKey, {
+          id: cleanKey,
+          name: '',
+          email: '',
+          phone: '',
+          photoURL: '',
+          createdAt: null,
+          purchasedCourses: [],
+          eventTickets: [],
+          supportTickets: [],
+          totalSpent: 0,
+          status: 'registered',
+          ...defaultData
+        });
+      }
+      return map.get(cleanKey);
+    };
+
+    // 1. Ingest from profile subcollection group
+    rawProfiles.forEach(p => {
+      const key = p.uid || p.id || p.userId || p.email;
+      if (!key) return;
+      const s = getOrCreate(key);
+      if (s) {
+        if (p.fullName || p.name || p.displayName) s.name = p.fullName || p.name || p.displayName;
+        if (p.email) s.email = p.email;
+        if (p.phone || p.phoneNumber) s.phone = p.phone || p.phoneNumber;
+        if (p.photoURL || p.photoUrl) s.photoURL = p.photoURL || p.photoUrl;
+        if (p.createdAt) s.createdAt = p.createdAt;
+        if (p.role) s.role = p.role;
+      }
+    });
+
+    // 2. Ingest from root user docs
+    rawUsers.forEach(u => {
+      const key = u.uid || u.id || u.email;
+      if (!key) return;
+      const s = getOrCreate(key);
+      if (s) {
+        if (!s.name && (u.fullName || u.name || u.displayName)) s.name = u.fullName || u.name || u.displayName;
+        if (!s.email && u.email) s.email = u.email;
+        if (!s.phone && (u.phone || u.phoneNumber)) s.phone = u.phone || u.phoneNumber;
+        if (!s.photoURL && (u.photoURL || u.photoUrl)) s.photoURL = u.photoURL || u.photoUrl;
+        if (!s.createdAt && u.createdAt) s.createdAt = u.createdAt;
+      }
+    });
+
+    // 3. Ingest Payments / Course Purchases
+    payments.forEach(p => {
+      const key = p.userId || p.uid || p.studentEmail || p.email || p.id;
+      if (!key) return;
+      const s = getOrCreate(key);
+      if (s) {
+        if (!s.name && (p.studentName || p.userName || p.name)) s.name = p.studentName || p.userName || p.name;
+        if (!s.email && (p.studentEmail || p.email)) s.email = p.studentEmail || p.email;
+        if (!s.phone && (p.phone || p.phoneNumber)) s.phone = p.phone || p.phoneNumber;
+        
+        const courseObj = courses.find(c => c.id === p.courseId) || getCourseBySlugOrId(p.courseId, courses);
+        const courseTitle = courseObj?.title || p.courseTitle || p.courseId || 'ኮርስ';
+        const amt = Number(p.amount || 0);
+        
+        if (!s.purchasedCourses.some((pc: any) => pc.id === p.id || (pc.courseId === p.courseId && pc.purchasedAt === p.purchasedAt))) {
+          s.purchasedCourses.push({
+            id: p.id,
+            courseId: p.courseId,
+            title: courseTitle,
+            amount: amt,
+            paymentMethod: p.paymentMethod || 'free',
+            purchasedAt: p.purchasedAt || null,
+            status: p.status || 'active',
+            referralCode: p.referralCode || null
+          });
+        }
+        if (!s.createdAt && p.purchasedAt) s.createdAt = p.purchasedAt;
+      }
+    });
+
+    // 4. Ingest Event Registrations & Tickets
+    eventTickets.forEach(t => {
+      const key = t.userId || t.email || t.phone || t.ticketId || t.id;
+      if (!key) return;
+      const s = getOrCreate(key);
+      if (s) {
+        if (!s.name && (t.fullName || t.name)) s.name = t.fullName || t.name;
+        if (!s.email && t.email) s.email = t.email;
+        if (!s.phone && t.phone) s.phone = t.phone;
+        
+        if (!s.eventTickets.some((et: any) => et.ticketId === t.ticketId || et.id === t.id)) {
+          s.eventTickets.push(t);
+        }
+        if (!s.createdAt && t.createdAt) s.createdAt = t.createdAt;
+      }
+    });
+
+    // 5. Ingest Support Tickets
+    tickets.forEach(t => {
+      const key = t.userId || t.email || t.id;
+      if (!key) return;
+      const s = getOrCreate(key);
+      if (s) {
+        if (!s.name && t.name) s.name = t.name;
+        if (!s.email && t.email) s.email = t.email;
+        if (!s.supportTickets.some((st: any) => st.id === t.id)) {
+          s.supportTickets.push(t);
+        }
+      }
+    });
+
+    // Build final formatted array
+    const result: any[] = [];
+    map.forEach((s) => {
+      const courseSpent = s.purchasedCourses.reduce((acc: number, c: any) => acc + (c.amount || 0), 0);
+      const eventSpent = s.eventTickets.reduce((acc: number, e: any) => acc + Number(e.price || e.amount || 0), 0);
+      s.totalSpent = courseSpent + eventSpent;
+
+      if (!s.name || s.name.trim() === '') {
+        if (s.email && s.email.includes('@')) {
+          s.name = s.email.split('@')[0];
+        } else if (s.phone) {
+          s.name = `ተማሪ (${s.phone})`;
+        } else {
+          s.name = 'ተማሪ (Student)';
+        }
+      }
+
+      if (s.totalSpent > 0 || s.purchasedCourses.some((c: any) => c.amount > 0)) {
+        s.status = 'paid';
+      } else if (s.purchasedCourses.length > 0) {
+        s.status = 'free';
+      } else if (s.eventTickets.length > 0) {
+        s.status = 'event';
+      } else {
+        s.status = 'registered';
+      }
+
+      result.push(s);
+    });
+
+    return result.sort((a, b) => {
+      const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return timeB - timeA;
+    });
+  }, [rawProfiles, rawUsers, payments, eventTickets, tickets, courses]);
+
+  // 📥 Export Students CSV Function
+  const exportStudentsCSV = () => {
+    if (students.length === 0) {
+      alert("ምንም ተማሪ አልተገኘም");
+      return;
+    }
+    const headers = ["ስም (Full Name)", "ኢሜይል (Email)", "ስልክ (Phone)", "ሁኔታ (Status)", "የተመዘገቡባቸው ኮርሶች (Enrolled Courses)", "የክስተት ትኬቶች (Event Tickets)", "ጠቅላላ ክፍያ (Total Spent ETB)", "የተመዘገበበት ቀን (Joined Date)"];
+    const rows = students.map(s => {
+      const coursesStr = (s.purchasedCourses || []).map((c: any) => c.title || c.courseId).join("; ");
+      const eventsStr = (s.eventTickets || []).map((e: any) => e.eventTitle || e.ticketId).join("; ");
+      const joinedStr = s.createdAt?.toDate ? s.createdAt.toDate().toLocaleDateString() : (s.createdAt ? new Date(s.createdAt).toLocaleDateString() : '—');
+      return [
+        `"${(s.name || '').replace(/"/g, '""')}"`,
+        `"${(s.email || '').replace(/"/g, '""')}"`,
+        `"${(s.phone || '').replace(/"/g, '""')}"`,
+        `"${s.status}"`,
+        `"${coursesStr.replace(/"/g, '""')}"`,
+        `"${eventsStr.replace(/"/g, '""')}"`,
+        `"${s.totalSpent || 0}"`,
+        `"${joinedStr}"`
+      ].join(",");
+    });
+    const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + [headers.join(","), ...rows].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `tsehay_campus_students_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
 
   useEffect(() => {
     if (typeof window !== 'undefined' && localStorage.getItem('adminAuth') === 'true') {
@@ -423,23 +615,78 @@ export default function AdminDashboard() {
       fetchApiYouTubeVideos();
     });
 
-    const sq = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'users'));
-    const unsubscribeStudents = onSnapshot(sq, (snapshot) => {
-      setStudents(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    });
+    // 🌟 1. Multi-source Real-time Sync for User Profiles (Subcollections)
+    let unsubscribeProfiles: any = () => {};
+    try {
+      const profileQuery = query(collectionGroup(db, 'profile'));
+      unsubscribeProfiles = onSnapshot(profileQuery, (snapshot) => {
+        if (!snapshot.empty) {
+          const list = snapshot.docs.map(doc => ({ 
+            id: doc.id, 
+            uid: doc.ref.parent.parent?.id || doc.id, 
+            ...doc.data() 
+          }));
+          setRawProfiles(list);
+        }
+      }, (err) => {
+        console.warn("Profile collectionGroup sync notice:", err);
+      });
+    } catch (e) {}
 
+    // 🌟 2. Real-time Sync for Artifacts Root Users
+    let unsubscribeArtifactUsers: any = () => {};
+    try {
+      const uQuery = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'users'));
+      unsubscribeArtifactUsers = onSnapshot(uQuery, (snapshot) => {
+        if (!snapshot.empty) {
+          const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          setRawUsers(prev => {
+            const map = new Map();
+            [...prev, ...list].forEach(item => map.set(item.id, { ...(map.get(item.id) || {}), ...item }));
+            return Array.from(map.values());
+          });
+        }
+      }, (err) => {
+        console.warn("Artifacts users sync notice:", err);
+      });
+    } catch (e) {}
+
+    // 🌟 3. Real-time Sync for Root Users Collection
+    let unsubscribeRootUsers: any = () => {};
+    try {
+      const rootUQuery = query(collection(db, 'users'));
+      unsubscribeRootUsers = onSnapshot(rootUQuery, (snapshot) => {
+        if (!snapshot.empty) {
+          const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          setRawUsers(prev => {
+            const map = new Map();
+            [...prev, ...list].forEach(item => map.set(item.id, { ...(map.get(item.id) || {}), ...item }));
+            return Array.from(map.values());
+          });
+        }
+      }, (err) => {
+        console.warn("Root users sync notice:", err);
+      });
+    } catch (e) {}
+
+    // 🌟 4. Real-time Sync for All Course Purchases & Free Enrollments
     const pq = query(collectionGroup(db, 'purchased_courses'));
     const unsubscribePayments = onSnapshot(pq, (snapshot) => {
       setPayments(snapshot.docs.map(doc => ({ id: doc.id, userId: doc.ref.parent.parent?.id, ...doc.data() })));
+    }, (err) => {
+      console.warn("Purchased courses sync notice:", err);
     });
 
+    // 🌟 5. Real-time Sync for Support Tickets & Student Inquiries
     const tq = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'support', 'messages', 'tickets'), orderBy('createdAt', 'desc'));
     const unsubscribeTickets = onSnapshot(tq, (snapshot) => {
       setTickets(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    }, (err) => {
+      console.warn("Support tickets sync notice:", err);
     });
 
     // 🌟 Real-Time Firestore Listener for Event Registrations & Tickets
-    let unsubscribeEventRegs: any = null;
+    let unsubscribeEventRegs: any = () => {};
     try {
       const regCol = collection(db, 'event_registrations');
       unsubscribeEventRegs = onSnapshot(regCol, (snapshot) => {
@@ -595,9 +842,12 @@ export default function AdminDashboard() {
         unsubscribeAuth();
         unsubscribe();
         unsubscribeYouTube();
-        unsubscribeStudents();
+        unsubscribeProfiles();
+        unsubscribeArtifactUsers();
+        unsubscribeRootUsers();
         unsubscribePayments();
         unsubscribeTickets();
+        unsubscribeEventRegs();
         unsubscribeAboutVideo();
         unsubscribePortfolio1();
         unsubscribePortfolio2();
@@ -1945,124 +2195,246 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="h-screen bg-gray-50 dark:bg-slate-900 flex overflow-hidden -mt-20 relative z-[60]">
-      {/* Sidebar */}
-      <aside className="w-[280px] bg-white dark:bg-[#1E293B] border-r border-gray-200 dark:border-slate-700 hidden lg:flex flex-col">
-        <div className="h-16 flex items-center px-6 border-b border-gray-100 dark:border-slate-700">
-          <div className="flex items-center gap-3 brand-entrance">
-            <img src="/tc-logo.jpg" alt="AdminPanel Logo" className="h-8 w-auto rounded-lg bg-white p-1 brand-logo-img" />
-            <h2 className="text-xl font-black font-heading text-dark dark:text-white tracking-tighter select-none">
-              <span>Admin</span><span className="text-primary">Panel</span>
-            </h2>
-          </div>
-        </div>
-        <nav className="flex-1 p-4 space-y-2">
-          <button onClick={() => setActiveTab('dashboard')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition ${activeTab === 'dashboard' ? 'bg-blue-50 dark:bg-slate-700/50 text-secondary dark:text-primary' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700/30'}`}>
-            <i className="fa-solid fa-chart-pie"></i> አጠቃላይ መረጃ (Dashboard)
-          </button>
-          <button onClick={() => setActiveTab('courses')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition ${activeTab === 'courses' ? 'bg-blue-50 dark:bg-slate-700/50 text-secondary dark:text-primary' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700/30'}`}>
-            <i className="fa-solid fa-layer-group"></i> ኮርሶች (Courses)
-          </button>
-          <button onClick={() => setActiveTab('events')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition ${activeTab === 'events' ? 'bg-[#f9b03c]/20 dark:bg-slate-700/60 text-[#f9b03c] border-l-4 border-[#f9b03c]' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700/30'}`}>
-            <i className="fa-solid fa-calendar-check text-[#f9b03c] text-lg"></i> ክንውኖች እና ትኬቶች (Events & QR)
-          </button>
-          <button onClick={() => setActiveTab('referrals')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition ${activeTab === 'referrals' ? 'bg-[#f9b03c]/15 dark:bg-slate-700/50 text-[#f9b03c]' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700/30'}`}>
-            <i className="fa-solid fa-tag text-[#f9b03c] text-lg"></i> Promo Codes (የቅናሽ ኮዶች)
-          </button>
-          <button onClick={() => setActiveTab('portfolio')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-black transition ${activeTab === 'portfolio' ? 'bg-[#f9b03c]/20 dark:bg-slate-700/60 text-[#f9b03c] border-l-4 border-[#f9b03c]' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700/30'}`}>
-            <i className="fa-brands fa-youtube text-red-500 text-xl"></i> <span>የ YouTube Portfolio (የስራ ማሳያ)</span>
-          </button>
-          <button onClick={() => setActiveTab('youtube')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition ${activeTab === 'youtube' ? 'bg-red-50 dark:bg-slate-700/50 text-red-600 dark:text-red-400' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700/30'}`}>
-            <i className="fa-brands fa-youtube text-red-500 text-lg"></i> ነጻ የዩቲዩብ ቪዲዮዎች
-          </button>
-          <button onClick={() => setActiveTab('about_video')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition ${activeTab === 'about_video' ? 'bg-[#f9b03c]/15 dark:bg-slate-700/50 text-[#f9b03c]' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700/30'}`}>
-            <i className="fa-solid fa-film text-[#f9b03c] text-lg"></i> ስለ እኛ ቪዲዮ (About Video)
-          </button>
-          <button onClick={() => setActiveTab('students')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition ${activeTab === 'students' ? 'bg-blue-50 dark:bg-slate-700/50 text-secondary dark:text-primary' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700/30'}`}>
-            <i className="fa-solid fa-users"></i> ተማሪዎች (Students)
-          </button>
-          <button onClick={() => setActiveTab('teachers')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition ${activeTab === 'teachers' ? 'bg-blue-50 dark:bg-slate-700/50 text-secondary dark:text-primary' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700/30'}`}>
-            <i className="fa-solid fa-chalkboard-user"></i> አስተማሪዎች (Teachers)
-          </button>
-          <button onClick={() => setActiveTab('payments')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition ${activeTab === 'payments' ? 'bg-blue-50 dark:bg-slate-700/50 text-secondary dark:text-primary' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700/30'}`}>
-            <i className="fa-solid fa-file-invoice-dollar"></i> የክፍያ ሪፖርቶች
-          </button>
-          <button onClick={() => setActiveTab('questions')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition ${activeTab === 'questions' ? 'bg-blue-50 dark:bg-slate-700/50 text-secondary dark:text-primary' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700/30'}`}>
-            <i className="fa-solid fa-circle-question"></i> የተማሪዎች ጥያቄ
-          </button>
-          <button onClick={() => setActiveTab('settings')} className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl font-bold transition ${activeTab === 'settings' ? 'bg-blue-50 dark:bg-slate-700/50 text-secondary dark:text-primary' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700/30'}`}>
-            <i className="fa-solid fa-gear"></i> ሲስተም ቅንብሮች
-          </button>
-        </nav>
-        <div className="p-4 border-t border-gray-200 dark:border-slate-700 bg-white dark:bg-[#1E293B]">
-          <div className="flex items-center gap-3 mb-4 px-2">
-            <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-sm shrink-0 overflow-hidden">
-              {auth.currentUser?.photoURL ? (
-                <img src={auth.currentUser.photoURL} className="w-full h-full object-cover" />
-              ) : (
-                (auth.currentUser?.displayName || auth.currentUser?.email || 'Admin').substring(0, 2).toUpperCase()
-              )}
+      {/* Mobile Sidebar Backdrop */}
+      {sidebarMobileOpen && (
+        <div 
+          className="fixed inset-0 bg-black/60 z-[90] lg:hidden backdrop-blur-xs transition-opacity"
+          onClick={() => setSidebarMobileOpen(false)}
+        />
+      )}
+
+      {/* Sidebar Navigation */}
+      <aside className={`
+        fixed lg:static top-0 bottom-0 left-0 z-[100] w-[280px] bg-white dark:bg-[#111827] border-r border-gray-200/80 dark:border-slate-800/80 flex flex-col transition-transform duration-300 ease-in-out
+        ${sidebarMobileOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0'}
+      `}>
+        {/* Brand Header */}
+        <div className="h-16 flex items-center justify-between px-6 border-b border-gray-100 dark:border-slate-800/80 bg-white/50 dark:bg-[#111827]/50 backdrop-blur-md">
+          <div className="flex items-center gap-3">
+            <img src="/tc-logo.jpg" alt="Admin Logo" className="h-8 w-auto rounded-xl bg-white p-1 shadow-xs border border-gray-100 dark:border-slate-700" />
+            <div>
+              <h2 className="text-lg font-black font-heading text-dark dark:text-white tracking-tight flex items-center gap-1.5">
+                <span>Tsehay</span><span className="text-[#f9b03c]">Admin</span>
+              </h2>
+              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Management Hub</p>
             </div>
-            <div className="overflow-hidden">
-              <p className="text-sm font-bold text-dark dark:text-white leading-tight truncate">{auth.currentUser?.displayName || auth.currentUser?.email?.split('@')[0] || 'Admin'}</p>
+          </div>
+          <button 
+            type="button"
+            onClick={() => setSidebarMobileOpen(false)}
+            className="lg:hidden w-8 h-8 rounded-lg bg-gray-100 dark:bg-slate-800 text-gray-500 flex items-center justify-center"
+          >
+            <i className="fa-solid fa-xmark text-sm"></i>
+          </button>
+        </div>
+
+        {/* Categorized Navigation */}
+        <nav className="flex-1 p-3.5 space-y-5 overflow-y-auto custom-scrollbar">
+          {/* 1. Main Overview */}
+          <div>
+            <p className="px-3 text-[10px] font-black uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1.5">ዋና አስተዳደር</p>
+            <button 
+              onClick={() => { setActiveTab('dashboard'); setSidebarMobileOpen(false); }} 
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-bold text-xs transition ${activeTab === 'dashboard' ? 'bg-[#f9b03c]/15 text-[#f9b03c] dark:text-[#f9b03c] shadow-xs' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800/60'}`}
+            >
+              <span className="flex items-center gap-2.5"><i className="fa-solid fa-chart-pie text-sm"></i> አጠቃላይ መረጃ</span>
+            </button>
+          </div>
+
+          {/* 2. Courses & Academics */}
+          <div>
+            <p className="px-3 text-[10px] font-black uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1.5">ትምህርት እና ኮርሶች</p>
+            <div className="space-y-1">
+              <button 
+                onClick={() => { setActiveTab('courses'); setSidebarMobileOpen(false); }} 
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-bold text-xs transition ${activeTab === 'courses' ? 'bg-[#3268ba]/15 text-[#3268ba] dark:text-blue-400 shadow-xs' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800/60'}`}
+              >
+                <span className="flex items-center gap-2.5"><i className="fa-solid fa-layer-group text-sm"></i> ኮርሶች (Courses)</span>
+                <span className="text-[11px] font-black px-2 py-0.5 rounded-md bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-300">{courses.length}</span>
+              </button>
+              <button 
+                onClick={() => { setActiveTab('teachers'); setSidebarMobileOpen(false); }} 
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-bold text-xs transition ${activeTab === 'teachers' ? 'bg-[#3268ba]/15 text-[#3268ba] dark:text-blue-400 shadow-xs' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800/60'}`}
+              >
+                <span className="flex items-center gap-2.5"><i className="fa-solid fa-chalkboard-user text-sm"></i> አስተማሪዎች (Teachers)</span>
+              </button>
+              <button 
+                onClick={() => { setActiveTab('portfolio'); setSidebarMobileOpen(false); }} 
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-bold text-xs transition ${activeTab === 'portfolio' ? 'bg-red-500/15 text-red-500 shadow-xs' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800/60'}`}
+              >
+                <span className="flex items-center gap-2.5"><i className="fa-brands fa-youtube text-sm text-red-500"></i> YouTube Portfolio</span>
+              </button>
+              <button 
+                onClick={() => { setActiveTab('youtube'); setSidebarMobileOpen(false); }} 
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-bold text-xs transition ${activeTab === 'youtube' ? 'bg-red-500/15 text-red-500 shadow-xs' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800/60'}`}
+              >
+                <span className="flex items-center gap-2.5"><i className="fa-solid fa-play text-sm text-red-500"></i> ነጻ ቪዲዮዎች</span>
+                <span className="text-[11px] font-black px-2 py-0.5 rounded-md bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-300">{youtubeVideos.length}</span>
+              </button>
+              <button 
+                onClick={() => { setActiveTab('about_video'); setSidebarMobileOpen(false); }} 
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-bold text-xs transition ${activeTab === 'about_video' ? 'bg-[#f9b03c]/15 text-[#f9b03c] shadow-xs' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800/60'}`}
+              >
+                <span className="flex items-center gap-2.5"><i className="fa-solid fa-film text-sm"></i> ስለ እኛ ቪዲዮ</span>
+              </button>
+            </div>
+          </div>
+
+          {/* 3. Students & Finance */}
+          <div>
+            <p className="px-3 text-[10px] font-black uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1.5">ተማሪዎች እና ፋይናንስ</p>
+            <div className="space-y-1">
+              <button 
+                onClick={() => { setActiveTab('students'); setSidebarMobileOpen(false); }} 
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-bold text-xs transition ${activeTab === 'students' ? 'bg-[#f9b03c]/20 text-[#f9b03c] dark:text-[#f9b03c] shadow-sm font-black border-l-3 border-[#f9b03c]' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800/60'}`}
+              >
+                <span className="flex items-center gap-2.5"><i className="fa-solid fa-user-graduate text-sm text-[#f9b03c]"></i> ተማሪዎች (Students)</span>
+                <span className="text-[11px] font-black px-2 py-0.5 rounded-md bg-[#f9b03c]/20 text-[#f9b03c]">{students.length}</span>
+              </button>
+              <button 
+                onClick={() => { setActiveTab('payments'); setSidebarMobileOpen(false); }} 
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-bold text-xs transition ${activeTab === 'payments' ? 'bg-emerald-500/15 text-emerald-500 shadow-xs' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800/60'}`}
+              >
+                <span className="flex items-center gap-2.5"><i className="fa-solid fa-file-invoice-dollar text-sm text-emerald-500"></i> የክፍያ ሪፖርቶች</span>
+                <span className="text-[11px] font-black px-2 py-0.5 rounded-md bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-300">{payments.length}</span>
+              </button>
+              <button 
+                onClick={() => { setActiveTab('questions'); setSidebarMobileOpen(false); }} 
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-bold text-xs transition ${activeTab === 'questions' ? 'bg-blue-500/15 text-blue-500 shadow-xs' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800/60'}`}
+              >
+                <span className="flex items-center gap-2.5"><i className="fa-solid fa-headset text-sm"></i> የተማሪ ጥያቄዎች</span>
+                {tickets.length > 0 && (
+                  <span className="text-[10px] font-black px-1.5 py-0.5 rounded-full bg-blue-500 text-white">{tickets.length}</span>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* 4. Events & Marketing */}
+          <div>
+            <p className="px-3 text-[10px] font-black uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1.5">ክንውኖች እና ማርኬቲንግ</p>
+            <div className="space-y-1">
+              <button 
+                onClick={() => { setActiveTab('events'); setSidebarMobileOpen(false); }} 
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-bold text-xs transition ${activeTab === 'events' ? 'bg-amber-500/15 text-amber-500 shadow-xs' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800/60'}`}
+              >
+                <span className="flex items-center gap-2.5"><i className="fa-solid fa-calendar-check text-sm text-amber-500"></i> Events & QR</span>
+                <span className="text-[11px] font-black px-2 py-0.5 rounded-md bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-300">{events.length}</span>
+              </button>
+              <button 
+                onClick={() => { setActiveTab('referrals'); setSidebarMobileOpen(false); }} 
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-bold text-xs transition ${activeTab === 'referrals' ? 'bg-[#f9b03c]/15 text-[#f9b03c] shadow-xs' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800/60'}`}
+              >
+                <span className="flex items-center gap-2.5"><i className="fa-solid fa-tags text-sm text-[#f9b03c]"></i> Promo Codes</span>
+                <span className="text-[11px] font-black px-2 py-0.5 rounded-md bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-300">{referralCodes.length}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* 5. System Settings */}
+          <div>
+            <p className="px-3 text-[10px] font-black uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1.5">ቅንብሮች</p>
+            <button 
+              onClick={() => { setActiveTab('settings'); setSidebarMobileOpen(false); }} 
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-bold text-xs transition ${activeTab === 'settings' ? 'bg-slate-200 dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800/60'}`}
+            >
+              <span className="flex items-center gap-2.5"><i className="fa-solid fa-gear text-sm"></i> ሲስተም ቅንብሮች</span>
+            </button>
+          </div>
+        </nav>
+
+        {/* Admin User Footer */}
+        <div className="p-4 border-t border-gray-100 dark:border-slate-800/80 bg-gray-50/70 dark:bg-[#111827]">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 to-[#f9b03c] text-slate-950 flex items-center justify-center font-black text-sm shrink-0 shadow-md">
+              <i className="fa-solid fa-shield-halved"></i>
+            </div>
+            <div className="overflow-hidden flex-1">
+              <p className="text-xs font-black text-dark dark:text-white truncate">Eyoub Sahle (Admin)</p>
               <div className="flex items-center gap-1.5 mt-0.5">
-                <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                <p className="text-[10px] text-green-500 font-bold uppercase tracking-wider">Online</p>
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span className="text-[10px] text-emerald-500 font-bold uppercase tracking-wider">Super Admin</span>
               </div>
             </div>
           </div>
-          <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-50 dark:bg-[#2A3B52] text-red-600 dark:text-red-400 rounded-xl font-bold hover:bg-red-50 dark:hover:bg-[#334760] transition border border-gray-100 dark:border-slate-600 text-sm">
-            <i className="fa-solid fa-arrow-right-from-bracket"></i> መውጫ (Logout)
+          <button 
+            type="button"
+            onClick={handleLogout} 
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 dark:text-red-400 rounded-xl font-bold text-xs transition cursor-pointer border border-red-500/20"
+          >
+            <i className="fa-solid fa-arrow-right-from-bracket"></i> ውጣ (Logout)
           </button>
         </div>
       </aside>
 
-      {/* Main Content */}
+      {/* Main Content Area */}
       <main className="flex-1 flex flex-col h-screen overflow-hidden">
-        <header className="h-16 bg-white dark:bg-[#1E293B] border-b border-gray-200 dark:border-slate-700 flex items-center justify-between px-8 shrink-0">
-          <h1 className="text-xl font-black text-dark dark:text-white">
-             {activeTab === 'dashboard' && 'አጠቃላይ መረጃ'}
-             {activeTab === 'courses' && 'ኮርሶች ማስተዳደሪያ'}
-             {activeTab === 'events' && 'የክንውኖች እና የትኬት አስተዳደር (Events, Tickets & QR Scanner)'}
-             {activeTab === 'referrals' && 'የሪፈራል እና የቅናሽ ኮዶች ማስተዳደሪያ (Referral & Promo Codes)'}
-             {activeTab === "portfolio" && "የ YouTube Portfolio ማስተዳደሪያ (Instructor YouTube Portfolio)"}
-             {activeTab === 'youtube' && 'ነጻ የዩቲዩብ ቪዲዮዎች ማስተዳደሪያ (YouTube Videos)'}
-             {activeTab === 'about_video' && 'ስለ እኛ ገጽ ቪዲዮ ፕሌየር ማስተዳደሪያ (About Page Video Player)'}
-             {activeTab === 'students' && 'የተማሪዎች አስተዳደር'}
-             {activeTab === 'teachers' && 'የአስተማሪዎች ዝርዝር'}
-             {activeTab === 'payments' && 'የክፍያ ሪፖርቶች'}
-             {activeTab === 'questions' && 'የተማሪዎች ጥያቄ'}
-             {activeTab === 'settings' && 'ሲስተም ቅንብሮች'}
-          </h1>
-          <div className="flex gap-4 items-center">
-            <button className="w-9 h-9 rounded-full bg-gray-50 dark:bg-[#2A3B52] flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white transition">
-               <i className="fa-solid fa-bell"></i>
+        {/* Top Modern Header */}
+        <header className="h-16 bg-white dark:bg-[#111827] border-b border-gray-200/80 dark:border-slate-800/80 flex items-center justify-between px-4 sm:px-8 shrink-0 z-10 backdrop-blur-md">
+          <div className="flex items-center gap-3">
+            {/* Mobile Hamburger */}
+            <button
+              type="button"
+              onClick={() => setSidebarMobileOpen(true)}
+              className="lg:hidden w-10 h-10 rounded-xl bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-200 flex items-center justify-center cursor-pointer"
+            >
+              <i className="fa-solid fa-bars text-base"></i>
             </button>
-            <button className="w-9 h-9 rounded-full bg-gray-50 dark:bg-[#2A3B52] flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white transition">
-               <i className="fa-solid fa-moon"></i>
-            </button>
-            <button className="bg-gray-100 dark:bg-[#2A3B52] text-dark dark:text-white px-4 py-1.5 rounded-full text-sm font-bold flex items-center gap-2 ml-2 hover:bg-gray-200 dark:hover:bg-[#334760] transition">
-              <i className="fa-solid fa-circle-user text-primary"></i> ማስተካከያ አድርግ
-            </button>
+            <div>
+              <h1 className="text-base sm:text-lg font-black text-dark dark:text-white flex items-center gap-2">
+                {activeTab === 'dashboard' && <><i className="fa-solid fa-chart-pie text-[#f9b03c]"></i> <span>አጠቃላይ ዳሽቦርድ</span></>}
+                {activeTab === 'courses' && <><i className="fa-solid fa-layer-group text-blue-500"></i> <span>የኮርሶች ማስተዳደሪያ</span></>}
+                {activeTab === 'events' && <><i className="fa-solid fa-calendar-check text-amber-500"></i> <span>የክንውኖች እና QR ትኬቶች ማስተዳደሪያ</span></>}
+                {activeTab === 'referrals' && <><i className="fa-solid fa-tag text-[#f9b03c]"></i> <span>የቅናሽ እና ሪፈራል ኮዶች</span></>}
+                {activeTab === 'portfolio' && <><i className="fa-brands fa-youtube text-red-500"></i> <span>የ YouTube Portfolio ማስተዳደሪያ</span></>}
+                {activeTab === 'youtube' && <><i className="fa-solid fa-play text-red-500"></i> <span>ነጻ የዩቲዩብ ቪዲዮዎች</span></>}
+                {activeTab === 'about_video' && <><i className="fa-solid fa-film text-[#f9b03c]"></i> <span>ስለ እኛ ገጽ ቪዲዮ</span></>}
+                {activeTab === 'students' && <><i className="fa-solid fa-user-graduate text-[#f9b03c]"></i> <span>የተማሪዎች ሙሉ መረጃ እና አስተዳደር</span></>}
+                {activeTab === 'teachers' && <><i className="fa-solid fa-chalkboard-user text-blue-500"></i> <span>የአስተማሪዎች ዝርዝር</span></>}
+                {activeTab === 'payments' && <><i className="fa-solid fa-file-invoice-dollar text-emerald-500"></i> <span>የክፍያ እና ፋይናንስ ሪፖርቶች</span></>}
+                {activeTab === 'questions' && <><i className="fa-solid fa-headset text-blue-500"></i> <span>የተማሪዎች ጥያቄዎች</span></>}
+                {activeTab === 'settings' && <><i className="fa-solid fa-gear text-slate-400"></i> <span>ሲስተም እና AI ቅንብሮች</span></>}
+              </h1>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* Quick Public Site Preview */}
+            <a 
+              href="/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:text-dark dark:hover:text-white font-bold text-xs transition border border-gray-200 dark:border-slate-700"
+            >
+              <i className="fa-solid fa-arrow-up-right-from-square text-[10px] text-[#f9b03c]"></i>
+              <span>ዌብሳይቱን እይ</span>
+            </a>
+
+            {/* Context Action Buttons */}
             {activeTab === 'courses' && (
-              <button onClick={() => openForm()} className="bg-dark dark:bg-primary text-white dark:text-dark px-6 py-2 rounded-xl text-sm font-bold hover:bg-secondary dark:hover:bg-yellow-400 transition shadow-sm flex items-center gap-2 ml-2">
-                <i className="fa-solid fa-plus"></i> አዲስ ኮርስ ጨምር
+              <button onClick={() => openForm()} className="bg-dark dark:bg-primary text-white dark:text-dark px-4 py-2 rounded-xl text-xs font-black hover:bg-secondary dark:hover:bg-yellow-400 transition shadow-sm flex items-center gap-1.5 cursor-pointer">
+                <i className="fa-solid fa-plus"></i> <span>አዲስ ኮርስ</span>
               </button>
             )}
             {activeTab === 'events' && eventsSubTab === 'list' && (
-              <button onClick={openAddEventModal} className="bg-gradient-to-r from-amber-500 to-[#f9b03c] text-slate-950 px-6 py-2 rounded-xl text-sm font-black hover:opacity-90 transition shadow-lg flex items-center gap-2 ml-2">
-                <i className="fa-solid fa-plus"></i> አዲስ ክስተት ጨምር
+              <button onClick={openAddEventModal} className="bg-gradient-to-r from-amber-500 to-[#f9b03c] text-slate-950 px-4 py-2 rounded-xl text-xs font-black hover:opacity-90 transition shadow-md flex items-center gap-1.5 cursor-pointer">
+                <i className="fa-solid fa-plus"></i> <span>አዲስ ክስተት</span>
               </button>
             )}
             {activeTab === 'youtube' && (
-              <button onClick={openAddYouTubeModal} className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-xl text-sm font-bold transition shadow-sm flex items-center gap-2 ml-2">
-                <i className="fa-solid fa-plus"></i> አዲስ ቪዲዮ ጨምር
+              <button onClick={openAddYouTubeModal} className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-xl text-xs font-black transition shadow-sm flex items-center gap-1.5 cursor-pointer">
+                <i className="fa-solid fa-plus"></i> <span>አዲስ ቪዲዮ</span>
+              </button>
+            )}
+            {activeTab === 'students' && (
+              <button onClick={exportStudentsCSV} className="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl text-xs font-black transition shadow-sm flex items-center gap-1.5 cursor-pointer">
+                <i className="fa-solid fa-file-csv"></i> <span>CSV አውርድ</span>
               </button>
             )}
           </div>
         </header>
 
-        <div className="flex-1 overflow-auto p-8">
+        <div className="flex-1 overflow-auto p-4 sm:p-8">
           {activeTab === 'dashboard' && (
              <div className="space-y-8">
                {/* High-level KPIs */}
@@ -2701,50 +3073,319 @@ export default function AdminDashboard() {
           )}
 
           {activeTab === 'students' && (
-            <div className="bg-white dark:bg-slate-800 rounded-3xl border border-gray-100 dark:border-slate-700 shadow-sm overflow-hidden">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-gray-50 dark:bg-slate-900 border-b border-gray-100 dark:border-slate-700">
-                      <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">ስም</th>
-                      <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">ኢሜይል</th>
-                      <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">ሁኔታ</th>
-                      <th className="p-4 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">እርምጃ</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {students.length === 0 ? (
-                      <tr><td colSpan={4} className="p-8 text-center text-gray-500">ምንም ተማሪ የለም</td></tr>
-                    ) : (
-                      students.map(student => {
-                        const studentPayments = payments.filter(p => p.userId === student.id);
-                        const isPaid = studentPayments.some(p => p.amount > 0);
-                        const isFree = studentPayments.length > 0 && !isPaid;
-                        
-                        return (
-                          <tr key={student.id} className="border-b border-gray-50 dark:border-slate-700/50 hover:bg-gray-50 dark:hover:bg-slate-700/20 transition group">
-                            <td className="p-4 font-bold text-dark dark:text-white">
-                                {student.name || 'Unknown'}
-                                <div className="text-[10px] text-gray-400 font-normal mt-1">Joined: {student.createdAt ? new Date(student.createdAt.toDate()).toLocaleDateString() : 'Unknown'}</div>
-                            </td>
-                            <td className="p-4 text-sm text-gray-500">{student.email}</td>
-                            <td className="p-4">
-                                {isPaid ? (
-                                    <span className="bg-primary/20 text-primary px-3 py-1 rounded-full text-xs font-bold">Paid</span>
-                                ) : isFree ? (
-                                    <span className="bg-blue-50 text-secondary px-3 py-1 rounded-full text-xs font-bold">Free</span>
-                                ) : (
-                                    <span className="bg-gray-100 text-gray-500 px-3 py-1 rounded-full text-xs font-bold">Registered</span>
-                                )}
-                            </td>
-                            <td className="p-4 text-right space-x-2">
-                               <a href={`mailto:${student.email}`} className="text-sm bg-blue-50 dark:bg-slate-700 text-secondary dark:text-primary px-3 py-1.5 rounded-lg font-bold hover:bg-secondary hover:text-white transition">መልዕክት ላክ</a>
-                            </td>
+            <div className="space-y-6">
+              {/* 🌟 1. Student Summary KPI Stat Cards */}
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="bg-white dark:bg-slate-800/90 rounded-2xl p-4 sm:p-5 border border-gray-100 dark:border-slate-700 shadow-xs flex items-center gap-3.5">
+                  <div className="w-12 h-12 rounded-xl bg-[#f9b03c]/15 text-[#f9b03c] flex items-center justify-center text-xl shrink-0">
+                    <i className="fa-solid fa-users"></i>
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">ጠቅላላ ተማሪዎች</p>
+                    <h4 className="text-2xl font-black text-dark dark:text-white font-heading">{students.length}</h4>
+                  </div>
+                </div>
+
+                <div className="bg-white dark:bg-slate-800/90 rounded-2xl p-4 sm:p-5 border border-gray-100 dark:border-slate-700 shadow-xs flex items-center gap-3.5">
+                  <div className="w-12 h-12 rounded-xl bg-emerald-500/15 text-emerald-500 flex items-center justify-center text-xl shrink-0">
+                    <i className="fa-solid fa-crown"></i>
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">የከፈሉ ተማሪዎች</p>
+                    <div className="flex items-baseline gap-1.5">
+                      <h4 className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-heading">
+                        {students.filter(s => s.status === 'paid').length}
+                      </h4>
+                      <span className="text-xs text-gray-400 font-bold">
+                        ({students.reduce((acc, s) => acc + (s.totalSpent || 0), 0).toLocaleString()} ብር)
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white dark:bg-slate-800/90 rounded-2xl p-4 sm:p-5 border border-gray-100 dark:border-slate-700 shadow-xs flex items-center gap-3.5">
+                  <div className="w-12 h-12 rounded-xl bg-blue-500/15 text-blue-500 flex items-center justify-center text-xl shrink-0">
+                    <i className="fa-solid fa-graduation-cap"></i>
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">ነፃ ተማሪዎች</p>
+                    <h4 className="text-2xl font-black text-blue-600 dark:text-blue-400 font-heading">
+                      {students.filter(s => s.status === 'free').length}
+                    </h4>
+                  </div>
+                </div>
+
+                <div className="bg-white dark:bg-slate-800/90 rounded-2xl p-4 sm:p-5 border border-gray-100 dark:border-slate-700 shadow-xs flex items-center gap-3.5">
+                  <div className="w-12 h-12 rounded-xl bg-purple-500/15 text-purple-500 flex items-center justify-center text-xl shrink-0">
+                    <i className="fa-solid fa-ticket"></i>
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">የክስተት ተሳታፊዎች</p>
+                    <h4 className="text-2xl font-black text-purple-600 dark:text-purple-400 font-heading">
+                      {students.filter(s => s.status === 'event' || (s.eventTickets && s.eventTickets.length > 0)).length}
+                    </h4>
+                  </div>
+                </div>
+              </div>
+
+              {/* 🌟 2. Search, Filter Chips & Export Toolbar */}
+              <div className="bg-white dark:bg-slate-800/90 rounded-2xl p-4 border border-gray-100 dark:border-slate-700 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+                {/* Search Bar */}
+                <div className="relative flex-1 max-w-md">
+                  <i className="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                  <input
+                    type="text"
+                    value={studentSearchTerm}
+                    onChange={(e) => setStudentSearchTerm(e.target.value)}
+                    placeholder="ተማሪ በስም፣ በኢሜይል፣ በስልክ ወይም በኮርስ ፈልግ..."
+                    className="w-full pl-9 pr-8 py-2.5 rounded-xl bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 text-xs text-dark dark:text-white outline-none focus:border-[#f9b03c]"
+                  />
+                  {studentSearchTerm && (
+                    <button
+                      type="button"
+                      onClick={() => setStudentSearchTerm('')}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs"
+                    >
+                      <i className="fa-solid fa-xmark"></i>
+                    </button>
+                  )}
+                </div>
+
+                {/* Filter Tabs */}
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setStudentFilterStatus('all')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${studentFilterStatus === 'all' ? 'bg-[#f9b03c] text-slate-950 shadow-xs' : 'bg-gray-100 dark:bg-slate-900 text-gray-600 dark:text-gray-400 hover:bg-gray-200'}`}
+                  >
+                    ሁሉም ({students.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setStudentFilterStatus('paid')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${studentFilterStatus === 'paid' ? 'bg-emerald-500 text-white shadow-xs' : 'bg-gray-100 dark:bg-slate-900 text-gray-600 dark:text-gray-400 hover:bg-gray-200'}`}
+                  >
+                    የከፈሉ ({students.filter(s => s.status === 'paid').length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setStudentFilterStatus('free')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${studentFilterStatus === 'free' ? 'bg-blue-500 text-white shadow-xs' : 'bg-gray-100 dark:bg-slate-900 text-gray-600 dark:text-gray-400 hover:bg-gray-200'}`}
+                  >
+                    ነፃ ({students.filter(s => s.status === 'free').length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setStudentFilterStatus('event')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${studentFilterStatus === 'event' ? 'bg-purple-500 text-white shadow-xs' : 'bg-gray-100 dark:bg-slate-900 text-gray-600 dark:text-gray-400 hover:bg-gray-200'}`}
+                  >
+                    ክስተቶች ({students.filter(s => s.status === 'event' || (s.eventTickets && s.eventTickets.length > 0)).length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={exportStudentsCSV}
+                    className="ml-auto px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-900 hover:bg-emerald-500 hover:text-white text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-slate-700 text-xs font-black transition flex items-center gap-1.5 cursor-pointer"
+                    title="Export to CSV"
+                  >
+                    <i className="fa-solid fa-file-csv text-emerald-500 group-hover:text-white"></i>
+                    <span>Export</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* 🌟 3. Rich Students Table */}
+              <div className="bg-white dark:bg-slate-800 rounded-3xl border border-gray-100 dark:border-slate-700 shadow-sm overflow-hidden">
+                {(() => {
+                  const filtered = students.filter(s => {
+                    if (studentFilterStatus === 'paid' && s.status !== 'paid') return false;
+                    if (studentFilterStatus === 'free' && s.status !== 'free') return false;
+                    if (studentFilterStatus === 'event' && s.status !== 'event' && (!s.eventTickets || s.eventTickets.length === 0)) return false;
+
+                    if (studentSearchTerm.trim()) {
+                      const term = studentSearchTerm.toLowerCase();
+                      const nameMatch = (s.name || '').toLowerCase().includes(term);
+                      const emailMatch = (s.email || '').toLowerCase().includes(term);
+                      const phoneMatch = (s.phone || '').toLowerCase().includes(term);
+                      const courseMatch = (s.purchasedCourses || []).some((c: any) => (c.title || '').toLowerCase().includes(term));
+                      const eventMatch = (s.eventTickets || []).some((e: any) => (e.eventTitle || '').toLowerCase().includes(term));
+                      return nameMatch || emailMatch || phoneMatch || courseMatch || eventMatch;
+                    }
+                    return true;
+                  });
+
+                  if (filtered.length === 0) {
+                    return (
+                      <div className="py-16 text-center">
+                        <div className="w-16 h-16 rounded-full bg-gray-100 dark:bg-slate-700/50 flex items-center justify-center text-gray-400 text-2xl mx-auto mb-3">
+                          <i className="fa-solid fa-user-slash"></i>
+                        </div>
+                        <h4 className="text-base font-bold text-dark dark:text-white">ምንም ተማሪ አልተገኘም</h4>
+                        <p className="text-xs text-gray-400 mt-1">በመረጡት መስፈርት የተገኘ የተማሪ መረጃ የለም።</p>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="bg-gray-50 dark:bg-slate-900 border-b border-gray-100 dark:border-slate-700">
+                            <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">ተማሪ</th>
+                            <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">ስልክ እና ኢሜይል</th>
+                            <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">የተመዘገቡባቸው ኮርሶች</th>
+                            <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">ሁኔታ እና ክፍያ</th>
+                            <th className="p-4 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">እርምጃ</th>
                           </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                          {filtered.map(student => {
+                            const joinedDateStr = student.createdAt?.toDate 
+                              ? new Date(student.createdAt.toDate()).toLocaleDateString() 
+                              : student.createdAt 
+                                ? new Date(student.createdAt).toLocaleDateString() 
+                                : 'የቅርብ ጊዜ';
+
+                            return (
+                              <tr 
+                                key={student.id} 
+                                className="border-b border-gray-50 dark:border-slate-700/50 hover:bg-gray-50/70 dark:hover:bg-slate-700/20 transition group cursor-pointer"
+                                onClick={() => setSelectedStudentForDetail(student)}
+                              >
+                                {/* Name & Avatar */}
+                                <td className="p-4">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-600 to-[#3268ba] text-white flex items-center justify-center font-black text-sm shrink-0 shadow-xs uppercase overflow-hidden">
+                                      {student.photoURL ? (
+                                        <img src={student.photoURL} alt={student.name} className="w-full h-full object-cover" />
+                                      ) : (
+                                        (student.name || 'S').substring(0, 2).toUpperCase()
+                                      )}
+                                    </div>
+                                    <div>
+                                      <h5 className="font-bold text-dark dark:text-white group-hover:text-[#f9b03c] transition-colors text-sm">
+                                        {student.name || 'ያልታወቀ ተማሪ'}
+                                      </h5>
+                                      <span className="text-[11px] text-gray-400 flex items-center gap-1 mt-0.5">
+                                        <i className="fa-regular fa-calendar text-[10px]"></i> ተመዝግቧል: {joinedDateStr}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </td>
+
+                                {/* Contact Details */}
+                                <td className="p-4" onClick={(e) => e.stopPropagation()}>
+                                  <div className="space-y-1 text-xs">
+                                    {student.email && student.email !== '—' && (
+                                      <div className="flex items-center gap-1.5 text-gray-600 dark:text-gray-300">
+                                        <i className="fa-solid fa-envelope text-blue-400 text-[11px]"></i>
+                                        <a href={`mailto:${student.email}`} className="hover:underline hover:text-blue-500 font-medium">
+                                          {student.email}
+                                        </a>
+                                      </div>
+                                    )}
+                                    {student.phone && student.phone !== '—' ? (
+                                      <div className="flex items-center gap-1.5 text-gray-600 dark:text-gray-300 font-bold">
+                                        <i className="fa-solid fa-phone text-emerald-400 text-[11px]"></i>
+                                        <a href={`tel:${student.phone}`} className="hover:underline hover:text-emerald-500">
+                                          {student.phone}
+                                        </a>
+                                      </div>
+                                    ) : (
+                                      <span className="text-[11px] text-gray-400">ስልክ የለም</span>
+                                    )}
+                                  </div>
+                                </td>
+
+                                {/* Enrolled Courses */}
+                                <td className="p-4" onClick={(e) => e.stopPropagation()}>
+                                  {student.purchasedCourses && student.purchasedCourses.length > 0 ? (
+                                    <div className="flex flex-wrap gap-1.5 max-w-xs">
+                                      {student.purchasedCourses.map((c: any, cIdx: number) => (
+                                        <span 
+                                          key={cIdx} 
+                                          className={`text-[10px] font-bold px-2 py-0.5 rounded-md border flex items-center gap-1 ${c.amount > 0 ? 'bg-amber-500/10 text-amber-600 dark:text-amber-300 border-amber-500/20' : 'bg-blue-500/10 text-blue-600 dark:text-blue-300 border-blue-500/20'}`}
+                                          title={`Price: ${c.amount} ETB (${c.paymentMethod || 'free'})`}
+                                        >
+                                          <i className={`fa-solid ${c.amount > 0 ? 'fa-crown text-[9px]' : 'fa-graduation-cap text-[9px]'}`}></i>
+                                          <span className="truncate max-w-[130px]">{c.title || c.courseId}</span>
+                                        </span>
+                                      ))}
+                                    </div>
+                                  ) : student.eventTickets && student.eventTickets.length > 0 ? (
+                                    <span className="text-[11px] font-bold text-purple-600 dark:text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-md border border-purple-500/20">
+                                      <i className="fa-solid fa-ticket mr-1"></i> {student.eventTickets.length} የክስተት ትኬት
+                                    </span>
+                                  ) : (
+                                    <span className="text-xs text-gray-400">ምንም ኮርስ አልተወሰደም</span>
+                                  )}
+                                </td>
+
+                                {/* Status & Total Spend */}
+                                <td className="p-4">
+                                  <div className="flex flex-col items-start gap-1">
+                                    {student.status === 'paid' ? (
+                                      <span className="bg-gradient-to-r from-amber-500/20 to-yellow-500/20 text-amber-600 dark:text-amber-300 font-black px-2.5 py-1 rounded-full text-[11px] border border-amber-400/30 flex items-center gap-1">
+                                        <i className="fa-solid fa-crown text-[10px]"></i> የከፈለ ({student.totalSpent?.toLocaleString()} ብር)
+                                      </span>
+                                    ) : student.status === 'free' ? (
+                                      <span className="bg-blue-500/15 text-blue-600 dark:text-blue-400 font-bold px-2.5 py-1 rounded-full text-[11px] border border-blue-500/20">
+                                        ነፃ ተማሪ
+                                      </span>
+                                    ) : student.status === 'event' ? (
+                                      <span className="bg-purple-500/15 text-purple-600 dark:text-purple-400 font-bold px-2.5 py-1 rounded-full text-[11px] border border-purple-500/20">
+                                        የክስተት ተሳታፊ
+                                      </span>
+                                    ) : (
+                                      <span className="bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-gray-300 font-bold px-2.5 py-1 rounded-full text-[11px]">
+                                        የተመዘገበ
+                                      </span>
+                                    )}
+                                  </div>
+                                </td>
+
+                                {/* Action Buttons */}
+                                <td className="p-4 text-right" onClick={(e) => e.stopPropagation()}>
+                                  <div className="flex items-center justify-end gap-1.5">
+                                    <button 
+                                      type="button"
+                                      onClick={() => setSelectedStudentForDetail(student)}
+                                      className="text-xs bg-[#f9b03c]/15 hover:bg-[#f9b03c] text-[#f9b03c] hover:text-slate-950 px-2.5 py-1.5 rounded-lg font-black transition cursor-pointer flex items-center gap-1"
+                                      title="የተማሪውን ሙሉ መረጃ እይ"
+                                    >
+                                      <i className="fa-solid fa-eye text-[11px]"></i>
+                                      <span className="hidden sm:inline">ዝርዝር</span>
+                                    </button>
+                                    {student.email && (
+                                      <a 
+                                        href={`mailto:${student.email}`} 
+                                        className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 hover:bg-blue-500 hover:text-white flex items-center justify-center text-xs transition cursor-pointer"
+                                        title="ኢሜይል ላክ"
+                                      >
+                                        <i className="fa-solid fa-envelope"></i>
+                                      </a>
+                                    )}
+                                    {student.phone && (
+                                      <a 
+                                        href={`https://wa.me/${student.phone.replace(/[^0-9]/g, '')}`} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="w-8 h-8 rounded-lg bg-emerald-500/15 text-emerald-500 hover:bg-emerald-500 hover:text-white flex items-center justify-center text-xs transition cursor-pointer"
+                                        title="WhatsApp መልዕክት ላክ"
+                                      >
+                                        <i className="fa-brands fa-whatsapp text-sm"></i>
+                                      </a>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  );
+                })()}
+              </div>
             </div>
           )}
 
@@ -2810,23 +3451,50 @@ export default function AdminDashboard() {
                     {payments.filter(p => Number(p.amount) > 0).length === 0 ? (
                         <tr><td colSpan={5} className="p-8 text-center text-gray-500">ምንም ክፍያ የለም</td></tr>
                     ) : (
-                        payments.filter(p => Number(p.amount) > 0).sort((a, b) => b.purchasedAt?.toMillis() - a.purchasedAt?.toMillis()).map(payment => {
-                            const student = students.find(s => s.id === payment.userId);
-                            const course = courses.find(c => c.id === payment.courseId);
+                        payments.filter(p => Number(p.amount) > 0).sort((a, b) => (b.purchasedAt?.toMillis ? b.purchasedAt.toMillis() : 0) - (a.purchasedAt?.toMillis ? a.purchasedAt.toMillis() : 0)).map(payment => {
+                            const student = students.find(s => s.id === payment.userId || s.email === payment.studentEmail || (payment.userId && s.id.includes(payment.userId)));
+                            const course = courses.find(c => c.id === payment.courseId) || getCourseBySlugOrId(payment.courseId, courses);
+                            const payMethodStr = (payment.paymentMethod || 'lakipay').toLowerCase();
+
                             return (
                                 <tr key={payment.id} className="border-b border-gray-50 dark:border-slate-700/50 hover:bg-gray-50 dark:hover:bg-slate-700/20 transition">
                                     <td className="p-4 font-bold text-dark dark:text-white">
-                                        {student?.name || 'Unknown Student'}
-                                        <div className="text-xs text-gray-500 font-normal mt-0.5">{student?.email || 'No email'}</div>
+                                        <div className="flex items-center gap-2.5">
+                                          <div className="w-8 h-8 rounded-full bg-[#f9b03c]/20 text-[#f9b03c] flex items-center justify-center text-xs font-black shrink-0">
+                                            {(student?.name || payment.studentName || 'S').substring(0, 2).toUpperCase()}
+                                          </div>
+                                          <div>
+                                            <span className="text-sm">{student?.name || payment.studentName || 'ተማሪ (Student)'}</span>
+                                            <div className="text-[11px] text-gray-400 font-normal">{student?.email || payment.studentEmail || student?.phone || 'መረጃ የለም'}</div>
+                                          </div>
+                                        </div>
                                     </td>
-                                    <td className="p-4 text-sm text-gray-700 dark:text-gray-300">{course?.title || payment.courseId}</td>
-                                    <td className="p-4 font-bold text-success">{Number(payment.amount).toLocaleString()} ብር</td>
-                                    <td className="p-4 text-sm text-gray-500 uppercase">{payment.paymentMethod || 'Chapa'}</td>
+                                    <td className="p-4 text-sm text-gray-700 dark:text-gray-300 font-bold">
+                                      {course?.title || payment.courseTitle || payment.courseId}
+                                      {payment.referralCode && (
+                                        <span className="block text-[10px] text-amber-500 font-bold">🏷️ ኮድ: {payment.referralCode}</span>
+                                      )}
+                                    </td>
+                                    <td className="p-4 font-black text-emerald-600 dark:text-emerald-400">
+                                      {Number(payment.amount).toLocaleString()} ብር
+                                    </td>
+                                    <td className="p-4 text-xs uppercase font-bold">
+                                      <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black ${
+                                        payMethodStr.includes('laki') || payMethodStr.includes('telebirr') ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' :
+                                        payMethodStr.includes('paypal') ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20' :
+                                        payMethodStr.includes('crypto') || payMethodStr.includes('now') ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20' :
+                                        'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300'
+                                      }`}>
+                                        {payment.paymentMethod || 'LakiPay'}
+                                      </span>
+                                    </td>
                                     <td className="p-4">
-                                        <span className="bg-green-50 text-success px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 w-max">
-                                            <i className="fa-solid fa-check-circle"></i> Successful
+                                        <span className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 px-2.5 py-1 rounded-full text-xs font-bold flex items-center gap-1 w-max border border-emerald-500/20">
+                                            <i className="fa-solid fa-circle-check text-[11px]"></i> ተረጋግጧል
                                         </span>
-                                        <div className="text-[10px] text-gray-400 mt-1">{payment.purchasedAt ? new Date(payment.purchasedAt.toDate()).toLocaleString() : ''}</div>
+                                        <div className="text-[10px] text-gray-400 mt-1">
+                                          {payment.purchasedAt?.toDate ? new Date(payment.purchasedAt.toDate()).toLocaleString() : payment.purchasedAt ? new Date(payment.purchasedAt).toLocaleString() : ''}
+                                        </div>
                                     </td>
                                 </tr>
                             );
@@ -4517,6 +5185,185 @@ export default function AdminDashboard() {
           >
             <i className="fa-solid fa-xmark text-sm"></i>
           </button>
+        </div>
+      )}
+
+      {/* 🌟 Dedicated Student Profile & Activity Detail Modal */}
+      {selectedStudentForDetail && (
+        <div 
+          className="fixed inset-0 z-[120] bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto"
+          onClick={() => setSelectedStudentForDetail(null)}
+        >
+          <div 
+            className="bg-[#0f172a] text-white rounded-3xl max-w-2xl w-full border border-white/10 shadow-[0_25px_80px_rgba(0,0,0,0.9)] overflow-hidden my-auto animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header with Student Identity */}
+            <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-[#1e293b] p-6 border-b border-white/10 relative">
+              <button 
+                type="button"
+                onClick={() => setSelectedStudentForDetail(null)}
+                className="absolute top-4 right-4 w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition cursor-pointer"
+              >
+                <i className="fa-solid fa-xmark text-sm"></i>
+              </button>
+
+              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-[#3268ba] via-blue-500 to-amber-400 text-slate-950 flex items-center justify-center font-black text-2xl shadow-lg shrink-0 overflow-hidden uppercase">
+                  {selectedStudentForDetail.photoURL ? (
+                    <img src={selectedStudentForDetail.photoURL} alt={selectedStudentForDetail.name} className="w-full h-full object-cover" />
+                  ) : (
+                    (selectedStudentForDetail.name || 'S').substring(0, 2).toUpperCase()
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mb-1">
+                    <h3 className="text-xl font-black text-white font-heading">
+                      {selectedStudentForDetail.name}
+                    </h3>
+                    {selectedStudentForDetail.status === 'paid' && (
+                      <span className="bg-[#f9b03c]/20 text-[#f9b03c] font-black text-[11px] px-2.5 py-0.5 rounded-full border border-[#f9b03c]/30 flex items-center gap-1">
+                        <i className="fa-solid fa-crown text-[10px]"></i> የከፈለ ተማሪ
+                      </span>
+                    )}
+                    {selectedStudentForDetail.status === 'free' && (
+                      <span className="bg-blue-500/20 text-blue-400 font-black text-[11px] px-2.5 py-0.5 rounded-full border border-blue-500/30">
+                        ነፃ ተማሪ
+                      </span>
+                    )}
+                    {selectedStudentForDetail.status === 'event' && (
+                      <span className="bg-purple-500/20 text-purple-400 font-black text-[11px] px-2.5 py-0.5 rounded-full border border-purple-500/30">
+                        የክስተት ተሳታፊ
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 text-xs text-gray-300">
+                    {selectedStudentForDetail.email && (
+                      <span className="flex items-center gap-1.5"><i className="fa-solid fa-envelope text-blue-400"></i> {selectedStudentForDetail.email}</span>
+                    )}
+                    {selectedStudentForDetail.phone && (
+                      <span className="flex items-center gap-1.5"><i className="fa-solid fa-phone text-emerald-400"></i> {selectedStudentForDetail.phone}</span>
+                    )}
+                    <span className="flex items-center gap-1.5 text-gray-400"><i className="fa-solid fa-id-badge text-amber-400"></i> ID: {selectedStudentForDetail.id.slice(0, 10)}...</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Contact & Action Buttons */}
+            <div className="p-4 bg-slate-900/60 border-b border-white/5 flex flex-wrap gap-2 justify-center sm:justify-start">
+              {selectedStudentForDetail.email && (
+                <a 
+                  href={`mailto:${selectedStudentForDetail.email}`}
+                  className="px-4 py-2 rounded-xl bg-blue-600/20 hover:bg-blue-600 text-blue-300 hover:text-white font-bold text-xs transition flex items-center gap-2 border border-blue-500/30"
+                >
+                  <i className="fa-solid fa-envelope"></i>
+                  <span>ኢሜይል ጻፍ</span>
+                </a>
+              )}
+              {selectedStudentForDetail.phone && (
+                <>
+                  <a 
+                    href={`https://wa.me/${selectedStudentForDetail.phone.replace(/[^0-9]/g, '')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-4 py-2 rounded-xl bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white font-bold text-xs transition flex items-center gap-2 border border-emerald-500/30"
+                  >
+                    <i className="fa-brands fa-whatsapp text-sm"></i>
+                    <span>WhatsApp</span>
+                  </a>
+                  <a 
+                    href={`tel:${selectedStudentForDetail.phone}`}
+                    className="px-4 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-200 font-bold text-xs transition flex items-center gap-2 border border-white/10"
+                  >
+                    <i className="fa-solid fa-phone text-emerald-400"></i>
+                    <span>በስልክ ደውል</span>
+                  </a>
+                </>
+              )}
+              <div className="ml-auto text-xs font-black text-[#f9b03c] self-center">
+                ጠቅላላ ክፍያ: {selectedStudentForDetail.totalSpent?.toLocaleString()} ETB
+              </div>
+            </div>
+
+            {/* Modal Body: Courses & Tickets */}
+            <div className="p-6 max-h-[55vh] overflow-y-auto space-y-6 custom-scrollbar">
+              {/* Enrolled Courses */}
+              <div>
+                <h4 className="text-xs font-black uppercase tracking-wider text-gray-400 mb-3 flex items-center gap-2">
+                  <i className="fa-solid fa-graduation-cap text-[#f9b03c]"></i>
+                  <span>የተመዘገቡባቸው ኮርሶች ({selectedStudentForDetail.purchasedCourses?.length || 0})</span>
+                </h4>
+                {(!selectedStudentForDetail.purchasedCourses || selectedStudentForDetail.purchasedCourses.length === 0) ? (
+                  <p className="text-xs text-gray-500 bg-slate-900/40 p-4 rounded-xl text-center">ምንም የተመዘገበበት ኮርስ የለም።</p>
+                ) : (
+                  <div className="space-y-2.5">
+                    {selectedStudentForDetail.purchasedCourses.map((c: any, idx: number) => (
+                      <div key={idx} className="p-3.5 rounded-2xl bg-slate-900/80 border border-white/10 flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm font-black shrink-0 ${c.amount > 0 ? 'bg-amber-500/20 text-[#f9b03c]' : 'bg-blue-500/20 text-blue-400'}`}>
+                            <i className={`fa-solid ${c.amount > 0 ? 'fa-crown' : 'fa-graduation-cap'}`}></i>
+                          </div>
+                          <div>
+                            <p className="font-bold text-xs text-white">{c.title || c.courseId}</p>
+                            <p className="text-[10px] text-gray-400">
+                              ዘዴ: <span className="uppercase text-gray-300 font-bold">{c.paymentMethod || 'free'}</span> 
+                              {c.referralCode && <span className="ml-2 text-amber-400">ኮድ: {c.referralCode}</span>}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <span className={`text-xs font-black ${c.amount > 0 ? 'text-[#f9b03c]' : 'text-blue-400'}`}>
+                            {c.amount > 0 ? `${Number(c.amount).toLocaleString()} ብር` : 'ነፃ (Free)'}
+                          </span>
+                          <span className="block text-[10px] text-emerald-400 font-bold uppercase">{c.status || 'Active'}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Event Tickets */}
+              {selectedStudentForDetail.eventTickets && selectedStudentForDetail.eventTickets.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-black uppercase tracking-wider text-gray-400 mb-3 flex items-center gap-2">
+                    <i className="fa-solid fa-ticket text-purple-400"></i>
+                    <span>የተገዙ የክስተት ትኬቶች ({selectedStudentForDetail.eventTickets.length})</span>
+                  </h4>
+                  <div className="space-y-2.5">
+                    {selectedStudentForDetail.eventTickets.map((t: any, idx: number) => (
+                      <div key={idx} className="p-3.5 rounded-2xl bg-slate-900/80 border border-purple-500/20 flex items-center justify-between gap-3">
+                        <div>
+                          <p className="font-bold text-xs text-white">{t.eventTitle || 'Event Workshop'}</p>
+                          <p className="text-[10px] text-gray-400 font-mono">ትኬት ID: {t.ticketId}</p>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-xs font-black text-purple-300">
+                            {Number(t.price || 0) > 0 ? `${Number(t.price).toLocaleString()} ብር` : 'ነፃ (Free)'}
+                          </span>
+                          <span className={`block text-[10px] font-bold ${t.checkedIn ? 'text-emerald-400' : 'text-amber-400'}`}>
+                            {t.checkedIn ? 'Checked-In' : 'Pending Check-In'}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 bg-slate-900 border-t border-white/10 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setSelectedStudentForDetail(null)}
+                className="px-5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition cursor-pointer"
+              >
+                ዝጋ (Close)
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
