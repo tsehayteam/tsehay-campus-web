@@ -367,6 +367,19 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
         try {
           await signInWithEmailAndPassword(auth, targetEmail, pass);
         } catch (e) {}
+
+        // 🌟 Trigger Automated Welcome Email
+        try {
+          fetch('/api/email/automation', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'welcome',
+              userEmail: targetEmail,
+              userName: userData?.name || targetEmail.split('@')[0]
+            })
+          }).catch(e => console.warn("Welcome email trigger notice:", e));
+        } catch (e) {}
       }
 
       setResendSuccessMessage("🎉 ኢሜልዎ በተሳካ ሁኔታ ተረጋግጧል! እንኳን ደህና መጡ!");
