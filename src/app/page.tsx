@@ -2,12 +2,14 @@
 'use client';
 import React, { useEffect, useState, useRef } from 'react';
 import { db } from '@/lib/firebase/config';
-import { collection, onSnapshot, query, getDocs } from 'firebase/firestore';
+import { collection, onSnapshot, query, getDocs, doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Footer from '@/components/Footer';
+import PaymentModal from '@/components/PaymentModal';
+import RequireAuthModal from '@/components/RequireAuthModal';
 import SmartSearchInput from '@/components/SmartSearchInput';
 import YouTubeVideoSlider from '@/components/YouTubeVideoSlider';
 import SynthesiaAiChatDemo from '@/components/SynthesiaAiChatDemo';
@@ -275,6 +277,12 @@ export default function Home() {
   });
   const [hasPurchasedCourses, setHasPurchasedCourses] = useState<boolean | null>(null);
   
+  // Payment / Auth Modal States
+  const [selectedCourse, setSelectedCourse] = useState<any>(null);
+  const [isEnrolling, setIsEnrolling] = useState(false);
+  const [showRequireAuthModal, setShowRequireAuthModal] = useState(false);
+  const [authCourseTarget, setAuthCourseTarget] = useState<any>(null);
+
   // FAQ state
   const [openFaqId, setOpenFaqId] = useState<number | null>(null);
   const [isAiActive, setIsAiActive] = useState(false);
@@ -324,6 +332,107 @@ export default function Home() {
     });
     return () => unsubscribe();
   }, []);
+
+  // 🌟 Seamless Post-Login Action Continuity: Automatically resume Buy/Enroll where user left off!
+  useEffect(() => {
+    if (user && courses.length > 0) {
+      try {
+        const savedRaw = sessionStorage.getItem('tsehay_pending_course_action');
+        if (savedRaw) {
+          const saved = JSON.parse(savedRaw);
+          const found = courses.find((c: any) => c.id === saved.courseId) || saved.course;
+          if (found) {
+            sessionStorage.removeItem('tsehay_pending_course_action');
+            setShowRequireAuthModal(false);
+            setAuthCourseTarget(null);
+            openPaymentModal(found);
+          }
+        }
+      } catch (e) {
+        console.warn("Error restoring pending course action:", e);
+      }
+    }
+  }, [user, courses]);
+
+  const openPaymentModal = async (course: any) => {
+    const isFree = course.isFree || course.price === 'Free' || course.price === '0' || course.price === 0;
+    
+    if (!user) {
+      try {
+        sessionStorage.setItem('tsehay_pending_course_action', JSON.stringify({
+          type: isFree ? 'enroll_free' : 'buy',
+          courseId: course.id,
+          courseTitle: course.title,
+          course: course
+        }));
+      } catch (e) {}
+      setAuthCourseTarget(course);
+      setShowRequireAuthModal(true);
+      return;
+    }
+
+    if (isFree) {
+      setIsEnrolling(true);
+      try {
+        // 1. Direct resilient client-side Firestore registration
+        try {
+          const purchaseRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'purchased_courses', course.id);
+          await setDoc(purchaseRef, {
+            courseId: course.id,
+            amount: 0,
+            paymentMethod: 'free',
+            purchasedAt: serverTimestamp(),
+            status: 'active'
+          }, { merge: true });
+        } catch (dbErr) {
+          console.warn("Client Firestore write attempt:", dbErr);
+        }
+
+        // 2. Set active course & lesson cache
+        try {
+          localStorage.setItem('tsehay_user_active_course', JSON.stringify(course));
+          if (course.lessons && course.lessons.length > 0) {
+            localStorage.setItem('tsehay_user_active_lesson', JSON.stringify({ ...course.lessons[0], moduleIndex: 0, lessonIndex: 0 }));
+          }
+        } catch (e) {}
+
+        // 3. Notify backend API in background
+        try {
+          const idToken = await user.getIdToken();
+          fetch('/api/enroll-free', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${idToken}`
+            },
+            body: JSON.stringify({ courseId: course.id })
+          }).catch(e => console.warn("Background API enrollment notify:", e));
+        } catch (authErr) {}
+
+        // 4. Route to dashboard classroom
+        if (typeof window !== 'undefined') {
+          window.location.href = '/dashboard';
+        } else {
+          router.push('/dashboard');
+        }
+      } catch (err: any) {
+         console.error("Free enrollment failed:", err);
+         if (typeof window !== 'undefined') {
+           window.location.href = '/dashboard';
+         } else {
+           router.push('/dashboard');
+         }
+      } finally {
+         setIsEnrolling(false);
+      }
+    } else {
+      setSelectedCourse(course);
+    }
+  };
+
+  const closePaymentModal = () => {
+    setSelectedCourse(null);
+  };
 
   return (
     <main className="relative bg-transparent">
@@ -582,25 +691,32 @@ export default function Home() {
                     className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 w-full max-w-full" 
                     id="courseList"
                 >
-                    {courses.slice(0, 6).map((course, index) => (
+                    {courses.slice(0, 6).map((course, index) => {
+                        const isFree = course.isFree || course.price === 0 || course.price === '0' || course.price === 'Free';
+                        return (
                         <Tilt3DCard
                             key={course.id}
                             maxTilt={12}
                             scale={1.025}
                             perspective={1100}
                             glare={true}
-                            onClick={() => window.location.href=`/courses/${getCourseSlug(course)}`}
+                            onClick={() => router.push(`/courses/${getCourseSlug(course) || course.id}`)}
                             className="cursor-pointer group"
                         >
                             <div 
                                 data-scrolly-order={index + 1}
-                                className="h-full course-card bg-white/90 dark:bg-slate-900/70 backdrop-blur-2xl rounded-3xl overflow-hidden flex flex-col justify-between border border-gray-200/80 dark:border-white/[0.08] hover:border-[#f9b03c]/60 dark:hover:border-[#f9b03c]/60 shadow-[0_15px_35px_rgba(0,0,0,0.08)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)] hover:shadow-[0_30px_70px_rgba(249,176,60,0.22),0_0_30px_rgba(50,104,186,0.15)] transition-all duration-500 relative"
+                                onClick={() => router.push(`/courses/${getCourseSlug(course) || course.id}`)}
+                                className="h-full course-card bg-white/90 dark:bg-slate-900/70 backdrop-blur-2xl rounded-3xl overflow-hidden flex flex-col justify-between border border-gray-200/80 dark:border-white/[0.08] hover:border-[#f9b03c]/60 dark:hover:border-[#f9b03c]/60 shadow-[0_15px_35px_rgba(0,0,0,0.08)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.6)] hover:shadow-[0_30px_70px_rgba(249,176,60,0.22),0_0_30px_rgba(50,104,186,0.15)] transition-all duration-500 relative select-none"
                                 style={{ transformStyle: 'preserve-3d' }}
                             >
                                 <div>
                                     {/* Thumbnail Wrapper with 3D Z-Popout */}
                                     <div 
-                                        className="relative aspect-video w-full overflow-hidden bg-slate-950 flex items-center justify-center m-0"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            router.push(`/courses/${getCourseSlug(course) || course.id}`);
+                                        }}
+                                        className="relative aspect-video w-full overflow-hidden bg-slate-950 flex items-center justify-center m-0 cursor-pointer"
                                         style={{ transform: 'translateZ(30px)' }}
                                     >
                                         <img 
@@ -616,7 +732,7 @@ export default function Home() {
                                         />
                                         
                                         {/* Floating Popout Badges */}
-                                        {(!course.isFree && course.price !== 0 && course.price !== '0' && course.price !== 'Free') ? (
+                                        {!isFree ? (
                                             <div 
                                                 className="absolute top-3.5 right-3.5 z-20 bg-gradient-to-r from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 text-[11px] font-black px-3.5 py-1.5 rounded-full flex items-center gap-1.5 shadow-[0_4px_15px_rgba(249,176,60,0.5)] border border-amber-200/50" 
                                                 style={{ transform: 'translateZ(45px)' }}
@@ -646,12 +762,19 @@ export default function Home() {
                                     {/* Content Details */}
                                     <div className="p-6 sm:p-7">
                                         {/* Title */}
-                                        <h3 
-                                            className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mb-3 line-clamp-2 leading-snug group-hover:text-[#f9b03c] transition-colors font-heading"
-                                            style={{ transform: 'translateZ(25px)' }}
+                                        <div 
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                router.push(`/courses/${getCourseSlug(course) || course.id}`);
+                                            }}
                                         >
-                                            {course.title || t('course_unknown')}
-                                        </h3>
+                                            <h3 
+                                                className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mb-3 line-clamp-2 leading-snug group-hover:text-[#f9b03c] transition-colors font-heading cursor-pointer"
+                                                style={{ transform: 'translateZ(25px)' }}
+                                            >
+                                                {course.title || t('course_unknown')}
+                                            </h3>
+                                        </div>
 
                                         {/* Instructor & Rating Info */}
                                         <div 
@@ -701,11 +824,11 @@ export default function Home() {
 
                                 {/* Price & CTA Row (Bottom) with 3D Depth */}
                                 <div 
-                                    className="px-6 sm:px-7 pb-6 sm:pb-7 pt-4 border-t border-gray-100 dark:border-white/[0.06] flex items-center justify-between mt-auto bg-slate-50/50 dark:bg-white/[0.01]"
+                                    className="px-6 sm:px-7 pb-6 sm:pb-7 pt-4 border-t border-gray-100 dark:border-white/[0.06] flex items-center justify-between gap-3 mt-auto bg-slate-50/50 dark:bg-white/[0.01]"
                                     style={{ transform: 'translateZ(32px)' }}
                                 >
                                     <div>
-                                        {(course.isFree || course.price === 0 || course.price === '0' || course.price === 'Free') ? (
+                                        {isFree ? (
                                             <span className="text-xl sm:text-2xl font-black text-[#f9b03c] tracking-tight">
                                                 {t('course_free') || 'ነፃ (Free)'}
                                             </span>
@@ -723,17 +846,38 @@ export default function Home() {
                                         )}
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <span className="text-xs font-black text-[#f9b03c] opacity-0 group-hover:opacity-100 transition-opacity duration-300 hidden sm:inline-block">
-                                            {(course.isFree || course.price === 0 || course.price === '0' || course.price === 'Free') ? 'በነፃ ይጀምሩ' : 'አሁኑኑ ይግዙ'}
-                                        </span>
-                                        <div className="w-10 h-10 rounded-2xl bg-[#3268ba]/10 dark:bg-white/[0.06] border border-[#3268ba]/30 dark:border-white/[0.1] text-secondary dark:text-white flex items-center justify-center group-hover:bg-[#f9b03c] group-hover:text-slate-950 group-hover:border-[#f9b03c] group-hover:rotate-[-45deg] transition-all duration-300 shadow-sm group-hover:shadow-[0_0_20px_rgba(249,176,60,0.6)]">
-                                            <i className="fa-solid fa-arrow-right text-sm"></i>
-                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                router.push(`/courses/${getCourseSlug(course) || course.id}`);
+                                            }}
+                                            className="bg-slate-100 dark:bg-white/[0.05] hover:bg-slate-200 dark:hover:bg-white/10 text-slate-900 dark:text-white text-xs font-bold px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-xl transition border border-gray-200 dark:border-white/10 flex items-center gap-1.5 cursor-pointer hover:border-[#f9b03c]/40 active:scale-95"
+                                        >
+                                            <i className="fa-solid fa-eye text-[#f9b03c]"></i>
+                                            <span>ይመልከቱ</span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                openPaymentModal(course);
+                                            }}
+                                            disabled={isEnrolling}
+                                            className="btn-shimmer-interactive px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl flex items-center gap-1.5 sm:gap-2 transition-all text-xs cursor-pointer active:scale-95 disabled:opacity-50 group font-black shadow-lg"
+                                        >
+                                            {isFree ? (
+                                                <>{isEnrolling ? 'እባክዎ ይጠብቁ...' : t('btn_go_to_class')} <i className="fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform"></i></>
+                                            ) : (
+                                                <>{t('btn_buy_course')} <i className="fa-solid fa-cart-shopping buy-icon-animated group-hover:scale-110 group-hover:-rotate-6 transition-transform"></i></>
+                                            )}
+                                        </button>
                                     </div>
                                 </div>
                             </div>
                         </Tilt3DCard>
-                    ))}
+                    );
+                    })}
                 </div>
             )}
 
@@ -897,19 +1041,25 @@ export default function Home() {
 
     <Footer />
 
-    
-    
+    {/* Render Payment Modal if a course is selected */}
+    {selectedCourse && (
+      <PaymentModal course={selectedCourse} onClose={closePaymentModal} />
+    )}
 
-    
-    
-    
-    
-
-    
-    
-    
-    
-
+    {/* Dedicated Authentication Required Modal */}
+    <RequireAuthModal
+      isOpen={showRequireAuthModal}
+      onClose={() => { setShowRequireAuthModal(false); setAuthCourseTarget(null); }}
+      courseTitle={authCourseTarget?.title}
+      courseImage={authCourseTarget?.image}
+      isFree={authCourseTarget?.isFree || authCourseTarget?.price === 'Free' || authCourseTarget?.price === '0' || authCourseTarget?.price === 0}
+      onContinueAuth={(isSignup) => {
+        setShowRequireAuthModal(false);
+        window.dispatchEvent(new CustomEvent('open-auth-modal', { 
+          detail: { isSignupMode: isSignup, isSignUp: isSignup } 
+        }));
+      }}
+    />
 
     </main>
   );

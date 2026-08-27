@@ -169,7 +169,7 @@ export function generateCourseSlug(title: string): string {
   if (!title) return '';
   const lower = title.toLowerCase();
   
-  if (lower.includes('shein') || lower.includes('ኢምፖርት') || lower.includes('import')) {
+  if (lower.includes('shein') || lower.includes('ኢምፖርት') || lower.includes('import') || lower.includes('ሼን')) {
     return 'shein-import-business';
   }
   if (lower.includes('youtube') || lower.includes('ዩቲዩብ')) {
@@ -184,7 +184,7 @@ export function generateCourseSlug(title: string): string {
   if (lower.includes('crypto') || lower.includes('ክሪፕቶ')) {
     return 'crypto-trading';
   }
-  if (lower.includes('web') || lower.includes('ኮዲንግ') || lower.includes('coding')) {
+  if (lower.includes('web') || lower.includes('ኮዲንግ') || lower.includes('coding') || lower.includes('ዌብ')) {
     return 'web-development';
   }
 
@@ -211,53 +211,56 @@ export function getCourseSlug(course: any): string {
     return course.slug.trim().toLowerCase();
   }
   if (course.title) {
-    return generateCourseSlug(course.title);
+    const slug = generateCourseSlug(course.title);
+    if (slug) return slug;
   }
   return course.id || '';
 }
 
 /**
- * Resolves a course by slug, raw ID, or known aliases
+ * Resolves a course by slug, raw ID, or known aliases with comprehensive multi-tier matching
  */
 export function getCourseBySlugOrId(slugOrId: string, courses: any[]): any {
-  if (!slugOrId || !Array.isArray(courses) || courses.length === 0) return null;
+  if (!slugOrId) return null;
 
+  const list = (Array.isArray(courses) && courses.length > 0) ? courses : DEFAULT_COURSES;
   const raw = decodeURIComponent(slugOrId).trim().toLowerCase();
 
   // 1. Direct ID or explicit slug match
-  const directMatch = courses.find((c: any) => 
+  const directMatch = list.find((c: any) => 
     (c.id && c.id.toLowerCase() === raw) ||
     (c.slug && c.slug.toLowerCase() === raw)
   );
   if (directMatch) return directMatch;
 
   // 2. Computed slug match
-  const slugMatch = courses.find((c: any) => getCourseSlug(c) === raw);
+  const slugMatch = list.find((c: any) => getCourseSlug(c) === raw);
   if (slugMatch) return slugMatch;
 
   // 3. Known Aliases
   // Digital Marketing aliases
-  if (raw === 'digital-marketing' || raw === 'digital-marketing-free' || raw === 'marketing' || raw === 'digital_marketing_free' || raw.includes('digital-marketing')) {
-    const dm = courses.find((c: any) => 
-      c.id === 'digital_marketing_free' ||
-      c.id === 'course_1784495507314' ||
-      (c.title && (c.title.includes('ዲጂታል ማርኬቲንግ') || /digital marketing/i.test(c.title)))
+  if (raw === 'digital-marketing' || raw === 'digital-marketing-free' || raw === 'marketing' || raw === 'digital_marketing_free' || raw.includes('digital-marketing') || raw.includes('marketing') || raw.includes('ማርኬቲንግ')) {
+    const isPro = raw.includes('pro') || raw.includes('ፕሮ');
+    const dm = list.find((c: any) => 
+      isPro 
+        ? (c.id === 'digital_marketing_pro' || (c.title && (c.title.includes('ፕሮፌሽናል') || /pro/i.test(c.title))))
+        : (c.id === 'digital_marketing_free' || c.id === 'course_1784495507314' || (c.title && (c.title.includes('ዲጂታል ማርኬቲንግ') || /digital marketing/i.test(c.title))))
     );
     if (dm) return dm;
   }
 
   // Shein aliases
-  if (raw === 'shein' || raw === 'shein-import' || raw === 'shein-import-business' || raw === 'ecommerce' || raw.includes('shein')) {
-    const shein = courses.find((c: any) => 
-      (c.title && (c.title.includes('ሼን') || /shein/i.test(c.title))) ||
-      (c.category && /shein/i.test(c.category))
+  if (raw === 'shein' || raw === 'shein-import' || raw === 'shein-import-business' || raw === 'ecommerce' || raw.includes('shein') || raw.includes('ኢምፖርት') || raw.includes('ሼን')) {
+    const shein = list.find((c: any) => 
+      (c.title && (c.title.includes('ሼን') || c.title.includes('ኢምፖርት') || /shein/i.test(c.title))) ||
+      (c.category && /shein|ecommerce/i.test(c.category))
     );
     if (shein) return shein;
   }
 
   // YouTube aliases
-  if (raw === 'youtube' || raw === 'youtube-secrets' || raw === 'youtube-masterclass' || raw === 'youtube-secrets-masterclass' || raw === 'course_1784885267254' || raw.includes('youtube')) {
-    const yt = courses.find((c: any) => 
+  if (raw === 'youtube' || raw === 'youtube-secrets' || raw === 'youtube-masterclass' || raw === 'youtube-secrets-masterclass' || raw === 'course_1784885267254' || raw.includes('youtube') || raw.includes('ዩቲዩብ')) {
+    const yt = list.find((c: any) => 
       c.id === 'course_1784885267254' ||
       (c.title && (c.title.includes('ዩቲዩብ') || /youtube/i.test(c.title))) ||
       (c.category && /youtube/i.test(c.category))
@@ -266,24 +269,38 @@ export function getCourseBySlugOrId(slugOrId: string, courses: any[]): any {
   }
 
   // Crypto aliases
-  if (raw === 'crypto' || raw === 'crypto-trading' || raw.includes('crypto')) {
-    const crypto = courses.find((c: any) => 
-      (c.title && (c.title.includes('ክሪፕቶ') || /crypto/i.test(c.title)))
+  if (raw === 'crypto' || raw === 'crypto-trading' || raw.includes('crypto') || raw.includes('ክሪፕቶ')) {
+    const crypto = list.find((c: any) => 
+      (c.title && (c.title.includes('ክሪፕቶ') || /crypto/i.test(c.title))) ||
+      (c.category && /crypto/i.test(c.category))
     );
     if (crypto) return crypto;
   }
 
+  // Web / Coding aliases
+  if (raw === 'web-development' || raw === 'coding' || raw.includes('coding') || raw.includes('web') || raw.includes('ኮዲንግ')) {
+    const web = list.find((c: any) => 
+      (c.title && (c.title.includes('ኮዲንግ') || c.title.includes('ዌብ') || /web|coding/i.test(c.title)))
+    );
+    if (web) return web;
+  }
+
   // 4. Timestamp / numeric course ID partial match
   if (raw.startsWith('course_') || raw.startsWith('course-')) {
-    const idMatch = courses.find((c: any) => c.id && c.id.toLowerCase().includes(raw));
+    const idMatch = list.find((c: any) => c.id && c.id.toLowerCase().includes(raw));
     if (idMatch) return idMatch;
   }
 
   // 5. Title substring search
-  const titleMatch = courses.find((c: any) => c.title && c.title.toLowerCase().includes(raw));
+  const titleMatch = list.find((c: any) => c.title && c.title.toLowerCase().includes(raw));
   if (titleMatch) return titleMatch;
 
-  return null;
+  // 6. Secondary fallback to DEFAULT_COURSES if not already searched
+  if (list !== DEFAULT_COURSES) {
+    return getCourseBySlugOrId(slugOrId, DEFAULT_COURSES);
+  }
+
+  return list[0] || null;
 }
 
 export function formatCourseDesc(course: any): string {

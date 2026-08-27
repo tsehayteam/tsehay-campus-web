@@ -12,7 +12,7 @@ import PaymentModal from '@/components/PaymentModal';
 import RequireAuthModal from '@/components/RequireAuthModal';
 import Footer from '@/components/Footer';
 import dynamic from 'next/dynamic';
-import { getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl, getCourseSlug, getCourseBySlugOrId } from '@/lib/courseCache';
+import { getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl, getCourseSlug, getCourseBySlugOrId, DEFAULT_COURSES } from '@/lib/courseCache';
 
 function CoursePreviewContent() {
   const routeParams = useParams();
@@ -53,26 +53,25 @@ function CoursePreviewContent() {
       return getCourseBySlugOrId(searchId, list) || list[0] || null;
     };
 
-    // Load from cache immediately on client mount
+    // Load from cache or DEFAULT_COURSES immediately on client mount
     try {
       const cached = getCachedCourses();
-      if (cached.length > 0) {
-        setAllCourses(cached);
-        const cachedCourse = findMatchingCourse(cached, id);
-        if (cachedCourse && isMounted) {
-          const cleanDesc = formatCourseDesc({ id: cachedCourse.id, ...cachedCourse });
-          setCourse({
-            ...cachedCourse,
-            desc: cleanDesc,
-            description: cleanDesc
-          });
-          if (cachedCourse.lessons && cachedCourse.lessons.length > 0) {
-            setModules([{ id: 'main', title: 'Course Content', lessons: cachedCourse.lessons }]);
-          } else if (cachedCourse.modules && cachedCourse.modules.length > 0) {
-            setModules(cachedCourse.modules);
-          }
-          setLoading(false);
+      const initialPool = (cached && cached.length > 0) ? cached : DEFAULT_COURSES;
+      setAllCourses(initialPool);
+      const initialCourse = findMatchingCourse(initialPool, id);
+      if (initialCourse && isMounted) {
+        const cleanDesc = formatCourseDesc({ id: initialCourse.id, ...initialCourse });
+        setCourse({
+          ...initialCourse,
+          desc: cleanDesc,
+          description: cleanDesc
+        });
+        if (initialCourse.lessons && initialCourse.lessons.length > 0) {
+          setModules([{ id: 'main', title: 'Course Content', lessons: initialCourse.lessons }]);
+        } else if (initialCourse.modules && initialCourse.modules.length > 0) {
+          setModules(initialCourse.modules);
         }
+        setLoading(false);
       }
     } catch (e) {}
 

@@ -361,11 +361,13 @@ export default function Courses() {
                       scale={1.02}
                       perspective={1100}
                       glare={true}
-                      className="h-full group"
+                      onClick={() => router.push(`/courses/${getCourseSlug(course) || course.id}`)}
+                      className="h-full group cursor-pointer"
                     >
                       {/* Premium Glassmorphic Card Container with Smooth Hover translateY(-8px) & Golden Aura */}
                       <div 
-                        className="h-full course-card bg-slate-900/80 backdrop-blur-2xl rounded-3xl overflow-hidden flex flex-col justify-between border border-white/[0.08] hover:border-[#f9b03c]/70 shadow-[0_15px_35px_rgba(0,0,0,0.6)] hover:shadow-[0_25px_60px_rgba(249,176,60,0.25),0_0_35px_rgba(50,104,186,0.18)] transition-all duration-500 cursor-pointer relative hover:-translate-y-2"
+                        onClick={() => router.push(`/courses/${getCourseSlug(course) || course.id}`)}
+                        className="h-full course-card bg-slate-900/80 backdrop-blur-2xl rounded-3xl overflow-hidden flex flex-col justify-between border border-white/[0.08] hover:border-[#f9b03c]/70 shadow-[0_15px_35px_rgba(0,0,0,0.6)] hover:shadow-[0_25px_60px_rgba(249,176,60,0.25),0_0_35px_rgba(50,104,186,0.18)] transition-all duration-500 cursor-pointer relative hover:-translate-y-2 select-none"
                         style={{ 
                           backdropFilter: 'blur(16px)',
                           WebkitBackdropFilter: 'blur(16px)',
@@ -374,8 +376,11 @@ export default function Courses() {
                       >
                         <div>
                           {/* Thumbnail Wrapper: 100% full view with ambient glow & 1.05 scale hover zoom */}
-                          <a 
-                            href={`/courses/${getCourseSlug(course)}`} 
+                          <div 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              router.push(`/courses/${getCourseSlug(course) || course.id}`);
+                            }}
                             className="relative aspect-video w-full overflow-hidden bg-black flex items-center justify-center block cursor-pointer"
                             style={{ transform: 'translateZ(30px)' }}
                           >
@@ -417,18 +422,23 @@ export default function Courses() {
                                 {course.category}
                               </div>
                             )}
-                          </a>
+                          </div>
                           
                           {/* Content Details */}
                           <div className="p-6 sm:p-7">
-                            <a href={`/courses/${getCourseSlug(course)}`}>
+                            <div 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                router.push(`/courses/${getCourseSlug(course) || course.id}`);
+                              }}
+                            >
                               <h3 
                                 className="text-xl sm:text-2xl font-black text-white mb-3 line-clamp-2 leading-snug group-hover:text-[#f9b03c] transition-colors font-heading cursor-pointer tracking-tight"
                                 style={{ transform: 'translateZ(25px)' }}
                               >
                                 {course.title || t('course_unknown')}
                               </h3>
-                            </a>
+                            </div>
                             
                             {/* Instructor & Rating Row */}
                             <div 
@@ -501,15 +511,23 @@ export default function Courses() {
                           </div>
                           
                           <div className="flex items-center gap-2">
-                            <a 
-                              href={`/courses/${getCourseSlug(course)}`} 
-                              className="bg-white/[0.05] hover:bg-white/10 text-white text-xs font-bold px-3.5 py-2.5 rounded-xl transition border border-white/10 flex items-center gap-1.5 cursor-pointer hover:border-[#f9b03c]/40"
+                            <button 
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                router.push(`/courses/${getCourseSlug(course) || course.id}`);
+                              }}
+                              className="bg-white/[0.05] hover:bg-white/10 text-white text-xs font-bold px-3.5 py-2.5 rounded-xl transition border border-white/10 flex items-center gap-1.5 cursor-pointer hover:border-[#f9b03c]/40 active:scale-95"
                             >
                               <i className="fa-solid fa-eye text-[#f9b03c]"></i>
                               <span>ይመልከቱ</span>
-                            </a>
+                            </button>
                             <button 
-                              onClick={() => openPaymentModal(course)} 
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openPaymentModal(course);
+                              }} 
                               disabled={isEnrolling} 
                               className="btn-shimmer-interactive px-4 py-2.5 rounded-xl flex items-center gap-2 transition-all text-xs cursor-pointer active:scale-95 disabled:opacity-50 group font-black shadow-lg"
                             >

@@ -12,12 +12,50 @@ export default function Hero3DPopoutStage({
 }: Hero3DPopoutStageProps) {
   const { t } = useLanguage();
   const stageRef = useRef<HTMLDivElement | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   
   // 3D Gyroscopic & Mouse Tilt State
   const [rotate, setRotate] = useState({ x: 0, y: 0, glareX: 50, glareY: 50 });
   const [isInteracting, setIsInteracting] = useState(false);
   const [studentCount, setStudentCount] = useState(500);
+  const [isVideoReady, setIsVideoReady] = useState(false);
   const animationFrameRef = useRef<number | null>(null);
+
+  // 🚀 Instant Video Kickstart (Ensures zero-delay video playback from first frame)
+  useEffect(() => {
+    const video = videoRef.current;
+    if (video) {
+      video.muted = true;
+      video.defaultMuted = true;
+      video.playsInline = true;
+      
+      const attemptPlay = () => {
+        const promise = video.play();
+        if (promise !== undefined) {
+          promise
+            .then(() => setIsVideoReady(true))
+            .catch(() => {
+              // Retry on first user scroll/interaction if restricted by browser policy
+              const handleFirstTouch = () => {
+                video.play().catch(() => {});
+                setIsVideoReady(true);
+                window.removeEventListener('touchstart', handleFirstTouch);
+                window.removeEventListener('scroll', handleFirstTouch);
+              };
+              window.addEventListener('touchstart', handleFirstTouch, { passive: true, once: true });
+              window.addEventListener('scroll', handleFirstTouch, { passive: true, once: true });
+            });
+        }
+      };
+
+      if (video.readyState >= 2) {
+        attemptPlay();
+      } else {
+        video.addEventListener('loadeddata', attemptPlay, { once: true });
+        video.addEventListener('canplay', attemptPlay, { once: true });
+      }
+    }
+  }, [videoSrc]);
 
   // Live student counter pulse
   useEffect(() => {
@@ -100,14 +138,18 @@ export default function Hero3DPopoutStage({
           className="relative w-full h-[220px] sm:h-[320px] md:h-[390px] lg:h-[430px] rounded-[1.8rem] sm:rounded-[2.2rem] shadow-[0_30px_90px_rgba(0,0,0,0.85)] border-2 border-white/20 dark:border-[#f9b03c]/40 overflow-hidden bg-black/90"
           style={{ transform: 'translateZ(0px)' }}
         >
-          {/* Main High-Definition Video Feed */}
+          {/* Main High-Definition Video Feed with Instant Poster Preload */}
           <video 
+            ref={videoRef}
             id="hero-video" 
             autoPlay 
             loop 
             muted 
             playsInline 
             preload="auto" 
+            poster="/assets/about_video_cover.jpg"
+            onCanPlay={() => setIsVideoReady(true)}
+            onPlaying={() => setIsVideoReady(true)}
             disablePictureInPicture 
             controlsList="nodownload noremoteplayback" 
             onContextMenu={(e) => e.preventDefault()} 
