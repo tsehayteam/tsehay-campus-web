@@ -946,8 +946,6 @@ export default function AdminDashboard() {
 
       setIsAuthenticated(true);
       setLoginError('');
-      // Trigger 2FA OTP sending to eyoubsahle@gmail.com
-      handleSend2faOtp(true);
     } else {
       setLoginError('የተሳሳተ የመዳረሻ ኮድ (Access Code) ወይም የይለፍ ቃል።');
     }
