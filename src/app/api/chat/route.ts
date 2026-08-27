@@ -53,9 +53,9 @@ function getSmartFallbackReply(userPrompt: string, courseContext?: any, hasImage
 
     if (isOffTopic && !isYouTube && !isDigitalMarketing && !isShein && !isCrypto && !isCoding && !isMentorship) {
         if (isEnglish) {
-            return "I am designed specifically to assist you with Tsehay Campus courses, YouTube channel creation, and digital business skills. If you have any questions regarding our courses, payments, or enrollment, I'd be glad to help! ✨";
+            return `I apologize, but I do not have sufficient details on this specific topic right now.\n\nFor accurate and official assistance, please reach out directly to our dedicated support team (**Tsehay Team**) via:\n• **Phone / WhatsApp**: **0980209090** (+251980209090)\n• **Telegram**: **@TsehayTeam** (https://t.me/tsehaycampus)\n• **Location**: Bole, Addis Ababa, Ethiopia\n\nOur team will be delighted to help you! ✨`;
         }
-        return "ይቅርታ፣ እኔ የተዘጋጀሁት ስለ ፀሐይ ካምፓስ ስልጠናዎች፣ የዩቲዩብ ስኬት እና የዲጂታል ክህሎቶች እርስዎን ለመርዳት ብቻ ነው። ስለ ካምፓሳችን ኮርሶች፣ ምዝገባ ወይም አሰራር ማንኛውንም ጥያቄ ካለዎት በደስታ እመልስልዎታለሁ! ✨";
+        return `ይቅርታ፣ ስለዚህ ጉዳይ አሁን ላይ በቂ መረጃ የለኝም።\n\nትክክለኛና ይፋዊ መረጃ ለማግኘት እባክዎ የእኛን የድጋፍ ሰጪ ቡድን (**ፀሐይ ቲም / Tsehay Team**) በቀጥታ ያግኙ፦\n• **ስልክ / ዋትስአፕ**፦ **0980209090** (0980-20-90-90 / +251980209090)\n• **ቴሌግራም**፦ **@TsehayTeam** (https://t.me/tsehaycampus)\n• **አድራሻ**፦ ቦሌ፣ አዲስ አበባ፣ ኢትዮጵያ\n\nየእኛ የፀሐይ ቲም አባላት በደስታ ይረዱዎታል! ✨`;
     }
 
     // 2. Greetings
@@ -269,9 +269,9 @@ function getSmartFallbackReply(userPrompt: string, courseContext?: any, hasImage
     }
 
     if (isEnglish) {
-        return "Feel free to ask any question about Tsehay Campus courses, our location (Bole, Addis Ababa), payments, and enrollment. Reach our team on phone at 0980209090 or Telegram @TsehayTeam. ✨";
+        return `I apologize, but I do not have sufficient information regarding this specific question right now.\n\nFor accurate and complete details, please reach out directly to the **Tsehay Team**:\n• **Phone & WhatsApp**: **0980209090** (+251980209090)\n• **Telegram Support**: **@TsehayTeam** (https://t.me/tsehaycampus)\n• **Office**: Bole, Addis Ababa, Ethiopia\n\nOur support team will be delighted to assist you! ✨`;
     }
-    return "ስለ ፀሐይ ካምፓስ ስልጠናዎች፣ አድራሻችን (ቦሌ፣ አዲስ አበባ)፣ ክፍያና ምዝገባ ማንኛውንም ጥያቄ መጠየቅ ይችላሉ። በስልክ 0980209090 ወይም በቴሌግራም በ @TsehayTeam ያግኙን። ✨";
+    return `ይቅርታ፣ ስለዚህ ጉዳይ አሁን ላይ በቂ መረጃ የለኝም።\n\nትክክለኛና የተሟላ ይፋዊ መረጃ ለማግኘት እባክዎ የእኛን የድጋፍ ሰጪ ቡድን (**ፀሐይ ቲም / Tsehay Team**) በቀጥታ ያግኙ፦\n• **ስልክ እና ዋትስአፕ**፦ **0980209090** (0980-20-90-90 / +251980209090)\n• **ቴሌግራም**፦ **@TsehayTeam** (https://t.me/tsehaycampus)\n• **አድራሻ**፦ ቦሌ፣ አዲስ አበባ፣ ኢትዮጵያ\n\nየፀሐይ ቲም አባላት በደስታ ያስተናግዱዎታል! ✨`;
 }
 
 export async function POST(req: Request) {
@@ -422,6 +422,7 @@ ${languageDirective}
 - Phone & WhatsApp: 0980209090 (+251980209090)
 - Telegram Channel & Support: @TsehayTeam (https://t.me/tsehaycampus)
 - Founder & Lead Mentor: Eyoub Sahle (ኢዮብ ሳህሌ)
+- Support Team: Tsehay Team (ፀሐይ ቲም)
 - Flagship Courses:
   1. **Shein Import Business (የሼን ኢምፖርት ቢዝነስ)** - 4,500 ETB
   2. **YouTube Secrets Masterclass & Monetization (የዩቲዩብ ስኬት ሚስጥሮች)** - 5,500 ETB (includes free Amharic E-Book)
@@ -431,6 +432,14 @@ ${languageDirective}
 - 1-on-1 Mentorship: Available with Eyoub Sahle at /mentorship for 45-minute private strategy sessions.
 - Payment Methods: Telebirr (ቴሌብር), CBE Birr (ሲቢኢ ብር), LakiPay (Domestic); PayPal, Credit/Debit Cards, Crypto (International).
 - Certification: Free official Digital Certificate of Completion upon passing the quiz (80%+).
+
+[RULE FOR UNKNOWN, UNVERIFIED OR OUT-OF-SCOPE QUESTIONS]
+- You are exceptionally knowledgeable on all Tsehay Campus topics, courses, ecommerce, YouTube, digital skills, and platform features. Answer them comprehensively and authoritatively!
+- However, if the user asks a question about something you do NOT have specific information on, or external topics outside your verified scope:
+  • NEVER guess, speculate, or give irrelevant generic replies.
+  • Politely and professionally explain that you do not have sufficient information on that specific question, and guide them to contact our human support team ("ፀሐይ ቲም / Tsehay Team"):
+    - Amharic: "ይቅርታ፣ ስለዚህ ጉዳይ አሁን ላይ በቂ መረጃ የለኝም። ትክክለኛና ይፋዊ መረጃ ለማግኘት እባክዎ የእኛን የድጋፍ ሰጪ ቡድን (**ፀሐይ ቲም / Tsehay Team**) በስልክ 0980209090 በመደወል ወይም በቴሌግራም በ @TsehayTeam ያግኙ። የፀሐይ ቲም አባላት በደስታ ይረዱዎታል! ✨"
+    - English: "I apologize, but I do not have sufficient details on this specific topic right now. For official and accurate assistance, please reach out directly to our dedicated support team (**Tsehay Team**) via phone at **0980209090** or on Telegram at **@TsehayTeam**. Our team will be glad to assist you! ✨"
 
 ${contextualCourseSection}`;
 
