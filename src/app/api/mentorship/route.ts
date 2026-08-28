@@ -15,7 +15,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const { name, phone, email, date, time, topic, userId, tier, amount, paymentMethod } = body;
+    const { name, phone, email, date, time, topic, userId, tier, amount, paymentMethod, meetingMode } = body;
 
     if (!name || !phone || !email || !date || !time) {
       return NextResponse.json(
@@ -24,7 +24,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const bookingData: MentorshipBooking & { tier?: string; amount?: number; paymentMethod?: string } = {
+    const bookingData: MentorshipBooking = {
       name: String(name).trim(),
       phone: String(phone).trim(),
       email: String(email).trim(),
@@ -33,6 +33,7 @@ export async function POST(req: Request) {
       topic: (topic || 'አጠቃላይ የ 1-ለ-1 ማማከር').trim(),
       tier: tier || '1-Hour Strategy Consultation',
       amount: amount || 4600,
+      meetingMode: meetingMode || 'online',
       paymentMethod: paymentMethod || 'telebirr',
       userId: userId || 'guest_user',
       createdAt: new Date().toISOString()

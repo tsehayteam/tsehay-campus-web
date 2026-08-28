@@ -36,7 +36,7 @@ const MENTORSHIP_TIERS: MentorshipTier[] = [
     isPopular: true,
     desc: 'ለዩቲዩብ ቻናልዎ፣ ለሼን ቢዝነስዎ ወይም ለዲጂታል ማርኬቲንግ ስራዎ ፈጣን ኦዲት እና የተግባር መፍትሔ የሚያገኙበት።',
     features: [
-      'የ 1-ለ-1 የቀጥታ የቪዲዮ ውይይት (Direct Video Call)',
+      'የ 1-ለ-1 የቀጥታ የቪዲዮ ወይም በአካል ውይይት',
       'የቻናል፣ የቢዝነስ ወይም የማስታወቂያ ፈጣን ኦዲት (Quick Audit)',
       'የችግሮች መፍትሔ እና ብጁ የድርጊት እቅድ (Action Plan)',
       'የማጠቃለያ ማስታወሻ እና የቪዲዮ ቀረጻ'
@@ -72,7 +72,7 @@ const MENTORSHIP_TIERS: MentorshipTier[] = [
     tag: 'VIP ሙሉ እቅድ (Full Scale Blueprint)',
     desc: 'ሙሉ ለሙሉ ከዜሮ ወደ ከፍተኛ ገቢ የሚያሸጋግር VIP ስልጠና እና ማማከር፣ የቀጥታ የፕሮጀክት ስራ እና የቅርብ ክትትል።',
     features: [
-      '5 የተከፋፈሉ የ 1 ሰዓት የቀጥታ የቪዲዮ ክፍለ-ጊዜዎች',
+      '5 የተከፋፈሉ የ 1 ሰዓት የቀጥታ ክፍለ-ጊዜዎች',
       'የሙሉ ቢዝነስ ሞዴል እና ገቢ ማስገኛ ፍኖተ-ካርታ',
       'የማስታወቂያ፣ የቪዲዮ እና የኦንላይን ንግድ አሰራር ክትትል',
       'የ 1 ወር የቀጥታ የ Telegram VIP ድጋፍ ከኢዮብ ሳህሌ ጋር'
@@ -89,13 +89,15 @@ export default function MentorshipPage() {
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState(user?.email || '');
   const [selectedTier, setSelectedTier] = useState<MentorshipTier>(MENTORSHIP_TIERS[0]);
+  const [meetingMode, setMeetingMode] = useState<'online' | 'in_person'>('online');
   const [selectedTime, setSelectedTime] = useState('02:30 PM (8:30 ከሰዓት)');
   const [topic, setTopic] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Payment Modal State
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  // Workflow Steps: 'form' | 'review' | 'payment' | 'confirmed'
+  const [bookingStep, setBookingStep] = useState<'form' | 'review' | 'payment'>('form');
+
+  // Payment Method State
   const [paymentMethod, setPaymentMethod] = useState<'telebirr' | 'cbe' | 'paypal'>('telebirr');
   const [transactionRef, setTransactionRef] = useState('');
   const [receiptFile, setReceiptFile] = useState<string | null>(null);
@@ -125,6 +127,7 @@ export default function MentorshipPage() {
     topic: string;
     tier: string;
     amount: number;
+    meetingMode: string;
     paymentMethod: string;
   } | null>(null);
 
@@ -236,8 +239,8 @@ export default function MentorshipPage() {
     'የኦንላይን ንግድ ከዜሮ ወደ ከፍተኛ ትርፍ'
   ];
 
-  // Open Payment Modal upon form validation
-  const handleOpenPayment = (e: React.FormEvent) => {
+  // Validate form and advance to Review Confirmation Step
+  const handleProceedToReview = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!fullName.trim()) {
@@ -269,10 +272,10 @@ export default function MentorshipPage() {
     }
 
     setErrorMessage(null);
-    setShowPaymentModal(true);
+    setBookingStep('review');
   };
 
-  // Execute Final Booking Confirmation
+  // Finalize booking, save to DB, and send dual emails automatically
   const handleFinalizeBooking = async () => {
     setIsProcessingPayment(true);
     setErrorMessage(null);
@@ -289,6 +292,7 @@ export default function MentorshipPage() {
       topic: topic.trim() || 'አጠቃላይ የ 1-ለ-1 ማማከር',
       tier: selectedTier.name,
       amount: selectedTier.price,
+      meetingMode,
       paymentMethod,
       transactionRef: transactionRef.trim(),
       receiptFile,
@@ -336,13 +340,13 @@ export default function MentorshipPage() {
 
       // 4. Update Confirmed State
       setConfirmedBooking(bookingPayload);
-      setShowPaymentModal(false);
+      setBookingStep('form');
 
     } catch (err: any) {
       console.error('Finalize booking error:', err);
       // Even if network glitches, confirm the booking for the student!
       setConfirmedBooking(bookingPayload);
-      setShowPaymentModal(false);
+      setBookingStep('form');
     } finally {
       setIsProcessingPayment(false);
     }
@@ -373,7 +377,7 @@ export default function MentorshipPage() {
               </span>
             </h1>
             <p className="text-slate-300 text-sm sm:text-base leading-relaxed max-w-2xl mx-auto">
-              በዩቲዩብ እድገት፣ በሼን ኢምፖርት እና በዲጂታል ማርኬቲንግ ዙሪያ ከኢዮብ ሳህሌ ጋር በግል ተገናኝተው የቢዝነስዎን ችግሮች የሚፈቱበት እና ተግባራዊ የገቢ እቅድ የሚያወጡበት ልዩ እድል።
+              በዩቲዩብ እድገት፣ በሼን ኢምፖርት እና በዲጂታል ማርኬቲንግ ዙሪያ ከኢዮብ ሳህሌ ጋር በግል (በኦንላይን ወይም በአካል) ተገናኝተው የቢዝነስዎን ችግሮች የሚፈቱበት እና ተግባራዊ የገቢ እቅድ የሚያወጡበት ልዩ እድል።
             </p>
           </div>
 
@@ -383,7 +387,7 @@ export default function MentorshipPage() {
               <div>
                 <h3 className="text-lg sm:text-xl font-black font-heading text-white flex items-center gap-2">
                   <i className="fa-solid fa-layer-group text-[#f9b03c]"></i>
-                  <span>የማማከር ፓኬጆችና ዋጋዎች (Select Mentorship Package)</span>
+                  <span>1. የማማከር ፓኬጅ ይምረጡ (Choose Mentorship Tier)</span>
                 </h3>
                 <p className="text-xs text-slate-400 mt-0.5">ለእርስዎ የሚስማማውን የማማከር ቆይታ እና የትኩረት መስክ ይምረጡ</p>
               </div>
@@ -476,7 +480,7 @@ export default function MentorshipPage() {
             </div>
           </div>
 
-          {/* Main Grid: Mentor Profile (Left) + Booking Form / Success State (Right) */}
+          {/* Main Grid: Mentor Profile (Left) + Booking Form / Review / Success State (Right) */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
             
             {/* Left Column (5 Cols): Mentor Spotlight Card */}
@@ -578,10 +582,10 @@ export default function MentorshipPage() {
               </div>
             </div>
 
-            {/* Right Column (7 Cols): Dynamic Booking Form or Confirmed State */}
+            {/* Right Column (7 Cols): Dynamic Flow (Form -> Review -> Payment -> Confirmed) */}
             <div className="lg:col-span-7">
               {confirmedBooking ? (
-                /* 🌟 SUCCESS CONFIRMATION STATE */
+                /* 🌟 STEP 4: SUCCESS CONFIRMATION STATE */
                 <div 
                   className="rounded-[2.5rem] p-6 sm:p-10 text-white relative overflow-hidden text-center animate-in zoom-in-95 duration-300"
                   style={{
@@ -601,7 +605,7 @@ export default function MentorshipPage() {
                     እንኳን ደስ አለዎት {confirmedBooking.name}!
                   </h2>
                   <p className="text-slate-300 text-xs sm:text-sm leading-relaxed mb-6 max-w-md mx-auto">
-                    የማማከር ቀጠሮዎ በተሳካ ሁኔታ ተመዝግቧል። አሰልጣኝ ኢዮብ ሳህሌ በቀጠሮው ቀንና ሰዓት በስልክ ቁጥርዎ ({confirmedBooking.phone}) ወይም በ Google Meet የሚያገኝዎት ይሆናል።
+                    የማማከር ቀጠሮዎ በተሳካ ሁኔታ ተመዝግቧል እና ማረጋገጫ በኢሜይልዎ ተልኳል። አሰልጣኝ ኢዮብ ሳህሌ በቀጠሮው ቀንና ሰዓት ({confirmedBooking.phone}) ላይ የሚያገኝዎት ይሆናል።
                   </p>
 
                   {/* Summary Box */}
@@ -617,6 +621,12 @@ export default function MentorshipPage() {
                     <div className="flex justify-between">
                       <span className="text-slate-400">የተከፈለ ክፍያ:</span>
                       <span className="font-bold text-emerald-400">{confirmedBooking.amount.toLocaleString()} ብር</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">የማማከር አይነት:</span>
+                      <span className="font-bold text-[#38bdf8]">
+                        {confirmedBooking.meetingMode === 'in_person' ? '🏢 በአካል (In-Person Office - ቦሌ)' : '🌐 ኦንላይን (Online Video Call)'}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-slate-400">ቀን (Date):</span>
@@ -644,15 +654,127 @@ export default function MentorshipPage() {
                     </a>
                     <button
                       type="button"
-                      onClick={() => setConfirmedBooking(null)}
-                      className="px-6 py-3.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold text-slate-300 transition"
+                      onClick={() => {
+                        setConfirmedBooking(null);
+                        setBookingStep('form');
+                      }}
+                      className="px-6 py-3.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold text-slate-300 transition cursor-pointer"
                     >
                       ሌላ ቀጠሮ አስይዝ
                     </button>
                   </div>
                 </div>
+              ) : bookingStep === 'review' ? (
+                /* 🌟 STEP 2: COMPLETE BOOKING REVIEW & CONFIRMATION (የሞሉትን መረጃ አሳይቶ ኮንፈርሜሽን መጠየቅ) */
+                <div 
+                  className="rounded-[2.5rem] p-6 sm:p-8 lg:p-10 text-white relative overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+                  style={{
+                    background: 'rgba(12, 16, 23, 0.95)',
+                    backdropFilter: 'blur(30px)',
+                    border: '2px solid rgba(249, 176, 60, 0.5)',
+                    boxShadow: '0 30px 90px rgba(0,0,0,0.9), 0 0 50px rgba(249,176,60,0.2)'
+                  }}
+                >
+                  <div className="flex items-center justify-between mb-6 pb-4 border-b border-white/10">
+                    <div>
+                      <span className="text-[10px] font-black uppercase tracking-wider text-[#f9b03c] block mb-1">
+                        ደረጃ 2 ከ 3 (Step 2 of 3)
+                      </span>
+                      <h3 className="text-xl font-black font-heading text-white">
+                        የቀጠሮ መረጃ ማረጋገጫ (Review & Confirm)
+                      </h3>
+                      <p className="text-xs text-slate-400 mt-0.5">እባክዎ ያስገቧቸውን መረጃዎች ትክክለኛነት ያረጋግጡ</p>
+                    </div>
+                    <div className="w-10 h-10 rounded-xl bg-[#f9b03c]/20 border border-[#f9b03c]/40 text-[#f9b03c] flex items-center justify-center text-sm font-black">
+                      <i className="fa-solid fa-clipboard-check"></i>
+                    </div>
+                  </div>
+
+                  {/* Comprehensive Review Summary Grid */}
+                  <div className="space-y-4 mb-6">
+                    {/* User Info Card */}
+                    <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/10 space-y-2 text-xs">
+                      <span className="text-[11px] font-bold text-[#f9b03c] uppercase tracking-wider block border-b border-white/5 pb-1">
+                        👤 የተገልጋይ መረጃ (Client Information)
+                      </span>
+                      <div className="flex justify-between pt-1">
+                        <span className="text-slate-400">ሙሉ ስም (Full Name):</span>
+                        <span className="font-bold text-white">{fullName}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">ስልክ ቁጥር (Phone):</span>
+                        <span className="font-bold text-white font-mono">{phone}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">ኢሜይል (Email):</span>
+                        <span className="font-bold text-white">{email}</span>
+                      </div>
+                    </div>
+
+                    {/* Mentorship Package & Format Card */}
+                    <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/10 space-y-2 text-xs">
+                      <span className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider block border-b border-white/5 pb-1">
+                        💼 የማማከር ዝርዝር (Mentorship Details)
+                      </span>
+                      <div className="flex justify-between pt-1">
+                        <span className="text-slate-400">የተመረጠ ፓኬጅ:</span>
+                        <span className="font-bold text-white">{selectedTier.name} ({selectedTier.duration})</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">የማማከር አይነት:</span>
+                        <span className="font-bold text-[#38bdf8]">
+                          {meetingMode === 'in_person' ? '🏢 በአካል (In-Person Office - ቦሌ፣ አዲስ አበባ)' : '🌐 ኦንላይን (Online Video Call - Google Meet)'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">ቀን (Date):</span>
+                        <span className="font-bold text-[#f9b03c]">{getFormattedSelectedDate(selectedDate)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">ሰዓት (Time Slot):</span>
+                        <span className="font-bold text-white">{selectedTime}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">የማማከሪያ ርዕስ:</span>
+                        <span className="font-bold text-white truncate max-w-[220px]">{topic || 'አጠቃላይ የ 1-ለ-1 ማማከር'}</span>
+                      </div>
+                    </div>
+
+                    {/* Total Fee Box */}
+                    <div className="p-4 rounded-2xl bg-gradient-to-r from-[#f9b03c]/15 to-amber-500/10 border border-[#f9b03c]/40 flex items-center justify-between">
+                      <div>
+                        <span className="text-[11px] font-bold text-slate-300 block">የሚከፈል ጠቅላላ ክፍያ (Total Investment):</span>
+                        <span className="text-xl sm:text-2xl font-black text-white font-heading">{selectedTier.price.toLocaleString()} ብር</span>
+                      </div>
+                      <span className="text-xs font-bold text-emerald-400 bg-emerald-500/15 px-3 py-1.5 rounded-xl border border-emerald-500/30">
+                        ~ ${selectedTier.usdPrice} USD
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Confirmation Buttons */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setBookingStep('form')}
+                      className="w-full py-3.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold text-slate-300 transition cursor-pointer flex items-center justify-center gap-2"
+                    >
+                      <i className="fa-solid fa-arrow-left"></i>
+                      <span>✏️ መረጃ አሻሽል (Edit Details)</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setBookingStep('payment')}
+                      className="w-full btn-buy-now-vibe py-3.5 rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-2 cursor-pointer active:scale-98 shadow-[0_0_30px_rgba(249,176,60,0.4)] text-slate-950"
+                    >
+                      <span>✓ መረጃው ትክክል ነው — ወደ ክፍያ ሂድ</span>
+                      <i className="fa-solid fa-arrow-right"></i>
+                    </button>
+                  </div>
+                </div>
               ) : (
-                /* 📋 MENTORSHIP BOOKING FORM */
+                /* 📋 STEP 1: MENTORSHIP BOOKING FORM */
                 <div 
                   className="rounded-[2.5rem] p-6 sm:p-8 lg:p-10 text-white relative overflow-hidden"
                   style={{
@@ -664,6 +786,9 @@ export default function MentorshipPage() {
                 >
                   <div className="flex items-center justify-between mb-6 pb-4 border-b border-white/10">
                     <div>
+                      <span className="text-[10px] font-black uppercase tracking-wider text-[#f9b03c] block mb-1">
+                        ደረጃ 1 ከ 3 (Step 1 of 3)
+                      </span>
                       <h3 className="text-xl font-black font-heading text-white">የቀጠሮ ቅጽ (Book Your Slot)</h3>
                       <p className="text-xs text-slate-400 mt-0.5">ከአንድ ሳምንት በኋላ የሚመችዎትን ቀን እና ሰዓት ይምረጡ</p>
                     </div>
@@ -702,8 +827,54 @@ export default function MentorshipPage() {
                     </span>
                   </div>
 
-                  <form onSubmit={handleOpenPayment} className="space-y-5">
+                  <form onSubmit={handleProceedToReview} className="space-y-5">
                     
+                    {/* 🏢 MEETING MODE: ONLINE VS IN-PERSON */}
+                    <div>
+                      <label className="block text-xs font-bold text-slate-300 mb-2">
+                        የማማከር አይነት ይምረጡ (Meeting Format) <span className="text-red-400">*</span>
+                      </label>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div
+                          onClick={() => setMeetingMode('online')}
+                          className={`p-3.5 rounded-2xl border transition cursor-pointer flex items-center gap-3 ${
+                            meetingMode === 'online'
+                              ? 'bg-[#f9b03c]/15 border-[#f9b03c] text-white shadow-[0_0_20px_rgba(249,176,60,0.2)]'
+                              : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'
+                          }`}
+                        >
+                          <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-base ${
+                            meetingMode === 'online' ? 'bg-[#f9b03c] text-slate-950' : 'bg-white/10 text-slate-300'
+                          }`}>
+                            <i className="fa-solid fa-video"></i>
+                          </div>
+                          <div>
+                            <h5 className="text-xs font-black text-white">🌐 ኦንላይን (Online Video)</h5>
+                            <p className="text-[10px] text-slate-400">Google Meet / Telegram Video</p>
+                          </div>
+                        </div>
+
+                        <div
+                          onClick={() => setMeetingMode('in_person')}
+                          className={`p-3.5 rounded-2xl border transition cursor-pointer flex items-center gap-3 ${
+                            meetingMode === 'in_person'
+                              ? 'bg-[#3268ba]/25 border-[#3268ba] text-white shadow-[0_0_20px_rgba(50,104,186,0.3)]'
+                              : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'
+                          }`}
+                        >
+                          <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-base ${
+                            meetingMode === 'in_person' ? 'bg-[#3268ba] text-white' : 'bg-white/10 text-slate-300'
+                          }`}>
+                            <i className="fa-solid fa-building"></i>
+                          </div>
+                          <div>
+                            <h5 className="text-xs font-black text-white">🏢 በአካል (In-Person Office)</h5>
+                            <p className="text-[10px] text-slate-400">ቦሌ፣ አዲስ አበባ (Bole Office)</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
                     {/* Full Name & Phone */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
@@ -882,16 +1053,13 @@ export default function MentorshipPage() {
                       </div>
                     </div>
 
-                    {/* Submit Button */}
+                    {/* Proceed to Review Button */}
                     <button
                       type="submit"
-                      disabled={isSubmitting}
-                      className="w-full btn-buy-now-vibe py-4 rounded-2xl text-sm font-black flex items-center justify-center gap-2.5 cursor-pointer active:scale-98 disabled:opacity-50 mt-4 shadow-[0_0_35px_rgba(249,176,60,0.35)] hover:shadow-[0_0_45px_rgba(249,176,60,0.5)] transition-all text-slate-950"
+                      className="w-full btn-buy-now-vibe py-4 rounded-2xl text-sm font-black flex items-center justify-center gap-2.5 cursor-pointer active:scale-98 mt-4 shadow-[0_0_35px_rgba(249,176,60,0.35)] hover:shadow-[0_0_45px_rgba(249,176,60,0.5)] transition-all text-slate-950"
                     >
-                      <i className="fa-solid fa-credit-card text-base"></i>
-                      <span>
-                        ቀጠሮ ያስይዙ እና ይክፈሉ ({selectedTier.price.toLocaleString()} ብር)
-                      </span>
+                      <span>የቀጠሮውን ማጠቃለያ ይመልከቱ (Review Booking)</span>
+                      <i className="fa-solid fa-arrow-right text-sm"></i>
                     </button>
 
                   </form>
@@ -904,20 +1072,23 @@ export default function MentorshipPage() {
         </div>
       </main>
 
-      {/* 🌟 PAYMENT SELECTION & CHECKOUT MODAL */}
-      {showPaymentModal && (
+      {/* 🌟 STEP 3: PAYMENT SELECTION & CHECKOUT MODAL */}
+      {bookingStep === 'payment' && (
         <div className="fixed inset-0 z-[9990] bg-black/85 backdrop-blur-xl flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="relative bg-[#0b101d] border border-white/15 rounded-3xl p-6 sm:p-8 w-full max-w-lg shadow-[0_25px_80px_rgba(0,0,0,0.9)] max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200 text-white">
             
             {/* Modal Header */}
             <div className="flex items-center justify-between pb-4 border-b border-white/10 mb-5">
               <div>
+                <span className="text-[10px] font-black uppercase tracking-wider text-[#f9b03c] block mb-0.5">
+                  ደረጃ 3 ከ 3 (Step 3 of 3)
+                </span>
                 <h3 className="text-lg font-black font-heading text-white">የማማከር ክፍያ (Mentorship Payment)</h3>
                 <p className="text-xs text-slate-400 mt-0.5">{selectedTier.name} — {selectedTier.price.toLocaleString()} ብር</p>
               </div>
               <button
                 type="button"
-                onClick={() => setShowPaymentModal(false)}
+                onClick={() => setBookingStep('review')}
                 className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/15 text-slate-400 hover:text-white flex items-center justify-center text-sm transition cursor-pointer"
               >
                 <i className="fa-solid fa-xmark"></i>
@@ -929,6 +1100,12 @@ export default function MentorshipPage() {
               <div className="flex justify-between">
                 <span className="text-slate-400">ተገልጋይ:</span>
                 <span className="font-bold text-white">{fullName}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400">የማማከር አይነት:</span>
+                <span className="font-bold text-[#38bdf8]">
+                  {meetingMode === 'in_person' ? '🏢 በአካል (In-Person Office - ቦሌ)' : '🌐 ኦንላይን (Online Video)'}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-400">ቀንና ሰዓት:</span>
@@ -1085,21 +1262,30 @@ export default function MentorshipPage() {
             </div>
 
             {/* Confirm & Complete Booking Button */}
-            <button
-              type="button"
-              disabled={isProcessingPayment}
-              onClick={handleFinalizeBooking}
-              className="w-full btn-buy-now-vibe py-3.5 rounded-2xl text-xs sm:text-sm font-black flex items-center justify-center gap-2 cursor-pointer active:scale-98 disabled:opacity-50 shadow-[0_0_30px_rgba(249,176,60,0.4)] text-slate-950"
-            >
-              {isProcessingPayment ? (
-                <div className="w-5 h-5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin"></div>
-              ) : (
-                <>
-                  <i className="fa-solid fa-check-circle text-base"></i>
-                  <span>ክፍያውን ፈጽሜያለሁ / ቀጠሮውን አረጋግጥ</span>
-                </>
-              )}
-            </button>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setBookingStep('review')}
+                className="w-1/3 py-3.5 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold text-slate-300 transition cursor-pointer"
+              >
+                ተመለስ
+              </button>
+              <button
+                type="button"
+                disabled={isProcessingPayment}
+                onClick={handleFinalizeBooking}
+                className="w-2/3 btn-buy-now-vibe py-3.5 rounded-2xl text-xs sm:text-sm font-black flex items-center justify-center gap-2 cursor-pointer active:scale-98 disabled:opacity-50 shadow-[0_0_30px_rgba(249,176,60,0.4)] text-slate-950"
+              >
+                {isProcessingPayment ? (
+                  <div className="w-5 h-5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <>
+                    <i className="fa-solid fa-check-circle text-base"></i>
+                    <span>ክፍያውን ፈጽሜያለሁ / ቀጠሮውን አረጋግጥ</span>
+                  </>
+                )}
+              </button>
+            </div>
 
           </div>
         </div>

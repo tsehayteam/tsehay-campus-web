@@ -13,6 +13,11 @@ export interface MentorshipBooking {
   date: string;
   time: string;
   topic: string;
+  tier?: string;
+  amount?: number;
+  meetingMode?: 'online' | 'in_person' | string;
+  paymentMethod?: string;
+  transactionRef?: string;
   userId?: string;
   createdAt?: string;
 }
@@ -448,6 +453,10 @@ export function getMentorshipUserEmailHtml(booking: MentorshipBooking): string {
           <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(249, 176, 60, 0.3); border-radius: 20px; padding: 22px; margin-bottom: 20px; box-shadow: inset 0 0 20px rgba(249,176,60,0.05);">
             <table width="100%" border="0" cellpadding="0" cellspacing="0">
               <tr>
+                <td style="padding: 6px 0; color: #94a3b8; font-size: 12px; font-weight: 700; text-transform: uppercase;">የተመረጠ ፓኬጅ (Package):</td>
+                <td align="right" style="padding: 6px 0; color: #f9b03c; font-size: 13px; font-weight: 900;">${booking.tier || '1-Hour Strategy Consultation'}</td>
+              </tr>
+              <tr>
                 <td style="padding: 6px 0; color: #94a3b8; font-size: 12px; font-weight: 700; text-transform: uppercase;">ቀን (Selected Date):</td>
                 <td align="right" style="padding: 6px 0; color: #ffffff; font-size: 13px; font-weight: 900;">${booking.date}</td>
               </tr>
@@ -457,7 +466,9 @@ export function getMentorshipUserEmailHtml(booking: MentorshipBooking): string {
               </tr>
               <tr>
                 <td style="padding: 6px 0; color: #94a3b8; font-size: 12px; font-weight: 700; text-transform: uppercase;">የመገናኛ ዘዴ (Format):</td>
-                <td align="right" style="padding: 6px 0; color: #38bdf8; font-size: 13px; font-weight: 900;">Google Meet / Phone Call</td>
+                <td align="right" style="padding: 6px 0; color: #38bdf8; font-size: 13px; font-weight: 900;">
+                  ${booking.meetingMode === 'in_person' ? '🏢 በአካል (In-Person Office - ቦሌ፣ አዲስ አበባ)' : '🌐 ኦንላይን (Online Video Call - Google Meet)'}
+                </td>
               </tr>
               <tr>
                 <td style="padding: 6px 0; color: #94a3b8; font-size: 12px; font-weight: 700; text-transform: uppercase;">የማማከሪያ ርዕስ (Topic):</td>
@@ -517,7 +528,7 @@ export function getMentorshipAdminEmailHtml(booking: MentorshipBooking): string 
           <h1 style="color: #ffffff; font-size: 22px; font-weight: 900; margin: 6px 0; line-height: 1.3;">
             አዲስ የማማከር ቀጠሮ ጥያቄ ቀርቧል
           </h1>
-          <p style="color: #94a3b8; font-size: 13px; margin: 0;">ከ ${booking.name}</p>
+          <p style="color: #94a3b8; font-size: 13px; margin: 0;">ከ ${booking.name} (${booking.tier || '1-Hour'})</p>
         </td>
       </tr>
 
@@ -543,12 +554,22 @@ export function getMentorshipAdminEmailHtml(booking: MentorshipBooking): string 
                 </td>
               </tr>
               <tr>
+                <td style="padding: 8px 0; color: #94a3b8; font-size: 12px; font-weight: 700;">የተመረጠ ፓኬጅ:</td>
+                <td align="right" style="padding: 8px 0; color: #f9b03c; font-size: 13px; font-weight: 900;">${booking.tier || '1-Hour Strategy Consultation'}</td>
+              </tr>
+              <tr>
                 <td style="padding: 8px 0; color: #94a3b8; font-size: 12px; font-weight: 700;">የተመረጠው ቀን:</td>
                 <td align="right" style="padding: 8px 0; color: #ffffff; font-size: 13px; font-weight: 900;">${booking.date}</td>
               </tr>
               <tr>
                 <td style="padding: 8px 0; color: #94a3b8; font-size: 12px; font-weight: 700;">የተመረጠው ሰዓት:</td>
                 <td align="right" style="padding: 8px 0; color: #f9b03c; font-size: 13px; font-weight: 900;">${booking.time}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; color: #94a3b8; font-size: 12px; font-weight: 700;">የማማከር አይነት:</td>
+                <td align="right" style="padding: 8px 0; color: #38bdf8; font-size: 13px; font-weight: 900;">
+                  ${booking.meetingMode === 'in_person' ? '🏢 በአካል (In-Person Office - ቦሌ)' : '🌐 ኦንላይን (Online Video Call)'}
+                </td>
               </tr>
             </table>
 
