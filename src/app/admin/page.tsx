@@ -2287,6 +2287,7 @@ export default function AdminDashboard() {
   }
 
   return (
+    <div className="flex h-screen bg-gray-50 dark:bg-[#0b0f19] text-gray-900 dark:text-gray-100 overflow-hidden font-sans">
       {/* Mobile Sidebar Backdrop */}
       {sidebarMobileOpen && (
         <div 
