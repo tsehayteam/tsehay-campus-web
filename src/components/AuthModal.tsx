@@ -568,7 +568,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
     }
   };
 
-  // 🌟 Resend Reset 6-Digit OTP Code
+  // 🌟 Resend Reset 6-Digit OTP Code (Custom Resend OTP)
   const handleResendResetOtpCode = async () => {
     const targetEmail = registeredEmail || email;
     if (!targetEmail) return;
@@ -583,19 +583,21 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
         await saveOtpForEmail(targetEmail, newCode);
       } catch (e) {}
 
-      try {
-        await sendPasswordResetEmail(auth, targetEmail);
-      } catch (e) {}
-
-      fetch('/api/auth/send-otp', {
+      const res = await fetch('/api/auth/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: targetEmail })
-      }).catch(e => console.warn("Background OTP send:", e));
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setResetOtpError(data.error || "አዲስ ኮድ መላክ አልተቻለም። እባክዎ በድጋሚ ይሞክሩ።");
+        return;
+      }
 
       setResetResendCountdown(60);
       setResetOtpDigits(['', '', '', '', '', '']);
-      setResendSuccessMessage(`አዲስ የ 6-አሃዝ ማረጋገጫ ኮድ እና የይለፍ ቃል መቀየሪያ ሊንክ ወደ ${targetEmail} ተልኳል!`);
+      setResendSuccessMessage(`አዲስ የ 6-አሃዝ ማረጋገጫ ኮድ ወደ ${targetEmail} ተልኳል!`);
     } catch (err: any) {
       setResetOtpError("አዲስ ኮድ መላክ አልተቻለም። እባክዎ በድጋሚ ይሞክሩ።");
     } finally {
@@ -603,7 +605,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
     }
   };
 
-  // 🌟 Send Reset Code (Step 1 -> Step 2)
+  // 🌟 Send Reset Code (Step 1 -> Step 2) via Custom Resend OTP
   const handleSendResetCode = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanEmail = email.trim().toLowerCase();
@@ -621,49 +623,33 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
     setResendSuccessMessage("");
 
     try {
-      // 1. Send official Firebase Password Reset Email
+      // 1. Generate local fallback OTP
+      const localCode = generateOtpCode();
       try {
-        await sendPasswordResetEmail(auth, cleanEmail);
-      } catch (fbErr: any) {
-        console.warn("Firebase sendPasswordResetEmail notice:", fbErr);
-        if (fbErr?.code === 'auth/user-not-found') {
-          setError('በዚህ Gmail አድራሻ የተመዘገበ ተጠቃሚ አልተገኘም። እባክዎ መጀመሪያ ይመዝገቡ።');
-          setLoading(false);
-          return;
-        } else if (fbErr?.code === 'auth/invalid-email') {
-          setError('እባክዎ ትክክለኛ የ Gmail አድራሻ ያስገቡ።');
-          setLoading(false);
-          return;
-        } else if (fbErr?.code === 'auth/too-many-requests') {
-          setError('ብዙ ሙከራዎችን አድርገዋል። እባክዎ ትንሽ ቆይተው እንደገና ይሞክሩ።');
-          setLoading(false);
-          return;
-        }
-      }
-
-      // 2. Generate and store OTP code
-      const code = generateOtpCode();
-      try {
-        await saveOtpForEmail(cleanEmail, code);
+        await saveOtpForEmail(cleanEmail, localCode);
       } catch (saveErr) {
         console.warn("saveOtpForEmail notice:", saveErr);
       }
 
-      try {
-        await fetch('/api/auth/send-otp', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: cleanEmail })
-        });
-      } catch (apiErr) {
-        console.warn("send-otp API notice:", apiErr);
+      // 2. Dispatch custom Resend OTP email via API route
+      const res = await fetch('/api/auth/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: cleanEmail })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        setError(data.error || 'የማረጋገጫ ኮድ መላክ አልተቻለም። እባክዎ በድጋሚ ይሞክሩ።');
+        return;
       }
 
       setRegisteredEmail(cleanEmail);
       setResetStep('otp');
       setResetResendCountdown(60);
       setResetOtpDigits(['', '', '', '', '', '']);
-      setResendSuccessMessage(`የይለፍ ቃል መቀየሪያ ሊንክ እና የ 6-አሃዝ ማረጋገጫ ኮድ ወደ ${cleanEmail} ተልኳል!`);
+      setResendSuccessMessage(`የ 6-አሃዝ ማረጋገጫ ኮድ ወደ ${cleanEmail} ተልኳል!`);
     } catch (err: any) {
       console.error("Error sending reset code:", err);
       setError('የማረጋገጫ ኮድ መላክ አልተቻለም። እባክዎ በድጋሚ ይሞክሩ።');

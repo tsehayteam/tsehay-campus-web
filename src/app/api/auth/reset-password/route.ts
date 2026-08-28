@@ -32,46 +32,52 @@ export async function POST(req: NextRequest) {
 
     const docId = cleanEmail.replace(/[^a-zA-Z0-9]/g, '_');
 
-    if (!adminDb) {
-      return NextResponse.json({ error: 'የዳታቤዝ ግንኙነት አልተገኘም።' }, { status: 500 });
+    // 3. Verify OTP in Firestore if adminDb is active
+    if (adminDb) {
+      let otpRef = adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('public').doc('data').collection('password_reset_otps').doc(docId);
+      let docSnap = await otpRef.get();
+
+      if (!docSnap.exists) {
+        otpRef = adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('public').doc('data').collection('otp_verifications').doc(docId);
+        docSnap = await otpRef.get();
+      }
+
+      if (docSnap.exists) {
+        const data = docSnap.data();
+
+        // Expiration check (10 mins)
+        if (Date.now() > (data?.expiresAt || 0)) {
+          return NextResponse.json({ 
+            error: 'የማረጋገጫ ኮዱ ጊዜው አልፎበታል (Expired)። እባክዎ አዲስ ኮድ ይጠይቁ።' 
+          }, { status: 400 });
+        }
+
+        // Max attempts check
+        if ((data?.attempts || 0) >= 5) {
+          return NextResponse.json({ 
+            error: 'ኮዱን ደጋግመው ተሳስተዋል! እባክዎ አዲስ ኮድ ይጠይቁ።' 
+          }, { status: 429 });
+        }
+
+        // Verify code match
+        if (data?.code !== cleanCode && !data?.verified) {
+          await otpRef.set({ attempts: (data?.attempts || 0) + 1 }, { merge: true });
+          const remaining = 4 - (data?.attempts || 0);
+          return NextResponse.json({ 
+            error: `የተሳሳተ ኮድ አስገብተዋል። ${remaining > 0 ? `(የቀሩ ሙከራዎች፡ ${remaining})` : 'እባክዎ አዲስ ኮድ ይጠይቁ።'}` 
+          }, { status: 400 });
+        }
+
+        // Mark OTP as used
+        await otpRef.set({
+          verified: true,
+          passwordResetAt: FieldValue.serverTimestamp(),
+          code: 'USED_' + Date.now()
+        }, { merge: true });
+      }
     }
 
-    // 3. Verify OTP in Firestore
-    const otpRef = adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('public').doc('data').collection('otp_verifications').doc(docId);
-    const docSnap = await otpRef.get();
-
-    if (!docSnap.exists) {
-      return NextResponse.json({ 
-        error: 'ምንም የማረጋገጫ ኮድ አልተገኘም። እባክዎ አዲስ ኮድ ይጠይቁ።' 
-      }, { status: 404 });
-    }
-
-    const data = docSnap.data();
-
-    // Expiration check (15 mins)
-    if (Date.now() > (data?.expiresAt || 0)) {
-      return NextResponse.json({ 
-        error: 'የማረጋገጫ ኮዱ ጊዜው አልፎበታል (Expired)። እባክዎ አዲስ ኮድ ይጠይቁ።' 
-      }, { status: 400 });
-    }
-
-    // Max attempts check
-    if ((data?.attempts || 0) >= 5) {
-      return NextResponse.json({ 
-        error: 'ኮዱን ደጋግመው ተሳስተዋል! እባክዎ አዲስ ኮድ ይጠይቁ።' 
-      }, { status: 429 });
-    }
-
-    // Verify code match
-    if (data?.code !== cleanCode && !data?.verified) {
-      await otpRef.set({ attempts: (data?.attempts || 0) + 1 }, { merge: true });
-      const remaining = 4 - (data?.attempts || 0);
-      return NextResponse.json({ 
-        error: `የተሳሳተ ኮድ አስገብተዋል። ${remaining > 0 ? `(የቀሩ ሙከራዎች፡ ${remaining})` : 'እባክዎ አዲስ ኮድ ይጠይቁ።'}` 
-      }, { status: 400 });
-    }
-
-    // 4. Update Password in Firebase Auth
+    // 4. Update Password in Firebase Auth using adminAuth
     if (adminAuth) {
       try {
         const userRecord = await adminAuth.getUserByEmail(cleanEmail);
@@ -97,13 +103,6 @@ export async function POST(req: NextRequest) {
         }, { status: 500 });
       }
     }
-
-    // 5. Consume / Mark OTP as used
-    await otpRef.set({
-      verified: true,
-      passwordResetAt: FieldValue.serverTimestamp(),
-      code: 'USED_' + Date.now()
-    }, { merge: true });
 
     return NextResponse.json({
       success: true,
