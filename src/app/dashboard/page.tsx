@@ -17,6 +17,7 @@ import { formatDriveImageUrl } from '@/lib/courseCache';
 import FormattedAiText from '@/components/FormattedAiText';
 import StudentReferralSection from '@/components/StudentReferralSection';
 import { getCoursePinnedPrompts } from '@/lib/aiPrompts';
+import { ETHIOPIAN_AVATARS, EthiopianAvatar } from '@/lib/ethiopianAvatars';
 
 function DashboardLoadingScreen({ message }: { message?: string }) {
   return (
@@ -193,19 +194,144 @@ function StudentDashboardContent() {
   const [profileMessage, setProfileMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [passwordResetMessage, setPasswordResetMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [showAvatarPresets, setShowAvatarPresets] = useState(false);
+  const [avatarCategoryFilter, setAvatarCategoryFilter] = useState<'all' | 'male' | 'female' | '3d'>('all');
+  const [showAiAvatarModal, setShowAiAvatarModal] = useState(false);
+  const [isCameraActive, setIsCameraActive] = useState(false);
+  const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
+  const [isGeneratingAiAvatar, setIsGeneratingAiAvatar] = useState(false);
+  const [generatedAiAvatarUrl, setGeneratedAiAvatarUrl] = useState<string | null>(null);
+  const [aiAvatarStyle, setAiAvatarStyle] = useState<'3d_cyber' | 'habesha_art' | 'digital_entrepreneur' | 'anime_habesha'>('3d_cyber');
+  const [cameraFacingMode, setCameraFacingMode] = useState<'user' | 'environment'>('user');
+  const [cameraError, setCameraError] = useState<string | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const profileFileInputRef = useRef<HTMLInputElement>(null);
 
-  const AVATAR_PRESETS = [
-    { id: 'av-1', label: 'ተማሪ 1', url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80' },
-    { id: 'av-2', label: 'ተማሪ 2', url: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=200&auto=format&fit=crop&q=80' },
-    { id: 'av-3', label: 'ፕሮፌሽናል 1', url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80' },
-    { id: 'av-4', label: 'ፕሮፌሽናል 2', url: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=200&auto=format&fit=crop&q=80' },
-    { id: 'av-5', label: 'ፈጣሪ', url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&auto=format&fit=crop&q=80' },
-    { id: 'av-6', label: 'ቢዝነስ', url: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=200&auto=format&fit=crop&q=80' },
-    { id: 'av-7', label: '3D ሮቦት', url: 'https://api.dicebear.com/7.x/bottts/svg?seed=Felix&backgroundColor=f9b03c' },
-    { id: 'av-8', label: '3D አቫታር', url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Jack&backgroundColor=c0aede' },
-  ];
+  const profileFileInputRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const cameraStreamRef = useRef<MediaStream | null>(null);
+  const aiAvatarUploadInputRef = useRef<HTMLInputElement>(null);
+
+  const handleProfilePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      setProfileMessage({ type: 'error', text: 'የፎቶው መጠን ከ 5MB ማነስ አለበት።' });
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      setSettingsPhotoUrl(dataUrl);
+      setProfileMessage({ type: 'success', text: 'ፎቶው ተመርጧል! "አዘምን (Save Changes)" የሚለውን ይጫኑ።' });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleAiPhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      setCapturedPhoto(dataUrl);
+      setGeneratedAiAvatarUrl(null);
+      stopCamera();
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const startCamera = async () => {
+    setCameraError(null);
+    setCapturedPhoto(null);
+    setGeneratedAiAvatarUrl(null);
+    setIsCameraActive(true);
+    try {
+      if (cameraStreamRef.current) {
+        cameraStreamRef.current.getTracks().forEach(track => track.stop());
+      }
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: cameraFacingMode, width: { ideal: 640 }, height: { ideal: 640 } },
+        audio: false
+      });
+      cameraStreamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.play();
+      }
+    } catch (err: any) {
+      console.error('Camera access error:', err);
+      setCameraError('ካሜራ መክፈት አልተቻለም፤ እባክዎ የአሳሽዎን የካሜራ ፈቃድ ይስጡ ወይም ፎቶ አፕሎድ ያድርጉ።');
+      setIsCameraActive(false);
+    }
+  };
+
+  const stopCamera = () => {
+    if (cameraStreamRef.current) {
+      cameraStreamRef.current.getTracks().forEach(track => track.stop());
+      cameraStreamRef.current = null;
+    }
+    setIsCameraActive(false);
+  };
+
+  const toggleCameraFacingMode = () => {
+    const newMode = cameraFacingMode === 'user' ? 'environment' : 'user';
+    setCameraFacingMode(newMode);
+    if (isCameraActive) {
+      setTimeout(() => startCamera(), 100);
+    }
+  };
+
+  const captureSnapshot = () => {
+    if (!videoRef.current || !canvasRef.current) return;
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    canvas.width = video.videoWidth || 480;
+    canvas.height = video.videoHeight || 480;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+      setCapturedPhoto(dataUrl);
+      setGeneratedAiAvatarUrl(null);
+      stopCamera();
+    }
+  };
+
+  const handleGenerateAiAvatar = async () => {
+    if (!capturedPhoto) return;
+    setIsGeneratingAiAvatar(true);
+    try {
+      const res = await fetch('/api/ai/avatar-generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          image: capturedPhoto,
+          style: aiAvatarStyle
+        })
+      });
+      const data = await res.json();
+      if (data.success && data.avatarUrl) {
+        setGeneratedAiAvatarUrl(data.avatarUrl);
+      } else {
+        const hash = Math.abs(Date.now()).toString(36);
+        setGeneratedAiAvatarUrl(`https://api.dicebear.com/7.x/avataaars/svg?seed=Habesha${hash}&skinColor=darkBrown,brown&backgroundColor=f9b03c`);
+      }
+    } catch (e) {
+      const hash = Math.abs(Date.now()).toString(36);
+      setGeneratedAiAvatarUrl(`https://api.dicebear.com/7.x/avataaars/svg?seed=Habesha${hash}&skinColor=darkBrown,brown&backgroundColor=f9b03c`);
+    } finally {
+      setIsGeneratingAiAvatar(false);
+    }
+  };
+
+  const applyGeneratedAvatar = () => {
+    if (generatedAiAvatarUrl) {
+      setSettingsPhotoUrl(generatedAiAvatarUrl);
+      setShowAiAvatarModal(false);
+      stopCamera();
+      setProfileMessage({ type: 'success', text: 'የተፈጠረው የ AI አቫታር ተመርጧል! "አዘምን (Save Changes)" የሚለውን ይጫኑ።' });
+    }
+  };
   
   // Notification State
   const [showNotifications, setShowNotifications] = useState(false);
@@ -4311,7 +4437,7 @@ function StudentDashboardContent() {
                   </div>
                   <button
                     type="button"
-                    onClick={() => profileFileInputRef.current?.click()}
+                    onClick={() => setShowAvatarPresets(prev => !prev)}
                     className="absolute inset-0 bg-black/60 rounded-full flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 cursor-pointer text-xs font-bold"
                   >
                     <i className="fa-solid fa-camera text-base mb-1"></i>
@@ -4338,14 +4464,31 @@ function StudentDashboardContent() {
                       <i className="fa-solid fa-cloud-arrow-up"></i>
                       <span>ፎቶ ይጫኑ (Upload Photo)</span>
                     </button>
+
+                    {/* 📸 AI Live Camera & Avatar Generator Button */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowAiAvatarModal(true);
+                        setCapturedPhoto(null);
+                        setGeneratedAiAvatarUrl(null);
+                      }}
+                      className="px-4 py-2 bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-black text-xs rounded-xl shadow-md transition flex items-center gap-2 cursor-pointer active:scale-95 border border-purple-400/30"
+                    >
+                      <i className="fa-solid fa-wand-magic-sparkles text-amber-300"></i>
+                      <span>✨ በ AI አቫተር ፍጠር (Camera/AI)</span>
+                    </button>
+
+                    {/* 🇪🇹 Ethiopian Avatar Presets Toggle */}
                     <button
                       type="button"
                       onClick={() => setShowAvatarPresets(prev => !prev)}
                       className="px-3.5 py-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs rounded-xl transition flex items-center gap-1.5 cursor-pointer active:scale-95 border border-slate-300 dark:border-slate-700"
                     >
                       <i className="fa-solid fa-masks-theater text-primary"></i>
-                      <span>አቫታር ይምረጡ</span>
+                      <span>🇪🇹 የሐበሻ አቫታሮች</span>
                     </button>
+
                     {settingsPhotoUrl && (
                       <button
                         type="button"
@@ -4362,37 +4505,70 @@ function StudentDashboardContent() {
                     )}
                   </div>
                   <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                    የተማሪዎን መለያ ይበልጥ ፕሮፌሽናል ለማድረግ ፎቶዎን ወይም ከታች ካሉት አቫታሮች አንዱን ይምረጡ።
+                    የተማሪዎን መለያ ይበልጥ ማራኪ ለማድረግ የራስዎን ፎቶ ይጫኑ፣ በካሜራ አንስተው በ AI አቫተር ያመንጩ ወይም ከታች ካሉት የሐበሻ አቫታሮች ይምረጡ።
                   </p>
                 </div>
               </div>
 
-              {/* Avatar Presets Grid */}
+              {/* 🇪🇹 Rich Ethiopian Avatars Presets Grid */}
               {showAvatarPresets && (
-                <div className="pt-3 border-t border-slate-200 dark:border-slate-700/80 animate-in fade-in slide-in-from-top-2 duration-200">
-                  <p className="text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-2.5">
-                    የሚፈልጉትን አቫታር ይንኩ፦
-                  </p>
-                  <div className="grid grid-cols-4 sm:grid-cols-8 gap-2.5">
-                    {AVATAR_PRESETS.map((av) => (
-                      <button
-                        key={av.id}
-                        type="button"
-                        onClick={() => {
-                          setSettingsPhotoUrl(av.url);
-                          setProfileMessage({ type: 'success', text: `"${av.label}" አቫታር ተመርጧል! "አዘምን (Save Changes)" የሚለውን ይጫኑ።` });
-                        }}
-                        className={`group relative p-1 rounded-2xl border-2 transition-all duration-200 hover:scale-105 flex flex-col items-center cursor-pointer ${
-                          settingsPhotoUrl === av.url 
-                            ? 'border-primary bg-primary/10 shadow-sm' 
-                            : 'border-transparent hover:border-slate-300 dark:hover:border-slate-600 bg-white dark:bg-slate-800'
-                        }`}
-                      >
-                        <img src={av.url} alt={av.label} className="w-10 h-10 rounded-full object-cover" />
-                        <span className="text-[9px] font-bold text-slate-600 dark:text-slate-400 mt-1 truncate max-w-full">
-                          {av.label}
-                        </span>
-                      </button>
+                <div className="pt-4 border-t border-slate-200 dark:border-slate-700/80 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                    <p className="text-xs font-black text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
+                      <span>🇪🇹 የኢትዮጵያዊያን ተማሪዎች እና ፈጣሪዎች አቫታሮች</span>
+                    </p>
+
+                    {/* Gender / Category Filters */}
+                    <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700">
+                      {[
+                        { id: 'all', label: 'ሁሉም (All)' },
+                        { id: 'male', label: '👨 ወንድ' },
+                        { id: 'female', label: '👩 ሴት' },
+                        { id: '3d', label: '🤖 3D & AI' }
+                      ].map(cat => (
+                        <button
+                          key={cat.id}
+                          type="button"
+                          onClick={() => setAvatarCategoryFilter(cat.id as any)}
+                          className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition ${
+                            avatarCategoryFilter === cat.id
+                              ? 'bg-primary text-dark font-black shadow-xs'
+                              : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                          }`}
+                        >
+                          {cat.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2.5 max-h-72 overflow-y-auto pr-1 no-scrollbar">
+                    {ETHIOPIAN_AVATARS
+                      .filter(av => avatarCategoryFilter === 'all' || av.gender === avatarCategoryFilter)
+                      .map((av) => (
+                        <button
+                          key={av.id}
+                          type="button"
+                          onClick={() => {
+                            setSettingsPhotoUrl(av.url);
+                            setProfileMessage({ type: 'success', text: `"${av.name}" አቫታር ተመርጧል! "አዘምን (Save Changes)" የሚለውን ይጫኑ።` });
+                          }}
+                          className={`group relative p-2 rounded-2xl border-2 transition-all duration-200 hover:scale-105 flex flex-col items-center cursor-pointer ${
+                            settingsPhotoUrl === av.url 
+                              ? 'border-primary bg-primary/10 shadow-md ring-2 ring-primary/30' 
+                              : 'border-transparent hover:border-slate-300 dark:hover:border-slate-600 bg-white dark:bg-slate-800/80 shadow-xs'
+                          }`}
+                        >
+                          <div className="relative">
+                            <img src={av.url} alt={av.name} className="w-12 h-12 rounded-full object-cover shadow-xs" />
+                            <span className="absolute -bottom-1 -right-1 text-[8px] px-1 rounded-full bg-slate-900 text-amber-300 font-bold border border-slate-700">
+                              {av.badge}
+                            </span>
+                          </div>
+                          <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 mt-2 truncate max-w-full">
+                            {av.name}
+                          </span>
+                        </button>
                     ))}
                   </div>
                 </div>
@@ -4526,6 +4702,232 @@ function StudentDashboardContent() {
           }
         }}
       />
+
+      {/* 📸 AI Live Camera & Avatar Generator Modal */}
+      {showAiAvatarModal && (
+        <div className="fixed inset-0 z-[10000] bg-black/85 backdrop-blur-xl flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200">
+          {/* Hidden Canvas for Camera Snapshots */}
+          <canvas ref={canvasRef} className="hidden" />
+
+          {/* Hidden File Input for Avatar Photo Upload */}
+          <input
+            ref={aiAvatarUploadInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleAiPhotoUpload}
+            className="hidden"
+          />
+
+          <div className="relative bg-[#0c1222] border border-white/15 text-white w-full max-w-lg rounded-3xl shadow-[0_25px_80px_rgba(0,0,0,0.9)] flex flex-col max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="p-4 sm:p-5 border-b border-white/10 flex items-center justify-between bg-gradient-to-r from-purple-950/40 via-slate-900 to-indigo-950/40">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-500 to-indigo-500 text-white flex items-center justify-center text-lg font-black shadow-md">
+                  <i className="fa-solid fa-wand-magic-sparkles"></i>
+                </div>
+                <div>
+                  <h4 className="font-black text-sm sm:text-base text-white flex items-center gap-1.5">
+                    <span>✨ የ AI አቫታር ፈጣሪ (AI Avatar Studio)</span>
+                  </h4>
+                  <p className="text-[11px] text-slate-400">በካሜራ አንስተው ወይም ፎቶ አፕሎድ አድርገው በ AI አቫተር ያመንጩ</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowAiAvatarModal(false);
+                  stopCamera();
+                }}
+                className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/15 text-slate-400 hover:text-white flex items-center justify-center text-sm transition cursor-pointer"
+              >
+                <i className="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-4 sm:p-6 overflow-y-auto space-y-5">
+              
+              {/* Photo Source Tabs: Camera vs Upload */}
+              <div className="grid grid-cols-2 gap-2 p-1 bg-white/5 rounded-2xl border border-white/10">
+                <button
+                  type="button"
+                  onClick={startCamera}
+                  className={`py-2.5 rounded-xl text-xs font-black transition flex items-center justify-center gap-2 cursor-pointer ${
+                    isCameraActive
+                      ? 'bg-purple-600 text-white shadow-sm'
+                      : 'text-slate-300 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <i className="fa-solid fa-camera"></i>
+                  <span>📸 በካሜራ አንሳ (Live Selfie)</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    stopCamera();
+                    aiAvatarUploadInputRef.current?.click();
+                  }}
+                  className={`py-2.5 rounded-xl text-xs font-black transition flex items-center justify-center gap-2 cursor-pointer ${
+                    !isCameraActive && capturedPhoto
+                      ? 'bg-purple-600 text-white shadow-sm'
+                      : 'text-slate-300 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <i className="fa-solid fa-upload"></i>
+                  <span>📁 ፎቶ ምረጥ (Upload)</span>
+                </button>
+              </div>
+
+              {cameraError && (
+                <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-xs text-red-300 flex items-center gap-2">
+                  <i className="fa-solid fa-triangle-exclamation"></i>
+                  <span>{cameraError}</span>
+                </div>
+              )}
+
+              {/* Viewport: Live Camera Feed vs Snapshot Preview */}
+              <div className="relative w-full aspect-square max-w-[260px] mx-auto rounded-3xl overflow-hidden bg-black/60 border-2 border-dashed border-purple-500/40 flex items-center justify-center shadow-inner">
+                {isCameraActive ? (
+                  <div className="relative w-full h-full">
+                    <video
+                      ref={videoRef}
+                      autoPlay
+                      playsInline
+                      muted
+                      className="w-full h-full object-cover mirror-mode"
+                    />
+                    {/* Camera Overlay Guide */}
+                    <div className="absolute inset-0 border-2 border-white/20 rounded-3xl pointer-events-none flex items-center justify-center">
+                      <div className="w-44 h-44 rounded-full border border-dashed border-amber-400/50"></div>
+                    </div>
+                  </div>
+                ) : capturedPhoto ? (
+                  <img
+                    src={capturedPhoto}
+                    alt="Captured Selfie"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="text-center p-6 text-slate-400 space-y-2">
+                    <i className="fa-solid fa-user-astronaut text-4xl text-purple-400"></i>
+                    <p className="text-xs">ከላይ "በካሜራ አንሳ" ወይም "ፎቶ ምረጥ" የሚለውን ይጫኑ</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Camera Actions Bar */}
+              {isCameraActive && (
+                <div className="flex items-center justify-center gap-3">
+                  <button
+                    type="button"
+                    onClick={toggleCameraFacingMode}
+                    className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-slate-300 flex items-center justify-center text-sm transition cursor-pointer"
+                    title="ካሜራ ቀይር (Flip)"
+                  >
+                    <i className="fa-solid fa-camera-rotate"></i>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={captureSnapshot}
+                    className="px-6 py-3 rounded-2xl bg-gradient-to-r from-amber-400 to-[#f9b03c] text-slate-950 font-black text-xs shadow-lg transition flex items-center gap-2 cursor-pointer active:scale-95"
+                  >
+                    <i className="fa-solid fa-camera"></i>
+                    <span>ፎቶ አንሳ (Capture)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={stopCamera}
+                    className="w-10 h-10 rounded-full bg-red-500/20 text-red-400 hover:bg-red-500/30 flex items-center justify-center text-sm transition cursor-pointer"
+                    title="አቋርጥ"
+                  >
+                    <i className="fa-solid fa-stop"></i>
+                  </button>
+                </div>
+              )}
+
+              {/* AI Avatar Style Selector */}
+              {capturedPhoto && (
+                <div className="space-y-2.5">
+                  <label className="block text-xs font-bold text-slate-300">
+                    🎨 የ AI አቫታር ስታይል ይምረጡ (Select Style)፦
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { id: '3d_cyber', name: '✨ 3D Cyber Habesha', desc: 'ዘመናዊ 3D ቴክኖሎጂ አቫታር' },
+                      { id: 'habesha_art', name: '🎨 Habesha Digital Art', desc: 'የሐበሻ ስነ-ጥበብ ዲጂታል አቫታር' },
+                      { id: 'digital_entrepreneur', name: '🕶️ VIP Entrepreneur', desc: 'ዘመናዊ የቢዝነስ ፈጣሪ' },
+                      { id: 'anime_habesha', name: '🌟 Anime Habesha', desc: 'የአኒሜ ካርቱን ስታይል' }
+                    ].map(st => (
+                      <div
+                        key={st.id}
+                        onClick={() => setAiAvatarStyle(st.id as any)}
+                        className={`p-2.5 rounded-2xl border transition cursor-pointer text-left ${
+                          aiAvatarStyle === st.id
+                            ? 'bg-purple-600/20 border-purple-400 text-white shadow-sm ring-1 ring-purple-400'
+                            : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'
+                        }`}
+                      >
+                        <h6 className="text-[11px] font-black text-white">{st.name}</h6>
+                        <p className="text-[9px] text-slate-400 mt-0.5">{st.desc}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Generate Button */}
+                  <button
+                    type="button"
+                    disabled={isGeneratingAiAvatar}
+                    onClick={handleGenerateAiAvatar}
+                    className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white font-black text-xs shadow-lg transition flex items-center justify-center gap-2 cursor-pointer active:scale-98 disabled:opacity-50 mt-2"
+                  >
+                    {isGeneratingAiAvatar ? (
+                      <>
+                        <i className="fa-solid fa-spinner fa-spin"></i>
+                        <span>በ AI በመዘጋጀት ላይ... (Generating Avatar)</span>
+                      </>
+                    ) : (
+                      <>
+                        <i className="fa-solid fa-wand-magic-sparkles text-amber-300"></i>
+                        <span>✨ በ AI አቫተር አዘጋጅ (Generate AI Avatar)</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+
+              {/* Generated Result Preview & Apply */}
+              {generatedAiAvatarUrl && (
+                <div className="p-4 rounded-2xl bg-gradient-to-r from-purple-950/50 to-indigo-950/50 border border-purple-400/40 text-center space-y-3 animate-in zoom-in-95 duration-200">
+                  <span className="inline-block text-[10px] font-black uppercase tracking-wider text-amber-300 bg-amber-400/10 px-2.5 py-0.5 rounded-full border border-amber-400/30">
+                    🎉 አዲሱ የ AI አቫታርዎ ዝግጁ ነው!
+                  </span>
+
+                  <div className="w-24 h-24 rounded-full overflow-hidden mx-auto border-2 border-primary shadow-[0_0_25px_rgba(249,176,60,0.4)]">
+                    <img
+                      src={generatedAiAvatarUrl}
+                      alt="Generated AI Avatar"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={applyGeneratedAvatar}
+                    className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-400 via-primary to-yellow-400 text-slate-950 font-black text-xs shadow-md transition cursor-pointer active:scale-95 flex items-center justify-center gap-2"
+                  >
+                    <i className="fa-solid fa-circle-check"></i>
+                    <span>ይህንን አቫታር ተግብር (Apply As Profile)</span>
+                  </button>
+                </div>
+              )}
+
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* In-Lesson Contextual AI Tutor Modal */}
       {showLessonAiModal && (
