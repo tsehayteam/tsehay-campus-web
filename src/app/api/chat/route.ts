@@ -76,6 +76,53 @@ function getSmartFallbackReply(userPrompt: string, courseContext?: any, hasImage
         return "ሰላም! እኔ **ፀሐይ AI** ነኝ፤ ወደ ፀሐይ ካምፓስ እንኳን ደህና መጡ! ☀️\n\nዛሬ በምን ልርዳዎት? ስለ ስልጠናዎቻችን (የዩቲዩብ ስኬት፣ የሼን ቢዝነስ፣ ዲጂታል ማርኬቲንግ)፣ ክፍያና ምዝገባ፣ ማማከር ወይም ሰርተፊኬት ማንኛውንም ጥያቄ በጽሁፍም ሆነ በድምፅ መጠየቅ ይችላሉ።";
     }
 
+    // 🌟 DYNAMIC ACTIVE COURSE QUICK ACTIONS
+    if (courseContext?.courseTitle) {
+        const ct = courseContext.courseTitle;
+        const wyl = courseContext.whatYouWillLearn || '';
+        const lt = courseContext.lessonTitle || '';
+
+        // A. Course Summary
+        if (p.includes('ማጠቃለያ') || p.includes('summary') || p.includes('አጠቃልል')) {
+            if (isEnglish) {
+                return `### 📚 "${ct}" Comprehensive Summary\n\nThis practical masterclass is specifically structured to give you end-to-end expertise:\n\n• **Core Focus**: ${wyl || 'Actionable, real-world skills and proven monetization workflows.'}\n${lt ? `• **Current Module**: ${lt}\n` : ''}• **Key Outcome**: Learn how to systematically build, launch, and monetize in Ethiopia and global markets.\n\nAsk me about any specific lesson or practical technique to dive deeper! ✨`;
+            }
+            return `### 📚 የ"${ct}" ስልጠና አጠቃላይ ማጠቃለያ\n\nይህ ተግባራዊ ስልጠና ከዜሮ ተነስተው በዘርፉ ብቁ እና ገቢ ፈጣሪ እንዲሆኑ የተቀረጸ ነው፦\n\n• **የስልጠናው ዋና ትኩረት**፦ ${wyl || 'በተግባር የተደገፉ የገበያ እና የቴክኖሎጂ ስልቶችን መተግበር'}\n${lt ? `• **አሁን ያለዎት ትምህርት**፦ ${lt}\n` : ''}• **የሚገኘው ውጤት**፦ በኢትዮጵያ እና በዓለም አቀፍ ደረጃ በቀላሉ ወደ ስራ በመግባት አትራፊ መሆን።\n\nስለ የትኛውም የትምህርቱ ክፍል ወይም አተገባበር ጥያቄ ካለዎት ይጠይቁኝ! ✨`;
+        }
+
+        // B. Action Steps
+        if (p.includes('ተግባር') || p.includes('action') || p.includes('እርምጃ') || p.includes('እንዴት ልተግብር')) {
+            if (isEnglish) {
+                return `### 🚀 Actionable Roadmap for "${ct}"\n\nTo turn what you learn in **${ct}** into profitable real-world success:\n\n1. **Step 1 (Master Foundations)**: Watch lessons sequentially and implement the assigned worksheets.\n2. **Step 2 (Setup & Tools)**: Configure necessary software, accounts, and payment systems.\n3. **Step 3 (First Launch / Execution)**: Launch your first practical campaign, content, or product listing.\n4. **Step 4 (Scale & Profit)**: Optimize based on analytics and multiply your revenue streams!\n\nWhich step would you like specific guidance on? 💡`;
+            }
+            return `### 🚀 የ"${ct}" የተግባር እርምጃዎች (Practical Roadmap)\n\nበ**${ct}** የተማሩትን ወደ እውነተኛ ገቢ ለመቀየር የሚከተሉትን 4 ዋና ዋና ደረጃዎች ይተግብሩ፦\n\n1. **ደረጃ 1 (ትምህርቱን መረዳት)**፦ የቪዲዮ ትምህርቶቹን በቅደም ተከተል በመከታተል ቁልፍ ነጥቦችን ይያዙ።\n2. **ደረጃ 2 (የስራ ማዋቀር)**፦ ለስራው አስፈላጊ የሆኑ መተግበሪያዎችን እና የክፍያ መንገዶችን ያዘጋጁ።\n3. **ደረጃ 3 (የመጀመሪያ ሙከራ)**፦ በስልጠናው በተማሩት መሰረት የመጀመሪያዎን ይዘት ወይም ስራ በተግባር ይጀምሩ።\n4. **ደረጃ 4 (ገቢ ማሳደግ)**፦ ወጥነትን በመጠበቅ እና ጥራትን በማሻሻል ገቢዎን በየጊዜው ያሳድጉ!\n\nበየትኛው ደረጃ ላይ እገዛ ይፈልጋሉ? 💡`;
+        }
+
+        // C. Beginner Explanation
+        if (p.includes('ጀማሪ') || p.includes('beginner') || p.includes('አብራራልኝ') || p.includes('ቀላል')) {
+            if (isEnglish) {
+                return `### 💡 "${ct}" Simplified for Beginners\n\nEven with zero prior experience, **${ct}** is designed to take you from the basics to professional confidence:\n\n• **Core Concept**: Breaking down complex industry methods into simple daily steps.\n• **How You Learn**: Follow along video demonstrations with real examples.\n\nTell me which specific concept feels tricky, and I'll explain it simply! 🌟`;
+            }
+            return `### 💡 "${ct}" ለጀማሪዎች በቀላል አማርኛ\n\nምንም አይነት የቅድመ-ልምድ ባይኖርዎትም ይህ ስልጠና ከዜሮ ተነስተው ደረጃ በደረጃ እንዲረዱት የተዘጋጀ ነው፦\n\n• **ዋናው ሀሳብ**፦ ውስብስብ የሚመስሉ የቢዝነስ እና የቴክኖሎጂ ስልቶችን ወደ ቀላል የተግባር እርምጃዎች መቀየር ነው።\n• **የአጠናን ዘዴ**፦ የኢዮብ ሳህሌን የቪዲዮ ማሳያዎች እየተመለከቱ እርስዎም አብረው ይሰራሉ።\n\nያልገባዎትን ወይም እንዲብራራልዎ የሚፈልጉትን ማንኛውንም ነጥብ እዚህ ይጻፉልኝ! 🌟`;
+        }
+
+        // D. Quiz Generator
+        if (p.includes('ፈተና') || p.includes('quiz') || p.includes('ጥያቄ አዘጋጅ') || p.includes('ጥያቄ ጠይቀኝ')) {
+            if (isEnglish) {
+                return `### 📝 "${ct}" Practical Knowledge Check\n\nAnswer these 3 practical questions to test your understanding:\n\n1. What is the single most critical factor for success in **${ct}**?\n2. What is the best strategy to overcome the most common beginner obstacle in this field?\n3. How will you apply the core technique from this course to generate your first results?\n\nType your answers below and I will review and grade them with helpful feedback! 🎯`;
+            }
+            return `### 📝 የ"${ct}" የተግባር መፈተኛ ጥያቄዎች\n\nእውቀትዎን ለመፈተሽ የሚከተሉትን 3 ጥያቄዎች ይመልሱ፦\n\n1. በ**${ct}** ስልጠና መሰረት ለስኬት በጣም ወሳኙ የመጀመሪያ እርምጃ ምንድን ነው?\n2. በስራ ሂደት ውስጥ የሚያጋጥመውን ዋነኛ ተግዳሮት በቀላሉ እንዴት ማለፍ ይቻላል?\n3. ከስልጠናው ያገኙትን እውቀት ተጠቅመው የመጀመሪያ ገቢዎን እንዴት መፍጠር ይችላሉ?\n\nመልስዎን እዚህ ይጻፉልኝ እና ትክክለኛነቱን ገምግሜ ዝርዝር ማብራሪያ እሰጥዎታለሁ! 🎯`;
+        }
+
+        // E. Business Idea Generation
+        if (p.includes('ሀሳብ') || p.includes('business') || p.includes('ቢዝነስ') || p.includes('አመንጭ')) {
+            if (isEnglish) {
+                return `### 💡 Lucrative Business Ideas with "${ct}"\n\nBased on the curriculum of **${ct}**, here are top actionable business opportunities you can start in Ethiopia or remotely:\n\n1. **Direct Service / Creation**: Offer specialized solutions directly to clients and businesses.\n2. **Digital Consulting & Management**: Manage channels, campaigns, or logistics for local and international brands.\n3. **Independent Monetization**: Build your own independent brand and generate scalable passive income!\n\nWhich of these business models excites you the most? 🚀`;
+            }
+            return `### 💡 በ"${ct}" የሚጀመሩ አትራፊ የቢዝነስ ሀሳቦች\n\nበ**${ct}** ባገኙት እውቀት መሰረት በኢትዮጵያ ውስጥ ወይም በኦንላይን ሊጀምሯቸው የሚችሉ 3 አዋጭ የስራ መስኮች፦\n\n1. **የቀጥታ ስራ / አገልግሎት መስጠት**፦ የተማሩትን ክህሎት ለድርጅቶች እና ለግለሰቦች በመስራት ፈጣን ገቢ ማግኘት\n2. **የዲጂታል አስተዳደር እና ማማከር**፦ የሌሎችን ቻናሎች፣ ማስታወቂያዎች ወይም የንግድ ስራዎች በማስተዳደር ወርሃዊ ክፍያ ማግኘት\n3. **የራስዎን ገለልተኛ ቢዝነስ መገንባት**፦ የራስዎን ብራንድ በማቋቋም ተከታታይ እና ዘላቂ የገቢ ምንጭ መፍጠር!\n\nከእነዚህ ውስጥ የትኛውን ቢዝነስ መጀመር ይፈልጋሉ? 🚀`;
+        }
+    }
+
     // 3. 1-on-1 Mentorship Booking
     if (isMentorship) {
         if (isEnglish) {
@@ -380,11 +427,42 @@ export async function POST(req: Request) {
 
     let contextualCourseSection = '';
     if (courseContext && courseContext.courseTitle) {
-        contextualCourseSection = `
-[ACTIVE COURSE CONTEXT: "${courseContext.courseTitle}"]
-- Current Active Lesson: "${courseContext.lessonTitle || 'Introduction'}"
-- Course Category: ${courseContext.category || 'Professional Skills'}
-- Instructor: ${courseContext.instructor || 'Eyoub Sahle'}
+      const lessonsList = Array.isArray(courseContext.lessons) && courseContext.lessons.length > 0
+        ? courseContext.lessons.map((l: any, i: number) => `  ${i + 1}. ${l.title || l.name || ''}${l.desc ? ` - ${l.desc}` : ''}`).join('\n')
+        : '';
+
+      const faqsList = Array.isArray(courseContext.faqs) && courseContext.faqs.length > 0
+        ? courseContext.faqs.map((f: any, i: number) => `  Q${i + 1}: ${f.question || f.q}\n  A${i + 1}: ${f.answer || f.a}`).join('\n\n')
+        : '';
+
+      contextualCourseSection = `
+===================================================================
+[🎯 ACTIVE COURSE CONTEXT & DEEP INSTRUCTOR DIRECTIVES]
+===================================================================
+- Course Title: "${courseContext.courseTitle}"
+- Course ID: ${courseContext.courseId || 'general'}
+- Category: ${courseContext.category || 'Professional Skills'}
+- Instructor: ${courseContext.instructor || 'Eyoub Sahle (ኢዮብ ሳህሌ)'}
+- Active Lesson / Topic: "${courseContext.lessonTitle || 'Full Course Overview'}"
+${courseContext.lessonDesc ? `- Active Lesson Description: "${courseContext.lessonDesc}"` : ''}
+${courseContext.whatYouWillLearn ? `- What You Will Learn: "${courseContext.whatYouWillLearn}"` : ''}
+${lessonsList ? `\n[COURSE SYLLABUS & LESSON STRUCTURE]:\n${lessonsList}` : ''}
+${faqsList ? `\n[FREQUENTLY ASKED QUESTIONS & PINNED KNOWLEDGE (FAQs)]:\n${faqsList}` : ''}
+
+[🌟 ADMIN CUSTOM INSTRUCTIONS FOR THIS COURSE (CRITICAL HIGHEST PRIORITY)]:
+${courseContext.courseAiPrompt ? courseContext.courseAiPrompt : `You are the master mentor and virtual teacher for "${courseContext.courseTitle}". You must provide deeply customized, step-by-step, actionable insights, practical examples, and clear explanations strictly specific to "${courseContext.courseTitle}".`}
+
+[DYNAMIC INTELLIGENT RESPONSES DIRECTIVE]
+1. When asked for a course summary ("💡 የኮርስ ማጠቃለያ"):
+   - Provide a deeply structured, engaging summary of the core modules, key skills gained, and practical business impact of "${courseContext.courseTitle}".
+2. When asked for practical action steps ("🚀 የተግባር እርምጃዎች"):
+   - Provide a realistic, sequential step-by-step roadmap specifically for "${courseContext.courseTitle}" (how to start from zero in Ethiopia, source/create content, handle payments, and scale).
+3. When asked for beginner explanation ("❓ ለጀማሪ አብራራልኝ"):
+   - Explain the core concepts of "${courseContext.courseTitle}" in simple, welcoming, friendly Amharic with relatable real-life analogies.
+4. When asked for quiz questions ("📝 የፈተና ጥያቄ አዘጋጅልኝ"):
+   - Generate 3 to 4 insightful, practical questions based on "${courseContext.courseTitle}" to test their comprehension.
+5. NEVER give generic, repetitive boilerplate replies ("አንድ አይነት መልስ ሁሌ አትመልስ"). Tailor every single answer with fresh, rich, and practical insights!
+===================================================================
 `;
     }
 

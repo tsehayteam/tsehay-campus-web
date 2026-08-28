@@ -398,9 +398,12 @@ function StudentDashboardContent() {
           prompt: `እባክዎ ለዚህ ትምህርት ("${activeLesson.title}") ቁልፍ የሆኑትን 3 ዋና ዋና ነጥቦች (Key Takeaways) እና ተግባራዊ እርምጃዎችን በአጭሩ አዘጋጅተው ይስጡኝ።`,
           courseContext: {
             courseTitle: activeCourse?.title,
+            courseId: activeCourse?.id,
+            instructor: activeCourse?.instructor || 'Eyoub Sahle (ኢዮብ ሳህሌ)',
             lessonTitle: activeLesson?.title,
             lessonDesc: activeLesson?.desc || activeCourse?.desc,
             courseAiPrompt: activeCourse?.aiPrompt,
+            whatYouWillLearn: Array.isArray(activeCourse?.whatYouWillLearn) ? activeCourse.whatYouWillLearn.join(', ') : activeCourse?.whatYouWillLearn,
             isSummaryRequest: true
           }
         })
@@ -499,9 +502,11 @@ function StudentDashboardContent() {
             courseTitle: activeCourse?.title,
             courseId: activeCourse?.id,
             category: activeCourse?.category,
+            instructor: activeCourse?.instructor || 'Eyoub Sahle (ኢዮብ ሳህሌ)',
             lessonTitle: activeLesson?.title,
             lessonDesc: activeLesson?.desc || activeCourse?.desc,
             courseAiPrompt: activeCourse?.aiPrompt,
+            whatYouWillLearn: Array.isArray(activeCourse?.whatYouWillLearn) ? activeCourse.whatYouWillLearn.join(', ') : activeCourse?.whatYouWillLearn,
             isLessonQuery: true
           }
         })
@@ -1472,12 +1477,17 @@ function StudentDashboardContent() {
       courseTitle: courseToUse.title,
       courseId: courseToUse.id,
       category: courseToUse.category,
+      instructor: courseToUse.instructor || 'Eyoub Sahle (ኢዮብ ሳህሌ)',
       lessonTitle: activeLesson?.title || 'Course Overview',
       lessonDesc: activeLesson?.desc || courseToUse.desc || '',
       courseAiPrompt: courseToUse.aiPrompt || '',
       whatYouWillLearn: Array.isArray(courseToUse.whatYouWillLearn) 
         ? courseToUse.whatYouWillLearn.join(', ') 
-        : (courseToUse.whatYouWillLearn || '')
+        : (courseToUse.whatYouWillLearn || ''),
+      lessons: Array.isArray(courseToUse.lessons) 
+        ? courseToUse.lessons.map((l: any) => ({ title: l.title || l.name, desc: l.desc })) 
+        : [],
+      faqs: courseToUse.faqs || []
     } : undefined;
 
     try {
@@ -1860,53 +1870,7 @@ function StudentDashboardContent() {
   };
 
   const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!chatInput.trim()) return;
-    
-    const userMsg = chatInput.trim();
-    const newMessages = [...chatMessages, { role: 'user', text: userMsg }];
-    setChatMessages(newMessages);
-    setChatInput("");
-    setIsChatLoading(true);
-
-    try {
-        const customAdminPrompt = activeCourse?.aiPrompt ? `\n[ADMIN CUSTOM INSTRUCTION FOR THIS COURSE]\n${activeCourse.aiPrompt}\n` : '';
-        const courseObjectives = Array.isArray(activeCourse?.whatYouWillLearn) ? activeCourse.whatYouWillLearn.join(', ') : '';
-
-        const systemInstruction = `You are "Tsehay AI Tutor", the official AI guide and tutor for "Tsehay Campus" (tsehaycampus.com).
-
-[CURRENT COURSE CONTEXT]
-Active Course: "${activeCourse?.title || 'General'}"
-Active Lesson: "${activeLesson?.title || 'General'}"
-Course Description: "${activeCourse?.desc || ''}"
-Objectives: ${courseObjectives}
-${customAdminPrompt}
-[STUDENT GUIDANCE & COURSE RECOMMENDATIONS]
-1. Answer student questions about this course, lesson, or related skills in clear, polite, and encouraging Amharic (or English if requested).
-2. Understand student interests and recommend relevant Tsehay Campus courses when appropriate:
-   - Digital Marketing Course (FREE) for marketing, social media, SEO, FB ads.
-   - Shein Import Business Course (4,500 ETB) for e-commerce, importing winning products, dollar payment.
-   - YouTube Secrets Masterclass / Book (900 ETB) for content creation, channel growth.
-   - Web Development / Coding (Coming Soon).
-3. Support students patiently and encourage their learning journey.`;
-
-        const response = await fetch('/api/chat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                prompt: `I am currently studying the lesson "${activeLesson?.title || 'Intro'}" in course "${activeCourse?.title || 'General'}". My question is: ${userMsg}`, 
-                systemInstruction 
-            })
-        });
-        const data = await response.json();
-        const aiReply = data.reply || data.candidates?.[0]?.content?.parts?.[0]?.text || "ይቅርታ፣ ማስተናገድ አልቻልኩም።";
-        setChatMessages([...newMessages, { role: 'ai', text: aiReply }]);
-        setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
-    } catch (error) {
-        setChatMessages([...newMessages, { role: 'ai', text: "የኢንተርኔት ችግር አጋጥሟል።" }]);
-    } finally {
-        setIsChatLoading(false);
-    }
+    return handleSendAiMessage(e);
   };
 
   if ((authLoading && !user) || (!authInitialized && !user) || (loading && courses.length === 0 && !activeCourse)) {

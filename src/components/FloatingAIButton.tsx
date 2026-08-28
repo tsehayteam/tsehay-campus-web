@@ -196,10 +196,15 @@ export default function FloatingAIButton() {
       courseTitle: selectedCourse.title,
       courseId: selectedCourse.id,
       category: selectedCourse.category,
+      instructor: selectedCourse.instructor || 'Eyoub Sahle (ኢዮብ ሳህሌ)',
       courseAiPrompt: selectedCourse.aiPrompt || '',
       whatYouWillLearn: Array.isArray(selectedCourse.whatYouWillLearn) 
         ? selectedCourse.whatYouWillLearn.join(', ') 
-        : (selectedCourse.whatYouWillLearn || '')
+        : (selectedCourse.whatYouWillLearn || ''),
+      lessons: Array.isArray(selectedCourse.lessons) 
+        ? selectedCourse.lessons.map((l: any) => ({ title: l.title || l.name, desc: l.desc })) 
+        : [],
+      faqs: selectedCourse.faqs || []
     } : undefined;
 
     try {
