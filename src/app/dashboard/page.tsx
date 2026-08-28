@@ -302,6 +302,8 @@ function StudentDashboardContent() {
   const [aiAttachedImage, setAiAttachedImage] = useState<string | null>(null);
   const [isAiVoiceRecording, setIsAiVoiceRecording] = useState(false);
   const [aiRecordingSeconds, setAiRecordingSeconds] = useState(0);
+  const [playingAiAudioIdx, setPlayingAiAudioIdx] = useState<number | null>(null);
+  const currentAiAudioRef = useRef<HTMLAudioElement | null>(null);
   const [showDashboardClearAiModal, setShowDashboardClearAiModal] = useState(false);
   const [isNavDrawerExpanded, setIsNavDrawerExpanded] = useState(false);
   const [isSyllabusCollapsed, setIsSyllabusCollapsed] = useState(false);
@@ -1248,118 +1250,168 @@ function StudentDashboardContent() {
   const aiMediaRecorderRef = useRef<MediaRecorder | null>(null);
   const aiAudioChunksRef = useRef<Blob[]>([]);
 
-  const startAiVoiceRecording = async () => {
+  // 🎙️ Seamless Real-Time Voice Input for Dashboard AI Tutor (Zero popups, live transcription into input)
+  const toggleAiVoiceListening = () => {
     if (typeof window === "undefined") return;
 
+    if (isAiVoiceRecording) {
+      if (aiRecognitionRef.current) {
+        try { aiRecognitionRef.current.stop(); } catch (e) {}
+        aiRecognitionRef.current = null;
+      }
+      setIsAiVoiceRecording(false);
+      return;
+    }
+
+    const win = window as any;
+    const SpeechRecognition = win.SpeechRecognition || win.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      alert('የእርስዎ ብራውዘር የቀጥታ ድምፅ ቅበላን አይደግፍም (Speech recognition is not supported in this browser). እባክዎ በ Chrome ወይም Edge ይጠቀሙ።');
+      return;
+    }
+
     try {
-      // 1. Capture microphone stream for direct multimodal audio
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      aiAudioChunksRef.current = [];
+      const recognition = new SpeechRecognition();
+      recognition.lang = dashboardAiLang === 'en' ? 'en-US' : 'am-ET';
+      recognition.continuous = true;
+      recognition.interimResults = true;
 
-      let mimeType = 'audio/webm';
-      if (typeof MediaRecorder !== 'undefined') {
-        if (!MediaRecorder.isTypeSupported('audio/webm')) {
-          if (MediaRecorder.isTypeSupported('audio/mp4')) mimeType = 'audio/mp4';
-          else if (MediaRecorder.isTypeSupported('audio/ogg')) mimeType = 'audio/ogg';
-          else mimeType = '';
-        }
-      }
+      const baseInput = chatInput.trim() ? chatInput.trim() + ' ' : '';
 
-      const mediaRecorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
-      
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data && event.data.size > 0) {
-          aiAudioChunksRef.current.push(event.data);
-        }
-      };
-
-      mediaRecorder.onstart = () => {
+      recognition.onstart = () => {
         setIsAiVoiceRecording(true);
-        setAiRecordingSeconds(0);
-        if (aiTimerRef.current) clearInterval(aiTimerRef.current);
-        aiTimerRef.current = setInterval(() => {
-          setAiRecordingSeconds(prev => prev + 1);
-        }, 1000);
       };
 
-      mediaRecorder.start(250);
-      aiMediaRecorderRef.current = mediaRecorder;
+      recognition.onresult = (event: any) => {
+        let interimTranscript = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          interimTranscript += event.results[i][0].transcript;
+        }
+        if (interimTranscript.trim()) {
+          setChatInput(baseInput + interimTranscript.trim());
+        }
+      };
 
-      // Also trigger SpeechRecognition if available for live visual preview
-      const win = window as any;
-      const SpeechRecognition = win.SpeechRecognition || win.webkitSpeechRecognition;
-      if (SpeechRecognition) {
-        try {
-          const recognition = new SpeechRecognition();
-          recognition.lang = "am-ET";
-          recognition.continuous = true;
-          recognition.interimResults = true;
-          recognition.onresult = (event: any) => {
-            let fullTranscript = "";
-            for (let i = 0; i < event.results.length; i++) {
-              fullTranscript += event.results[i][0].transcript + ' ';
-            }
-            if (fullTranscript.trim()) {
-              aiVoiceTranscriptRef.current = fullTranscript.trim();
-              setChatInput(fullTranscript.trim());
-            }
-          };
-          recognition.start();
-          aiRecognitionRef.current = recognition;
-        } catch (e) {}
-      }
+      recognition.onerror = (event: any) => {
+        console.warn("Dashboard speech recognition error:", event.error);
+        if (event.error === 'not-allowed') {
+          alert('እባክዎ የማይክሮፎን ፈቃድ ይስጡ (Please allow microphone access in browser settings).');
+        }
+        setIsAiVoiceRecording(false);
+      };
+
+      recognition.onend = () => {
+        setIsAiVoiceRecording(false);
+      };
+
+      recognition.start();
+      aiRecognitionRef.current = recognition;
     } catch (err) {
-      console.warn("Could not start AI voice media recorder:", err);
-      alert('እባክዎ የማይክሮፎን ፈቃድ ይስጡ (Please allow microphone access in browser settings).');
+      console.warn("Could not start dashboard speech recognition:", err);
       setIsAiVoiceRecording(false);
     }
   };
 
-  const stopAiVoiceRecording = (shouldSend: boolean = true) => {
-    const spoken = (aiVoiceTranscriptRef.current || chatInput).trim();
-    
-    if (aiMediaRecorderRef.current && aiMediaRecorderRef.current.state !== 'inactive') {
-      const recorder = aiMediaRecorderRef.current;
-      recorder.onstop = () => {
-        try {
-          recorder.stream.getTracks().forEach(t => t.stop());
-          const audioBlob = new Blob(aiAudioChunksRef.current, { type: recorder.mimeType || 'audio/webm' });
-          if (shouldSend && audioBlob.size > 200) {
-            const reader = new FileReader();
-            reader.readAsDataURL(audioBlob);
-            reader.onloadend = () => {
-              const base64Audio = reader.result as string;
-              handleSendAiMessage(undefined, spoken, base64Audio);
-            };
-          } else if (shouldSend && spoken) {
-            handleSendAiMessage(undefined, spoken);
-          }
-        } catch (e) {
-          if (shouldSend && spoken) handleSendAiMessage(undefined, spoken);
-        }
+  // 🔊 Natural, Warm Ethiopian / Pleasant Female Voice Reader for Dashboard AI Tutor
+  const playAiVoiceResponse = (text: string, idx: number) => {
+    if (typeof window === 'undefined') return;
+
+    if (playingAiAudioIdx === idx) {
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      if (currentAiAudioRef.current) {
+        currentAiAudioRef.current.pause();
+        currentAiAudioRef.current = null;
+      }
+      setPlayingAiAudioIdx(null);
+      return;
+    }
+
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    if (currentAiAudioRef.current) {
+      currentAiAudioRef.current.pause();
+      currentAiAudioRef.current = null;
+    }
+
+    const cleanText = text
+      .replace(/```[\s\S]*?```/g, ' ')
+      .replace(/`([^`]+)`/g, '$1')
+      .replace(/[*_~#>[\]()]/g, ' ')
+      .replace(/https?:\/\/\S+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (!cleanText) return;
+
+    if ('speechSynthesis' in window) {
+      const utterance = new SpeechSynthesisUtterance(cleanText);
+      const voices = window.speechSynthesis.getVoices();
+
+      let selectedVoice = voices.find(v => 
+        v.lang.toLowerCase().includes('am') || 
+        v.lang.toLowerCase().includes('et') || 
+        v.name.toLowerCase().includes('amharic') ||
+        v.name.toLowerCase().includes('ethiopia')
+      );
+
+      if (!selectedVoice) {
+        selectedVoice = voices.find(v => 
+          (v.name.toLowerCase().includes('natural') || 
+           v.name.toLowerCase().includes('zira') || 
+           v.name.toLowerCase().includes('jenny') || 
+           v.name.toLowerCase().includes('aria') || 
+           v.name.toLowerCase().includes('samantha') || 
+           v.name.toLowerCase().includes('google') ||
+           v.name.toLowerCase().includes('female')) &&
+          (v.lang.startsWith('en') || v.lang.startsWith('am'))
+        );
+      }
+
+      if (selectedVoice) {
+        utterance.voice = selectedVoice;
+      }
+
+      utterance.lang = selectedVoice?.lang || 'am-ET';
+      utterance.rate = 0.94;
+      utterance.pitch = 1.05;
+      utterance.volume = 1.0;
+
+      utterance.onstart = () => setPlayingAiAudioIdx(idx);
+      utterance.onend = () => setPlayingAiAudioIdx(null);
+      utterance.onerror = () => {
+        tryAudioEndpoint(cleanText, idx);
       };
 
-      try {
-        recorder.stop();
-        recorder.stream.getTracks().forEach(t => t.stop());
-      } catch (e) {}
-      aiMediaRecorderRef.current = null;
+      setPlayingAiAudioIdx(idx);
+      window.speechSynthesis.speak(utterance);
     } else {
-      if (shouldSend && spoken) {
-        handleSendAiMessage(undefined, spoken);
-      }
+      tryAudioEndpoint(cleanText, idx);
     }
+  };
 
-    if (aiRecognitionRef.current) {
-      try { aiRecognitionRef.current.stop(); } catch (e) {}
-      aiRecognitionRef.current = null;
+  const tryAudioEndpoint = (cleanText: string, idx: number) => {
+    try {
+      const encodedText = encodeURIComponent(cleanText.slice(0, 300));
+      const audioUrl = `/api/ai/tts?text=${encodedText}&lang=${dashboardAiLang === 'en' ? 'en' : 'am'}`;
+      const audio = new Audio(audioUrl);
+      currentAiAudioRef.current = audio;
+      setPlayingAiAudioIdx(idx);
+
+      audio.onended = () => {
+        setPlayingAiAudioIdx(null);
+        currentAiAudioRef.current = null;
+      };
+      audio.onerror = () => {
+        setPlayingAiAudioIdx(null);
+        currentAiAudioRef.current = null;
+      };
+      audio.play().catch(() => {
+        setPlayingAiAudioIdx(null);
+        currentAiAudioRef.current = null;
+      });
+    } catch (e) {
+      setPlayingAiAudioIdx(null);
     }
-    if (aiTimerRef.current) {
-      clearInterval(aiTimerRef.current);
-      aiTimerRef.current = null;
-    }
-    setIsAiVoiceRecording(false);
-    setAiRecordingSeconds(0);
   };
 
   const handleAiImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -3988,6 +4040,20 @@ ${customAdminPrompt}
                              {/* Action buttons under AI response */}
                              {!isUser && i > 0 && (
                                  <div className="flex items-center gap-2 mt-1.5 ml-9 flex-wrap">
+                                     {/* 🔊 Voice Audio Player Button */}
+                                     <button 
+                                       onClick={() => playAiVoiceResponse(m.text, i)}
+                                       className={`text-[11px] font-bold px-2.5 py-1 rounded-lg border flex items-center gap-1 transition cursor-pointer active:scale-95 ${
+                                         playingAiAudioIdx === i
+                                           ? 'bg-amber-500/20 text-amber-500 dark:text-amber-300 border-amber-500/40 animate-pulse'
+                                           : 'bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/15 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-white/10'
+                                       }`}
+                                       title={playingAiAudioIdx === i ? 'ድምፁን አቁም (Stop Voice)' : 'በድምፅ አዳምጥ (Listen via Voice)'}
+                                     >
+                                       <i className={`fa-solid ${playingAiAudioIdx === i ? 'fa-pause text-amber-500' : 'fa-volume-high text-[#f9b03c]'}`}></i>
+                                       <span>{playingAiAudioIdx === i ? 'አቁም' : 'አዳምጥ'}</span>
+                                     </button>
+
                                      <button
                                          onClick={() => {
                                              navigator.clipboard.writeText(m.text);
@@ -4069,121 +4135,91 @@ ${customAdminPrompt}
                    </div>
                  )}
 
-                 {/* Quick Action Suggestion Chips (Hidden when recording voice) */}
-                 {!isAiVoiceRecording && (
-                   <div className="relative z-10 flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
-                       {[
-                         { label: '💡 የኮርስ ማጠቃለያ', prompt: selectedAiCourse ? `የ"${selectedAiCourse.title}" ኮርስ ዋና ዋና ነጥቦችን አጠቃልልልኝ` : 'የኮርሶቹን ዋና ዋና ጥቅሞች አጠቃልልልኝ' },
-                         { label: '🚀 የተግባር እርምጃዎች', prompt: selectedAiCourse ? `በ"${selectedAiCourse.title}" የተማርነውን በኢትዮጵያ ውስጥ በተግባር እንዴት ልተግብረው?` : 'የተማርኩትን ወደ ተግባራዊ ገቢ እንዴት እቀይረዋለሁ?' },
-                         { label: '❓ ለጀማሪ አብራራልኝ', prompt: 'ያልገባኝን ነገር በቀላል እና ግልጽ በሆነ አማርኛ ደረጃ በደረጃ አብራራልኝ' },
-                         { label: '📝 የፈተና ጥያቄ አዘጋጅልኝ', prompt: 'እውቀቴን ለመፈተሽ 3 ተግባራዊ ጥያቄዎችን አዘጋጅተህ ጠይቀኝ' }
-                       ].map((item, idx) => (
-                         <button
-                           key={idx}
-                           type="button"
-                           onClick={() => handleSendAiMessage(undefined, item.prompt)}
-                           className="text-[11px] font-bold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-white/5 hover:bg-[#f9b03c] dark:hover:bg-[#f9b03c] hover:text-slate-950 dark:hover:text-slate-950 px-3 py-1 rounded-full border border-gray-200 dark:border-white/10 transition-all duration-150 active:scale-95 whitespace-nowrap shrink-0 cursor-pointer"
-                         >
-                           {item.label}
-                         </button>
-                       ))}
-                   </div>
-                 )}
+                  {/* Quick Action Suggestion Chips */}
+                  <div className="relative z-10 flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
+                      {[
+                        { label: '💡 የኮርስ ማጠቃለያ', prompt: selectedAiCourse ? `የ"${selectedAiCourse.title}" ኮርስ ዋና ዋና ነጥቦችን አጠቃልልልኝ` : 'የኮርሶቹን ዋና ዋና ጥቅሞች አጠቃልልልኝ' },
+                        { label: '🚀 የተግባር እርምጃዎች', prompt: selectedAiCourse ? `በ"${selectedAiCourse.title}" የተማርነውን በኢትዮጵያ ውስጥ በተግባር እንዴት ልተግብረው?` : 'የተማርኩትን ወደ ተግባራዊ ገቢ እንዴት እቀይረዋለሁ?' },
+                        { label: '❓ ለጀማሪ አብራራልኝ', prompt: 'ያልገባኝን ነገር በቀላል እና ግልጽ በሆነ አማርኛ ደረጃ በደረጃ አብራራልኝ' },
+                        { label: '📝 የፈተና ጥያቄ አዘጋጅልኝ', prompt: 'እውቀቴን ለመፈተሽ 3 ተግባራዊ ጥያቄዎችን አዘጋጅተህ ጠይቀኝ' }
+                      ].map((item, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => handleSendAiMessage(undefined, item.prompt)}
+                          className="text-[11px] font-bold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-white/5 hover:bg-[#f9b03c] dark:hover:bg-[#f9b03c] hover:text-slate-950 dark:hover:text-slate-950 px-3 py-1 rounded-full border border-gray-200 dark:border-white/10 transition-all duration-150 active:scale-95 whitespace-nowrap shrink-0 cursor-pointer"
+                        >
+                          {item.label}
+                        </button>
+                      ))}
+                  </div>
 
-                 {/* 🌟 UNIFIED SINGLE BOTTOM CONTROLS DOCK (No duplicates) */}
-                 {isAiVoiceRecording ? (
-                   /* 🎙️ Single Sleek Voice Recording Capsule */
-                   <div className="relative z-10 px-4 py-3 bg-gradient-to-r from-red-950/90 via-[#180a22] to-amber-950/90 border border-red-500/40 rounded-2xl flex items-center justify-between gap-3 animate-in fade-in duration-200">
-                     <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                       <span className="relative flex h-3.5 w-3.5 shrink-0">
-                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
-                         <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-red-500 shadow-[0_0_10px_#ef4444]"></span>
-                       </span>
-                       <div className="flex flex-col min-w-0">
-                         <span className="text-xs font-black text-amber-300 flex items-center gap-1.5">
-                           <span>ድምፅዎን እያዳመጥኩ ነው...</span>
-                           <span className="text-[11px] bg-red-500/30 text-red-300 px-2 py-0.5 rounded-full border border-red-500/40 font-mono">
-                             {aiRecordingSeconds}s
-                           </span>
-                         </span>
-                         <span className="text-[11px] text-gray-300 truncate">
-                           {chatInput || aiVoiceTranscriptRef.current || 'እየተናገሩ... ሲጨርሱ "ላክ" የሚለውን ይጫኑ'}
-                         </span>
-                       </div>
-                     </div>
+                  {/* ✍️ Clean Single Persistent Input Bar (Photo, Text Input, Live Mic / Send) */}
+                  <form onSubmit={(e) => handleSendAiMessage(e)} className="relative z-10 flex items-center gap-2">
+                      {/* Photo Upload Button */}
+                      <button
+                        type="button"
+                        onClick={() => aiFileInputRef.current?.click()}
+                        className="w-11 h-11 rounded-2xl bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/15 text-gray-600 dark:text-gray-300 hover:text-[#f9b03c] border border-gray-200 dark:border-white/15 flex items-center justify-center transition active:scale-90 cursor-pointer shrink-0"
+                        title="ፎቶ / ስክሪንሾት አያይዝ"
+                      >
+                        <i className="fa-solid fa-paperclip text-sm"></i>
+                      </button>
 
-                     <div className="flex items-center gap-2 shrink-0">
-                       <button 
-                         type="button"
-                         onClick={() => stopAiVoiceRecording(false)}
-                         className="h-10 px-3.5 rounded-2xl bg-white/10 hover:bg-red-500/20 hover:text-red-400 text-gray-300 text-xs font-bold transition active:scale-95 cursor-pointer border border-white/10"
-                         title="ድምፁን ሰርዝ"
-                       >
-                         <i className="fa-solid fa-xmark mr-1"></i>
-                         <span>ሰርዝ</span>
-                       </button>
-                       
-                       <button 
-                         type="button"
-                         onClick={() => stopAiVoiceRecording(true)}
-                         className="h-10 px-4 rounded-2xl bg-gradient-to-r from-[#f9b03c] via-amber-400 to-yellow-300 hover:brightness-110 text-slate-950 text-xs font-black transition cursor-pointer shadow-[0_0_20px_rgba(249,176,60,0.6)] flex items-center gap-1.5 active:scale-95"
-                         title="ድምፁን ላክ"
-                       >
-                         <i className="fa-solid fa-paper-plane text-xs"></i>
-                         <span>ላክ</span>
-                       </button>
-                     </div>
-                   </div>
-                 ) : (
-                   /* ✍️ Clean Single Input Bar (Photo, Text Input, Microphone / Send) */
-                   <form onSubmit={(e) => handleSendAiMessage(e)} className="relative z-10 flex items-center gap-2">
-                       {/* Photo Upload Button */}
-                       <button
-                         type="button"
-                         onClick={() => aiFileInputRef.current?.click()}
-                         className="w-11 h-11 rounded-2xl bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/15 text-gray-600 dark:text-gray-300 hover:text-[#f9b03c] border border-gray-200 dark:border-white/15 flex items-center justify-center transition active:scale-90 cursor-pointer shrink-0"
-                         title="ፎቶ / ስክሪንሾት አያይዝ"
-                       >
-                         <i className="fa-solid fa-paperclip text-sm"></i>
-                       </button>
+                      {/* Text Input with Live Listening Animation */}
+                      <div className="relative flex-1">
+                        <input 
+                            type="text" 
+                            value={chatInput}
+                            onChange={e => setChatInput(e.target.value)}
+                            placeholder={
+                              isAiVoiceRecording
+                                ? "🔴 እያዳመጥኩ ነው... ይናገሩ (Listening... speak now)"
+                                : selectedAiCourse 
+                                  ? `ስለ ${selectedAiCourse.title} ለ Tsehay AI ጥያቄዎን እዚህ ይጻፉ...` 
+                                  : "ለ Tsehay AI ማንኛውንም ጥያቄ እዚህ ይጻፉ..."
+                            }
+                            className={`w-full bg-gray-50 dark:bg-slate-950/80 border rounded-2xl px-4 py-3 text-xs sm:text-sm outline-none text-dark dark:text-white placeholder-gray-400 transition duration-300 ${
+                              isAiVoiceRecording
+                                ? 'border-[#f9b03c] ring-2 ring-[#f9b03c]/40 shadow-[0_0_20px_rgba(249,176,60,0.35)] animate-pulse placeholder-amber-400'
+                                : 'border-gray-200 dark:border-white/15 focus:border-[#f9b03c]'
+                            }`}
+                        />
+                      </div>
 
-                       <input 
-                           type="text" 
-                           value={chatInput}
-                           onChange={e => setChatInput(e.target.value)}
-                           placeholder={selectedAiCourse ? `ስለ ${selectedAiCourse.title} ለ Tsehay AI ጥያቄዎን እዚህ ይጻፉ...` : "ለ Tsehay AI ማንኛውንም ጥያቄ እዚህ ይጻፉ..."}
-                           className="flex-1 bg-gray-50 dark:bg-slate-950/80 border border-gray-200 dark:border-white/15 rounded-2xl px-4 py-3 text-xs sm:text-sm outline-none focus:border-[#f9b03c] text-dark dark:text-white placeholder-gray-400 transition"
-                       />
+                      {/* Microphone Voice Toggle Button */}
+                      <button
+                        type="button"
+                        onClick={toggleAiVoiceListening}
+                        className={`w-11 h-11 rounded-2xl border flex items-center justify-center transition-all duration-300 active:scale-90 cursor-pointer shrink-0 ${
+                          isAiVoiceRecording
+                            ? 'bg-red-500 border-red-400 text-white shadow-[0_0_20px_rgba(239,68,68,0.8)] animate-pulse'
+                            : 'bg-gradient-to-tr from-[#f9b03c]/20 to-amber-500/30 hover:from-[#f9b03c] hover:to-amber-400 text-[#f9b03c] hover:text-slate-950 border-[#f9b03c]/40 shadow-[0_0_15px_rgba(249,176,60,0.2)]'
+                        }`}
+                        title={isAiVoiceRecording ? "ድምፅ ማዳመጥ አቁም (Stop Listening)" : "በድምፅ ተናገር (Speak via Voice)"}
+                      >
+                        <i className={`fa-solid ${isAiVoiceRecording ? 'fa-microphone-lines text-base' : 'fa-microphone text-sm'}`}></i>
+                      </button>
 
-                       {/* Dynamic Action: Send button if text/image exists, else Microphone Voice button */}
-                       {chatInput.trim() || aiAttachedImage ? (
-                         <button 
-                             type="submit" 
-                             disabled={isChatLoading}
-                             className="px-5 sm:px-6 h-11 rounded-2xl font-black text-xs sm:text-sm flex items-center justify-center gap-2 transition-all duration-200 cursor-pointer shadow-md active:scale-90 bg-gradient-to-r from-[#f9b03c] to-amber-400 text-slate-950 shadow-[0_0_20px_rgba(249,176,60,0.4)] hover:brightness-110"
-                             title="መልዕክት ላክ"
-                         >
-                             {isChatLoading ? (
-                               <div className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin"></div>
-                             ) : (
-                               <>
-                                 <i className="fa-solid fa-paper-plane text-xs"></i>
-                                 <span>ላክ</span>
-                               </>
-                             )}
-                         </button>
-                       ) : (
-                         <button
-                           type="button"
-                           onClick={() => startAiVoiceRecording()}
-                           className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-[#f9b03c]/20 to-amber-500/30 hover:from-[#f9b03c] hover:to-amber-400 text-[#f9b03c] hover:text-slate-950 border border-[#f9b03c]/40 flex items-center justify-center transition-all duration-200 active:scale-90 cursor-pointer shrink-0 shadow-[0_0_15px_rgba(249,176,60,0.2)]"
-                           title="በድምፅ ተናገር (Speak via Voice)"
-                         >
-                           <i className="fa-solid fa-microphone text-sm"></i>
-                         </button>
-                       )}
-                   </form>
-                 )}
+                      {/* Send Button */}
+                      {(chatInput.trim() || aiAttachedImage) && (
+                        <button 
+                            type="submit" 
+                            disabled={isChatLoading}
+                            className="px-5 sm:px-6 h-11 rounded-2xl font-black text-xs sm:text-sm flex items-center justify-center gap-2 transition-all duration-200 cursor-pointer shadow-md active:scale-90 bg-gradient-to-r from-[#f9b03c] to-amber-400 text-slate-950 shadow-[0_0_20px_rgba(249,176,60,0.4)] hover:brightness-110 animate-in zoom-in-95"
+                            title="መልዕክት ላክ"
+                        >
+                            {isChatLoading ? (
+                              <div className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin"></div>
+                            ) : (
+                              <>
+                                <i className="fa-solid fa-paper-plane text-xs"></i>
+                                <span>ላክ</span>
+                              </>
+                            )}
+                        </button>
+                      )}
+                  </form>
              </div>
           </div>
         )}
