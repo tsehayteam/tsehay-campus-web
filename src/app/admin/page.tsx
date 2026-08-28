@@ -4342,117 +4342,277 @@ export default function AdminDashboard() {
                             </span>
                           </div>
                         ))}
-                    <p className="text-sm font-medium">እስካሁን የተፈጠረ የቅናሽ ኮድ የለም። ከላይ ባለው ፎርም አዲስ ኮድ መፍጠር ይችላሉ።</p>
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left text-sm">
-                      <thead>
-                        <tr className="border-b border-gray-100 dark:border-slate-700/80 text-xs text-gray-400 uppercase font-black tracking-wider">
-                          <th className="py-3 px-4">የኮድ ስም (Code Name)</th>
-                          <th className="py-3 px-4">የቅናሽ መጠን (Discount)</th>
-                          <th className="py-3 px-4">የሚሰራበት ኮርስ (Target Course)</th>
-                          <th className="py-3 px-4 text-center">የተጠቀሙ / ገደብ (Usage / Limit)</th>
-                          <th className="py-3 px-4 text-center">ሁኔታ (Status)</th>
-                          <th className="py-3 px-4 text-right">ድርጊት (Actions)</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100 dark:divide-slate-700/60">
-                        {referralCodes.map((item) => {
-                          const matchedCourse = courses.find(c => c.id === item.targetCourseId);
-                          const courseLabel = item.targetCourseId === 'all' 
-                            ? '🌟 ሁሉም ኮርሶች (All Courses)' 
-                            : (matchedCourse ? matchedCourse.title : item.targetCourseId);
+                      </div>
+                    </div>
+                  )}
 
-                          const usage = item.usageCount || 0;
-                          const maxLimit = Number(item.maxUsageLimit) || 0;
-                          const isLimitReached = maxLimit > 0 && usage >= maxLimit;
+                </div>
+              )}
 
-                          return (
-                            <tr key={item.id} className="hover:bg-gray-50/50 dark:hover:bg-slate-700/20 transition group">
-                              {/* Code Name */}
-                              <td className="py-4 px-4 font-mono font-black text-sm text-dark dark:text-white">
-                                <span className="inline-block px-3 py-1 rounded-xl bg-[#f9b03c]/15 text-[#f9b03c] border border-[#f9b03c]/30 shadow-sm">
-                                  {item.code || item.id}
-                                </span>
-                                {item.description && (
-                                  <p className="text-[11px] font-sans text-gray-400 mt-1 font-normal line-clamp-1">{item.description}</p>
-                                )}
-                              </td>
+              {/* 🌟 SUBTAB 2: Promo Codes Creation & Management */}
+              {referralsSubTab === 'promo_codes' && (
+                <div className="space-y-8">
+                  {/* Top Creation Card */}
+                  <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 sm:p-8 border border-gray-100 dark:border-slate-700 shadow-xl">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 dark:border-slate-700 pb-5 mb-6">
+                      <div className="flex items-center gap-3.5">
+                        <div className="w-12 h-12 rounded-2xl bg-[#f9b03c]/15 border border-[#f9b03c]/30 flex items-center justify-center text-[#f9b03c] text-xl shadow-sm">
+                          <i className="fa-solid fa-tags"></i>
+                        </div>
+                        <div>
+                          <h3 className="text-xl font-black text-dark dark:text-white">አዲስ የቅናሽ ኮድ ፍጠር (Create Promo Code)</h3>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">ለማርኬቲንግ እና ለተማሪዎች ቅናሽ ወይም 100% ነፃ መመዝገቢያ ኮድ እዚህ ያዘጋጁ</p>
+                        </div>
+                      </div>
+                      {referralSuccessMsg && (
+                        <div className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 animate-bounce">
+                          <i className="fa-solid fa-circle-check"></i>
+                          <span>{referralSuccessMsg}</span>
+                        </div>
+                      )}
+                    </div>
 
-                              {/* Discount */}
-                              <td className="py-4 px-4 font-black">
-                                <span className={`inline-block text-xs px-3 py-1 rounded-full ${
-                                  item.discountPercent >= 100 
-                                    ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30' 
-                                    : 'bg-amber-500/20 text-amber-700 dark:text-[#f9b03c] border border-amber-500/30'
-                                }`}>
-                                  {item.discountPercent >= 100 ? '100% FREE' : `${item.discountPercent}% OFF`}
-                                </span>
-                              </td>
+                    <form onSubmit={handleCreateReferralCode} className="space-y-6">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                        {/* Code Name */}
+                        <div>
+                          <label className="block text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-2">
+                            የኮድ ስም (Code Name) *
+                          </label>
+                          <input 
+                            type="text" 
+                            required 
+                            placeholder="e.g. ABEL10, VIP50, FREE100" 
+                            value={newCodeName}
+                            onChange={(e) => setNewCodeName(e.target.value.toUpperCase().replace(/\s+/g, ''))}
+                            className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm font-mono font-black uppercase tracking-wider text-dark dark:text-white outline-none focus:border-[#f9b03c] transition"
+                          />
+                        </div>
 
-                              {/* Target Course */}
-                              <td className="py-4 px-4 font-bold text-gray-700 dark:text-gray-200">
-                                <span className="line-clamp-1 max-w-[220px]" title={courseLabel}>{courseLabel}</span>
-                              </td>
-
-                              {/* Usage / Max Limit */}
-                              <td className="py-4 px-4 text-center font-bold text-gray-900 dark:text-white">
-                                <div className="inline-flex flex-col items-center gap-1">
-                                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-mono font-bold ${
-                                    isLimitReached 
-                                      ? 'bg-red-500/20 text-red-500 border border-red-500/30' 
-                                      : 'bg-gray-100 dark:bg-slate-700/70 text-gray-800 dark:text-gray-200'
-                                  }`}>
-                                    <i className="fa-solid fa-users text-[#f9b03c]"></i>
-                                    <span>
-                                      {usage} / {maxLimit > 0 ? maxLimit : '∞'}
-                                    </span>
-                                  </span>
-                                  {isLimitReached ? (
-                                    <span className="text-[10px] text-red-400 font-bold">ገደቡ ሞልቷል (Full)</span>
-                                  ) : maxLimit > 0 ? (
-                                    <span className="text-[10px] text-gray-400">{maxLimit - usage} ሰው ይቀራል</span>
-                                  ) : (
-                                    <span className="text-[10px] text-emerald-400">ያልተገደበ (Unlimited)</span>
-                                  )}
-                                </div>
-                              </td>
-
-                              {/* Status Toggle */}
-                              <td className="py-4 px-4 text-center">
+                        {/* Discount Percentage */}
+                        <div>
+                          <label className="block text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-2 flex items-center justify-between">
+                            <span>የቅናሽ ፐርሰንት (%) *</span>
+                            <span className="text-[#f9b03c] font-black">{newDiscountPercent}% {newDiscountPercent >= 100 ? '(FREE)' : 'OFF'}</span>
+                          </label>
+                          <div className="flex items-center gap-1.5">
+                            <input 
+                              type="number" 
+                              min={1} 
+                              max={100} 
+                              required 
+                              value={newDiscountPercent}
+                              onChange={(e) => setNewDiscountPercent(Math.min(100, Math.max(1, Number(e.target.value))))}
+                              className="w-20 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-2 py-3 text-sm font-bold text-center text-dark dark:text-white outline-none focus:border-[#f9b03c]"
+                            />
+                            <div className="flex-1 flex gap-1">
+                              {[10, 20, 50, 100].map(pct => (
                                 <button
+                                  key={pct}
                                   type="button"
-                                  onClick={() => handleToggleReferralStatus(item)}
-                                  className={`text-xs font-bold px-3 py-1 rounded-lg transition cursor-pointer ${
-                                    item.isActive && !isLimitReached
-                                      ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20' 
-                                      : 'bg-gray-200 dark:bg-slate-700 text-gray-500 hover:bg-gray-300'
+                                  onClick={() => setNewDiscountPercent(pct)}
+                                  className={`flex-1 py-2 rounded-lg text-[11px] font-bold transition cursor-pointer ${
+                                    newDiscountPercent === pct 
+                                      ? 'bg-[#f9b03c] text-slate-950 shadow-sm font-black' 
+                                      : 'bg-gray-100 dark:bg-slate-700/60 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700'
                                   }`}
                                 >
-                                  {isLimitReached ? '🚫 Full' : item.isActive ? '✓ Active' : '✕ Inactive'}
+                                  {pct === 100 ? 'Free' : `${pct}%`}
                                 </button>
-                              </td>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
 
-                              {/* Actions */}
-                              <td className="py-4 px-4 text-right">
-                                <button
-                                  type="button"
-                                  onClick={() => handleDeleteReferralCode(item.id)}
-                                  className="text-xs font-bold text-red-500 hover:text-red-600 p-2 hover:bg-red-500/10 rounded-xl transition cursor-pointer"
-                                  title="ኮዱን አጥፋ"
-                                >
-                                  <i className="fa-solid fa-trash"></i>
-                                </button>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
+                        {/* Target Course */}
+                        <div>
+                          <label className="block text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-2">
+                            የሚሰራበት ኮርስ (Course) *
+                          </label>
+                          <select 
+                            value={newTargetCourseId}
+                            onChange={(e) => setNewTargetCourseId(e.target.value)}
+                            className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm font-medium text-dark dark:text-white outline-none focus:border-[#f9b03c] transition cursor-pointer"
+                          >
+                            <option value="all">🌟 ለሁሉም ኮርሶች (All Courses)</option>
+                            {courses.map(c => (
+                              <option key={c.id} value={c.id}>
+                                {c.title}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {/* Max Usage Limit */}
+                        <div>
+                          <label className="block text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-2 flex items-center justify-between">
+                            <span>የአጠቃቀም ገደብ (Limit)</span>
+                            <span className="text-gray-400 text-[11px] font-normal">{newMaxUsageLimit === 0 ? 'ያልተገደበ' : `${newMaxUsageLimit} ተማሪ`}</span>
+                          </label>
+                          <input 
+                            type="number" 
+                            min={0} 
+                            placeholder="0 ለ Unlimited"
+                            value={newMaxUsageLimit}
+                            onChange={(e) => setNewMaxUsageLimit(e.target.value === '' ? '' : Math.max(0, Number(e.target.value)))}
+                            className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm text-dark dark:text-white outline-none focus:border-[#f9b03c] transition font-mono"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-2">
+                          አጭር ማስታወሻ / ማብራሪያ (Description - አማራጭ)
+                        </label>
+                        <input 
+                          type="text" 
+                          placeholder="ለምሳሌ፡ የቴሌግራም ቻናል ተከታዮች ልዩ 50% ቅናሽ..."
+                          value={newCodeDesc}
+                          onChange={(e) => setNewCodeDesc(e.target.value)}
+                          className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm text-dark dark:text-white outline-none focus:border-[#f9b03c] transition"
+                        />
+                      </div>
+
+                      <div className="flex justify-end pt-2">
+                        <button 
+                          type="submit" 
+                          disabled={isSavingReferral || !newCodeName.trim()}
+                          className="bg-gradient-to-r from-[#f9b03c] to-amber-500 hover:from-amber-400 hover:to-[#f9b03c] text-slate-950 font-black px-8 py-3.5 rounded-2xl shadow-lg hover:shadow-[0_0_25px_rgba(249,176,60,0.5)] transition-all duration-300 disabled:opacity-50 flex items-center gap-2 cursor-pointer active:scale-95 text-sm"
+                        >
+                          <i className="fa-solid fa-plus"></i>
+                          <span>{isSavingReferral ? 'እየፈጠረ ነው...' : 'የቅናሽ ኮድ ፍጠር (Create Code)'}</span>
+                        </button>
+                      </div>
+                    </form>
                   </div>
-                )}
-              </div>
+
+                  {/* List of Active Promo Codes */}
+                  <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 sm:p-8 border border-gray-100 dark:border-slate-700 shadow-xl space-y-6">
+                    <div className="flex items-center justify-between border-b border-gray-100 dark:border-slate-700 pb-4">
+                      <h4 className="text-lg font-black text-dark dark:text-white flex items-center gap-2">
+                        <i className="fa-solid fa-list-check text-[#f9b03c]"></i>
+                        <span>ያሉ የቅናሽ ኮዶች ዝርዝር ({referralCodes.length})</span>
+                      </h4>
+                      <span className="text-xs text-gray-500 font-medium">ቀጥታ ስራ ላይ ያሉ (Real-Time)</span>
+                    </div>
+
+                    {referralCodes.length === 0 ? (
+                      <div className="text-center py-12 text-gray-400 space-y-3">
+                        <i className="fa-solid fa-ticket text-4xl text-gray-300 dark:text-slate-600"></i>
+                        <p className="text-sm font-medium">እስካሁን የተፈጠረ የቅናሽ ኮድ የለም። ከላይ ባለው ፎርም አዲስ ኮድ መፍጠር ይችላሉ።</p>
+                      </div>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left text-sm">
+                          <thead>
+                            <tr className="border-b border-gray-100 dark:border-slate-700/80 text-xs text-gray-400 uppercase font-black tracking-wider">
+                              <th className="py-3 px-4">የኮድ ስም (Code Name)</th>
+                              <th className="py-3 px-4">የቅናሽ መጠን (Discount)</th>
+                              <th className="py-3 px-4">የሚሰራበት ኮርስ (Target Course)</th>
+                              <th className="py-3 px-4 text-center">የተጠቀሙ / ገደብ (Usage / Limit)</th>
+                              <th className="py-3 px-4 text-center">ሁኔታ (Status)</th>
+                              <th className="py-3 px-4 text-right">ድርጊት (Actions)</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-100 dark:divide-slate-700/60">
+                            {referralCodes.map((item) => {
+                              const matchedCourse = courses.find(c => c.id === item.targetCourseId);
+                              const courseLabel = item.targetCourseId === 'all' 
+                                ? '🌟 ሁሉም ኮርሶች (All Courses)' 
+                                : (matchedCourse ? matchedCourse.title : item.targetCourseId);
+
+                              const usage = item.usageCount || 0;
+                              const maxLimit = Number(item.maxUsageLimit) || 0;
+                              const isLimitReached = maxLimit > 0 && usage >= maxLimit;
+
+                              return (
+                                <tr key={item.id} className="hover:bg-gray-50/50 dark:hover:bg-slate-700/20 transition group">
+                                  {/* Code Name */}
+                                  <td className="py-4 px-4 font-mono font-black text-sm text-dark dark:text-white">
+                                    <span className="inline-block px-3 py-1 rounded-xl bg-[#f9b03c]/15 text-[#f9b03c] border border-[#f9b03c]/30 shadow-sm">
+                                      {item.code || item.id}
+                                    </span>
+                                    {item.description && (
+                                      <p className="text-[11px] font-sans text-gray-400 mt-1 font-normal line-clamp-1">{item.description}</p>
+                                    )}
+                                  </td>
+
+                                  {/* Discount */}
+                                  <td className="py-4 px-4 font-black">
+                                    <span className={`inline-block text-xs px-3 py-1 rounded-full ${
+                                      item.discountPercent >= 100 
+                                        ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30' 
+                                        : 'bg-amber-500/20 text-amber-700 dark:text-[#f9b03c] border border-amber-500/30'
+                                    }`}>
+                                      {item.discountPercent >= 100 ? '100% FREE' : `${item.discountPercent}% OFF`}
+                                    </span>
+                                  </td>
+
+                                  {/* Target Course */}
+                                  <td className="py-4 px-4 font-bold text-gray-700 dark:text-gray-200">
+                                    <span className="line-clamp-1 max-w-[220px]" title={courseLabel}>{courseLabel}</span>
+                                  </td>
+
+                                  {/* Usage / Max Limit */}
+                                  <td className="py-4 px-4 text-center font-bold text-gray-900 dark:text-white">
+                                    <div className="inline-flex flex-col items-center gap-1">
+                                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-mono font-bold ${
+                                        isLimitReached 
+                                          ? 'bg-red-500/20 text-red-500 border border-red-500/30' 
+                                          : 'bg-gray-100 dark:bg-slate-700/70 text-gray-800 dark:text-gray-200'
+                                      }`}>
+                                        <i className="fa-solid fa-users text-[#f9b03c]"></i>
+                                        <span>
+                                          {usage} / {maxLimit > 0 ? maxLimit : '∞'}
+                                        </span>
+                                      </span>
+                                      {isLimitReached ? (
+                                        <span className="text-[10px] text-red-400 font-bold">ገደቡ ሞልቷል (Full)</span>
+                                      ) : maxLimit > 0 ? (
+                                        <span className="text-[10px] text-gray-400">{maxLimit - usage} ሰው ይቀራል</span>
+                                      ) : (
+                                        <span className="text-[10px] text-emerald-400">ያልተገደበ (Unlimited)</span>
+                                      )}
+                                    </div>
+                                  </td>
+
+                                  {/* Status Toggle */}
+                                  <td className="py-4 px-4 text-center">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleToggleReferralStatus(item)}
+                                      className={`text-xs font-bold px-3 py-1 rounded-lg transition cursor-pointer ${
+                                        item.isActive && !isLimitReached
+                                          ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20' 
+                                          : 'bg-gray-200 dark:bg-slate-700 text-gray-500 hover:bg-gray-300'
+                                      }`}
+                                    >
+                                      {isLimitReached ? '🚫 Full' : item.isActive ? '✓ Active' : '✕ Inactive'}
+                                    </button>
+                                  </td>
+
+                                  {/* Actions */}
+                                  <td className="py-4 px-4 text-right">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteReferralCode(item.id)}
+                                      className="text-xs font-bold text-red-500 hover:text-red-600 p-2 hover:bg-red-500/10 rounded-xl transition cursor-pointer"
+                                      title="ኮዱን አጥፋ"
+                                    >
+                                      <i className="fa-solid fa-trash"></i>
+                                    </button>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+
+                </div>
+              )}
 
             </div>
           )}
