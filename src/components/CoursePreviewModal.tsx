@@ -1,7 +1,8 @@
 'use client';
 import React, { useEffect } from 'react';
 import Link from 'next/link';
-import { parseVideoEmbedUrl, formatDriveImageUrl, getCourseSlug } from '@/lib/courseCache';
+import { parseVideoEmbedUrl } from '@/lib/videoParser';
+import { formatDriveImageUrl, getCourseSlug } from '@/lib/courseCache';
 
 interface CoursePreviewModalProps {
   isOpen: boolean;

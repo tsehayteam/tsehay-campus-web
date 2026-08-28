@@ -373,3 +373,5 @@ export function formatDriveImageUrl(url: any): string {
   return clean;
 }
 
+export { parseVideoEmbedUrl, parseImageUrl } from './videoParser';
+
