@@ -469,6 +469,22 @@ export default function Navbar() {
               >
                 <span>{t('mentorship') || (lang === 'en' ? 'Mentorship' : 'ማማከር')}</span>
               </Link>
+
+              <Link 
+                href="/community" 
+                onClick={() => {
+                  if (pathname === '/community') {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }
+                }}
+                className={`py-2 text-[14px] lg:text-[15px] font-bold transition-all duration-300 anim-nav-link-4 ${
+                  pathname === '/community' 
+                    ? 'terafab-nav-link-active' 
+                    : 'terafab-nav-link text-gray-700 dark:text-gray-300'
+                }`}
+              >
+                <span>{lang === 'en' ? 'Community' : 'ማህበረሰብ'}</span>
+              </Link>
             </div>
             
             {/* Desktop Search Bar */}
@@ -568,7 +584,7 @@ export default function Navbar() {
                   </button>
 
                   {showProfileDropdown && (
-                    <div className="absolute right-0 mt-2 w-52 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-gray-100 dark:border-white/10 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                    <div className="absolute right-0 mt-2 w-56 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-gray-100 dark:border-white/10 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
                       <Link 
                         href="/dashboard" 
                         onClick={() => setShowProfileDropdown(false)} 
@@ -576,6 +592,22 @@ export default function Navbar() {
                       >
                         <i className="fa-solid fa-graduation-cap text-[#f9b03c] text-base"></i> 
                         <span>{t('classroom') || 'ወደ መማሪያ ክፍል'}</span>
+                      </Link>
+                      <Link 
+                        href="/community" 
+                        onClick={() => setShowProfileDropdown(false)} 
+                        className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-bold text-gray-700 dark:text-gray-300 hover:bg-[#f9b03c]/10 hover:text-[#f9b03c] transition"
+                      >
+                        <i className="fa-solid fa-users text-[#f9b03c]"></i> 
+                        <span>ማህበረሰብ (Community)</span>
+                      </Link>
+                      <Link 
+                        href="/inbox" 
+                        onClick={() => setShowProfileDropdown(false)} 
+                        className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-bold text-gray-700 dark:text-gray-300 hover:bg-[#f9b03c]/10 hover:text-[#f9b03c] transition"
+                      >
+                        <i className="fa-solid fa-paper-plane text-blue-400"></i> 
+                        <span>የመልዕክት ሳጥን (Inbox)</span>
                       </Link>
                       {isAdmin && (
                         <Link 
@@ -682,6 +714,22 @@ export default function Navbar() {
                 </div>
                 <span className="text-xs sm:text-sm font-black text-gray-900 dark:text-white font-heading">
                   {t('mentorship') || (lang === 'en' ? 'Mentorship' : 'ማማከር')}
+                </span>
+              </button>
+            </div>
+
+            {/* 3.8. Staggered Item: Community (Centered) */}
+            <div className="w-full animate-nav-stagger-3">
+              <button 
+                type="button" 
+                onClick={() => { closeCurtain(); navigateTo('/community'); }} 
+                className={`w-full flex items-center justify-center gap-2.5 px-4 py-2.5 rounded-2xl mobile-nav-card text-center cursor-pointer group transition-all duration-300 ${pathname === '/community' ? 'mobile-nav-card-active' : ''}`}
+              >
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-[#f9b03c]/20 text-[#f9b03c] transition-transform group-hover:scale-110">
+                  <i className="fa-solid fa-users text-xs"></i>
+                </div>
+                <span className="text-xs sm:text-sm font-black text-gray-900 dark:text-white font-heading">
+                  {lang === 'en' ? 'Community' : 'የተማሪዎች ማህበረሰብ'}
                 </span>
               </button>
             </div>

@@ -2051,6 +2051,24 @@ ${customAdminPrompt}
               )}
             </button>
 
+            {/* 3.5. Community & Social Feed */}
+            <a 
+              href="/community" 
+              className="flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-auto md:w-full text-left text-sm text-white hover:bg-white/[0.08] hover:text-[#f9b03c] border border-transparent cursor-pointer"
+            >
+              <div className="flex items-center gap-3">
+                <span className="w-8 h-8 rounded-xl flex items-center justify-center bg-white/[0.08] text-white group-hover:bg-[#f9b03c]/20 group-hover:text-[#f9b03c] transition-all">
+                  <i className="fa-solid fa-users text-xs"></i>
+                </span>
+                <span className="whitespace-nowrap md:whitespace-normal md:hidden lg:block font-black text-sm tracking-tight">
+                  ማህበረሰብ (Community)
+                </span>
+              </div>
+              <span className="hidden lg:inline-flex text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-[#f9b03c]/20 text-[#f9b03c] border border-[#f9b03c]/30">
+                New
+              </span>
+            </a>
+
             {/* 4. Tsehay AI Tutor - Elevated Spotlight Gold Brand Item */}
             <button 
               onClick={() => setCurrentView('ai')} 

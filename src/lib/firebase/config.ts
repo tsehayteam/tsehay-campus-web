@@ -1,6 +1,7 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore, initializeFirestore } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
 
 const getAuthDomain = () => {
   if (typeof window !== 'undefined') {
@@ -23,6 +24,7 @@ const firebaseConfig = {
 
 import { FirebaseApp } from "firebase/app";
 import { Firestore } from "firebase/firestore";
+import { FirebaseStorage } from "firebase/storage";
 
 let app: FirebaseApp;
 let db: Firestore;
@@ -36,5 +38,7 @@ if (!getApps().length) {
 }
 
 const auth = getAuth(app);
+const storage = getStorage(app);
 
-export { app, auth, db };
+export { app, auth, db, storage };
+

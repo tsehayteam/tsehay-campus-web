@@ -10,6 +10,13 @@ import { DEFAULT_EVENTS, getCachedEvents, saveCachedEvents, getRemainingSeats, g
 import AdminQrScanner from '@/components/AdminQrScanner';
 
 import { parseVideoEmbedUrl, parseImageUrl } from '@/lib/videoParser';
+import { 
+  CommunityPost, 
+  subscribeCommunityPosts, 
+  deleteCommunityPost, 
+  pinCommunityPost, 
+  featureCommunityPost 
+} from '@/lib/communityService';
 
 const PRESET_REQUIREMENTS = [
   'መሰረታዊ የኮምፒውተር እውቀት (Basic Computer Skill)',
@@ -272,6 +279,11 @@ export default function AdminDashboard() {
   const [newCodeDesc, setNewCodeDesc] = useState('');
   const [isSavingReferral, setIsSavingReferral] = useState(false);
   const [referralSuccessMsg, setReferralSuccessMsg] = useState('');
+
+  // 🌟 Community Moderation State
+  const [communityPosts, setCommunityPosts] = useState<CommunityPost[]>([]);
+  const [communityFilter, setCommunityFilter] = useState<string>('all');
+  const [communitySearch, setCommunitySearch] = useState<string>('');
 
   // YouTube Form State
   const [isYouTubeModalOpen, setIsYouTubeModalOpen] = useState(false);
@@ -1021,6 +1033,11 @@ export default function AdminDashboard() {
       fetchApiReferralCodes();
     });
 
+    // 🌟 Real-time Sync for Community Posts & Discussions
+    const unsubscribeCommunity = subscribeCommunityPosts((posts) => {
+      setCommunityPosts(posts);
+    }, 'all');
+
     return () => {
         unsubscribeAuth();
         unsubscribe();
@@ -1035,6 +1052,7 @@ export default function AdminDashboard() {
         unsubscribePortfolio1();
         unsubscribePortfolio2();
         unsubscribeReferrals();
+        if (typeof unsubscribeCommunity === 'function') unsubscribeCommunity();
         clearTimeout(safetyTimer);
     };
   }, []);
@@ -2491,6 +2509,13 @@ export default function AdminDashboard() {
                   <span className="text-[10px] font-black px-1.5 py-0.5 rounded-full bg-blue-500 text-white">{tickets.length}</span>
                 )}
               </button>
+              <button 
+                onClick={() => { setActiveTab('community'); setSidebarMobileOpen(false); }} 
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-bold text-xs transition ${activeTab === 'community' ? 'bg-[#f9b03c]/20 text-[#f9b03c] dark:text-[#f9b03c] shadow-sm font-black border-l-3 border-[#f9b03c]' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800/60'}`}
+              >
+                <span className="flex items-center gap-2.5"><i className="fa-solid fa-users-viewfinder text-sm text-[#f9b03c]"></i> ማህበረሰብ (Community)</span>
+                <span className="text-[10px] font-black px-1.5 py-0.5 rounded-full bg-[#f9b03c]/20 text-[#f9b03c]">{communityPosts.length}</span>
+              </button>
             </div>
           </div>
 
@@ -2577,6 +2602,7 @@ export default function AdminDashboard() {
                 {activeTab === 'teachers' && <><i className="fa-solid fa-chalkboard-user text-blue-500"></i> <span>የአስተማሪዎች ዝርዝር</span></>}
                 {activeTab === 'payments' && <><i className="fa-solid fa-file-invoice-dollar text-emerald-500"></i> <span>የክፍያ እና ፋይናንስ ሪፖርቶች</span></>}
                 {activeTab === 'questions' && <><i className="fa-solid fa-headset text-blue-500"></i> <span>የተማሪዎች ጥያቄዎች</span></>}
+                {activeTab === 'community' && <><i className="fa-solid fa-users-viewfinder text-[#f9b03c]"></i> <span>የተማሪዎች ማህበረሰብ ቁጥጥር (Community Moderation)</span></>}
                 {activeTab === 'settings' && <><i className="fa-solid fa-gear text-slate-400"></i> <span>ሲስተም እና AI ቅንብሮች</span></>}
               </h1>
             </div>
@@ -4039,6 +4065,294 @@ export default function AdminDashboard() {
                         ))
                     )}
                 </div>
+            </div>
+          )}
+
+          {/* 🌟 6. COMMUNITY MODERATION TAB (ማህበረሰብ ቁጥጥር) */}
+          {activeTab === 'community' && (
+            <div className="max-w-7xl mx-auto space-y-6 animate-in fade-in duration-300">
+              
+              {/* Stats Overview */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl p-5 shadow-xs flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-[#f9b03c]/15 text-[#f9b03c] flex items-center justify-center text-xl shrink-0">
+                    <i className="fa-solid fa-comments"></i>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 font-bold">ጠቅላላ ፖስቶች</p>
+                    <p className="text-2xl font-black text-dark dark:text-white mt-0.5">{communityPosts.length}</p>
+                  </div>
+                </div>
+
+                <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl p-5 shadow-xs flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-blue-500/15 text-blue-500 flex items-center justify-center text-xl shrink-0">
+                    <i className="fa-solid fa-message"></i>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 font-bold">አስተያየቶች (Comments)</p>
+                    <p className="text-2xl font-black text-dark dark:text-white mt-0.5">
+                      {communityPosts.reduce((acc, p) => acc + (p.commentsCount || 0), 0)}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl p-5 shadow-xs flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-amber-500/15 text-amber-500 flex items-center justify-center text-xl shrink-0">
+                    <i className="fa-solid fa-thumbtack"></i>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 font-bold">የተሰኩ ማስታወቂያዎች</p>
+                    <p className="text-2xl font-black text-dark dark:text-white mt-0.5">
+                      {communityPosts.filter(p => p.isPinned).length}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl p-5 shadow-xs flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-emerald-500/15 text-emerald-500 flex items-center justify-center text-xl shrink-0">
+                    <i className="fa-solid fa-star"></i>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 font-bold">ተመራጭ ስኬቶች</p>
+                    <p className="text-2xl font-black text-dark dark:text-white mt-0.5">
+                      {communityPosts.filter(p => p.isFeatured).length}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action and Filter Bar */}
+              <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-2xl p-4 shadow-xs flex flex-col md:flex-row items-center justify-between gap-4">
+                <div className="flex items-center gap-2 flex-wrap w-full md:w-auto">
+                  {[
+                    { id: 'all', label: 'ሁሉም (All)' },
+                    { id: 'questions', label: '❓ ጥያቄዎች' },
+                    { id: 'success', label: '🚀 ስኬቶች' },
+                    { id: 'business', label: '💼 ቢዝነስ' },
+                    { id: 'tech', label: '💻 ቴክኖሎጂ' },
+                    { id: 'pinned', label: '📌 የተሰኩ' },
+                  ].map((cat) => (
+                    <button
+                      key={cat.id}
+                      onClick={() => setCommunityFilter(cat.id)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-black transition cursor-pointer ${
+                        communityFilter === cat.id
+                          ? 'bg-[#f9b03c] text-slate-950 shadow-xs'
+                          : 'bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200'
+                      }`}
+                    >
+                      {cat.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex items-center gap-3 w-full md:w-auto">
+                  <div className="relative flex-1 md:w-64">
+                    <i className="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                    <input
+                      type="text"
+                      value={communitySearch}
+                      onChange={(e) => setCommunitySearch(e.target.value)}
+                      placeholder="ፖስት ወይም ጸሐፊ ፈልግ..."
+                      className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl py-1.5 pl-8 pr-3 text-xs text-dark dark:text-white placeholder-gray-400 focus:outline-none focus:border-[#f9b03c]"
+                    />
+                  </div>
+
+                  <a
+                    href="/community"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3.5 py-1.5 rounded-xl bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white border border-blue-500/30 text-xs font-black transition flex items-center gap-1.5 whitespace-nowrap"
+                  >
+                    <i className="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                    <span>ማህበረሰቡን ክፈት</span>
+                  </a>
+                </div>
+              </div>
+
+              {/* Moderation Posts List */}
+              <div className="bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-3xl p-6 shadow-xs space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-slate-800">
+                  <h3 className="font-heading font-black text-sm text-dark dark:text-white flex items-center gap-2">
+                    <i className="fa-solid fa-shield-halved text-[#f9b03c]"></i>
+                    <span>የተለጠፉ ፖስቶች እና ውይይቶች ዝርዝር (Live Feed Moderation)</span>
+                  </h3>
+                  <span className="text-xs text-gray-400 font-bold">
+                    {communityPosts.length} ፖስቶች ተገኝተዋል
+                  </span>
+                </div>
+
+                {communityPosts.length === 0 ? (
+                  <div className="p-12 text-center text-gray-400 text-xs font-bold">
+                    ምንም የማህበረሰብ ፖስት አልተገኘም።
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {communityPosts
+                      .filter((p) => {
+                        if (communityFilter === 'pinned') return p.isPinned;
+                        if (communityFilter !== 'all') return p.category === communityFilter;
+                        return true;
+                      })
+                      .filter((p) => {
+                        if (!communitySearch.trim()) return true;
+                        const q = communitySearch.toLowerCase();
+                        return (
+                          p.authorName.toLowerCase().includes(q) ||
+                          p.authorEmail.toLowerCase().includes(q) ||
+                          p.content.toLowerCase().includes(q)
+                        );
+                      })
+                      .map((post) => (
+                        <div
+                          key={post.id}
+                          className="p-4 sm:p-5 rounded-2xl border border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-800/40 space-y-3 transition hover:border-[#f9b03c]/40"
+                        >
+                          {/* Post Header */}
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div className="flex items-center gap-3">
+                              <img
+                                src={post.authorPhoto}
+                                alt={post.authorName}
+                                className="w-10 h-10 rounded-full object-cover ring-2 ring-[#f9b03c]/40 shrink-0"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(post.authorName)}&background=f9b03c&color=111827&bold=true`;
+                                }}
+                              />
+                              <div>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="font-heading font-black text-sm text-dark dark:text-white">
+                                    {post.authorName}
+                                  </span>
+                                  {post.isAdmin && (
+                                    <span className="text-[10px] font-black bg-blue-500/20 text-blue-500 px-2 py-0.2 rounded-full">
+                                      Admin
+                                    </span>
+                                  )}
+                                  {post.isPro && (
+                                    <span className="text-[10px] font-black bg-amber-500/20 text-amber-500 px-2 py-0.2 rounded-full">
+                                      ⭐ Pro Student
+                                    </span>
+                                  )}
+                                  {post.isPinned && (
+                                    <span className="text-[10px] font-black bg-[#f9b03c]/20 text-[#f9b03c] px-2 py-0.2 rounded-full">
+                                      📌 Pinned
+                                    </span>
+                                  )}
+                                  {post.isFeatured && (
+                                    <span className="text-[10px] font-black bg-emerald-500/20 text-emerald-500 px-2 py-0.2 rounded-full">
+                                      ⭐ Featured
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-2 text-[11px] text-gray-400 mt-0.5">
+                                  <span>{post.authorEmail}</span>
+                                  <span>•</span>
+                                  <span>{post.createdAt ? new Date(post.createdAt).toLocaleString() : ''}</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Moderation Actions */}
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    await pinCommunityPost(post.id, !post.isPinned);
+                                  } catch (e) {
+                                    console.error(e);
+                                  }
+                                }}
+                                className={`px-2.5 py-1 rounded-xl text-xs font-black transition cursor-pointer border ${
+                                  post.isPinned 
+                                    ? 'bg-amber-400/20 text-amber-500 border-amber-400/40' 
+                                    : 'bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-slate-700 hover:text-[#f9b03c]'
+                                }`}
+                                title="ወደ ላይ ሰካ / አንሳ"
+                              >
+                                <i className="fa-solid fa-thumbtack mr-1"></i>
+                                <span>{post.isPinned ? 'Unpin' : 'Pin'}</span>
+                              </button>
+
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    await featureCommunityPost(post.id, !post.isFeatured);
+                                  } catch (e) {
+                                    console.error(e);
+                                  }
+                                }}
+                                className={`px-2.5 py-1 rounded-xl text-xs font-black transition cursor-pointer border ${
+                                  post.isFeatured 
+                                    ? 'bg-emerald-500/20 text-emerald-500 border-emerald-500/40' 
+                                    : 'bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-slate-700 hover:text-emerald-500'
+                                }`}
+                                title="ተመራጭ አድርግ"
+                              >
+                                <i className="fa-solid fa-star mr-1"></i>
+                                <span>{post.isFeatured ? 'Unfeature' : 'Feature'}</span>
+                              </button>
+
+                              <a
+                                href={`/inbox?user=${encodeURIComponent(post.authorId)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-2.5 py-1 rounded-xl bg-blue-500/10 hover:bg-blue-500 hover:text-white text-blue-500 border border-blue-500/20 text-xs font-black transition flex items-center gap-1"
+                                title="ለተማሪው ቀጥታ መልዕክት ላክ"
+                              >
+                                <i className="fa-solid fa-envelope"></i>
+                                <span>DM</span>
+                              </a>
+
+                              <button
+                                onClick={async () => {
+                                  if (!confirm(`ይህንን ፖስት መሰረዝ እርግጠኛ ነዎት?`)) return;
+                                  try {
+                                    await deleteCommunityPost(post.id);
+                                  } catch (e) {
+                                    console.error(e);
+                                    alert("ፖስቱን መሰረዝ አልተቻለም።");
+                                  }
+                                }}
+                                className="px-2.5 py-1 rounded-xl bg-red-500/10 hover:bg-red-500 hover:text-white text-red-500 border border-red-500/20 text-xs font-black transition cursor-pointer"
+                                title="ፖስቱን አጥፋ"
+                              >
+                                <i className="fa-solid fa-trash mr-1"></i>
+                                <span>አጥፋ</span>
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Post Content */}
+                          <div className="bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-gray-100 dark:border-slate-800">
+                            <p className="text-xs sm:text-sm text-dark dark:text-slate-200 whitespace-pre-wrap leading-relaxed">
+                              {post.content}
+                            </p>
+
+                            {post.imageUrl && (
+                              <div className="mt-2">
+                                <img src={post.imageUrl} alt="Attached" className="h-32 rounded-lg object-cover border border-gray-200 dark:border-slate-700" />
+                              </div>
+                            )}
+
+                            {post.codeSnippet && (
+                              <div className="mt-2 p-2.5 rounded-lg bg-black/80 font-mono text-xs text-emerald-400 overflow-x-auto">
+                                <code>{post.codeSnippet.code}</code>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Post Stats Footer */}
+                          <div className="flex items-center gap-4 text-xs text-gray-500">
+                            <span>👍 {post.likes.length} ወደድኩት</span>
+                            <span>💬 {post.commentsCount || 0} አስተያየቶች</span>
+                            <span className="text-[#f9b03c] font-bold">ዘርፍ፦ {post.category}</span>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
