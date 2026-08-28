@@ -405,19 +405,19 @@ export default function AdminDashboard() {
     });
 
     // 4. Ingest Event Registrations & Tickets
-    eventTickets.forEach(t => {
-      const key = t.userId || t.email || t.phone || t.ticketId || t.id;
+    eventTickets.forEach((t: EventTicket) => {
+      const key = t.userId || t.email || t.attendeeEmail || t.phone || t.attendeePhone || t.ticketId || t.id;
       if (!key) return;
       const s = getOrCreate(key);
       if (s) {
-        if (!s.name && (t.fullName || t.name)) s.name = t.fullName || t.name;
-        if (!s.email && t.email) s.email = t.email;
-        if (!s.phone && t.phone) s.phone = t.phone;
+        if (!s.name && (t.fullName || t.name || t.attendeeName)) s.name = t.fullName || t.name || t.attendeeName;
+        if (!s.email && (t.email || t.attendeeEmail)) s.email = t.email || t.attendeeEmail;
+        if (!s.phone && (t.phone || t.attendeePhone)) s.phone = t.phone || t.attendeePhone;
         
         if (!s.eventTickets.some((et: any) => et.ticketId === t.ticketId || et.id === t.id)) {
           s.eventTickets.push(t);
         }
-        if (!s.createdAt && t.createdAt) s.createdAt = t.createdAt;
+        if (!s.createdAt && (t.createdAt || t.issuedAt)) s.createdAt = t.createdAt || t.issuedAt;
       }
     });
 

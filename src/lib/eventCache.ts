@@ -25,6 +25,7 @@ export interface TsehayEvent {
 
 export interface EventTicket {
   ticketId: string; // e.g. "TC-EVT-8F92-491A"
+  id?: string;
   eventId: string;
   eventSlug?: string;
   eventTitle: string;
@@ -37,14 +38,24 @@ export interface EventTicket {
   attendeeName: string;
   attendeeEmail: string;
   attendeePhone?: string;
+  name?: string;
+  fullName?: string;
+  email?: string;
+  phone?: string;
   userId: string;
-  tier: 'VIP' | 'General Admission' | 'Free Pass' | 'VIP Pass';
+  tier: 'VIP' | 'General Admission' | 'Free Pass' | 'VIP Pass' | string;
   pricePaid: number;
+  price?: number;
   paymentMethod: string;
   qrCodeData: string;
   isUsed: boolean;
+  checkedIn?: boolean;
   usedAt?: string | null;
   issuedAt: string;
+  createdAt?: any;
+  status?: string;
+  verifiedBy?: string | null;
+  [key: string]: any;
 }
 
 export function formatDriveImageUrl(url: any): string {
