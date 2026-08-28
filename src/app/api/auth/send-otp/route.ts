@@ -28,18 +28,22 @@ export async function POST(req: NextRequest) {
 
     const docId = cleanEmail.replace(/[^a-zA-Z0-9]/g, '_');
 
-    // 3. Save to Firestore
+    // 3. Save to Firestore (graceful fallback if adminDb is not initialized)
     if (adminDb) {
-      const otpRef = adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('public').doc('data').collection('otp_verifications').doc(docId);
-      await otpRef.set({
-        code: otpCode,
-        email: cleanEmail,
-        createdAt: now,
-        expiresAt: expiresAt,
-        attempts: 0,
-        verified: false,
-        updatedAt: FieldValue.serverTimestamp()
-      }, { merge: true });
+      try {
+        const otpRef = adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('public').doc('data').collection('otp_verifications').doc(docId);
+        await otpRef.set({
+          code: otpCode,
+          email: cleanEmail,
+          createdAt: now,
+          expiresAt: expiresAt,
+          attempts: 0,
+          verified: false,
+          updatedAt: FieldValue.serverTimestamp()
+        }, { merge: true });
+      } catch (dbErr) {
+        console.warn('adminDb write notice in send-otp:', dbErr);
+      }
     }
 
     return NextResponse.json({

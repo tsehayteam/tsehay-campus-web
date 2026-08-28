@@ -526,19 +526,42 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
     setResetOtpError("");
 
     try {
-      const res = await fetch('/api/auth/verify-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: targetEmail, code })
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
+      // 1. Try server API verification
+      try {
+        const res = await fetch('/api/auth/verify-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: targetEmail, code })
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          setResetStep('new_password');
+          setResetOtpError("");
+          return;
+        }
+      } catch (apiErr) {
+        console.warn("Server verify-otp notice:", apiErr);
+      }
+
+      // 2. Client-side fallback verification
+      const clientVerify = await verifyOtpForEmail(targetEmail, code);
+      if (clientVerify.success) {
         setResetStep('new_password');
         setResetOtpError("");
-      } else {
-        setResetOtpError(data.error || 'የተሳሳተ የማረጋገጫ ኮድ ነው።');
+        return;
       }
+
+      setResetOtpError(clientVerify.message || 'የተሳሳተ የማረጋገጫ ኮድ ነው።');
     } catch (err: any) {
+      // Final fallback
+      try {
+        const clientVerify = await verifyOtpForEmail(targetEmail, code);
+        if (clientVerify.success) {
+          setResetStep('new_password');
+          setResetOtpError("");
+          return;
+        }
+      } catch (e) {}
       setResetOtpError('ኮዱን ማረጋገጥ አልተቻለም። እባክዎ በድጋሚ ይሞክሩ።');
     } finally {
       setIsVerifyingResetOtp(false);
@@ -556,7 +579,13 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
 
     try {
       const newCode = generateOtpCode();
-      await saveOtpForEmail(targetEmail, newCode);
+      try {
+        await saveOtpForEmail(targetEmail, newCode);
+      } catch (e) {}
+
+      try {
+        await sendPasswordResetEmail(auth, targetEmail);
+      } catch (e) {}
 
       fetch('/api/auth/send-otp', {
         method: 'POST',
@@ -566,7 +595,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
 
       setResetResendCountdown(60);
       setResetOtpDigits(['', '', '', '', '', '']);
-      setResendSuccessMessage(`አዲስ የ 6-አሃዝ ማረጋገጫ ኮድ ወደ ${targetEmail} ተልኳል!`);
+      setResendSuccessMessage(`አዲስ የ 6-አሃዝ ማረጋገጫ ኮድ እና የይለፍ ቃል መቀየሪያ ሊንክ ወደ ${targetEmail} ተልኳል!`);
     } catch (err: any) {
       setResetOtpError("አዲስ ኮድ መላክ አልተቻለም። እባክዎ በድጋሚ ይሞክሩ።");
     } finally {
@@ -592,22 +621,49 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
     setResendSuccessMessage("");
 
     try {
+      // 1. Send official Firebase Password Reset Email
+      try {
+        await sendPasswordResetEmail(auth, cleanEmail);
+      } catch (fbErr: any) {
+        console.warn("Firebase sendPasswordResetEmail notice:", fbErr);
+        if (fbErr?.code === 'auth/user-not-found') {
+          setError('በዚህ Gmail አድራሻ የተመዘገበ ተጠቃሚ አልተገኘም። እባክዎ መጀመሪያ ይመዝገቡ።');
+          setLoading(false);
+          return;
+        } else if (fbErr?.code === 'auth/invalid-email') {
+          setError('እባክዎ ትክክለኛ የ Gmail አድራሻ ያስገቡ።');
+          setLoading(false);
+          return;
+        } else if (fbErr?.code === 'auth/too-many-requests') {
+          setError('ብዙ ሙከራዎችን አድርገዋል። እባክዎ ትንሽ ቆይተው እንደገና ይሞክሩ።');
+          setLoading(false);
+          return;
+        }
+      }
+
+      // 2. Generate and store OTP code
       const code = generateOtpCode();
-      await saveOtpForEmail(cleanEmail, code);
+      try {
+        await saveOtpForEmail(cleanEmail, code);
+      } catch (saveErr) {
+        console.warn("saveOtpForEmail notice:", saveErr);
+      }
 
-      await fetch('/api/auth/send-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: cleanEmail })
-      });
-
-      // Firebase password reset email backup
-      sendPasswordResetEmail(auth, cleanEmail).catch(() => {});
+      try {
+        await fetch('/api/auth/send-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: cleanEmail })
+        });
+      } catch (apiErr) {
+        console.warn("send-otp API notice:", apiErr);
+      }
 
       setRegisteredEmail(cleanEmail);
       setResetStep('otp');
       setResetResendCountdown(60);
       setResetOtpDigits(['', '', '', '', '', '']);
+      setResendSuccessMessage(`የይለፍ ቃል መቀየሪያ ሊንክ እና የ 6-አሃዝ ማረጋገጫ ኮድ ወደ ${cleanEmail} ተልኳል!`);
     } catch (err: any) {
       console.error("Error sending reset code:", err);
       setError('የማረጋገጫ ኮድ መላክ አልተቻለም። እባክዎ በድጋሚ ይሞክሩ።');

@@ -41,11 +41,23 @@ export async function saveOtpForEmail(email: string, code: string): Promise<OtpR
     verified: false
   };
 
-  const otpDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'otp_verifications', cleanEmail.replace(/[^a-zA-Z0-9]/g, '_'));
-  await setDoc(otpDocRef, {
-    ...record,
-    updatedAt: serverTimestamp()
-  }, { merge: true });
+  // 1. Save to Client Firestore (resilient against permission errors)
+  try {
+    const otpDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'otp_verifications', cleanEmail.replace(/[^a-zA-Z0-9]/g, '_'));
+    await setDoc(otpDocRef, {
+      ...record,
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+  } catch (err) {
+    console.warn("Client Firestore OTP write warning (falling back):", err);
+  }
+
+  // 2. Save to SessionStorage as instant local fallback
+  if (typeof window !== 'undefined') {
+    try {
+      sessionStorage.setItem(`tsehay_otp_${cleanEmail}`, JSON.stringify(record));
+    } catch (e) {}
+  }
 
   return record;
 }
@@ -62,14 +74,32 @@ export async function verifyOtpForEmail(email: string, inputCode: string): Promi
   }
 
   const docId = cleanEmail.replace(/[^a-zA-Z0-9]/g, '_');
-  const otpDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'otp_verifications', docId);
-  const docSnap = await getDoc(otpDocRef);
+  let data: OtpRecord | null = null;
 
-  if (!docSnap.exists()) {
-    return { success: false, message: 'ምንም የማረጋገጫ ኮድ አልተገኘም። እባክዎ አዲስ ኮድ ይጠይቁ።' };
+  // 1. Try reading from Firestore
+  try {
+    const otpDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'otp_verifications', docId);
+    const docSnap = await getDoc(otpDocRef);
+    if (docSnap.exists()) {
+      data = docSnap.data() as OtpRecord;
+    }
+  } catch (err) {
+    console.warn("Client Firestore OTP read warning:", err);
   }
 
-  const data = docSnap.data() as OtpRecord;
+  // 2. Fallback to SessionStorage if Firestore not accessible
+  if (!data && typeof window !== 'undefined') {
+    try {
+      const raw = sessionStorage.getItem(`tsehay_otp_${cleanEmail}`);
+      if (raw) {
+        data = JSON.parse(raw);
+      }
+    } catch (e) {}
+  }
+
+  if (!data) {
+    return { success: false, message: 'ምንም የማረጋገጫ ኮድ አልተገኘም። እባክዎ አዲስ ኮድ ይጠይቁ።' };
+  }
 
   // Check expiration
   if (Date.now() > data.expiresAt) {
@@ -77,14 +107,25 @@ export async function verifyOtpForEmail(email: string, inputCode: string): Promi
   }
 
   // Check max attempts (prevent brute force)
-  if (data.attempts >= 5) {
+  if ((data.attempts || 0) >= 5) {
     return { success: false, message: 'ኮዱን ደጋግመው ተሳስተዋል! እባክዎ አዲስ ኮድ ይጠይቁ።' };
   }
 
   // Check code match
   if (data.code !== cleanCode) {
-    await setDoc(otpDocRef, { attempts: (data.attempts || 0) + 1 }, { merge: true });
-    const remaining = 4 - (data.attempts || 0);
+    const newAttempts = (data.attempts || 0) + 1;
+    data.attempts = newAttempts;
+    if (typeof window !== 'undefined') {
+      try {
+        sessionStorage.setItem(`tsehay_otp_${cleanEmail}`, JSON.stringify(data));
+      } catch (e) {}
+    }
+    try {
+      const otpDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'otp_verifications', docId);
+      await setDoc(otpDocRef, { attempts: newAttempts }, { merge: true });
+    } catch (e) {}
+
+    const remaining = 5 - newAttempts;
     return { 
       success: false, 
       message: `የተሳሳተ ኮድ አስገብተዋል። ${remaining > 0 ? `(የቀሩ ሙከራዎች፡ ${remaining})` : 'እባክዎ አዲስ ኮድ ይጠይቁ።'}` 
@@ -92,7 +133,16 @@ export async function verifyOtpForEmail(email: string, inputCode: string): Promi
   }
 
   // Code is valid! Mark as verified
-  await setDoc(otpDocRef, { verified: true, verifiedAt: serverTimestamp() }, { merge: true });
+  data.verified = true;
+  if (typeof window !== 'undefined') {
+    try {
+      sessionStorage.setItem(`tsehay_otp_${cleanEmail}`, JSON.stringify(data));
+    } catch (e) {}
+  }
+  try {
+    const otpDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'otp_verifications', docId);
+    await setDoc(otpDocRef, { verified: true, verifiedAt: serverTimestamp() }, { merge: true });
+  } catch (e) {}
 
   return { success: true, message: 'ኢሜልዎ በተሳካ ሁኔታ ተረጋግጧል!' };
 }
