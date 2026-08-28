@@ -303,7 +303,8 @@ function StudentDashboardContent() {
   const [isAiVoiceRecording, setIsAiVoiceRecording] = useState(false);
   const [aiRecordingSeconds, setAiRecordingSeconds] = useState(0);
   const [showDashboardClearAiModal, setShowDashboardClearAiModal] = useState(false);
-  const [isNavDrawerExpanded, setIsNavDrawerExpanded] = useState(true);
+  const [isNavDrawerExpanded, setIsNavDrawerExpanded] = useState(false);
+  const [isSyllabusCollapsed, setIsSyllabusCollapsed] = useState(false);
   
   // 🗑️ Tsehay AI 15-Day Recycle Bin State
   const [showAiTrashModal, setShowAiTrashModal] = useState(false);
@@ -1904,17 +1905,25 @@ ${customAdminPrompt}
 
         <nav className="flex-1 overflow-x-auto md:overflow-y-auto py-2 md:py-3 px-3 space-y-1 font-body no-scrollbar w-full flex flex-row md:flex-col gap-2 md:gap-0 items-center md:items-stretch">
           
-          {/* 🌟 ULTRA-PREMIUM UNIFIED MAIN MENU DOCK (SINGLE CLEAN ACCORDION CONTROLLER) */}
+          {/* 🌟 ULTRA-PREMIUM UNIFIED MAIN MENU DOCK (ANIMATED SECONDARY TOGGLE BUTTON) */}
           <div className="hidden lg:block w-full mb-3">
             <button
               type="button"
               onClick={() => setIsNavDrawerExpanded(prev => !prev)}
-              className="w-full flex items-center justify-between p-3 rounded-2xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 hover:border-[#f9b03c]/40 transition-all duration-300 group cursor-pointer shadow-md hover:shadow-[0_0_20px_rgba(249,176,60,0.15)] active:scale-[0.98]"
+              className={`w-full flex items-center justify-between p-3 rounded-2xl transition-all duration-300 group cursor-pointer active:scale-[0.98] border ${
+                isNavDrawerExpanded
+                  ? 'bg-white/[0.04] hover:bg-white/[0.08] border-white/10 hover:border-[#f9b03c]/40 shadow-md'
+                  : 'bg-gradient-to-r from-amber-500/15 via-[#f9b03c]/10 to-transparent border-[#f9b03c]/50 hover:border-[#f9b03c] shadow-[0_0_25px_rgba(249,176,60,0.2)] hover:shadow-[0_0_30px_rgba(249,176,60,0.35)]'
+              }`}
               title={isNavDrawerExpanded ? "ማውጫውን እጠፍ (Collapse Menu)" : "ማውጫውን ዘርጋ (Expand Menu)"}
             >
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#f9b03c]/25 via-amber-400/15 to-transparent text-[#f9b03c] border border-[#f9b03c]/40 flex items-center justify-center text-xs shadow-sm group-hover:scale-110 group-hover:shadow-[0_0_12px_rgba(249,176,60,0.4)] transition-all">
-                  <i className="fa-solid fa-compass"></i>
+                <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs shadow-sm transition-all duration-300 ${
+                  isNavDrawerExpanded
+                    ? 'bg-gradient-to-tr from-[#f9b03c]/25 via-amber-400/15 to-transparent text-[#f9b03c] border border-[#f9b03c]/40 group-hover:scale-110'
+                    : 'bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 shadow-[0_0_15px_rgba(249,176,60,0.6)] animate-pulse'
+                }`}>
+                  <i className={`fa-solid ${isNavDrawerExpanded ? 'fa-compass' : 'fa-bars-staggered'}`}></i>
                 </div>
                 <div className="text-left">
                   <span className="font-heading font-black text-xs sm:text-[13px] text-white tracking-wide block leading-tight">
@@ -1933,14 +1942,14 @@ ${customAdminPrompt}
 
               <div className="flex items-center gap-1.5">
                 {isNavDrawerExpanded ? (
-                  <span className="text-[10px] font-black text-slate-950 bg-gradient-to-r from-[#f9b03c] via-amber-300 to-yellow-200 px-3 py-1 rounded-full shadow-[0_0_15px_rgba(249,176,60,0.5)] flex items-center gap-1.5 transition-all">
+                  <span className="text-[10px] font-black text-white bg-slate-800/90 border border-white/20 hover:border-[#f9b03c]/60 px-3 py-1 rounded-full shadow-sm flex items-center gap-1.5 transition-all">
                     <i className="fa-solid fa-chevron-up text-[9px] transition-transform group-hover:-translate-y-0.5"></i>
                     <span>እጠፍ</span>
                   </span>
                 ) : (
-                  <span className="text-[10px] font-black text-slate-300 bg-white/10 px-3 py-1 rounded-full border border-white/10 group-hover:text-[#f9b03c] group-hover:border-[#f9b03c]/40 group-hover:bg-[#f9b03c]/15 flex items-center gap-1.5 transition-all">
+                  <span className="text-[10px] font-black text-slate-950 bg-gradient-to-r from-[#f9b03c] via-amber-300 to-yellow-200 px-3 py-1 rounded-full shadow-[0_0_15px_rgba(249,176,60,0.6)] flex items-center gap-1.5 transition-all group-hover:scale-105 animate-pulse">
                     <i className="fa-solid fa-chevron-down text-[9px] transition-transform group-hover:translate-y-0.5"></i>
-                    <span>ዘርጋ</span>
+                    <span>✨ ዘርጋ</span>
                   </span>
                 )}
               </div>
@@ -2365,17 +2374,42 @@ ${customAdminPrompt}
           </div>
         ) : (
           <div className="max-w-[1600px] mx-auto">
-            <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl sm:text-3xl font-black font-heading text-dark dark:text-white mb-2">{activeCourse?.title || t('course_loading')}</h1>
                     <p className="text-gray-500 dark:text-gray-400 font-body text-sm">{activeCourse?.category || 'Tsehay Campus Course'}</p>
                 </div>
+
+                {/* 🌟 Dedicated Cinema Mode / Syllabus Toggle with Animated Secondary Color */}
+                <div className="hidden lg:flex items-center gap-3">
+                    <button
+                        type="button"
+                        onClick={() => setIsSyllabusCollapsed(prev => !prev)}
+                        className={`px-4 py-2.5 rounded-2xl font-heading text-xs font-black transition-all duration-300 flex items-center gap-2 cursor-pointer active:scale-95 border shadow-lg ${
+                          isSyllabusCollapsed
+                            ? 'bg-gradient-to-r from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 border-amber-300/80 shadow-[0_0_20px_rgba(249,176,60,0.45)] animate-pulse'
+                            : 'bg-white/[0.06] hover:bg-[#f9b03c]/15 text-white hover:text-[#f9b03c] border-white/10 hover:border-[#f9b03c]/50'
+                        }`}
+                        title={isSyllabusCollapsed ? "የኮርስ ይዘት ዝርዝርን ዘርጋ (Expand Playlist)" : "ሲኒማ እይታ / ይዘቱን እጠፍ (Focus Mode)"}
+                    >
+                        <i className={`fa-solid ${isSyllabusCollapsed ? 'fa-list-check text-slate-950' : 'fa-expand text-[#f9b03c]'} text-sm`}></i>
+                        <span>{isSyllabusCollapsed ? '📚 የኮርስ ይዘት ዘርጋ (Show Playlist)' : '🎬 ሲኒማ እይታ / ይዘት እጠፍ (Focus Mode)'}</span>
+                    </button>
+                </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-6 lg:gap-8">
+            <div className={`grid grid-cols-1 gap-6 lg:gap-8 transition-all duration-500 ${
+              isSyllabusCollapsed 
+                ? 'grid-cols-1' 
+                : 'lg:grid-cols-3 xl:grid-cols-4'
+            }`}>
                 
                 {/* Left Side: Video & Tabs */}
-                <div className="lg:col-span-2 xl:col-span-3 flex flex-col gap-6">
+                <div className={`flex flex-col gap-6 transition-all duration-500 ${
+                  isSyllabusCollapsed 
+                    ? 'w-full col-span-1' 
+                    : 'lg:col-span-2 xl:col-span-3'
+                }`}>
                     
                     {/* Cinematic Video Player */}
                     <div className="bg-dark rounded-2xl overflow-hidden shadow-2xl relative border border-gray-800 aspect-video flex items-center justify-center group/player">
@@ -3393,31 +3427,44 @@ ${customAdminPrompt}
                     </div>
                 </div>
 
-                {/* Right Side: Curriculum/Course Content (Desktop Only, Mobile uses Syllabus tab) */}
-                <div className="hidden lg:block lg:col-span-1 xl:col-span-1">
+                {/* Right Side: Curriculum/Course Content (Desktop Only, Collapsible Focus Mode) */}
+                {!isSyllabusCollapsed && (
+                  <div className="hidden lg:block lg:col-span-1 xl:col-span-1 animate-in fade-in slide-in-from-right-4 duration-300">
                     <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-200 dark:border-slate-700 flex flex-col h-full lg:h-[calc(100vh-160px)] lg:sticky lg:top-4 overflow-hidden transition-colors duration-300">
                         
-                        <div className="p-5 border-b border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 z-10 shadow-sm">
-                            <h3 className="font-heading font-black text-lg text-dark dark:text-white">የኮርስ ይዘት (Course Content)</h3>
-                            {(() => {
-                                let totalCount = 0;
-                                modules.forEach((m: any) => { totalCount += (m.lessons || []).length; });
-                                if (totalCount === 0) totalCount = 1;
-                                
-                                const percent = Math.min(100, Math.round((progress.length / totalCount) * 100));
+                        <div className="p-5 border-b border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 z-10 shadow-sm flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-heading font-black text-lg text-dark dark:text-white">የኮርስ ይዘት (Course Content)</h3>
+                              {(() => {
+                                  let totalCount = 0;
+                                  modules.forEach((m: any) => { totalCount += (m.lessons || []).length; });
+                                  if (totalCount === 0) totalCount = 1;
+                                  
+                                  const percent = Math.min(100, Math.round((progress.length / totalCount) * 100));
 
-                                return (
-                                    <>
-                                        <div className="flex justify-between items-end mt-3 mb-1">
-                                            <p className="text-[11px] text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wide">የኮርሱ ሂደት</p>
-                                            <p className="text-sm text-secondary dark:text-primary font-black">{percent}%</p>
-                                        </div>
-                                        <div className="w-full bg-gray-100 dark:bg-slate-700 rounded-full h-2.5 overflow-hidden">
-                                            <div className="bg-gradient-to-r from-amber-400 to-emerald-500 h-2.5 rounded-full transition-all duration-500 shadow-sm" style={{ width: `${percent}%` }}></div>
-                                        </div>
-                                    </>
-                                );
-                            })()}
+                                  return (
+                                      <>
+                                          <div className="flex justify-between items-end mt-3 mb-1">
+                                              <p className="text-[11px] text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wide">የኮርሱ ሂደት</p>
+                                              <p className="text-sm text-secondary dark:text-primary font-black">{percent}%</p>
+                                          </div>
+                                          <div className="w-full bg-gray-100 dark:bg-slate-700 rounded-full h-2.5 overflow-hidden">
+                                              <div className="bg-gradient-to-r from-amber-400 to-emerald-500 h-2.5 rounded-full transition-all duration-500 shadow-sm" style={{ width: `${percent}%` }}></div>
+                                          </div>
+                                      </>
+                                  );
+                              })()}
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => setIsSyllabusCollapsed(true)}
+                              className="px-2.5 py-1 rounded-xl bg-amber-500/10 hover:bg-[#f9b03c] text-[#f9b03c] hover:text-slate-950 border border-[#f9b03c]/30 text-[11px] font-black transition-all cursor-pointer flex items-center gap-1 shadow-sm shrink-0 mt-0.5"
+                              title="ይዘቱን እጠፍ / ወደ ሲኒማ እይታ ሂድ"
+                            >
+                              <i className="fa-solid fa-chevron-right text-[9px]"></i>
+                              <span>እጠፍ</span>
+                            </button>
                         </div>
 
                         <div className="flex-1 overflow-y-auto no-scrollbar">
@@ -3512,7 +3559,8 @@ ${customAdminPrompt}
                             )}
                         </div>
                     </div>
-                </div>
+                  </div>
+                )}
 
             </div>
           </div>
