@@ -211,22 +211,6 @@ function StudentDashboardContent() {
   const cameraStreamRef = useRef<MediaStream | null>(null);
   const aiAvatarUploadInputRef = useRef<HTMLInputElement>(null);
 
-  const handleProfilePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      setProfileMessage({ type: 'error', text: 'የፎቶው መጠን ከ 5MB ማነስ አለበት።' });
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const dataUrl = event.target?.result as string;
-      setSettingsPhotoUrl(dataUrl);
-      setProfileMessage({ type: 'success', text: 'ፎቶው ተመርጧል! "አዘምን (Save Changes)" የሚለውን ይጫኑ።' });
-    };
-    reader.readAsDataURL(file);
-  };
-
   const handleAiPhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
