@@ -216,8 +216,23 @@ export default function EventDetailPage() {
     e.preventDefault();
     if (!event) return;
 
-    if (!attendeeName.trim() || !attendeeEmail.trim()) {
-      setBookingError('እባክዎ ሙሉ ስምዎን እና ኢሜይልዎን ያስገቡ።');
+    const trimmedName = attendeeName.trim();
+    const trimmedEmail = attendeeEmail.trim();
+    const trimmedPhone = attendeePhone.trim();
+
+    if (!trimmedName) {
+      setBookingError('እባክዎ ሙሉ ስምዎን ያስገቡ (ግዴታ ነው)።');
+      return;
+    }
+
+    if (!trimmedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      setBookingError('እባክዎ ትክክለኛ የኢሜይል አድራሻ ያስገቡ (ግዴታ ነው)።');
+      return;
+    }
+
+    const cleanPhone = trimmedPhone.replace(/[\s\-()]/g, '');
+    if (!cleanPhone || cleanPhone.length < 9) {
+      setBookingError('እባክዎ ትክክለኛ ስልክ ቁጥር ያስገቡ (ግዴታ ነው - ለምሳሌ 0911223344 ወይም +251911223344)።');
       return;
     }
 
@@ -587,7 +602,9 @@ export default function EventDetailPage() {
 
             <form onSubmit={handleConfirmBooking} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1.5">ሙሉ ስም (Full Name) *</label>
+                <label className="block text-xs font-bold text-slate-200 mb-1.5">
+                  ሙሉ ስም (Full Name) <span className="text-red-400 font-black">* (ግዴታ)</span>
+                </label>
                 <input
                   type="text"
                   required
@@ -599,26 +616,35 @@ export default function EventDetailPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1.5">ኢሜይል (Email Address) *</label>
+                <label className="block text-xs font-bold text-slate-200 mb-1.5">
+                  ኢሜይል (Email Address) <span className="text-red-400 font-black">* (ግዴታ)</span>
+                </label>
                 <input
                   type="email"
                   required
                   value={attendeeEmail}
                   onChange={(e) => setAttendeeEmail(e.target.value)}
-                  placeholder="eyoubsahle1@gmail.com (ቲኬቱ የሚላክበት)"
+                  placeholder="eyoubsahle1@gmail.com (ዲጂታል ቲኬቱ የሚላክበት)"
                   className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-hidden focus:border-[#f9b03c]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1.5">ስልክ ቁጥር (Phone Number)</label>
+                <label className="block text-xs font-bold text-slate-200 mb-1.5">
+                  ስልክ ቁጥር (Phone Number) <span className="text-red-400 font-black">* (ግዴታ)</span>
+                </label>
                 <input
                   type="tel"
+                  required
                   value={attendeePhone}
                   onChange={(e) => setAttendeePhone(e.target.value)}
-                  placeholder="09..."
+                  placeholder="0911223344 ወይም +251911223344"
                   className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-hidden focus:border-[#f9b03c]"
                 />
+                <p className="text-[10px] text-amber-400/80 mt-1 flex items-center gap-1">
+                  <i className="fa-solid fa-shield-check"></i>
+                  <span>የማረጋገጫ SMS እና የትኬት QR ኮድ ወደዚህ ቁጥር ይላካል</span>
+                </p>
               </div>
 
               {/* Payment Method Selector for Paid Events */}

@@ -13,15 +13,21 @@ interface DigitalTicketModalProps {
 export default function DigitalTicketModal({ isOpen, onClose, ticket }: DigitalTicketModalProps) {
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [emailStatus, setEmailStatus] = useState<string | null>(null);
+  const [copiedCode, setCopiedCode] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
   const ticketRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  // Lock body scroll
+  // Lock body scroll & trigger celebratory confetti
   useEffect(() => {
     if (isOpen && typeof document !== 'undefined') {
       document.body.style.overflow = 'hidden';
+      setShowConfetti(true);
+      const timer = setTimeout(() => setShowConfetti(false), 4500);
+      return () => clearTimeout(timer);
     } else if (typeof document !== 'undefined') {
       document.body.style.overflow = '';
+      setShowConfetti(false);
     }
     return () => {
       if (typeof document !== 'undefined') {
@@ -33,8 +39,8 @@ export default function DigitalTicketModal({ isOpen, onClose, ticket }: DigitalT
   if (!isOpen || !ticket) return null;
 
   const qrSvg = generateTicketQrSvg(ticket.qrCodeData || ticket.ticketId, {
-    width: 180,
-    height: 180,
+    width: 200,
+    height: 200,
     colorDark: '#0c1017',
     colorLight: '#ffffff'
   });
@@ -42,8 +48,8 @@ export default function DigitalTicketModal({ isOpen, onClose, ticket }: DigitalT
   const handleDownloadTicket = () => {
     if (!canvasRef.current) return;
     const dataUrl = drawQrToCanvas(canvasRef.current, ticket.qrCodeData || ticket.ticketId, {
-      width: 400,
-      height: 400,
+      width: 480,
+      height: 480,
       colorDark: '#000000',
       colorLight: '#ffffff'
     });
@@ -52,6 +58,14 @@ export default function DigitalTicketModal({ isOpen, onClose, ticket }: DigitalT
     link.download = `TSEHAY-TICKET-${ticket.ticketId}.png`;
     link.href = dataUrl;
     link.click();
+  };
+
+  const handleCopyTicketId = () => {
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(ticket.ticketId);
+      setCopiedCode(true);
+      setTimeout(() => setCopiedCode(false), 2500);
+    }
   };
 
   const handleSendToEmail = async () => {
@@ -68,7 +82,7 @@ export default function DigitalTicketModal({ isOpen, onClose, ticket }: DigitalT
       });
       const data = await res.json();
       if (data.success) {
-        setEmailStatus(`✅ ትኬቱ ወደ ${ticket.attendeeEmail} ተልኳል!`);
+        setEmailStatus(`✅ ትኬቱ ወደ ${ticket.attendeeEmail} በስኬት ተልኳል!`);
       } else {
         setEmailStatus('⚠️ ወደ ኢሜይል መላክ አልተቻለም፤ እባክዎ ትኬቱን በቀጥታ ያውርዱ።');
       }
@@ -79,6 +93,30 @@ export default function DigitalTicketModal({ isOpen, onClose, ticket }: DigitalT
     }
   };
 
+  const handleShareTelegram = () => {
+    const text = encodeURIComponent(
+      `🎟️ የፀሐይ ካምፓስ ዝግጅት ትኬት ተቆርጧል!\n\n📌 ዝግጅት፡ ${ticket.eventTitle}\n📅 ቀን፡ ${ticket.eventDate} @ ${ticket.eventTime}\n📍 ቦታ፡ ${ticket.eventLocation}\n👤 ተሳታፊ፡ ${ticket.attendeeName}\n🔑 የትኬት ቁጥር፡ ${ticket.ticketId}\n\n🔗 https://tsehaycampus.com`
+    );
+    window.open(`https://t.me/share/url?url=https://tsehaycampus.com&text=${text}`, '_blank');
+  };
+
+  const handleShareWhatsApp = () => {
+    const text = encodeURIComponent(
+      `🎟️ የፀሐይ ካምፓስ ዝግጅት ትኬት ተቆርጧል!\n\n📌 ዝግጅት፡ ${ticket.eventTitle}\n📅 ቀን፡ ${ticket.eventDate} @ ${ticket.eventTime}\n📍 ቦታ፡ ${ticket.eventLocation}\n👤 ተሳታፊ፡ ${ticket.attendeeName}\n🔑 የትኬት ቁጥር፡ ${ticket.ticketId}\n\n🔗 https://tsehaycampus.com`
+    );
+    window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
+  };
+
+  const handleAddToCalendar = () => {
+    const title = encodeURIComponent(`Tsehay Campus Event: ${ticket.eventTitle}`);
+    const details = encodeURIComponent(
+      `Tsehay Campus Event Pass\nAttendee: ${ticket.attendeeName}\nTicket ID: ${ticket.ticketId}\nVenue: ${ticket.eventLocation}\nPrice: ${ticket.pricePaid === 0 ? 'Free' : ticket.pricePaid + ' ETB'}`
+    );
+    const location = encodeURIComponent(ticket.eventLocation);
+    const googleCalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}&location=${location}`;
+    window.open(googleCalUrl, '_blank');
+  };
+
   return (
     <div 
       className="fixed inset-0 z-[999999] flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
@@ -86,9 +124,42 @@ export default function DigitalTicketModal({ isOpen, onClose, ticket }: DigitalT
     >
       {/* Backdrop */}
       <div 
-        className="fixed inset-0 bg-black/85 backdrop-blur-xl transition-opacity animate-in fade-in duration-300"
+        className="fixed inset-0 bg-black/90 backdrop-blur-2xl transition-opacity animate-in fade-in duration-300"
         onClick={onClose}
       />
+
+      {/* Confetti Animation Effect */}
+      {showConfetti && (
+        <div className="fixed inset-0 pointer-events-none z-20 overflow-hidden">
+          {Array.from({ length: 40 }).map((_, i) => {
+            const left = Math.random() * 100;
+            const delay = Math.random() * 2;
+            const duration = 2.5 + Math.random() * 2;
+            const colors = ['#f9b03c', '#eab308', '#3b82f6', '#10b981', '#ec4899', '#ffffff'];
+            const color = colors[i % colors.length];
+            return (
+              <div
+                key={i}
+                className="absolute w-2.5 h-2.5 rounded-sm animate-bounce"
+                style={{
+                  left: `${left}%`,
+                  top: '-5%',
+                  backgroundColor: color,
+                  animation: `fall ${duration}s linear ${delay}s infinite`,
+                  transform: `rotate(${Math.random() * 360}deg)`,
+                  opacity: 0.9
+                }}
+              />
+            );
+          })}
+          <style jsx>{`
+            @keyframes fall {
+              0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+              100% { transform: translateY(105vh) rotate(720deg); opacity: 0; }
+            }
+          `}</style>
+        </div>
+      )}
 
       {/* Hidden Canvas for High-Res PNG Download */}
       <canvas ref={canvasRef} className="hidden" />
@@ -99,10 +170,10 @@ export default function DigitalTicketModal({ isOpen, onClose, ticket }: DigitalT
         {/* Apple Wallet Style Cinema Pass */}
         <div 
           ref={ticketRef}
-          className="relative bg-gradient-to-b from-[#111726] via-[#0c1017] to-[#080b11] border-2 border-amber-400/50 rounded-[2rem] p-6 shadow-[0_25px_90px_rgba(0,0,0,0.95),0_0_50px_rgba(249,176,60,0.25)] text-white overflow-hidden"
+          className="relative bg-gradient-to-b from-[#111726] via-[#0c1017] to-[#080b11] border-2 border-amber-400/50 rounded-[2.2rem] p-5 sm:p-6 shadow-[0_25px_90px_rgba(0,0,0,0.95),0_0_50px_rgba(249,176,60,0.25)] text-white overflow-hidden"
         >
           {/* Ambient Glowing Aura */}
-          <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-64 h-64 bg-[#f9b03c]/25 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-72 h-72 bg-[#f9b03c]/20 rounded-full blur-3xl pointer-events-none" />
           
           {/* Close Button */}
           <button
@@ -115,9 +186,9 @@ export default function DigitalTicketModal({ isOpen, onClose, ticket }: DigitalT
           </button>
 
           {/* Top Header & Holographic Seal */}
-          <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-4">
+          <div className="flex items-center justify-between border-b border-white/10 pb-3.5 mb-3.5">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-[#f9b03c] to-amber-400 text-slate-950 flex items-center justify-center font-black text-xs shadow-[0_0_15px_rgba(249,176,60,0.5)]">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#f9b03c] to-amber-400 text-slate-950 flex items-center justify-center font-black text-xs shadow-[0_0_15px_rgba(249,176,60,0.5)]">
                 TC
               </div>
               <div>
@@ -127,41 +198,42 @@ export default function DigitalTicketModal({ isOpen, onClose, ticket }: DigitalT
             </div>
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[10px] font-black">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-              <span>{ticket.isUsed ? 'ተጠቅመዋል' : 'VALID PASS'}</span>
+              <span>{ticket.isUsed ? 'ተጠቅመዋል' : 'CONFIRMED PASS'}</span>
             </div>
           </div>
 
-          {/* Event Title & Tier */}
-          <div className="mb-4">
-            <div className="inline-block px-2 py-0.5 rounded bg-amber-400/15 text-[#f9b03c] text-[10px] font-black uppercase mb-1">
-              {ticket.tier || 'VIP Access'}
+          {/* Event Title & Tier Badge */}
+          <div className="mb-3.5">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-400/15 border border-amber-400/30 text-[#f9b03c] text-[10px] font-black uppercase mb-1.5">
+              <i className="fa-solid fa-crown text-[9px]"></i>
+              <span>{ticket.tier || 'VIP Access Pass'}</span>
             </div>
-            <h3 className="text-lg font-black text-white font-heading leading-snug">
+            <h3 className="text-base sm:text-lg font-black text-white font-heading leading-snug">
               {ticket.eventTitle}
             </h3>
           </div>
 
-          {/* Details Grid */}
-          <div className="grid grid-cols-2 gap-3 p-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.06] mb-4 text-xs">
+          {/* Confirmed Details Grid */}
+          <div className="grid grid-cols-2 gap-2.5 p-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.06] mb-3.5 text-xs">
             <div>
               <p className="text-[10px] text-slate-400 uppercase font-semibold">ተሳታፊ (Attendee)</p>
               <p className="font-bold text-white truncate mt-0.5">{ticket.attendeeName}</p>
             </div>
             <div>
-              <p className="text-[10px] text-slate-400 uppercase font-semibold">የተከፈለበት ዋጋ (Price)</p>
-              <p className="font-bold text-[#f9b03c] mt-0.5">
-                {ticket.pricePaid === 0 ? 'ነፃ (Free)' : `${ticket.pricePaid.toLocaleString()} ብር`}
+              <p className="text-[10px] text-slate-400 uppercase font-semibold">ስልክ ቁጥር (Phone)</p>
+              <p className="font-bold text-[#f9b03c] truncate mt-0.5">{ticket.attendeePhone || 'ተመዝግቧል'}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-slate-400 uppercase font-semibold">ቀንና ሰዓት (Date & Time)</p>
+              <p className="font-bold text-slate-200 mt-0.5">{ticket.eventDate} @ {ticket.eventTime}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-slate-400 uppercase font-semibold">የትኬት ዋጋ (Price)</p>
+              <p className="font-black text-emerald-400 mt-0.5">
+                {ticket.pricePaid === 0 ? '100% ነፃ (Free)' : `${ticket.pricePaid.toLocaleString()} ብር`}
               </p>
             </div>
-            <div>
-              <p className="text-[10px] text-slate-400 uppercase font-semibold">ቀን (Date)</p>
-              <p className="font-bold text-slate-200 mt-0.5">{ticket.eventDate}</p>
-            </div>
-            <div>
-              <p className="text-[10px] text-slate-400 uppercase font-semibold">ሰዓት (Time)</p>
-              <p className="font-bold text-slate-200 mt-0.5">{ticket.eventTime}</p>
-            </div>
-            <div className="col-span-2">
+            <div className="col-span-2 pt-1 border-t border-white/5">
               <p className="text-[10px] text-slate-400 uppercase font-semibold">ቦታ (Venue / Location)</p>
               <p className="font-bold text-slate-200 truncate mt-0.5 flex items-center gap-1">
                 <i className="fa-solid fa-location-dot text-[#f9b03c] text-[10px]"></i>
@@ -171,7 +243,7 @@ export default function DigitalTicketModal({ isOpen, onClose, ticket }: DigitalT
           </div>
 
           {/* Perforation Divider with Notches */}
-          <div className="relative my-4 flex items-center justify-between">
+          <div className="relative my-3 flex items-center justify-between">
             <div className="absolute -left-8 w-5 h-5 rounded-full bg-black/90 border-r border-amber-400/40" />
             <div className="w-full border-t border-dashed border-white/20" />
             <div className="absolute -right-8 w-5 h-5 rounded-full bg-black/90 border-l border-amber-400/40" />
@@ -180,13 +252,22 @@ export default function DigitalTicketModal({ isOpen, onClose, ticket }: DigitalT
           {/* QR Code Section */}
           <div className="flex flex-col items-center justify-center p-4 bg-white rounded-2xl text-slate-950 text-center shadow-inner">
             <div 
-              className="w-40 h-40 flex items-center justify-center"
+              className="w-36 h-36 sm:w-40 sm:h-40 flex items-center justify-center"
               dangerouslySetInnerHTML={{ __html: qrSvg }}
             />
-            <p className="text-[11px] font-mono font-black tracking-widest text-slate-900 mt-2">
-              {ticket.ticketId}
-            </p>
-            <p className="text-[10px] text-slate-500 mt-0.5">
+            
+            {/* Clickable Ticket ID Copy */}
+            <button
+              type="button"
+              onClick={handleCopyTicketId}
+              className="mt-2 px-3 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-900 font-mono text-xs font-black tracking-wider flex items-center gap-1.5 cursor-pointer transition active:scale-95"
+              title="የትኬት ቁጥር ቅዳ"
+            >
+              <i className={`fa-solid ${copiedCode ? 'fa-check text-emerald-600' : 'fa-copy text-slate-600'}`}></i>
+              <span>{ticket.ticketId}</span>
+              {copiedCode && <span className="text-[10px] text-emerald-600 font-bold">(ተቀድቷል!)</span>}
+            </button>
+            <p className="text-[10px] text-slate-500 mt-1">
               በመግቢያው በር ላይ ይህንን QR Code ያሳዩ
             </p>
           </div>
@@ -198,8 +279,8 @@ export default function DigitalTicketModal({ isOpen, onClose, ticket }: DigitalT
             </div>
           )}
 
-          {/* Action Buttons */}
-          <div className="grid grid-cols-2 gap-2 mt-4">
+          {/* Action Buttons Grid */}
+          <div className="grid grid-cols-2 gap-2 mt-3.5">
             <button
               type="button"
               onClick={handleDownloadTicket}
@@ -216,6 +297,39 @@ export default function DigitalTicketModal({ isOpen, onClose, ticket }: DigitalT
             >
               <i className="fa-solid fa-envelope"></i>
               <span>{isSendingEmail ? 'በመላክ ላይ...' : 'ኢሜይል ላክ'}</span>
+            </button>
+          </div>
+
+          {/* Social & Calendar Quick Actions */}
+          <div className="flex items-center justify-center gap-2 mt-2 pt-2 border-t border-white/5">
+            <button
+              type="button"
+              onClick={handleShareTelegram}
+              className="px-2.5 py-1.5 rounded-lg bg-[#229ED9]/15 hover:bg-[#229ED9]/25 text-[#229ED9] border border-[#229ED9]/30 text-[11px] font-bold flex items-center gap-1 transition cursor-pointer"
+              title="በቴሌግራም አጋራ"
+            >
+              <i className="fa-brands fa-telegram"></i>
+              <span>Telegram</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleShareWhatsApp}
+              className="px-2.5 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 text-[11px] font-bold flex items-center gap-1 transition cursor-pointer"
+              title="በ WhatsApp አጋራ"
+            >
+              <i className="fa-brands fa-whatsapp"></i>
+              <span>WhatsApp</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleAddToCalendar}
+              className="px-2.5 py-1.5 rounded-lg bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 border border-blue-500/30 text-[11px] font-bold flex items-center gap-1 transition cursor-pointer"
+              title="ወደ Google Calendar ጨምር"
+            >
+              <i className="fa-solid fa-calendar-plus"></i>
+              <span>Calendar</span>
             </button>
           </div>
 

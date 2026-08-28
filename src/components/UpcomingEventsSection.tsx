@@ -120,8 +120,23 @@ export default function UpcomingEventsSection() {
     e.preventDefault();
     if (!selectedEvent) return;
 
-    if (!attendeeName.trim() || !attendeeEmail.trim()) {
-      setBookingError('እባክዎ ስምዎን እና ኢሜይልዎን ያስገቡ።');
+    const trimmedName = attendeeName.trim();
+    const trimmedEmail = attendeeEmail.trim();
+    const trimmedPhone = attendeePhone.trim();
+
+    if (!trimmedName) {
+      setBookingError('እባክዎ ሙሉ ስምዎን ያስገቡ (ግዴታ ነው)።');
+      return;
+    }
+
+    if (!trimmedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      setBookingError('እባክዎ ትክክለኛ የኢሜይል አድራሻ ያስገቡ (ግዴታ ነው)።');
+      return;
+    }
+
+    const cleanPhone = trimmedPhone.replace(/[\s\-()]/g, '');
+    if (!cleanPhone || cleanPhone.length < 9) {
+      setBookingError('እባክዎ ትክክለኛ ስልክ ቁጥር ያስገቡ (ግዴታ ነው - ለምሳሌ 0911223344 ወይም +251911223344)።');
       return;
     }
 
@@ -479,7 +494,9 @@ export default function UpcomingEventsSection() {
 
             <form onSubmit={handleConfirmBooking} className="space-y-3.5">
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">ሙሉ ስም (Full Name) *</label>
+                <label className="block text-xs font-bold text-slate-200 mb-1">
+                  ሙሉ ስም (Full Name) <span className="text-red-400 font-black">* (ግዴታ)</span>
+                </label>
                 <input
                   type="text"
                   required
@@ -491,33 +508,48 @@ export default function UpcomingEventsSection() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">ኢሜይል (Email Address) *</label>
+                <label className="block text-xs font-bold text-slate-200 mb-1">
+                  ኢሜይል (Email Address) <span className="text-red-400 font-black">* (ግዴታ)</span>
+                </label>
                 <input
                   type="email"
                   required
                   value={attendeeEmail}
                   onChange={(e) => setAttendeeEmail(e.target.value)}
-                  placeholder="eyoubsahle1@gmail.com (ትኬቱ የሚላክበት)"
+                  placeholder="eyoubsahle1@gmail.com (ዲጂታል ትኬቱ የሚላክበት)"
                   className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-hidden focus:border-[#f9b03c]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">ስልክ ቁጥር (Phone Number)</label>
+                <label className="block text-xs font-bold text-slate-200 mb-1">
+                  ስልክ ቁጥር (Phone Number) <span className="text-red-400 font-black">* (ግዴታ)</span>
+                </label>
                 <input
                   type="tel"
+                  required
                   value={attendeePhone}
                   onChange={(e) => setAttendeePhone(e.target.value)}
-                  placeholder="09..."
+                  placeholder="0911223344 ወይም +251911223344"
                   className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-hidden focus:border-[#f9b03c]"
                 />
+                <p className="text-[10px] text-amber-400/80 mt-1 flex items-center gap-1">
+                  <i className="fa-solid fa-shield-check"></i>
+                  <span>የማረጋገጫ SMS እና የትኬት QR ኮድ ወደዚህ ቁጥር ይላካል</span>
+                </p>
               </div>
 
-              <div className="p-3 rounded-xl bg-white/[0.04] border border-white/[0.08] text-xs flex justify-between items-center">
-                <span className="text-slate-300 font-semibold">የትኬት ዋጋ</span>
-                <span className="font-black text-[#f9b03c] text-sm">
-                  {selectedEvent.price === 0 || selectedEvent.isFree ? 'ነፃ (Free)' : `${selectedEvent.price.toLocaleString()} ብር`}
-                </span>
+              <div className="p-3.5 rounded-2xl bg-white/[0.04] border border-white/[0.08] text-xs space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-300 font-semibold">የትኬት አይነት</span>
+                  <span className="font-bold text-slate-200">{selectedEvent.price > 1200 ? 'VIP Pass' : 'General Admission'}</span>
+                </div>
+                <div className="flex justify-between items-center pt-2 border-t border-white/5">
+                  <span className="text-slate-300 font-semibold">የትኬት ዋጋ</span>
+                  <span className="font-black text-[#f9b03c] text-sm">
+                    {selectedEvent.price === 0 || selectedEvent.isFree ? '100% ነፃ (Free)' : `${selectedEvent.price.toLocaleString()} ብር`}
+                  </span>
+                </div>
               </div>
 
               <button
