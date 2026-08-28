@@ -13,6 +13,7 @@ import { useRouter } from 'next/navigation';
 
 import SmartSearchInput from '@/components/SmartSearchInput';
 import CourseCardSkeleton from '@/components/CourseCardSkeleton';
+import CoursePreviewModal from '@/components/CoursePreviewModal';
 import Tilt3DCard from '@/components/3d/Tilt3DCard';
 import { searchCourses } from '@/lib/smartSearch';
 import { getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl, getCourseSlug } from '@/lib/courseCache';
@@ -33,6 +34,7 @@ export default function Courses() {
     }
   });
   const [selectedCourse, setSelectedCourse] = useState(null);
+  const [previewModalCourse, setPreviewModalCourse] = useState<any>(null);
   const [isEnrolling, setIsEnrolling] = useState(false);
   const [showRequireAuthModal, setShowRequireAuthModal] = useState(false);
   const [authCourseTarget, setAuthCourseTarget] = useState<any>(null);
@@ -143,18 +145,20 @@ export default function Courses() {
           console.warn("Token fetch warning:", authErr);
         }
 
-        // 4. Route to dashboard classroom
+        // 4. Route directly to dashboard classroom
+        const targetUrl = `/dashboard?view=classroom&courseId=${encodeURIComponent(course.id)}&lesson=0`;
         if (typeof window !== 'undefined') {
-          window.location.href = '/dashboard';
+          window.location.href = targetUrl;
         } else {
-          router.push('/dashboard');
+          router.push(targetUrl);
         }
       } catch (err: any) {
          console.error("Free enrollment failed:", err);
+         const targetUrl = `/dashboard?view=classroom&courseId=${encodeURIComponent(course.id)}&lesson=0`;
          if (typeof window !== 'undefined') {
-           window.location.href = '/dashboard';
+           window.location.href = targetUrl;
          } else {
-           router.push('/dashboard');
+           router.push(targetUrl);
          }
       } finally {
          setIsEnrolling(false);
@@ -516,11 +520,12 @@ export default function Courses() {
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                router.push(`/courses/${getCourseSlug(course) || course.id}`);
+                                setPreviewModalCourse(course);
                               }}
                               className="bg-white/[0.05] hover:bg-white/10 text-white text-xs font-bold px-3.5 py-2.5 rounded-xl transition border border-white/10 flex items-center gap-1.5 cursor-pointer hover:border-[#f9b03c]/40 active:scale-95"
+                              title="ማስተዋወቂያ ቪዲዮ ይመልከቱ (Watch Preview Video)"
                             >
-                              <i className="fa-solid fa-eye text-[#f9b03c]"></i>
+                              <i className="fa-solid fa-play text-[#f9b03c]"></i>
                               <span>ይመልከቱ</span>
                             </button>
                             <button 
@@ -571,6 +576,15 @@ export default function Courses() {
             detail: { isSignupMode: isSignup, isSignUp: isSignup } 
           }));
         }}
+      />
+
+      {/* Cinema-Grade Course Preview Video Modal */}
+      <CoursePreviewModal
+        isOpen={Boolean(previewModalCourse)}
+        onClose={() => setPreviewModalCourse(null)}
+        course={previewModalCourse}
+        onGoToClassroom={(c) => openPaymentModal(c)}
+        onBuyCourse={(c) => openPaymentModal(c)}
       />
     </React.Fragment>
   );

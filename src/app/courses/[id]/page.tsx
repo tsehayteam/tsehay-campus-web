@@ -297,18 +297,20 @@ function CoursePreviewContent() {
           console.warn("Token fetch warning:", authErr);
         }
 
-        // 4. Smoothly route to dashboard classroom
+        // 4. Smoothly route directly to dashboard classroom
+        const targetUrl = `/dashboard?view=classroom&courseId=${encodeURIComponent(course.id)}&lesson=0`;
         if (typeof window !== 'undefined') {
-          window.location.href = '/dashboard';
+          window.location.href = targetUrl;
         } else {
-          router.push('/dashboard');
+          router.push(targetUrl);
         }
       } catch (error) {
         console.error("Error enrolling in free course", error);
+        const targetUrl = `/dashboard?view=classroom&courseId=${encodeURIComponent(course.id)}&lesson=0`;
         if (typeof window !== 'undefined') {
-          window.location.href = '/dashboard';
+          window.location.href = targetUrl;
         } else {
-          router.push('/dashboard');
+          router.push(targetUrl);
         }
       } finally {
         setIsEnrolling(false);

@@ -16,6 +16,7 @@ import SynthesiaAiChatDemo from '@/components/SynthesiaAiChatDemo';
 import InstructorYouTubePortfolio from '@/components/InstructorYouTubePortfolio';
 import UpcomingEventsSection from '@/components/UpcomingEventsSection';
 import CourseCardSkeleton from '@/components/CourseCardSkeleton';
+import CoursePreviewModal from '@/components/CoursePreviewModal';
 import { getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl, getCourseSlug } from '@/lib/courseCache';
 import Hero3DPopoutStage from '@/components/3d/Hero3DPopoutStage';
 import Tilt3DCard from '@/components/3d/Tilt3DCard';
@@ -277,8 +278,9 @@ export default function Home() {
   });
   const [hasPurchasedCourses, setHasPurchasedCourses] = useState<boolean | null>(null);
   
-  // Payment / Auth Modal States
+  // Payment / Auth / Preview Modal States
   const [selectedCourse, setSelectedCourse] = useState<any>(null);
+  const [previewModalCourse, setPreviewModalCourse] = useState<any>(null);
   const [isEnrolling, setIsEnrolling] = useState(false);
   const [showRequireAuthModal, setShowRequireAuthModal] = useState(false);
   const [authCourseTarget, setAuthCourseTarget] = useState<any>(null);
@@ -409,18 +411,20 @@ export default function Home() {
           }).catch(e => console.warn("Background API enrollment notify:", e));
         } catch (authErr) {}
 
-        // 4. Route to dashboard classroom
+        // 4. Route directly to dashboard classroom
+        const targetUrl = `/dashboard?view=classroom&courseId=${encodeURIComponent(course.id)}&lesson=0`;
         if (typeof window !== 'undefined') {
-          window.location.href = '/dashboard';
+          window.location.href = targetUrl;
         } else {
-          router.push('/dashboard');
+          router.push(targetUrl);
         }
       } catch (err: any) {
          console.error("Free enrollment failed:", err);
+         const targetUrl = `/dashboard?view=classroom&courseId=${encodeURIComponent(course.id)}&lesson=0`;
          if (typeof window !== 'undefined') {
-           window.location.href = '/dashboard';
+           window.location.href = targetUrl;
          } else {
-           router.push('/dashboard');
+           router.push(targetUrl);
          }
       } finally {
          setIsEnrolling(false);
@@ -851,11 +855,12 @@ export default function Home() {
                                             type="button"
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                router.push(`/courses/${getCourseSlug(course) || course.id}`);
+                                                setPreviewModalCourse(course);
                                             }}
                                             className="bg-slate-100 dark:bg-white/[0.05] hover:bg-slate-200 dark:hover:bg-white/10 text-slate-900 dark:text-white text-xs font-bold px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-xl transition border border-gray-200 dark:border-white/10 flex items-center gap-1.5 cursor-pointer hover:border-[#f9b03c]/40 active:scale-95"
+                                            title="ማስተዋወቂያ ቪዲዮ ይመልከቱ (Watch Preview Video)"
                                         >
-                                            <i className="fa-solid fa-eye text-[#f9b03c]"></i>
+                                            <i className="fa-solid fa-play text-[#f9b03c]"></i>
                                             <span>ይመልከቱ</span>
                                         </button>
                                         <button
@@ -1060,6 +1065,15 @@ export default function Home() {
           detail: { isSignupMode: isSignup, isSignUp: isSignup } 
         }));
       }}
+    />
+
+    {/* Cinema-Grade Course Preview Video Modal */}
+    <CoursePreviewModal
+      isOpen={Boolean(previewModalCourse)}
+      onClose={() => setPreviewModalCourse(null)}
+      course={previewModalCourse}
+      onGoToClassroom={(c) => openPaymentModal(c)}
+      onBuyCourse={(c) => openPaymentModal(c)}
     />
 
     </main>

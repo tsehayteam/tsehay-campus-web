@@ -618,26 +618,41 @@ function StudentDashboardContent() {
 
         const purchasesRef = collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'purchased_courses');
         const purchasesSnap = await getDocs(purchasesRef);
+        let userCourses: any[] = [];
         
-        if (purchasesSnap.empty) {
-            setCourses([]);
-            setActiveCourse(null);
-            setLoading(false);
-            return;
+        if (!purchasesSnap.empty) {
+          const coursePromises = purchasesSnap.docs.map(async (purchaseDoc) => {
+              const courseId = purchaseDoc.data().courseId;
+              const courseRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses', courseId);
+              const courseSnap = await getDoc(courseRef);
+              if (courseSnap.exists()) {
+                  return { id: courseSnap.id, ...courseSnap.data() };
+              }
+              return null;
+          });
+
+          const allCourses = (await Promise.all(coursePromises)).filter(c => c !== null);
+          userCourses = allCourses;
         }
 
-        const coursePromises = purchasesSnap.docs.map(async (purchaseDoc) => {
-            const courseId = purchaseDoc.data().courseId;
-            const courseRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses', courseId);
-            const courseSnap = await getDoc(courseRef);
-            if (courseSnap.exists()) {
-                return { id: courseSnap.id, ...courseSnap.data() };
+        // Resilient fallback for URL courseId or newly enrolled free course
+        if (urlCourseId && !userCourses.some((c: any) => c.id === urlCourseId)) {
+          try {
+            const directSnap = await getDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses', urlCourseId));
+            if (directSnap.exists()) {
+              userCourses = [{ id: directSnap.id, ...directSnap.data() }, ...userCourses];
+            } else {
+              const cachedActive = localStorage.getItem('tsehay_user_active_course');
+              if (cachedActive) {
+                const parsed = JSON.parse(cachedActive);
+                if (parsed.id === urlCourseId) {
+                  userCourses = [parsed, ...userCourses];
+                }
+              }
             }
-            return null;
-        });
+          } catch(e) {}
+        }
 
-        const allCourses = (await Promise.all(coursePromises)).filter(c => c !== null);
-        const userCourses = allCourses;
         setCourses(userCourses);
         try {
           localStorage.setItem('tsehay_user_courses_cache', JSON.stringify(userCourses));
@@ -663,6 +678,8 @@ function StudentDashboardContent() {
             try { localStorage.setItem('tsehay_user_active_course', JSON.stringify(userCourses[0])); } catch(e) {}
             return userCourses[0];
           });
+        } else {
+          setActiveCourse(null);
         }
       } catch (error) {
         console.error("Error fetching courses", error);
