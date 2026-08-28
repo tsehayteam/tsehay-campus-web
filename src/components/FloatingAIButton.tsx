@@ -7,6 +7,7 @@ import { db } from '@/lib/firebase/config';
 import { collection, doc, getDocs, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import FormattedAiText from '@/components/FormattedAiText';
 import { getCourseBySlugOrId } from '@/lib/courseCache';
+import { getCoursePinnedPrompts } from '@/lib/aiPrompts';
 
 interface Message {
   role: 'user' | 'ai';
@@ -511,21 +512,7 @@ export default function FloatingAIButton() {
     }
   };
 
-  const quickPrompts = aiLang === 'am' ? [
-    { label: '💡 የኮርሶች ዝርዝር እና ዋጋ', prompt: 'በፀሐይ ካምፓስ (Tsehay Campus) ውስጥ ምን ምን ተግባራዊ ስልጠናዎች አሉ? የኮርሶቹ ዋጋ እና የስልጠናው ሂደትስ እንዴት ነው?' },
-    { label: '🛍️ የሼን ኢምፖርት ቢዝነስ', prompt: 'ከሼን (SHEIN) እና ከቻይና እቃዎችን በቀጥታ አስመጥቶ በኢትዮጵያ ውስጥ በከፍተኛ ትርፍ ለመሸጥ ምን ምን ነገሮች ያስፈልጋሉ? የዶላር ክፍያ እና ካርጎስ እንዴት ይሰራል?' },
-    { label: '🎬 የዩቲዩብ ስኬት እና ዶላር ገቢ', prompt: 'ፊት ሳያሳዩ (Faceless) በ AI በመታገዝ ከዩቲዩብ በወር ከ $1,000+ በላይ ዶላር ገቢ ለማግኘት የዩቲዩብ ስኬት ማስተርክላስ ምን ያስተምረኛል?' },
-    { label: '💳 ክፍያና ምዝገባ (ቴሌብር / CBE)', prompt: 'ለስልጠናዎች በቴሌብር (Telebirr)፣ በሲቢኢ ብር (CBE Birr) ወይም በባንክ እንዴት እከፍላለሁ? ከከፈልኩ በኋላ ወዲያውኑ እንዴት ነው ትምህርት የምጀምረው?' },
-    { label: '🤝 1-ለ-1 ማማከር (Mentorship)', prompt: 'ከኢዮብ ሳህሌ (Eyoub Sahle) ጋር የቀጥታ የ 1-ለ-1 የማማከር ቀጠሮ እንዴት ማስያዝ እችላለሁ? በምን ጉዳዮች ዙሪያ ማማከር እችላለሁ?' },
-    { label: '📜 የኮርስ ሰርተፊኬት', prompt: 'ኮርሱን ሳጠናቅቅ በኦንላይን የሚረጋገጥ (Verifiable QR) ይፋዊ ሰርተፊኬት እንዴት ነው የማገኘው?' }
-  ] : [
-    { label: '💡 Courses & Pricing', prompt: 'What practical courses are available on Tsehay Campus, and what are their respective fees and curriculum outlines?' },
-    { label: '🛍️ Shein Import Business', prompt: 'How does the Shein Import Business training work? What are the requirements for dollar payments, freight forwarding, and profitable local sales in Ethiopia?' },
-    { label: '🎬 YouTube Monetization', prompt: 'How does the YouTube Secrets Masterclass help me build a faceless AI YouTube channel and earn $1,000+/month from Ethiopia?' },
-    { label: '💳 Payment & Enrollment', prompt: 'How do I pay and enroll using Telebirr, CBE Birr, LakiPay, or International Cards? How fast do lessons unlock?' },
-    { label: '🤝 1-on-1 Mentorship', prompt: 'How can I schedule a 1-on-1 private strategy mentorship session with Eyoub Sahle?' },
-    { label: '📜 Official Certificate', prompt: 'How do I earn my accredited, verifiable digital Certificate of Completion once I finish the course?' }
-  ];
+  const quickPrompts = getCoursePinnedPrompts(selectedCourse, aiLang);
 
   // 🚫 Completely remove Tsehay AI and its floating launcher icon from the Admin Dashboard
   if (pathname?.startsWith('/admin')) {

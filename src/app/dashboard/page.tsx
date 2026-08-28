@@ -16,6 +16,7 @@ import CourseCertificate from '@/components/CourseCertificate';
 import { formatDriveImageUrl } from '@/lib/courseCache';
 import FormattedAiText from '@/components/FormattedAiText';
 import StudentReferralSection from '@/components/StudentReferralSection';
+import { getCoursePinnedPrompts } from '@/lib/aiPrompts';
 
 function DashboardLoadingScreen({ message }: { message?: string }) {
   return (
@@ -4100,19 +4101,14 @@ function StudentDashboardContent() {
                    </div>
                  )}
 
-                  {/* Quick Action Suggestion Chips */}
+                  {/* Quick Action Suggestion Chips - Dynamically adapt to selected course or general campus */}
                   <div className="relative z-10 flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
-                      {[
-                        { label: '💡 የኮርስ ማጠቃለያ', prompt: selectedAiCourse ? `የ"${selectedAiCourse.title}" ኮርስ ዋና ዋና ነጥቦችን አጠቃልልልኝ` : 'የኮርሶቹን ዋና ዋና ጥቅሞች አጠቃልልልኝ' },
-                        { label: '🚀 የተግባር እርምጃዎች', prompt: selectedAiCourse ? `በ"${selectedAiCourse.title}" የተማርነውን በኢትዮጵያ ውስጥ በተግባር እንዴት ልተግብረው?` : 'የተማርኩትን ወደ ተግባራዊ ገቢ እንዴት እቀይረዋለሁ?' },
-                        { label: '❓ ለጀማሪ አብራራልኝ', prompt: 'ያልገባኝን ነገር በቀላል እና ግልጽ በሆነ አማርኛ ደረጃ በደረጃ አብራራልኝ' },
-                        { label: '📝 የፈተና ጥያቄ አዘጋጅልኝ', prompt: 'እውቀቴን ለመፈተሽ 3 ተግባራዊ ጥያቄዎችን አዘጋጅተህ ጠይቀኝ' }
-                      ].map((item, idx) => (
+                      {getCoursePinnedPrompts(selectedAiCourse, dashboardAiLang).map((item, idx) => (
                         <button
                           key={idx}
                           type="button"
                           onClick={() => handleSendAiMessage(undefined, item.prompt)}
-                          className="text-[11px] font-bold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-white/5 hover:bg-[#f9b03c] dark:hover:bg-[#f9b03c] hover:text-slate-950 dark:hover:text-slate-950 px-3 py-1 rounded-full border border-gray-200 dark:border-white/10 transition-all duration-150 active:scale-95 whitespace-nowrap shrink-0 cursor-pointer"
+                          className="text-[11px] font-bold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-white/5 hover:bg-[#f9b03c] dark:hover:bg-[#f9b03c] hover:text-slate-950 dark:hover:text-slate-950 px-3 py-1 rounded-full border border-gray-200 dark:border-white/10 transition-all duration-150 active:scale-95 whitespace-nowrap shrink-0 cursor-pointer shadow-xs"
                         >
                           {item.label}
                         </button>
