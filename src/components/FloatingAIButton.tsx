@@ -448,21 +448,33 @@ export default function FloatingAIButton() {
   };
 
   const handleSaveToNotes = async (text: string, idx: number) => {
-    if (!user) {
-      alert('ማስታወሻዎችን ለማስቀመጥ እባክዎ መጀመሪያ ይግቡ (Please login).');
-      return;
-    }
+    // 🌟 1. Immediate visual feedback right mark
+    setNoteSavedIdx(idx);
+    setTimeout(() => setNoteSavedIdx(null), 3000);
+
     try {
-      const noteDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'notes', `ai_note_${Date.now()}`);
-      await setDoc(noteDocRef, {
+      const newNote = {
+        id: `ai_note_${Date.now()}`,
         text,
         lessonTitle: selectedCourse ? `Tsehay AI (${selectedCourse.title})` : 'Tsehay AI ማስታወሻ',
         source: 'ai',
-        createdAt: new Date().toLocaleDateString('am-ET')
-      });
-      setNoteSavedIdx(idx);
-      setTimeout(() => setNoteSavedIdx(null), 2500);
-    } catch (e) {}
+        createdAt: new Date().toLocaleString('am-ET', { dateStyle: 'medium', timeStyle: 'short' })
+      };
+
+      // Always save to localStorage notes cache
+      const cached = localStorage.getItem('tsehay_user_notes_all');
+      const prevNotes = cached ? JSON.parse(cached) : [];
+      const updated = [newNote, ...prevNotes];
+      localStorage.setItem('tsehay_user_notes_all', JSON.stringify(updated));
+
+      if (user?.uid) {
+        localStorage.setItem(`tsehay_user_notes_${user.uid}`, JSON.stringify(updated));
+        const noteDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'notes', newNote.id);
+        await setDoc(noteDocRef, newNote);
+      }
+    } catch (e) {
+      console.warn("Could not save note:", e);
+    }
   };
 
   const handleClearChat = () => {
@@ -735,9 +747,14 @@ export default function FloatingAIButton() {
 
                       <button 
                         onClick={() => handleSaveToNotes(m.text, idx)}
-                        className="text-[10px] bg-[#f9b03c]/10 hover:bg-[#f9b03c]/20 text-[#f9b03c] px-2.5 py-1 rounded-lg border border-[#f9b03c]/20 flex items-center gap-1 transition cursor-pointer active:scale-95"
+                        className={`text-[10px] px-2.5 py-1 rounded-lg border flex items-center gap-1.5 transition-all duration-200 cursor-pointer active:scale-95 ${
+                          noteSavedIdx === idx
+                            ? 'bg-emerald-500/25 text-emerald-400 border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.35)] font-bold'
+                            : 'bg-[#f9b03c]/10 hover:bg-[#f9b03c]/20 text-[#f9b03c] border-[#f9b03c]/30'
+                        }`}
+                        title={noteSavedIdx === idx ? 'ወደ ማስታወሻ ተመዝግቧል (Saved to Notes)' : 'ወደ ማስታወሻ አድ አድርግ (Save to Notes)'}
                       >
-                        <i className={`fa-solid ${noteSavedIdx === idx ? 'fa-circle-check text-emerald-400' : 'fa-bookmark'}`}></i>
+                        <i className={`fa-solid ${noteSavedIdx === idx ? 'fa-circle-check text-emerald-400 animate-bounce text-xs' : 'fa-bookmark text-xs'}`}></i>
                         <span>{noteSavedIdx === idx ? '✓ ተመዝግቧል' : 'ወደ ማስታወሻ አድ'}</span>
                       </button>
                     </div>

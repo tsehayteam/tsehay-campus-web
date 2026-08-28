@@ -4068,19 +4068,20 @@ ${customAdminPrompt}
 
                                       <button 
                                           onClick={async () => {
-                                              const noteId = await handleSaveNote(m.text);
                                               setSavedAiNotes(prev => ({ ...prev, [i]: true }));
+                                              const noteId = await handleSaveNote(m.text);
                                               if (noteId) {
                                                   setSavedAiNoteIds(prev => ({ ...prev, [i]: noteId }));
                                               }
                                           }} 
                                           className={`text-[11px] font-black px-3 py-1 rounded-lg border flex items-center gap-1.5 transition-all shadow-xs cursor-pointer active:scale-95 ${
                                               savedAiNotes[i]
-                                                  ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/40"
+                                                  ? "bg-emerald-500/25 text-emerald-700 dark:text-emerald-300 border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.35)] font-bold"
                                                   : "bg-amber-400/20 hover:bg-amber-400 dark:bg-amber-500/20 dark:hover:bg-amber-400 text-amber-800 dark:text-amber-300 hover:text-dark border-amber-400/40"
                                           }`}
+                                          title={savedAiNotes[i] ? "ወደ ማስታወሻ ተመዝግቧል (Saved to Notes)" : "ወደ ማስታወሻ አድ አድርግ (Save to Notes)"}
                                       >
-                                          <i className={`fa-solid ${savedAiNotes[i] ? "fa-circle-check text-emerald-600 dark:text-emerald-400" : "fa-bookmark text-[10px]"}`}></i> 
+                                          <i className={`fa-solid ${savedAiNotes[i] ? "fa-circle-check text-emerald-600 dark:text-emerald-400 animate-bounce" : "fa-bookmark text-[10px]"}`}></i> 
                                           <span>{savedAiNotes[i] ? "✓ ወደ ማስታወሻ ተመዝግቧል" : "ወደ ማስታወሻ አድ አድርግ"}</span>
                                       </button>
 
