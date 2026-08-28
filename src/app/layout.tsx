@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
@@ -9,6 +10,7 @@ import TermsModal from "@/components/TermsModal";
 import ContentProtection from "@/components/ContentProtection";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import FloatingAIButton from "@/components/FloatingAIButton";
+import ReferralTracker from "@/components/ReferralTracker";
 import { LanguageProvider } from "@/context/LanguageContext";
 import Global3DBackgroundCanvas from "@/components/scrollytelling/Global3DBackgroundCanvas";
 import SmoothScrollAndScrollyProvider from "@/components/scrollytelling/SmoothScrollAndScrollyProvider";
@@ -189,6 +191,10 @@ export default function RootLayout({
               <PageTransitionWrapper>
                 {children}
               </PageTransitionWrapper>
+              
+              <Suspense fallback={null}>
+                <ReferralTracker />
+              </Suspense>
               
               <TermsModal />
               <PaymentModal />

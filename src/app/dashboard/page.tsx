@@ -15,6 +15,7 @@ import CourseQuiz from '@/components/CourseQuiz';
 import CourseCertificate from '@/components/CourseCertificate';
 import { formatDriveImageUrl } from '@/lib/courseCache';
 import FormattedAiText from '@/components/FormattedAiText';
+import StudentReferralSection from '@/components/StudentReferralSection';
 
 function DashboardLoadingScreen({ message }: { message?: string }) {
   return (
@@ -54,7 +55,7 @@ function StudentDashboardContent() {
   const urlCourseId = searchParams?.get('courseId') || searchParams?.get('course');
   const urlLesson = searchParams?.get('lesson');
 
-  const validViews = ['classroom', 'courses', 'messages', 'ai', 'certificates', 'settings'];
+  const validViews = ['classroom', 'courses', 'referrals', 'messages', 'ai', 'certificates', 'settings'];
   const initialView = (urlViewParam && validViews.includes(urlViewParam))
     ? urlViewParam
     : (typeof window !== 'undefined' && localStorage.getItem('tsehay_dashboard_last_view')) || 'classroom';
@@ -2085,8 +2086,38 @@ ${customAdminPrompt}
                 <i className="hidden lg:block fa-solid fa-chevron-right text-xs text-white/80 animate-in fade-in slide-in-from-left-1 duration-200"></i>
               )}
             </button>
+
+            {/* 6. Refer a Friend (ጓደኛዎን ይጋብዙ - ALX Growth Program) */}
+            <button 
+              onClick={() => setCurrentView('referrals')} 
+              className={`flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-auto md:w-full text-left text-sm cursor-pointer ${
+                currentView === 'referrals' 
+                  ? 'bg-gradient-to-r from-amber-500 via-[#f9b03c] to-yellow-400 text-slate-950 shadow-xl shadow-[#f9b03c]/40 font-black border border-white/30 scale-[1.02]' 
+                  : 'text-white bg-white/[0.04] hover:bg-[#f9b03c]/15 hover:text-[#f9b03c] border border-amber-400/25 hover:border-[#f9b03c]/50 font-black'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <span className={`w-8 h-8 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 ${
+                  currentView === 'referrals'
+                    ? 'bg-slate-950 text-[#f9b03c] shadow-inner'
+                    : 'bg-[#f9b03c]/20 text-[#f9b03c]'
+                }`}>
+                  <i className="fa-solid fa-gift text-sm animate-bounce"></i>
+                </span>
+                <span className="whitespace-nowrap md:whitespace-normal md:hidden lg:block font-black text-sm tracking-tight drop-shadow-xs">
+                  ጓደኛዎን ይጋብዙ
+                </span>
+              </div>
+              <span className={`hidden lg:inline-flex text-[9px] uppercase tracking-wider font-black px-2 py-0.5 rounded-full border transition-all ${
+                currentView === 'referrals'
+                  ? 'bg-slate-950/80 text-[#f9b03c] border-slate-900/30'
+                  : 'bg-amber-400/20 text-[#f9b03c] border-amber-400/30'
+              }`}>
+                🎁 ነፃ ኮርስ
+              </span>
+            </button>
             
-            {/* 6. Settings (መገለጫ እና ማስተካከያ) */}
+            {/* 7. Settings (መገለጫ እና ማስተካከያ) */}
             <button 
               onClick={() => setCurrentView('settings')} 
               className={`flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-auto md:w-full text-left text-sm cursor-pointer ${
@@ -3474,6 +3505,38 @@ ${customAdminPrompt}
 
         {currentView === 'courses' && (
           <div className="max-w-7xl mx-auto py-10">
+            {/* 🌟 Referral Incentive Banner in My Courses */}
+            <div 
+              onClick={() => setCurrentView('referrals')}
+              className="mb-8 p-5 sm:p-6 rounded-3xl border border-amber-400/40 bg-gradient-to-r from-amber-500/10 via-[#f9b03c]/10 to-blue-500/10 backdrop-blur-md flex flex-col sm:flex-row items-center justify-between gap-4 cursor-pointer hover:border-[#f9b03c] transition-all group shadow-lg shadow-black/20"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-2xl bg-[#f9b03c] text-slate-950 flex items-center justify-center text-2xl font-black shrink-0 shadow-md group-hover:scale-110 transition-transform">
+                  <i className="fa-solid fa-gift"></i>
+                </div>
+                <div>
+                  <span className="text-[10px] font-black uppercase tracking-wider text-[#f9b03c] px-2.5 py-0.5 rounded-full bg-[#f9b03c]/20 border border-[#f9b03c]/30">
+                    ልዩ እድል • Refer & Earn
+                  </span>
+                  <h3 className="text-base sm:text-lg font-black text-dark dark:text-white font-heading mt-1">
+                    5 ጓደኞችዎን በመጋበዝ የሚቀጥለውን ኮርስ በነፃ ይውሰዱ!
+                  </h3>
+                  <p className="text-xs text-gray-500 dark:text-slate-400">
+                    የግል ሊንክዎን ያጋሩ፤ 5 ተማሪ ሲመዘገብ 1 ነፃ ኮርስ፣ 10 ሲመዘገብ 1-on-1 Mentorship ያገኛሉ።
+                  </p>
+                </div>
+              </div>
+
+              <button 
+                type="button"
+                onClick={(e) => { e.stopPropagation(); setCurrentView('referrals'); }}
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#f9b03c] to-amber-400 text-slate-950 font-black text-xs transition shadow-md group-hover:brightness-110 flex items-center justify-center gap-2 shrink-0 cursor-pointer"
+              >
+                <span>ጓደኛ ይጋብዙ</span>
+                <i className="fa-solid fa-arrow-right text-xs group-hover:translate-x-1 transition-transform"></i>
+              </button>
+            </div>
+
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold text-dark dark:text-white font-heading">የእኔ ኮርሶች (My Courses)</h2>
             </div>
@@ -4098,6 +4161,25 @@ ${customAdminPrompt}
                   ))}
               </div>
             )}
+          </div>
+        )}
+
+        {/* 🌟 Refer a Friend (ALX Growth Program View) */}
+        {currentView === 'referrals' && (
+          <div className="py-6">
+            <StudentReferralSection 
+              courses={courses} 
+              onCourseUnlocked={(unlockedId) => {
+                try {
+                  const userRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user?.uid || '', 'purchased_courses', unlockedId);
+                  getDoc(userRef).then(snap => {
+                    if (snap.exists()) {
+                      setCourses(prev => [...prev.filter(c => c.id !== unlockedId), { id: unlockedId, ...snap.data() }]);
+                    }
+                  }).catch(() => {});
+                } catch (e) {}
+              }}
+            />
           </div>
         )}
 

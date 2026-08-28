@@ -260,7 +260,10 @@ export default function AdminDashboard() {
   const [isSavingPortfolio, setIsSavingPortfolio] = useState(false);
   const [portfolioSavedMessage, setPortfolioSavedMessage] = useState('');
 
-  // 🌟 Referral & Promo Codes State
+  // 🌟 Referral, Affiliates & Promo Codes State
+  const [referralsSubTab, setReferralsSubTab] = useState<'affiliates' | 'promo_codes'>('affiliates');
+  const [referralAuditLogs, setReferralAuditLogs] = useState<any[]>([]);
+  const [affiliateSearchTerm, setAffiliateSearchTerm] = useState('');
   const [referralCodes, setReferralCodes] = useState<any[]>([]);
   const [newCodeName, setNewCodeName] = useState('');
   const [newDiscountPercent, setNewDiscountPercent] = useState<number>(50);
@@ -592,6 +595,94 @@ export default function AdminDashboard() {
     link.click();
     document.body.removeChild(link);
   };
+
+  // 🌟 Export Affiliates & Referrals CSV
+  const exportAffiliatesCSV = () => {
+    if (affiliatesList.length === 0) {
+      alert('ምንም የተማሪ አጋር መረጃ አልተገኘም (No affiliate data to export).');
+      return;
+    }
+
+    const headers = ['Rank', 'Student Name', 'Email', 'Phone', 'Total Referrals', 'Free Course Unlocked (>=5)', 'Mentorship Unlocked (>=10)', 'Last Referral Date'];
+    const rows = affiliatesList.map((aff, idx) => [
+      `"#${idx + 1}"`,
+      `"${(aff.name || '').replace(/"/g, '""')}"`,
+      `"${aff.email || ''}"`,
+      `"${aff.phone || ''}"`,
+      `"${aff.referralCount || 0}"`,
+      `"${aff.hasFreeCourseReward ? 'YES' : 'NO'}"`,
+      `"${aff.hasMentorshipReward ? 'YES' : 'NO'}"`,
+      `"${aff.lastReferralAt ? new Date(aff.lastReferralAt).toLocaleDateString() : '-'}"`
+    ]);
+
+    const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `TsehayCampus_Affiliates_Leaderboard_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // 🌟 Derive Affiliates list from students + referral audit logs
+  const affiliatesList = useMemo(() => {
+    const map = new Map<string, any>();
+
+    // 1. Ingest from students / rawUsers
+    students.forEach(s => {
+      const count = Number(s.referralCount || 0);
+      if (count > 0 || s.hasFreeCourseReward || s.hasMentorshipReward) {
+        map.set(s.id, {
+          id: s.id,
+          name: s.name || 'ያልታወቀ ተማሪ',
+          email: s.email || '',
+          phone: s.phone || '',
+          referralCount: count,
+          hasFreeCourseReward: Boolean(s.hasFreeCourseReward || count >= 5),
+          hasMentorshipReward: Boolean(s.hasMentorshipReward || count >= 10),
+          claimedFreeCourse: Boolean(s.claimedFreeCourse),
+          claimedMentorship: Boolean(s.claimedMentorship),
+          lastReferralAt: s.lastReferralAt || s.createdAt,
+          referredList: []
+        });
+      }
+    });
+
+    // 2. Cross-reference with referral audit logs
+    referralAuditLogs.forEach(log => {
+      const refUid = log.referrerUid;
+      if (refUid) {
+        if (!map.has(refUid)) {
+          const matchedStudent = students.find(s => s.id === refUid);
+          map.set(refUid, {
+            id: refUid,
+            name: matchedStudent?.name || log.referrerName || 'ተማሪ አጋር',
+            email: matchedStudent?.email || '',
+            phone: matchedStudent?.phone || '',
+            referralCount: 1,
+            hasFreeCourseReward: false,
+            hasMentorshipReward: false,
+            claimedFreeCourse: false,
+            claimedMentorship: false,
+            lastReferralAt: log.createdAt,
+            referredList: [log]
+          });
+        } else {
+          const existing = map.get(refUid);
+          existing.referredList.push(log);
+          if (existing.referralCount < existing.referredList.length) {
+            existing.referralCount = existing.referredList.length;
+          }
+          if (existing.referralCount >= 5) existing.hasFreeCourseReward = true;
+          if (existing.referralCount >= 10) existing.hasMentorshipReward = true;
+        }
+      }
+    });
+
+    // Sort by referralCount descending (Leaderboard)
+    return Array.from(map.values()).sort((a, b) => b.referralCount - a.referralCount);
+  }, [students, referralAuditLogs]);
 
 
   useEffect(() => {
@@ -3954,175 +4045,303 @@ export default function AdminDashboard() {
           {activeTab === 'referrals' && (
             <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-300">
               
-              {/* Top Creation Card */}
-              <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 sm:p-8 border border-gray-100 dark:border-slate-700 shadow-xl">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 dark:border-slate-700 pb-5 mb-6">
-                  <div className="flex items-center gap-3.5">
-                    <div className="w-12 h-12 rounded-2xl bg-[#f9b03c]/15 border border-[#f9b03c]/30 flex items-center justify-center text-[#f9b03c] text-xl shadow-sm">
-                      <i className="fa-solid fa-gift"></i>
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-black text-dark dark:text-white">አዲስ የሪፈራል / የቅናሽ ኮድ ፍጠር (Create Promo Code)</h3>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">ለማርኬቲንግ እና ለተማሪዎች ቅናሽ ወይም 100% ነፃ መመዝገቢያ ኮድ እዚህ ያዘጋጁ</p>
-                    </div>
-                  </div>
-                  {referralSuccessMsg && (
-                    <div className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 animate-bounce">
-                      <i className="fa-solid fa-circle-check"></i>
-                      <span>{referralSuccessMsg}</span>
-                    </div>
-                  )}
+              {/* 🌟 1. Sub-Tab Switcher (Affiliates vs Promo Codes) */}
+              <div className="bg-white dark:bg-slate-800 rounded-2xl p-2 border border-gray-100 dark:border-slate-700 shadow-sm flex items-center justify-between gap-2 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setReferralsSubTab('affiliates')}
+                    className={`px-5 py-2.5 rounded-xl font-black text-xs transition flex items-center gap-2 cursor-pointer ${
+                      referralsSubTab === 'affiliates'
+                        ? 'bg-gradient-to-r from-[#f9b03c] to-amber-500 text-slate-950 shadow-md scale-[1.02]'
+                        : 'bg-gray-50 dark:bg-slate-900 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    <i className="fa-solid fa-trophy"></i>
+                    <span>የተማሪ አጋሮች መከታተያ (Affiliates & Leaderboard)</span>
+                    <span className="px-2 py-0.5 rounded-full bg-black/20 text-[10px]">
+                      {affiliatesList.length}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setReferralsSubTab('promo_codes')}
+                    className={`px-5 py-2.5 rounded-xl font-black text-xs transition flex items-center gap-2 cursor-pointer ${
+                      referralsSubTab === 'promo_codes'
+                        ? 'bg-gradient-to-r from-[#f9b03c] to-amber-500 text-slate-950 shadow-md scale-[1.02]'
+                        : 'bg-gray-50 dark:bg-slate-900 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    <i className="fa-solid fa-tags"></i>
+                    <span>የቅናሽ ኮዶች ማስተዳደሪያ (Promo Codes)</span>
+                    <span className="px-2 py-0.5 rounded-full bg-black/20 text-[10px]">
+                      {referralCodes.length}
+                    </span>
+                  </button>
                 </div>
 
-                <form onSubmit={handleCreateReferralCode} className="space-y-6">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-                    {/* Code Name */}
-                    <div>
-                      <label className="block text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-2">
-                        የኮድ ስም (Code Name) *
-                      </label>
-                      <input 
-                        type="text" 
-                        required 
-                        placeholder="e.g. ABEL10, VIP50, FREE100" 
-                        value={newCodeName}
-                        onChange={(e) => setNewCodeName(e.target.value.toUpperCase().replace(/\s+/g, ''))}
-                        className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm font-mono font-black uppercase tracking-wider text-dark dark:text-white outline-none focus:border-[#f9b03c] transition"
-                      />
-                    </div>
-
-                    {/* Discount Percentage */}
-                    <div>
-                      <label className="block text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-2 flex items-center justify-between">
-                        <span>የቅናሽ ፐርሰንት (%) *</span>
-                        <span className="text-[#f9b03c] font-black">{newDiscountPercent}% {newDiscountPercent >= 100 ? '(FREE)' : 'OFF'}</span>
-                      </label>
-                      <div className="flex items-center gap-1.5">
-                        <input 
-                          type="number" 
-                          min={1} 
-                          max={100} 
-                          required 
-                          value={newDiscountPercent}
-                          onChange={(e) => setNewDiscountPercent(Math.min(100, Math.max(1, Number(e.target.value))))}
-                          className="w-20 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-2 py-3 text-sm font-bold text-center text-dark dark:text-white outline-none focus:border-[#f9b03c]"
-                        />
-                        <div className="flex-1 flex gap-1">
-                          {[10, 20, 50, 100].map(pct => (
-                            <button
-                              key={pct}
-                              type="button"
-                              onClick={() => setNewDiscountPercent(pct)}
-                              className={`flex-1 py-2 rounded-lg text-[11px] font-bold transition cursor-pointer ${
-                                newDiscountPercent === pct 
-                                  ? 'bg-[#f9b03c] text-slate-950 shadow-sm font-black' 
-                                  : 'bg-gray-100 dark:bg-slate-700/60 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700'
-                              }`}
-                            >
-                              {pct === 100 ? 'Free' : `${pct}%`}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Target Course */}
-                    <div>
-                      <label className="block text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-2">
-                        የሚሰራበት ኮርስ (Course) *
-                      </label>
-                      <select 
-                        value={newTargetCourseId}
-                        onChange={(e) => setNewTargetCourseId(e.target.value)}
-                        className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm font-medium text-dark dark:text-white outline-none focus:border-[#f9b03c] transition cursor-pointer"
-                      >
-                        <option value="all">🌟 ለሁሉም ኮርሶች (All Courses)</option>
-                        {courses.map(c => (
-                          <option key={c.id} value={c.id}>
-                            📚 {c.title}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* Max Usage Limit (የተጠቃሚዎች ብዛት ገደብ) */}
-                    <div>
-                      <label className="block text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-2 flex items-center justify-between">
-                        <span>የተጠቃሚ ገደብ (Max Limit)</span>
-                        <span className="text-emerald-500 dark:text-emerald-400 font-bold">
-                          {Number(newMaxUsageLimit) > 0 ? `${newMaxUsageLimit} ሰው` : 'ያልተገደበ (Unlimited)'}
-                        </span>
-                      </label>
-                      <div className="flex items-center gap-1.5">
-                        <input 
-                          type="number" 
-                          min={0} 
-                          placeholder="0 = Unlimited"
-                          value={newMaxUsageLimit}
-                          onChange={(e) => setNewMaxUsageLimit(e.target.value)}
-                          className="w-20 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-2 py-3 text-sm font-bold text-center text-dark dark:text-white outline-none focus:border-[#f9b03c]"
-                        />
-                        <div className="flex-1 flex gap-1">
-                          {[10, 50, 100, 0].map(limit => (
-                            <button
-                              key={limit}
-                              type="button"
-                              onClick={() => setNewMaxUsageLimit(limit)}
-                              className={`flex-1 py-2 rounded-lg text-[11px] font-bold transition cursor-pointer ${
-                                Number(newMaxUsageLimit) === limit 
-                                  ? 'bg-emerald-500 text-slate-950 shadow-sm font-black' 
-                                  : 'bg-gray-100 dark:bg-slate-700/60 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700'
-                              }`}
-                            >
-                              {limit === 0 ? '∞' : limit}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Description / Note */}
-                  <div>
-                    <label className="block text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-2">
-                      አጭር ማብራሪያ (Description / Note - Optional)
-                    </label>
-                    <input 
-                      type="text" 
-                      placeholder="ለምሳሌ፡ ለአስር ፈጣን ተማሪዎች 10% ቅናሽ ወይም የቴሌግራም አባላት ጊቭአዌይ" 
-                      value={newCodeDesc}
-                      onChange={(e) => setNewCodeDesc(e.target.value)}
-                      className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm text-dark dark:text-white outline-none focus:border-[#f9b03c] transition"
-                    />
-                  </div>
-
-                  {/* Submit Button */}
-                  <div className="flex justify-end pt-2">
-                    <button 
-                      type="submit" 
-                      disabled={isSavingReferral || !newCodeName.trim()}
-                      className="bg-gradient-to-r from-[#f9b03c] to-amber-500 hover:from-amber-400 hover:to-[#f9b03c] text-slate-950 font-black px-8 py-3.5 rounded-2xl shadow-lg hover:shadow-[0_0_25px_rgba(249,176,60,0.5)] transition-all duration-300 disabled:opacity-50 flex items-center gap-2 cursor-pointer active:scale-95 text-sm"
-                    >
-                      <i className="fa-solid fa-plus"></i>
-                      <span>{isSavingReferral ? 'እየፈጠረ ነው...' : 'የቅናሽ ኮድ ፍጠር (Create Code)'}</span>
-                    </button>
-                  </div>
-                </form>
+                {referralsSubTab === 'affiliates' && (
+                  <button
+                    type="button"
+                    onClick={exportAffiliatesCSV}
+                    className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-emerald-500 hover:text-white dark:bg-slate-700 text-gray-700 dark:text-gray-200 text-xs font-bold transition flex items-center gap-2 cursor-pointer ml-auto"
+                  >
+                    <i className="fa-solid fa-file-csv text-emerald-500 group-hover:text-white"></i>
+                    <span>CSV አውርድ (Export)</span>
+                  </button>
+                )}
               </div>
 
-              {/* Bottom List of Active Referral Codes: MasterClass Data Table */}
-              <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 sm:p-8 border border-gray-100 dark:border-slate-700 shadow-xl space-y-6">
-                <div className="flex items-center justify-between border-b border-gray-100 dark:border-slate-700 pb-4">
-                  <h4 className="text-lg font-black text-dark dark:text-white flex items-center gap-2">
-                    <i className="fa-solid fa-list-check text-[#f9b03c]"></i>
-                    <span>ያሉ የቅናሽ ኮዶች ዝርዝር ({referralCodes.length})</span>
-                  </h4>
-                  <span className="text-xs text-gray-500 font-medium">ቀጥታ ስራ ላይ ያሉ (Real-Time)</span>
-                </div>
+              {/* 🌟 SUBTAB 1: Student Affiliates Leaderboard & Tracking */}
+              {referralsSubTab === 'affiliates' && (
+                <div className="space-y-6">
+                  
+                  {/* 4 Metric Cards */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    
+                    {/* Metric 1 */}
+                    <div className="bg-white dark:bg-slate-800 rounded-3xl p-5 border border-gray-100 dark:border-slate-700 shadow-sm flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-2xl bg-amber-500/15 text-[#f9b03c] flex items-center justify-center text-xl shrink-0">
+                        <i className="fa-solid fa-users-rays"></i>
+                      </div>
+                      <div>
+                        <p className="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">ጠቅላላ ሪፈራሎች</p>
+                        <h4 className="text-2xl font-black text-dark dark:text-white font-heading">
+                          {affiliatesList.reduce((acc, a) => acc + (a.referralCount || 0), 0) || referralAuditLogs.length}
+                        </h4>
+                      </div>
+                    </div>
 
-                {referralCodes.length === 0 ? (
-                  <div className="text-center py-12 text-gray-400 space-y-3">
-                    <i className="fa-solid fa-ticket text-4xl text-gray-300 dark:text-slate-600"></i>
+                    {/* Metric 2 */}
+                    <div className="bg-white dark:bg-slate-800 rounded-3xl p-5 border border-gray-100 dark:border-slate-700 shadow-sm flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-2xl bg-blue-500/15 text-blue-500 flex items-center justify-center text-xl shrink-0">
+                        <i className="fa-solid fa-user-group"></i>
+                      </div>
+                      <div>
+                        <p className="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">ንቁ አጋሮች (Affiliates)</p>
+                        <h4 className="text-2xl font-black text-blue-600 dark:text-blue-400 font-heading">
+                          {affiliatesList.length}
+                        </h4>
+                      </div>
+                    </div>
+
+                    {/* Metric 3 */}
+                    <div className="bg-white dark:bg-slate-800 rounded-3xl p-5 border border-gray-100 dark:border-slate-700 shadow-sm flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-2xl bg-emerald-500/15 text-emerald-500 flex items-center justify-center text-xl shrink-0">
+                        <i className="fa-solid fa-gift"></i>
+                      </div>
+                      <div>
+                        <p className="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">ነፃ ኮርስ የደረሱ (5+)</p>
+                        <h4 className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-heading">
+                          {affiliatesList.filter(a => a.hasFreeCourseReward || a.referralCount >= 5).length}
+                        </h4>
+                      </div>
+                    </div>
+
+                    {/* Metric 4 */}
+                    <div className="bg-white dark:bg-slate-800 rounded-3xl p-5 border border-gray-100 dark:border-slate-700 shadow-sm flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-2xl bg-purple-500/15 text-purple-500 flex items-center justify-center text-xl shrink-0">
+                        <i className="fa-solid fa-user-tie"></i>
+                      </div>
+                      <div>
+                        <p className="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Mentorship የደረሱ (10+)</p>
+                        <h4 className="text-2xl font-black text-purple-600 dark:text-purple-400 font-heading">
+                          {affiliatesList.filter(a => a.hasMentorshipReward || a.referralCount >= 10).length}
+                        </h4>
+                      </div>
+                    </div>
+
+                  </div>
+
+                  {/* Search Bar */}
+                  <div className="bg-white dark:bg-slate-800 rounded-2xl p-3.5 border border-gray-100 dark:border-slate-700 shadow-sm">
+                    <div className="relative">
+                      <i className="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                      <input
+                        type="text"
+                        value={affiliateSearchTerm}
+                        onChange={(e) => setAffiliateSearchTerm(e.target.value)}
+                        placeholder="ተማሪ አጋር በስም፣ በኢሜይል ወይም በስልክ ፈልግ..."
+                        className="w-full pl-9 pr-4 py-2 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-xs text-dark dark:text-white outline-none focus:border-[#f9b03c]"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Top Affiliates Leaderboard Table */}
+                  <div className="bg-white dark:bg-slate-800 rounded-3xl border border-gray-100 dark:border-slate-700 shadow-sm overflow-hidden">
+                    <div className="p-5 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between">
+                      <h3 className="font-black text-base text-dark dark:text-white flex items-center gap-2">
+                        <i className="fa-solid fa-ranking-star text-[#f9b03c]"></i>
+                        <span>የተማሪ አጋሮች ደረጃ ሰንጠረዥ (Affiliates Leaderboard)</span>
+                      </h3>
+                      <span className="text-xs text-gray-400 font-bold">ALX Growth Model</span>
+                    </div>
+
+                    {(() => {
+                      const filteredAffiliates = affiliatesList.filter(a => {
+                        if (!affiliateSearchTerm) return true;
+                        const term = affiliateSearchTerm.toLowerCase();
+                        return (
+                          (a.name || '').toLowerCase().includes(term) ||
+                          (a.email || '').toLowerCase().includes(term) ||
+                          (a.phone || '').includes(term)
+                        );
+                      });
+
+                      if (filteredAffiliates.length === 0) {
+                        return (
+                          <div className="py-16 text-center text-gray-400 space-y-2 text-xs">
+                            <i className="fa-solid fa-user-group text-3xl text-gray-300 dark:text-slate-600"></i>
+                            <p>እስካሁን ምንም ሪፈራል ያደረገ ተማሪ አልተገኘም።</p>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-left border-collapse">
+                            <thead>
+                              <tr className="bg-gray-50 dark:bg-slate-900 border-b border-gray-100 dark:border-slate-700 text-xs font-black text-gray-400 uppercase">
+                                <th className="p-4 text-center">ደረጃ (Rank)</th>
+                                <th className="p-4">ተማሪ (Student)</th>
+                                <th className="p-4 text-center">የጋበዟቸው (Invited)</th>
+                                <th className="p-4">የተከፈቱ ሽልማቶች (Rewards)</th>
+                                <th className="p-4">የመጨረሻ ቀን</th>
+                                <th className="p-4 text-right">እርምጃ</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100 dark:divide-slate-700/60 text-xs">
+                              {filteredAffiliates.map((aff, idx) => {
+                                const rank = idx + 1;
+                                return (
+                                  <tr key={aff.id} className="hover:bg-gray-50/70 dark:hover:bg-slate-700/20 transition">
+                                    {/* Rank */}
+                                    <td className="p-4 text-center">
+                                      {rank === 1 ? (
+                                        <span className="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-400 to-yellow-300 text-slate-950 font-black text-xs inline-flex items-center justify-center shadow-md">
+                                          🥇 1
+                                        </span>
+                                      ) : rank === 2 ? (
+                                        <span className="w-8 h-8 rounded-full bg-gradient-to-tr from-slate-300 to-slate-200 text-slate-950 font-black text-xs inline-flex items-center justify-center shadow-md">
+                                          🥈 2
+                                        </span>
+                                      ) : rank === 3 ? (
+                                        <span className="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-700 to-amber-600 text-white font-black text-xs inline-flex items-center justify-center shadow-md">
+                                          🥉 3
+                                        </span>
+                                      ) : (
+                                        <span className="font-bold text-gray-400">#{rank}</span>
+                                      )}
+                                    </td>
+
+                                    {/* Student */}
+                                    <td className="p-4">
+                                      <div className="flex items-center gap-3">
+                                        <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-600 to-[#3268ba] text-white flex items-center justify-center font-bold text-xs">
+                                          {(aff.name || 'S').substring(0, 2).toUpperCase()}
+                                        </div>
+                                        <div>
+                                          <div className="font-bold text-dark dark:text-white">{aff.name}</div>
+                                          <div className="text-[11px] text-gray-400 font-mono">{aff.email || aff.phone || 'መረጃ የለም'}</div>
+                                        </div>
+                                      </div>
+                                    </td>
+
+                                    {/* Total Referrals */}
+                                    <td className="p-4 text-center">
+                                      <span className="px-3 py-1.5 rounded-full bg-[#f9b03c]/20 text-[#f9b03c] border border-[#f9b03c]/40 font-black text-xs font-mono inline-flex items-center gap-1.5">
+                                        <i className="fa-solid fa-user-plus text-[10px]"></i>
+                                        <span>{aff.referralCount} ተማሪዎች</span>
+                                      </span>
+                                    </td>
+
+                                    {/* Rewards Unlocked */}
+                                    <td className="p-4">
+                                      <div className="flex flex-wrap gap-1.5">
+                                        {aff.referralCount >= 10 || aff.hasMentorshipReward ? (
+                                          <span className="px-2.5 py-1 rounded-lg bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/30 text-[10px] font-black flex items-center gap-1">
+                                            <i className="fa-solid fa-user-tie"></i> 1-on-1 Mentorship
+                                          </span>
+                                        ) : null}
+                                        {aff.referralCount >= 5 || aff.hasFreeCourseReward ? (
+                                          <span className="px-2.5 py-1 rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-[10px] font-black flex items-center gap-1">
+                                            <i className="fa-solid fa-gift"></i> 1 ነፃ ኮርስ
+                                          </span>
+                                        ) : (
+                                          <span className="text-[11px] text-gray-400">
+                                            {5 - aff.referralCount} ተጨማሪ ይቀራል (ለነፃ ኮርስ)
+                                          </span>
+                                        )}
+                                      </div>
+                                    </td>
+
+                                    {/* Date */}
+                                    <td className="p-4 text-gray-500 dark:text-gray-400 text-xs">
+                                      {aff.lastReferralAt ? new Date(aff.lastReferralAt).toLocaleDateString() : '-'}
+                                    </td>
+
+                                    {/* Actions */}
+                                    <td className="p-4 text-right">
+                                      <div className="flex items-center justify-end gap-1.5">
+                                        {aff.email && (
+                                          <a
+                                            href={`mailto:${aff.email}?subject=${encodeURIComponent('የፀሐይ ካምፓስ ሪፈራል ሽልማት')}`}
+                                            className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 hover:bg-blue-500 hover:text-white flex items-center justify-center text-xs transition"
+                                            title="ኢሜይል ላክ"
+                                          >
+                                            <i className="fa-solid fa-envelope"></i>
+                                          </a>
+                                        )}
+                                        {aff.phone && (
+                                          <a
+                                            href={`https://wa.me/${aff.phone.replace(/[^0-9]/g, '')}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="w-8 h-8 rounded-lg bg-emerald-500/15 text-emerald-500 hover:bg-emerald-500 hover:text-white flex items-center justify-center text-xs transition"
+                                            title="WhatsApp መልዕክት ላክ"
+                                          >
+                                            <i className="fa-brands fa-whatsapp"></i>
+                                          </a>
+                                        )}
+                                      </div>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      );
+                    })()}
+                  </div>
+
+                  {/* Live Referrals Audit Stream */}
+                  {referralAuditLogs.length > 0 && (
+                    <div className="bg-white dark:bg-slate-800 rounded-3xl border border-gray-100 dark:border-slate-700 p-6 shadow-sm">
+                      <h4 className="font-black text-sm text-dark dark:text-white mb-4 flex items-center gap-2">
+                        <i className="fa-solid fa-satellite-dish text-emerald-500"></i>
+                        <span>የቅርብ ጊዜ ሪፈራል ምዝገባዎች (Live Activity Stream)</span>
+                      </h4>
+
+                      <div className="divide-y divide-gray-100 dark:divide-slate-700/60">
+                        {referralAuditLogs.slice(0, 15).map((log, idx) => (
+                          <div key={log.id || idx} className="py-3 flex items-center justify-between text-xs">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-full bg-emerald-500/15 text-emerald-500 flex items-center justify-center text-xs font-black">
+                                <i className="fa-solid fa-check"></i>
+                              </div>
+                              <div>
+                                <span className="font-bold text-dark dark:text-white">{log.referredName || 'አዲስ ተማሪ'}</span>
+                                <span className="text-gray-400 text-[11px] ml-2">በጋባዥ UID: {log.referrerUid?.substring(0, 8)}...</span>
+                              </div>
+                            </div>
+
+                            <span className="text-[11px] text-gray-400">
+                              {log.createdAt ? new Date(log.createdAt).toLocaleString() : ''}
+                            </span>
+                          </div>
+                        ))}
                     <p className="text-sm font-medium">እስካሁን የተፈጠረ የቅናሽ ኮድ የለም። ከላይ ባለው ፎርም አዲስ ኮድ መፍጠር ይችላሉ።</p>
                   </div>
                 ) : (

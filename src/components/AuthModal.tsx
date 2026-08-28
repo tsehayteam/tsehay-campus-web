@@ -17,6 +17,7 @@ import { doc, setDoc, serverTimestamp, getDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { validateEmailForSignup, isGmailAddress } from "@/lib/disposableEmailBlocker";
 import { validateReferralCode, recordReferralUsage } from "@/lib/referralService";
+import { getStoredReferrerUid, clearStoredReferrerUid } from "@/lib/referralTrackingService";
 import { generateOtpCode, saveOtpForEmail, verifyOtpForEmail } from "@/lib/otpService";
 
 interface AuthModalProps {
@@ -380,6 +381,22 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
             })
           }).catch(e => console.warn("Welcome email trigger notice:", e));
         } catch (e) {}
+
+        // 🌟 Trigger ALX-Style Referral Attribution Credit
+        const storedReferrerUid = getStoredReferrerUid();
+        if (storedReferrerUid && storedReferrerUid !== cred.user.uid) {
+          fetch('/api/referrals/record', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              newUserUid: cred.user.uid,
+              newUserName: userData?.name || targetEmail.split('@')[0],
+              newUserEmail: targetEmail,
+              referrerUid: storedReferrerUid
+            })
+          }).catch(e => console.warn("Referral record trigger notice:", e));
+          clearStoredReferrerUid();
+        }
       }
 
       setResendSuccessMessage("🎉 ኢሜልዎ በተሳካ ሁኔታ ተረጋግጧል! እንኳን ደህና መጡ!");
@@ -696,6 +713,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
 
       setLoading(true);
       try {
+        const storedReferrerUid = getStoredReferrerUid();
         const userData = {
           name: name.trim() || pendingGoogleAuth.displayName || "ተጠቃሚ",
           email: pendingGoogleAuth.email || cleanEmail,
@@ -703,6 +721,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
           city: city.trim(),
           source: source || "Google",
           photoURL: pendingGoogleAuth.photoURL || null,
+          referredBy: storedReferrerUid || null,
           createdAt: serverTimestamp(),
           lastLogin: serverTimestamp(),
           isAdmin: false,
@@ -710,6 +729,20 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
 
         const docRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', pendingGoogleAuth.uid, 'profile', 'info');
         await setDoc(docRef, userData, { merge: true });
+
+        if (storedReferrerUid && storedReferrerUid !== pendingGoogleAuth.uid) {
+          fetch('/api/referrals/record', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              newUserUid: pendingGoogleAuth.uid,
+              newUserName: userData.name,
+              newUserEmail: userData.email,
+              referrerUid: storedReferrerUid
+            })
+          }).catch(e => console.warn("Referral record trigger notice:", e));
+          clearStoredReferrerUid();
+        }
 
         if (name.trim()) {
           try {
@@ -783,6 +816,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
           } catch (e) {}
         }
 
+        const storedReferrerUid = getStoredReferrerUid();
         const userData = {
           name: name.trim(),
           email: cleanEmail,
@@ -790,6 +824,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
           city: city.trim(),
           source: source || "Direct",
           referralCode: referralCode.trim().toUpperCase() || null,
+          referredBy: storedReferrerUid || null,
           createdAt: serverTimestamp(),
           lastLogin: serverTimestamp(),
           isAdmin: false,
