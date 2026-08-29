@@ -56,6 +56,77 @@ export default function FloatingAIButton() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // 🌟 Freely Draggable Physics States
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartRef = useRef({ mouseX: 0, mouseY: 0, posX: 0, posY: 0 });
+  const hasMovedRef = useRef(false);
+
+  const handleDragStart = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+    const target = e.target as HTMLElement;
+    if (target.closest('button') || target.closest('select') || target.closest('input') || target.closest('a')) {
+      return;
+    }
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    dragStartRef.current = { mouseX: clientX, mouseY: clientY, posX: position.x, posY: position.y };
+    hasMovedRef.current = false;
+    setIsDragging(true);
+  }, [position]);
+
+  const handleLauncherDragStart = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    dragStartRef.current = { mouseX: clientX, mouseY: clientY, posX: position.x, posY: position.y };
+    hasMovedRef.current = false;
+    setIsDragging(true);
+  }, [position]);
+
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handleDragMove = (e: MouseEvent | TouchEvent) => {
+      const clientX = 'touches' in e ? e.touches[0].clientX : (e as MouseEvent).clientX;
+      const clientY = 'touches' in e ? e.touches[0].clientY : (e as MouseEvent).clientY;
+      const deltaX = clientX - dragStartRef.current.mouseX;
+      const deltaY = clientY - dragStartRef.current.mouseY;
+
+      if (Math.abs(deltaX) > 4 || Math.abs(deltaY) > 4) {
+        hasMovedRef.current = true;
+      }
+
+      let newX = dragStartRef.current.posX + deltaX;
+      let newY = dragStartRef.current.posY + deltaY;
+
+      // Constrain within viewport bounds
+      const maxX = 10;
+      const minX = typeof window !== 'undefined' ? -window.innerWidth + 120 : -500;
+      const maxY = 10;
+      const minY = typeof window !== 'undefined' ? -window.innerHeight + 120 : -700;
+
+      newX = Math.min(maxX, Math.max(minX, newX));
+      newY = Math.min(maxY, Math.max(minY, newY));
+
+      setPosition({ x: newX, y: newY });
+    };
+
+    const handleDragEnd = () => {
+      setIsDragging(false);
+    };
+
+    window.addEventListener('mousemove', handleDragMove);
+    window.addEventListener('mouseup', handleDragEnd);
+    window.addEventListener('touchmove', handleDragMove, { passive: false });
+    window.addEventListener('touchend', handleDragEnd);
+
+    return () => {
+      window.removeEventListener('mousemove', handleDragMove);
+      window.removeEventListener('mouseup', handleDragEnd);
+      window.removeEventListener('touchmove', handleDragMove);
+      window.removeEventListener('touchend', handleDragEnd);
+    };
+  }, [isDragging]);
+
   // 1. Fetch available courses to populate context selector
   useEffect(() => {
     const fetchCourses = async () => {
@@ -520,7 +591,13 @@ export default function FloatingAIButton() {
   }
 
   return (
-    <div className="fixed bottom-6 right-6 z-[9980] font-body select-none">
+    <div 
+      className="fixed bottom-6 right-6 z-[9980] font-body select-none"
+      style={{
+        transform: `translate3d(${position.x}px, ${position.y}px, 0)`,
+        touchAction: 'none'
+      }}
+    >
       
       {/* Hidden File Input for Image Upload */}
       <input 
@@ -571,8 +648,13 @@ export default function FloatingAIButton() {
             </div>
           )}
 
-          {/* Header Bar */}
-          <div className="relative px-5 py-3.5 bg-gradient-to-r from-[#0b1329]/90 via-[#0f1b38]/90 to-[#0b1329]/90 border-b border-white/10 flex items-center justify-between shrink-0 z-10">
+          {/* Header Bar (Draggable) */}
+          <div 
+            onMouseDown={handleDragStart}
+            onTouchStart={handleDragStart}
+            className="relative px-5 py-3.5 bg-gradient-to-r from-[#0b1329]/90 via-[#0f1b38]/90 to-[#0b1329]/90 border-b border-white/10 flex items-center justify-between shrink-0 z-10 cursor-grab active:cursor-grabbing"
+            title="ጠቅ አድርገው ወደ ፈለጉበት ቦታ ይጎትቱ (Drag to move)"
+          >
             <div className="flex items-center gap-3">
               <div className="relative">
                 <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-200 text-slate-950 flex items-center justify-center font-black shadow-[0_0_20px_rgba(249,176,60,0.5)] border border-white/30">
@@ -588,6 +670,9 @@ export default function FloatingAIButton() {
                   <span className="text-[9px] bg-[#f9b03c]/20 text-[#f9b03c] font-black px-2 py-0.5 rounded-full border border-[#f9b03c]/30 flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
                     <span>24/7 LIVE</span>
+                  </span>
+                  <span className="text-[10px] text-gray-500 font-mono hidden sm:inline" title="Draggable">
+                    <i className="fa-solid fa-grip-lines-vertical"></i>
                   </span>
                 </div>
                 <p className="text-[11px] text-emerald-400 font-bold flex items-center gap-1.5 truncate max-w-[170px] sm:max-w-[200px]">
@@ -879,13 +964,17 @@ export default function FloatingAIButton() {
         </div>
       )}
 
-      {/* 🌟 2. FLOATING LAUNCHER BUTTON WITH GLOWING RADIAL PULSE */}
+      {/* 🌟 2. FLOATING LAUNCHER BUTTON WITH GLOWING RADIAL PULSE (DRAGGABLE) */}
       {!isOpen && (
         <button
           type="button"
-          onClick={() => setIsOpen(true)}
-          className="group relative flex items-center gap-3 bg-gradient-to-r from-[#0d1527] via-[#13203f] to-[#0d1527] border border-[#f9b03c]/40 hover:border-[#f9b03c] p-2.5 sm:px-4 sm:py-3 rounded-full shadow-[0_10px_35px_rgba(0,0,0,0.6)] hover:shadow-[0_0_35px_rgba(249,176,60,0.45)] transition-all duration-300 active:scale-90 hover:-translate-y-1 cursor-pointer"
-          title="Tsehay AI Tutor ን ክፈት"
+          onMouseDown={handleLauncherDragStart}
+          onTouchStart={handleLauncherDragStart}
+          onClick={() => {
+            if (!hasMovedRef.current) setIsOpen(true);
+          }}
+          className="group relative flex items-center gap-3 bg-gradient-to-r from-[#0d1527] via-[#13203f] to-[#0d1527] border border-[#f9b03c]/40 hover:border-[#f9b03c] p-2.5 sm:px-4 sm:py-3 rounded-full shadow-[0_10px_35px_rgba(0,0,0,0.6)] hover:shadow-[0_0_35px_rgba(249,176,60,0.45)] transition-all duration-300 active:scale-95 hover:-translate-y-0.5 cursor-grab active:cursor-grabbing select-none"
+          title="ጠቅ አድርገው ይክፈቱ ወይም ወደ ፈለጉበት ቦታ ይጎትቱ (Click to open or drag)"
         >
           <span className="absolute -inset-0.5 rounded-full bg-gradient-to-r from-[#3268ba] via-[#f9b03c] to-[#3268ba] opacity-40 group-hover:opacity-100 blur-sm transition duration-500 animate-pulse pointer-events-none"></span>
 

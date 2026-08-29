@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { db, auth } from '@/lib/firebase/config';
 import { useAuth, ADMIN_EMAILS, isEmailAdmin } from '@/context/AuthContext';
 import { collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc, serverTimestamp, query, orderBy, collectionGroup } from 'firebase/firestore';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile, sendPasswordResetEmail } from 'firebase/auth';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { DEFAULT_COURSES, getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl, getCourseSlug, getCourseBySlugOrId, markCourseDeleted, unmarkCourseDeleted, generateCourseSlug } from '@/lib/courseCache';
 import { DEFAULT_EVENTS, getCachedEvents, saveCachedEvents, getRemainingSeats, generateEventSlug, TsehayEvent, EventTicket } from '@/lib/eventCache';
@@ -1665,8 +1665,12 @@ export default function AdminDashboard() {
   const handleAdminPasswordReset = async () => {
     if (!auth.currentUser?.email) return;
     try {
-      await sendPasswordResetEmail(auth, auth.currentUser.email);
-      alert('የይለፍ ቃል መቀየሪያ ኢሜል ተልኳል! እባክዎ ኢሜልዎን ይክፈቱ።');
+      await fetch('/api/auth/send-reset-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: auth.currentUser.email })
+      });
+      alert('የይለፍ ቃል መቀየሪያ ማረጋገጫ ኮድ ተልኳል! እባክዎ ኢሜልዎን ይክፈቱ።');
     } catch (error) {
       console.error("Error sending reset email:", error);
       alert('የይለፍ ቃል መቀየሪያ ኢሜል መላክ አልተቻለም። እባክዎ በድጋሚ ይሞክሩ።');

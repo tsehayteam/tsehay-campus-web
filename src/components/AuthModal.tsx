@@ -6,7 +6,6 @@ import {
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
   sendEmailVerification,
-  sendPasswordResetEmail,
   signOut,
   updateProfile, 
   GoogleAuthProvider, 
@@ -179,9 +178,16 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
     }
     setLoading(true);
     try {
-      await sendPasswordResetEmail(auth, email.trim());
-      alert('የይለፍ ቃል መቀየሪያ ሊንክ ወደ ኢሜልዎ ተልኳል (Password reset email sent)!');
-      setIsResetMode(false);
+      await fetch('/api/auth/send-reset-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim().toLowerCase() })
+      });
+      setRegisteredEmail(email.trim().toLowerCase());
+      setResetStep('otp');
+      setResetResendCountdown(60);
+      setResetOtpDigits(['', '', '', '', '', '']);
+      setResendSuccessMessage(`የ 6-አሃዝ ማረጋገጫ ኮድ ወደ ${email.trim()} ተልኳል!`);
     } catch (err: any) {
       console.error("Reset password error:", err);
       setError(getFriendlyErrorMessage(err));
@@ -597,10 +603,6 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
         console.warn("Resend OTP background dispatch:", e);
       }
 
-      try {
-        sendPasswordResetEmail(auth, targetEmail).catch(e => console.warn("Firebase reset backup:", e));
-      } catch (e) {}
-
       setResetResendCountdown(60);
       setResetOtpDigits(['', '', '', '', '', '']);
       setResendSuccessMessage(`አዲስ የ 6-አሃዝ ማረጋገጫ ኮድ ወደ ${targetEmail} ተልኳል!`);
@@ -613,7 +615,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
     }
   };
 
-  // 🌟 Send Reset Code (Step 1 -> Step 2) via Custom Resend OTP & Firebase Fallback
+  // 🌟 Send Reset Code (Step 1 -> Step 2) via Custom Resend OTP
   const handleSendResetCode = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanEmail = email.trim().toLowerCase();
@@ -641,7 +643,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
 
       // 2. Dispatch custom Resend OTP email via API route
       try {
-        const res = await fetch('/api/auth/send-otp', {
+        const res = await fetch('/api/auth/send-reset-otp', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email: cleanEmail })
@@ -651,13 +653,8 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
           await saveOtpForEmail(cleanEmail, data.code);
         }
       } catch (fetchErr) {
-        console.warn("API send-otp dispatch notice:", fetchErr);
+        console.warn("API send-reset-otp dispatch notice:", fetchErr);
       }
-
-      // 3. Dispatch Firebase native reset link as backup
-      try {
-        sendPasswordResetEmail(auth, cleanEmail).catch(e => console.warn("Firebase password reset link backup:", e));
-      } catch (e) {}
 
       setRegisteredEmail(cleanEmail);
       setResetStep('otp');

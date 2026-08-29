@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { adminAuth, adminDb } from '@/lib/firebase/admin';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,7 +10,7 @@ export async function POST(req: NextRequest) {
 
     if (!email || !code || !newPassword) {
       return NextResponse.json({ 
-        error: 'ኢሜል፣ የማረጋገጫ ኮድ እና አዲስ የይለፍ ቃል ያስፈልጋል።' 
+        error: 'ኢሜል፣ የማረጋገጫ ኮድ እና አዲስ የይለፍ ቃል ያስፈልጋል። (Email, OTP code and new password required)' 
       }, { status: 400 });
     }
 
@@ -33,75 +34,98 @@ export async function POST(req: NextRequest) {
 
     const docId = cleanEmail.replace(/[^a-zA-Z0-9]/g, '_');
 
-    // 3. Verify OTP in Firestore if adminDb is active
-    try {
-      const { adminDb, adminAuth } = await import('@/lib/firebase/admin');
-      if (adminDb) {
-        let otpRef = adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('public').doc('data').collection('password_reset_otps').doc(docId);
-        let docSnap = await otpRef.get();
+    // 3. Verify and Invalidate OTP in Firestore
+    if (adminDb) {
+      try {
+        const otpPaths = [
+          adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('public').doc('data').collection('password_reset_otps').doc(docId),
+          adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('public').doc('data').collection('otp_verifications').doc(docId),
+          adminDb.collection('password_reset_otps').doc(docId),
+          adminDb.collection('otp_verifications').doc(docId)
+        ];
 
-        if (!docSnap.exists) {
-          otpRef = adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('public').doc('data').collection('otp_verifications').doc(docId);
-          docSnap = await otpRef.get();
+        let foundOtpData: any = null;
+        let matchedRef: any = null;
+
+        for (const ref of otpPaths) {
+          const snap = await ref.get();
+          if (snap.exists) {
+            foundOtpData = snap.data();
+            matchedRef = ref;
+            break;
+          }
         }
 
-        if (docSnap.exists) {
-          const data = docSnap.data();
-
-          // Expiration check (15 mins)
-          if (Date.now() > (data?.expiresAt || 0)) {
+        if (foundOtpData) {
+          // Check expiration (15 mins)
+          if (Date.now() > (foundOtpData.expiresAt || 0)) {
             return NextResponse.json({ 
               error: 'የማረጋገጫ ኮዱ ጊዜው አልፎበታል (Expired)። እባክዎ አዲስ ኮድ ይጠይቁ።' 
             }, { status: 400 });
           }
 
-          // Max attempts check
-          if ((data?.attempts || 0) >= 5) {
+          // Check attempts
+          if ((foundOtpData.attempts || 0) >= 5) {
             return NextResponse.json({ 
               error: 'ኮዱን ደጋግመው ተሳስተዋል! እባክዎ አዲስ ኮድ ይጠይቁ።' 
             }, { status: 429 });
           }
 
-          // Verify code match
-          if (data?.code !== cleanCode && !data?.verified) {
-            await otpRef.set({ attempts: (data?.attempts || 0) + 1 }, { merge: true });
-            const remaining = 4 - (data?.attempts || 0);
+          // Code match verification
+          if (foundOtpData.code !== cleanCode && !foundOtpData.verified) {
+            if (matchedRef) {
+              await matchedRef.set({ attempts: (foundOtpData.attempts || 0) + 1 }, { merge: true });
+            }
+            const remaining = 4 - (foundOtpData.attempts || 0);
             return NextResponse.json({ 
               error: `የተሳሳተ ኮድ አስገብተዋል። ${remaining > 0 ? `(የቀሩ ሙከራዎች፡ ${remaining})` : 'እባክዎ አዲስ ኮድ ይጠይቁ።'}` 
             }, { status: 400 });
           }
 
-          // Mark OTP as used
-          await otpRef.set({
-            verified: true,
-            passwordResetAt: Date.now(),
-            code: 'USED_' + Date.now()
-          }, { merge: true });
+          // Delete / invalidate OTP across all paths
+          for (const ref of otpPaths) {
+            try {
+              await ref.delete();
+            } catch (delErr) {}
+          }
         }
+      } catch (dbErr) {
+        console.warn('Firestore OTP verification notice:', dbErr);
+      }
+    }
+
+    // 4. Update Password in Firebase Auth using Firebase Admin SDK
+    try {
+      let authSDK: any = adminAuth;
+      if (!authSDK) {
+        const { getAuth } = await import('firebase-admin/auth');
+        authSDK = getAuth();
       }
 
-      // 4. Update Password in Firebase Auth using adminAuth if available
-      if (adminAuth) {
-        try {
-          const userRecord = await adminAuth.getUserByEmail(cleanEmail);
-          if (userRecord) {
-            await adminAuth.updateUser(userRecord.uid, {
-              password: cleanPass,
-              emailVerified: true
-            });
-          }
-        } catch (authErr: any) {
-          console.warn('Firebase Admin password update notice:', authErr);
+      if (authSDK) {
+        const userRecord = await authSDK.getUserByEmail(cleanEmail);
+        if (userRecord && userRecord.uid) {
+          await authSDK.updateUser(userRecord.uid, {
+            password: cleanPass,
+            emailVerified: true
+          });
+          console.log(`[Password Reset Success] Password updated in Firebase Auth for ${cleanEmail} (uid: ${userRecord.uid})`);
         }
       }
-    } catch (dbErr) {
-      console.warn('adminDb / adminAuth reset notice:', dbErr);
+    } catch (authErr: any) {
+      console.error('Firebase Admin Auth password update error:', authErr);
+      if (authErr.code === 'auth/user-not-found') {
+        return NextResponse.json({ 
+          error: 'በዚህ የኢሜይል አድራሻ የተመዘገበ አካውንት አልተገኘም። (User not found)' 
+        }, { status: 404 });
+      }
     }
 
     return NextResponse.json({
       success: true,
-      message: 'የይለፍ ቃልዎ በተሳካ ሁኔታ ተቀይሯል! አሁን መግባት ይችላሉ።'
+      message: 'Password updated successfully'
     });
+
   } catch (error: any) {
     console.error('Error in reset-password API route:', error);
     return NextResponse.json({ 

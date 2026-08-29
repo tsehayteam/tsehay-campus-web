@@ -1944,10 +1944,12 @@ function StudentDashboardContent() {
       if (!user?.email) return;
       setPasswordResetMessage(null);
       try {
-          const { getAuth, sendPasswordResetEmail } = await import('firebase/auth');
-          const auth = getAuth();
-          await sendPasswordResetEmail(auth, user.email);
-          setPasswordResetMessage({ type: 'success', text: 'የይለፍ ቃል መቀየሪያ ሊንክ ወደ ኢሜልዎ ተልኳል! (Reset link sent to your email)' });
+          await fetch('/api/auth/send-reset-otp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: user.email })
+          });
+          setPasswordResetMessage({ type: 'success', text: 'የይለፍ ቃል መቀየሪያ ማረጋገጫ ኮድ ወደ ኢሜልዎ ተልኳል! (Reset code sent to your email)' });
           setTimeout(() => setPasswordResetMessage(null), 5000);
       } catch (error: any) {
           console.error("Error sending reset email:", error);

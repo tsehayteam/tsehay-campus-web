@@ -2,6 +2,7 @@ import { EventTicket } from './eventCache';
 
 export const BRAND_LOGO_URL = 'https://www.tsehaycampus.com/tc-logo.jpg';
 export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.tsehaycampus.com';
+export const SENDER_EMAIL = process.env.RESEND_FROM_EMAIL || "Tsehay Campus <support@tsehaycampus.com>";
 
 export interface SendEmailOptions {
   to: string | string[];
@@ -29,11 +30,12 @@ export async function sendEmail({
   }
 
   const recipients = Array.isArray(to) ? to : [to];
-  const verifiedFrom = from || process.env.RESEND_FROM_EMAIL || 'Tsehay Campus <onboarding@resend.dev>';
+  const primaryFrom = from || SENDER_EMAIL;
   const fallbackFromList = [
-    verifiedFrom,
+    primaryFrom,
     'Tsehay Campus <onboarding@resend.dev>',
     'Tsehay Campus <tsehayoperation@gmail.com>',
+    'Tsehay Campus <support@tsehaycampus.com>',
     'Tsehay Campus <noreply@tsehaycampus.com>'
   ];
 
