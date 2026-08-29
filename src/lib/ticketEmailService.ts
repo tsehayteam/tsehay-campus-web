@@ -6,8 +6,8 @@ export async function sendTicketEmail(ticket: EventTicket): Promise<{ success: b
   }
 
   const resendApiKey = process.env.RESEND_API_KEY;
-  const fromEmail = process.env.RESEND_FROM_EMAIL || 'Tsehay Campus <support@tsehaycampus.com>';
-  const fallbackFrom = 'Tsehay Campus <onboarding@resend.dev>';
+  const fromEmail = process.env.RESEND_FROM_EMAIL || '"Tsehay Campus" <tsehayoperation@gmail.com>';
+  const fallbackFrom = '"Tsehay Campus" <tsehayoperation@gmail.com>';
 
   const attendeeName = ticket.attendeeName || 'የተከበሩ ተማሪ';
   const eventTitle = ticket.eventTitle || 'Tsehay Campus Live Event';
@@ -94,7 +94,7 @@ export async function sendTicketEmail(ticket: EventTicket): Promise<{ success: b
       <tr>
         <td align="center" style="padding: 30px 20px 15px; background: linear-gradient(180deg, #161c28 0%, #0c1017 100%); border-bottom: 1px dashed rgba(249, 176, 60, 0.4);">
           <div style="display: inline-block; background: #ffffff; padding: 6px 14px; border-radius: 12px; margin-bottom: 15px;">
-            <img src="${websiteUrl}/tc-logo.jpg" alt="Tsehay Campus Logo" width="140" style="display: block; max-width: 140px; height: auto;" />
+            <img src="https://www.tsehaycampus.com/tc-logo.jpg" alt="Tsehay Campus Logo" width="140" style="display: block; max-width: 140px; height: auto;" />
           </div>
           <div style="display: inline-block; background: rgba(249, 176, 60, 0.15); border: 1px solid #f9b03c; color: #f9b03c; font-size: 11px; font-weight: 800; padding: 4px 12px; border-radius: 100px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">
             ${isOnline ? '🌐 ONLINE WORKSHOP PASS' : '📍 IN-PERSON EVENT PASS'}

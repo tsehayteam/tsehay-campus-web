@@ -59,9 +59,9 @@ export async function POST(req: NextRequest) {
 
       // 3. Send HTML Email via Resend
       const resendApiKey = process.env.RESEND_API_KEY;
-      const fromEmail = process.env.RESEND_FROM_EMAIL || 'Tsehay Campus Security <support@tsehaycampus.com>';
-      const fallbackFrom = 'Tsehay Campus <onboarding@resend.dev>';
-      const websiteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://tsehaycampus.com';
+      const fromEmail = process.env.RESEND_FROM_EMAIL || '"Tsehay Campus" <tsehayoperation@gmail.com>';
+      const fallbackFrom = '"Tsehay Campus" <tsehayoperation@gmail.com>';
+      const websiteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.tsehaycampus.com';
 
       const emailHtml = `
       <!DOCTYPE html>
@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
           <tr>
             <td align="center" style="padding: 32px 20px 20px; background: linear-gradient(135deg, #1e3a8a 0%, #3268ba 50%, #1e293b 100%); border-bottom: 2px solid #f9b03c;">
               <div style="display: inline-block; background: #ffffff; padding: 6px 14px; border-radius: 12px; margin-bottom: 14px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
-                <img src="${websiteUrl}/tc-logo.jpg" alt="Tsehay Campus Logo" width="130" style="display: block; max-width: 130px; height: auto;" />
+                <img src="https://www.tsehaycampus.com/tc-logo.jpg" alt="Tsehay Campus Logo" width="130" style="display: block; max-width: 130px; height: auto;" />
               </div>
               <div style="display: inline-block; background: rgba(249, 176, 60, 0.18); border: 1px solid #f9b03c; color: #f9b03c; font-size: 11px; font-weight: 800; padding: 4px 14px; border-radius: 100px; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 8px;">
                 🔐 ADMIN 2-STEP VERIFICATION

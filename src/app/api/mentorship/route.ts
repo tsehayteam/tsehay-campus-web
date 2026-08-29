@@ -58,7 +58,7 @@ export async function POST(req: Request) {
 
     // 2. Dispatch Dual Emails via Resend (Safe & Non-blocking)
     const resendApiKey = process.env.RESEND_API_KEY;
-    const fromEmail = process.env.RESEND_FROM_EMAIL || 'Tsehay Campus <support@tsehaycampus.com>';
+    const fromEmail = process.env.RESEND_FROM_EMAIL || '"Tsehay Campus" <tsehayoperation@gmail.com>';
     const adminEmail = process.env.ADMIN_EMAIL || 'eyoubsahle@gmail.com';
 
     if (resendApiKey) {

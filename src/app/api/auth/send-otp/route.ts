@@ -60,8 +60,8 @@ export async function POST(req: NextRequest) {
 
     // 4. Send Premium HTML Email via Resend
     const resendApiKey = process.env.RESEND_API_KEY;
-    const fromEmail = process.env.RESEND_FROM_EMAIL || 'Tsehay Campus <support@tsehaycampus.com>';
-    const fallbackFrom = 'Tsehay Campus <onboarding@resend.dev>';
+    const fromEmail = process.env.RESEND_FROM_EMAIL || '"Tsehay Campus" <tsehayoperation@gmail.com>';
+    const fallbackFrom = '"Tsehay Campus" <tsehayoperation@gmail.com>';
 
     const emailHtml = `
       <!DOCTYPE html>
@@ -201,7 +201,7 @@ export async function POST(req: NextRequest) {
                   
                   <!-- Header -->
                   <div class="header-bar">
-                    <img src="https://tsehaycampus.com/tc-logo.jpg" alt="Tsehay Campus" class="logo-img" onerror="this.src='https://ui-avatars.com/api/?name=TC&background=3268BA&color=fff';" />
+                    <img src="https://www.tsehaycampus.com/tc-logo.jpg" alt="Tsehay Campus" class="logo-img" onerror="this.src='https://ui-avatars.com/api/?name=TC&background=3268BA&color=fff';" />
                     <div class="brand-title">
                       <span class="brand-gold">Tsehay</span> <span class="brand-blue">Campus</span>
                     </div>
@@ -233,7 +233,7 @@ export async function POST(req: NextRequest) {
                   <div class="footer">
                     <div>© ${new Date().getFullYear()} Tsehay Campus (የኢትዮጵያ #1 የመማሪያ ፕላትፎርም). መብቱ በህግ የተጠበቀ ነው።</div>
                     <div style="margin-top: 6px;">
-                      ድጋፍ ካስፈለገዎ፡ <a href="mailto:support@tsehaycampus.com" class="footer-link">support@tsehaycampus.com</a>
+                      ድጋፍ ካስፈለገዎ፡ <a href="mailto:tsehayoperation@gmail.com" class="footer-link">tsehayoperation@gmail.com</a>
                     </div>
                   </div>
 

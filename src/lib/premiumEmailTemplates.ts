@@ -50,8 +50,8 @@ export interface NewCourseAlertData {
   courseSlug?: string;
 }
 
-const BRAND_LOGO_URL = 'https://tsehaycampus.com/tc-logo.jpg';
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://tsehaycampus.com';
+const BRAND_LOGO_URL = 'https://www.tsehaycampus.com/tc-logo.jpg';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.tsehaycampus.com';
 
 // 🌟 1. WELCOME EMAIL (Onboarding New Student)
 export function getWelcomeEmailHtml(data: WelcomeEmailData): string {
