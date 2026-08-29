@@ -25,7 +25,7 @@ export default function Tilt3DLoginButton({
     const centerX = rect.width / 2;
     const centerY = rect.height / 2;
 
-    const maxTilt = 18;
+    const maxTilt = 24;
     const rotateX = ((y - centerY) / centerY) * -maxTilt;
     const rotateY = ((x - centerX) / centerX) * maxTilt;
     const glareX = (x / rect.width) * 100;
@@ -62,33 +62,39 @@ export default function Tilt3DLoginButton({
         onClick={onClick}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
-        className={`relative group px-4 sm:px-5 py-2 sm:py-2.2 rounded-full font-heading font-black text-xs sm:text-[13px] text-slate-950 bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#f9b03c] shadow-[0_0_25px_rgba(249,176,60,0.45),0_8px_20px_rgba(0,0,0,0.8)] border border-amber-300/60 hover:border-white/80 active:scale-95 cursor-pointer select-none transition-shadow duration-300 overflow-hidden flex items-center gap-2 ${className}`}
+        className={`relative group px-4 sm:px-5 py-2 sm:py-2.2 rounded-full font-heading font-black text-xs sm:text-[13px] text-slate-950 bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#f9b03c] shadow-[0_0_30px_rgba(249,176,60,0.5),0_10px_25px_rgba(0,0,0,0.85)] border border-amber-300/80 hover:border-white active:scale-95 cursor-pointer select-none transition-shadow duration-300 overflow-hidden flex items-center gap-2 ${className}`}
         style={{
           transformStyle: 'preserve-3d',
           transform: tilt.isHovered
-            ? `rotateX(${tilt.rotateX.toFixed(2)}deg) rotateY(${tilt.rotateY.toFixed(2)}deg) scale3d(1.06, 1.06, 1.06)`
+            ? `rotateX(${tilt.rotateX.toFixed(2)}deg) rotateY(${tilt.rotateY.toFixed(2)}deg) scale3d(1.08, 1.08, 1.08)`
             : 'rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)',
-          transition: 'transform 0.15s ease-out, box-shadow 0.3s ease',
+          transition: 'transform 0.12s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.3s ease',
         }}
       >
-        {/* Specular Light Flare Overlay */}
+        {/* Continuous Animated Shimmer Sweep */}
+        <div 
+          className="absolute inset-0 w-[200%] h-full bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] pointer-events-none"
+          style={{ transform: 'skewX(-20deg) translateZ(1px)' }}
+        />
+
+        {/* Dynamic Specular Light Glare Overlay */}
         <div
           className="absolute inset-0 pointer-events-none rounded-full transition-opacity duration-300"
           style={{
-            opacity: tilt.isHovered ? 0.7 : 0,
-            background: `radial-gradient(circle 80px at ${tilt.glareX}% ${tilt.glareY}%, rgba(255,255,255,0.85) 0%, rgba(249,176,60,0.3) 50%, transparent 80%)`,
+            opacity: tilt.isHovered ? 0.75 : 0.15,
+            background: `radial-gradient(circle 90px at ${tilt.glareX}% ${tilt.glareY}%, rgba(255,255,255,0.9) 0%, rgba(249,176,60,0.4) 50%, transparent 80%)`,
             mixBlendMode: 'screen',
-            transform: 'translateZ(2px)',
+            transform: 'translateZ(3px)',
           }}
         />
 
         {/* Ambient Pulsing Glow behind */}
-        <span className="absolute -inset-1 rounded-full bg-[#f9b03c]/30 blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none -z-10" />
+        <span className="absolute -inset-1 rounded-full bg-[#f9b03c]/40 blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none -z-10 animate-pulse" />
 
-        {/* Login Icon with 3D Depth */}
+        {/* Login Icon with 3D Depth & 360 Spin on Hover */}
         <div 
-          className="w-4 h-4 rounded-full bg-slate-950 text-[#f9b03c] flex items-center justify-center text-[9px] font-black shrink-0 shadow-sm group-hover:rotate-12 transition-transform duration-300"
-          style={{ transform: 'translateZ(6px)' }}
+          className="w-4 h-4 rounded-full bg-slate-950 text-[#f9b03c] flex items-center justify-center text-[9px] font-black shrink-0 shadow-sm group-hover:rotate-[360deg] transition-transform duration-700 ease-out"
+          style={{ transform: 'translateZ(8px)' }}
         >
           <i className="fa-solid fa-arrow-right-to-bracket"></i>
         </div>
@@ -96,7 +102,7 @@ export default function Tilt3DLoginButton({
         {/* Label */}
         <span 
           className="tracking-wide uppercase font-black drop-shadow-xs whitespace-nowrap"
-          style={{ transform: 'translateZ(8px)' }}
+          style={{ transform: 'translateZ(10px)' }}
         >
           {label}
         </span>
