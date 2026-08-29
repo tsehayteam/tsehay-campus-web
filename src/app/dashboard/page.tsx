@@ -2440,7 +2440,7 @@ function StudentDashboardContent() {
                   >
                       <i className="fa-regular fa-bell"></i>
                       {notificationsList.filter(n => !n.read).length > 0 && (
-                        <span className="absolute 0 top-0.5 right-0.5 w-2.5 h-2.5 bg-[#f9b03c] rounded-full ring-2 ring-white dark:ring-slate-900 animate-pulse"></span>
+                        <span className="absolute top-0.5 right-0.5 w-2.5 h-2.5 bg-[#f9b03c] rounded-full ring-2 ring-white dark:ring-slate-900"></span>
                       )}
                   </button>
 
@@ -2537,15 +2537,15 @@ function StudentDashboardContent() {
                     <button
                         type="button"
                         onClick={() => setIsSyllabusCollapsed(prev => !prev)}
-                        className={`px-4 py-2.5 rounded-2xl font-heading text-xs font-black transition-all duration-300 flex items-center gap-2 cursor-pointer active:scale-95 border shadow-lg ${
+                        className={`px-4 py-2 rounded-xl font-heading text-xs font-black transition-all duration-300 flex items-center gap-2 cursor-pointer active:scale-95 border shadow-md ${
                           isSyllabusCollapsed
-                            ? 'bg-gradient-to-r from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 border-amber-300/80 shadow-[0_0_20px_rgba(249,176,60,0.45)] animate-pulse'
+                            ? 'bg-gradient-to-r from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 border-amber-300/80 shadow-[0_0_20px_rgba(249,176,60,0.45)]'
                             : 'bg-white/[0.06] hover:bg-[#f9b03c]/15 text-white hover:text-[#f9b03c] border-white/10 hover:border-[#f9b03c]/50'
                         }`}
-                        title={isSyllabusCollapsed ? "የኮርስ ይዘት ዝርዝርን ዘርጋ (Expand Playlist)" : "ሲኒማ እይታ / ይዘቱን እጠፍ (Focus Mode)"}
+                        title={isSyllabusCollapsed ? "የኮርስ ይዘት ዘርጋ (Show Playlist)" : "🎬 ፎከስ ሞድ (Focus Mode)"}
                     >
-                        <i className={`fa-solid ${isSyllabusCollapsed ? 'fa-list-check text-slate-950' : 'fa-expand text-[#f9b03c]'} text-sm`}></i>
-                        <span>{isSyllabusCollapsed ? '📚 የኮርስ ይዘት ዘርጋ (Show Playlist)' : '🎬 ሲኒማ እይታ / ይዘት እጠፍ (Focus Mode)'}</span>
+                        <i className={`fa-solid ${isSyllabusCollapsed ? 'fa-list-check text-slate-950' : 'fa-expand text-[#f9b03c]'} text-xs`}></i>
+                        <span>{isSyllabusCollapsed ? '📚 የኮርስ ይዘት ዘርጋ' : '🎬 ፎከስ ሞድ (Focus Mode)'}</span>
                     </button>
                 </div>
             </div>
@@ -3621,11 +3621,10 @@ function StudentDashboardContent() {
                             <button
                               type="button"
                               onClick={() => setIsSyllabusCollapsed(true)}
-                              className="px-2.5 py-1 rounded-xl bg-amber-500/10 hover:bg-[#f9b03c] text-[#f9b03c] hover:text-slate-950 border border-[#f9b03c]/30 text-[11px] font-black transition-all cursor-pointer flex items-center gap-1 shadow-sm shrink-0 mt-0.5"
-                              title="ይዘቱን እጠፍ / ወደ ሲኒማ እይታ ሂድ"
+                              className="w-7 h-7 rounded-xl bg-white/5 hover:bg-white/15 text-gray-400 hover:text-white border border-white/10 text-xs transition-all cursor-pointer flex items-center justify-center shadow-sm shrink-0 mt-0.5"
+                              title="ይዘቱን እጠፍ (Collapse Sidebar)"
                             >
-                              <i className="fa-solid fa-chevron-right text-[9px]"></i>
-                              <span>እጠፍ</span>
+                              <i className="fa-solid fa-xmark"></i>
                             </button>
                         </div>
 

@@ -284,13 +284,18 @@ export default function Navbar() {
           className="fixed top-3 flex justify-center pointer-events-auto select-none transition-all duration-300 left-1/2 -translate-x-1/2 z-50 animate-in fade-in"
           title="ዋና ማውጫ / Menu"
         >
+          {/* Ambient Breathing Shimmer Aura alternating between Golden Orange and Cobalt Blue */}
+          <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-[#f9b03c]/40 via-[#3268ba]/40 to-[#f9b03c]/40 blur-md pointer-events-none animate-pulse" />
+
           <button
             type="button"
             onClick={openCurtain}
-            className="pointer-events-auto px-5 sm:px-6 py-1.5 sm:py-2 rounded-full flex items-center gap-2 group transition-all duration-300 active:scale-95 cursor-pointer whitespace-nowrap backdrop-blur-xl bg-black/85 border border-[#f9b03c]/30 hover:border-[#f9b03c] text-white hover:text-[#f9b03c] shadow-lg hover:shadow-[0_0_25px_rgba(249,176,60,0.35)]"
+            className="relative pointer-events-auto px-5 sm:px-6 py-1.5 sm:py-2 rounded-full flex items-center gap-2 group transition-all duration-300 active:scale-95 cursor-pointer whitespace-nowrap backdrop-blur-xl bg-black/90 border border-white/15 hover:border-[#f9b03c] text-white hover:text-[#f9b03c] shadow-lg hover:shadow-[0_0_25px_rgba(249,176,60,0.35)]"
           >
             <span className="text-xs sm:text-[13px] font-black tracking-wide transition-colors whitespace-nowrap flex items-center gap-1.5 font-heading">
-              🧭 ዋና ማውጫ ▾
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#f9b03c] via-amber-200 to-[#5a93e8]">
+                🧭 ዋና ማውጫ ▾
+              </span>
             </span>
           </button>
         </div>
@@ -506,7 +511,7 @@ export default function Navbar() {
 
                   {/* Sleek Animated Frosted-Glass Profile Dropdown */}
                   {showProfileDropdown && (
-                    <div className="absolute right-0 mt-2.5 w-64 rounded-2xl bg-[#070b14]/95 backdrop-blur-2xl border border-white/15 shadow-[0_20px_50px_rgba(0,0,0,0.85),0_0_30px_rgba(249,176,60,0.15)] p-3 z-50 animate-in fade-in zoom-in-95 duration-200 space-y-2">
+                    <div className="absolute right-0 top-full mt-2 min-w-[220px] max-w-[280px] rounded-2xl bg-black/90 backdrop-blur-2xl border border-white/10 shadow-2xl p-3 z-50 animate-in fade-in zoom-in-95 duration-200 space-y-2">
                       {/* User Info Header */}
                       <div className="flex items-center gap-2.5 px-2 py-1.5 pb-2.5 border-b border-white/10">
                         <img

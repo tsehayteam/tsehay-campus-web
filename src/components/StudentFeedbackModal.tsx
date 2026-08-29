@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { db, storage } from '@/lib/firebase/config';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
@@ -11,6 +12,7 @@ export interface StudentFeedbackModalProps {
 }
 
 export default function StudentFeedbackModal({ initialOpen = false }: StudentFeedbackModalProps) {
+  const pathname = usePathname();
   const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(initialOpen);
   const [rating, setRating] = useState<number>(5);
@@ -328,24 +330,28 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
     }
   };
 
+  const isClassroomOrAdmin = pathname?.startsWith('/admin') || pathname?.startsWith('/dashboard') || pathname?.startsWith('/classroom');
+
   return (
     <>
-      {/* 🌟 1. FLOATING FEEDBACK TRIGGER BUTTON (Silicon Valley Glassmorphism) */}
-      <button
-        type="button"
-        onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-40 group flex items-center gap-2.5 px-4 py-2.5 rounded-full bg-[#0c1017]/90 hover:bg-[#111827] text-white border border-[#f9b03c]/40 hover:border-[#f9b03c] shadow-[0_10px_30px_rgba(0,0,0,0.8),0_0_20px_rgba(249,176,60,0.2)] backdrop-blur-xl transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer"
-        title="ለ ፀሐይ ካምፓስ አስተያየት ይስጡ (Give Feedback)"
-      >
-        <span className="relative flex h-3 w-3">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#f9b03c] opacity-75"></span>
-          <span className="relative inline-flex rounded-full h-3 w-3 bg-[#f9b03c]"></span>
-        </span>
-        <i className="fa-solid fa-comment-dots text-[#f9b03c] text-sm group-hover:rotate-12 transition-transform"></i>
-        <span className="text-xs font-heading font-black text-slate-200 group-hover:text-white tracking-wide">
-          አስተያየት / Feedback
-        </span>
-      </button>
+      {/* 🌟 1. FLOATING FEEDBACK TRIGGER BUTTON (Silicon Valley Glassmorphism - Hidden in Classroom/Admin) */}
+      {!isClassroomOrAdmin && (
+        <button
+          type="button"
+          onClick={() => setIsOpen(true)}
+          className="fixed bottom-6 right-6 z-40 group flex items-center gap-2.5 px-4 py-2.5 rounded-full bg-[#0c1017]/90 hover:bg-[#111827] text-white border border-[#f9b03c]/40 hover:border-[#f9b03c] shadow-[0_10px_30px_rgba(0,0,0,0.8),0_0_20px_rgba(249,176,60,0.2)] backdrop-blur-xl transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer"
+          title="ለ ፀሐይ ካምፓስ አስተያየት ይስጡ (Give Feedback)"
+        >
+          <span className="relative flex h-3 w-3">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#f9b03c] opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-[#f9b03c]"></span>
+          </span>
+          <i className="fa-solid fa-comment-dots text-[#f9b03c] text-sm group-hover:rotate-12 transition-transform"></i>
+          <span className="text-xs font-heading font-black text-slate-200 group-hover:text-white tracking-wide">
+            አስተያየት / Feedback
+          </span>
+        </button>
+      )}
 
       {/* 🌟 2. GLOBAL FEEDBACK MODAL */}
       {isOpen && (
