@@ -63,6 +63,40 @@ service cloud.firestore {
       }
     }
 
+    // 4. Root Community Posts, Comments & Direct Messaging
+    match /community_posts/{postId} {
+      allow read: if true;
+      allow write: if isAuthenticated() || isGlobalAdmin();
+
+      match /{sub=**} {
+        allow read: if true;
+        allow write: if isAuthenticated() || isGlobalAdmin();
+      }
+    }
+
+    match /community_conversations/{convId} {
+      allow read, write: if isAuthenticated() || isGlobalAdmin();
+
+      match /{sub=**} {
+        allow read, write: if isAuthenticated() || isGlobalAdmin();
+      }
+    }
+
+    match /direct_messages/{msgId} {
+      allow read, write: if isAuthenticated() || isGlobalAdmin();
+    }
+
+    // 5. Root Instructors Collection
+    match /instructors/{instructorId} {
+      allow read: if true;
+      allow write: if isGlobalAdmin() || isAuthenticated();
+
+      match /{sub=**} {
+        allow read: if true;
+        allow write: if isGlobalAdmin() || isAuthenticated();
+      }
+    }
+
     // 4. Tsehay Campus Application Artifacts Scope
     match /artifacts/{appId} {
       
@@ -188,6 +222,32 @@ service cloud.firestore {
       // 4.12 Support & Helpdesk Tickets
       match /support/{document=**} {
         allow read, write: if isAdmin() || isAuthenticated();
+      }
+
+      // 4.13 Community Posts & Comments (Artifact Scope)
+      match /community_posts/{postId} {
+        allow read: if true;
+        allow write: if isAuthenticated() || isAdmin();
+
+        match /{sub=**} {
+          allow read: if true;
+          allow write: if isAuthenticated() || isAdmin();
+        }
+      }
+
+      // 4.14 Community Conversations & Direct Messages (Artifact Scope)
+      match /community_conversations/{convId} {
+        allow read, write: if isAuthenticated() || isAdmin();
+
+        match /{sub=**} {
+          allow read, write: if isAuthenticated() || isAdmin();
+        }
+      }
+
+      // 4.15 Instructors in Artifact Scope
+      match /public/data/instructors/{instructorId} {
+        allow read: if true;
+        allow write: if isAdmin() || isAuthenticated();
       }
     }
   }

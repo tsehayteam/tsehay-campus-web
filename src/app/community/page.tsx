@@ -154,12 +154,12 @@ export default function CommunityPage() {
 
     setIsSubmittingPost(true);
     try {
-      await createCommunityPost({
+      const newPostPayload = {
         authorId: currentUser.uid,
         authorName: userProfile?.displayName || 'ተማሪ',
         authorEmail: currentUser.email || '',
-        authorPhoto: userProfile?.photoURL || `https://ui-avatars.com/api/?name=User&background=f9b03c&color=111827&bold=true`,
-        authorRole: userProfile?.isAdmin ? 'admin' : 'student',
+        authorPhoto: userProfile?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(userProfile?.displayName || 'User')}&background=f9b03c&color=111827&bold=true`,
+        authorRole: (userProfile?.isAdmin ? 'admin' : 'student') as 'admin' | 'student' | 'instructor',
         isAdmin: Boolean(userProfile?.isAdmin),
         isPro: Boolean(userProfile?.isPro),
         content: postContent.trim(),
@@ -169,7 +169,18 @@ export default function CommunityPage() {
         tags: selectedTags,
         isPinned: false,
         isFeatured: false,
-      });
+      };
+
+      const docId = await createCommunityPost(newPostPayload);
+
+      // Optimistically insert to feed
+      setPosts(prev => [{
+        id: docId || `post_${Date.now()}`,
+        ...newPostPayload,
+        likes: [],
+        commentsCount: 0,
+        createdAt: new Date().toISOString()
+      }, ...prev]);
 
       // Reset Creator Form
       setPostContent('');
@@ -186,7 +197,7 @@ export default function CommunityPage() {
     }
   };
 
-  // Handle Like Post
+  // Handle Like Post (Instant Optimistic UI)
   const handleLike = async (post: CommunityPost) => {
     if (!currentUser) {
       setShowAuthModal(true);
@@ -194,6 +205,20 @@ export default function CommunityPage() {
     }
 
     const isLiked = post.likes.includes(currentUser.uid);
+    
+    // Instant Optimistic Update
+    setPosts(prev => prev.map(p => {
+      if (p.id === post.id) {
+        return {
+          ...p,
+          likes: isLiked 
+            ? p.likes.filter(id => id !== currentUser.uid) 
+            : [...p.likes, currentUser.uid]
+        };
+      }
+      return p;
+    }));
+
     try {
       await toggleLikePost(post.id, currentUser.uid, isLiked);
     } catch (e) {
@@ -212,6 +237,28 @@ export default function CommunityPage() {
     if (!text) return;
 
     setSubmittingComment((prev) => ({ ...prev, [postId]: true }));
+    const tempCommentId = `comm_${Date.now()}`;
+    const newCommentObj = {
+      id: tempCommentId,
+      postId,
+      authorId: currentUser.uid,
+      authorName: userProfile?.displayName || 'ተማሪ',
+      authorEmail: currentUser.email || '',
+      authorPhoto: userProfile?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(userProfile?.displayName || 'User')}&background=f9b03c&color=111827&bold=true`,
+      isAdmin: Boolean(userProfile?.isAdmin),
+      isPro: Boolean(userProfile?.isPro),
+      content: text,
+      createdAt: new Date().toISOString()
+    };
+
+    // Optimistic comment and counter update
+    setCommentsByPost(prev => ({
+      ...prev,
+      [postId]: [...(prev[postId] || []), newCommentObj]
+    }));
+    setPosts(prev => prev.map(p => p.id === postId ? { ...p, commentsCount: (p.commentsCount || 0) + 1 } : p));
+    setCommentInputs((prev) => ({ ...prev, [postId]: '' }));
+
     try {
       await addCommentToPost(postId, {
         authorId: currentUser.uid,
@@ -222,8 +269,6 @@ export default function CommunityPage() {
         isPro: Boolean(userProfile?.isPro),
         content: text,
       });
-
-      setCommentInputs((prev) => ({ ...prev, [postId]: '' }));
     } catch (err) {
       console.error('Error posting comment:', err);
     } finally {
@@ -233,7 +278,11 @@ export default function CommunityPage() {
 
   // Handle Delete Post (Admin or Post Author)
   const handleDeletePost = async (postId: string) => {
-    if (!confirm('ይህንን ፖስት መሰረዝ እርግጠኛ ነዎት?')) return;
+    if (!confirm('ይህንን ፖስት መሰረዝ እርግጠኛ ነዎት? (Are you sure you want to delete this post?)')) return;
+    
+    // Instant Optimistic Removal
+    setPosts(prev => prev.filter(p => p.id !== postId));
+
     try {
       await deleteCommunityPost(postId);
     } catch (e) {
@@ -244,6 +293,13 @@ export default function CommunityPage() {
   // Handle Delete Comment
   const handleDeleteComment = async (postId: string, commentId: string) => {
     if (!confirm('አስተያየቱን መሰረዝ እርግጠኛ ነዎት?')) return;
+    
+    setCommentsByPost(prev => ({
+      ...prev,
+      [postId]: (prev[postId] || []).filter(c => c.id !== commentId)
+    }));
+    setPosts(prev => prev.map(p => p.id === postId ? { ...p, commentsCount: Math.max(0, (p.commentsCount || 1) - 1) } : p));
+
     try {
       await deleteCommentFromPost(postId, commentId);
     } catch (e) {

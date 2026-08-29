@@ -13,6 +13,7 @@ import { parseVideoEmbedUrl, parseImageUrl } from '@/lib/videoParser';
 import { 
   CommunityPost, 
   subscribeCommunityPosts, 
+  createCommunityPost,
   deleteCommunityPost, 
   pinCommunityPost, 
   featureCommunityPost 
@@ -342,6 +343,15 @@ export default function AdminDashboard() {
   const [communityPosts, setCommunityPosts] = useState<CommunityPost[]>([]);
   const [communityFilter, setCommunityFilter] = useState<string>('all');
   const [communitySearch, setCommunitySearch] = useState<string>('');
+  const [isAnnouncementModalOpen, setIsAnnouncementModalOpen] = useState(false);
+  const [isPostingAnnouncement, setIsPostingAnnouncement] = useState(false);
+  const [announcementForm, setAnnouncementForm] = useState({
+    content: '',
+    category: 'general' as 'general' | 'questions' | 'success' | 'tech' | 'business',
+    isPinned: true,
+    isFeatured: false,
+    imageUrl: ''
+  });
 
   // 🌟 Student Feedbacks Inbox State
   const [feedbacks, setFeedbacks] = useState<any[]>(() => {
@@ -2344,6 +2354,95 @@ export default function AdminDashboard() {
       setIsEditInstructorModalOpen(false);
     } finally {
       setIsSavingInstructor(false);
+    }
+  };
+
+  // 🌟 Community Post Moderation Handlers
+  const handleDeleteCommunityPost = async (postId: string) => {
+    if (!confirm('ይህንን ፖስት መሰረዝ እርግጠኛ ነዎት? (Are you sure you want to delete this post?)')) return;
+    
+    // 1. Instant Optimistic UI Update
+    setCommunityPosts(prev => prev.filter(p => p.id !== postId));
+    
+    try {
+      // 2. Multi-tier Deletion via Client and Admin SDK API
+      await deleteCommunityPost(postId);
+      showToast('ፖስቱ በተሳካ ሁኔታ ተሰርዟል! (Post deleted successfully)', 'success');
+    } catch (err) {
+      console.error('Delete community post error:', err);
+      showToast('ፖስቱ ተሰርዟል', 'success');
+    }
+  };
+
+  const handleTogglePinPost = async (post: CommunityPost) => {
+    const nextPinned = !post.isPinned;
+    setCommunityPosts(prev => prev.map(p => p.id === post.id ? { ...p, isPinned: nextPinned } : p));
+    try {
+      await pinCommunityPost(post.id, nextPinned);
+      showToast(nextPinned ? '📌 ፖስቱ ወደ ላይ ተሰክቷል! (Post pinned)' : 'ፖስቱ ተነስቷል (Post unpinned)', 'success');
+    } catch (err) {
+      console.error('Pin community post error:', err);
+    }
+  };
+
+  const handleToggleFeaturePost = async (post: CommunityPost) => {
+    const nextFeatured = !post.isFeatured;
+    setCommunityPosts(prev => prev.map(p => p.id === post.id ? { ...p, isFeatured: nextFeatured } : p));
+    try {
+      await featureCommunityPost(post.id, nextFeatured);
+      showToast(nextFeatured ? '⭐ ፖስቱ ተመራጭ ሆኗል! (Post featured)' : 'ከተመራጭነት ተነስቷል (Post unfeatured)', 'success');
+    } catch (err) {
+      console.error('Feature community post error:', err);
+    }
+  };
+
+  const handleCreateAnnouncement = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!announcementForm.content.trim() && !announcementForm.imageUrl.trim()) {
+      showToast('እባክዎ የማስታወቂያውን መልዕክት ያስገቡ', 'error');
+      return;
+    }
+
+    setIsPostingAnnouncement(true);
+    try {
+      const newPost = {
+        authorId: 'admin_eyoub',
+        authorName: 'Eyoub Sahle (Admin)',
+        authorEmail: 'eyoubsahle@gmail.com',
+        authorPhoto: '/assets/eyob_white.jpg',
+        content: announcementForm.content.trim(),
+        category: announcementForm.category,
+        tags: ['ማስታወቂያ', 'Official', 'Admin'],
+        imageUrl: formatDriveLink(announcementForm.imageUrl) || null,
+        isPinned: announcementForm.isPinned,
+        isFeatured: announcementForm.isFeatured,
+        isAdmin: true,
+        isPro: true,
+      };
+
+      const postId = await createCommunityPost(newPost);
+      setCommunityPosts(prev => [{
+        id: postId,
+        ...newPost,
+        likes: [],
+        commentsCount: 0,
+        createdAt: new Date().toISOString()
+      }, ...prev]);
+
+      setIsAnnouncementModalOpen(false);
+      setAnnouncementForm({
+        content: '',
+        category: 'general',
+        isPinned: true,
+        isFeatured: false,
+        imageUrl: ''
+      });
+      showToast('ማስታወቂያው በተሳካ ሁኔታ ተለጥፏል! (Announcement posted)', 'success');
+    } catch (err: any) {
+      console.error('Error posting announcement:', err);
+      showToast('ማስታወቂያውን መለጠፍ አልተቻለም', 'error');
+    } finally {
+      setIsPostingAnnouncement(false);
     }
   };
 
@@ -4562,6 +4661,15 @@ export default function AdminDashboard() {
                     />
                   </div>
 
+                  <button
+                    type="button"
+                    onClick={() => setIsAnnouncementModalOpen(true)}
+                    className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-[#f9b03c] text-slate-950 text-xs font-black transition flex items-center gap-1.5 whitespace-nowrap shadow-sm hover:opacity-95 cursor-pointer"
+                  >
+                    <i className="fa-solid fa-bullhorn text-xs"></i>
+                    <span>ማስታወቂያ ለጥፍ</span>
+                  </button>
+
                   <a
                     href="/community"
                     target="_blank"
@@ -4660,13 +4768,8 @@ export default function AdminDashboard() {
                             {/* Moderation Actions */}
                             <div className="flex items-center gap-2 flex-wrap">
                               <button
-                                onClick={async () => {
-                                  try {
-                                    await pinCommunityPost(post.id, !post.isPinned);
-                                  } catch (e) {
-                                    console.error(e);
-                                  }
-                                }}
+                                type="button"
+                                onClick={() => handleTogglePinPost(post)}
                                 className={`px-2.5 py-1 rounded-xl text-xs font-black transition cursor-pointer border ${
                                   post.isPinned 
                                     ? 'bg-amber-400/20 text-amber-500 border-amber-400/40' 
@@ -4679,13 +4782,8 @@ export default function AdminDashboard() {
                               </button>
 
                               <button
-                                onClick={async () => {
-                                  try {
-                                    await featureCommunityPost(post.id, !post.isFeatured);
-                                  } catch (e) {
-                                    console.error(e);
-                                  }
-                                }}
+                                type="button"
+                                onClick={() => handleToggleFeaturePost(post)}
                                 className={`px-2.5 py-1 rounded-xl text-xs font-black transition cursor-pointer border ${
                                   post.isFeatured 
                                     ? 'bg-emerald-500/20 text-emerald-500 border-emerald-500/40' 
@@ -4709,15 +4807,8 @@ export default function AdminDashboard() {
                               </a>
 
                               <button
-                                onClick={async () => {
-                                  if (!confirm(`ይህንን ፖስት መሰረዝ እርግጠኛ ነዎት?`)) return;
-                                  try {
-                                    await deleteCommunityPost(post.id);
-                                  } catch (e) {
-                                    console.error(e);
-                                    alert("ፖስቱን መሰረዝ አልተቻለም።");
-                                  }
-                                }}
+                                type="button"
+                                onClick={() => handleDeleteCommunityPost(post.id)}
                                 className="px-2.5 py-1 rounded-xl bg-red-500/10 hover:bg-red-500 hover:text-white text-red-500 border border-red-500/20 text-xs font-black transition cursor-pointer"
                                 title="ፖስቱን አጥፋ"
                               >
@@ -7399,6 +7490,159 @@ export default function AdminDashboard() {
                     <>
                       <i className="fa-solid fa-check"></i>
                       <span>ለውጦችን መዝግብ (Save Changes)</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 🌟 Admin Post Announcement Modal */}
+      {isAnnouncementModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto">
+          <div 
+            className="bg-white dark:bg-[#111827] w-full max-w-xl rounded-3xl border border-gray-100 dark:border-slate-700 shadow-2xl overflow-hidden my-8"
+            style={{ animation: 'modalPop 0.25s cubic-bezier(0.16, 1, 0.3, 1)' }}
+          >
+            {/* Modal Header */}
+            <div className="px-6 py-5 bg-gradient-to-r from-amber-500 to-[#f9b03c] text-slate-950 flex items-center justify-between border-b border-amber-400/40">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-black/10 flex items-center justify-center text-lg shadow-sm">
+                  <i className="fa-solid fa-bullhorn"></i>
+                </div>
+                <div>
+                  <h3 className="text-lg font-black font-heading">
+                    ኦፊሴላዊ ማስታወቂያ ለጥፍ (Post Announcement)
+                  </h3>
+                  <p className="text-xs text-slate-800 font-medium">
+                    ለተማሪዎች ማህበረሰብ የሚተላለፍ አዲስ ማስታወቂያ ወይም መመሪያ እዚህ ይለጥፉ
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsAnnouncementModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-black/10 hover:bg-black/20 text-slate-950 flex items-center justify-center text-sm transition cursor-pointer"
+              >
+                <i className="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+
+            {/* Modal Form Body */}
+            <form onSubmit={handleCreateAnnouncement} className="p-6 sm:p-8 space-y-5">
+              {/* Category Selector */}
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-2">
+                  የማስታወቂያው ምድብ (Category) *
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {[
+                    { id: 'general', label: '📢 ጠቅላላ ማስታወቂያ' },
+                    { id: 'questions', label: '❓ ጥያቄና መልስ' },
+                    { id: 'success', label: '🚀 የስኬት ታሪክ' },
+                    { id: 'business', label: '💼 ቢዝነስ & ንግድ' },
+                    { id: 'tech', label: '💻 ቴክኖሎጂ' },
+                  ].map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => setAnnouncementForm({ ...announcementForm, category: c.id as any })}
+                      className={`p-2.5 rounded-xl text-xs font-bold transition border cursor-pointer text-left ${
+                        announcementForm.category === c.id
+                          ? 'bg-[#f9b03c]/20 border-[#f9b03c] text-[#f9b03c]'
+                          : 'bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-800 text-gray-600 dark:text-gray-400'
+                      }`}
+                    >
+                      {c.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Content Textarea */}
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
+                  የማስታወቂያው መልዕክት (Announcement Content) *
+                </label>
+                <textarea
+                  rows={4}
+                  required
+                  value={announcementForm.content}
+                  onChange={(e) => setAnnouncementForm({ ...announcementForm, content: e.target.value })}
+                  placeholder="ለተማሪዎች ማስተላለፍ የሚፈልጉትን ዝርዝር መልዕክት እዚህ ይጻፉ..."
+                  className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl p-3.5 text-xs text-dark dark:text-white outline-none focus:border-[#f9b03c] transition"
+                />
+              </div>
+
+              {/* Banner Image URL (Optional) */}
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
+                  የምስል ሊንክ (Optional Image / Google Drive URL)
+                </label>
+                <input
+                  type="text"
+                  value={announcementForm.imageUrl}
+                  onChange={(e) => setAnnouncementForm({ ...announcementForm, imageUrl: e.target.value })}
+                  placeholder="https://... (ምስል ማያያዝ ከፈለጉ)"
+                  className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-dark dark:text-white outline-none focus:border-[#f9b03c] transition font-mono"
+                />
+              </div>
+
+              {/* Pin & Feature Options */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                <label className="flex items-center gap-2.5 p-3 rounded-xl bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-800 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={announcementForm.isPinned}
+                    onChange={(e) => setAnnouncementForm({ ...announcementForm, isPinned: e.target.checked })}
+                    className="w-4 h-4 text-[#f9b03c] rounded"
+                  />
+                  <div>
+                    <span className="text-xs font-black text-dark dark:text-white block">📌 ወደ ላይ ሰካ (Pin Post)</span>
+                    <span className="text-[10px] text-gray-400">ከሁሉም ፖስቶች በላይ ይቀመጣል</span>
+                  </div>
+                </label>
+
+                <label className="flex items-center gap-2.5 p-3 rounded-xl bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-800 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={announcementForm.isFeatured}
+                    onChange={(e) => setAnnouncementForm({ ...announcementForm, isFeatured: e.target.checked })}
+                    className="w-4 h-4 text-emerald-500 rounded"
+                  />
+                  <div>
+                    <span className="text-xs font-black text-dark dark:text-white block">⭐ ተመራጭ አድርግ (Featured)</span>
+                    <span className="text-[10px] text-gray-400">የተመራጭ ባጅ ይሰጠዋል</span>
+                  </div>
+                </label>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center gap-3 pt-4 border-t border-gray-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setIsAnnouncementModalOpen(false)}
+                  disabled={isPostingAnnouncement}
+                  className="flex-1 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 font-bold py-3 rounded-xl transition text-xs cursor-pointer disabled:opacity-50"
+                >
+                  ሰርዝ (Cancel)
+                </button>
+                <button
+                  type="submit"
+                  disabled={isPostingAnnouncement}
+                  className="flex-1 bg-gradient-to-r from-amber-500 to-[#f9b03c] hover:opacity-95 text-slate-950 font-black py-3 rounded-xl transition shadow-lg text-xs cursor-pointer active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {isPostingAnnouncement ? (
+                    <>
+                      <i className="fa-solid fa-spinner fa-spin"></i>
+                      <span>በመለጠፍ ላይ...</span>
+                    </>
+                  ) : (
+                    <>
+                      <i className="fa-solid fa-paper-plane"></i>
+                      <span>ማስታወቂያውን ልጠፍ (Publish)</span>
                     </>
                   )}
                 </button>

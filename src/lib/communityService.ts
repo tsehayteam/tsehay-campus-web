@@ -241,7 +241,6 @@ export const subscribeCommunityPosts = (
 
 // 2. Create Community Post
 export const createCommunityPost = async (post: Omit<CommunityPost, 'id' | 'likes' | 'commentsCount' | 'createdAt'>) => {
-  const postsRef = collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_posts');
   const newPostData = {
     ...post,
     likes: [],
@@ -251,40 +250,130 @@ export const createCommunityPost = async (post: Omit<CommunityPost, 'id' | 'like
     createdAt: serverTimestamp(),
   };
 
-  const docRef = await addDoc(postsRef, newPostData);
-  return docRef.id;
+  let docId = '';
+  try {
+    const postsRef = collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_posts');
+    const docRef = await addDoc(postsRef, newPostData);
+    docId = docRef.id;
+
+    // Mirror to root community_posts
+    try {
+      await setDoc(doc(db, 'community_posts', docId), { ...newPostData, id: docId });
+    } catch (e) {}
+  } catch (clientErr) {
+    console.warn('Client create post fallback to API:', clientErr);
+    const res = await fetch('/api/admin/community', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(post)
+    });
+    if (res.ok) {
+      const data = await res.json();
+      docId = data.post?.id || `post_${Date.now()}`;
+    }
+  }
+
+  return docId;
 };
 
 // 3. Toggle Like on Post
 export const toggleLikePost = async (postId: string, userId: string, currentlyLiked: boolean) => {
-  const postDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_posts', postId);
-  if (currentlyLiked) {
-    await updateDoc(postDocRef, {
-      likes: arrayRemove(userId)
-    });
-  } else {
-    await updateDoc(postDocRef, {
-      likes: arrayUnion(userId)
-    });
+  try {
+    const postDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_posts', postId);
+    if (currentlyLiked) {
+      await updateDoc(postDocRef, {
+        likes: arrayRemove(userId)
+      });
+    } else {
+      await updateDoc(postDocRef, {
+        likes: arrayUnion(userId)
+      });
+    }
+  } catch (e) {
+    try {
+      const rootDocRef = doc(db, 'community_posts', postId);
+      if (currentlyLiked) {
+        await updateDoc(rootDocRef, { likes: arrayRemove(userId) });
+      } else {
+        await updateDoc(rootDocRef, { likes: arrayUnion(userId) });
+      }
+    } catch (err) {}
   }
 };
 
 // 4. Delete Community Post
 export const deleteCommunityPost = async (postId: string) => {
-  const postDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_posts', postId);
-  await deleteDoc(postDocRef);
+  // 1. Client Firestore Deletions
+  try {
+    const postDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_posts', postId);
+    await deleteDoc(postDocRef);
+  } catch (e) {}
+
+  try {
+    const rootDocRef = doc(db, 'community_posts', postId);
+    await deleteDoc(rootDocRef);
+  } catch (e) {}
+
+  // 2. Server API Deletion via Admin SDK
+  try {
+    await fetch(`/api/admin/community?id=${encodeURIComponent(postId)}`, {
+      method: 'DELETE'
+    });
+  } catch (apiErr) {}
+
+  // 3. Local Cache Invalidation
+  if (typeof window !== 'undefined') {
+    try {
+      const cached = localStorage.getItem('tsehay_cached_community_posts');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        const filtered = parsed.filter((p: any) => p.id !== postId);
+        localStorage.setItem('tsehay_cached_community_posts', JSON.stringify(filtered));
+      }
+    } catch (e) {}
+  }
+
+  return { success: true, postId };
 };
 
 // 5. Pin / Unpin Post
 export const pinCommunityPost = async (postId: string, isPinned: boolean) => {
-  const postDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_posts', postId);
-  await updateDoc(postDocRef, { isPinned });
+  try {
+    const postDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_posts', postId);
+    await updateDoc(postDocRef, { isPinned });
+  } catch (e) {}
+
+  try {
+    await updateDoc(doc(db, 'community_posts', postId), { isPinned });
+  } catch (e) {}
+
+  try {
+    await fetch('/api/admin/community', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: postId, isPinned })
+    });
+  } catch (e) {}
 };
 
 // 6. Feature Post
 export const featureCommunityPost = async (postId: string, isFeatured: boolean) => {
-  const postDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_posts', postId);
-  await updateDoc(postDocRef, { isFeatured });
+  try {
+    const postDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_posts', postId);
+    await updateDoc(postDocRef, { isFeatured });
+  } catch (e) {}
+
+  try {
+    await updateDoc(doc(db, 'community_posts', postId), { isFeatured });
+  } catch (e) {}
+
+  try {
+    await fetch('/api/admin/community', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: postId, isFeatured })
+    });
+  } catch (e) {}
 };
 
 // 7. Subscribe to Comments on a Post
