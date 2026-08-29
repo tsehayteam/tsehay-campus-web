@@ -1,4 +1,5 @@
 'use client';
+
 import React, { useEffect, useState, useRef, Suspense } from 'react';
 import { db, auth } from '@/lib/firebase/config';
 import { collection, getDocs, query, orderBy, doc, getDoc, updateDoc, setDoc, serverTimestamp, where, onSnapshot } from 'firebase/firestore';
@@ -6,9 +7,9 @@ import { useAuth } from '@/context/AuthContext';
 import { updateProfile } from 'firebase/auth';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageContext';
-import dynamic from 'next/dynamic';
+import nextDynamic from 'next/dynamic';
 
-const ReactPlayer: any = dynamic(() => import('react-player'), { ssr: false });
+const ReactPlayer: any = nextDynamic(() => import('react-player'), { ssr: false });
 
 import CourseRatingModal from '@/components/CourseRatingModal';
 import CourseQuiz from '@/components/CourseQuiz';

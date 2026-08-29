@@ -1,4 +1,5 @@
 'use client';
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { db, auth } from '@/lib/firebase/config';
 import { useAuth, ADMIN_EMAILS, isEmailAdmin } from '@/context/AuthContext';

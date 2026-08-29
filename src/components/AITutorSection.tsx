@@ -15,6 +15,7 @@ export interface PromptScenario {
   badge: string;
   question: string;
   response: string;
+  summary: string;
   courseTag: string;
   courseSlug: string;
   accentColor: string;
@@ -27,6 +28,7 @@ export const PROMPT_SCENARIOS: PromptScenario[] = [
     icon: 'fa-solid fa-boxes-packing',
     badge: '50% Cargo Saving',
     question: 'በሼን ኢምፖርት እንዴት ትርፋማ ልሁን?',
+    summary: 'የካርጎ ወጪን በ 50% የሚቀንሱ፣ በ Flash Sale ቅናሾች የመግዛትና ያለ ካፒታል በ Pre-Order የመስራት ስልቶች።',
     response: `📦 የሼን ኢምፖርት 3ቱ የትርፋማነት ሚስጥሮች፦\n\n1. ከፍተኛ ዋጋ ያላቸውን ቀላል እቃዎች መምረጥ (High Value-to-Weight Ratio) — የካርጎ ወጪን በ 50% ይቀንሳል።\n2. በ Flash Sale እና በ Points ቅናሽ መጠቀም — የግዢ ወጪን በ 30-40% ዝቅ ያደርጋል።\n3. በቅድመ-ትዕዛዝ (Pre-Order) ሞዴል ያለ ካፒታል መስራት።\n\n💡 ዝርዝር የካርጎ ኤጀንት ግንኙነቶችንና የክፍያ መንገዶችን በኮርሱ ውስጥ እንሰራለን!`,
     courseTag: 'የሼን ኢምፖርት ቢዝነስ',
     courseSlug: 'shein-import-business',
@@ -38,6 +40,7 @@ export const PROMPT_SCENARIOS: PromptScenario[] = [
     icon: 'fa-brands fa-youtube',
     badge: 'Viral Hook Strategy',
     question: 'የዩቲዩብ ቪዲዮ እይታዎችን እንዴት ላሳድግ?',
+    summary: 'ቫይራል የመነሻ 3 ሰከንዶች (The 3-Second Hook)፣ ማራኪ ከፍተኛ CTR ተምኔል እና የተመልካች ቆይታ ማሳደጊያ ስልቶች።',
     response: `🎬 የዩቲዩብ ቪዲዮዎችን ቫይራል የማድረጊያ 3 ቁልፍ ስልቶች፦\n\n1. ጠንካራ የመነሻ 3 ሰከንዶች (The 3-Second Hook) — ተመልካች ሳያሳልፍ ሙሉውን እንዲያይ ያደርጋል።\n2. ከፍተኛ CTR የሚያመጣ ማራኪ ተምኔል (High-Contrast Thumbnail + Mystery Text)።\n3. የተመልካች ቆይታ (Audience Retention) በየ 6 ሰከንዱ በስክሪን ቅንብር ማደስ።\n\n💡 በዩቲዩብ ማስተርክላሳችን የሞንታዥ እና የሞኒታይዜሽን ስትራቴጂዎችን ደረጃ በደረጃ ይማራሉ!`,
     courseTag: 'የዩቲዩብ ስኬት ሚስጥሮች',
     courseSlug: 'youtube-secrets-masterclass',
@@ -49,6 +52,7 @@ export const PROMPT_SCENARIOS: PromptScenario[] = [
     icon: 'fa-solid fa-chart-line',
     badge: 'Client Acquisition',
     question: 'በዲጂታል ማርኬቲንግ የመጀመሪያ ደንበኛዬን እንዴት ላግኝ?',
+    summary: 'ለአካባቢ ቢዝነሶች ነፃ ማስታወቂያ በመስራት፣ በ Facebook & TikTok Ads ትክክለኛውን ገዢ በማነጣጠር እና ወደ ወርሃዊ ውል የመቀየር ዘዴዎች።',
     response: `📈 የመጀመሪያ ደንበኛን በፍጥነት የማግኛ 3 የድርጊት እርምጃዎች፦\n\n1. ለአካባቢዎ ላሉ 3 ትናንሽ ቢዝነሶች ነፃ አጭር የቪዲዮ ማስታወቂያ (Proof of Concept) መስራት።\n2. በ Facebook & TikTok Ads ትክክለኛውን ገዢ (Target Audience) ማነጣጠር።\n3. ውጤቱን በቁጥር በማሳየት (ROI Case Study) ወደ ወርሃዊ የክፍያ ውል መቀየር።\n\n💡 በዲጂታል ማርኬቲንግ ኮርሳችን ላይ የተረጋገጡ የማስታወቂያ ሴቲንጎችን በቀጥታ ተግባር እንሰራለን!`,
     courseTag: 'ዲጂታል ማርኬቲንግ እና ሶሻል ሚዲያ',
     courseSlug: 'digital-marketing',
@@ -69,6 +73,7 @@ export default function AITutorSection() {
   const [coursesList, setCoursesList] = useState<any[]>([]);
 
   const chatContainerRef = useRef<HTMLDivElement>(null);
+  const terminalRef = useRef<HTMLDivElement>(null);
   const activeScenario = PROMPT_SCENARIOS[activeScenarioIdx];
 
   // Fetch cached or live courses for navigation
@@ -105,25 +110,24 @@ export default function AITutorSection() {
       if (displayedQuestion.length < targetQ.length) {
         timer = setTimeout(() => {
           setDisplayedQuestion(targetQ.slice(0, displayedQuestion.length + 1));
-        }, 32);
+        }, 30);
       } else {
         timer = setTimeout(() => {
           setIsThinking(true);
           setPhase('thinking');
-        }, 350);
+        }, 300);
       }
     } else if (phase === 'thinking') {
       timer = setTimeout(() => {
         setIsThinking(false);
         setPhase('typing_r');
-      }, 700);
+      }, 600);
     } else if (phase === 'typing_r') {
       if (displayedResponse.length < targetR.length) {
-        // Stream text with natural cadence
         const nextChunk = targetR.slice(0, displayedResponse.length + 3);
         timer = setTimeout(() => {
           setDisplayedResponse(nextChunk);
-        }, 20);
+        }, 18);
       } else {
         setPhase('idle');
       }
@@ -140,62 +144,58 @@ export default function AITutorSection() {
   }, [displayedQuestion, displayedResponse, isThinking]);
 
   // Handle Chip Selection
-  const handleSelectScenario = (idx: number) => {
-    if (idx === activeScenarioIdx && phase !== 'idle') return;
+  const handleSelectScenario = (idx: number, scrollIntoTerminal: boolean = false) => {
+    if (idx === activeScenarioIdx && phase !== 'idle' && !scrollIntoTerminal) return;
     if (isSpeaking && typeof window !== 'undefined' && 'speechSynthesis' in window) {
       window.speechSynthesis.cancel();
       setIsSpeaking(false);
     }
     setDisplayedQuestion('');
     setDisplayedResponse('');
-    setIsThinking(false);
     setActiveScenarioIdx(idx);
     setPhase('typing_q');
+
+    if (scrollIntoTerminal && terminalRef.current) {
+      terminalRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
   };
 
-  // Copy handler
+  // Copy response
   const handleCopy = () => {
-    if (!displayedResponse) return;
-    navigator.clipboard.writeText(displayedResponse);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(displayedResponse || activeScenario.response);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
 
-  // Text-To-Speech (TTS) Voice handler
+  // Voice TTS (Live Speech Synthesis)
   const handleToggleTTS = () => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
 
     if (isSpeaking) {
-      if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-      }
+      window.speechSynthesis.cancel();
       setIsSpeaking(false);
       return;
     }
 
+    window.speechSynthesis.cancel();
     const textToSpeak = displayedResponse || activeScenario.response;
-    if (!textToSpeak) return;
+    const cleanText = textToSpeak.replace(/[📦🎬📈💡⚡•\-*#]/g, '').trim();
 
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const clean = textToSpeak.replace(/[#*`_💡🎬📈📦1-9.]/g, '').trim();
-      const utterance = new SpeechSynthesisUtterance(clean);
-      utterance.rate = 0.95;
-      utterance.pitch = 1.0;
-      
-      const voices = window.speechSynthesis.getVoices();
-      const amVoice = voices.find(v => v.lang.includes('am') || v.lang.includes('et'));
-      if (amVoice) utterance.voice = amVoice;
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    utterance.rate = 0.95;
+    utterance.pitch = 1.0;
 
-      utterance.onstart = () => setIsSpeaking(true);
-      utterance.onend = () => setIsSpeaking(false);
-      utterance.onerror = () => setIsSpeaking(false);
+    const voices = window.speechSynthesis.getVoices();
+    const amVoice = voices.find(v => v.lang.includes('am') || v.lang.includes('AM'));
+    if (amVoice) utterance.voice = amVoice;
 
-      window.speechSynthesis.speak(utterance);
-    } else {
-      setIsSpeaking(true);
-      setTimeout(() => setIsSpeaking(false), 4000);
-    }
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+
+    setIsSpeaking(true);
+    window.speechSynthesis.speak(utterance);
   };
 
   // Resolve target course route
@@ -228,32 +228,31 @@ export default function AITutorSection() {
       const generatedResp = `⚡ ለ "${queryText}" የተሰጠ ፈጣን የስትራቴጂ ትንተና፦\n\n1. ግልጽ የደንበኛ ፍላጎት (Target Niche) ይለዩ።\n2. አነስተኛ ወጪ ባለው ዲጂታል ቻናል (Telegram / TikTok) ቀጥታ ይሞክሩ።\n3. የሽያጭ ሂደቱን በ AI አውቶሜሽን በማቀናጀት ስራዎን ያፋጥኑ።\n\n💡 ዝርዝር ተግባራዊ ትምህርቱን በእኛ ኮርሶች ውስጥ ያገኛሉ!`;
       setDisplayedResponse(generatedResp);
       setPhase('idle');
-    }, 800);
+    }, 750);
   };
 
   return (
-    <section id="ai-feature" className="relative py-24 lg:py-32 overflow-hidden bg-[#030509] border-y border-white/10 select-none">
+    <section id="ai-feature" className="relative py-20 lg:py-28 overflow-hidden bg-[#030509] border-y border-white/10 select-none">
       
-      {/* 🌟 1. Visual Atmosphere & Layered 3D Ambient Glow */}
-      <div className="absolute inset-0 bg-[radial-gradient(#ffffff0a_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none opacity-40"></div>
+      {/* 🌟 1. Visual Atmosphere & Layered 3D Ambient Glow (Clean, No Stray Dots) */}
+      <div className="absolute inset-0 bg-[radial-gradient(#ffffff08_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none opacity-40"></div>
       
       {/* Golden Orange Glow (#f9b03c / 15%) */}
-      <div className="absolute top-1/4 -left-32 w-[500px] h-[500px] bg-[#f9b03c]/15 rounded-full blur-[140px] pointer-events-none animate-pulse" style={{ animationDuration: '6s' }}></div>
+      <div className="absolute top-1/4 -left-32 w-[500px] h-[500px] bg-[#f9b03c]/15 rounded-full blur-[140px] pointer-events-none"></div>
       
       {/* Cobalt Blue Glow (#3268ba / 20%) */}
-      <div className="absolute bottom-1/4 -right-32 w-[550px] h-[550px] bg-[#3268ba]/20 rounded-full blur-[150px] pointer-events-none animate-pulse" style={{ animationDuration: '8s' }}></div>
+      <div className="absolute bottom-1/4 -right-32 w-[550px] h-[550px] bg-[#3268ba]/20 rounded-full blur-[150px] pointer-events-none"></div>
 
-      {/* Floating Accent Background Grid Specular */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[350px] bg-gradient-to-r from-[#f9b03c]/5 via-transparent to-[#3268ba]/5 rounded-full blur-[100px] pointer-events-none"></div>
-
-      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-16">
+        
+        {/* ===================== TOP ROW: 2-COLUMN HERO SHOWCASE ===================== */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center">
           
           {/* ===================== LEFT COLUMN: VALUE PROPOSITION ===================== */}
-          <div className="lg:col-span-6 flex flex-col text-left space-y-7">
+          <div className="lg:col-span-6 flex flex-col text-left space-y-6">
             
             {/* Modern Top Badge */}
-            <div className="inline-flex items-center gap-2.5 bg-gradient-to-r from-[#f9b03c]/15 via-amber-500/10 to-transparent border border-[#f9b03c]/30 px-4 py-1.5 rounded-full w-fit shadow-[0_0_25px_rgba(249,176,60,0.2)] backdrop-blur-xl group hover:border-[#f9b03c]/60 transition-colors">
+            <div className="inline-flex items-center gap-2.5 bg-gradient-to-r from-[#f9b03c]/15 via-amber-500/10 to-transparent border border-[#f9b03c]/30 px-4 py-1.5 rounded-full w-fit shadow-[0_0_25px_rgba(249,176,60,0.2)] backdrop-blur-xl">
               <span className="relative flex h-2.5 w-2.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#f9b03c] opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#f9b03c]"></span>
@@ -264,7 +263,7 @@ export default function AITutorSection() {
             </div>
 
             {/* Bold Gradient Headline */}
-            <h2 className="text-3xl sm:text-4xl lg:text-[2.85rem] font-black font-heading text-white leading-[1.18] tracking-tight">
+            <h2 className="text-3xl sm:text-4xl lg:text-[2.75rem] font-black font-heading text-white leading-[1.18] tracking-tight">
               ጥያቄዎችህን በቅጽበት የሚመልስ፣{' '}
               <span className="bg-gradient-to-r from-white via-amber-200 to-[#f9b03c] bg-clip-text text-transparent drop-shadow-[0_2px_20px_rgba(249,176,60,0.3)]">
                 አብሮህ የሚማር የግል AI መምህርህ
@@ -277,7 +276,7 @@ export default function AITutorSection() {
             </p>
 
             {/* 3 Sleek Benefit Cards */}
-            <div className="space-y-3.5 pt-1">
+            <div className="space-y-3 pt-1">
               
               {/* Benefit 1 */}
               <div className="flex items-start gap-3.5 p-3.5 rounded-2xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 hover:border-[#f9b03c]/40 transition-all duration-300 shadow-sm group">
@@ -331,37 +330,19 @@ export default function AITutorSection() {
             <div className="pt-2">
               <Link 
                 href="/courses"
-                className="group relative inline-flex items-center justify-center gap-3 px-8 py-4 rounded-2xl bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#f9b03c] text-slate-950 font-black text-sm shadow-[0_0_35px_rgba(249,176,60,0.4)] hover:shadow-[0_0_50px_rgba(249,176,60,0.65)] transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer"
+                className="group relative inline-flex items-center justify-center gap-3 px-8 py-3.5 rounded-2xl bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#f9b03c] text-slate-950 font-black text-xs sm:text-sm uppercase tracking-wider shadow-[0_0_35px_rgba(249,176,60,0.4)] hover:shadow-[0_0_50px_rgba(249,176,60,0.65)] transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer"
               >
-                <span>ኮርሶችን ይዩ እና ይማሩ</span>
-                <i className="fa-solid fa-arrow-right text-xs group-hover:translate-x-1.5 transition-transform duration-300"></i>
-                <span className="absolute -inset-1 rounded-2xl bg-white/20 blur-sm opacity-0 group-hover:opacity-100 transition-opacity"></span>
+                <span>ኮርሶችን ይዩ እና ይማሩ →</span>
               </Link>
             </div>
 
           </div>
 
           {/* ===================== RIGHT COLUMN: 3D INTERACTIVE LIVE DEMO TERMINAL ===================== */}
-          <div className="lg:col-span-6 flex justify-center relative">
+          <div ref={terminalRef} className="lg:col-span-6 flex justify-center relative">
             
-            {/* Floating Top Accent Badge ("⚡ 0.2s Instant Response") */}
-            <div className="hidden sm:flex absolute -top-4 -right-2 z-20 items-center gap-2 px-3.5 py-1.5 rounded-xl bg-[#090e1a]/90 border border-amber-400/40 shadow-[0_10px_25px_rgba(0,0,0,0.6)] backdrop-blur-xl animate-bounce" style={{ animationDuration: '4s' }}>
-              <span className="w-2 h-2 rounded-full bg-[#f9b03c] animate-ping"></span>
-              <span className="text-xs font-black text-[#f9b03c] font-mono">
-                ⚡ 0.2s Instant Response
-              </span>
-            </div>
-
-            {/* Floating Bottom Accent Badge ("🎙️ Live Voice TTS") */}
-            <div className="hidden sm:flex absolute -bottom-4 -left-2 z-20 items-center gap-2 px-3.5 py-1.5 rounded-xl bg-[#090e1a]/90 border border-blue-400/40 shadow-[0_10px_25px_rgba(0,0,0,0.6)] backdrop-blur-xl">
-              <i className="fa-solid fa-waveform-lines text-[#5a93e8] animate-pulse"></i>
-              <span className="text-xs font-black text-[#5a93e8] font-mono">
-                🎙️ Live Voice TTS
-              </span>
-            </div>
-
             {/* 3D Tilt Wrapper */}
-            <Tilt3DCard maxTilt={6} scale={1.01} perspective={1200} className="w-full max-w-xl">
+            <Tilt3DCard maxTilt={5} scale={1.01} perspective={1200} className="w-full max-w-xl">
               
               <div className="w-full bg-[#070b14]/95 backdrop-blur-2xl border border-white/15 rounded-3xl p-5 sm:p-6 relative overflow-hidden shadow-[0_25px_80px_rgba(0,0,0,0.85)] group">
                 
@@ -373,7 +354,7 @@ export default function AITutorSection() {
                 {/* 1. Terminal Window Bar */}
                 <div className="flex items-center justify-between border-b border-white/10 pb-3.5 mb-4 relative z-10">
                   
-                  {/* macOS Acrylic Window Dots */}
+                  {/* macOS Window Dots */}
                   <div className="flex items-center gap-2">
                     <span className="w-3 h-3 rounded-full bg-red-500/80 border border-red-400/40"></span>
                     <span className="w-3 h-3 rounded-full bg-yellow-500/80 border border-yellow-400/40"></span>
@@ -400,10 +381,10 @@ export default function AITutorSection() {
                 <div className="mb-4 relative z-10">
                   <p className="text-[11px] text-gray-400 uppercase font-black tracking-wider mb-2 flex items-center gap-1.5">
                     <i className="fa-solid fa-sparkles text-[#f9b03c]"></i>
-                    <span>የተዘጋጁ ጥያቄዎችን ይምረጡ (Quick Prompt Chips):</span>
+                    <span>የተዘጋጁ ጥያቄዎችን ይምረጡ (Quick Chips):</span>
                   </p>
                   
-                  <div className="flex flex-col sm:flex-row gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                     {PROMPT_SCENARIOS.map((sc, idx) => (
                       <button
                         key={sc.id}
@@ -427,7 +408,7 @@ export default function AITutorSection() {
                 {/* 3. Live Chat Simulation Terminal Body */}
                 <div 
                   ref={chatContainerRef}
-                  className="space-y-3.5 min-h-[250px] max-h-[290px] overflow-y-auto pr-1 flex flex-col justify-start relative z-10 custom-scrollbar"
+                  className="space-y-3.5 min-h-[250px] max-h-[280px] overflow-y-auto pr-1 flex flex-col justify-start relative z-10 custom-scrollbar"
                 >
                   
                   {/* User Prompt Message */}
@@ -485,7 +466,7 @@ export default function AITutorSection() {
                             </span>
                           </div>
 
-                          {/* Action Icons (Voice TTS, Live Sound Wave Equalizer & Copy) */}
+                          {/* Action Icons (Voice TTS & Copy) */}
                           <div className="flex items-center gap-2">
                             
                             {/* Live Sound Wave Equalizer animation when speaking */}
@@ -582,6 +563,75 @@ export default function AITutorSection() {
           </div>
 
         </div>
+
+        {/* ===================== 🌟 2. 3-COLUMN FAQ QUESTION GRID ===================== */}
+        <div className="pt-6 border-t border-white/10">
+          
+          <div className="text-center max-w-2xl mx-auto mb-8 space-y-2">
+            <span className="text-[11px] font-black uppercase tracking-widest text-[#f9b03c] font-heading">
+              💡 በብዛት የሚጠየቁ ጥያቄዎች • AI FAQ Knowledge Base
+            </span>
+            <h3 className="text-2xl sm:text-3xl font-black font-heading text-white">
+              ተማሪዎቻችን Tsehay AI ን በብዛት የሚጠይቋቸው ርዕሶች
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-400">
+              ከስር ከቀረቡት ጥያቄዎች አንዱን በመጫን የቀጥታ ስትራቴጂውን በ AI አስመስክረው ይመልከቱ
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {PROMPT_SCENARIOS.map((sc, idx) => (
+              <div
+                key={`faq-${sc.id}`}
+                onClick={() => handleSelectScenario(idx, true)}
+                className={`group p-5 rounded-3xl border transition-all duration-300 cursor-pointer relative overflow-hidden backdrop-blur-xl flex flex-col justify-between ${
+                  activeScenarioIdx === idx
+                    ? 'bg-[#f9b03c]/10 border-[#f9b03c] shadow-[0_0_30px_rgba(249,176,60,0.25)]'
+                    : 'bg-white/[0.03] hover:bg-white/[0.06] border-white/10 hover:border-[#f9b03c]/50 shadow-lg'
+                }`}
+              >
+                {/* Subtle Ambient Glow */}
+                <div className="absolute -top-10 -right-10 w-24 h-24 bg-[#f9b03c]/10 rounded-full blur-2xl pointer-events-none group-hover:bg-[#f9b03c]/20 transition-colors" />
+
+                <div>
+                  {/* Top Badge & Category */}
+                  <div className="flex items-center justify-between gap-2 mb-3">
+                    <span className="text-xs font-black text-[#f9b03c] flex items-center gap-1.5">
+                      <i className={sc.icon}></i>
+                      <span>{sc.category}</span>
+                    </span>
+                    <span className="text-[10px] font-mono font-bold bg-white/5 border border-white/10 px-2 py-0.5 rounded-full text-slate-300">
+                      {sc.badge}
+                    </span>
+                  </div>
+
+                  {/* Question */}
+                  <h4 className="text-base font-black text-white font-heading mb-2 group-hover:text-[#f9b03c] transition-colors leading-snug">
+                    "{sc.question}"
+                  </h4>
+
+                  {/* Summary */}
+                  <p className="text-xs text-slate-300 leading-relaxed font-body">
+                    {sc.summary}
+                  </p>
+                </div>
+
+                {/* Bottom Action Trigger */}
+                <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-xs font-bold">
+                  <span className="text-[#f9b03c] group-hover:translate-x-1 transition-transform flex items-center gap-1.5">
+                    <span>በ AI አስመስክር (Ask AI)</span>
+                    <i className="fa-solid fa-arrow-right text-[10px]"></i>
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-normal">
+                    {sc.courseTag}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+        </div>
+
       </div>
     </section>
   );

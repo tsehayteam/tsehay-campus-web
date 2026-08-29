@@ -10,6 +10,7 @@ import SmartSearchInput from "./SmartSearchInput";
 import { auth } from "@/lib/firebase/config";
 import { signOut } from "firebase/auth";
 import { getCachedCourses } from "@/lib/courseCache";
+import Tilt3DLoginButton from "@/components/3d/Tilt3DLoginButton";
 
 export default function Navbar() {
   const { user, isAdmin } = useAuth();
@@ -504,6 +505,33 @@ export default function Navbar() {
                 <span className="w-1.5 h-1.5 rounded-full bg-black ml-0.5 animate-pulse"></span>
               </button>
 
+              {/* 3D Magnetic Hover Tilt "ይግቡ / Login" Button or User Profile */}
+              {!mounted || !user ? (
+                <Tilt3DLoginButton
+                  onClick={() => {
+                    closeCurtain();
+                    openAuthModal(false);
+                  }}
+                  label={lang === 'en' ? 'Login' : 'ይግቡ (Login)'}
+                />
+              ) : (
+                <Link
+                  href="/dashboard"
+                  onClick={() => closeCurtain()}
+                  className="flex items-center gap-2 p-1 pr-3 rounded-full bg-white/5 hover:bg-white/10 border border-[#f9b03c]/40 hover:border-[#f9b03c] transition-all cursor-pointer group shadow-sm"
+                  title="መማሪያ ክፍል (Dashboard)"
+                >
+                  <img
+                    src={navUserPhoto}
+                    alt={navUserName}
+                    className="w-7 h-7 rounded-full border border-[#f9b03c] object-cover shrink-0"
+                  />
+                  <span className="text-xs font-bold text-slate-200 group-hover:text-[#f9b03c] transition-colors truncate max-w-[90px]">
+                    {navUserName.split(' ')[0]}
+                  </span>
+                </Link>
+              )}
+
               {/* Compact Install App Trigger */}
               <button 
                 type="button"
@@ -660,14 +688,16 @@ export default function Navbar() {
             {/* User Profile & Auth Trigger */}
             <div className="w-full pt-1">
               {!mounted || !user ? (
-                <button 
-                  type="button" 
-                  onClick={() => { closeCurtain(); openAuthModal(false); }} 
-                  className="w-full btn-buy-now-vibe font-black py-3.5 rounded-2xl shadow-lg flex items-center justify-center gap-2 text-xs sm:text-sm cursor-pointer active:scale-95 group"
-                >
-                  <i className="fa-solid fa-arrow-right-to-bracket text-slate-950"></i>
-                  <span>{t('login') || 'ግባ ወይም ተመዝገብ (Login / Sign Up)'}</span>
-                </button>
+                <div className="w-full flex justify-center">
+                  <Tilt3DLoginButton
+                    className="w-full justify-center py-3.5"
+                    onClick={() => {
+                      closeCurtain();
+                      openAuthModal(false);
+                    }}
+                    label={t('login') || (lang === 'en' ? 'Login / Sign Up' : 'ግባ ወይም ተመዝገብ (Login / Sign Up)')}
+                  />
+                </div>
               ) : (
                 <div className="space-y-2.5 p-3.5 rounded-2xl bg-white/5 border border-white/10 text-center">
                   <div className="flex items-center justify-between gap-3 pb-2 border-b border-white/10">
