@@ -153,10 +153,48 @@ export default function AdminDashboard() {
     return false;
   });
   const [twoFactorCode, setTwoFactorCode] = useState('');
+  const [isSendingEmailOtp, setIsSendingEmailOtp] = useState(false);
   const [isVerifying2faOtp, setIsVerifying2faOtp] = useState(false);
+  const [otpCooldown, setOtpCooldown] = useState(0);
   const [otpError, setOtpError] = useState<string | null>(null);
   const [otpSuccessMsg, setOtpSuccessMsg] = useState<string | null>(null);
   const [redirectCountdown, setRedirectCountdown] = useState(3);
+
+  // 60-Second Cooldown Timer for OTP Resending
+  useEffect(() => {
+    if (otpCooldown <= 0) return;
+    const interval = setInterval(() => {
+      setOtpCooldown(prev => prev <= 1 ? 0 : prev - 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [otpCooldown]);
+
+  // 📧 Send 6-Digit Verification Code to eyoubsahle@gmail.com
+  const handleSend2faOtp = async () => {
+    if (otpCooldown > 0 || isSendingEmailOtp) return;
+    setIsSendingEmailOtp(true);
+    setOtpError(null);
+    setOtpSuccessMsg(null);
+
+    try {
+      const res = await fetch('/api/admin/verify-2fa', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'send', email: STRICT_ADMIN_EMAIL })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setOtpSuccessMsg('የ 6-አሃዝ የአድሚን ማረጋገጫ ኮድ ወደ eyoubsahle@gmail.com ተልኳል!');
+        setOtpCooldown(60);
+      } else {
+        setOtpError(data.error || 'ኮድ መላክ አልተቻለም። እባክዎ እንደገና ይሞክሩ።');
+      }
+    } catch (err: any) {
+      setOtpError('የኔትወርክ ችግር አጋጥሟል። እባክዎ እንደገና ይሞክሩ።');
+    } finally {
+      setIsSendingEmailOtp(false);
+    }
+  };
 
   // Auto-redirect unauthorized students to /dashboard
   useEffect(() => {
@@ -177,16 +215,19 @@ export default function AdminDashboard() {
     }
   }, [user, router]);
 
-  // 🔑 Master Access Code Verification ("Eyoub TC")
-  const handleVerify2faOtp = (e: React.FormEvent) => {
+  // 🔑 Verify 6-Digit OTP or Master Access Code
+  const handleVerify2faOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanInput = twoFactorCode.trim();
+    if (!cleanInput) return;
 
+    setIsVerifying2faOtp(true);
+    setOtpError(null);
+    setOtpSuccessMsg(null);
+
+    // Fast-path master code
     if (cleanInput === 'Eyoub TC') {
-      setIsVerifying2faOtp(true);
-      setOtpError(null);
       setOtpSuccessMsg('ማረጋገጫው ተሳክቷል! ወደ አድሚን ዳሽቦርድ በመግባት ላይ...');
-
       setTimeout(() => {
         setIs2faVerified(true);
         setIsAuthenticated(true);
@@ -196,9 +237,36 @@ export default function AdminDashboard() {
           sessionStorage.setItem('tsehay_admin_2fa_token', `master_token_${Date.now()}`);
         }
         setIsVerifying2faOtp(false);
-      }, 350);
-    } else {
-      setOtpError('ኮዱ ትክክል አይደለም።');
+      }, 300);
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/admin/verify-2fa', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'verify', email: STRICT_ADMIN_EMAIL, code: cleanInput })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setOtpSuccessMsg('የአድሚን ማረጋገጫ ተሳክቷል! እንኳን ደህና መጡ።');
+        setTimeout(() => {
+          setIs2faVerified(true);
+          setIsAuthenticated(true);
+          if (typeof window !== 'undefined') {
+            sessionStorage.setItem('tsehay_admin_verified', 'true');
+            localStorage.setItem('tsehay_admin_verified', 'true');
+            sessionStorage.setItem('tsehay_admin_2fa_token', data.token || `token_${Date.now()}`);
+          }
+          setIsVerifying2faOtp(false);
+        }, 300);
+      } else {
+        setOtpError(data.error || 'የተሳሳተ ኮድ አስገብተዋል። እባክዎ እንደገና ይሞክሩ።');
+        setIsVerifying2faOtp(false);
+      }
+    } catch (err: any) {
+      setOtpError('የማረጋገጥ ሂደት ላይ ስህተት አጋጥሟል። እባክዎ እንደገና ይሞክሩ።');
+      setIsVerifying2faOtp(false);
     }
   };
 
@@ -2389,6 +2457,7 @@ export default function AdminDashboard() {
     return (
       <div className="min-h-screen bg-[#06090e] text-white flex flex-col items-center justify-center p-4 relative overflow-hidden -mt-20 z-[9999]">
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[550px] h-[550px] bg-[#f9b03c]/15 rounded-full blur-[160px] pointer-events-none" />
+        <div className="absolute top-1/3 left-1/3 w-[450px] h-[450px] bg-[#3268ba]/15 rounded-full blur-[150px] pointer-events-none" />
 
         <div 
           className="relative max-w-md w-full rounded-[2.5rem] p-8 sm:p-10 text-white shadow-2xl animate-in zoom-in-95 duration-200"
@@ -2400,20 +2469,58 @@ export default function AdminDashboard() {
           }}
         >
           <div className="text-center mb-6">
-            <div className="w-16 h-16 rounded-3xl bg-gradient-to-tr from-[#f9b03c] to-amber-400 text-slate-950 flex items-center justify-center text-2xl font-black mx-auto mb-4 shadow-[0_0_30px_rgba(249,176,60,0.5)]">
-              <i className="fa-solid fa-key"></i>
+            <div className="w-16 h-16 rounded-3xl bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-[#3268ba] text-slate-950 flex items-center justify-center text-2xl font-black mx-auto mb-4 shadow-[0_0_30px_rgba(249,176,60,0.5)]">
+              <i className="fa-solid fa-shield-halved text-white"></i>
             </div>
             
             <div className="inline-block px-3.5 py-1 rounded-full bg-amber-400/15 border border-amber-400/30 text-[#f9b03c] text-xs font-black uppercase tracking-wider mb-2">
-              🔒 MASTER ACCESS VERIFICATION
+              🔒 ADMIN 2-STEP VERIFICATION
             </div>
 
             <h2 className="text-2xl font-black font-heading text-white tracking-tight">
-              የአድሚን ማረጋገጫ ኮድ
+              የአድሚን ማረጋገጫ ኮድ (2FA)
             </h2>
             <p className="text-xs text-slate-400 mt-1.5 leading-relaxed">
-              ወደ አድሚን ዳሽቦርድ ለመግባት የአድሚን ማስተር ኮድዎን (Master Access Code) ያስገቡ።
+              ወደ አድሚን ዳሽቦርድ ለመግባት ባለ 6-አሃዝ የማረጋገጫ ኮድ ወደ ኢሜይልዎ ይላኩ።
             </p>
+          </div>
+
+          {/* Target Admin Email Pill */}
+          <div className="p-3 rounded-2xl bg-white/[0.04] border border-white/10 text-xs text-slate-300 mb-5 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <i className="fa-solid fa-envelope text-[#f9b03c]"></i>
+              <span>ተቀባይ ኢሜይል፡</span>
+            </div>
+            <strong className="text-white font-mono text-[11px] bg-black/40 px-2.5 py-1 rounded-lg border border-white/5">
+              eyoubsahle@gmail.com
+            </strong>
+          </div>
+
+          {/* Send / Resend Code Button */}
+          <div className="mb-5">
+            <button
+              type="button"
+              onClick={handleSend2faOtp}
+              disabled={isSendingEmailOtp || otpCooldown > 0}
+              className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-[#3268ba] to-[#1e3a8a] hover:from-[#3b82f6] hover:to-[#2563eb] text-white text-xs font-black uppercase tracking-wider border border-[#3268ba]/50 transition cursor-pointer active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md"
+            >
+              {isSendingEmailOtp ? (
+                <>
+                  <i className="fa-solid fa-spinner fa-spin text-amber-400"></i>
+                  <span>ኮድ በመላክ ላይ...</span>
+                </>
+              ) : otpCooldown > 0 ? (
+                <>
+                  <i className="fa-solid fa-clock text-amber-400"></i>
+                  <span>በ {otpCooldown}s ውስጥ ድጋሚ መላክ ይችላሉ</span>
+                </>
+              ) : (
+                <>
+                  <i className="fa-solid fa-paper-plane text-[#f9b03c]"></i>
+                  <span>ኮድ በኢሜይል ላክ (Send Code)</span>
+                </>
+              )}
+            </button>
           </div>
 
           {otpSuccessMsg && (
@@ -2430,19 +2537,23 @@ export default function AdminDashboard() {
             </div>
           )}
 
-          <form onSubmit={handleVerify2faOtp} className="space-y-5">
+          <form onSubmit={handleVerify2faOtp} className="space-y-4">
             <div>
-              <label className="text-[11px] font-bold text-slate-300 uppercase tracking-widest mb-2 block text-center">
-                የአድሚን ማስተር ኮድ (Master Access Code)
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-[11px] font-bold text-slate-300 uppercase tracking-widest block">
+                  ባለ 6-አሃዝ ኮድ (6-Digit OTP)
+                </label>
+                <span className="text-[10px] text-slate-400">የ 10 ደቂቃ ቆይታ አለው</span>
+              </div>
               <input
-                type="password"
+                type="text"
                 autoFocus
                 required
+                maxLength={10}
                 value={twoFactorCode}
                 onChange={(e) => setTwoFactorCode(e.target.value)}
-                placeholder="የማስተር ኮድዎን ያስገቡ..."
-                className="w-full bg-black/60 border-2 border-amber-400/40 focus:border-[#f9b03c] rounded-2xl py-3.5 px-4 text-center text-lg font-bold text-[#f9b03c] outline-none shadow-inner tracking-widest placeholder:text-gray-600 placeholder:tracking-normal placeholder:text-sm"
+                placeholder="ለምሳሌ፡ 847291"
+                className="w-full bg-black/60 border-2 border-amber-400/40 focus:border-[#f9b03c] rounded-2xl py-3.5 px-4 text-center text-xl font-bold font-mono text-[#f9b03c] outline-none shadow-inner tracking-widest placeholder:text-gray-600 placeholder:tracking-normal placeholder:text-xs"
               />
             </div>
 
@@ -2459,7 +2570,7 @@ export default function AdminDashboard() {
               ) : (
                 <>
                   <i className="fa-solid fa-unlock-keyhole"></i>
-                  <span>አረጋግጥና ግባ (Verify & Enter Dashboard)</span>
+                  <span>አረጋግጥና ግባ (Verify Code & Enter)</span>
                 </>
               )}
             </button>
