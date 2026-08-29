@@ -118,23 +118,34 @@ export default function Courses() {
 
   // 🌟 Seamless Post-Login Action Continuity: Automatically resume Buy/Enroll where user left off!
   useEffect(() => {
-    if (user && courses.length > 0) {
-      try {
-        const savedRaw = sessionStorage.getItem('tsehay_pending_course_action');
-        if (savedRaw) {
-          const saved = JSON.parse(savedRaw);
-          const found = courses.find((c: any) => c.id === saved.courseId) || saved.course;
-          if (found) {
-            sessionStorage.removeItem('tsehay_pending_course_action');
-            setShowRequireAuthModal(false);
-            setAuthCourseTarget(null);
-            openPaymentModal(found);
+    const handleResume = () => {
+      if (user && courses.length > 0) {
+        try {
+          const savedRaw = sessionStorage.getItem('tsehay_pending_course_action') || sessionStorage.getItem('tsehay_pending_action');
+          if (savedRaw) {
+            const saved = JSON.parse(savedRaw);
+            const found = courses.find((c: any) => c.id === saved.courseId) || saved.course;
+            if (found) {
+              sessionStorage.removeItem('tsehay_pending_course_action');
+              sessionStorage.removeItem('tsehay_pending_action');
+              setShowRequireAuthModal(false);
+              setAuthCourseTarget(null);
+              openPaymentModal(found);
+            }
           }
+        } catch (e) {
+          console.warn("Error restoring pending course action:", e);
         }
-      } catch (e) {
-        console.warn("Error restoring pending course action:", e);
       }
-    }
+    };
+
+    handleResume();
+    window.addEventListener('tsehay_resume_pending_action', handleResume);
+    window.addEventListener('tsehay_auth_state_changed', handleResume);
+    return () => {
+      window.removeEventListener('tsehay_resume_pending_action', handleResume);
+      window.removeEventListener('tsehay_auth_state_changed', handleResume);
+    };
   }, [user, courses]);
 
   const openPaymentModal = async (course: any) => {
@@ -147,7 +158,15 @@ export default function Courses() {
             type: 'enroll_free',
             courseId: course.id,
             courseTitle: course.title,
-            course: course
+            course: course,
+            returnUrl: '/courses'
+          }));
+          sessionStorage.setItem('tsehay_pending_action', JSON.stringify({
+            type: 'enroll_free',
+            courseId: course.id,
+            courseTitle: course.title,
+            course: course,
+            returnUrl: '/courses'
           }));
         } catch (e) {}
         setAuthCourseTarget(course);
@@ -213,6 +232,27 @@ export default function Courses() {
          setIsEnrolling(false);
       }
     } else {
+      if (!user) {
+        try {
+          sessionStorage.setItem('tsehay_pending_course_action', JSON.stringify({
+            type: 'buy',
+            courseId: course.id,
+            courseTitle: course.title,
+            course: course,
+            returnUrl: '/courses'
+          }));
+          sessionStorage.setItem('tsehay_pending_action', JSON.stringify({
+            type: 'buy_course',
+            courseId: course.id,
+            courseTitle: course.title,
+            course: course,
+            returnUrl: '/courses'
+          }));
+        } catch (e) {}
+        setAuthCourseTarget(course);
+        setShowRequireAuthModal(true);
+        return;
+      }
       // Paid course -> Open payment modal directly for instant checkout
       setSelectedCourse(course);
     }

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getMentorshipUserEmailHtml, getMentorshipAdminEmailHtml, MentorshipBooking } from '@/lib/premiumEmailTemplates';
+import { adminDb } from '@/lib/firebase/admin';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,7 +16,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const { name, phone, email, date, time, topic, userId, tier, amount, paymentMethod, meetingMode } = body;
+    const { name, phone, email, date, time, topic, userId, tier, amount, paymentMethod, meetingMode, transactionRef, receiptFile } = body;
 
     if (!name || !phone || !email || !date || !time) {
       return NextResponse.json(
@@ -24,7 +25,11 @@ export async function POST(req: Request) {
       );
     }
 
+    const validUserId = String(userId || 'guest_user').trim();
+    let bookingId = `MNTR-${Date.now().toString(36).toUpperCase()}`;
+
     const bookingData: MentorshipBooking = {
+      id: bookingId,
       name: String(name).trim(),
       phone: String(phone).trim(),
       email: String(email).trim(),
@@ -32,28 +37,47 @@ export async function POST(req: Request) {
       time: String(time).trim(),
       topic: (topic || 'አጠቃላይ የ 1-ለ-1 ማማከር').trim(),
       tier: tier || '1-Hour Strategy Consultation',
-      amount: amount || 4600,
+      amount: Number(amount) || 4600,
       meetingMode: meetingMode || 'online',
       paymentMethod: paymentMethod || 'telebirr',
-      userId: userId || 'guest_user',
+      userId: validUserId,
       createdAt: new Date().toISOString()
     };
 
-    // 1. Save booking to Firestore collection 'mentorship_bookings'
-    let bookingId = `MNTR-${Date.now().toString(36).toUpperCase()}`;
-    try {
-      const { adminDb } = await import('@/lib/firebase/admin');
-      if (adminDb && typeof adminDb.collection === 'function') {
-        const docRef = await adminDb.collection('mentorship_bookings').add({
-          ...bookingData,
-          status: 'confirmed',
-          createdAtServer: new Date()
-        });
-        bookingId = docRef.id;
-        bookingData.id = bookingId;
+    const dbPayload = {
+      ...bookingData,
+      transactionRef: transactionRef ? String(transactionRef).trim() : null,
+      receiptFile: receiptFile || null,
+      status: 'confirmed',
+      createdAtServer: new Date()
+    };
+
+    // 1. Save booking to Firestore collections & user sub-collection
+    if (adminDb) {
+      try {
+        const batchPromises: Promise<any>[] = [
+          adminDb.collection('mentorship_bookings').doc(bookingId).set(dbPayload),
+          adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('mentorship_bookings').doc(bookingId).set(dbPayload)
+        ];
+
+        // If user is authenticated, strictly link to their user profile subcollection
+        if (validUserId && !validUserId.startsWith('guest_')) {
+          batchPromises.push(
+            adminDb
+              .collection('artifacts')
+              .doc('tsehaycampus-e1a6d')
+              .collection('users')
+              .doc(validUserId)
+              .collection('mentorship_bookings')
+              .doc(bookingId)
+              .set(dbPayload)
+          );
+        }
+
+        await Promise.allSettled(batchPromises);
+      } catch (dbErr) {
+        console.warn('Firestore admin mentorship save warning:', dbErr);
       }
-    } catch (dbErr) {
-      console.warn('Firestore admin mentorship save warning:', dbErr);
     }
 
     // 2. Dispatch Dual Emails via Resend (Safe & Non-blocking)
@@ -63,42 +87,34 @@ export async function POST(req: Request) {
 
     if (resendApiKey) {
       // Email A: Student Confirmation
-      try {
-        await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${resendApiKey}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            from: fromEmail,
-            to: [bookingData.email],
-            subject: 'የማማከር ቀጠሮዎ ተመዝግቧል! (Mentorship Booking Received) - Tsehay Campus',
-            html: getMentorshipUserEmailHtml(bookingData)
-          })
-        });
-      } catch (mailErr) {
-        console.warn('Mentorship student email error:', mailErr);
-      }
+      fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${resendApiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          from: fromEmail,
+          to: [bookingData.email],
+          subject: 'የማማከር ቀጠሮዎ ተመዝግቧል! (Mentorship Booking Received) - Tsehay Campus',
+          html: getMentorshipUserEmailHtml(bookingData)
+        })
+      }).catch((e) => console.warn('Mentorship student email dispatch error:', e));
 
       // Email B: Admin Alert
-      try {
-        await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${resendApiKey}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            from: fromEmail,
-            to: [adminEmail, 'admin@tsehaycampus.com'],
-            subject: `New Mentorship Booking: ${bookingData.name} (${bookingData.tier} - ${bookingData.date})`,
-            html: getMentorshipAdminEmailHtml(bookingData)
-          })
-        });
-      } catch (adminMailErr) {
-        console.warn('Mentorship admin email alert error:', adminMailErr);
-      }
+      fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${resendApiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          from: fromEmail,
+          to: [adminEmail, 'admin@tsehaycampus.com'],
+          subject: `New Mentorship Booking: ${bookingData.name} (${bookingData.tier} - ${bookingData.date})`,
+          html: getMentorshipAdminEmailHtml(bookingData)
+        })
+      }).catch((e) => console.warn('Mentorship admin email alert error:', e));
     }
 
     return NextResponse.json({

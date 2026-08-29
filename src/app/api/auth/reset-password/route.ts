@@ -15,8 +15,8 @@ export async function POST(req: NextRequest) {
     }
 
     const cleanEmail = email.trim().toLowerCase();
-    const cleanCode = code.trim();
-    const cleanPass = newPassword.trim();
+    const cleanCode = String(code).trim();
+    const cleanPass = String(newPassword).trim();
 
     // 1. Password length validation
     if (cleanPass.length < 6) {
@@ -95,6 +95,9 @@ export async function POST(req: NextRequest) {
     }
 
     // 4. Update Password in Firebase Auth using Firebase Admin SDK
+    let customToken: string | null = null;
+    let targetUid: string = '';
+
     try {
       let authSDK: any = adminAuth;
       if (!authSDK) {
@@ -105,11 +108,20 @@ export async function POST(req: NextRequest) {
       if (authSDK) {
         const userRecord = await authSDK.getUserByEmail(cleanEmail);
         if (userRecord && userRecord.uid) {
-          await authSDK.updateUser(userRecord.uid, {
+          targetUid = userRecord.uid;
+          await authSDK.updateUser(targetUid, {
             password: cleanPass,
             emailVerified: true
           });
-          console.log(`[Password Reset Success] Password updated in Firebase Auth for ${cleanEmail} (uid: ${userRecord.uid})`);
+          
+          // Generate Custom Token for frictionless client sign-in
+          try {
+            customToken = await authSDK.createCustomToken(targetUid);
+          } catch (tokenErr) {
+            console.warn('Could not generate customToken on password reset:', tokenErr);
+          }
+
+          console.log(`[Password Reset Success] Password updated in Firebase Auth for ${cleanEmail} (uid: ${targetUid})`);
         }
       }
     } catch (authErr: any) {
@@ -119,11 +131,17 @@ export async function POST(req: NextRequest) {
           error: 'በዚህ የኢሜይል አድራሻ የተመዘገበ አካውንት አልተገኘም። (User not found)' 
         }, { status: 404 });
       }
+      return NextResponse.json({
+        error: 'የይለፍ ቃል ማደስ አልተቻለም። እባክዎ በድጋሚ ይሞክሩ።'
+      }, { status: 500 });
     }
 
     return NextResponse.json({
       success: true,
-      message: 'Password updated successfully'
+      customToken,
+      uid: targetUid,
+      email: cleanEmail,
+      message: 'የይለፍ ቃልዎ በተሳካ ሁኔታ ተቀይሯል!'
     });
 
   } catch (error: any) {

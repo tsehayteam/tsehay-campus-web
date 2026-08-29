@@ -159,7 +159,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setAuthInitialized(true);
     });
 
-    return () => unsubscribe();
+    const handleAuthCustomEvent = (e: any) => {
+      if (e?.detail) {
+        setUser(e.detail);
+        setLoading(false);
+        setAuthInitialized(true);
+      }
+    };
+    window.addEventListener('tsehay_auth_state_changed', handleAuthCustomEvent);
+
+    return () => {
+      unsubscribe();
+      window.removeEventListener('tsehay_auth_state_changed', handleAuthCustomEvent);
+    };
   }, []);
 
   return (

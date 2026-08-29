@@ -229,28 +229,59 @@ function CoursePreviewContent() {
 
   // 🌟 Seamless Post-Login Action Continuity: Automatically resume Buy/Enroll where user left off!
   useEffect(() => {
-    if (user && course) {
-      try {
-        const savedRaw = sessionStorage.getItem('tsehay_pending_course_action');
-        if (savedRaw) {
-          const saved = JSON.parse(savedRaw);
-          if (saved.courseId === course.id) {
-            sessionStorage.removeItem('tsehay_pending_course_action');
-            setShowRequireAuthModal(false);
-            if (saved.type === 'buy') {
-              setShowPaymentModal(true);
-            } else if (saved.type === 'enroll_free') {
-              handleEnroll();
+    const handleResume = () => {
+      if (user && course) {
+        try {
+          const savedRaw = sessionStorage.getItem('tsehay_pending_course_action') || sessionStorage.getItem('tsehay_pending_action');
+          if (savedRaw) {
+            const saved = JSON.parse(savedRaw);
+            if (saved.courseId === course.id) {
+              sessionStorage.removeItem('tsehay_pending_course_action');
+              sessionStorage.removeItem('tsehay_pending_action');
+              setShowRequireAuthModal(false);
+              if (saved.type === 'buy' || saved.type === 'buy_course') {
+                setShowPaymentModal(true);
+              } else if (saved.type === 'enroll_free') {
+                handleEnroll();
+              }
             }
           }
+        } catch (e) {
+          console.warn("Error restoring pending course action:", e);
         }
-      } catch (e) {
-        console.warn("Error restoring pending course action:", e);
       }
-    }
+    };
+
+    handleResume();
+    window.addEventListener('tsehay_resume_pending_action', handleResume);
+    window.addEventListener('tsehay_auth_state_changed', handleResume);
+    return () => {
+      window.removeEventListener('tsehay_resume_pending_action', handleResume);
+      window.removeEventListener('tsehay_auth_state_changed', handleResume);
+    };
   }, [user, course]);
 
   const handleBuyClick = () => {
+    if (!user) {
+      try {
+        sessionStorage.setItem('tsehay_pending_course_action', JSON.stringify({
+          type: 'buy',
+          courseId: course?.id,
+          courseTitle: course?.title,
+          course: course,
+          returnUrl: `/courses/${course?.id}`
+        }));
+        sessionStorage.setItem('tsehay_pending_action', JSON.stringify({
+          type: 'buy_course',
+          courseId: course?.id,
+          courseTitle: course?.title,
+          course: course,
+          returnUrl: `/courses/${course?.id}`
+        }));
+      } catch (e) {}
+      setShowRequireAuthModal(true);
+      return;
+    }
     setShowPaymentModal(true);
   };
 

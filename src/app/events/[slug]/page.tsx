@@ -193,7 +193,7 @@ export default function EventDetailPage() {
     return ticketObj;
   };
 
-  // 🌟 Post-Payment Return Listener (Auto-issue ticket after successful LakiPay redirect)
+  // 🌟 Post-Payment Return & Post-Login Action Resume Listener
   useEffect(() => {
     if (typeof window !== 'undefined' && event) {
       const urlParams = new URLSearchParams(window.location.search);
@@ -210,11 +210,53 @@ export default function EventDetailPage() {
         } catch (e) {}
       }
     }
+
+    const handleResumeEvent = (e?: any) => {
+      try {
+        const storedPending = sessionStorage.getItem('tsehay_pending_event_reg') || sessionStorage.getItem('tsehay_pending_action');
+        if (storedPending && event) {
+          const parsed = JSON.parse(storedPending);
+          if (parsed.eventId === event.id || parsed.eventSlug === event.slug) {
+            if (parsed.attendeeName) setAttendeeName(parsed.attendeeName);
+            if (parsed.attendeeEmail) setAttendeeEmail(parsed.attendeeEmail);
+            if (parsed.attendeePhone) setAttendeePhone(parsed.attendeePhone);
+            setIsBookingOpen(true);
+          }
+        }
+      } catch (e) {}
+    };
+
+    window.addEventListener('tsehay_resume_pending_action', handleResumeEvent);
+    window.addEventListener('open-event-booking', handleResumeEvent);
+    window.addEventListener('tsehay_auth_state_changed', handleResumeEvent);
+
+    return () => {
+      window.removeEventListener('tsehay_resume_pending_action', handleResumeEvent);
+      window.removeEventListener('open-event-booking', handleResumeEvent);
+      window.removeEventListener('tsehay_auth_state_changed', handleResumeEvent);
+    };
   }, [event]);
 
   const handleConfirmBooking = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!event) return;
+
+    if (!user) {
+      try {
+        sessionStorage.setItem('tsehay_pending_event_reg', JSON.stringify({
+          eventId: event.id,
+          eventSlug: event.slug,
+          eventTitle: event.title,
+          attendeeName: attendeeName.trim(),
+          attendeeEmail: attendeeEmail.trim(),
+          attendeePhone: attendeePhone.trim(),
+          returnUrl: `/events/${event.slug || event.id}`
+        }));
+      } catch (e) {}
+      setIsBookingOpen(false);
+      window.dispatchEvent(new CustomEvent('open-auth-modal', { detail: { isSignupMode: false } }));
+      return;
+    }
 
     const trimmedName = attendeeName.trim();
     const trimmedEmail = attendeeEmail.trim();

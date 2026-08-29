@@ -131,12 +131,53 @@ export default function MentorshipPage() {
     paymentMethod: string;
   } | null>(null);
 
-  // Pre-fill user data when authenticated
+  // Pre-fill user data and restore pending mentorship bookings seamlessly on login
   useEffect(() => {
     if (user) {
       if (user.displayName && !fullName) setFullName(user.displayName);
       if (user.email && !email) setEmail(user.email);
     }
+
+    const handleResumeAction = (e?: any) => {
+      try {
+        const savedRaw = sessionStorage.getItem('tsehay_pending_mentorship_action') || 
+                         sessionStorage.getItem('tsehay_pending_action');
+        if (savedRaw) {
+          const saved = JSON.parse(savedRaw);
+          if (saved.type === 'book_mentorship' || saved.fullName || saved.selectedTierId) {
+            if (saved.fullName) setFullName(saved.fullName);
+            if (saved.phone) setPhone(saved.phone);
+            if (saved.email) setEmail(saved.email);
+            if (saved.meetingMode) setMeetingMode(saved.meetingMode);
+            if (saved.selectedDate) setSelectedDate(saved.selectedDate);
+            if (saved.selectedTime) setSelectedTime(saved.selectedTime);
+            if (saved.topic) setTopic(saved.topic);
+            if (saved.selectedTierId) {
+              const matched = MENTORSHIP_TIERS.find(t => t.id === saved.selectedTierId);
+              if (matched) setSelectedTier(matched);
+            }
+            sessionStorage.removeItem('tsehay_pending_mentorship_action');
+            sessionStorage.removeItem('tsehay_pending_action');
+            setBookingStep('review');
+          }
+        }
+      } catch (err) {
+        console.warn("Mentorship resume error:", err);
+      }
+    };
+
+    window.addEventListener('tsehay_resume_pending_action', handleResumeAction);
+    window.addEventListener('open-mentorship-payment', handleResumeAction);
+    window.addEventListener('tsehay_auth_state_changed', handleResumeAction);
+
+    // Initial check on mount
+    handleResumeAction();
+
+    return () => {
+      window.removeEventListener('tsehay_resume_pending_action', handleResumeAction);
+      window.removeEventListener('open-mentorship-payment', handleResumeAction);
+      window.removeEventListener('tsehay_auth_state_changed', handleResumeAction);
+    };
   }, [user]);
 
   // 🚀 Dynamically generate 6 available date pills synchronized with the currently viewed calendar month
@@ -287,6 +328,25 @@ export default function MentorshipPage() {
 
   // Finalize booking, save to DB, and send dual emails automatically
   const handleFinalizeBooking = async () => {
+    if (!user) {
+      try {
+        sessionStorage.setItem('tsehay_pending_mentorship_action', JSON.stringify({
+          fullName: fullName.trim(),
+          phone: phone.trim(),
+          email: email.trim(),
+          selectedDate,
+          selectedTime,
+          topic: topic.trim() || 'አጠቃላይ የ 1-ለ-1 ማማከር',
+          selectedTierId: selectedTier.id,
+          meetingMode,
+          paymentMethod,
+          returnUrl: '/mentorship'
+        }));
+      } catch (e) {}
+      window.dispatchEvent(new CustomEvent('open-auth-modal', { detail: { isSignupMode: false } }));
+      return;
+    }
+
     setIsProcessingPayment(true);
     setErrorMessage(null);
 

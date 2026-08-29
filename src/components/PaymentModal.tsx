@@ -186,15 +186,16 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
           courseTitle: course?.title,
           course: course
         }));
+        sessionStorage.setItem('tsehay_pending_action', JSON.stringify({
+          type: 'buy_course',
+          courseId: course?.id,
+          courseTitle: course?.title,
+          course: course
+        }));
       } catch (e) {}
 
       if (typeof window !== 'undefined') {
-        const globalWin = window as any;
-        if (typeof globalWin.openAuthModal === 'function') {
-          globalWin.openAuthModal(false);
-        } else {
-          window.dispatchEvent(new CustomEvent('open-auth-modal', { detail: { isSignUp: false, isSignupMode: false } }));
-        }
+        window.dispatchEvent(new CustomEvent('open-auth-modal', { detail: { isSignUp: false, isSignupMode: false } }));
       }
       return;
     }

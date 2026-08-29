@@ -3,6 +3,8 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { auth } from '@/lib/firebase/config';
+import { signInWithCustomToken, signInWithEmailAndPassword } from 'firebase/auth';
 
 function ResetPasswordForm() {
   const searchParams = useSearchParams();
@@ -82,13 +84,57 @@ function ResetPasswordForm() {
 
       setIsSuccess(true);
 
-      // Clean local cache & redirect after 2.5s
+      // Seamless Auto Sign-In with new credentials
+      let signedIn = false;
+      if (data.customToken) {
+        try {
+          const cred = await signInWithCustomToken(auth, data.customToken);
+          signedIn = true;
+          window.dispatchEvent(new CustomEvent('tsehay_auth_state_changed', { detail: cred.user }));
+          window.dispatchEvent(new CustomEvent('tsehay_user_logged_in', { detail: cred.user }));
+        } catch (tokenErr) {
+          console.warn('Custom token login fallback to password sign in:', tokenErr);
+        }
+      }
+
+      if (!signedIn) {
+        try {
+          const cred = await signInWithEmailAndPassword(auth, cleanEmail, cleanPass);
+          signedIn = true;
+          window.dispatchEvent(new CustomEvent('tsehay_auth_state_changed', { detail: cred.user }));
+          window.dispatchEvent(new CustomEvent('tsehay_user_logged_in', { detail: cred.user }));
+        } catch (passErr) {
+          console.warn('Password login notice:', passErr);
+        }
+      }
+
+      // Check for pending actions in sessionStorage to return seamlessly
       setTimeout(() => {
-        router.push('/');
-        setTimeout(() => {
-          window.dispatchEvent(new CustomEvent('open-auth-modal', { detail: { isSignupMode: false } }));
-        }, 500);
-      }, 2500);
+        try {
+          const pendingAction = sessionStorage.getItem('tsehay_pending_action') ||
+                               sessionStorage.getItem('tsehay_pending_course_action') ||
+                               sessionStorage.getItem('tsehay_pending_event_reg');
+          
+          if (pendingAction) {
+            const parsed = JSON.parse(pendingAction);
+            if (parsed.returnUrl) {
+              router.push(parsed.returnUrl);
+              return;
+            }
+            if (parsed.courseId) {
+              router.push(`/courses/${parsed.courseId}`);
+              return;
+            }
+            if (parsed.eventSlug) {
+              router.push(`/events/${parsed.eventSlug}`);
+              return;
+            }
+          }
+        } catch (e) {}
+
+        // Default redirect
+        router.push('/dashboard');
+      }, 1800);
 
     } catch (err: any) {
       setError(err?.message || 'ስህተት ተፈጥሯል፤ እባክዎ እንደገና ይሞክሩ።');
@@ -120,14 +166,14 @@ function ResetPasswordForm() {
       {/* Success State */}
       {isSuccess ? (
         <div className="p-6 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-center animate-in zoom-in-95 duration-300">
-          <div className="w-14 h-14 rounded-full bg-emerald-500/20 text-emerald-400 mx-auto flex items-center justify-center text-2xl mb-4 border border-emerald-500/40">
+          <div className="w-14 h-14 rounded-full bg-emerald-500/20 text-emerald-400 mx-auto flex items-center justify-center text-2xl mb-4 border border-emerald-500/40 animate-bounce">
             <i className="fa-solid fa-check"></i>
           </div>
           <h3 className="text-lg font-black text-white font-heading mb-2">
             የይለፍ ቃልዎ በተሳካ ሁኔታ ተቀይሯል!
           </h3>
           <p className="text-xs text-slate-300 mb-4 font-body">
-            አሁን በአዲሱ የይለፍ ቃልዎ መግባት ይችላሉ። ወደ መነሻ ገጽ እየተላለፉ ነው...
+            በአዲሱ የይለፍ ቃልዎ በቀጥታ ወደ አካውንትዎ ገብተዋል። ወደ መማሪያ ክፍልዎ እየተላለፉ ነው...
           </p>
           <div className="w-full bg-white/10 rounded-full h-1.5 overflow-hidden">
             <div className="bg-emerald-500 h-full animate-pulse w-full"></div>
@@ -245,7 +291,7 @@ function ResetPasswordForm() {
             ) : (
               <>
                 <i className="fa-solid fa-key text-xs"></i>
-                <span>የይለፍ ቃል ቀይር (Reset Password)</span>
+                <span>የይለፍ ቃል ቀይር እና ግባ (Save & Login)</span>
               </>
             )}
           </button>

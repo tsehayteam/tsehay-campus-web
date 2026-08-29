@@ -31,11 +31,11 @@ export default function RequireAuthModal({
   if (!isOpen) return null;
 
   const handleAuthRedirect = (isSignup: boolean) => {
+    onClose();
     if (typeof onContinueAuth === 'function') {
       onContinueAuth(isSignup);
     } else {
-      onClose();
-      router.push(isSignup ? '/signup' : '/login');
+      window.dispatchEvent(new CustomEvent('open-auth-modal', { detail: { isSignupMode: isSignup, isSignUp: isSignup } }));
     }
   };
 
