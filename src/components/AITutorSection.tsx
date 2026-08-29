@@ -37,7 +37,7 @@ export const PROMPT_SCENARIOS: PromptScenario[] = [
     category: '🎥 ዩቲዩብ እና ኮንተንት',
     icon: 'fa-brands fa-youtube',
     badge: 'Viral Hook Strategy',
-    question: 'የዩቲዩብ ቪዲዮዎቼ ብዙ እይታ እንዲያገኙ ምን ላድርግ?',
+    question: 'የዩቲዩብ ቪዲዮ እይታዎችን እንዴት ላሳድግ?',
     response: `🎬 የዩቲዩብ ቪዲዮዎችን ቫይራል የማድረጊያ 3 ቁልፍ ስልቶች፦\n\n1. ጠንካራ የመነሻ 3 ሰከንዶች (The 3-Second Hook) — ተመልካች ሳያሳልፍ ሙሉውን እንዲያይ ያደርጋል።\n2. ከፍተኛ CTR የሚያመጣ ማራኪ ተምኔል (High-Contrast Thumbnail + Mystery Text)።\n3. የተመልካች ቆይታ (Audience Retention) በየ 6 ሰከንዱ በስክሪን ቅንብር ማደስ።\n\n💡 በዩቲዩብ ማስተርክላሳችን የሞንታዥ እና የሞኒታይዜሽን ስትራቴጂዎችን ደረጃ በደረጃ ይማራሉ!`,
     courseTag: 'የዩቲዩብ ስኬት ሚስጥሮች',
     courseSlug: 'youtube-secrets-masterclass',
@@ -485,9 +485,20 @@ export default function AITutorSection() {
                             </span>
                           </div>
 
-                          {/* Action Icons (Voice TTS & Copy) */}
-                          <div className="flex items-center gap-1.5">
+                          {/* Action Icons (Voice TTS, Live Sound Wave Equalizer & Copy) */}
+                          <div className="flex items-center gap-2">
                             
+                            {/* Live Sound Wave Equalizer animation when speaking */}
+                            {isSpeaking && (
+                              <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-amber-500/15 border border-[#f9b03c]/40 animate-pulse">
+                                <span className="w-1 h-3 bg-[#f9b03c] rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                                <span className="w-1 h-4 bg-amber-300 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                                <span className="w-1 h-2 bg-[#f9b03c] rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                                <span className="w-1 h-4.5 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: '100ms' }}></span>
+                                <span className="text-[10px] text-[#f9b03c] font-mono font-black ml-1 hidden sm:inline">LIVE AUDIO</span>
+                              </div>
+                            )}
+
                             {/* Voice TTS Button */}
                             <button
                               type="button"

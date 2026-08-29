@@ -138,7 +138,7 @@ export default function Hero3DPopoutStage({
           className="relative w-full h-[220px] sm:h-[320px] md:h-[390px] lg:h-[430px] rounded-[1.8rem] sm:rounded-[2.2rem] shadow-[0_30px_90px_rgba(0,0,0,0.85)] border-2 border-white/20 dark:border-[#f9b03c]/40 overflow-hidden bg-black/90"
           style={{ transform: 'translateZ(0px)' }}
         >
-          {/* Main High-Definition Video Feed with Instant Poster Preload */}
+          {/* Main High-Definition Video Feed with Instant Low-Bandwidth Poster & Metadata Preload */}
           <video 
             ref={videoRef}
             id="hero-video" 
@@ -146,8 +146,8 @@ export default function Hero3DPopoutStage({
             loop 
             muted 
             playsInline 
-            preload="auto" 
-            poster="/assets/about_video_cover.jpg"
+            preload="metadata" 
+            poster="/assets/hero-bg-new.jpg"
             onCanPlay={() => setIsVideoReady(true)}
             onPlaying={() => setIsVideoReady(true)}
             disablePictureInPicture 
