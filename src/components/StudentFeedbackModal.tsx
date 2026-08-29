@@ -39,6 +39,65 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
   const audioChunksRef = useRef<Blob[]>([]);
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
 
+  // 🌟 Freely Draggable Physics States
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartRef = useRef({ mouseX: 0, mouseY: 0, posX: 0, posY: 0 });
+  const hasMovedRef = useRef(false);
+
+  const handleLauncherDragStart = (e: React.MouseEvent | React.TouchEvent) => {
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    dragStartRef.current = { mouseX: clientX, mouseY: clientY, posX: position.x, posY: position.y };
+    hasMovedRef.current = false;
+    setIsDragging(true);
+  };
+
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handleDragMove = (e: MouseEvent | TouchEvent) => {
+      const clientX = 'touches' in e ? e.touches[0].clientX : (e as MouseEvent).clientX;
+      const clientY = 'touches' in e ? e.touches[0].clientY : (e as MouseEvent).clientY;
+      const deltaX = clientX - dragStartRef.current.mouseX;
+      const deltaY = clientY - dragStartRef.current.mouseY;
+
+      if (Math.abs(deltaX) > 4 || Math.abs(deltaY) > 4) {
+        hasMovedRef.current = true;
+      }
+
+      let newX = dragStartRef.current.posX + deltaX;
+      let newY = dragStartRef.current.posY + deltaY;
+
+      // Constrain within viewport bounds
+      const maxX = 10;
+      const minX = typeof window !== 'undefined' ? -window.innerWidth + 140 : -500;
+      const maxY = 10;
+      const minY = typeof window !== 'undefined' ? -window.innerHeight + 140 : -700;
+
+      newX = Math.min(maxX, Math.max(minX, newX));
+      newY = Math.min(maxY, Math.max(minY, newY));
+
+      setPosition({ x: newX, y: newY });
+    };
+
+    const handleDragEnd = () => {
+      setIsDragging(false);
+    };
+
+    window.addEventListener('mousemove', handleDragMove);
+    window.addEventListener('mouseup', handleDragEnd);
+    window.addEventListener('touchmove', handleDragMove, { passive: false });
+    window.addEventListener('touchend', handleDragEnd);
+
+    return () => {
+      window.removeEventListener('mousemove', handleDragMove);
+      window.removeEventListener('mouseup', handleDragEnd);
+      window.removeEventListener('touchmove', handleDragMove);
+      window.removeEventListener('touchend', handleDragEnd);
+    };
+  }, [isDragging]);
+
   // Sync user info
   useEffect(() => {
     if (user) {
@@ -334,23 +393,39 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
 
   return (
     <>
-      {/* 🌟 1. FLOATING FEEDBACK TRIGGER BUTTON (Silicon Valley Glassmorphism - Hidden in Classroom/Admin) */}
+      {/* 🌟 1. FLOATING FEEDBACK TRIGGER BUTTON (Draggable, Pulsing, Positioned below AI at fixed bottom-6 right-6 z-[9999]) */}
       {!isClassroomOrAdmin && (
-        <button
-          type="button"
-          onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 z-40 group flex items-center gap-2.5 px-4 py-2.5 rounded-full bg-[#0c1017]/90 hover:bg-[#111827] text-white border border-[#f9b03c]/40 hover:border-[#f9b03c] shadow-[0_10px_30px_rgba(0,0,0,0.8),0_0_20px_rgba(249,176,60,0.2)] backdrop-blur-xl transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer"
-          title="ለ ፀሐይ ካምፓስ አስተያየት ይስጡ (Give Feedback)"
+        <div
+          className="fixed bottom-6 right-6 z-[9999] font-body select-none"
+          style={{
+            transform: `translate3d(${position.x}px, ${position.y}px, 0)`,
+            touchAction: 'none'
+          }}
         >
-          <span className="relative flex h-3 w-3">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#f9b03c] opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-[#f9b03c]"></span>
-          </span>
-          <i className="fa-solid fa-comment-dots text-[#f9b03c] text-sm group-hover:rotate-12 transition-transform"></i>
-          <span className="text-xs font-heading font-black text-slate-200 group-hover:text-white tracking-wide">
-            አስተያየት / Feedback
-          </span>
-        </button>
+          <button
+            type="button"
+            onMouseDown={handleLauncherDragStart}
+            onTouchStart={handleLauncherDragStart}
+            onClick={() => {
+              if (!hasMovedRef.current) setIsOpen(true);
+            }}
+            className="group relative flex items-center gap-2.5 px-4 py-2.5 rounded-full bg-gradient-to-r from-[#0d1527] via-[#13203f] to-[#0d1527] border border-[#f9b03c]/40 hover:border-[#f9b03c] text-white shadow-[0_10px_30px_rgba(0,0,0,0.8),0_0_25px_rgba(249,176,60,0.4)] hover:shadow-[0_0_35px_rgba(249,176,60,0.6)] backdrop-blur-xl transition-all duration-300 hover:scale-105 active:scale-95 cursor-grab active:cursor-grabbing select-none"
+            title="ጠቅ አድርገው ይክፈቱ ወይም ወደ ፈለጉበት ቦታ ይጎትቱ (Click to give feedback or drag)"
+          >
+            <span className="absolute -inset-0.5 rounded-full bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#3268ba] opacity-35 group-hover:opacity-100 blur-xs transition duration-500 animate-pulse pointer-events-none"></span>
+
+            <div className="relative flex items-center gap-2">
+              <span className="relative flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#f9b03c] opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-[#f9b03c]"></span>
+              </span>
+              <i className="fa-solid fa-comment-dots text-[#f9b03c] text-sm group-hover:rotate-12 transition-transform"></i>
+              <span className="text-xs font-heading font-black text-slate-200 group-hover:text-white tracking-wide">
+                💬 አስተያየት (Feedback)
+              </span>
+            </div>
+          </button>
+        </div>
       )}
 
       {/* 🌟 2. GLOBAL FEEDBACK MODAL */}

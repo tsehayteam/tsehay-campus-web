@@ -62,6 +62,17 @@ export default function FloatingAIButton() {
   const dragStartRef = useRef({ mouseX: 0, mouseY: 0, posX: 0, posY: 0 });
   const hasMovedRef = useRef(false);
 
+  // Global Event Listener to open Tsehay AI directly from Navbar or anywhere
+  useEffect(() => {
+    const handleOpenAi = () => {
+      setIsOpen(true);
+    };
+    window.addEventListener('open-tsehay-ai', handleOpenAi);
+    return () => {
+      window.removeEventListener('open-tsehay-ai', handleOpenAi);
+    };
+  }, []);
+
   const handleDragStart = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     const target = e.target as HTMLElement;
     if (target.closest('button') || target.closest('select') || target.closest('input') || target.closest('a')) {

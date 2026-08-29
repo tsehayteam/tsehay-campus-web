@@ -457,15 +457,7 @@ export default function Navbar() {
               <button 
                 type="button"
                 onClick={() => {
-                  if (pathname === '/') {
-                    const element = document.getElementById('ai-feature');
-                    if (element) element.scrollIntoView({ behavior: 'smooth' });
-                  } else {
-                    router.push('/#ai-feature');
-                    setTimeout(() => {
-                      document.getElementById('ai-feature')?.scrollIntoView({ behavior: 'smooth' });
-                    }, 350);
-                  }
+                  window.dispatchEvent(new CustomEvent('open-tsehay-ai'));
                 }} 
                 className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-[#f9b03c] to-[#e09825] text-slate-950 font-black text-xs cursor-pointer notranslate shadow-lg shadow-[#f9b03c]/20 hover:scale-105 active:scale-95 transition-all duration-300"
                 title="Tsehay AI 24/7 የግል መምህር (Classroom AI Assistant)"
@@ -652,7 +644,10 @@ export default function Navbar() {
               {/* Tsehay AI */}
               <button 
                 type="button" 
-                onClick={() => { closeCurtain(); navigateTo('/#ai-feature'); }} 
+                onClick={() => { 
+                  closeCurtain(); 
+                  window.dispatchEvent(new CustomEvent('open-tsehay-ai')); 
+                }} 
                 className="p-3.5 rounded-2xl mobile-nav-card flex flex-col items-center justify-center text-center cursor-pointer group transition-all duration-200 bg-amber-500/10 border-amber-500/30"
               >
                 <span className="text-xs font-black text-[#f9b03c] notranslate font-heading flex items-center gap-1">
