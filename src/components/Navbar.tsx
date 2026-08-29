@@ -278,25 +278,23 @@ export default function Navbar() {
 
   return (
     <>
-      {/* ===================== 1. SINGLE UNIFIED TOP-CENTER TOGGLE CAPSULE ===================== */}
-      <div 
-        className="fixed top-3 flex justify-center pointer-events-auto select-none transition-all duration-300 left-1/2 -translate-x-1/2 z-[100000]"
-        title={isCurtainOpen ? "ማውጫ ዝጋ / Close Menu" : "ዋና ማውጫ / Menu"}
-      >
-        <button
-          type="button"
-          onClick={isCurtainOpen ? closeCurtain : openCurtain}
-          className={`pointer-events-auto px-5 sm:px-6 py-1.5 sm:py-2 rounded-full flex items-center gap-2 group transition-all duration-300 active:scale-95 cursor-pointer whitespace-nowrap backdrop-blur-xl bg-black/85 border shadow-lg ${
-            isCurtainOpen
-              ? 'border-[#f9b03c] text-[#f9b03c] shadow-[0_0_25px_rgba(249,176,60,0.4)]'
-              : 'border-[#f9b03c]/30 hover:border-[#f9b03c] text-white hover:text-[#f9b03c] shadow-[0_0_20px_rgba(0,0,0,0.8)]'
-          }`}
+      {/* ===================== 1. FLOATING CAPSULE (ONLY WHEN CLOSED) ===================== */}
+      {!isCurtainOpen && (
+        <div 
+          className="fixed top-3 flex justify-center pointer-events-auto select-none transition-all duration-300 left-1/2 -translate-x-1/2 z-50 animate-in fade-in"
+          title="ዋና ማውጫ / Menu"
         >
-          <span className="text-xs sm:text-[13px] font-black tracking-wide transition-colors whitespace-nowrap flex items-center gap-1.5 font-heading">
-            {isCurtainOpen ? '🧭 ዝጋ ▴' : '🧭 ዋና ማውጫ ▾'}
-          </span>
-        </button>
-      </div>
+          <button
+            type="button"
+            onClick={openCurtain}
+            className="pointer-events-auto px-5 sm:px-6 py-1.5 sm:py-2 rounded-full flex items-center gap-2 group transition-all duration-300 active:scale-95 cursor-pointer whitespace-nowrap backdrop-blur-xl bg-black/85 border border-[#f9b03c]/30 hover:border-[#f9b03c] text-white hover:text-[#f9b03c] shadow-lg hover:shadow-[0_0_25px_rgba(249,176,60,0.35)]"
+          >
+            <span className="text-xs sm:text-[13px] font-black tracking-wide transition-colors whitespace-nowrap flex items-center gap-1.5 font-heading">
+              🧭 ዋና ማውጫ ▾
+            </span>
+          </button>
+        </div>
+      )}
 
       {/* ===================== 2. BACKDROP OVERLAY ===================== */}
       <div 
@@ -309,10 +307,10 @@ export default function Navbar() {
       />
 
       {/* ===================== 3. 3D GLASSMORPHIC EXPANDED NAVBAR ===================== */}
-      <nav 
+      <div 
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
-        className={`fixed top-0 left-0 right-0 w-full max-w-full z-[9999] shadow-[0_25px_70px_rgba(0,0,0,0.95)] select-none transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] max-h-[92vh] overflow-y-auto overscroll-contain no-scrollbar backdrop-blur-2xl bg-black/80 border-b border-white/10 ${
+        className={`fixed top-0 left-0 right-0 w-full max-w-full z-[9999] transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] ${
           isCurtainOpen 
             ? 'translate-y-0 opacity-100 pointer-events-auto' 
             : '-translate-y-full opacity-0 pointer-events-none'
@@ -321,6 +319,7 @@ export default function Navbar() {
           willChange: 'transform, opacity',
         }}
       >
+        <nav className="w-full relative shadow-[0_25px_70px_rgba(0,0,0,0.95)] select-none max-h-[90vh] overflow-y-auto overscroll-contain no-scrollbar backdrop-blur-2xl bg-black/85 border-b border-white/10">
         {/* Navbar Inner Content */}
         <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8">
           
@@ -716,7 +715,7 @@ export default function Navbar() {
               )}
             </div>
 
-            {/* Integrated Roll Up Button */}
+            {/* Integrated Mobile Roll Up Button */}
             <button
               type="button"
               onClick={closeCurtain}
@@ -729,6 +728,21 @@ export default function Navbar() {
           </div>
         </div>
       </nav>
+
+      {/* Bottom-Edge Handle Attached to Navigation Container */}
+      {isCurtainOpen && (
+        <div className="absolute bottom-0 translate-y-full left-1/2 -translate-x-1/2 z-[10000] pointer-events-auto flex justify-center select-none">
+          <button 
+            type="button"
+            onClick={closeCurtain}
+            className="pointer-events-auto bg-black/90 backdrop-blur-xl border-x border-b border-[#f9b03c]/30 hover:border-[#f9b03c] text-white hover:text-[#f9b03c] text-xs font-black font-heading px-5 sm:px-6 py-1.5 sm:py-2 rounded-b-xl shadow-lg hover:shadow-[0_10px_25px_rgba(0,0,0,0.9),0_0_20px_rgba(249,176,60,0.35)] transition-all duration-200 active:scale-95 cursor-pointer flex items-center gap-1.5 whitespace-nowrap"
+            title="ማውጫ ዝጋ / Close Menu (Click to Roll Up)"
+          >
+            <span>🧭 ማውጫ ዝጋ ▴</span>
+          </button>
+        </div>
+      )}
+    </div>
       
       <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} isSignupMode={isSignupMode} setIsSignupMode={setIsSignupMode} />
     </>
