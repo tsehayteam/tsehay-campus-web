@@ -108,6 +108,27 @@ service cloud.firestore {
       allow read, update, delete: if isGlobalAdmin() || isAuthenticated();
     }
 
+    // 7. Root Events & Event Registrations (Public Read & Registration Create)
+    match /events/{eventId} {
+      allow read: if true;
+      allow write: if isGlobalAdmin() || isAuthenticated();
+
+      match /{sub=**} {
+        allow read: if true;
+        allow write: if isGlobalAdmin() || isAuthenticated();
+      }
+    }
+
+    match /event_registrations/{regId} {
+      allow read, create: if true;
+      allow update, delete: if isGlobalAdmin() || isAuthenticated();
+
+      match /{sub=**} {
+        allow read, create: if true;
+        allow update, delete: if isGlobalAdmin() || isAuthenticated();
+      }
+    }
+
     // 4. Tsehay Campus Application Artifacts Scope
     match /artifacts/{appId} {
       
@@ -140,6 +161,33 @@ service cloud.firestore {
           allow read: if true;
           allow write: if isAdmin() || isAuthenticated();
         }
+      }
+
+      // Legacy direct courses collection
+      match /courses/{courseId} {
+        allow read: if true;
+        allow write: if isAdmin() || isAuthenticated();
+
+        match /{sub=**} {
+          allow read: if true;
+          allow write: if isAdmin() || isAuthenticated();
+        }
+      }
+
+      // Direct and public events collections
+      match /events/{eventId} {
+        allow read: if true;
+        allow write: if isAdmin() || isAuthenticated();
+
+        match /{sub=**} {
+          allow read: if true;
+          allow write: if isAdmin() || isAuthenticated();
+        }
+      }
+
+      match /event_registrations/{regId} {
+        allow read, create: if true;
+        allow update, delete: if isAdmin() || isAuthenticated();
       }
 
       // 4.3 Public Data: Site Settings (About Video, YouTube Portfolio, AI Settings)

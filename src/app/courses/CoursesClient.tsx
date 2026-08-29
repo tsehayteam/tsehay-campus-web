@@ -19,13 +19,8 @@ import { searchCourses } from '@/lib/smartSearch';
 import { getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl, getCourseSlug, mergeCoursesLists } from '@/lib/courseCache';
 
 export default function CoursesClient() {
-  const [courses, setCourses] = useState<any[]>(() => {
-    try {
-      return getCachedCourses();
-    } catch (e) {
-      return [];
-    }
-  });
+  const [isMounted, setIsMounted] = useState(false);
+  const [courses, setCourses] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [previewModalCourse, setPreviewModalCourse] = useState<any>(null);
@@ -38,6 +33,15 @@ export default function CoursesClient() {
   const [isReferralWelcome, setIsReferralWelcome] = useState(false);
 
   useEffect(() => {
+    setIsMounted(true);
+    try {
+      const cached = getCachedCourses();
+      if (cached && cached.length > 0) {
+        setCourses(cached);
+        setLoading(false);
+      }
+    } catch (e) {}
+
     if (typeof window !== 'undefined') {
       try {
         const params = new URLSearchParams(window.location.search);
@@ -55,12 +59,11 @@ export default function CoursesClient() {
   useEffect(() => {
     let artifactList: any[] = [];
     let rootList: any[] = [];
-    let altArtifactList: any[] = [];
 
     const syncAndMerge = () => {
-      const merged = mergeCoursesLists(artifactList, rootList, altArtifactList);
-      setCourses(merged);
+      const merged = mergeCoursesLists(artifactList, rootList);
       if (merged.length > 0) {
+        setCourses(merged);
         saveCachedCourses(merged);
       }
       setLoading(false);
@@ -74,7 +77,6 @@ export default function CoursesClient() {
         artifactList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         syncAndMerge();
       }, (error) => {
-        console.warn("Artifacts courses sync notice:", error);
         setLoading(false);
       });
     } catch (e) {}
@@ -87,46 +89,29 @@ export default function CoursesClient() {
         rootList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         syncAndMerge();
       }, (error) => {
-        console.warn("Root courses sync notice:", error);
         setLoading(false);
       });
     } catch (e) {}
 
-    // 3. Live listener on artifacts/tsehaycampus-e1a6d/courses
-    let unsubAltArtifact = () => {};
-    try {
-      const qAlt = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'courses'));
-      unsubAltArtifact = onSnapshot(qAlt, (snapshot) => {
-        altArtifactList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        syncAndMerge();
-      }, (error) => {
-        console.warn("Alt artifacts courses sync notice:", error);
-        setLoading(false);
-      });
-    } catch (e) {}
-
-    // 4. Immediate cache-busted HTTP fetch
+    // 3. Immediate cache-busted HTTP fetch
     fetch(`/api/courses?t=${Date.now()}`, {
       cache: 'no-store',
       headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' }
     })
       .then(res => res.json())
       .then(data => {
-        if (data && Array.isArray(data.courses)) {
+        if (data && Array.isArray(data.courses) && data.courses.length > 0) {
           const apiMerged = mergeCoursesLists(data.courses);
           setCourses(apiMerged);
-          if (apiMerged.length > 0) {
-            saveCachedCourses(apiMerged);
-          }
+          saveCachedCourses(apiMerged);
         }
       })
-      .catch(err => console.warn("API courses fetch notice:", err))
+      .catch(() => {})
       .finally(() => setLoading(false));
 
     return () => {
       unsubArtifact();
       unsubRoot();
-      unsubAltArtifact();
     };
   }, []);
 
@@ -426,7 +411,7 @@ export default function CoursesClient() {
         <section className="py-12 sm:py-20 relative z-10 flex-1">
           <div className="max-w-[1350px] mx-auto px-4 sm:px-6 lg:px-8">
             
-            {loading && courses.length === 0 ? (
+            {(!isMounted || (loading && courses.length === 0)) ? (
               <div className="w-full">
                 <CourseCardSkeleton count={6} />
               </div>

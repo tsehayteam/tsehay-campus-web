@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import Script from "next/script";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
@@ -98,8 +99,6 @@ export const metadata: Metadata = {
   },
 };
 
-import Script from "next/script";
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -133,10 +132,16 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://images.unsplash.com" />
         <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossOrigin="anonymous" />
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-        <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&family=Inter:wght@400;500;700&family=Noto+Sans+Ethiopic:wght@400;700;900&family=Playfair+Display:ital,wght@0,700;1,700&family=Great+Vibes&display=swap" rel="stylesheet" />
-        <script
+      </head>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased pt-0 notranslate`}
+        translate="no"
+        suppressHydrationWarning
+      >
+        <Script
           id="schema-org"
           type="application/ld+json"
+          strategy="afterInteractive"
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               "@context": "https://schema.org",
@@ -157,8 +162,9 @@ export default function RootLayout({
             })
           }}
         />
-        <script
+        <Script
           id="theme-initializer"
+          strategy="afterInteractive"
           dangerouslySetInnerHTML={{ __html: `
             (function() {
               try {
@@ -173,12 +179,6 @@ export default function RootLayout({
             })();
           `}}
         />
-      </head>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased pt-0 notranslate`}
-        translate="no"
-        suppressHydrationWarning
-      >
         <LanguageProvider>
           <AuthProvider>
             <SmoothScrollAndScrollyProvider>

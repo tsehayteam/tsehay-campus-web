@@ -281,13 +281,8 @@ function MagneticLink({ children, className, href, ...props }: any) {
 export default function HomeClient() {
   const { user } = useAuth();
   const router = useRouter();
-  const [courses, setCourses] = useState<any[]>(() => {
-    try {
-      return getCachedCourses();
-    } catch (e) {
-      return [];
-    }
-  });
+  const [isMounted, setIsMounted] = useState(false);
+  const [courses, setCourses] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [hasPurchasedCourses, setHasPurchasedCourses] = useState<boolean | null>(null);
   
@@ -301,6 +296,18 @@ export default function HomeClient() {
   const { t } = useLanguage();
   const [openFaqId, setOpenFaqId] = useState<number | null>(null);
 
+  // Synchronously initialize cached courses on client mount
+  useEffect(() => {
+    setIsMounted(true);
+    try {
+      const cached = getCachedCourses();
+      if (cached && cached.length > 0) {
+        setCourses(cached);
+        setLoading(false);
+      }
+    } catch (e) {}
+  }, []);
+
   // Check if logged in user has purchased any courses
   useEffect(() => {
     if (!user) {
@@ -312,7 +319,6 @@ export default function HomeClient() {
         const snap = await getDocs(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'purchased_courses'));
         setHasPurchasedCourses(!snap.empty);
       } catch (e) {
-        console.warn("Could not check user purchased courses:", e);
         setHasPurchasedCourses(false);
       }
     };
@@ -340,12 +346,11 @@ export default function HomeClient() {
   useEffect(() => {
     let artifactList: any[] = [];
     let rootList: any[] = [];
-    let altArtifactList: any[] = [];
 
     const syncAndMerge = () => {
-      const merged = mergeCoursesLists(artifactList, rootList, altArtifactList);
-      setCourses(merged);
+      const merged = mergeCoursesLists(artifactList, rootList);
       if (merged.length > 0) {
+        setCourses(merged);
         saveCachedCourses(merged);
       }
       setLoading(false);
@@ -359,7 +364,6 @@ export default function HomeClient() {
         artifactList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         syncAndMerge();
       }, (error) => {
-        console.warn("Artifacts courses sync notice:", error);
         setLoading(false);
       });
     } catch (e) {}
@@ -372,46 +376,29 @@ export default function HomeClient() {
         rootList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         syncAndMerge();
       }, (error) => {
-        console.warn("Root courses sync notice:", error);
         setLoading(false);
       });
     } catch (e) {}
 
-    // 3. Live listener on artifacts/tsehaycampus-e1a6d/courses
-    let unsubAltArtifact = () => {};
-    try {
-      const qAlt = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'courses'));
-      unsubAltArtifact = onSnapshot(qAlt, (snapshot) => {
-        altArtifactList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        syncAndMerge();
-      }, (error) => {
-        console.warn("Alt artifacts courses sync notice:", error);
-        setLoading(false);
-      });
-    } catch (e) {}
-
-    // 4. Immediate cache-busted HTTP fetch
+    // 3. Immediate cache-busted HTTP fetch
     fetch(`/api/courses?t=${Date.now()}`, {
       cache: 'no-store',
       headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' }
     })
       .then(res => res.json())
       .then(data => {
-        if (data && Array.isArray(data.courses)) {
+        if (data && Array.isArray(data.courses) && data.courses.length > 0) {
           const apiMerged = mergeCoursesLists(data.courses);
           setCourses(apiMerged);
-          if (apiMerged.length > 0) {
-            saveCachedCourses(apiMerged);
-          }
+          saveCachedCourses(apiMerged);
         }
       })
-      .catch(err => console.warn("API courses fetch notice:", err))
+      .catch(() => {})
       .finally(() => setLoading(false));
 
     return () => {
       unsubArtifact();
       unsubRoot();
-      unsubAltArtifact();
     };
   }, []);
 
@@ -849,7 +836,7 @@ export default function HomeClient() {
                 </p>
             </div>
 
-            {loading && courses.length === 0 ? (
+            {(!isMounted || (loading && courses.length === 0)) ? (
                 <div className="w-full scrolly-reveal">
                     <CourseCardSkeleton count={3} />
                 </div>
