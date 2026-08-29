@@ -244,11 +244,29 @@ export async function POST(req: NextRequest) {
         } catch (e) {}
       }
 
-      return NextResponse.json({
+      const response = NextResponse.json({
         success: true,
         token,
         message: 'የአድሚን ማረጋገጫ ተሳክቷል! እንኳን ደህና መጡ። (Admin 2FA Verified)'
       });
+
+      response.cookies.set('tc_admin_session', token, {
+        httpOnly: false,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 60 * 60, // 7 days
+        path: '/'
+      });
+
+      response.cookies.set('tsehay_admin_token', token, {
+        httpOnly: false,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 60 * 60, // 7 days
+        path: '/'
+      });
+
+      return response;
     }
 
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 });

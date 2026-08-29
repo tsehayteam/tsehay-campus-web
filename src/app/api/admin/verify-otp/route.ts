@@ -52,6 +52,14 @@ export async function POST(req: NextRequest) {
         message: 'የአድሚን ማረጋገጫ ተሳክቷል! እንኳን ደህና መጡ። (Admin Verified)'
       });
 
+      response.cookies.set('tc_admin_session', token, {
+        httpOnly: false,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 60 * 60, // 7 days
+        path: '/'
+      });
+
       response.cookies.set('tsehay_admin_token', token, {
         httpOnly: false,
         secure: process.env.NODE_ENV === 'production',
@@ -150,6 +158,14 @@ export async function POST(req: NextRequest) {
       success: true,
       token,
       message: 'የአድሚን ማረጋገጫ ተሳክቷል! እንኳን ደህና መጡ። (Admin OTP Verified)'
+    });
+
+    response.cookies.set('tc_admin_session', token, {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60, // 7 days
+      path: '/'
     });
 
     response.cookies.set('tsehay_admin_token', token, {

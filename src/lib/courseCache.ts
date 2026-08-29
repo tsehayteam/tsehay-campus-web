@@ -326,6 +326,58 @@ export function formatCourseDesc(course: any): string {
   return text;
 }
 
+export function getDeletedCourseIds(): Set<string> {
+  if (typeof window === 'undefined') return new Set();
+  try {
+    const deleted = localStorage.getItem('tsehay_deleted_courses');
+    if (deleted) {
+      const parsed = JSON.parse(deleted);
+      if (Array.isArray(parsed)) return new Set(parsed);
+    }
+  } catch (e) {}
+  return new Set();
+}
+
+export function markCourseDeleted(courseId: string) {
+  if (!courseId) return;
+  const clean = courseId.trim();
+  if (typeof window !== 'undefined') {
+    try {
+      const set = getDeletedCourseIds();
+      set.add(clean);
+      localStorage.setItem('tsehay_deleted_courses', JSON.stringify(Array.from(set)));
+      
+      // Also remove from local caches immediately
+      const cached = localStorage.getItem('tsehay_courses_cache');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed)) {
+          const filtered = parsed.filter((c: any) => c.id !== clean && c.slug !== clean);
+          localStorage.setItem('tsehay_courses_cache', JSON.stringify(filtered));
+        }
+      }
+
+      const adminCached = localStorage.getItem('tsehay_admin_courses_cache');
+      if (adminCached) {
+        const parsed = JSON.parse(adminCached);
+        if (Array.isArray(parsed)) {
+          const filtered = parsed.filter((c: any) => c.id !== clean && c.slug !== clean);
+          localStorage.setItem('tsehay_admin_courses_cache', JSON.stringify(filtered));
+        }
+      }
+    } catch (e) {}
+  }
+}
+
+export function unmarkCourseDeleted(courseId: string) {
+  if (!courseId || typeof window === 'undefined') return;
+  try {
+    const set = getDeletedCourseIds();
+    set.delete(courseId.trim());
+    localStorage.setItem('tsehay_deleted_courses', JSON.stringify(Array.from(set)));
+  } catch (e) {}
+}
+
 const OBSOLETE_DUMMY_IDS = new Set([
   'web-development-bootcamp',
   'crypto-finance-mastery',
@@ -334,17 +386,21 @@ const OBSOLETE_DUMMY_IDS = new Set([
 
 /**
  * Combines two or more course lists safely, removing duplicates by id or slug,
- * while preserving updated properties and filtering out obsolete dummy courses.
+ * while preserving updated properties and filtering out obsolete and deleted courses.
  */
 export function mergeCoursesLists(...lists: (any[] | undefined | null)[]): any[] {
   const map = new Map<string, any>();
+  const deletedSet = getDeletedCourseIds();
 
   for (const list of lists) {
     if (!Array.isArray(list)) continue;
     for (const item of list) {
       if (!item || (!item.id && !item.slug && !item.title)) continue;
       const id = (item.id || '').toString().trim();
-      if (OBSOLETE_DUMMY_IDS.has(id)) continue;
+      const slug = (item.slug || '').toString().trim();
+
+      if (OBSOLETE_DUMMY_IDS.has(id) || OBSOLETE_DUMMY_IDS.has(slug)) continue;
+      if (deletedSet.has(id) || deletedSet.has(slug) || item.status === 'Deleted' || item.isDeleted === true) continue;
       
       const key = (item.id || item.slug || item.title).toString().trim();
       const existing = map.get(key);
@@ -358,7 +414,7 @@ export function mergeCoursesLists(...lists: (any[] | undefined | null)[]): any[]
     }
   }
 
-  return Array.from(map.values());
+  return Array.from(map.values()).filter(c => c.status !== 'Deleted' && !c.isDeleted);
 }
 
 /**

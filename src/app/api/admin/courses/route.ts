@@ -98,7 +98,8 @@ export async function GET(req: NextRequest) {
       } catch (e) {}
     }
 
-    return NextResponse.json({ success: true, count: courses.length, courses });
+    const filteredCourses = courses.filter((c: any) => c && c.status !== 'Deleted' && !c.isDeleted);
+    return NextResponse.json({ success: true, count: filteredCourses.length, courses: filteredCourses });
   } catch (error: any) {
     console.error('Error fetching courses in API route:', error);
     return NextResponse.json({ success: true, count: DEFAULT_COURSES.length, courses: DEFAULT_COURSES, error: error.message });

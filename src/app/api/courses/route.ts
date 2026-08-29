@@ -115,7 +115,19 @@ export async function GET(req: NextRequest) {
       console.warn("Root courses fetch notice:", e);
     }
 
-    // If Firestore collections are currently empty, auto-sync authentic DEFAULT_COURSES so they persist
+    // Filter active (non-deleted) courses from Firestore
+    const liveFirestoreCourses = mergeCoursesLists(artifactCourses, rootCourses);
+
+    // If Firestore has live courses, return them directly so edits and deletes reflect instantly
+    if (liveFirestoreCourses.length > 0) {
+      return NextResponse.json({ 
+        success: true, 
+        count: liveFirestoreCourses.length, 
+        courses: liveFirestoreCourses 
+      });
+    }
+
+    // Only bootstrap DEFAULT_COURSES if Firestore is 100% empty
     if (artifactCourses.length === 0 && rootCourses.length === 0) {
       try {
         for (const course of DEFAULT_COURSES) {
@@ -142,8 +154,7 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // Merge root, artifact, and default authentic courses
-    const merged = mergeCoursesLists(DEFAULT_COURSES, artifactCourses, rootCourses);
+    const merged = mergeCoursesLists(DEFAULT_COURSES);
 
     return NextResponse.json({ 
       success: true, 

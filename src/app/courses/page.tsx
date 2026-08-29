@@ -45,7 +45,12 @@ export default function Courses() {
     let rootList: any[] = [];
 
     const syncAndMerge = () => {
-      const merged = mergeCoursesLists(DEFAULT_COURSES, artifactList, rootList);
+      let merged: any[] = [];
+      if (artifactList.length > 0 || rootList.length > 0) {
+        merged = mergeCoursesLists(artifactList, rootList);
+      } else {
+        merged = mergeCoursesLists(DEFAULT_COURSES);
+      }
       if (merged.length > 0) {
         setCourses(merged);
         saveCachedCourses(merged);
@@ -58,10 +63,8 @@ export default function Courses() {
     try {
       const qArtifact = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses'));
       unsubArtifact = onSnapshot(qArtifact, (snapshot) => {
-        if (!snapshot.empty) {
-          artifactList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          syncAndMerge();
-        }
+        artifactList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        syncAndMerge();
         setLoading(false);
       }, (error) => {
         console.warn("Artifacts courses sync notice:", error);
@@ -74,10 +77,8 @@ export default function Courses() {
     try {
       const qRoot = query(collection(db, 'courses'));
       unsubRoot = onSnapshot(qRoot, (snapshot) => {
-        if (!snapshot.empty) {
-          rootList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          syncAndMerge();
-        }
+        rootList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        syncAndMerge();
         setLoading(false);
       }, (error) => {
         console.warn("Root courses sync notice:", error);
@@ -90,7 +91,7 @@ export default function Courses() {
       .then(res => res.json())
       .then(data => {
         if (data && Array.isArray(data.courses) && data.courses.length > 0) {
-          setCourses(prev => mergeCoursesLists(DEFAULT_COURSES, prev, data.courses));
+          setCourses(mergeCoursesLists(data.courses));
           saveCachedCourses(data.courses);
         }
       })
