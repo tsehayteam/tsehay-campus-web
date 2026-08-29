@@ -885,12 +885,6 @@ function AboutSingleReelSlider() {
           {/* Subtle Ambient Vignette Overlay */}
           <div className={`absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/30 z-15 pointer-events-none transition-opacity duration-300 ${isPlaying ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'}`} />
 
-          {/* Reel Index Badge (e.g. 1 / 2) */}
-          <div className="absolute top-3.5 left-3.5 z-20 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/10 text-[11px] font-black text-amber-300 flex items-center gap-1.5 pointer-events-none">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#f9b03c] animate-pulse"></span>
-            <span>{currentIndex + 1} / {reels.length}</span>
-          </div>
-
           {/* 🌟 Centered Golden Yellow Play / Pause Button */}
           <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
             {!isPlaying && (
