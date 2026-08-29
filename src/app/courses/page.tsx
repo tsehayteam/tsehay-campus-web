@@ -272,7 +272,11 @@ export default function Courses() {
             
             {/* Futuristic Silicon Valley Heading */}
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-white mb-6 leading-tight drop-shadow-sm font-heading tracking-tight">
-              {t('courses_title_1')}<span className="text-transparent bg-clip-text bg-gradient-to-r from-[#3268ba] via-blue-400 to-[#f9b03c]">Tsehay Campus</span> {t('courses_title_2')}
+              {t('courses_title_1')}{' '}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#f9b03c] via-amber-300 to-[#5a93e8] animate-pulse drop-shadow-[0_5px_25px_rgba(249,176,60,0.35)]">
+                Tsehay Campus
+              </span>{' '}
+              {t('courses_title_2')}
             </h1>
             
             {/* Golden Yellow Glow Divider */}

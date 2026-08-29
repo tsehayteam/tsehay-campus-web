@@ -226,59 +226,56 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
     let uploadedImageUrl: string | null = imagePreviewUrl;
     let uploadedAudioUrl: string | null = null;
 
-    // 1. Upload Screenshot / Image to Firebase Storage (with 10s timeout fallback)
-    if (imageFile) {
-      try {
-        const imageStorageRef = ref(storage, `feedback_attachments/${feedbackId}_${imageFile.name}`);
-        const uploadTask = uploadBytes(imageStorageRef, imageFile).then(snap => getDownloadURL(snap.ref));
-        const resUrl = await withTimeout(uploadTask, 10000, null);
-        if (resUrl) uploadedImageUrl = resUrl;
-      } catch (uploadErr) {
-        console.warn('Storage image upload fallback to Data URL:', uploadErr);
-      }
-    }
-
-    // 2. Upload Voice Audio to Firebase Storage (with 10s timeout fallback)
-    if (audioBlob) {
-      try {
-        const audioStorageRef = ref(storage, `feedback_audio/${feedbackId}.webm`);
-        const uploadTask = uploadBytes(audioStorageRef, audioBlob).then(snap => getDownloadURL(snap.ref));
-        const resUrl = await withTimeout(uploadTask, 10000, null);
-        if (resUrl) {
-          uploadedAudioUrl = resUrl;
-        } else {
-          uploadedAudioUrl = await blobToDataURL(audioBlob);
-        }
-      } catch (uploadErr) {
-        console.warn('Storage audio upload fallback to Data URL:', uploadErr);
+    try {
+      // 1. Audio Processing: Fast Base64 conversion + Quick Cloud Storage Upload Attempt
+      if (audioBlob) {
         try {
           uploadedAudioUrl = await blobToDataURL(audioBlob);
-        } catch {}
+        } catch (bErr) {
+          console.warn('Blob to data URL notice:', bErr);
+        }
+
+        // Parallel non-blocking cloud storage upload attempt (3.5s timeout)
+        try {
+          const audioStorageRef = ref(storage, `feedback_audio/${feedbackId}.webm`);
+          const uploadTask = uploadBytes(audioStorageRef, audioBlob).then(snap => getDownloadURL(snap.ref));
+          const storageUrl = await withTimeout(uploadTask, 3500, null);
+          if (storageUrl) uploadedAudioUrl = storageUrl;
+        } catch (uploadErr) {
+          console.warn('Fast storage audio upload notice:', uploadErr);
+        }
       }
-    }
 
-    const feedbackPayload = {
-      id: feedbackId,
-      rating: Number(rating) || 5,
-      type: category,
-      category,
-      message: message.trim() || (uploadedAudioUrl ? '🎙️ [የድምፅ መልዕክት ተልኳል]' : ''),
-      userId: user?.uid || 'guest_student',
-      userName: contactName.trim() || user?.displayName || (user?.email ? user.email.split('@')[0] : 'ተማሪ'),
-      userEmail: contactEmail.trim() || user?.email || 'student@tsehaycampus.com',
-      pageUrl: typeof window !== 'undefined' ? window.location.pathname : '/',
-      imageUrl: uploadedImageUrl || null,
-      screenshotUrl: uploadedImageUrl || null,
-      audioUrl: uploadedAudioUrl || null,
-      voiceNoteUrl: uploadedAudioUrl || null,
-      status: 'pending',
-      createdAt: new Date().toISOString(),
-      createdAtClient: new Date().toISOString(),
-      createdAtTimestamp: Date.now()
-    };
+      // 2. Image Processing
+      if (imageFile) {
+        try {
+          const imageStorageRef = ref(storage, `feedback_attachments/${feedbackId}_${imageFile.name}`);
+          const uploadTask = uploadBytes(imageStorageRef, imageFile).then(snap => getDownloadURL(snap.ref));
+          const storageUrl = await withTimeout(uploadTask, 3500, null);
+          if (storageUrl) uploadedImageUrl = storageUrl;
+        } catch (uploadErr) {
+          console.warn('Fast storage image upload notice:', uploadErr);
+        }
+      }
 
-    try {
-      // 1. Direct Client Firestore Writes to student_feedback & user_feedbacks
+      const feedbackPayload = {
+        id: feedbackId,
+        category,
+        type: category,
+        rating: Number(rating) || 5,
+        message: message.trim() || (uploadedAudioUrl ? '🎙️ [የድምፅ መልዕክት ተልኳል]' : ''),
+        audioUrl: uploadedAudioUrl || null,
+        imageUrl: uploadedImageUrl || null,
+        userEmail: contactEmail.trim() || user?.email || 'student@tsehaycampus.com',
+        userName: contactName.trim() || user?.displayName || (user?.email ? user.email.split('@')[0] : 'ተማሪ'),
+        userId: user?.uid || 'guest_student',
+        pageUrl: typeof window !== 'undefined' ? window.location.pathname : '/',
+        status: 'pending',
+        createdAt: Date.now(),
+        createdAtISO: new Date().toISOString()
+      };
+
+      // 3. Direct Client Firestore Writes to student_feedback & user_feedbacks
       try {
         await addDoc(collection(db, 'student_feedback'), {
           ...feedbackPayload,
@@ -293,37 +290,40 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
         });
       } catch (fsErr) {}
 
-      // 2. Server API Dispatch with 10s timeout fallback
+      // 4. Server API Dispatch
       try {
         const apiCall = fetch('/api/feedback', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(feedbackPayload),
         });
-        await withTimeout(apiCall, 10000, null);
+        await withTimeout(apiCall, 4000, null);
       } catch (apiErr) {}
 
-      // 3. Local Cache & Custom Event for Admin & Dashboard
+      // 5. Local Cache & Custom Event for Admin & Dashboard
       try {
         const existing = JSON.parse(localStorage.getItem('tsehay_user_feedbacks') || '[]');
         localStorage.setItem('tsehay_user_feedbacks', JSON.stringify([feedbackPayload, ...existing]));
         window.dispatchEvent(new CustomEvent('tsehay_feedback_submitted', { detail: feedbackPayload }));
       } catch (lsErr) {}
 
+      // 🌟 UI Transition: Immediately reset submitting and show Green Success Screen
+      setIsSubmitting(false);
       setIsSubmitted(true);
+
+      // Auto-close modal after 1.5 seconds & reset recorder
       setTimeout(() => {
         setIsSubmitted(false);
         setMessage('');
         setImageFile(null);
         setImagePreviewUrl(null);
-        setAudioBlob(null);
-        setAudioPreviewUrl(null);
+        handleRemoveAudio();
         setRating(5);
         setIsOpen(false);
-      }, 2000);
+      }, 1500);
+
     } catch (err: any) {
       setError(err?.message || 'አስተያየትዎን ማስገባት አልተቻለም። እባክዎ እንደገና ይሞክሩ።');
-    } finally {
       setIsSubmitting(false);
     }
   };
@@ -383,7 +383,7 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
                 </div>
                 <div className="space-y-1.5">
                   <h3 className="text-xl font-black font-heading text-white">
-                    እናመሰግናለን! አስተያየትዎ ደርሶናል።
+                    🎉 አስተያየትዎ ደርሶናል! እናመሰግናለን!
                   </h3>
                   <p className="text-xs text-slate-300 max-w-xs mx-auto">
                     የእርስዎ አስተያየት የፀሐይ ካምፓስን የላቀ እና የተሻለ የትምህርት ተሞክሮ እንድንገነባ ያግዘናል።

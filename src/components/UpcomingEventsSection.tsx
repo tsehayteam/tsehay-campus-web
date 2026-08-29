@@ -310,7 +310,7 @@ export default function UpcomingEventsSection() {
           </div>
 
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-black font-heading text-white tracking-tight leading-tight mb-4">
-            በቀጥታ እና በአካል የሚሰጡ <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-[#f9b03c] to-yellow-200">ልዩ ወርክሾፖች</span>
+            በቀጥታ እና በአካል የሚሰጡ <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#f9b03c] via-amber-300 to-[#5a93e8] animate-pulse drop-shadow-[0_5px_25px_rgba(249,176,60,0.4)]">ልዩ ወርክሾፖች (Workshops)</span>
           </h2>
           
           <p className="text-slate-300 text-sm sm:text-base leading-relaxed">

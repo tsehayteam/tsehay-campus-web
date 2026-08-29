@@ -126,16 +126,12 @@ export default function SmartSearchInput({
         
         {/* Ambient Neon Pulse Glow */}
         <div 
-          className={`absolute -inset-0.5 rounded-full bg-gradient-to-r from-[#3268ba]/50 via-[#f9b03c]/40 to-[#3268ba]/50 blur-md transition-opacity duration-300 pointer-events-none ${
-            isFocused ? 'opacity-100 animate-pulse' : 'opacity-0 group-hover:opacity-40'
+          className={`absolute -inset-0.5 ${compact ? 'rounded-full' : 'rounded-2xl'} bg-gradient-to-r from-[#3268ba]/60 via-[#f9b03c]/40 to-[#3268ba]/60 blur-md transition-opacity duration-500 pointer-events-none animate-pulse ${
+            isFocused ? 'opacity-100' : 'opacity-60 group-hover:opacity-100'
           }`} 
         />
 
         <div className="relative flex items-center">
-          <div className={`absolute ${compact ? 'left-3' : 'left-4'} top-1/2 -translate-y-1/2 flex items-center pointer-events-none z-10`}>
-            <i className={`fa-solid fa-magnifying-glass transition-colors duration-300 ${compact ? 'text-xs' : 'text-sm'} ${isFocused ? 'text-[#f9b03c]' : 'text-gray-400 group-hover:text-slate-200'}`}></i>
-          </div>
-          
           <input 
             ref={inputRef}
             type="text" 
@@ -150,25 +146,48 @@ export default function SmartSearchInput({
             placeholder={placeholder}
             className={
               compact 
-                ? "w-full bg-[#070c18]/90 dark:bg-black/90 backdrop-blur-xl border border-[#3268ba]/40 shadow-[0_0_20px_rgba(50,104,186,0.25)] focus:border-[#f9b03c] focus:ring-1 focus:ring-[#f9b03c]/40 rounded-full py-2 pl-9 pr-8 text-white font-medium outline-none transition-all duration-300 text-xs placeholder:text-gray-400"
-                : "w-full bg-slate-900/80 dark:bg-[#070b14]/90 backdrop-blur-2xl border border-white/10 rounded-2xl py-3.5 pl-11 pr-10 text-white font-medium outline-none focus:border-[#3268ba] focus:ring-2 focus:ring-[#3268ba]/30 focus:shadow-[0_0_25px_rgba(50,104,186,0.3)] transition-all duration-300 text-xs sm:text-sm placeholder:font-normal placeholder:text-gray-400 shadow-[0_8px_30px_rgba(0,0,0,0.5)]"
+                ? "w-full bg-[#070c18]/95 dark:bg-black/95 backdrop-blur-xl border border-[#3268ba]/50 shadow-lg shadow-[#3268ba]/10 focus:border-[#f9b03c] focus:ring-1 focus:ring-[#f9b03c]/40 rounded-full py-2 pl-4 pr-16 text-white font-medium outline-none transition-all duration-300 text-xs placeholder:text-gray-400"
+                : "w-full bg-slate-900/90 dark:bg-[#070b14]/95 backdrop-blur-2xl border border-[#3268ba]/50 shadow-lg shadow-[#3268ba]/10 rounded-2xl py-3.5 pl-5 pr-24 text-white font-medium outline-none focus:border-[#f9b03c] focus:ring-2 focus:ring-[#f9b03c]/30 focus:shadow-[0_0_25px_rgba(249,176,60,0.3)] transition-all duration-300 text-xs sm:text-sm placeholder:font-normal placeholder:text-gray-400"
             }
           />
 
-          {query && (
-            <button 
-              type="button" 
+          {/* Right-Aligned Search Actions & Trigger Button */}
+          <div className="absolute right-1.5 sm:right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5 z-10">
+            {query && (
+              <button 
+                type="button" 
+                onClick={() => {
+                  setQuery('');
+                  setIsOpen(false);
+                  inputRef.current?.focus();
+                }} 
+                className="w-6 h-6 rounded-full bg-white/10 hover:bg-white/20 text-gray-400 hover:text-white transition-colors cursor-pointer flex items-center justify-center text-[10px]"
+                aria-label="Clear search"
+              >
+                <i className="fa-solid fa-xmark"></i>
+              </button>
+            )}
+
+            <button
+              type="button"
               onClick={() => {
-                setQuery('');
-                setIsOpen(false);
-                inputRef.current?.focus();
-              }} 
-              className={`absolute ${compact ? 'right-2.5 text-xs' : 'right-3 text-sm'} top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#f9b03c] transition-colors cursor-pointer p-1`}
-              aria-label="Clear search"
+                if (filteredResults.length > 0) {
+                  handleSelectCourse(filteredResults[0]);
+                } else if (matchingTopics.length > 0) {
+                  handleSelectTopic(matchingTopics[0].tag);
+                } else {
+                  inputRef.current?.focus();
+                }
+              }}
+              className={`flex items-center justify-center rounded-xl bg-gradient-to-r from-[#3268ba] to-[#25549c] hover:from-[#f9b03c] hover:to-amber-500 text-white hover:text-slate-950 font-bold transition-all duration-300 cursor-pointer shadow-md active:scale-95 ${
+                compact ? 'w-7 h-7 text-xs rounded-full' : 'px-3 py-2 text-xs gap-1.5'
+              }`}
+              title="ፈልግ (Search)"
             >
-              <i className="fa-solid fa-xmark"></i>
+              <i className="fa-solid fa-magnifying-glass"></i>
+              {!compact && <span className="hidden sm:inline text-[11px] font-black">ፈልግ</span>}
             </button>
-          )}
+          </div>
         </div>
       </div>
 
