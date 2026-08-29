@@ -171,3 +171,157 @@ export async function GET(req: NextRequest) {
     });
   }
 }
+
+export async function POST(req: NextRequest) {
+  try {
+    let body: any = {};
+    try {
+      body = await req.json();
+    } catch (e) {
+      body = {};
+    }
+
+    const courseData = body.courseData || body;
+    const courseId = body.courseId || body.id || courseData.id;
+
+    if (!courseData || Object.keys(courseData).length === 0) {
+      return NextResponse.json({ error: 'Missing courseData payload' }, { status: 400 });
+    }
+
+    const docId = courseId || `course_${Date.now()}`;
+    const payload = {
+      ...courseData,
+      id: docId,
+      updatedAt: new Date().toISOString()
+    };
+
+    if (adminDb) {
+      try {
+        const courseRef = adminDb
+          .collection('artifacts')
+          .doc('tsehaycampus-e1a6d')
+          .collection('public')
+          .doc('data')
+          .collection('courses')
+          .doc(docId);
+        await courseRef.set(payload, { merge: true });
+      } catch (e) {}
+
+      try {
+        await adminDb.collection('courses').doc(docId).set(payload, { merge: true });
+      } catch (e) {}
+
+      return NextResponse.json({ success: true, message: 'Course saved successfully', id: docId, course: payload });
+    }
+
+    return NextResponse.json({ success: true, message: 'Saved', id: docId, course: payload });
+  } catch (error: any) {
+    console.error('Error saving course in /api/courses POST:', error);
+    return NextResponse.json({ success: false, error: error.message || 'Internal server error' }, { status: 500 });
+  }
+}
+
+export async function PUT(req: NextRequest) {
+  try {
+    let body: any = {};
+    try {
+      body = await req.json();
+    } catch (e) {
+      body = {};
+    }
+
+    const { searchParams } = new URL(req.url);
+    const courseId = searchParams.get('id') || searchParams.get('courseId') || body.id || body.courseId;
+    const courseData = body.courseData || body;
+
+    if (!courseId) {
+      return NextResponse.json({ success: false, error: 'Missing courseId parameter' }, { status: 400 });
+    }
+
+    const payload = {
+      ...courseData,
+      id: courseId,
+      updatedAt: new Date().toISOString()
+    };
+
+    if (adminDb) {
+      try {
+        const courseRef = adminDb
+          .collection('artifacts')
+          .doc('tsehaycampus-e1a6d')
+          .collection('public')
+          .doc('data')
+          .collection('courses')
+          .doc(courseId);
+        await courseRef.set(payload, { merge: true });
+      } catch (e) {}
+
+      try {
+        await adminDb.collection('courses').doc(courseId).set(payload, { merge: true });
+      } catch (e) {}
+
+      return NextResponse.json({ success: true, message: 'Course updated successfully', id: courseId, course: payload });
+    }
+
+    return NextResponse.json({ success: true, message: 'Updated', id: courseId, course: payload });
+  } catch (error: any) {
+    console.error('Error in PUT /api/courses:', error);
+    return NextResponse.json({ success: false, error: error.message || 'Internal server error' }, { status: 500 });
+  }
+}
+
+export async function PATCH(req: NextRequest) {
+  return PUT(req);
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    let courseId = searchParams.get('id') || searchParams.get('courseId');
+
+    if (!courseId) {
+      try {
+        const body = await req.json();
+        courseId = body?.id || body?.courseId;
+      } catch (e) {}
+    }
+
+    if (!courseId) {
+      return NextResponse.json({ success: false, error: 'Missing id parameter' }, { status: 400 });
+    }
+
+    if (adminDb) {
+      try {
+        const courseRef = adminDb
+          .collection('artifacts')
+          .doc('tsehaycampus-e1a6d')
+          .collection('public')
+          .doc('data')
+          .collection('courses')
+          .doc(courseId);
+        await courseRef.delete();
+      } catch (e) {}
+
+      try {
+        await adminDb.collection('courses').doc(courseId).delete();
+      } catch (e) {}
+
+      return NextResponse.json({ 
+        success: true, 
+        message: 'Course deleted successfully', 
+        id: courseId,
+        courseId 
+      });
+    }
+
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Course deleted successfully', 
+      id: courseId,
+      courseId 
+    });
+  } catch (error: any) {
+    console.error('Error deleting course in /api/courses:', error);
+    return NextResponse.json({ success: false, error: error.message || 'Internal server error' }, { status: 500 });
+  }
+}

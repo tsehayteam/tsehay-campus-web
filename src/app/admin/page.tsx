@@ -2138,17 +2138,21 @@ export default function AdminDashboard() {
           await deleteDoc(rootDocRef);
         } catch (e) {}
 
-        // 3. Server Admin API Deletions
+        // 3. Server Admin API Deletions with safe JSON handling
         try {
-          await fetch(`/api/admin/courses?courseId=${encodeURIComponent(id)}`, {
+          const res = await fetch(`/api/admin/courses?id=${encodeURIComponent(id)}`, {
             method: 'DELETE'
           });
+          if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            console.warn("Admin delete course notice:", errData);
+          }
         } catch (e) {}
 
         try {
-          await fetch(`/api/admin/save-course?courseId=${encodeURIComponent(id)}`, {
+          await fetch(`/api/admin/save-course?id=${encodeURIComponent(id)}`, {
             method: 'DELETE'
-          });
+          }).catch(() => {});
         } catch (e) {}
 
         showToast("ኮርሱ በተሳካ ሁኔታ ተሰርዟል! (Course deleted successfully)", 'success');
