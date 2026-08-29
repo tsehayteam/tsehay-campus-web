@@ -23,12 +23,7 @@ export default function Navbar() {
   const { lang, toggleLanguage, t } = useLanguage();
   const [animationKey, setAnimationKey] = useState(0);
 
-  useEffect(() => {
-    // Keep curtain closed by default so user manually clicks to open
-    setIsCurtainOpen(false);
-  }, []);
-
-  // ✍️ Typewriter effect for brand logo text ("Tsehay Campus")
+  // Brand Name animated reveal
   const fullBrandName = "Tsehay Campus";
   const [displayedBrand, setDisplayedBrand] = useState("");
   const [isTypingDone, setIsTypingDone] = useState(false);
@@ -47,11 +42,12 @@ export default function Navbar() {
         setIsTypingDone(true);
         clearInterval(typingTimer);
       }
-    }, 70);
+    }, 60);
 
     return () => clearInterval(typingTimer);
   }, [isCurtainOpen, animationKey]);
 
+  // Cached User Profile
   const [customPhoto, setCustomPhoto] = useState<string | null>(() => {
     if (typeof window === 'undefined') return null;
     try {
@@ -76,6 +72,7 @@ export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
 
+  // Listen for profile updates
   useEffect(() => {
     const handleProfileUpdate = (e: any) => {
       if (e.detail?.photoURL !== undefined) {
@@ -89,6 +86,7 @@ export default function Navbar() {
     return () => window.removeEventListener('tsehay_profile_updated', handleProfileUpdate);
   }, []);
 
+  // Swipe Up to roll up menu
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchStartY(e.touches[0].clientY);
   };
@@ -97,7 +95,6 @@ export default function Navbar() {
     if (touchStartY === null) return;
     const touchEndY = e.changedTouches[0].clientY;
     const diff = touchEndY - touchStartY;
-    // Strictly ONLY swipe UP to close when open (NEVER swipe down to open)
     if (diff < -35 && isCurtainOpen) {
       setIsCurtainOpen(false);
     }
@@ -105,20 +102,31 @@ export default function Navbar() {
   };
 
   const openCurtain = (e?: React.MouseEvent | React.TouchEvent) => {
-    if (e) {
-      e.stopPropagation();
-    }
+    if (e) e.stopPropagation();
     setIsCurtainOpen(true);
     setAnimationKey(prev => prev + 1);
   };
 
   const closeCurtain = (e?: React.MouseEvent | React.TouchEvent) => {
-    if (e) {
-      e.stopPropagation();
-    }
+    if (e) e.stopPropagation();
     setIsCurtainOpen(false);
   };
 
+  // Auto-collapse smoothly on scroll down
+  useEffect(() => {
+    let lastScrollY = typeof window !== 'undefined' ? window.scrollY : 0;
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      if (currentScrollY > 120 && currentScrollY > lastScrollY + 25 && isCurtainOpen) {
+        setIsCurtainOpen(false);
+      }
+      lastScrollY = currentScrollY;
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [isCurtainOpen]);
+
+  // Global event triggers
   useEffect(() => {
     const handleOpenCurtain = () => {
       setIsCurtainOpen(true);
@@ -145,9 +153,7 @@ export default function Navbar() {
 
   const navigateTo = (url: string) => {
     setShowProfileDropdown(false);
-    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
-      setIsCurtainOpen(false);
-    }
+    setIsCurtainOpen(false);
 
     if (url.startsWith('/#') || url.startsWith('#')) {
       const hash = url.replace('/#', '').replace('#', '');
@@ -258,7 +264,7 @@ export default function Navbar() {
     }
   };
 
-  // 🚫 Hide public website navbar & "ዋና ማውጫ" curtain completely on Admin routes
+  // Hide on admin routes
   if (pathname?.startsWith('/admin')) {
     return null;
   }
@@ -267,28 +273,28 @@ export default function Navbar() {
   const isAbout = pathname === '/about';
   const isCourses = pathname?.startsWith('/courses');
   const isMentorship = pathname === '/mentorship';
+  const isCommunity = pathname === '/community';
 
   return (
     <>
-      {/* 1. ✨ Floating Center-Aligned Trigger Button (Visible when Curtain is Rolled Up) */}
+      {/* ===================== 1. FLOATING 3D MINIMAL PILL TRIGGER ===================== */}
       {!isCurtainOpen && (
         <div 
           className="fixed top-0 flex justify-center pointer-events-auto select-none transition-all duration-300 left-1/2 -translate-x-1/2 z-[99999]"
-          title="ዋና ማውጫ / Menu (Click to Open Menu)"
+          title="ዋና ማውጫ / Menu (Click to Expand Navigation)"
         >
           <button
             type="button"
             onClick={openCurtain}
-            className="pointer-events-auto bg-[#030509]/95 dark:bg-[#030509]/95 hover:bg-[#080d1a] border-x border-b border-[#f9b03c]/60 hover:border-[#f9b03c] px-5 sm:px-8 py-2 sm:py-2.5 rounded-b-2xl flex items-center gap-2.5 sm:gap-3 group transition-all duration-300 active:scale-95 cursor-pointer shadow-[0_0_25px_rgba(249,176,60,0.4),0_8px_30px_rgba(0,0,0,0.85)] whitespace-nowrap backdrop-blur-xl"
+            className="pointer-events-auto bg-[#030509]/95 hover:bg-[#070c18] border-x border-b border-[#f9b03c]/60 hover:border-[#f9b03c] px-6 sm:px-8 py-2 sm:py-2.5 rounded-b-2xl flex items-center gap-2.5 sm:gap-3 group transition-all duration-300 active:scale-95 cursor-pointer shadow-[0_0_25px_rgba(249,176,60,0.35),0_10px_35px_rgba(0,0,0,0.9)] whitespace-nowrap backdrop-blur-xl"
           >
-            {/* Glowing Compass Icon */}
+            {/* Glowing Compass / Menu Dot */}
             <div className="w-5 h-5 rounded-full bg-[#f9b03c]/20 border border-[#f9b03c]/60 flex items-center justify-center text-[#f9b03c] text-[11px] shadow-[0_0_10px_rgba(249,176,60,0.5)] group-hover:scale-110 group-hover:rotate-12 transition-transform">
               <i className="fa-solid fa-compass"></i>
             </div>
 
             {/* Label Text */}
             <span className="text-xs sm:text-[13px] font-black tracking-wide text-white group-hover:text-[#f9b03c] transition-colors whitespace-nowrap flex items-center gap-1.5 font-heading">
-              <i className="fa-solid fa-bars text-[11px] text-[#f9b03c]"></i>
               <span>ዋና ማውጫ / Menu</span>
             </span>
 
@@ -297,48 +303,42 @@ export default function Navbar() {
         </div>
       )}
 
-      {/* 2. Backdrop Overlay when Curtain is Expanded (Clicking outside closes it smoothly) */}
+      {/* ===================== 2. BACKDROP OVERLAY ===================== */}
       <div 
         onClick={closeCurtain}
-        className={`fixed inset-0 z-[9995] bg-black/75 backdrop-blur-[8px] transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+        className={`fixed inset-0 z-[9995] bg-black/80 backdrop-blur-md transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] ${
           isCurtainOpen 
             ? 'opacity-100 pointer-events-auto' 
             : 'opacity-0 pointer-events-none'
         }`}
       />
 
-      {/* 3. 🚀 Sliding Curtain Navbar (Smooth Drop-down with Heavy Glassmorphism & High Z-Index) */}
+      {/* ===================== 3. 3D GLASSMORPHIC EXPANDED NAVBAR ===================== */}
       <nav 
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
-        className={`fixed top-0 left-0 right-0 w-full max-w-full z-[9999] shadow-[0_20px_60px_rgba(0,0,0,0.9)] select-none transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] max-h-[92vh] overflow-y-auto overscroll-contain no-scrollbar ${
+        className={`fixed top-0 left-0 right-0 w-full max-w-full z-[9999] shadow-[0_25px_70px_rgba(0,0,0,0.95)] select-none transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] max-h-[92vh] overflow-y-auto overscroll-contain no-scrollbar backdrop-blur-2xl bg-black/85 border-b border-white/10 ${
           isCurtainOpen 
             ? 'translate-y-0 opacity-100 pointer-events-auto' 
             : '-translate-y-full opacity-0 pointer-events-none'
         }`}
         style={{
-          backdropFilter: 'blur(25px)',
-          WebkitBackdropFilter: 'blur(25px)',
-          background: 'rgba(3, 5, 9, 0.96)',
-          borderBottom: '1px solid rgba(249, 176, 60, 0.25)',
           willChange: 'transform, opacity',
         }}
       >
-        {/* 🔼 SINGLE DISTINCT ULTRA-PREMIUM ROLL-UP TAB AT BOTTOM CENTER */}
+        {/* Sleek Center Roll-Up Handle at Bottom */}
         {isCurtainOpen && (
           <div 
             className="absolute -bottom-8 flex justify-center pointer-events-auto z-[10000] left-1/2 -translate-x-1/2"
-            style={{
-              width: 'max-content',
-            }}
+            style={{ width: 'max-content' }}
           >
             <button 
               type="button"
               onClick={closeCurtain}
-              className="curtain-rollup-handle pointer-events-auto px-5 sm:px-6 py-1.5 sm:py-2 rounded-b-2xl flex items-center gap-2 text-white hover:text-white cursor-pointer group active:scale-95 shadow-[0_10px_30px_rgba(0,0,0,0.85),0_0_22px_rgba(249,176,60,0.35)] whitespace-nowrap"
+              className="curtain-rollup-handle pointer-events-auto px-5 sm:px-6 py-1.5 sm:py-2 rounded-b-2xl flex items-center gap-2 text-white hover:text-white cursor-pointer group active:scale-95 shadow-[0_10px_30px_rgba(0,0,0,0.9),0_0_25px_rgba(249,176,60,0.4)] whitespace-nowrap bg-[#030509]/95 border-x border-b border-[#f9b03c]/50"
               title="ወደ ላይ መልሰህ እጠፍ (Roll Up Menu)"
             >
-              <div className="w-4 h-4 rounded-full bg-gradient-to-tr from-[#f9b03c] to-amber-300 text-black flex items-center justify-center text-[10px] font-black shadow-[0_0_10px_rgba(249,176,60,0.5)] shrink-0 group-hover:scale-110 transition-transform">
+              <div className="w-4 h-4 rounded-full bg-gradient-to-tr from-[#f9b03c] to-amber-300 text-slate-950 flex items-center justify-center text-[10px] font-black shadow-[0_0_10px_rgba(249,176,60,0.5)] shrink-0 group-hover:scale-110 transition-transform">
                 <i className="fa-solid fa-chevron-up text-[9px] font-black"></i>
               </div>
               <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-white group-hover:text-[#f9b03c] font-heading transition-colors">
@@ -352,26 +352,26 @@ export default function Navbar() {
         <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8">
           
           {/* Top Bar Row */}
-          <div className="flex justify-between items-center h-15 sm:h-20 gap-3 lg:gap-6">
+          <div className="flex justify-between items-center h-16 sm:h-20 gap-3 lg:gap-6">
             
-            {/* Brand Logo + ✍️ Animated Typewriter Reveal Text ("Tsehay Campus") */}
+            {/* Brand Logo & Title */}
             <Link 
               href="/" 
               onClick={() => { 
                 closeCurtain(); 
                 if (pathname === '/') window.scrollTo({ top: 0, behavior: 'smooth' }); 
               }} 
-              className="flex-shrink-0 flex items-center cursor-pointer group gap-2.5 mr-2 sm:mr-4 lg:mr-8 brand-entrance"
+              className="flex-shrink-0 flex items-center cursor-pointer group gap-3 mr-2 sm:mr-4 lg:mr-8"
             >
               <img 
                 key={`brand-logo-${animationKey}`}
                 src="/tc-logo.jpg" 
                 alt="Tsehay Campus Logo" 
-                className="h-8 sm:h-12 w-auto object-contain rounded-xl shadow-sm border border-black/10 dark:border-white/10 group-hover:border-[#f9b03c]/50 brand-logo-img hover:scale-105 transition-transform duration-300 logo-spring-reveal" 
+                className="h-9 sm:h-12 w-auto object-contain rounded-2xl shadow-sm border border-white/10 group-hover:border-[#f9b03c]/60 group-hover:scale-105 transition-all duration-300" 
                 onError={(e) => { e.currentTarget.src = 'https://ui-avatars.com/api/?name=TC&background=3268BA&color=fff'; }} 
               />
               
-              {/* Typewriter animated brand title - visible on Mobile, Tablet & Desktop */}
+              {/* Typewriter animated brand title */}
               <div className="flex items-center notranslate select-none">
                 <span className="font-heading font-black text-base sm:text-2xl tracking-tight transition-colors duration-300 flex items-center">
                   <span className="text-[#f9b03c]">
@@ -387,95 +387,86 @@ export default function Navbar() {
               </div>
             </Link>
 
-            {/* Desktop Navigation Links */}
+            {/* ===================== CLEAN DESKTOP NAV LINKS (NO ICONS) ===================== */}
             <div key={`desktop-nav-links-${animationKey}`} className="hidden lg:flex items-center gap-7 h-full">
+              
+              {/* 1. መነሻ */}
               <Link 
                 href="/" 
                 onClick={() => {
-                  if (pathname === '/') {
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }
+                  if (pathname === '/') window.scrollTo({ top: 0, behavior: 'smooth' });
                 }} 
-                className={`py-2 text-[14px] lg:text-[15px] font-bold flex items-center gap-1.5 transition-all duration-300 anim-nav-link-1 ${
+                className={`py-2 text-[14px] lg:text-[15px] font-bold tracking-wide transition-all duration-300 ${
                   isHome 
                     ? 'terafab-nav-link-active' 
-                    : 'terafab-nav-link text-gray-700 dark:text-gray-300'
+                    : 'terafab-nav-link text-slate-300 hover:text-white'
                 }`}
               >
-                <i className="fa-solid fa-house text-xs opacity-75"></i>
                 <span>{t('home') || 'መነሻ'}</span>
               </Link>
 
-              <Link 
-                href="/about" 
-                onClick={() => {
-                  if (pathname === '/about') {
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }
-                }} 
-                className={`py-2 text-[14px] lg:text-[15px] font-bold transition-all duration-300 anim-nav-link-2 ${
-                  isAbout 
-                    ? 'terafab-nav-link-active' 
-                    : 'terafab-nav-link text-gray-700 dark:text-gray-300'
-                }`}
-              >
-                {t('about_us')}
-              </Link>
-
+              {/* 2. ሁሉም ኮርሶች */}
               <Link 
                 href="/courses" 
                 onClick={() => {
-                  if (pathname === '/courses') {
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }
+                  if (pathname === '/courses') window.scrollTo({ top: 0, behavior: 'smooth' });
                 }} 
-                className={`py-2 text-[14px] lg:text-[15px] font-bold transition-all duration-300 anim-nav-link-3 ${
+                className={`py-2 text-[14px] lg:text-[15px] font-bold tracking-wide transition-all duration-300 ${
                   isCourses 
                     ? 'terafab-nav-link-active' 
-                    : 'terafab-nav-link text-gray-700 dark:text-gray-300'
+                    : 'terafab-nav-link text-slate-300 hover:text-white'
                 }`}
               >
-                <i className="fa-solid fa-graduation-cap text-xs opacity-75"></i>
-                <span>{t('all_courses') || 'ኮርሶች'}</span>
+                <span>{t('all_courses') || 'ሁሉም ኮርሶች'}</span>
               </Link>
 
+              {/* 3. ማማከር (1-on-1) */}
               <Link 
                 href="/mentorship" 
                 onClick={() => {
-                  if (pathname === '/mentorship') {
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }
+                  if (pathname === '/mentorship') window.scrollTo({ top: 0, behavior: 'smooth' });
                 }} 
-                className={`py-2 text-[14px] lg:text-[15px] font-bold transition-all duration-300 flex items-center gap-1.5 anim-nav-link-4 ${
+                className={`py-2 text-[14px] lg:text-[15px] font-bold tracking-wide transition-all duration-300 ${
                   isMentorship 
                     ? 'terafab-nav-link-active' 
-                    : 'terafab-nav-link text-gray-700 dark:text-gray-300'
+                    : 'terafab-nav-link text-slate-300 hover:text-white'
                 }`}
               >
-                <i className="fa-solid fa-user-tie text-xs text-[#f9b03c]"></i>
-                <span>{t('mentorship') || (lang === 'en' ? 'Mentorship' : 'ማማከር')}</span>
-                <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-[#f9b03c]/20 text-[#f9b03c] font-black border border-[#f9b03c]/40">1-on-1</span>
+                <span>{lang === 'en' ? 'Mentorship (1-on-1)' : 'ማማከር (1-on-1)'}</span>
               </Link>
 
+              {/* 4. ማህበረሰብ */}
               <Link 
                 href="/community" 
                 onClick={() => {
-                  if (pathname === '/community') {
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }
+                  if (pathname === '/community') window.scrollTo({ top: 0, behavior: 'smooth' });
                 }} 
-                className={`py-2 text-[14px] lg:text-[15px] font-bold transition-all duration-300 flex items-center gap-1.5 anim-nav-link-5 ${
-                  pathname === '/community' 
+                className={`py-2 text-[14px] lg:text-[15px] font-bold tracking-wide transition-all duration-300 ${
+                  isCommunity 
                     ? 'terafab-nav-link-active' 
-                    : 'terafab-nav-link text-gray-700 dark:text-gray-300'
+                    : 'terafab-nav-link text-slate-300 hover:text-white'
                 }`}
               >
-                <i className="fa-solid fa-users text-xs text-[#f9b03c]"></i>
                 <span>{lang === 'en' ? 'Community' : 'ማህበረሰብ'}</span>
               </Link>
 
+              {/* 5. ስለ እኛ */}
+              <Link 
+                href="/about" 
+                onClick={() => {
+                  if (pathname === '/about') window.scrollTo({ top: 0, behavior: 'smooth' });
+                }} 
+                className={`py-2 text-[14px] lg:text-[15px] font-bold tracking-wide transition-all duration-300 ${
+                  isAbout 
+                    ? 'terafab-nav-link-active' 
+                    : 'terafab-nav-link text-slate-300 hover:text-white'
+                }`}
+              >
+                <span>{t('about_us') || 'ስለ እኛ'}</span>
+              </Link>
+
               {/* Smart Search Bar on Desktop */}
-              <div className="w-52 lg:w-64 ml-1 anim-nav-search">
+              <div className="w-52 lg:w-64 ml-1">
                 <SmartSearchInput 
                   courses={allCourses} 
                   compact={true}
@@ -484,17 +475,16 @@ export default function Navbar() {
               </div>
             </div>
 
-            {/* Desktop Actions */}
+            {/* Desktop Actions Toolbar */}
             <div key={`desktop-actions-${animationKey}`} className="hidden md:flex items-center gap-2 lg:gap-3 font-heading text-sm">
-              {/* Premium AI Feature Pill Button */}
+              
+              {/* Glowing Tsehay AI Feature Badge */}
               <button 
                 type="button"
                 onClick={() => {
                   if (pathname === '/') {
                     const element = document.getElementById('ai-feature');
-                    if (element) {
-                      element.scrollIntoView({ behavior: 'smooth' });
-                    }
+                    if (element) element.scrollIntoView({ behavior: 'smooth' });
                   } else {
                     router.push('/#ai-feature');
                     setTimeout(() => {
@@ -502,70 +492,70 @@ export default function Navbar() {
                     }, 350);
                   }
                 }} 
-                className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-[#f9b03c]/15 via-amber-400/20 to-[#f9b03c]/15 hover:from-[#f9b03c]/25 hover:to-amber-400/30 border border-[#f9b03c]/50 hover:border-[#f9b03c] shadow-[0_0_15px_rgba(249,176,60,0.25)] hover:shadow-[0_0_25px_rgba(249,176,60,0.45)] text-slate-900 dark:text-white font-bold text-xs cursor-pointer notranslate transition-all duration-300 hover:scale-[1.03] active:scale-[0.98] anim-nav-ai group"
+                className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-[#f9b03c]/15 via-amber-400/20 to-[#f9b03c]/15 hover:from-[#f9b03c]/25 hover:to-amber-400/30 border border-[#f9b03c]/50 hover:border-[#f9b03c] shadow-[0_0_15px_rgba(249,176,60,0.25)] hover:shadow-[0_0_25px_rgba(249,176,60,0.45)] text-white font-bold text-xs cursor-pointer notranslate transition-all duration-300 hover:scale-[1.03] active:scale-[0.98] group"
                 title="Tsehay AI 24/7 የግል መምህር (Classroom AI Assistant)"
               >
                 <div className="w-5 h-5 rounded-md bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-200 text-slate-950 flex items-center justify-center font-black shadow-xs shrink-0 group-hover:rotate-12 transition-transform duration-300">
                   <i className="fa-solid fa-robot text-[10px]"></i>
                 </div>
-                <span className="text-xs font-black tracking-wide text-slate-900 dark:text-white group-hover:text-[#f9b03c] transition-colors">
+                <span className="text-xs font-black tracking-wide text-white group-hover:text-[#f9b03c] transition-colors">
                   Tsehay AI
                 </span>
                 <span className="w-1.5 h-1.5 rounded-full bg-[#f9b03c] shadow-[0_0_8px_#f9b03c] ml-0.5 animate-pulse"></span>
               </button>
 
-              {/* Install App Quick Trigger */}
+              {/* Install App Trigger */}
               <button 
                 type="button"
                 onClick={() => window.dispatchEvent(new CustomEvent('open-pwa-install'))}
-                className="btn-install-pwa hidden lg:flex items-center gap-1.5 px-3.5 py-1.5 rounded-full font-bold text-xs cursor-pointer notranslate anim-nav-app group"
+                className="btn-install-pwa hidden lg:flex items-center gap-1.5 px-3.5 py-1.5 rounded-full font-bold text-xs cursor-pointer notranslate border border-white/10 hover:border-white/20 bg-white/5 hover:bg-white/10 text-slate-200 group transition-all"
                 title="አፕሊኬሽኑን በስልክዎ ወይም በኮምፒተርዎ ላይ ይጫኑ (Install App)"
               >
-                <i className="fa-solid fa-mobile-screen-button text-xs opacity-75 icon-anim-device group-hover:scale-110 transition-transform"></i>
+                <i className="fa-solid fa-mobile-screen-button text-xs opacity-75 group-hover:scale-110 transition-transform"></i>
                 <span>አፕ ጫን</span>
               </button>
 
               {/* Language Switcher */}
               <button 
                 onClick={toggleLanguage} 
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gray-200 dark:border-white/10 hover:border-[#f9b03c]/50 bg-gray-100/80 dark:bg-white/5 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-bold text-xs transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer notranslate anim-nav-lang group" 
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/10 hover:border-[#f9b03c]/50 bg-white/5 text-slate-300 hover:text-white font-bold text-xs transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer notranslate group" 
                 translate="no"
                 title="ቋንቋ ይቀይሩ / Switch Language"
               >
-                <i className="fa-solid fa-globe text-[11px] opacity-75 text-[#f9b03c] icon-anim-globe group-hover:rotate-45 transition-transform"></i>
+                <i className="fa-solid fa-globe text-[11px] opacity-75 text-[#f9b03c] group-hover:rotate-45 transition-transform"></i>
                 <span>{lang === 'am' ? 'EN' : 'አማ'}</span>
               </button>
 
               {/* Dark/Light Mode Toggle */}
               <button 
                 onClick={toggleTheme} 
-                className="w-9 h-9 rounded-full border border-gray-200 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20 bg-gray-100/80 dark:bg-white/5 text-gray-700 dark:text-yellow-400 flex items-center justify-center text-xs transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer anim-nav-theme group"
+                className="w-9 h-9 rounded-full border border-white/10 hover:border-white/20 bg-white/5 text-yellow-400 flex items-center justify-center text-xs transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
                 aria-label="Toggle dark/light mode"
                 title="ሞድ ይቀይሩ / Toggle theme"
               >
                 <i className={`fa-solid ${theme === 'dark' ? 'fa-moon' : 'fa-sun'}`}></i>
               </button>
 
-              {/* 3. Mobile Direct Close Button */}
+              {/* Header Right Quick Close Button (✕) */}
               <button
                 type="button"
                 onClick={closeCurtain}
-                className="w-8 h-8 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 flex items-center justify-center text-xs transition active:scale-95 cursor-pointer"
-                title="ዝጋ (Close)"
+                className="w-8 h-8 rounded-xl bg-white/10 hover:bg-red-500/20 border border-white/10 hover:border-red-500/30 text-slate-300 hover:text-red-400 flex items-center justify-center text-xs transition active:scale-95 cursor-pointer"
+                title="ዝጋ (Close Menu)"
               >
                 <i className="fa-solid fa-xmark"></i>
               </button>
             </div>
           </div>
 
-          {/* 📱 Mobile Centered Staggered Navigation Panel (Clean 2-Column Action Cards Grid) */}
+          {/* ===================== 📱 MOBILE MENU PANEL ===================== */}
           <div key={`mobile-nav-${animationKey}`} className="lg:hidden pb-6 pt-2 space-y-3.5 max-w-lg mx-auto w-full flex flex-col items-center text-center">
             
-            {/* Drag indicator */}
+            {/* Drag Bar Indicator */}
             <div className="w-12 h-1 rounded-full bg-white/20 mx-auto -mt-1 mb-1"></div>
 
-            {/* 1. Pop-Up Smart Search */}
-            <div className="w-full animate-pop-up-search">
+            {/* Smart Search */}
+            <div className="w-full">
               <SmartSearchInput 
                 courses={allCourses} 
                 compact={true}
@@ -573,116 +563,99 @@ export default function Navbar() {
               />
             </div>
 
-            {/* 2. Structured 2-Column Navigation Grid (Clean, Responsive, Intuitive) */}
+            {/* Clean 2-Column Navigation Grid (Text Focused) */}
             <div className="grid grid-cols-2 gap-2.5 w-full">
+              
               {/* Home */}
               <button 
                 type="button" 
                 onClick={() => { closeCurtain(); navigateTo('/'); }} 
-                className={`p-3 rounded-2xl mobile-nav-card flex flex-col items-center justify-center text-center cursor-pointer group transition-all duration-200 ${isHome ? 'mobile-nav-card-active' : ''}`}
+                className={`p-3.5 rounded-2xl mobile-nav-card flex flex-col items-center justify-center text-center cursor-pointer group transition-all duration-200 ${isHome ? 'mobile-nav-card-active' : ''}`}
               >
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-[#f9b03c]/15 text-[#f9b03c] mb-1.5 group-hover:scale-110 transition-transform">
-                  <i className="fa-solid fa-house text-sm icon-anim-home"></i>
-                </div>
-                <span className="text-xs font-black text-gray-900 dark:text-white font-heading">
-                  {t('home') || 'መነሻ ገጽ'}
+                <span className="text-xs font-black text-white font-heading">
+                  {t('home') || 'መነሻ'}
                 </span>
-                <span className="text-[9px] text-gray-500 dark:text-gray-400">Home</span>
+                <span className="text-[10px] text-gray-400 mt-0.5">Home</span>
               </button>
 
               {/* All Courses */}
               <button 
                 type="button" 
                 onClick={() => { closeCurtain(); navigateTo('/courses'); }} 
-                className={`p-3 rounded-2xl mobile-nav-card flex flex-col items-center justify-center text-center cursor-pointer group transition-all duration-200 ${isCourses ? 'mobile-nav-card-active' : ''}`}
+                className={`p-3.5 rounded-2xl mobile-nav-card flex flex-col items-center justify-center text-center cursor-pointer group transition-all duration-200 ${isCourses ? 'mobile-nav-card-active' : ''}`}
               >
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-blue-500/15 text-blue-400 mb-1.5 group-hover:scale-110 transition-transform">
-                  <i className="fa-solid fa-graduation-cap text-sm icon-anim-courses"></i>
-                </div>
-                <span className="text-xs font-black text-gray-900 dark:text-white font-heading">
+                <span className="text-xs font-black text-white font-heading">
                   {t('all_courses') || 'ሁሉም ኮርሶች'}
                 </span>
-                <span className="text-[9px] text-gray-500 dark:text-gray-400">Courses</span>
+                <span className="text-[10px] text-gray-400 mt-0.5">Courses</span>
               </button>
 
-              {/* 1-on-1 Mentorship */}
+              {/* Mentorship */}
               <button 
                 type="button" 
                 onClick={() => { closeCurtain(); navigateTo('/mentorship'); }} 
-                className={`p-3 rounded-2xl mobile-nav-card flex flex-col items-center justify-center text-center cursor-pointer group transition-all duration-200 ${isMentorship ? 'mobile-nav-card-active' : ''}`}
+                className={`p-3.5 rounded-2xl mobile-nav-card flex flex-col items-center justify-center text-center cursor-pointer group transition-all duration-200 ${isMentorship ? 'mobile-nav-card-active' : ''}`}
               >
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-amber-500/20 text-[#f9b03c] mb-1.5 group-hover:scale-110 transition-transform">
-                  <i className="fa-solid fa-user-tie text-sm"></i>
-                </div>
-                <span className="text-xs font-black text-gray-900 dark:text-white font-heading">
-                  {t('mentorship') || '1-ለ-1 ማማከር'}
+                <span className="text-xs font-black text-white font-heading">
+                  {lang === 'en' ? 'Mentorship (1-on-1)' : 'ማማከር (1-on-1)'}
                 </span>
-                <span className="text-[9px] text-gray-500 dark:text-gray-400">Mentorship</span>
+                <span className="text-[10px] text-gray-400 mt-0.5">1-on-1 Expert</span>
               </button>
 
               {/* Community */}
               <button 
                 type="button" 
                 onClick={() => { closeCurtain(); navigateTo('/community'); }} 
-                className={`p-3 rounded-2xl mobile-nav-card flex flex-col items-center justify-center text-center cursor-pointer group transition-all duration-200 ${pathname === '/community' ? 'mobile-nav-card-active' : ''}`}
+                className={`p-3.5 rounded-2xl mobile-nav-card flex flex-col items-center justify-center text-center cursor-pointer group transition-all duration-200 ${isCommunity ? 'mobile-nav-card-active' : ''}`}
               >
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-emerald-500/15 text-emerald-400 mb-1.5 group-hover:scale-110 transition-transform">
-                  <i className="fa-solid fa-users text-sm"></i>
-                </div>
-                <span className="text-xs font-black text-gray-900 dark:text-white font-heading">
+                <span className="text-xs font-black text-white font-heading">
                   {lang === 'en' ? 'Community' : 'ማህበረሰብ'}
                 </span>
-                <span className="text-[9px] text-gray-500 dark:text-gray-400">Community</span>
+                <span className="text-[10px] text-gray-400 mt-0.5">Discussions</span>
               </button>
 
-              {/* Tsehay AI Tutor */}
+              {/* Tsehay AI */}
               <button 
                 type="button" 
                 onClick={() => { closeCurtain(); navigateTo('/#ai-feature'); }} 
-                className="p-3 rounded-2xl mobile-nav-card flex flex-col items-center justify-center text-center cursor-pointer group transition-all duration-200"
+                className="p-3.5 rounded-2xl mobile-nav-card flex flex-col items-center justify-center text-center cursor-pointer group transition-all duration-200 bg-amber-500/10 border-amber-500/30"
               >
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-purple-500/15 text-purple-400 mb-1.5 group-hover:scale-110 transition-transform">
-                  <i className="fa-solid fa-robot text-sm"></i>
-                </div>
-                <span className="text-xs font-black text-gray-900 dark:text-white notranslate font-heading flex items-center gap-1">
+                <span className="text-xs font-black text-[#f9b03c] notranslate font-heading flex items-center gap-1">
                   <span>Tsehay AI</span>
                   <span className="w-1.5 h-1.5 rounded-full bg-[#f9b03c] animate-pulse"></span>
                 </span>
-                <span className="text-[9px] text-gray-500 dark:text-gray-400">24/7 AI Tutor</span>
+                <span className="text-[10px] text-amber-200/70 mt-0.5">24/7 AI Tutor</span>
               </button>
 
               {/* About Us */}
               <button 
                 type="button" 
                 onClick={() => { closeCurtain(); navigateTo('/about'); }} 
-                className={`p-3 rounded-2xl mobile-nav-card flex flex-col items-center justify-center text-center cursor-pointer group transition-all duration-200 ${isAbout ? 'mobile-nav-card-active' : ''}`}
+                className={`p-3.5 rounded-2xl mobile-nav-card flex flex-col items-center justify-center text-center cursor-pointer group transition-all duration-200 ${isAbout ? 'mobile-nav-card-active' : ''}`}
               >
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-cyan-500/15 text-cyan-400 mb-1.5 group-hover:scale-110 transition-transform">
-                  <i className="fa-solid fa-circle-info text-sm icon-anim-about"></i>
-                </div>
-                <span className="text-xs font-black text-gray-900 dark:text-white font-heading">
+                <span className="text-xs font-black text-white font-heading">
                   {t('about_us') || 'ስለ እኛ'}
                 </span>
-                <span className="text-[9px] text-gray-500 dark:text-gray-400">About Us</span>
+                <span className="text-[10px] text-gray-400 mt-0.5">About Us</span>
               </button>
             </div>
 
-            {/* 3. Install App Pill */}
+            {/* Install App Trigger Pill */}
             <button 
               type="button" 
               onClick={() => {
                 closeCurtain();
                 window.dispatchEvent(new CustomEvent('open-pwa-install'));
               }} 
-              className="w-full py-2.5 px-4 rounded-xl mobile-nav-card bg-amber-500/10 border-amber-500/30 flex items-center justify-center gap-2 text-center cursor-pointer group transition-all duration-200"
+              className="w-full py-2.5 px-4 rounded-xl mobile-nav-card bg-white/5 border-white/10 hover:border-[#f9b03c]/40 flex items-center justify-center gap-2 text-center cursor-pointer group transition-all duration-200"
             >
               <i className="fa-solid fa-mobile-screen-button text-xs text-[#f9b03c]"></i>
-              <span className="text-xs font-black text-gray-900 dark:text-white font-heading">
+              <span className="text-xs font-black text-white font-heading">
                 አፕሊኬሽኑን በስልክዎ ይጫኑ (Install App)
               </span>
             </button>
 
-            {/* 4. User Profile & Login Section */}
+            {/* User Profile & Auth Trigger */}
             <div className="w-full pt-1">
               {!mounted || !user ? (
                 <button 
@@ -690,7 +663,7 @@ export default function Navbar() {
                   onClick={() => { closeCurtain(); openAuthModal(false); }} 
                   className="w-full btn-buy-now-vibe font-black py-3.5 rounded-2xl shadow-lg flex items-center justify-center gap-2 text-xs sm:text-sm cursor-pointer active:scale-95 group"
                 >
-                  <i className="fa-solid fa-arrow-right-to-bracket text-slate-950 icon-anim-login"></i>
+                  <i className="fa-solid fa-arrow-right-to-bracket text-slate-950"></i>
                   <span>{t('login') || 'ግባ ወይም ተመዝገብ (Login / Sign Up)'}</span>
                 </button>
               ) : (
@@ -703,8 +676,8 @@ export default function Navbar() {
                         className="w-9 h-9 rounded-full border-2 border-[#f9b03c] object-cover shrink-0 shadow-sm" 
                       />
                       <div>
-                        <div className="text-xs font-bold text-gray-900 dark:text-white truncate max-w-[150px]">{navUserName}</div>
-                        <div className="text-[10px] text-gray-500 dark:text-gray-400 truncate max-w-[150px]">{user?.email}</div>
+                        <div className="text-xs font-bold text-white truncate max-w-[150px]">{navUserName}</div>
+                        <div className="text-[10px] text-gray-400 truncate max-w-[150px]">{user?.email}</div>
                       </div>
                     </div>
                     <button 
@@ -755,10 +728,10 @@ export default function Navbar() {
             <button
               type="button"
               onClick={closeCurtain}
-              className="mt-2 py-2 px-5 rounded-full bg-white/10 hover:bg-white/15 text-slate-300 hover:text-white border border-white/10 flex items-center gap-2 text-xs font-bold transition cursor-pointer active:scale-95"
+              className="mt-2 py-2 px-6 rounded-full bg-white/10 hover:bg-white/15 text-slate-300 hover:text-white border border-white/10 flex items-center gap-2 text-xs font-bold transition cursor-pointer active:scale-95"
             >
               <i className="fa-solid fa-chevron-up text-[10px] text-[#f9b03c]"></i>
-              <span>ወደ ላይ መልስ (Close Menu)</span>
+              <span>ወደ ላይ መልስ (Roll Up)</span>
             </button>
 
           </div>
