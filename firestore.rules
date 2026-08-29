@@ -129,6 +129,16 @@ service cloud.firestore {
       }
     }
 
+    match /about_reels/{reelId} {
+      allow read: if true;
+      allow write: if isGlobalAdmin() || isAuthenticated();
+    }
+
+    match /about_photos/{photoId} {
+      allow read: if true;
+      allow write: if isGlobalAdmin() || isAuthenticated();
+    }
+
     // 4. Tsehay Campus Application Artifacts Scope
     match /artifacts/{appId} {
       
@@ -224,7 +234,18 @@ service cloud.firestore {
         allow write: if true;
       }
 
-      // 4.8 Public Data: Q&A Community
+      // 4.8 Public Data: About Reels & Photos
+      match /public/data/about_reels/{reelId} {
+        allow read: if true;
+        allow write: if isAdmin() || isAuthenticated();
+      }
+
+      match /public/data/about_photos/{photoId} {
+        allow read: if true;
+        allow write: if isAdmin() || isAuthenticated();
+      }
+
+      // 4.9 Public Data: Q&A Community
       match /public/data/qa/{qaId} {
         allow read: if isAuthenticated();
         allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;

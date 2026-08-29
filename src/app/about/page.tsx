@@ -702,6 +702,8 @@ function AboutSingleReelSlider() {
           }));
           if (list.length > 0) setReels(list);
         }
+      }, (error) => {
+        // Silent graceful fallback to default reels
       });
       return () => unsubscribe();
     } catch (e) {}
@@ -942,6 +944,8 @@ function AboutSingleCleanPhoto() {
             setPhotoSrc(firstDoc.src || firstDoc.imageUrl);
           }
         }
+      }, (error) => {
+        // Silent fallback
       });
       return () => unsubscribe();
     } catch (e) {}

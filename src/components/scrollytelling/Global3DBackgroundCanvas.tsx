@@ -199,6 +199,99 @@ export default function Global3DBackgroundCanvas() {
         }
       }
 
+      // =========================================================================
+      // 🛰️ 3D REVOLVING SATELLITE & CELESTIAL ORBITAL GYROSCOPE RINGS
+      // =========================================================================
+      const time = Date.now() * 0.001;
+      const satCenterX = cx;
+      const satCenterY = cy * 0.85;
+
+      const ORBIT_RINGS = [
+        { radius: Math.min(width * 0.28, 260), rotX: 1.1 + Math.sin(time * 0.3) * 0.2, rotY: time * 0.45, color: 'rgba(249, 176, 60, 0.4)', satColor: '#f9b03c', satGlow: 'rgba(249, 176, 60, 0.9)', satSpeed: time * 1.2, satSize: 4.5 },
+        { radius: Math.min(width * 0.38, 340), rotX: 0.65, rotY: -time * 0.35 + 1.2, color: 'rgba(50, 104, 186, 0.35)', satColor: '#5a93e8', satGlow: 'rgba(90, 147, 232, 0.9)', satSpeed: -time * 0.9 + 2.0, satSize: 5.5 },
+        { radius: Math.min(width * 0.20, 180), rotX: 1.45, rotY: time * 0.6 + 0.8, color: 'rgba(249, 176, 60, 0.25)', satColor: '#ffffff', satGlow: 'rgba(255, 255, 255, 0.9)', satSpeed: time * 1.8 + 0.5, satSize: 3.5 },
+      ];
+
+      // Draw subtle luminous core pulse at center of satellite system
+      const corePulse = (Math.sin(time * 2) + 1) * 0.5;
+      const coreGrad = ctx.createRadialGradient(satCenterX, satCenterY, 0, satCenterX, satCenterY, 85 + corePulse * 25);
+      coreGrad.addColorStop(0, 'rgba(249, 176, 60, 0.12)');
+      coreGrad.addColorStop(0.5, 'rgba(50, 104, 186, 0.06)');
+      coreGrad.addColorStop(1, 'transparent');
+      ctx.fillStyle = coreGrad;
+      ctx.beginPath();
+      ctx.arc(satCenterX, satCenterY, 110, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Render each 3D orbital ring & revolving satellite
+      ORBIT_RINGS.forEach((ring) => {
+        const SEGMENTS = 64;
+        ctx.beginPath();
+
+        for (let s = 0; s <= SEGMENTS; s++) {
+          const theta = (s / SEGMENTS) * Math.PI * 2;
+          // Unrotated ring in 3D plane
+          const x0 = Math.cos(theta) * ring.radius;
+          const y0 = 0;
+          const z0 = Math.sin(theta) * ring.radius;
+
+          // Rotate by rotX and rotY
+          const y1 = y0 * Math.cos(ring.rotX) - z0 * Math.sin(ring.rotX);
+          const z1 = y0 * Math.sin(ring.rotX) + z0 * Math.cos(ring.rotX);
+
+          const x2 = x0 * Math.cos(ring.rotY) + z1 * Math.sin(ring.rotY);
+          const z2 = -x0 * Math.sin(ring.rotY) + z1 * Math.cos(ring.rotY);
+
+          const projZ = z2 + 800;
+          const scale = 800 / projZ;
+          const px = satCenterX + x2 * scale;
+          const py = satCenterY + y1 * scale;
+
+          if (s === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        }
+
+        ctx.strokeStyle = ring.color;
+        ctx.lineWidth = 1.2;
+        ctx.setLineDash([6, 8]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Revolving Satellite Node on this ring
+        const satTheta = ring.satSpeed;
+        const sx0 = Math.cos(satTheta) * ring.radius;
+        const sy0 = 0;
+        const sz0 = Math.sin(satTheta) * ring.radius;
+
+        const sy1 = sy0 * Math.cos(ring.rotX) - sz0 * Math.sin(ring.rotX);
+        const sz1 = sy0 * Math.sin(ring.rotX) + sz0 * Math.cos(ring.rotX);
+
+        const sx2 = sx0 * Math.cos(ring.rotY) + sz1 * Math.sin(ring.rotY);
+        const sz2 = -sx0 * Math.sin(ring.rotY) + sz1 * Math.cos(ring.rotY);
+
+        const satProjZ = sz2 + 800;
+        const satScale = 800 / satProjZ;
+        const satPx = satCenterX + sx2 * satScale;
+        const satPy = satCenterY + sy1 * satScale;
+        const satRadius = Math.max(2, ring.satSize * satScale);
+
+        // Satellite glowing aura
+        const satGrad = ctx.createRadialGradient(satPx, satPy, 0, satPx, satPy, satRadius * 4);
+        satGrad.addColorStop(0, ring.satGlow);
+        satGrad.addColorStop(0.4, ring.satColor);
+        satGrad.addColorStop(1, 'transparent');
+        ctx.fillStyle = satGrad;
+        ctx.beginPath();
+        ctx.arc(satPx, satPy, satRadius * 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Satellite solid core
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(satPx, satPy, satRadius * 0.9, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
       // Draw glowing particle nodes
       for (let i = 0; i < projectedNodes.length; i++) {
         const p = projectedNodes[i];
