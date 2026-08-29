@@ -476,7 +476,7 @@ export default function Navbar() {
                 <span className="w-1.5 h-1.5 rounded-full bg-black ml-0.5 animate-pulse"></span>
               </button>
 
-              {/* 3D Magnetic Hover Tilt "ይግቡ / Login" Button or User Profile */}
+              {/* 3D Magnetic Hover Tilt "ይግቡ / Login" Button or User Profile with Sleek Dropdown */}
               {!mounted || !user ? (
                 <Tilt3DLoginButton
                   onClick={() => {
@@ -486,21 +486,74 @@ export default function Navbar() {
                   label={lang === 'en' ? 'Login' : 'ይግቡ (Login)'}
                 />
               ) : (
-                <Link
-                  href="/dashboard"
-                  onClick={() => closeCurtain()}
-                  className="flex items-center gap-2 p-1 pr-3 rounded-full bg-white/5 hover:bg-white/10 border border-[#f9b03c]/40 hover:border-[#f9b03c] transition-all cursor-pointer group shadow-sm"
-                  title="መማሪያ ክፍል (Dashboard)"
-                >
-                  <img
-                    src={navUserPhoto}
-                    alt={navUserName}
-                    className="w-7 h-7 rounded-full border border-[#f9b03c] object-cover shrink-0"
-                  />
-                  <span className="text-xs font-bold text-slate-200 group-hover:text-[#f9b03c] transition-colors truncate max-w-[90px]">
-                    {navUserName.split(' ')[0]}
-                  </span>
-                </Link>
+                <div className="relative" ref={profileDropdownRef}>
+                  <button
+                    type="button"
+                    onClick={() => setShowProfileDropdown(prev => !prev)}
+                    className="flex items-center gap-2 p-1 pr-3 rounded-full bg-white/5 hover:bg-white/10 border border-[#f9b03c]/40 hover:border-[#f9b03c] transition-all cursor-pointer group shadow-sm"
+                    title="የተጠቃሚ መረጃ (User Profile)"
+                  >
+                    <img
+                      src={navUserPhoto}
+                      alt={navUserName}
+                      className="w-7 h-7 rounded-full border border-[#f9b03c] object-cover shrink-0"
+                    />
+                    <span className="text-xs font-bold text-slate-200 group-hover:text-[#f9b03c] transition-colors truncate max-w-[90px]">
+                      {navUserName.split(' ')[0]}
+                    </span>
+                    <i className={`fa-solid fa-chevron-down text-[10px] text-gray-400 transition-transform duration-200 ${showProfileDropdown ? 'rotate-180 text-[#f9b03c]' : ''}`}></i>
+                  </button>
+
+                  {/* Sleek Animated Frosted-Glass Profile Dropdown */}
+                  {showProfileDropdown && (
+                    <div className="absolute right-0 mt-2.5 w-64 rounded-2xl bg-[#070b14]/95 backdrop-blur-2xl border border-white/15 shadow-[0_20px_50px_rgba(0,0,0,0.85),0_0_30px_rgba(249,176,60,0.15)] p-3 z-50 animate-in fade-in zoom-in-95 duration-200 space-y-2">
+                      {/* User Info Header */}
+                      <div className="flex items-center gap-2.5 px-2 py-1.5 pb-2.5 border-b border-white/10">
+                        <img
+                          src={navUserPhoto}
+                          alt={navUserName}
+                          className="w-9 h-9 rounded-full border border-[#f9b03c] object-cover shrink-0"
+                        />
+                        <div className="overflow-hidden text-left">
+                          <div className="text-xs font-black text-white truncate font-heading">{navUserName}</div>
+                          <div className="text-[10px] text-gray-400 truncate">{user?.email}</div>
+                        </div>
+                      </div>
+
+                      {/* Option 1: 🎓 Go to Classroom */}
+                      <button
+                        type="button"
+                        onClick={() => navigateTo('/dashboard')}
+                        className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-gradient-to-r from-[#f9b03c] to-amber-500 hover:brightness-110 text-slate-950 font-black text-xs transition cursor-pointer shadow-md"
+                      >
+                        <i className="fa-solid fa-graduation-cap text-sm"></i>
+                        <span>ወደ መማሪያ ክፍል (Go to Classroom)</span>
+                      </button>
+
+                      {/* Admin Link if Admin */}
+                      {isAdmin && (
+                        <button
+                          type="button"
+                          onClick={() => navigateTo('/admin')}
+                          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl bg-[#3268ba]/20 hover:bg-[#3268ba]/35 text-[#5a93e8] border border-[#3268ba]/40 font-bold text-xs transition cursor-pointer"
+                        >
+                          <i className="fa-solid fa-shield-halved text-xs"></i>
+                          <span>አድሚን ዳሽቦርድ (Admin)</span>
+                        </button>
+                      )}
+
+                      {/* Option 2: 🚪 Log Out */}
+                      <button
+                        type="button"
+                        onClick={handleSignOut}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl bg-white/5 hover:bg-red-500/15 text-slate-300 hover:text-red-400 border border-transparent hover:border-red-500/30 font-bold text-xs transition cursor-pointer"
+                      >
+                        <i className="fa-solid fa-arrow-right-from-bracket text-xs text-red-400"></i>
+                        <span>ውጣ (Log Out)</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
               )}
 
               {/* Compact Install App Trigger */}

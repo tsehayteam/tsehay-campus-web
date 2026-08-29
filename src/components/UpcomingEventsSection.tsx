@@ -334,16 +334,10 @@ export default function UpcomingEventsSection() {
             return (
               <div 
                 key={event.id}
-                className="group relative rounded-3xl p-6 transition-all duration-300 hover:-translate-y-1.5 flex flex-col justify-between"
-                style={{
-                  background: 'rgba(255, 255, 255, 0.03)',
-                  backdropFilter: 'blur(20px)',
-                  border: isSoldOut ? '1px solid rgba(239, 68, 68, 0.25)' : '1px solid rgba(255, 255, 255, 0.08)',
-                  boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5)'
-                }}
+                className="group relative rounded-3xl p-6 transition-all duration-500 hover:-translate-y-2 hover:scale-[1.01] flex flex-col justify-between backdrop-blur-xl bg-black/60 border border-white/10 hover:border-[#f9b03c]/60 shadow-[0_20px_50px_rgba(0,0,0,0.7)] hover:shadow-[0_25px_60px_rgba(249,176,60,0.25)]"
               >
-                {/* Golden Hover Glow Border Layer */}
-                <div className={`absolute inset-0 rounded-3xl border-2 border-transparent transition-colors duration-300 pointer-events-none ${isSoldOut ? 'group-hover:border-red-500/30' : 'group-hover:border-amber-400/40'}`} />
+                {/* 3D Radial Glow on Hover */}
+                <div className="absolute inset-0 rounded-3xl bg-gradient-to-b from-[#f9b03c]/10 via-transparent to-[#3268ba]/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
 
                 <div>
                   {/* Event Thumbnail & Badges */}
@@ -351,13 +345,14 @@ export default function UpcomingEventsSection() {
                     <img 
                       src={formatDriveImageUrl(event.image) || event.image || 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?q=80&w=1000'} 
                       alt={event.title}
-                      className="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-500"
+                      className="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-700"
                     />
                     
-                    {/* Top Status Capsules */}
+                    {/* Top Status Capsules: Cobalt Blue (#3268ba) Category Tag */}
                     <div className="absolute top-3 left-3 flex flex-wrap items-center gap-2">
-                      <span className="px-3 py-1 rounded-full bg-black/70 backdrop-blur-md text-[#f9b03c] border border-amber-400/30 text-xs font-black">
-                        {event.isOnline ? '🌐 Virtual Live Stream' : '📍 In-Person (አካል)'}
+                      <span className="px-3 py-1 rounded-full bg-[#3268ba]/80 backdrop-blur-md text-white border border-[#3268ba] text-xs font-black shadow-md flex items-center gap-1.5">
+                        <i className={`fa-solid ${event.isOnline ? 'fa-globe' : 'fa-location-dot'} text-[11px]`}></i>
+                        <span>{event.isOnline ? 'Virtual Live Stream' : 'In-Person (አካል)'}</span>
                       </span>
                       {isSoldOut && (
                         <span className="px-2.5 py-1 rounded-full bg-red-600/90 text-white text-[10px] font-black tracking-wider uppercase shadow-md animate-pulse">
@@ -366,21 +361,21 @@ export default function UpcomingEventsSection() {
                       )}
                     </div>
 
-                    {/* Price Tag */}
+                    {/* Price Tag: Golden Orange (#f9b03c) Badge */}
                     <div className="absolute bottom-3 right-3">
-                      <span className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-[#f9b03c] text-slate-950 text-xs font-black shadow-lg">
+                      <span className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#f9b03c] text-slate-950 text-xs font-black shadow-[0_0_20px_rgba(249,176,60,0.6)]">
                         {event.price === 0 || event.isFree ? '100% ነፃ (FREE)' : `${event.price.toLocaleString()} ብር`}
                       </span>
                     </div>
                   </Link>
 
-                  {/* Date & Time Capsule */}
-                  <div className="flex items-center gap-3 text-xs text-slate-300 mb-3 font-semibold">
-                    <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 px-2.5 py-1 rounded-lg">
+                  {/* Date & Time Capsule with Golden Orange Accent */}
+                  <div className="flex items-center gap-2.5 text-xs text-slate-300 mb-3.5 font-semibold">
+                    <div className="flex items-center gap-1.5 bg-[#f9b03c]/10 border border-[#f9b03c]/30 px-3 py-1.5 rounded-xl text-[#f9b03c] font-black">
                       <i className="fa-regular fa-calendar text-[#f9b03c]"></i>
                       <span>{event.date}</span>
                     </div>
-                    <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 px-2.5 py-1 rounded-lg">
+                    <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 px-3 py-1.5 rounded-xl text-slate-200">
                       <i className="fa-regular fa-clock text-[#f9b03c]"></i>
                       <span>{event.time}</span>
                     </div>
@@ -388,7 +383,7 @@ export default function UpcomingEventsSection() {
 
                   {/* Title */}
                   <Link href={`/events/${event.slug || event.id}`} className="block">
-                    <h3 className="text-lg sm:text-xl font-bold text-white font-heading line-clamp-2 mb-2.5 group-hover:text-[#f9b03c] transition-colors">
+                    <h3 className="text-lg sm:text-xl font-black text-white font-heading line-clamp-2 mb-2.5 group-hover:text-[#f9b03c] transition-colors leading-snug">
                       {event.title}
                     </h3>
                   </Link>
@@ -399,13 +394,17 @@ export default function UpcomingEventsSection() {
                   </p>
 
                   {/* Speaker & Location Info */}
-                  <div className="space-y-1.5 text-xs text-slate-400 mb-5 border-t border-white/5 pt-3">
+                  <div className="space-y-2 text-xs text-slate-400 mb-5 border-t border-white/10 pt-3.5">
                     <div className="flex items-center gap-2">
-                      <i className="fa-solid fa-microphone-lines text-[#f9b03c] w-4"></i>
+                      <div className="w-5 h-5 rounded-md bg-[#3268ba]/20 text-[#5a93e8] flex items-center justify-center text-[10px]">
+                        <i className="fa-solid fa-microphone-lines"></i>
+                      </div>
                       <span className="text-slate-200 font-bold">{event.speaker}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <i className="fa-solid fa-location-dot text-[#f9b03c] w-4"></i>
+                      <div className="w-5 h-5 rounded-md bg-[#f9b03c]/20 text-[#f9b03c] flex items-center justify-center text-[10px]">
+                        <i className="fa-solid fa-location-dot"></i>
+                      </div>
                       <span className="truncate">{event.location}</span>
                     </div>
                   </div>
@@ -419,36 +418,36 @@ export default function UpcomingEventsSection() {
                       {isSoldOut ? (
                         <span className="text-red-400 font-black">ትኬቱ ሙሉ በሙሉ አልቋል!</span>
                       ) : (
-                        <span className="text-[#f9b03c]">{remainingSeats} ቦታዎች ብቻ ቀርተዋል!</span>
+                        <span className="text-[#f9b03c] font-black">{remainingSeats} ቦታዎች ብቻ ቀርተዋል!</span>
                       )}
                     </div>
-                    <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+                    <div className="w-full h-2.5 bg-white/10 rounded-full overflow-hidden p-0.5">
                       <div 
-                        className={`h-full rounded-full transition-all duration-1000 ${isSoldOut ? 'bg-red-500' : 'bg-gradient-to-r from-amber-500 to-[#f9b03c]'}`}
+                        className={`h-full rounded-full transition-all duration-1000 ${isSoldOut ? 'bg-red-500' : 'bg-gradient-to-r from-[#3268ba] via-[#5a93e8] to-[#f9b03c] shadow-[0_0_10px_rgba(249,176,60,0.8)]'}`}
                         style={{ width: `${percentTaken}%` }}
                       />
                     </div>
                   </div>
 
                   {/* Action Buttons Row */}
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2.5">
                     <button
                       type="button"
                       disabled={isSoldOut}
                       onClick={() => !isSoldOut && handleOpenBooking(event)}
-                      className={`flex-1 py-3.5 rounded-2xl text-xs sm:text-sm font-black flex items-center justify-center gap-1.5 transition-all ${
+                      className={`flex-1 py-3.5 rounded-2xl text-xs sm:text-sm font-black flex items-center justify-center gap-2 transition-all cursor-pointer ${
                         isSoldOut
                           ? 'bg-slate-800/80 text-slate-500 border border-white/5 cursor-not-allowed'
-                          : 'btn-buy-now-vibe cursor-pointer active:scale-98 group/btn shadow-[0_0_25px_rgba(249,176,60,0.3)] hover:shadow-[0_0_35px_rgba(249,176,60,0.6)]'
+                          : 'bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#f9b03c] hover:brightness-110 text-slate-950 active:scale-95 shadow-[0_0_25px_rgba(249,176,60,0.35)] hover:shadow-[0_0_40px_rgba(249,176,60,0.6)]'
                       }`}
                     >
                       <span>{isSoldOut ? 'ትኬቱ አልቋል (Sold Out)' : (event.price === 0 || event.isFree ? 'በነፃ ይመዝገቡ' : 'ትኬት ይቁረጡ')}</span>
-                      <i className={`fa-solid ${isSoldOut ? 'fa-lock' : 'fa-ticket'} text-xs ${!isSoldOut ? 'group-hover/btn:translate-x-1 transition-transform' : ''}`}></i>
+                      <i className={`fa-solid ${isSoldOut ? 'fa-lock' : 'fa-ticket'} text-xs`}></i>
                     </button>
 
                     <Link
                       href={`/events/${event.slug || event.id}`}
-                      className="px-3.5 py-3.5 rounded-2xl bg-white/5 hover:bg-white/15 border border-white/10 text-slate-300 hover:text-white transition flex items-center justify-center text-xs font-bold shrink-0"
+                      className="px-3.5 py-3.5 rounded-2xl bg-white/5 hover:bg-white/15 border border-white/10 hover:border-[#f9b03c]/50 text-slate-300 hover:text-white transition flex items-center justify-center text-xs font-bold shrink-0"
                       title="ሙሉ ዝርዝር እይ"
                     >
                       <i className="fa-solid fa-arrow-up-right-from-square text-xs text-[#f9b03c]"></i>

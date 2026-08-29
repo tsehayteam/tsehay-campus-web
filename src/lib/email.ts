@@ -79,7 +79,7 @@ export async function sendEmail({
  * 🌟 1. BRANDED PASSWORD RESET & MAGIC LINK OTP TEMPLATE
  */
 export function getPasswordResetOtpEmailHtml(otp: string, email?: string, resetUrl?: string): string {
-  const directLink = resetUrl || `${SITE_URL}/auth/reset?code=${otp}&email=${encodeURIComponent(email || '')}`;
+  const directLink = resetUrl || `${SITE_URL}/reset-password?code=${otp}&email=${encodeURIComponent(email || '')}`;
 
   return `
   <!DOCTYPE html>

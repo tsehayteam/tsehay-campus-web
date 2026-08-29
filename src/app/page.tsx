@@ -703,24 +703,26 @@ export default function Home() {
 
     
     <section id="courses" className="py-20 sm:py-28 bg-slate-50/40 dark:bg-transparent border-b border-gray-200/80 dark:border-white/[0.06] transition-colors duration-300 relative overflow-hidden">
-        {/* 🌟 3D Deep Atmospheric Background Aura & Cyber Mesh */}
+        {/* 🌟 Terafub-inspired 3D Deep Atmospheric Background Aura & Cyber Mesh */}
         <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
-            <div className="absolute -top-32 -right-32 w-[600px] h-[600px] bg-gradient-to-bl from-[#f9b03c]/15 via-[#f9b03c]/5 to-transparent rounded-full blur-[140px] animate-pulse"></div>
-            <div className="absolute -bottom-32 -left-32 w-[600px] h-[600px] bg-gradient-to-tr from-[#3268ba]/20 via-[#3268ba]/8 to-transparent rounded-full blur-[140px]"></div>
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-[radial-gradient(ellipse_at_center,rgba(50,104,186,0.08),rgba(249,176,60,0.05),transparent_70%)] blur-[100px]"></div>
-            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-[0.035] dark:opacity-[0.02]"></div>
+            <div className="absolute -top-32 -right-32 w-[700px] h-[700px] bg-gradient-to-bl from-[#f9b03c]/20 via-[#f9b03c]/5 to-transparent rounded-full blur-[150px] animate-pulse"></div>
+            <div className="absolute -bottom-32 -left-32 w-[700px] h-[700px] bg-gradient-to-tr from-[#3268ba]/25 via-[#3268ba]/8 to-transparent rounded-full blur-[150px]"></div>
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[450px] bg-[radial-gradient(ellipse_at_center,rgba(249,176,60,0.12),rgba(50,104,186,0.1),transparent_70%)] blur-[120px]"></div>
+            <div className="absolute inset-0 bg-[radial-gradient(#3268ba_1px,transparent_1px)] [background-size:32px_32px] opacity-[0.06] dark:opacity-[0.035]"></div>
         </div>
 
         <div className="max-w-[1300px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
             <div className="flex flex-col items-center text-center mb-14 sm:mb-18 gap-3 scrolly-reveal">
-                <div className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-400/15 via-[#f9b03c]/10 to-amber-400/15 border border-[#f9b03c]/30 px-5 py-2 rounded-full shadow-[0_0_20px_rgba(249,176,60,0.15)] backdrop-blur-md">
-                    <span className="w-2.5 h-2.5 rounded-full bg-[#f9b03c] shadow-[0_0_8px_#f9b03c] animate-pulse"></span>
+                <div className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-400/15 via-[#f9b03c]/10 to-[#3268ba]/15 border border-[#f9b03c]/30 px-5 py-2 rounded-full shadow-[0_0_25px_rgba(249,176,60,0.2)] backdrop-blur-md">
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#f9b03c] shadow-[0_0_10px_#f9b03c] animate-ping"></span>
                     <span className="text-xs font-black uppercase tracking-widest text-[#f9b03c]">FEATURED MASTERCLASSES</span>
                 </div>
-                <h2 className="font-heading font-black text-3xl sm:text-5xl lg:text-6xl text-slate-900 dark:text-white tracking-tight">
-                    {t('popular_courses')}
+                <h2 className="font-heading font-black text-3xl sm:text-5xl lg:text-6xl tracking-tight leading-tight">
+                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-slate-900 via-[#f9b03c] to-amber-600 dark:from-white dark:via-[#f9b03c] dark:to-[#5a93e8] drop-shadow-[0_5px_25px_rgba(249,176,60,0.3)]">
+                        {t('popular_courses') || 'የፀሐይ ካምፓስ ኮርሶች'}
+                    </span>
                 </h2>
-                <div className="w-24 h-1.5 bg-gradient-to-r from-transparent via-[#f9b03c] to-transparent mx-auto rounded-full shadow-[0_0_12px_rgba(249,176,60,0.6)]"></div>
+                <div className="w-28 h-1.5 bg-gradient-to-r from-transparent via-[#f9b03c] to-transparent mx-auto rounded-full shadow-[0_0_15px_rgba(249,176,60,0.8)]"></div>
                 <p className="text-gray-600 dark:text-[#8a95a5] font-body text-base sm:text-lg max-w-2xl mt-1">
                     {t('popular_courses_desc')}
                 </p>

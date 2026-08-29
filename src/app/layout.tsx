@@ -8,7 +8,7 @@ import AuthModal from "@/components/AuthModal";
 import PaymentModal from "@/components/PaymentModal";
 import TermsModal from "@/components/TermsModal";
 import ContentProtection from "@/components/ContentProtection";
-import PWAInstallPrompt from "@/components/PWAInstallPrompt";
+import PWAInstallBanner from "@/components/PWAInstallBanner";
 import FloatingAIButton from "@/components/FloatingAIButton";
 import StudentFeedbackModal from "@/components/StudentFeedbackModal";
 import ReferralTracker from "@/components/ReferralTracker";
@@ -199,7 +199,7 @@ export default function RootLayout({
               
               <TermsModal />
               <PaymentModal />
-              <PWAInstallPrompt />
+              <PWAInstallBanner />
               <FloatingAIButton />
               <StudentFeedbackModal />
             </SmoothScrollAndScrollyProvider>
