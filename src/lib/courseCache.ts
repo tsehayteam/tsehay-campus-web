@@ -1,5 +1,58 @@
 export const DEFAULT_COURSES = [
   {
+    id: "shein-import-business",
+    slug: "shein-import-business",
+    title: "የሼን ኢምፖርት ቢዝነስ ስልጠና (Shein Import Business Course)",
+    description: "ከቻይና እና Shein እቃዎችን በቀጥታ ወደ ኢትዮጵያ በማስመጣት በኦንላይን እና በሶሻል ሚዲያ አትራፊ የኢኮሜርስ ቢዝነስ የመገንባት ሙሉ ተግባራዊ ስልጠና።",
+    desc: "ከቻይና እና Shein እቃዎችን በቀጥታ ወደ ኢትዮጵያ በማስመጣት በኦንላይን እና በሶሻል ሚዲያ አትራፊ የኢኮሜርስ ቢዝነስ የመገንባት ሙሉ ተግባራዊ ስልጠና።",
+    price: 4500,
+    oldPrice: 9000,
+    status: "Active",
+    isFree: false,
+    category: "E-Commerce",
+    level: "መካከለኛ (Intermediate)",
+    image: "https://images.unsplash.com/photo-1472851294608-062f824d29cc?auto=format&fit=crop&w=800&q=80",
+    banner: "https://images.unsplash.com/photo-1472851294608-062f824d29cc?auto=format&fit=crop&w=800&q=80",
+    video: "https://www.youtube.com/watch?v=mgdOMtW6J8k",
+    instructor: "Eyoub Sahle",
+    instructorTitle: "የቢዝነስ እና ዲጂታል ማርኬቲንግ ባለሙያ (Lead Instructor)",
+    instructorImage: "https://drive.google.com/thumbnail?id=1rdjkUc6ZwK6NbbgHaZ-7BtEi8A9aA5Uq&sz=w1000",
+    instructorTelegram: "@EyoubSahle",
+    instructorBio: "በኢ-ኮሜርስ፣ ዲጂታል ማርኬቲንግ እና ክሪፕቶ ከረንሲ ዘርፍ የብዙ አመታት የተግባር ልምድ ያለው እና በመቶዎች የሚቆጠሩ ተማሪዎችን ወደ ስኬት ያበቃ ባለሙያ።",
+    students: 185,
+    studentsCount: 185,
+    rating: 4.9,
+    ratingAvg: 4.9,
+    ratingCount: 34,
+    instructorRatingAvg: 4.9,
+    modulesCount: 6,
+    isPopular: true,
+    aiPrompt: "You are Tsehay AI. Your job is to help students learning the Shein Import & E-commerce course by Eyoub Sahle. Answer questions strictly related to product sourcing, cargo shipping to Ethiopia, online selling, and e-commerce.",
+    whatYouWillLearn: [
+      "ከ Shein እና ቻይና እቃዎችን በቀጥታ የማዘዣ መንገዶች",
+      "አትራፊ የሆኑ የገበያ እቃዎችን (Winning Products) መምረጥ",
+      "አስተማማኝ የክፍያ እና የካርጎ/ትራንስፖርት መንገዶች ወደ ኢትዮጵያ",
+      "የቴሌግራም፣ ቲክቶክ እና ፌስቡክ ኦንላይን ሽያጭ ስልቶች"
+    ],
+    requirements: [
+      "ስማርት ስልክ ወይም ላፕቶፕ",
+      "የኢንተርኔት ግንኙነት",
+      "የመማርና ቢዝነስ የመጀመር ፍላጎት"
+    ],
+    includes: [
+      "በቪዲዮ የተደገፈ ሙሉ ስልጠና",
+      "የካርጎ እና የክፍያ አድራሻዎች ድጋፍ",
+      "የህይወት ዘመን ሙሉ መዳረሻ",
+      "የማጠናቀቂያ ህጋዊ ሰርተፊኬት"
+    ],
+    lessons: [
+      { title: "ክፍል 1: የ Shein ቢዝነስ መግቢያ እና ምዝገባ", duration: "10:15", video: "https://www.youtube.com/watch?v=mgdOMtW6J8k", desc: "የ Shein አሰራርና አካውንት አከፋፈት", points: 30 },
+      { title: "ክፍል 2: አትራፊ እቃዎችን (Winning Products) የመምረጥ ጥበብ", duration: "14:20", video: "https://www.youtube.com/watch?v=mgdOMtW6J8k", desc: "ፈጣን ተፈላጊ የሆኑ እቃዎችን መለየት", points: 50 },
+      { title: "ክፍል 3: የክፍያ እና የካርጎ/ትራንስፖርት መንገዶች ወደ ኢትዮጵያ", duration: "18:40", video: "https://www.youtube.com/watch?v=mgdOMtW6J8k", desc: "ቀላል ክፍያና አስተማማኝ ካርጎ መረጣ", points: 80 },
+      { title: "ክፍል 4: የኦንላይን ሽያጭ እና የቴሌግራም/ቲክቶክ ማርኬቲንግ", duration: "16:10", video: "https://www.youtube.com/watch?v=mgdOMtW6J8k", desc: "ደንበኞችን መሳብና ሽያጭ መጨመር", points: 70 }
+    ]
+  },
+  {
     id: "course_1784885267254",
     slug: "youtube-secrets-masterclass",
     title: "የዩቲዩብ ስኬት ሚስጥሮች (YouTube Secrets Masterclass)",
@@ -8,6 +61,7 @@ export const DEFAULT_COURSES = [
     price: 600,
     oldPrice: 1200,
     status: "Active",
+    isFree: false,
     category: "YouTube",
     level: "ጀማሪ (Beginner)",
     image: "https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?auto=format&fit=crop&w=800&q=80",
@@ -58,9 +112,9 @@ export const DEFAULT_COURSES = [
   {
     id: "digital_marketing_free",
     slug: "digital-marketing",
-    title: "ዲጂታል ማርኬቲንግ ለጀማሪዎች፡ ቢዝነስዎን በቀላሉ የሚያሳድጉበት መመሪያ",
-    description: "በዚህ ኮርስ የዲጂታል ማርኬቲንግ መሰረታዊ ሀሳቦችን፣ የሶሻል ሚዲያ አጠቃቀምን እና ቢዝነስዎን እንዴት ማሳደግ እንደሚችሉ ይማራሉ።",
-    desc: "በዚህ ኮርስ የዲጂታል ማርኬቲንግ መሰረታዊ ሀሳቦችን፣ የሶሻል ሚዲያ አጠቃቀምን እና ቢዝነስዎን እንዴት ማሳደግ እንደሚችሉ ይማራሉ።",
+    title: "የዲጂታል ማርኬቲንግ ስልጠና (Free Digital Marketing Course)",
+    description: "በዚህ ኮርስ የዲጂታል ማርኬቲንግ መሰረታዊ ሀሳቦችን፣ የሶሻል ሚዲያ አጠቃቀምን እና ቢዝነስዎን እንዴት በቀላሉ ማሳደግ እንደሚችሉ ይማራሉ።",
+    desc: "በዚህ ኮርስ የዲጂታል ማርኬቲንግ መሰረታዊ ሀሳቦችን፣ የሶሻል ሚዲያ አጠቃቀምን እና ቢዝነስዎን እንዴት በቀላሉ ማሳደግ እንደሚችሉ ይማራሉ።",
     price: 0,
     oldPrice: 4000,
     status: "Active",
@@ -106,217 +160,6 @@ export const DEFAULT_COURSES = [
       { title: "ባህላዊ vs ዲጂታል ማርኬቲንግ", duration: "05:15", video: "https://www.youtube.com/embed/B-s71n0dHUk", desc: "የሁለቱ የግብይት አይነቶች ልዩነት", points: 50 },
       { title: "የዲጂታል ማርኬቲንግ አይነቶች ክፍል 1", duration: "10:00", video: "https://www.youtube.com/embed/B-s71n0dHUk", desc: "ዋና ዋና የዲጂታል ማርኬቲንግ መንገዶች", points: 100 },
       { title: "በተግባር የተደገፈ የፌስቡክ ማስታወቂያ", duration: "15:20", video: "https://www.youtube.com/embed/B-s71n0dHUk", desc: "የፌስቡክ ማስታወቂያ አሰራር በተግባር", points: 100 }
-    ]
-  },
-  {
-    id: "digital_marketing_pro",
-    slug: "digital-marketing-pro",
-    title: "ፕሮፌሽናል ዲጂታል ማርኬቲንግ ማስተር ክላስ",
-    description: "ይህ የፕሮፌሽናል ዲጂታል ማርኬቲንግ ኮርስ ሲሆን ከጀማሪ እስከ አድቫንስድ ያሉትን ሁሉንም የዲጂታል ማርኬቲንግ አይነቶች በተግባር ይማሩበታል።",
-    desc: "ይህ የፕሮፌሽናል ዲጂታል ማርኬቲንግ ኮርስ ሲሆን ከጀማሪ እስከ አድቫንስድ ያሉትን ሁሉንም የዲጂታል ማርኬቲንግ አይነቶች በተግባር ይማሩበታል።",
-    price: 2500,
-    oldPrice: 5000,
-    status: "Active",
-    isFree: false,
-    category: "Marketing",
-    level: "ከፍተኛ (Advanced)",
-    image: "https://drive.google.com/thumbnail?id=1HZf1jV5AdSXyc7MJUf8vPgYm4z0-30O6&sz=w1000",
-    banner: "https://drive.google.com/thumbnail?id=1HZf1jV5AdSXyc7MJUf8vPgYm4z0-30O6&sz=w1000",
-    video: "https://www.youtube.com/embed/B-s71n0dHUk",
-    instructor: "Eyoub Sahle",
-    instructorTitle: "የቢዝነስ እና ዲጂታል ማርኬቲንግ ባለሙያ (Lead Instructor)",
-    instructorImage: "https://drive.google.com/thumbnail?id=1rdjkUc6ZwK6NbbgHaZ-7BtEi8A9aA5Uq&sz=w1000",
-    instructorTelegram: "@EyoubSahle",
-    instructorBio: "በኢ-ኮሜርስ፣ ዲጂታል ማርኬቲንግ እና ክሪፕቶ ከረንሲ ዘርፍ የብዙ አመታት የተግባር ልምድ ያለው እና በመቶዎች የሚቆጠሩ ተማሪዎችን ወደ ስኬት ያበቃ ባለሙያ።",
-    students: 140,
-    studentsCount: 140,
-    rating: 4.9,
-    ratingAvg: 4.9,
-    ratingCount: 15,
-    instructorRatingAvg: 4.9,
-    modulesCount: 7,
-    isPopular: true,
-    aiPrompt: "You are Tsehay AI for the Pro Digital Marketing class. Help students with advanced marketing concepts, Facebook Ads, Google Ads, and SEO.",
-    whatYouWillLearn: [
-      "የላቀ የ Facebook & Instagram Ads ስትራቴጂ",
-      "Google Ads እና የ YouTube Ads ማስታወቂያዎች",
-      "የሽያጭ ፋነል (Sales Funnel) እና Copywriting ጥበብ",
-      "የኢሜል ማርኬቲንግ እና አውቶሜሽን"
-    ],
-    requirements: [
-      "መሰረታዊ የዲጂታል ማርኬቲንግ ግንዛቤ",
-      "ኮምፒውተር ወይም ላፕቶፕ",
-      "የኢንተርኔት ግንኙነት"
-    ],
-    includes: [
-      "የላቁ የቪዲዮ ትምህርቶች",
-      "የቀጥታ ፕሮጀክት ድጋፍ",
-      "ሙሉ የህይወት ዘመን መዳረሻ",
-      "የተረጋገጠ ሰርተፊኬት"
-    ],
-    lessons: [
-      { title: "Introduction to Advanced Marketing", duration: "05:00", video: "https://www.youtube.com/embed/B-s71n0dHUk", desc: "Welcome to Pro Class", points: 50 },
-      { title: "Facebook Pixel and Conversion API", duration: "12:00", video: "https://www.youtube.com/embed/B-s71n0dHUk", desc: "Pixel setup and custom events", points: 80 },
-      { title: "Audience Targeting & Retargeting Mastery", duration: "14:30", video: "https://www.youtube.com/embed/B-s71n0dHUk", desc: "Creating high converting custom audiences", points: 90 }
-    ]
-  },
-  {
-    id: "shein-import-business",
-    slug: "shein-import-business",
-    title: "የ Shein ገቢ ንግድ እና ኢ-ኮሜርስ (Shein Import Business)",
-    description: "ከቻይና እና Shein እቃዎችን በቀጥታ ወደ ኢትዮጵያ በማስመጣት በኦንላይን እና በሶሻል ሚዲያ አትራፊ የኢኮሜርስ ቢዝነስ የመገንባት ሙሉ ተግባራዊ ስልጠና።",
-    desc: "ከቻይና እና Shein እቃዎችን በቀጥታ ወደ ኢትዮጵያ በማስመጣት በኦንላይን እና በሶሻል ሚዲያ አትራፊ የኢኮሜርስ ቢዝነስ የመገንባት ሙሉ ተግባራዊ ስልጠና።",
-    price: 3500,
-    oldPrice: 7000,
-    status: "Active",
-    isFree: false,
-    category: "E-Commerce",
-    level: "መካከለኛ (Intermediate)",
-    image: "https://images.unsplash.com/photo-1472851294608-062f824d29cc?auto=format&fit=crop&w=800&q=80",
-    banner: "https://images.unsplash.com/photo-1472851294608-062f824d29cc?auto=format&fit=crop&w=800&q=80",
-    video: "https://www.youtube.com/watch?v=mgdOMtW6J8k",
-    instructor: "Eyoub Sahle",
-    instructorTitle: "የቢዝነስ እና ዲጂታል ማርኬቲንግ ባለሙያ (Lead Instructor)",
-    instructorImage: "https://drive.google.com/thumbnail?id=1rdjkUc6ZwK6NbbgHaZ-7BtEi8A9aA5Uq&sz=w1000",
-    instructorTelegram: "@EyoubSahle",
-    instructorBio: "በኢ-ኮሜርስ፣ ዲጂታል ማርኬቲንግ እና ክሪፕቶ ከረንሲ ዘርፍ የብዙ አመታት የተግባር ልምድ ያለው እና በመቶዎች የሚቆጠሩ ተማሪዎችን ወደ ስኬት ያበቃ ባለሙያ።",
-    students: 185,
-    studentsCount: 185,
-    rating: 4.9,
-    ratingAvg: 4.9,
-    ratingCount: 34,
-    instructorRatingAvg: 4.9,
-    modulesCount: 6,
-    isPopular: true,
-    aiPrompt: "You are Tsehay AI. Your job is to help students learning the Shein Import & E-commerce course by Eyoub Sahle. Answer questions strictly related to product sourcing, cargo shipping to Ethiopia, online selling, and e-commerce.",
-    whatYouWillLearn: [
-      "ከ Shein እና ቻይና እቃዎችን በቀጥታ የማዘዣ መንገዶች",
-      "አትራፊ የሆኑ የገበያ እቃዎችን (Winning Products) መምረጥ",
-      "አስተማማኝ የክፍያ እና የካርጎ/ትራንስፖርት መንገዶች ወደ ኢትዮጵያ",
-      "የቴሌግራም፣ ቲክቶክ እና ፌስቡክ ኦንላይን ሽያጭ ስልቶች"
-    ],
-    requirements: [
-      "ስማርት ስልክ ወይም ላፕቶፕ",
-      "የኢንተርኔት ግንኙነት",
-      "የመማርና ቢዝነስ የመጀመር ፍላጎት"
-    ],
-    includes: [
-      "በቪዲዮ የተደገፈ ሙሉ ስልጠና",
-      "የካርጎ እና የክፍያ አድራሻዎች ድጋፍ",
-      "የህይወት ዘመን ሙሉ መዳረሻ",
-      "የማጠናቀቂያ ህጋዊ ሰርተፊኬት"
-    ],
-    lessons: [
-      { title: "ክፍል 1: የ Shein ቢዝነስ መግቢያ እና ምዝገባ", duration: "10:15", video: "https://www.youtube.com/watch?v=mgdOMtW6J8k", desc: "የ Shein አሰራርና አካውንት አከፋፈት", points: 30 },
-      { title: "ክፍል 2: አትራፊ እቃዎችን (Winning Products) የመምረጥ ጥበብ", duration: "14:20", video: "https://www.youtube.com/watch?v=mgdOMtW6J8k", desc: "ፈጣን ተፈላጊ የሆኑ እቃዎችን መለየት", points: 50 },
-      { title: "ክፍል 3: የክፍያ እና የካርጎ/ትራንስፖርት መንገዶች ወደ ኢትዮጵያ", duration: "18:40", video: "https://www.youtube.com/watch?v=mgdOMtW6J8k", desc: "ቀላል ክፍያና አስተማማኝ ካርጎ መረጣ", points: 80 },
-      { title: "ክፍል 4: የኦንላይን ሽያጭ እና የቴሌግራም/ቲክቶክ ማርኬቲንግ", duration: "16:10", video: "https://www.youtube.com/watch?v=mgdOMtW6J8k", desc: "ደንበኞችን መሳብና ሽያጭ መጨመር", points: 70 }
-    ]
-  },
-  {
-    id: "crypto-finance-mastery",
-    slug: "crypto-trading",
-    title: "የክሪፕቶ ከረንሲ እና የፋይናንስ ኤክስፐርት ስልጠና (Crypto Trading Mastery)",
-    description: "በክሪፕቶ ማርኬት እና ዲጂታል አሴቶች ላይ በጥንቃቄና በዕውቀት ኢንቨስት የማድረግና የመነገድ ሙያዊ ስልጠና። ቴክኒካል እና ፈንዳሜንታል አናሊሲስ፣ ሪስክ ማኔጅመንት እና የትርፍ አወሳሰድ።",
-    desc: "በክሪፕቶ ማርኬት እና ዲጂታል አሴቶች ላይ በጥንቃቄና በዕውቀት ኢንቨስት የማድረግና የመነገድ ሙያዊ ስልጠና። ቴክኒካል እና ፈንዳሜንታል አናሊሲስ፣ ሪስክ ማኔጅመንት እና የትርፍ አወሳሰድ።",
-    price: 4500,
-    oldPrice: 9000,
-    status: "Active",
-    isFree: false,
-    category: "Crypto",
-    level: "ከፍተኛ (Advanced)",
-    image: "https://images.unsplash.com/photo-1621416894569-0f39ed31d247?auto=format&fit=crop&w=800&q=80",
-    banner: "https://images.unsplash.com/photo-1621416894569-0f39ed31d247?auto=format&fit=crop&w=800&q=80",
-    video: "https://www.youtube.com/watch?v=mgdOMtW6J8k",
-    instructor: "Eyoub Sahle",
-    instructorTitle: "የቢዝነስ እና ዲጂታል ማርኬቲንግ ባለሙያ (Lead Instructor)",
-    instructorImage: "https://drive.google.com/thumbnail?id=1rdjkUc6ZwK6NbbgHaZ-7BtEi8A9aA5Uq&sz=w1000",
-    instructorTelegram: "@EyoubSahle",
-    instructorBio: "በኢ-ኮሜርስ፣ ዲጂታል ማርኬቲንግ እና ክሪፕቶ ከረንሲ ዘርፍ የብዙ አመታት የተግባር ልምድ ያለው እና በመቶዎች የሚቆጠሩ ተማሪዎችን ወደ ስኬት ያበቃ ባለሙያ።",
-    students: 95,
-    studentsCount: 95,
-    rating: 4.8,
-    ratingAvg: 4.8,
-    ratingCount: 19,
-    instructorRatingAvg: 4.8,
-    modulesCount: 6,
-    isPopular: true,
-    aiPrompt: "You are Tsehay AI. Your job is to help students learning Crypto Trading & Finance Mastery by Eyoub Sahle. Answer questions strictly related to technical analysis, crypto exchanges, risk management, and trading strategies.",
-    whatYouWillLearn: [
-      "የክሪፕቶ ከረንሲ እና የብሎክቼይን መሰረታዊያን",
-      "Bybit እና Binance አካውንት አጠቃቀምና P2P ግብይት",
-      "የቴክኒካል አናሊሲስ (Chart Patterns, RSI, MACD)",
-      "የሪስክ ማኔጅመንት እና የካፒታል ጥበቃ ህጎች"
-    ],
-    requirements: [
-      "ስማርት ስልክ ወይም ኮምፒውተር",
-      "መሰረታዊ የኢንተርኔት እውቀት",
-      "የመማር ፍላጎት"
-    ],
-    includes: [
-      "የላቁ የቪዲዮ ትምህርቶች",
-      "የቀጥታ ትሬዲንግ ማሳያዎች",
-      "የቴሌግራም ቪአይፒ ማህበረሰብ ድጋፍ",
-      "የኮርስ ሰርተፊኬት"
-    ],
-    lessons: [
-      { title: "ክፍል 1: የብሎክቼይን እና የክሪፕቶ መሰረታዊ ፅንሰ ሀሳቦች", duration: "12:00", video: "https://www.youtube.com/watch?v=mgdOMtW6J8k", desc: "የክሪፕቶ አመጣጥ እና የገበያ መዋቅር", points: 40 },
-      { title: "ክፍል 2: Bybit እና Binance አካውንት አከፋፈት እና ደህንነት", duration: "15:30", video: "https://www.youtube.com/watch?v=mgdOMtW6J8k", desc: "P2P ክፍያ እና አካውንት ማረጋገጥ", points: 60 },
-      { title: "ክፍል 3: ቴክኒካል አናሊሲስ (Chart Patterns & Indicators)", duration: "20:45", video: "https://www.youtube.com/watch?v=mgdOMtW6J8k", desc: "የቻርት ንባብ እና የመግቢያ/መውጫ ነጥቦች", points: 100 },
-      { title: "ክፍል 4: ሪስክ ማኔጅመንት እና የሳይኮሎጂ ቁጥጥር", duration: "14:15", video: "https://www.youtube.com/watch?v=mgdOMtW6J8k", desc: "ካፒታልን የመጠበቅ እና የማሳደግ ህጎች", points: 80 }
-    ]
-  },
-  {
-    id: "web-development-bootcamp",
-    slug: "web-development",
-    title: "የዌብሳይት እና ሶፍትዌር ዴቨሎፕመንት (Full-Stack Web Development)",
-    description: "ከዜሮ ተነስተው ዘመናዊ ዌብሳይቶችን እና አፕሊኬሽኖችን በ HTML, CSS, JavaScript, React እና Next.js የመገንባት ሙሉ ተግባራዊ ስልጠና።",
-    desc: "ከዜሮ ተነስተው ዘመናዊ ዌብሳይቶችን እና አፕሊኬሽኖችን በ HTML, CSS, JavaScript, React እና Next.js የመገንባት ሙሉ ተግባራዊ ስልጠና።",
-    price: 4500,
-    oldPrice: 9000,
-    status: "Active",
-    isFree: false,
-    category: "Tech",
-    level: "ጀማሪ እስከ ከፍተኛ (All Levels)",
-    image: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=800&q=80",
-    banner: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=800&q=80",
-    video: "https://www.youtube.com/watch?v=mgdOMtW6J8k",
-    instructor: "Eyoub Sahle",
-    instructorTitle: "የቢዝነስ እና ዲጂታል ማርኬቲንግ ባለሙያ (Lead Instructor)",
-    instructorImage: "https://drive.google.com/thumbnail?id=1rdjkUc6ZwK6NbbgHaZ-7BtEi8A9aA5Uq&sz=w1000",
-    instructorTelegram: "@EyoubSahle",
-    instructorBio: "በኢ-ኮሜርስ፣ ዲጂታል ማርኬቲንግ እና ክሪፕቶ ከረንሲ ዘርፍ የብዙ አመታት የተግባር ልምድ ያለው እና በመቶዎች የሚቆጠሩ ተማሪዎችን ወደ ስኬት ያበቃ ባለሙያ።",
-    students: 115,
-    studentsCount: 115,
-    rating: 4.9,
-    ratingAvg: 4.9,
-    ratingCount: 24,
-    instructorRatingAvg: 4.9,
-    modulesCount: 10,
-    isPopular: true,
-    aiPrompt: "You are Tsehay AI. Your job is to help students learning Full-Stack Web Development by Eyoub Sahle. Answer questions strictly related to HTML, CSS, JavaScript, React, Next.js, and coding.",
-    whatYouWillLearn: [
-      "የ HTML5, CSS3 እና የዘመናዊ UI ዲዛይን መሰረቶች",
-      "JavaScript ፕሮግራሚንግ እና DOM Manipulation",
-      "React.js እና Next.js ሙሉ አፕሊኬሽን ግንባታ",
-      "Firebase backend እና Deployment ወደ ኢንተርኔት"
-    ],
-    requirements: [
-      "ላፕቶፕ ወይም ዴስክቶፕ ኮምፒውተር",
-      "የኢንተርኔት ግንኙነት",
-      "የመማርና ኮድ የመጻፍ ፍላጎት"
-    ],
-    includes: [
-      "ሙሉ የቪዲዮ ትምህርቶችና የኮድ ፋይሎች",
-      "የተግባር ፕሮጀክቶች ግንባታ",
-      "የህይወት ዘመን ሙሉ መዳረሻ",
-      "የተረጋገጠ የሙያ ሰርተፊኬት"
-    ],
-    lessons: [
-      { title: "ክፍል 1: የዌብ ቴክኖሎጂ መግቢያ (HTML5 & CSS3)", duration: "16:20", video: "https://www.youtube.com/watch?v=mgdOMtW6J8k", desc: "የመጀመሪያውን ድረ-ገጽ መገንባት", points: 50 },
-      { title: "ክፍል 2: JavaScript መሰረታዊ እና ኢንተራክቲቭ ዲዛይን", duration: "18:40", video: "https://www.youtube.com/watch?v=mgdOMtW6J8k", desc: "የፕሮግራሚንግ ሎጂክ እና DOM አያያዝ", points: 80 },
-      { title: "ክፍል 3: React እና Next.js ሙሉ አፕሊኬሽን ስራ", duration: "22:15", video: "https://www.youtube.com/watch?v=mgdOMtW6J8k", desc: "ዘመናዊ የፍሮንት-ኢንድ አወቃቀር", points: 100 },
-      { title: "ክፍል 4: ዳታቤዝ ማገናኘት እና ዌብሳይትን ኦንላይን መጫን (Deployment)", duration: "15:50", video: "https://www.youtube.com/watch?v=mgdOMtW6J8k", desc: "Vercel እና Firebase ማገናኘት", points: 90 }
     ]
   }
 ];
@@ -483,9 +326,15 @@ export function formatCourseDesc(course: any): string {
   return text;
 }
 
+const OBSOLETE_DUMMY_IDS = new Set([
+  'web-development-bootcamp',
+  'crypto-finance-mastery',
+  'digital_marketing_pro'
+]);
+
 /**
  * Combines two or more course lists safely, removing duplicates by id or slug,
- * while preserving updated properties.
+ * while preserving updated properties and filtering out obsolete dummy courses.
  */
 export function mergeCoursesLists(...lists: (any[] | undefined | null)[]): any[] {
   const map = new Map<string, any>();
@@ -494,6 +343,9 @@ export function mergeCoursesLists(...lists: (any[] | undefined | null)[]): any[]
     if (!Array.isArray(list)) continue;
     for (const item of list) {
       if (!item || (!item.id && !item.slug && !item.title)) continue;
+      const id = (item.id || '').toString().trim();
+      if (OBSOLETE_DUMMY_IDS.has(id)) continue;
+      
       const key = (item.id || item.slug || item.title).toString().trim();
       const existing = map.get(key);
       const merged = existing ? { ...existing, ...item } : item;

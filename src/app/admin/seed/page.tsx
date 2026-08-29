@@ -25,7 +25,7 @@ export default function SeedDatabase() {
         }
       }
 
-      // Step 2: Seed All Authentic Courses into both collections
+      // Step 2: Seed the 3 Authentic Courses into both collections
       let count = 0;
       for (const course of DEFAULT_COURSES) {
         const docId = course.id;
@@ -55,7 +55,7 @@ export default function SeedDatabase() {
         count++;
       }
 
-      setSuccess(`All ${count} authentic courses successfully synchronized into Firestore!`);
+      setSuccess(`All ${count} authentic courses (Shein Import, YouTube Secrets, Free Digital Marketing) successfully synchronized into Firestore!`);
     } catch (error: any) {
       console.error(error);
       setSuccess(`Error seeding data: ${error.message}`);
@@ -68,7 +68,7 @@ export default function SeedDatabase() {
     <div className="p-10 flex flex-col items-center justify-center min-h-screen bg-gray-50 dark:bg-slate-900 text-dark dark:text-white">
       <h1 className="text-2xl font-bold mb-4 font-heading">Sync & Seed Authentic Courses Database</h1>
       <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 max-w-md text-center">
-        Writes the 6 authentic original courses (YouTube Secrets, Shein Import, Digital Marketing Free/Pro, Crypto Trading, Web Development) to Firestore.
+        Writes the 3 authentic courses (Shein Import Business - 4500 ETB, YouTube Secrets - 600 ETB, Free Digital Marketing - 0 ETB) directly to Firestore.
       </p>
       <button 
         onClick={seedData} 

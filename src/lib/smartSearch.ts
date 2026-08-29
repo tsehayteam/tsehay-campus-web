@@ -2,6 +2,18 @@
 
 // Comprehensive Keyword Mapping Dictionary (English & Amharic)
 const KEYWORD_MAP: Record<string, string[]> = {
+  // Shein & E-commerce
+  "shein": ["shein", "ecommerce", "import", "china", "ሼን", "ኢምፖርት", "የሼን"],
+  "ሼን": ["shein", "ecommerce", "import", "china", "ሼን", "ኢምፖርት", "የሼን"],
+  "import": ["shein", "ecommerce", "import", "china", "ኢምፖርት", "ሼን"],
+  "ኢምፖርት": ["shein", "ecommerce", "import", "china", "ኢምፖርት", "ሼን"],
+  "ecommerce": ["shein", "ecommerce", "online business", "ኢ-ኮሜርስ", "ሼን"],
+
+  // YouTube & Video Creation
+  "youtube": ["youtube", "video", "monetization", "faceless", "ዩቲዩብ", "ቪዲዮ"],
+  "ዩቲዩብ": ["youtube", "video", "monetization", "faceless", "ዩቲዩብ", "ቪዲዮ"],
+  "video": ["youtube", "video editing", "faceless", "ቪዲዮ"],
+
   // Digital Marketing & Social Media
   "social media": ["digital marketing", "facebook", "instagram", "tiktok", "telegram", "ዲጂታል ማርኬቲንግ", "ሶሻል ሚዲያ"],
   "social media marketing": ["digital marketing", "facebook", "instagram", "tiktok", "ዲጂታል ማርኬቲንግ", "ሶሻል ሚዲያ"],
@@ -10,7 +22,7 @@ const KEYWORD_MAP: Record<string, string[]> = {
   "tiktok": ["digital marketing", "social media", "content", "ዲጂታል ማርኬቲንግ", "ቲክቶክ"],
   "marketing": ["digital marketing", "sales", "social media", "ማርኬቲንግ", "ዲጂታል ማርኬቲንግ"],
   "ads": ["digital marketing", "facebook", "google ads", "ማስታወቂያ"],
-  "seo": ["digital marketing", "web development", "google", "ዲጂታል ማርኬቲንግ"],
+  "seo": ["digital marketing", "youtube", "google", "ዲጂታል ማርኬቲንግ"],
   "ማርኬቲንግ": ["digital marketing", "social media", "ዲጂታል ማርኬቲንግ"],
   "ሶሻል ሚዲያ": ["digital marketing", "social media", "ዲጂታል ማርኬቲንግ"],
   "ፌስቡክ": ["digital marketing", "facebook", "ዲጂታል ማርኬቲንግ"],
