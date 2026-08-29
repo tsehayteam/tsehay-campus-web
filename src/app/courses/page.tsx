@@ -210,6 +210,15 @@ export default function Courses() {
     setSelectedCourse(null);
   };
 
+  const COURSE_CATEGORY_TABS = [
+    { id: 'E-Commerce', labelKey: 'cat_ecommerce', defaultLabel: 'E-Commerce', icon: 'fa-cart-shopping' },
+    { id: 'YouTube & Content Creation', labelKey: 'cat_youtube', defaultLabel: 'YouTube & Content Creation', icon: 'fa-youtube' },
+    { id: 'Marketing', labelKey: 'cat_marketing', defaultLabel: 'Marketing', icon: 'fa-bullhorn' },
+    { id: 'Brokerage', labelKey: 'cat_brokerage', defaultLabel: 'Brokerage', icon: 'fa-handshake' },
+    { id: 'Film Making', labelKey: 'cat_filmmaking', defaultLabel: 'Film Making', icon: 'fa-video' },
+    { id: 'Career Development', labelKey: 'cat_career', defaultLabel: 'Career Development', icon: 'fa-briefcase' },
+  ];
+
   const filteredCourses = (() => {
     let matched = searchQuery ? searchCourses(courses, searchQuery) : courses;
 
@@ -217,7 +226,19 @@ export default function Courses() {
     if (selectedCategory === "Free") return matched.filter(course => course.price === "Free" || course.price === "0" || course.price === 0 || course.isFree);
     if (selectedCategory === "Paid") return matched.filter(course => course.price !== "Free" && course.price !== "0" && course.price !== 0 && !course.isFree);
     
-    return matched.filter(course => course.category === selectedCategory);
+    return matched.filter(course => {
+      if (!course.category) return false;
+      const cat = String(course.category).toLowerCase().trim();
+      const sel = selectedCategory.toLowerCase().trim();
+      if (cat === sel) return true;
+      if (sel === 'e-commerce' && (cat === 'ecommerce' || cat.includes('commerce') || cat.includes('shein') || cat.includes('aliexpress'))) return true;
+      if (sel.includes('youtube') && (cat.includes('youtube') || cat.includes('content') || cat.includes('video'))) return true;
+      if (sel.includes('marketing') && (cat.includes('marketing') || cat.includes('digital') || cat.includes('facebook'))) return true;
+      if (sel.includes('brokerage') && (cat.includes('broker') || cat.includes('real estate') || cat.includes('ደላላ'))) return true;
+      if (sel.includes('film') && (cat.includes('film') || cat.includes('cinema') || cat.includes('editing'))) return true;
+      if (sel.includes('career') && (cat.includes('career') || cat.includes('development') || cat.includes('job'))) return true;
+      return false;
+    });
   })();
 
   return (
@@ -239,14 +260,14 @@ export default function Courses() {
         {/* =========================================================================
             🌟 HERO TITLE, SEARCH & FUTURISTIC GLASS FILTER SECTION
            ========================================================================= */}
-        <section className="relative border-b border-white/[0.06] pt-16 pb-12 lg:pt-24 lg:pb-16 transition-colors duration-300 z-10">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
-            
-            {/* Glowing Category Badge */}
-            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-400/15 via-[#f9b03c]/10 to-amber-400/15 border border-[#f9b03c]/30 text-[#f9b03c] font-black px-5 py-2 rounded-full text-xs sm:text-sm mb-6 shadow-[0_0_20px_rgba(249,176,60,0.2)] backdrop-blur-md">
-              <i className="fa-solid fa-graduation-cap text-[#f9b03c]"></i> {t('courses_badge')}
+        <section className="pt-28 pb-6 sm:pt-36 sm:pb-8 relative z-10 text-center px-4 sm:px-6">
+          <div className="max-w-4xl mx-auto">
+            {/* Top Silicon Valley Badge */}
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/[0.05] border border-white/10 backdrop-blur-md text-[#f9b03c] text-xs font-black uppercase tracking-widest mb-6 shadow-[0_0_20px_rgba(249,176,60,0.2)] animate-pulse">
+              <i className="fa-solid fa-graduation-cap text-[#f9b03c]"></i>
+              <span>{t('courses_badge')}</span>
             </div>
-
+            
             {/* Futuristic Silicon Valley Heading */}
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-white mb-6 leading-tight drop-shadow-sm font-heading tracking-tight">
               {t('courses_title_1')}<span className="text-transparent bg-clip-text bg-gradient-to-r from-[#3268ba] via-blue-400 to-[#f9b03c]">Tsehay Campus</span> {t('courses_title_2')}
@@ -263,7 +284,7 @@ export default function Courses() {
             <div className="max-w-2xl mx-auto mb-8">
               <SmartSearchInput 
                 courses={courses}
-                placeholder="ኮርሶችን ይፈልጉ (e.g. Social Media, Facebook, ዌብሳይት, Python)..."
+                placeholder="ኮርሶችን ይፈልጉ (e.g. E-Commerce, YouTube, Marketing, Brokerage, Film, Career)..."
                 onSearchChange={(searchResults, q) => {
                   setSearchQuery(q);
                 }}
@@ -321,54 +342,25 @@ export default function Courses() {
 
               <div className="w-px h-6 bg-white/10 mx-1 hidden sm:block"></div>
 
-              {/* Specific Categories */}
-              <button 
-                type="button"
-                onClick={() => setSelectedCategory('Ecommerce')} 
-                className={`px-4 sm:px-5 py-2 sm:py-2.5 rounded-full font-bold text-xs sm:text-sm transition-all duration-300 cursor-pointer ${
-                  selectedCategory === 'Ecommerce' 
-                    ? 'bg-gradient-to-r from-[#3268ba] to-[#5a93e8] text-white font-bold border border-[#5a93e8] shadow-[0_0_15px_rgba(50,104,186,0.45)]' 
-                    : 'bg-white/[0.03] text-slate-300 hover:text-white border border-white/10 hover:border-[#f9b03c]/40 hover:bg-white/[0.08]'
-                }`}
-              >
-                {t('cat_ecommerce')}
-              </button>
-
-              <button 
-                type="button"
-                onClick={() => setSelectedCategory('Marketing')} 
-                className={`px-4 sm:px-5 py-2 sm:py-2.5 rounded-full font-bold text-xs sm:text-sm transition-all duration-300 cursor-pointer ${
-                  selectedCategory === 'Marketing' 
-                    ? 'bg-gradient-to-r from-[#3268ba] to-[#5a93e8] text-white font-bold border border-[#5a93e8] shadow-[0_0_15px_rgba(50,104,186,0.45)]' 
-                    : 'bg-white/[0.03] text-slate-300 hover:text-white border border-white/10 hover:border-[#f9b03c]/40 hover:bg-white/[0.08]'
-                }`}
-              >
-                {t('cat_marketing')}
-              </button>
-
-              <button 
-                type="button"
-                onClick={() => setSelectedCategory('Crypto')} 
-                className={`px-4 sm:px-5 py-2 sm:py-2.5 rounded-full font-bold text-xs sm:text-sm transition-all duration-300 cursor-pointer ${
-                  selectedCategory === 'Crypto' 
-                    ? 'bg-gradient-to-r from-[#3268ba] to-[#5a93e8] text-white font-bold border border-[#5a93e8] shadow-[0_0_15px_rgba(50,104,186,0.45)]' 
-                    : 'bg-white/[0.03] text-slate-300 hover:text-white border border-white/10 hover:border-[#f9b03c]/40 hover:bg-white/[0.08]'
-                }`}
-              >
-                {t('cat_crypto')}
-              </button>
-
-              <button 
-                type="button"
-                onClick={() => setSelectedCategory('Tech')} 
-                className={`px-4 sm:px-5 py-2 sm:py-2.5 rounded-full font-bold text-xs sm:text-sm transition-all duration-300 cursor-pointer ${
-                  selectedCategory === 'Tech' 
-                    ? 'bg-gradient-to-r from-[#3268ba] to-[#5a93e8] text-white font-bold border border-[#5a93e8] shadow-[0_0_15px_rgba(50,104,186,0.45)]' 
-                    : 'bg-white/[0.03] text-slate-300 hover:text-white border border-white/10 hover:border-[#f9b03c]/40 hover:bg-white/[0.08]'
-                }`}
-              >
-                {t('cat_tech')}
-              </button>
+              {/* 🌟 6 Specific Updated Categories */}
+              {COURSE_CATEGORY_TABS.map((catTab) => {
+                const isSelected = selectedCategory === catTab.id;
+                return (
+                  <button
+                    key={catTab.id}
+                    type="button"
+                    onClick={() => setSelectedCategory(catTab.id)}
+                    className={`px-4 sm:px-5 py-2 sm:py-2.5 rounded-full font-bold text-xs sm:text-sm transition-all duration-300 cursor-pointer flex items-center gap-1.5 ${
+                      isSelected
+                        ? 'bg-gradient-to-r from-[#3268ba] to-[#5a93e8] text-white font-bold border border-[#5a93e8] shadow-[0_0_15px_rgba(50,104,186,0.45)] scale-105'
+                        : 'bg-white/[0.03] text-slate-300 hover:text-white border border-white/10 hover:border-[#f9b03c]/40 hover:bg-white/[0.08]'
+                    }`}
+                  >
+                    <i className={`fa-solid ${catTab.icon} text-[11px] ${isSelected ? 'text-[#f9b03c]' : 'text-slate-400'}`}></i>
+                    <span>{t(catTab.labelKey) || catTab.defaultLabel}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </section>

@@ -44,16 +44,20 @@ export async function POST(req: NextRequest) {
     const timeHex = Date.now().toString(36).substring(4).toUpperCase();
     const ticketId = `TC-EVT-${timeHex}-${randomHex}`;
 
-    // Scannable QR Payload
+    // Scannable QR Payload (Standardized Verification Schema)
     const qrPayload = JSON.stringify({
+      ticketId,
+      eventId,
+      userId,
+      code: ticketId,
       tId: ticketId,
-      eId: eventId,
       slug: eventSlug,
       name: attendeeName,
       email: attendeeEmail,
       tier: tier,
       isOnline,
-      v: '1.0'
+      v: '2.0',
+      timestamp: Date.now()
     });
 
     const ticket: EventTicket = {
@@ -122,22 +126,68 @@ export async function POST(req: NextRequest) {
             .set(ticket);
         }
 
-        // 4. Increment Event registeredCount in real-time
+        // 4. 🌟 ATOMIC SEAT DECREMENT & REGISTRATION INCREMENT
         if (eventId && !eventId.startsWith('evt_fallback')) {
           try {
             const { FieldValue } = await import('firebase-admin/firestore');
             const inc = FieldValue.increment(1);
+            const decSeat = FieldValue.increment(-1);
 
             const eventRefRoot = adminDb.collection('events').doc(eventId);
             const eventRefArtifact = adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('public').doc('data').collection('events').doc(eventId);
+            const eventRefColl = adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('events').doc(eventId);
 
             await Promise.allSettled([
-              eventRefRoot.set({ registeredCount: inc }, { merge: true }),
-              eventRefArtifact.set({ registeredCount: inc }, { merge: true })
+              eventRefRoot.set({
+                registeredCount: inc,
+                remainingSeats: decSeat,
+                availableTickets: decSeat,
+                seatsLeft: decSeat
+              }, { merge: true }),
+              eventRefArtifact.set({
+                registeredCount: inc,
+                remainingSeats: decSeat,
+                availableTickets: decSeat,
+                seatsLeft: decSeat
+              }, { merge: true }),
+              eventRefColl.set({
+                registeredCount: inc,
+                remainingSeats: decSeat,
+                availableTickets: decSeat,
+                seatsLeft: decSeat
+              }, { merge: true })
             ]);
           } catch (incErr) {
-            console.warn('Event registeredCount increment notice:', incErr);
+            console.warn('Event atomic seat decrement notice:', incErr);
           }
+        }
+
+        // 5. 🔔 Trigger Real-time Admin Notification
+        try {
+          const notifId = `notif_ticket_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+          const notifData = {
+            id: notifId,
+            type: 'event_registration',
+            title: '🎟️ አዲስ የኢቨንት ትኬት ተመዝግቧል!',
+            message: `${attendeeName} (${attendeeEmail}) ለ "${eventTitle}" ትኬት ቆርጠዋል [${tier} - ${pricePaid > 0 ? `${pricePaid} ETB` : 'ነፃ'}]።`,
+            eventId,
+            eventTitle,
+            ticketId,
+            attendeeName,
+            attendeeEmail,
+            tier,
+            pricePaid,
+            createdAt: new Date().toISOString(),
+            isRead: false,
+          };
+
+          await Promise.allSettled([
+            adminDb.collection('admin_notifications').doc(notifId).set(notifData),
+            adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('notifications').doc(notifId).set(notifData),
+            adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('admin_notifications').doc(notifId).set(notifData)
+          ]);
+        } catch (notifErr) {
+          console.warn('Admin notification notice:', notifErr);
         }
       } catch (dbErr) {
         console.warn('Firestore event registration save notice:', dbErr);

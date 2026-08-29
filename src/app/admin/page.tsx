@@ -3333,6 +3333,17 @@ export default function AdminDashboard() {
                     <i className="fa-solid fa-qrcode text-sm"></i>
                     <span>የበር ላይ QR ስካነር (Door Scanner)</span>
                   </button>
+
+                  <a
+                    href="/admin/scanner"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3.5 py-2 rounded-xl bg-purple-500/15 text-purple-600 dark:text-purple-400 hover:bg-purple-500 hover:text-white border border-purple-500/30 text-xs font-black transition flex items-center gap-1.5 cursor-pointer"
+                    title="ለሞባይል የተዘጋጀ ሙሉ ገጽ ስካነር ክፈት"
+                  >
+                    <i className="fa-solid fa-mobile-screen-button"></i>
+                    <span>📱 የሞባይል ስካነር ክፈት (Mobile Fullscreen)</span>
+                  </a>
                 </div>
 
                 {eventsSubTab === 'list' && (
@@ -6261,12 +6272,12 @@ export default function AdminDashboard() {
                 <div>
                   <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">የኮርሱ ዘርፍ (Category) *</label>
                   <select required value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-dark dark:text-white outline-none focus:border-primary transition">
-                    <option value="General">General</option>
-                    <option value="Ecommerce">Ecommerce</option>
+                    <option value="E-Commerce">E-Commerce</option>
+                    <option value="YouTube & Content Creation">YouTube & Content Creation</option>
                     <option value="Marketing">Marketing</option>
-                    <option value="Crypto">Crypto</option>
-                    <option value="Tech">Tech</option>
-                    <option value="Free">Free</option>
+                    <option value="Brokerage">Brokerage</option>
+                    <option value="Film Making">Film Making</option>
+                    <option value="Career Development">Career Development</option>
                   </select>
                 </div>
 
