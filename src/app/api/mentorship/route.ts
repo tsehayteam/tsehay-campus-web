@@ -46,7 +46,7 @@ export async function POST(req: Request) {
       if (adminDb && typeof adminDb.collection === 'function') {
         const docRef = await adminDb.collection('mentorship_bookings').add({
           ...bookingData,
-          status: 'pending_payment',
+          status: 'confirmed',
           createdAtServer: new Date()
         });
         bookingId = docRef.id;

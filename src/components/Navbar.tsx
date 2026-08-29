@@ -527,29 +527,19 @@ export default function Navbar() {
                       <button
                         type="button"
                         onClick={() => navigateTo('/dashboard')}
-                        className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-gradient-to-r from-[#f9b03c] to-amber-500 hover:brightness-110 text-slate-950 font-black text-xs transition cursor-pointer shadow-md"
+                        className="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#f9b03c] hover:brightness-110 active:scale-[0.98] text-slate-950 font-black text-xs transition-all cursor-pointer shadow-md group"
                       >
-                        <i className="fa-solid fa-graduation-cap text-sm"></i>
-                        <span>ወደ መማሪያ ክፍል (Go to Classroom)</span>
+                        <div className="w-6 h-6 rounded-lg bg-black/15 flex items-center justify-center text-slate-950 group-hover:scale-110 transition-transform shrink-0">
+                          <i className="fa-solid fa-graduation-cap text-base"></i>
+                        </div>
+                        <span className="font-heading tracking-wide text-xs">ወደ መማሪያ ክፍል</span>
                       </button>
-
-                      {/* Admin Link if Admin */}
-                      {isAdmin && (
-                        <button
-                          type="button"
-                          onClick={() => navigateTo('/admin')}
-                          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl bg-[#3268ba]/20 hover:bg-[#3268ba]/35 text-[#5a93e8] border border-[#3268ba]/40 font-bold text-xs transition cursor-pointer"
-                        >
-                          <i className="fa-solid fa-shield-halved text-xs"></i>
-                          <span>አድሚን ዳሽቦርድ (Admin)</span>
-                        </button>
-                      )}
 
                       {/* Option 2: 🚪 Log Out */}
                       <button
                         type="button"
                         onClick={handleSignOut}
-                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl bg-white/5 hover:bg-red-500/15 text-slate-300 hover:text-red-400 border border-transparent hover:border-red-500/30 font-bold text-xs transition cursor-pointer"
+                        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-white/5 hover:bg-red-500/15 text-slate-300 hover:text-red-400 border border-transparent hover:border-red-500/30 font-bold text-xs transition-all cursor-pointer"
                       >
                         <i className="fa-solid fa-arrow-right-from-bracket text-xs text-red-400"></i>
                         <span>ውጣ (Log Out)</span>

@@ -126,7 +126,9 @@ export async function POST(req: NextRequest) {
             ? courseData.whatYouWillLearn.split('\n').map((s: string) => s.trim()).filter(Boolean) 
             : []),
       requirements: Array.isArray(courseData.requirements) ? courseData.requirements : [],
-      includes: Array.isArray(courseData.includes) ? courseData.includes : (courseData.includesList || [])
+      includes: Array.isArray(courseData.includes) ? courseData.includes : (courseData.includesList || []),
+      instructorImage: courseData.instructorImage || courseData.instructorPhoto || '',
+      instructorPhoto: courseData.instructorImage || courseData.instructorPhoto || ''
     };
 
     // 3. Write directly to Firestore using Firebase Admin SDK if available

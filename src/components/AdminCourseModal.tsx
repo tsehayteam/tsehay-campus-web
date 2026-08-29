@@ -30,16 +30,17 @@ export default function AdminCourseModal({
   const [formData, setFormData] = useState({
     title: initialData?.title || '',
     category: initialData?.category || 'E-Commerce',
-    instructor: initialData?.instructor || '',
-    instructorImage: initialData?.instructorImage || '',
+    instructor: initialData?.instructor || initialData?.instructorName || '',
+    instructorImage: initialData?.instructorImage || initialData?.instructorPhoto || initialData?.instructor_image || initialData?.instructor_photo || '',
     instructorTelegram: initialData?.instructorTelegram || '@EyoubSahle',
     price: initialData?.price || '',
     oldPrice: initialData?.oldPrice || '',
-    image: initialData?.image || '',
-    thumbnail: initialData?.thumbnail || '',
+    image: initialData?.image || initialData?.thumbnail || '',
+    thumbnail: initialData?.thumbnail || initialData?.image || '',
+    video: initialData?.video || initialData?.videoUrl || initialData?.previewVideoUrl || '',
     isFree: Boolean(initialData?.isFree),
     isFeatured: Boolean(initialData?.isFeatured),
-    description: initialData?.description || '',
+    description: initialData?.description || initialData?.desc || '',
     telegramGroupUrl: initialData?.telegramGroupUrl || '',
   });
 
@@ -138,6 +139,20 @@ export default function AdminCourseModal({
                 className="w-full bg-slate-900/80 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-[#f9b03c] outline-none transition"
               />
             </div>
+          </div>
+
+          {/* Instructor Photo URL */}
+          <div>
+            <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
+              የአሰልጣኝ ፎቶ ሊንክ (Instructor Photo / Drive URL)
+            </label>
+            <input
+              type="text"
+              value={formData.instructorImage}
+              onChange={(e) => setFormData({ ...formData, instructorImage: e.target.value })}
+              placeholder="https://drive.google.com/file/d/... or image URL"
+              className="w-full bg-slate-900/80 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-[#f9b03c] outline-none transition"
+            />
           </div>
 
           {/* Price & Old Price */}

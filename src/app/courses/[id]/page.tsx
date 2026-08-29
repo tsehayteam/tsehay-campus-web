@@ -422,7 +422,8 @@ function CoursePreviewContent() {
   const instructorName = course?.instructorName || course?.instructor || 'Eyoub Sahle';
   const isEyoub = !instructorName || instructorName.toLowerCase().includes('eyoub') || instructorName.toLowerCase().includes('eyob') || instructorName.includes('ኢዮብ');
   const defaultInstructorPhoto = isEyoub ? '/assets/eyob_white.jpg' : '/tc-logo.jpg';
-  const displayInstructorImage = course?.instructorImage ? formatDriveImageUrl(course.instructorImage) : defaultInstructorPhoto;
+  const rawInstructorImg = course?.instructorImage || course?.instructorPhoto || course?.instructor_image || course?.instructor_photo;
+  const displayInstructorImage = rawInstructorImg ? formatDriveImageUrl(rawInstructorImg) : defaultInstructorPhoto;
 
   const formatPrice = (val: any) => {
     if (typeof val === 'number') return val.toLocaleString();

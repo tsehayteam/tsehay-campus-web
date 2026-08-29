@@ -139,10 +139,11 @@ export default function MentorshipPage() {
     }
   }, [user]);
 
-  // 🚀 Quick date chips starting strictly from 7 days out
+  // 🚀 Dynamically generate 6 available date pills synchronized with the currently viewed calendar month
+  const isMinMonth = calendarMonth.getFullYear() === minAvailableDate.getFullYear() && calendarMonth.getMonth() === minAvailableDate.getMonth();
+  const baseDay = isMinMonth ? minAvailableDate.getDate() : 1;
   const quickUpcomingDates = Array.from({ length: 6 }, (_, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() + 7 + i);
+    const d = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), baseDay + i);
     return {
       iso: d.toISOString().split('T')[0],
       display: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
@@ -212,7 +213,12 @@ export default function MentorshipPage() {
   };
 
   const nextMonth = () => {
-    setCalendarMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+    setCalendarMonth(prev => {
+      const next = new Date(prev.getFullYear(), prev.getMonth() + 1, 1);
+      const nextIso = new Date(next.getFullYear(), next.getMonth(), 1).toISOString().split('T')[0];
+      setSelectedDate(nextIso);
+      return next;
+    });
   };
 
   const prevMonth = () => {
@@ -220,6 +226,10 @@ export default function MentorshipPage() {
     const minMonth = new Date(minAvailableDate.getFullYear(), minAvailableDate.getMonth(), 1);
     if (prev >= minMonth) {
       setCalendarMonth(prev);
+      const isMin = prev.getFullYear() === minAvailableDate.getFullYear() && prev.getMonth() === minAvailableDate.getMonth();
+      const dayToSelect = isMin ? minAvailableDate.getDate() : 1;
+      const prevIso = new Date(prev.getFullYear(), prev.getMonth(), dayToSelect).toISOString().split('T')[0];
+      setSelectedDate(prevIso);
     }
   };
 
@@ -305,7 +315,7 @@ export default function MentorshipPage() {
       try {
         await addDoc(collection(db, 'mentorship_bookings'), {
           ...bookingPayload,
-          status: 'pending_confirmation',
+          status: 'confirmed',
           createdAtServer: serverTimestamp()
         });
       } catch (firestoreErr) {

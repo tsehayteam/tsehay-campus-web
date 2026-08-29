@@ -2015,8 +2015,11 @@ export default function AdminDashboard() {
 
     if (course) {
       setEditingCourse(course);
+      const currentInstructorImg = course.instructorImage || course.instructorPhoto || course.instructor_image || course.instructor_photo || '';
       setFormData({ 
         ...course,
+        instructorImage: currentInstructorImg,
+        instructorPhoto: currentInstructorImg,
         whatYouWillLearn: course.whatYouWillLearn ? (Array.isArray(course.whatYouWillLearn) ? course.whatYouWillLearn.join('\n') : course.whatYouWillLearn) : '',
         requirementsList: Array.isArray(course.requirements) ? course.requirements : [],
         includesList: Array.isArray(course.includes) ? course.includes : [
@@ -2112,7 +2115,8 @@ export default function AdminDashboard() {
         image: formatDriveLink(formData.image),
         banner: formatDriveLink(formData.banner),
         video: formData.video || '',
-        instructorImage: formatDriveLink(formData.instructorImage),
+        instructorImage: formatDriveLink(formData.instructorImage) || (editingCourse ? (formatDriveLink(editingCourse.instructorImage) || formatDriveLink(editingCourse.instructorPhoto) || '') : ''),
+        instructorPhoto: formatDriveLink(formData.instructorImage) || (editingCourse ? (formatDriveLink(editingCourse.instructorImage) || formatDriveLink(editingCourse.instructorPhoto) || '') : ''),
         price: priceNum,
         timestamp: (editingCourse && editingCourse.timestamp) ? editingCourse.timestamp : Date.now(),
         updatedAt: new Date().toISOString()
