@@ -10,6 +10,7 @@ import TermsModal from "@/components/TermsModal";
 import ContentProtection from "@/components/ContentProtection";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import FloatingAIButton from "@/components/FloatingAIButton";
+import StudentFeedbackModal from "@/components/StudentFeedbackModal";
 import ReferralTracker from "@/components/ReferralTracker";
 import { LanguageProvider } from "@/context/LanguageContext";
 import Global3DBackgroundCanvas from "@/components/scrollytelling/Global3DBackgroundCanvas";
@@ -200,6 +201,7 @@ export default function RootLayout({
               <PaymentModal />
               <PWAInstallPrompt />
               <FloatingAIButton />
+              <StudentFeedbackModal />
             </SmoothScrollAndScrollyProvider>
           </AuthProvider>
         </LanguageProvider>

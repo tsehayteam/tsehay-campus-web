@@ -248,6 +248,16 @@ export default function Footer() {
                                     <span>የግላዊነት ፖሊሲ (Privacy)</span>
                                 </button>
                             </li>
+                            <li>
+                                <button 
+                                    type="button" 
+                                    onClick={() => { window.dispatchEvent(new CustomEvent('tsehay_open_feedback_modal')); }} 
+                                    className="hover:text-[#f9b03c] hover:translate-x-1 transition-all duration-200 flex items-center gap-2 group cursor-pointer text-left text-[#f9b03c]"
+                                >
+                                    <i className="fa-solid fa-comment-dots text-xs"></i>
+                                    <span>{lang === 'am' ? 'አስተያየት ይስጡ (Give Feedback)' : 'Give Feedback'}</span>
+                                </button>
+                            </li>
                         </ul>
                     </div>
 

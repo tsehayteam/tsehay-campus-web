@@ -2776,6 +2776,16 @@ function StudentDashboardContent() {
                                             </span>
                                         )}
                                     </button>
+
+                                    <button 
+                                        type="button"
+                                        onClick={() => window.dispatchEvent(new CustomEvent('tsehay_open_feedback_modal', { detail: { category: 'course' } }))}
+                                        className="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl sm:rounded-2xl text-xs font-bold text-slate-300 hover:text-[#f9b03c] bg-slate-800/80 hover:bg-slate-800 border border-slate-700/60 transition cursor-pointer"
+                                        title="ስለዚህ ትምህርት አስተያየት ይስጡ (Lesson Feedback)"
+                                    >
+                                        <i className="fa-regular fa-comment-dots text-[#f9b03c]"></i>
+                                        <span>አስተያየት</span>
+                                    </button>
                                 </div>
 
                                 {/* Next / Quiz Button */}

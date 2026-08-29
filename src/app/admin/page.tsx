@@ -1409,8 +1409,26 @@ export default function AdminDashboard() {
     setFeedbacks(prev => prev.map(f => f.id === feedback.id ? { ...f, status: nextStatus } : f));
     
     try {
-      const ref = doc(db, 'user_feedbacks', feedback.id);
-      await updateDoc(ref, { status: nextStatus, updatedAt: serverTimestamp() });
+      // 1. Client Firestore Update
+      try {
+        const ref = doc(db, 'user_feedbacks', feedback.id);
+        await updateDoc(ref, { status: nextStatus, updatedAt: serverTimestamp() });
+      } catch (err) {}
+      try {
+        const ref2 = doc(db, 'student_feedback', feedback.id);
+        await updateDoc(ref2, { status: nextStatus, updatedAt: serverTimestamp() });
+      } catch (err) {}
+
+      // 2. Server API Dispatch
+      try {
+        await fetch(`/api/admin/feedback?id=${encodeURIComponent(feedback.id)}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: nextStatus })
+        });
+      } catch (err) {}
+
+      showToast(nextStatus === 'resolved' ? 'አስተያየቱ መፍትሄ ተሰጥቶታል ተብሏል (Marked as Resolved)' : 'አስተያየቱ ወደ መጠባበቅ ተመልሷል (Marked as Pending)', 'success');
     } catch (err) {
       console.error("Error updating feedback status:", err);
     } finally {
@@ -1421,10 +1439,29 @@ export default function AdminDashboard() {
   // 🌟 Delete Feedback
   const handleDeleteFeedback = async (id: string) => {
     if (!confirm('ይህንን የተማሪ አስተያየት በእርግጥ መሰረዝ ይፈልጋሉ? (Are you sure you want to delete this feedback?)')) return;
+    
+    // Optimistic UI update
     setFeedbacks(prev => prev.filter(f => f.id !== id));
+    
     try {
-      const ref = doc(db, 'user_feedbacks', id);
-      await deleteDoc(ref);
+      // 1. Client Firestore Delete
+      try {
+        const ref = doc(db, 'user_feedbacks', id);
+        await deleteDoc(ref);
+      } catch (err) {}
+      try {
+        const ref2 = doc(db, 'student_feedback', id);
+        await deleteDoc(ref2);
+      } catch (err) {}
+
+      // 2. Server API Dispatch
+      try {
+        await fetch(`/api/admin/feedback?id=${encodeURIComponent(id)}`, {
+          method: 'DELETE'
+        });
+      } catch (err) {}
+
+      showToast('አስተያየቱ በተሳካ ሁኔታ ተሰርዟል! (Feedback deleted)', 'success');
     } catch (err) {
       console.error("Error deleting feedback:", err);
     }
