@@ -35,13 +35,18 @@ export default function AdminCourseModal({
     instructorTelegram: initialData?.instructorTelegram || '@EyoubSahle',
     price: initialData?.price || '',
     oldPrice: initialData?.oldPrice || '',
-    image: initialData?.image || initialData?.thumbnail || '',
-    thumbnail: initialData?.thumbnail || initialData?.image || '',
-    video: initialData?.video || initialData?.videoUrl || initialData?.previewVideoUrl || '',
+    image: initialData?.image || initialData?.thumbnailUrl || initialData?.thumbnail || '',
+    thumbnail: initialData?.thumbnail || initialData?.thumbnailUrl || initialData?.image || '',
+    thumbnailUrl: initialData?.thumbnailUrl || initialData?.image || initialData?.thumbnail || '',
+    video: initialData?.video || initialData?.previewVideoUrl || initialData?.videoUrl || '',
+    videoUrl: initialData?.videoUrl || initialData?.previewVideoUrl || initialData?.video || '',
+    previewVideoUrl: initialData?.previewVideoUrl || initialData?.videoUrl || initialData?.video || '',
     isFree: Boolean(initialData?.isFree),
     isFeatured: Boolean(initialData?.isFeatured),
     description: initialData?.description || initialData?.desc || '',
     telegramGroupUrl: initialData?.telegramGroupUrl || '',
+    modules: initialData?.modules || [],
+    lessons: initialData?.lessons || [],
   });
 
   const [saving, setSaving] = useState(false);
@@ -52,7 +57,15 @@ export default function AdminCourseModal({
     e.preventDefault();
     setSaving(true);
     try {
-      await onSave(formData);
+      await onSave({
+        ...formData,
+        previewVideoUrl: formData.previewVideoUrl || formData.video || formData.videoUrl,
+        videoUrl: formData.previewVideoUrl || formData.video || formData.videoUrl,
+        video: formData.previewVideoUrl || formData.video || formData.videoUrl,
+        thumbnailUrl: formData.thumbnailUrl || formData.image || formData.thumbnail,
+        image: formData.thumbnailUrl || formData.image || formData.thumbnail,
+        thumbnail: formData.thumbnailUrl || formData.image || formData.thumbnail,
+      });
       onClose();
     } catch (err) {
       console.error('Error saving course:', err);
@@ -191,9 +204,23 @@ export default function AdminCourseModal({
             </label>
             <input
               type="text"
-              value={formData.image || formData.thumbnail}
-              onChange={(e) => setFormData({ ...formData, image: e.target.value, thumbnail: e.target.value })}
+              value={formData.image || formData.thumbnail || formData.thumbnailUrl}
+              onChange={(e) => setFormData({ ...formData, image: e.target.value, thumbnail: e.target.value, thumbnailUrl: e.target.value })}
               placeholder="https://..."
+              className="w-full bg-slate-900/80 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-[#f9b03c] outline-none transition"
+            />
+          </div>
+
+          {/* Preview Video / Embed URL */}
+          <div>
+            <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
+              የማስተዋወቂያ ቪዲዮ ሊንክ (Preview Video / Embed URL)
+            </label>
+            <input
+              type="text"
+              value={formData.previewVideoUrl || formData.video || formData.videoUrl}
+              onChange={(e) => setFormData({ ...formData, previewVideoUrl: e.target.value, video: e.target.value, videoUrl: e.target.value })}
+              placeholder="https://www.youtube.com/watch?v=... ወይም iframe link"
               className="w-full bg-slate-900/80 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-[#f9b03c] outline-none transition"
             />
           </div>

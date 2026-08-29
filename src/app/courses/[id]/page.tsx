@@ -45,79 +45,53 @@ function CoursePreviewContent() {
     }
 
     let isMounted = true;
-
-    // Helper to find best matching course from a list
-    const findMatchingCourse = (list: any[], searchId: string) => {
-      if (!list || list.length === 0) return null;
-      return getCourseBySlugOrId(searchId, list) || list[0] || null;
-    };
-
-    // Load from cache or DEFAULT_COURSES immediately on client mount
-    try {
-      const cached = getCachedCourses();
-      const initialPool = (cached && cached.length > 0) ? cached : DEFAULT_COURSES;
-      setAllCourses(initialPool);
-      const initialCourse = findMatchingCourse(initialPool, id);
-      if (initialCourse && isMounted) {
-        const cleanDesc = formatCourseDesc({ id: initialCourse.id, ...initialCourse });
-        setCourse({
-          ...initialCourse,
-          desc: cleanDesc,
-          description: cleanDesc
-        });
-        if (initialCourse.lessons && initialCourse.lessons.length > 0) {
-          setModules([{ id: 'main', title: 'Course Content', lessons: initialCourse.lessons }]);
-        } else if (initialCourse.modules && initialCourse.modules.length > 0) {
-          setModules(initialCourse.modules);
-        }
-        setLoading(false);
-      }
-    } catch (e) {}
+    setLoading(true);
 
     const fetchCourseData = async () => {
       try {
         let loadedCourseData: any = null;
         let loadedCourseId = id;
 
-        // 1. Fetch current course details by ID from artifacts or root collection
+        // 1. Fetch current course details directly from Firestore root collection 'courses'
         try {
-          const courseRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses', id);
-          const courseSnap = await getDoc(courseRef);
-          if (courseSnap.exists()) {
-            loadedCourseData = courseSnap.data();
-            loadedCourseId = courseSnap.id;
+          const rootRef = doc(db, 'courses', id);
+          const rootSnap = await getDoc(rootRef);
+          if (rootSnap.exists()) {
+            loadedCourseData = rootSnap.data();
+            loadedCourseId = rootSnap.id;
           }
         } catch (e) {}
 
+        // 2. Fetch from nested artifacts collection if not found in root
         if (!loadedCourseData) {
           try {
-            const rootRef = doc(db, 'courses', id);
-            const rootSnap = await getDoc(rootRef);
-            if (rootSnap.exists()) {
-              loadedCourseData = rootSnap.data();
-              loadedCourseId = rootSnap.id;
+            const courseRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses', id);
+            const courseSnap = await getDoc(courseRef);
+            if (courseSnap.exists()) {
+              loadedCourseData = courseSnap.data();
+              loadedCourseId = courseSnap.id;
             }
           } catch (e) {}
         }
 
-        // 2. Fetch all courses dynamically from both collections
+        // 3. Fetch all courses dynamically to find by slug or alias if needed
         let allList: any[] = [];
-        try {
-          const allCoursesQuery = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses'));
-          const allCoursesSnap = await getDocs(allCoursesQuery);
-          if (!allCoursesSnap.empty) {
-            allList = allCoursesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-          }
-        } catch (allErr) {}
-
         try {
           const rootQuery = query(collection(db, 'courses'));
           const rootSnap = await getDocs(rootQuery);
           if (!rootSnap.empty) {
-            const rootDocs = rootSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-            allList = mergeCoursesLists(allList, rootDocs);
+            allList = rootSnap.docs.map(d => ({ id: d.id, ...d.data() }));
           }
         } catch (rootErr) {}
+
+        try {
+          const allCoursesQuery = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses'));
+          const allCoursesSnap = await getDocs(allCoursesQuery);
+          if (!allCoursesSnap.empty) {
+            const artifactDocs = allCoursesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+            allList = mergeCoursesLists(allList, artifactDocs);
+          }
+        } catch (allErr) {}
 
         if (allList.length > 0 && isMounted) {
           const fullPool = mergeCoursesLists(DEFAULT_COURSES, allList);
@@ -125,88 +99,75 @@ function CoursePreviewContent() {
           saveCachedCourses(fullPool);
         }
 
-        // If direct getDoc didn't find the course by raw ID, resolve by slug or alias from allList or DEFAULT_COURSES
+        // If direct getDoc didn't find by ID, resolve by slug or ID match from allList or DEFAULT_COURSES
         if (!loadedCourseData) {
           const pool = allList.length > 0 ? mergeCoursesLists(DEFAULT_COURSES, allList) : DEFAULT_COURSES;
-          const matched = findMatchingCourse(pool, id);
+          const matched = getCourseBySlugOrId(id, pool);
           if (matched) {
             loadedCourseData = matched;
             loadedCourseId = matched.id;
           }
         }
 
-        if (isMounted && loadedCourseData) {
-          const cleanDesc = formatCourseDesc({ id: loadedCourseId, ...loadedCourseData });
-          setCourse({ 
-            id: loadedCourseId, 
-            ...loadedCourseData,
-            desc: cleanDesc,
-            description: cleanDesc
-          });
-          
-          let modulesList = [];
-          
-          if (loadedCourseData.lessons && loadedCourseData.lessons.length > 0) {
-            modulesList = [{ id: 'main', title: 'Course Content', lessons: loadedCourseData.lessons }];
-          } else if (loadedCourseData.modules && loadedCourseData.modules.length > 0) {
-            modulesList = loadedCourseData.modules;
-          } else {
-            // Fallback for older courses that used the subcollection
-            try {
-              const modulesQuery = query(
-                collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses', loadedCourseId, 'modules'),
-                orderBy('order', 'asc')
-              );
-              const modulesSnap = await getDocs(modulesQuery);
-              modulesList = modulesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            } catch (subErr) {
-              console.warn("Subcollection modules query fallback:", subErr);
+        if (isMounted) {
+          if (loadedCourseData) {
+            const cleanDesc = formatCourseDesc({ id: loadedCourseId, ...loadedCourseData });
+            setCourse({ 
+              id: loadedCourseId, 
+              ...loadedCourseData,
+              desc: cleanDesc,
+              description: cleanDesc
+            });
+            
+            let modulesList = [];
+            
+            if (loadedCourseData.lessons && loadedCourseData.lessons.length > 0) {
+              modulesList = [{ id: 'main', title: 'Course Content', lessons: loadedCourseData.lessons }];
+            } else if (loadedCourseData.modules && loadedCourseData.modules.length > 0) {
+              modulesList = loadedCourseData.modules;
+            } else {
+              try {
+                const modulesQuery = query(
+                  collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses', loadedCourseId, 'modules'),
+                  orderBy('order', 'asc')
+                );
+                const modulesSnap = await getDocs(modulesQuery);
+                modulesList = modulesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+              } catch (subErr) {
+                console.warn("Subcollection modules query fallback:", subErr);
+              }
             }
+            
+            setModules(modulesList);
+            
+            if (modulesList.length > 0) {
+              setExpandedModules({ [modulesList[0].id || 'main']: true });
+            }
+          } else {
+            setCourse(null);
           }
-          
-          setModules(modulesList);
-          
-          if (modulesList.length > 0) {
-            setExpandedModules({ [modulesList[0].id || 'main']: true });
-          }
+          setLoading(false);
         }
 
         // Fetch verified course reviews from Firestore across all possible locations
         try {
-          const realReviews: any[] = [];
-          if (loadedCourseData.reviews && Array.isArray(loadedCourseData.reviews)) {
-            realReviews.push(...loadedCourseData.reviews);
-          }
-          const reviewsRef = collection(db, "artifacts", "tsehaycampus-e1a6d", "public", "data", "reviews");
-          const qReviews = query(reviewsRef, where("courseId", "==", loadedCourseId));
-          const revSnap = await getDocs(qReviews);
-          if (!revSnap.empty) {
-            revSnap.docs.forEach(d => {
-              if (!realReviews.some(r => r.id === d.id)) {
-                realReviews.push({ id: d.id, ...d.data() });
-              }
-            });
-          }
-          try {
-            const subRevRef = collection(db, "artifacts", "tsehaycampus-e1a6d", "public", "data", "courses", loadedCourseId, "reviews");
-            const subSnap = await getDocs(subRevRef);
-            if (!subSnap.empty) {
-              subSnap.docs.forEach(d => {
-                if (!realReviews.some(r => r.id === d.id)) {
-                  realReviews.push({ id: d.id, ...d.data() });
-                }
-              });
+          let reviews: any[] = [];
+          const rootReviewsSnap = await getDocs(query(collection(db, 'courses', loadedCourseId, 'reviews')));
+          if (!rootReviewsSnap.empty) {
+            reviews = rootReviewsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+          } else {
+            const artifactReviewsSnap = await getDocs(query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses', loadedCourseId, 'reviews')));
+            if (!artifactReviewsSnap.empty) {
+              reviews = artifactReviewsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
             }
-          } catch (subErr) {}
-          if (realReviews.length > 0 && isMounted) {
-            setCourseReviews(realReviews);
           }
-        } catch (revErr) {
-          console.warn("Reviews fetch warning:", revErr);
-        }
-      } catch (error) {
-        console.error("Error fetching course data:", error);
-      } finally {
+          if (isMounted && reviews.length > 0) {
+            setCourseReviews(reviews);
+          }
+        } catch (revErr) {}
+
+      } catch (err) {
+        console.error("Error loading course details:", err);
         if (isMounted) {
           setLoading(false);
         }
@@ -402,6 +363,7 @@ function CoursePreviewContent() {
   const extractIframeSrc = (url: any) => {
     if (!url || typeof url !== 'string') return null;
     let clean = url.trim();
+    if (!clean) return null;
     if (clean.includes('<iframe') && clean.includes('src="')) {
       const match = clean.match(/src="([^"]+)"/);
       if (match) clean = match[1];
@@ -410,12 +372,12 @@ function CoursePreviewContent() {
     return clean;
   };
 
-  const previewVideoUrl = extractIframeSrc(course?.previewVideoUrl) || extractIframeSrc(course?.video) || extractIframeSrc(course?.videoUrl);
-  const firstLessonVideo = modules.length > 0 && modules[0].lessons?.length > 0 ? (extractIframeSrc(modules[0].lessons[0].video) || extractIframeSrc(modules[0].lessons[0].videoUrl)) : null;
-  const defaultVideoUrl = previewVideoUrl || firstLessonVideo;
-  const currentVideoUrl = activeVideoUrl ? extractIframeSrc(activeVideoUrl) : defaultVideoUrl;
+  // Video Player Source Resolution: Strictly resolve using authentic fields in order
+  const previewVideoUrl = extractIframeSrc(course?.previewVideoUrl) || extractIframeSrc(course?.videoUrl) || extractIframeSrc(course?.trailerUrl) || extractIframeSrc(course?.video);
+  const firstLessonVideo = modules.length > 0 && modules[0].lessons?.length > 0 ? (extractIframeSrc(modules[0].lessons[0].videoUrl) || extractIframeSrc(modules[0].lessons[0].video)) : null;
+  const activeVideo = (activeVideoUrl ? extractIframeSrc(activeVideoUrl) : null) || previewVideoUrl || firstLessonVideo || "";
 
-  const displayImage = formatDriveImageUrl(course?.image);
+  const displayImage = formatDriveImageUrl(course?.thumbnailUrl || course?.image || course?.thumbnail);
   const displayBanner = course?.banner ? formatDriveImageUrl(course.banner) : null;
 
   const instructorName = course?.instructorName || course?.instructor || 'Eyoub Sahle';
@@ -983,10 +945,10 @@ function CoursePreviewContent() {
           <div className="md:sticky md:top-24 bg-[#050811]/90 backdrop-blur-2xl border border-white/[0.08] shadow-2xl rounded-2xl overflow-hidden z-10 md:-mt-[350px]">
             {/* Video Preview Thumbnail */}
             <div className="relative group border-b border-white/[0.08] overflow-hidden rounded-t-2xl">
-              {isPlaying && currentVideoUrl ? (
+              {isPlaying && activeVideo ? (
                 <div className="w-full aspect-video bg-black overflow-hidden relative">
                   {(() => {
-                      let finalUrl = currentVideoUrl;
+                      let finalUrl = activeVideo;
                       if (finalUrl.includes('mediadelivery.net')) {
                           let embedUrl = finalUrl.replace('/play/', '/embed/').replace('video.mediadelivery.net', 'iframe.mediadelivery.net');
                           if (!embedUrl.includes('autoplay=')) {
@@ -1037,9 +999,17 @@ function CoursePreviewContent() {
                   })()}
                 </div>
               ) : (
-                <div className="cursor-pointer relative w-full aspect-video bg-black overflow-hidden group select-none" onClick={() => { if (currentVideoUrl) setIsPlaying(true); }}>
-                  <img src={displayImage || `https://placehold.co/600x400/3268BA/FFFFFF?text=${encodeURIComponent(course.title || 'Tsehay Campus')}&font=Montserrat`} alt={course.title} className="w-full h-full object-cover block group-hover:scale-105 transition-transform duration-700" onError={(e) => { e.currentTarget.src='https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1000&auto=format&fit=crop' }} />
-                  {currentVideoUrl && (
+                <div 
+                  className={`relative w-full aspect-video bg-black overflow-hidden group select-none ${activeVideo ? 'cursor-pointer' : ''}`}
+                  onClick={() => { if (activeVideo) setIsPlaying(true); }}
+                >
+                  <img 
+                    src={displayImage || `https://placehold.co/600x400/3268BA/FFFFFF?text=${encodeURIComponent(course?.title || 'Tsehay Campus')}&font=Montserrat`} 
+                    alt={course?.title || 'Course'} 
+                    className="w-full h-full object-cover block group-hover:scale-105 transition-transform duration-700" 
+                    onError={(e) => { e.currentTarget.src='https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1000&auto=format&fit=crop'; }} 
+                  />
+                  {activeVideo ? (
                     <>
                       {/* Subtle Edge Vignette only */}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20 pointer-events-none"></div>
@@ -1051,6 +1021,13 @@ function CoursePreviewContent() {
                         </div>
                       </div>
                     </>
+                  ) : (
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center p-4">
+                      <div className="px-4 py-2 rounded-xl bg-black/70 border border-white/10 backdrop-blur-md text-xs font-bold text-white flex items-center gap-2">
+                        <i className="fa-solid fa-graduation-cap text-[#f9b03c]"></i>
+                        <span>ትምህርቱን ጀምር</span>
+                      </div>
+                    </div>
                   )}
                 </div>
               )}

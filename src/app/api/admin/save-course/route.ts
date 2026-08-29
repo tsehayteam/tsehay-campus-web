@@ -126,9 +126,15 @@ export async function POST(req: NextRequest) {
             ? courseData.whatYouWillLearn.split('\n').map((s: string) => s.trim()).filter(Boolean) 
             : []),
       requirements: Array.isArray(courseData.requirements) ? courseData.requirements : [],
-      includes: Array.isArray(courseData.includes) ? courseData.includes : (courseData.includesList || []),
       instructorImage: courseData.instructorImage || courseData.instructorPhoto || '',
-      instructorPhoto: courseData.instructorImage || courseData.instructorPhoto || ''
+      instructorPhoto: courseData.instructorImage || courseData.instructorPhoto || '',
+      previewVideoUrl: courseData.previewVideoUrl || courseData.videoUrl || courseData.video || '',
+      videoUrl: courseData.previewVideoUrl || courseData.videoUrl || courseData.video || '',
+      video: courseData.previewVideoUrl || courseData.videoUrl || courseData.video || '',
+      thumbnailUrl: courseData.thumbnailUrl || courseData.image || courseData.thumbnail || '',
+      image: courseData.thumbnailUrl || courseData.image || courseData.thumbnail || '',
+      thumbnail: courseData.thumbnailUrl || courseData.image || courseData.thumbnail || '',
+      modules: Array.isArray(courseData.modules) ? courseData.modules : []
     };
 
     // 3. Write directly to Firestore using Firebase Admin SDK if available

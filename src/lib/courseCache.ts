@@ -13,7 +13,7 @@ export const DEFAULT_COURSES = [
     level: "መካከለኛ (Intermediate)",
     image: "https://images.unsplash.com/photo-1472851294608-062f824d29cc?auto=format&fit=crop&w=800&q=80",
     banner: "https://images.unsplash.com/photo-1472851294608-062f824d29cc?auto=format&fit=crop&w=800&q=80",
-    video: "https://www.youtube.com/watch?v=mgdOMtW6J8k",
+    video: "",
     instructor: "Eyoub Sahle",
     instructorTitle: "የቢዝነስ እና ዲጂታል ማርኬቲንግ ባለሙያ (Lead Instructor)",
     instructorImage: "https://drive.google.com/thumbnail?id=1rdjkUc6ZwK6NbbgHaZ-7BtEi8A9aA5Uq&sz=w1000",
@@ -46,10 +46,10 @@ export const DEFAULT_COURSES = [
       "የማጠናቀቂያ ህጋዊ ሰርተፊኬት"
     ],
     lessons: [
-      { title: "ክፍል 1: የ Shein ቢዝነስ መግቢያ እና ምዝገባ", duration: "10:15", video: "https://www.youtube.com/watch?v=mgdOMtW6J8k", desc: "የ Shein አሰራርና አካውንት አከፋፈት", points: 30 },
-      { title: "ክፍል 2: አትራፊ እቃዎችን (Winning Products) የመምረጥ ጥበብ", duration: "14:20", video: "https://www.youtube.com/watch?v=mgdOMtW6J8k", desc: "ፈጣን ተፈላጊ የሆኑ እቃዎችን መለየት", points: 50 },
-      { title: "ክፍል 3: የክፍያ እና የካርጎ/ትራንስፖርት መንገዶች ወደ ኢትዮጵያ", duration: "18:40", video: "https://www.youtube.com/watch?v=mgdOMtW6J8k", desc: "ቀላል ክፍያና አስተማማኝ ካርጎ መረጣ", points: 80 },
-      { title: "ክፍል 4: የኦንላይን ሽያጭ እና የቴሌግራም/ቲክቶክ ማርኬቲንግ", duration: "16:10", video: "https://www.youtube.com/watch?v=mgdOMtW6J8k", desc: "ደንበኞችን መሳብና ሽያጭ መጨመር", points: 70 }
+      { title: "ክፍል 1: የ Shein ቢዝነስ መግቢያ እና ምዝገባ", duration: "10:15", video: "", desc: "የ Shein አሰራርና አካውንት አከፋፈት", points: 30 },
+      { title: "ክፍል 2: አትራፊ እቃዎችን (Winning Products) የመምረጥ ጥበብ", duration: "14:20", video: "", desc: "ፈጣን ተፈላጊ የሆኑ እቃዎችን መለየት", points: 50 },
+      { title: "ክፍል 3: የክፍያ እና የካርጎ/ትራንስፖርት መንገዶች ወደ ኢትዮጵያ", duration: "18:40", video: "", desc: "ቀላል ክፍያና አስተማማኝ ካርጎ መረጣ", points: 80 },
+      { title: "ክፍል 4: የኦንላይን ሽያጭ እና የቴሌግራም/ቲክቶክ ማርኬቲንግ", duration: "16:10", video: "", desc: "ደንበኞችን መሳብና ሽያጭ መጨመር", points: 70 }
     ]
   },
   {
@@ -66,7 +66,7 @@ export const DEFAULT_COURSES = [
     level: "ጀማሪ (Beginner)",
     image: "https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?auto=format&fit=crop&w=800&q=80",
     banner: "https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?auto=format&fit=crop&w=800&q=80",
-    video: "https://www.youtube.com/watch?v=mgdOMtW6J8k",
+    video: "",
     instructor: "Eyoub Sahle",
     instructorTitle: "የቢዝነስ እና ዲጂታል ማርኬቲንግ ባለሙያ (Lead Instructor)",
     instructorImage: "https://drive.google.com/thumbnail?id=1rdjkUc6ZwK6NbbgHaZ-7BtEi8A9aA5Uq&sz=w1000",
@@ -102,11 +102,11 @@ export const DEFAULT_COURSES = [
       "የሁልጊዜ መዳረሻ (Full lifetime access)"
     ],
     lessons: [
-      { title: "ክፍል 1: መግቢያ እና የዩቲዩብ መሰረታዊ እውነታዎች", duration: "08:30", video: "https://www.youtube.com/watch?v=mgdOMtW6J8k", desc: "የዩቲዩብ እድሎችና የኮርሱ አጠቃላይ ገለጻ", points: 20 },
-      { title: "ክፍል 2: አዋጭ ኒች (Profitable Niche) መምረጥ", duration: "12:45", video: "https://www.youtube.com/watch?v=mgdOMtW6J8k", desc: "ከፍተኛ ተከፋይ እና ተወዳጅ የሆኑ የዩቲዩብ ርዕሶችን የመምረጫ ስልቶች", points: 30 },
-      { title: "ክፍል 3: የ Faceless ቻናሎች ምስጢር እና የ AI መሳሪያዎች", duration: "15:20", video: "https://www.youtube.com/watch?v=mgdOMtW6J8k", desc: "ፊት ሳያሳዩ በ AI ድምጽና ምስል ቪዲዮዎችን መስራት", points: 50 },
-      { title: "ክፍል 4: ፕሮፌሽናል Thumbnail እና Title ዲዛይን", duration: "14:10", video: "https://www.youtube.com/watch?v=mgdOMtW6J8k", desc: "ተመልካች ክሊክ እንዲያደርግ የሚያስችሉ ስልቶች", points: 40 },
-      { title: "ክፍል 5: የዩቲዩብ SEO እና አልጎሪዝም ሃክ", duration: "18:00", video: "https://www.youtube.com/watch?v=mgdOMtW6J8k", desc: "ቪዲዮዎችዎ በሰርች እና በ Suggested እንዲመጡ ማድረግ", points: 60 }
+      { title: "ክፍል 1: መግቢያ እና የዩቲዩብ መሰረታዊ እውነታዎች", duration: "08:30", video: "", desc: "የዩቲዩብ እድሎችና የኮርሱ አጠቃላይ ገለጻ", points: 20 },
+      { title: "ክፍል 2: አዋጭ ኒች (Profitable Niche) መምረጥ", duration: "12:45", video: "", desc: "ከፍተኛ ተከፋይ እና ተወዳጅ የሆኑ የዩቲዩብ ርዕሶችን የመምረጫ ስልቶች", points: 30 },
+      { title: "ክፍል 3: የ Faceless ቻናሎች ምስጢር እና የ AI መሳሪያዎች", duration: "15:20", video: "", desc: "ፊት ሳያሳዩ በ AI ድምጽና ምስል ቪዲዮዎችን መስራት", points: 50 },
+      { title: "ክፍል 4: ፕሮፌሽናል Thumbnail እና Title ዲዛይን", duration: "14:10", video: "", desc: "ተመልካች ክሊክ እንዲያደርግ የሚያስችሉ ስልቶች", points: 40 },
+      { title: "ክፍል 5: የዩቲዩብ SEO እና አልጎሪዝም ሃክ", duration: "18:00", video: "", desc: "ቪዲዮዎችዎ በሰርች እና በ Suggested እንዲመጡ ማድረግ", points: 60 }
     ]
   },
   {
