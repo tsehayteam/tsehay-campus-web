@@ -1,8 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase/admin';
-import { DEFAULT_COURSES, generateCourseSlug, getCourseBySlugOrId } from '@/lib/courseCache';
+import { generateCourseSlug } from '@/lib/courseCache';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
+
+const NO_CACHE_HEADERS = {
+  'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+  'CDN-Cache-Control': 'no-store',
+  'Vercel-CDN-Cache-Control': 'no-store',
+  'Pragma': 'no-cache',
+  'Expires': '0',
+};
 
 export async function GET(req: NextRequest) {
   try {
@@ -10,109 +20,131 @@ export async function GET(req: NextRequest) {
     const courseId = searchParams.get('courseId') || searchParams.get('id');
 
     if (!adminDb) {
-      if (courseId) {
-        const found = getCourseBySlugOrId(courseId, DEFAULT_COURSES);
-        return found ? NextResponse.json({ success: true, course: found }) : NextResponse.json({ error: 'Course not found' }, { status: 404 });
-      }
-      return NextResponse.json({ success: true, count: DEFAULT_COURSES.length, courses: DEFAULT_COURSES });
+      return NextResponse.json({ success: true, count: 0, courses: [] }, { headers: NO_CACHE_HEADERS });
     }
 
     if (courseId) {
-      // 1. Direct doc ID lookup
+      const cleanId = courseId.trim();
+      const cleanLower = cleanId.toLowerCase();
+
+      // 1. Direct doc lookup in primary artifact collection
       const docRef = adminDb
         .collection('artifacts')
         .doc('tsehaycampus-e1a6d')
         .collection('public')
         .doc('data')
         .collection('courses')
-        .doc(courseId);
+        .doc(cleanId);
 
       const snap = await docRef.get();
       if (snap.exists) {
-        return NextResponse.json({ success: true, course: { id: snap.id, ...snap.data() } });
+        return NextResponse.json({ success: true, course: { id: snap.id, ...snap.data() } }, { headers: NO_CACHE_HEADERS });
       }
 
       // 2. Direct root doc lookup
       try {
-        const rootSnap = await adminDb.collection('courses').doc(courseId).get();
+        const rootSnap = await adminDb.collection('courses').doc(cleanId).get();
         if (rootSnap.exists) {
-          return NextResponse.json({ success: true, course: { id: rootSnap.id, ...rootSnap.data() } });
+          return NextResponse.json({ success: true, course: { id: rootSnap.id, ...rootSnap.data() } }, { headers: NO_CACHE_HEADERS });
         }
       } catch (e) {}
 
-      // 3. Slug query lookup
+      // 3. Alternative artifact collection lookup
+      try {
+        const altSnap = await adminDb
+          .collection('artifacts')
+          .doc('tsehaycampus-e1a6d')
+          .collection('courses')
+          .doc(cleanId)
+          .get();
+        if (altSnap.exists) {
+          return NextResponse.json({ success: true, course: { id: altSnap.id, ...altSnap.data() } }, { headers: NO_CACHE_HEADERS });
+        }
+      } catch (e) {}
+
+      // 4. Slug query lookup
       const slugSnap = await adminDb
         .collection('artifacts')
         .doc('tsehaycampus-e1a6d')
         .collection('public')
         .doc('data')
         .collection('courses')
-        .where('slug', '==', courseId.toLowerCase().trim())
+        .where('slug', '==', cleanLower)
         .limit(1)
         .get();
 
       if (!slugSnap.empty) {
         const doc = slugSnap.docs[0];
-        return NextResponse.json({ success: true, course: { id: doc.id, ...doc.data() } });
+        return NextResponse.json({ success: true, course: { id: doc.id, ...doc.data() } }, { headers: NO_CACHE_HEADERS });
       }
 
-      const defaultMatch = getCourseBySlugOrId(courseId, DEFAULT_COURSES);
-      if (defaultMatch) {
-        return NextResponse.json({ success: true, course: defaultMatch });
-      }
-
-      return NextResponse.json({ error: 'Course not found' }, { status: 404 });
+      return NextResponse.json({ success: false, error: 'Course not found' }, { status: 404, headers: NO_CACHE_HEADERS });
     }
 
-    const snapshot = await adminDb
-      .collection('artifacts')
-      .doc('tsehaycampus-e1a6d')
-      .collection('public')
-      .doc('data')
-      .collection('courses')
-      .get();
+    const courseMap = new Map<string, any>();
 
-    let courses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-    if (courses.length === 0) {
-      try {
-        const rootSnap = await adminDb.collection('courses').get();
-        if (!rootSnap.empty) {
-          courses = rootSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    // Collection 1: artifacts/tsehaycampus-e1a6d/public/data/courses
+    try {
+      const snap1 = await adminDb
+        .collection('artifacts')
+        .doc('tsehaycampus-e1a6d')
+        .collection('public')
+        .doc('data')
+        .collection('courses')
+        .get();
+      snap1.docs.forEach(doc => {
+        if (doc.exists) {
+          const data = doc.data();
+          if (data && data.status !== 'Deleted' && !data.isDeleted) {
+            courseMap.set(doc.id, { id: doc.id, ...data });
+          }
         }
-      } catch (e) {}
-    }
+      });
+    } catch (e) {}
 
-    if (courses.length === 0) {
-      courses = DEFAULT_COURSES;
-      // Background auto-sync into Firestore
-      try {
-        for (const course of DEFAULT_COURSES) {
-          const docId = course.id;
-          const payload = { ...course, updatedAt: new Date().toISOString(), status: 'Active' };
-          try {
-            await adminDb
-              .collection('artifacts')
-              .doc('tsehaycampus-e1a6d')
-              .collection('public')
-              .doc('data')
-              .collection('courses')
-              .doc(docId)
-              .set(payload, { merge: true });
-          } catch (e) {}
-
-          try {
-            await adminDb.collection('courses').doc(docId).set(payload, { merge: true });
-          } catch (e) {}
+    // Collection 2: root courses
+    try {
+      const snap2 = await adminDb.collection('courses').get();
+      snap2.docs.forEach(doc => {
+        if (doc.exists) {
+          const data = doc.data();
+          if (data && data.status !== 'Deleted' && !data.isDeleted) {
+            if (!courseMap.has(doc.id)) {
+              courseMap.set(doc.id, { id: doc.id, ...data });
+            } else {
+              courseMap.set(doc.id, { ...courseMap.get(doc.id), ...data, id: doc.id });
+            }
+          }
         }
-      } catch (e) {}
-    }
+      });
+    } catch (e) {}
 
-    const filteredCourses = courses.filter((c: any) => c && c.status !== 'Deleted' && !c.isDeleted);
-    return NextResponse.json({ success: true, count: filteredCourses.length, courses: filteredCourses });
+    // Collection 3: artifacts/tsehaycampus-e1a6d/courses
+    try {
+      const snap3 = await adminDb
+        .collection('artifacts')
+        .doc('tsehaycampus-e1a6d')
+        .collection('courses')
+        .get();
+      snap3.docs.forEach(doc => {
+        if (doc.exists) {
+          const data = doc.data();
+          if (data && data.status !== 'Deleted' && !data.isDeleted) {
+            if (!courseMap.has(doc.id)) {
+              courseMap.set(doc.id, { id: doc.id, ...data });
+            } else {
+              courseMap.set(doc.id, { ...courseMap.get(doc.id), ...data, id: doc.id });
+            }
+          }
+        }
+      });
+    } catch (e) {}
+
+    const courses = Array.from(courseMap.values());
+    return NextResponse.json({ success: true, count: courses.length, courses }, { headers: NO_CACHE_HEADERS });
   } catch (error: any) {
-    console.error('Error fetching courses in API route:', error);
-    return NextResponse.json({ success: true, count: DEFAULT_COURSES.length, courses: DEFAULT_COURSES, error: error.message });
+    console.error('Error fetching courses in Admin API route:', error);
+    return NextResponse.json({ success: false, count: 0, courses: [], error: error.message }, { status: 500, headers: NO_CACHE_HEADERS });
   }
 }
 
@@ -129,7 +161,7 @@ export async function POST(req: NextRequest) {
     const courseId = body.courseId || body.id || courseData.id;
 
     if (!courseData || Object.keys(courseData).length === 0) {
-      return NextResponse.json({ error: 'Missing courseData payload' }, { status: 400 });
+      return NextResponse.json({ error: 'Missing courseData payload' }, { status: 400, headers: NO_CACHE_HEADERS });
     }
 
     const docId = courseId || `course_${Date.now()}`;
@@ -145,36 +177,43 @@ export async function POST(req: NextRequest) {
     };
 
     if (adminDb) {
-      // 1. Primary write to artifacts/tsehaycampus-e1a6d/public/data/courses/${docId}
       try {
-        const courseRef = adminDb
+        await adminDb
           .collection('artifacts')
           .doc('tsehaycampus-e1a6d')
           .collection('public')
           .doc('data')
           .collection('courses')
-          .doc(docId);
-        await courseRef.set(payload, { merge: true });
+          .doc(docId)
+          .set(payload, { merge: true });
       } catch (e) {}
 
-      // 2. Mirror write to root /courses/${docId}
       try {
         await adminDb.collection('courses').doc(docId).set(payload, { merge: true });
+      } catch (e) {}
+
+      try {
+        await adminDb
+          .collection('artifacts')
+          .doc('tsehaycampus-e1a6d')
+          .collection('courses')
+          .doc(docId)
+          .set(payload, { merge: true });
       } catch (e) {}
 
       return NextResponse.json({ 
         success: true, 
         message: 'Course saved successfully via Admin SDK', 
         docId, 
-        id: docId,
+        id: docId, 
         course: payload 
-      });
+      }, { headers: NO_CACHE_HEADERS });
     }
 
-    return NextResponse.json({ success: true, message: 'Saved with client sync', docId, id: docId, course: payload });
+    return NextResponse.json({ success: true, message: 'Saved with client sync', docId, id: docId, course: payload }, { headers: NO_CACHE_HEADERS });
   } catch (error: any) {
     console.error('Error saving course in Admin API route:', error);
-    return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500, headers: NO_CACHE_HEADERS });
   }
 }
 
@@ -192,7 +231,7 @@ export async function PUT(req: NextRequest) {
     const courseData = body.courseData || body;
 
     if (!courseId) {
-      return NextResponse.json({ success: false, error: 'Missing courseId parameter' }, { status: 400 });
+      return NextResponse.json({ success: false, error: 'Missing courseId parameter' }, { status: 400, headers: NO_CACHE_HEADERS });
     }
 
     const payload = {
@@ -203,18 +242,27 @@ export async function PUT(req: NextRequest) {
 
     if (adminDb) {
       try {
-        const courseRef = adminDb
+        await adminDb
           .collection('artifacts')
           .doc('tsehaycampus-e1a6d')
           .collection('public')
           .doc('data')
           .collection('courses')
-          .doc(courseId);
-        await courseRef.set(payload, { merge: true });
+          .doc(courseId)
+          .set(payload, { merge: true });
       } catch (e) {}
 
       try {
         await adminDb.collection('courses').doc(courseId).set(payload, { merge: true });
+      } catch (e) {}
+
+      try {
+        await adminDb
+          .collection('artifacts')
+          .doc('tsehaycampus-e1a6d')
+          .collection('courses')
+          .doc(courseId)
+          .set(payload, { merge: true });
       } catch (e) {}
 
       return NextResponse.json({ 
@@ -222,13 +270,13 @@ export async function PUT(req: NextRequest) {
         message: 'Course updated successfully', 
         id: courseId, 
         course: payload 
-      });
+      }, { headers: NO_CACHE_HEADERS });
     }
 
-    return NextResponse.json({ success: true, message: 'Course updated', id: courseId, course: payload });
+    return NextResponse.json({ success: true, message: 'Course updated', id: courseId, course: payload }, { headers: NO_CACHE_HEADERS });
   } catch (error: any) {
     console.error('Error in PUT /api/admin/courses:', error);
-    return NextResponse.json({ success: false, error: error.message || 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ success: false, error: error.message || 'Internal server error' }, { status: 500, headers: NO_CACHE_HEADERS });
   }
 }
 
@@ -249,41 +297,50 @@ export async function DELETE(req: NextRequest) {
     }
 
     if (!courseId) {
-      return NextResponse.json({ success: false, error: 'Missing id parameter' }, { status: 400 });
+      return NextResponse.json({ success: false, error: 'Missing id parameter' }, { status: 400, headers: NO_CACHE_HEADERS });
     }
 
     if (adminDb) {
       try {
-        const courseRef = adminDb
+        await adminDb
           .collection('artifacts')
           .doc('tsehaycampus-e1a6d')
           .collection('public')
           .doc('data')
           .collection('courses')
-          .doc(courseId);
-        await courseRef.delete();
+          .doc(courseId)
+          .delete();
       } catch (e) {}
 
       try {
         await adminDb.collection('courses').doc(courseId).delete();
       } catch (e) {}
 
+      try {
+        await adminDb
+          .collection('artifacts')
+          .doc('tsehaycampus-e1a6d')
+          .collection('courses')
+          .doc(courseId)
+          .delete();
+      } catch (e) {}
+
       return NextResponse.json({ 
         success: true, 
         message: 'Course deleted successfully', 
-        id: courseId,
+        id: courseId, 
         courseId 
-      });
+      }, { headers: NO_CACHE_HEADERS });
     }
 
     return NextResponse.json({ 
       success: true, 
       message: 'Course deleted successfully', 
-      id: courseId,
+      id: courseId, 
       courseId 
-    });
+    }, { headers: NO_CACHE_HEADERS });
   } catch (error: any) {
     console.error('Error deleting course in Admin API route:', error);
-    return NextResponse.json({ success: false, error: error.message || 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ success: false, error: error.message || 'Internal server error' }, { status: 500, headers: NO_CACHE_HEADERS });
   }
 }

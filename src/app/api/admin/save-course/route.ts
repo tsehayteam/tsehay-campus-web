@@ -1,8 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb, adminAuth } from '@/lib/firebase/admin';
-import { DEFAULT_COURSES } from '@/lib/courseCache';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
+
+const NO_CACHE_HEADERS = {
+  'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+  'CDN-Cache-Control': 'no-store',
+  'Vercel-CDN-Cache-Control': 'no-store',
+  'Pragma': 'no-cache',
+  'Expires': '0',
+};
 
 const AUTHORIZED_ADMIN_EMAILS = [
   'admin@tsehaycampus.com',
@@ -18,7 +27,7 @@ export async function GET(req: NextRequest) {
     const courseId = searchParams.get('courseId') || searchParams.get('id');
 
     if (!adminDb) {
-      return NextResponse.json({ success: true, count: DEFAULT_COURSES.length, courses: DEFAULT_COURSES });
+      return NextResponse.json({ success: true, count: 0, courses: [] }, { headers: NO_CACHE_HEADERS });
     }
 
     if (courseId) {
@@ -33,22 +42,22 @@ export async function GET(req: NextRequest) {
 
         const snap = await docRef.get();
         if (snap.exists) {
-          return NextResponse.json({ success: true, course: { id: snap.id, ...snap.data() } });
+          return NextResponse.json({ success: true, course: { id: snap.id, ...snap.data() } }, { headers: NO_CACHE_HEADERS });
         }
       } catch (e) {}
 
-      // Check default courses by ID
-      const defaultMatch = DEFAULT_COURSES.find(c => c.id === courseId);
-      if (defaultMatch) {
-        return NextResponse.json({ success: true, course: defaultMatch });
-      }
+      try {
+        const rootDoc = await adminDb.collection('courses').doc(courseId).get();
+        if (rootDoc.exists) {
+          return NextResponse.json({ success: true, course: { id: rootDoc.id, ...rootDoc.data() } }, { headers: NO_CACHE_HEADERS });
+        }
+      } catch (e) {}
 
-      return NextResponse.json({ success: false, error: 'Course not found' }, { status: 404 });
+      return NextResponse.json({ success: false, error: 'Course not found' }, { status: 404, headers: NO_CACHE_HEADERS });
     }
 
-    let courses: any[] = [];
+    const courseMap = new Map<string, any>();
     try {
-      // 1. Try nested collection path
       const snapshot = await adminDb
         .collection('artifacts')
         .doc('tsehaycampus-e1a6d')
@@ -57,28 +66,35 @@ export async function GET(req: NextRequest) {
         .collection('courses')
         .get();
 
-      courses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      snapshot.docs.forEach(doc => {
+        if (doc.exists) {
+          const data = doc.data();
+          if (data && data.status !== 'Deleted' && !data.isDeleted) {
+            courseMap.set(doc.id, { id: doc.id, ...data });
+          }
+        }
+      });
     } catch (e) {}
 
-    // 2. Try root collection path if nested is empty
-    if (courses.length === 0) {
-      try {
-        const rootSnap = await adminDb.collection('courses').get();
-        if (!rootSnap.empty) {
-          courses = rootSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    try {
+      const rootSnapshot = await adminDb.collection('courses').get();
+      rootSnapshot.docs.forEach(doc => {
+        if (doc.exists) {
+          const data = doc.data();
+          if (data && data.status !== 'Deleted' && !data.isDeleted) {
+            if (!courseMap.has(doc.id)) {
+              courseMap.set(doc.id, { id: doc.id, ...data });
+            }
+          }
         }
-      } catch (e) {}
-    }
+      });
+    } catch (e) {}
 
-    // 3. Fallback to DEFAULT_COURSES so admin always has complete courses visible
-    if (courses.length === 0) {
-      courses = DEFAULT_COURSES;
-    }
-
-    return NextResponse.json({ success: true, count: courses.length, courses });
+    const courses = Array.from(courseMap.values());
+    return NextResponse.json({ success: true, count: courses.length, courses }, { headers: NO_CACHE_HEADERS });
   } catch (error: any) {
-    console.error('Error fetching courses in /api/admin/save-course GET:', error);
-    return NextResponse.json({ success: true, count: DEFAULT_COURSES.length, courses: DEFAULT_COURSES, error: error?.message });
+    console.error('Error fetching admin saved courses:', error);
+    return NextResponse.json({ success: false, count: 0, courses: [], error: error.message }, { status: 500, headers: NO_CACHE_HEADERS });
   }
 }
 
@@ -87,26 +103,16 @@ export async function POST(req: NextRequest) {
     let body: any = {};
     try {
       body = await req.json();
-    } catch (parseError) {
-      return NextResponse.json({ success: false, error: 'Invalid JSON payload' }, { status: 400 });
+    } catch (e) {
+      body = {};
     }
 
-    const { email, idToken, courseData, courseId } = body;
-
-    // 1. Admin verification (Safe)
-    let isAuthorized = true; // Permissive fallback if user is in admin dashboard
-    if (email && typeof email === 'string') {
-      const cleanEmail = email.trim().toLowerCase();
-      if (AUTHORIZED_ADMIN_EMAILS.includes(cleanEmail)) {
-        isAuthorized = true;
-      }
-    }
+    const { courseData, courseId, email } = body;
 
     if (!courseData) {
-      return NextResponse.json({ success: false, error: 'Missing courseData payload' }, { status: 400 });
+      return NextResponse.json({ success: false, error: 'Missing courseData payload' }, { status: 400, headers: NO_CACHE_HEADERS });
     }
 
-    // 2. Prepare course document ID and clean payload
     const docId = courseId || courseData.id || `course_${Date.now()}`;
     const timestamp = courseData.timestamp || Date.now();
     const nowIso = new Date().toISOString();
@@ -137,56 +143,6 @@ export async function POST(req: NextRequest) {
       modules: Array.isArray(courseData.modules) ? courseData.modules : []
     };
 
-    // 3. Write directly to Firestore using Firebase Admin SDK if available
-    if (adminDb && typeof adminDb.collection === 'function') {
-      try {
-        // Primary nested document
-        const nestedRef = adminDb
-          .collection('artifacts')
-          .doc('tsehaycampus-e1a6d')
-          .collection('public')
-          .doc('data')
-          .collection('courses')
-          .doc(docId);
-
-        await nestedRef.set(formattedPayload, { merge: true });
-      } catch (nestedErr) {
-        console.warn('Admin Firestore nested write warning:', nestedErr);
-      }
-
-      // Root mirror document
-      try {
-        await adminDb.collection('courses').doc(docId).set(formattedPayload, { merge: true });
-      } catch (rootErr) {
-        console.warn('Admin Firestore root mirror write warning:', rootErr);
-      }
-    }
-
-    return NextResponse.json({
-      success: true,
-      message: 'ኮርሱ እና የ AI ሲስተም ፕሮምፕቱ በደህንነት ተቀምጧል! (Course Saved Securely)',
-      docId,
-      course: formattedPayload
-    });
-
-  } catch (error: any) {
-    console.error('Error in /api/admin/save-course route:', error);
-    return NextResponse.json(
-      { success: false, error: error?.message || 'Error saving course' },
-      { status: 200 } // Return 200 with success: false so JSON parsing never fails on client
-    );
-  }
-}
-
-export async function DELETE(req: NextRequest) {
-  try {
-    const { searchParams } = new URL(req.url);
-    const courseId = searchParams.get('courseId') || searchParams.get('id');
-
-    if (!courseId) {
-      return NextResponse.json({ success: false, error: 'Missing courseId' }, { status: 400 });
-    }
-
     if (adminDb && typeof adminDb.collection === 'function') {
       try {
         await adminDb
@@ -195,22 +151,42 @@ export async function DELETE(req: NextRequest) {
           .collection('public')
           .doc('data')
           .collection('courses')
-          .doc(courseId)
-          .delete();
-      } catch (e) {}
+          .doc(docId)
+          .set(formattedPayload, { merge: true });
+      } catch (nestedErr) {
+        console.warn('Admin Firestore nested write warning:', nestedErr);
+      }
 
       try {
-        await adminDb.collection('courses').doc(courseId).delete();
-      } catch (e) {}
+        await adminDb.collection('courses').doc(docId).set(formattedPayload, { merge: true });
+      } catch (rootErr) {
+        console.warn('Admin Firestore root mirror write warning:', rootErr);
+      }
+
+      try {
+        await adminDb
+          .collection('artifacts')
+          .doc('tsehaycampus-e1a6d')
+          .collection('courses')
+          .doc(docId)
+          .set(formattedPayload, { merge: true });
+      } catch (altErr) {
+        console.warn('Admin Firestore alt write warning:', altErr);
+      }
     }
 
     return NextResponse.json({
       success: true,
-      message: 'ኮርሱ በተሳካ ሁኔታ ተሰርዟል (Course deleted successfully)',
-      courseId
-    });
+      message: 'ኮርሱ እና የ AI ሲስተም ፕሮምፕቱ በደህንነት ተቀምጧል! (Course Saved Securely)',
+      docId,
+      course: formattedPayload
+    }, { headers: NO_CACHE_HEADERS });
+
   } catch (error: any) {
-    console.error('Error in DELETE /api/admin/save-course:', error);
-    return NextResponse.json({ success: false, error: error?.message }, { status: 200 });
+    console.error('Error in save-course API:', error);
+    return NextResponse.json({
+      success: false,
+      error: error?.message || 'ኮርሱን ማስቀመጥ አልተቻለም (Failed to save course)'
+    }, { status: 500, headers: NO_CACHE_HEADERS });
   }
 }

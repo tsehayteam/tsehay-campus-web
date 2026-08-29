@@ -431,10 +431,10 @@ export function mergeCoursesLists(...lists: (any[] | undefined | null)[]): any[]
 
 /**
  * Reads verified live course data previously synced from Firestore.
- * Always returns fallback DEFAULT_COURSES if cache is empty so pages are NEVER blank for any visitor.
+ * Returns empty array if cache is empty so pages strictly mirror the live Firestore database.
  */
 export function getCachedCourses(): any[] {
-  if (typeof window === 'undefined') return DEFAULT_COURSES;
+  if (typeof window === 'undefined') return [];
   try {
     const cached = localStorage.getItem('tsehay_courses_cache');
     if (cached) {
@@ -450,7 +450,7 @@ export function getCachedCourses(): any[] {
   } catch (err) {
     console.warn("Course cache read error:", err);
   }
-  return DEFAULT_COURSES;
+  return [];
 }
 
 export function saveCachedCourses(courses: any[]) {
