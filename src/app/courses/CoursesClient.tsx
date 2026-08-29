@@ -262,13 +262,12 @@ export default function CoursesClient() {
   };
 
   const COURSE_CATEGORY_TABS = [
-    { id: 'E-Commerce', labelKey: 'cat_ecommerce', defaultLabel: 'E-Commerce', icon: 'fa-cart-shopping' },
-    { id: 'YouTube', labelKey: 'cat_youtube', defaultLabel: 'YouTube', icon: 'fa-youtube' },
-    { id: 'Content Creation', labelKey: 'cat_content_creation', defaultLabel: 'Content Creation', icon: 'fa-wand-magic-sparkles' },
-    { id: 'Marketing', labelKey: 'cat_marketing', defaultLabel: 'Marketing', icon: 'fa-bullhorn' },
-    { id: 'Brokerage', labelKey: 'cat_brokerage', defaultLabel: 'Brokerage', icon: 'fa-handshake' },
-    { id: 'Tech & Skills', labelKey: 'cat_tech', defaultLabel: 'Tech & Skills', icon: 'fa-laptop-code' },
-    { id: 'Design & Media', labelKey: 'cat_design', defaultLabel: 'Design & Media', icon: 'fa-palette' },
+    { id: 'All', label: 'ሁሉም', icon: 'fa-layer-group' },
+    { id: 'Free', label: 'ነፃ ኮርሶች', icon: 'fa-sparkles', isFree: true },
+    { id: 'Paid', label: 'ፕሪሚየም', icon: 'fa-crown', isPaid: true },
+    { id: 'Ecommerce', label: 'ኢ-ኮሜርስ (Shein)', icon: 'fa-cart-shopping' },
+    { id: 'YouTube', label: 'ዩቲዩብ እና ቪዲዮ', icon: 'fa-youtube' },
+    { id: 'Marketing', label: 'ዲጂታል ማርኬቲንግ', icon: 'fa-bullhorn' },
   ];
 
   // Helper to match category flexibly
@@ -276,15 +275,10 @@ export default function CoursesClient() {
     if (!courseCat) return false;
     const catLower = courseCat.toLowerCase();
     const tabLower = tabId.toLowerCase();
-    if (catLower.includes(tabLower) || tabLower.includes(catLower)) return true;
-    if (tabId === 'E-Commerce' && (catLower.includes('e-commerce') || catLower.includes('ecommerce') || catLower.includes('shein') || catLower.includes('ንግድ') || catLower.includes('ኢምፖርት'))) return true;
-    if (tabId === 'YouTube' && (catLower.includes('youtube') || catLower.includes('ዩቲዩብ') || catLower.includes('video'))) return true;
-    if (tabId === 'Content Creation' && (catLower.includes('content') || catLower.includes('creation') || catLower.includes('ቪዲዮ') || catLower.includes('tiktok') || catLower.includes('ቲክቶክ'))) return true;
+    if (tabId === 'Ecommerce' && (catLower.includes('e-commerce') || catLower.includes('ecommerce') || catLower.includes('shein') || catLower.includes('ንግድ') || catLower.includes('ኢምፖርት'))) return true;
+    if (tabId === 'YouTube' && (catLower.includes('youtube') || catLower.includes('ዩቲዩብ') || catLower.includes('video') || catLower.includes('content'))) return true;
     if (tabId === 'Marketing' && (catLower.includes('marketing') || catLower.includes('ማርኬቲንግ') || catLower.includes('sales') || catLower.includes('ሽያጭ') || catLower.includes('digital'))) return true;
-    if (tabId === 'Brokerage' && (catLower.includes('broker') || catLower.includes('ደላላ') || catLower.includes('ሪል እስቴት') || catLower.includes('real estate'))) return true;
-    if (tabId === 'Tech & Skills' && (catLower.includes('tech') || catLower.includes('coding') || catLower.includes('computer') || catLower.includes('skill'))) return true;
-    if (tabId === 'Design & Media' && (catLower.includes('design') || catLower.includes('media') || catLower.includes('graphics') || catLower.includes('photo') || catLower.includes('ዲዛይን'))) return true;
-    return false;
+    return catLower.includes(tabLower) || tabLower.includes(catLower);
   };
 
   const getFilteredCourses = () => {
@@ -294,7 +288,11 @@ export default function CoursesClient() {
       result = searchCourses(result, searchQuery);
     }
 
-    if (selectedCategory !== "All") {
+    if (selectedCategory === "Free") {
+      result = result.filter(c => c.price === "Free" || c.price === "0" || c.price === 0 || c.isFree);
+    } else if (selectedCategory === "Paid") {
+      result = result.filter(c => c.price !== "Free" && c.price !== "0" && c.price !== 0 && !c.isFree);
+    } else if (selectedCategory !== "All") {
       result = result.filter(c => isCategoryMatch(c.category, selectedCategory));
     }
 
@@ -363,20 +361,7 @@ export default function CoursesClient() {
             </div>
 
             {/* Category Filter Pills */}
-            <div className="flex items-center justify-center flex-wrap gap-2 sm:gap-2.5 pt-2">
-              <button
-                type="button"
-                onClick={() => setSelectedCategory("All")}
-                className={`px-4 sm:px-5 py-2 rounded-full text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 ${
-                  selectedCategory === "All"
-                    ? 'bg-gradient-to-r from-[#f9b03c] to-amber-500 text-slate-950 shadow-[0_0_20px_rgba(249,176,60,0.4)] scale-105 border border-amber-300'
-                    : 'bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 hover:border-white/20'
-                }`}
-              >
-                <i className="fa-solid fa-layer-group text-[11px]"></i>
-                <span>{t('all_categories') || 'ሁሉም ምድቦች'}</span>
-              </button>
-
+            <div className="inline-flex flex-wrap justify-center items-center gap-2 sm:gap-2.5 p-2 sm:p-2.5 rounded-3xl bg-slate-900/70 backdrop-blur-2xl border border-white/10 shadow-[0_10px_35px_rgba(0,0,0,0.5)]">
               {COURSE_CATEGORY_TABS.map((catTab) => {
                 const isSelected = selectedCategory === catTab.id;
                 return (
@@ -384,10 +369,16 @@ export default function CoursesClient() {
                     key={catTab.id}
                     type="button"
                     onClick={() => setSelectedCategory(catTab.id)}
-                    className={`px-4 sm:px-5 py-2 rounded-full text-xs font-black transition-all cursor-pointer flex items-center gap-2 ${
+                    className={`px-4 sm:px-5 py-2 sm:py-2.5 rounded-full font-bold text-xs sm:text-sm transition-all duration-300 cursor-pointer flex items-center gap-2 ${
                       isSelected
-                        ? 'bg-gradient-to-r from-[#f9b03c] to-amber-500 text-slate-950 shadow-[0_0_20px_rgba(249,176,60,0.4)] scale-105 border border-amber-300'
-                        : 'bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 hover:border-white/20'
+                        ? catTab.isFree
+                          ? 'bg-[#3268ba] text-white font-black border border-[#5a93e8] shadow-[0_0_20px_rgba(50,104,186,0.6)] scale-105'
+                          : 'bg-gradient-to-r from-[#f9b03c] to-amber-500 text-slate-950 font-black shadow-[0_0_20px_rgba(249,176,60,0.45)] border border-[#f9b03c] scale-105'
+                        : catTab.isFree
+                          ? 'bg-white/[0.03] text-[#5a93e8] hover:text-white border border-[#3268ba]/30 hover:border-[#3268ba] hover:bg-[#3268ba]/20'
+                          : catTab.isPaid
+                            ? 'bg-white/[0.03] text-[#f9b03c] hover:text-slate-950 hover:bg-[#f9b03c] border border-[#f9b03c]/30'
+                            : 'bg-white/[0.03] text-slate-300 hover:text-white border border-white/10 hover:border-[#f9b03c]/40 hover:bg-white/[0.08]'
                     }`}
                   >
                     {catTab.icon === 'fa-youtube' ? (
@@ -395,9 +386,9 @@ export default function CoursesClient() {
                         <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
                       </svg>
                     ) : (
-                      <i className={`fa-solid ${catTab.icon} text-[11px] ${isSelected ? 'text-[#f9b03c]' : 'text-slate-400'}`}></i>
+                      <i className={`fa-solid ${catTab.icon} text-[11px] ${isSelected ? (catTab.isFree ? 'text-white' : 'text-slate-950') : 'text-[#f9b03c]'}`}></i>
                     )}
-                    <span>{t(catTab.labelKey) || catTab.defaultLabel}</span>
+                    <span>{catTab.label}</span>
                   </button>
                 );
               })}
