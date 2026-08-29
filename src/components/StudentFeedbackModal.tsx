@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { db } from '@/lib/firebase/config';
+import { db, storage } from '@/lib/firebase/config';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 export interface StudentFeedbackModalProps {
   initialOpen?: boolean;
@@ -21,6 +22,20 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // 📷 Image/Screenshot Attachment State
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // 🎙️ Voice Recording State
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [audioPreviewUrl, setAudioPreviewUrl] = useState<string | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Sync user info
   useEffect(() => {
@@ -48,6 +63,29 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
     };
   }, []);
 
+  // Handle Paste Event for Screenshots
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handlePaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+          const file = items[i].getAsFile();
+          if (file) {
+            handleImageSelected(file);
+            break;
+          }
+        }
+      }
+    };
+
+    window.addEventListener('paste', handlePaste);
+    return () => window.removeEventListener('paste', handlePaste);
+  }, [isOpen]);
+
   const ratingLabels: { [key: number]: string } = {
     1: '⭐ ደካማ (Needs Major Improvement)',
     2: '⭐⭐ ማሻሻያ ያስፈልገዋል (Fair)',
@@ -63,28 +101,166 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
     { id: 'general', label: '💬 አጠቃላይ (General)', desc: 'አጠቃላይ አስተያየት' },
   ];
 
+  // 📷 Image selection handler
+  const handleImageSelected = (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      setError('እባክዎ ትክክለኛ የፎቶ ፋይል (PNG, JPG, WebP) ይምረጡ።');
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setError('የምስሉ መጠን ከ 10MB መብለጥ የለበትም።');
+      return;
+    }
+
+    setImageFile(file);
+    const reader = new FileReader();
+    reader.onload = () => {
+      setImagePreviewUrl(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+    setError(null);
+  };
+
+  const handleRemoveImage = () => {
+    setImageFile(null);
+    setImagePreviewUrl(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  // 🎙️ Voice Recording Handlers
+  const startRecording = async () => {
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setError('ይህ ብሮውዘር ድምፅ መቅረፅን አይደግፍም።');
+        return;
+      }
+
+      setError(null);
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioChunksRef.current = [];
+
+      const recorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = recorder;
+
+      recorder.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      recorder.onstop = () => {
+        const mimeType = recorder.mimeType || 'audio/webm';
+        const blob = new Blob(audioChunksRef.current, { type: mimeType });
+        setAudioBlob(blob);
+        const audioUrl = URL.createObjectURL(blob);
+        setAudioPreviewUrl(audioUrl);
+        stream.getTracks().forEach((track) => track.stop());
+      };
+
+      recorder.start(100);
+      setIsRecording(true);
+      setRecordingSeconds(0);
+
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingSeconds((prev) => {
+          if (prev >= 60) {
+            stopRecording();
+            return 60;
+          }
+          return prev + 1;
+        });
+      }, 1000);
+    } catch (err: any) {
+      console.error('Audio recording error:', err);
+      setError('የማይክሮፎን ፈቃድ አልተሰጠም። እባክዎ ማይክሮፎን ይፍቀዱ።');
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+        recordingTimerRef.current = null;
+      }
+    }
+  };
+
+  const handleRemoveAudio = () => {
+    if (audioPreviewUrl) URL.revokeObjectURL(audioPreviewUrl);
+    setAudioBlob(null);
+    setAudioPreviewUrl(null);
+    setRecordingSeconds(0);
+  };
+
+  // Convert Blob to Base64 Data URL (fallback helper)
+  const blobToDataURL = (blob: Blob): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!message.trim()) {
-      setError('እባክዎ ሀሳብዎን ወይም አስተያየትዎን ይፃፉ።');
+    if (!message.trim() && !audioBlob) {
+      setError('እባክዎ ሀሳብዎን ይፃፉ ወይም በድምፅ ይቅረጹ።');
       return;
     }
 
     setIsSubmitting(true);
     setError(null);
 
+    const feedbackId = `fb_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    let uploadedImageUrl: string | null = imagePreviewUrl;
+    let uploadedAudioUrl: string | null = null;
+
+    // 1. Upload Screenshot / Image to Firebase Storage
+    if (imageFile) {
+      try {
+        const imageStorageRef = ref(storage, `feedback_attachments/${feedbackId}_${imageFile.name}`);
+        const snapshot = await uploadBytes(imageStorageRef, imageFile);
+        uploadedImageUrl = await getDownloadURL(snapshot.ref);
+      } catch (uploadErr) {
+        console.warn('Storage image upload fallback to Data URL:', uploadErr);
+        // Data URL already in imagePreviewUrl
+      }
+    }
+
+    // 2. Upload Voice Audio to Firebase Storage
+    if (audioBlob) {
+      try {
+        const audioStorageRef = ref(storage, `feedback_audio/${feedbackId}.webm`);
+        const snapshot = await uploadBytes(audioStorageRef, audioBlob);
+        uploadedAudioUrl = await getDownloadURL(snapshot.ref);
+      } catch (uploadErr) {
+        console.warn('Storage audio upload fallback to Data URL:', uploadErr);
+        try {
+          uploadedAudioUrl = await blobToDataURL(audioBlob);
+        } catch {}
+      }
+    }
+
     const feedbackPayload = {
+      id: feedbackId,
       rating: Number(rating) || 5,
       type: category,
       category,
-      message: message.trim(),
+      message: message.trim() || (uploadedAudioUrl ? '🎙️ [የድምፅ መልዕክት ተልኳል]' : ''),
       userId: user?.uid || 'guest_student',
       userName: contactName.trim() || user?.displayName || (user?.email ? user.email.split('@')[0] : 'ተማሪ'),
       userEmail: contactEmail.trim() || user?.email || 'student@tsehaycampus.com',
       pageUrl: typeof window !== 'undefined' ? window.location.pathname : '/',
+      imageUrl: uploadedImageUrl || null,
+      screenshotUrl: uploadedImageUrl || null,
+      audioUrl: uploadedAudioUrl || null,
+      voiceNoteUrl: uploadedAudioUrl || null,
       status: 'pending',
       createdAt: new Date().toISOString(),
-      createdAtClient: new Date().toISOString()
+      createdAtClient: new Date().toISOString(),
     };
 
     try {
@@ -92,10 +268,10 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
       try {
         await addDoc(collection(db, 'user_feedbacks'), {
           ...feedbackPayload,
-          createdAt: serverTimestamp()
+          createdAt: serverTimestamp(),
         });
       } catch (fsErr) {
-        console.warn('Client firestore write fallback:', fsErr);
+        console.warn('Client firestore write notice:', fsErr);
       }
 
       // 2. Server API Dispatch
@@ -103,7 +279,7 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
         await fetch('/api/feedback', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(feedbackPayload)
+          body: JSON.stringify(feedbackPayload),
         });
       } catch (apiErr) {}
 
@@ -118,6 +294,10 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
       setTimeout(() => {
         setIsSubmitted(false);
         setMessage('');
+        setImageFile(null);
+        setImagePreviewUrl(null);
+        setAudioBlob(null);
+        setAudioPreviewUrl(null);
         setRating(5);
         setIsOpen(false);
       }, 2500);
@@ -151,14 +331,14 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
       {isOpen && (
         <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
           {/* Backdrop */}
-          <div 
+          <div
             className="fixed inset-0 bg-black/85 backdrop-blur-md transition-opacity animate-in fade-in duration-300"
             onClick={() => setIsOpen(false)}
           />
 
           {/* Modal Card */}
-          <div 
-            className="relative w-full max-w-lg bg-[#0c1017]/95 border border-[#f9b03c]/40 rounded-3xl p-6 sm:p-8 shadow-[0_25px_80px_rgba(0,0,0,0.95),0_0_50px_rgba(249,176,60,0.2)] backdrop-blur-2xl z-10 animate-in zoom-in-95 duration-300 overflow-hidden my-auto"
+          <div
+            className="relative w-full max-w-lg bg-[#0c1017]/95 border border-[#f9b03c]/40 rounded-3xl p-5 sm:p-7 shadow-[0_25px_80px_rgba(0,0,0,0.95),0_0_50px_rgba(249,176,60,0.2)] backdrop-blur-2xl z-10 animate-in zoom-in-95 duration-300 overflow-hidden my-auto max-h-[90vh] overflow-y-auto custom-scrollbar"
             style={{ animation: 'modalPop 0.25s cubic-bezier(0.16, 1, 0.3, 1)' }}
           >
             {/* Ambient Glows */}
@@ -194,15 +374,15 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
               /* Feedback Form */
               <div>
                 {/* Header */}
-                <div className="flex items-center gap-3.5 mb-5">
-                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#f9b03c] to-amber-300 text-slate-950 flex items-center justify-center text-xl font-black shadow-[0_0_25px_rgba(249,176,60,0.4)] shrink-0">
+                <div className="flex items-center gap-3.5 mb-4">
+                  <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-[#f9b03c] to-amber-300 text-slate-950 flex items-center justify-center text-lg font-black shadow-[0_0_25px_rgba(249,176,60,0.4)] shrink-0">
                     <i className="fa-solid fa-lightbulb"></i>
                   </div>
                   <div>
                     <span className="text-[10px] font-black uppercase tracking-widest text-[#f9b03c] block">
                       Tsehay Campus • Student Voice
                     </span>
-                    <h3 className="text-lg sm:text-xl font-black font-heading text-white">
+                    <h3 className="text-base sm:text-lg font-black font-heading text-white">
                       ስለ ፀሐይ ካምፓስ ምን አስተያየት አለዎት?
                     </h3>
                   </div>
@@ -217,8 +397,8 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                   {/* 1. Star Rating UI */}
-                  <div className="bg-white/5 border border-white/10 rounded-2xl p-4 text-center">
-                    <label className="block text-xs font-bold text-slate-300 mb-2">
+                  <div className="bg-white/5 border border-white/10 rounded-2xl p-3 text-center">
+                    <label className="block text-xs font-bold text-slate-300 mb-1.5">
                       አጠቃላይ እርካታዎን በኮከብ ይግለጹ (Rating) *
                     </label>
                     <div className="flex items-center justify-center gap-2 mb-1">
@@ -231,7 +411,7 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
                             onMouseEnter={() => setHoverRating(star)}
                             onMouseLeave={() => setHoverRating(0)}
                             onClick={() => setRating(star)}
-                            className="p-1 text-2xl sm:text-3xl transition-transform hover:scale-125 focus:outline-none cursor-pointer"
+                            className="p-1 text-2xl transition-transform hover:scale-125 focus:outline-none cursor-pointer"
                           >
                             <i
                               className={`fa-solid fa-star transition-colors duration-200 ${
@@ -251,7 +431,7 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
 
                   {/* 2. Feedback Type Selection */}
                   <div>
-                    <label className="block text-xs font-black uppercase tracking-wider text-slate-400 mb-2">
+                    <label className="block text-xs font-black uppercase tracking-wider text-slate-400 mb-1.5">
                       የአስተያየት አይነት ይምረጡ (Category) *
                     </label>
                     <div className="grid grid-cols-2 gap-2">
@@ -260,14 +440,14 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
                           key={item.id}
                           type="button"
                           onClick={() => setCategory(item.id as any)}
-                          className={`p-3 rounded-2xl border text-left transition-all duration-200 cursor-pointer ${
+                          className={`p-2.5 rounded-2xl border text-left transition-all duration-200 cursor-pointer ${
                             category === item.id
                               ? 'bg-[#f9b03c]/20 border-[#f9b03c] text-white shadow-[0_0_20px_rgba(249,176,60,0.25)]'
                               : 'bg-white/5 border-white/10 text-slate-400 hover:border-white/20 hover:text-slate-200'
                           }`}
                         >
                           <div className="font-heading font-black text-xs">{item.label}</div>
-                          <div className="text-[10px] text-slate-400 mt-0.5">{item.desc}</div>
+                          <div className="text-[9px] text-slate-400 mt-0.5">{item.desc}</div>
                         </button>
                       ))}
                     </div>
@@ -275,46 +455,167 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
 
                   {/* 3. Text Message Area */}
                   <div>
-                    <label className="block text-xs font-black uppercase tracking-wider text-slate-400 mb-1.5 flex items-center justify-between">
-                      <span>የአስተያየትዎ ዝርዝር (Message) *</span>
+                    <label className="block text-xs font-black uppercase tracking-wider text-slate-400 mb-1 flex items-center justify-between">
+                      <span>የአስተያየትዎ ዝርዝር (Message)</span>
                       <span className="text-[10px] text-slate-500 font-normal">{message.length}/500</span>
                     </label>
                     <textarea
                       rows={3}
-                      required
                       maxLength={500}
                       value={message}
                       onChange={(e) => setMessage(e.target.value)}
-                      placeholder="ስለ ፕላትፎርሙ፣ ኮርሶቹ ወይም ስለተሻሻለው ነገር በዝርዝር ይንገሩን..."
-                      className="w-full bg-white/5 border border-white/10 rounded-2xl p-3.5 text-xs text-white placeholder-slate-500 outline-none focus:border-[#f9b03c] transition-all resize-none"
+                      placeholder="ስለ ፕላትፎርሙ፣ ኮርሶቹ ወይም ስላጋጠመዎት ነገር በዝርዝር ይንገሩን..."
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl p-3 text-xs text-white placeholder-slate-500 outline-none focus:border-[#f9b03c] transition-all resize-none"
                     />
                   </div>
 
-                  {/* 4. Optional Contact Inputs (For guests or update) */}
+                  {/* 4. 🎙️ Live Voice Recording & 📷 Screenshot Attachment Controls */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    
+                    {/* Voice Recording Control */}
+                    <div className="p-3 rounded-2xl bg-white/5 border border-white/10 flex flex-col justify-between gap-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                          <i className="fa-solid fa-microphone text-[#f9b03c]"></i>
+                          <span>የድምፅ መልዕክት</span>
+                        </span>
+                        {isRecording && (
+                          <span className="text-[10px] text-red-400 font-mono font-bold animate-pulse flex items-center gap-1">
+                            <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
+                            00:{recordingSeconds < 10 ? `0${recordingSeconds}` : recordingSeconds}
+                          </span>
+                        )}
+                      </div>
+
+                      {!isRecording && !audioPreviewUrl && (
+                        <button
+                          type="button"
+                          onClick={startRecording}
+                          className="w-full py-2 px-3 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-[#f9b03c]/40 text-[#f9b03c] text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer active:scale-95"
+                        >
+                          <i className="fa-solid fa-microphone"></i>
+                          <span>ድምፅ ቅረጽ (Record)</span>
+                        </button>
+                      )}
+
+                      {isRecording && (
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-xl bg-red-500/10 border border-red-500/30">
+                            <span className="w-1 h-3 bg-red-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                            <span className="w-1 h-5 bg-red-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                            <span className="w-1 h-2 bg-red-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                            <span className="w-1 h-4 bg-red-400 rounded-full animate-bounce" style={{ animationDelay: '100ms' }}></span>
+                            <span className="text-[10px] text-red-400 font-bold ml-1">እየተቀረጸ ነው...</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={stopRecording}
+                            className="px-3 py-1.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-xs font-black transition cursor-pointer"
+                          >
+                            አቁም
+                          </button>
+                        </div>
+                      )}
+
+                      {audioPreviewUrl && !isRecording && (
+                        <div className="space-y-1.5">
+                          <audio controls src={audioPreviewUrl} className="w-full h-7 rounded-lg" />
+                          <div className="flex items-center justify-between text-[10px]">
+                            <span className="text-emerald-400 font-bold">✓ ድምፅ ተቀርጿል</span>
+                            <button
+                              type="button"
+                              onClick={handleRemoveAudio}
+                              className="text-red-400 hover:text-red-300 cursor-pointer font-bold"
+                            >
+                              አጥፋ / ድገም
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Screenshot Attachment Control */}
+                    <div className="p-3 rounded-2xl bg-white/5 border border-white/10 flex flex-col justify-between gap-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                          <i className="fa-solid fa-image text-blue-400"></i>
+                          <span>ምስል / ስክሪንሾት</span>
+                        </span>
+                      </div>
+
+                      {!imagePreviewUrl ? (
+                        <div>
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => {
+                              if (e.target.files && e.target.files[0]) {
+                                handleImageSelected(e.target.files[0]);
+                              }
+                            }}
+                            className="hidden"
+                            id="feedback-image-upload"
+                          />
+                          <label
+                            htmlFor="feedback-image-upload"
+                            className="w-full py-2 px-3 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/40 text-blue-400 text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer active:scale-95"
+                          >
+                            <i className="fa-solid fa-paperclip"></i>
+                            <span>ፎቶ ምረጥ (Attach)</span>
+                          </label>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between gap-2 bg-white/5 p-1.5 rounded-xl border border-white/10">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <img
+                              src={imagePreviewUrl}
+                              alt="Attachment Preview"
+                              className="w-8 h-8 rounded-lg object-cover border border-white/20 shrink-0"
+                            />
+                            <span className="text-[10px] text-emerald-400 font-bold truncate">
+                              ✓ ምስል ተያይዟል
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={handleRemoveImage}
+                            className="w-6 h-6 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 flex items-center justify-center text-[10px] cursor-pointer"
+                            title="ምስል አስወግድ"
+                          >
+                            <i className="fa-solid fa-xmark"></i>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                  </div>
+
+                  {/* 5. Optional Contact Inputs (For guests) */}
                   {!user && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       <input
                         type="text"
                         value={contactName}
                         onChange={(e) => setContactName(e.target.value)}
                         placeholder="ስምዎ (አማራጭ)"
-                        className="bg-white/5 border border-white/10 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 outline-none focus:border-[#f9b03c]"
+                        className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 outline-none focus:border-[#f9b03c]"
                       />
                       <input
                         type="email"
                         value={contactEmail}
                         onChange={(e) => setContactEmail(e.target.value)}
                         placeholder="ኢሜይል (አማራጭ)"
-                        className="bg-white/5 border border-white/10 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 outline-none focus:border-[#f9b03c]"
+                        className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 outline-none focus:border-[#f9b03c]"
                       />
                     </div>
                   )}
 
                   {/* Submit Button */}
-                  <div className="pt-2">
+                  <div className="pt-1">
                     <button
                       type="submit"
-                      disabled={isSubmitting || !message.trim()}
+                      disabled={isSubmitting || (!message.trim() && !audioBlob)}
                       className="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-[#f9b03c] to-amber-500 hover:from-amber-400 hover:to-[#f9b03c] text-slate-950 font-heading font-black text-xs uppercase tracking-wider shadow-[0_0_30px_rgba(249,176,60,0.4)] hover:shadow-[0_0_40px_rgba(249,176,60,0.6)] transition-all duration-300 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 active:scale-98"
                     >
                       {isSubmitting ? (

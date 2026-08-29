@@ -12,23 +12,23 @@ export async function POST(req: NextRequest) {
       body = {};
     }
 
-    const { rating, type, category, message, userId, userName, userEmail, pageUrl } = body;
+    const { rating, type, category, message, userId, userName, userEmail, pageUrl, imageUrl, screenshotUrl, audioUrl, voiceNoteUrl } = body;
 
-    if (!message || !message.trim()) {
-      return NextResponse.json({ success: false, error: 'Feedback message is required' }, { status: 400 });
-    }
-
-    const feedbackId = `fb_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const feedbackId = body.id || `fb_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     const payload = {
       id: feedbackId,
       rating: Number(rating) || 5,
       type: type || category || 'general',
       category: category || type || 'general',
-      message: message.trim(),
+      message: (message || '').trim() || (audioUrl || voiceNoteUrl ? '🎙️ [የድምፅ መልዕክት]' : ''),
       userId: userId || 'guest_student',
       userName: userName || (userEmail ? userEmail.split('@')[0] : 'ተማሪ'),
       userEmail: userEmail || 'student@tsehaycampus.com',
       pageUrl: pageUrl || '/',
+      imageUrl: imageUrl || screenshotUrl || null,
+      screenshotUrl: screenshotUrl || imageUrl || null,
+      audioUrl: audioUrl || voiceNoteUrl || null,
+      voiceNoteUrl: voiceNoteUrl || audioUrl || null,
       status: 'pending',
       createdAt: new Date().toISOString(),
       createdAtClient: new Date().toISOString(),

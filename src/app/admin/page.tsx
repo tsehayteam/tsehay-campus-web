@@ -6136,6 +6136,42 @@ export default function AdminDashboard() {
                             <div className="p-4 rounded-2xl bg-gray-50 dark:bg-slate-900/70 border border-gray-100 dark:border-white/5 text-xs text-gray-800 dark:text-slate-200 leading-relaxed font-body whitespace-pre-wrap">
                               "{item.message}"
                             </div>
+
+                            {/* 🎙️ Voice Recording Audio Player */}
+                            {(item.audioUrl || item.voiceNoteUrl) && (
+                              <div className="mt-3 p-3 rounded-2xl bg-amber-500/10 border border-[#f9b03c]/30">
+                                <div className="text-[11px] font-black text-[#f9b03c] mb-1.5 flex items-center gap-1.5">
+                                  <i className="fa-solid fa-microphone-lines animate-pulse"></i>
+                                  <span>የተማሪው የድምፅ መልዕክት (Voice Recording)</span>
+                                </div>
+                                <audio controls src={item.audioUrl || item.voiceNoteUrl} className="w-full h-8 rounded-lg" />
+                              </div>
+                            )}
+
+                            {/* 📷 Screenshot Attachment Preview */}
+                            {(item.imageUrl || item.screenshotUrl) && (
+                              <div className="mt-3">
+                                <div className="text-[11px] font-bold text-slate-400 mb-1 flex items-center gap-1.5">
+                                  <i className="fa-solid fa-image text-blue-400"></i>
+                                  <span>የተያያዘ ምስል / Screenshot:</span>
+                                </div>
+                                <a 
+                                  href={item.imageUrl || item.screenshotUrl} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer" 
+                                  className="inline-block group relative"
+                                >
+                                  <img 
+                                    src={item.imageUrl || item.screenshotUrl} 
+                                    alt="Feedback Attachment" 
+                                    className="max-h-40 rounded-xl object-contain border border-gray-200 dark:border-white/10 hover:border-[#f9b03c] transition-all cursor-pointer shadow-sm" 
+                                  />
+                                  <span className="absolute bottom-1 right-1 bg-black/80 text-white text-[9px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition">
+                                    🔍 በትልቁ እይ
+                                  </span>
+                                </a>
+                              </div>
+                            )}
                           </div>
 
                           {/* Footer Action Bar */}

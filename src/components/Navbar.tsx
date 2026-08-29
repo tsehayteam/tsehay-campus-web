@@ -277,29 +277,31 @@ export default function Navbar() {
 
   return (
     <>
-      {/* ===================== 1. FLOATING 3D MINIMAL CAPSULE TRIGGER ===================== */}
-      {!isCurtainOpen && (
-        <div 
-          className="fixed top-0 flex justify-center pointer-events-auto select-none transition-all duration-300 left-1/2 -translate-x-1/2 z-[99999]"
-          title="ዋና ማውጫ / Menu (Click to Expand Navigation)"
+      {/* ===================== 1. FLOATING 3D MINIMAL CAPSULE TRIGGER (CENTRALIZED TOGGLE) ===================== */}
+      <div 
+        className="fixed top-0 flex justify-center pointer-events-auto select-none transition-all duration-300 left-1/2 -translate-x-1/2 z-[100000]"
+        title={isCurtainOpen ? "ማውጫ ዝጋ / Close Menu (Click to Roll Up)" : "ዋና ማውጫ / Menu (Click to Expand Navigation)"}
+      >
+        <button
+          type="button"
+          onClick={isCurtainOpen ? closeCurtain : openCurtain}
+          className={`pointer-events-auto border-x border-b px-6 sm:px-8 py-2 sm:py-2.5 rounded-b-2xl flex items-center gap-2.5 sm:gap-3 group transition-all duration-300 active:scale-95 cursor-pointer whitespace-nowrap backdrop-blur-2xl ${
+            isCurtainOpen
+              ? 'bg-[#030509]/95 hover:bg-[#070c18] border-[#f9b03c]/80 hover:border-[#f9b03c] shadow-[0_0_30px_rgba(249,176,60,0.5),0_10px_35px_rgba(0,0,0,0.95)] text-[#f9b03c]'
+              : 'bg-[#030509]/95 hover:bg-[#070c18] border-[#f9b03c]/60 hover:border-[#f9b03c] shadow-[0_0_25px_rgba(249,176,60,0.35),0_10px_35px_rgba(0,0,0,0.9)] text-white hover:text-[#f9b03c]'
+          }`}
         >
-          <button
-            type="button"
-            onClick={openCurtain}
-            className="pointer-events-auto bg-[#030509]/95 hover:bg-[#070c18] border-x border-b border-[#f9b03c]/60 hover:border-[#f9b03c] px-6 sm:px-8 py-2 sm:py-2.5 rounded-b-2xl flex items-center gap-2.5 sm:gap-3 group transition-all duration-300 active:scale-95 cursor-pointer shadow-[0_0_25px_rgba(249,176,60,0.35),0_10px_35px_rgba(0,0,0,0.9)] whitespace-nowrap backdrop-blur-xl"
-          >
-            {/* Glowing Compass Dot */}
-            <div className="w-5 h-5 rounded-full bg-[#f9b03c]/20 border border-[#f9b03c]/60 flex items-center justify-center text-[#f9b03c] text-[11px] shadow-[0_0_10px_rgba(249,176,60,0.5)] group-hover:scale-110 group-hover:rotate-12 transition-transform">
-              <i className="fa-solid fa-compass"></i>
-            </div>
+          {/* Glowing Compass Dot */}
+          <div className="w-5 h-5 rounded-full bg-[#f9b03c]/20 border border-[#f9b03c]/60 flex items-center justify-center text-[#f9b03c] text-[11px] shadow-[0_0_10px_rgba(249,176,60,0.5)] group-hover:scale-110 group-hover:rotate-12 transition-transform">
+            <i className={`fa-solid ${isCurtainOpen ? 'fa-chevron-up' : 'fa-compass'}`}></i>
+          </div>
 
-            {/* Label Text */}
-            <span className="text-xs sm:text-[13px] font-black tracking-wide text-white group-hover:text-[#f9b03c] transition-colors whitespace-nowrap flex items-center gap-1.5 font-heading">
-              <span>🧭 ዋና ማውጫ / Menu ▾</span>
-            </span>
-          </button>
-        </div>
-      )}
+          {/* Label Text */}
+          <span className="text-xs sm:text-[13px] font-black tracking-wide transition-colors whitespace-nowrap flex items-center gap-1.5 font-heading">
+            <span>{isCurtainOpen ? '🧭 ማውጫ ዝጋ / Close ▴' : '🧭 ዋና ማውጫ / Menu ▾'}</span>
+          </span>
+        </button>
+      </div>
 
       {/* ===================== 2. BACKDROP OVERLAY ===================== */}
       <div 
