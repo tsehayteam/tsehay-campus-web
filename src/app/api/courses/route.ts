@@ -115,7 +115,34 @@ export async function GET(req: NextRequest) {
       console.warn("Root courses fetch notice:", e);
     }
 
-    // Merge root, artifact, and default courses
+    // If Firestore collections are currently empty, auto-sync authentic DEFAULT_COURSES so they persist
+    if (artifactCourses.length === 0 && rootCourses.length === 0) {
+      try {
+        for (const course of DEFAULT_COURSES) {
+          const docId = course.id;
+          const payload = { ...course, updatedAt: new Date().toISOString(), status: 'Active' };
+          
+          try {
+            await adminDb
+              .collection('artifacts')
+              .doc('tsehaycampus-e1a6d')
+              .collection('public')
+              .doc('data')
+              .collection('courses')
+              .doc(docId)
+              .set(payload, { merge: true });
+          } catch (e) {}
+
+          try {
+            await adminDb.collection('courses').doc(docId).set(payload, { merge: true });
+          } catch (e) {}
+        }
+      } catch (syncErr) {
+        console.warn("Auto-sync authentic courses notice:", syncErr);
+      }
+    }
+
+    // Merge root, artifact, and default authentic courses
     const merged = mergeCoursesLists(DEFAULT_COURSES, artifactCourses, rootCourses);
 
     return NextResponse.json({ 

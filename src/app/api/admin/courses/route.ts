@@ -75,6 +75,27 @@ export async function GET(req: NextRequest) {
 
     if (courses.length === 0) {
       courses = DEFAULT_COURSES;
+      // Background auto-sync into Firestore
+      try {
+        for (const course of DEFAULT_COURSES) {
+          const docId = course.id;
+          const payload = { ...course, updatedAt: new Date().toISOString(), status: 'Active' };
+          try {
+            await adminDb
+              .collection('artifacts')
+              .doc('tsehaycampus-e1a6d')
+              .collection('public')
+              .doc('data')
+              .collection('courses')
+              .doc(docId)
+              .set(payload, { merge: true });
+          } catch (e) {}
+
+          try {
+            await adminDb.collection('courses').doc(docId).set(payload, { merge: true });
+          } catch (e) {}
+        }
+      } catch (e) {}
     }
 
     return NextResponse.json({ success: true, count: courses.length, courses });
