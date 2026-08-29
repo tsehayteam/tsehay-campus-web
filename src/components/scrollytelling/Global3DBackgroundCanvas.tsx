@@ -1,11 +1,16 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 
 export default function Global3DBackgroundCanvas() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const pathname = usePathname();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Distraction-free route detection: Classroom / Dashboard / Admin / Settings
   const isClassroomOrDashboard = 
@@ -20,8 +25,7 @@ export default function Global3DBackgroundCanvas() {
   }, [isClassroomOrDashboard]);
 
   useEffect(() => {
-    // If inside dashboard or classroom, don't run particle animation loop
-    if (isClassroomOrDashboard) {
+    if (!mounted || isClassroomOrDashboard) {
       return;
     }
 
@@ -202,35 +206,34 @@ export default function Global3DBackgroundCanvas() {
       // =========================================================================
       // 🛰️ 3D REVOLVING SATELLITE & CELESTIAL ORBITAL GYROSCOPE RINGS
       // =========================================================================
-      const time = Date.now() * 0.001;
+      const time = Date.now() * 0.0012;
       const satCenterX = cx;
       const satCenterY = cy * 0.85;
 
       const ORBIT_RINGS = [
-        { radius: Math.min(width * 0.28, 260), rotX: 1.1 + Math.sin(time * 0.3) * 0.2, rotY: time * 0.45, color: 'rgba(249, 176, 60, 0.4)', satColor: '#f9b03c', satGlow: 'rgba(249, 176, 60, 0.9)', satSpeed: time * 1.2, satSize: 4.5 },
-        { radius: Math.min(width * 0.38, 340), rotX: 0.65, rotY: -time * 0.35 + 1.2, color: 'rgba(50, 104, 186, 0.35)', satColor: '#5a93e8', satGlow: 'rgba(90, 147, 232, 0.9)', satSpeed: -time * 0.9 + 2.0, satSize: 5.5 },
-        { radius: Math.min(width * 0.20, 180), rotX: 1.45, rotY: time * 0.6 + 0.8, color: 'rgba(249, 176, 60, 0.25)', satColor: '#ffffff', satGlow: 'rgba(255, 255, 255, 0.9)', satSpeed: time * 1.8 + 0.5, satSize: 3.5 },
+        { radius: Math.min(width * 0.32, 290), rotX: 1.15 + Math.sin(time * 0.4) * 0.2, rotY: time * 0.5, color: 'rgba(249, 176, 60, 0.65)', satColor: '#f9b03c', satGlow: 'rgba(249, 176, 60, 0.95)', satSpeed: time * 1.4, satSize: 6 },
+        { radius: Math.min(width * 0.42, 380), rotX: 0.7, rotY: -time * 0.4 + 1.2, color: 'rgba(90, 147, 232, 0.55)', satColor: '#5a93e8', satGlow: 'rgba(90, 147, 232, 0.95)', satSpeed: -time * 1.1 + 2.0, satSize: 7 },
+        { radius: Math.min(width * 0.22, 200), rotX: 1.5, rotY: time * 0.7 + 0.8, color: 'rgba(255, 200, 100, 0.5)', satColor: '#ffffff', satGlow: 'rgba(255, 255, 255, 1)', satSpeed: time * 2.0 + 0.5, satSize: 5 },
       ];
 
       // Draw subtle luminous core pulse at center of satellite system
-      const corePulse = (Math.sin(time * 2) + 1) * 0.5;
-      const coreGrad = ctx.createRadialGradient(satCenterX, satCenterY, 0, satCenterX, satCenterY, 85 + corePulse * 25);
-      coreGrad.addColorStop(0, 'rgba(249, 176, 60, 0.12)');
-      coreGrad.addColorStop(0.5, 'rgba(50, 104, 186, 0.06)');
+      const corePulse = (Math.sin(time * 2.5) + 1) * 0.5;
+      const coreGrad = ctx.createRadialGradient(satCenterX, satCenterY, 0, satCenterX, satCenterY, 120 + corePulse * 35);
+      coreGrad.addColorStop(0, 'rgba(249, 176, 60, 0.25)');
+      coreGrad.addColorStop(0.4, 'rgba(50, 104, 186, 0.12)');
       coreGrad.addColorStop(1, 'transparent');
       ctx.fillStyle = coreGrad;
       ctx.beginPath();
-      ctx.arc(satCenterX, satCenterY, 110, 0, Math.PI * 2);
+      ctx.arc(satCenterX, satCenterY, 140, 0, Math.PI * 2);
       ctx.fill();
 
       // Render each 3D orbital ring & revolving satellite
       ORBIT_RINGS.forEach((ring) => {
-        const SEGMENTS = 64;
+        const SEGMENTS = 72;
         ctx.beginPath();
 
         for (let s = 0; s <= SEGMENTS; s++) {
           const theta = (s / SEGMENTS) * Math.PI * 2;
-          // Unrotated ring in 3D plane
           const x0 = Math.cos(theta) * ring.radius;
           const y0 = 0;
           const z0 = Math.sin(theta) * ring.radius;
@@ -252,8 +255,8 @@ export default function Global3DBackgroundCanvas() {
         }
 
         ctx.strokeStyle = ring.color;
-        ctx.lineWidth = 1.2;
-        ctx.setLineDash([6, 8]);
+        ctx.lineWidth = 1.8;
+        ctx.setLineDash([8, 10]);
         ctx.stroke();
         ctx.setLineDash([]);
 
@@ -273,16 +276,16 @@ export default function Global3DBackgroundCanvas() {
         const satScale = 800 / satProjZ;
         const satPx = satCenterX + sx2 * satScale;
         const satPy = satCenterY + sy1 * satScale;
-        const satRadius = Math.max(2, ring.satSize * satScale);
+        const satRadius = Math.max(3, ring.satSize * satScale);
 
         // Satellite glowing aura
-        const satGrad = ctx.createRadialGradient(satPx, satPy, 0, satPx, satPy, satRadius * 4);
+        const satGrad = ctx.createRadialGradient(satPx, satPy, 0, satPx, satPy, satRadius * 5);
         satGrad.addColorStop(0, ring.satGlow);
-        satGrad.addColorStop(0.4, ring.satColor);
+        satGrad.addColorStop(0.5, ring.satColor);
         satGrad.addColorStop(1, 'transparent');
         ctx.fillStyle = satGrad;
         ctx.beginPath();
-        ctx.arc(satPx, satPy, satRadius * 4, 0, Math.PI * 2);
+        ctx.arc(satPx, satPy, satRadius * 5, 0, Math.PI * 2);
         ctx.fill();
 
         // Satellite solid core
@@ -292,20 +295,17 @@ export default function Global3DBackgroundCanvas() {
         ctx.fill();
       });
 
-      // Draw glowing particle nodes
       for (let i = 0; i < projectedNodes.length; i++) {
         const p = projectedNodes[i];
         if (!p || p.alpha <= 0.02) continue;
 
         const radius = Math.max(1, p.node.size * p.scale);
 
-        // Ambient glow halo
         ctx.beginPath();
         ctx.arc(p.px, p.py, radius * 2.3, 0, Math.PI * 2);
         ctx.fillStyle = p.node.glowColor.replace('0.85', (p.alpha * 0.28).toString()).replace('0.8', (p.alpha * 0.28).toString());
         ctx.fill();
 
-        // Core particle dot
         ctx.beginPath();
         ctx.arc(p.px, p.py, radius, 0, Math.PI * 2);
         ctx.fillStyle = p.node.color;
@@ -322,32 +322,29 @@ export default function Global3DBackgroundCanvas() {
     return () => {
       cancelAnimationFrame(animId);
       window.removeEventListener('resize', handleResize);
-      window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('scroll', handleScroll);
     };
-  }, [isClassroomOrDashboard]);
+  }, [mounted, isClassroomOrDashboard]);
 
-  // If inside Learning Dashboard/Classroom: render static deep void background with subtle static corner mesh gradients
   if (isClassroomOrDashboard) {
     return (
       <div 
         id="global-static-dashboard-background" 
         className="fixed inset-0 w-full h-full pointer-events-none -z-20 bg-[#030509]"
       >
-        {/* Subtle static blurred mesh gradients in corners (5-7% opacity for distraction-free learning) */}
         <div className="absolute top-0 left-0 w-[450px] h-[450px] bg-[#f9b03c]/[0.05] rounded-full blur-[140px] pointer-events-none" />
         <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-[#3268ba]/[0.07] rounded-full blur-[150px] pointer-events-none" />
       </div>
     );
   }
 
-  // Marketing Pages (Landing, About, Courses, Preview): Render interactive 3D particle canvas
   return (
     <canvas
       ref={canvasRef}
       id="global-3d-background-canvas"
       aria-hidden="true"
-      className="fixed inset-0 w-full h-full pointer-events-none -z-20 transition-opacity duration-700"
+      className="fixed inset-0 w-full h-full pointer-events-none z-0 transition-opacity duration-700"
       style={{
         backgroundColor: '#030509',
         willChange: 'transform, opacity',
