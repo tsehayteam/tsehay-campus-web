@@ -166,7 +166,8 @@ export const DEFAULT_COURSES = [
 
 export const COURSE_CATEGORIES = [
   "E-Commerce",
-  "YouTube & Content Creation",
+  "YouTube",
+  "Content Creation",
   "Marketing",
   "Brokerage",
   "Film Making",

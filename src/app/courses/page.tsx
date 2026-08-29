@@ -212,7 +212,8 @@ export default function Courses() {
 
   const COURSE_CATEGORY_TABS = [
     { id: 'E-Commerce', labelKey: 'cat_ecommerce', defaultLabel: 'E-Commerce', icon: 'fa-cart-shopping' },
-    { id: 'YouTube & Content Creation', labelKey: 'cat_youtube', defaultLabel: 'YouTube & Content Creation', icon: 'fa-youtube' },
+    { id: 'YouTube', labelKey: 'cat_youtube', defaultLabel: 'YouTube', icon: 'fa-youtube' },
+    { id: 'Content Creation', labelKey: 'cat_content_creation', defaultLabel: 'Content Creation', icon: 'fa-wand-magic-sparkles' },
     { id: 'Marketing', labelKey: 'cat_marketing', defaultLabel: 'Marketing', icon: 'fa-bullhorn' },
     { id: 'Brokerage', labelKey: 'cat_brokerage', defaultLabel: 'Brokerage', icon: 'fa-handshake' },
     { id: 'Film Making', labelKey: 'cat_filmmaking', defaultLabel: 'Film Making', icon: 'fa-video' },
@@ -231,12 +232,13 @@ export default function Courses() {
       const cat = String(course.category).toLowerCase().trim();
       const sel = selectedCategory.toLowerCase().trim();
       if (cat === sel) return true;
-      if (sel === 'e-commerce' && (cat === 'ecommerce' || cat.includes('commerce') || cat.includes('shein') || cat.includes('aliexpress'))) return true;
-      if (sel.includes('youtube') && (cat.includes('youtube') || cat.includes('content') || cat.includes('video'))) return true;
-      if (sel.includes('marketing') && (cat.includes('marketing') || cat.includes('digital') || cat.includes('facebook'))) return true;
+      if (sel === 'e-commerce' && (cat === 'ecommerce' || cat.includes('commerce') || cat.includes('shein') || cat.includes('aliexpress') || cat.includes('ኢኮሜርስ'))) return true;
+      if (sel === 'youtube' && (cat === 'youtube' || cat.includes('youtube') || cat.includes('ዩቲዩብ'))) return true;
+      if (sel === 'content creation' && (cat === 'content creation' || cat.includes('content') || cat.includes('creation') || cat.includes('ክሬሽን'))) return true;
+      if (sel.includes('marketing') && (cat.includes('marketing') || cat.includes('digital') || cat.includes('facebook') || cat.includes('ማርኬቲንግ'))) return true;
       if (sel.includes('brokerage') && (cat.includes('broker') || cat.includes('real estate') || cat.includes('ደላላ'))) return true;
-      if (sel.includes('film') && (cat.includes('film') || cat.includes('cinema') || cat.includes('editing'))) return true;
-      if (sel.includes('career') && (cat.includes('career') || cat.includes('development') || cat.includes('job'))) return true;
+      if (sel.includes('film') && (cat.includes('film') || cat.includes('cinema') || cat.includes('editing') || cat.includes('ፊልም'))) return true;
+      if (sel.includes('career') && (cat.includes('career') || cat.includes('development') || cat.includes('job') || cat.includes('ስራ'))) return true;
       return false;
     });
   })();

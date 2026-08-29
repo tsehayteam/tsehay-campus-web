@@ -204,6 +204,14 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
     });
   };
 
+  // Timeout helper to ensure uploads and network calls never hang indefinitely
+  const withTimeout = <T,>(promise: Promise<T>, ms: number, fallback: T): Promise<T> => {
+    return Promise.race([
+      promise,
+      new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms))
+    ]);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!message.trim() && !audioBlob) {
@@ -218,24 +226,29 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
     let uploadedImageUrl: string | null = imagePreviewUrl;
     let uploadedAudioUrl: string | null = null;
 
-    // 1. Upload Screenshot / Image to Firebase Storage
+    // 1. Upload Screenshot / Image to Firebase Storage (with 10s timeout fallback)
     if (imageFile) {
       try {
         const imageStorageRef = ref(storage, `feedback_attachments/${feedbackId}_${imageFile.name}`);
-        const snapshot = await uploadBytes(imageStorageRef, imageFile);
-        uploadedImageUrl = await getDownloadURL(snapshot.ref);
+        const uploadTask = uploadBytes(imageStorageRef, imageFile).then(snap => getDownloadURL(snap.ref));
+        const resUrl = await withTimeout(uploadTask, 10000, null);
+        if (resUrl) uploadedImageUrl = resUrl;
       } catch (uploadErr) {
         console.warn('Storage image upload fallback to Data URL:', uploadErr);
-        // Data URL already in imagePreviewUrl
       }
     }
 
-    // 2. Upload Voice Audio to Firebase Storage
+    // 2. Upload Voice Audio to Firebase Storage (with 10s timeout fallback)
     if (audioBlob) {
       try {
         const audioStorageRef = ref(storage, `feedback_audio/${feedbackId}.webm`);
-        const snapshot = await uploadBytes(audioStorageRef, audioBlob);
-        uploadedAudioUrl = await getDownloadURL(snapshot.ref);
+        const uploadTask = uploadBytes(audioStorageRef, audioBlob).then(snap => getDownloadURL(snap.ref));
+        const resUrl = await withTimeout(uploadTask, 10000, null);
+        if (resUrl) {
+          uploadedAudioUrl = resUrl;
+        } else {
+          uploadedAudioUrl = await blobToDataURL(audioBlob);
+        }
       } catch (uploadErr) {
         console.warn('Storage audio upload fallback to Data URL:', uploadErr);
         try {
@@ -261,26 +274,33 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
       status: 'pending',
       createdAt: new Date().toISOString(),
       createdAtClient: new Date().toISOString(),
+      createdAtTimestamp: Date.now()
     };
 
     try {
-      // 1. Direct Client Firestore Write
+      // 1. Direct Client Firestore Writes to student_feedback & user_feedbacks
+      try {
+        await addDoc(collection(db, 'student_feedback'), {
+          ...feedbackPayload,
+          createdAt: serverTimestamp(),
+        });
+      } catch (fsErr) {}
+
       try {
         await addDoc(collection(db, 'user_feedbacks'), {
           ...feedbackPayload,
           createdAt: serverTimestamp(),
         });
-      } catch (fsErr) {
-        console.warn('Client firestore write notice:', fsErr);
-      }
+      } catch (fsErr) {}
 
-      // 2. Server API Dispatch
+      // 2. Server API Dispatch with 10s timeout fallback
       try {
-        await fetch('/api/feedback', {
+        const apiCall = fetch('/api/feedback', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(feedbackPayload),
         });
+        await withTimeout(apiCall, 10000, null);
       } catch (apiErr) {}
 
       // 3. Local Cache & Custom Event for Admin & Dashboard
@@ -300,7 +320,7 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
         setAudioPreviewUrl(null);
         setRating(5);
         setIsOpen(false);
-      }, 2500);
+      }, 2000);
     } catch (err: any) {
       setError(err?.message || 'አስተያየትዎን ማስገባት አልተቻለም። እባክዎ እንደገና ይሞክሩ።');
     } finally {

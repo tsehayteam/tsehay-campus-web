@@ -4,7 +4,8 @@ import React, { useState } from 'react';
 
 export const COURSE_CATEGORIES = [
   'E-Commerce',
-  'YouTube & Content Creation',
+  'YouTube',
+  'Content Creation',
   'Marketing',
   'Brokerage',
   'Film Making',

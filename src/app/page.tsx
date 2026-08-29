@@ -13,7 +13,6 @@ import PaymentModal from '@/components/PaymentModal';
 import RequireAuthModal from '@/components/RequireAuthModal';
 import SmartSearchInput from '@/components/SmartSearchInput';
 import YouTubeVideoSlider from '@/components/YouTubeVideoSlider';
-import AITutorSection from '@/components/AITutorSection';
 import InstructorYouTubePortfolio from '@/components/InstructorYouTubePortfolio';
 import UpcomingEventsSection from '@/components/UpcomingEventsSection';
 import CourseCardSkeleton from '@/components/CourseCardSkeleton';
@@ -947,11 +946,6 @@ export default function Home() {
     </section>
 
     
-    {/* SECTION: 3D GLASSMORPHIC TSEHAY AI TUTOR & INTERACTIVE DEMO */}
-    <div className="scrolly-reveal">
-      <AITutorSection />
-    </div>
-
     {/* YouTube Free Video Lessons Horizontal Slider */}
     <div className="scrolly-reveal">
       <YouTubeVideoSlider />

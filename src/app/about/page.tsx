@@ -12,7 +12,7 @@ export default function About() {
 
   return (
     <>
-      <main className="min-h-screen flex flex-col bg-[#030509] text-slate-100 transition-colors duration-300 relative overflow-hidden">
+      <main className="min-h-screen flex flex-col bg-[#030509] text-slate-100 transition-colors duration-300 relative">
         
         {/* =========================================================================
             🌟 3D PARTICLE NETWORK & MESH GRADIENT CANVAS BACKGROUND
@@ -396,7 +396,7 @@ export default function About() {
 }
 
 // =========================================================================
-// 🌟 3D PARTICLE NETWORK & MESH GRADIENT CANVAS (MATCHING LANDING PAGE)
+// 🌟 3D PARTICLE NETWORK & MESH GRADIENT CANVAS (HIGH-PERFORMANCE 60FPS)
 // =========================================================================
 function About3DParticleMeshCanvas() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -404,7 +404,7 @@ function About3DParticleMeshCanvas() {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { alpha: true });
     if (!ctx) return;
 
     let animId: number;
@@ -416,9 +416,9 @@ function About3DParticleMeshCanvas() {
       width = canvas.width = window.innerWidth;
       height = canvas.height = window.innerHeight;
     };
-    window.addEventListener('resize', handleResize);
+    window.addEventListener('resize', handleResize, { passive: true });
 
-    const particleCount = Math.min(Math.floor((width * height) / 22000), 65);
+    const particleCount = Math.min(Math.floor((width * height) / 28000), 45);
     const particles: Array<{
       x: number;
       y: number;
@@ -437,10 +437,10 @@ function About3DParticleMeshCanvas() {
         x: Math.random() * width,
         y: Math.random() * height,
         z: Math.random() * 400 - 200,
-        vx: (Math.random() - 0.5) * 0.45,
-        vy: (Math.random() - 0.5) * 0.45,
-        vz: (Math.random() - 0.5) * 0.3,
-        radius: Math.random() * 1.8 + 1,
+        vx: (Math.random() - 0.5) * 0.35,
+        vy: (Math.random() - 0.5) * 0.35,
+        vz: (Math.random() - 0.5) * 0.25,
+        radius: Math.random() * 1.6 + 1,
         color: colors[Math.floor(Math.random() * colors.length)]
       });
     }
@@ -462,16 +462,13 @@ function About3DParticleMeshCanvas() {
         if (p.z > 200) p.z = -200;
 
         const scale = 300 / (300 + p.z);
-        const alpha = Math.max(0.15, Math.min(0.7, (p.z + 200) / 400)) * 0.65;
+        const alpha = Math.max(0.15, Math.min(0.65, (p.z + 200) / 400)) * 0.6;
 
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.radius * scale, 0, Math.PI * 2);
         ctx.fillStyle = p.color;
         ctx.globalAlpha = alpha;
-        ctx.shadowBlur = 10;
-        ctx.shadowColor = p.color;
         ctx.fill();
-        ctx.shadowBlur = 0;
 
         for (let j = i + 1; j < particles.length; j++) {
           const p2 = particles[j];
@@ -479,14 +476,14 @@ function About3DParticleMeshCanvas() {
           const dy = p.y - p2.y;
           const dist = Math.sqrt(dx * dx + dy * dy);
 
-          if (dist < 130) {
-            const lineAlpha = (1 - dist / 130) * 0.18;
+          if (dist < 110) {
+            const lineAlpha = (1 - dist / 110) * 0.15;
             ctx.beginPath();
             ctx.moveTo(p.x, p.y);
             ctx.lineTo(p2.x, p2.y);
             ctx.strokeStyle = '#f9b03c';
             ctx.globalAlpha = lineAlpha;
-            ctx.lineWidth = 0.75;
+            ctx.lineWidth = 0.65;
             ctx.stroke();
           }
         }
@@ -507,8 +504,8 @@ function About3DParticleMeshCanvas() {
   return (
     <canvas
       ref={canvasRef}
-      className="fixed inset-0 w-full h-full pointer-events-none -z-10 opacity-70"
-      style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh' }}
+      className="fixed inset-0 w-full h-full pointer-events-none -z-10 opacity-60"
+      style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', willChange: 'transform' }}
     />
   );
 }

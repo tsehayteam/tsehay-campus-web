@@ -158,15 +158,27 @@ export const subscribeCommunityPosts = (
   categoryFilter: string = 'all'
 ) => {
   try {
+    const getDeletedIds = (): string[] => {
+      if (typeof window === 'undefined') return [];
+      try {
+        const deleted = localStorage.getItem('tsehay_deleted_community_posts');
+        return deleted ? JSON.parse(deleted) : [];
+      } catch (e) {
+        return [];
+      }
+    };
+
     const postsRef = collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_posts');
-    const q = query(postsRef, orderBy('createdAt', 'desc'), limit(50));
+    const q = query(postsRef, orderBy('createdAt', 'desc'), limit(100));
 
     const unsubscribe = onSnapshot(
       q,
       (snapshot) => {
+        const deletedIds = getDeletedIds();
         if (!snapshot.empty) {
           const livePosts: CommunityPost[] = [];
           snapshot.forEach((docSnap) => {
+            if (deletedIds.includes(docSnap.id)) return;
             const data = docSnap.data();
             livePosts.push({
               id: docSnap.id,
@@ -210,24 +222,30 @@ export const subscribeCommunityPosts = (
             localStorage.setItem('tsehay_cached_community_posts', JSON.stringify(livePosts));
           } catch (e) {}
         } else {
-          // If Firestore collection is empty, seed with initial posts
-          onPostsUpdate(INITIAL_COMMUNITY_POSTS);
+          // If Firestore collection is empty, filter out any deleted sample posts
+          const availableSamples = INITIAL_COMMUNITY_POSTS.filter(p => !deletedIds.includes(p.id));
+          const filtered = categoryFilter === 'all' 
+            ? availableSamples 
+            : availableSamples.filter(p => p.category === categoryFilter);
+          onPostsUpdate(filtered);
         }
       },
       (error) => {
         console.warn('Community posts snapshot error:', error);
-        // Resilient fallback from localStorage or defaults
+        const deletedIds = getDeletedIds();
         try {
           const cached = localStorage.getItem('tsehay_cached_community_posts');
           if (cached) {
             const parsed = JSON.parse(cached);
             if (Array.isArray(parsed) && parsed.length > 0) {
-              onPostsUpdate(categoryFilter === 'all' ? parsed : parsed.filter((p: any) => p.category === categoryFilter));
+              const cleaned = parsed.filter((p: any) => !deletedIds.includes(p.id));
+              onPostsUpdate(categoryFilter === 'all' ? cleaned : cleaned.filter((p: any) => p.category === categoryFilter));
               return;
             }
           }
         } catch (e) {}
-        onPostsUpdate(INITIAL_COMMUNITY_POSTS);
+        const fallback = INITIAL_COMMUNITY_POSTS.filter(p => !deletedIds.includes(p.id));
+        onPostsUpdate(categoryFilter === 'all' ? fallback : fallback.filter(p => p.category === categoryFilter));
       }
     );
 
@@ -303,9 +321,27 @@ export const toggleLikePost = async (postId: string, userId: string, isLiked: bo
   } catch (apiErr) {}
 };
 
-// 4. Delete Community Post
+// 4. Delete Community Post (Instant Multi-Tier Sync)
 export const deleteCommunityPost = async (postId: string) => {
-  // 1. Client Firestore Deletions
+  // 1. Mark Deleted in Local Storage immediately
+  if (typeof window !== 'undefined') {
+    try {
+      const deleted = JSON.parse(localStorage.getItem('tsehay_deleted_community_posts') || '[]');
+      if (!deleted.includes(postId)) {
+        deleted.push(postId);
+        localStorage.setItem('tsehay_deleted_community_posts', JSON.stringify(deleted));
+      }
+      const cached = localStorage.getItem('tsehay_cached_community_posts');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        const filtered = parsed.filter((p: any) => p.id !== postId);
+        localStorage.setItem('tsehay_cached_community_posts', JSON.stringify(filtered));
+      }
+      window.dispatchEvent(new CustomEvent('tsehay_community_post_deleted', { detail: { postId } }));
+    } catch (e) {}
+  }
+
+  // 2. Client Firestore Deletions
   try {
     const postDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_posts', postId);
     await deleteDoc(postDocRef);
@@ -316,24 +352,12 @@ export const deleteCommunityPost = async (postId: string) => {
     await deleteDoc(rootDocRef);
   } catch (e) {}
 
-  // 2. Server API Deletion via Admin SDK
+  // 3. Server API Deletion via Admin SDK
   try {
     await fetch(`/api/admin/community?id=${encodeURIComponent(postId)}`, {
       method: 'DELETE'
     });
   } catch (apiErr) {}
-
-  // 3. Local Cache Invalidation
-  if (typeof window !== 'undefined') {
-    try {
-      const cached = localStorage.getItem('tsehay_cached_community_posts');
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        const filtered = parsed.filter((p: any) => p.id !== postId);
-        localStorage.setItem('tsehay_cached_community_posts', JSON.stringify(filtered));
-      }
-    } catch (e) {}
-  }
 
   return { success: true, postId };
 };

@@ -14,10 +14,10 @@ interface SmartSearchInputProps {
 
 const PREDICTIVE_TOPICS = [
   { label: 'የሼን ኢምፖርት (Shein Import)', tag: 'shein', category: 'E-Commerce' },
-  { label: 'የዩቲዩብ ሚስጥሮች (YouTube Secrets)', tag: 'youtube', category: 'YouTube & Content Creation' },
+  { label: 'የዩቲዩብ ሚስጥሮች (YouTube Secrets)', tag: 'youtube', category: 'YouTube' },
   { label: 'ዲጂታል ማርኬቲንግ (Digital Marketing)', tag: 'marketing', category: 'Marketing' },
   { label: 'ቻይና ቀጥታ ንግድ (China Import)', tag: 'import', category: 'E-Commerce' },
-  { label: 'Faceless YouTube Channel', tag: 'faceless', category: 'YouTube & Content Creation' },
+  { label: 'Faceless YouTube Channel', tag: 'faceless', category: 'Content Creation' },
   { label: 'Facebook & TikTok Ads', tag: 'ads', category: 'Marketing' }
 ];
 

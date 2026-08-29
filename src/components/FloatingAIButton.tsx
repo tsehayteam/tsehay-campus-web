@@ -592,7 +592,7 @@ export default function FloatingAIButton() {
 
   return (
     <div 
-      className="fixed bottom-6 right-6 z-[9980] font-body select-none"
+      className="fixed bottom-24 right-6 z-40 font-body select-none"
       style={{
         transform: `translate3d(${position.x}px, ${position.y}px, 0)`,
         touchAction: 'none'

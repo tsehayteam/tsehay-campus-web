@@ -1183,25 +1183,54 @@ export default function AdminDashboard() {
       setCommunityPosts(posts);
     }, 'all');
 
-    // 🌟 Live User Feedbacks Listener
+    // 🌟 Live User Feedbacks Listener (Listens to both user_feedbacks & student_feedback)
     let unsubscribeFeedbacks: any = () => {};
+    let unsubscribeStudentFeedbacks: any = () => {};
     try {
       const fbRef = collection(db, 'user_feedbacks');
       unsubscribeFeedbacks = onSnapshot(fbRef, (snapshot) => {
         if (!snapshot.empty) {
           const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          list.sort((a: any, b: any) => {
-            const timeA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : (a.createdAtClient ? new Date(a.createdAtClient).getTime() : 0);
-            const timeB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : (b.createdAtClient ? new Date(b.createdAtClient).getTime() : 0);
-            return timeB - timeA;
+          setFeedbacks(prev => {
+            const map = new Map();
+            [...prev, ...list].forEach(item => map.set(item.id, { ...(map.get(item.id) || {}), ...item }));
+            const merged = Array.from(map.values());
+            merged.sort((a: any, b: any) => {
+              const timeA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : (a.createdAtClient ? new Date(a.createdAtClient).getTime() : (a.createdAtTimestamp || 0));
+              const timeB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : (b.createdAtClient ? new Date(b.createdAtClient).getTime() : (b.createdAtTimestamp || 0));
+              return timeB - timeA;
+            });
+            try {
+              localStorage.setItem('tsehay_user_feedbacks', JSON.stringify(merged));
+            } catch (e) {}
+            return merged;
           });
-          setFeedbacks(list);
-          try {
-            localStorage.setItem('tsehay_user_feedbacks', JSON.stringify(list));
-          } catch (e) {}
         }
       }, (err) => {
-        console.warn("Feedbacks sync notice:", err);
+        console.warn("User feedbacks sync notice:", err);
+      });
+
+      const sFbRef = collection(db, 'student_feedback');
+      unsubscribeStudentFeedbacks = onSnapshot(sFbRef, (snapshot) => {
+        if (!snapshot.empty) {
+          const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          setFeedbacks(prev => {
+            const map = new Map();
+            [...prev, ...list].forEach(item => map.set(item.id, { ...(map.get(item.id) || {}), ...item }));
+            const merged = Array.from(map.values());
+            merged.sort((a: any, b: any) => {
+              const timeA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : (a.createdAtClient ? new Date(a.createdAtClient).getTime() : (a.createdAtTimestamp || 0));
+              const timeB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : (b.createdAtClient ? new Date(b.createdAtClient).getTime() : (b.createdAtTimestamp || 0));
+              return timeB - timeA;
+            });
+            try {
+              localStorage.setItem('tsehay_user_feedbacks', JSON.stringify(merged));
+            } catch (e) {}
+            return merged;
+          });
+        }
+      }, (err) => {
+        console.warn("Student feedback sync notice:", err);
       });
     } catch (e) {}
 
@@ -1220,6 +1249,7 @@ export default function AdminDashboard() {
         unsubscribePortfolio2();
         unsubscribeReferrals();
         unsubscribeFeedbacks();
+        unsubscribeStudentFeedbacks();
         if (typeof unsubscribeCommunity === 'function') unsubscribeCommunity();
         clearTimeout(safetyTimer);
     };
