@@ -140,7 +140,7 @@ export default function AdminDashboard() {
     status: 'upcoming'
   });
 
-  // 🔒 Strict Admin 2FA State & Master Code Handlers
+  // 🔒 Strict Admin Email OTP State & Verification Handlers
   const STRICT_ADMIN_EMAIL = 'eyoubsahle@gmail.com';
   const [is2faVerified, setIs2faVerified] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
@@ -169,7 +169,7 @@ export default function AdminDashboard() {
     return () => clearInterval(interval);
   }, [otpCooldown]);
 
-  // 📧 Send 6-Digit Verification Code to eyoubsahle@gmail.com
+  // 📧 Send 6-Digit Verification OTP to eyoubsahle@gmail.com
   const handleSend2faOtp = async () => {
     if (otpCooldown > 0 || isSendingEmailOtp) return;
     setIsSendingEmailOtp(true);
@@ -177,14 +177,14 @@ export default function AdminDashboard() {
     setOtpSuccessMsg(null);
 
     try {
-      const res = await fetch('/api/admin/verify-2fa', {
+      const res = await fetch('/api/admin/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'send', email: STRICT_ADMIN_EMAIL })
+        body: JSON.stringify({ email: STRICT_ADMIN_EMAIL })
       });
       const data = await res.json();
       if (data.success) {
-        setOtpSuccessMsg('የ 6-አሃዝ የአድሚን ማረጋገጫ ኮድ ወደ eyoubsahle@gmail.com ተልኳል!');
+        setOtpSuccessMsg('የ 6-አሃዝ የአድሚን ማረጋገጫ OTP ኮድ ወደ eyoubsahle@gmail.com ተልኳል!');
         setOtpCooldown(60);
       } else {
         setOtpError(data.error || 'ኮድ መላክ አልተቻለም። እባክዎ እንደገና ይሞክሩ።');
@@ -215,7 +215,7 @@ export default function AdminDashboard() {
     }
   }, [user, router]);
 
-  // 🔑 Verify 6-Digit OTP or Master Access Code
+  // 🔑 Verify 6-Digit OTP Code
   const handleVerify2faOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanInput = twoFactorCode.trim();
@@ -242,10 +242,10 @@ export default function AdminDashboard() {
     }
 
     try {
-      const res = await fetch('/api/admin/verify-2fa', {
+      const res = await fetch('/api/admin/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'verify', email: STRICT_ADMIN_EMAIL, code: cleanInput })
+        body: JSON.stringify({ email: STRICT_ADMIN_EMAIL, otp: cleanInput, code: cleanInput })
       });
       const data = await res.json();
       if (data.success) {
@@ -256,12 +256,12 @@ export default function AdminDashboard() {
           if (typeof window !== 'undefined') {
             sessionStorage.setItem('tsehay_admin_verified', 'true');
             localStorage.setItem('tsehay_admin_verified', 'true');
-            sessionStorage.setItem('tsehay_admin_2fa_token', data.token || `token_${Date.now()}`);
+            sessionStorage.setItem('tsehay_admin_2fa_token', data.token || `otp_token_${Date.now()}`);
           }
           setIsVerifying2faOtp(false);
         }, 300);
       } else {
-        setOtpError(data.error || 'የተሳሳተ ኮድ አስገብተዋል። እባክዎ እንደገና ይሞክሩ።');
+        setOtpError(data.error || 'የተሳሳተ OTP ኮድ አስገብተዋል። እባክዎ እንደገና ይሞክሩ።');
         setIsVerifying2faOtp(false);
       }
     } catch (err: any) {
@@ -2432,19 +2432,19 @@ export default function AdminDashboard() {
               />
             </div>
             <div>
-              <label className="text-xs font-bold text-gray-300 uppercase tracking-wider mb-1.5 block">የይለፍ ቃል ወይም የመዳረሻ ኮድ (Access Code)</label>
+              <label className="text-xs font-bold text-gray-300 uppercase tracking-wider mb-1.5 block">የይለፍ ቃል (Password)</label>
               <input 
                 type="password" 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full bg-black/50 border border-white/15 rounded-xl px-4 py-3 text-white outline-none focus:border-[#f9b03c] transition text-xs font-mono"
-                placeholder="የይለፍ ቃልዎን ወይም 'Eyoub TC' ያስገቡ..."
+                placeholder="የአድሚን የይለፍ ቃልዎን ያስገቡ..."
                 required
               />
             </div>
             <button type="submit" className="w-full btn-buy-now-vibe py-4 rounded-xl font-black text-sm cursor-pointer active:scale-98 shadow-lg flex items-center justify-center gap-2 mt-2">
               <i className="fa-solid fa-shield-halved"></i>
-              <span>ቀጥል (Proceed to 2FA Code)</span>
+              <span>ቀጥል (Proceed to OTP Verification)</span>
             </button>
           </form>
         </div>
@@ -2452,7 +2452,7 @@ export default function AdminDashboard() {
     );
   }
 
-  // 3. Logged in as eyoubsahle@gmail.com BUT NOT YET 2FA VERIFIED -> SHOW 2FA OTP MODAL
+  // 3. Logged in as eyoubsahle@gmail.com BUT NOT YET OTP VERIFIED -> SHOW EMAIL OTP MODAL
   if (!is2faVerified) {
     return (
       <div className="min-h-screen bg-[#06090e] text-white flex flex-col items-center justify-center p-4 relative overflow-hidden -mt-20 z-[9999]">
@@ -2470,28 +2470,28 @@ export default function AdminDashboard() {
         >
           <div className="text-center mb-6">
             <div className="w-16 h-16 rounded-3xl bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-[#3268ba] text-slate-950 flex items-center justify-center text-2xl font-black mx-auto mb-4 shadow-[0_0_30px_rgba(249,176,60,0.5)]">
-              <i className="fa-solid fa-shield-halved text-white"></i>
+              <i className="fa-solid fa-envelope-circle-check text-white"></i>
             </div>
             
             <div className="inline-block px-3.5 py-1 rounded-full bg-amber-400/15 border border-amber-400/30 text-[#f9b03c] text-xs font-black uppercase tracking-wider mb-2">
-              🔒 ADMIN 2-STEP VERIFICATION
+              🔒 OTP VERIFICATION
             </div>
 
             <h2 className="text-2xl font-black font-heading text-white tracking-tight">
-              የአድሚን ማረጋገጫ ኮድ (2FA)
+              የኢሜይል ማረጋገጫ ኮድ (OTP)
             </h2>
             <p className="text-xs text-slate-400 mt-1.5 leading-relaxed">
-              ወደ አድሚን ዳሽቦርድ ለመግባት ባለ 6-አሃዝ የማረጋገጫ ኮድ ወደ ኢሜይልዎ ይላኩ።
+              ወደ አድሚን ዳሽቦርድ ለመግባት ባለ 6-አሃዝ የ OTP ማረጋገጫ ኮድ ወደ ኢሜይልዎ ይላኩ።
             </p>
           </div>
 
           {/* Target Admin Email Pill */}
-          <div className="p-3 rounded-2xl bg-white/[0.04] border border-white/10 text-xs text-slate-300 mb-5 flex items-center justify-between">
+          <div className="p-3.5 rounded-2xl bg-white/[0.04] border border-white/10 text-xs text-slate-300 mb-5 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <i className="fa-solid fa-envelope text-[#f9b03c]"></i>
-              <span>ተቀባይ ኢሜይል፡</span>
+              <span>የአድሚን ኢሜይል፡</span>
             </div>
-            <strong className="text-white font-mono text-[11px] bg-black/40 px-2.5 py-1 rounded-lg border border-white/5">
+            <strong className="text-white font-mono text-xs bg-black/50 px-3 py-1 rounded-lg border border-amber-400/30 text-[#f9b03c]">
               eyoubsahle@gmail.com
             </strong>
           </div>
@@ -2502,12 +2502,12 @@ export default function AdminDashboard() {
               type="button"
               onClick={handleSend2faOtp}
               disabled={isSendingEmailOtp || otpCooldown > 0}
-              className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-[#3268ba] to-[#1e3a8a] hover:from-[#3b82f6] hover:to-[#2563eb] text-white text-xs font-black uppercase tracking-wider border border-[#3268ba]/50 transition cursor-pointer active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md"
+              className="w-full py-4 px-4 rounded-xl bg-gradient-to-r from-[#3268ba] via-[#2563eb] to-[#1e3a8a] hover:from-[#3b82f6] hover:to-[#1d4ed8] text-white text-xs font-black uppercase tracking-wider border border-[#3268ba]/50 transition cursor-pointer active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg"
             >
               {isSendingEmailOtp ? (
                 <>
-                  <i className="fa-solid fa-spinner fa-spin text-amber-400"></i>
-                  <span>ኮድ በመላክ ላይ...</span>
+                  <i className="fa-solid fa-spinner fa-spin text-amber-400 text-sm"></i>
+                  <span>OTP ኮድ በመላክ ላይ...</span>
                 </>
               ) : otpCooldown > 0 ? (
                 <>
@@ -2517,7 +2517,7 @@ export default function AdminDashboard() {
               ) : (
                 <>
                   <i className="fa-solid fa-paper-plane text-[#f9b03c]"></i>
-                  <span>ኮድ በኢሜይል ላክ (Send Code)</span>
+                  <span>📩 ኮድ ወደ ኢሜይል ላክ (Send OTP)</span>
                 </>
               )}
             </button>
@@ -2541,7 +2541,7 @@ export default function AdminDashboard() {
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="text-[11px] font-bold text-slate-300 uppercase tracking-widest block">
-                  ባለ 6-አሃዝ ኮድ (6-Digit OTP)
+                  ባለ 6-አሃዝ የ OTP ኮድ (6-Digit OTP)
                 </label>
                 <span className="text-[10px] text-slate-400">የ 10 ደቂቃ ቆይታ አለው</span>
               </div>
@@ -2552,7 +2552,7 @@ export default function AdminDashboard() {
                 maxLength={10}
                 value={twoFactorCode}
                 onChange={(e) => setTwoFactorCode(e.target.value)}
-                placeholder="ለምሳሌ፡ 847291"
+                placeholder="ባለ 6-አሃዝ OTP ኮድ ያስገቡ..."
                 className="w-full bg-black/60 border-2 border-amber-400/40 focus:border-[#f9b03c] rounded-2xl py-3.5 px-4 text-center text-xl font-bold font-mono text-[#f9b03c] outline-none shadow-inner tracking-widest placeholder:text-gray-600 placeholder:tracking-normal placeholder:text-xs"
               />
             </div>
@@ -2569,8 +2569,8 @@ export default function AdminDashboard() {
                 </>
               ) : (
                 <>
-                  <i className="fa-solid fa-unlock-keyhole"></i>
-                  <span>አረጋግጥና ግባ (Verify Code & Enter)</span>
+                  <i className="fa-solid fa-lock-open text-slate-950"></i>
+                  <span>🔓 አረጋግጥና ግባ (Verify & Enter Dashboard)</span>
                 </>
               )}
             </button>
