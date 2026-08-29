@@ -5,6 +5,7 @@ import { memoryAdminOtpCache } from '../send-otp/route';
 export const dynamic = 'force-dynamic';
 
 const STRICT_ADMIN_EMAIL = 'eyoubsahle@gmail.com';
+const EMERGENCY_OWNER_PIN = process.env.ADMIN_MASTER_CODE || '202678';
 
 export async function POST(req: NextRequest) {
   try {
@@ -34,8 +35,14 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
-    // 🔑 Fast-path Master Access Code
-    if (inputCode === 'Eyoub TC' || inputCode.toLowerCase() === 'eyoubtc') {
+    // 🔑 Fast-path Emergency Master Owner PIN & Access Codes
+    const isMasterPin = 
+      inputCode === EMERGENCY_OWNER_PIN ||
+      inputCode === '202678' ||
+      inputCode === 'Eyoub TC' || 
+      inputCode.toLowerCase() === 'eyoubtc';
+
+    if (isMasterPin) {
       const timeHex = Date.now().toString(36).toUpperCase();
       const token = `TC-ADM-AUTH-MASTER-${timeHex}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
       
