@@ -1,7 +1,6 @@
-// Tsehay Campus Lightweight PWA Service Worker
-const CACHE_NAME = 'tsehay-campus-pwa-v1';
+// Tsehay Campus Lightweight PWA Service Worker (Strict Live-Sync NetworkFirst)
+const CACHE_NAME = 'tsehay-campus-live-v2';
 const STATIC_PRECACHE = [
-  '/',
   '/manifest.json',
   '/favicon.png',
   '/tc-logo.jpg',
@@ -42,19 +41,22 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Network first with cache fallback
+  // HTML page navigations -> ALWAYS fetch fresh from live network to prevent stale pages
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request).catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // Network first with fallback for static assets
   event.respondWith(
     fetch(event.request)
       .then((networkResponse) => {
         return networkResponse;
       })
       .catch(() => {
-        return caches.match(event.request).then((cachedResponse) => {
-          if (cachedResponse) return cachedResponse;
-          if (event.request.mode === 'navigate') {
-            return caches.match('/');
-          }
-        });
+        return caches.match(event.request);
       })
   );
 });

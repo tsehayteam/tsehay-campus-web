@@ -11,7 +11,6 @@ import Link from 'next/link';
 import PaymentModal from '@/components/PaymentModal';
 import RequireAuthModal from '@/components/RequireAuthModal';
 import Footer from '@/components/Footer';
-import dynamic from 'next/dynamic';
 import { getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl, getCourseSlug, getCourseBySlugOrId, DEFAULT_COURSES, mergeCoursesLists } from '@/lib/courseCache';
 
 function CoursePreviewContent() {
