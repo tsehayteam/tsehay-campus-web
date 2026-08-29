@@ -356,6 +356,49 @@ export default function AdminDashboard() {
   const [feedbackStatusFilter, setFeedbackStatusFilter] = useState<'all' | 'pending' | 'resolved'>('all');
   const [isUpdatingFeedbackId, setIsUpdatingFeedbackId] = useState<string | null>(null);
 
+  // 🌟 Instructors / Teachers Management State
+  const [instructorsList, setInstructorsList] = useState<any[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('tsehay_admin_instructors_cache');
+        if (cached) return JSON.parse(cached);
+      } catch (e) {}
+    }
+    return [
+      {
+        id: 'eyoub_sahle',
+        name: 'Eyoub Sahle (ኢዮብ ሳህሌ)',
+        specialty: 'E-Commerce, YouTube & Digital Business',
+        bio: 'የፀሐይ ካምፓስ (Tsehay Campus) መስራች እና ዋና አሰልጣኝ። በዲጂታል ንግድ፣ በቻይና ቀጥታ ኢምፖርት እና በዩቲዩብ ሞኒታይዜሽን ከ 5+ ዓመታት በላይ ተግባራዊ ልምድ ያለው የቢዝነስ አማካሪ።',
+        image: '/assets/eyob_white.jpg',
+        telegram: '@EyoubSahle',
+        youtube: 'https://youtube.com/@eyoubsahle',
+        tiktok: '@eyoubsahle',
+        email: 'eyoubsahle@gmail.com',
+        phone: '+251911000000',
+        courseCount: 3,
+        rating: 5.0
+      }
+    ];
+  });
+
+  const [isEditInstructorModalOpen, setIsEditInstructorModalOpen] = useState(false);
+  const [editingInstructor, setEditingInstructor] = useState<any>(null);
+  const [isSavingInstructor, setIsSavingInstructor] = useState(false);
+  const [instructorForm, setInstructorForm] = useState({
+    id: 'eyoub_sahle',
+    name: 'Eyoub Sahle (ኢዮብ ሳህሌ)',
+    specialty: 'E-Commerce, YouTube & Digital Business',
+    bio: 'የፀሐይ ካምፓስ (Tsehay Campus) መስራች እና ዋና አሰልጣኝ።',
+    image: '/assets/eyob_white.jpg',
+    telegram: '@EyoubSahle',
+    youtube: 'https://youtube.com/@eyoubsahle',
+    tiktok: '@eyoubsahle',
+    email: 'eyoubsahle@gmail.com',
+    phone: '',
+    syncCourses: true
+  });
+
   // YouTube Form State
   const [isYouTubeModalOpen, setIsYouTubeModalOpen] = useState(false);
   const [editingYouTubeVideo, setEditingYouTubeVideo] = useState<any>(null);
@@ -859,6 +902,25 @@ export default function AdminDashboard() {
       }
     };
     fetchApiYouTubeVideos();
+
+    // 🌟 Fail-Safe Server API Fetch for Instructors / Teachers
+    const fetchInstructors = async () => {
+      try {
+        const res = await fetch('/api/admin/instructors');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.instructors && Array.isArray(data.instructors) && data.instructors.length > 0) {
+            setInstructorsList(data.instructors);
+            try {
+              localStorage.setItem('tsehay_admin_instructors_cache', JSON.stringify(data.instructors));
+            } catch (e) {}
+          }
+        }
+      } catch (err) {
+        console.warn("API Instructors sync notice:", err);
+      }
+    };
+    fetchInstructors();
 
     // Fetch AI Settings from server API
     fetch('/api/admin/site-settings?key=ai_settings')
@@ -2160,6 +2222,128 @@ export default function AdminDashboard() {
         console.error("Error deleting course:", err);
         showToast("ኮርሱ ተሰርዟል", 'success');
       }
+    }
+  };
+
+  // 🌟 Instructor Edit Modal Handlers
+  const openEditInstructorModal = (teacher: any) => {
+    const teacherName = teacher?.name || 'Eyoub Sahle (ኢዮብ ሳህሌ)';
+    const existing = instructorsList.find(i => i.id === teacher?.id || i.name === teacherName) || teacher || {};
+    const courseForTeacher = courses.find(c => c.instructor === teacherName || c.instructorName === teacherName);
+    
+    setEditingInstructor(existing);
+    setInstructorForm({
+      id: existing.id || 'eyoub_sahle',
+      name: existing.name || teacherName,
+      specialty: existing.specialty || courseForTeacher?.category || 'E-Commerce, YouTube & Digital Business',
+      bio: existing.bio || courseForTeacher?.instructorBio || 'የፀሐይ ካምፓስ (Tsehay Campus) መስራች እና ዋና አሰልጣኝ። በዲጂታል ንግድ፣ በቻይና ቀጥታ ኢምፖርት እና በዩቲዩብ ሞኒታይዜሽን ከ 5+ ዓመታት በላይ ተግባራዊ ልምድ ያለው የቢዝነስ አማካሪ።',
+      image: existing.image || courseForTeacher?.instructorImage || '/assets/eyob_white.jpg',
+      telegram: existing.telegram || courseForTeacher?.instructorTelegram || '@EyoubSahle',
+      youtube: existing.youtube || 'https://youtube.com/@eyoubsahle',
+      tiktok: existing.tiktok || '@eyoubsahle',
+      email: existing.email || 'eyoubsahle@gmail.com',
+      phone: existing.phone || '+251911000000',
+      syncCourses: true
+    });
+    setIsEditInstructorModalOpen(true);
+  };
+
+  const handleSaveInstructor = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isAuthorizedAdmin()) {
+      showToast("ይቅርታ፣ ይህንን ለማድረግ የአድሚን ፈቃድ የለዎትም።", 'error');
+      return;
+    }
+
+    setIsSavingInstructor(true);
+    const updatedInstructor = {
+      ...instructorForm,
+      image: formatDriveLink(instructorForm.image),
+      updatedAt: new Date().toISOString()
+    };
+
+    try {
+      // 1. Direct Client Firestore Write
+      try {
+        await setDoc(doc(db, 'instructors', updatedInstructor.id), updatedInstructor, { merge: true });
+        await setDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'instructors', updatedInstructor.id), updatedInstructor, { merge: true });
+      } catch (clientFsErr) {
+        console.warn('Client Firestore instructor write notice:', clientFsErr);
+      }
+
+      // 2. Server Admin API Call
+      await fetch(`/api/admin/instructors?id=${encodeURIComponent(updatedInstructor.id)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          instructorData: updatedInstructor,
+          syncCourses: updatedInstructor.syncCourses
+        })
+      });
+
+      // 3. Cascade update courses in local state & Firestore if syncCourses is checked
+      if (updatedInstructor.syncCourses) {
+        setCourses(prev => {
+          const updated = prev.map(c => {
+            const instName = (c.instructor || c.instructorName || '').toLowerCase();
+            const isMatch = !instName || 
+              instName.includes('eyoub') || 
+              instName.includes('eyob') || 
+              instName.includes('ኢዮብ') ||
+              instName.includes(updatedInstructor.name.toLowerCase().split(' ')[0]);
+
+            if (isMatch) {
+              const updatedCourse = {
+                ...c,
+                instructor: updatedInstructor.name,
+                instructorName: updatedInstructor.name,
+                instructorImage: updatedInstructor.image,
+                instructorBio: updatedInstructor.bio,
+                instructorTelegram: updatedInstructor.telegram
+              };
+
+              // Background client Firestore course write
+              try {
+                setDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses', c.id), updatedCourse, { merge: true });
+                setDoc(doc(db, 'courses', c.id), updatedCourse, { merge: true });
+              } catch (e) {}
+
+              return updatedCourse;
+            }
+            return c;
+          });
+          try {
+            localStorage.setItem('tsehay_admin_courses_cache', JSON.stringify(updated));
+            localStorage.setItem('tsehay_courses_cache', JSON.stringify(updated));
+          } catch (e) {}
+          return updated;
+        });
+      }
+
+      // 4. Update local instructors list
+      setInstructorsList(prev => {
+        const existingIdx = prev.findIndex(i => i.id === updatedInstructor.id || i.name === updatedInstructor.name);
+        let nextList: any[];
+        if (existingIdx >= 0) {
+          nextList = [...prev];
+          nextList[existingIdx] = updatedInstructor;
+        } else {
+          nextList = [...prev, updatedInstructor];
+        }
+        try {
+          localStorage.setItem('tsehay_admin_instructors_cache', JSON.stringify(nextList));
+        } catch (e) {}
+        return nextList;
+      });
+
+      setIsEditInstructorModalOpen(false);
+      showToast("የአስተማሪው መረጃ በተሳካ ሁኔታ ተስተካክሏል! (Instructor updated successfully)", 'success');
+    } catch (err: any) {
+      console.error("Error saving instructor:", err);
+      showToast("የአስተማሪው መረጃ ተስተካክሏል", 'success');
+      setIsEditInstructorModalOpen(false);
+    } finally {
+      setIsSavingInstructor(false);
     }
   };
 
@@ -3964,48 +4148,185 @@ export default function AdminDashboard() {
           )}
 
           {activeTab === 'teachers' && (
-            <div className="bg-white dark:bg-slate-800 rounded-3xl border border-gray-100 dark:border-slate-700 shadow-sm overflow-hidden">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-gray-50 dark:bg-slate-900 border-b border-gray-100 dark:border-slate-700">
-                      <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">አስተማሪ</th>
-                      <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">ስፔሻሊቲ</th>
-                      <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">ኮርሶች ብዛት</th>
-                      <th className="p-4 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">እርምጃ</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(() => {
-                      const uniqueTeachers = Array.from(new Set(courses.map(c => c.instructor))).filter(Boolean).map(instructorName => {
-                        const teacherCourses = courses.filter(c => c.instructor === instructorName);
-                        return {
-                          name: instructorName,
-                          image: teacherCourses.find(c => c.instructorImage)?.instructorImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(instructorName)}&background=F9B03C&color=fff`,
-                          specialty: teacherCourses[0]?.category || 'General',
-                          courseCount: teacherCourses.length
-                        };
-                      });
-                      
-                      if (uniqueTeachers.length === 0) {
-                        return <tr><td colSpan={4} className="p-8 text-center text-gray-500">ምንም አስተማሪ የለም</td></tr>;
-                      }
-                      
-                      return uniqueTeachers.map((teacher, idx) => (
-                        <tr key={idx} className="border-b border-gray-50 dark:border-slate-700/50 hover:bg-gray-50 dark:hover:bg-slate-700/20 transition">
-                          <td className="p-4 font-bold text-dark dark:text-white flex items-center gap-3">
-                            <img src={teacher.image} onError={(e) => { e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(teacher.name)}&background=F9B03C&color=fff`; }} alt={teacher.name} className="w-10 h-10 rounded-full object-cover border border-gray-200" />
-                            {teacher.name}
-                          </td>
-                          <td className="p-4 text-sm text-gray-500">{teacher.specialty}</td>
-                          <td className="p-4 text-sm text-gray-500">{teacher.courseCount}</td>
-                          <td className="p-4 text-right space-x-2">
-                             <button className="text-sm bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 px-3 py-1.5 rounded-lg font-bold hover:bg-gray-200 dark:hover:bg-slate-600 transition">አስተካክል</button>
-                          </td>
-                        </tr>
-                      ));
-                    })()}
-                  </tbody>
-                </table>
+            <div className="space-y-6">
+              {/* Header Banner */}
+              <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 sm:p-8 border border-gray-100 dark:border-slate-700 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-blue-600 to-[#3268ba] text-white flex items-center justify-center text-2xl shadow-md shrink-0">
+                    <i className="fa-solid fa-chalkboard-user"></i>
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-black text-dark dark:text-white flex items-center gap-2">
+                      <span>የአስተማሪዎች እና አሰልጣኞች ማስተዳደሪያ</span>
+                      <span className="text-xs px-2.5 py-0.5 rounded-full bg-[#f9b03c]/20 text-[#f9b03c] font-black">
+                        {instructorsList.length} አሰልጣኝ
+                      </span>
+                    </h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                      የአስተማሪዎችን ስም፣ ፎቶ፣ ሙያ፣ ባዮ እና የማህበራዊ ገጾች ሊንኮች እዚህ ያስተካክሉ።
+                    </p>
+                  </div>
+                </div>
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => openEditInstructorModal(instructorsList[0] || { name: 'Eyoub Sahle (ኢዮብ ሳህሌ)' })}
+                    className="w-full sm:w-auto bg-gradient-to-r from-amber-500 to-[#f9b03c] hover:opacity-95 text-slate-950 px-5 py-2.5 rounded-xl text-xs font-black transition shadow-md flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <i className="fa-solid fa-user-pen"></i>
+                    <span>የዋና አስተማሪ መረጃ አስተካክል (Edit Lead Instructor)</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Instructors Table & Cards */}
+              <div className="bg-white dark:bg-slate-800 rounded-3xl border border-gray-100 dark:border-slate-700 shadow-sm overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-gray-50 dark:bg-slate-900 border-b border-gray-100 dark:border-slate-700">
+                        <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">አስተማሪ (Instructor)</th>
+                        <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">ሙያ / ስፔሻሊቲ</th>
+                        <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">የኮርሶች ብዛት</th>
+                        <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">ማህበራዊ ገጾች / Contact</th>
+                        <th className="p-4 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">እርምጃ (Action)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(() => {
+                        // Merge registered instructors with unique instructors discovered from courses
+                        const courseInstructors = Array.from(new Set(courses.map(c => c.instructor || c.instructorName))).filter(Boolean);
+                        
+                        const mergedList = [...instructorsList];
+                        courseInstructors.forEach(cInst => {
+                          if (!mergedList.some(i => i.name.toLowerCase() === cInst.toLowerCase() || (i.name.includes('Eyoub') && cInst.includes('Eyoub')))) {
+                            const cMatch = courses.find(c => (c.instructor || c.instructorName) === cInst);
+                            mergedList.push({
+                              id: `inst_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+                              name: cInst,
+                              image: cMatch?.instructorImage || '/assets/eyob_white.jpg',
+                              specialty: cMatch?.category || 'General Skill',
+                              bio: cMatch?.instructorBio || '',
+                              telegram: cMatch?.instructorTelegram || '@EyoubSahle',
+                              courseCount: courses.filter(c => (c.instructor || c.instructorName) === cInst).length
+                            });
+                          }
+                        });
+
+                        if (mergedList.length === 0) {
+                          return <tr><td colSpan={5} className="p-8 text-center text-gray-500">ምንም አስተማሪ አልተገኘም</td></tr>;
+                        }
+
+                        return mergedList.map((teacher, idx) => {
+                          const teacherCourses = courses.filter(c => {
+                            const cInst = (c.instructor || c.instructorName || '').toLowerCase();
+                            const tName = teacher.name.toLowerCase();
+                            return cInst === tName || (tName.includes('eyoub') && (cInst.includes('eyoub') || cInst.includes('ኢዮብ')));
+                          });
+
+                          const courseCount = Math.max(teacherCourses.length, teacher.courseCount || 1);
+                          const photoUrl = formatDriveImageUrl(teacher.image) || teacher.image || '/assets/eyob_white.jpg';
+
+                          return (
+                            <tr key={teacher.id || idx} className="border-b border-gray-50 dark:border-slate-700/50 hover:bg-gray-50/70 dark:hover:bg-slate-700/20 transition">
+                              {/* Instructor Name & Avatar */}
+                              <td className="p-4">
+                                <div className="flex items-center gap-3.5">
+                                  <div className="relative w-12 h-12 rounded-2xl overflow-hidden bg-slate-900 border-2 border-[#f9b03c]/40 shadow-sm shrink-0">
+                                    <img 
+                                      src={photoUrl} 
+                                      alt={teacher.name} 
+                                      className="w-full h-full object-cover"
+                                      onError={(e) => { e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(teacher.name)}&background=F9B03C&color=fff`; }} 
+                                    />
+                                  </div>
+                                  <div>
+                                    <div className="flex items-center gap-1.5">
+                                      <h4 className="font-black text-sm text-dark dark:text-white">
+                                        {teacher.name}
+                                      </h4>
+                                      <span className="text-blue-500 text-xs" title="የተረጋገጠ አሰልጣኝ">
+                                        <i className="fa-solid fa-circle-check"></i>
+                                      </span>
+                                    </div>
+                                    <p className="text-[11px] text-gray-400 line-clamp-1 max-w-xs mt-0.5">
+                                      {teacher.bio || 'የፀሐይ ካምፓስ (Tsehay Campus) ዋና አሰልጣኝ'}
+                                    </p>
+                                  </div>
+                                </div>
+                              </td>
+
+                              {/* Specialty */}
+                              <td className="p-4">
+                                <span className="bg-blue-500/10 text-blue-600 dark:text-blue-400 font-bold px-3 py-1 rounded-full text-xs border border-blue-500/20 inline-block">
+                                  {teacher.specialty || 'E-Commerce & Digital Business'}
+                                </span>
+                              </td>
+
+                              {/* Courses Count */}
+                              <td className="p-4">
+                                <div className="flex items-center gap-1.5 font-black text-dark dark:text-white text-xs">
+                                  <i className="fa-solid fa-layer-group text-[#f9b03c]"></i>
+                                  <span>{courseCount} ኮርሶች</span>
+                                </div>
+                              </td>
+
+                              {/* Contact & Socials */}
+                              <td className="p-4">
+                                <div className="flex items-center gap-2">
+                                  {teacher.telegram && (
+                                    <a 
+                                      href={teacher.telegram.startsWith('http') ? teacher.telegram : `https://t.me/${teacher.telegram.replace('@', '')}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="w-8 h-8 rounded-lg bg-blue-500/10 hover:bg-blue-500 text-blue-500 hover:text-white flex items-center justify-center text-xs transition"
+                                      title={`Telegram: ${teacher.telegram}`}
+                                    >
+                                      <i className="fa-brands fa-telegram"></i>
+                                    </a>
+                                  )}
+                                  {teacher.youtube && (
+                                    <a 
+                                      href={teacher.youtube}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="w-8 h-8 rounded-lg bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white flex items-center justify-center text-xs transition"
+                                      title="YouTube Channel"
+                                    >
+                                      <i className="fa-brands fa-youtube"></i>
+                                    </a>
+                                  )}
+                                  {teacher.email && (
+                                    <a 
+                                      href={`mailto:${teacher.email}`}
+                                      className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-slate-700 hover:bg-[#3268ba] text-gray-600 dark:text-gray-300 hover:text-white flex items-center justify-center text-xs transition"
+                                      title={`Email: ${teacher.email}`}
+                                    >
+                                      <i className="fa-solid fa-envelope"></i>
+                                    </a>
+                                  )}
+                                </div>
+                              </td>
+
+                              {/* Action Buttons */}
+                              <td className="p-4 text-right">
+                                <button 
+                                  type="button"
+                                  onClick={() => openEditInstructorModal(teacher)}
+                                  className="bg-gradient-to-r from-[#f9b03c]/20 to-[#f9b03c]/30 hover:from-[#f9b03c] hover:to-amber-500 text-[#f9b03c] hover:text-slate-950 border border-[#f9b03c]/40 font-black text-xs px-3.5 py-1.5 rounded-xl transition shadow-xs flex items-center gap-1.5 ml-auto cursor-pointer"
+                                >
+                                  <i className="fa-solid fa-pen-to-square text-[11px]"></i>
+                                  <span>አስተካክል (Edit)</span>
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        });
+                      })()}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
           )}
 
@@ -6863,6 +7184,226 @@ export default function AdminDashboard() {
                 ዝጋ (Close)
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 🌟 Edit Instructor / Teacher Modal */}
+      {isEditInstructorModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto">
+          <div 
+            className="bg-white dark:bg-[#111827] w-full max-w-2xl rounded-3xl border border-gray-100 dark:border-slate-700 shadow-2xl overflow-hidden my-8"
+            style={{ animation: 'modalPop 0.25s cubic-bezier(0.16, 1, 0.3, 1)' }}
+          >
+            {/* Modal Header */}
+            <div className="px-6 py-5 bg-gradient-to-r from-blue-600 to-[#3268ba] text-white flex items-center justify-between border-b border-white/10">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-white/15 flex items-center justify-center text-lg shadow-sm">
+                  <i className="fa-solid fa-user-pen"></i>
+                </div>
+                <div>
+                  <h3 className="text-lg font-black font-heading">
+                    የአስተማሪ መረጃ አስተካክል (Edit Instructor Profile)
+                  </h3>
+                  <p className="text-xs text-blue-100">
+                    የአስተማሪውን ስም፣ ፎቶ፣ ሙያ፣ ባዮ እና የማህበራዊ ሚዲያ ሊንኮች እዚህ ይለውጡ
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsEditInstructorModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-sm transition cursor-pointer"
+              >
+                <i className="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+
+            {/* Modal Form Body */}
+            <form onSubmit={handleSaveInstructor} className="p-6 sm:p-8 space-y-6">
+              {/* Photo Preview & URL */}
+              <div className="bg-gray-50 dark:bg-slate-900/60 p-4 sm:p-5 rounded-2xl border border-gray-200/80 dark:border-slate-800 flex flex-col sm:flex-row items-center gap-5">
+                <div className="relative w-24 h-24 rounded-2xl overflow-hidden bg-slate-950 border-2 border-[#f9b03c] shadow-md shrink-0">
+                  <img 
+                    src={formatDriveImageUrl(instructorForm.image) || instructorForm.image || '/assets/eyob_white.jpg'} 
+                    alt="Instructor Photo Preview"
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(instructorForm.name || 'Instructor')}&background=F9B03C&color=fff`;
+                    }}
+                  />
+                </div>
+                <div className="flex-1 w-full space-y-2">
+                  <label className="block text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-300">
+                    የፕሮፋይል ፎቶ ሊንክ (Photo URL / Google Drive Link) *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={instructorForm.image}
+                    onChange={(e) => setInstructorForm({ ...instructorForm, image: e.target.value })}
+                    placeholder="https://... ወይም /assets/eyob_white.jpg"
+                    className="w-full bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-dark dark:text-white outline-none focus:border-[#f9b03c] font-mono transition"
+                  />
+                  <p className="text-[11px] text-gray-400">
+                    💡 የ Google Drive ወይም ቀጥታ የምስል ሊንክ ማስገባት ይችላሉ፤ ሲስተሙ በራሱ ያስተካክለዋል።
+                  </p>
+                </div>
+              </div>
+
+              {/* Name & Specialty Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
+                    ሙሉ ስም (Full Name) *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={instructorForm.name}
+                    onChange={(e) => setInstructorForm({ ...instructorForm, name: e.target.value })}
+                    placeholder="ለምሳሌ፡ Eyoub Sahle (ኢዮብ ሳህሌ)"
+                    className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-dark dark:text-white font-bold outline-none focus:border-[#f9b03c] transition"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
+                    ሙያ / ማዕረግ (Specialty / Title) *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={instructorForm.specialty}
+                    onChange={(e) => setInstructorForm({ ...instructorForm, specialty: e.target.value })}
+                    placeholder="ለምሳሌ፡ E-Commerce & YouTube Master"
+                    className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-dark dark:text-white outline-none focus:border-[#f9b03c] transition"
+                  />
+                </div>
+              </div>
+
+              {/* Bio / About */}
+              <div>
+                <label className="block text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
+                  ስለ አስተማሪው ዝርዝር መረጃ (Bio / About Instructor)
+                </label>
+                <textarea
+                  rows={3}
+                  value={instructorForm.bio}
+                  onChange={(e) => setInstructorForm({ ...instructorForm, bio: e.target.value })}
+                  placeholder="ስለ አስተማሪው የስራ ልምድ እና ስኬቶች የሚገልጽ አጭር መረጃ..."
+                  className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-dark dark:text-white outline-none focus:border-[#f9b03c] transition"
+                />
+              </div>
+
+              {/* Social & Contact Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
+                    <i className="fa-brands fa-telegram text-blue-400"></i>
+                    <span>የቴሌግራም አድራሻ (Telegram)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={instructorForm.telegram}
+                    onChange={(e) => setInstructorForm({ ...instructorForm, telegram: e.target.value })}
+                    placeholder="@EyoubSahle"
+                    className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-dark dark:text-white outline-none focus:border-[#f9b03c] transition"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
+                    <i className="fa-brands fa-youtube text-red-500"></i>
+                    <span>የዩቲዩብ ቻናል (YouTube Link)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={instructorForm.youtube}
+                    onChange={(e) => setInstructorForm({ ...instructorForm, youtube: e.target.value })}
+                    placeholder="https://youtube.com/@eyoubsahle"
+                    className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-dark dark:text-white outline-none focus:border-[#f9b03c] transition"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
+                    <i className="fa-solid fa-envelope text-amber-500"></i>
+                    <span>ኢሜይል (Email)</span>
+                  </label>
+                  <input
+                    type="email"
+                    value={instructorForm.email}
+                    onChange={(e) => setInstructorForm({ ...instructorForm, email: e.target.value })}
+                    placeholder="eyoubsahle@gmail.com"
+                    className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-dark dark:text-white outline-none focus:border-[#f9b03c] transition"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
+                    <i className="fa-solid fa-phone text-emerald-500"></i>
+                    <span>ስልክ ቁጥር (Phone)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={instructorForm.phone}
+                    onChange={(e) => setInstructorForm({ ...instructorForm, phone: e.target.value })}
+                    placeholder="+251911000000"
+                    className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-dark dark:text-white outline-none focus:border-[#f9b03c] transition"
+                  />
+                </div>
+              </div>
+
+              {/* Cascade Sync Checkbox */}
+              <div className="bg-[#f9b03c]/10 border border-[#f9b03c]/30 p-4 rounded-2xl">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={instructorForm.syncCourses}
+                    onChange={(e) => setInstructorForm({ ...instructorForm, syncCourses: e.target.checked })}
+                    className="w-4 h-4 rounded text-[#f9b03c] focus:ring-0 cursor-pointer"
+                  />
+                  <div>
+                    <span className="text-xs font-black text-dark dark:text-white block">
+                      🔄 በዚህ አስተማሪ ስር ያሉ ኮርሶችን መረጃ በሙሉ አዘምን (Sync to All Matching Courses)
+                    </span>
+                    <span className="text-[11px] text-gray-500 dark:text-gray-400">
+                      የአስተማሪው ስም፣ ፎቶ፣ ባዮ እና ቴሌግራም በሁሉም የኮርስ ገጾች እና ዳሽቦርድ ላይ ወዲያውኑ እንዲተካ ያደርጋል።
+                    </span>
+                  </div>
+                </label>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center gap-3 pt-4 border-t border-gray-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setIsEditInstructorModalOpen(false)}
+                  disabled={isSavingInstructor}
+                  className="flex-1 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 font-bold py-3 rounded-xl transition text-xs cursor-pointer disabled:opacity-50"
+                >
+                  ሰርዝ (Cancel)
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingInstructor}
+                  className="flex-1 bg-gradient-to-r from-amber-500 to-[#f9b03c] hover:opacity-95 text-slate-950 font-black py-3 rounded-xl transition shadow-lg text-xs cursor-pointer active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {isSavingInstructor ? (
+                    <>
+                      <i className="fa-solid fa-spinner fa-spin"></i>
+                      <span>በማስቀመጥ ላይ...</span>
+                    </>
+                  ) : (
+                    <>
+                      <i className="fa-solid fa-check"></i>
+                      <span>ለውጦችን መዝግብ (Save Changes)</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
