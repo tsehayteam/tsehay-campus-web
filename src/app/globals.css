@@ -27,17 +27,17 @@
 }
 
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
-  --plyr-color-main: #f59e0b;
-  --bodyBg: #f8fafc;
-}
-
-:root.dark {
-  --background: #000000;
+  --background: #030509;
   --foreground: #ededed;
   --plyr-color-main: #facc15;
-  --bodyBg: #000000;
+  --bodyBg: #030509;
+}
+
+:root.dark, html.dark, body {
+  --background: #030509;
+  --foreground: #ededed;
+  --plyr-color-main: #facc15;
+  --bodyBg: #030509;
 }
 
 @custom-variant dark (&:where(.dark, .dark *));
@@ -48,13 +48,19 @@ html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-tap-highlight-color: transparent;
+  background-color: #030509;
+  overflow-x: hidden;
+  max-width: 100%;
 }
 
 body {
   color: var(--foreground);
-  background: var(--background);
+  background-color: #030509 !important;
+  background: #030509 !important;
   font-family: var(--font-body), Arial, Helvetica, sans-serif;
   overflow-x: hidden;
+  max-width: 100%;
+  width: 100%;
   padding-bottom: env(safe-area-inset-bottom);
 }
 

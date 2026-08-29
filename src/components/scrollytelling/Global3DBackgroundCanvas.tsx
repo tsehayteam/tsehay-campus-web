@@ -31,12 +31,12 @@ export default function Global3DBackgroundCanvas() {
     if (!ctx) return;
 
     let animId: number;
-    let width = (canvas.width = window.innerWidth);
+    let width = (canvas.width = document.documentElement.clientWidth || window.innerWidth);
     let height = (canvas.height = window.innerHeight);
 
     const handleResize = () => {
       if (!canvas) return;
-      width = canvas.width = window.innerWidth;
+      width = canvas.width = document.documentElement.clientWidth || window.innerWidth;
       height = canvas.height = window.innerHeight;
     };
     window.addEventListener('resize', handleResize, { passive: true });
