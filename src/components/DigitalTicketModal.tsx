@@ -82,7 +82,7 @@ export default function DigitalTicketModal({ isOpen, onClose, ticket }: DigitalT
       });
       const data = await res.json();
       if (data.success) {
-        setEmailStatus(`✅ ትኬቱ ወደ ${ticket.attendeeEmail} በስኬት ተልኳል!`);
+        setEmailStatus('✅ ቲኬትዎ በተሳካ ሁኔታ ወደ ኢሜይልዎ ተልኳል!');
       } else {
         setEmailStatus('⚠️ ወደ ኢሜይል መላክ አልተቻለም፤ እባክዎ ትኬቱን በቀጥታ ያውርዱ።');
       }
@@ -249,12 +249,18 @@ export default function DigitalTicketModal({ isOpen, onClose, ticket }: DigitalT
             <div className="absolute -right-8 w-5 h-5 rounded-full bg-black/90 border-l border-amber-400/40" />
           </div>
 
-          {/* QR Code Section */}
-          <div className="flex flex-col items-center justify-center p-4 bg-white rounded-2xl text-slate-950 text-center shadow-inner">
-            <div 
-              className="w-36 h-36 sm:w-40 sm:h-40 flex items-center justify-center"
-              dangerouslySetInnerHTML={{ __html: qrSvg }}
-            />
+          {/* QR Code Section with Embedded Official Tsehay Campus Logo */}
+          <div className="flex flex-col items-center justify-center p-4 bg-white rounded-2xl text-slate-950 text-center shadow-inner relative">
+            <div className="relative w-36 h-36 sm:w-40 sm:h-40 flex items-center justify-center">
+              <div 
+                className="w-full h-full flex items-center justify-center"
+                dangerouslySetInnerHTML={{ __html: qrSvg }}
+              />
+              {/* Embedded Center Tsehay Campus Brand Logo */}
+              <div className="absolute inset-0 m-auto w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white p-0.5 shadow-md flex items-center justify-center border border-amber-400">
+                <img src="/tc-logo.jpg" alt="TC" className="w-full h-full object-cover rounded-lg" />
+              </div>
+            </div>
             
             {/* Clickable Ticket ID Copy */}
             <button
@@ -267,14 +273,18 @@ export default function DigitalTicketModal({ isOpen, onClose, ticket }: DigitalT
               <span>{ticket.ticketId}</span>
               {copiedCode && <span className="text-[10px] text-emerald-600 font-bold">(ተቀድቷል!)</span>}
             </button>
-            <p className="text-[10px] text-slate-500 mt-1">
+            <p className="text-[10px] text-slate-500 mt-1 font-medium">
               በመግቢያው በር ላይ ይህንን QR Code ያሳዩ
             </p>
           </div>
 
           {/* Email Status Alert */}
           {emailStatus && (
-            <div className="mt-3 p-2.5 rounded-xl bg-amber-400/10 border border-amber-400/30 text-xs text-amber-200 text-center">
+            <div className={`mt-3 p-3 rounded-xl text-xs text-center font-bold animate-in fade-in zoom-in-95 duration-200 ${
+              emailStatus.startsWith('✅') 
+                ? 'bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 shadow-lg shadow-emerald-500/10' 
+                : 'bg-amber-400/10 border border-amber-400/30 text-amber-200'
+            }`}>
               {emailStatus}
             </div>
           )}

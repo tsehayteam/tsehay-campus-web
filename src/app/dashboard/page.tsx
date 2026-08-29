@@ -2265,7 +2265,7 @@ function StudentDashboardContent() {
               )}
             </button>
 
-            {/* 6. Refer a Friend (ጓደኛዎን ይጋብዙ - ALX Growth Program) */}
+            {/* 6. Refer a Friend (ጓደኛዎን ይጋብዙ - Tsehay Campus Growth Program) */}
             <button 
               onClick={() => setCurrentView('referrals')} 
               className={`flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-auto md:w-full text-left text-sm cursor-pointer ${
@@ -4370,7 +4370,7 @@ function StudentDashboardContent() {
           </div>
         )}
 
-        {/* 🌟 Refer a Friend (ALX Growth Program View) */}
+        {/* 🌟 Refer a Friend (Tsehay Campus Growth Program View) */}
         {currentView === 'referrals' && (
           <div className="py-6">
             <StudentReferralSection 

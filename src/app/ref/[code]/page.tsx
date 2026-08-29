@@ -1,0 +1,31 @@
+'use client';
+
+import React, { useEffect, use } from 'react';
+import { useRouter } from 'next/navigation';
+import { captureReferralParam } from '@/lib/referralTrackingService';
+
+export default function ReferralCodeRedirectPage({ params }: { params: Promise<{ code: string }> }) {
+  const resolvedParams = use(params);
+  const router = useRouter();
+
+  useEffect(() => {
+    if (resolvedParams?.code) {
+      captureReferralParam(resolvedParams.code);
+    }
+    // Redirect directly to the Course catalog / preview with referral attribution & welcome banner
+    router.replace(`/courses?ref=${encodeURIComponent(resolvedParams?.code || '')}&welcome=true`);
+  }, [resolvedParams, router]);
+
+  return (
+    <div className="min-h-screen bg-[#06090e] flex items-center justify-center text-white font-body">
+      <div className="text-center p-6 max-w-sm rounded-3xl bg-white/5 border border-white/10 backdrop-blur-xl">
+        <div className="w-14 h-14 rounded-2xl bg-[#f9b03c]/20 text-[#f9b03c] border border-[#f9b03c]/40 flex items-center justify-center text-2xl mx-auto mb-4 animate-bounce">
+          <i className="fa-solid fa-gift"></i>
+        </div>
+        <h2 className="text-lg font-black font-heading text-white mb-1">ወደ Tsehay Campus እንኳን በደህና መጡ!</h2>
+        <p className="text-xs text-slate-300 mb-4">የጓደኛዎን ልዩ ግብዣ በማዘጋጀት ወደ ኮርሶች ገጽ እያስተላለፍንዎት ነው...</p>
+        <div className="w-8 h-8 rounded-full border-2 border-[#f9b03c] border-t-transparent animate-spin mx-auto" />
+      </div>
+    </div>
+  );
+}

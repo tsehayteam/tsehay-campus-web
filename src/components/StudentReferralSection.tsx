@@ -185,7 +185,7 @@ export default function StudentReferralSection({ courses = [], onCourseUnlocked 
           <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
             <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#f9b03c]/15 border border-[#f9b03c]/40 text-[#f9b03c] text-xs font-black tracking-wide">
               <span className="w-2 h-2 rounded-full bg-[#f9b03c] animate-ping" />
-              <span>ALX-Style Growth Program • የፀሐይ ካምፓስ አጋርነት</span>
+              <span>Tsehay Campus Growth Program • የፀሐይ ካምፓስ አጋርነት</span>
             </span>
 
             <div className="flex items-center gap-2 bg-white/5 border border-white/10 px-3.5 py-1.5 rounded-full text-xs font-bold text-slate-300">
@@ -204,7 +204,7 @@ export default function StudentReferralSection({ courses = [], onCourseUnlocked 
             </p>
           </div>
 
-          {/* 🌟 2. Rewards Milestones Grid (ALX-Style Cards) */}
+          {/* 🌟 2. Rewards Milestones Grid (Tsehay Campus Cards) */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-8">
             
             {/* Milestone 1: 5 Invites = 1 Free Course */}

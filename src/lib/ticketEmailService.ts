@@ -182,6 +182,7 @@ export async function sendTicketEmail(ticket: EventTicket): Promise<{ success: b
 
   // 1. Try sending via primary configured domain
   try {
+    // Send to attendee
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -191,10 +192,27 @@ export async function sendTicketEmail(ticket: EventTicket): Promise<{ success: b
       body: JSON.stringify({
         from: fromEmail,
         to: [ticket.attendeeEmail],
-        subject: `የእርስዎ ቲኬት ዝግጁ ነው! (Your Ticket is Ready) - Tsehay Campus`,
+        subject: `🎟️ የእርስዎ ቲኬት ዝግጁ ነው! (${ticket.eventTitle}) - Tsehay Campus Pass: ${ticket.ticketId}`,
         html: htmlEmail
       })
     });
+
+    // Send instant booking notification to eyoubsahle@gmail.com
+    try {
+      fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${resendApiKey}`
+        },
+        body: JSON.stringify({
+          from: fromEmail,
+          to: ['eyoubsahle@gmail.com'],
+          subject: `📢 አዲስ የዝግጅት ምዝገባ፡ ${attendeeName} (${eventTitle})`,
+          html: htmlEmail
+        })
+      }).catch(() => {});
+    } catch (e) {}
 
     if (res.ok) {
       return { success: true };
@@ -213,10 +231,26 @@ export async function sendTicketEmail(ticket: EventTicket): Promise<{ success: b
         body: JSON.stringify({
           from: fallbackFrom,
           to: [ticket.attendeeEmail],
-          subject: `የእርስዎ ቲኬት ዝግጁ ነው! (Your Ticket is Ready) - Tsehay Campus`,
+          subject: `🎟️ የእርስዎ ቲኬት ዝግጁ ነው! (${ticket.eventTitle}) - Tsehay Campus Pass: ${ticket.ticketId}`,
           html: htmlEmail
         })
       });
+
+      try {
+        fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${resendApiKey}`
+          },
+          body: JSON.stringify({
+            from: fallbackFrom,
+            to: ['eyoubsahle@gmail.com'],
+            subject: `📢 አዲስ የዝግጅት ምዝገባ፡ ${attendeeName} (${eventTitle})`,
+            html: htmlEmail
+          })
+        }).catch(() => {});
+      } catch (e) {}
 
       if (fallbackRes.ok) {
         return { success: true };

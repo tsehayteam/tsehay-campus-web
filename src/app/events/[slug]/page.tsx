@@ -349,7 +349,7 @@ export default function EventDetailPage() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           
           {/* Breadcrumb & Top Bar */}
-          <div className="flex flex-wrap items-center justify-between gap-4 mb-8 pt-4">
+          <div className="flex items-center justify-between gap-4 mb-8 pt-4">
             <Link 
               href="/#events" 
               className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-xs text-slate-300 transition"
@@ -357,16 +357,6 @@ export default function EventDetailPage() {
               <i className="fa-solid fa-arrow-left text-[#f9b03c] text-xs"></i>
               <span>ወደ ዋናው ገጽ (All Events)</span>
             </Link>
-
-            <button
-              type="button"
-              onClick={() => setIsShareModalOpen(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#3268ba] hover:bg-[#254f8e] text-white text-xs font-black transition shadow-[0_0_20px_rgba(50,104,186,0.4)] border border-[#4a85df]/50 cursor-pointer active:scale-95"
-              title="ክንውኑን አጋራ (Share Event)"
-            >
-              <i className="fa-solid fa-share-nodes text-white text-xs"></i>
-              <span>አጋራ (Share Event)</span>
-            </button>
           </div>
 
           {/* Cinematic Hero Container */}

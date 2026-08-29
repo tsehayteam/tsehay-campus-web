@@ -1,5 +1,5 @@
 /**
- * 🌟 ALX Africa-Style Affiliate & Referral Growth Engine Service
+ * 🌟 Official Tsehay Campus Affiliate & Referral Growth Engine Service
  * Tsehay Campus (ፀሐይ ካምፓስ)
  */
 

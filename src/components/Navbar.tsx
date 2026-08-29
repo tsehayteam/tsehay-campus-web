@@ -290,12 +290,10 @@ export default function Navbar() {
           <button
             type="button"
             onClick={openCurtain}
-            className="relative pointer-events-auto px-5 sm:px-6 py-1.5 sm:py-2 rounded-full flex items-center gap-2 group transition-all duration-300 active:scale-95 cursor-pointer whitespace-nowrap backdrop-blur-xl bg-black/90 border border-white/15 hover:border-[#f9b03c] text-white hover:text-[#f9b03c] shadow-lg hover:shadow-[0_0_25px_rgba(249,176,60,0.35)]"
+            className="relative pointer-events-auto px-4 py-1.5 rounded-full flex items-center gap-1.5 group transition-all duration-300 active:scale-95 cursor-pointer whitespace-nowrap backdrop-blur-2xl bg-black/90 border border-white/20 hover:border-[#f9b03c] text-white hover:text-[#f9b03c] shadow-[0_10px_30px_rgba(0,0,0,0.8),0_0_20px_rgba(249,176,60,0.25)]"
           >
-            <span className="text-xs sm:text-[13px] font-black tracking-wide transition-colors whitespace-nowrap flex items-center gap-1.5 font-heading">
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#f9b03c] via-amber-200 to-[#5a93e8]">
-                🧭 ዋና ማውጫ ▾
-              </span>
+            <span className="text-xs font-black tracking-wide whitespace-nowrap flex items-center gap-1 font-heading text-transparent bg-clip-text bg-gradient-to-r from-[#f9b03c] via-amber-200 to-[#5a93e8]">
+              🧭 ▾
             </span>
           </button>
         </div>
@@ -511,7 +509,7 @@ export default function Navbar() {
 
                   {/* Sleek Animated Frosted-Glass Profile Dropdown */}
                   {showProfileDropdown && (
-                    <div className="absolute right-0 top-full mt-2 min-w-[220px] max-w-[280px] rounded-2xl bg-black/90 backdrop-blur-2xl border border-white/10 shadow-2xl p-3 z-50 animate-in fade-in zoom-in-95 duration-200 space-y-2">
+                    <div className="absolute right-0 top-full mt-2 min-w-[220px] max-w-[280px] rounded-2xl bg-black/90 backdrop-blur-2xl border border-white/10 shadow-2xl p-3 z-[9999] animate-in fade-in zoom-in-95 duration-200 space-y-2">
                       {/* User Info Header */}
                       <div className="flex items-center gap-2.5 px-2 py-1.5 pb-2.5 border-b border-white/10">
                         <img
@@ -793,10 +791,10 @@ export default function Navbar() {
           <button 
             type="button"
             onClick={closeCurtain}
-            className="pointer-events-auto bg-black/90 backdrop-blur-xl border-x border-b border-[#f9b03c]/30 hover:border-[#f9b03c] text-white hover:text-[#f9b03c] text-xs font-black font-heading px-5 sm:px-6 py-1.5 sm:py-2 rounded-b-xl shadow-lg hover:shadow-[0_10px_25px_rgba(0,0,0,0.9),0_0_20px_rgba(249,176,60,0.35)] transition-all duration-200 active:scale-95 cursor-pointer flex items-center gap-1.5 whitespace-nowrap"
-            title="ማውጫ ዝጋ / Close Menu (Click to Roll Up)"
+            className="pointer-events-auto bg-black/90 backdrop-blur-xl border-x border-b border-[#f9b03c]/40 hover:border-[#f9b03c] text-white hover:text-[#f9b03c] text-xs font-black font-heading px-5 sm:px-6 py-1.5 rounded-b-xl shadow-lg hover:shadow-[0_10px_25px_rgba(0,0,0,0.9),0_0_20px_rgba(249,176,60,0.35)] transition-all duration-200 active:scale-95 cursor-pointer flex items-center gap-1.5 whitespace-nowrap"
+            title="ዝጋ / Close Menu"
           >
-            <span>🧭 ማውጫ ዝጋ ▴</span>
+            <span>▴ ዝጋ (Close)</span>
           </button>
         </div>
       )}

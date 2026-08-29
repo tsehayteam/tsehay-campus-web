@@ -7,8 +7,8 @@ import { collection, onSnapshot, query, doc, setDoc, serverTimestamp } from 'fir
 import PaymentModal from '@/components/PaymentModal';
 import RequireAuthModal from '@/components/RequireAuthModal';
 import { useLanguage } from '@/context/LanguageContext';
-import Footer from '@/components/Footer';
 import { useAuth } from '@/context/AuthContext';
+import Footer from '@/components/Footer';
 import { useRouter } from 'next/navigation';
 
 import SmartSearchInput from '@/components/SmartSearchInput';
@@ -35,6 +35,18 @@ export default function Courses() {
   const { t } = useLanguage();
   const { user } = useAuth();
   const router = useRouter();
+  const [isReferralWelcome, setIsReferralWelcome] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('welcome') === 'true' || params.get('ref')) {
+          setIsReferralWelcome(true);
+        }
+      } catch (e) {}
+    }
+  }, []);
   
   // Search and Category Filtering States
   const [searchQuery, setSearchQuery] = useState("");
@@ -282,12 +294,25 @@ export default function Courses() {
             {/* Golden Yellow Glow Divider */}
             <div className="w-24 h-1.5 bg-gradient-to-r from-transparent via-[#f9b03c] to-transparent mx-auto rounded-full shadow-[0_0_12px_rgba(249,176,60,0.6)] mb-6" />
             
-            <p className="text-slate-300 text-base md:text-lg max-w-3xl mx-auto font-medium leading-relaxed mb-10 font-body">
+            <p className="text-slate-300 text-base md:text-lg max-w-3xl mx-auto font-medium leading-relaxed mb-8 font-body">
               {t('courses_subtitle')}
             </p>
 
+            {/* 🎁 Referral Invitee Welcome Banner */}
+            {isReferralWelcome && (
+              <div className="mb-8 p-4 rounded-2xl bg-gradient-to-r from-amber-500/20 via-[#f9b03c]/20 to-blue-500/20 border border-[#f9b03c]/50 text-white max-w-2xl mx-auto shadow-lg backdrop-blur-xl animate-in fade-in zoom-in-95 duration-300 flex items-center gap-3.5">
+                <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-[#f9b03c] to-amber-400 text-slate-950 flex items-center justify-center font-black text-xl shrink-0 shadow-md">
+                  🎁
+                </div>
+                <div className="text-left">
+                  <p className="text-xs font-black text-[#f9b03c] uppercase tracking-wider font-heading">የጓደኛ ልዩ ግብዣ • Exclusive Referral Welcome</p>
+                  <p className="text-xs sm:text-sm text-slate-200 font-medium">በጓደኛዎ ልዩ ግብዣ መጥተዋል! አሁን ማንኛውንም ኮርስ በመምረጥ ነፃ የቪዲዮ ትምህርቶችን በቅድሚያ ይመልከቱ እና ይመዝገቡ።</p>
+                </div>
+              </div>
+            )}
+
             {/* Futuristic Glassmorphic Search Bar */}
-            <div className="max-w-2xl mx-auto mb-8">
+            <div className="max-w-2xl mx-auto mb-8 relative z-30">
               <SmartSearchInput 
                 courses={courses}
                 placeholder="ኮርሶችን ይፈልጉ (e.g. E-Commerce, YouTube, Marketing, Brokerage, Film, Career)..."

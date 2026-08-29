@@ -5067,7 +5067,7 @@ export default function AdminDashboard() {
                         <i className="fa-solid fa-ranking-star text-[#f9b03c]"></i>
                         <span>የተማሪ አጋሮች ደረጃ ሰንጠረዥ (Affiliates Leaderboard)</span>
                       </h3>
-                      <span className="text-xs text-gray-400 font-bold">ALX Growth Model</span>
+                      <span className="text-xs text-gray-400 font-bold">Tsehay Campus Growth Program</span>
                     </div>
 
                     {(() => {

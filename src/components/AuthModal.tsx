@@ -388,7 +388,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
           }).catch(e => console.warn("Welcome email trigger notice:", e));
         } catch (e) {}
 
-        // 🌟 Trigger ALX-Style Referral Attribution Credit
+        // 🌟 Trigger Official Tsehay Campus Referral Attribution Credit
         const storedReferrerUid = getStoredReferrerUid();
         if (storedReferrerUid && storedReferrerUid !== cred.user.uid) {
           fetch('/api/referrals/record', {
