@@ -1,28 +1,43 @@
 'use client';
 
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageContext';
 
 interface RequireAuthModalProps {
   isOpen: boolean;
   onClose: () => void;
+  title?: string;
+  description?: string;
   courseTitle?: string;
   courseImage?: string;
   isFree?: boolean;
-  onContinueAuth: (isSignup: boolean) => void;
+  onContinueAuth?: (isSignup: boolean) => void;
 }
 
 export default function RequireAuthModal({
   isOpen,
   onClose,
+  title,
+  description,
   courseTitle,
   courseImage,
   isFree = false,
   onContinueAuth
 }: RequireAuthModalProps) {
   const { t } = useLanguage();
+  const router = useRouter();
 
   if (!isOpen) return null;
+
+  const handleAuthRedirect = (isSignup: boolean) => {
+    if (onContinueAuth) {
+      onContinueAuth(isSignup);
+    } else {
+      onClose();
+      router.push(isSignup ? '/signup' : '/login');
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
@@ -59,14 +74,16 @@ export default function RequireAuthModal({
 
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-400/10 dark:bg-amber-400/15 border border-amber-400/30 text-amber-800 dark:text-[#f9b03c] text-xs font-black mb-2.5">
             <span className="w-2 h-2 rounded-full bg-[#f9b03c] animate-ping"></span>
-            <span>{isFree ? "የነፃ ኮርስ ምዝገባ" : "የኮርስ ግዢ ምዝገባ"}</span>
+            <span>{title ? "የአባልነት መግቢያ" : (isFree ? "የነፃ ኮርስ ምዝገባ" : "የኮርስ ግዢ ምዝገባ")}</span>
           </div>
 
           <h3 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white font-heading tracking-tight">
-            ለመቀጠል እባክዎ አስቀድመው ይመዝገቡ
+            {title || "ለመቀጠል እባክዎ አስቀድመው ይመዝገቡ"}
           </h3>
           <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-2 max-w-sm leading-relaxed">
-            {courseTitle ? (
+            {description ? (
+              description
+            ) : courseTitle ? (
               <>
                 <span className="font-bold text-amber-700 dark:text-[#f9b03c]">"{courseTitle}"</span> የተሰኘውን ኮርስ ለመጀመር፣ እድገትዎን ለመከታተል እና ሰርተፍኬት ለማግኘት አባል መሆን ያስፈልግዎታል!
               </>
@@ -102,7 +119,7 @@ export default function RequireAuthModal({
         <div className="flex flex-col gap-3">
           <button
             type="button"
-            onClick={() => onContinueAuth(true)}
+            onClick={() => handleAuthRedirect(true)}
             className="w-full btn-buy-now-vibe py-3.5 sm:py-4 rounded-xl sm:rounded-2xl text-sm sm:text-base flex items-center justify-center gap-2.5 cursor-pointer active:scale-98 group font-black shadow-lg"
           >
             <span>እሺ፣ አሁኑኑ ይመዝገቡ (Create Account)</span>
@@ -112,7 +129,7 @@ export default function RequireAuthModal({
           <div className="flex items-center justify-between gap-3 pt-1">
             <button
               type="button"
-              onClick={() => onContinueAuth(false)}
+              onClick={() => handleAuthRedirect(false)}
               className="flex-1 bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-slate-800 dark:text-slate-200 font-bold py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm transition-all border border-gray-200 dark:border-white/10 flex items-center justify-center gap-1.5 cursor-pointer active:scale-98"
             >
               <i className="fa-solid fa-arrow-right-to-bracket text-xs text-amber-500"></i>
