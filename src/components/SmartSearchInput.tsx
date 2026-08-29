@@ -83,7 +83,7 @@ export default function SmartSearchInput({
             placeholder={placeholder}
             className={
               compact 
-                ? "w-full bg-slate-900/80 dark:bg-slate-950/80 backdrop-blur-xl border-2 border-[#f9b03c]/70 shadow-[0_0_14px_rgba(249,176,60,0.35)] animate-pulse focus:animate-none focus:border-[#f9b03c] focus:ring-1 focus:ring-[#f9b03c]/50 rounded-xl py-2 pl-9 pr-8 text-white font-medium outline-none transition-all duration-300 text-xs placeholder:text-gray-300"
+                ? "w-full bg-white/[0.06] dark:bg-slate-950/70 backdrop-blur-xl border border-[#3268ba]/40 shadow-[0_0_15px_rgba(50,104,186,0.15)] focus:border-[#3268ba] focus:ring-1 focus:ring-[#3268ba]/50 rounded-full py-2 pl-9 pr-8 text-white font-medium outline-none transition-all duration-300 text-xs placeholder:text-gray-400"
                 : "w-full bg-slate-900/70 dark:bg-[#0b0f19]/70 backdrop-blur-2xl border border-white/10 rounded-2xl py-4 sm:py-4.5 pl-13 sm:pl-14 pr-12 text-white font-medium outline-none focus:border-[#f9b03c] focus:ring-2 focus:ring-[#f9b03c]/25 focus:shadow-[0_0_30px_rgba(249,176,60,0.25)] transition-all duration-300 text-sm sm:text-base placeholder:font-normal placeholder:text-gray-400 shadow-[0_8px_30px_rgba(0,0,0,0.4)]"
             }
             style={{
