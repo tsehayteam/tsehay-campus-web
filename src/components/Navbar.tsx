@@ -278,28 +278,22 @@ export default function Navbar() {
 
   return (
     <>
-      {/* ===================== 1. FLOATING 3D MINIMAL CAPSULE TRIGGER (CENTRALIZED TOGGLE) ===================== */}
+      {/* ===================== 1. SINGLE UNIFIED TOP-CENTER TOGGLE CAPSULE ===================== */}
       <div 
-        className="fixed top-0 flex justify-center pointer-events-auto select-none transition-all duration-300 left-1/2 -translate-x-1/2 z-[100000]"
-        title={isCurtainOpen ? "ማውጫ ዝጋ / Close Menu (Click to Roll Up)" : "ዋና ማውጫ / Menu (Click to Expand Navigation)"}
+        className="fixed top-3 flex justify-center pointer-events-auto select-none transition-all duration-300 left-1/2 -translate-x-1/2 z-[100000]"
+        title={isCurtainOpen ? "ማውጫ ዝጋ / Close Menu" : "ዋና ማውጫ / Menu"}
       >
         <button
           type="button"
           onClick={isCurtainOpen ? closeCurtain : openCurtain}
-          className={`pointer-events-auto border-x border-b px-6 sm:px-8 py-2 sm:py-2.5 rounded-b-2xl flex items-center gap-2.5 sm:gap-3 group transition-all duration-300 active:scale-95 cursor-pointer whitespace-nowrap backdrop-blur-2xl ${
+          className={`pointer-events-auto px-5 sm:px-6 py-1.5 sm:py-2 rounded-full flex items-center gap-2 group transition-all duration-300 active:scale-95 cursor-pointer whitespace-nowrap backdrop-blur-xl bg-black/85 border shadow-lg ${
             isCurtainOpen
-              ? 'bg-[#030509]/95 hover:bg-[#070c18] border-[#f9b03c]/80 hover:border-[#f9b03c] shadow-[0_0_30px_rgba(249,176,60,0.5),0_10px_35px_rgba(0,0,0,0.95)] text-[#f9b03c]'
-              : 'bg-[#030509]/95 hover:bg-[#070c18] border-[#f9b03c]/60 hover:border-[#f9b03c] shadow-[0_0_25px_rgba(249,176,60,0.35),0_10px_35px_rgba(0,0,0,0.9)] text-white hover:text-[#f9b03c]'
+              ? 'border-[#f9b03c] text-[#f9b03c] shadow-[0_0_25px_rgba(249,176,60,0.4)]'
+              : 'border-[#f9b03c]/30 hover:border-[#f9b03c] text-white hover:text-[#f9b03c] shadow-[0_0_20px_rgba(0,0,0,0.8)]'
           }`}
         >
-          {/* Glowing Compass Dot */}
-          <div className="w-5 h-5 rounded-full bg-[#f9b03c]/20 border border-[#f9b03c]/60 flex items-center justify-center text-[#f9b03c] text-[11px] shadow-[0_0_10px_rgba(249,176,60,0.5)] group-hover:scale-110 group-hover:rotate-12 transition-transform">
-            <i className={`fa-solid ${isCurtainOpen ? 'fa-chevron-up' : 'fa-compass'}`}></i>
-          </div>
-
-          {/* Label Text */}
           <span className="text-xs sm:text-[13px] font-black tracking-wide transition-colors whitespace-nowrap flex items-center gap-1.5 font-heading">
-            <span>{isCurtainOpen ? '🧭 ማውጫ ዝጋ / Close ▴' : '🧭 ዋና ማውጫ / Menu ▾'}</span>
+            {isCurtainOpen ? '🧭 ዝጋ ▴' : '🧭 ዋና ማውጫ ▾'}
           </span>
         </button>
       </div>
@@ -327,28 +321,6 @@ export default function Navbar() {
           willChange: 'transform, opacity',
         }}
       >
-        {/* Sleek Center Roll-Up Handle at Bottom */}
-        {isCurtainOpen && (
-          <div 
-            className="absolute -bottom-8 flex justify-center pointer-events-auto z-[10000] left-1/2 -translate-x-1/2"
-            style={{ width: 'max-content' }}
-          >
-            <button 
-              type="button"
-              onClick={closeCurtain}
-              className="curtain-rollup-handle pointer-events-auto px-5 sm:px-6 py-1.5 sm:py-2 rounded-b-2xl flex items-center gap-2 text-white hover:text-white cursor-pointer group active:scale-95 shadow-[0_10px_30px_rgba(0,0,0,0.9),0_0_25px_rgba(249,176,60,0.4)] whitespace-nowrap bg-[#030509]/95 border-x border-b border-[#f9b03c]/50"
-              title="ወደ ላይ መልሰህ እጠፍ (Roll Up Menu)"
-            >
-              <div className="w-4 h-4 rounded-full bg-gradient-to-tr from-[#f9b03c] to-amber-300 text-slate-950 flex items-center justify-center text-[10px] font-black shadow-[0_0_10px_rgba(249,176,60,0.5)] shrink-0 group-hover:scale-110 transition-transform">
-                <i className="fa-solid fa-chevron-up text-[9px] font-black"></i>
-              </div>
-              <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-white group-hover:text-[#f9b03c] font-heading transition-colors">
-                ወደ ላይ እጠፍ (Roll Up)
-              </span>
-            </button>
-          </div>
-        )}
-
         {/* Navbar Inner Content */}
         <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8">
           
@@ -563,18 +535,6 @@ export default function Navbar() {
               >
                 <i className={`fa-solid ${theme === 'dark' ? 'fa-moon' : 'fa-sun'}`}></i>
               </button>
-
-              {/* Seamless Integrated Close / Roll-Up Button (🧭 ማውጫ ዝጋ / Close ▴) */}
-              <button
-                type="button"
-                onClick={closeCurtain}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 hover:bg-[#f9b03c]/20 border border-white/15 hover:border-[#f9b03c]/50 text-slate-200 hover:text-[#f9b03c] font-black text-xs transition-all active:scale-95 cursor-pointer shadow-sm"
-                title="ማውጫ ዝጋ (Close Menu)"
-              >
-                <i className="fa-solid fa-compass text-[11px] text-[#f9b03c]"></i>
-                <span className="hidden sm:inline">🧭 ማውጫ ዝጋ / Close ▴</span>
-                <span className="sm:hidden">ዝጋ ▴</span>
-              </button>
             </div>
           </div>
 
@@ -763,7 +723,7 @@ export default function Navbar() {
               className="mt-2 py-2 px-6 rounded-full bg-white/10 hover:bg-white/15 text-slate-300 hover:text-white border border-white/10 flex items-center gap-2 text-xs font-bold transition cursor-pointer active:scale-95"
             >
               <i className="fa-solid fa-chevron-up text-[10px] text-[#f9b03c]"></i>
-              <span>🧭 ማውጫ ዝጋ / Close ▴</span>
+              <span>ዝጋ ▴</span>
             </button>
 
           </div>
