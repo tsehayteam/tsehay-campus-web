@@ -108,6 +108,25 @@ export default function CommunityPage() {
     };
   }, [activeCategory]);
 
+  // Deep-link auto-scroll when visiting /community?post=ID or /community#post-ID
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const urlParams = new URLSearchParams(window.location.search);
+    const targetPostId = urlParams.get('post') || window.location.hash.replace('#post-', '');
+    if (targetPostId && posts.length > 0) {
+      setTimeout(() => {
+        const el = document.getElementById(`post-${targetPostId}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          el.classList.add('ring-2', 'ring-[#f9b03c]', 'ring-offset-2', 'ring-offset-slate-950');
+          setTimeout(() => {
+            el.classList.remove('ring-2', 'ring-[#f9b03c]', 'ring-offset-2', 'ring-offset-slate-950');
+          }, 3000);
+        }
+      }, 300);
+    }
+  }, [posts]);
+
   // Handle Comments Toggle
   const toggleComments = (postId: string) => {
     setExpandedComments((prev) => {
@@ -224,6 +243,38 @@ export default function CommunityPage() {
     } catch (e) {
       console.error('Error toggling like:', e);
     }
+  };
+
+  // Handle Toggle Pin (Optimistic UI)
+  const handleTogglePin = async (post: CommunityPost) => {
+    const nextPinned = !post.isPinned;
+    setPosts(prev => prev.map(p => p.id === post.id ? { ...p, isPinned: nextPinned } : p));
+    try {
+      await pinCommunityPost(post.id, nextPinned);
+    } catch (e) {
+      console.error('Error pinning post:', e);
+    }
+  };
+
+  // Handle Share Post (Web Share API + Clipboard Copy)
+  const handleSharePost = async (post: CommunityPost) => {
+    const postUrl = `${window.location.origin}/community?post=${encodeURIComponent(post.id)}`;
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Tsehay Campus Community',
+          text: post.content.substring(0, 120),
+          url: postUrl
+        });
+        return;
+      } catch (e) {}
+    }
+
+    try {
+      await navigator.clipboard.writeText(postUrl);
+      setCopiedPostId(post.id);
+      setTimeout(() => setCopiedPostId(null), 2500);
+    } catch (e) {}
   };
 
   // Handle Submit Comment
@@ -623,6 +674,7 @@ export default function CommunityPage() {
                   return (
                     <article
                       key={post.id}
+                      id={`post-${post.id}`}
                       className="rounded-3xl border border-white/10 bg-[#050811]/90 backdrop-blur-xl p-5 sm:p-7 shadow-xl space-y-4 transition-all duration-300 hover:border-white/20"
                     >
                       {/* Pinned & Featured Badges */}
@@ -696,9 +748,9 @@ export default function CommunityPage() {
                           {userProfile?.isAdmin && (
                             <>
                               <button
-                                onClick={() => pinCommunityPost(post.id, !post.isPinned)}
+                                onClick={() => handleTogglePin(post)}
                                 className={`w-8 h-8 rounded-xl border flex items-center justify-center text-xs transition cursor-pointer ${
-                                  post.isPinned ? 'bg-amber-400/20 text-amber-400 border-amber-400/40' : 'bg-white/5 text-slate-400 border-white/10 hover:text-white'
+                                  post.isPinned ? 'bg-amber-400/20 text-amber-400 border-amber-400/40 shadow-[0_0_10px_rgba(249,176,60,0.3)]' : 'bg-white/5 text-slate-400 border-white/10 hover:text-white'
                                 }`}
                                 title={post.isPinned ? "ማስቀሪያን አንሳ" : "ወደ ላይ ሰካ (Pin Post)"}
                               >
@@ -826,15 +878,18 @@ export default function CommunityPage() {
 
                           {/* Share / Copy Link */}
                           <button
-                            onClick={() => {
-                              navigator.clipboard.writeText(`${window.location.origin}/community#post-${post.id}`);
-                              setCopiedPostId(post.id);
-                              setTimeout(() => setCopiedPostId(null), 2000);
-                            }}
-                            className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border border-white/10 text-xs transition cursor-pointer"
-                            title="የፖስቱን ሊንክ ቅዳ"
+                            onClick={() => handleSharePost(post)}
+                            className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-[#f9b03c] border border-white/10 text-xs transition cursor-pointer flex items-center gap-1.5 active:scale-95"
+                            title="የፖስቱን ሊንክ አጋራ / ቅዳ (Share Post)"
                           >
-                            {copiedPostId === post.id ? '✓ ተቀድቷል' : <i className="fa-solid fa-share-nodes"></i>}
+                            {copiedPostId === post.id ? (
+                              <span className="text-[#f9b03c] font-black text-[11px]">✓ ሊንኩ ተገልብጧል (Copied!)</span>
+                            ) : (
+                              <>
+                                <i className="fa-solid fa-share-nodes"></i>
+                                <span className="hidden sm:inline text-[11px]">አጋራ</span>
+                              </>
+                            )}
                           </button>
                         </div>
                       </div>

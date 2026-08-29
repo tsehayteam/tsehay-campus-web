@@ -276,29 +276,31 @@ export const createCommunityPost = async (post: Omit<CommunityPost, 'id' | 'like
   return docId;
 };
 
-// 3. Toggle Like on Post
-export const toggleLikePost = async (postId: string, userId: string, currentlyLiked: boolean) => {
+// 3. Toggle Like on a Post
+export const toggleLikePost = async (postId: string, userId: string, isLiked: boolean) => {
+  // 1. Client Firestore Updates
   try {
     const postDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_posts', postId);
-    if (currentlyLiked) {
-      await updateDoc(postDocRef, {
-        likes: arrayRemove(userId)
-      });
-    } else {
-      await updateDoc(postDocRef, {
-        likes: arrayUnion(userId)
-      });
-    }
-  } catch (e) {
-    try {
-      const rootDocRef = doc(db, 'community_posts', postId);
-      if (currentlyLiked) {
-        await updateDoc(rootDocRef, { likes: arrayRemove(userId) });
-      } else {
-        await updateDoc(rootDocRef, { likes: arrayUnion(userId) });
-      }
-    } catch (err) {}
-  }
+    await updateDoc(postDocRef, {
+      likes: isLiked ? arrayRemove(userId) : arrayUnion(userId)
+    });
+  } catch (err) {}
+
+  try {
+    const rootDocRef = doc(db, 'community_posts', postId);
+    await updateDoc(rootDocRef, {
+      likes: isLiked ? arrayRemove(userId) : arrayUnion(userId)
+    });
+  } catch (err) {}
+
+  // 2. Server API Dispatch
+  try {
+    await fetch('/api/community/like', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ postId, userId, isLiked })
+    });
+  } catch (apiErr) {}
 };
 
 // 4. Delete Community Post
@@ -348,10 +350,10 @@ export const pinCommunityPost = async (postId: string, isPinned: boolean) => {
   } catch (e) {}
 
   try {
-    await fetch('/api/admin/community', {
-      method: 'PATCH',
+    await fetch('/api/community/pin', {
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: postId, isPinned })
+      body: JSON.stringify({ postId, isPinned })
     });
   } catch (e) {}
 };
@@ -431,29 +433,42 @@ export const addCommentToPost = async (
     content: string;
   }
 ) => {
-  const commentsRef = collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_posts', postId, 'comments');
-  const postDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_posts', postId);
+  // 1. Client Firestore
+  try {
+    const commentsRef = collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_posts', postId, 'comments');
+    const postDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_posts', postId);
 
-  await addDoc(commentsRef, {
-    ...commentData,
-    createdAt: serverTimestamp(),
-  });
+    await addDoc(commentsRef, {
+      ...commentData,
+      createdAt: serverTimestamp(),
+    });
 
-  // Increment comment count
-  await updateDoc(postDocRef, {
-    commentsCount: increment(1),
-  });
+    await updateDoc(postDocRef, {
+      commentsCount: increment(1),
+    });
+  } catch (e) {}
+
+  // 2. Server API Dispatch
+  try {
+    await fetch('/api/community/comment', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ postId, ...commentData })
+    });
+  } catch (apiErr) {}
 };
 
 // 9. Delete Comment
 export const deleteCommentFromPost = async (postId: string, commentId: string) => {
-  const commentDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_posts', postId, 'comments', commentId);
-  const postDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_posts', postId);
+  try {
+    const commentDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_posts', postId, 'comments', commentId);
+    const postDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_posts', postId);
 
-  await deleteDoc(commentDocRef);
-  await updateDoc(postDocRef, {
-    commentsCount: increment(-1),
-  });
+    await deleteDoc(commentDocRef);
+    await updateDoc(postDocRef, {
+      commentsCount: increment(-1),
+    });
+  } catch (e) {}
 };
 
 // ==========================================
@@ -552,7 +567,7 @@ export const subscribeConversationMessages = (
   }
 };
 
-// Send a Direct Message
+// Send a Direct Message with Multi-tier Resilience
 export const sendDirectMessage = async (
   conversationId: string,
   message: {
@@ -568,47 +583,64 @@ export const sendDirectMessage = async (
     imageUrl?: string | null;
   }
 ) => {
-  const convDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_conversations', conversationId);
-  const msgCollRef = collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_conversations', conversationId, 'messages');
+  // 1. Client Firestore
+  try {
+    const convDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_conversations', conversationId);
+    const msgCollRef = collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_conversations', conversationId, 'messages');
 
-  // 1. Add message doc
-  await addDoc(msgCollRef, {
-    conversationId,
-    senderId: message.senderId,
-    senderName: message.senderName,
-    senderPhoto: message.senderPhoto,
-    senderEmail: message.senderEmail,
-    receiverId: message.receiverId,
-    content: message.content,
-    imageUrl: message.imageUrl || null,
-    createdAt: serverTimestamp(),
-    isRead: false,
-  });
+    await addDoc(msgCollRef, {
+      conversationId,
+      senderId: message.senderId,
+      senderName: message.senderName,
+      senderPhoto: message.senderPhoto,
+      senderEmail: message.senderEmail,
+      receiverId: message.receiverId,
+      content: message.content,
+      imageUrl: message.imageUrl || null,
+      createdAt: serverTimestamp(),
+      isRead: false,
+    });
 
-  // 2. Set or Update conversation parent doc
-  await setDoc(
-    convDocRef,
-    {
-      participants: [message.senderId, message.receiverId],
-      participantDetails: {
-        [message.senderId]: {
-          name: message.senderName,
-          photo: message.senderPhoto,
-          email: message.senderEmail,
-          isAdmin: isUserAdmin(message.senderEmail),
+    await setDoc(
+      convDocRef,
+      {
+        participants: [message.senderId, message.receiverId],
+        participantDetails: {
+          [message.senderId]: {
+            name: message.senderName,
+            photo: message.senderPhoto,
+            email: message.senderEmail,
+            isAdmin: isUserAdmin(message.senderEmail),
+          },
+          [message.receiverId]: {
+            name: message.receiverName,
+            photo: message.receiverPhoto,
+            email: message.receiverEmail,
+            isAdmin: isUserAdmin(message.receiverEmail),
+          },
         },
-        [message.receiverId]: {
-          name: message.receiverName,
-          photo: message.receiverPhoto,
-          email: message.receiverEmail,
-          isAdmin: isUserAdmin(message.receiverEmail),
-        },
+        lastMessage: message.content || (message.imageUrl ? '📷 ምስል ተልኳል' : ''),
+        lastMessageSenderId: message.senderId,
+        lastMessageTime: serverTimestamp(),
+        [`unreadCount.${message.receiverId}`]: increment(1),
       },
-      lastMessage: message.content || (message.imageUrl ? '📷 ምስል ተልኳል' : ''),
-      lastMessageSenderId: message.senderId,
-      lastMessageTime: serverTimestamp(),
-      [`unreadCount.${message.receiverId}`]: increment(1),
-    },
-    { merge: true }
-  );
+      { merge: true }
+    );
+  } catch (clientErr) {
+    console.warn('Client direct message notice:', clientErr);
+  }
+
+  // 2. Server API Dispatch
+  try {
+    await fetch('/api/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        conversationId,
+        ...message
+      })
+    });
+  } catch (apiErr) {}
+
+  return { success: true };
 };

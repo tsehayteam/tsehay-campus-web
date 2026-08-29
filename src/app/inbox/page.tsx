@@ -157,10 +157,10 @@ function InboxContent() {
         } else {
           setActiveRecipient({
             uid: targetUserId,
-            name: targetUserId === 'admin-tsehay' ? 'Tsehay Campus Admin' : 'ተማሪ',
-            photo: targetUserId === 'admin-tsehay' ? '/tc-logo.jpg' : `https://ui-avatars.com/api/?name=User&background=f9b03c&color=111827&bold=true`,
-            email: targetUserId === 'admin-tsehay' ? 'admin@tsehaycampus.com' : '',
-            isAdmin: targetUserId === 'admin-tsehay',
+            name: targetUserId === 'admin-tsehay' || targetUserId === 'admin' ? 'Tsehay Campus Admin (Help & Support)' : 'ተማሪ / መምህር',
+            photo: targetUserId === 'admin-tsehay' || targetUserId === 'admin' ? '/tc-logo.jpg' : `https://ui-avatars.com/api/?name=${encodeURIComponent(targetUserId)}&background=f9b03c&color=111827&bold=true`,
+            email: targetUserId === 'admin-tsehay' || targetUserId === 'admin' ? 'admin@tsehaycampus.com' : '',
+            isAdmin: targetUserId === 'admin-tsehay' || targetUserId === 'admin',
             isPro: true,
           });
         }
@@ -188,24 +188,50 @@ function InboxContent() {
     };
   }, [currentUser, targetUserId, availableContacts]);
 
-  // Subscribe to messages in active conversation
+  // Subscribe to messages in active conversation + API fallback
   useEffect(() => {
     if (!activeConversationId) {
       setMessages([]);
+      setMessagesLoading(false);
       return;
     }
 
     setMessagesLoading(true);
+
+    // 1. API Fallback fetch
+    const fetchApiMessages = async () => {
+      try {
+        const res = await fetch(`/api/messages?conversationId=${encodeURIComponent(activeConversationId)}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.messages && Array.isArray(data.messages) && data.messages.length > 0) {
+            setMessages(data.messages);
+            setMessagesLoading(false);
+          }
+        }
+      } catch (e) {}
+    };
+    fetchApiMessages();
+
+    // 2. Real-time Firestore Subscription
     const unsub = subscribeConversationMessages(activeConversationId, (liveMsgs) => {
-      setMessages(liveMsgs);
+      if (liveMsgs.length > 0) {
+        setMessages(liveMsgs);
+      }
       setMessagesLoading(false);
       setTimeout(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
       }, 100);
     });
 
+    // 3. Safety Spinner Auto-Dismiss
+    const safetyTimer = setTimeout(() => {
+      setMessagesLoading(false);
+    }, 1200);
+
     return () => {
       if (typeof unsub === 'function') unsub();
+      clearTimeout(safetyTimer);
     };
   }, [activeConversationId]);
 
@@ -214,7 +240,7 @@ function InboxContent() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Handle Send Direct Message
+  // Handle Send Direct Message (Instant 0ms Optimistic UI)
   const handleSendMessage = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!currentUser || !activeRecipient || !activeConversationId) return;
@@ -222,7 +248,65 @@ function InboxContent() {
     const trimmed = inputMessage.trim();
     if (!trimmed && !attachedChatImage) return;
 
+    const tempMsgId = `msg_${Date.now()}`;
+    const nowIso = new Date().toISOString();
+    const optimisticMessage: DirectMessage = {
+      id: tempMsgId,
+      conversationId: activeConversationId,
+      senderId: currentUser.uid,
+      senderName: userProfile?.displayName || 'ተማሪ',
+      senderPhoto: userProfile?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(userProfile?.displayName || 'User')}&background=f9b03c&color=111827&bold=true`,
+      senderEmail: currentUser.email || '',
+      receiverId: activeRecipient.uid,
+      content: trimmed,
+      imageUrl: attachedChatImage || null,
+      createdAt: nowIso,
+      isRead: false,
+    };
+
+    // Instant UI Append
+    setMessages(prev => [...prev, optimisticMessage]);
+    
+    // Update local conversations last message preview
+    setConversations(prev => {
+      const exists = prev.some(c => c.id === activeConversationId);
+      if (exists) {
+        return prev.map(c => c.id === activeConversationId ? {
+          ...c,
+          lastMessage: trimmed || (attachedChatImage ? '📷 ምስል ተልኳል' : ''),
+          lastMessageTime: nowIso,
+          lastMessageSenderId: currentUser.uid
+        } : c);
+      } else {
+        return [{
+          id: activeConversationId,
+          participants: [currentUser.uid, activeRecipient.uid],
+          participantDetails: {
+            [currentUser.uid]: {
+              name: userProfile?.displayName || 'ተማሪ',
+              photo: userProfile?.photoURL || '',
+              email: currentUser.email || '',
+              isAdmin: Boolean(userProfile?.isAdmin)
+            },
+            [activeRecipient.uid]: {
+              name: activeRecipient.name,
+              photo: activeRecipient.photo,
+              email: activeRecipient.email,
+              isAdmin: Boolean(activeRecipient.isAdmin)
+            }
+          },
+          lastMessage: trimmed || (attachedChatImage ? '📷 ምስል ተልኳል' : ''),
+          lastMessageSenderId: currentUser.uid,
+          lastMessageTime: nowIso,
+          unreadCount: {}
+        }, ...prev];
+      }
+    });
+
+    setInputMessage('');
+    setAttachedChatImage(null);
     setIsSending(true);
+
     try {
       await sendDirectMessage(activeConversationId, {
         senderId: currentUser.uid,
@@ -236,14 +320,13 @@ function InboxContent() {
         content: trimmed,
         imageUrl: attachedChatImage,
       });
-
-      setInputMessage('');
-      setAttachedChatImage(null);
     } catch (err) {
-      console.error('Error sending message:', err);
-      alert('መልዕክቱን መላክ አልተቻለም። እባክዎ እንደገና ይሞክሩ።');
+      console.warn('Direct message background dispatch:', err);
     } finally {
       setIsSending(false);
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 50);
     }
   };
 
