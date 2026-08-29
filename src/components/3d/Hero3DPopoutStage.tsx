@@ -12,14 +12,11 @@ export default function Hero3DPopoutStage({
 }: Hero3DPopoutStageProps) {
   const { t } = useLanguage();
   const stageRef = useRef<HTMLDivElement | null>(null);
+  const glareRef = useRef<HTMLDivElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  
-  // 3D Gyroscopic & Mouse Tilt State
-  const [rotate, setRotate] = useState({ x: 0, y: 0, glareX: 50, glareY: 50 });
-  const [isInteracting, setIsInteracting] = useState(false);
   const [studentCount, setStudentCount] = useState(500);
-  const [isVideoReady, setIsVideoReady] = useState(false);
-  const animationFrameRef = useRef<number | null>(null);
+  const isInteractingRef = useRef(false);
+  const rafIdRef = useRef<number | null>(null);
 
   // 🚀 Instant Video Kickstart (Ensures zero-delay video playback from first frame)
   useEffect(() => {
@@ -32,19 +29,15 @@ export default function Hero3DPopoutStage({
       const attemptPlay = () => {
         const promise = video.play();
         if (promise !== undefined) {
-          promise
-            .then(() => setIsVideoReady(true))
-            .catch(() => {
-              // Retry on first user scroll/interaction if restricted by browser policy
-              const handleFirstTouch = () => {
-                video.play().catch(() => {});
-                setIsVideoReady(true);
-                window.removeEventListener('touchstart', handleFirstTouch);
-                window.removeEventListener('scroll', handleFirstTouch);
-              };
-              window.addEventListener('touchstart', handleFirstTouch, { passive: true, once: true });
-              window.addEventListener('scroll', handleFirstTouch, { passive: true, once: true });
-            });
+          promise.catch(() => {
+            const handleFirstTouch = () => {
+              video.play().catch(() => {});
+              window.removeEventListener('touchstart', handleFirstTouch);
+              window.removeEventListener('scroll', handleFirstTouch);
+            };
+            window.addEventListener('touchstart', handleFirstTouch, { passive: true, once: true });
+            window.addEventListener('scroll', handleFirstTouch, { passive: true, once: true });
+          });
         }
       };
 
@@ -61,34 +54,13 @@ export default function Hero3DPopoutStage({
   useEffect(() => {
     const interval = setInterval(() => {
       setStudentCount(prev => (prev >= 540 ? 500 : prev + 1));
-    }, 4500);
+    }, 5000);
     return () => clearInterval(interval);
   }, []);
 
-  // Idle floating 3D breathing motion when cursor isn't active
-  useEffect(() => {
-    if (isInteracting) return;
-    let angle = 0;
-    const idleLoop = () => {
-      angle += 0.02;
-      setRotate({
-        x: Math.sin(angle) * 3.5,
-        y: Math.cos(angle * 0.8) * 4.5,
-        glareX: 50 + Math.sin(angle) * 20,
-        glareY: 50 + Math.cos(angle) * 20,
-      });
-      animationFrameRef.current = requestAnimationFrame(idleLoop);
-    };
-
-    animationFrameRef.current = requestAnimationFrame(idleLoop);
-    return () => {
-      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-    };
-  }, [isInteracting]);
-
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!stageRef.current) return;
-    setIsInteracting(true);
+    isInteractingRef.current = true;
     const rect = stageRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
@@ -100,11 +72,23 @@ export default function Hero3DPopoutStage({
     const gX = (x / rect.width) * 100;
     const gY = (y / rect.height) * 100;
 
-    setRotate({ x: rotX, y: rotY, glareX: gX, glareY: gY });
+    if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
+    rafIdRef.current = requestAnimationFrame(() => {
+      if (stageRef.current) {
+        stageRef.current.style.transform = `rotateX(${rotX.toFixed(2)}deg) rotateY(${rotY.toFixed(2)}deg)`;
+      }
+      if (glareRef.current) {
+        glareRef.current.style.background = `radial-gradient(circle 380px at ${gX.toFixed(1)}% ${gY.toFixed(1)}%, rgba(255,255,255,0.7) 0%, rgba(249,176,60,0.2) 50%, transparent 80%)`;
+      }
+    });
   }, []);
 
   const handleMouseLeave = useCallback(() => {
-    setIsInteracting(false);
+    isInteractingRef.current = false;
+    if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
+    if (stageRef.current) {
+      stageRef.current.style.transform = 'rotateX(0deg) rotateY(0deg)';
+    }
   }, []);
 
   return (
@@ -114,23 +98,23 @@ export default function Hero3DPopoutStage({
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
     >
-      {/* 🌟 3D Holographic Backdrop Aura (Radiates out in 3D space) */}
+      {/* 🌟 3D Holographic Backdrop Aura */}
       <div 
         className="absolute -inset-6 sm:-inset-10 rounded-[3rem] opacity-70 pointer-events-none transition-transform duration-500 ease-out"
         style={{
           background: 'radial-gradient(ellipse at center, rgba(249,176,60,0.22) 0%, rgba(50,104,186,0.25) 45%, transparent 75%)',
           filter: 'blur(35px)',
-          transform: `translate3d(0, 0, -40px) scale(${isInteracting ? 1.06 : 1})`,
+          transform: 'translate3d(0, 0, -40px)',
         }}
       />
 
-      {/* 🚀 Main 3D Anamorphic Tilt Rig (Preserves 3D depth coordinates) */}
+      {/* 🚀 Main 3D Anamorphic Tilt Rig */}
       <div
         ref={stageRef}
         className="relative w-full rounded-[2rem] sm:rounded-[2.4rem] transition-transform duration-300 ease-out"
         style={{
           transformStyle: 'preserve-3d',
-          transform: `rotateX(${rotate.x.toFixed(2)}deg) rotateY(${rotate.y.toFixed(2)}deg)`,
+          transform: 'rotateX(0deg) rotateY(0deg)',
         }}
       >
         {/* Layer 1: Frame Glass Housing with Cyber Neon Bezel */}
@@ -138,7 +122,7 @@ export default function Hero3DPopoutStage({
           className="relative w-full h-[220px] sm:h-[320px] md:h-[390px] lg:h-[430px] rounded-[1.8rem] sm:rounded-[2.2rem] shadow-[0_30px_90px_rgba(0,0,0,0.85)] border-2 border-white/20 dark:border-[#f9b03c]/40 overflow-hidden bg-black/90"
           style={{ transform: 'translateZ(0px)' }}
         >
-          {/* Main High-Definition Video Feed with Instant Low-Bandwidth Poster & Metadata Preload */}
+          {/* Main High-Definition Video Feed */}
           <video 
             ref={videoRef}
             id="hero-video" 
@@ -148,8 +132,6 @@ export default function Hero3DPopoutStage({
             playsInline 
             preload="metadata" 
             poster="/assets/hero-bg-new.jpg"
-            onCanPlay={() => setIsVideoReady(true)}
-            onPlaying={() => setIsVideoReady(true)}
             disablePictureInPicture 
             controlsList="nodownload noremoteplayback" 
             onContextMenu={(e) => e.preventDefault()} 
@@ -158,11 +140,12 @@ export default function Hero3DPopoutStage({
             <source src={videoSrc} type="video/mp4" />
           </video>
 
-          {/* Dynamic 3D Specular Light Glare (Follows mouse cursor) */}
+          {/* Dynamic 3D Specular Light Glare (Direct Ref) */}
           <div 
+            ref={glareRef}
             className="absolute inset-0 pointer-events-none mix-blend-screen opacity-40 transition-opacity duration-300"
             style={{
-              background: `radial-gradient(circle 380px at ${rotate.glareX}% ${rotate.glareY}%, rgba(255,255,255,0.7) 0%, rgba(249,176,60,0.2) 50%, transparent 80%)`,
+              background: 'radial-gradient(circle 380px at 50% 50%, rgba(255,255,255,0.7) 0%, rgba(249,176,60,0.2) 50%, transparent 80%)',
             }}
           />
 

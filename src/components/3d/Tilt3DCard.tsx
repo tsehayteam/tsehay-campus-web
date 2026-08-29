@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useState, useCallback } from 'react';
+import React, { useRef, useCallback } from 'react';
 
 interface Tilt3DCardProps {
   children: React.ReactNode;
@@ -9,7 +9,7 @@ interface Tilt3DCardProps {
   perspective?: number;
   scale?: number;
   glare?: boolean;
-  onClick?: () => void;
+  onClick?: (e?: any) => void;
   style?: React.CSSProperties;
 }
 
@@ -24,11 +24,12 @@ export default function Tilt3DCard({
   style = {},
 }: Tilt3DCardProps) {
   const cardRef = useRef<HTMLDivElement | null>(null);
-  const [tilt, setTilt] = useState({ rotateX: 0, rotateY: 0, glareX: 50, glareY: 50, isHovered: false });
+  const innerRef = useRef<HTMLDivElement | null>(null);
+  const glareRef = useRef<HTMLDivElement | null>(null);
   const rafId = useRef<number | null>(null);
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (!cardRef.current) return;
+    if (!cardRef.current || !innerRef.current) return;
     const rect = cardRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
@@ -42,24 +43,24 @@ export default function Tilt3DCard({
 
     if (rafId.current) cancelAnimationFrame(rafId.current);
     rafId.current = requestAnimationFrame(() => {
-      setTilt({
-        rotateX,
-        rotateY,
-        glareX,
-        glareY,
-        isHovered: true,
-      });
+      if (innerRef.current) {
+        innerRef.current.style.transform = `rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg) scale3d(${scale}, ${scale}, ${scale})`;
+      }
+      if (glareRef.current) {
+        glareRef.current.style.opacity = '0.35';
+        glareRef.current.style.background = `radial-gradient(circle 320px at ${glareX.toFixed(1)}% ${glareY.toFixed(1)}%, rgba(255,255,255,0.4) 0%, rgba(249,176,60,0.15) 40%, transparent 80%)`;
+      }
     });
-  }, [maxTilt]);
+  }, [maxTilt, scale]);
 
   const handleMouseLeave = useCallback(() => {
     if (rafId.current) cancelAnimationFrame(rafId.current);
-    setTilt(prev => ({
-      ...prev,
-      rotateX: 0,
-      rotateY: 0,
-      isHovered: false,
-    }));
+    if (innerRef.current) {
+      innerRef.current.style.transform = 'rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)';
+    }
+    if (glareRef.current) {
+      glareRef.current.style.opacity = '0';
+    }
   }, []);
 
   return (
@@ -76,11 +77,10 @@ export default function Tilt3DCard({
       }}
     >
       <div
+        ref={innerRef}
         className="w-full h-full transition-transform duration-300 ease-out"
         style={{
-          transform: tilt.isHovered
-            ? `rotateX(${tilt.rotateX.toFixed(2)}deg) rotateY(${tilt.rotateY.toFixed(2)}deg) scale3d(${scale}, ${scale}, ${scale})`
-            : 'rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)',
+          transform: 'rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)',
           transformStyle: 'preserve-3d',
         }}
       >
@@ -89,10 +89,10 @@ export default function Tilt3DCard({
         {/* Specular 3D Glare Sheen */}
         {glare && (
           <div
-            className="absolute inset-0 pointer-events-none rounded-[inherit] transition-opacity duration-300 overflow-hidden"
+            ref={glareRef}
+            className="absolute inset-0 pointer-events-none rounded-[inherit] transition-opacity duration-300 overflow-hidden opacity-0"
             style={{
-              opacity: tilt.isHovered ? 0.35 : 0,
-              background: `radial-gradient(circle 320px at ${tilt.glareX}% ${tilt.glareY}%, rgba(255,255,255,0.4) 0%, rgba(249,176,60,0.15) 40%, transparent 80%)`,
+              background: 'radial-gradient(circle 320px at 50% 50%, rgba(255,255,255,0.4) 0%, rgba(249,176,60,0.15) 40%, transparent 80%)',
               mixBlendMode: 'overlay',
               transform: 'translateZ(1px)',
             }}

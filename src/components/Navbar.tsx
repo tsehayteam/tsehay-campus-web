@@ -212,12 +212,28 @@ export default function Navbar() {
 
     const fetchCourses = async () => {
       try {
+        const { getCachedCourses } = await import('@/lib/courseCache');
+        const cached = getCachedCourses();
+        if (cached && cached.length > 0) {
+          setAllCourses(cached);
+        }
+
         const { collection, getDocs } = await import('firebase/firestore');
         const { db } = await import('@/lib/firebase/config');
         const querySnapshot = await getDocs(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses'));
-        setAllCourses(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        if (!querySnapshot.empty) {
+          setAllCourses(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+          return;
+        }
       } catch (e) {
-        console.error('Failed to fetch courses for search');
+        // Fallback to API route
+        try {
+          const res = await fetch('/api/courses');
+          const data = await res.json();
+          if (data && Array.isArray(data.courses)) {
+            setAllCourses(data.courses);
+          }
+        } catch (apiErr) {}
       }
     };
     fetchCourses();

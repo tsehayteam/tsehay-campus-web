@@ -1,13 +1,14 @@
 'use client';
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { searchCourses } from '@/lib/smartSearch';
-import { getCourseSlug } from '@/lib/courseCache';
+import { getCourseSlug, getCachedCourses } from '@/lib/courseCache';
 
 interface SmartSearchInputProps {
-  courses: any[];
+  courses?: any[];
   placeholder?: string;
   onSearchChange?: (filteredCourses: any[], query: string) => void;
+  onSelectCourse?: (course: any) => void;
   className?: string;
   compact?: boolean;
 }
@@ -21,52 +22,79 @@ const PREDICTIVE_TOPICS = [
   { label: 'Facebook & TikTok Ads', tag: 'ads', category: 'Marketing' }
 ];
 
+const STATIC_EMPTY_ARRAY: any[] = [];
+
 export default function SmartSearchInput({
-  courses = [],
+  courses,
   placeholder = "ኮርሶችን ይፈልጉ (e.g. Shein, YouTube, Marketing)...",
   onSearchChange,
+  onSelectCourse,
   className = "",
   compact = false
 }: SmartSearchInputProps) {
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
-  const [filteredResults, setFilteredResults] = useState<any[]>([]);
-  const [matchingTopics, setMatchingTopics] = useState<typeof PREDICTIVE_TOPICS>([]);
+  const [internalCourses, setInternalCourses] = useState<any[]>(STATIC_EMPTY_ARRAY);
   const [selectedIndex, setSelectedIndex] = useState<number>(-1);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
-  // Real-time typeahead filtering
+  // Load fallback courses if not provided
   useEffect(() => {
+    if (courses && courses.length > 0) {
+      setInternalCourses(courses);
+    } else {
+      try {
+        const cached = getCachedCourses();
+        if (cached && cached.length > 0) {
+          setInternalCourses(cached);
+        } else {
+          fetch('/api/courses')
+            .then(res => res.json())
+            .then(data => {
+              if (data && Array.isArray(data.courses) && data.courses.length > 0) {
+                setInternalCourses(data.courses);
+              }
+            })
+            .catch(() => {});
+        }
+      } catch (e) {}
+    }
+  }, [courses]);
+
+  const activeCourses = useMemo(() => {
+    return (courses && courses.length > 0) ? courses : internalCourses;
+  }, [courses, internalCourses]);
+
+  // Derived filtered results to prevent infinite state update loops
+  const { filteredResults, matchingTopics } = useMemo(() => {
     const trimmed = query.trim().toLowerCase();
     if (!trimmed) {
-      setFilteredResults([]);
-      setMatchingTopics([]);
-      setIsOpen(false);
-      setSelectedIndex(-1);
-      if (onSearchChange) onSearchChange(courses, '');
-      return;
+      return { filteredResults: STATIC_EMPTY_ARRAY, matchingTopics: STATIC_EMPTY_ARRAY };
     }
 
-    const matched = searchCourses(courses, query);
-    setFilteredResults(matched);
-
+    const matched = searchCourses(activeCourses, query);
     const matchedTopics = PREDICTIVE_TOPICS.filter(
       t => t.label.toLowerCase().includes(trimmed) || 
            t.tag.toLowerCase().includes(trimmed) || 
            t.category.toLowerCase().includes(trimmed)
     );
-    setMatchingTopics(matchedTopics);
+    return { filteredResults: matched, matchingTopics: matchedTopics };
+  }, [query, activeCourses]);
 
-    setIsOpen(true);
-    setSelectedIndex(-1);
+  // Safe search change notification (only on query change)
+  const onSearchChangeRef = useRef(onSearchChange);
+  useEffect(() => {
+    onSearchChangeRef.current = onSearchChange;
+  }, [onSearchChange]);
 
-    if (onSearchChange) {
-      onSearchChange(matched, query);
+  useEffect(() => {
+    if (onSearchChangeRef.current) {
+      onSearchChangeRef.current(filteredResults, query);
     }
-  }, [query, courses]);
+  }, [query, filteredResults]);
 
   // Outside click listener
   useEffect(() => {
@@ -81,12 +109,17 @@ export default function SmartSearchInput({
 
   const handleSelectCourse = useCallback((course: any) => {
     setIsOpen(false);
+    if (onSelectCourse) {
+      onSelectCourse(course);
+      return;
+    }
     const targetSlug = getCourseSlug(course) || course.id;
     router.push(`/courses/${targetSlug}`);
-  }, [router]);
+  }, [onSelectCourse, router]);
 
   const handleSelectTopic = (topicTag: string) => {
     setQuery(topicTag);
+    setIsOpen(true);
     inputRef.current?.focus();
   };
 
@@ -136,7 +169,10 @@ export default function SmartSearchInput({
             ref={inputRef}
             type="text" 
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setIsOpen(e.target.value.trim().length > 0);
+            }}
             onKeyDown={handleKeyDown}
             onFocus={() => { 
               setIsFocused(true);

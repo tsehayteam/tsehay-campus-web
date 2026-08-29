@@ -155,26 +155,36 @@ const PARTNER_BRANDS = [
 ];
 
 function FloatingElement({ children, depth = 1, className = '', style = {} }: any) {
-  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const elRef = useRef<HTMLDivElement | null>(null);
+  const rafRef = useRef<number | null>(null);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
+      if (!elRef.current) return;
       const { innerWidth, innerHeight } = window;
       const x = (e.clientX - innerWidth / 2) / (25 / depth);
       const y = (e.clientY - innerHeight / 2) / (25 / depth);
-      setOffset({ x, y });
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      rafRef.current = requestAnimationFrame(() => {
+        if (elRef.current) {
+          elRef.current.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0)`;
+        }
+      });
     };
 
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mousemove', handleMouseMove, { passive: true });
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
   }, [depth]);
 
   return (
     <div
+      ref={elRef}
       className={className}
       style={{
         ...style,
-        transform: `${style.transform || ''} translate3d(${offset.x}px, ${offset.y}px, 0)`,
         transition: 'transform 0.2s cubic-bezier(0.25, 1, 0.5, 1)',
         willChange: 'transform'
       }}
@@ -186,7 +196,7 @@ function FloatingElement({ children, depth = 1, className = '', style = {} }: an
 
 function MagneticButton({ children, className, onClick, ...props }: any) {
   const btnRef = useRef<HTMLButtonElement | null>(null);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const rafRef = useRef<number | null>(null);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLButtonElement>) => {
     if (!btnRef.current) return;
@@ -194,11 +204,19 @@ function MagneticButton({ children, className, onClick, ...props }: any) {
     const { left, top, width, height } = btnRef.current.getBoundingClientRect();
     const x = (clientX - (left + width / 2)) * 0.28;
     const y = (clientY - (top + height / 2)) * 0.28;
-    setPosition({ x, y });
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    rafRef.current = requestAnimationFrame(() => {
+      if (btnRef.current) {
+        btnRef.current.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0)`;
+      }
+    });
   };
 
   const handleMouseLeave = () => {
-    setPosition({ x: 0, y: 0 });
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    if (btnRef.current) {
+      btnRef.current.style.transform = 'translate3d(0px, 0px, 0)';
+    }
   };
 
   return (
@@ -208,8 +226,7 @@ function MagneticButton({ children, className, onClick, ...props }: any) {
       onMouseLeave={handleMouseLeave}
       onClick={onClick}
       style={{
-        transform: `translate3d(${position.x}px, ${position.y}px, 0)`,
-        transition: position.x === 0 ? 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.4s ease' : 'transform 0.1s ease-out, box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
+        transition: 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease'
       }}
       className={className}
       {...props}
@@ -221,7 +238,7 @@ function MagneticButton({ children, className, onClick, ...props }: any) {
 
 function MagneticLink({ children, className, href, ...props }: any) {
   const linkRef = useRef<HTMLAnchorElement | null>(null);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const rafRef = useRef<number | null>(null);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLAnchorElement>) => {
     if (!linkRef.current) return;
@@ -229,11 +246,19 @@ function MagneticLink({ children, className, href, ...props }: any) {
     const { left, top, width, height } = linkRef.current.getBoundingClientRect();
     const x = (clientX - (left + width / 2)) * 0.28;
     const y = (clientY - (top + height / 2)) * 0.28;
-    setPosition({ x, y });
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    rafRef.current = requestAnimationFrame(() => {
+      if (linkRef.current) {
+        linkRef.current.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0)`;
+      }
+    });
   };
 
   const handleMouseLeave = () => {
-    setPosition({ x: 0, y: 0 });
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    if (linkRef.current) {
+      linkRef.current.style.transform = 'translate3d(0px, 0px, 0)';
+    }
   };
 
   return (
@@ -243,8 +268,7 @@ function MagneticLink({ children, className, href, ...props }: any) {
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
       style={{
-        transform: `translate3d(${position.x}px, ${position.y}px, 0)`,
-        transition: position.x === 0 ? 'transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1), background 0.4s ease' : 'transform 0.1s ease-out, box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
+        transition: 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease'
       }}
       className={className}
       {...props}
@@ -578,14 +602,13 @@ export default function HomeClient() {
 
                     {/* Massive Bold Headline with Amber/Gold Metallic Sheen */}
                     <h1 className="font-heading font-black text-4xl sm:text-6xl md:text-7xl lg:text-[76px] tracking-tight leading-[1.12] sm:leading-[1.08] text-white mb-6">
-                        {t('hero_title_1') || 'የወደፊት ህይወትዎን'}{' '}
+                        {t('hero_title_1') || 'ክህሎትዎን ያሳድጉ፣'}{' '}
                         <span className="relative inline-block mt-1 sm:mt-0">
                             <span className="relative z-10 text-transparent bg-clip-text bg-gradient-to-r from-[#f9b03c] via-[#ffc66b] to-yellow-400">
-                                {t('hero_title_2') || 'በተግባራዊ ክህሎት'}
+                                {t('hero_title_2') || 'ቢዝነስዎን ይጀምሩ።'}
                             </span>
                             <span className="absolute -bottom-2 left-0 w-full h-3 bg-gradient-to-r from-[#f9b03c]/30 to-transparent blur-xs -z-0"></span>
-                        </span>{' '}
-                        {t('hero_title_3') || 'ይገንቡ'}
+                        </span>
                     </h1>
 
                     {/* Subtitle */}

@@ -296,6 +296,8 @@ export default function InstructorYouTubePortfolio() {
             }));
           } catch (e) {}
         }
+      }, (err) => {
+        // Handled silently to prevent uncaught console errors
       });
     } catch (e) {}
 
