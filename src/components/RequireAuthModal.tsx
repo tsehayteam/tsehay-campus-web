@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageContext';
 
 export interface RequireAuthModalProps {
@@ -25,16 +26,16 @@ export default function RequireAuthModal({
   onContinueAuth
 }: RequireAuthModalProps) {
   const { t } = useLanguage();
+  const router = useRouter();
 
   if (!isOpen) return null;
 
-  const handleAuth = (isSignup: boolean) => {
+  const handleAuthRedirect = (isSignup: boolean) => {
     if (typeof onContinueAuth === 'function') {
       onContinueAuth(isSignup);
     } else {
-      if (typeof window !== 'undefined') {
-        window.location.href = isSignup ? '/signup' : '/login';
-      }
+      onClose();
+      router.push(isSignup ? '/signup' : '/login');
     }
   };
 
@@ -118,7 +119,7 @@ export default function RequireAuthModal({
         <div className="flex flex-col gap-3">
           <button
             type="button"
-            onClick={() => handleAuth(true)}
+            onClick={() => handleAuthRedirect(true)}
             className="w-full btn-buy-now-vibe py-3.5 sm:py-4 rounded-xl sm:rounded-2xl text-sm sm:text-base flex items-center justify-center gap-2.5 cursor-pointer active:scale-98 group font-black shadow-lg"
           >
             <span>እሺ፣ አሁኑኑ ይመዝገቡ (Create Account)</span>
@@ -128,7 +129,7 @@ export default function RequireAuthModal({
           <div className="flex items-center justify-between gap-3 pt-1">
             <button
               type="button"
-              onClick={() => handleAuth(false)}
+              onClick={() => handleAuthRedirect(false)}
               className="flex-1 bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-slate-800 dark:text-slate-200 font-bold py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm transition-all border border-gray-200 dark:border-white/10 flex items-center justify-center gap-1.5 cursor-pointer active:scale-98"
             >
               <i className="fa-solid fa-arrow-right-to-bracket text-xs text-amber-500"></i>

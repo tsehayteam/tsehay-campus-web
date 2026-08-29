@@ -18,6 +18,7 @@ import FormattedAiText from '@/components/FormattedAiText';
 import StudentReferralSection from '@/components/StudentReferralSection';
 import { getCoursePinnedPrompts } from '@/lib/aiPrompts';
 import { ETHIOPIAN_AVATARS, EthiopianAvatar } from '@/lib/ethiopianAvatars';
+import FeedbackModal from '@/components/FeedbackModal';
 
 function DashboardLoadingScreen({ message }: { message?: string }) {
   return (
@@ -149,6 +150,9 @@ function StudentDashboardContent() {
     if (typeof window === 'undefined') return true;
     return !localStorage.getItem('tsehay_user_courses_cache');
   });
+  // User Feedback Modal State
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+
   const [activeCourse, setActiveCourse] = useState<any>(() => {
     if (typeof window === 'undefined') return null;
     try {
@@ -5104,6 +5108,30 @@ function StudentDashboardContent() {
               </div>
           </div>
       )}
+
+      {/* 💡 Floating Glassmorphism Feedback Trigger Button (Silicon Valley Style) */}
+      <div className="fixed bottom-22 sm:bottom-24 right-4 sm:right-6 z-40">
+        <button
+          type="button"
+          onClick={() => setShowFeedbackModal(true)}
+          className="group relative flex items-center gap-2.5 bg-[#0c1224]/90 hover:bg-[#131e38] border border-[#f9b03c]/40 hover:border-[#f9b03c] px-3.5 py-2.5 rounded-full shadow-[0_10px_35px_rgba(0,0,0,0.65)] hover:shadow-[0_0_35px_rgba(249,176,60,0.45)] backdrop-blur-xl transition-all duration-300 active:scale-90 hover:-translate-y-1 cursor-pointer text-white"
+          title="ለ ፀሐይ ካምፓስ አስተያየት ይስጡ (Send Feedback)"
+        >
+          <span className="w-6 h-6 rounded-full bg-[#f9b03c]/20 text-[#f9b03c] group-hover:bg-[#f9b03c] group-hover:text-slate-950 flex items-center justify-center text-xs font-black transition-colors shadow-xs">
+            💡
+          </span>
+          <span className="font-heading font-black text-xs text-white group-hover:text-[#f9b03c] transition-colors pr-1">
+            አስተያየት
+          </span>
+        </button>
+      </div>
+
+      {/* 💡 Feedback Modal */}
+      <FeedbackModal 
+        isOpen={showFeedbackModal} 
+        onClose={() => setShowFeedbackModal(false)} 
+        user={user} 
+      />
     </div>
   );
 }

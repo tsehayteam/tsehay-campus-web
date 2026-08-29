@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { db, auth } from '@/lib/firebase/config';
 import { useAuth, ADMIN_EMAILS, isEmailAdmin } from '@/context/AuthContext';
-import { collection, onSnapshot, doc, setDoc, deleteDoc, serverTimestamp, query, orderBy, collectionGroup } from 'firebase/firestore';
+import { collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc, serverTimestamp, query, orderBy, collectionGroup } from 'firebase/firestore';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile, sendPasswordResetEmail } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { DEFAULT_COURSES, getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl, getCourseSlug, getCourseBySlugOrId } from '@/lib/courseCache';
@@ -284,6 +284,19 @@ export default function AdminDashboard() {
   const [communityPosts, setCommunityPosts] = useState<CommunityPost[]>([]);
   const [communityFilter, setCommunityFilter] = useState<string>('all');
   const [communitySearch, setCommunitySearch] = useState<string>('');
+
+  // 🌟 Student Feedbacks Inbox State
+  const [feedbacks, setFeedbacks] = useState<any[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const cached = localStorage.getItem('tsehay_user_feedbacks');
+      return cached ? JSON.parse(cached) : [];
+    } catch (e) { return []; }
+  });
+  const [feedbackSearchTerm, setFeedbackSearchTerm] = useState('');
+  const [feedbackTypeFilter, setFeedbackTypeFilter] = useState<'all' | 'course' | 'bug' | 'idea' | 'general'>('all');
+  const [feedbackStatusFilter, setFeedbackStatusFilter] = useState<'all' | 'pending' | 'resolved'>('all');
+  const [isUpdatingFeedbackId, setIsUpdatingFeedbackId] = useState<string | null>(null);
 
   // YouTube Form State
   const [isYouTubeModalOpen, setIsYouTubeModalOpen] = useState(false);
@@ -1038,6 +1051,28 @@ export default function AdminDashboard() {
       setCommunityPosts(posts);
     }, 'all');
 
+    // 🌟 Live User Feedbacks Listener
+    let unsubscribeFeedbacks: any = () => {};
+    try {
+      const fbRef = collection(db, 'user_feedbacks');
+      unsubscribeFeedbacks = onSnapshot(fbRef, (snapshot) => {
+        if (!snapshot.empty) {
+          const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          list.sort((a: any, b: any) => {
+            const timeA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : (a.createdAtClient ? new Date(a.createdAtClient).getTime() : 0);
+            const timeB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : (b.createdAtClient ? new Date(b.createdAtClient).getTime() : 0);
+            return timeB - timeA;
+          });
+          setFeedbacks(list);
+          try {
+            localStorage.setItem('tsehay_user_feedbacks', JSON.stringify(list));
+          } catch (e) {}
+        }
+      }, (err) => {
+        console.warn("Feedbacks sync notice:", err);
+      });
+    } catch (e) {}
+
     return () => {
         unsubscribeAuth();
         unsubscribe();
@@ -1052,6 +1087,7 @@ export default function AdminDashboard() {
         unsubscribePortfolio1();
         unsubscribePortfolio2();
         unsubscribeReferrals();
+        unsubscribeFeedbacks();
         if (typeof unsubscribeCommunity === 'function') unsubscribeCommunity();
         clearTimeout(safetyTimer);
     };
@@ -1230,6 +1266,36 @@ export default function AdminDashboard() {
       } catch (err: any) {
         console.error("Error deleting referral code:", err);
       }
+    }
+  };
+
+  // 🌟 Toggle Feedback Resolved / Pending Status
+  const handleToggleFeedbackStatus = async (feedback: any) => {
+    const nextStatus = feedback.status === 'resolved' ? 'pending' : 'resolved';
+    setIsUpdatingFeedbackId(feedback.id);
+    
+    // Optimistic UI update
+    setFeedbacks(prev => prev.map(f => f.id === feedback.id ? { ...f, status: nextStatus } : f));
+    
+    try {
+      const ref = doc(db, 'user_feedbacks', feedback.id);
+      await updateDoc(ref, { status: nextStatus, updatedAt: serverTimestamp() });
+    } catch (err) {
+      console.error("Error updating feedback status:", err);
+    } finally {
+      setIsUpdatingFeedbackId(null);
+    }
+  };
+
+  // 🌟 Delete Feedback
+  const handleDeleteFeedback = async (id: string) => {
+    if (!confirm('ይህንን የተማሪ አስተያየት በእርግጥ መሰረዝ ይፈልጋሉ? (Are you sure you want to delete this feedback?)')) return;
+    setFeedbacks(prev => prev.filter(f => f.id !== id));
+    try {
+      const ref = doc(db, 'user_feedbacks', id);
+      await deleteDoc(ref);
+    } catch (err) {
+      console.error("Error deleting feedback:", err);
     }
   };
 
@@ -2535,6 +2601,21 @@ export default function AdminDashboard() {
                 <span className="flex items-center gap-2.5"><i className="fa-solid fa-users-viewfinder text-sm text-[#f9b03c]"></i> ማህበረሰብ (Community)</span>
                 <span className="text-[10px] font-black px-1.5 py-0.5 rounded-full bg-[#f9b03c]/20 text-[#f9b03c]">{communityPosts.length}</span>
               </button>
+              <button 
+                onClick={() => { setActiveTab('feedbacks'); setSidebarMobileOpen(false); }} 
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-bold text-xs transition ${activeTab === 'feedbacks' ? 'bg-[#f9b03c]/20 text-[#f9b03c] dark:text-[#f9b03c] shadow-sm font-black border-l-3 border-[#f9b03c]' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800/60'}`}
+              >
+                <span className="flex items-center gap-2.5"><i className="fa-solid fa-comments text-sm text-[#f9b03c]"></i> የተማሪዎች አስተያየት (Feedback)</span>
+                {feedbacks.filter(f => f.status !== 'resolved').length > 0 ? (
+                  <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-[#f9b03c] text-slate-950 animate-pulse">
+                    {feedbacks.filter(f => f.status !== 'resolved').length} አዲስ
+                  </span>
+                ) : (
+                  <span className="text-[11px] font-black px-2 py-0.5 rounded-md bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-300">
+                    {feedbacks.length}
+                  </span>
+                )}
+              </button>
             </div>
           </div>
 
@@ -2622,6 +2703,7 @@ export default function AdminDashboard() {
                 {activeTab === 'payments' && <><i className="fa-solid fa-file-invoice-dollar text-emerald-500"></i> <span>የክፍያ እና ፋይናንስ ሪፖርቶች</span></>}
                 {activeTab === 'questions' && <><i className="fa-solid fa-headset text-blue-500"></i> <span>የተማሪዎች ጥያቄዎች</span></>}
                 {activeTab === 'community' && <><i className="fa-solid fa-users-viewfinder text-[#f9b03c]"></i> <span>የተማሪዎች ማህበረሰብ ቁጥጥር (Community Moderation)</span></>}
+                {activeTab === 'feedbacks' && <><i className="fa-solid fa-comments text-[#f9b03c]"></i> <span>የተማሪዎች አስተያየት ሳጥን (Student Feedback Inbox)</span></>}
                 {activeTab === 'settings' && <><i className="fa-solid fa-gear text-slate-400"></i> <span>ሲስተም እና AI ቅንብሮች</span></>}
               </h1>
             </div>
@@ -5329,6 +5411,356 @@ export default function AdminDashboard() {
                   </div>
                 </form>
               </div>
+            </div>
+          )}
+
+          {/* ===================== 🌟 STUDENT FEEDBACKS INBOX VIEW ===================== */}
+          {activeTab === 'feedbacks' && (
+            <div className="space-y-6 animate-in fade-in duration-300">
+              
+              {/* Header Hero Banner */}
+              <div className="bg-gradient-to-r from-amber-500/15 via-[#f9b03c]/10 to-transparent p-6 sm:p-8 rounded-3xl border border-[#f9b03c]/30 backdrop-blur-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 flex items-center justify-center text-2xl font-black shadow-[0_0_30px_rgba(249,176,60,0.5)] shrink-0">
+                    <i className="fa-solid fa-comments"></i>
+                  </div>
+                  <div>
+                    <h2 className="text-xl sm:text-2xl font-black font-heading text-white tracking-tight flex items-center gap-2">
+                      <span>የተማሪዎች አስተያየት ሳጥን</span>
+                      <span className="text-xs bg-[#f9b03c]/20 text-[#f9b03c] border border-[#f9b03c]/40 font-black px-2.5 py-0.5 rounded-full">
+                        Live Inbox
+                      </span>
+                    </h2>
+                    <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-xl">
+                      ከተማሪዎች የሚላኩ ጥቆማዎች፣ የኮርስ አስተያየቶች፣ አዳዲስ ሀሳቦች እና የዌብሳይት ችግሮች የሚሰበሰቡበት ማዕከል።
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 self-start md:self-auto">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (feedbacks.length > 0) {
+                        const pending = feedbacks.filter(f => f.status !== 'resolved');
+                        alert(`በአጠቃላይ ${feedbacks.length} አስተያየቶች ያሉ ሲሆን ${pending.length} በመጠባበቅ ላይ ይገኛሉ።`);
+                      }
+                    }}
+                    className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold text-slate-300 transition flex items-center gap-2 cursor-pointer"
+                  >
+                    <i className="fa-solid fa-bell text-[#f9b03c]"></i>
+                    <span>ያልተመለሱ: {feedbacks.filter(f => f.status !== 'resolved').length}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* 4 Stats Cards */}
+              {(() => {
+                const totalCount = feedbacks.length;
+                const pendingCount = feedbacks.filter(f => f.status !== 'resolved').length;
+                const resolvedCount = feedbacks.filter(f => f.status === 'resolved').length;
+                const avgRating = totalCount > 0 
+                  ? (feedbacks.reduce((acc, f) => acc + (Number(f.rating) || 5), 0) / totalCount).toFixed(1)
+                  : '5.0';
+
+                return (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="bg-white dark:bg-slate-800/80 p-5 rounded-3xl border border-gray-100 dark:border-slate-700/80 shadow-xs flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-2xl bg-amber-500/15 text-[#f9b03c] flex items-center justify-center text-xl font-black shrink-0">
+                        <i className="fa-solid fa-comments"></i>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider">ጠቅላላ አስተያየቶች</p>
+                        <h4 className="text-2xl font-black text-dark dark:text-white font-heading mt-0.5">{totalCount}</h4>
+                      </div>
+                    </div>
+
+                    <div className="bg-white dark:bg-slate-800/80 p-5 rounded-3xl border border-gray-100 dark:border-slate-700/80 shadow-xs flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-2xl bg-yellow-500/15 text-yellow-400 flex items-center justify-center text-xl font-black shrink-0">
+                        <i className="fa-solid fa-star"></i>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider">አማካኝ እርካታ (Avg Rating)</p>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <h4 className="text-2xl font-black text-dark dark:text-white font-heading">{avgRating}</h4>
+                          <span className="text-xs text-yellow-400 font-black">/ 5.0</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-white dark:bg-slate-800/80 p-5 rounded-3xl border border-gray-100 dark:border-slate-700/80 shadow-xs flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-2xl bg-red-500/15 text-red-400 flex items-center justify-center text-xl font-black shrink-0">
+                        <i className="fa-solid fa-clock-rotate-left"></i>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider">በመጠባበቅ ላይ ያሉ</p>
+                        <h4 className="text-2xl font-black text-red-500 font-heading mt-0.5">{pendingCount}</h4>
+                      </div>
+                    </div>
+
+                    <div className="bg-white dark:bg-slate-800/80 p-5 rounded-3xl border border-gray-100 dark:border-slate-700/80 shadow-xs flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-2xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center text-xl font-black shrink-0">
+                        <i className="fa-solid fa-circle-check"></i>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider">የተስተካከሉ (Resolved)</p>
+                        <h4 className="text-2xl font-black text-emerald-500 font-heading mt-0.5">{resolvedCount}</h4>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Filters Toolbar */}
+              <div className="bg-white dark:bg-slate-800/80 p-4 sm:p-5 rounded-3xl border border-gray-100 dark:border-slate-700/80 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+                
+                {/* Search Input */}
+                <div className="relative flex-1">
+                  <i className="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs" />
+                  <input
+                    type="text"
+                    value={feedbackSearchTerm}
+                    onChange={(e) => setFeedbackSearchTerm(e.target.value)}
+                    placeholder="በተማሪ ስም፣ ኢሜይል ወይም ጽሑፍ ፈልግ..."
+                    className="w-full bg-gray-50 dark:bg-slate-900/80 border border-gray-200 dark:border-slate-700 rounded-xl pl-9 pr-4 py-2.5 text-xs text-dark dark:text-white outline-none focus:border-[#f9b03c] transition"
+                  />
+                  {feedbackSearchTerm && (
+                    <button
+                      type="button"
+                      onClick={() => setFeedbackSearchTerm('')}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200 text-xs"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+
+                {/* Type Filter Pills */}
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {[
+                    { id: 'all', label: 'ሁሉም' },
+                    { id: 'course', label: '🎓 ኮርስ' },
+                    { id: 'bug', label: '🐛 ችግር' },
+                    { id: 'idea', label: '💡 ሀሳብ' },
+                    { id: 'general', label: '💬 አጠቃላይ' },
+                  ].map((cat) => (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => setFeedbackTypeFilter(cat.id as any)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer active:scale-95 ${
+                        feedbackTypeFilter === cat.id
+                          ? 'bg-[#f9b03c] text-slate-950 shadow-xs font-black'
+                          : 'bg-gray-100 dark:bg-slate-900/60 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700'
+                      }`}
+                    >
+                      {cat.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Status Toggle */}
+                <div className="flex items-center gap-1 bg-gray-100 dark:bg-slate-900/80 p-1 rounded-xl border border-gray-200 dark:border-slate-700/60 self-start md:self-auto">
+                  {[
+                    { id: 'all', label: 'ሁሉም' },
+                    { id: 'pending', label: '⏳ ያልተስተካከለ' },
+                    { id: 'resolved', label: '✅ ተስተካክሏል' },
+                  ].map((st) => (
+                    <button
+                      key={st.id}
+                      type="button"
+                      onClick={() => setFeedbackStatusFilter(st.id as any)}
+                      className={`px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
+                        feedbackStatusFilter === st.id
+                          ? 'bg-white dark:bg-slate-800 text-dark dark:text-white shadow-xs font-black'
+                          : 'text-gray-500 hover:text-dark dark:hover:text-white'
+                      }`}
+                    >
+                      {st.label}
+                    </button>
+                  ))}
+                </div>
+
+              </div>
+
+              {/* Feedback Cards List */}
+              {(() => {
+                const filtered = feedbacks.filter(item => {
+                  const matchType = feedbackTypeFilter === 'all' || item.type === feedbackTypeFilter;
+                  const matchStatus = feedbackStatusFilter === 'all' || 
+                    (feedbackStatusFilter === 'resolved' && item.status === 'resolved') ||
+                    (feedbackStatusFilter === 'pending' && item.status !== 'resolved');
+                  const q = feedbackSearchTerm.toLowerCase().trim();
+                  const matchSearch = !q || 
+                    (item.userName || '').toLowerCase().includes(q) ||
+                    (item.userEmail || '').toLowerCase().includes(q) ||
+                    (item.message || '').toLowerCase().includes(q);
+                  return matchType && matchStatus && matchSearch;
+                });
+
+                if (filtered.length === 0) {
+                  return (
+                    <div className="bg-white dark:bg-slate-800/80 rounded-3xl p-12 text-center border border-gray-100 dark:border-slate-700/80">
+                      <div className="w-16 h-16 rounded-3xl bg-amber-500/10 text-[#f9b03c] flex items-center justify-center text-2xl mx-auto mb-4">
+                        <i className="fa-solid fa-inbox"></i>
+                      </div>
+                      <h4 className="text-lg font-black text-dark dark:text-white mb-1">ምንም አስተያየት አልተገኘም</h4>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 max-w-sm mx-auto">
+                        በተመረጠው ማጣሪያ መሰረት የተገኘ የተማሪ አስተያየት የለም።
+                      </p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
+                    {filtered.map((item) => {
+                      const isResolved = item.status === 'resolved';
+                      const isUpdating = isUpdatingFeedbackId === item.id;
+                      const dateDisplay = item.createdAtClient 
+                        ? new Date(item.createdAtClient).toLocaleString('am-ET', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+                        : (item.createdAt?.toDate ? item.createdAt.toDate().toLocaleString('am-ET', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'አሁን');
+
+                      return (
+                        <div 
+                          key={item.id}
+                          className={`bg-white dark:bg-slate-800/90 rounded-3xl p-5 sm:p-6 border transition-all duration-200 flex flex-col justify-between gap-4 shadow-sm hover:shadow-md ${
+                            isResolved 
+                              ? 'border-emerald-500/30 opacity-80 hover:opacity-100' 
+                              : 'border-amber-400/40 hover:border-[#f9b03c]'
+                          }`}
+                        >
+                          <div>
+                            {/* Top User Header */}
+                            <div className="flex items-start justify-between gap-3 mb-3">
+                              <div className="flex items-center gap-3 min-w-0">
+                                <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#f9b03c]/20 to-amber-500/20 text-[#f9b03c] flex items-center justify-center font-black text-sm shrink-0 border border-[#f9b03c]/30">
+                                  {(item.userName || 'ተ')[0].toUpperCase()}
+                                </div>
+                                <div className="min-w-0">
+                                  <h4 className="font-black text-sm text-dark dark:text-white truncate">
+                                    {item.userName || 'ተማሪ'}
+                                  </h4>
+                                  <p className="text-[11px] text-gray-500 dark:text-slate-400 truncate">
+                                    {item.userEmail || 'student@tsehaycampus.com'}
+                                  </p>
+                                </div>
+                              </div>
+
+                              {/* Status Badge */}
+                              <span className={`text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider flex items-center gap-1 border shrink-0 ${
+                                isResolved
+                                  ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                                  : 'bg-amber-500/15 text-[#f9b03c] border-[#f9b03c]/30'
+                              }`}>
+                                <span className={`w-1.5 h-1.5 rounded-full ${isResolved ? 'bg-emerald-400' : 'bg-[#f9b03c] animate-pulse'}`}></span>
+                                <span>{isResolved ? 'ተስተካክሏል' : 'በመጠባበቅ ላይ'}</span>
+                              </span>
+                            </div>
+
+                            {/* Stars Rating & Feedback Type Row */}
+                            <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                              {/* 5-Star Display */}
+                              <div className="flex items-center gap-1">
+                                {[1, 2, 3, 4, 5].map((star) => (
+                                  <i 
+                                    key={star} 
+                                    className={`fa-solid fa-star text-xs ${
+                                      star <= (Number(item.rating) || 5) 
+                                        ? 'text-[#f9b03c] drop-shadow-[0_0_8px_rgba(249,176,60,0.6)]' 
+                                        : 'text-gray-300 dark:text-slate-700'
+                                    }`} 
+                                  />
+                                ))}
+                                <span className="text-xs font-black text-dark dark:text-[#f9b03c] ml-1">
+                                  {Number(item.rating) || 5}/5
+                                </span>
+                              </div>
+
+                              {/* Type Badge */}
+                              <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-lg border ${
+                                item.type === 'course' ? 'bg-blue-500/10 text-blue-400 border-blue-500/30' :
+                                item.type === 'bug' ? 'bg-red-500/10 text-red-400 border-red-500/30' :
+                                item.type === 'idea' ? 'bg-purple-500/10 text-purple-400 border-purple-500/30' :
+                                'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                              }`}>
+                                {item.type === 'course' ? '🎓 የኮርስ አስተያየት' :
+                                 item.type === 'bug' ? '🐛 የዌብሳይት ችግር' :
+                                 item.type === 'idea' ? '💡 አዲስ ሀሳብ' : '💬 አጠቃላይ'}
+                              </span>
+                            </div>
+
+                            {/* Message Container */}
+                            <div className="p-4 rounded-2xl bg-gray-50 dark:bg-slate-900/70 border border-gray-100 dark:border-white/5 text-xs text-gray-800 dark:text-slate-200 leading-relaxed font-body whitespace-pre-wrap">
+                              "{item.message}"
+                            </div>
+                          </div>
+
+                          {/* Footer Action Bar */}
+                          <div className="pt-3 border-t border-gray-100 dark:border-white/5 flex flex-wrap items-center justify-between gap-2">
+                            <span className="text-[10px] text-gray-400 flex items-center gap-1">
+                              <i className="fa-regular fa-clock text-[10px]"></i>
+                              <span>{dateDisplay}</span>
+                            </span>
+
+                            <div className="flex items-center gap-2">
+                              {/* Direct Email Reply */}
+                              {item.userEmail && (
+                                <a
+                                  href={`mailto:${item.userEmail}?subject=${encodeURIComponent('Re: Tsehay Campus Feedback Response')}`}
+                                  className="px-3 py-1.5 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 text-xs font-bold transition flex items-center gap-1 cursor-pointer"
+                                  title="በኢሜይል መልስ ስጥ"
+                                >
+                                  <i className="fa-solid fa-reply text-[10px]"></i>
+                                  <span>መልስ ስጥ</span>
+                                </a>
+                              )}
+
+                              {/* Toggle Resolved */}
+                              <button
+                                type="button"
+                                disabled={isUpdating}
+                                onClick={() => handleToggleFeedbackStatus(item)}
+                                className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition flex items-center gap-1.5 cursor-pointer active:scale-95 disabled:opacity-50 ${
+                                  isResolved
+                                    ? 'bg-gray-100 dark:bg-white/10 hover:bg-gray-200 text-gray-600 dark:text-gray-300'
+                                    : 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-xs'
+                                }`}
+                              >
+                                {isUpdating ? (
+                                  <i className="fa-solid fa-spinner fa-spin text-xs"></i>
+                                ) : isResolved ? (
+                                  <>
+                                    <i className="fa-solid fa-rotate-left text-[10px]"></i>
+                                    <span>እንደገና ክፈት</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <i className="fa-solid fa-check text-xs"></i>
+                                    <span>ተስተካክሏል (Resolve)</span>
+                                  </>
+                                )}
+                              </button>
+
+                              {/* Delete */}
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteFeedback(item.id)}
+                                className="w-8 h-8 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-500 hover:text-red-400 flex items-center justify-center text-xs transition cursor-pointer"
+                                title="አስተያየቱን ሰርዝ"
+                              >
+                                <i className="fa-solid fa-trash-can"></i>
+                              </button>
+                            </div>
+                          </div>
+
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+
             </div>
           )}
 
