@@ -325,11 +325,37 @@ export function formatCourseDesc(course: any): string {
 }
 
 /**
+ * Combines two or more course lists safely, removing duplicates by id or slug,
+ * while preserving updated properties.
+ */
+export function mergeCoursesLists(...lists: (any[] | undefined | null)[]): any[] {
+  const map = new Map<string, any>();
+
+  for (const list of lists) {
+    if (!Array.isArray(list)) continue;
+    for (const item of list) {
+      if (!item || (!item.id && !item.slug && !item.title)) continue;
+      const key = (item.id || item.slug || item.title).toString().trim();
+      const existing = map.get(key);
+      const merged = existing ? { ...existing, ...item } : item;
+      const cleanDesc = formatCourseDesc(merged);
+      map.set(key, {
+        ...merged,
+        desc: cleanDesc,
+        description: cleanDesc
+      });
+    }
+  }
+
+  return Array.from(map.values());
+}
+
+/**
  * Reads verified live course data previously synced from Firestore.
- * Returns empty array [] if no live sync was cached, allowing UI to show smooth skeleton loader.
+ * Always returns fallback DEFAULT_COURSES if cache is empty so pages are NEVER blank for any visitor.
  */
 export function getCachedCourses(): any[] {
-  if (typeof window === 'undefined') return [];
+  if (typeof window === 'undefined') return DEFAULT_COURSES;
   try {
     const cached = localStorage.getItem('tsehay_courses_cache');
     if (cached) {
@@ -345,7 +371,7 @@ export function getCachedCourses(): any[] {
   } catch (err) {
     console.warn("Course cache read error:", err);
   }
-  return [];
+  return DEFAULT_COURSES;
 }
 
 export function saveCachedCourses(courses: any[]) {

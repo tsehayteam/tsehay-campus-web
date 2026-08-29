@@ -1,5 +1,6 @@
 // @ts-nocheck
 'use client';
+
 import React, { useEffect, useState, useRef } from 'react';
 import { db } from '@/lib/firebase/config';
 import { collection, onSnapshot, query, getDocs, doc, setDoc, serverTimestamp } from 'firebase/firestore';
@@ -17,7 +18,7 @@ import InstructorYouTubePortfolio from '@/components/InstructorYouTubePortfolio'
 import UpcomingEventsSection from '@/components/UpcomingEventsSection';
 import CourseCardSkeleton from '@/components/CourseCardSkeleton';
 import CoursePreviewModal from '@/components/CoursePreviewModal';
-import { getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl, getCourseSlug } from '@/lib/courseCache';
+import { DEFAULT_COURSES, getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl, getCourseSlug, mergeCoursesLists } from '@/lib/courseCache';
 import Hero3DPopoutStage from '@/components/3d/Hero3DPopoutStage';
 import Tilt3DCard from '@/components/3d/Tilt3DCard';
 import { scrollTriggerEngine } from '@/lib/scrollTriggerEngine';
@@ -316,23 +317,66 @@ export default function Home() {
   }, [courses.length]);
 
   useEffect(() => {
-    // Fetch courses for landing page with real-time updates
-    const q = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      if (!snapshot.empty) {
-        const coursesList = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-        setCourses(coursesList);
-        saveCachedCourses(coursesList);
+    let artifactList: any[] = [];
+    let rootList: any[] = [];
+
+    const syncAndMerge = () => {
+      const merged = mergeCoursesLists(DEFAULT_COURSES, artifactList, rootList);
+      if (merged.length > 0) {
+        setCourses(merged);
+        saveCachedCourses(merged);
       }
       setLoading(false);
-    }, (error) => {
-      console.error("Error fetching courses:", error);
-      setLoading(false);
-    });
-    return () => unsubscribe();
+    };
+
+    // 1. Live listener on artifacts collection
+    let unsubArtifact = () => {};
+    try {
+      const qArtifact = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses'));
+      unsubArtifact = onSnapshot(qArtifact, (snapshot) => {
+        if (!snapshot.empty) {
+          artifactList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          syncAndMerge();
+        }
+        setLoading(false);
+      }, (error) => {
+        console.warn("Artifacts courses sync notice:", error);
+        setLoading(false);
+      });
+    } catch (e) {}
+
+    // 2. Live listener on root courses collection
+    let unsubRoot = () => {};
+    try {
+      const qRoot = query(collection(db, 'courses'));
+      unsubRoot = onSnapshot(qRoot, (snapshot) => {
+        if (!snapshot.empty) {
+          rootList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          syncAndMerge();
+        }
+        setLoading(false);
+      }, (error) => {
+        console.warn("Root courses sync notice:", error);
+        setLoading(false);
+      });
+    } catch (e) {}
+
+    // 3. Immediate HTTP fallback fetch
+    fetch('/api/courses')
+      .then(res => res.json())
+      .then(data => {
+        if (data && Array.isArray(data.courses) && data.courses.length > 0) {
+          setCourses(prev => mergeCoursesLists(DEFAULT_COURSES, prev, data.courses));
+          saveCachedCourses(data.courses);
+        }
+      })
+      .catch(err => console.warn("API courses fetch notice:", err))
+      .finally(() => setLoading(false));
+
+    return () => {
+      unsubArtifact();
+      unsubRoot();
+    };
   }, []);
 
   // 🌟 Seamless Post-Login Action Continuity: Automatically resume Buy/Enroll where user left off!

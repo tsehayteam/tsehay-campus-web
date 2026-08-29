@@ -12,7 +12,7 @@ import PaymentModal from '@/components/PaymentModal';
 import RequireAuthModal from '@/components/RequireAuthModal';
 import Footer from '@/components/Footer';
 import dynamic from 'next/dynamic';
-import { getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl, getCourseSlug, getCourseBySlugOrId, DEFAULT_COURSES } from '@/lib/courseCache';
+import { getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl, getCourseSlug, getCourseBySlugOrId, DEFAULT_COURSES, mergeCoursesLists } from '@/lib/courseCache';
 
 function CoursePreviewContent() {
   const routeParams = useParams();
@@ -80,7 +80,7 @@ function CoursePreviewContent() {
         let loadedCourseData: any = null;
         let loadedCourseId = id;
 
-        // 1. Fetch current course details by ID
+        // 1. Fetch current course details by ID from artifacts or root collection
         try {
           const courseRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses', id);
           const courseSnap = await getDoc(courseRef);
@@ -90,25 +90,46 @@ function CoursePreviewContent() {
           }
         } catch (e) {}
 
-        // 2. Fetch all courses dynamically (also used for slug/fallback resolution)
+        if (!loadedCourseData) {
+          try {
+            const rootRef = doc(db, 'courses', id);
+            const rootSnap = await getDoc(rootRef);
+            if (rootSnap.exists()) {
+              loadedCourseData = rootSnap.data();
+              loadedCourseId = rootSnap.id;
+            }
+          } catch (e) {}
+        }
+
+        // 2. Fetch all courses dynamically from both collections
         let allList: any[] = [];
         try {
           const allCoursesQuery = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses'));
           const allCoursesSnap = await getDocs(allCoursesQuery);
           if (!allCoursesSnap.empty) {
             allList = allCoursesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-            if (isMounted) {
-              setAllCourses(allList);
-              saveCachedCourses(allList);
-            }
           }
-        } catch (allErr) {
-          console.warn("All courses fetch fallback:", allErr);
+        } catch (allErr) {}
+
+        try {
+          const rootQuery = query(collection(db, 'courses'));
+          const rootSnap = await getDocs(rootQuery);
+          if (!rootSnap.empty) {
+            const rootDocs = rootSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+            allList = mergeCoursesLists(allList, rootDocs);
+          }
+        } catch (rootErr) {}
+
+        if (allList.length > 0 && isMounted) {
+          const fullPool = mergeCoursesLists(DEFAULT_COURSES, allList);
+          setAllCourses(fullPool);
+          saveCachedCourses(fullPool);
         }
 
-        // If direct getDoc didn't find the course by raw ID, resolve by slug or alias from allList
-        if (!loadedCourseData && allList.length > 0) {
-          const matched = findMatchingCourse(allList, id);
+        // If direct getDoc didn't find the course by raw ID, resolve by slug or alias from allList or DEFAULT_COURSES
+        if (!loadedCourseData) {
+          const pool = allList.length > 0 ? mergeCoursesLists(DEFAULT_COURSES, allList) : DEFAULT_COURSES;
+          const matched = findMatchingCourse(pool, id);
           if (matched) {
             loadedCourseData = matched;
             loadedCourseId = matched.id;
