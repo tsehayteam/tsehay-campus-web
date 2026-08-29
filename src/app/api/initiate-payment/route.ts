@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server';
 
 function generateCleanTxRef() {
-  const timeHex = Date.now().toString(36).toUpperCase();
-  const randHex = Math.random().toString(36).substring(2, 6).toUpperCase();
-  return `TC-${timeHex}-${randHex}`;
+  const randHex = Math.random().toString(36).substring(2, 8).toUpperCase();
+  return `REF-${randHex}`;
 }
 
 function formatPaymentDetails(rawTitle?: string) {

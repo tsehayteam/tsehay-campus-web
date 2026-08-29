@@ -62,7 +62,7 @@ export const DEFAULT_COURSES = [
     oldPrice: 1200,
     status: "Active",
     isFree: false,
-    category: "YouTube",
+    category: "YouTube & Content Creation",
     level: "ጀማሪ (Beginner)",
     image: "https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?auto=format&fit=crop&w=800&q=80",
     banner: "https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?auto=format&fit=crop&w=800&q=80",
@@ -163,6 +163,17 @@ export const DEFAULT_COURSES = [
     ]
   }
 ];
+
+export const COURSE_CATEGORIES = [
+  "E-Commerce",
+  "YouTube & Content Creation",
+  "Marketing",
+  "Brokerage",
+  "Film Making",
+  "Career Development"
+] as const;
+
+export type CourseCategory = (typeof COURSE_CATEGORIES)[number];
 
 /**
  * Normalizes title / category / string into a clean, human-friendly URL slug
