@@ -284,16 +284,16 @@ export default function Navbar() {
           className="fixed top-3 flex justify-center pointer-events-auto select-none transition-all duration-300 left-1/2 -translate-x-1/2 z-50 animate-in fade-in"
           title="ዋና ማውጫ / Menu"
         >
-          {/* Ambient Breathing Shimmer Aura alternating between Golden Orange and Cobalt Blue */}
-          <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-[#f9b03c]/40 via-[#3268ba]/40 to-[#f9b03c]/40 blur-md pointer-events-none animate-pulse" />
+          {/* Subtle #f9b03c ambient breathing glow */}
+          <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-[#f9b03c]/40 via-[#3268ba]/30 to-[#f9b03c]/40 blur-md pointer-events-none animate-pulse" />
 
           <button
             type="button"
             onClick={openCurtain}
-            className="relative pointer-events-auto px-4 py-1.5 rounded-full flex items-center gap-1.5 group transition-all duration-300 active:scale-95 cursor-pointer whitespace-nowrap backdrop-blur-2xl bg-black/90 border border-white/20 hover:border-[#f9b03c] text-white hover:text-[#f9b03c] shadow-[0_10px_30px_rgba(0,0,0,0.8),0_0_20px_rgba(249,176,60,0.25)]"
+            className="relative pointer-events-auto px-5 sm:px-6 py-1.5 sm:py-2 rounded-full flex items-center gap-2 group transition-all duration-300 active:scale-95 cursor-pointer whitespace-nowrap backdrop-blur-2xl bg-black/90 border border-white/20 hover:border-[#f9b03c] text-white hover:text-[#f9b03c] shadow-[0_10px_30px_rgba(0,0,0,0.8),0_0_20px_rgba(249,176,60,0.25)]"
           >
-            <span className="text-xs font-black tracking-wide whitespace-nowrap flex items-center gap-1 font-heading text-transparent bg-clip-text bg-gradient-to-r from-[#f9b03c] via-amber-200 to-[#5a93e8]">
-              🧭 ▾
+            <span className="text-xs sm:text-[13px] font-black tracking-wide whitespace-nowrap flex items-center gap-1.5 font-heading text-white group-hover:text-[#f9b03c] transition-colors">
+              🧭 ዋና ማውጫ ▾
             </span>
           </button>
         </div>
@@ -322,7 +322,7 @@ export default function Navbar() {
           willChange: 'transform, opacity',
         }}
       >
-        <nav className="w-full relative shadow-[0_25px_70px_rgba(0,0,0,0.95)] select-none max-h-[90vh] overflow-y-auto overscroll-contain no-scrollbar backdrop-blur-2xl bg-black/85 border-b border-white/10">
+        <nav className="w-full relative shadow-[0_25px_70px_rgba(0,0,0,0.95)] select-none overflow-visible backdrop-blur-2xl bg-black/95 border-b border-white/10">
         {/* Navbar Inner Content */}
         <div className="max-w-[1500px] mx-auto px-4 sm:px-6 lg:px-8">
           
@@ -791,10 +791,10 @@ export default function Navbar() {
           <button 
             type="button"
             onClick={closeCurtain}
-            className="pointer-events-auto bg-black/90 backdrop-blur-xl border-x border-b border-[#f9b03c]/40 hover:border-[#f9b03c] text-white hover:text-[#f9b03c] text-xs font-black font-heading px-5 sm:px-6 py-1.5 rounded-b-xl shadow-lg hover:shadow-[0_10px_25px_rgba(0,0,0,0.9),0_0_20px_rgba(249,176,60,0.35)] transition-all duration-200 active:scale-95 cursor-pointer flex items-center gap-1.5 whitespace-nowrap"
-            title="ዝጋ / Close Menu"
+            className="pointer-events-auto bg-black/95 text-white border-x border-b border-[#f9b03c]/40 hover:border-[#f9b03c] text-xs font-black font-heading px-5 sm:px-6 py-2 rounded-b-xl shadow-xl hover:shadow-[0_10px_25px_rgba(0,0,0,0.9),0_0_20px_rgba(249,176,60,0.35)] transition-all duration-200 active:scale-95 cursor-pointer flex items-center gap-1.5 whitespace-nowrap"
+            title="ማውጫ ዝጋ / Close Menu"
           >
-            <span>▴ ዝጋ (Close)</span>
+            <span>🧭 ማውጫ ዝጋ ▴</span>
           </button>
         </div>
       )}

@@ -54,7 +54,7 @@ export function parseVideoEmbedUrl(rawUrl: string, autoplay: boolean = false): P
   if (!rawUrl || !rawUrl.trim()) {
     return {
       type: 'embed',
-      src: `https://www.youtube.com/embed/mgdOMtW6J8k?${ytParams}`
+      src: ''
     };
   }
 

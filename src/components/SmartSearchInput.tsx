@@ -194,7 +194,11 @@ export default function SmartSearchInput({
       {/* 🌟 Futuristic YouTube/Algolia Style Live Predictive Autocomplete Dropdown */}
       {isOpen && (
         <div 
-          className="absolute top-full left-0 right-0 mt-2 bg-[#070b14]/98 backdrop-blur-2xl border border-[#3268ba]/40 rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.95),0_0_30px_rgba(50,104,186,0.25)] overflow-hidden z-[9999] max-h-[420px] overflow-y-auto animate-in slide-in-from-top-2 duration-200 divide-y divide-white/10"
+          className={`absolute top-full mt-2 bg-black/95 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-[9999] max-h-[420px] overflow-y-auto animate-in slide-in-from-top-2 duration-200 divide-y divide-white/10 ${
+            compact 
+              ? 'right-0 w-[360px] sm:w-[440px] md:w-[460px] max-w-[92vw]' 
+              : 'left-0 right-0 w-full'
+          }`}
         >
           {/* Header Status Bar */}
           <div className="px-3.5 py-2 bg-gradient-to-r from-[#3268ba]/20 via-transparent to-[#f9b03c]/10 flex items-center justify-between">

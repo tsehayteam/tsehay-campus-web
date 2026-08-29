@@ -411,8 +411,9 @@ function CoursePreviewContent() {
     return clean;
   };
 
-  const previewVideoUrl = extractIframeSrc(course?.video);
-  const defaultVideoUrl = previewVideoUrl || extractIframeSrc(course?.videoUrl) || (modules.length > 0 && modules[0].lessons?.length > 0 ? extractIframeSrc(modules[0].lessons[0].videoUrl) : null);
+  const previewVideoUrl = extractIframeSrc(course?.previewVideoUrl) || extractIframeSrc(course?.video) || extractIframeSrc(course?.videoUrl);
+  const firstLessonVideo = modules.length > 0 && modules[0].lessons?.length > 0 ? (extractIframeSrc(modules[0].lessons[0].video) || extractIframeSrc(modules[0].lessons[0].videoUrl)) : null;
+  const defaultVideoUrl = previewVideoUrl || firstLessonVideo;
   const currentVideoUrl = activeVideoUrl ? extractIframeSrc(activeVideoUrl) : defaultVideoUrl;
 
   const displayImage = formatDriveImageUrl(course?.image);
