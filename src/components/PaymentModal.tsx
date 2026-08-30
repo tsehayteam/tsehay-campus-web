@@ -471,26 +471,50 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
               <div className="space-y-3">
                 <h4 className="font-bold text-xs text-gray-400 uppercase tracking-wider">የክፍያ አማራጭ ይምረጡ</h4>
                 
-                {/* Option 1: LakiPay */}
+                {/* Option 1: LakiPay (Telebirr, CBE, Siinqee, Oromia Bank, Coop, CBE Birr & Cards) */}
                 <label 
-                  className={`payment-option flex items-center justify-between p-3.5 sm:p-4 rounded-2xl border cursor-pointer transition-all duration-200 transform hover:-translate-y-0.5 ${paymethod === 'lakipay' ? 'border-[#f9b03c] bg-amber-500/10 shadow-[0_0_20px_rgba(249,176,60,0.2)] ring-2 ring-amber-500/40' : 'border-gray-800/90 bg-[#121a2d] hover:bg-[#16233d] hover:border-gray-700'}`}
+                  className={`payment-option flex flex-col p-3.5 sm:p-4 rounded-2xl border cursor-pointer transition-all duration-200 transform hover:-translate-y-0.5 ${paymethod === 'lakipay' ? 'border-[#f9b03c] bg-amber-500/10 shadow-[0_0_20px_rgba(249,176,60,0.2)] ring-2 ring-amber-500/40' : 'border-gray-800/90 bg-[#121a2d] hover:bg-[#16233d] hover:border-gray-700'}`}
                 >
-                  <div className="flex items-center gap-3 min-w-0 pr-2">
-                    <input 
-                      type="radio" 
-                      name="paymethod" 
-                      value="lakipay" 
-                      checked={paymethod === 'lakipay'} 
-                      onChange={() => setPaymethod('lakipay')} 
-                      className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500 focus:ring-amber-500 accent-amber-500 cursor-pointer shrink-0" 
-                    />
-                    <div className="min-w-0">
-                      <span className="font-black text-white text-base sm:text-lg block leading-tight">LakiPay</span>
-                      <span className="text-[11px] sm:text-xs text-[#f9b03c] font-bold block mt-0.5">Telebirr • CBE • Sinqee • Oromia • M-Pesa • Cards</span>
+                  <div className="flex items-center justify-between gap-3 w-full">
+                    <div className="flex items-center gap-3 min-w-0 pr-2">
+                      <input 
+                        type="radio" 
+                        name="paymethod" 
+                        value="lakipay" 
+                        checked={paymethod === 'lakipay'} 
+                        onChange={() => setPaymethod('lakipay')} 
+                        className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500 focus:ring-amber-500 accent-amber-500 cursor-pointer shrink-0" 
+                      />
+                      <div className="min-w-0">
+                        <span className="font-black text-white text-base sm:text-lg block leading-tight">LakiPay • የኢትዮጵያ ባንኮች እና ዋሌቶች</span>
+                        <span className="text-[11px] sm:text-xs text-[#f9b03c] font-bold block mt-0.5">Telebirr • CBE • Siinqee • Oromia • Coop • Cards</span>
+                      </div>
+                    </div>
+                    <div className="bg-white w-24 sm:w-32 h-9 sm:h-10 px-2 rounded-xl flex items-center justify-center shadow-md border border-gray-200 shrink-0">
+                      <img src="/lakipay-logo.svg" alt="LakiPay" className="h-5 sm:h-6 w-auto max-w-full object-contain" />
                     </div>
                   </div>
-                  <div className="bg-white w-24 sm:w-32 h-9 sm:h-10 px-2 rounded-xl flex items-center justify-center shadow-md border border-gray-200 shrink-0">
-                    <img src="/lakipay-logo.svg" alt="LakiPay" className="h-5 sm:h-6 w-auto max-w-full object-contain" />
+
+                  {/* Direct Supported Bank & Wallet Pills Strip */}
+                  <div className="mt-3 pt-2.5 border-t border-white/[0.08] flex flex-wrap items-center gap-1.5 text-[10px] font-bold text-slate-300">
+                    <span className="bg-purple-950/60 text-purple-300 border border-purple-800/50 px-2 py-0.5 rounded-lg flex items-center gap-1">
+                      <i className="fa-solid fa-building-columns text-[9px]"></i> CBE (ንግድ ባንክ)
+                    </span>
+                    <span className="bg-amber-950/60 text-amber-300 border border-amber-800/50 px-2 py-0.5 rounded-lg flex items-center gap-1">
+                      <i className="fa-solid fa-landmark text-[9px]"></i> Siinqee (ሲንቄ)
+                    </span>
+                    <span className="bg-red-950/60 text-red-300 border border-red-800/50 px-2 py-0.5 rounded-lg flex items-center gap-1">
+                      <i className="fa-solid fa-vault text-[9px]"></i> Oromia Bank (ኦሮሚያ)
+                    </span>
+                    <span className="bg-sky-950/60 text-sky-300 border border-sky-800/50 px-2 py-0.5 rounded-lg flex items-center gap-1">
+                      <i className="fa-solid fa-handshake-angle text-[9px]"></i> Coop Bank
+                    </span>
+                    <span className="bg-blue-950/60 text-blue-300 border border-blue-800/50 px-2 py-0.5 rounded-lg flex items-center gap-1">
+                      <i className="fa-solid fa-mobile-screen-button text-[9px]"></i> Telebirr
+                    </span>
+                    <span className="bg-emerald-950/60 text-emerald-300 border border-emerald-800/50 px-2 py-0.5 rounded-lg flex items-center gap-1">
+                      <i className="fa-solid fa-credit-card text-[9px]"></i> Cards & CBE Birr
+                    </span>
                   </div>
                 </label>
 

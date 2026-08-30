@@ -2260,19 +2260,15 @@ function StudentDashboardContent() {
                     ? 'bg-slate-950 text-[#f9b03c] shadow-inner'
                     : 'bg-[#f9b03c]/20 text-[#f9b03c]'
                 }`}>
-                  <i className="fa-solid fa-gift text-sm animate-bounce"></i>
+                  <i className="fa-solid fa-gift text-sm"></i>
                 </span>
                 <span className="whitespace-nowrap md:whitespace-normal md:hidden lg:block font-black text-sm tracking-tight drop-shadow-xs">
                   ጓደኛዎን ይጋብዙ
                 </span>
               </div>
-              <span className={`hidden lg:inline-flex text-[9px] uppercase tracking-wider font-black px-2 py-0.5 rounded-full border transition-all ${
-                currentView === 'referrals'
-                  ? 'bg-slate-950/80 text-[#f9b03c] border-slate-900/30'
-                  : 'bg-amber-400/20 text-[#f9b03c] border-amber-400/30'
-              }`}>
-                🎁 ነፃ ኮርስ
-              </span>
+              {currentView === 'referrals' && (
+                <i className="hidden lg:block fa-solid fa-chevron-right text-xs text-slate-950 animate-in fade-in slide-in-from-left-1 duration-200"></i>
+              )}
             </button>
             
             {/* 7. Settings (መገለጫ እና ማስተካከያ) */}
@@ -2354,20 +2350,52 @@ function StudentDashboardContent() {
 
       {/* Main Content Wrapper */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Dashboard Header */}
-        <header className="h-[72px] bg-white/80 dark:bg-slate-800/80 backdrop-blur-md border-b border-gray-200 dark:border-slate-700 flex items-center justify-between px-4 sm:px-6 lg:px-8 z-10 shrink-0">
-            <div className="flex items-center gap-4">
-                <nav className="hidden md:flex text-sm font-semibold text-gray-500 dark:text-gray-400 items-center gap-2 font-body">
-                    <span onClick={() => setCurrentView('courses')} className="hover:text-secondary dark:hover:text-primary transition cursor-pointer">{t('courses')}</span>
-                    <i className="fa-solid fa-chevron-right text-[10px]"></i>
-                    <span onClick={() => setCurrentView('courses')} className="hover:text-secondary dark:hover:text-primary transition cursor-pointer">{t('my_courses')}</span>
-                    <i className="fa-solid fa-chevron-right text-[10px]"></i>
-                    <span className="text-dark dark:text-white font-bold truncate max-w-[200px]">{activeCourse ? activeCourse.title : t('loading')}</span>
+        {/* Dashboard Header with Curtain Trigger & Focus Mode */}
+        <header className="h-[72px] bg-[#050811]/90 backdrop-blur-md border-b border-white/10 flex items-center justify-between px-4 sm:px-6 lg:px-8 z-20 shrink-0">
+            <div className="flex items-center gap-3 sm:gap-4">
+                {/* Top-Left Curtain Navigation Trigger */}
+                <button
+                  type="button"
+                  onClick={() => setIsNavDrawerExpanded(prev => !prev)}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/15 via-[#f9b03c]/10 to-transparent border border-[#f9b03c]/40 hover:border-[#f9b03c] text-white transition-all shadow-[0_0_15px_rgba(249,176,60,0.15)] cursor-pointer active:scale-95"
+                  title="ዋና ማውጫ (Curtain Menu)"
+                >
+                  <div className="w-6 h-6 rounded-lg bg-[#f9b03c] text-slate-950 flex items-center justify-center text-xs font-black">
+                    <i className={`fa-solid ${isNavDrawerExpanded ? 'fa-xmark' : 'fa-bars'}`}></i>
+                  </div>
+                  <span className="text-xs font-black hidden sm:inline text-white">
+                    ማውጫ (Menu)
+                  </span>
+                </button>
+
+                <nav className="hidden md:flex text-sm font-semibold text-gray-400 items-center gap-2 font-body">
+                    <span onClick={() => setCurrentView('courses')} className="hover:text-[#f9b03c] transition cursor-pointer">{t('courses')}</span>
+                    <i className="fa-solid fa-chevron-right text-[10px] text-gray-600"></i>
+                    <span onClick={() => setCurrentView('courses')} className="hover:text-[#f9b03c] transition cursor-pointer">{t('my_courses')}</span>
+                    <i className="fa-solid fa-chevron-right text-[10px] text-gray-600"></i>
+                    <span className="text-white font-bold truncate max-w-[200px]">{activeCourse ? activeCourse.title : t('loading')}</span>
                 </nav>
             </div>
-            <div className="flex items-center gap-3 sm:gap-4 shrink-0 relative">
+            <div className="flex items-center gap-2.5 sm:gap-4 shrink-0 relative">
+                
+                {/* 🌟 Prominent High-Contrast Focus Mode Button in Header */}
+                <button
+                    type="button"
+                    onClick={() => setIsSyllabusCollapsed(prev => !prev)}
+                    className={`px-3 sm:px-4 py-1.5 rounded-xl font-heading text-xs font-black transition-all duration-300 flex items-center gap-2 cursor-pointer active:scale-95 border shadow-md ${
+                      isSyllabusCollapsed
+                        ? 'bg-gradient-to-r from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 border-amber-300/80 shadow-[0_0_20px_rgba(249,176,60,0.45)]'
+                        : 'bg-white/[0.08] hover:bg-[#f9b03c]/20 text-white hover:text-[#f9b03c] border-white/15 hover:border-[#f9b03c]/60'
+                    }`}
+                    title={isSyllabusCollapsed ? "የኮርስ ይዘት ዘርጋ (Exit Focus Mode)" : "የትኩረት ሁነታ (Focus Mode)"}
+                >
+                    <i className={`fa-solid ${isSyllabusCollapsed ? 'fa-compress text-slate-950' : 'fa-expand text-[#f9b03c]'} text-xs`}></i>
+                    <span className="hidden sm:inline">{isSyllabusCollapsed ? 'ይዘት ዘርጋ' : 'የትኩረት ሁነታ (Focus Mode)'}</span>
+                    <span className="sm:hidden">{isSyllabusCollapsed ? 'ዘርጋ' : 'የትኩረት'}</span>
+                </button>
+
                 <div 
-                  className="hidden sm:flex items-center gap-2 bg-gradient-to-r from-amber-500/10 to-yellow-500/10 dark:from-amber-500/20 dark:to-yellow-500/20 border border-[#f9b03c]/40 px-3.5 py-1.5 rounded-full shadow-sm cursor-help hover:scale-105 transition" 
+                  className="hidden sm:flex items-center gap-2 bg-gradient-to-r from-amber-500/20 to-yellow-500/10 border border-[#f9b03c]/40 px-3.5 py-1.5 rounded-full shadow-sm cursor-help hover:scale-105 transition" 
                   title="የተከማቹ ፖይንቶች ከመቶ (Earned Points out of 100)"
                 >
                     <div className="w-5 h-5 rounded-full bg-[#f9b03c]/20 flex items-center justify-center text-[#f9b03c] text-xs">

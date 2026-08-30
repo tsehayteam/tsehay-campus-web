@@ -233,6 +233,21 @@ body {
   animation: scaleInSubtle 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(249, 176, 60, 0.35), 0 0 40px rgba(50, 104, 186, 0.2);
+    border-color: rgba(249, 176, 60, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 35px rgba(249, 176, 60, 0.7), 0 0 60px rgba(249, 176, 60, 0.4);
+    border-color: rgba(249, 176, 60, 0.85);
+  }
+}
+
+.mentorship-pulse-glow {
+  animation: pulseGlow 2s infinite ease-in-out;
+}
+
 /* Glassmorphism & Ultra-Premium Silicon Valley Terafab Navbar */
 .terafab-nav-link {
   position: relative;

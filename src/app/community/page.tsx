@@ -239,7 +239,12 @@ export default function CommunityPage() {
     }));
 
     try {
-      await toggleLikePost(post.id, currentUser.uid, isLiked);
+      await toggleLikePost(post.id, currentUser.uid, isLiked, {
+        postAuthorEmail: post.authorEmail,
+        postAuthorName: post.authorName,
+        postSnippet: post.content,
+        likerName: userProfile?.displayName || currentUser.displayName || 'አንድ ተማሪ'
+      });
     } catch (e) {
       console.error('Error toggling like:', e);
     }
@@ -287,6 +292,8 @@ export default function CommunityPage() {
     const text = commentInputs[postId]?.trim();
     if (!text) return;
 
+    const targetPost = posts.find(p => p.id === postId);
+
     setSubmittingComment((prev) => ({ ...prev, [postId]: true }));
     const tempCommentId = `comm_${Date.now()}`;
     const newCommentObj = {
@@ -319,6 +326,10 @@ export default function CommunityPage() {
         isAdmin: Boolean(userProfile?.isAdmin),
         isPro: Boolean(userProfile?.isPro),
         content: text,
+      }, {
+        authorEmail: targetPost?.authorEmail,
+        authorName: targetPost?.authorName,
+        postSnippet: targetPost?.content
       });
     } catch (err) {
       console.error('Error posting comment:', err);

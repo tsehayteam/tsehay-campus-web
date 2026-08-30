@@ -295,7 +295,17 @@ export const createCommunityPost = async (post: Omit<CommunityPost, 'id' | 'like
 };
 
 // 3. Toggle Like on a Post
-export const toggleLikePost = async (postId: string, userId: string, isLiked: boolean) => {
+export const toggleLikePost = async (
+  postId: string, 
+  userId: string, 
+  isLiked: boolean,
+  notificationMeta?: {
+    postAuthorEmail?: string;
+    postAuthorName?: string;
+    postSnippet?: string;
+    likerName?: string;
+  }
+) => {
   // 1. Client Firestore Updates
   try {
     const postDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_posts', postId);
@@ -319,6 +329,24 @@ export const toggleLikePost = async (postId: string, userId: string, isLiked: bo
       body: JSON.stringify({ postId, userId, isLiked })
     });
   } catch (apiErr) {}
+
+  // 3. Automated Email Notification on New Like
+  if (!isLiked && notificationMeta?.postAuthorEmail && notificationMeta?.likerName) {
+    try {
+      fetch('/api/email/community-notification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'like',
+          recipientEmail: notificationMeta.postAuthorEmail,
+          recipientName: notificationMeta.postAuthorName || 'ተማሪ',
+          senderName: notificationMeta.likerName,
+          postTitleOrSnippet: notificationMeta.postSnippet,
+          postId
+        })
+      }).catch(() => {});
+    } catch (e) {}
+  }
 };
 
 // 4. Delete Community Post (Instant Multi-Tier Sync)
@@ -455,6 +483,11 @@ export const addCommentToPost = async (
     isAdmin: boolean;
     isPro: boolean;
     content: string;
+  },
+  postAuthorMeta?: {
+    authorEmail?: string;
+    authorName?: string;
+    postSnippet?: string;
   }
 ) => {
   // 1. Client Firestore
@@ -480,6 +513,25 @@ export const addCommentToPost = async (
       body: JSON.stringify({ postId, ...commentData })
     });
   } catch (apiErr) {}
+
+  // 3. Automated Email Notification to Post Author
+  if (postAuthorMeta?.authorEmail && postAuthorMeta.authorEmail !== commentData.authorEmail) {
+    try {
+      fetch('/api/email/community-notification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'comment',
+          recipientEmail: postAuthorMeta.authorEmail,
+          recipientName: postAuthorMeta.authorName || 'ተማሪ',
+          senderName: commentData.authorName,
+          commentSnippet: commentData.content,
+          postTitleOrSnippet: postAuthorMeta.postSnippet,
+          postId
+        })
+      }).catch(() => {});
+    } catch (e) {}
+  }
 };
 
 // 9. Delete Comment
@@ -665,6 +717,25 @@ export const sendDirectMessage = async (
       })
     });
   } catch (apiErr) {}
+
+  // 3. Automated Email Notification to Receiver
+  if (message.receiverEmail && message.receiverEmail !== message.senderEmail) {
+    try {
+      fetch('/api/email/community-notification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'message',
+          recipientEmail: message.receiverEmail,
+          recipientName: message.receiverName || 'ተማሪ',
+          senderName: message.senderName,
+          senderPhoto: message.senderPhoto,
+          messageSnippet: message.content || (message.imageUrl ? '📷 ምስል አያይዘዋል' : 'አዲስ መልዕክት'),
+          conversationId
+        })
+      }).catch(() => {});
+    } catch (e) {}
+  }
 
   return { success: true };
 };

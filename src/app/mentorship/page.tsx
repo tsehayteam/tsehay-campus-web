@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import PaymentModal from '@/components/PaymentModal';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase/config';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
@@ -116,6 +117,8 @@ export default function MentorshipPage() {
   const [selectedDate, setSelectedDate] = useState<string>(minDateIso);
   const [calendarMonth, setCalendarMonth] = useState<Date>(new Date(minAvailableDate.getFullYear(), minAvailableDate.getMonth(), 1));
 
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+
   // Success Confirmation State
   const [confirmedBooking, setConfirmedBooking] = useState<{
     id: string;
@@ -130,6 +133,45 @@ export default function MentorshipPage() {
     meetingMode: string;
     paymentMethod: string;
   } | null>(null);
+
+  // Payment target object structured for universal PaymentModal
+  const mentorshipPaymentTarget = {
+    id: `mentorship_${selectedTier.id}`,
+    title: `የ 1-ለ-1 ማማከር • ${selectedTier.name}`,
+    price: selectedTier.price,
+    originalPrice: selectedTier.originalPrice,
+    image: '/assets/eyob_white.jpg',
+    isFree: false
+  };
+
+  const handleLaunchPaymentModal = (tierToPay?: MentorshipTier) => {
+    if (tierToPay) setSelectedTier(tierToPay);
+    setIsPaymentModalOpen(true);
+  };
+
+  // Detect payment return from URL params
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const sp = new URLSearchParams(window.location.search);
+    if (sp.get('success') === 'true') {
+      const bId = sp.get('bookingId') || `MNTR-${Date.now().toString(36).toUpperCase()}`;
+      const confirmed = {
+        id: bId,
+        name: fullName || user?.displayName || 'ተማሪ',
+        phone: phone || user?.phoneNumber || '',
+        email: email || user?.email || '',
+        date: selectedDate,
+        time: selectedTime,
+        topic: topic || 'አጠቃላይ የ 1-ለ-1 ማማከር',
+        tier: selectedTier.name,
+        amount: selectedTier.price,
+        meetingMode,
+        paymentMethod: 'lakipay'
+      };
+      setConfirmedBooking(confirmed);
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, [user]);
 
   // Mentorship Typewriter Headline Effect
   const mentorshipHeadlinePhrases = [
@@ -877,11 +919,21 @@ export default function MentorshipPage() {
 
                     <button
                       type="button"
-                      onClick={() => setBookingStep('payment')}
+                      onClick={() => handleLaunchPaymentModal()}
                       className="w-full btn-buy-now-vibe py-3.5 rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-2 cursor-pointer active:scale-98 shadow-[0_0_30px_rgba(249,176,60,0.4)] text-slate-950"
                     >
-                      <span>✓ መረጃው ትክክል ነው — ወደ ክፍያ ሂድ</span>
+                      <span>ቀጠሮ ያስይዙ (Book Session)</span>
                       <i className="fa-solid fa-arrow-right"></i>
+                    </button>
+                  </div>
+                  
+                  <div className="pt-3 text-center">
+                    <button
+                      type="button"
+                      onClick={() => setBookingStep('payment')}
+                      className="text-xs font-bold text-slate-400 hover:text-[#f9b03c] transition underline underline-offset-4 cursor-pointer"
+                    >
+                      ወይም በእጅ የባንክ ማስተላለፊያ ደረሰኝ ያስገቡ (Manual Receipt Upload)
                     </button>
                   </div>
                 </div>
@@ -1401,6 +1453,14 @@ export default function MentorshipPage() {
 
           </div>
         </div>
+      )}
+
+      {/* Universal Multi-Gateway Payment Modal */}
+      {isPaymentModalOpen && (
+        <PaymentModal
+          course={mentorshipPaymentTarget}
+          onClose={() => setIsPaymentModalOpen(false)}
+        />
       )}
 
       <Footer />

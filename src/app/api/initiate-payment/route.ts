@@ -140,6 +140,11 @@ export async function POST(request: Request) {
       if (formattedApiKey || publicKey || secretKey) {
         for (const endpoint of endpoints) {
           try {
+            const isMentorship = String(courseId).startsWith('mentorship_') || String(courseId).startsWith('MNTR-') || String(title).includes('ማማከር') || String(title).includes('Mentorship');
+            const targetReturnUrl = isMentorship 
+              ? `${origin}/mentorship?success=true&bookingId=${courseId}&reference=${tx_ref}` 
+              : `${origin}/dashboard?success=true&course=${courseId}&reference=${tx_ref}`;
+
             const lakipayPayload: Record<string, any> = {
               amount: numAmount,
               currency: "ETB",
@@ -156,16 +161,22 @@ export async function POST(request: Request) {
               title: payDetails.title,
               description: payDetails.description,
               reference: tx_ref,
+              payment_methods: "ALL",
               supported_mediums: [
                 "TELEBIRR",
                 "CBE",
+                "SIINQEE",
+                "OROMIA_BANK",
+                "COOP",
                 "MPESA",
                 "OROMIA_BANK",
                 "ETHSWITCH",
-                "CYBERSOURCE"
+                "CYBERSOURCE",
+                "CARDS",
+                "WALLETS"
               ],
               callback_url: `${origin}/api/webhook`,
-              return_url: `${origin}/dashboard?success=true&course=${courseId}&reference=${tx_ref}`
+              return_url: targetReturnUrl
             };
 
             if (validEthPhone) {
