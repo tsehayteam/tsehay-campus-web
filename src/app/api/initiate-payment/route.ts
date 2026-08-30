@@ -156,6 +156,14 @@ export async function POST(request: Request) {
               title: payDetails.title,
               description: payDetails.description,
               reference: tx_ref,
+              supported_mediums: [
+                "TELEBIRR",
+                "CBE",
+                "MPESA",
+                "OROMIA_BANK",
+                "ETHSWITCH",
+                "CYBERSOURCE"
+              ],
               callback_url: `${origin}/api/webhook`,
               return_url: `${origin}/dashboard?success=true&course=${courseId}&reference=${tx_ref}`
             };
