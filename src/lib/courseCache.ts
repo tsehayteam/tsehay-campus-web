@@ -321,6 +321,23 @@ export function formatCourseDesc(course: any): string {
   return text;
 }
 
+export function isValidCourse(c: any): boolean {
+  if (!c || typeof c !== 'object') return false;
+  if (c.status === 'Deleted' || c.isDeleted === true) return false;
+  const id = (c.id || '').toString().trim().toLowerCase();
+  const title = (c.title || '').toString().trim();
+  const desc = (c.desc || c.description || '').toString().trim();
+
+  // Filter out test/dummy entries that were created as temporary samples
+  if (id === '5l,m4lmltml' || title.includes('5l,m4lmltml') || desc.includes('2354t4554t4t4')) return false;
+  if (title.toLowerCase() === 'shien business' && (c.price === 0 || c.price === 'Free' || c.price === '0') && c.id !== 'shein-import-business') return false;
+  if (id === 'web-development-bootcamp' || id === 'crypto-finance-mastery' || id === 'digital_marketing_pro') return false;
+  
+  if (!title || title.length < 3) return false;
+
+  return true;
+}
+
 /**
  * Combines courses from multiple collection snapshots or endpoints cleanly
  */
@@ -330,7 +347,7 @@ export function mergeCoursesLists(...lists: any[][]): any[] {
   lists.forEach(list => {
     if (Array.isArray(list)) {
       list.forEach(c => {
-        if (c && c.id) {
+        if (isValidCourse(c)) {
           const cleanDesc = formatCourseDesc(c);
           const slug = getCourseSlug(c);
           const existing = map.get(c.id);
@@ -363,11 +380,12 @@ export function getCachedCourses(): any[] {
     if (cached) {
       const parsed = JSON.parse(cached);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed.map((c: any) => ({
+        const valid = parsed.filter(isValidCourse).map((c: any) => ({
           ...c,
           desc: formatCourseDesc(c),
           description: formatCourseDesc(c)
         }));
+        if (valid.length > 0) return valid;
       }
     }
   } catch (err) {
@@ -379,12 +397,14 @@ export function getCachedCourses(): any[] {
 export function saveCachedCourses(courses: any[]) {
   if (typeof window === 'undefined' || !Array.isArray(courses) || courses.length === 0) return;
   try {
-    const sanitized = courses.map((c: any) => ({
+    const sanitized = courses.filter(isValidCourse).map((c: any) => ({
       ...c,
       desc: formatCourseDesc(c),
       description: formatCourseDesc(c)
     }));
-    localStorage.setItem('tsehay_courses_cache', JSON.stringify(sanitized));
+    if (sanitized.length > 0) {
+      localStorage.setItem('tsehay_courses_cache', JSON.stringify(sanitized));
+    }
   } catch (err) {
     console.warn("Course cache save error:", err);
   }
@@ -407,13 +427,14 @@ export function formatDriveImageUrl(url: any): string {
  */
 export function broadcastCourseUpdate(courses: any[]) {
   if (typeof window === 'undefined' || !Array.isArray(courses) || courses.length === 0) return;
-  saveCachedCourses(courses);
+  const sanitized = courses.filter(isValidCourse);
+  saveCachedCourses(sanitized);
 
   try {
     // 1. Cross-tab Broadcast Channel
     if (typeof BroadcastChannel !== 'undefined') {
       const bc = new BroadcastChannel('tsehay_live_courses_channel');
-      bc.postMessage({ type: 'COURSES_UPDATED', courses });
+      bc.postMessage({ type: 'COURSES_UPDATED', courses: sanitized });
       setTimeout(() => bc.close(), 200);
     }
   } catch (e) {}
@@ -421,7 +442,7 @@ export function broadcastCourseUpdate(courses: any[]) {
   try {
     // 2. Intra-tab Custom Event
     window.dispatchEvent(new CustomEvent('tsehay_courses_updated', {
-      detail: { courses }
+      detail: { courses: sanitized }
     }));
   } catch (e) {}
 
@@ -433,15 +454,12 @@ export function broadcastCourseUpdate(courses: any[]) {
 
 /**
  * Universal Multi-Strategy Real-Time Subscription Engine
- * Subscribes simultaneously to:
- * 1. Firestore nested collection: artifacts/tsehaycampus-e1a6d/public/data/courses
- * 2. Firestore root collection: courses
- * 3. BroadcastChannel ('tsehay_live_courses_channel')
- * 4. Window Custom Event ('tsehay_courses_updated')
- * 5. Window Storage Event
- * 6. Immediate Server API Fetch (/api/courses)
- * 
- * Guarantees courses are delivered in nanoseconds and updated live on any change without refresh!
+ * Subscribes directly to:
+ * 1. Authoritative Firestore collection: artifacts/tsehaycampus-e1a6d/public/data/courses (Managed by Admin)
+ * 2. BroadcastChannel ('tsehay_live_courses_channel')
+ * 3. Window Custom Event ('tsehay_courses_updated')
+ * 4. Window Storage Event
+ * 5. Immediate Server API Fetch (/api/courses)
  */
 export function subscribeToCourses(callback: (courses: any[]) => void): () => void {
   if (typeof window === 'undefined') return () => {};
@@ -450,22 +468,25 @@ export function subscribeToCourses(callback: (courses: any[]) => void): () => vo
   let lastDataHash = '';
   const unifiedMap = new Map<string, any>();
 
-  const emitIfChanged = (newCourses: any[]) => {
+  const emitIfChanged = (newCourses: any[], replace: boolean = false) => {
     if (isCleanedUp || !Array.isArray(newCourses)) return;
 
-    newCourses.forEach((c: any) => {
-      if (c && c.id && c.status !== 'Deleted' && !c.isDeleted) {
-        const cleanDesc = formatCourseDesc(c);
-        const slug = getCourseSlug(c);
-        const existing = unifiedMap.get(c.id);
-        unifiedMap.set(c.id, {
-          ...existing,
-          ...c,
-          slug: slug || existing?.slug || '',
-          desc: cleanDesc,
-          description: cleanDesc
-        });
-      }
+    const validCourses = newCourses.filter(isValidCourse);
+    if (validCourses.length === 0) return;
+
+    if (replace) {
+      unifiedMap.clear();
+    }
+
+    validCourses.forEach((c: any) => {
+      const cleanDesc = formatCourseDesc(c);
+      const slug = getCourseSlug(c);
+      unifiedMap.set(c.id, {
+        ...c,
+        slug: slug || c.slug || '',
+        desc: cleanDesc,
+        description: cleanDesc
+      });
     });
 
     const list = Array.from(unifiedMap.values());
@@ -479,12 +500,12 @@ export function subscribeToCourses(callback: (courses: any[]) => void): () => vo
     }
   };
 
-  // 1. Deliver cached / default data immediately (0ms)
+  // 1. Deliver cached / default verified courses immediately (0ms)
   const initial = getCachedCourses();
   if (initial.length > 0) {
-    emitIfChanged(initial);
+    emitIfChanged(initial, true);
   } else {
-    emitIfChanged(DEFAULT_COURSES);
+    emitIfChanged(DEFAULT_COURSES, true);
   }
 
   // 2. Immediate Server API Fail-Safe Fetch (<100ms) with cache-busting
@@ -495,20 +516,23 @@ export function subscribeToCourses(callback: (courses: any[]) => void): () => vo
     .then(res => res.json())
     .then(data => {
       if (!isCleanedUp && data.courses && Array.isArray(data.courses) && data.courses.length > 0) {
-        emitIfChanged(data.courses);
+        emitIfChanged(data.courses, true);
       }
     })
     .catch(err => console.warn('API courses fetch note:', err));
 
-  // 3. Real-Time Firestore Listener: Nested artifacts collection
+  // 3. Real-Time Firestore Live Listener on the Authoritative Admin Courses Collection:
+  // artifacts/tsehaycampus-e1a6d/public/data/courses
   let unsubNested = () => {};
   try {
     const nestedQuery = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses'));
     unsubNested = onSnapshot(nestedQuery, (snap) => {
       if (!isCleanedUp && !snap.empty) {
-        const list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const list = snap.docs
+          .map(doc => ({ id: doc.id, ...doc.data() }))
+          .filter(isValidCourse);
         if (list.length > 0) {
-          emitIfChanged(list);
+          emitIfChanged(list, true);
         }
       }
     }, (err) => {
@@ -518,51 +542,33 @@ export function subscribeToCourses(callback: (courses: any[]) => void): () => vo
     console.warn('Nested Firestore listener init note:', e);
   }
 
-  // 4. Real-Time Firestore Listener: Root courses collection
-  let unsubRoot = () => {};
-  try {
-    const rootQuery = query(collection(db, 'courses'));
-    unsubRoot = onSnapshot(rootQuery, (snap) => {
-      if (!isCleanedUp && !snap.empty) {
-        const list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        if (list.length > 0) {
-          emitIfChanged(list);
-        }
-      }
-    }, (err) => {
-      console.warn('Root Firestore listener sync note:', err.message);
-    });
-  } catch (e) {
-    console.warn('Root Firestore listener init note:', e);
-  }
-
-  // 5. Cross-Tab Broadcast Channel Listener (Nanosecond Live Sync across multiple browser tabs)
+  // 4. Cross-Tab Broadcast Channel Listener (Nanosecond Live Sync across multiple browser tabs)
   let bc: BroadcastChannel | null = null;
   try {
     if (typeof BroadcastChannel !== 'undefined') {
       bc = new BroadcastChannel('tsehay_live_courses_channel');
       bc.onmessage = (event) => {
         if (!isCleanedUp && event.data && event.data.type === 'COURSES_UPDATED' && Array.isArray(event.data.courses)) {
-          emitIfChanged(event.data.courses);
+          emitIfChanged(event.data.courses, true);
         }
       };
     }
   } catch (e) {}
 
-  // 6. Intra-Tab Custom Event Listener (Instant UI update within the current page)
+  // 5. Intra-Tab Custom Event Listener (Instant UI update within the current page)
   const handleCustomUpdate = (e: any) => {
     if (!isCleanedUp && e.detail && Array.isArray(e.detail.courses)) {
-      emitIfChanged(e.detail.courses);
+      emitIfChanged(e.detail.courses, true);
     }
   };
   window.addEventListener('tsehay_courses_updated', handleCustomUpdate);
 
-  // 7. Local Storage Event Listener (Cross-tab fallback)
+  // 6. Local Storage Event Listener (Cross-tab fallback)
   const handleStorage = (e: StorageEvent) => {
     if (!isCleanedUp && (!e.key || e.key === 'tsehay_courses_cache')) {
       const updated = getCachedCourses();
       if (updated.length > 0) {
-        emitIfChanged(updated);
+        emitIfChanged(updated, true);
       }
     }
   };
@@ -572,7 +578,6 @@ export function subscribeToCourses(callback: (courses: any[]) => void): () => vo
   return () => {
     isCleanedUp = true;
     unsubNested();
-    unsubRoot();
     if (bc) {
       bc.close();
     }

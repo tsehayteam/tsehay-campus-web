@@ -117,10 +117,11 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // 2. Fetch All Live Courses from Firestore directly
+    // 2. Fetch All Live Courses from Authoritative Firestore Collection
     const courseMap = new Map<string, any>();
 
-    // Collection A: artifacts/tsehaycampus-e1a6d/public/data/courses
+    // Primary & Authoritative Collection (Admin Management Hub):
+    // artifacts/tsehaycampus-e1a6d/public/data/courses
     try {
       const snapA = await adminDb
         .collection('artifacts')
@@ -129,59 +130,49 @@ export async function GET(req: NextRequest) {
         .doc('data')
         .collection('courses')
         .get();
+      
       snapA.docs.forEach(d => {
         if (d.exists) {
           const data = d.data();
-          if (data && data.status !== 'Deleted' && !data.isDeleted) {
+          const title = (data?.title || '').trim();
+          const desc = (data?.desc || data?.description || '').trim();
+          // Filter out deleted or dummy test artifacts
+          if (data && data.status !== 'Deleted' && !data.isDeleted && !title.includes('5l,m4lmltml') && !desc.includes('2354t4554t4t4')) {
             courseMap.set(d.id, { id: d.id, ...data });
           }
         }
       });
     } catch (e) {
-      console.warn("Collection A fetch notice:", e);
+      console.warn("Primary collection A fetch notice:", e);
     }
 
-    // Collection B: root courses
-    try {
-      const snapB = await adminDb.collection('courses').get();
-      snapB.docs.forEach(d => {
-        if (d.exists) {
-          const data = d.data();
-          if (data && data.status !== 'Deleted' && !data.isDeleted) {
-            if (!courseMap.has(d.id)) {
+    // Only fallback to root courses if Primary Collection A is completely empty
+    if (courseMap.size === 0) {
+      try {
+        const snapB = await adminDb.collection('courses').get();
+        snapB.docs.forEach(d => {
+          if (d.exists) {
+            const data = d.data();
+            const title = (data?.title || '').trim();
+            const desc = (data?.desc || data?.description || '').trim();
+            if (data && data.status !== 'Deleted' && !data.isDeleted && !title.includes('5l,m4lmltml') && !desc.includes('2354t4554t4t4') && d.id !== '5l,m4lmltml') {
               courseMap.set(d.id, { id: d.id, ...data });
-            } else {
-              courseMap.set(d.id, { ...courseMap.get(d.id), ...data, id: d.id });
             }
           }
-        }
-      });
-    } catch (e) {
-      console.warn("Collection B fetch notice:", e);
+        });
+      } catch (e) {
+        console.warn("Fallback collection B fetch notice:", e);
+      }
     }
 
-    // Collection C: artifacts/tsehaycampus-e1a6d/courses
+    // Proactively clean up any obsolete test documents from root courses
     try {
-      const snapC = await adminDb
-        .collection('artifacts')
-        .doc('tsehaycampus-e1a6d')
-        .collection('courses')
-        .get();
-      snapC.docs.forEach(d => {
-        if (d.exists) {
-          const data = d.data();
-          if (data && data.status !== 'Deleted' && !data.isDeleted) {
-            if (!courseMap.has(d.id)) {
-              courseMap.set(d.id, { id: d.id, ...data });
-            } else {
-              courseMap.set(d.id, { ...courseMap.get(d.id), ...data, id: d.id });
-            }
-          }
-        }
+      const junkDocs = ['5l,m4lmltml', 'Shien Business', 'shien-business-test'];
+      junkDocs.forEach(jId => {
+        adminDb.collection('courses').doc(jId).delete().catch(() => {});
+        adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('courses').doc(jId).delete().catch(() => {});
       });
-    } catch (e) {
-      console.warn("Collection C fetch notice:", e);
-    }
+    } catch (e) {}
 
     const courses = Array.from(courseMap.values());
 
