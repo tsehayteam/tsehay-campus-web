@@ -24,6 +24,7 @@ import CoursePreviewModal from '@/components/CoursePreviewModal';
 import Hero3DPopoutStage from '@/components/3d/Hero3DPopoutStage';
 import Tilt3DCard from '@/components/3d/Tilt3DCard';
 import { scrollTriggerEngine } from '@/lib/scrollTriggerEngine';
+import WaitlistModal from '@/components/WaitlistModal';
 import { 
   getCachedCourses, 
   saveCachedCourses, 
@@ -31,21 +32,23 @@ import {
   formatDriveImageUrl, 
   getCourseSlug, 
   subscribeToCourses,
-  DEFAULT_COURSES 
+  DEFAULT_COURSES,
+  getComingSoonCourses,
+  ComingSoonCourse
 } from '@/lib/courseCache';
 
 const PARTNER_BRANDS = [
   {
     name: 'Google',
     render: () => (
-      <div className="flex items-center gap-3 sm:gap-4 opacity-95 hover:opacity-100 transition-all duration-300 transform hover:scale-105 cursor-pointer">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className="w-8 h-8 sm:w-10 sm:h-10 shrink-0">
+      <div className="flex items-center gap-3.5 sm:gap-4.5 opacity-95 hover:opacity-100 transition-all duration-300 transform hover:scale-105 cursor-pointer min-h-[52px]">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 shrink-0 drop-shadow-md">
           <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
           <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
           <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
           <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
         </svg>
-        <span className="text-xl sm:text-2xl md:text-3xl font-black font-heading tracking-tight">
+        <span className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black font-heading tracking-tight drop-shadow-sm">
           <span className="text-[#4285F4]">G</span>
           <span className="text-[#EA4335]">o</span>
           <span className="text-[#FBBC05]">o</span>
@@ -59,9 +62,9 @@ const PARTNER_BRANDS = [
   {
     name: 'Meta',
     render: () => (
-      <div className="flex items-center gap-3 sm:gap-4 opacity-95 hover:opacity-100 transition-all duration-300 transform hover:scale-105 cursor-pointer">
-        <i className="fa-brands fa-meta text-2xl sm:text-3xl md:text-4xl text-[#0668E1] shrink-0"></i>
-        <span className="text-xl sm:text-2xl md:text-3xl font-black text-[#0668E1] tracking-tight" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+      <div className="flex items-center gap-3.5 sm:gap-4.5 opacity-95 hover:opacity-100 transition-all duration-300 transform hover:scale-105 cursor-pointer min-h-[52px]">
+        <i className="fa-brands fa-meta text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-[#0668E1] shrink-0 drop-shadow-md"></i>
+        <span className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-[#0668E1] tracking-tight drop-shadow-sm" style={{ fontFamily: 'Montserrat, sans-serif' }}>
           Meta
         </span>
       </div>
@@ -70,9 +73,9 @@ const PARTNER_BRANDS = [
   {
     name: 'TikTok',
     render: () => (
-      <div className="flex items-center gap-3 sm:gap-4 opacity-95 hover:opacity-100 transition-all duration-300 transform hover:scale-105 cursor-pointer">
-        <i className="fa-brands fa-tiktok text-2xl sm:text-3xl md:text-4xl text-white shrink-0"></i>
-        <span className="text-xl sm:text-2xl md:text-3xl font-black text-white tracking-tight" style={{ fontFamily: 'Montserrat, sans-serif' }}>
+      <div className="flex items-center gap-3.5 sm:gap-4.5 opacity-95 hover:opacity-100 transition-all duration-300 transform hover:scale-105 cursor-pointer min-h-[52px]">
+        <i className="fa-brands fa-tiktok text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-white shrink-0 drop-shadow-md"></i>
+        <span className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-white tracking-tight drop-shadow-sm" style={{ fontFamily: 'Montserrat, sans-serif' }}>
           TikTok
         </span>
       </div>
@@ -81,8 +84,8 @@ const PARTNER_BRANDS = [
   {
     name: 'SHEIN',
     render: () => (
-      <div className="flex items-center gap-2 sm:gap-3 opacity-95 hover:opacity-100 transition-all duration-300 transform hover:scale-105 cursor-pointer">
-        <span className="text-2xl sm:text-3xl md:text-4xl font-black tracking-widest font-heading text-white" style={{ letterSpacing: '0.15em' }}>
+      <div className="flex items-center gap-3 sm:gap-4 opacity-95 hover:opacity-100 transition-all duration-300 transform hover:scale-105 cursor-pointer min-h-[52px]">
+        <span className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-widest font-heading text-white drop-shadow-md" style={{ letterSpacing: '0.18em' }}>
           SHEIN
         </span>
       </div>
@@ -91,38 +94,12 @@ const PARTNER_BRANDS = [
   {
     name: 'YouTube',
     render: () => (
-      <div className="flex items-center gap-2.5 sm:gap-3.5 opacity-95 hover:opacity-100 transition-all duration-300 transform hover:scale-105 cursor-pointer">
-        <div className="w-8 h-6 sm:w-10 sm:h-7 bg-[#FF0000] rounded-lg sm:rounded-xl flex items-center justify-center shadow-md shrink-0">
-          <i className="fa-solid fa-play text-white text-xs ml-0.5"></i>
+      <div className="flex items-center gap-3 sm:gap-4.5 opacity-95 hover:opacity-100 transition-all duration-300 transform hover:scale-105 cursor-pointer min-h-[52px]">
+        <div className="w-12 h-8 sm:w-14 sm:h-10 md:w-16 md:h-12 bg-[#FF0000] rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg shrink-0">
+          <i className="fa-solid fa-play text-white text-xs sm:text-sm md:text-base ml-0.5"></i>
         </div>
-        <span className="text-xl sm:text-2xl md:text-3xl font-black tracking-tighter text-white font-heading">
+        <span className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black tracking-tighter text-white font-heading drop-shadow-sm">
           YouTube
-        </span>
-      </div>
-    )
-  },
-  {
-    name: 'Alibaba',
-    render: () => (
-      <div className="flex items-center gap-2.5 sm:gap-3.5 opacity-95 hover:opacity-100 transition-all duration-300 transform hover:scale-105 cursor-pointer">
-        <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-[#FF6A00] flex items-center justify-center text-white font-black text-sm sm:text-base shadow-sm shrink-0">
-          a
-        </div>
-        <span className="text-xl sm:text-2xl md:text-3xl font-black text-[#FF6A00] tracking-tight font-heading">
-          Alibaba<span className="text-xs text-slate-400 font-normal">.com</span>
-        </span>
-      </div>
-    )
-  },
-  {
-    name: 'Telegram',
-    render: () => (
-      <div className="flex items-center gap-2.5 sm:gap-3.5 opacity-95 hover:opacity-100 transition-all duration-300 transform hover:scale-105 cursor-pointer">
-        <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-[#229ED9] flex items-center justify-center text-white text-sm sm:text-base shadow-sm shrink-0">
-          <i className="fa-brands fa-telegram -ml-0.5"></i>
-        </div>
-        <span className="text-xl sm:text-2xl md:text-3xl font-black text-white tracking-tight font-heading">
-          Telegram
         </span>
       </div>
     )
@@ -130,36 +107,10 @@ const PARTNER_BRANDS = [
   {
     name: 'Shopify',
     render: () => (
-      <div className="flex items-center gap-2.5 sm:gap-3.5 opacity-95 hover:opacity-100 transition-all duration-300 transform hover:scale-105 cursor-pointer">
-        <i className="fa-brands fa-shopify text-2xl sm:text-3xl md:text-4xl text-[#95BF47] shrink-0"></i>
-        <span className="text-xl sm:text-2xl md:text-3xl font-black text-[#95BF47] tracking-tight font-heading">
+      <div className="flex items-center gap-3.5 sm:gap-4.5 opacity-95 hover:opacity-100 transition-all duration-300 transform hover:scale-105 cursor-pointer min-h-[52px]">
+        <i className="fa-brands fa-shopify text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-[#95BF47] shrink-0 drop-shadow-md"></i>
+        <span className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-[#95BF47] tracking-tight font-heading drop-shadow-sm">
           shopify
-        </span>
-      </div>
-    )
-  },
-  {
-    name: 'Telebirr',
-    render: () => (
-      <div className="flex items-center gap-2.5 sm:gap-3.5 opacity-95 hover:opacity-100 transition-all duration-300 transform hover:scale-105 cursor-pointer">
-        <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-tr from-[#005CB9] to-[#00A4E4] flex items-center justify-center text-white font-black text-xs sm:text-sm shadow-md shrink-0">
-          tb
-        </div>
-        <span className="text-xl sm:text-2xl md:text-3xl font-black tracking-tight font-heading">
-          <span className="text-[#00A4E4]">tele</span><span className="text-[#F37023]">birr</span>
-        </span>
-      </div>
-    )
-  },
-  {
-    name: 'CBE',
-    render: () => (
-      <div className="flex items-center gap-2.5 sm:gap-3.5 opacity-95 hover:opacity-100 transition-all duration-300 transform hover:scale-105 cursor-pointer">
-        <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-xl bg-[#7B2082] flex items-center justify-center text-white font-black text-xs sm:text-sm shadow-md shrink-0">
-          CBE
-        </div>
-        <span className="text-xl sm:text-2xl md:text-3xl font-black text-[#b842c2] tracking-tight font-heading">
-          CBE BIRR
         </span>
       </div>
     )
@@ -219,9 +170,11 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
   });
   const [loading, setLoading] = useState<boolean>(false);
   
-  // Payment / Auth / Preview Modal States
+  // Payment / Auth / Preview / Waitlist Modal States
   const [selectedCourse, setSelectedCourse] = useState<any>(null);
   const [previewModalCourse, setPreviewModalCourse] = useState<any>(null);
+  const [selectedWaitlistCourse, setSelectedWaitlistCourse] = useState<ComingSoonCourse | null>(null);
+  const [isWaitlistModalOpen, setIsWaitlistModalOpen] = useState(false);
   const [isEnrolling, setIsEnrolling] = useState(false);
   const [showRequireAuthModal, setShowRequireAuthModal] = useState(false);
   const [authCourseTarget, setAuthCourseTarget] = useState<any>(null);
@@ -716,8 +669,10 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
               className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 w-full max-w-full" 
               id="courseList"
             >
-              {courses.slice(0, 6).map((course, index) => {
-                const isFree = course.isFree || course.price === 0 || course.price === '0' || course.price === 'Free';
+              {[...courses, ...getComingSoonCourses().map(c => ({ ...c, isComingSoon: true }))].slice(0, 8).map((course, index) => {
+                const isComingSoon = Boolean(course.isComingSoon || course.status === 'Coming Soon');
+                const isFree = !isComingSoon && (course.isFree || course.price === 0 || course.price === '0' || course.price === 'Free');
+
                 return (
                   <Tilt3DCard
                     key={course.id}
@@ -725,12 +680,21 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
                     scale={1.025}
                     perspective={1100}
                     glare={true}
-                    onClick={() => router.push(`/courses/${getCourseSlug(course) || course.id}`)}
+                    onClick={() => {
+                      if (isComingSoon) {
+                        setSelectedWaitlistCourse(course);
+                        setIsWaitlistModalOpen(true);
+                      } else {
+                        router.push(`/courses/${getCourseSlug(course) || course.id}`);
+                      }
+                    }}
                     className="cursor-pointer group"
                   >
                     <div 
                       data-scrolly-order={index + 1}
-                      className="h-full terafab-glass-card overflow-hidden flex flex-col justify-between relative select-none"
+                      className={`h-full terafab-glass-card overflow-hidden flex flex-col justify-between relative select-none ${
+                        isComingSoon ? 'border-[#f9b03c]/40 hover:border-[#f9b03c]' : ''
+                      }`}
                       style={{ transformStyle: 'preserve-3d' }}
                     >
                       <div>
@@ -752,7 +716,15 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
                           />
                           
                           {/* Floating Popout Badges */}
-                          {!isFree ? (
+                          {isComingSoon ? (
+                            <div 
+                              className="absolute top-3.5 right-3.5 z-20 bg-gradient-to-r from-[#f9b03c] via-amber-400 to-yellow-400 text-slate-950 text-[11px] font-black px-3.5 py-1.5 rounded-full flex items-center gap-1.5 shadow-[0_4px_15px_rgba(249,176,60,0.55)] border border-amber-200/60 animate-pulse" 
+                              style={{ transform: 'translateZ(45px)' }}
+                            >
+                              <i className="fa-solid fa-hourglass-half text-[10px]"></i>
+                              <span>በቅርቡ (Coming Soon)</span>
+                            </div>
+                          ) : !isFree ? (
                             <div 
                               className="absolute top-3.5 right-3.5 z-20 bg-gradient-to-r from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 text-[11px] font-black px-3.5 py-1.5 rounded-full flex items-center gap-1.5 shadow-[0_4px_15px_rgba(249,176,60,0.5)] border border-amber-200/50" 
                               style={{ transform: 'translateZ(45px)' }}
@@ -769,12 +741,12 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
                           )}
 
                           {/* Category Badge */}
-                          {course.category && (
+                          {(course.category || course.tag) && (
                             <div 
                               className="absolute bottom-3.5 left-3.5 z-20 bg-[#030509]/85 backdrop-blur-md text-[#f9b03c] border border-white/15 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider shadow-md"
                               style={{ transform: 'translateZ(40px)' }}
                             >
-                              {course.category}
+                              {course.category || course.tag}
                             </div>
                           )}
                         </div>
@@ -800,8 +772,17 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
                               <span>{course.instructor || 'Eyoub Sahle'}</span>
                             </div>
                             <div className="flex items-center gap-1 bg-[#f9b03c]/15 text-[#f9b03c] font-black px-2.5 py-0.5 rounded-full text-xs border border-[#f9b03c]/30 shadow-xs">
-                              <i className="fa-solid fa-star text-[10px]"></i>
-                              <span>{course.ratingAvg || '4.9'}</span>
+                              {isComingSoon ? (
+                                <>
+                                  <i className="fa-solid fa-bell text-[10px]"></i>
+                                  <span>{course.highlightBadge || 'Coming Soon'}</span>
+                                </>
+                              ) : (
+                                <>
+                                  <i className="fa-solid fa-star text-[10px]"></i>
+                                  <span>{course.ratingAvg || '4.9'}</span>
+                                </>
+                              )}
                             </div>
                           </div>
 
@@ -820,15 +801,15 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
                           >
                             <div className="flex items-center gap-1.5 bg-white/[0.05] text-gray-300 text-xs font-semibold px-3 py-1 rounded-full border border-white/[0.08] backdrop-blur-md">
                               <i className="fa-regular fa-clock text-[#f9b03c] text-[10px]"></i>
-                              <span>{course.duration || '00:50:00'}</span>
+                              <span>{course.duration || '6+ ሰዓታት'}</span>
                             </div>
                             <div className="flex items-center gap-1.5 bg-white/[0.05] text-gray-300 text-xs font-semibold px-3 py-1 rounded-full border border-white/[0.08] backdrop-blur-md">
                               <i className="fa-solid fa-layer-group text-[#f9b03c] text-[10px]"></i>
-                              <span>{course.lessons?.length || 5} ትምህርቶች</span>
+                              <span>{course.lessons?.length ? `${course.lessons.length} ትምህርቶች` : 'የተሟላ ሞጁል'}</span>
                             </div>
                             <div className="flex items-center gap-1.5 bg-white/[0.05] text-gray-300 text-xs font-semibold px-3 py-1 rounded-full border border-white/[0.08] backdrop-blur-md">
                               <i className="fa-solid fa-signal text-[#f9b03c] text-[10px]"></i>
-                              <span>{course.level || 'ጀማሪ'}</span>
+                              <span>{course.level || 'ጀማሪ እና መካከለኛ'}</span>
                             </div>
                           </div>
                         </div>
@@ -840,7 +821,14 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
                         style={{ transform: 'translateZ(32px)' }}
                       >
                         <div>
-                          {isFree ? (
+                          {isComingSoon ? (
+                            <div className="flex flex-col">
+                              <span className="text-[10px] text-gray-400 uppercase font-black tracking-wider">ሁኔታ</span>
+                              <span className="text-sm sm:text-base font-black text-[#f9b03c] tracking-tight flex items-center gap-1.5">
+                                <i className="fa-solid fa-sparkles text-xs"></i> {course.expectedDate || 'በቅርቡ'}
+                              </span>
+                            </div>
+                          ) : isFree ? (
                             <span className="text-xl sm:text-2xl font-black text-[#f9b03c] tracking-tight">
                               ነፃ (Free)
                             </span>
@@ -858,33 +846,50 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
                           )}
                         </div>
                         <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setPreviewModalCourse(course);
-                            }}
-                            className="bg-white/[0.05] hover:bg-white/10 text-white text-xs font-bold px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-xl transition border border-white/10 flex items-center gap-1.5 cursor-pointer hover:border-[#f9b03c]/40 active:scale-95"
-                            title="ማስተዋወቂያ ቪዲዮ ይመልከቱ"
-                          >
-                            <i className="fa-solid fa-play text-[#f9b03c]"></i>
-                            <span>ይመልከቱ</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openPaymentModal(course);
-                            }}
-                            disabled={isEnrolling}
-                            className="btn-shimmer-interactive px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl flex items-center gap-1.5 sm:gap-2 transition-all text-xs cursor-pointer active:scale-95 disabled:opacity-50 group font-black shadow-lg"
-                          >
-                            {isFree ? (
-                              <>{isEnrolling ? 'እባክዎ ይጠብቁ...' : 'በነፃ ይጀምሩ'} <i className="fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform"></i></>
-                            ) : (
-                              <>አሁኑኑ ይግዙ <i className="fa-solid fa-cart-shopping buy-icon-animated group-hover:scale-110 group-hover:-rotate-6 transition-transform"></i></>
-                            )}
-                          </button>
+                          {isComingSoon ? (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedWaitlistCourse(course);
+                                setIsWaitlistModalOpen(true);
+                              }}
+                              className="px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#f9b03c] text-slate-950 font-black text-xs flex items-center gap-1.5 sm:gap-2 shadow-[0_0_20px_rgba(249,176,60,0.4)] hover:shadow-[0_0_30px_rgba(249,176,60,0.6)] transition-all cursor-pointer active:scale-95 group"
+                            >
+                              <i className="fa-solid fa-bell text-xs group-hover:rotate-12 transition-transform"></i>
+                              <span>ተጠባባቂ ዝርዝር ውስጥ ግባ (Join Waitlist)</span>
+                            </button>
+                          ) : (
+                            <>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setPreviewModalCourse(course);
+                                }}
+                                className="bg-white/[0.05] hover:bg-white/10 text-white text-xs font-bold px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-xl transition border border-white/10 flex items-center gap-1.5 cursor-pointer hover:border-[#f9b03c]/40 active:scale-95"
+                                title="ማስተዋወቂያ ቪዲዮ ይመልከቱ"
+                              >
+                                <i className="fa-solid fa-play text-[#f9b03c]"></i>
+                                <span>ይመልከቱ</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openPaymentModal(course);
+                                }}
+                                disabled={isEnrolling}
+                                className="btn-shimmer-interactive px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl flex items-center gap-1.5 sm:gap-2 transition-all text-xs cursor-pointer active:scale-95 disabled:opacity-50 group font-black shadow-lg"
+                              >
+                                {isFree ? (
+                                  <>{isEnrolling ? 'እባክዎ ይጠብቁ...' : 'በነፃ ይጀምሩ'} <i className="fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform"></i></>
+                                ) : (
+                                  <>አሁኑኑ ይግዙ <i className="fa-solid fa-cart-shopping buy-icon-animated group-hover:scale-110 group-hover:-rotate-6 transition-transform"></i></>
+                                )}
+                              </button>
+                            </>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -935,16 +940,9 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
       <div className="scrolly-reveal">
         <UpcomingEventsSection />
       </div>
-
-      {/* =========================================================================
-          9. COMING SOON COURSES & WAITLIST
-         ========================================================================= */}
-      <div className="scrolly-reveal">
-        <ComingSoonCoursesSection />
-      </div>
       
       {/* =========================================================================
-          10. FAQ ACCORDION ("ብዙ ጊዜ የሚነሱ ጥያቄዎች")
+          9. FAQ ACCORDION ("ብዙ ጊዜ የሚነሱ ጥያቄዎች")
          ========================================================================= */}
       <section id="faq" className="py-20 bg-transparent border-b border-white/[0.08] transition-colors duration-300 scrolly-reveal relative overflow-hidden">
         <div className="absolute top-0 right-0 w-96 h-96 bg-[#f9b03c]/5 rounded-full blur-[140px] pointer-events-none"></div>
@@ -1090,6 +1088,16 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
         course={previewModalCourse}
         onGoToClassroom={(c) => openPaymentModal(c)}
         onBuyCourse={(c) => openPaymentModal(c)}
+      />
+
+      {/* Waitlist Modal */}
+      <WaitlistModal
+        isOpen={isWaitlistModalOpen}
+        onClose={() => {
+          setIsWaitlistModalOpen(false);
+          setSelectedWaitlistCourse(null);
+        }}
+        course={selectedWaitlistCourse}
       />
 
     </main>
