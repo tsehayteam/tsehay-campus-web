@@ -1175,28 +1175,26 @@ img, video, canvas {
 
 .scrolly-reveal {
   opacity: 0;
-  transform: perspective(1200px) rotateX(14deg) translateY(38px) scale(0.96);
-  transform-origin: center top;
+  transform: translateY(40px);
   transition: opacity 0.85s cubic-bezier(0.16, 1, 0.3, 1), transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: opacity, transform;
 }
 
 .scrolly-reveal.is-visible {
   opacity: 1;
-  transform: perspective(1200px) rotateX(0deg) translateY(0) scale(1);
+  transform: translateY(0);
 }
 
 .scrolly-card {
   opacity: 0;
-  transform: perspective(1200px) rotateX(18deg) translateY(44px) scale(0.94);
-  transform-origin: center top;
+  transform: translateY(40px);
   transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: opacity, transform;
 }
 
 .scrolly-card.is-visible {
   opacity: 1;
-  transform: perspective(1200px) rotateX(0deg) translateY(0) scale(1);
+  transform: translateY(0);
 }
 
 .scrolly-stagger-1 { transition-delay: 0.08s; }
@@ -1864,4 +1862,94 @@ img, video, canvas {
 .animate-scan-laser {
   animation: scanLaserHologram 4.5s ease-in-out infinite alternate;
 }
+
+/* =========================================================================
+   ✨ Terafab.ai Ultra-Premium Dark Glassmorphism Design System
+   ========================================================================= */
+.terafab-glass {
+  background: rgba(255, 255, 255, 0.025);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+}
+
+.terafab-glass-card {
+  background: rgba(255, 255, 255, 0.025);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.terafab-glass-card:hover {
+  background: rgba(255, 255, 255, 0.045);
+  border-color: rgba(249, 176, 60, 0.45);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), 0 0 30px rgba(249, 176, 60, 0.18);
+}
+
+.terafab-hero-container {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow: hidden;
+  background-color: #030509;
+}
+
+.terafab-hero-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  opacity: 0.22;
+  filter: blur(1px);
+  transform: scale(1.05);
+  animation: kenBurnsHero 24s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+@keyframes kenBurnsHero {
+  0% { transform: scale(1.03) translate(0, 0); }
+  100% { transform: scale(1.12) translate(-1%, -1%); }
+}
+
+.terafab-hero-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, transparent 0%, rgba(3, 5, 9, 0.75) 65%, #030509 100%);
+  pointer-events: none;
+}
+
+.terafab-btn-primary {
+  background: linear-gradient(135deg, #f9b03c 0%, #f59e0b 50%, #d97706 100%);
+  color: #030509;
+  font-weight: 900;
+  box-shadow: 0 0 30px rgba(249, 176, 60, 0.45);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.terafab-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 45px rgba(249, 176, 60, 0.7);
+}
+
+.terafab-btn-glass {
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.terafab-btn-glass:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(249, 176, 60, 0.6);
+  box-shadow: 0 0 30px rgba(249, 176, 60, 0.2);
+  transform: translateY(-2px);
+}
+
 

@@ -14,7 +14,7 @@ export default function Hero3DPopoutStage({
   const stageRef = useRef<HTMLDivElement | null>(null);
   const glareRef = useRef<HTMLDivElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const [studentCount, setStudentCount] = useState(500);
+  const [studentCount, setStudentCount] = useState(530);
   const isInteractingRef = useRef(false);
   const rafIdRef = useRef<number | null>(null);
 
@@ -53,7 +53,7 @@ export default function Hero3DPopoutStage({
   // Live student counter pulse
   useEffect(() => {
     const interval = setInterval(() => {
-      setStudentCount(prev => (prev >= 540 ? 500 : prev + 1));
+      setStudentCount(prev => (prev >= 560 ? 530 : prev + 1));
     }, 5000);
     return () => clearInterval(interval);
   }, []);
@@ -122,7 +122,7 @@ export default function Hero3DPopoutStage({
           className="relative w-full h-[220px] sm:h-[320px] md:h-[390px] lg:h-[430px] rounded-[1.8rem] sm:rounded-[2.2rem] shadow-[0_30px_90px_rgba(0,0,0,0.85)] border-2 border-white/20 dark:border-[#f9b03c]/40 overflow-hidden bg-black/90"
           style={{ transform: 'translateZ(0px)' }}
         >
-          {/* Main High-Definition Video Feed */}
+          {/* Main High-Definition Video Feed with Instant Poster Preload */}
           <video 
             ref={videoRef}
             id="hero-video" 

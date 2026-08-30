@@ -14,16 +14,30 @@ import { useRouter } from 'next/navigation';
 import SmartSearchInput from '@/components/SmartSearchInput';
 import CourseCardSkeleton from '@/components/CourseCardSkeleton';
 import CoursePreviewModal from '@/components/CoursePreviewModal';
+import WaitlistModal from '@/components/WaitlistModal';
 import Tilt3DCard from '@/components/3d/Tilt3DCard';
 import { searchCourses } from '@/lib/smartSearch';
-import { getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl, getCourseSlug, mergeCoursesLists, DEFAULT_COURSES } from '@/lib/courseCache';
+import { getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl, getCourseSlug, mergeCoursesLists, subscribeToCourses, getComingSoonCourses, ComingSoonCourse, DEFAULT_COURSES } from '@/lib/courseCache';
 
-export default function CoursesClient() {
+export default function CoursesClient({ initialCourses }: { initialCourses?: any[] }) {
   const [isMounted, setIsMounted] = useState(false);
-  const [courses, setCourses] = useState<any[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [courses, setCourses] = useState<any[]>(() => {
+    if (initialCourses && Array.isArray(initialCourses) && initialCourses.length > 0) {
+      return initialCourses;
+    }
+    try {
+      const cached = getCachedCourses();
+      if (cached && cached.length > 0) return cached;
+    } catch {}
+    return DEFAULT_COURSES;
+  });
+  const [loading, setLoading] = useState<boolean>(() => {
+    return !(initialCourses && initialCourses.length > 0);
+  });
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [previewModalCourse, setPreviewModalCourse] = useState<any>(null);
+  const [selectedWaitlistCourse, setSelectedWaitlistCourse] = useState<ComingSoonCourse | null>(null);
+  const [isWaitlistModalOpen, setIsWaitlistModalOpen] = useState(false);
   const [isEnrolling, setIsEnrolling] = useState(false);
   const [showRequireAuthModal, setShowRequireAuthModal] = useState(false);
   const [authCourseTarget, setAuthCourseTarget] = useState<any>(null);
@@ -31,21 +45,19 @@ export default function CoursesClient() {
   const { user } = useAuth();
   const router = useRouter();
   const [isReferralWelcome, setIsReferralWelcome] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('All');
 
   useEffect(() => {
     setIsMounted(true);
-    try {
-      const cached = getCachedCourses();
-      if (cached && cached.length > 0) {
-        setCourses(cached);
-        setLoading(false);
-      } else {
-        setCourses(DEFAULT_COURSES);
-        setLoading(false);
-      }
-    } catch (e) {
-      setCourses(DEFAULT_COURSES);
-      setLoading(false);
+    if (!initialCourses || initialCourses.length === 0) {
+      try {
+        const cached = getCachedCourses();
+        if (cached && cached.length > 0) {
+          setCourses(cached);
+          setLoading(false);
+        }
+      } catch (e) {}
     }
 
     if (typeof window !== 'undefined') {
@@ -57,106 +69,16 @@ export default function CoursesClient() {
       } catch (e) {}
     }
   }, []);
-  
-  // Search and Category Filtering States
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All");
 
   useEffect(() => {
-    let artifactList: any[] = [];
-    let rootList: any[] = [];
-
-    const syncAndMerge = () => {
-      let merged: any[] = [];
-      if (artifactList.length > 0 || rootList.length > 0) {
-        merged = mergeCoursesLists(artifactList, rootList);
-      } else {
-        const cached = getCachedCourses();
-        merged = cached.length > 0 ? cached : DEFAULT_COURSES;
-      }
-      if (merged.length > 0) {
-        setCourses(merged);
-        saveCachedCourses(merged);
+    const unsubscribe = subscribeToCourses((coursesList) => {
+      if (Array.isArray(coursesList) && coursesList.length > 0) {
+        setCourses(coursesList);
       }
       setLoading(false);
-    };
+    });
 
-    // 1. Real-Time Live listener on artifacts public collection
-    let unsubArtifact = () => {};
-    try {
-      const qArtifact = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses'));
-      unsubArtifact = onSnapshot(qArtifact, (snapshot) => {
-        if (!snapshot.empty) {
-          artifactList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        } else {
-          artifactList = [];
-        }
-        syncAndMerge();
-      }, (error) => {
-        console.warn("Artifacts courses sync notice:", error);
-        syncAndMerge();
-      });
-    } catch (e) {
-      syncAndMerge();
-    }
-
-    // 2. Real-Time Live listener on root courses collection
-    let unsubRoot = () => {};
-    try {
-      const qRoot = query(collection(db, 'courses'));
-      unsubRoot = onSnapshot(qRoot, (snapshot) => {
-        if (!snapshot.empty) {
-          rootList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        } else {
-          rootList = [];
-        }
-        syncAndMerge();
-      }, (error) => {
-        console.warn("Root courses sync notice:", error);
-        syncAndMerge();
-      });
-    } catch (e) {
-      syncAndMerge();
-    }
-
-    // 3. Immediate cache-busted HTTP fetch from backend API
-    fetch(`/api/courses?t=${Date.now()}`, {
-      cache: 'no-store',
-      headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' }
-    })
-      .then(res => res.json())
-      .then(data => {
-        if (data && Array.isArray(data.courses) && data.courses.length > 0) {
-          const apiMerged = mergeCoursesLists(data.courses);
-          setCourses(apiMerged);
-          saveCachedCourses(apiMerged);
-        }
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-
-    // 4. Instant In-Tab & Cross-Tab nano-second event sync when Admin adds/edits/deletes courses
-    const handleCoursesSyncEvent = (e: any) => {
-      if (e?.detail && Array.isArray(e.detail) && e.detail.length > 0) {
-        const clean = mergeCoursesLists(e.detail);
-        setCourses(clean);
-        saveCachedCourses(clean);
-      } else {
-        const cached = getCachedCourses();
-        if (cached && cached.length > 0) {
-          setCourses(cached);
-        }
-      }
-    };
-    window.addEventListener('tsehay_courses_updated', handleCoursesSyncEvent);
-    window.addEventListener('storage', handleCoursesSyncEvent);
-
-    return () => {
-      unsubArtifact();
-      unsubRoot();
-      window.removeEventListener('tsehay_courses_updated', handleCoursesSyncEvent);
-      window.removeEventListener('storage', handleCoursesSyncEvent);
-    };
+    return () => unsubscribe();
   }, []);
 
   // 🌟 Seamless Post-Login Action Continuity: Automatically resume Buy/Enroll where user left off!
@@ -326,18 +248,19 @@ export default function CoursesClient() {
   };
 
   const getFilteredCourses = () => {
-    let result = courses;
+    const comingSoonList = getComingSoonCourses().map(c => ({ ...c, isComingSoon: true }));
+    let result = [...courses, ...comingSoonList];
 
     if (searchQuery.trim()) {
       result = searchCourses(result, searchQuery);
     }
 
     if (selectedCategory === "Free") {
-      result = result.filter(c => c.price === "Free" || c.price === "0" || c.price === 0 || c.isFree);
+      result = result.filter(c => !c.isComingSoon && (c.price === "Free" || c.price === "0" || c.price === 0 || c.isFree));
     } else if (selectedCategory === "Paid") {
-      result = result.filter(c => c.price !== "Free" && c.price !== "0" && c.price !== 0 && !c.isFree);
+      result = result.filter(c => !c.isComingSoon && (c.price !== "Free" && c.price !== "0" && c.price !== 0 && !c.isFree));
     } else if (selectedCategory !== "All") {
-      result = result.filter(c => isCategoryMatch(c.category, selectedCategory));
+      result = result.filter(c => isCategoryMatch(c.category || c.tag, selectedCategory));
     }
 
     return result;
@@ -349,8 +272,6 @@ export default function CoursesClient() {
     <React.Fragment>
       <main className="min-h-screen bg-[#030509] text-white selection:bg-[#f9b03c] selection:text-black relative flex flex-col overflow-x-hidden">
         
-        {/* 🌟 3D MESH & PARTICLE CANVAS BACKGROUND */}
-        <Courses3DParticleMeshCanvas />
 
         {/* Ambient Top Glow Orbs */}
         <div className="fixed top-0 left-1/4 -translate-x-1/2 w-[600px] h-[600px] bg-gradient-to-br from-[#f9b03c]/15 to-transparent rounded-full blur-[140px] pointer-events-none -z-10 animate-pulse" />
@@ -473,7 +394,8 @@ export default function CoursesClient() {
                 className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 w-full max-w-full"
               >
                 {filteredCourses.map((course) => {
-                  const isFree = course.isFree || course.price === 'Free' || course.price === '0' || course.price === 0;
+                  const isComingSoon = Boolean(course.isComingSoon || course.status === 'Coming Soon');
+                  const isFree = !isComingSoon && (course.isFree || course.price === 'Free' || course.price === '0' || course.price === 0);
 
                   return (
                     <Tilt3DCard
@@ -482,13 +404,21 @@ export default function CoursesClient() {
                       scale={1.02}
                       perspective={1100}
                       glare={true}
-                      onClick={() => router.push(`/courses/${getCourseSlug(course) || course.id}`)}
+                      onClick={() => {
+                        if (isComingSoon) {
+                          setSelectedWaitlistCourse(course);
+                          setIsWaitlistModalOpen(true);
+                        } else {
+                          router.push(`/courses/${getCourseSlug(course) || course.id}`);
+                        }
+                      }}
                       className="h-full group cursor-pointer"
                     >
                       {/* Premium Glassmorphic Card Container with Smooth Hover translateY(-8px) & Golden Aura */}
                       <div 
-                        onClick={() => router.push(`/courses/${getCourseSlug(course) || course.id}`)}
-                        className="h-full course-card bg-slate-900/80 backdrop-blur-2xl rounded-3xl overflow-hidden flex flex-col justify-between border border-white/[0.08] hover:border-[#f9b03c]/70 shadow-[0_15px_35px_rgba(0,0,0,0.6)] hover:shadow-[0_25px_60px_rgba(249,176,60,0.25),0_0_35px_rgba(50,104,186,0.18)] transition-all duration-500 cursor-pointer relative hover:-translate-y-2 select-none"
+                        className={`h-full course-card bg-slate-900/80 backdrop-blur-2xl rounded-3xl overflow-hidden flex flex-col justify-between border border-white/[0.08] shadow-[0_15px_35px_rgba(0,0,0,0.6)] hover:shadow-[0_25px_60px_rgba(249,176,60,0.25),0_0_35px_rgba(50,104,186,0.18)] transition-all duration-500 cursor-pointer relative hover:-translate-y-2 select-none ${
+                          isComingSoon ? 'border-[#f9b03c]/40 hover:border-[#f9b03c]' : 'hover:border-[#f9b03c]/70'
+                        }`}
                         style={{ 
                           backdropFilter: 'blur(16px)',
                           WebkitBackdropFilter: 'blur(16px)',
@@ -498,10 +428,6 @@ export default function CoursesClient() {
                         <div>
                           {/* Thumbnail Wrapper: 100% full view with ambient glow & 1.05 scale hover zoom */}
                           <div 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              router.push(`/courses/${getCourseSlug(course) || course.id}`);
-                            }}
                             className="relative aspect-video w-full overflow-hidden bg-black flex items-center justify-center block cursor-pointer"
                             style={{ transform: 'translateZ(30px)' }}
                           >
@@ -517,8 +443,16 @@ export default function CoursesClient() {
                               className="relative z-10 w-full h-full object-contain p-2 transition-transform duration-500 ease-out group-hover:scale-105" 
                             />
                             
-                            {/* PREMIUM / FREE Badge (Brand Colors: Yellow/Blue - NO GREEN) */}
-                            {!isFree ? (
+                            {/* PREMIUM / FREE / COMING SOON Badge */}
+                            {isComingSoon ? (
+                              <div 
+                                className="absolute top-3.5 right-3.5 z-20 bg-gradient-to-r from-[#f9b03c] via-amber-400 to-yellow-400 text-slate-950 text-[11px] font-black px-3.5 py-1.5 rounded-full flex items-center gap-1.5 shadow-[0_4px_15px_rgba(249,176,60,0.55)] border border-amber-200/60 animate-pulse"
+                                style={{ transform: 'translateZ(45px)' }}
+                              >
+                                <i className="fa-solid fa-hourglass-half text-[10px]"></i>
+                                <span>በቅርቡ (Coming Soon)</span>
+                              </div>
+                            ) : !isFree ? (
                               <div 
                                 className="absolute top-3.5 right-3.5 z-20 bg-gradient-to-r from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 text-[11px] font-black px-3.5 py-1.5 rounded-full flex items-center gap-1.5 shadow-[0_4px_15px_rgba(249,176,60,0.5)] border border-amber-200/50"
                                 style={{ transform: 'translateZ(45px)' }}
@@ -535,24 +469,19 @@ export default function CoursesClient() {
                             )}
                             
                             {/* Category Badge on Image */}
-                            {course.category && (
+                            {(course.category || course.tag) && (
                               <div 
                                 className="absolute bottom-3.5 left-3.5 z-20 bg-[#030509]/85 backdrop-blur-md text-[#f9b03c] border border-white/15 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider shadow-md"
                                 style={{ transform: 'translateZ(40px)' }}
                               >
-                                {course.category}
+                                {course.category || course.tag}
                               </div>
                             )}
                           </div>
                           
                           {/* Content Details */}
                           <div className="p-6 sm:p-7">
-                            <div 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                router.push(`/courses/${getCourseSlug(course) || course.id}`);
-                              }}
-                            >
+                            <div>
                               <h3 
                                 className="text-xl sm:text-2xl font-black text-white mb-3 line-clamp-2 leading-snug group-hover:text-[#f9b03c] transition-colors font-heading cursor-pointer tracking-tight"
                                 style={{ transform: 'translateZ(25px)' }}
@@ -573,8 +502,17 @@ export default function CoursesClient() {
                                 <span>{course.instructor || 'Eyoub Sahle'}</span>
                               </div>
                               <div className="flex items-center gap-1 bg-[#f9b03c]/15 text-[#f9b03c] font-black px-2.5 py-0.5 rounded-full text-xs border border-[#f9b03c]/30 shadow-xs">
-                                <i className="fa-solid fa-star text-[10px]"></i>
-                                <span>{course.ratingAvg || '4.9'}</span>
+                                {isComingSoon ? (
+                                  <>
+                                    <i className="fa-solid fa-bell text-[10px]"></i>
+                                    <span>{course.highlightBadge || 'Coming Soon'}</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <i className="fa-solid fa-star text-[10px]"></i>
+                                    <span>{course.ratingAvg || '4.9'}</span>
+                                  </>
+                                )}
                               </div>
                             </div>
                             
@@ -590,52 +528,82 @@ export default function CoursesClient() {
                         {/* Card Bottom / Action Row */}
                         <div className="px-6 pb-6 pt-3 border-t border-white/[0.06] flex items-center justify-between mt-auto">
                           <div>
-                            <span className="text-[10px] text-slate-400 uppercase font-black tracking-wider block">
-                              {t('tuition_fee')}
-                            </span>
-                            <div className="flex items-baseline gap-2">
-                              <span className="text-xl sm:text-2xl font-black text-white font-heading tracking-tight">
-                                {isFree ? 'ነፃ (Free)' : `${Number(course.price || 0).toLocaleString()} ETB`}
-                              </span>
-                              {course.oldPrice && Number(course.oldPrice) > Number(course.price) && (
-                                <span className="text-xs text-slate-500 line-through font-bold">
-                                  {Number(course.oldPrice).toLocaleString()} ETB
+                            {isComingSoon ? (
+                              <div className="flex flex-col">
+                                <span className="text-[10px] text-slate-400 uppercase font-black tracking-wider block">
+                                  ሁኔታ
                                 </span>
-                              )}
-                            </div>
+                                <span className="text-base sm:text-lg font-black text-[#f9b03c] font-heading tracking-tight flex items-center gap-1.5">
+                                  <i className="fa-solid fa-sparkles text-xs"></i> {course.expectedDate || 'በቅርቡ የሚለቀቅ'}
+                                </span>
+                              </div>
+                            ) : (
+                              <div>
+                                <span className="text-[10px] text-slate-400 uppercase font-black tracking-wider block">
+                                  {t('tuition_fee')}
+                                </span>
+                                <div className="flex items-baseline gap-2">
+                                  <span className="text-xl sm:text-2xl font-black text-white font-heading tracking-tight">
+                                    {isFree ? 'ነፃ (Free)' : `${Number(course.price || 0).toLocaleString()} ETB`}
+                                  </span>
+                                  {course.oldPrice && Number(course.oldPrice) > Number(course.price) && (
+                                    <span className="text-xs text-slate-500 line-through font-bold">
+                                      {Number(course.oldPrice).toLocaleString()} ETB
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            )}
                           </div>
 
                           <div className="flex items-center gap-2">
-                            {/* Preview Trailer Video Button */}
-                            {course.video && (
-                              <button
+                            {isComingSoon ? (
+                              <button 
                                 type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  setPreviewModalCourse(course);
+                                  setSelectedWaitlistCourse(course);
+                                  setIsWaitlistModalOpen(true);
                                 }}
-                                className="w-9 h-9 rounded-xl bg-white/5 hover:bg-[#f9b03c]/20 text-slate-300 hover:text-[#f9b03c] border border-white/10 hover:border-[#f9b03c]/40 flex items-center justify-center transition-all cursor-pointer text-xs"
-                                title="ትሬይለር ይመልከቱ (Watch Trailer)"
+                                className="px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#f9b03c] text-slate-950 font-black text-xs flex items-center gap-1.5 sm:gap-2 shadow-[0_0_20px_rgba(249,176,60,0.4)] hover:shadow-[0_0_30px_rgba(249,176,60,0.6)] transition-all cursor-pointer active:scale-95 group"
                               >
-                                <i className="fa-solid fa-play"></i>
+                                <i className="fa-solid fa-bell text-xs group-hover:rotate-12 transition-transform"></i>
+                                <span>ተጠባባቂ ዝርዝር ውስጥ ግባ (Join Waitlist)</span>
                               </button>
-                            )}
+                            ) : (
+                              <>
+                                {/* Preview Trailer Video Button */}
+                                {course.video && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setPreviewModalCourse(course);
+                                    }}
+                                    className="w-9 h-9 rounded-xl bg-white/5 hover:bg-[#f9b03c]/20 text-slate-300 hover:text-[#f9b03c] border border-white/10 hover:border-[#f9b03c]/40 flex items-center justify-center transition-all cursor-pointer text-xs"
+                                    title="ትሬይለር ይመልከቱ (Watch Trailer)"
+                                  >
+                                    <i className="fa-solid fa-play"></i>
+                                  </button>
+                                )}
 
-                            {/* Main CTA: Buy Course or Go to Classroom */}
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                openPaymentModal(course);
-                              }} 
-                              disabled={isEnrolling} 
-                              className="btn-shimmer-interactive px-4 py-2.5 rounded-xl flex items-center gap-2 transition-all text-xs cursor-pointer active:scale-95 disabled:opacity-50 group font-black shadow-lg"
-                            >
-                              {isFree ? (
-                                <>{isEnrolling ? 'እባክዎ ይጠብቁ...' : t('btn_go_to_class')} <i className="fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform"></i></>
-                              ) : (
-                                <>{t('btn_buy_course')} <i className="fa-solid fa-cart-shopping buy-icon-animated group-hover:scale-110 group-hover:-rotate-6 transition-transform"></i></>
-                              )}
-                            </button>
+                                {/* Main CTA: Buy Course or Go to Classroom */}
+                                <button 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    openPaymentModal(course);
+                                  }} 
+                                  disabled={isEnrolling} 
+                                  className="btn-shimmer-interactive px-4 py-2.5 rounded-xl flex items-center gap-2 transition-all text-xs cursor-pointer active:scale-95 disabled:opacity-50 group font-black shadow-lg"
+                                >
+                                  {isFree ? (
+                                    <>{isEnrolling ? 'እባክዎ ይጠብቁ...' : t('btn_go_to_class')} <i className="fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform"></i></>
+                                  ) : (
+                                    <>{t('btn_buy_course')} <i className="fa-solid fa-cart-shopping buy-icon-animated group-hover:scale-110 group-hover:-rotate-6 transition-transform"></i></>
+                                  )}
+                                </button>
+                              </>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -679,121 +647,18 @@ export default function CoursesClient() {
         onGoToClassroom={(c) => openPaymentModal(c)}
         onBuyCourse={(c) => openPaymentModal(c)}
       />
+
+      {/* Waitlist Modal */}
+      <WaitlistModal
+        isOpen={isWaitlistModalOpen}
+        onClose={() => {
+          setIsWaitlistModalOpen(false);
+          setSelectedWaitlistCourse(null);
+        }}
+        course={selectedWaitlistCourse}
+      />
     </React.Fragment>
   );
 }
 
-// =========================================================================
-// 🌟 3D PARTICLE NETWORK & MESH GRADIENT CANVAS (MATCHING LANDING & ABOUT)
-// =========================================================================
-function Courses3DParticleMeshCanvas() {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    let animId: number;
-    let width = (canvas.width = window.innerWidth);
-    let height = (canvas.height = window.innerHeight);
-
-    const handleResize = () => {
-      if (!canvas) return;
-      width = canvas.width = window.innerWidth;
-      height = canvas.height = window.innerHeight;
-    };
-    window.addEventListener('resize', handleResize);
-
-    const particleCount = Math.min(Math.floor((width * height) / 20000), 75);
-    const particles: Array<{
-      x: number;
-      y: number;
-      z: number;
-      vx: number;
-      vy: number;
-      vz: number;
-      radius: number;
-      color: string;
-    }> = [];
-
-    const colors = ['#f9b03c', '#3268ba', '#5a93e8', '#ffe066'];
-
-    for (let i = 0; i < particleCount; i++) {
-      particles.push({
-        x: Math.random() * width,
-        y: Math.random() * height,
-        z: Math.random() * 400 - 200,
-        vx: (Math.random() - 0.5) * 0.45,
-        vy: (Math.random() - 0.5) * 0.45,
-        vz: (Math.random() - 0.5) * 0.3,
-        radius: Math.random() * 1.8 + 1,
-        color: colors[Math.floor(Math.random() * colors.length)]
-      });
-    }
-
-    const render = () => {
-      ctx.clearRect(0, 0, width, height);
-
-      for (let i = 0; i < particles.length; i++) {
-        const p = particles[i];
-        p.x += p.vx;
-        p.y += p.vy;
-        p.z += p.vz;
-
-        if (p.x < 0) p.x = width;
-        if (p.x > width) p.x = 0;
-        if (p.y < 0) p.y = height;
-        if (p.y > height) p.y = 0;
-        if (p.z < -200) p.z = 200;
-        if (p.z > 200) p.z = -200;
-
-        const fov = 350;
-        const scale = fov / (fov + p.z);
-        const screenX = p.x;
-        const screenY = p.y;
-        const r = p.radius * scale;
-
-        ctx.beginPath();
-        ctx.arc(screenX, screenY, Math.max(0.5, r), 0, Math.PI * 2);
-        ctx.fillStyle = p.color;
-        ctx.globalAlpha = Math.max(0.15, Math.min(0.65, scale * 0.7));
-        ctx.fill();
-
-        for (let j = i + 1; j < particles.length; j++) {
-          const p2 = particles[j];
-          const dx = p.x - p2.x;
-          const dy = p.y - p2.y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-
-          if (dist < 110) {
-            ctx.beginPath();
-            ctx.moveTo(p.x, p.y);
-            ctx.lineTo(p2.x, p2.y);
-            ctx.strokeStyle = '#f9b03c';
-            ctx.globalAlpha = (1 - dist / 110) * 0.15;
-            ctx.lineWidth = 0.6;
-            ctx.stroke();
-          }
-        }
-      }
-      ctx.globalAlpha = 1;
-      animId = requestAnimationFrame(render);
-    };
-
-    render();
-
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      cancelAnimationFrame(animId);
-    };
-  }, []);
-
-  return (
-    <canvas 
-      ref={canvasRef} 
-      className="fixed inset-0 w-full h-full pointer-events-none -z-20 opacity-80"
-    />
-  );
-}

@@ -6,7 +6,7 @@ import { useAuth, ADMIN_EMAILS, isEmailAdmin } from '@/context/AuthContext';
 import { collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc, serverTimestamp, query, orderBy, collectionGroup } from 'firebase/firestore';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
-import { DEFAULT_COURSES, getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl, getCourseSlug, getCourseBySlugOrId, markCourseDeleted, unmarkCourseDeleted, generateCourseSlug } from '@/lib/courseCache';
+import { DEFAULT_COURSES, getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl, getCourseSlug, getCourseBySlugOrId, generateCourseSlug, broadcastCourseUpdate } from '@/lib/courseCache';
 import { DEFAULT_EVENTS, getCachedEvents, saveCachedEvents, getRemainingSeats, generateEventSlug, TsehayEvent, EventTicket } from '@/lib/eventCache';
 import AdminQrScanner from '@/components/AdminQrScanner';
 
@@ -108,6 +108,12 @@ export default function AdminDashboard() {
   const [selectedStudentForDetail, setSelectedStudentForDetail] = useState<any | null>(null);
   const [sidebarMobileOpen, setSidebarMobileOpen] = useState(false);
   const router = useRouter();
+
+  // 🌟 Course Waitlists State
+  const [waitlists, setWaitlists] = useState<any[]>([]);
+  const [waitlistSearchTerm, setWaitlistSearchTerm] = useState('');
+  const [waitlistCourseFilter, setWaitlistCourseFilter] = useState('all');
+  const [isDeletingWaitlist, setIsDeletingWaitlist] = useState<string | null>(null);
 
   // 🌟 Events & QR Tickets State
   const [events, setEvents] = useState<TsehayEvent[]>(() => getCachedEvents());
@@ -1067,6 +1073,34 @@ export default function AdminDashboard() {
     };
     fetchEventsData();
 
+    // 🌟 Live Real-Time Firestore Listener for Course Waitlists
+    let unsubscribeWaitlists: any = () => {};
+    const fetchWaitlistsData = async () => {
+      try {
+        const wlRes = await fetch('/api/admin/waitlists');
+        if (wlRes.ok) {
+          const wlData = await wlRes.json();
+          if (wlData.waitlists && Array.isArray(wlData.waitlists)) {
+            setWaitlists(wlData.waitlists);
+          }
+        }
+      } catch (e) {}
+    };
+    fetchWaitlistsData();
+
+    try {
+      const wlCol = collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'course_waitlists');
+      unsubscribeWaitlists = onSnapshot(wlCol, (snapshot) => {
+        if (!snapshot.empty) {
+          const list = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+          list.sort((a: any, b: any) => (b.timestamp || 0) - (a.timestamp || 0));
+          setWaitlists(list);
+        }
+      }, (err) => {
+        console.warn('Real-time waitlists sync fallback:', err);
+      });
+    } catch (e) {}
+
     const aboutVidRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'site_settings', 'about_video');
     const unsubscribeAboutVideo = onSnapshot(aboutVidRef, (docSnap) => {
       if (docSnap.exists()) {
@@ -1250,6 +1284,7 @@ export default function AdminDashboard() {
         unsubscribeReferrals();
         unsubscribeFeedbacks();
         unsubscribeStudentFeedbacks();
+        if (typeof unsubscribeWaitlists === 'function') unsubscribeWaitlists();
         if (typeof unsubscribeCommunity === 'function') unsubscribeCommunity();
         clearTimeout(safetyTimer);
     };
@@ -2131,21 +2166,15 @@ export default function AdminDashboard() {
         }
       } catch (tokenErr) {}
 
-      // 🚀 1. Unmark deleted if editing/recreating & Direct Client Firestore Save
-      unmarkCourseDeleted(docId);
+      // 🚀 1. Direct client Firestore write (dual path for instant live listeners)
       try {
-        const nestedDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses', docId);
-        await setDoc(nestedDocRef, coursePayload, { merge: true });
-        try {
-          await setDoc(doc(db, 'courses', docId), coursePayload, { merge: true });
-        } catch (rootFsErr) {
-          console.warn('Root courses client mirror warning:', rootFsErr);
-        }
-      } catch (clientFsErr) {
-        console.warn('Client Firestore save warning:', clientFsErr);
+        await setDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses', docId), coursePayload, { merge: true });
+        await setDoc(doc(db, 'courses', docId), coursePayload, { merge: true });
+      } catch (clientWriteErr) {
+        console.warn('Client Firestore write warning:', clientWriteErr);
       }
 
-      // 🚀 2. Server Admin API Call (Sync & Admin SDK write to both endpoints)
+      // 🚀 3. Server Admin API Call (Sync & Admin SDK write)
       try {
         await fetch('/api/admin/courses', {
           method: 'POST',
@@ -2173,7 +2202,7 @@ export default function AdminDashboard() {
         console.warn('Admin save-course API call warning:', apiErr);
       }
 
-      // 🚀 3. Optimistic State Update for Instant Visual Responsiveness
+      // 🚀 4. Optimistic State Update for Instant Visual Responsiveness & Nanosecond Cross-Tab Broadcast
       setCourses(prev => {
         const existingIdx = prev.findIndex(c => c.id === docId);
         let updated: any[];
@@ -2183,11 +2212,7 @@ export default function AdminDashboard() {
         } else {
           updated = [{ ...coursePayload, id: docId }, ...prev];
         }
-        try {
-          localStorage.setItem('tsehay_admin_courses_cache', JSON.stringify(updated));
-          localStorage.setItem('tsehay_courses_cache', JSON.stringify(updated));
-          window.dispatchEvent(new CustomEvent('tsehay_courses_updated', { detail: updated }));
-        } catch (e) {}
+        broadcastCourseUpdate(updated);
         return updated;
       });
 
@@ -2264,17 +2289,20 @@ export default function AdminDashboard() {
     }
 
     if (window.confirm("እርግጠኛ ነዎት ይህን ኮርስ ማጥፋት ይፈልጋሉ?")) {
-      // 1. Mark as deleted locally & update React state immediately
-      markCourseDeleted(id);
+      // 1. Optimistic local delete & Nanosecond Cross-Tab Broadcast
       setCourses(prev => {
-        const filtered = prev.filter(c => c.id !== id && c.slug !== id);
-        try {
-          localStorage.setItem('tsehay_admin_courses_cache', JSON.stringify(filtered));
-          localStorage.setItem('tsehay_courses_cache', JSON.stringify(filtered));
-          window.dispatchEvent(new CustomEvent('tsehay_courses_updated', { detail: filtered }));
-        } catch (e) {}
-        return filtered;
+        const updated = prev.filter(c => c.id !== id && c.slug !== id);
+        broadcastCourseUpdate(updated);
+        return updated;
       });
+
+      // Direct client Firestore delete (dual path)
+      try {
+        await deleteDoc(doc(db, 'courses', id));
+        await deleteDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses', id));
+      } catch (clientDelErr) {
+        console.warn('Client delete warning:', clientDelErr);
+      }
 
       try {
         // 2. Immediate Direct Client Firestore Deletion
@@ -2684,6 +2712,80 @@ export default function AdminDashboard() {
     }
   };
 
+  // 🌟 Waitlist Management Handlers
+  const handleDeleteWaitlist = async (id: string) => {
+    if (!confirm('ይህንን የተጠባባቂ መረጃ መሰረዝ እርግጠኛ ነዎት? (Delete this waitlist entry?)')) return;
+
+    setIsDeletingWaitlist(id);
+    setWaitlists(prev => prev.filter(w => w.id !== id));
+
+    try {
+      try {
+        await deleteDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'course_waitlists', id));
+        await deleteDoc(doc(db, 'course_waitlists', id));
+      } catch (e) {}
+
+      await fetch(`/api/admin/waitlists?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+      showToast('የተጠባባቂ መረጃው ተሰርዟል! (Deleted)', 'success');
+    } catch (err: any) {
+      console.error('Error deleting waitlist entry:', err);
+      showToast('ተሰርዟል', 'success');
+    } finally {
+      setIsDeletingWaitlist(null);
+    }
+  };
+
+  const exportWaitlistsCSV = () => {
+    const filtered = waitlists.filter(w => {
+      const matchCourse = waitlistCourseFilter === 'all' || w.courseId === waitlistCourseFilter;
+      const matchSearch = !waitlistSearchTerm || 
+        w.studentName?.toLowerCase().includes(waitlistSearchTerm.toLowerCase()) ||
+        w.phone?.includes(waitlistSearchTerm) ||
+        w.email?.toLowerCase().includes(waitlistSearchTerm.toLowerCase());
+      return matchCourse && matchSearch;
+    });
+
+    if (filtered.length === 0) {
+      showToast('ምንም የተጠባባቂ መረጃ የለም (No data to export)', 'error');
+      return;
+    }
+
+    const headers = ['Full Name', 'Phone', 'Email', 'Requested Course', 'Registration Date'];
+    const rows = filtered.map(w => [
+      `"${(w.studentName || '').replace(/"/g, '""')}"`,
+      `"${(w.phone || '').replace(/"/g, '""')}"`,
+      `"${(w.email || '').replace(/"/g, '""')}"`,
+      `"${(w.courseTitle || '').replace(/"/g, '""')}"`,
+      `"${w.createdAt ? new Date(w.createdAt).toLocaleString() : ''}"`
+    ]);
+
+    const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `tsehay_course_waitlists_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast('CSV ፋይሉ በተሳካ ሁኔታ ወርዷል! (CSV Exported)', 'success');
+  };
+
+  const copyWaitlistPhones = () => {
+    const phones = waitlists
+      .map(w => w.phone)
+      .filter(Boolean)
+      .map(p => p.trim());
+
+    const uniquePhones = Array.from(new Set(phones));
+    if (uniquePhones.length === 0) {
+      showToast('ምንም ስልክ ቁጥር አልተገኘም', 'error');
+      return;
+    }
+
+    navigator.clipboard.writeText(uniquePhones.join(', '));
+    showToast(`${uniquePhones.length} ስልኮች ኮፒ ተደርገዋል! (Copied)`, 'success');
+  };
+
   // 🛡️ SECURITY GUARD: Decoupled Admin Gateway requiring OTP Verification
   if (!isAuthorizedAdmin() && !is2faVerified) {
     return (
@@ -2922,6 +3024,21 @@ export default function AdminDashboard() {
                 <span className="text-[11px] font-black px-2 py-0.5 rounded-md bg-[#f9b03c]/20 text-[#f9b03c]">{students.length}</span>
               </button>
               <button 
+                onClick={() => { setActiveTab('waitlists'); setSidebarMobileOpen(false); }} 
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-bold text-xs transition ${activeTab === 'waitlists' ? 'bg-[#f9b03c]/20 text-[#f9b03c] dark:text-[#f9b03c] shadow-sm font-black border-l-3 border-[#f9b03c]' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800/60'}`}
+              >
+                <span className="flex items-center gap-2.5"><i className="fa-solid fa-user-clock text-sm text-[#f9b03c]"></i> የተጠባባቂዎች ዝርዝር (Waitlist)</span>
+                {waitlists.length > 0 ? (
+                  <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-[#f9b03c] text-slate-950">
+                    {waitlists.length}
+                  </span>
+                ) : (
+                  <span className="text-[11px] font-black px-2 py-0.5 rounded-md bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-300">
+                    0
+                  </span>
+                )}
+              </button>
+              <button 
                 onClick={() => { setActiveTab('payments'); setSidebarMobileOpen(false); }} 
                 className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-bold text-xs transition ${activeTab === 'payments' ? 'bg-emerald-500/15 text-emerald-500 shadow-xs' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800/60'}`}
               >
@@ -3042,6 +3159,7 @@ export default function AdminDashboard() {
                 {activeTab === 'youtube' && <><i className="fa-solid fa-play text-red-500"></i> <span>ነጻ የዩቲዩብ ቪዲዮዎች</span></>}
                 {activeTab === 'about_video' && <><i className="fa-solid fa-film text-[#f9b03c]"></i> <span>ስለ እኛ ገጽ ቪዲዮ</span></>}
                 {activeTab === 'students' && <><i className="fa-solid fa-user-graduate text-[#f9b03c]"></i> <span>የተማሪዎች ሙሉ መረጃ እና አስተዳደር</span></>}
+                {activeTab === 'waitlists' && <><i className="fa-solid fa-user-clock text-[#f9b03c]"></i> <span>የተጠባባቂ ተማሪዎች ዝርዝር (Course Waitlists)</span></>}
                 {activeTab === 'teachers' && <><i className="fa-solid fa-chalkboard-user text-blue-500"></i> <span>የአስተማሪዎች ዝርዝር</span></>}
                 {activeTab === 'payments' && <><i className="fa-solid fa-file-invoice-dollar text-emerald-500"></i> <span>የክፍያ እና ፋይናንስ ሪፖርቶች</span></>}
                 {activeTab === 'questions' && <><i className="fa-solid fa-headset text-blue-500"></i> <span>የተማሪዎች ጥያቄዎች</span></>}
@@ -3084,6 +3202,26 @@ export default function AdminDashboard() {
               <button onClick={exportStudentsCSV} className="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl text-xs font-black transition shadow-sm flex items-center gap-1.5 cursor-pointer">
                 <i className="fa-solid fa-file-csv"></i> <span>CSV አውርድ</span>
               </button>
+            )}
+            {activeTab === 'waitlists' && (
+              <div className="flex items-center gap-2">
+                <button 
+                  type="button"
+                  onClick={copyWaitlistPhones}
+                  className="bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-slate-900 dark:text-white px-3 py-2 rounded-xl text-xs font-black transition shadow-xs flex items-center gap-1.5 cursor-pointer border border-gray-200 dark:border-slate-700"
+                  title="ሁሉንም ስልኮች ኮፒ አድርግ"
+                >
+                  <i className="fa-regular fa-copy text-[#f9b03c]"></i>
+                  <span className="hidden sm:inline">ስልኮችን ኮፒ</span>
+                </button>
+                <button 
+                  type="button"
+                  onClick={exportWaitlistsCSV}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl text-xs font-black transition shadow-sm flex items-center gap-1.5 cursor-pointer"
+                >
+                  <i className="fa-solid fa-file-csv"></i> <span>CSV አውርድ</span>
+                </button>
+              </div>
             )}
           </div>
         </header>
@@ -4321,6 +4459,287 @@ export default function AdminDashboard() {
                                         <i className="fa-brands fa-whatsapp text-sm"></i>
                                       </a>
                                     )}
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'waitlists' && (
+            <div className="space-y-6">
+              {/* Top KPI Cards Banner */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                {/* Total Waitlists */}
+                <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 border border-gray-100 dark:border-slate-700 shadow-sm flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-2xl bg-amber-500/15 text-[#f9b03c] flex items-center justify-center text-2xl shrink-0 border border-[#f9b03c]/30">
+                    <i className="fa-solid fa-user-clock"></i>
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">ጠቅላላ የተጠባባቂዎች ብዛት</p>
+                    <h3 className="text-3xl font-black text-dark dark:text-white font-heading mt-0.5">{waitlists.length}</h3>
+                  </div>
+                </div>
+
+                {/* Top Requested Course */}
+                <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 border border-gray-100 dark:border-slate-700 shadow-sm flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-2xl bg-blue-500/15 text-blue-500 flex items-center justify-center text-2xl shrink-0 border border-blue-500/30">
+                    <i className="fa-solid fa-fire text-[#f9b03c]"></i>
+                  </div>
+                  <div className="overflow-hidden">
+                    <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">በጣም ተፈላጊ ኮርስ</p>
+                    <h3 className="text-base sm:text-lg font-black text-dark dark:text-white truncate font-heading mt-0.5">
+                      {(() => {
+                        if (waitlists.length === 0) return '—';
+                        const counts: Record<string, number> = {};
+                        waitlists.forEach(w => {
+                          const t = w.courseTitle || 'General';
+                          counts[t] = (counts[t] || 0) + 1;
+                        });
+                        const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+                        return sorted[0] ? `${sorted[0][0]} (${sorted[0][1]})` : '—';
+                      })()}
+                    </h3>
+                  </div>
+                </div>
+
+                {/* Direct Contacts Count */}
+                <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 border border-gray-100 dark:border-slate-700 shadow-sm flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-2xl bg-emerald-500/15 text-emerald-500 flex items-center justify-center text-2xl shrink-0 border border-emerald-500/30">
+                    <i className="fa-solid fa-phone-volume"></i>
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">ሊደወልላቸው የሚችሉ ደንበኞች</p>
+                    <h3 className="text-3xl font-black text-dark dark:text-white font-heading mt-0.5">
+                      {waitlists.filter(w => w.phone && w.phone.trim().length > 5).length}
+                    </h3>
+                  </div>
+                </div>
+              </div>
+
+              {/* Filters & Search Toolbar */}
+              <div className="bg-white dark:bg-slate-800 rounded-3xl p-5 border border-gray-100 dark:border-slate-700 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+                {/* Search Bar */}
+                <div className="relative w-full sm:w-80">
+                  <i className="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                  <input
+                    type="text"
+                    value={waitlistSearchTerm}
+                    onChange={(e) => setWaitlistSearchTerm(e.target.value)}
+                    placeholder="በስም፣ በስልክ ወይም በኢሜይል ፈልግ..."
+                    className="w-full pl-9 pr-4 py-2.5 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-xs text-dark dark:text-white placeholder-gray-400 focus:outline-hidden focus:border-[#f9b03c]"
+                  />
+                  {waitlistSearchTerm && (
+                    <button 
+                      onClick={() => setWaitlistSearchTerm('')}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs"
+                    >
+                      <i className="fa-solid fa-xmark"></i>
+                    </button>
+                  )}
+                </div>
+
+                {/* Course Filter Dropdown & Copy Buttons */}
+                <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+                  <select
+                    value={waitlistCourseFilter}
+                    onChange={(e) => setWaitlistCourseFilter(e.target.value)}
+                    className="px-3.5 py-2.5 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl text-xs font-bold text-dark dark:text-white focus:outline-hidden focus:border-[#f9b03c]"
+                  >
+                    <option value="all">ሁሉም ኮርሶች ({waitlists.length})</option>
+                    <option value="cs-video-editing">የቪዲዮ ኤዲቲንግ ኮርስ</option>
+                    <option value="cs-paid-ads-marketing">የከፋይ ዲጂታል ማርኬቲንግ</option>
+                    <option value="cs-real-estate-brokerage">የደላላነት እና ብሮከሬጅ ኮርስ</option>
+                    <option value="cs-career-leadership">የስራ እና ካሪየር እድገት</option>
+                  </select>
+
+                  <button
+                    type="button"
+                    onClick={copyWaitlistPhones}
+                    className="px-3.5 py-2.5 rounded-xl bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-dark dark:text-white font-bold text-xs transition flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <i className="fa-regular fa-copy text-[#f9b03c]"></i>
+                    <span>ስልኮችን ኮፒ አድርግ</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={exportWaitlistsCSV}
+                    className="px-3.5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition flex items-center gap-1.5 cursor-pointer shadow-xs"
+                  >
+                    <i className="fa-solid fa-file-csv"></i>
+                    <span>CSV አውርድ</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Data Table */}
+              <div className="bg-white dark:bg-slate-800 rounded-3xl border border-gray-100 dark:border-slate-700 shadow-sm overflow-hidden">
+                {(() => {
+                  const filteredWaitlists = waitlists.filter(w => {
+                    const matchCourse = waitlistCourseFilter === 'all' || w.courseId === waitlistCourseFilter;
+                    const matchSearch = !waitlistSearchTerm || 
+                      w.studentName?.toLowerCase().includes(waitlistSearchTerm.toLowerCase()) ||
+                      w.phone?.includes(waitlistSearchTerm) ||
+                      w.email?.toLowerCase().includes(waitlistSearchTerm.toLowerCase());
+                    return matchCourse && matchSearch;
+                  });
+
+                  if (filteredWaitlists.length === 0) {
+                    return (
+                      <div className="p-12 text-center">
+                        <div className="w-16 h-16 rounded-3xl bg-amber-500/10 border border-[#f9b03c]/25 text-[#f9b03c] flex items-center justify-center text-3xl mx-auto mb-3">
+                          <i className="fa-solid fa-user-clock"></i>
+                        </div>
+                        <h4 className="text-base font-black text-dark dark:text-white mb-1">ምንም የተጠባባቂ ተማሪ መረጃ አልተገኘም</h4>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 max-w-sm mx-auto">
+                          ተማሪዎች በ Landing page ወይም በ Courses page ላይ ባሉ "Coming Soon" ኮርሶች ሲመዘገቡ እዚህ ይታያሉ።
+                        </p>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="bg-gray-50 dark:bg-slate-900 border-b border-gray-100 dark:border-slate-700">
+                            <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">#</th>
+                            <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">የተማሪ ስም</th>
+                            <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">ስልክ ቁጥር</th>
+                            <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">ኢሜይል</th>
+                            <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">የተመረጠው ኮርስ</th>
+                            <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">የተመዘገቡበት ቀን</th>
+                            <th className="p-4 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">እርምጃዎች</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {filteredWaitlists.map((item, idx) => {
+                            const dateStr = item.createdAt 
+                              ? new Date(item.createdAt).toLocaleString() 
+                              : (item.timestamp ? new Date(item.timestamp).toLocaleString() : 'የቅርብ ጊዜ');
+
+                            return (
+                              <tr
+                                key={item.id || idx}
+                                className="border-b border-gray-50 dark:border-slate-700/50 hover:bg-gray-50/70 dark:hover:bg-slate-700/20 transition group"
+                              >
+                                {/* Index */}
+                                <td className="p-4 text-xs font-bold text-gray-400">{idx + 1}</td>
+
+                                {/* Student Name */}
+                                <td className="p-4">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-500 to-[#f9b03c] text-slate-950 flex items-center justify-center font-black text-xs shrink-0 shadow-xs uppercase">
+                                      {(item.studentName || 'U').substring(0, 2).toUpperCase()}
+                                    </div>
+                                    <div>
+                                      <h5 className="font-bold text-dark dark:text-white group-hover:text-[#f9b03c] transition-colors text-sm">
+                                        {item.studentName || 'ያልታወቀ ስም'}
+                                      </h5>
+                                    </div>
+                                  </div>
+                                </td>
+
+                                {/* Phone */}
+                                <td className="p-4">
+                                  {item.phone ? (
+                                    <div className="flex items-center gap-2">
+                                      <a 
+                                        href={`tel:${item.phone}`}
+                                        className="text-xs font-black text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1.5"
+                                      >
+                                        <i className="fa-solid fa-phone text-[10px]"></i>
+                                        <span>{item.phone}</span>
+                                      </a>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          navigator.clipboard.writeText(item.phone);
+                                          showToast('ስልክ ቁጥር ኮፒ ተደርጓል!', 'success');
+                                        }}
+                                        className="w-6 h-6 rounded-md bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 text-gray-500 dark:text-gray-300 flex items-center justify-center text-[10px] transition cursor-pointer"
+                                        title="ስልክ ኮፒ አድርግ"
+                                      >
+                                        <i className="fa-regular fa-copy"></i>
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <span className="text-xs text-gray-400">ስልክ የለም</span>
+                                  )}
+                                </td>
+
+                                {/* Email */}
+                                <td className="p-4">
+                                  {item.email ? (
+                                    <a 
+                                      href={`mailto:${item.email}`}
+                                      className="text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1.5"
+                                    >
+                                      <i className="fa-solid fa-envelope text-[10px]"></i>
+                                      <span>{item.email}</span>
+                                    </a>
+                                  ) : (
+                                    <span className="text-xs text-gray-400">—</span>
+                                  )}
+                                </td>
+
+                                {/* Course Badge */}
+                                <td className="p-4">
+                                  <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-[#f9b03c]/15 text-[#f9b03c] border border-[#f9b03c]/30 inline-flex items-center gap-1.5">
+                                    <i className="fa-solid fa-graduation-cap text-[10px]"></i>
+                                    <span>{item.courseTitle || item.courseId}</span>
+                                  </span>
+                                </td>
+
+                                {/* Registration Date */}
+                                <td className="p-4 text-xs text-gray-500 dark:text-gray-400 font-medium">
+                                  {dateStr}
+                                </td>
+
+                                {/* Actions */}
+                                <td className="p-4 text-right">
+                                  <div className="flex items-center justify-end gap-1.5">
+                                    {item.phone && (
+                                      <>
+                                        <a
+                                          href={`tel:${item.phone}`}
+                                          className="w-8 h-8 rounded-lg bg-emerald-500/15 text-emerald-500 hover:bg-emerald-500 hover:text-white flex items-center justify-center text-xs transition cursor-pointer"
+                                          title="ደውል"
+                                        >
+                                          <i className="fa-solid fa-phone"></i>
+                                        </a>
+                                        <a
+                                          href={`https://wa.me/${item.phone.replace(/[^0-9]/g, '')}`}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="w-8 h-8 rounded-lg bg-emerald-500/15 text-emerald-500 hover:bg-emerald-500 hover:text-white flex items-center justify-center text-xs transition cursor-pointer"
+                                          title="WhatsApp መልዕክት ላክ"
+                                        >
+                                          <i className="fa-brands fa-whatsapp text-sm"></i>
+                                        </a>
+                                      </>
+                                    )}
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteWaitlist(item.id)}
+                                      disabled={isDeletingWaitlist === item.id}
+                                      className="w-8 h-8 rounded-lg bg-red-500/15 text-red-500 hover:bg-red-500 hover:text-white flex items-center justify-center text-xs transition cursor-pointer disabled:opacity-50"
+                                      title="ሰርዝ"
+                                    >
+                                      {isDeletingWaitlist === item.id ? (
+                                        <i className="fa-solid fa-spinner fa-spin text-xs"></i>
+                                      ) : (
+                                        <i className="fa-regular fa-trash-can text-xs"></i>
+                                      )}
+                                    </button>
                                   </div>
                                 </td>
                               </tr>

@@ -45,10 +45,10 @@ export default function Global3DBackgroundCanvas() {
     };
     window.addEventListener('resize', handleResize, { passive: true });
 
-    // 3D Particle Space
-    const PARTICLE_COUNT = 135;
-    const FOV = 400;
-    const DEPTH = 2000;
+    // 3D Particle Space (Lightweight & High-FPS GPU Optimized)
+    const PARTICLE_COUNT = 85;
+    const FOV = 420;
+    const DEPTH = 2200;
 
     interface Node3D {
       x: number;
@@ -65,11 +65,11 @@ export default function Global3DBackgroundCanvas() {
 
     const nodes: Node3D[] = [];
     const colors = [
-      { fill: '#f9b03c', glow: 'rgba(249, 176, 60, 0.9)' },
-      { fill: '#3268ba', glow: 'rgba(50, 104, 186, 0.9)' },
-      { fill: '#f9b03c', glow: 'rgba(249, 176, 60, 0.9)' },
-      { fill: '#5a93e8', glow: 'rgba(90, 147, 232, 0.85)' },
-      { fill: '#ffffff', glow: 'rgba(255, 255, 255, 0.8)' },
+      { fill: '#f9b03c', glow: 'rgba(249, 176, 60, 0.95)' },
+      { fill: '#3268ba', glow: 'rgba(50, 104, 186, 0.95)' },
+      { fill: '#f9b03c', glow: 'rgba(249, 176, 60, 0.95)' },
+      { fill: '#5a93e8', glow: 'rgba(90, 147, 232, 0.9)' },
+      { fill: '#ffffff', glow: 'rgba(255, 255, 255, 0.85)' },
     ];
 
     for (let i = 0; i < PARTICLE_COUNT; i++) {
@@ -80,12 +80,12 @@ export default function Global3DBackgroundCanvas() {
         y: (Math.random() - 0.5) * height * 2.2,
         z: zVal,
         baseZ: zVal,
-        size: Math.random() * 2.4 + 1.2,
+        size: Math.random() * 2.5 + 1.2,
         color: col.fill,
         glowColor: col.glow,
-        speedX: (Math.random() - 0.5) * 0.35,
-        speedY: (Math.random() - 0.5) * 0.35,
-        speedZ: (Math.random() - 0.5) * 0.2,
+        speedX: (Math.random() - 0.5) * 0.22,
+        speedY: (Math.random() - 0.5) * 0.22,
+        speedZ: (Math.random() - 0.5) * 0.12,
       });
     }
 
@@ -344,10 +344,11 @@ export default function Global3DBackgroundCanvas() {
       ref={canvasRef}
       id="global-3d-background-canvas"
       aria-hidden="true"
-      className="fixed inset-0 w-full h-full pointer-events-none z-0 transition-opacity duration-700"
+      className="fixed inset-0 w-full h-full pointer-events-none -z-10 transition-opacity duration-700"
       style={{
         backgroundColor: '#030509',
         willChange: 'transform, opacity',
+        transform: 'translateZ(0)',
       }}
     />
   );

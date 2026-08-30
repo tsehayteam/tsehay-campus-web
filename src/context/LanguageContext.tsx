@@ -43,8 +43,10 @@ const translations: Record<string, Record<Language, string>> = {
   'our': { am: 'የእኛ ', en: 'Our ' },
   'difference': { am: 'ልዩነት', en: 'Difference' },
   'difference_desc': { am: 'ከሌሎች የኦንላይን መማሪያ መድረኮች በምን እንለያለን?', en: 'What makes us different from other online learning platforms?' },
-  'practical_courses': { am: 'ኦንላይን + የፊት ለፊት ስልጠና', en: 'Online + In-Person Training' },
-  'practical_courses_desc': { am: 'ትምህርትዎን በኦንላይን በራስዎ ፍጥነት እየተከታተሉ፤ በተጨማሪም የካምፓሳችን አባል በመሆን በየጊዜው በአካል (Offline) በሚሰጡ የተግባር ስልጠናዎች እና የልምድ ልውውጦች ይሳተፋሉ።', en: 'Follow your lessons online at your own pace; plus join in-person (offline) practical workshops and mastermind networking as an active campus member.' },
+  'practical_title': { am: '100% የተግባር ስልጠና', en: '100% Practical Training' },
+  'practical_desc': { am: 'በባዶ ቲዎሪ ሳይሆን፣ ገበያ ላይ ወዲያውኑ ገቢ የሚያስገኙ በተግባር የተፈተኑ ስልጠናዎች።', en: 'Not empty theory, but practically tested modern trainings that generate immediate income in the market.' },
+  'practical_courses': { am: '100% የተግባር ስልጠና', en: '100% Practical Training' },
+  'practical_courses_desc': { am: 'በባዶ ቲዎሪ ሳይሆን፣ ገበያ ላይ ወዲያውኑ ገቢ የሚያስገኙ በተግባር የተፈተኑ ስልጠናዎች።', en: 'Not empty theory, but practically tested modern trainings that generate immediate income in the market.' },
   'ai_tutor_card_title': { am: 'የ 24/7 የግል AI መምህር', en: '24/7 Personal AI Tutor' },
   'ai_integration': { am: 'ትስስር', en: 'Integration' },
   'ai_integration_desc': { am: 'በማንኛውም ሰዓት ከጎንዎ ሆኖ ጥያቄዎችዎን የሚመልስ፣ የቢዝነስ ሀሳቦችን የሚያመነጭ እና የሚያማክር ዘመናዊ የ AI ረዳት (Tsehay AI) በእያንዳንዱ ኮርስ ውስጥ ተካቷል።', en: 'A modern AI assistant (Tsehay AI) included in every course by your side 24/7 answering questions, generating business ideas, and consulting.' },
@@ -75,6 +77,8 @@ const translations: Record<string, Record<Language, string>> = {
   'faq_a2': { am: 'አዎ፣ በእርግጥ! እያንዳንዱን ኮርስ ሙሉ በሙሉ ተከታትለው እንዳጠናቀቁ በስምዎ የተዘጋጀ ዲጂታል ሰርተፍኬት (Certificate of Completion) ወዲያውኑ ይደርስዎታል። ይህንን ሰርተፍኬት በቀላሉ በማውረድ (Download በማድረግ) ለስራ ማመልከቻ፣ ለሲቪ (CV) ማሳመሪያ ወይም በሊንክድኢን (LinkedIn) ላይ ለፕሮፌሽናል ትስስር ማጋራት ይችላሉ።', en: 'Yes, absolutely! Once you completely finish each course, a digital Certificate of Completion in your name will be delivered to you immediately. You can easily download this certificate to use for job applications, enhancing your CV, or sharing on LinkedIn for professional networking.' },
   'faq_q3': { am: 'የ "Tsehay AI" ረዳቱን ለመጠቀም ተጨማሪ ክፍያ አለው?', en: 'Is there an additional fee to use the "Tsehay AI" assistant?' },
   'faq_a3': { am: 'በፍጹም! የ "Tsehay AI" ረዳት በካምፓሳችን ውስጥ ለሚገኙ ሁሉም ኮርሶች በነፃ የተካተተ ነው። አንዴ ኮርሱን ከጀመሩ በኋላ 24/7 ከጎንዎ ሆኖ ጥያቄዎችዎን ይመልሳል፣ ያልገባዎትን ያብራራል፣ እንዲሁም የቢዝነስ ሀሳቦችን ያመነጭልዎታል። ይህ የእርስዎ የግል ረዳት ለትምህርትዎ ስኬት ከፍተኛ አስተዋጽኦ ያደርጋል፤ ለዚህም ምንም አይነት ተጨማሪ ወርሃዊም ሆነ አመታዊ ክፍያ አይጠየቁም።', en: 'Absolutely not! The "Tsehay AI" assistant is included for free for all courses in our campus. Once you start the course, it will be by your side 24/7 to answer your questions, clarify anything unclear, and generate business ideas for you. This personal assistant contributes greatly to your success; there are no additional monthly or annual fees.' },
+  'faq_q4': { am: 'የክፍያ አማራጮች ምንድን ናቸው?', en: 'What are the available payment options?' },
+  'faq_a4': { am: 'በኢትዮጵያ ውስጥ በቴሌብር (Telebirr)፣ በኢትዮጵያ ንግድ ባንክ (CBE)፣ በአቢሲኒያ እና በሁሉም ባንኮች በቀላሉ መክፈል ይችላሉ። ከውጭ ሀገር ደግሞ በ PayPal፣ በቪዛ/ማስተርካርድ እንዲሁም በ Crypto (USDT) መክፈል ይችላሉ።', en: 'Within Ethiopia you can pay via Telebirr, CBE, Bank of Abyssinia, and all local banks. From abroad, you can easily pay via PayPal, Visa/Mastercard, and Crypto (USDT).' },
 
   // CTA Section
   'cta_title_1': { am: 'የስኬት ጉዞዎን', en: 'Your success journey' },

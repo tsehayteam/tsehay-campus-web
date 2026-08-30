@@ -125,6 +125,23 @@ export async function POST(req: NextRequest) {
           .doc(ticketId)
           .set({ ...newTicket, registeredAt: new Date().toISOString() });
 
+        // 2. Increment registeredCount on the event document so remaining tickets decrease
+        try {
+          if (eventId) {
+            const eventRef = adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('events').doc(eventId);
+            const eventDoc = await eventRef.get();
+            if (eventDoc.exists) {
+              const currentCount = eventDoc.data()?.registeredCount || 0;
+              await eventRef.update({
+                registeredCount: currentCount + 1,
+                updatedAt: new Date().toISOString()
+              });
+            }
+          }
+        } catch (cntErr) {
+          console.warn('Error updating event registeredCount:', cntErr);
+        }
+
         // 3. User sub-collection
         if (userId && !userId.startsWith('anon_')) {
           await adminDb

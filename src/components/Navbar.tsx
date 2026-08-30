@@ -9,7 +9,7 @@ import AuthModal from "./AuthModal";
 import SmartSearchInput from "./SmartSearchInput";
 import { auth } from "@/lib/firebase/config";
 import { signOut } from "firebase/auth";
-import { getCachedCourses } from "@/lib/courseCache";
+import { getCachedCourses, subscribeToCourses } from "@/lib/courseCache";
 import Tilt3DLoginButton from "@/components/3d/Tilt3DLoginButton";
 
 export default function Navbar() {
@@ -210,37 +210,16 @@ export default function Navbar() {
     };
     document.addEventListener('mousedown', handleClickOutside);
 
-    const fetchCourses = async () => {
-      try {
-        const { getCachedCourses } = await import('@/lib/courseCache');
-        const cached = getCachedCourses();
-        if (cached && cached.length > 0) {
-          setAllCourses(cached);
-        }
-
-        const { collection, getDocs } = await import('firebase/firestore');
-        const { db } = await import('@/lib/firebase/config');
-        const querySnapshot = await getDocs(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses'));
-        if (!querySnapshot.empty) {
-          setAllCourses(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-          return;
-        }
-      } catch (e) {
-        // Fallback to API route
-        try {
-          const res = await fetch('/api/courses');
-          const data = await res.json();
-          if (data && Array.isArray(data.courses)) {
-            setAllCourses(data.courses);
-          }
-        } catch (apiErr) {}
+    const unsubscribeCourses = subscribeToCourses((coursesList) => {
+      if (Array.isArray(coursesList) && coursesList.length > 0) {
+        setAllCourses(coursesList);
       }
-    };
-    fetchCourses();
+    });
 
     return () => {
       window.removeEventListener('open-auth-modal', handleOpenAuth);
       document.removeEventListener('mousedown', handleClickOutside);
+      unsubscribeCourses();
     };
   }, []);
 
@@ -473,7 +452,8 @@ export default function Navbar() {
               <button 
                 type="button"
                 onClick={() => {
-                  window.dispatchEvent(new CustomEvent('open-tsehay-ai'));
+                  closeCurtain();
+                  navigateTo('/ai');
                 }} 
                 className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-[#f9b03c] to-[#e09825] text-slate-950 font-black text-xs cursor-pointer notranslate shadow-lg shadow-[#f9b03c]/20 hover:scale-105 active:scale-95 transition-all duration-300"
                 title="Tsehay AI 24/7 የግል መምህር (Classroom AI Assistant)"
@@ -662,7 +642,7 @@ export default function Navbar() {
                 type="button" 
                 onClick={() => { 
                   closeCurtain(); 
-                  window.dispatchEvent(new CustomEvent('open-tsehay-ai')); 
+                  navigateTo('/ai');
                 }} 
                 className="p-3.5 rounded-2xl mobile-nav-card flex flex-col items-center justify-center text-center cursor-pointer group transition-all duration-200 bg-amber-500/10 border-amber-500/30"
               >
