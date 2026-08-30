@@ -71,14 +71,75 @@ export default function CoursesClient({ initialCourses }: { initialCourses?: any
   }, []);
 
   useEffect(() => {
-    const unsubscribe = subscribeToCourses((coursesList) => {
-      if (Array.isArray(coursesList) && coursesList.length > 0) {
-        setCourses(coursesList);
+    let artifactList: any[] = [];
+    let rootList: any[] = [];
+
+    const syncAndMerge = () => {
+      let merged: any[] = [];
+      if (artifactList.length > 0 || rootList.length > 0) {
+        merged = mergeCoursesLists(artifactList, rootList);
+      } else {
+        const cached = getCachedCourses();
+        merged = cached.length > 0 ? cached : DEFAULT_COURSES;
+      }
+      if (merged.length > 0) {
+        setCourses(merged);
+        saveCachedCourses(merged);
       }
       setLoading(false);
-    });
+    };
 
-    return () => unsubscribe();
+    // 1. Live listener on artifacts collection
+    let unsubArtifact = () => {};
+    try {
+      const qArtifact = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses'));
+      unsubArtifact = onSnapshot(qArtifact, (snapshot) => {
+        if (!snapshot.empty) {
+          artifactList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          syncAndMerge();
+        }
+        setLoading(false);
+      }, (error) => {
+        console.warn("Artifacts courses sync notice:", error);
+        setLoading(false);
+      });
+    } catch (e) {}
+
+    // 2. Live listener on root courses collection
+    let unsubRoot = () => {};
+    try {
+      const qRoot = query(collection(db, 'courses'));
+      unsubRoot = onSnapshot(qRoot, (snapshot) => {
+        if (!snapshot.empty) {
+          rootList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          syncAndMerge();
+        }
+        setLoading(false);
+      }, (error) => {
+        console.warn("Root courses sync notice:", error);
+        setLoading(false);
+      });
+    } catch (e) {}
+
+    // 3. Immediate HTTP fallback fetch
+    fetch(`/api/courses?t=${Date.now()}`, {
+      cache: 'no-store',
+      headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' }
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data && Array.isArray(data.courses) && data.courses.length > 0) {
+          artifactList = data.courses;
+          syncAndMerge();
+        }
+      })
+      .catch(err => console.warn("API courses fetch notice:", err))
+      .finally(() => setLoading(false));
+
+    return () => {
+      unsubArtifact();
+      unsubRoot();
+    };
   }, []);
 
   // 🌟 Seamless Post-Login Action Continuity: Automatically resume Buy/Enroll where user left off!

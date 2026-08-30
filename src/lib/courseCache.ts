@@ -454,11 +454,6 @@ export function broadcastCourseUpdate(courses: any[]) {
 
 /**
  * Universal Multi-Strategy Real-Time Subscription Engine
- * Subscribes directly to:
- * 1. Authoritative Firestore collection: artifacts/tsehaycampus-e1a6d/public/data/courses (Managed by Admin)
- * 2. BroadcastChannel ('tsehay_live_courses_channel')
- * 3. Window Custom Event ('tsehay_courses_updated')
- * 4. Window Storage Event
  * 5. Immediate Server API Fetch (/api/courses)
  */
 export function subscribeToCourses(callback: (courses: any[]) => void): () => void {
