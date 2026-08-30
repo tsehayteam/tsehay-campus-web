@@ -17,7 +17,7 @@ import InstructorYouTubePortfolio from '@/components/InstructorYouTubePortfolio'
 import UpcomingEventsSection from '@/components/UpcomingEventsSection';
 import CourseCardSkeleton from '@/components/CourseCardSkeleton';
 import CoursePreviewModal from '@/components/CoursePreviewModal';
-import { getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl, getCourseSlug, mergeCoursesLists } from '@/lib/courseCache';
+import { getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl, getCourseSlug, mergeCoursesLists, subscribeToCourses } from '@/lib/courseCache';
 import Hero3DPopoutStage from '@/components/3d/Hero3DPopoutStage';
 import Tilt3DCard from '@/components/3d/Tilt3DCard';
 import { scrollTriggerEngine } from '@/lib/scrollTriggerEngine';
@@ -344,62 +344,14 @@ export default function HomeClient() {
   }, [courses.length]);
 
   useEffect(() => {
-    let artifactList: any[] = [];
-    let rootList: any[] = [];
-
-    const syncAndMerge = () => {
-      const merged = mergeCoursesLists(artifactList, rootList);
-      if (merged.length > 0) {
-        setCourses(merged);
-        saveCachedCourses(merged);
+    const unsubscribe = subscribeToCourses((coursesList) => {
+      if (Array.isArray(coursesList) && coursesList.length > 0) {
+        setCourses(coursesList);
       }
       setLoading(false);
-    };
+    });
 
-    // 1. Live listener on artifacts public collection
-    let unsubArtifact = () => {};
-    try {
-      const qArtifact = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses'));
-      unsubArtifact = onSnapshot(qArtifact, (snapshot) => {
-        artifactList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        syncAndMerge();
-      }, (error) => {
-        setLoading(false);
-      });
-    } catch (e) {}
-
-    // 2. Live listener on root courses collection
-    let unsubRoot = () => {};
-    try {
-      const qRoot = query(collection(db, 'courses'));
-      unsubRoot = onSnapshot(qRoot, (snapshot) => {
-        rootList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        syncAndMerge();
-      }, (error) => {
-        setLoading(false);
-      });
-    } catch (e) {}
-
-    // 3. Immediate cache-busted HTTP fetch
-    fetch(`/api/courses?t=${Date.now()}`, {
-      cache: 'no-store',
-      headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' }
-    })
-      .then(res => res.json())
-      .then(data => {
-        if (data && Array.isArray(data.courses) && data.courses.length > 0) {
-          const apiMerged = mergeCoursesLists(data.courses);
-          setCourses(apiMerged);
-          saveCachedCourses(apiMerged);
-        }
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-
-    return () => {
-      unsubArtifact();
-      unsubRoot();
-    };
+    return () => unsubscribe();
   }, []);
 
   // 🌟 Seamless Post-Login Action Continuity: Automatically resume Buy/Enroll where user left off!

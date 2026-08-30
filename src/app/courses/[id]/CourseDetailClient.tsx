@@ -11,7 +11,7 @@ import Link from 'next/link';
 import PaymentModal from '@/components/PaymentModal';
 import RequireAuthModal from '@/components/RequireAuthModal';
 import Footer from '@/components/Footer';
-import { getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl, getCourseSlug, getCourseBySlugOrId, mergeCoursesLists } from '@/lib/courseCache';
+import { getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl, getCourseSlug, getCourseBySlugOrId, mergeCoursesLists, subscribeToCourses } from '@/lib/courseCache';
 
 function CoursePreviewContent() {
   const routeParams = useParams();
@@ -235,8 +235,30 @@ function CoursePreviewContent() {
 
     fetchCourseData();
 
+    // 6. Live multi-channel subscription for instant zero-refresh updates
+    const unsubscribe = subscribeToCourses((coursesList) => {
+      if (!isMounted || !Array.isArray(coursesList) || coursesList.length === 0) return;
+      setAllCourses(coursesList);
+      const updatedMatch = findMatchingCourse(coursesList, id);
+      if (updatedMatch) {
+        const cleanDesc = formatCourseDesc({ id: updatedMatch.id, ...updatedMatch });
+        setCourse(prev => ({
+          ...(prev || {}),
+          ...updatedMatch,
+          desc: cleanDesc,
+          description: cleanDesc
+        }));
+        if (updatedMatch.lessons && updatedMatch.lessons.length > 0) {
+          setModules([{ id: 'main', title: 'Course Content', lessons: updatedMatch.lessons }]);
+        } else if (updatedMatch.modules && updatedMatch.modules.length > 0) {
+          setModules(updatedMatch.modules);
+        }
+      }
+    });
+
     return () => {
       isMounted = false;
+      unsubscribe();
     };
   }, [id]);
 

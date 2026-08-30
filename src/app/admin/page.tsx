@@ -6,7 +6,7 @@ import { useAuth, ADMIN_EMAILS, isEmailAdmin } from '@/context/AuthContext';
 import { collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc, serverTimestamp, query, orderBy, collectionGroup } from 'firebase/firestore';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
-import { DEFAULT_COURSES, getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl, getCourseSlug, getCourseBySlugOrId, markCourseDeleted, unmarkCourseDeleted, generateCourseSlug } from '@/lib/courseCache';
+import { DEFAULT_COURSES, getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl, getCourseSlug, getCourseBySlugOrId, generateCourseSlug, broadcastCourseUpdate } from '@/lib/courseCache';
 import { DEFAULT_EVENTS, getCachedEvents, saveCachedEvents, getRemainingSeats, generateEventSlug, TsehayEvent, EventTicket } from '@/lib/eventCache';
 import AdminQrScanner from '@/components/AdminQrScanner';
 
@@ -2131,21 +2131,15 @@ export default function AdminDashboard() {
         }
       } catch (tokenErr) {}
 
-      // 🚀 1. Unmark deleted if editing/recreating & Direct Client Firestore Save
-      unmarkCourseDeleted(docId);
+      // 🚀 1. Direct client Firestore write (dual path for instant live listeners)
       try {
-        const nestedDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses', docId);
-        await setDoc(nestedDocRef, coursePayload, { merge: true });
-        try {
-          await setDoc(doc(db, 'courses', docId), coursePayload, { merge: true });
-        } catch (rootFsErr) {
-          console.warn('Root courses client mirror warning:', rootFsErr);
-        }
-      } catch (clientFsErr) {
-        console.warn('Client Firestore save warning:', clientFsErr);
+        await setDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses', docId), coursePayload, { merge: true });
+        await setDoc(doc(db, 'courses', docId), coursePayload, { merge: true });
+      } catch (clientWriteErr) {
+        console.warn('Client Firestore write warning:', clientWriteErr);
       }
 
-      // 🚀 2. Server Admin API Call (Sync & Admin SDK write to both endpoints)
+      // 🚀 3. Server Admin API Call (Sync & Admin SDK write)
       try {
         await fetch('/api/admin/courses', {
           method: 'POST',
@@ -2173,7 +2167,7 @@ export default function AdminDashboard() {
         console.warn('Admin save-course API call warning:', apiErr);
       }
 
-      // 🚀 3. Optimistic State Update for Instant Visual Responsiveness
+      // 🚀 4. Optimistic State Update for Instant Visual Responsiveness & Nanosecond Cross-Tab Broadcast
       setCourses(prev => {
         const existingIdx = prev.findIndex(c => c.id === docId);
         let updated: any[];
@@ -2183,10 +2177,7 @@ export default function AdminDashboard() {
         } else {
           updated = [{ ...coursePayload, id: docId }, ...prev];
         }
-        try {
-          localStorage.setItem('tsehay_admin_courses_cache', JSON.stringify(updated));
-          localStorage.setItem('tsehay_courses_cache', JSON.stringify(updated));
-        } catch (e) {}
+        broadcastCourseUpdate(updated);
         return updated;
       });
 
@@ -2263,16 +2254,20 @@ export default function AdminDashboard() {
     }
 
     if (window.confirm("እርግጠኛ ነዎት ይህን ኮርስ ማጥፋት ይፈልጋሉ?")) {
-      // 1. Mark as deleted locally & update React state immediately
-      markCourseDeleted(id);
+      // 1. Optimistic local delete & Nanosecond Cross-Tab Broadcast
       setCourses(prev => {
-        const filtered = prev.filter(c => c.id !== id && c.slug !== id);
-        try {
-          localStorage.setItem('tsehay_admin_courses_cache', JSON.stringify(filtered));
-          localStorage.setItem('tsehay_courses_cache', JSON.stringify(filtered));
-        } catch (e) {}
-        return filtered;
+        const updated = prev.filter(c => c.id !== id && c.slug !== id);
+        broadcastCourseUpdate(updated);
+        return updated;
       });
+
+      // Direct client Firestore delete (dual path)
+      try {
+        await deleteDoc(doc(db, 'courses', id));
+        await deleteDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses', id));
+      } catch (clientDelErr) {
+        console.warn('Client delete warning:', clientDelErr);
+      }
 
       try {
         // 2. Immediate Direct Client Firestore Deletion

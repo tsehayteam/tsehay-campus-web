@@ -6,7 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase/config';
 import { collection, doc, getDocs, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import FormattedAiText from '@/components/FormattedAiText';
-import { getCourseBySlugOrId } from '@/lib/courseCache';
+import { getCourseBySlugOrId, subscribeToCourses } from '@/lib/courseCache';
 import { getCoursePinnedPrompts } from '@/lib/aiPrompts';
 
 interface Message {
@@ -55,7 +55,6 @@ export default function FloatingAIButton() {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-
   // 🌟 Freely Draggable Physics States
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -138,21 +137,14 @@ export default function FloatingAIButton() {
     };
   }, [isDragging]);
 
-  // 1. Fetch available courses to populate context selector
+  // 1. Fetch available courses to populate context selector with real-time live sync
   useEffect(() => {
-    const fetchCourses = async () => {
-      try {
-        const q = collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses');
-        const snap = await getDocs(q);
-        if (!snap.empty) {
-          const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-          setCourses(list);
-        }
-      } catch (err) {
-        console.warn("Floating AI courses fetch warning:", err);
+    const unsubscribe = subscribeToCourses((coursesList) => {
+      if (Array.isArray(coursesList) && coursesList.length > 0) {
+        setCourses(coursesList);
       }
-    };
-    fetchCourses();
+    });
+    return () => unsubscribe();
   }, []);
 
   // 2. Detect course context from current URL pathname

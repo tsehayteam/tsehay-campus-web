@@ -9,7 +9,7 @@ import AuthModal from "./AuthModal";
 import SmartSearchInput from "./SmartSearchInput";
 import { auth } from "@/lib/firebase/config";
 import { signOut } from "firebase/auth";
-import { getCachedCourses } from "@/lib/courseCache";
+import { getCachedCourses, subscribeToCourses } from "@/lib/courseCache";
 import Tilt3DLoginButton from "@/components/3d/Tilt3DLoginButton";
 
 export default function Navbar() {
@@ -210,37 +210,16 @@ export default function Navbar() {
     };
     document.addEventListener('mousedown', handleClickOutside);
 
-    const fetchCourses = async () => {
-      try {
-        const { getCachedCourses } = await import('@/lib/courseCache');
-        const cached = getCachedCourses();
-        if (cached && cached.length > 0) {
-          setAllCourses(cached);
-        }
-
-        const { collection, getDocs } = await import('firebase/firestore');
-        const { db } = await import('@/lib/firebase/config');
-        const querySnapshot = await getDocs(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses'));
-        if (!querySnapshot.empty) {
-          setAllCourses(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-          return;
-        }
-      } catch (e) {
-        // Fallback to API route
-        try {
-          const res = await fetch('/api/courses');
-          const data = await res.json();
-          if (data && Array.isArray(data.courses)) {
-            setAllCourses(data.courses);
-          }
-        } catch (apiErr) {}
+    const unsubscribeCourses = subscribeToCourses((coursesList) => {
+      if (Array.isArray(coursesList) && coursesList.length > 0) {
+        setAllCourses(coursesList);
       }
-    };
-    fetchCourses();
+    });
 
     return () => {
       window.removeEventListener('open-auth-modal', handleOpenAuth);
       document.removeEventListener('mousedown', handleClickOutside);
+      unsubscribeCourses();
     };
   }, []);
 
