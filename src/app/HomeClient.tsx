@@ -296,7 +296,7 @@ export default function HomeClient() {
   const { t } = useLanguage();
   const [openFaqId, setOpenFaqId] = useState<number | null>(null);
 
-  // Synchronously initialize cached courses on client mount
+  // Synchronously initialize cached courses or default high-quality courses on client mount
   useEffect(() => {
     setIsMounted(true);
     try {
@@ -304,8 +304,14 @@ export default function HomeClient() {
       if (cached && cached.length > 0) {
         setCourses(cached);
         setLoading(false);
+      } else {
+        setCourses(DEFAULT_COURSES);
+        setLoading(false);
       }
-    } catch (e) {}
+    } catch (e) {
+      setCourses(DEFAULT_COURSES);
+      setLoading(false);
+    }
   }, []);
 
   // Check if logged in user has purchased any courses
@@ -348,7 +354,13 @@ export default function HomeClient() {
     let rootList: any[] = [];
 
     const syncAndMerge = () => {
-      const merged = mergeCoursesLists(artifactList, rootList);
+      let merged: any[] = [];
+      if (artifactList.length > 0 || rootList.length > 0) {
+        merged = mergeCoursesLists(artifactList, rootList);
+      } else {
+        const cached = getCachedCourses();
+        merged = cached.length > 0 ? cached : DEFAULT_COURSES;
+      }
       if (merged.length > 0) {
         setCourses(merged);
         saveCachedCourses(merged);
@@ -356,31 +368,45 @@ export default function HomeClient() {
       setLoading(false);
     };
 
-    // 1. Live listener on artifacts public collection
+    // 1. Real-Time Live listener on artifacts public collection
     let unsubArtifact = () => {};
     try {
       const qArtifact = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses'));
       unsubArtifact = onSnapshot(qArtifact, (snapshot) => {
-        artifactList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        if (!snapshot.empty) {
+          artifactList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        } else {
+          artifactList = [];
+        }
         syncAndMerge();
       }, (error) => {
-        setLoading(false);
+        console.warn("Artifacts courses sync notice:", error);
+        syncAndMerge();
       });
-    } catch (e) {}
+    } catch (e) {
+      syncAndMerge();
+    }
 
-    // 2. Live listener on root courses collection
+    // 2. Real-Time Live listener on root courses collection
     let unsubRoot = () => {};
     try {
       const qRoot = query(collection(db, 'courses'));
       unsubRoot = onSnapshot(qRoot, (snapshot) => {
-        rootList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        if (!snapshot.empty) {
+          rootList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        } else {
+          rootList = [];
+        }
         syncAndMerge();
       }, (error) => {
-        setLoading(false);
+        console.warn("Root courses sync notice:", error);
+        syncAndMerge();
       });
-    } catch (e) {}
+    } catch (e) {
+      syncAndMerge();
+    }
 
-    // 3. Immediate cache-busted HTTP fetch
+    // 3. Immediate cache-busted HTTP fetch from backend API
     fetch(`/api/courses?t=${Date.now()}`, {
       cache: 'no-store',
       headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' }
@@ -396,9 +422,27 @@ export default function HomeClient() {
       .catch(() => {})
       .finally(() => setLoading(false));
 
+    // 4. Instant In-Tab & Cross-Tab nano-second event sync when Admin adds/edits/deletes courses
+    const handleCoursesSyncEvent = (e: any) => {
+      if (e?.detail && Array.isArray(e.detail) && e.detail.length > 0) {
+        const clean = mergeCoursesLists(e.detail);
+        setCourses(clean);
+        saveCachedCourses(clean);
+      } else {
+        const cached = getCachedCourses();
+        if (cached && cached.length > 0) {
+          setCourses(cached);
+        }
+      }
+    };
+    window.addEventListener('tsehay_courses_updated', handleCoursesSyncEvent);
+    window.addEventListener('storage', handleCoursesSyncEvent);
+
     return () => {
       unsubArtifact();
       unsubRoot();
+      window.removeEventListener('tsehay_courses_updated', handleCoursesSyncEvent);
+      window.removeEventListener('storage', handleCoursesSyncEvent);
     };
   }, []);
 

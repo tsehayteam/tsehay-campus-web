@@ -2186,6 +2186,7 @@ export default function AdminDashboard() {
         try {
           localStorage.setItem('tsehay_admin_courses_cache', JSON.stringify(updated));
           localStorage.setItem('tsehay_courses_cache', JSON.stringify(updated));
+          window.dispatchEvent(new CustomEvent('tsehay_courses_updated', { detail: updated }));
         } catch (e) {}
         return updated;
       });
@@ -2270,6 +2271,7 @@ export default function AdminDashboard() {
         try {
           localStorage.setItem('tsehay_admin_courses_cache', JSON.stringify(filtered));
           localStorage.setItem('tsehay_courses_cache', JSON.stringify(filtered));
+          window.dispatchEvent(new CustomEvent('tsehay_courses_updated', { detail: filtered }));
         } catch (e) {}
         return filtered;
       });
