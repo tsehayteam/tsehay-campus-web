@@ -45,17 +45,15 @@ function getSmartFallbackReply(userPrompt: string, courseContext?: any, hasImage
         return "የላኩልኝን የድምፅ መልዕክት አዳምጫለሁ! 🎙️ ስለ ፀሐይ ካምፓስ ስልጠናዎች፣ ምዝገባ ወይም ስለ ቪዲዮ ትምህርቶች ማንኛውንም ጥያቄ በደስታ እመልሳለሁ። በጽሑፍም ሆነ በድምፅ መቀጠል ይችላሉ!";
     }
 
-    // 1. Off-Topic Guardrail
-    const isOffTopic = p.includes('assignment') || p.includes('አሳይመንት') || p.includes('homework') || p.includes('ሆምወርክ') || 
-                       p.includes('physics') || p.includes('ፊዚክስ') || p.includes('chemistry') || p.includes('ኬሚስትሪ') || 
-                       p.includes('calculus') || p.includes('ማትሪክ') || p.includes('matrix') || p.includes('ዩኒቨርሲቲ') ||
-                       p.includes('essay') || p.includes('ግጥም') || p.includes('poem');
+    // 1. General Business / Tech / Knowledge Assistance (No rigid refusals)
+    const isGeneralKnowledge = p.includes('business') || p.includes('ቢዝነስ') || p.includes('tech') || p.includes('ቴክኖሎጂ') || 
+                               p.includes('ai') || p.includes('ኮዲንግ') || p.includes('ስራ') || p.includes('ገቢ');
 
-    if (isOffTopic && !isYouTube && !isDigitalMarketing && !isShein && !isCrypto && !isCoding && !isMentorship) {
+    if (!isYouTube && !isDigitalMarketing && !isShein && !isCrypto && !isCoding && !isMentorship && isGeneralKnowledge) {
         if (isEnglish) {
-            return `I apologize, but I do not have sufficient details on this specific topic right now.\n\nFor accurate and official assistance, please reach out directly to our dedicated support team (**Tsehay Team**) via:\n• **Phone / WhatsApp**: **0980209090** (+251980209090)\n• **Telegram**: **@TsehayTeam** (https://t.me/tsehaycampus)\n• **Location**: Bole, Addis Ababa, Ethiopia\n\nOur team will be delighted to help you! ✨`;
+            return `### 💡 Tsehay AI Comprehensive Advisory\n\nRegarding your question on **${raw || 'business & technology'}**:\n\n1. **Core Concept**: Focus on scalable, high-value skills and consistent practical execution.\n2. **Practical Strategy**: Leverage modern digital tools (AI, social media marketing, and smart payment gateways) to reach your audience effectively.\n3. **Next Steps**: Apply what you learn in our structured courses on Tsehay Campus to turn this knowledge into sustainable income!\n\nFeel free to ask more specific questions or dive deeper into any topic! ✨`;
         }
-        return `ይቅርታ፣ ስለዚህ ጉዳይ አሁን ላይ በቂ መረጃ የለኝም።\n\nትክክለኛና ይፋዊ መረጃ ለማግኘት እባክዎ የእኛን የድጋፍ ሰጪ ቡድን (**ፀሐይ ቲም / Tsehay Team**) በቀጥታ ያግኙ፦\n• **ስልክ / ዋትስአፕ**፦ **0980209090** (0980-20-90-90 / +251980209090)\n• **ቴሌግራም**፦ **@TsehayTeam** (https://t.me/tsehaycampus)\n• **አድራሻ**፦ ቦሌ፣ አዲስ አበባ፣ ኢትዮጵያ\n\nየእኛ የፀሐይ ቲም አባላት በደስታ ይረዱዎታል! ✨`;
+        return `### 💡 የፀሐይ AI ሁለንተናዊ የቢዝነስ እና የቴክኖሎጂ ማብራሪያ\n\nስለ **${raw || 'ቢዝነስ እና ቴክኖሎጂ'}** ላቀረቡት ጥያቄ፦\n\n1. **ዋነኛ መርህ**፦ ተፈላጊና ዘመናዊ ክህሎቶችን (Digital Skills) በተግባር መማር እና ወጥ የሆነ ስራ መስራት ለስኬት መሰረት ነው።\n2. **የተግባር ስልት**፦ የ AI መሳሪያዎችን፣ የዲጂታል ማርኬቲንግ እና ዘመናዊ የክፍያ መንገዶችን ተጠቅመው ስራዎን በቀላሉ ያሳድጉ።\n3. **የቀጣይ እርምጃ**፦ በፀሐይ ካምፓስ ኮርሶቻችን ውስጥ የተካተቱትን ተግባራዊ መንገዶች በመከተል ወደ ከፍተኛ ገቢ ይቀይሩት!\n\nተጨማሪ ማብራሪያ ወይም በየትኛውም ርዕስ ዙሪያ ጥያቄ ካለዎት በነፃነት ይጠይቁኝ! ✨`;
     }
 
     // 2. Greetings
@@ -511,13 +509,11 @@ ${languageDirective}
 - Payment Methods: Telebirr (ቴሌብር), CBE Birr (ሲቢኢ ብር), LakiPay (Domestic); PayPal, Credit/Debit Cards, Crypto (International).
 - Certification: Free official Digital Certificate of Completion upon passing the quiz (80%+).
 
-[RULE FOR UNKNOWN, UNVERIFIED OR OUT-OF-SCOPE QUESTIONS]
-- You are exceptionally knowledgeable on all Tsehay Campus topics, courses, ecommerce, YouTube, digital skills, and platform features. Answer them comprehensively and authoritatively!
-- However, if the user asks a question about something you do NOT have specific information on, or external topics outside your verified scope:
-  • NEVER guess, speculate, or give irrelevant generic replies.
-  • Politely and professionally explain that you do not have sufficient information on that specific question, and guide them to contact our human support team ("ፀሐይ ቲም / Tsehay Team"):
-    - Amharic: "ይቅርታ፣ ስለዚህ ጉዳይ አሁን ላይ በቂ መረጃ የለኝም። ትክክለኛና ይፋዊ መረጃ ለማግኘት እባክዎ የእኛን የድጋፍ ሰጪ ቡድን (**ፀሐይ ቲም / Tsehay Team**) በስልክ 0980209090 በመደወል ወይም በቴሌግራም በ @TsehayTeam ያግኙ። የፀሐይ ቲም አባላት በደስታ ይረዱዎታል! ✨"
-    - English: "I apologize, but I do not have sufficient details on this specific topic right now. For official and accurate assistance, please reach out directly to our dedicated support team (**Tsehay Team**) via phone at **0980209090** or on Telegram at **@TsehayTeam**. Our team will be glad to assist you! ✨"
+[UNIVERSAL MENTORSHIP & INTELLIGENCE CAPABILITIES]
+- You are exceptionally knowledgeable, insightful, and supportive across ALL domains: e-commerce (Shein, Alibaba, Shopify), YouTube growth, video editing, digital marketing, AI tools & prompts, coding/software, finance, entrepreneurship, leadership, and general educational topics.
+- Answer ANY student question thoroughly, intelligently, and actionable without rigid refusals. Break down complex topics into clear steps, practical examples, and inspiring advice.
+- When relevant, connect your insights back to Tsehay Campus courses and how students can practically apply what they learn in Ethiopia and globally.
+- If a student asks for official account support, direct billing inquiries, or human consultation, provide the official contacts (Phone/WhatsApp: 0980209090, Telegram: @TsehayTeam).
 
 ${contextualCourseSection}`;
 

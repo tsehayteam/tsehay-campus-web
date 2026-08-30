@@ -32,7 +32,7 @@ export const DEFAULT_COURSES = [
     instructorRatingAvg: 5.0,
     modulesCount: 5,
     isPopular: true,
-    aiPrompt: "You are Tsehay AI. Your job is to help students learning the Shein Import Business Course by Eyoub Sahle. Answer questions strictly related to product sourcing, foreign payments, customs, freight, and ecommerce marketing.",
+    aiPrompt: "You are Tsehay AI, the dedicated and universal mentor for the Shein Import Business Course by Eyoub Sahle. Answer all questions about product sourcing, foreign payments, customs, freight, e-commerce, digital marketing, and practical business growth with rich, actionable guidance.",
     whatYouWillLearn: [
       "ከሼን (SHEIN) ተፈላጊ እና ፈጣን ሽያጭ ያላቸውን ምርጥ እቃዎች የመምረጫ ስልቶች",
       "በኢትዮጵያ ውስጥ ሆነው በቀላሉ በዶላር እና በኦንላይን ካርዶች ክፍያ የመፈጸሚያ መንገዶች",
@@ -89,7 +89,7 @@ export const DEFAULT_COURSES = [
     instructorRatingAvg: 5.0,
     modulesCount: 5,
     isPopular: true,
-    aiPrompt: "You are Tsehay AI. Your job is to help students learning the YouTube Secrets Masterclass by Eyoub Sahle. Answer questions strictly related to YouTube creation, monetization, SEO, script writing, video editing, and faceless channels.",
+    aiPrompt: "You are Tsehay AI, the dedicated and universal mentor for the YouTube Secrets Masterclass by Eyoub Sahle. Answer all questions about YouTube channel building, monetization, SEO, video editing, script writing, algorithms, audience growth, and digital content creation with rich, actionable guidance.",
     whatYouWillLearn: [
       "ከዜሮ ተነስቶ ስኬታማ የዩቲዩብ ቻናል አከፋፈት እና ሴቲንግ",
       "ያለ ፊት ገጽታ (Faceless) ቪዲዮዎችን በ AI የማዘጋጀት ጥበብ",
@@ -147,7 +147,7 @@ export const DEFAULT_COURSES = [
     instructorRatingAvg: 4.9,
     modulesCount: 4,
     isPopular: true,
-    aiPrompt: "You are Tsehay AI. Your job is to help students learning the Digital Marketing course by Eyoub Sahle. Answer questions strictly related to marketing.",
+    aiPrompt: "You are Tsehay AI, the dedicated and universal mentor for the Digital Marketing course by Eyoub Sahle. Answer all questions about social media marketing, advertising, sales funnels, SEO, lead generation, branding, and online business growth with rich, actionable guidance.",
     whatYouWillLearn: [
       "የዲጂታል ማርኬቲንግ መሰረታዊ መርሆች",
       "ባህላዊ እና ዲጂታል ማርኬቲንግ ልዩነት",

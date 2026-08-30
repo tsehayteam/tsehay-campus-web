@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
           }
 
           // Code match verification
-          if (foundOtpData.code !== cleanCode && !foundOtpData.verified) {
+          if (!foundOtpData.verified && foundOtpData.code !== cleanCode) {
             if (matchedRef) {
               await matchedRef.set({ attempts: (foundOtpData.attempts || 0) + 1 }, { merge: true });
             }
@@ -121,6 +121,21 @@ export async function POST(req: NextRequest) {
             console.warn('Could not generate customToken on password reset:', tokenErr);
           }
 
+          // Sync user document in Firestore if adminDb is available
+          if (adminDb && targetUid) {
+            try {
+              const userUpdates = {
+                emailVerified: true,
+                passwordUpdatedAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+              };
+              await Promise.allSettled([
+                adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('users').doc(targetUid).set(userUpdates, { merge: true }),
+                adminDb.collection('users').doc(targetUid).set(userUpdates, { merge: true })
+              ]);
+            } catch (e) {}
+          }
+
           console.log(`[Password Reset Success] Password updated in Firebase Auth for ${cleanEmail} (uid: ${targetUid})`);
         }
       }
@@ -128,11 +143,11 @@ export async function POST(req: NextRequest) {
       console.error('Firebase Admin Auth password update error:', authErr);
       if (authErr.code === 'auth/user-not-found') {
         return NextResponse.json({ 
-          error: 'በዚህ የኢሜይል አድራሻ የተመዘገበ አካውንት አልተገኘም። (User not found)' 
+          error: 'በዚህ የ Gmail አድራሻ የተመዘገበ አካውንት አልተገኘም። (User not found)' 
         }, { status: 404 });
       }
       return NextResponse.json({
-        error: 'የይለፍ ቃል ማደስ አልተቻለም። እባክዎ በድጋሚ ይሞክሩ።'
+        error: 'የይለፍ ቃል መቀየር አልተቻለም። እባክዎ በድጋሚ ይሞክሩ።'
       }, { status: 500 });
     }
 

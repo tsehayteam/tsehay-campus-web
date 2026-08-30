@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { auth, db } from "@/lib/firebase/config";
 import { 
   signInWithEmailAndPassword, 
+  signInWithCustomToken,
   createUserWithEmailAndPassword, 
   sendEmailVerification, 
   signOut, 
@@ -728,16 +729,27 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
         return;
       }
 
-      // Auto sign-in with newly set password
+      // Auto sign-in with customToken or newly set password
       let authedUser: User | null = null;
       if (data.customToken) {
         try {
-          const tokenCred = await signInWithEmailAndPassword(auth, targetEmail, cleanPass);
-          authedUser = tokenCred.user;
+          const customCred = await signInWithCustomToken(auth, data.customToken);
+          authedUser = customCred.user;
+        } catch (tokenErr) {
+          try {
+            const passCred = await signInWithEmailAndPassword(auth, targetEmail, cleanPass);
+            authedUser = passCred.user;
+          } catch (e) {}
+        }
+      } else {
+        try {
+          const passCred = await signInWithEmailAndPassword(auth, targetEmail, cleanPass);
+          authedUser = passCred.user;
         } catch (e) {}
       }
 
       setResetStep('success');
+      setResendSuccessMessage('የይለፍ ቃልዎ በተሳካ ሁኔታ ተቀይሯል!');
       setTimeout(() => {
         setIsResetMode(false);
         if (authedUser || auth.currentUser) {
@@ -745,7 +757,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
         } else {
           onClose();
         }
-      }, 1200);
+      }, 1400);
     } catch (err: any) {
       console.error("Save new password error:", err);
       setError('የይለፍ ቃል መቀየር አልተቻለም። እባክዎ በድጋሚ ይሞክሩ።');
