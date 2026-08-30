@@ -975,10 +975,26 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
           } catch (e) {}
         }
 
-        await setDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', cred.user.uid, 'profile', 'info'), userData, { merge: true });
+        try {
+          // 1. Root users collection write (safe fallback)
+          await setDoc(doc(db, "users", cred.user.uid), {
+            uid: cred.user.uid,
+            name: name.trim(),
+            email: cleanEmail,
+            phone: phone.trim(),
+            city: city.trim(),
+            createdAt: serverTimestamp(),
+            lastLogin: serverTimestamp()
+          }, { merge: true }).catch(() => {});
+
+          // 2. Artifact profile info collection write
+          await setDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', cred.user.uid, 'profile', 'info'), userData, { merge: true }).catch(() => {});
+        } catch (dbErr) {
+          console.warn("Firestore profile initialization notice:", dbErr);
+        }
 
         const otpCode = generateOtpCode();
-        await saveOtpForEmail(cleanEmail, otpCode);
+        await saveOtpForEmail(cleanEmail, otpCode).catch(() => {});
 
         fetch('/api/auth/send-otp', {
           method: 'POST',
@@ -1025,18 +1041,39 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
     try {
       const cred = await signInWithEmailAndPassword(auth, cleanEmail, password);
 
-      // Record last login in background
-      setDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', cred.user.uid, 'profile', 'info'), {
-        lastLogin: serverTimestamp()
-      }, { merge: true }).catch(() => {});
+      // Safely ensure user document exists without crashing on permission errors
+      try {
+        setDoc(doc(db, "users", cred.user.uid), {
+          uid: cred.user.uid,
+          email: cleanEmail,
+          lastLogin: serverTimestamp()
+        }, { merge: true }).catch(() => {});
+
+        setDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', cred.user.uid, 'profile', 'info'), {
+          lastLogin: serverTimestamp()
+        }, { merge: true }).catch(() => {});
+      } catch (profileErr) {
+        console.warn("Background profile sync note:", profileErr);
+      }
 
       setError("");
       handlePostAuthSuccess(cred.user);
     } catch (err: any) {
       console.error("Email login error:", err);
       const code = err?.code || '';
-      if (code === 'auth/user-not-found' || code === 'auth/invalid-credential' || code === 'auth/wrong-password') {
-        setError('የተሳሳተ የ Gmail አድራሻ ወይም የይለፍ ቃል አስገብተዋል። አዲስ ከሆኑ "አዲስ ይመዝገቡ" የሚለውን ይጫኑ።');
+      
+      // 🌟 SMART ROUTING: If account is not found, automatically switch to Sign Up mode!
+      if (
+        code === 'auth/user-not-found' || 
+        code === 'auth/invalid-credential' || 
+        code === 'auth/invalid-login-credentials'
+      ) {
+        setIsSignupMode(true);
+        setSignupStep(1);
+        setEmail(cleanEmail);
+        setError('አካውንት ስላላገኘን እባክዎ አዲስ ይመዝገቡ (Account not found, please sign up)።');
+      } else if (code === 'auth/wrong-password') {
+        setError('የተሳሳተ የይለፍ ቃል አስገብተዋል። እባክዎ በትክክል ያስገቡ ወይም "የይለፍ ቃል ረሱ?" የሚለውን ይጫኑ።');
       } else {
         setError(getFriendlyErrorMessage(err));
       }

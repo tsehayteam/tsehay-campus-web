@@ -3,11 +3,6 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Deny all by default to prevent data leaks
-    match /{document=**} {
-      allow read, write: if false;
-    }
-
     // Helper: Check if request is from any authenticated user
     function isAuthenticated() {
       return request.auth != null;
@@ -49,17 +44,18 @@ service cloud.firestore {
       }
     }
 
-    // 3. Root Users Collection
+    // 3. Root Users Collection (Users have full access to their own document & subcollections)
     match /users/{userId} {
-      allow read, write: if isGlobalAdmin() || (isAuthenticated() && request.auth.uid == userId);
+      allow read, write: if (isAuthenticated() && request.auth.uid == userId) || isGlobalAdmin();
+      allow create: if isAuthenticated() || isGlobalAdmin();
       
       match /enrollments/{courseId} {
-        allow read: if isGlobalAdmin() || (isAuthenticated() && request.auth.uid == userId);
+        allow read: if (isAuthenticated() && request.auth.uid == userId) || isGlobalAdmin();
         allow write: if isGlobalAdmin() || isAuthenticated();
       }
 
       match /{sub=**} {
-        allow read, write: if isGlobalAdmin() || (isAuthenticated() && request.auth.uid == userId);
+        allow read, write: if (isAuthenticated() && request.auth.uid == userId) || isGlobalAdmin();
       }
     }
 
@@ -263,39 +259,16 @@ service cloud.firestore {
         allow write: if isAdmin() || isAuthenticated();
       }
 
-      // 4.11 User Private Data & Subcollections
+      // 4.11 User Private Data & Subcollections (Artifact Scope)
       match /users/{userId} {
         // User root doc
-        allow read, write: if isAdmin() || (isAuthenticated() && request.auth.uid == userId);
+        allow read, write: if (isAuthenticated() && request.auth.uid == userId) || isAdmin();
+        allow create: if isAuthenticated() || isAdmin();
 
-        // Profile info
-        match /profile/{document=**} {
-          allow read, write: if isAdmin() || (isAuthenticated() && request.auth.uid == userId);
-        }
-        
-        // Notes
-        match /notes/{document=**} {
-          allow read, write: if isAdmin() || (isAuthenticated() && request.auth.uid == userId);
-        }
-
-        // Chat History
-        match /chat/{document=**} {
-          allow read, write: if isAdmin() || (isAuthenticated() && request.auth.uid == userId);
-        }
-
-        // AI Chat History
-        match /ai_chat/{document=**} {
-          allow read, write: if isAdmin() || (isAuthenticated() && request.auth.uid == userId);
-        }
-
-        // Gamification & Lesson Progress
-        match /progress/{document=**} {
-          allow read, write: if isAdmin() || (isAuthenticated() && request.auth.uid == userId);
-        }
-
-        // Purchased Courses & Enrollments
-        match /purchased_courses/{courseId} {
-          allow read, write: if isAdmin() || (isAuthenticated() && request.auth.uid == userId);
+        // Profile info & all nested subcollections
+        match /{document=**} {
+          allow read, write: if (isAuthenticated() && request.auth.uid == userId) || isAdmin();
+          allow create: if isAuthenticated() || isAdmin();
         }
       }
 

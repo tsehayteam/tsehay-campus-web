@@ -2,7 +2,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { auth, db } from '@/lib/firebase/config';
 import { onAuthStateChanged, signOut, User } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 export const ADMIN_EMAILS = [
   'admin@tsehaycampus.com',
@@ -114,6 +114,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           };
           localStorage.setItem('tsehay_auth_user_cache', JSON.stringify(serialized));
         } catch (e) {}
+
+        // Safely ensure user document exists without throwing or crashing
+        try {
+          setDoc(doc(db, 'users', firebaseUser.uid), {
+            uid: firebaseUser.uid,
+            email: firebaseUser.email,
+            displayName: firebaseUser.displayName || '',
+            photoURL: firebaseUser.photoURL || null,
+            lastLogin: serverTimestamp()
+          }, { merge: true }).catch(() => {});
+
+          setDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', firebaseUser.uid, 'profile', 'info'), {
+            uid: firebaseUser.uid,
+            email: firebaseUser.email,
+            name: firebaseUser.displayName || '',
+            photoURL: firebaseUser.photoURL || null,
+            lastLogin: serverTimestamp()
+          }, { merge: true }).catch(() => {});
+        } catch (syncErr) {
+          // Silently ignore background profile sync notices
+        }
 
         let userIsAdmin = isEmailAdmin(firebaseUser.email);
 
