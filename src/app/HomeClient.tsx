@@ -17,8 +17,6 @@ import SmartSearchInput from '@/components/SmartSearchInput';
 import YouTubeVideoSlider from '@/components/YouTubeVideoSlider';
 import InstructorYouTubePortfolio from '@/components/InstructorYouTubePortfolio';
 import UpcomingEventsSection from '@/components/UpcomingEventsSection';
-import ComingSoonCoursesSection from '@/components/ComingSoonCoursesSection';
-import AITutorSection from '@/components/AITutorSection';
 import CourseCardSkeleton from '@/components/CourseCardSkeleton';
 import CoursePreviewModal from '@/components/CoursePreviewModal';
 import Hero3DPopoutStage from '@/components/3d/Hero3DPopoutStage';
@@ -913,12 +911,6 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
         </div>
       </section>
 
-      {/* =========================================================================
-          5. INTERACTIVE "TSEHAY AI" SANDBOX (Automated Typing Loop)
-         ========================================================================= */}
-      <div className="scrolly-reveal">
-        <AITutorSection />
-      </div>
 
       {/* =========================================================================
           6. FREE LESSONS VIDEO SLIDER

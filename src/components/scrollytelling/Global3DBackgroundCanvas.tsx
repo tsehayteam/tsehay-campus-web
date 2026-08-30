@@ -45,8 +45,8 @@ export default function Global3DBackgroundCanvas() {
     };
     window.addEventListener('resize', handleResize, { passive: true });
 
-    // 3D Particle Space
-    const PARTICLE_COUNT = 145;
+    // 3D Particle Space (Lightweight & High-FPS GPU Optimized)
+    const PARTICLE_COUNT = 85;
     const FOV = 420;
     const DEPTH = 2200;
 
@@ -344,10 +344,11 @@ export default function Global3DBackgroundCanvas() {
       ref={canvasRef}
       id="global-3d-background-canvas"
       aria-hidden="true"
-      className="fixed inset-0 w-full h-full pointer-events-none z-0 transition-opacity duration-700"
+      className="fixed inset-0 w-full h-full pointer-events-none -z-10 transition-opacity duration-700"
       style={{
         backgroundColor: '#030509',
         willChange: 'transform, opacity',
+        transform: 'translateZ(0)',
       }}
     />
   );

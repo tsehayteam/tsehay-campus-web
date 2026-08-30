@@ -14,10 +14,6 @@ export default function About() {
     <>
       <main className="min-h-screen flex flex-col bg-[#030509] text-slate-100 transition-colors duration-300 relative">
         
-        {/* =========================================================================
-            🌟 3D PARTICLE NETWORK & MESH GRADIENT CANVAS BACKGROUND
-           ========================================================================= */}
-        <About3DParticleMeshCanvas />
 
         {/* Deep Void Stardust Mesh Background & Ambient Lighting */}
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-15 mix-blend-overlay pointer-events-none z-0" />
