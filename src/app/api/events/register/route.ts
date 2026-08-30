@@ -133,30 +133,47 @@ export async function POST(req: NextRequest) {
             const inc = FieldValue.increment(1);
             const decSeat = FieldValue.increment(-1);
 
-            const eventRefRoot = adminDb.collection('events').doc(eventId);
-            const eventRefArtifact = adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('public').doc('data').collection('events').doc(eventId);
-            const eventRefColl = adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('events').doc(eventId);
+            const updatePayload = {
+              registeredCount: inc,
+              remainingSeats: decSeat,
+              availableTickets: decSeat,
+              seatsLeft: decSeat
+            };
 
-            await Promise.allSettled([
-              eventRefRoot.set({
-                registeredCount: inc,
-                remainingSeats: decSeat,
-                availableTickets: decSeat,
-                seatsLeft: decSeat
-              }, { merge: true }),
-              eventRefArtifact.set({
-                registeredCount: inc,
-                remainingSeats: decSeat,
-                availableTickets: decSeat,
-                seatsLeft: decSeat
-              }, { merge: true }),
-              eventRefColl.set({
-                registeredCount: inc,
-                remainingSeats: decSeat,
-                availableTickets: decSeat,
-                seatsLeft: decSeat
-              }, { merge: true })
-            ]);
+            const promises: Promise<any>[] = [];
+
+            // Direct doc ID updates
+            promises.push(
+              adminDb.collection('events').doc(eventId).set(updatePayload, { merge: true }),
+              adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('public').doc('data').collection('events').doc(eventId).set(updatePayload, { merge: true }),
+              adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('events').doc(eventId).set(updatePayload, { merge: true })
+            );
+
+            // Also check if slug exists and might be a separate doc ID
+            if (eventSlug && eventSlug !== eventId) {
+              promises.push(
+                adminDb.collection('events').doc(eventSlug).set(updatePayload, { merge: true }),
+                adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('public').doc('data').collection('events').doc(eventSlug).set(updatePayload, { merge: true }),
+                adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('events').doc(eventSlug).set(updatePayload, { merge: true })
+              );
+            }
+
+            // Also query by slug if doc ID was different
+            const rootSlugSnap = await adminDb.collection('events').where('slug', '==', eventSlug || eventId).get().catch(() => null);
+            if (rootSlugSnap && !rootSlugSnap.empty) {
+              rootSlugSnap.docs.forEach(d => {
+                promises.push(d.ref.set(updatePayload, { merge: true }));
+              });
+            }
+
+            const nestedSlugSnap = await adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('public').doc('data').collection('events').where('slug', '==', eventSlug || eventId).get().catch(() => null);
+            if (nestedSlugSnap && !nestedSlugSnap.empty) {
+              nestedSlugSnap.docs.forEach(d => {
+                promises.push(d.ref.set(updatePayload, { merge: true }));
+              });
+            }
+
+            await Promise.allSettled(promises);
           } catch (incErr) {
             console.warn('Event atomic seat decrement notice:', incErr);
           }

@@ -75,6 +75,7 @@ export default function AiPage() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const recognitionRef = useRef<any>(null);
+  const voiceTranscriptRef = useRef<string>('');
 
   // Subscribe to real-time courses
   useEffect(() => {
@@ -142,16 +143,24 @@ export default function AiPage() {
       if (SpeechRecognition) {
         const recognition = new SpeechRecognition();
         recognition.lang = 'am-ET';
-        recognition.continuous = true;
-        recognition.interimResults = true;
+        recognition.continuous = false;
+        recognition.interimResults = false;
 
         recognition.onresult = (event: any) => {
           let transcript = '';
           for (let i = event.resultIndex; i < event.results.length; i++) {
             transcript += event.results[i][0].transcript;
           }
-          if (transcript) {
-            setInput(transcript);
+          if (transcript.trim()) {
+            voiceTranscriptRef.current = transcript.trim();
+          }
+        };
+
+        recognition.onend = () => {
+          const spoken = voiceTranscriptRef.current.trim();
+          if (spoken) {
+            stopVoiceRecording();
+            sendMessage(spoken);
           }
         };
 
@@ -178,6 +187,27 @@ export default function AiPage() {
     }
     setIsRecording(false);
     setRecordingDuration(0);
+  };
+
+  const speakText = (text: string) => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+    try {
+      window.speechSynthesis.cancel();
+      const clean = text
+        .replace(/```[\s\S]*?```/g, ' ')
+        .replace(/`([^`]+)`/g, '$1')
+        .replace(/[*_~#>[\]()]/g, ' ')
+        .replace(/https?:\/\/\S+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      if (!clean) return;
+      const utterance = new SpeechSynthesisUtterance(clean);
+      const voices = window.speechSynthesis.getVoices();
+      const voice = voices.find(v => v.lang.includes('am') || v.name.toLowerCase().includes('amharic')) ||
+                    voices.find(v => v.name.toLowerCase().includes('natural') || v.name.toLowerCase().includes('female'));
+      if (voice) utterance.voice = voice;
+      window.speechSynthesis.speak(utterance);
+    } catch (e) {}
   };
 
   const sendMessage = async (overrideText?: string, audioUrl?: string) => {
@@ -241,6 +271,7 @@ export default function AiPage() {
           timestamp: 'አሁን'
         }
       ]);
+      speakText(replyText);
     } catch (err) {
       console.error('AI chat error:', err);
       setMessages((prev) => [

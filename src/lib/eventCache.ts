@@ -12,6 +12,7 @@ export interface TsehayEvent {
   mapsUrl?: string; // Google Maps URL for in-person events
   capacity: number;
   registeredCount: number;
+  remainingSeats?: number;
   price: number; // 0 for Free
   isFree?: boolean;
   speaker: string; // e.g. "ኢዮብ ሳህሌ (Eyoub Sahle)"
@@ -218,6 +219,9 @@ export function getEventBySlugOrId(slugOrId: string, eventsList: TsehayEvent[] =
 }
 
 export function getRemainingSeats(event: TsehayEvent): number {
+  if (event.remainingSeats !== undefined && typeof event.remainingSeats === 'number') {
+    return Math.max(0, event.remainingSeats);
+  }
   const cap = Number(event.capacity) || 100;
   const reg = Number(event.registeredCount) || 0;
   return Math.max(0, cap - reg);

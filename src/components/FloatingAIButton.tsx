@@ -349,35 +349,37 @@ export default function FloatingAIButton() {
     try {
       const recognition = new SpeechRecognition();
       recognition.lang = aiLang === 'en' ? 'en-US' : 'am-ET';
-      recognition.continuous = true;
-      recognition.interimResults = true;
-
-      const baseInput = input.trim() ? input.trim() + ' ' : '';
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      voiceTranscriptRef.current = '';
 
       recognition.onstart = () => {
         setIsRecordingVoice(true);
       };
 
       recognition.onresult = (event: any) => {
-        let interimTranscript = '';
+        let captured = '';
         for (let i = event.resultIndex; i < event.results.length; i++) {
-          interimTranscript += event.results[i][0].transcript;
+          captured += event.results[i][0].transcript;
         }
-        if (interimTranscript.trim()) {
-          setInput(baseInput + interimTranscript.trim());
+        if (captured.trim()) {
+          voiceTranscriptRef.current = captured.trim();
         }
       };
 
       recognition.onerror = (event: any) => {
-        console.warn("Speech recognition error:", event.error);
-        if (event.error === 'not-allowed') {
-          alert('እባክዎ የማይክሮፎን ፈቃድ ይስጡ (Please allow microphone access in browser settings).');
-        }
+        console.warn("Speech recognition notice:", event.error);
         setIsRecordingVoice(false);
       };
 
       recognition.onend = () => {
         setIsRecordingVoice(false);
+        const speechText = voiceTranscriptRef.current.trim();
+        if (speechText) {
+          voiceTranscriptRef.current = '';
+          // Send silently in background and auto-play response
+          handleSendMessage(speechText);
+        }
       };
 
       recognition.start();

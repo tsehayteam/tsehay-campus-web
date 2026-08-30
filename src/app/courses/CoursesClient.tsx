@@ -501,16 +501,16 @@ export default function CoursesClient({ initialCourses }: { initialCourses?: any
                                 </div>
                                 <span>{course.instructor || 'Eyoub Sahle'}</span>
                               </div>
-                              <div className="flex items-center gap-1 bg-[#f9b03c]/15 text-[#f9b03c] font-black px-2.5 py-0.5 rounded-full text-xs border border-[#f9b03c]/30 shadow-xs">
+                              <div className="flex items-center gap-1.5 bg-gradient-to-r from-[#f9b03c]/25 via-amber-500/20 to-[#f9b03c]/15 text-[#f9b03c] font-black px-3 py-1 rounded-full text-xs sm:text-sm border border-[#f9b03c]/50 shadow-[0_0_15px_rgba(249,176,60,0.35)] backdrop-blur-md">
                                 {isComingSoon ? (
                                   <>
-                                    <i className="fa-solid fa-bell text-[10px]"></i>
-                                    <span>{course.highlightBadge || 'Coming Soon'}</span>
+                                    <i className="fa-solid fa-hourglass-half text-xs text-[#f9b03c]"></i>
+                                    <span className="font-black tracking-wide">{course.highlightBadge || 'Coming Soon'}</span>
                                   </>
                                 ) : (
                                   <>
-                                    <i className="fa-solid fa-star text-[10px]"></i>
-                                    <span>{course.ratingAvg || '4.9'}</span>
+                                    <i className="fa-solid fa-star text-xs text-[#f9b03c] drop-shadow-[0_0_6px_#f9b03c]"></i>
+                                    <span className="font-black text-[#f9b03c] tracking-wide">★ {course.ratingAvg || '4.9'}</span>
                                   </>
                                 )}
                               </div>

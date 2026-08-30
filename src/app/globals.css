@@ -93,6 +93,21 @@ body {
   50% { transform: translateY(-8px) rotate(1deg); }
 }
 
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 16px rgba(249, 176, 60, 0.45), inset 0 0 8px rgba(249, 176, 60, 0.2);
+    border-color: rgba(249, 176, 60, 0.6);
+  }
+  50% {
+    box-shadow: 0 0 32px rgba(249, 176, 60, 0.85), 0 0 50px rgba(50, 104, 186, 0.35), inset 0 0 14px rgba(249, 176, 60, 0.4);
+    border-color: #f9b03c;
+  }
+}
+
+.mentorship-pulse-glow {
+  animation: pulseGlow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
 @keyframes pulse-glow {
   0%, 100% {
     opacity: 1;

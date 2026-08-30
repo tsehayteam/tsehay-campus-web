@@ -192,6 +192,49 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
     return () => unsubscribe();
   }, []);
 
+  // Seamless Slow Headline Typewriter Effect
+  const headlinePhrases = [
+    { white: 'ክህሎትዎን ያሳድጉ፤', gold: 'ቢዝነስዎን ይጀምሩ።' },
+    { white: 'የዩቲዩብ ቻናልዎን', gold: 'ገቢ ማግኛ ያድርጉ።' },
+    { white: 'የሼን እና ኢ-ኮሜርስ', gold: 'ንግድዎን ይገንቡ።' },
+    { white: 'በ AI የታገዘ', gold: 'ዲጂታል ገቢን ይፍጠሩ።' }
+  ];
+  const [currentPhraseIdx, setCurrentPhraseIdx] = useState(0);
+  const [typedCharCount, setTypedCharCount] = useState(0);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    const currentPhrase = headlinePhrases[currentPhraseIdx];
+    const fullLength = currentPhrase.white.length + currentPhrase.gold.length;
+
+    let timer: any;
+    if (!isDeleting && typedCharCount < fullLength) {
+      timer = setTimeout(() => {
+        setTypedCharCount(prev => prev + 1);
+      }, 70); // slow smooth typing
+    } else if (!isDeleting && typedCharCount >= fullLength) {
+      timer = setTimeout(() => {
+        setIsDeleting(true);
+      }, 3500); // pause at completed phrase
+    } else if (isDeleting && typedCharCount > 0) {
+      timer = setTimeout(() => {
+        setTypedCharCount(prev => prev - 1);
+      }, 35); // quick deletion
+    } else if (isDeleting && typedCharCount === 0) {
+      setIsDeleting(false);
+      setCurrentPhraseIdx(prev => (prev + 1) % headlinePhrases.length);
+    }
+
+    return () => clearTimeout(timer);
+  }, [typedCharCount, isDeleting, currentPhraseIdx]);
+
+  const activePhrase = headlinePhrases[currentPhraseIdx];
+  const whiteLength = activePhrase.white.length;
+  const typedWhite = activePhrase.white.slice(0, Math.min(typedCharCount, whiteLength));
+  const typedGold = typedCharCount > whiteLength 
+    ? activePhrase.gold.slice(0, typedCharCount - whiteLength)
+    : '';
+
   // Enhanced 3D Scroll Trigger Orchestrator
   useEffect(() => {
     scrollTriggerEngine.init({
@@ -382,19 +425,20 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
               <div className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full bg-[#f9b03c]/10 border border-[#f9b03c]/40 backdrop-blur-xl mb-6 sm:mb-8 shadow-[0_0_25px_rgba(249,176,60,0.25)] transition-all duration-300">
                 <span className="w-2 h-2 rounded-full bg-[#f9b03c] shadow-[0_0_10px_#f9b03c] animate-pulse"></span>
                 <span className="text-xs sm:text-sm font-black font-heading tracking-wider text-[#f9b03c]">
-                  ✨ ተማር። ተግብር። አደግ። • TSEHAY CAMPUS ✨
+                  {lang === 'en' ? '✨ SHINING LIGHT ON YOUR SUCCESS • TSEHAY CAMPUS ✨' : '✨ ለስኬትዎ የምታበራ ፀሐይ • TSEHAY CAMPUS ✨'}
                 </span>
               </div>
 
-              {/* Main Cinematic Headline */}
-              <h1 className="font-heading font-black text-4xl sm:text-6xl md:text-7xl lg:text-[76px] tracking-tight leading-[1.12] sm:leading-[1.08] text-white mb-6">
-                <span>ክህሎትዎን ያሳድጉ፤</span>{' '}
+              {/* Main Cinematic Typewriter Headline */}
+              <h1 className="font-heading font-black text-4xl sm:text-6xl md:text-7xl lg:text-[74px] tracking-tight leading-[1.14] sm:leading-[1.08] text-white mb-6 min-h-[120px] sm:min-h-[160px]">
+                <span>{typedWhite}</span>{' '}
                 <span className="relative inline-block mt-1 sm:mt-0">
                   <span className="relative z-10 text-transparent bg-clip-text bg-gradient-to-r from-[#f9b03c] via-[#ffc66b] to-yellow-400 drop-shadow-[0_0_35px_rgba(249,176,60,0.4)]">
-                    ቢዝነስዎን ይጀምሩ።
+                    {typedGold}
                   </span>
                   <span className="absolute -bottom-2 left-0 w-full h-3 bg-gradient-to-r from-[#f9b03c]/30 to-transparent blur-xs -z-0"></span>
                 </span>
+                <span className="inline-block w-1.5 h-8 sm:h-12 bg-[#f9b03c] animate-pulse ml-1.5 align-middle shadow-[0_0_8px_#f9b03c]"></span>
               </h1>
 
               {/* Subheadline */}
@@ -424,13 +468,13 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
                   </svg>
                 </MagneticLink>
 
-                {/* Secondary CTA: 1-on-1 Mentorship */}
+                {/* Secondary CTA: 1-on-1 Mentorship with Smooth Glowing Pulse */}
                 <MagneticLink 
                   href="/mentorship"
-                  className="w-full sm:w-auto px-8 sm:px-9 py-4 rounded-2xl terafab-btn-glass flex items-center justify-center gap-3 text-sm sm:text-base cursor-pointer hover:border-[#f9b03c]/60 group"
+                  className="w-full sm:w-auto px-8 sm:px-9 py-4 rounded-2xl terafab-btn-glass mentorship-pulse-glow flex items-center justify-center gap-3 text-sm sm:text-base cursor-pointer hover:border-[#f9b03c]/80 group"
                 >
                   <i className="fa-solid fa-calendar-check text-[#f9b03c]"></i>
-                  <span>1-ለ-1 ማማከር (Mentorship)</span>
+                  <span className="font-bold">1-ለ-1 ማማከር (Mentorship)</span>
                 </MagneticLink>
               </div>
 
@@ -466,9 +510,9 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
          ========================================================================= */}
       <section className="py-10 sm:py-14 bg-white/[0.02] backdrop-blur-2xl border-b border-white/[0.08] relative z-20 overflow-hidden select-none scrolly-reveal">
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 text-center mb-6 sm:mb-8">
-          <div className="inline-flex items-center gap-2.5 bg-[#3268ba]/15 border border-[#3268ba]/30 rounded-full px-5 py-2 shadow-xs backdrop-blur-md">
-            <span className="w-2 h-2 rounded-full bg-[#f9b03c] animate-pulse"></span>
-            <p className="font-mono text-[#f9b03c] font-black tracking-widest text-[11px] sm:text-xs uppercase">
+          <div className="inline-flex items-center gap-3 bg-[#3268ba]/20 border border-[#3268ba]/40 rounded-full px-6 py-2.5 shadow-lg backdrop-blur-md">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#f9b03c] animate-pulse shadow-[0_0_10px_#f9b03c]"></span>
+            <p className="font-heading text-[#f9b03c] font-black tracking-widest text-xs sm:text-sm uppercase drop-shadow-sm">
               ከ 500+ በላይ ተማሪዎች እና ታላላቅ ተቋማት የታመነ
             </p>
           </div>
@@ -563,7 +607,7 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
               scale={1.03}
               perspective={1000}
               glare={true}
-              onClick={() => window.dispatchEvent(new Event('open-tsehay-ai'))}
+              onClick={() => router.push('/ai')}
               className="cursor-pointer"
             >
               <div 
@@ -769,16 +813,16 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
                               </div>
                               <span>{course.instructor || 'Eyoub Sahle'}</span>
                             </div>
-                            <div className="flex items-center gap-1 bg-[#f9b03c]/15 text-[#f9b03c] font-black px-2.5 py-0.5 rounded-full text-xs border border-[#f9b03c]/30 shadow-xs">
+                            <div className="flex items-center gap-1.5 bg-gradient-to-r from-[#f9b03c]/25 via-amber-500/20 to-[#f9b03c]/15 text-[#f9b03c] font-black px-3 py-1 rounded-full text-xs sm:text-sm border border-[#f9b03c]/50 shadow-[0_0_15px_rgba(249,176,60,0.35)] backdrop-blur-md">
                               {isComingSoon ? (
                                 <>
-                                  <i className="fa-solid fa-bell text-[10px]"></i>
-                                  <span>{course.highlightBadge || 'Coming Soon'}</span>
+                                  <i className="fa-solid fa-hourglass-half text-xs text-[#f9b03c]"></i>
+                                  <span className="font-black tracking-wide">{course.highlightBadge || 'Coming Soon'}</span>
                                 </>
                               ) : (
                                 <>
-                                  <i className="fa-solid fa-star text-[10px]"></i>
-                                  <span>{course.ratingAvg || '4.9'}</span>
+                                  <i className="fa-solid fa-star text-xs text-[#f9b03c] drop-shadow-[0_0_6px_#f9b03c]"></i>
+                                  <span className="font-black text-[#f9b03c] tracking-wide">★ {course.ratingAvg || '4.9'}</span>
                                 </>
                               )}
                             </div>

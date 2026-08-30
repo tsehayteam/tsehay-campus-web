@@ -327,9 +327,11 @@ export default function UpcomingEventsSection() {
               event.slug ? (registrationsCountByEvent[event.slug] || 0) : 0
             );
             const capacity = Number(event.capacity) || 100;
-            const remainingSeats = Math.max(0, capacity - liveRegCount);
+            const remainingSeats = (event as any).remainingSeats !== undefined && typeof (event as any).remainingSeats === 'number'
+              ? Math.max(0, (event as any).remainingSeats)
+              : Math.max(0, capacity - liveRegCount);
             const isSoldOut = remainingSeats <= 0;
-            const percentTaken = Math.min(100, Math.round((liveRegCount / capacity) * 100));
+            const percentTaken = Math.min(100, Math.round(((capacity - remainingSeats) / capacity) * 100));
 
             return (
               <div 
