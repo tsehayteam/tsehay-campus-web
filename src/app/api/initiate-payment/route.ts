@@ -159,9 +159,24 @@ export async function POST(request: Request) {
               supported_mediums: [
                 "TELEBIRR",
                 "CBE",
+                "CBE_BIRR",
                 "MPESA",
+                "OROMIA_BANK",
+                "SINQEE_BANK",
+                "AWASH",
+                "AWASH_BANK",
+                "ABYSSINIA",
+                "DASHEN",
+                "AMHARA_BANK",
+                "COOP",
+                "COOPERATIVE_BANK_OF_OROMIA",
+                "WEGAGEN",
+                "BUNNA",
                 "ETHSWITCH",
-                "CYBERSOURCE"
+                "ETH_SWITCH",
+                "BANK",
+                "CYBERSOURCE",
+                "CARD"
               ],
               callback_url: `${origin}/api/webhook`,
               return_url: `${origin}/dashboard?success=true&course=${courseId}&reference=${tx_ref}`
