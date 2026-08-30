@@ -37,24 +37,54 @@ export default function UpcomingEventsSection() {
     };
     window.addEventListener('tsehay_events_updated', handleEventsUpdate);
 
-    // 1. Live Firestore listener for events
+    let artifactList: TsehayEvent[] = [];
+    let rootList: TsehayEvent[] = [];
+
+    const syncAndSet = () => {
+      const eventMap = new Map<string, TsehayEvent>();
+      [...artifactList, ...rootList].forEach(ev => {
+        if (ev && ev.id) {
+          eventMap.set(ev.id, {
+            ...ev,
+            image: formatDriveImageUrl(ev.image) || ev.image
+          });
+        }
+      });
+
+      const combined = Array.from(eventMap.values());
+      if (combined.length > 0) {
+        setEvents(combined);
+        try {
+          localStorage.setItem('tsehay_events_cache', JSON.stringify(combined));
+        } catch (e) {}
+      }
+    };
+
+    // 1. Live Firestore listener on root events collection
+    let unsubRoot: any = null;
+    try {
+      const rootRef = collection(db, 'events');
+      unsubRoot = onSnapshot(rootRef, (snapshot) => {
+        if (!snapshot.empty) {
+          rootList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as TsehayEvent));
+          syncAndSet();
+        }
+      }, (err) => {});
+    } catch (e) {}
+
+    // 2. Live Firestore listener for artifact events collection
     let unsubNested: any = null;
     try {
       const nestedRef = collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'events');
       unsubNested = onSnapshot(nestedRef, (snapshot) => {
         if (!snapshot.empty) {
-          const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as TsehayEvent));
-          setEvents(list);
-          try {
-            localStorage.setItem('tsehay_events_cache', JSON.stringify(list));
-          } catch (e) {}
+          artifactList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as TsehayEvent));
+          syncAndSet();
         }
-      }, (err) => {
-        console.warn("Real-time events Firestore sync fallback:", err);
-      });
+      }, (err) => {});
     } catch (e) {}
 
-    // 2. Live Firestore listener for event registrations to accurately decrement seats
+    // 3. Live Firestore listener for event registrations to accurately decrement seats
     let unsubRegs: any = null;
     try {
       const regsRef = collection(db, 'event_registrations');
@@ -71,32 +101,30 @@ export default function UpcomingEventsSection() {
           }
         });
         setRegistrationsCountByEvent(counts);
-      }, (err) => {
-        console.warn("Event registrations sync notice:", err);
-      });
+      }, (err) => {});
     } catch (e) {}
 
-    // 3. Fetch live events from API
+    // 4. Fetch live events from API with cache-busting
     const fetchEvents = async () => {
       try {
-        const res = await fetch('/api/events');
+        const res = await fetch(`/api/events?t=${Date.now()}`, {
+          cache: 'no-store',
+          headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' }
+        });
         if (res.ok) {
           const data = await res.json();
           if (data.events && Array.isArray(data.events) && data.events.length > 0) {
-            setEvents(data.events);
-            try {
-              localStorage.setItem('tsehay_events_cache', JSON.stringify(data.events));
-            } catch (e) {}
+            artifactList = data.events;
+            syncAndSet();
           }
         }
-      } catch (e) {
-        console.warn("Error fetching events:", e);
-      }
+      } catch (e) {}
     };
     fetchEvents();
 
     return () => {
       window.removeEventListener('tsehay_events_updated', handleEventsUpdate);
+      if (unsubRoot) unsubRoot();
       if (unsubNested) unsubNested();
       if (unsubRegs) unsubRegs();
     };

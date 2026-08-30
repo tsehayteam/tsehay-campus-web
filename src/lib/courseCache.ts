@@ -537,6 +537,22 @@ export function subscribeToCourses(callback: (courses: any[]) => void): () => vo
     console.warn('Nested Firestore listener init note:', e);
   }
 
+  // b) Root courses collection
+  let unsubRoot = () => {};
+  try {
+    const rootQuery = query(collection(db, 'courses'));
+    unsubRoot = onSnapshot(rootQuery, (snap) => {
+      if (!isCleanedUp && !snap.empty) {
+        const list = snap.docs
+          .map(doc => ({ id: doc.id, ...doc.data() }))
+          .filter(isValidCourse);
+        if (list.length > 0) {
+          emitIfChanged(list, false);
+        }
+      }
+    }, (err) => {});
+  } catch (e) {}
+
   // 4. Cross-Tab Broadcast Channel Listener (Nanosecond Live Sync across multiple browser tabs)
   let bc: BroadcastChannel | null = null;
   try {
@@ -573,6 +589,7 @@ export function subscribeToCourses(callback: (courses: any[]) => void): () => vo
   return () => {
     isCleanedUp = true;
     unsubNested();
+    unsubRoot();
     if (bc) {
       bc.close();
     }
