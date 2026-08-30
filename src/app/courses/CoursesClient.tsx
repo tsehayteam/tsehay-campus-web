@@ -14,6 +14,7 @@ import { useRouter } from 'next/navigation';
 import SmartSearchInput from '@/components/SmartSearchInput';
 import CourseCardSkeleton from '@/components/CourseCardSkeleton';
 import CoursePreviewModal from '@/components/CoursePreviewModal';
+import ComingSoonCoursesSection from '@/components/ComingSoonCoursesSection';
 import Tilt3DCard from '@/components/3d/Tilt3DCard';
 import { searchCourses } from '@/lib/smartSearch';
 import { getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl, getCourseSlug, mergeCoursesLists, subscribeToCourses } from '@/lib/courseCache';
@@ -554,6 +555,11 @@ export default function CoursesClient() {
             )}
           </div>
         </section>
+
+        {/* =========================================================================
+            ✨ COMING SOON COURSES & WAITLIST SECTION
+           ========================================================================= */}
+        <ComingSoonCoursesSection id="all-courses-coming-soon" />
       </main>
 
       {/* Footer */}

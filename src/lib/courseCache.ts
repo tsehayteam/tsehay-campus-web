@@ -561,3 +561,112 @@ export function subscribeToCourses(callback: (courses: any[]) => void): () => vo
     window.removeEventListener('storage', handleStorage);
   };
 }
+
+export interface ComingSoonCourse {
+  id: string;
+  slug: string;
+  title: string;
+  titleEn: string;
+  tag: string;
+  category: string;
+  description: string;
+  level: string;
+  duration: string;
+  instructor: string;
+  image: string;
+  highlightBadge: string;
+  benefits: string[];
+  expectedDate?: string;
+}
+
+export const COMING_SOON_COURSES: ComingSoonCourse[] = [
+  {
+    id: "cs-video-editing",
+    slug: "video-editing-masterclass",
+    title: "የቪዲዮ ኤዲቲንግ ኮርስ (Video Editing Masterclass)",
+    titleEn: "Video Editing Masterclass",
+    tag: "ቪዲዮ ኤዲቲንግ",
+    category: "Content Creation",
+    description: "በ CapCut እና Premiere Pro ፕሮፌሽናል ቪዲዮዎችን ማቀናበር፣ የድምፅ እና የከለር ግሬዲንግ፣ የሞሽን ግራፊክስ እና ለቲክቶክ/ዩቲዩብ ቫይራል የሚሆኑ ይዘቶችን መስራት።",
+    level: "ጀማሪ - ከፍተኛ (All Levels)",
+    duration: "6+ ሰዓታት",
+    instructor: "Eyoub Sahle & Video Team",
+    image: "https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?q=80&w=800",
+    highlightBadge: "CapCut & Premiere Pro",
+    benefits: [
+      "የቫይራል ቪዲዮዎች ኤዲቲንግ ስልት",
+      "Color Grading & Sound Design",
+      "Motion Graphics & B-Roll Mastery",
+      "ለአለምአቀፍ ደንበኞች በዶላር መስራት"
+    ],
+    expectedDate: "በቅርቡ (Coming Soon)"
+  },
+  {
+    id: "cs-paid-ads-marketing",
+    slug: "advanced-paid-digital-marketing",
+    title: "የከፋይ ዲጂታል ማርኬቲንግ (Advanced Paid Marketing)",
+    titleEn: "Advanced Paid Digital Marketing",
+    tag: "ዲጂታል ማርኬቲንግ",
+    category: "Marketing",
+    description: "በ Meta (Facebook/Instagram) Ads፣ TikTok Ads እና Google Search Ads ከፍተኛ ሽያጭ የሚያመጡ ማስታወቂያዎችን መስራት፣ Target Audience መምረጥ እና ROAS ማሳደግ።",
+    level: "መካከለኛ - ከፍተኛ",
+    duration: "8+ ሰዓታት",
+    instructor: "Eyoub Sahle",
+    image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=800",
+    highlightBadge: "Meta, TikTok & Google Ads",
+    benefits: [
+      "ከፍተኛ ትርፍ የሚያስገኙ ማስታወቂያዎች (ROAS)",
+      "የፒክሰል እና የዳታ ትንተና (Pixel & Tracking)",
+      "Scalable Budget Management",
+      "የኢ-ኮሜርስ ሽያጭ ማባዣ ስልቶች"
+    ],
+    expectedDate: "በቅርቡ (Coming Soon)"
+  },
+  {
+    id: "cs-real-estate-brokerage",
+    slug: "real-estate-business-brokerage",
+    title: "የደላላነት እና ብሮከሬጅ ኮርስ (Real Estate & Brokerage)",
+    titleEn: "Real Estate & Business Brokerage",
+    tag: "ብሮከሬጅ እና ንግድ",
+    category: "Brokerage",
+    description: "በኢትዮጵያ ህጋዊ የደላላነት አሰራር፣ የቤትና የመኪና ግብይት ሚስጥሮች፣ ከገዢና ሻጭ ጋር መደራደር፣ የኮሚሽን አሰባሰብ እና የቢዝነስ አጋርነት መስራት።",
+    level: "ለሁሉም (All Levels)",
+    duration: "5+ ሰዓታት",
+    instructor: "Tsehay Property Experts",
+    image: "https://images.unsplash.com/photo-1560518883-ce09059eeffa?q=80&w=800",
+    highlightBadge: "High Commission Deals",
+    benefits: [
+      "ህጋዊ የውል እና የኮሚሽን አሰራር",
+      "ከፍተኛ ከፋይ ገዢዎችን የማግኛ ዘዴ",
+      "የቤት እና የመኪና ግብይት ስነ-ስርዓት",
+      "የስምምነት እና ድርድር ጥበብ"
+    ],
+    expectedDate: "በቅርቡ (Coming Soon)"
+  },
+  {
+    id: "cs-career-leadership",
+    slug: "career-development-leadership",
+    title: "የስራ እና ካሪየር እድገት (Career & Leadership)",
+    titleEn: "Career Development & Leadership",
+    tag: "የስራ እድገት",
+    category: "Career",
+    description: "አለምአቀፍ የርቀት (Remote) ስራዎችን በዶላር ማግኘት፣ የ LinkedIn እና Upwork ፕሮፋይል ማሳመር፣ የኢንተርቪው ዝግጅት እና የሊደርሺፕ ክህሎቶች።",
+    level: "ለሁሉም (All Levels)",
+    duration: "4+ ሰዓታት",
+    instructor: "Career Mentors",
+    image: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=800",
+    highlightBadge: "Remote Jobs & LinkedIn",
+    benefits: [
+      "ዓለም አቀፍ የርቀት ስራዎችን ማግኘት",
+      "አሸናፊ CV እና የሊንክድኢን ፕሮፋይል",
+      "የስራ ቃለ-መጠይቅ (Interview) ማለፊያ",
+      "የደመወዝ ድርድር እና የካሪየር እድገት"
+    ],
+    expectedDate: "በቅርቡ (Coming Soon)"
+  }
+];
+
+export function getComingSoonCourses(): ComingSoonCourse[] {
+  return COMING_SOON_COURSES;
+}
+

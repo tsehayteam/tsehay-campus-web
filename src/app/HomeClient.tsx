@@ -17,6 +17,7 @@ import SmartSearchInput from '@/components/SmartSearchInput';
 import YouTubeVideoSlider from '@/components/YouTubeVideoSlider';
 import InstructorYouTubePortfolio from '@/components/InstructorYouTubePortfolio';
 import UpcomingEventsSection from '@/components/UpcomingEventsSection';
+import ComingSoonCoursesSection from '@/components/ComingSoonCoursesSection';
 import AITutorSection from '@/components/AITutorSection';
 import CourseCardSkeleton from '@/components/CourseCardSkeleton';
 import CoursePreviewModal from '@/components/CoursePreviewModal';
@@ -931,9 +932,16 @@ export default function HomeClient() {
       <div className="scrolly-reveal">
         <UpcomingEventsSection />
       </div>
+
+      {/* =========================================================================
+          9. COMING SOON COURSES & WAITLIST
+         ========================================================================= */}
+      <div className="scrolly-reveal">
+        <ComingSoonCoursesSection />
+      </div>
       
       {/* =========================================================================
-          9. FAQ ACCORDION ("ብዙ ጊዜ የሚነሱ ጥያቄዎች")
+          10. FAQ ACCORDION ("ብዙ ጊዜ የሚነሱ ጥያቄዎች")
          ========================================================================= */}
       <section id="faq" className="py-20 bg-transparent border-b border-white/[0.08] transition-colors duration-300 scrolly-reveal relative overflow-hidden">
         <div className="absolute top-0 right-0 w-96 h-96 bg-[#f9b03c]/5 rounded-full blur-[140px] pointer-events-none"></div>
