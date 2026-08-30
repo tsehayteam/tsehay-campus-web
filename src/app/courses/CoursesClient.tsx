@@ -228,23 +228,28 @@ export default function CoursesClient({ initialCourses }: { initialCourses?: any
   };
 
   const COURSE_CATEGORY_TABS = [
-    { id: 'All', label: 'ሁሉም', icon: 'fa-layer-group' },
-    { id: 'Free', label: 'ነፃ ኮርሶች', icon: 'fa-sparkles', isFree: true },
-    { id: 'Paid', label: 'ፕሪሚየም', icon: 'fa-crown', isPaid: true },
-    { id: 'Ecommerce', label: 'ኢ-ኮሜርስ (Shein)', icon: 'fa-cart-shopping' },
-    { id: 'YouTube', label: 'ዩቲዩብ እና ቪዲዮ', icon: 'fa-youtube' },
-    { id: 'Marketing', label: 'ዲጂታል ማርኬቲንግ', icon: 'fa-bullhorn' },
+    { id: 'All', label: 'ሁሉም (All)', icon: 'fa-layer-group' },
+    { id: 'Ecommerce', label: 'E-Commerce (የሼን ኢምፖርት)', icon: 'fa-cart-shopping' },
+    { id: 'YouTube', label: 'YouTube & Content (የዩቲዩብ ስኬት)', icon: 'fa-youtube' },
+    { id: 'VideoEditing', label: 'Video Editing (የቪዲዮ ኤዲቲንግ)', icon: 'fa-film' },
+    { id: 'FreeMarketing', label: 'Free Digital Marketing (ነፃ ማርኬቲንግ)', icon: 'fa-gift', isFree: true },
+    { id: 'PaidMarketing', label: 'Paid Digital Marketing (የከፋይ ማርኬቲንግ)', icon: 'fa-bullhorn', isPaid: true },
+    { id: 'Brokerage', label: 'Real Estate & Brokerage (የደላላነትና ብሮከሬጅ)', icon: 'fa-building' },
+    { id: 'Career', label: 'Career Development (የስራ እና ካሪየር እድገት)', icon: 'fa-briefcase' },
   ];
 
   // Helper to match category flexibly
   const isCategoryMatch = (courseCat: string = '', tabId: string) => {
     if (!courseCat) return false;
     const catLower = courseCat.toLowerCase();
-    const tabLower = tabId.toLowerCase();
-    if (tabId === 'Ecommerce' && (catLower.includes('e-commerce') || catLower.includes('ecommerce') || catLower.includes('shein') || catLower.includes('ንግድ') || catLower.includes('ኢምፖርት'))) return true;
-    if (tabId === 'YouTube' && (catLower.includes('youtube') || catLower.includes('ዩቲዩብ') || catLower.includes('video') || catLower.includes('content'))) return true;
-    if (tabId === 'Marketing' && (catLower.includes('marketing') || catLower.includes('ማርኬቲንግ') || catLower.includes('sales') || catLower.includes('ሽያጭ') || catLower.includes('digital'))) return true;
-    return catLower.includes(tabLower) || tabLower.includes(catLower);
+    if (tabId === 'Ecommerce' && (catLower.includes('e-commerce') || catLower.includes('ecommerce') || catLower.includes('shein') || catLower.includes('ሼን') || catLower.includes('ኢምፖርት'))) return true;
+    if (tabId === 'YouTube' && (catLower.includes('youtube') || catLower.includes('ዩቲዩብ') || catLower.includes('content') || catLower.includes('ስኬት'))) return true;
+    if (tabId === 'VideoEditing' && (catLower.includes('video editing') || catLower.includes('ኤዲቲንግ') || catLower.includes('editing') || catLower.includes('capcut'))) return true;
+    if (tabId === 'FreeMarketing' && (catLower.includes('free') || catLower.includes('ነፃ') || catLower.includes('ዲጂታል ማርኬቲንግ ለጀማሪዎች'))) return true;
+    if (tabId === 'PaidMarketing' && (catLower.includes('paid') || catLower.includes('ከፋይ') || catLower.includes('advanced') || catLower.includes('ads'))) return true;
+    if (tabId === 'Brokerage' && (catLower.includes('brokerage') || catLower.includes('real estate') || catLower.includes('ደላላ') || catLower.includes('ብሮከሬጅ'))) return true;
+    if (tabId === 'Career' && (catLower.includes('career') || catLower.includes('ስራ') || catLower.includes('leadership') || catLower.includes('ካሪየር'))) return true;
+    return catLower.includes(tabId.toLowerCase());
   };
 
   const getFilteredCourses = () => {

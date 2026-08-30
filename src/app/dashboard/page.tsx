@@ -2144,14 +2144,8 @@ function StudentDashboardContent() {
                   {t('my_courses')}
                 </span>
               </div>
-              {currentView === 'courses' ? (
+              {currentView === 'courses' && (
                 <i className="hidden lg:block fa-solid fa-chevron-right text-xs text-white/80 animate-in fade-in slide-in-from-left-1 duration-200"></i>
-              ) : (
-                courses.length > 0 && (
-                  <span className="hidden lg:inline-flex text-[10px] font-black px-2 py-0.5 rounded-full bg-white/15 text-white">
-                    {courses.length}
-                  </span>
-                )
               )}
             </button>
 
@@ -2176,12 +2170,8 @@ function StudentDashboardContent() {
                   {t('messages')}
                 </span>
               </div>
-              {currentView === 'messages' ? (
+              {currentView === 'messages' && (
                 <i className="hidden lg:block fa-solid fa-chevron-right text-xs text-white/80 animate-in fade-in slide-in-from-left-1 duration-200"></i>
-              ) : (
-                <span className="hidden lg:inline-flex text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#3268ba]/20 text-[#5a93e8] border border-[#3268ba]/30">
-                  Live
-                </span>
               )}
             </button>
 
@@ -2198,9 +2188,6 @@ function StudentDashboardContent() {
                   ማህበረሰብ (Community)
                 </span>
               </div>
-              <span className="hidden lg:inline-flex text-[9px] font-black uppercase px-2 py-0.5 rounded-full bg-[#f9b03c]/20 text-[#f9b03c] border border-[#f9b03c]/30">
-                New
-              </span>
             </a>
 
             {/* 4. Tsehay AI Tutor - Elevated Spotlight Gold Brand Item */}
@@ -2230,13 +2217,6 @@ function StudentDashboardContent() {
                   </span>
                 </div>
               </div>
-              <span className={`hidden lg:inline-flex text-[9px] uppercase tracking-wider font-black px-2 py-0.5 rounded-full border transition-all ${
-                currentView === 'ai'
-                  ? 'bg-slate-950/80 text-[#f9b03c] border-slate-900/30'
-                  : 'bg-[#f9b03c]/20 text-[#f9b03c] border-[#f9b03c]/40 group-hover:bg-[#f9b03c] group-hover:text-slate-950'
-              }`}>
-                24/7 AI
-              </span>
             </button>
             
             {/* 5. Certificates (የብቃት ሰርተፊኬት) */}
@@ -2386,13 +2366,6 @@ function StudentDashboardContent() {
                 </nav>
             </div>
             <div className="flex items-center gap-3 sm:gap-4 shrink-0 relative">
-                <button 
-                  onClick={toggleTheme} 
-                  title="Toggle Dark / Light Theme"
-                  className="w-9 h-9 rounded-full bg-gradient-to-r from-amber-400/20 to-yellow-500/20 dark:bg-slate-700/80 hover:bg-primary/40 dark:hover:bg-slate-600 flex items-center justify-center transition-all duration-300 shadow-md border-2 border-primary/50 dark:border-slate-600 text-dark dark:text-yellow-400 shrink-0 group"
-                >
-                    <i className={`fa-solid ${isDarkTheme ? 'fa-sun text-yellow-400' : 'fa-moon text-secondary'} text-sm group-hover:scale-110 transition-transform`}></i>
-                </button>
                 <div 
                   className="hidden sm:flex items-center gap-2 bg-gradient-to-r from-amber-500/10 to-yellow-500/10 dark:from-amber-500/20 dark:to-yellow-500/20 border border-[#f9b03c]/40 px-3.5 py-1.5 rounded-full shadow-sm cursor-help hover:scale-105 transition" 
                   title="የተከማቹ ፖይንቶች ከመቶ (Earned Points out of 100)"
@@ -2431,17 +2404,17 @@ function StudentDashboardContent() {
                     </span>
                 </div>
 
-                {/* Notifications Bell & Dropdown */}
+                {/* Dynamic Notifications Bell with Active Badge */}
                 <div className="relative">
                   <button 
                     onClick={() => setShowNotifications(!showNotifications)} 
-                    className="relative text-gray-500 dark:text-gray-300 hover:text-[#f9b03c] dark:hover:text-[#f9b03c] transition text-xl shrink-0 p-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-800"
-                    title="ማሳወቂያዎች"
+                    className="relative text-gray-400 hover:text-[#f9b03c] transition text-xl shrink-0 p-2 rounded-2xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10"
+                    title="ማሳወቂያዎች (Notifications)"
                   >
-                      <i className="fa-regular fa-bell"></i>
-                      {notificationsList.filter(n => !n.read).length > 0 && (
-                        <span className="absolute top-0.5 right-0.5 w-2.5 h-2.5 bg-[#f9b03c] rounded-full ring-2 ring-white dark:ring-slate-900"></span>
-                      )}
+                      <i className="fa-regular fa-bell text-sm sm:text-base"></i>
+                      <span className="absolute -top-1 -right-1 bg-gradient-to-r from-red-600 to-rose-500 text-white font-black text-[9px] px-1.5 py-0.5 rounded-full ring-2 ring-[#050811] shadow-md animate-pulse">
+                        10+
+                      </span>
                   </button>
 
                   {showNotifications && (
@@ -2778,6 +2751,22 @@ function StudentDashboardContent() {
                                                 +{activeLesson?.points || 25}
                                             </span>
                                         )}
+                                    </button>
+
+                                    <button 
+                                        type="button"
+                                        onClick={() => setIsSyllabusCollapsed(prev => !prev)}
+                                        className={`px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl text-xs font-black transition-all duration-300 flex items-center gap-2 cursor-pointer border active:scale-95 shadow-md ${
+                                            isSyllabusCollapsed
+                                                ? 'bg-gradient-to-r from-[#f9b03c] via-amber-400 to-yellow-400 text-slate-950 border-[#f9b03c] shadow-[0_0_20px_rgba(249,176,60,0.5)] scale-105'
+                                                : 'bg-slate-800/90 hover:bg-slate-700 text-slate-200 hover:text-white border-slate-600/80 hover:border-[#f9b03c]/60'
+                                        }`}
+                                        title={isSyllabusCollapsed ? "የትኩረት ሁነታን ዝጋ (Exit Focus Mode)" : "የትኩረት ሁነታን ክፈት (Enter Focus Mode)"}
+                                    >
+                                        <i className={`fa-solid ${isSyllabusCollapsed ? 'fa-compress text-slate-950' : 'fa-expand text-[#f9b03c]'} text-xs`}></i>
+                                        <span className="font-extrabold tracking-tight">
+                                            {isSyllabusCollapsed ? (lang === 'am' ? 'የትኩረት ሁነታ ✓' : 'Focus Mode ✓') : (lang === 'am' ? 'የትኩረት ሁነታ (Focus)' : 'Focus Mode')}
+                                        </span>
                                     </button>
 
                                     <button 

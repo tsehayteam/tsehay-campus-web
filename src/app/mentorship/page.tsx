@@ -131,6 +131,46 @@ export default function MentorshipPage() {
     paymentMethod: string;
   } | null>(null);
 
+  // Mentorship Typewriter Headline Effect
+  const mentorshipHeadlinePhrases = [
+    { white: 'ከአሰልጣኝ ኢዮብ ሳህሌ ጋር', gold: 'የ 1-ለ-1 የግል ማማከር' },
+    { white: 'የዩቲዩብ እና የኢ-ኮሜርስ', gold: 'የስኬት ስትራቴጂዎን ይገንቡ' },
+    { white: 'የዲጂታል ማርኬቲንግ', gold: 'ፈጣን የገቢ ማሳደጊያ እቅድ' },
+  ];
+  const [mPhraseIdx, setMPhraseIdx] = useState(0);
+  const [mTypedCharCount, setMTypedCharCount] = useState(0);
+  const [mIsDeleting, setMIsDeleting] = useState(false);
+
+  useEffect(() => {
+    const currentPhrase = mentorshipHeadlinePhrases[mPhraseIdx];
+    const fullLength = currentPhrase.white.length + currentPhrase.gold.length;
+
+    let timer: any;
+    if (!mIsDeleting && mTypedCharCount < fullLength) {
+      timer = setTimeout(() => {
+        setMTypedCharCount(prev => prev + 1);
+      }, 70);
+    } else if (!mIsDeleting && mTypedCharCount >= fullLength) {
+      timer = setTimeout(() => {
+        setMIsDeleting(true);
+      }, 3500);
+    } else if (mIsDeleting && mTypedCharCount > 0) {
+      timer = setTimeout(() => {
+        setMTypedCharCount(prev => prev - 1);
+      }, 35);
+    } else if (mIsDeleting && mTypedCharCount === 0) {
+      setMIsDeleting(false);
+      setMPhraseIdx(prev => (prev + 1) % mentorshipHeadlinePhrases.length);
+    }
+
+    return () => clearTimeout(timer);
+  }, [mTypedCharCount, mIsDeleting, mPhraseIdx]);
+
+  const activeMPhrase = mentorshipHeadlinePhrases[mPhraseIdx];
+  const mWhiteLen = activeMPhrase.white.length;
+  const mTypedWhite = activeMPhrase.white.slice(0, Math.min(mTypedCharCount, mWhiteLen));
+  const mTypedGold = mTypedCharCount > mWhiteLen ? activeMPhrase.gold.slice(0, mTypedCharCount - mWhiteLen) : '';
+
   // Pre-fill user data and restore pending mentorship bookings seamlessly on login
   useEffect(() => {
     if (user) {
@@ -436,15 +476,17 @@ export default function MentorshipPage() {
           
           {/* Header Banner */}
           <div className="text-center max-w-3xl mx-auto mb-10 sm:mb-14">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-400/10 border border-amber-400/30 text-[#f9b03c] text-xs font-black mb-4 shadow-[0_0_20px_rgba(249,176,60,0.2)]">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#f9b03c]/10 border border-[#f9b03c]/30 text-[#f9b03c] text-xs font-black mb-4 shadow-[0_0_20px_rgba(249,176,60,0.2)]">
               <span className="w-2 h-2 rounded-full bg-[#f9b03c] animate-pulse"></span>
-              <span>1-ON-1 VIP MENTORSHIP & STRATEGY SESSION</span>
+              <span>✨ 1-ON-1 VIP MENTORSHIP & STRATEGY SESSION ✨</span>
             </div>
-            <h1 className="text-3xl sm:text-5xl font-black font-heading text-white tracking-tight leading-tight mb-4">
-              ከአሰልጣኝ ኢዮብ ሳህሌ ጋር <br />
-              <span className="bg-gradient-to-r from-[#f9b03c] via-amber-300 to-yellow-100 bg-clip-text text-transparent">
-                የ 1-ለ-1 የግል ማማከር (Mentorship)
+            <h1 className="text-3xl sm:text-5xl md:text-6xl font-black font-heading text-white tracking-tight leading-tight mb-4 min-h-[90px] sm:min-h-[120px]">
+              <span>{mTypedWhite}</span>{' '}
+              <br className="hidden sm:block" />
+              <span className="bg-gradient-to-r from-[#f9b03c] via-amber-300 to-yellow-200 bg-clip-text text-transparent drop-shadow-[0_0_25px_rgba(249,176,60,0.4)]">
+                {mTypedGold}
               </span>
+              <span className="inline-block w-1.5 h-6 sm:h-10 bg-[#f9b03c] animate-pulse ml-1.5 align-middle"></span>
             </h1>
             <p className="text-slate-300 text-sm sm:text-base leading-relaxed max-w-2xl mx-auto">
               በዩቲዩብ እድገት፣ በሼን ኢምፖርት እና በዲጂታል ማርኬቲንግ ዙሪያ ከኢዮብ ሳህሌ ጋር በግል (በኦንላይን ወይም በአካል) ተገናኝተው የቢዝነስዎን ችግሮች የሚፈቱበት እና ተግባራዊ የገቢ እቅድ የሚያወጡበት ልዩ እድል።
