@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { usePathname } from 'next/navigation';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -117,7 +118,8 @@ export default function PWAInstallBanner() {
     if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
   };
 
-  if (isInstalled) return null;
+  const pathname = usePathname();
+  if (isInstalled || pathname?.startsWith('/maintenance')) return null;
 
   return (
     <div 

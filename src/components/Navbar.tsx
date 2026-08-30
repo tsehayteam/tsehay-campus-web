@@ -260,8 +260,8 @@ export default function Navbar() {
     }
   };
 
-  // Hide on admin routes
-  if (pathname?.startsWith('/admin')) {
+  // Hide on admin routes and maintenance page
+  if (pathname?.startsWith('/admin') || pathname?.startsWith('/maintenance')) {
     return null;
   }
 

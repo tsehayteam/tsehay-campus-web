@@ -590,8 +590,8 @@ export default function FloatingAIButton() {
 
   const quickPrompts = getCoursePinnedPrompts(selectedCourse, aiLang);
 
-  // 🚫 Completely remove Tsehay AI floating launcher icon from the Admin Dashboard and Classroom/Dashboard player
-  if (pathname?.startsWith('/admin') || pathname?.startsWith('/dashboard') || pathname?.startsWith('/classroom')) {
+  // 🚫 Completely remove Tsehay AI floating launcher icon from the Admin Dashboard, Classroom/Dashboard player, and Maintenance page
+  if (pathname?.startsWith('/admin') || pathname?.startsWith('/dashboard') || pathname?.startsWith('/classroom') || pathname?.startsWith('/maintenance')) {
     return null;
   }
 
