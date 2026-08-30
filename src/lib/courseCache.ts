@@ -445,20 +445,34 @@ export function subscribeToCourses(callback: (courses: any[]) => void): () => vo
 
   let isCleanedUp = false;
   let lastDataHash = '';
+  const unifiedMap = new Map<string, any>();
 
   const emitIfChanged = (newCourses: any[]) => {
-    if (isCleanedUp || !Array.isArray(newCourses) || newCourses.length === 0) return;
-    const sanitized = newCourses.map((c: any) => ({
-      ...c,
-      desc: formatCourseDesc(c),
-      description: formatCourseDesc(c)
-    }));
+    if (isCleanedUp || !Array.isArray(newCourses)) return;
 
-    const currentHash = JSON.stringify(sanitized.map(c => `${c.id}_${c.price}_${c.title}_${c.updatedAt || ''}`));
+    newCourses.forEach((c: any) => {
+      if (c && c.id && c.status !== 'Deleted' && !c.isDeleted) {
+        const cleanDesc = formatCourseDesc(c);
+        const slug = getCourseSlug(c);
+        const existing = unifiedMap.get(c.id);
+        unifiedMap.set(c.id, {
+          ...existing,
+          ...c,
+          slug: slug || existing?.slug || '',
+          desc: cleanDesc,
+          description: cleanDesc
+        });
+      }
+    });
+
+    const list = Array.from(unifiedMap.values());
+    if (list.length === 0) return;
+
+    const currentHash = JSON.stringify(list.map(c => `${c.id}_${c.price}_${c.title}_${c.updatedAt || ''}`));
     if (currentHash !== lastDataHash) {
       lastDataHash = currentHash;
-      saveCachedCourses(sanitized);
-      callback(sanitized);
+      saveCachedCourses(list);
+      callback(list);
     }
   };
 
@@ -468,7 +482,7 @@ export function subscribeToCourses(callback: (courses: any[]) => void): () => vo
     emitIfChanged(initial);
   }
 
-  // 2. Immediate Server API Fail-Safe Fetch (<100ms)
+  // 2. Immediate Server API Fail-Safe Fetch (<100ms) with cache-busting
   fetch(`/api/courses?t=${Date.now()}`, {
     cache: 'no-store',
     headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' }

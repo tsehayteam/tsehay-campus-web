@@ -201,13 +201,16 @@ function MagneticLink({ children, className, href, ...props }: any) {
   );
 }
 
-export default function HomeClient() {
+export default function HomeClient({ initialCourses }: { initialCourses?: any[] }) {
   const { user } = useAuth();
   const router = useRouter();
   const { t, lang } = useLanguage();
   
   const [isMounted, setIsMounted] = useState(false);
   const [courses, setCourses] = useState<any[]>(() => {
+    if (initialCourses && Array.isArray(initialCourses) && initialCourses.length > 0) {
+      return initialCourses;
+    }
     try {
       return getCachedCourses();
     } catch {

@@ -19,10 +19,21 @@ import Tilt3DCard from '@/components/3d/Tilt3DCard';
 import { searchCourses } from '@/lib/smartSearch';
 import { getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl, getCourseSlug, mergeCoursesLists, subscribeToCourses } from '@/lib/courseCache';
 
-export default function CoursesClient() {
+export default function CoursesClient({ initialCourses }: { initialCourses?: any[] }) {
   const [isMounted, setIsMounted] = useState(false);
-  const [courses, setCourses] = useState<any[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [courses, setCourses] = useState<any[]>(() => {
+    if (initialCourses && Array.isArray(initialCourses) && initialCourses.length > 0) {
+      return initialCourses;
+    }
+    try {
+      const cached = getCachedCourses();
+      if (cached && cached.length > 0) return cached;
+    } catch {}
+    return [];
+  });
+  const [loading, setLoading] = useState<boolean>(() => {
+    return !(initialCourses && initialCourses.length > 0);
+  });
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [previewModalCourse, setPreviewModalCourse] = useState<any>(null);
   const [isEnrolling, setIsEnrolling] = useState(false);
@@ -35,13 +46,15 @@ export default function CoursesClient() {
 
   useEffect(() => {
     setIsMounted(true);
-    try {
-      const cached = getCachedCourses();
-      if (cached && cached.length > 0) {
-        setCourses(cached);
-        setLoading(false);
-      }
-    } catch (e) {}
+    if (!initialCourses || initialCourses.length === 0) {
+      try {
+        const cached = getCachedCourses();
+        if (cached && cached.length > 0) {
+          setCourses(cached);
+          setLoading(false);
+        }
+      } catch (e) {}
+    }
 
     if (typeof window !== 'undefined') {
       try {
