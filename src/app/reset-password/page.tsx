@@ -4,7 +4,12 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { auth } from '@/lib/firebase/config';
-import { signInWithCustomToken, signInWithEmailAndPassword } from 'firebase/auth';
+import { 
+  signInWithCustomToken, 
+  signInWithEmailAndPassword,
+  confirmPasswordReset,
+  verifyPasswordResetCode 
+} from 'firebase/auth';
 
 function ResetPasswordForm() {
   const searchParams = useSearchParams();
@@ -23,10 +28,26 @@ function ResetPasswordForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [isOobCode, setIsOobCode] = useState(false);
 
   useEffect(() => {
     if (urlEmail) setEmail(urlEmail);
-    if (urlCode) setCode(urlCode);
+    if (urlCode) {
+      setCode(urlCode);
+      // If code looks like a Firebase action code (long string)
+      if (urlCode.length > 10) {
+        setIsOobCode(true);
+        verifyPasswordResetCode(auth, urlCode)
+          .then((verifiedEmail) => {
+            if (verifiedEmail) {
+              setEmail(verifiedEmail);
+            }
+          })
+          .catch((err) => {
+            console.warn('Firebase action code verification notice:', err);
+          });
+      }
+    }
   }, [urlEmail, urlCode]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -49,7 +70,7 @@ function ResetPasswordForm() {
     }
 
     if (!cleanCode) {
-      setError('እባክዎ ባለ 6-አሃዝ የማረጋገጫ ኮድ ያስገቡ።');
+      setError('እባክዎ የማረጋገጫ ኮድ ወይም ሊንክ ያስገቡ።');
       return;
     }
 
@@ -66,46 +87,63 @@ function ResetPasswordForm() {
     setIsSubmitting(true);
 
     try {
-      const res = await fetch('/api/auth/reset-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: cleanEmail,
-          code: cleanCode,
-          newPassword: cleanPass,
-        }),
-      });
+      let resetSuccess = false;
 
-      const data = await res.json().catch(() => ({}));
+      // 1. Try Firebase Native Action Code Reset if code is an oobCode
+      if (cleanCode.length > 10) {
+        try {
+          await confirmPasswordReset(auth, cleanCode, cleanPass);
+          resetSuccess = true;
+        } catch (fbErr: any) {
+          console.warn('Native confirmPasswordReset attempt fallback to API:', fbErr);
+          const code = fbErr?.code || '';
+          if (code === 'auth/expired-action-code') {
+            throw new Error('የማረጋገጫ ሊንኩ ጊዜው አልፎበታል (Expired)። እባክዎ አዲስ የይለፍ ቃል መቀየሪያ ሊንክ ይጠይቁ።');
+          } else if (code === 'auth/invalid-action-code') {
+            // Might be a custom OTP or handled by backend, continue to API fallback
+          } else {
+            throw new Error(fbErr?.message || 'የይለፍ ቃል መቀየር አልተቻለም።');
+          }
+        }
+      }
 
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || 'የይለፍ ቃል መቀየር አልተቻለም። እባክዎ እንደገና ይሞክሩ።');
+      // 2. Fallback to API route (handles 6-digit OTP or Firebase Admin password sync)
+      if (!resetSuccess) {
+        const res = await fetch('/api/auth/reset-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: cleanEmail,
+            code: cleanCode,
+            newPassword: cleanPass,
+          }),
+        });
+
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || 'የይለፍ ቃል መቀየር አልተቻለም። እባክዎ እንደገና ይሞክሩ።');
+        }
+
+        // Auto sign in with customToken if provided
+        if (data.customToken) {
+          try {
+            const cred = await signInWithCustomToken(auth, data.customToken);
+            window.dispatchEvent(new CustomEvent('tsehay_auth_state_changed', { detail: cred.user }));
+            window.dispatchEvent(new CustomEvent('tsehay_user_logged_in', { detail: cred.user }));
+          } catch (tokenErr) {}
+        }
       }
 
       setIsSuccess(true);
 
-      // Seamless Auto Sign-In with new credentials
-      let signedIn = false;
-      if (data.customToken) {
-        try {
-          const cred = await signInWithCustomToken(auth, data.customToken);
-          signedIn = true;
-          window.dispatchEvent(new CustomEvent('tsehay_auth_state_changed', { detail: cred.user }));
-          window.dispatchEvent(new CustomEvent('tsehay_user_logged_in', { detail: cred.user }));
-        } catch (tokenErr) {
-          console.warn('Custom token login fallback to password sign in:', tokenErr);
-        }
-      }
-
-      if (!signedIn) {
-        try {
-          const cred = await signInWithEmailAndPassword(auth, cleanEmail, cleanPass);
-          signedIn = true;
-          window.dispatchEvent(new CustomEvent('tsehay_auth_state_changed', { detail: cred.user }));
-          window.dispatchEvent(new CustomEvent('tsehay_user_logged_in', { detail: cred.user }));
-        } catch (passErr) {
-          console.warn('Password login notice:', passErr);
-        }
+      // Attempt immediate password sign in if not already logged in
+      try {
+        const cred = await signInWithEmailAndPassword(auth, cleanEmail, cleanPass);
+        window.dispatchEvent(new CustomEvent('tsehay_auth_state_changed', { detail: cred.user }));
+        window.dispatchEvent(new CustomEvent('tsehay_user_logged_in', { detail: cred.user }));
+      } catch (passErr) {
+        console.warn('Password login notice:', passErr);
       }
 
       // Check for pending actions in sessionStorage to return seamlessly
@@ -134,7 +172,7 @@ function ResetPasswordForm() {
 
         // Default redirect
         router.push('/dashboard');
-      }, 1800);
+      }, 1600);
 
     } catch (err: any) {
       setError(err?.message || 'ስህተት ተፈጥሯል፤ እባክዎ እንደገና ይሞክሩ።');

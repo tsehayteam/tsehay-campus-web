@@ -6,6 +6,7 @@ import {
   signInWithEmailAndPassword, 
   signInWithCustomToken,
   createUserWithEmailAndPassword, 
+  sendPasswordResetEmail,
   sendEmailVerification, 
   signOut, 
   updateProfile, 
@@ -258,26 +259,37 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
 
   const getFriendlyErrorMessage = (err: any) => {
     const errorCode = err?.code || '';
-    if (errorCode === 'auth/wrong-password' || errorCode === 'auth/user-not-found' || errorCode === 'auth/invalid-credential') {
-      return 'የተሳሳተ የ Gmail አድራሻ ወይም የይለፍ ቃል አስገብተዋል። እባክዎ በድጋሚ ይሞክሩ።';
+    if (
+      errorCode === 'auth/wrong-password' || 
+      errorCode === 'auth/user-not-found' || 
+      errorCode === 'auth/invalid-credential' || 
+      errorCode === 'auth/invalid-login-credentials'
+    ) {
+      return 'የተሳሳተ የ Gmail አድራሻ ወይም የይለፍ ቃል አስገብተዋል። እባክዎ በትክክል ያረጋግጡ።';
     }
     if (errorCode === 'auth/email-already-in-use') {
       return 'ይህ የ Gmail አድራሻ አስቀድሞ ተመዝግቧል። እባክዎ የይለፍ ቃልዎን አስገብተው ይግቡ።';
     }
     if (errorCode === 'auth/weak-password') {
-      return 'የይለፍ ቃሉ በጣም አጭር ወይም ደካማ ነው። እባክዎ ቢያንስ 6 ፊደላት/ቁጥሮች ይጠቀሙ።';
+      return 'የይለፍ ቃሉ በጣም አጭር ወይም ደካማ ነው። እባክዎ ቢያንስ 6 ፊደላት ወይም ቁጥሮች ይጠቀሙ።';
     }
     if (errorCode === 'auth/invalid-email') {
-      return 'እባክዎ ትክክለኛ የ Gmail አድራሻ ያስገቡ።';
+      return 'እባክዎ ትክክለኛ የ Gmail (@gmail.com) አድራሻ ያስገቡ።';
     }
     if (errorCode === 'auth/network-request-failed') {
       return 'የኢንተርኔት ግንኙነት ችግር አጋጥሟል። እባክዎ የኢንተርኔትዎን ሁኔታ አረጋግጠው በድጋሚ ይሞክሩ።';
     }
     if (errorCode === 'auth/too-many-requests') {
-      return 'ብዙ ሙከራዎች ተደርገዋል። እባክዎ ጥቂት ደቂቃዎችን ቆይተው በድጋሚ ይሞክሩ።';
+      return 'ብዙ ያልተሳኩ ሙከራዎች ተደርገዋል። እባክዎ ጥቂት ደቂቃዎችን ቆይተው በድጋሚ ይሞክሩ።';
+    }
+    if (errorCode === 'auth/user-disabled') {
+      return 'ይህ አካውንት ታግዷል። እባክዎ የካምፓሱን ድጋፍ ሰጪ ያነጋግሩ (@TsehayTeam)።';
     }
     if (errorCode === 'auth/popup-closed-by-user') {
       return '';
+    }
+    if (errorCode === 'auth/popup-blocked') {
+      return 'የ Google መግቢያ መስኮት በብሮውዘርዎ ታግዷል። እባክዎ Pop-up ይፍቀዱ።';
     }
     return err?.message || 'የሆነ ችግር አጋጥሟል። እባክዎ በድጋሚ ይሞክሩ።';
   };
@@ -294,18 +306,38 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
       setError('እባክዎ መጀመሪያ የ Gmail አድራሻዎን ያስገቡ።');
       return;
     }
+    if (!cleanEmail.endsWith('@gmail.com')) {
+      setError('ይቅርታ! የፀሐይ ካምፓስ የሚቀበለው ትክክለኛ የ Gmail (@gmail.com) አድራሻዎችን ብቻ ነው።');
+      return;
+    }
+
     setLoading(true);
     try {
-      await fetch('/api/auth/send-reset-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: cleanEmail })
-      });
+      // 1. Firebase Native Password Reset Email Link
+      try {
+        await sendPasswordResetEmail(auth, cleanEmail);
+      } catch (fbResetErr: any) {
+        console.warn("Firebase sendPasswordResetEmail notice:", fbResetErr);
+      }
+
+      // 2. Custom 6-Digit OTP Email
+      try {
+        const localCode = generateOtpCode();
+        await saveOtpForEmail(cleanEmail, localCode).catch(() => {});
+        await fetch('/api/auth/send-reset-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: cleanEmail })
+        });
+      } catch (otpErr) {
+        console.warn("OTP send notice:", otpErr);
+      }
+
       setRegisteredEmail(cleanEmail);
       setResetStep('otp');
       setResetResendCountdown(60);
       setResetOtpDigits(['', '', '', '', '', '']);
-      setResendSuccessMessage(`የ 6-አሃዝ ማረጋገጫ ኮድ ወደ ${cleanEmail} ተልኳል!`);
+      setResendSuccessMessage(`የይለፍ ቃል መቀየሪያ ሊንክ እና የ 6-አሃዝ ማረጋገጫ ኮድ ወደ ${cleanEmail} ተልኳል!`);
     } catch (err: any) {
       console.error("Reset password error:", err);
       setError(getFriendlyErrorMessage(err));
@@ -667,26 +699,36 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
     setResendSuccessMessage("");
 
     try {
-      const localCode = generateOtpCode();
-      await saveOtpForEmail(cleanEmail, localCode).catch(() => {});
+      // 1. Firebase Native Password Reset Email Link
+      try {
+        await sendPasswordResetEmail(auth, cleanEmail);
+      } catch (fbResetErr: any) {
+        console.warn("Firebase sendPasswordResetEmail notice:", fbResetErr);
+      }
 
-      await fetch('/api/auth/send-reset-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: cleanEmail })
-      }).catch(() => {});
+      // 2. Custom 6-Digit OTP Email
+      try {
+        const localCode = generateOtpCode();
+        await saveOtpForEmail(cleanEmail, localCode).catch(() => {});
+
+        await fetch('/api/auth/send-reset-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: cleanEmail })
+        }).catch(() => {});
+      } catch (otpErr) {}
 
       setRegisteredEmail(cleanEmail);
       setResetStep('otp');
       setResetResendCountdown(60);
       setResetOtpDigits(['', '', '', '', '', '']);
-      setResendSuccessMessage(`የ 6-አሃዝ ማረጋገጫ ኮድ ወደ ${cleanEmail} ተልኳል!`);
+      setResendSuccessMessage(`የይለፍ ቃል መቀየሪያ ሊንክ እና የ 6-አሃዝ ማረጋገጫ ኮድ ወደ ${cleanEmail} ተልኳል!`);
     } catch (err: any) {
       setRegisteredEmail(cleanEmail);
       setResetStep('otp');
       setResetResendCountdown(60);
       setResetOtpDigits(['', '', '', '', '', '']);
-      setResendSuccessMessage(`የ 6-አሃዝ ማረጋገጫ ኮድ ወደ ${cleanEmail} ተልኳል!`);
+      setResendSuccessMessage(`የይለፍ ቃል መቀየሪያ ሊንክ እና የ 6-አሃዝ ማረጋገጫ ኮድ ወደ ${cleanEmail} ተልኳል!`);
     } finally {
       setLoading(false);
     }
