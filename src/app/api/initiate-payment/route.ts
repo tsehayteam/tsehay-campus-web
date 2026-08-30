@@ -100,133 +100,89 @@ export async function POST(request: Request) {
     const rawPhone = body.phone_number || body.phoneNumber || body.phone || '';
     const validEthPhone = formatEthPhone(rawPhone);
 
-    // 1. LAKIPAY INTEGRATION (Telebirr, CBE, Banks, Wallets & Cards)
+    // 1. LAKIPAY V2 API INTEGRATION (Telebirr, CBE, Siinqee, MPESA, EthSwitch, Cards)
     if (selectedMethod === 'lakipay' || selectedMethod === 'addispay') {
-      const lakipayDirectUrl = (
-        process.env.LAKIPAY_DIRECT_URL || 
-        process.env.LAKIPAY_CHECKOUT_URL || 
-        ''
-      ).trim();
+      const pubKey = (process.env.LAKIPAY_PUBLIC_KEY || "").trim().replace(/^["']|["']$/g, '');
+      const secKey = (process.env.LAKIPAY_SECRET_KEY || "").trim().replace(/^["']|["']$/g, '');
+      const rawApiKey = (process.env.LAKIPAY_API_KEY || "").trim().replace(/^["']|["']$/g, '');
+      const lakipayDirectUrl = (process.env.LAKIPAY_DIRECT_URL || process.env.LAKIPAY_CHECKOUT_URL || '').trim();
 
-      const merchantId = (
-        process.env.LAKIPAY_MERCHANT_ID || 
-        process.env.LAKIPAY_MERCHANT || 
-        process.env.ADDISPAY_MERCHANT_ID || 
-        process.env.ADDISPAY_APP_ID || ''
-      ).trim();
+      const formattedApiKey = (pubKey && secKey) 
+        ? `${pubKey}:${secKey}` 
+        : (rawApiKey || `${pubKey}:${secKey}`);
 
-      const operatorId = (
-        process.env.LAKIPAY_OPERATOR_ID || 
-        process.env.LAKIPAY_OPERATOR || ''
-      ).trim();
+      const isMentorship = String(courseId).startsWith('mentorship_') || String(courseId).startsWith('MNTR-') || String(title).includes('ማማከር') || String(title).includes('Mentorship');
+      const successUrl = isMentorship 
+        ? `${origin}/mentorship?success=true&bookingId=${courseId}&reference=${tx_ref}` 
+        : `${origin}/dashboard?success=true&courseId=${courseId}&reference=${tx_ref}`;
+      const failedUrl = isMentorship 
+        ? `${origin}/mentorship?failed=true` 
+        : `${origin}/dashboard?failed=true`;
 
-      const secretKey = (process.env.LAKIPAY_SECRET_KEY || '').trim().replace(/^["']|["']$/g, '');
-      const publicKey = (process.env.LAKIPAY_PUBLIC_KEY || '').trim().replace(/^["']|["']$/g, '');
-      const rawApiKey = (process.env.LAKIPAY_API_KEY || '').trim().replace(/^["']|["']$/g, '');
-
-      const formattedApiKey = (publicKey && secretKey) 
-        ? `${publicKey}:${secretKey}` 
-        : (rawApiKey || secretKey || publicKey);
+      const lakipayPayload = {
+        amount: Number(numAmount),
+        currency: "ETB",
+        reference: tx_ref,
+        title: String(title || "Tsehay Campus Course"),
+        description: "For Local Payments",
+        supported_mediums: ["TELEBIRR", "CBE", "MPESA", "ETHSWITCH", "CYBERSOURCE"],
+        callback_url: `${origin}/api/webhook`,
+        redirects: {
+          success: successUrl,
+          failed: failedUrl
+        }
+      };
 
       const endpoints = Array.from(new Set([
         process.env.LAKIPAY_ENDPOINT,
         'https://api.lakipay.co/api/v2/payment/checkout',
-        'https://api.lakipay.co/api/v1/payment/checkout',
         'https://api.lakipay.co/v2/payment/checkout'
       ].filter(Boolean))) as string[];
 
       let lastLakipayError: string | null = null;
 
-      if (formattedApiKey || publicKey || secretKey) {
-        for (const endpoint of endpoints) {
-          try {
-            const isMentorship = String(courseId).startsWith('mentorship_') || String(courseId).startsWith('MNTR-') || String(title).includes('ማማከር') || String(title).includes('Mentorship');
-            const targetReturnUrl = isMentorship 
-              ? `${origin}/mentorship?success=true&bookingId=${courseId}&reference=${tx_ref}` 
-              : `${origin}/dashboard?success=true&course=${courseId}&reference=${tx_ref}`;
-
-            const lakipayPayload: Record<string, any> = {
-              amount: numAmount,
-              currency: "ETB",
-              email: email,
-              first_name: firstName || email.split('@')[0] || "Student",
-              last_name: lastName || "Campus",
-              merchant_name: "Tsehay Campus",
-              merchant: "Tsehay Campus",
-              business_name: "Tsehay Campus",
-              vendor_name: "Tsehay Campus",
-              company_name: "Tsehay Campus",
-              app_name: "Tsehay Campus",
-              name: "Tsehay Campus",
-              title: payDetails.title,
-              description: payDetails.description,
-              reference: tx_ref,
-              payment_methods: "ALL",
-              supported_mediums: [
-                "TELEBIRR",
-                "CBE",
-                "SIINQEE",
-                "OROMIA_BANK",
-                "COOP",
-                "MPESA",
-                "OROMIA_BANK",
-                "ETHSWITCH",
-                "CYBERSOURCE",
-                "CARDS",
-                "WALLETS"
-              ],
-              callback_url: `${origin}/api/webhook`,
-              return_url: targetReturnUrl
-            };
-
-            if (validEthPhone) {
-              lakipayPayload.phone_number = validEthPhone;
-            }
-
-            const headers: Record<string, string> = {
+      for (const endpoint of endpoints) {
+        try {
+          const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
               'Content-Type': 'application/json',
               'X-API-Key': formattedApiKey
-            };
+            },
+            body: JSON.stringify(lakipayPayload)
+          });
 
-            const response = await fetch(endpoint, {
-              method: 'POST',
-              headers,
-              body: JSON.stringify(lakipayPayload)
-            });
+          const resData = await response.json().catch(() => null);
 
-            const data = await response.json().catch(() => null);
+          if (resData) {
+            const returnedRef = resData.reference || resData.data?.reference || resData.transaction_id || resData.data?.transaction_id || tx_ref;
+            const checkoutUrl = 
+              resData.data?.checkout_url || 
+              resData.data?.payment_url || 
+              resData.data?.url || 
+              resData.checkout_url || 
+              resData.payment_url || 
+              resData.checkoutUrl || 
+              resData.url ||
+              resData.redirect_url ||
+              resData.data?.redirect_url;
 
-            if (data) {
-              const returnedRef = data.reference || data.data?.reference || data.transaction_id || data.data?.transaction_id || tx_ref;
-              
-              // Extract valid full HTTP checkout URL returned by LakiPay API
-              const rawCheckoutUrl = 
-                data.checkout_url || 
-                data.checkoutUrl || 
-                data.payment_url || 
-                data.url || 
-                data.redirect_url || 
-                data.link || 
-                data.checkout_link ||
-                data.data?.checkout_url || 
-                data.data?.payment_url || 
-                data.data?.url || 
-                data.data?.link || 
-                data.data?.redirect_url ||
-                data.data?.checkout_link;
-
-              if (rawCheckoutUrl && typeof rawCheckoutUrl === 'string' && rawCheckoutUrl.startsWith('http')) {
-                return NextResponse.json({ checkoutUrl: rawCheckoutUrl, reference: returnedRef });
-              }
-
-              if (data.message || data.error || data.detail || data.data?.message) {
-                lastLakipayError = data.message || data.error || data.detail || data.data?.message;
-              }
+            if (checkoutUrl && typeof checkoutUrl === 'string' && checkoutUrl.startsWith('http')) {
+              return NextResponse.json({ 
+                success: true, 
+                checkout_url: checkoutUrl, 
+                checkoutUrl: checkoutUrl, 
+                reference: returnedRef 
+              });
             }
-          } catch (gatewayErr: any) {
-            console.error(`LakiPay Error on ${endpoint}:`, gatewayErr);
-            lastLakipayError = gatewayErr.message || 'LakiPay connection error';
+
+            if (resData.message || resData.error || resData.detail || resData.data?.message) {
+              lastLakipayError = resData.message || resData.error || resData.detail || resData.data?.message;
+            }
           }
+        } catch (gatewayErr: any) {
+          console.error(`LakiPay Error on ${endpoint}:`, gatewayErr);
+          lastLakipayError = gatewayErr.message || 'LakiPay connection error';
         }
       }
 
