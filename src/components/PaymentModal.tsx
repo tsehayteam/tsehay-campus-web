@@ -486,7 +486,7 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
                     />
                     <div className="min-w-0">
                       <span className="font-black text-white text-base sm:text-lg block leading-tight">LakiPay</span>
-                      <span className="text-[11px] sm:text-xs text-[#f9b03c] font-bold block mt-0.5">For Local Payments</span>
+                      <span className="text-[11px] sm:text-xs text-[#f9b03c] font-bold block mt-0.5">Telebirr • CBE • Sinqee • Oromia • M-Pesa • Cards</span>
                     </div>
                   </div>
                   <div className="bg-white w-24 sm:w-32 h-9 sm:h-10 px-2 rounded-xl flex items-center justify-center shadow-md border border-gray-200 shrink-0">
