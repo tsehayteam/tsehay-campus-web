@@ -105,32 +105,34 @@ function InboxContent() {
         }
       ];
 
-      try {
-        const usersRef = collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'users');
-        const q = query(usersRef, limit(20));
-        const snap = await getDocs(q);
-        const fetchedList: any[] = [];
-        snap.forEach((d) => {
-          if (currentUser && d.id === currentUser.uid) return;
-          const u = d.data();
-          fetchedList.push({
-            uid: d.id,
-            name: u.displayName || u.email?.split('@')[0] || 'ተማሪ',
-            photo: u.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.displayName || 'User')}&background=f9b03c&color=111827&bold=true`,
-            email: u.email || '',
-            isAdmin: isUserAdmin(u.email, u.role),
-            isPro: Boolean(u.enrolledCourses?.length > 0 || u.isPro),
+      const isCurrentAdmin = isUserAdmin(currentUser?.email);
+      if (isCurrentAdmin) {
+        try {
+          const usersRef = collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'users');
+          const q = query(usersRef, limit(20));
+          const snap = await getDocs(q);
+          const fetchedList: any[] = [];
+          snap.forEach((d) => {
+            if (currentUser && d.id === currentUser.uid) return;
+            const u = d.data();
+            fetchedList.push({
+              uid: d.id,
+              name: u.displayName || u.email?.split('@')[0] || 'ተማሪ',
+              photo: u.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.displayName || 'User')}&background=f9b03c&color=111827&bold=true`,
+              email: u.email || '',
+              isAdmin: isUserAdmin(u.email, u.role),
+              isPro: Boolean(u.enrolledCourses?.length > 0 || u.isPro),
+            });
           });
-        });
 
-        if (fetchedList.length > 0) {
-          setAvailableContacts([...defaultContacts, ...fetchedList]);
-        } else {
-          setAvailableContacts(defaultContacts);
-        }
-      } catch (e) {
-        setAvailableContacts(defaultContacts);
+          if (fetchedList.length > 0) {
+            setAvailableContacts([...defaultContacts, ...fetchedList]);
+            return;
+          }
+        } catch (e) {}
       }
+
+      setAvailableContacts(defaultContacts);
     };
 
     if (currentUser) {

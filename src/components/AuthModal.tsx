@@ -364,20 +364,33 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
         return;
       }
 
-      const docRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'profile', 'info');
-      const docSnap = await getDoc(docRef);
-      const existingData = docSnap.exists() ? docSnap.data() : null;
+      let existingData: any = null;
+      try {
+        const docRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'profile', 'info');
+        const docSnap = await getDoc(docRef).catch(() => null);
+        existingData = docSnap && docSnap.exists() ? docSnap.data() : null;
+      } catch (readErr) {}
 
       if (existingData && isProfileDataComplete(existingData)) {
-        await setDoc(docRef, {
-          lastLogin: serverTimestamp(),
-          photoURL: user.photoURL || existingData.photoURL || null,
-          email: user.email || existingData.email || "",
-        }, { merge: true });
+        try {
+          await setDoc(doc(db, "users", user.uid), { 
+            email: user.email, 
+            name: user.displayName || existingData.name || userEmail.split('@')[0], 
+            createdAt: Date.now() 
+          }, { merge: true }).catch(() => {});
+
+          const docRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'profile', 'info');
+          await setDoc(docRef, {
+            lastLogin: serverTimestamp(),
+            photoURL: user.photoURL || existingData.photoURL || null,
+            email: user.email || existingData.email || "",
+          }, { merge: true }).catch(() => {});
+        } catch (writeErr) {}
 
         setPendingGoogleAuth(null);
         setError("");
         handlePostAuthSuccess(user);
+        return;
       } else {
         setPendingGoogleAuth(user);
         setName(existingData?.name || user.displayName || "");
@@ -864,8 +877,21 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
           isAdmin: false,
         };
 
-        const docRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', pendingGoogleAuth.uid, 'profile', 'info');
-        await setDoc(docRef, userData, { merge: true });
+        try {
+          const userName = name.trim() || pendingGoogleAuth.displayName || "ተጠቃሚ";
+          await setDoc(doc(db, "users", pendingGoogleAuth.uid), { 
+            email: pendingGoogleAuth.email || cleanEmail, 
+            name: userName, 
+            phone: phone.trim(),
+            city: city.trim(),
+            createdAt: Date.now() 
+          }, { merge: true }).catch(() => {});
+
+          const docRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', pendingGoogleAuth.uid, 'profile', 'info');
+          await setDoc(docRef, userData, { merge: true }).catch(() => {});
+        } catch (dbErr) {
+          console.warn("Google profile save note:", dbErr);
+        }
 
         if (storedReferrerUid && storedReferrerUid !== pendingGoogleAuth.uid) {
           fetch('/api/referrals/record', {
