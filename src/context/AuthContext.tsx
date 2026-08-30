@@ -17,12 +17,33 @@ export const isEmailAdmin = (email?: string | null): boolean => {
   return ADMIN_EMAILS.includes(email.trim().toLowerCase());
 };
 
+export const clearUserSessionData = (previousUid?: string) => {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.removeItem('tsehay_auth_user_cache');
+    localStorage.removeItem('tsehay_auth_is_admin');
+    localStorage.removeItem('tsehay_user_courses_cache');
+    localStorage.removeItem('tsehay_user_active_course');
+    localStorage.removeItem('tsehay_user_active_modules');
+    localStorage.removeItem('tsehay_user_active_lesson');
+    localStorage.removeItem('tsehay_user_purchased_courses');
+    sessionStorage.removeItem('tsehay_pending_course_action');
+    sessionStorage.removeItem('tsehay_pending_action');
+
+    if (previousUid) {
+      localStorage.removeItem(`tsehay_user_courses_${previousUid}`);
+      localStorage.removeItem(`tsehay_user_active_course_${previousUid}`);
+    }
+  } catch (e) {}
+};
+
 interface AuthContextType {
   user: User | null;
   loading: boolean;
   authInitialized: boolean;
   isAdmin: boolean;
   verifyAdminStatus: () => Promise<boolean>;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({ 
@@ -30,7 +51,8 @@ const AuthContext = createContext<AuthContextType>({
   loading: true, 
   authInitialized: false, 
   isAdmin: false,
-  verifyAdminStatus: async () => false
+  verifyAdminStatus: async () => false,
+  logout: async () => {}
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -49,13 +71,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isAdmin, setIsAdmin] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
     try {
-      if (localStorage.getItem('adminAuth') === 'true' || localStorage.getItem('tsehay_auth_is_admin') === 'true') {
-        return true;
-      }
       const cachedUser = localStorage.getItem('tsehay_auth_user_cache');
       if (cachedUser) {
         const parsed = JSON.parse(cachedUser);
         if (isEmailAdmin(parsed?.email)) return true;
+        // Non-admin email is strictly NOT an admin
+        return false;
+      }
+      // If no user is logged in, check session-scoped admin token
+      if (sessionStorage.getItem('tsehay_admin_verified') === 'true' || sessionStorage.getItem('tsehay_admin_2fa_token')) {
+        return true;
       }
       return false;
     } catch (e) {
@@ -63,19 +88,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   });
 
-  // If user is cached locally, start immediately with loading: false for zero perceived delay
   const [loading, setLoading] = useState<boolean>(!cachedUserObj);
   const [authInitialized, setAuthInitialized] = useState<boolean>(!!cachedUserObj);
 
   const verifyAdminStatus = async (): Promise<boolean> => {
     const currentUser = auth.currentUser || user;
     if (!currentUser) {
-      if (typeof window !== 'undefined' && localStorage.getItem('adminAuth') === 'true') {
-        return true;
+      if (typeof window !== 'undefined') {
+        const isVerified = sessionStorage.getItem('tsehay_admin_verified') === 'true' || !!sessionStorage.getItem('tsehay_admin_2fa_token');
+        setIsAdmin(isVerified);
+        return isVerified;
       }
+      setIsAdmin(false);
       return false;
     }
 
+    // Direct email check
     if (isEmailAdmin(currentUser.email)) {
       setIsAdmin(true);
       return true;
@@ -97,7 +125,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     } catch (err) {}
 
-    return isAdmin;
+    setIsAdmin(false);
+    return false;
+  };
+
+  const logout = async () => {
+    try {
+      clearUserSessionData(user?.uid);
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('tsehay_admin_verified');
+        sessionStorage.removeItem('tsehay_admin_2fa_token');
+        sessionStorage.removeItem('tc_admin_session');
+        localStorage.removeItem('adminAuth');
+        localStorage.removeItem('adminEmail');
+      }
+      setIsAdmin(false);
+      setUser(null);
+      await signOut(auth);
+    } catch (err) {
+      console.warn("Logout error:", err);
+    }
   };
 
   useEffect(() => {
@@ -115,7 +162,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           localStorage.setItem('tsehay_auth_user_cache', JSON.stringify(serialized));
         } catch (e) {}
 
-        // Safely ensure user document exists without throwing or crashing
+        // Safely ensure user profile doc exists without throwing
         try {
           setDoc(doc(db, 'users', firebaseUser.uid), {
             uid: firebaseUser.uid,
@@ -132,10 +179,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             photoURL: firebaseUser.photoURL || null,
             lastLogin: serverTimestamp()
           }, { merge: true }).catch(() => {});
-        } catch (syncErr) {
-          // Silently ignore background profile sync notices
-        }
+        } catch (syncErr) {}
 
+        // Determine Admin Role strictly
         let userIsAdmin = isEmailAdmin(firebaseUser.email);
 
         if (!userIsAdmin) {
@@ -153,13 +199,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             if (userDoc.exists() && (userDoc.data().isAdmin === true || userDoc.data().role === 'admin')) {
               userIsAdmin = true;
             }
-          } catch (err) {
-            console.warn("Error fetching admin status:", err);
-          }
-        }
-
-        if (typeof window !== 'undefined' && localStorage.getItem('adminAuth') === 'true') {
-          userIsAdmin = true;
+          } catch (err) {}
         }
 
         setIsAdmin(userIsAdmin);
@@ -167,12 +207,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           localStorage.setItem('tsehay_auth_is_admin', userIsAdmin ? 'true' : 'false');
         } catch (e) {}
       } else {
-        const localAdmin = typeof window !== 'undefined' && localStorage.getItem('adminAuth') === 'true';
-        setIsAdmin(localAdmin);
+        // No user signed in
+        const sessionAdmin = typeof window !== 'undefined' && (
+          sessionStorage.getItem('tsehay_admin_verified') === 'true' ||
+          !!sessionStorage.getItem('tsehay_admin_2fa_token')
+        );
+        setIsAdmin(sessionAdmin);
         try {
           localStorage.removeItem('tsehay_auth_user_cache');
-          if (!localAdmin) {
+          if (!sessionAdmin) {
             localStorage.removeItem('tsehay_auth_is_admin');
+            localStorage.removeItem('adminAuth');
           }
         } catch (e) {}
       }
@@ -196,7 +241,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, authInitialized, isAdmin, verifyAdminStatus }}>
+    <AuthContext.Provider value={{ user, loading, authInitialized, isAdmin, verifyAdminStatus, logout }}>
       {children}
     </AuthContext.Provider>
   );

@@ -453,9 +453,14 @@ export default function MentorshipPage() {
     };
 
     try {
-      // 1. Client-side Firestore Save
+      // 1. Client-side Firestore Save (Root + Artifact Collections)
       try {
         await addDoc(collection(db, 'mentorship_bookings'), {
+          ...bookingPayload,
+          status: 'confirmed',
+          createdAtServer: serverTimestamp()
+        });
+        await addDoc(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'mentorship_bookings'), {
           ...bookingPayload,
           status: 'confirmed',
           createdAtServer: serverTimestamp()

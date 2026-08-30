@@ -752,6 +752,13 @@ function StudentDashboardContent() {
               if (courseSnap.exists()) {
                   return { id: courseSnap.id, ...courseSnap.data() };
               }
+              // Also check root collection
+              try {
+                const rootSnap = await getDoc(doc(db, 'courses', courseId));
+                if (rootSnap.exists()) {
+                  return { id: rootSnap.id, ...rootSnap.data() };
+                }
+              } catch(e) {}
               return null;
           });
 
@@ -766,12 +773,9 @@ function StudentDashboardContent() {
             if (directSnap.exists()) {
               userCourses = [{ id: directSnap.id, ...directSnap.data() }, ...userCourses];
             } else {
-              const cachedActive = localStorage.getItem('tsehay_user_active_course');
-              if (cachedActive) {
-                const parsed = JSON.parse(cachedActive);
-                if (parsed.id === urlCourseId) {
-                  userCourses = [parsed, ...userCourses];
-                }
+              const rootDirectSnap = await getDoc(doc(db, 'courses', urlCourseId));
+              if (rootDirectSnap.exists()) {
+                userCourses = [{ id: rootDirectSnap.id, ...rootDirectSnap.data() }, ...userCourses];
               }
             }
           } catch(e) {}
@@ -779,6 +783,7 @@ function StudentDashboardContent() {
 
         setCourses(userCourses);
         try {
+          localStorage.setItem(`tsehay_user_courses_${user.uid}`, JSON.stringify(userCourses));
           localStorage.setItem('tsehay_user_courses_cache', JSON.stringify(userCourses));
         } catch(e) {}
           
@@ -788,22 +793,35 @@ function StudentDashboardContent() {
             if (urlCourseId) {
               const matchedFromUrl = userCourses.find((c: any) => c.id === urlCourseId);
               if (matchedFromUrl) {
-                try { localStorage.setItem('tsehay_user_active_course', JSON.stringify(matchedFromUrl)); } catch(e) {}
+                try { 
+                  localStorage.setItem(`tsehay_user_active_course_${user.uid}`, JSON.stringify(matchedFromUrl));
+                  localStorage.setItem('tsehay_user_active_course', JSON.stringify(matchedFromUrl)); 
+                } catch(e) {}
                 return matchedFromUrl;
               }
             }
             // 2. Priority: previously selected active course
             if (prev && userCourses.some((c: any) => c.id === prev.id)) {
               const updated = userCourses.find((c: any) => c.id === prev.id) || prev;
-              try { localStorage.setItem('tsehay_user_active_course', JSON.stringify(updated)); } catch(e) {}
+              try { 
+                localStorage.setItem(`tsehay_user_active_course_${user.uid}`, JSON.stringify(updated));
+                localStorage.setItem('tsehay_user_active_course', JSON.stringify(updated)); 
+              } catch(e) {}
               return updated;
             }
             // 3. Fallback: first course
-            try { localStorage.setItem('tsehay_user_active_course', JSON.stringify(userCourses[0])); } catch(e) {}
+            try { 
+              localStorage.setItem(`tsehay_user_active_course_${user.uid}`, JSON.stringify(userCourses[0]));
+              localStorage.setItem('tsehay_user_active_course', JSON.stringify(userCourses[0])); 
+            } catch(e) {}
             return userCourses[0];
           });
         } else {
           setActiveCourse(null);
+          try {
+            localStorage.removeItem('tsehay_user_active_course');
+            localStorage.removeItem(`tsehay_user_active_course_${user.uid}`);
+          } catch(e) {}
         }
       } catch (error) {
         console.error("Error fetching courses", error);

@@ -328,12 +328,10 @@ export function isValidCourse(c: any): boolean {
   const title = (c.title || '').toString().trim();
   const desc = (c.desc || c.description || '').toString().trim();
 
-  // Filter out test/dummy entries that were created as temporary samples
+  // Filter out corrupted/broken test entries
   if (id === '5l,m4lmltml' || title.includes('5l,m4lmltml') || desc.includes('2354t4554t4t4')) return false;
-  if (title.toLowerCase() === 'shien business' && (c.price === 0 || c.price === 'Free' || c.price === '0') && c.id !== 'shein-import-business') return false;
-  if (id === 'web-development-bootcamp' || id === 'crypto-finance-mastery' || id === 'digital_marketing_pro') return false;
   
-  if (!title || title.length < 3) return false;
+  if (!title || title.length < 2) return false;
 
   return true;
 }

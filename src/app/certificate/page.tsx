@@ -8,19 +8,28 @@ import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase/config';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 
-const DEFAULT_COURSES = [
-  'የዩቲዩብ ስኬት ሚስጥሮች (YouTube Secrets Masterclass)',
-  'ዲጂታል ማርኬቲንግ ለጀማሪዎች (Digital Marketing Beginner)',
-  'ፕሮፌሽናል ዲጂታል ማርኬቲንግ ማስተር ክላስ (Pro Digital Marketing)',
-  'በ AI የታገዘ የቢዝነስ እና የኮንቴንት ማበልፀጊያ (AI for Business)',
-];
+import { subscribeToCourses, getCachedCourses } from '@/lib/courseCache';
 
 export default function CertificateGeneratorPage() {
   const { t } = useLanguage();
   const { user } = useAuth();
 
+  const [availableCourses, setAvailableCourses] = useState<string[]>(() => {
+    const cached = getCachedCourses();
+    if (cached.length > 0) {
+      return cached.map((c: any) => c.title || c.id);
+    }
+    return [
+      'የሼን እና ዓለም አቀፍ ኢምፖርት ቢዝነስ (Shein Import Business)',
+      'የዩቲዩብ ስኬት ሚስጥሮች (YouTube Secrets Masterclass)',
+      'ዲጂታል ማርኬቲንግ ለጀማሪዎች (Digital Marketing Masterclass)',
+      'ፕሮፌሽናል ዲጂታል ማርኬቲንግ ማስተር ክላስ (Pro Digital Marketing)',
+      'በ AI የታገዘ የቢዝነስ እና የኮንቴንት ማበልፀጊያ (AI for Business)',
+    ];
+  });
+
   const [studentName, setStudentName] = useState(user?.displayName || 'Abebe Kebede');
-  const [selectedCourse, setSelectedCourse] = useState(DEFAULT_COURSES[0]);
+  const [selectedCourse, setSelectedCourse] = useState(() => availableCourses[0] || 'የሼን እና ዓለም አቀፍ ኢምፖርት ቢዝነስ (Shein Import Business)');
   const [certLanguage, setCertLanguage] = useState<'en' | 'am'>('en');
   const [certId, setCertId] = useState('TC-2026-X8F9');
   const [issueDate, setIssueDate] = useState('');
@@ -37,7 +46,26 @@ export default function CertificateGeneratorPage() {
   const certRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const courseKey = selectedCourse.slice(0, 20).replace(/[^a-zA-Z0-9_-]/g, '_');
+  const courseKey = (selectedCourse || 'course').slice(0, 20).replace(/[^a-zA-Z0-9_-]/g, '_');
+
+  useEffect(() => {
+    const unsub = subscribeToCourses((coursesList) => {
+      if (Array.isArray(coursesList) && coursesList.length > 0) {
+        const titles = coursesList.map((c: any) => c.title || c.id).filter(Boolean);
+        if (titles.length > 0) {
+          setAvailableCourses(titles);
+          setSelectedCourse(prev => titles.includes(prev) ? prev : titles[0]);
+        }
+      }
+    });
+    return () => unsub();
+  }, []);
+
+  useEffect(() => {
+    if (user?.displayName && (!studentName || studentName === 'Abebe Kebede')) {
+      setStudentName(user.displayName);
+    }
+  }, [user]);
 
   useEffect(() => {
     // Generate unique ID and formatted date on mount
@@ -301,7 +329,7 @@ export default function CertificateGeneratorPage() {
                 onChange={(e) => setSelectedCourse(e.target.value)}
                 className="w-full bg-[#0d1222] border border-white/[0.1] rounded-xl px-4 py-3.5 text-white font-semibold text-sm focus:border-[#f9b03c] focus:ring-1 focus:ring-[#f9b03c] outline-none transition cursor-pointer"
               >
-                {DEFAULT_COURSES.map((c, i) => (
+                {availableCourses.map((c, i) => (
                   <option key={i} value={c} className="bg-[#0d1222] text-white">
                     {c}
                   </option>
