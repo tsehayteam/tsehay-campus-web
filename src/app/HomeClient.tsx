@@ -194,10 +194,10 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
 
   // Seamless Slow Headline Typewriter Effect
   const headlinePhrases = [
-    { white: 'ክህሎትዎን ያሳድጉ፤', gold: 'ቢዝነስዎን ይጀምሩ።' },
-    { white: 'የዩቲዩብ ቻናልዎን', gold: 'ገቢ ማግኛ ያድርጉ።' },
-    { white: 'የሼን እና ኢ-ኮሜርስ', gold: 'ንግድዎን ይገንቡ።' },
-    { white: 'በ AI የታገዘ', gold: 'ዲጂታል ገቢን ይፍጠሩ።' }
+    { white: 'ክህሎትዎን ያሳድጉ፤', gold: 'ቢዝነስዎን ዛሬውኑ ይጀምሩ።' },
+    { white: 'የዩቲዩብ ቻናልዎን', gold: 'ወደ ከፍተኛ ገቢ ይቀይሩ።' },
+    { white: 'የሼን እና ኢ-ኮሜርስ', gold: 'ንግድዎን በተግባር ይገንቡ።' },
+    { white: 'በ AI የታገዘ ዘመናዊ', gold: 'ዲጂታል ገቢን ይፍጠሩ።' }
   ];
   const [currentPhraseIdx, setCurrentPhraseIdx] = useState(0);
   const [typedCharCount, setTypedCharCount] = useState(0);
@@ -425,7 +425,7 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
               <div className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full bg-[#f9b03c]/10 border border-[#f9b03c]/40 backdrop-blur-xl mb-6 sm:mb-8 shadow-[0_0_25px_rgba(249,176,60,0.25)] transition-all duration-300">
                 <span className="w-2 h-2 rounded-full bg-[#f9b03c] shadow-[0_0_10px_#f9b03c] animate-pulse"></span>
                 <span className="text-xs sm:text-sm font-black font-heading tracking-wider text-[#f9b03c]">
-                  {lang === 'en' ? '✨ SHINING LIGHT ON YOUR SUCCESS • TSEHAY CAMPUS ✨' : '✨ ለስኬትዎ የምታበራ ፀሐይ • TSEHAY CAMPUS ✨'}
+                  {lang === 'en' ? '✨ SHINING LIGHT ON YOUR SUCCESS ✨' : '✨ ለስኬትዎ የምታበራ ፀሐይ ✨'}
                 </span>
               </div>
 
@@ -446,8 +446,8 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
                 በኢትዮጵያ የኦንላይን ክህሎት ስልጠና ቀዳሚ ፕላትፎርም። በተግባር እና በ AI የታገዘ ስልጠና ወስደው ቢዝነስዎን ዛሬውኑ ይጀምሩ።
               </p>
 
-              {/* Global Search Bar */}
-              <div className="w-full max-w-xl mb-8 sm:mb-10">
+              {/* Global Search Bar with Pulsing Glow Border */}
+              <div className="w-full max-w-xl mb-8 sm:mb-10 p-0.5 rounded-2xl search-border-pulse border border-[#f9b03c]/40 bg-black/40 backdrop-blur-xl">
                 <SmartSearchInput 
                   placeholder="ኮርሶችን፣ አስተማሪዎችን ወይም ርዕሶችን ይፈልጉ (ለምሳሌ: Shein, YouTube...)"
                   onSelectCourse={(course) => router.push(`/courses/${getCourseSlug(course) || course.id}`)}
@@ -569,7 +569,7 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 lg:gap-10">
             
-            {/* Card 1: 100% Practical Training */}
+            {/* Card 1: 100% Practical Training (Golden Yellow) */}
             <Tilt3DCard 
               maxTilt={12} 
               perspective={1000}
@@ -578,11 +578,12 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
             >
               <div 
                 data-scrolly-order="1"
-                className="h-full terafab-glass-card p-8 sm:p-10 flex flex-col justify-between group"
+                className="h-full rounded-3xl p-8 sm:p-10 flex flex-col justify-between group bg-[#0a0e17]/85 backdrop-blur-xl border border-[#f9b03c]/30 hover:border-[#f9b03c]/70 shadow-[0_15px_40px_rgba(0,0,0,0.7),0_0_20px_rgba(249,176,60,0.15)] hover:shadow-[0_20px_50px_rgba(249,176,60,0.3)] transition-all duration-300 relative overflow-hidden"
               >
-                <div>
+                <div className="absolute -top-12 -left-12 w-32 h-32 bg-[#f9b03c]/10 rounded-full blur-2xl pointer-events-none group-hover:scale-150 transition-transform duration-500"></div>
+                <div className="relative z-10">
                   <div 
-                    className="w-16 h-16 sm:w-20 sm:h-20 bg-[#f9b03c]/10 text-[#f9b03c] border border-[#f9b03c]/30 rounded-2xl flex items-center justify-center text-3xl sm:text-4xl mb-6 sm:mb-8 group-hover:scale-110 group-hover:bg-[#f9b03c] group-hover:text-slate-950 transition-all duration-300 shadow-inner"
+                    className="w-16 h-16 sm:w-20 sm:h-20 bg-[#f9b03c]/15 text-[#f9b03c] border border-[#f9b03c]/40 rounded-2xl flex items-center justify-center text-3xl sm:text-4xl mb-6 sm:mb-8 group-hover:scale-110 group-hover:bg-[#f9b03c] group-hover:text-slate-950 transition-all duration-300 shadow-[0_0_20px_rgba(249,176,60,0.2)]"
                     style={{ transform: 'translateZ(35px)' }}
                   >
                     <i className="fa-solid fa-laptop-code"></i>
@@ -594,14 +595,14 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
                     በባዶ ቲዎሪ ሳይሆን፣ ገበያ ላይ ወዲያውኑ ገቢ የሚያስገኙ በተግባር የተፈተኑ ስልጠናዎች።
                   </p>
                 </div>
-                <div className="mt-8 flex items-center gap-2 text-xs sm:text-sm font-bold text-[#f9b03c] group-hover:translate-x-1.5 transition-transform duration-300" style={{ transform: 'translateZ(20px)' }}>
+                <div className="mt-8 flex items-center gap-2 text-xs sm:text-sm font-bold text-[#f9b03c] group-hover:translate-x-1.5 transition-transform duration-300 relative z-10" style={{ transform: 'translateZ(20px)' }}>
                   <span>ተጨማሪ ዝርዝር</span>
                   <i className="fa-solid fa-arrow-right text-xs"></i>
                 </div>
               </div>
             </Tilt3DCard>
 
-            {/* Card 2: 24/7 Personal AI Tutor (Featured Center Glow Card) */}
+            {/* Card 2: 24/7 Personal AI Tutor (Featured Center Glow Card - Golden Yellow + Royal Blue) */}
             <Tilt3DCard 
               maxTilt={15}
               scale={1.03}
@@ -612,16 +613,16 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
             >
               <div 
                 data-scrolly-order="2"
-                className="h-full terafab-glass-card p-8 sm:p-10 border-2 border-[#f9b03c]/50 hover:border-[#f9b03c] hover:shadow-[0_30px_70px_rgba(249,176,60,0.35)] relative overflow-hidden flex flex-col justify-between group"
+                className="h-full rounded-3xl p-8 sm:p-10 border-2 border-[#f9b03c]/70 hover:border-[#f9b03c] bg-[#0c121f]/90 backdrop-blur-2xl shadow-[0_25px_60px_rgba(0,0,0,0.9),0_0_35px_rgba(249,176,60,0.35)] relative overflow-hidden flex flex-col justify-between group transition-all duration-300"
                 style={{ transformStyle: 'preserve-3d' }}
               >
-                <div className="absolute -right-10 -top-10 bg-gradient-to-br from-[#f9b03c]/20 via-[#3268ba]/10 to-transparent w-48 h-48 rounded-full -z-10 group-hover:scale-150 transition-transform duration-700 pointer-events-none"></div>
-                <div className="absolute top-4 sm:top-6 right-4 sm:right-6 bg-gradient-to-r from-[#f9b03c] to-amber-500 text-slate-950 text-xs font-black px-3.5 py-1 rounded-full shadow-md animate-pulse" style={{ transform: 'translateZ(40px)' }}>
+                <div className="absolute -right-10 -top-10 bg-gradient-to-br from-[#f9b03c]/25 via-[#3268ba]/20 to-transparent w-48 h-48 rounded-full -z-10 group-hover:scale-150 transition-transform duration-700 pointer-events-none blur-xl"></div>
+                <div className="absolute top-4 sm:top-6 right-4 sm:right-6 bg-gradient-to-r from-[#f9b03c] to-amber-400 text-slate-950 text-xs font-black px-3.5 py-1 rounded-full shadow-md animate-pulse" style={{ transform: 'translateZ(40px)' }}>
                   አዲስ
                 </div>
-                <div>
+                <div className="relative z-10">
                   <div 
-                    className="w-16 h-16 sm:w-20 sm:h-20 bg-[#f9b03c]/15 text-[#f9b03c] border border-[#f9b03c]/30 rounded-2xl flex items-center justify-center text-3xl sm:text-4xl mb-6 sm:mb-8 group-hover:scale-110 group-hover:bg-[#f9b03c] group-hover:text-slate-950 transition-all duration-300 shadow-inner relative z-10"
+                    className="w-16 h-16 sm:w-20 sm:h-20 bg-[#f9b03c]/20 text-[#f9b03c] border border-[#f9b03c]/50 rounded-2xl flex items-center justify-center text-3xl sm:text-4xl mb-6 sm:mb-8 group-hover:scale-110 group-hover:bg-[#f9b03c] group-hover:text-slate-950 transition-all duration-300 shadow-[0_0_25px_rgba(249,176,60,0.3)] relative z-10"
                     style={{ transform: 'translateZ(45px)' }}
                   >
                     <i className="fa-solid fa-robot"></i>
@@ -629,18 +630,18 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
                   <h3 className="font-black text-xl sm:text-2xl text-white mb-3 sm:mb-4 font-heading relative z-10" style={{ transform: 'translateZ(30px)' }}>
                     የ 24/7 የግል AI መምህር
                   </h3>
-                  <p className="text-[#a0aec0] font-body leading-relaxed text-sm sm:text-[15px] relative z-10" style={{ transform: 'translateZ(20px)' }}>
+                  <p className="text-slate-300 font-body leading-relaxed text-sm sm:text-[15px] relative z-10" style={{ transform: 'translateZ(20px)' }}>
                     በማንኛውም ሰዓት ከጎንዎ ሆኖ ጥያቄዎችዎን የሚመልስ እና የሚያማክር የ AI ረዳት (Tsehay AI)።
                   </p>
                 </div>
-                <div className="mt-8 flex items-center gap-2 text-xs sm:text-sm font-black text-[#f9b03c] group-hover:translate-x-1.5 transition-transform duration-300" style={{ transform: 'translateZ(25px)' }}>
+                <div className="mt-8 flex items-center gap-2 text-xs sm:text-sm font-black text-[#f9b03c] group-hover:translate-x-1.5 transition-transform duration-300 relative z-10" style={{ transform: 'translateZ(25px)' }}>
                   <span>Tsehay AI ን ይሞክሩ</span>
                   <i className="fa-solid fa-wand-magic-sparkles text-xs"></i>
                 </div>
               </div>
             </Tilt3DCard>
 
-            {/* Card 3: Accredited Certificate */}
+            {/* Card 3: Accredited Certificate (Royal Blue) */}
             <Tilt3DCard 
               maxTilt={12}
               perspective={1000}
@@ -649,11 +650,12 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
             >
               <div 
                 data-scrolly-order="3"
-                className="h-full terafab-glass-card p-8 sm:p-10 flex flex-col justify-between group"
+                className="h-full rounded-3xl p-8 sm:p-10 flex flex-col justify-between group bg-[#080d1a]/85 backdrop-blur-xl border border-[#3268ba]/40 hover:border-[#3268ba]/80 shadow-[0_15px_40px_rgba(0,0,0,0.7),0_0_25px_rgba(50,104,186,0.2)] hover:shadow-[0_20px_50px_rgba(50,104,186,0.4)] transition-all duration-300 relative overflow-hidden"
               >
-                <div>
+                <div className="absolute -top-12 -right-12 w-32 h-32 bg-[#3268ba]/15 rounded-full blur-2xl pointer-events-none group-hover:scale-150 transition-transform duration-500"></div>
+                <div className="relative z-10">
                   <div 
-                    className="w-16 h-16 sm:w-20 sm:h-20 bg-[#3268ba]/15 text-[#5a93e8] border border-[#3268ba]/30 rounded-2xl flex items-center justify-center text-3xl sm:text-4xl mb-6 sm:mb-8 group-hover:scale-110 group-hover:bg-[#3268ba] group-hover:text-white transition-all duration-300 shadow-inner"
+                    className="w-16 h-16 sm:w-20 sm:h-20 bg-[#3268ba]/20 text-[#3268ba] border border-[#3268ba]/40 rounded-2xl flex items-center justify-center text-3xl sm:text-4xl mb-6 sm:mb-8 group-hover:scale-110 group-hover:bg-[#3268ba] group-hover:text-white transition-all duration-300 shadow-[0_0_20px_rgba(50,104,186,0.3)]"
                     style={{ transform: 'translateZ(35px)' }}
                   >
                     <i className="fa-solid fa-award"></i>
@@ -665,7 +667,7 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
                     ትምህርትዎን እንዳጠናቀቁ፣ ክህሎትዎን የሚያረጋግጥ ዲጂታል ሰርተፍኬት።
                   </p>
                 </div>
-                <div className="mt-8 flex items-center gap-2 text-xs sm:text-sm font-bold text-[#5a93e8] group-hover:translate-x-1.5 transition-transform duration-300" style={{ transform: 'translateZ(20px)' }}>
+                <div className="mt-8 flex items-center gap-2 text-xs sm:text-sm font-bold text-[#3268ba] group-hover:text-[#5a93e8] group-hover:translate-x-1.5 transition-transform duration-300 relative z-10" style={{ transform: 'translateZ(20px)' }}>
                   <span>ሰርተፍኬት ያረጋግጡ</span>
                   <i className="fa-solid fa-arrow-right text-xs"></i>
                 </div>

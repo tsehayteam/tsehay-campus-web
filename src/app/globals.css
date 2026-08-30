@@ -234,6 +234,68 @@ body {
 }
 
 /* Glassmorphism & Ultra-Premium Silicon Valley Terafab Navbar */
+.terafab-nav-link {
+  position: relative;
+  transition: all 0.3s ease;
+}
+.terafab-nav-link-active {
+  position: relative;
+  color: #f9b03c !important;
+  font-weight: 800;
+}
+.terafab-nav-link-active::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 100%;
+  height: 2.5px;
+  background: linear-gradient(90deg, #f9b03c, #ffc66b, #f9b03c);
+  border-radius: 9999px;
+  box-shadow: 0 0 12px #f9b03c, 0 0 4px #ffc66b;
+  animation: glowLine 2s infinite ease-in-out;
+}
+@keyframes glowLine {
+  0%, 100% { opacity: 0.8; transform: scaleX(0.95); }
+  50% { opacity: 1; transform: scaleX(1); }
+}
+
+/* Pulsing Golden Yellow Search Border Glow */
+@keyframes borderPulse {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(249, 176, 60, 0.25), inset 0 0 10px rgba(249, 176, 60, 0.1);
+    border-color: rgba(249, 176, 60, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 35px rgba(249, 176, 60, 0.6), inset 0 0 18px rgba(249, 176, 60, 0.25);
+    border-color: rgba(249, 176, 60, 0.85);
+  }
+}
+.search-border-pulse {
+  animation: borderPulse 2s infinite ease-in-out;
+}
+
+.mobile-nav-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  transition: all 0.25s ease;
+}
+.mobile-nav-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(249, 176, 60, 0.35);
+  transform: translateY(-1px);
+}
+.mobile-nav-card-active {
+  background: linear-gradient(135deg, rgba(249, 176, 60, 0.15), rgba(50, 104, 186, 0.15)) !important;
+  border: 1.5px solid #f9b03c !important;
+  box-shadow: 0 0 20px rgba(249, 176, 60, 0.3) !important;
+}
+.mobile-nav-card-active span:first-child {
+  color: #f9b03c !important;
+}
+
 .glass-nav {
   background: rgba(255, 255, 255, 0.82);
   backdrop-filter: blur(20px);

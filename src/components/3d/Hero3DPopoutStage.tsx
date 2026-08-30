@@ -15,6 +15,7 @@ export default function Hero3DPopoutStage({
   const glareRef = useRef<HTMLDivElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [studentCount, setStudentCount] = useState(530);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const isInteractingRef = useRef(false);
   const rafIdRef = useRef<number | null>(null);
 
@@ -151,6 +152,24 @@ export default function Hero3DPopoutStage({
 
           {/* Video bottom subtle gradient */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-black/20 pointer-events-none" />
+
+          {/* Central Inviting Golden Yellow Play Button with Magnetic Ripple */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-auto z-20">
+            <button
+              type="button"
+              onClick={() => setIsModalOpen(true)}
+              className="relative group cursor-pointer active:scale-90 transition-transform duration-300"
+              title="የመግቢያ ቪዲዮውን ይመልከቱ (Watch Intro Video)"
+            >
+              {/* Ripple Rings */}
+              <span className="absolute -inset-4 rounded-full bg-[#f9b03c]/40 animate-ping pointer-events-none" />
+              <span className="absolute -inset-2 rounded-full bg-[#f9b03c]/60 blur-sm pointer-events-none" />
+
+              <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 flex items-center justify-center text-2xl sm:text-3xl font-black shadow-[0_0_40px_rgba(249,176,60,0.8),0_10px_30px_rgba(0,0,0,0.8)] border-2 border-white/60 group-hover:scale-110 transition-all duration-300">
+                <i className="fa-solid fa-play ml-1 group-hover:scale-110 transition-transform"></i>
+              </div>
+            </button>
+          </div>
         </div>
 
         {/* ------------------------------------------------------------------ */}
@@ -201,6 +220,49 @@ export default function Hero3DPopoutStage({
           </div>
         </div>
       </div>
+
+      {/* 🌟 FULL-SCREEN VIDEO LIGHTBOX / MODAL */}
+      {isModalOpen && (
+        <div 
+          className="fixed inset-0 z-[99999] bg-black/95 backdrop-blur-2xl flex items-center justify-center p-4 sm:p-6 md:p-10 animate-in fade-in duration-300"
+          onClick={() => setIsModalOpen(false)}
+        >
+          {/* Modal Container */}
+          <div 
+            className="relative w-full max-w-5xl rounded-3xl bg-[#0a0f18] border border-[#f9b03c]/50 shadow-[0_0_80px_rgba(249,176,60,0.3)] overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-white/10 bg-black/50">
+              <div className="flex items-center gap-2.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#f9b03c] animate-pulse"></span>
+                <h3 className="text-sm sm:text-base font-black text-white font-heading">
+                  የፀሐይ ካምፓስ መግቢያ ቪዲዮ (Tsehay Campus Introduction)
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white flex items-center justify-center transition cursor-pointer text-sm"
+                title="ዝጋ (Close)"
+              >
+                <i className="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+
+            {/* Video Player */}
+            <div className="relative aspect-video w-full bg-black">
+              <video
+                src={videoSrc}
+                autoPlay
+                controls
+                playsInline
+                className="w-full h-full object-contain"
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
