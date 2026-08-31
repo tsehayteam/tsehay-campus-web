@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
-  const isMaintenanceMode = true; // Toggle to false when done
+  const isMaintenanceMode = false; // Toggle to false when done
   if (
     isMaintenanceMode && 
     !request.nextUrl.pathname.startsWith('/maintenance') &&
