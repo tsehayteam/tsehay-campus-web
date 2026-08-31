@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase/admin';
-import { generateCourseSlug } from '@/lib/courseCache';
+import { generateCourseSlug, DEFAULT_COURSES, isValidCourse, mergeCoursesLists } from '@/lib/courseCache';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
 
     if (!adminDb) {
       return NextResponse.json(
-        { success: true, count: 0, courses: [], message: 'Database connection initializing' },
+        { success: true, count: DEFAULT_COURSES.length, courses: DEFAULT_COURSES },
         { headers: NO_CACHE_HEADERS }
       );
     }
@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
           .collection('courses')
           .doc(cleanId)
           .get();
-        if (snap.exists) {
+        if (snap.exists && isValidCourse(snap.data())) {
           return NextResponse.json(
             { success: true, course: { id: snap.id, ...snap.data() } },
             { headers: NO_CACHE_HEADERS }
@@ -49,67 +49,14 @@ export async function GET(req: NextRequest) {
         }
       } catch (e) {}
 
-      // Check root courses collection
-      try {
-        const rootSnap = await adminDb.collection('courses').doc(cleanId).get();
-        if (rootSnap.exists) {
-          return NextResponse.json(
-            { success: true, course: { id: rootSnap.id, ...rootSnap.data() } },
-            { headers: NO_CACHE_HEADERS }
-          );
-        }
-      } catch (e) {}
-
-      // Check artifacts/tsehaycampus-e1a6d/courses collection
-      try {
-        const altSnap = await adminDb
-          .collection('artifacts')
-          .doc('tsehaycampus-e1a6d')
-          .collection('courses')
-          .doc(cleanId)
-          .get();
-        if (altSnap.exists) {
-          return NextResponse.json(
-            { success: true, course: { id: altSnap.id, ...altSnap.data() } },
-            { headers: NO_CACHE_HEADERS }
-          );
-        }
-      } catch (e) {}
-
-      // Check slug queries across collections
-      try {
-        const slugSnap1 = await adminDb
-          .collection('artifacts')
-          .doc('tsehaycampus-e1a6d')
-          .collection('public')
-          .doc('data')
-          .collection('courses')
-          .where('slug', '==', cleanLower)
-          .limit(1)
-          .get();
-        if (!slugSnap1.empty) {
-          const doc = slugSnap1.docs[0];
-          return NextResponse.json(
-            { success: true, course: { id: doc.id, ...doc.data() } },
-            { headers: NO_CACHE_HEADERS }
-          );
-        }
-      } catch (e) {}
-
-      try {
-        const slugSnap2 = await adminDb
-          .collection('courses')
-          .where('slug', '==', cleanLower)
-          .limit(1)
-          .get();
-        if (!slugSnap2.empty) {
-          const doc = slugSnap2.docs[0];
-          return NextResponse.json(
-            { success: true, course: { id: doc.id, ...doc.data() } },
-            { headers: NO_CACHE_HEADERS }
-          );
-        }
-      } catch (e) {}
+      // Check default courses fallback for single course
+      const defaultMatch = DEFAULT_COURSES.find(c => c.id === cleanId || c.slug === cleanLower || c.id.toLowerCase() === cleanLower);
+      if (defaultMatch) {
+        return NextResponse.json(
+          { success: true, course: defaultMatch },
+          { headers: NO_CACHE_HEADERS }
+        );
+      }
 
       return NextResponse.json(
         { success: false, error: 'Course not found' },
@@ -134,10 +81,7 @@ export async function GET(req: NextRequest) {
       snapA.docs.forEach(d => {
         if (d.exists) {
           const data = d.data();
-          const title = (data?.title || '').trim();
-          const desc = (data?.desc || data?.description || '').trim();
-          // Filter out deleted or dummy test artifacts
-          if (data && data.status !== 'Deleted' && !data.isDeleted && !title.includes('5l,m4lmltml') && !desc.includes('2354t4554t4t4')) {
+          if (isValidCourse({ id: d.id, ...data })) {
             courseMap.set(d.id, { id: d.id, ...data });
           }
         }
@@ -146,45 +90,29 @@ export async function GET(req: NextRequest) {
       console.warn("Primary collection A fetch notice:", e);
     }
 
-    // Only fallback to root courses if Primary Collection A is completely empty
-    if (courseMap.size === 0) {
-      try {
-        const snapB = await adminDb.collection('courses').get();
-        snapB.docs.forEach(d => {
-          if (d.exists) {
-            const data = d.data();
-            const title = (data?.title || '').trim();
-            const desc = (data?.desc || data?.description || '').trim();
-            if (data && data.status !== 'Deleted' && !data.isDeleted && !title.includes('5l,m4lmltml') && !desc.includes('2354t4554t4t4') && d.id !== '5l,m4lmltml') {
-              courseMap.set(d.id, { id: d.id, ...data });
-            }
-          }
-        });
-      } catch (e) {
-        console.warn("Fallback collection B fetch notice:", e);
-      }
-    }
-
-    // Proactively clean up any obsolete test documents from root courses
+    // Proactively clean up any obsolete test documents from collections
     try {
-      const junkDocs = ['5l,m4lmltml', 'Shien Business', 'shien-business-test'];
+      const junkDocs = ['5l,m4lmltml', 'Shien Business', 'shien-business-test', 'shien-business'];
       junkDocs.forEach(jId => {
         adminDb.collection('courses').doc(jId).delete().catch(() => {});
         adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('courses').doc(jId).delete().catch(() => {});
       });
     } catch (e) {}
 
-    const courses = Array.from(courseMap.values());
+    let coursesList = Array.from(courseMap.values());
+    if (coursesList.length < 3) {
+      coursesList = mergeCoursesLists(DEFAULT_COURSES, coursesList);
+    }
 
     return NextResponse.json(
-      { success: true, count: courses.length, courses },
+      { success: true, count: coursesList.length, courses: coursesList },
       { headers: NO_CACHE_HEADERS }
     );
   } catch (error: any) {
     console.error('Error fetching public courses in API route:', error);
     return NextResponse.json(
-      { success: false, count: 0, courses: [], error: error.message },
-      { status: 500, headers: NO_CACHE_HEADERS }
+      { success: true, count: DEFAULT_COURSES.length, courses: DEFAULT_COURSES },
+      { headers: NO_CACHE_HEADERS }
     );
   }
 }
