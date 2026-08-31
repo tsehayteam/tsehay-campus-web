@@ -28,6 +28,7 @@ import {
   saveCachedCourses, 
   formatCourseDesc, 
   formatDriveImageUrl, 
+  getCleanCourseImage,
   getCourseSlug, 
   subscribeToCourses,
   DEFAULT_COURSES,
@@ -809,13 +810,13 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
                           style={{ transform: 'translateZ(30px)' }}
                         >
                           <img 
-                            src={formatDriveImageUrl(course.image) || `https://placehold.co/600x400/3268BA/FFFFFF?text=${encodeURIComponent(course.title || 'Tsehay Campus')}&font=Montserrat`} 
+                            src={getCleanCourseImage(course) || `https://placehold.co/600x400/3268BA/FFFFFF?text=${encodeURIComponent(course.title || 'Tsehay Campus')}&font=Montserrat`} 
                             alt="" 
                             aria-hidden="true" 
                             className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-40 scale-125 pointer-events-none select-none" 
                           />
                           <img 
-                            src={formatDriveImageUrl(course.image) || `https://placehold.co/600x400/3268BA/FFFFFF?text=${encodeURIComponent(course.title || 'Tsehay Campus')}&font=Montserrat`} 
+                            src={getCleanCourseImage(course) || `https://placehold.co/600x400/3268BA/FFFFFF?text=${encodeURIComponent(course.title || 'Tsehay Campus')}&font=Montserrat`} 
                             alt={course.title} 
                             className="relative z-10 w-full h-full object-contain p-2 group-hover:scale-[1.04] transition-transform duration-500" 
                           />

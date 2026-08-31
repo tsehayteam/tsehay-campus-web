@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { searchCourses } from '@/lib/smartSearch';
-import { getCourseSlug, getCachedCourses } from '@/lib/courseCache';
+import { getCourseSlug, getCachedCourses, getCleanCourseImage } from '@/lib/courseCache';
 
 interface SmartSearchInputProps {
   courses?: any[];
@@ -302,7 +302,7 @@ export default function SmartSearchInput({
                   >
                     <div className="flex items-center gap-3 min-w-0 pr-2">
                       <img 
-                        src={course.thumbnail || course.image || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=200'} 
+                        src={getCleanCourseImage(course) || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=200'} 
                         alt={course.title} 
                         className="w-11 h-11 rounded-xl object-cover border border-white/15 shrink-0 group-hover:scale-105 transition-transform" 
                       />

@@ -11,7 +11,7 @@ import Link from 'next/link';
 import PaymentModal from '@/components/PaymentModal';
 import RequireAuthModal from '@/components/RequireAuthModal';
 import Footer from '@/components/Footer';
-import { getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl, getCourseSlug, getCourseBySlugOrId, mergeCoursesLists, subscribeToCourses } from '@/lib/courseCache';
+import { getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl, getCleanCourseImage, getCourseSlug, getCourseBySlugOrId, mergeCoursesLists, subscribeToCourses } from '@/lib/courseCache';
 
 function CoursePreviewContent() {
   const routeParams = useParams();
@@ -614,7 +614,7 @@ function CoursePreviewContent() {
                     className="relative w-full h-full flex items-center justify-center cursor-pointer"
                   >
                     <img 
-                      src={formatDriveImageUrl(course.image) || 'https://placehold.co/600x400/3268BA/FFFFFF?text=Tsehay+Campus'} 
+                      src={getCleanCourseImage(course) || 'https://placehold.co/600x400/3268BA/FFFFFF?text=Tsehay+Campus'} 
                       alt={course.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />

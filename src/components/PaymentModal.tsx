@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase/config';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { validateReferralCode, recordReferralUsage } from '@/lib/referralService';
+import { getCleanCourseImage } from '@/lib/courseCache';
 
 export default function PaymentModal({ course: propCourse, onClose: propOnClose }: any) {
   const [internalCourse, setInternalCourse] = useState<any>(null);
@@ -384,7 +385,7 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
             {/* Selected Course Card */}
             <div className="flex items-center gap-3.5 bg-[#121a2d] p-3.5 sm:p-4 rounded-2xl border border-gray-800/90 shadow-inner">
               <img 
-                src={course.image || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1000&auto=format&fit=crop'} 
+                src={getCleanCourseImage(course) || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1000&auto=format&fit=crop'} 
                 className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl object-cover shadow-sm border border-gray-700/80 shrink-0" 
                 alt={course.title} 
               />

@@ -17,7 +17,7 @@ import CoursePreviewModal from '@/components/CoursePreviewModal';
 import WaitlistModal from '@/components/WaitlistModal';
 import Tilt3DCard from '@/components/3d/Tilt3DCard';
 import { searchCourses } from '@/lib/smartSearch';
-import { getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl, getCourseSlug, mergeCoursesLists, subscribeToCourses, getComingSoonCourses, ComingSoonCourse, DEFAULT_COURSES } from '@/lib/courseCache';
+import { getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl, getCleanCourseImage, getCourseSlug, mergeCoursesLists, subscribeToCourses, getComingSoonCourses, ComingSoonCourse, DEFAULT_COURSES } from '@/lib/courseCache';
 
 export default function CoursesClient({ initialCourses }: { initialCourses?: any[] }) {
   const [isMounted, setIsMounted] = useState(false);
@@ -498,13 +498,13 @@ export default function CoursesClient({ initialCourses }: { initialCourses?: any
                             style={{ transform: 'translateZ(30px)' }}
                           >
                             <img 
-                              src={formatDriveImageUrl(course.image) || `https://placehold.co/600x400/3268BA/FFFFFF?text=${encodeURIComponent(course.title || 'Tsehay Campus')}&font=Montserrat`} 
+                              src={getCleanCourseImage(course) || `https://placehold.co/600x400/3268BA/FFFFFF?text=${encodeURIComponent(course.title || 'Tsehay Campus')}&font=Montserrat`} 
                               alt="" 
                               aria-hidden="true" 
                               className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-40 scale-125 pointer-events-none select-none" 
                             />
                             <img 
-                              src={formatDriveImageUrl(course.image) || `https://placehold.co/600x400/3268BA/FFFFFF?text=${encodeURIComponent(course.title || 'Tsehay Campus')}&font=Montserrat`} 
+                              src={getCleanCourseImage(course) || `https://placehold.co/600x400/3268BA/FFFFFF?text=${encodeURIComponent(course.title || 'Tsehay Campus')}&font=Montserrat`} 
                               alt={course.title} 
                               className="relative z-10 w-full h-full object-contain p-2 transition-transform duration-500 ease-out group-hover:scale-105" 
                             />

@@ -14,7 +14,7 @@ const ReactPlayer: any = nextDynamic(() => import('react-player'), { ssr: false 
 import CourseRatingModal from '@/components/CourseRatingModal';
 import CourseQuiz from '@/components/CourseQuiz';
 import CourseCertificate from '@/components/CourseCertificate';
-import { formatDriveImageUrl } from '@/lib/courseCache';
+import { formatDriveImageUrl, getCleanCourseImage } from '@/lib/courseCache';
 import FormattedAiText from '@/components/FormattedAiText';
 import StudentReferralSection from '@/components/StudentReferralSection';
 import { getCoursePinnedPrompts } from '@/lib/aiPrompts';
@@ -2715,7 +2715,7 @@ function StudentDashboardContent() {
                             }
                         })() || (
                             <>
-                                <img src={formatDriveImageUrl(activeCourse?.image) || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1200'} className="absolute inset-0 w-full h-full object-cover opacity-60" alt="Video cover" />
+                                <img src={getCleanCourseImage(activeCourse) || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1200'} className="absolute inset-0 w-full h-full object-cover opacity-60" alt="Video cover" />
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20 flex flex-col justify-between p-6 lg:p-8">
                                     <div className="self-end bg-black/40 backdrop-blur-md text-white text-xs font-bold px-3 py-1.5 rounded-lg border border-white/10">
                                         No Video Available
@@ -3809,7 +3809,7 @@ function StudentDashboardContent() {
               ) : (
                 courses.map(course => (
                   <div key={course.id} className="bg-white dark:bg-slate-800 rounded-3xl p-4 shadow-sm border border-slate-100 dark:border-slate-700">
-                    <img src={formatDriveImageUrl(course.thumbnail || course.image) || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1200'} className="w-full h-48 object-cover rounded-2xl mb-4" />
+                    <img src={getCleanCourseImage(course) || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1200'} className="w-full h-48 object-cover rounded-2xl mb-4" />
                     <h3 className="font-bold text-lg mb-3 line-clamp-2 text-dark dark:text-white font-heading">{course.title}</h3>
                     <button onClick={() => { 
                       setActiveCourse(course); 

@@ -425,6 +425,39 @@ export function formatDriveImageUrl(url: any): string {
   return clean;
 }
 
+export function getCleanCourseImage(c: any): string {
+  if (!c || typeof c !== 'object') return '';
+  const rawTitle = (c.title || '').toString().toLowerCase();
+  const id = (c.id || '').toString().toLowerCase();
+  const rawImage = (c.image || c.thumbnail || c.banner || '').toString().trim();
+
+  // 1. Free Digital Marketing Course
+  if (rawTitle.includes('ማርኬቲንግ') || rawTitle.includes('marketing') || id.includes('marketing')) {
+    if (!rawImage || rawImage.includes('1rdjkUc6ZwK6NbbgHaZ-7BtEi8A9aA5Uq') || rawImage.includes('hero-bg-new')) {
+      return "https://drive.google.com/thumbnail?id=1HZf1jV5AdSXyc7MJUf8vPgYm4z0-30O6&sz=w1000";
+    }
+    return formatDriveImageUrl(rawImage);
+  }
+
+  // 2. Shein Import Business Course
+  if (rawTitle.includes('ሼን') || rawTitle.includes('shein') || id.includes('shein')) {
+    if (rawImage.includes('1HZf1jV5AdSXyc7MJUf8vPgYm4z0-30O6') || rawImage.includes('hero-bg-new')) {
+      return "https://drive.google.com/thumbnail?id=1rdjkUc6ZwK6NbbgHaZ-7BtEi8A9aA5Uq&sz=w1000";
+    }
+    return formatDriveImageUrl(rawImage);
+  }
+
+  // 3. YouTube Secrets Course
+  if (rawTitle.includes('ዩቲዩብ') || rawTitle.includes('youtube') || id.includes('youtube')) {
+    if (!rawImage || rawImage.includes('hero-bg-new') || rawImage.includes('1HZf1jV5AdSXyc7MJUf8vPgYm4z0-30O6')) {
+      return "/assets/about_video_cover.jpg";
+    }
+    return formatDriveImageUrl(rawImage);
+  }
+
+  return formatDriveImageUrl(rawImage);
+}
+
 /**
  * Broadcasts course changes instantly across all open tabs, windows, and intra-app components
  * Achieves zero-latency (nanosecond) live synchronization without page reload
