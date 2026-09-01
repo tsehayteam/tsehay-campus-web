@@ -20,6 +20,7 @@ import StudentReferralSection from '@/components/StudentReferralSection';
 import { getCoursePinnedPrompts } from '@/lib/aiPrompts';
 import { ETHIOPIAN_AVATARS, EthiopianAvatar } from '@/lib/ethiopianAvatars';
 import FeedbackModal from '@/components/FeedbackModal';
+import { speakWithLanguageDetection } from '@/lib/ttsHelper';
 
 function DashboardLoadingScreen({ message }: { message?: string }) {
   return (
@@ -1453,7 +1454,7 @@ function StudentDashboardContent() {
     }
   };
 
-  // 🔊 Natural, Warm Ethiopian / Pleasant Female Voice Reader for Dashboard AI Tutor
+    // 🔊 Natural, Fluid Ethiopian / English Voice Reader with Dynamic Language Detection
   const playAiVoiceResponse = (text: string, idx: number) => {
     if (typeof window === 'undefined') return;
 
@@ -1476,57 +1477,19 @@ function StudentDashboardContent() {
     const cleanText = text
       .replace(/```[\s\S]*?```/g, ' ')
       .replace(/`([^`]+)`/g, '$1')
-      .replace(/[*_~#>[\]()]/g, ' ')
+      .replace(/[*_~#>\[\]()]/g, ' ')
       .replace(/https?:\/\/\S+/g, ' ')
       .replace(/\s+/g, ' ')
       .trim();
 
     if (!cleanText) return;
 
-    if ('speechSynthesis' in window) {
-      const utterance = new SpeechSynthesisUtterance(cleanText);
-      const voices = window.speechSynthesis.getVoices();
-
-      let selectedVoice = voices.find(v => 
-        v.lang.toLowerCase().includes('am') || 
-        v.lang.toLowerCase().includes('et') || 
-        v.name.toLowerCase().includes('amharic') ||
-        v.name.toLowerCase().includes('ethiopia')
-      );
-
-      if (!selectedVoice) {
-        selectedVoice = voices.find(v => 
-          (v.name.toLowerCase().includes('natural') || 
-           v.name.toLowerCase().includes('zira') || 
-           v.name.toLowerCase().includes('jenny') || 
-           v.name.toLowerCase().includes('aria') || 
-           v.name.toLowerCase().includes('samantha') || 
-           v.name.toLowerCase().includes('google') ||
-           v.name.toLowerCase().includes('female')) &&
-          (v.lang.startsWith('en') || v.lang.startsWith('am'))
-        );
-      }
-
-      if (selectedVoice) {
-        utterance.voice = selectedVoice;
-      }
-
-      utterance.lang = selectedVoice?.lang || 'am-ET';
-      utterance.rate = 0.94;
-      utterance.pitch = 1.05;
-      utterance.volume = 1.0;
-
-      utterance.onstart = () => setPlayingAiAudioIdx(idx);
-      utterance.onend = () => setPlayingAiAudioIdx(null);
-      utterance.onerror = () => {
-        tryAudioEndpoint(cleanText, idx);
-      };
-
-      setPlayingAiAudioIdx(idx);
-      window.speechSynthesis.speak(utterance);
-    } else {
-      tryAudioEndpoint(cleanText, idx);
-    }
+    speakWithLanguageDetection({
+      text: cleanText,
+      onStart: () => setPlayingAiAudioIdx(idx),
+      onEnd: () => setPlayingAiAudioIdx(null),
+      onError: () => tryAudioEndpoint(cleanText, idx)
+    });
   };
 
   const tryAudioEndpoint = (cleanText: string, idx: number) => {
