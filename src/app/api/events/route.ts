@@ -48,14 +48,26 @@ export async function GET(req: NextRequest) {
       if (snap.exists) {
         const evData: any = { id: snap.id, ...snap.data() };
         evData.image = formatDriveImageUrl(evData.image) || evData.image;
+        const cap = Number(evData.capacity) || 100;
+        const reg = Number(evData.registeredCount) || 0;
+        evData.remainingSeats = evData.remainingSeats !== undefined && typeof evData.remainingSeats === 'number'
+          ? Math.max(0, evData.remainingSeats)
+          : Math.max(0, cap - reg);
         return NextResponse.json({ success: true, event: evData });
       }
 
       const defaultMatch = DEFAULT_EVENTS.find(e => e.id === eventId || e.slug === eventId);
       if (defaultMatch) {
+        const cap = Number(defaultMatch.capacity) || 100;
+        const reg = Number(defaultMatch.registeredCount) || 0;
+        const remaining = defaultMatch.remainingSeats ?? Math.max(0, cap - reg);
         return NextResponse.json({ 
           success: true, 
-          event: { ...defaultMatch, image: formatDriveImageUrl(defaultMatch.image) || defaultMatch.image } 
+          event: { 
+            ...defaultMatch, 
+            remainingSeats: remaining,
+            image: formatDriveImageUrl(defaultMatch.image) || defaultMatch.image 
+          } 
         });
       }
 
@@ -82,19 +94,54 @@ export async function GET(req: NextRequest) {
       } catch (e) {}
     }
 
+    // Auto-seed default events with persistent remainingSeats if collection was empty
     if (events.length === 0) {
       events = DEFAULT_EVENTS;
+      try {
+        for (const ev of DEFAULT_EVENTS) {
+          const cap = Number(ev.capacity) || 100;
+          const reg = Number(ev.registeredCount) || 0;
+          const rem = ev.remainingSeats ?? Math.max(0, cap - reg);
+          const seeded = {
+            ...ev,
+            remainingSeats: rem,
+            registeredCount: reg,
+            capacity: cap,
+            updatedAt: new Date().toISOString()
+          };
+          await adminDb.collection('events').doc(ev.id).set(seeded, { merge: true });
+          await adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('public').doc('data').collection('events').doc(ev.id).set(seeded, { merge: true });
+        }
+      } catch (seedErr) {
+        console.warn('Auto-seed default events note:', seedErr);
+      }
     }
 
-    events = events.map(e => ({
-      ...e,
-      image: formatDriveImageUrl(e.image) || e.image
-    }));
+    events = events.map(e => {
+      const cap = Number(e.capacity) || 100;
+      const reg = Number(e.registeredCount) || 0;
+      const rem = e.remainingSeats !== undefined && typeof e.remainingSeats === 'number'
+        ? Math.max(0, e.remainingSeats)
+        : Math.max(0, cap - reg);
+
+      return {
+        ...e,
+        capacity: cap,
+        registeredCount: reg,
+        remainingSeats: rem,
+        image: formatDriveImageUrl(e.image) || e.image
+      };
+    });
 
     return NextResponse.json({ success: true, events, count: events.length });
   } catch (error: any) {
     console.error('Error fetching events:', error);
-    return NextResponse.json({ success: true, events: DEFAULT_EVENTS, count: DEFAULT_EVENTS.length, error: error.message });
+    const fallbackEvents = DEFAULT_EVENTS.map(e => ({
+      ...e,
+      remainingSeats: e.remainingSeats ?? (e.capacity - e.registeredCount),
+      image: formatDriveImageUrl(e.image) || e.image
+    }));
+    return NextResponse.json({ success: true, events: fallbackEvents, count: fallbackEvents.length, error: error.message });
   }
 }
 
@@ -106,14 +153,21 @@ export async function POST(req: NextRequest) {
     const rawImage = eventData.image || '';
     const formattedImage = formatDriveImageUrl(rawImage) || rawImage || 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?q=80&w=1200';
 
+    const cap = Number(eventData.capacity) || 100;
+    const reg = Number(eventData.registeredCount) || 0;
+    const rem = eventData.remainingSeats !== undefined && typeof eventData.remainingSeats === 'number'
+      ? eventData.remainingSeats
+      : Math.max(0, cap - reg);
+
     const payload = {
       ...eventData,
       id: eventId,
       image: formattedImage,
       updatedAt: new Date().toISOString(),
-      capacity: Number(eventData.capacity) || 100,
+      capacity: cap,
       price: Number(eventData.price) || 0,
-      registeredCount: Number(eventData.registeredCount) || 0
+      registeredCount: reg,
+      remainingSeats: rem
     };
 
     if (adminDb) {

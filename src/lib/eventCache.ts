@@ -20,6 +20,7 @@ export interface TsehayEvent {
   speaker: string; // e.g. "ኢዮብ ሳህሌ (Eyoub Sahle)"
   speakerRole?: string; // e.g. "Founder & Lead Mentor"
   image: string;
+  videoUrl?: string;
   tags: string[];
   isFeatured?: boolean;
   status: 'upcoming' | 'ongoing' | 'completed' | 'sold_out';
@@ -102,6 +103,7 @@ export const DEFAULT_EVENTS: TsehayEvent[] = [
     mapsUrl: "https://maps.google.com/?q=Ethiopian+Skylight+Hotel+Addis+Ababa",
     capacity: 120,
     registeredCount: 84,
+    remainingSeats: 36,
     price: 1500,
     isFree: false,
     speaker: "ኢዮብ ሳህሌ (Eyoub Sahle)",
@@ -124,6 +126,7 @@ export const DEFAULT_EVENTS: TsehayEvent[] = [
     mapsUrl: "https://maps.google.com/?q=Bole+Rwanda+Addis+Ababa",
     capacity: 80,
     registeredCount: 52,
+    remainingSeats: 28,
     price: 1200,
     isFree: false,
     speaker: "ኢዮብ ሳህሌ & የኢምፖርት ባለሙያዎች",
@@ -146,6 +149,7 @@ export const DEFAULT_EVENTS: TsehayEvent[] = [
     meetingLink: "https://meet.google.com/tsehay-live-marketing",
     capacity: 500,
     registeredCount: 395,
+    remainingSeats: 105,
     price: 0,
     isFree: true,
     speaker: "ኢዮብ ሳህሌ (Eyoub Sahle)",

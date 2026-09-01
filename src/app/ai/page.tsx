@@ -6,6 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import FormattedAiText from '@/components/FormattedAiText';
 import { getCachedCourses, subscribeToCourses } from '@/lib/courseCache';
+import { speakWithLanguageDetection } from '@/lib/ttsHelper';
 import Footer from '@/components/Footer';
 
 interface Message {
@@ -68,6 +69,7 @@ export default function AiPage() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
+  const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -189,30 +191,33 @@ export default function AiPage() {
     setRecordingDuration(0);
   };
 
-  const speakText = (text: string) => {
-    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
-    try {
-      window.speechSynthesis.cancel();
-      const clean = text
-        .replace(/```[\s\S]*?```/g, ' ')
-        .replace(/`([^`]+)`/g, '$1')
-        .replace(/[*_~#>[\]()]/g, ' ')
-        .replace(/https?:\/\/\S+/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim();
-      if (!clean) return;
-      const utterance = new SpeechSynthesisUtterance(clean);
-      const voices = window.speechSynthesis.getVoices();
-      const voice = voices.find(v => v.lang.includes('am') || v.name.toLowerCase().includes('amharic')) ||
-                    voices.find(v => v.name.toLowerCase().includes('natural') || v.name.toLowerCase().includes('female'));
-      if (voice) utterance.voice = voice;
-      window.speechSynthesis.speak(utterance);
-    } catch (e) {}
+  const toggleSpeech = (id: string, text: string) => {
+    if (typeof window === 'undefined') return;
+
+    if (speakingMessageId === id) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+      setSpeakingMessageId(null);
+      return;
+    }
+
+    speakWithLanguageDetection({
+      text,
+      onStart: () => setSpeakingMessageId(id),
+      onEnd: () => setSpeakingMessageId(null),
+      onError: () => setSpeakingMessageId(null),
+    });
   };
 
   const sendMessage = async (overrideText?: string, audioUrl?: string) => {
     const userText = overrideText !== undefined ? overrideText : input.trim();
     if (!userText && !attachedImage && !audioUrl) return;
+
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+    setSpeakingMessageId(null);
 
     const currentImage = attachedImage;
     setInput('');
@@ -262,16 +267,17 @@ export default function AiPage() {
         data.content ||
         'ይቅርታ፣ አሁን ላይ መልስ ለመስጠት አልቻልኩም። እባክዎ ጥያቄዎን በድጋሚ ይሞክሩ።';
 
+      const newAiId = `ai-${Date.now()}`;
       setMessages((prev) => [
         ...prev,
         {
-          id: `ai-${Date.now()}`,
+          id: newAiId,
           role: 'ai',
           text: replyText,
           timestamp: 'አሁን'
         }
       ]);
-      speakText(replyText);
+      toggleSpeech(newAiId, replyText);
     } catch (err) {
       console.error('AI chat error:', err);
       setMessages((prev) => [
@@ -295,6 +301,10 @@ export default function AiPage() {
   };
 
   const clearChat = () => {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+    setSpeakingMessageId(null);
     setMessages([
       {
         id: 'welcome-reset',
@@ -366,25 +376,26 @@ export default function AiPage() {
         {/* Quick Starter Prompts Grid (Visible if only 1 welcome message) */}
         {messages.length <= 1 && (
           <div className="mb-6 animate-in fade-in duration-500">
-            <div className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-3">
-              💡 ፈጣን ጥያቄዎች (Quick Starters)
+            <div className="text-xs text-[#f9b03c] font-black uppercase tracking-wider mb-3 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-[#f9b03c] animate-pulse"></span>
+              <span>💡 ፈጣን ጥያቄዎች (Quick Starters)</span>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               {STARTER_PROMPTS.map((starter, idx) => (
                 <button
                   key={idx}
                   type="button"
                   onClick={() => sendMessage(starter.prompt)}
-                  className="p-4 rounded-2xl bg-slate-900/60 hover:bg-slate-900/90 border border-white/10 hover:border-[#f9b03c]/60 text-left transition-all duration-300 group cursor-pointer shadow-sm hover:shadow-[0_10px_25px_rgba(0,0,0,0.5)]"
+                  className="p-4 sm:p-5 rounded-2xl bg-slate-900/80 hover:bg-[#0b1324] border border-white/10 hover:border-[#f9b03c]/60 text-left transition-all duration-300 group cursor-pointer shadow-lg hover:shadow-[0_0_30px_rgba(249,176,60,0.25)] hover:scale-[1.02] active:scale-[0.98] backdrop-blur-xl"
                 >
-                  <div className="flex items-center gap-2.5 mb-1.5">
+                  <div className="flex items-center gap-2.5 mb-2">
                     <div
-                      className="w-7 h-7 rounded-lg flex items-center justify-center text-xs"
-                      style={{ backgroundColor: `${starter.color}20`, color: starter.color }}
+                      className="w-8 h-8 rounded-xl flex items-center justify-center text-xs shadow-sm transition-transform duration-300 group-hover:scale-110"
+                      style={{ backgroundColor: `${starter.color}25`, color: starter.color, border: `1px solid ${starter.color}40` }}
                     >
                       <i className={`fa-solid ${starter.icon}`}></i>
                     </div>
-                    <span className="text-[11px] font-black text-slate-400 uppercase tracking-wide">
+                    <span className="text-[11px] font-black text-slate-400 group-hover:text-slate-300 uppercase tracking-wide">
                       {starter.category}
                     </span>
                   </div>
@@ -443,9 +454,36 @@ export default function AiPage() {
                     )}
                   </div>
 
-                  {/* Message Bottom Action: Copy & Time */}
-                  <div className="mt-2.5 pt-2 border-t border-white/10 flex items-center justify-between text-[10px] text-slate-400">
-                    <span>{m.timestamp}</span>
+                  {/* Message Bottom Action: TTS Listen / Stop, Copy & Time */}
+                  <div className="mt-2.5 pt-2 border-t border-white/10 flex items-center justify-between text-[11px] text-slate-400">
+                    <div className="flex items-center gap-3">
+                      <span>{m.timestamp}</span>
+                      {isAi && (
+                        <button
+                          type="button"
+                          onClick={() => toggleSpeech(m.id, m.text)}
+                          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                            speakingMessageId === m.id
+                              ? 'bg-amber-400/20 text-[#f9b03c] border border-amber-400/50 shadow-[0_0_15px_rgba(249,176,60,0.4)] animate-pulse'
+                              : 'bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border border-white/10'
+                          }`}
+                          title={speakingMessageId === m.id ? "ድምፁን አቁም (Stop Speech)" : "በድምፅ አዳምጥ (Listen via Voice)"}
+                        >
+                          {speakingMessageId === m.id ? (
+                            <>
+                              <span className="w-2 h-2 rounded-full bg-[#f9b03c] animate-ping"></span>
+                              <span>ድምፅ አቁም</span>
+                            </>
+                          ) : (
+                            <>
+                              <i className="fa-solid fa-volume-high text-[#f9b03c] text-xs"></i>
+                              <span>አዳምጥ</span>
+                            </>
+                          )}
+                        </button>
+                      )}
+                    </div>
+
                     {isAi && (
                       <button
                         type="button"
@@ -458,7 +496,7 @@ export default function AiPage() {
                             copiedId === m.id ? 'fa-check text-green-400' : 'fa-copy'
                           }`}
                         ></i>
-                        <span>{copiedId === m.id ? 'ኮፒ ተደርጓል!' : 'ኮፒ'}</span>
+                        <span>{copiedId === m.id ? 'ተገልብጧል!' : 'ኮፒ'}</span>
                       </button>
                     )}
                   </div>

@@ -632,14 +632,56 @@ export interface ComingSoonCourse {
   expectedDate?: string;
 }
 
+export function formatCleanCategory(rawCat: string = ''): string {
+  if (!rawCat) return 'Digital Marketing';
+  const lower = rawCat.trim().toLowerCase();
+  
+  // 1. Digital Marketing (free/paid merged)
+  if (lower.includes('marketing') || lower.includes('ማርኬቲንግ') || lower.includes('ads')) {
+    return 'Digital Marketing';
+  }
+  
+  // 2. YouTube & Content Creation split
+  if (lower.includes('youtube') || lower.includes('ዩቲዩብ')) {
+    return 'YouTube';
+  }
+  if (lower.includes('content') || lower.includes('ይዘት')) {
+    return 'Content Creation';
+  }
+  
+  // 3. Brokerage
+  if (lower.includes('brokerage') || lower.includes('real estate') || lower.includes('ደላላ') || lower.includes('ብሮከሬጅ') || lower.includes('ቤት')) {
+    return 'Brokerage';
+  }
+  
+  // 4. E-Commerce
+  if (lower.includes('ecommerce') || lower.includes('e-commerce') || lower.includes('shein') || lower.includes('ሼን') || lower.includes('ኢምፖርት')) {
+    return 'E-Commerce';
+  }
+  
+  // 5. Video Editing
+  if (lower.includes('video editing') || lower.includes('ኤዲቲንግ') || lower.includes('editing')) {
+    return 'Video Editing';
+  }
+  
+  // 6. Career
+  if (lower.includes('career') || lower.includes('leadership') || lower.includes('ስራ') || lower.includes('ካሪየር')) {
+    return 'Career';
+  }
+
+  // Strip any parenthetical subtitles like (የቪዲዮ ኤዲቲንግ) or (የደላላነትና ብሮከሬጅ)
+  const cleaned = rawCat.replace(/\s*\([^)]*\)/g, '').trim();
+  return cleaned || rawCat;
+}
+
 export const COMING_SOON_COURSES: ComingSoonCourse[] = [
   {
     id: "cs-video-editing",
     slug: "video-editing-masterclass",
     title: "የቪዲዮ ኤዲቲንግ ኮርስ (Video Editing Masterclass)",
     titleEn: "Video Editing Masterclass",
-    tag: "Video Editing (የቪዲዮ ኤዲቲንግ)",
-    category: "Video Editing (የቪዲዮ ኤዲቲንግ)",
+    tag: "Video Editing",
+    category: "Video Editing",
     description: "በ CapCut እና Premiere Pro ፕሮፌሽናል ቪዲዮዎችን ማቀናበር፣ የድምፅ እና የከለር ግሬዲንግ፣ የሞሽን ግራፊክስ እና ለቲክቶክ/ዩቲዩብ ቫይራል የሚሆኑ ይዘቶችን መስራት።",
     level: "ጀማሪ - ከፍተኛ (All Levels)",
     duration: "6+ ሰዓታት",
@@ -659,8 +701,8 @@ export const COMING_SOON_COURSES: ComingSoonCourse[] = [
     slug: "advanced-paid-digital-marketing",
     title: "የከፋይ ዲጂታል ማርኬቲንግ (Advanced Paid Marketing)",
     titleEn: "Advanced Paid Digital Marketing",
-    tag: "Paid Digital Marketing (የከፋይ ዲጂታል ማርኬቲንግ)",
-    category: "Paid Digital Marketing (የከፋይ ዲጂታል ማርኬቲንግ)",
+    tag: "Digital Marketing",
+    category: "Digital Marketing",
     description: "በ Meta (Facebook/Instagram) Ads፣ TikTok Ads እና Google Search Ads ከፍተኛ ሽያጭ የሚያመጡ ማስታወቂያዎችን መስራት፣ Target Audience መምረጥ እና ROAS ማሳደግ።",
     level: "መካከለኛ - ከፍተኛ",
     duration: "8+ ሰዓታት",
@@ -680,8 +722,8 @@ export const COMING_SOON_COURSES: ComingSoonCourse[] = [
     slug: "real-estate-business-brokerage",
     title: "የደላላነት እና ብሮከሬጅ ኮርስ (Real Estate & Brokerage)",
     titleEn: "Real Estate & Business Brokerage",
-    tag: "Real Estate & Brokerage (የደላላነትና ብሮከሬጅ)",
-    category: "Real Estate & Brokerage (የደላላነትና ብሮከሬጅ)",
+    tag: "Brokerage",
+    category: "Brokerage",
     description: "በኢትዮጵያ ህጋዊ የደላላነት አሰራር፣ የቤትና የመኪና ግብይት ሚስጥሮች፣ ከገዢና ሻጭ ጋር መደራደር፣ የኮሚሽን አሰባሰብ እና የቢዝነስ አጋርነት መስራት።",
     level: "ለሁሉም (All Levels)",
     duration: "5+ ሰዓታት",
@@ -701,8 +743,8 @@ export const COMING_SOON_COURSES: ComingSoonCourse[] = [
     slug: "career-development-leadership",
     title: "የስራ እና ካሪየር እድገት (Career & Leadership)",
     titleEn: "Career Development & Leadership",
-    tag: "Career Development (የስራ እና ካሪየር እድገት)",
-    category: "Career Development (የስራ እና ካሪየር እድገት)",
+    tag: "Career",
+    category: "Career",
     description: "አለምአቀፍ የርቀት (Remote) ስራዎችን በዶላር ማግኘት፣ የ LinkedIn እና Upwork ፕሮፋይል ማሳመር፣ የኢንተርቪው ዝግጅት እና የሊደርሺፕ ክህሎቶች።",
     level: "ለሁሉም (All Levels)",
     duration: "4+ ሰዓታት",

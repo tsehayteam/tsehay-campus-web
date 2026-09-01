@@ -16,8 +16,9 @@ import CourseCardSkeleton from '@/components/CourseCardSkeleton';
 import CoursePreviewModal from '@/components/CoursePreviewModal';
 import WaitlistModal from '@/components/WaitlistModal';
 import Tilt3DCard from '@/components/3d/Tilt3DCard';
+import TypingCoursesHeadline from '@/components/TypingCoursesHeadline';
 import { searchCourses } from '@/lib/smartSearch';
-import { getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl, getCleanCourseImage, getCourseSlug, mergeCoursesLists, subscribeToCourses, getComingSoonCourses, ComingSoonCourse, DEFAULT_COURSES } from '@/lib/courseCache';
+import { getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl, getCleanCourseImage, getCourseSlug, mergeCoursesLists, subscribeToCourses, getComingSoonCourses, ComingSoonCourse, DEFAULT_COURSES, formatCleanCategory } from '@/lib/courseCache';
 
 export default function CoursesClient({ initialCourses }: { initialCourses?: any[] }) {
   const [isMounted, setIsMounted] = useState(false);
@@ -289,14 +290,14 @@ export default function CoursesClient({ initialCourses }: { initialCourses?: any
   };
 
   const COURSE_CATEGORY_TABS = [
-    { id: 'All', label: 'ሁሉም (All)', icon: 'fa-layer-group' },
-    { id: 'Ecommerce', label: 'E-Commerce (የሼን ኢምፖርት)', icon: 'fa-cart-shopping' },
-    { id: 'YouTube', label: 'YouTube & Content (የዩቲዩብ ስኬት)', icon: 'fa-youtube' },
-    { id: 'VideoEditing', label: 'Video Editing (የቪዲዮ ኤዲቲንግ)', icon: 'fa-film' },
-    { id: 'FreeMarketing', label: 'Free Digital Marketing (ነፃ ማርኬቲንግ)', icon: 'fa-gift', isFree: true },
-    { id: 'PaidMarketing', label: 'Paid Digital Marketing (የከፋይ ማርኬቲንግ)', icon: 'fa-bullhorn', isPaid: true },
-    { id: 'Brokerage', label: 'Real Estate & Brokerage (የደላላነትና ብሮከሬጅ)', icon: 'fa-building' },
-    { id: 'Career', label: 'Career Development (የስራ እና ካሪየር እድገት)', icon: 'fa-briefcase' },
+    { id: 'All', label: 'All Courses', icon: 'fa-layer-group' },
+    { id: 'Ecommerce', label: 'E-Commerce', icon: 'fa-cart-shopping' },
+    { id: 'YouTube', label: 'YouTube', icon: 'fa-youtube' },
+    { id: 'ContentCreation', label: 'Content Creation', icon: 'fa-clapperboard' },
+    { id: 'VideoEditing', label: 'Video Editing', icon: 'fa-film' },
+    { id: 'Marketing', label: 'Digital Marketing', icon: 'fa-bullhorn' },
+    { id: 'Brokerage', label: 'Brokerage', icon: 'fa-building' },
+    { id: 'Career', label: 'Career', icon: 'fa-briefcase' },
   ];
 
   // Helper to match category flexibly
@@ -304,10 +305,10 @@ export default function CoursesClient({ initialCourses }: { initialCourses?: any
     if (!courseCat) return false;
     const catLower = courseCat.toLowerCase();
     if (tabId === 'Ecommerce' && (catLower.includes('e-commerce') || catLower.includes('ecommerce') || catLower.includes('shein') || catLower.includes('ሼን') || catLower.includes('ኢምፖርት'))) return true;
-    if (tabId === 'YouTube' && (catLower.includes('youtube') || catLower.includes('ዩቲዩብ') || catLower.includes('content') || catLower.includes('ስኬት'))) return true;
+    if (tabId === 'YouTube' && (catLower.includes('youtube') || catLower.includes('ዩቲዩብ'))) return true;
+    if (tabId === 'ContentCreation' && (catLower.includes('content') || catLower.includes('ይዘት'))) return true;
     if (tabId === 'VideoEditing' && (catLower.includes('video editing') || catLower.includes('ኤዲቲንግ') || catLower.includes('editing') || catLower.includes('capcut'))) return true;
-    if (tabId === 'FreeMarketing' && (catLower.includes('free') || catLower.includes('ነፃ') || catLower.includes('ዲጂታል ማርኬቲንግ ለጀማሪዎች'))) return true;
-    if (tabId === 'PaidMarketing' && (catLower.includes('paid') || catLower.includes('ከፋይ') || catLower.includes('advanced') || catLower.includes('ads'))) return true;
+    if (tabId === 'Marketing' && (catLower.includes('marketing') || catLower.includes('ማርኬቲንግ') || catLower.includes('ads'))) return true;
     if (tabId === 'Brokerage' && (catLower.includes('brokerage') || catLower.includes('real estate') || catLower.includes('ደላላ') || catLower.includes('ብሮከሬጅ'))) return true;
     if (tabId === 'Career' && (catLower.includes('career') || catLower.includes('ስራ') || catLower.includes('leadership') || catLower.includes('ካሪየር'))) return true;
     return catLower.includes(tabId.toLowerCase());
@@ -369,12 +370,8 @@ export default function CoursesClient({ initialCourses }: { initialCourses?: any
             </div>
 
             {/* Main Title */}
-            <h1 className="text-4xl sm:text-6xl md:text-7xl font-black font-heading tracking-tight leading-[1.1] mb-6">
-              <span className="text-white">ሁሉንም </span>
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#f9b03c] via-amber-300 to-yellow-400 drop-shadow-[0_5px_30px_rgba(249,176,60,0.4)]">
-                የተግባር ኮርሶች
-              </span>
-              <span className="text-white"> በአንድ ቦታ</span>
+            <h1 className="text-4xl sm:text-6xl md:text-7xl font-black font-heading tracking-tight leading-[1.1] mb-6 min-h-[80px] sm:min-h-[110px] course-title-glow-pulse">
+              <TypingCoursesHeadline text="ሁሉንም የተግባር ኮርሶች በአንድ ቦታ" />
             </h1>
 
             <p className="text-slate-300 text-base sm:text-xl max-w-2xl mx-auto mb-10 leading-relaxed font-body font-medium">
@@ -478,16 +475,16 @@ export default function CoursesClient({ initialCourses }: { initialCourses?: any
                           router.push(`/courses/${getCourseSlug(course) || course.id}`);
                         }
                       }}
-                      className="h-full group cursor-pointer"
+                      className="h-full group cursor-pointer course-popup-card"
                     >
                       {/* Premium Glassmorphic Card Container with Smooth Hover translateY(-8px) & Golden Aura */}
                       <div 
-                        className={`h-full course-card bg-slate-900/80 backdrop-blur-2xl rounded-3xl overflow-hidden flex flex-col justify-between border border-white/[0.08] shadow-[0_15px_35px_rgba(0,0,0,0.6)] hover:shadow-[0_25px_60px_rgba(249,176,60,0.25),0_0_35px_rgba(50,104,186,0.18)] transition-all duration-500 cursor-pointer relative hover:-translate-y-2 select-none ${
+                        className={`h-full course-card bg-[#0a0e17]/85 backdrop-blur-2xl rounded-3xl overflow-hidden flex flex-col justify-between border border-white/[0.08] shadow-[0_20px_50px_rgba(0,0,0,0.8),0_0_25px_rgba(249,176,60,0.06)] hover:shadow-[0_25px_60px_rgba(249,176,60,0.35)] transition-all duration-500 cursor-pointer relative hover:-translate-y-2 select-none ${
                           isComingSoon ? 'border-[#f9b03c]/40 hover:border-[#f9b03c]' : 'hover:border-[#f9b03c]/70'
                         }`}
                         style={{ 
-                          backdropFilter: 'blur(16px)',
-                          WebkitBackdropFilter: 'blur(16px)',
+                          backdropFilter: 'blur(20px)',
+                          WebkitBackdropFilter: 'blur(20px)',
                           transformStyle: 'preserve-3d' 
                         }}
                       >
@@ -537,10 +534,10 @@ export default function CoursesClient({ initialCourses }: { initialCourses?: any
                             {/* Category Badge on Image */}
                             {(course.category || course.tag) && (
                               <div 
-                                className="absolute bottom-3.5 left-3.5 z-20 bg-[#030509]/85 backdrop-blur-md text-[#f9b03c] border border-white/15 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider shadow-md"
+                                className="absolute bottom-3.5 left-3.5 z-20 bg-[#030509]/90 backdrop-blur-md text-[#f9b03c] border border-[#f9b03c]/30 text-[10.5px] font-black px-3.5 py-1 rounded-full uppercase tracking-wider shadow-md"
                                 style={{ transform: 'translateZ(40px)' }}
                               >
-                                {course.category || course.tag}
+                                {formatCleanCategory(course.category || course.tag)}
                               </div>
                             )}
                           </div>

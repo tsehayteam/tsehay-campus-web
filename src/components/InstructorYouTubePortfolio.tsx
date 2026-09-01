@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { db } from '@/lib/firebase/config';
 import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import Tilt3DCard from '@/components/3d/Tilt3DCard';
+import CinematicVideoModal from '@/components/CinematicVideoModal';
 
 export function extractYouTubeId(urlOrId: string): string {
   if (!urlOrId || typeof urlOrId !== 'string') return '';
@@ -537,54 +538,15 @@ export default function InstructorYouTubePortfolio() {
       </div>
 
       {/* =========================================================================
-          DISTRACTION-FREE FULLSCREEN CINEMA PLAYER (REACT PORTAL DIRECTLY ON BODY)
+          DISTRACTION-FREE FULLSCREEN CINEMA PLAYER (CINEMATIC VIDEO MODAL)
           Pops up 100% dead-center in front of the viewer's eyes with zero scrolling!
          ========================================================================= */}
-      {mounted && activeModalVideo && createPortal(
-        <div
-          className="fixed inset-0 z-[999999] bg-black/95 backdrop-blur-2xl flex items-center justify-center p-3 sm:p-6 lg:p-10 animate-in fade-in zoom-in-95 duration-200"
-          onClick={() => setActiveModalVideo(null)}
-          style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh' }}
-        >
-          {/* Top Bar with Title & Close Button */}
-          <div className="absolute top-4 sm:top-6 inset-x-4 sm:inset-x-8 z-[1000000] flex items-center justify-between pointer-events-none">
-            <div className="flex items-center gap-2.5 bg-black/80 backdrop-blur-md px-4 py-2 rounded-full border border-white/20 shadow-lg pointer-events-auto">
-              <i className="fa-brands fa-youtube text-red-500 text-lg"></i>
-              <span className="text-xs sm:text-sm font-bold text-white max-w-[220px] sm:max-w-md truncate">
-                {activeModalVideo.title}
-              </span>
-            </div>
-
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setActiveModalVideo(null);
-              }}
-              className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-white/15 hover:bg-red-500 text-white flex items-center justify-center transition-all duration-300 border border-white/25 hover:scale-110 shadow-[0_0_30px_rgba(0,0,0,0.9)] backdrop-blur-md cursor-pointer pointer-events-auto"
-              title="ዝጋ (Close)"
-              aria-label="Close video player"
-            >
-              <i className="fa-solid fa-xmark text-lg sm:text-xl"></i>
-            </button>
-          </div>
-
-          {/* Centered Full-Screen Cinema Video Container */}
-          <div
-            className="relative w-full max-w-6xl max-h-[85vh] aspect-video rounded-2xl sm:rounded-3xl overflow-hidden shadow-[0_0_120px_rgba(0,0,0,1),0_0_60px_rgba(249,176,60,0.35)] border border-white/20 bg-black flex items-center justify-center"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <iframe
-              src={`https://www.youtube.com/embed/${activeModalVideo.id}?autoplay=1&rel=0&modestbranding=1&controls=1&showinfo=0&cc_load_policy=0&iv_load_policy=3&playsinline=1&enablejsapi=1`}
-              title={activeModalVideo.title}
-              className="w-full h-full border-0 absolute inset-0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
-              allowFullScreen
-            ></iframe>
-          </div>
-        </div>,
-        document.body
-      )}
+      <CinematicVideoModal
+        isOpen={Boolean(activeModalVideo)}
+        onClose={() => setActiveModalVideo(null)}
+        videoUrl={activeModalVideo ? (activeModalVideo.url || `https://www.youtube.com/watch?v=${activeModalVideo.id}`) : ''}
+        title={activeModalVideo?.title || 'YouTube Portfolio Video'}
+      />
 
       {/* Embedded CSS for Title Shimmer Animation */}
       <style dangerouslySetInnerHTML={{__html: `

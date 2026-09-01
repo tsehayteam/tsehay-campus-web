@@ -2,12 +2,11 @@ import { EventTicket } from '@/lib/eventCache';
 
 export async function sendTicketEmail(ticket: EventTicket): Promise<{ success: boolean; error?: string }> {
   if (!ticket || !ticket.attendeeEmail) {
+    console.warn('[Ticket Email Service] Recipient email is missing. Delivery aborted.');
     return { success: false, error: 'Recipient email is missing' };
   }
 
-  const resendApiKey = process.env.RESEND_API_KEY;
-  const fromEmail = process.env.RESEND_FROM_EMAIL || '"Tsehay Campus" <tsehayoperation@gmail.com>';
-  const fallbackFrom = '"Tsehay Campus" <tsehayoperation@gmail.com>';
+  const resendApiKey = (process.env.RESEND_API_KEY || process.env.RESEND_KEY || '').trim();
 
   const attendeeName = ticket.attendeeName || 'የተከበሩ ተማሪ';
   const eventTitle = ticket.eventTitle || 'Tsehay Campus Live Event';
@@ -16,8 +15,8 @@ export async function sendTicketEmail(ticket: EventTicket): Promise<{ success: b
   const eventLocation = ticket.eventLocation || (ticket.isOnline ? 'Online Google Meet' : 'Bole, Addis Ababa, Ethiopia');
   const ticketId = ticket.ticketId || `TC-EVT-${Date.now().toString(36).toUpperCase()}`;
   const tier = ticket.tier || 'General Admission';
-  const pricePaid = ticket.pricePaid === 0 ? 'ነፃ (Free)' : `${ticket.pricePaid?.toLocaleString()} ብር`;
-  const websiteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://tsehaycampus.com';
+  const pricePaid = ticket.pricePaid === 0 ? '100% ነፃ (Free)' : `${ticket.pricePaid?.toLocaleString()} ብር`;
+  const websiteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.tsehaycampus.com';
   const isOnline = !!ticket.isOnline || eventLocation.toLowerCase().includes('online') || eventLocation.toLowerCase().includes('meet');
   const meetingLink = ticket.meetingLink || 'https://meet.google.com/tsehay-live';
   const mapsUrl = ticket.mapsUrl || 'https://maps.google.com/?q=Bole+Addis+Ababa';
@@ -26,7 +25,7 @@ export async function sendTicketEmail(ticket: EventTicket): Promise<{ success: b
   let mainActionSection = '';
 
   if (isOnline) {
-    // 🎥 ONLINE EVENT TEMPLATE: Prominent Google Meet Join Link (No Door QR)
+    // 🎥 ONLINE EVENT TEMPLATE: Prominent Google Meet Join Link
     mainActionSection = `
       <!-- Online Google Meet Join Section -->
       <tr>
@@ -53,12 +52,12 @@ export async function sendTicketEmail(ticket: EventTicket): Promise<{ success: b
   } else {
     // 📍 IN-PERSON EVENT TEMPLATE: Scannable Door Pass + Google Maps Navigation Link
     mainActionSection = `
-      <!-- In-Person Door QR Pass -->
+      <!-- In-Person Door Pass -->
       <tr>
         <td align="center" style="padding: 15px 28px;">
           <div style="background: #ffffff; border-radius: 20px; padding: 22px 24px; text-align: center; color: #0c1017; box-shadow: 0 15px 35px rgba(0,0,0,0.5);">
             <p style="margin: 0 0 8px 0; font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 1.5px; color: #475569;">
-              የበር ላይ ማረጋገጫ ኮድ (Door Verification Pass)
+              የበር ላይ ማረጋገጫ ቁጥር (Door Pass Code)
             </p>
             <div style="font-family: monospace; font-size: 26px; font-weight: 900; letter-spacing: 3px; color: #0f172a; padding: 12px; background: #f8fafc; border: 2px dashed #cbd5e1; border-radius: 12px; margin-bottom: 8px;">
               ${ticketId}
@@ -116,7 +115,7 @@ export async function sendTicketEmail(ticket: EventTicket): Promise<{ success: b
         </td>
       </tr>
 
-      <!-- Details Box -->
+      <!-- Details Box (Date, Time, Location, Ticket ID) -->
       <tr>
         <td style="padding: 10px 28px;">
           <table width="100%" cellpadding="0" cellspacing="0" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; padding: 18px;">
@@ -132,13 +131,18 @@ export async function sendTicketEmail(ticket: EventTicket): Promise<{ success: b
             </tr>
 
             <tr>
-              <td style="padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 12px; color: #94a3b8; text-transform: uppercase; font-weight: 600;">ፎርማት / ቦታ (Format)</td>
+              <td style="padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 12px; color: #94a3b8; text-transform: uppercase; font-weight: 600;">ቦታ / አድራሻ (Location)</td>
               <td align="right" style="padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 13px; color: #ffffff; font-weight: 700;">${eventLocation}</td>
             </tr>
 
             <tr>
               <td style="padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 12px; color: #94a3b8; text-transform: uppercase; font-weight: 600;">የትኬት ደረጃ (Ticket Tier)</td>
               <td align="right" style="padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 13px; color: #f9b03c; font-weight: 800;">${tier}</td>
+            </tr>
+
+            <tr>
+              <td style="padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 12px; color: #94a3b8; text-transform: uppercase; font-weight: 600;">የተከፈለበት ዋጋ (Price Paid)</td>
+              <td align="right" style="padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 13px; color: #10b981; font-weight: 800;">${pricePaid}</td>
             </tr>
 
             <tr>
@@ -176,90 +180,74 @@ export async function sendTicketEmail(ticket: EventTicket): Promise<{ success: b
   `;
 
   if (!resendApiKey) {
-    console.warn('RESEND_API_KEY environment variable is not set. Email delivery deferred.');
-    return { success: false, error: 'RESEND_API_KEY is not configured in environment variables' };
+    console.warn('[Ticket Email Service] RESEND_API_KEY is not set in environment variables. Email deferred.');
+    return { success: false, error: 'RESEND_API_KEY is not configured' };
   }
 
-  // 1. Try sending via primary configured domain
-  try {
-    // Send to attendee
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${resendApiKey}`
-      },
-      body: JSON.stringify({
-        from: fromEmail,
-        to: [ticket.attendeeEmail],
-        subject: `🎟️ የእርስዎ ቲኬት ዝግጁ ነው! (${ticket.eventTitle}) - Tsehay Campus Pass: ${ticket.ticketId}`,
-        html: htmlEmail
-      })
-    });
+  // Sender candidates in order of preference (prioritizing verified official domain)
+  const sendersToTry = Array.from(new Set([
+    process.env.RESEND_FROM_EMAIL || 'Tsehay Campus <support@tsehaycampus.com>',
+    'Tsehay Campus <support@tsehaycampus.com>',
+    'Tsehay Campus <events@tsehaycampus.com>',
+    'Tsehay Campus <onboarding@resend.dev>',
+    'Tsehay Campus <noreply@tsehaycampus.com>',
+    'Tsehay Campus <tsehayoperation@gmail.com>'
+  ]));
 
-    // Send instant booking notification to eyoubsahle@gmail.com
+  let lastError = '';
+
+  for (const fromSender of sendersToTry) {
     try {
-      fetch('https://api.resend.com/emails', {
+      console.log(`[Ticket Email Service] Attempting ticket dispatch for ${ticketId} to ${ticket.attendeeEmail} via ${fromSender}...`);
+      
+      const res = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${resendApiKey}`
         },
         body: JSON.stringify({
-          from: fromEmail,
-          to: ['eyoubsahle@gmail.com'],
-          subject: `📢 አዲስ የዝግጅት ምዝገባ፡ ${attendeeName} (${eventTitle})`,
-          html: htmlEmail
-        })
-      }).catch(() => {});
-    } catch (e) {}
-
-    if (res.ok) {
-      return { success: true };
-    }
-
-    const errorJson = await res.json().catch(() => ({}));
-
-    // 2. Fallback to onboarding@resend.dev if custom domain is unverified
-    if (res.status === 403 || (errorJson.message && errorJson.message.includes('domain'))) {
-      const fallbackRes = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${resendApiKey}`
-        },
-        body: JSON.stringify({
-          from: fallbackFrom,
+          from: fromSender,
           to: [ticket.attendeeEmail],
           subject: `🎟️ የእርስዎ ቲኬት ዝግጁ ነው! (${ticket.eventTitle}) - Tsehay Campus Pass: ${ticket.ticketId}`,
-          html: htmlEmail
+          html: htmlEmail,
+          reply_to: 'tsehayoperation@gmail.com'
         })
       });
 
-      try {
-        fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${resendApiKey}`
-          },
-          body: JSON.stringify({
-            from: fallbackFrom,
-            to: ['eyoubsahle@gmail.com'],
-            subject: `📢 አዲስ የዝግጅት ምዝገባ፡ ${attendeeName} (${eventTitle})`,
-            html: htmlEmail
-          })
-        }).catch(() => {});
-      } catch (e) {}
+      const responseJson = await res.json().catch(() => ({}));
 
-      if (fallbackRes.ok) {
+      if (res.ok && responseJson.id) {
+        console.log(`[Ticket Email Service] ✅ Ticket email successfully dispatched! (Resend ID: ${responseJson.id})`);
+
+        // Send internal copy to admin notification email
+        try {
+          fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${resendApiKey}`
+            },
+            body: JSON.stringify({
+              from: fromSender,
+              to: ['eyoubsahle@gmail.com'],
+              subject: `📢 አዲስ የዝግጅት ምዝገባ፡ ${attendeeName} (${eventTitle})`,
+              html: htmlEmail
+            })
+          }).catch(() => {});
+        } catch {}
+
         return { success: true };
       }
-    }
 
-    return { success: false, error: errorJson.message || `HTTP ${res.status}` };
-  } catch (err: any) {
-    console.error('Failed to send ticket email via Resend:', err);
-    return { success: false, error: err.message || 'Email delivery failed' };
+      lastError = responseJson.message || `HTTP ${res.status}`;
+      console.warn(`[Ticket Email Service] Attempt with "${fromSender}" failed:`, lastError);
+    } catch (err: any) {
+      lastError = err.message;
+      console.warn(`[Ticket Email Service] Fetch error with "${fromSender}":`, err.message);
+    }
   }
+
+  console.error('[Ticket Email Service] ❌ All sender attempts exhausted for ticket email:', lastError);
+  return { success: false, error: lastError || 'Email delivery failed across all sender profiles' };
 }

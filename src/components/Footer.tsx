@@ -3,6 +3,8 @@ import React from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageContext';
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 export default function Footer() {
     const { t, lang } = useLanguage();
@@ -11,9 +13,26 @@ export default function Footer() {
     const [isFooterVisible, setIsFooterVisible] = React.useState(false);
     const footerRef = React.useRef<HTMLElement>(null);
 
+    // 🌊 GSAP ScrollTrigger + Dual-Layer Cascading Entrance
     React.useEffect(() => {
         const el = footerRef.current;
         if (!el) return;
+
+        let gsapTrigger: ScrollTrigger | null = null;
+        try {
+            gsap.registerPlugin(ScrollTrigger);
+            gsapTrigger = ScrollTrigger.create({
+                trigger: el,
+                start: 'top 92%',
+                end: 'bottom bottom',
+                toggleActions: 'play reverse play reverse',
+                onEnter: () => setIsFooterVisible(true),
+                onEnterBack: () => setIsFooterVisible(true),
+                onLeaveBack: () => setIsFooterVisible(false),
+            });
+        } catch (err) {
+            console.warn('GSAP Footer ScrollTrigger:', err);
+        }
 
         const checkVisibility = () => {
             const rect = el.getBoundingClientRect();
@@ -48,11 +67,26 @@ export default function Footer() {
         window.addEventListener('resize', checkVisibility, { passive: true });
 
         return () => {
+            if (gsapTrigger) gsapTrigger.kill();
             observer.disconnect();
             window.removeEventListener('scroll', checkVisibility);
             window.removeEventListener('resize', checkVisibility);
         };
     }, []);
+
+    // 🧲 Magnetic Pull Interaction for Social Media Buttons
+    const handleMagneticMove = (e: React.MouseEvent<HTMLAnchorElement>) => {
+        const target = e.currentTarget;
+        const rect = target.getBoundingClientRect();
+        const x = e.clientX - rect.left - rect.width / 2;
+        const y = e.clientY - rect.top - rect.height / 2;
+        target.style.transform = `translate(${x * 0.35}px, ${y * 0.35}px) scale(1.22)`;
+    };
+
+    const handleMagneticLeave = (e: React.MouseEvent<HTMLAnchorElement>) => {
+        const target = e.currentTarget;
+        target.style.transform = 'translate(0px, 0px) scale(1)';
+    };
 
     const navigateToSection = (hash: string) => {
         if (pathname === '/') {
@@ -94,7 +128,7 @@ export default function Footer() {
                 {/* Main 4-Column Grid with Sequential Cascading / Ripple Entrance */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-8 lg:gap-12 mb-12 sm:mb-14">
                     
-                    {/* Column 1: Brand & Socials (5 Cols) - Cascade 1 */}
+                    {/* Column 1: Brand & Socials (5 Cols) - Cascade 1 (0.05s) */}
                     <div className="footer-cascade-col footer-delay-1 lg:col-span-5 flex flex-col justify-between">
                         <div>
                             {/* Logo & Name with 360 Rotation on Hover */}
@@ -135,7 +169,9 @@ export default function Footer() {
                                 target="_blank" 
                                 rel="noreferrer" 
                                 aria-label="YouTube"
-                                className="footer-social-magnetic w-9 h-9 rounded-full bg-white/[0.04] hover:bg-[#f9b03c]/10 text-gray-400 hover:text-[#f9b03c] border border-white/[0.08] flex items-center justify-center shadow-sm"
+                                onMouseMove={handleMagneticMove}
+                                onMouseLeave={handleMagneticLeave}
+                                className="footer-social-magnetic w-9 h-9 rounded-full bg-white/[0.04] hover:bg-[#f9b03c]/10 text-gray-400 hover:text-[#f9b03c] border border-white/[0.08] flex items-center justify-center shadow-sm cursor-pointer"
                                 title="YouTube"
                             >
                                 <i className="fa-brands fa-youtube text-sm"></i>
@@ -145,7 +181,9 @@ export default function Footer() {
                                 target="_blank" 
                                 rel="noreferrer" 
                                 aria-label="Telegram"
-                                className="footer-social-magnetic w-9 h-9 rounded-full bg-white/[0.04] hover:bg-[#f9b03c]/10 text-gray-400 hover:text-[#f9b03c] border border-white/[0.08] flex items-center justify-center shadow-sm"
+                                onMouseMove={handleMagneticMove}
+                                onMouseLeave={handleMagneticLeave}
+                                className="footer-social-magnetic w-9 h-9 rounded-full bg-white/[0.04] hover:bg-[#f9b03c]/10 text-gray-400 hover:text-[#f9b03c] border border-white/[0.08] flex items-center justify-center shadow-sm cursor-pointer"
                                 title="Telegram"
                             >
                                 <i className="fa-brands fa-telegram text-sm"></i>
@@ -155,7 +193,9 @@ export default function Footer() {
                                 target="_blank" 
                                 rel="noreferrer" 
                                 aria-label="TikTok"
-                                className="footer-social-magnetic w-9 h-9 rounded-full bg-white/[0.04] hover:bg-[#f9b03c]/10 text-gray-400 hover:text-[#f9b03c] border border-white/[0.08] flex items-center justify-center shadow-sm"
+                                onMouseMove={handleMagneticMove}
+                                onMouseLeave={handleMagneticLeave}
+                                className="footer-social-magnetic w-9 h-9 rounded-full bg-white/[0.04] hover:bg-[#f9b03c]/10 text-gray-400 hover:text-[#f9b03c] border border-white/[0.08] flex items-center justify-center shadow-sm cursor-pointer"
                                 title="TikTok"
                             >
                                 <i className="fa-brands fa-tiktok text-sm"></i>
@@ -165,7 +205,9 @@ export default function Footer() {
                                 target="_blank" 
                                 rel="noreferrer" 
                                 aria-label="WhatsApp"
-                                className="footer-social-magnetic w-9 h-9 rounded-full bg-white/[0.04] hover:bg-[#f9b03c]/10 text-gray-400 hover:text-[#f9b03c] border border-white/[0.08] flex items-center justify-center shadow-sm"
+                                onMouseMove={handleMagneticMove}
+                                onMouseLeave={handleMagneticLeave}
+                                className="footer-social-magnetic w-9 h-9 rounded-full bg-white/[0.04] hover:bg-[#f9b03c]/10 text-gray-400 hover:text-[#f9b03c] border border-white/[0.08] flex items-center justify-center shadow-sm cursor-pointer"
                                 title="WhatsApp"
                             >
                                 <i className="fa-brands fa-whatsapp text-sm"></i>
@@ -173,7 +215,9 @@ export default function Footer() {
                             <a 
                                 href="tel:0980209090" 
                                 aria-label="Phone"
-                                className="footer-social-magnetic w-9 h-9 rounded-full bg-white/[0.04] hover:bg-[#f9b03c]/10 text-gray-400 hover:text-[#f9b03c] border border-white/[0.08] flex items-center justify-center shadow-sm"
+                                onMouseMove={handleMagneticMove}
+                                onMouseLeave={handleMagneticLeave}
+                                className="footer-social-magnetic w-9 h-9 rounded-full bg-white/[0.04] hover:bg-[#f9b03c]/10 text-gray-400 hover:text-[#f9b03c] border border-white/[0.08] flex items-center justify-center shadow-sm cursor-pointer"
                                 title="ስልክ ይደውሉ"
                             >
                                 <i className="fa-solid fa-phone text-xs"></i>
@@ -181,7 +225,7 @@ export default function Footer() {
                         </div>
                     </div>
 
-                    {/* Column 2: Quick Links - ፈጣን ማውጫ (3 Cols) - Cascade 2 */}
+                    {/* Column 2: Quick Links - ፈጣን ማውጫ (3 Cols) - Cascade 2 (0.20s) */}
                     <div className="footer-cascade-col footer-delay-2 lg:col-span-3">
                         <h4 className="text-white font-semibold font-heading text-base mb-5 relative inline-block after:content-[''] after:block after:w-8 after:h-[2px] after:bg-[#f9b03c] after:mt-1.5">
                             {lang === 'am' ? 'ፈጣን ማውጫ' : 'Quick Links'}
@@ -215,7 +259,7 @@ export default function Footer() {
                         </ul>
                     </div>
 
-                    {/* Column 3: Support & Legal - ድጋፍ እና ህግ (2 Cols) - Cascade 3 */}
+                    {/* Column 3: Support & Legal - ድጋፍ እና ህግ (2 Cols) - Cascade 3 (0.35s) */}
                     <div className="footer-cascade-col footer-delay-3 lg:col-span-2">
                         <h4 className="text-white font-semibold font-heading text-base mb-5 relative inline-block after:content-[''] after:block after:w-8 after:h-[2px] after:bg-[#f9b03c] after:mt-1.5">
                             {lang === 'am' ? 'ድጋፍ እና ህግ' : 'Support & Legal'}
@@ -261,7 +305,7 @@ export default function Footer() {
                         </ul>
                     </div>
 
-                    {/* Column 4: Contact & Address - አድራሻ እና ግንኙነት (2 Cols) - Cascade 4 */}
+                    {/* Column 4: Contact & Address - አድራሻ እና ግንኙነት (2 Cols) - Cascade 4 (0.50s) */}
                     <div className="footer-cascade-col footer-delay-4 lg:col-span-2">
                         <h4 className="text-white font-semibold font-heading text-base mb-5 relative inline-block after:content-[''] after:block after:w-8 after:h-[2px] after:bg-[#f9b03c] after:mt-1.5">
                             {lang === 'am' ? 'አድራሻ እና ግንኙነት' : 'Contact & Address'}
@@ -311,7 +355,7 @@ export default function Footer() {
                     </div>
                 </div>
 
-                {/* Bottom Bar: Copyright & Powered By Tsehay Digital - Cascade 5 */}
+                {/* Bottom Bar: Copyright & Powered By Tsehay Digital - Cascade 5 (0.65s) */}
                 <div className="footer-cascade-col footer-delay-5 border-t border-white/[0.08] pt-6 sm:pt-8 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-gray-400">
                     <div className="text-center sm:text-left">
                         <p>© 2026 <span className="notranslate text-gray-200 font-bold" translate="no">Tsehay Campus</span>. መብቱ በህግ የተጠበቀ ነው።</p>
@@ -342,4 +386,3 @@ export default function Footer() {
         </footer>
     );
 }
-

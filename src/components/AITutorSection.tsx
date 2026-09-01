@@ -66,12 +66,14 @@ export default function AITutorSection() {
   const [displayedQuestion, setDisplayedQuestion] = useState('');
   const [displayedResponse, setDisplayedResponse] = useState('');
   const [isThinking, setIsThinking] = useState(false);
-  const [phase, setPhase] = useState<'typing_q' | 'thinking' | 'typing_r' | 'idle'>('typing_q');
+  const [phase, setPhase] = useState<'idle' | 'typing_q' | 'thinking' | 'typing_r'>('idle');
   const [copied, setCopied] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [customInput, setCustomInput] = useState('');
   const [coursesList, setCoursesList] = useState<any[]>([]);
+  const [isSectionVisible, setIsSectionVisible] = useState(false);
 
+  const sectionRef = useRef<HTMLElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const terminalRef = useRef<HTMLDivElement>(null);
   const activeScenario = PROMPT_SCENARIOS[activeScenarioIdx];
@@ -100,6 +102,45 @@ export default function AITutorSection() {
     fetchLive();
   }, []);
 
+  // 🚀 Scrollytelling Visibility & Typing Trigger Sequence
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el) return;
+
+    let typingTriggerTimer: NodeJS.Timeout;
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          setIsSectionVisible(true);
+          // Auto-start typing only AFTER the entire section container and elements animate in (~650ms)
+          typingTriggerTimer = setTimeout(() => {
+            setPhase((currentPhase) => {
+              if (currentPhase === 'idle') return 'typing_q';
+              return currentPhase;
+            });
+          }, 650);
+        } else {
+          const rect = entry.boundingClientRect;
+          const vh = window.innerHeight;
+          if (rect.top > vh + 50 || rect.bottom < -50) {
+            setIsSectionVisible(false);
+          }
+        }
+      });
+    }, {
+      threshold: 0.12,
+      rootMargin: '0px 0px -40px 0px'
+    });
+
+    observer.observe(el);
+
+    return () => {
+      observer.disconnect();
+      clearTimeout(typingTriggerTimer);
+    };
+  }, []);
+
   // Handle typing & streaming simulation
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -110,7 +151,7 @@ export default function AITutorSection() {
       if (displayedQuestion.length < targetQ.length) {
         timer = setTimeout(() => {
           setDisplayedQuestion(targetQ.slice(0, displayedQuestion.length + 1));
-        }, 30);
+        }, 28);
       } else {
         timer = setTimeout(() => {
           setIsThinking(true);
@@ -121,13 +162,13 @@ export default function AITutorSection() {
       timer = setTimeout(() => {
         setIsThinking(false);
         setPhase('typing_r');
-      }, 600);
+      }, 550);
     } else if (phase === 'typing_r') {
       if (displayedResponse.length < targetR.length) {
         const nextChunk = targetR.slice(0, displayedResponse.length + 3);
         timer = setTimeout(() => {
           setDisplayedResponse(nextChunk);
-        }, 18);
+        }, 16);
       } else {
         setPhase('idle');
       }
@@ -232,9 +273,13 @@ export default function AITutorSection() {
   };
 
   return (
-    <section id="ai-feature" className="relative py-20 lg:py-28 overflow-hidden bg-[#030509] border-y border-white/10 select-none">
+    <section 
+      id="ai-feature" 
+      ref={sectionRef}
+      className={`terafab-ai-box relative py-20 lg:py-28 overflow-hidden bg-[#030509] border-y border-white/10 select-none ${isSectionVisible ? 'is-visible' : ''}`}
+    >
       
-      {/* 🌟 1. Visual Atmosphere & Layered 3D Ambient Glow (Clean, No Stray Dots) */}
+      {/* 🌟 1. Visual Atmosphere & Layered 3D Ambient Glow */}
       <div className="absolute inset-0 bg-[radial-gradient(#ffffff08_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none opacity-40"></div>
       
       {/* Golden Orange Glow (#f9b03c / 15%) */}
@@ -248,11 +293,11 @@ export default function AITutorSection() {
         {/* ===================== TOP ROW: 2-COLUMN HERO SHOWCASE ===================== */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center">
           
-          {/* ===================== LEFT COLUMN: VALUE PROPOSITION ===================== */}
+          {/* ===================== LEFT COLUMN: VALUE PROPOSITION (STAGGERED DELAYS) ===================== */}
           <div className="lg:col-span-6 flex flex-col text-left space-y-6">
             
-            {/* Modern Top Badge */}
-            <div className="inline-flex items-center gap-2.5 bg-gradient-to-r from-[#f9b03c]/15 via-amber-500/10 to-transparent border border-[#f9b03c]/30 px-4 py-1.5 rounded-full w-fit shadow-[0_0_25px_rgba(249,176,60,0.2)] backdrop-blur-xl">
+            {/* Modern Top Badge (Delay 1: 0.10s) */}
+            <div className="terafab-ai-item delay-1 inline-flex items-center gap-2.5 bg-gradient-to-r from-[#f9b03c]/15 via-amber-500/10 to-transparent border border-[#f9b03c]/30 px-4 py-1.5 rounded-full w-fit shadow-[0_0_25px_rgba(249,176,60,0.2)] backdrop-blur-xl">
               <span className="relative flex h-2.5 w-2.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#f9b03c] opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#f9b03c]"></span>
@@ -262,24 +307,24 @@ export default function AITutorSection() {
               </span>
             </div>
 
-            {/* Bold Gradient Headline */}
-            <h2 className="text-3xl sm:text-4xl lg:text-[2.75rem] font-black font-heading text-white leading-[1.18] tracking-tight">
+            {/* Bold Gradient Headline (Delay 2: 0.20s) */}
+            <h2 className="terafab-ai-item delay-2 text-3xl sm:text-4xl lg:text-[2.75rem] font-black font-heading text-white leading-[1.18] tracking-tight">
               ጥያቄዎችህን በቅጽበት የሚመልስ፣{' '}
               <span className="bg-gradient-to-r from-white via-amber-200 to-[#f9b03c] bg-clip-text text-transparent drop-shadow-[0_2px_20px_rgba(249,176,60,0.3)]">
                 አብሮህ የሚማር የግል AI መምህርህ
               </span>
             </h2>
 
-            {/* Subtitle */}
-            <p className="text-sm sm:text-base text-slate-300 font-body leading-relaxed max-w-xl">
+            {/* Subtitle (Delay 3: 0.30s) */}
+            <p className="terafab-ai-item delay-3 text-sm sm:text-base text-slate-300 font-body leading-relaxed max-w-xl">
               በኮርሶችህ ውስጥ ለሚገጥምህ ማንኛውም ጥያቄ በሰከንዶች ውስጥ ተግባራዊ መፍትሄ፣ የቢዝነስ ስትራቴጂ እና ደረጃ በደረጃ መመሪያ የሚሰጥህ የኪስህ AI መምህር።
             </p>
 
-            {/* 3 Sleek Benefit Cards */}
+            {/* 3 Sleek Benefit Cards (Staggered Delays 4, 5, 6: 0.40s, 0.50s, 0.60s) */}
             <div className="space-y-3 pt-1">
               
               {/* Benefit 1 */}
-              <div className="flex items-start gap-3.5 p-3.5 rounded-2xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 hover:border-[#f9b03c]/40 transition-all duration-300 shadow-sm group">
+              <div className="terafab-ai-item delay-4 flex items-start gap-3.5 p-3.5 rounded-2xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 hover:border-[#f9b03c]/40 transition-all duration-300 shadow-sm group">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#f9b03c]/20 to-amber-400/10 text-[#f9b03c] border border-[#f9b03c]/30 flex items-center justify-center text-sm shrink-0 shadow-[0_0_15px_rgba(249,176,60,0.2)] group-hover:scale-110 transition-transform">
                   <i className="fa-solid fa-bolt"></i>
                 </div>
@@ -295,7 +340,7 @@ export default function AITutorSection() {
               </div>
 
               {/* Benefit 2 */}
-              <div className="flex items-start gap-3.5 p-3.5 rounded-2xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 hover:border-[#3268ba]/40 transition-all duration-300 shadow-sm group">
+              <div className="terafab-ai-item delay-5 flex items-start gap-3.5 p-3.5 rounded-2xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 hover:border-[#3268ba]/40 transition-all duration-300 shadow-sm group">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#3268ba]/25 to-blue-400/10 text-[#5a93e8] border border-[#3268ba]/40 flex items-center justify-center text-sm shrink-0 shadow-[0_0_15px_rgba(50,104,186,0.25)] group-hover:scale-110 transition-transform">
                   <i className="fa-solid fa-microphone-lines"></i>
                 </div>
@@ -310,7 +355,7 @@ export default function AITutorSection() {
               </div>
 
               {/* Benefit 3 */}
-              <div className="flex items-start gap-3.5 p-3.5 rounded-2xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 hover:border-emerald-500/40 transition-all duration-300 shadow-sm group">
+              <div className="terafab-ai-item delay-6 flex items-start gap-3.5 p-3.5 rounded-2xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/10 hover:border-emerald-500/40 transition-all duration-300 shadow-sm group">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500/20 to-teal-400/10 text-emerald-400 border border-emerald-500/30 flex items-center justify-center text-sm shrink-0 shadow-[0_0_15px_rgba(16,185,129,0.2)] group-hover:scale-110 transition-transform">
                   <span className="text-sm">🇪🇹</span>
                 </div>
@@ -326,8 +371,8 @@ export default function AITutorSection() {
 
             </div>
 
-            {/* Glowing CTA Button */}
-            <div className="pt-2">
+            {/* Glowing CTA Button (Delay 7: 0.70s) */}
+            <div className="terafab-ai-item delay-7 pt-2">
               <Link 
                 href="/courses"
                 className="group relative inline-flex items-center justify-center gap-3 px-8 py-3.5 rounded-2xl bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#f9b03c] text-slate-950 font-black text-xs sm:text-sm uppercase tracking-wider shadow-[0_0_35px_rgba(249,176,60,0.4)] hover:shadow-[0_0_50px_rgba(249,176,60,0.65)] transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer"
@@ -339,7 +384,7 @@ export default function AITutorSection() {
           </div>
 
           {/* ===================== RIGHT COLUMN: 3D INTERACTIVE LIVE DEMO TERMINAL ===================== */}
-          <div ref={terminalRef} className="lg:col-span-6 flex justify-center relative">
+          <div ref={terminalRef} className="terafab-ai-item delay-4 lg:col-span-6 flex justify-center relative">
             
             {/* 3D Tilt Wrapper */}
             <Tilt3DCard maxTilt={5} scale={1.01} perspective={1200} className="w-full max-w-xl">
@@ -413,14 +458,23 @@ export default function AITutorSection() {
                   
                   {/* User Prompt Message */}
                   {displayedQuestion && (
-                    <div className="flex justify-end items-start gap-2.5 animate-in fade-in duration-200">
-                      <div className="bg-gradient-to-r from-[#3268ba] to-blue-600 text-white px-4 py-3 rounded-2xl rounded-tr-xs max-w-[88%] shadow-lg border border-white/15">
+                    <div className="flex justify-end items-start gap-2.5 animate-in fade-in duration-200 min-w-0">
+                      <div 
+                        className="bg-gradient-to-r from-[#3268ba] to-blue-600 text-white px-4 py-3 rounded-2xl rounded-tr-xs max-w-[88%] shadow-lg border border-white/15 min-w-0"
+                        style={{ wordBreak: 'break-word', overflowWrap: 'break-word', whiteSpace: 'pre-wrap' }}
+                      >
                         <div className="text-[10px] text-blue-200 font-mono mb-1 font-bold flex items-center gap-1.5">
                           <i className="fa-solid fa-user text-[9px]"></i>
                           <span>የተማሪ ጥያቄ</span>
                         </div>
-                        <p className="text-xs sm:text-sm font-bold leading-relaxed">
-                          {displayedQuestion}
+                        <p 
+                          className="text-xs sm:text-sm font-bold leading-relaxed terafab-typing-text"
+                          style={{ wordBreak: 'break-word', overflowWrap: 'break-word', whiteSpace: 'pre-wrap' }}
+                        >
+                          <span>{displayedQuestion}</span>
+                          {phase === 'typing_q' && (
+                            <span className="inline-block w-1.5 h-3.5 bg-white animate-pulse ml-1 align-middle shadow-[0_0_6px_#ffffff] rounded-xs"></span>
+                          )}
                         </p>
                       </div>
                       <div className="w-8 h-8 rounded-xl bg-[#3268ba] text-white flex items-center justify-center text-xs font-black shrink-0 border border-white/20 shadow-sm">
@@ -431,7 +485,7 @@ export default function AITutorSection() {
 
                   {/* AI Neural Thinking Animation */}
                   {isThinking && (
-                    <div className="flex items-start gap-2.5 animate-in fade-in duration-200">
+                    <div className="flex items-start gap-2.5 animate-in fade-in duration-200 min-w-0">
                       <div className="w-8 h-8 rounded-xl bg-[#f9b03c] text-slate-950 flex items-center justify-center text-xs font-black shrink-0 shadow-[0_0_15px_rgba(249,176,60,0.5)]">
                         <i className="fa-solid fa-robot"></i>
                       </div>
@@ -448,26 +502,29 @@ export default function AITutorSection() {
 
                   {/* AI Streaming Response Card */}
                   {displayedResponse && (
-                    <div className="flex items-start gap-2.5 animate-in fade-in duration-200">
+                    <div className="flex items-start gap-2.5 animate-in fade-in duration-200 min-w-0">
                       <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#f9b03c] to-amber-300 text-slate-950 flex items-center justify-center text-xs font-black shrink-0 shadow-[0_0_15px_rgba(249,176,60,0.5)]">
                         <i className="fa-solid fa-robot"></i>
                       </div>
 
-                      <div className="bg-white/[0.04] border border-white/15 backdrop-blur-2xl p-4 rounded-2xl rounded-tl-xs max-w-[92%] shadow-2xl relative w-full">
+                      <div 
+                        className="bg-white/[0.04] border border-white/15 backdrop-blur-2xl p-4 rounded-2xl rounded-tl-xs max-w-[92%] shadow-2xl relative w-full min-w-0 overflow-hidden"
+                        style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}
+                      >
                         
                         {/* Response Top Toolbar */}
                         <div className="flex items-center justify-between gap-2 mb-2.5 pb-2 border-b border-white/10">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-black text-[#f9b03c] flex items-center gap-1.5 font-heading">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="text-xs font-black text-[#f9b03c] flex items-center gap-1.5 font-heading shrink-0">
                               <i className="fa-solid fa-wand-magic-sparkles text-[11px]"></i> Tsehay AI
                             </span>
-                            <span className="text-[10px] bg-[#f9b03c]/20 text-[#f9b03c] border border-[#f9b03c]/40 px-2 py-0.5 rounded-full font-bold">
+                            <span className="text-[10px] bg-[#f9b03c]/20 text-[#f9b03c] border border-[#f9b03c]/40 px-2 py-0.5 rounded-full font-bold truncate">
                               {activeScenario.badge}
                             </span>
                           </div>
 
                           {/* Action Icons (Voice TTS & Copy) */}
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 shrink-0">
                             
                             {/* Live Sound Wave Equalizer animation when speaking */}
                             {isSpeaking && (
@@ -507,10 +564,16 @@ export default function AITutorSection() {
                           </div>
                         </div>
 
-                        {/* Streaming Text Body */}
-                        <p className="text-xs sm:text-[13px] text-slate-200 font-medium leading-relaxed whitespace-pre-line font-body">
-                          {displayedResponse}
-                        </p>
+                        {/* Streaming Text Body with Multi-line Wrapping & Inline Cursor */}
+                        <div 
+                          className="terafab-typing-text text-xs sm:text-[13px] text-slate-200 font-medium leading-relaxed font-body"
+                          style={{ wordBreak: 'break-word', overflowWrap: 'break-word', whiteSpace: 'pre-wrap' }}
+                        >
+                          <span>{displayedResponse}</span>
+                          {phase === 'typing_r' && (
+                            <span className="inline-block w-1.5 h-3.5 sm:h-4 bg-[#f9b03c] animate-pulse ml-1 align-middle shadow-[0_0_8px_#f9b03c] rounded-xs"></span>
+                          )}
+                        </div>
 
                         {/* Dynamic Course CTA Footer Badge */}
                         <div className="mt-3.5 pt-2.5 border-t border-white/10 flex items-center justify-between gap-2 flex-wrap">
@@ -564,10 +627,10 @@ export default function AITutorSection() {
 
         </div>
 
-        {/* ===================== 🌟 2. 3-COLUMN FAQ QUESTION GRID ===================== */}
+        {/* ===================== 🌟 2. 3-COLUMN FAQ QUESTION GRID (STAGGERED DELAYS) ===================== */}
         <div className="pt-6 border-t border-white/10">
           
-          <div className="text-center max-w-2xl mx-auto mb-8 space-y-2">
+          <div className="terafab-ai-item delay-5 text-center max-w-2xl mx-auto mb-8 space-y-2">
             <span className="text-[11px] font-black uppercase tracking-widest text-[#f9b03c] font-heading">
               💡 በብዛት የሚጠየቁ ጥያቄዎች • AI FAQ Knowledge Base
             </span>
@@ -579,7 +642,7 @@ export default function AITutorSection() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="terafab-ai-item delay-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {PROMPT_SCENARIOS.map((sc, idx) => (
               <div
                 key={`faq-${sc.id}`}

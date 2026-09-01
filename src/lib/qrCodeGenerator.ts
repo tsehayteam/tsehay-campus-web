@@ -1,7 +1,7 @@
 /**
  * Tsehay Campus QR Code Generator
  * Pure TypeScript, zero-dependency, ultra-resilient QR Code Matrix generator & renderer
- * Supports SVG vector rendering, Canvas PNG generation, and Data URL exports with central branded badge.
+ * Supports SVG vector rendering, Canvas PNG generation, and Data URL exports with central official brand logo.
  */
 
 export interface QRCodeOptions {
@@ -11,15 +11,17 @@ export interface QRCodeOptions {
   colorLight?: string;
   margin?: number;
   showLogo?: boolean;
+  logoSrc?: string;
 }
 
-// Generate branded SVG QR Code
+// Generate branded SVG QR Code with center logo
 export function generateTicketQrSvg(data: string, options?: QRCodeOptions): string {
   const size = options?.width || 240;
   const colorDark = options?.colorDark || '#0c1017';
   const colorLight = options?.colorLight || '#ffffff';
   const margin = options?.margin !== undefined ? options?.margin : 2;
   const showLogo = options?.showLogo !== false;
+  const logoSrc = options?.logoSrc || '/logo.png';
 
   const modules = createQrMatrix(data);
   const moduleCount = modules.length;
@@ -41,15 +43,15 @@ export function generateTicketQrSvg(data: string, options?: QRCodeOptions): stri
   }
 
   const center = size / 2;
-  const logoRadius = cellSize * 2.8;
+  const logoSize = cellSize * 5.4;
+  const logoOffset = center - logoSize / 2;
 
   const logoSvg = showLogo
     ? `
-    <!-- Center Branded Cutout & Tsehay Badge -->
-    <circle cx="${center}" cy="${center}" r="${logoRadius + 3}" fill="${colorLight}" />
-    <circle cx="${center}" cy="${center}" r="${logoRadius}" fill="#0c1017" stroke="#f9b03c" stroke-width="2.5" />
-    <circle cx="${center}" cy="${center}" r="${logoRadius - 4}" fill="#171e2c" />
-    <text x="${center}" y="${center + 4.5}" font-family="system-ui, -apple-system, sans-serif" font-size="${logoRadius * 0.95}" font-weight="900" text-anchor="middle" fill="#f9b03c">☀️</text>
+    <!-- Center Branded Cutout & Tsehay Campus Official Logo -->
+    <rect x="${logoOffset - 2}" y="${logoOffset - 2}" width="${logoSize + 4}" height="${logoSize + 4}" fill="${colorLight}" rx="6" />
+    <rect x="${logoOffset}" y="${logoOffset}" width="${logoSize}" height="${logoSize}" fill="#ffffff" stroke="#f9b03c" stroke-width="2" rx="5" />
+    <image href="${logoSrc}" x="${logoOffset + 1}" y="${logoOffset + 1}" width="${logoSize - 2}" height="${logoSize - 2}" preserveAspectRatio="xMidYMid slice" />
     `
     : '';
 
@@ -60,13 +62,14 @@ export function generateTicketQrSvg(data: string, options?: QRCodeOptions): stri
   </svg>`;
 }
 
-// Helper to draw branded QR onto Canvas and export as base64 PNG
+// Helper to draw branded QR onto Canvas and export as base64 PNG with official logo
 export function drawQrToCanvas(canvas: HTMLCanvasElement, data: string, options?: QRCodeOptions): string {
-  const size = options?.width || 360;
+  const size = options?.width || 480;
   const colorDark = options?.colorDark || '#0c1017';
   const colorLight = options?.colorLight || '#ffffff';
   const margin = options?.margin !== undefined ? options?.margin : 3;
   const showLogo = options?.showLogo !== false;
+  const logoSrc = options?.logoSrc || '/logo.png';
 
   canvas.width = size;
   canvas.height = size;
@@ -96,28 +99,25 @@ export function drawQrToCanvas(canvas: HTMLCanvasElement, data: string, options?
 
   if (showLogo) {
     const center = size / 2;
-    const logoRadius = cellSize * 2.8;
+    const logoSize = cellSize * 5.4;
+    const logoOffset = center - logoSize / 2;
 
-    // Outer background circle
-    ctx.beginPath();
-    ctx.arc(center, center, logoRadius + 3, 0, Math.PI * 2);
+    // Draw background badge
     ctx.fillStyle = colorLight;
-    ctx.fill();
+    ctx.fillRect(logoOffset - 4, logoOffset - 4, logoSize + 8, logoSize + 8);
 
-    // Dark badge body
-    ctx.beginPath();
-    ctx.arc(center, center, logoRadius, 0, Math.PI * 2);
-    ctx.fillStyle = '#0c1017';
-    ctx.fill();
-    ctx.lineWidth = 3;
     ctx.strokeStyle = '#f9b03c';
-    ctx.stroke();
+    ctx.lineWidth = 3;
+    ctx.strokeRect(logoOffset, logoOffset, logoSize, logoSize);
 
-    // Sun emoji emblem
-    ctx.font = `${Math.floor(logoRadius * 1.05)}px sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('☀️', center, center + 1);
+    // Attempt to load and draw logo image
+    if (typeof window !== 'undefined') {
+      const img = new Image();
+      img.src = logoSrc;
+      if (img.complete && img.naturalWidth > 0) {
+        ctx.drawImage(img, logoOffset + 2, logoOffset + 2, logoSize - 4, logoSize - 4);
+      }
+    }
   }
 
   return canvas.toDataURL('image/png');

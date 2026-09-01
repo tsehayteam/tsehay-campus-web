@@ -152,112 +152,156 @@ export const isUserAdmin = (email?: string | null, role?: string): boolean => {
   return adminEmails.includes(email.toLowerCase()) || role === 'admin';
 };
 
-// 1. Subscribe to Live Community Posts
+// Helper to get instantly cached community posts
+export const getCachedCommunityPosts = (): CommunityPost[] => {
+  if (typeof window === 'undefined') return INITIAL_COMMUNITY_POSTS;
+  try {
+    const deletedIds = JSON.parse(localStorage.getItem('tsehay_deleted_community_posts') || '[]');
+    const cached = localStorage.getItem('tsehay_cached_community_posts');
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed.filter((p: any) => !deletedIds.includes(p.id));
+      }
+    }
+  } catch (e) {}
+  return INITIAL_COMMUNITY_POSTS;
+};
+
+// 1. Subscribe to Live Community Posts (Multi-Collection + API Real-Time Sync)
 export const subscribeCommunityPosts = (
   onPostsUpdate: (posts: CommunityPost[]) => void,
   categoryFilter: string = 'all'
 ) => {
-  try {
-    const getDeletedIds = (): string[] => {
-      if (typeof window === 'undefined') return [];
+  const getDeletedIds = (): string[] => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const deleted = localStorage.getItem('tsehay_deleted_community_posts');
+      return deleted ? JSON.parse(deleted) : [];
+    } catch (e) {
+      return [];
+    }
+  };
+
+  const postMap = new Map<string, CommunityPost>();
+
+  // Hydrate from localStorage or sample posts immediately
+  getCachedCommunityPosts().forEach(p => postMap.set(p.id, p));
+
+  const publishPosts = () => {
+    const deletedIds = getDeletedIds();
+    const allPosts = Array.from(postMap.values()).filter(p => !deletedIds.includes(p.id));
+    
+    // Sort: Pinned posts first, then chronological newest to oldest
+    allPosts.sort((a, b) => {
+      if (a.isPinned && !b.isPinned) return -1;
+      if (!a.isPinned && b.isPinned) return 1;
+      const timeA = new Date(a.createdAt).getTime();
+      const timeB = new Date(b.createdAt).getTime();
+      return timeB - timeA;
+    });
+
+    const filtered = categoryFilter === 'all' 
+      ? allPosts 
+      : allPosts.filter(p => p.category === categoryFilter);
+
+    onPostsUpdate(filtered);
+    if (typeof window !== 'undefined') {
       try {
-        const deleted = localStorage.getItem('tsehay_deleted_community_posts');
-        return deleted ? JSON.parse(deleted) : [];
-      } catch (e) {
-        return [];
+        localStorage.setItem('tsehay_cached_community_posts', JSON.stringify(allPosts));
+      } catch (e) {}
+    }
+  };
+
+  const processDoc = (docSnap: any) => {
+    const data = docSnap.data();
+    const id = docSnap.id;
+    const deletedIds = getDeletedIds();
+    if (deletedIds.includes(id)) return;
+
+    postMap.set(id, {
+      id,
+      authorId: data.authorId || '',
+      authorName: data.authorName || 'ተማሪ',
+      authorEmail: data.authorEmail || '',
+      authorPhoto: data.authorPhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(data.authorName || 'User')}&background=f9b03c&color=111827&bold=true`,
+      authorRole: data.authorRole,
+      isAdmin: Boolean(data.isAdmin || isUserAdmin(data.authorEmail, data.authorRole)),
+      isPro: Boolean(data.isPro),
+      content: data.content || '',
+      codeSnippet: data.codeSnippet || null,
+      imageUrl: data.imageUrl || null,
+      category: data.category || 'general',
+      tags: Array.isArray(data.tags) ? data.tags : [],
+      likes: Array.isArray(data.likes) ? data.likes : [],
+      commentsCount: Number(data.commentsCount || 0),
+      isPinned: Boolean(data.isPinned),
+      isFeatured: Boolean(data.isFeatured),
+      createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : (data.createdAt || new Date().toISOString()),
+      updatedAt: data.updatedAt,
+    });
+  };
+
+  // 1. Listen on Root community_posts
+  let unsubRoot = () => {};
+  try {
+    const rootRef = collection(db, 'community_posts');
+    const qRoot = query(rootRef, orderBy('createdAt', 'desc'), limit(100));
+    unsubRoot = onSnapshot(qRoot, (snapshot) => {
+      if (!snapshot.empty) {
+        snapshot.forEach(processDoc);
+        publishPosts();
       }
-    };
+    }, (err) => {
+      console.warn('Root community_posts onSnapshot notice:', err);
+    });
+  } catch (e) {}
 
-    const postsRef = collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_posts');
-    const q = query(postsRef, orderBy('createdAt', 'desc'), limit(100));
+  // 2. Listen on Artifact community_posts
+  let unsubArtifact = () => {};
+  try {
+    const artifactRef = collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_posts');
+    const qArtifact = query(artifactRef, orderBy('createdAt', 'desc'), limit(100));
+    unsubArtifact = onSnapshot(qArtifact, (snapshot) => {
+      if (!snapshot.empty) {
+        snapshot.forEach(processDoc);
+        publishPosts();
+      }
+    }, (err) => {
+      console.warn('Artifact community_posts onSnapshot notice:', err);
+    });
+  } catch (e) {}
 
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        const deletedIds = getDeletedIds();
-        if (!snapshot.empty) {
-          const livePosts: CommunityPost[] = [];
-          snapshot.forEach((docSnap) => {
-            if (deletedIds.includes(docSnap.id)) return;
-            const data = docSnap.data();
-            livePosts.push({
-              id: docSnap.id,
-              authorId: data.authorId || '',
-              authorName: data.authorName || 'ተማሪ',
-              authorEmail: data.authorEmail || '',
-              authorPhoto: data.authorPhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(data.authorName || 'User')}&background=f9b03c&color=111827&bold=true`,
-              authorRole: data.authorRole,
-              isAdmin: Boolean(data.isAdmin || isUserAdmin(data.authorEmail, data.authorRole)),
-              isPro: Boolean(data.isPro),
-              content: data.content || '',
-              codeSnippet: data.codeSnippet || null,
-              imageUrl: data.imageUrl || null,
-              category: data.category || 'general',
-              tags: data.tags || [],
-              likes: Array.isArray(data.likes) ? data.likes : [],
-              commentsCount: Number(data.commentsCount || 0),
-              isPinned: Boolean(data.isPinned),
-              isFeatured: Boolean(data.isFeatured),
-              createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : (data.createdAt || new Date().toISOString()),
-              updatedAt: data.updatedAt,
+  // 3. Parallel Server API Fetch (Ensures fresh sync across servers)
+  fetch(`/api/admin/community?t=${Date.now()}`)
+    .then(res => res.json())
+    .then(json => {
+      if (json.success && Array.isArray(json.posts)) {
+        json.posts.forEach((p: any) => {
+          if (p && p.id) {
+            postMap.set(p.id, {
+              ...p,
+              createdAt: p.createdAt || new Date().toISOString(),
+              likes: Array.isArray(p.likes) ? p.likes : [],
+              commentsCount: Number(p.commentsCount || 0)
             });
-          });
-
-          // Sort: Pinned posts first, then chronological
-          livePosts.sort((a, b) => {
-            if (a.isPinned && !b.isPinned) return -1;
-            if (!a.isPinned && b.isPinned) return 1;
-            const timeA = new Date(a.createdAt).getTime();
-            const timeB = new Date(b.createdAt).getTime();
-            return timeB - timeA;
-          });
-
-          // Filter if category is specified
-          const filtered = categoryFilter === 'all' 
-            ? livePosts 
-            : livePosts.filter(p => p.category === categoryFilter);
-
-          onPostsUpdate(filtered);
-          try {
-            localStorage.setItem('tsehay_cached_community_posts', JSON.stringify(livePosts));
-          } catch (e) {}
-        } else {
-          // If Firestore collection is empty, filter out any deleted sample posts
-          const availableSamples = INITIAL_COMMUNITY_POSTS.filter(p => !deletedIds.includes(p.id));
-          const filtered = categoryFilter === 'all' 
-            ? availableSamples 
-            : availableSamples.filter(p => p.category === categoryFilter);
-          onPostsUpdate(filtered);
-        }
-      },
-      (error) => {
-        console.warn('Community posts snapshot error:', error);
-        const deletedIds = getDeletedIds();
-        try {
-          const cached = localStorage.getItem('tsehay_cached_community_posts');
-          if (cached) {
-            const parsed = JSON.parse(cached);
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              const cleaned = parsed.filter((p: any) => !deletedIds.includes(p.id));
-              onPostsUpdate(categoryFilter === 'all' ? cleaned : cleaned.filter((p: any) => p.category === categoryFilter));
-              return;
-            }
           }
-        } catch (e) {}
-        const fallback = INITIAL_COMMUNITY_POSTS.filter(p => !deletedIds.includes(p.id));
-        onPostsUpdate(categoryFilter === 'all' ? fallback : fallback.filter(p => p.category === categoryFilter));
+        });
+        publishPosts();
       }
-    );
+    })
+    .catch(e => console.warn('Community API load error:', e));
 
-    return unsubscribe;
-  } catch (error) {
-    console.error('Failed to setup posts listener:', error);
-    onPostsUpdate(INITIAL_COMMUNITY_POSTS);
-    return () => {};
-  }
+  // Initial trigger with current cached state
+  publishPosts();
+
+  return () => {
+    unsubRoot();
+    unsubArtifact();
+  };
 };
 
-// 2. Create Community Post
+// 2. Create Community Post (Multi-Tier Robust Persistence)
 export const createCommunityPost = async (post: Omit<CommunityPost, 'id' | 'likes' | 'commentsCount' | 'createdAt'>) => {
   const newPostData = {
     ...post,
@@ -265,30 +309,54 @@ export const createCommunityPost = async (post: Omit<CommunityPost, 'id' | 'like
     commentsCount: 0,
     isPinned: Boolean(post.isPinned),
     isFeatured: Boolean(post.isFeatured),
-    createdAt: serverTimestamp(),
+    createdAt: new Date().toISOString(),
   };
 
-  let docId = '';
-  try {
-    const postsRef = collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_posts');
-    const docRef = await addDoc(postsRef, newPostData);
-    docId = docRef.id;
+  let docId = `post_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
 
-    // Mirror to root community_posts
-    try {
-      await setDoc(doc(db, 'community_posts', docId), { ...newPostData, id: docId });
-    } catch (e) {}
-  } catch (clientErr) {
-    console.warn('Client create post fallback to API:', clientErr);
+  // 1. Direct Firestore writes (Root + Artifact)
+  try {
+    const rootDocRef = doc(db, 'community_posts', docId);
+    await setDoc(rootDocRef, { ...newPostData, id: docId });
+  } catch (e) {
+    console.warn('Direct root create post notice:', e);
+  }
+
+  try {
+    const artifactDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_posts', docId);
+    await setDoc(artifactDocRef, { ...newPostData, id: docId });
+  } catch (e) {
+    console.warn('Direct artifact create post notice:', e);
+  }
+
+  // 2. Server API Persistence
+  try {
     const res = await fetch('/api/admin/community', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(post)
+      body: JSON.stringify({ ...post, id: docId })
     });
     if (res.ok) {
       const data = await res.json();
-      docId = data.post?.id || `post_${Date.now()}`;
+      if (data.post?.id) {
+        docId = data.post.id;
+      }
     }
+  } catch (apiErr) {
+    console.warn('Server create post API notice:', apiErr);
+  }
+
+  // 3. Update localStorage cache immediately
+  if (typeof window !== 'undefined') {
+    try {
+      const cached = getCachedCommunityPosts();
+      const newPost: CommunityPost = {
+        id: docId,
+        ...newPostData,
+      };
+      const updated = [newPost, ...cached.filter(p => p.id !== docId)];
+      localStorage.setItem('tsehay_cached_community_posts', JSON.stringify(updated));
+    } catch (e) {}
   }
 
   return docId;
@@ -435,41 +503,58 @@ export const subscribePostComments = (
   postId: string,
   onCommentsUpdate: (comments: CommunityComment[]) => void
 ) => {
+  const commentMap = new Map<string, CommunityComment>();
+
+  const publishComments = () => {
+    const list = Array.from(commentMap.values());
+    list.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    onCommentsUpdate(list);
+  };
+
+  const processComment = (docSnap: any) => {
+    const data = docSnap.data();
+    commentMap.set(docSnap.id, {
+      id: docSnap.id,
+      postId,
+      authorId: data.authorId || '',
+      authorName: data.authorName || 'ተጠቃሚ',
+      authorEmail: data.authorEmail || '',
+      authorPhoto: data.authorPhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(data.authorName || 'User')}&background=f9b03c&color=111827&bold=true`,
+      isAdmin: Boolean(data.isAdmin || isUserAdmin(data.authorEmail)),
+      isPro: Boolean(data.isPro),
+      content: data.content || '',
+      createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : (data.createdAt || new Date().toISOString()),
+    });
+  };
+
+  let unsubArtifact = () => {};
   try {
-    const commentsRef = collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_posts', postId, 'comments');
-    const q = query(commentsRef, orderBy('createdAt', 'asc'), limit(50));
-
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        const liveComments: CommunityComment[] = [];
-        snapshot.forEach((docSnap) => {
-          const data = docSnap.data();
-          liveComments.push({
-            id: docSnap.id,
-            postId,
-            authorId: data.authorId || '',
-            authorName: data.authorName || 'ተጠቃሚ',
-            authorEmail: data.authorEmail || '',
-            authorPhoto: data.authorPhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(data.authorName || 'User')}&background=f9b03c&color=111827&bold=true`,
-            isAdmin: Boolean(data.isAdmin || isUserAdmin(data.authorEmail)),
-            isPro: Boolean(data.isPro),
-            content: data.content || '',
-            createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : (data.createdAt || new Date().toISOString()),
-          });
-        });
-        onCommentsUpdate(liveComments);
-      },
-      (error) => {
-        console.warn('Comments listener error:', error);
+    const artifactRef = collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_posts', postId, 'comments');
+    const qArtifact = query(artifactRef, orderBy('createdAt', 'asc'), limit(100));
+    unsubArtifact = onSnapshot(qArtifact, (snap) => {
+      if (!snap.empty) {
+        snap.forEach(processComment);
+        publishComments();
       }
-    );
+    }, () => {});
+  } catch (e) {}
 
-    return unsubscribe;
-  } catch (e) {
-    console.error('Error attaching comments listener:', e);
-    return () => {};
-  }
+  let unsubRoot = () => {};
+  try {
+    const rootRef = collection(db, 'community_posts', postId, 'comments');
+    const qRoot = query(rootRef, orderBy('createdAt', 'asc'), limit(100));
+    unsubRoot = onSnapshot(qRoot, (snap) => {
+      if (!snap.empty) {
+        snap.forEach(processComment);
+        publishComments();
+      }
+    }, () => {});
+  } catch (e) {}
+
+  return () => {
+    unsubArtifact();
+    unsubRoot();
+  };
 };
 
 // 8. Add Comment to Post
@@ -490,19 +575,27 @@ export const addCommentToPost = async (
     postSnippet?: string;
   }
 ) => {
-  // 1. Client Firestore
+  const commentId = `comm_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+  const fullComment = {
+    ...commentData,
+    id: commentId,
+    postId,
+    createdAt: new Date().toISOString(),
+  };
+
+  // 1. Client Firestore (Root + Artifact)
   try {
-    const commentsRef = collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_posts', postId, 'comments');
-    const postDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_posts', postId);
+    const rootCommentsRef = doc(db, 'community_posts', postId, 'comments', commentId);
+    const rootPostRef = doc(db, 'community_posts', postId);
+    await setDoc(rootCommentsRef, fullComment);
+    await updateDoc(rootPostRef, { commentsCount: increment(1) });
+  } catch (e) {}
 
-    await addDoc(commentsRef, {
-      ...commentData,
-      createdAt: serverTimestamp(),
-    });
-
-    await updateDoc(postDocRef, {
-      commentsCount: increment(1),
-    });
+  try {
+    const artCommentsRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_posts', postId, 'comments', commentId);
+    const artPostRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_posts', postId);
+    await setDoc(artCommentsRef, fullComment);
+    await updateDoc(artPostRef, { commentsCount: increment(1) });
   } catch (e) {}
 
   // 2. Server API Dispatch
@@ -510,7 +603,7 @@ export const addCommentToPost = async (
     await fetch('/api/community/comment', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ postId, ...commentData })
+      body: JSON.stringify({ postId, ...commentData, id: commentId })
     });
   } catch (apiErr) {}
 

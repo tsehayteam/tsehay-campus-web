@@ -1262,41 +1262,55 @@ img, video, canvas {
 }
 
 /* ==========================================================================
-   🚀 Terafab.ai Scrollytelling & Cinematic Reveal Engine
+   🚀 Cello.so & Terafab 3D Inward Fly-Through Reveal Engine
    ========================================================================== */
 
 .scrolly-reveal {
   opacity: 0;
-  transform: translateY(40px);
-  transition: opacity 0.85s cubic-bezier(0.16, 1, 0.3, 1), transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: perspective(1200px) translateZ(-70px) scale(0.92) translateY(30px);
+  transition: opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1), transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: opacity, transform;
 }
 
 .scrolly-reveal.is-visible {
   opacity: 1;
-  transform: translateY(0);
+  transform: perspective(1200px) translateZ(0) scale(1) translateY(0);
 }
 
 .scrolly-card {
   opacity: 0;
-  transform: translateY(40px);
-  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: perspective(1200px) translateZ(-60px) scale(0.92) translateY(30px);
+  transition: opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1), transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: opacity, transform;
 }
 
+.is-visible .scrolly-card,
 .scrolly-card.is-visible {
   opacity: 1;
-  transform: translateY(0);
+  transform: perspective(1200px) translateZ(0) scale(1) translateY(0);
 }
 
-.scrolly-stagger-1 { transition-delay: 0.08s; }
-.scrolly-stagger-2 { transition-delay: 0.22s; }
-.scrolly-stagger-3 { transition-delay: 0.36s; }
-.scrolly-stagger-4 { transition-delay: 0.50s; }
-.scrolly-stagger-5 { transition-delay: 0.62s; }
-.scrolly-stagger-6 { transition-delay: 0.74s; }
+.scrolly-stagger-1, .scrolly-card.delay-1 { transition-delay: 0.10s; }
+.scrolly-stagger-2, .scrolly-card.delay-2 { transition-delay: 0.25s; }
+.scrolly-stagger-3, .scrolly-card.delay-3 { transition-delay: 0.40s; }
+.scrolly-stagger-4, .scrolly-card.delay-4 { transition-delay: 0.55s; }
+.scrolly-stagger-5, .scrolly-card.delay-5 { transition-delay: 0.70s; }
+.scrolly-stagger-6, .scrolly-card.delay-6 { transition-delay: 0.85s; }
 
-/* Subtle continuous glowing pulse for main headline badge */
+/* Subtle continuous glowing pulse for main headline text & badge */
+@keyframes headlinePulseGlow {
+  0%, 100% {
+    text-shadow: 0 0 15px rgba(249, 176, 60, 0.35), 0 0 30px rgba(249, 176, 60, 0.18);
+  }
+  50% {
+    text-shadow: 0 0 35px rgba(249, 176, 60, 0.75), 0 0 65px rgba(249, 176, 60, 0.45), 0 0 90px rgba(50, 104, 186, 0.35);
+  }
+}
+
+.headline-glow-pulse {
+  animation: headlinePulseGlow 3.5s ease-in-out infinite;
+}
+
 @keyframes headlineGlowPulse {
   0%, 100% {
     box-shadow: 0 0 20px rgba(249, 176, 60, 0.25), inset 0 0 15px rgba(249, 176, 60, 0.08);
@@ -1318,7 +1332,7 @@ img, video, canvas {
 
 .terafab-ai-box {
   opacity: 0;
-  transform: scale(0.92) translateY(36px);
+  transform: scale(0.90) translateY(40px);
   filter: blur(8px);
   transition: opacity 0.95s cubic-bezier(0.16, 1, 0.3, 1), transform 0.95s cubic-bezier(0.16, 1, 0.3, 1), filter 0.95s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: opacity, transform, filter;
@@ -1350,6 +1364,16 @@ img, video, canvas {
 .terafab-ai-item.delay-6 { transition-delay: 0.60s; }
 .terafab-ai-item.delay-7 { transition-delay: 0.70s; }
 
+/* 🛡️ Constrained Amharic & English Typing Animation Wrapping */
+.terafab-typing-text {
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+  white-space: pre-wrap !important;
+  word-break: break-word !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+}
+
 /* ==========================================================================
    🌊 Footer Cascading / Ripple Entrance & Interactive Magnetic Effects
    ========================================================================== */
@@ -1366,9 +1390,9 @@ img, video, canvas {
   transform: translateY(0) scale(1);
 }
 
-.footer-delay-1 { transition-delay: 0.08s; }
-.footer-delay-2 { transition-delay: 0.22s; }
-.footer-delay-3 { transition-delay: 0.36s; }
+.footer-delay-1 { transition-delay: 0.05s; }
+.footer-delay-2 { transition-delay: 0.20s; }
+.footer-delay-3 { transition-delay: 0.35s; }
 .footer-delay-4 { transition-delay: 0.50s; }
 .footer-delay-5 { transition-delay: 0.65s; }
 
@@ -2044,4 +2068,63 @@ img, video, canvas {
   transform: translateY(-2px);
 }
 
+/* 🌟 Silicon Valley 3D Inward Fly-In Event Cards */
+.event-fly-in-card {
+  transform-style: preserve-3d;
+  perspective: 1200px;
+  will-change: transform, opacity;
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.6s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.4s ease;
+}
 
+#courses-pin-container {
+  will-change: transform;
+}
+
+#courses-horizontal-track {
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
+}
+
+/* 🌟 Course Title Dual-Color Glow (Golden Yellow #f9b03c <-> Royal Blue #3268ba) */
+@keyframes courseTitleDualGlow {
+  0%, 100% {
+    text-shadow: 0 0 25px rgba(249, 176, 60, 0.65), 0 0 50px rgba(249, 176, 60, 0.35);
+    filter: drop-shadow(0 0 15px rgba(249, 176, 60, 0.45));
+  }
+  50% {
+    text-shadow: 0 0 25px rgba(50, 104, 186, 0.75), 0 0 50px rgba(50, 104, 186, 0.45);
+    filter: drop-shadow(0 0 15px rgba(50, 104, 186, 0.5));
+  }
+}
+
+.course-title-glow-pulse {
+  animation: courseTitleDualGlow 3.6s ease-in-out infinite alternate;
+  will-change: text-shadow, filter;
+}
+
+/* 🌟 Course Details Cinematic Pop-Up Entrance */
+@keyframes courseSectionPopUp {
+  0% {
+    opacity: 0;
+    transform: translateY(24px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.course-section-popout {
+  animation: courseSectionPopUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
+
+/* 🌟 Course Pop-Up Entrance & Hover Glow */
+.course-popup-card {
+  will-change: transform, opacity;
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.course-popup-card:hover {
+  transform: translateY(-8px);
+}

@@ -3,6 +3,7 @@ import React, { useEffect } from 'react';
 import Link from 'next/link';
 import { parseVideoEmbedUrl } from '@/lib/videoParser';
 import { formatDriveImageUrl, getCourseSlug } from '@/lib/courseCache';
+import TypingCourseTitle from '@/components/TypingCourseTitle';
 
 interface CoursePreviewModalProps {
   isOpen: boolean;
@@ -121,8 +122,8 @@ export default function CoursePreviewModal({
                   </span>
                 )}
               </div>
-              <h3 className="text-lg sm:text-xl font-black font-heading text-white line-clamp-2">
-                {course.title}
+              <h3 className="text-lg sm:text-2xl font-black font-heading text-white line-clamp-2">
+                <TypingCourseTitle title={course.title} />
               </h3>
             </div>
 
@@ -131,7 +132,7 @@ export default function CoursePreviewModal({
                 <span className="text-2xl font-black text-[#f9b03c]">100% ነፃ (Free)</span>
               ) : (
                 <div>
-                  <span className="text-2xl font-black text-white">
+                  <span className="text-2xl sm:text-3xl font-black text-white font-heading">
                     {Number(course.price).toLocaleString()} ብር
                   </span>
                   {course.originalPrice && (

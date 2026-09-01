@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { db } from '@/lib/firebase/config';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import CinematicVideoModal from '@/components/CinematicVideoModal';
 
 export interface YouTubeItem {
   id: string;
@@ -460,47 +461,13 @@ export default function YouTubeVideoSlider() {
         )}
       </div>
 
-      {/* Fullscreen Pure Cinematic Video Modal (Autoplay, Zero Text/Clutter, Outside Close Button) */}
-      {selectedModalVideo && (
-        <div
-          className="fixed inset-0 z-50 bg-black/95 backdrop-blur-2xl flex items-center justify-center p-3 sm:p-6 sm:py-10 animate-in fade-in duration-200"
-          onClick={() => setSelectedModalVideo(null)}
-        >
-          {/* Close Button Outside the Video Frame */}
-          <button
-            type="button"
-            onClick={() => setSelectedModalVideo(null)}
-            className="fixed top-4 right-4 sm:top-6 sm:right-8 z-50 w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-white/10 hover:bg-white/25 text-white flex items-center justify-center transition-all duration-300 border border-white/20 hover:scale-110 shadow-[0_0_25px_rgba(0,0,0,0.8)] backdrop-blur-md cursor-pointer"
-            title="ዝጋ (Close)"
-            aria-label="Close video player"
-          >
-            <i className="fa-solid fa-xmark text-lg sm:text-xl"></i>
-          </button>
-
-          {/* Pure Video Frame (No Titles, No Subtitles, No Bottom Bars) */}
-          <div
-            className="relative w-full max-w-5xl aspect-video rounded-2xl sm:rounded-3xl overflow-hidden shadow-[0_0_80px_rgba(0,0,0,0.95),0_0_40px_rgba(249,176,60,0.2)] border border-white/15 bg-black"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {(selectedModalVideo.youtubeId || selectedModalVideo.youtubeUrl) ? (
-              <iframe
-                src={`https://www.youtube.com/embed/${selectedModalVideo.youtubeId || extractYouTubeId(selectedModalVideo.youtubeUrl)}?autoplay=1&rel=0&modestbranding=1&cc_load_policy=0&cc_lang_pref=off&iv_load_policy=3&playsinline=1&controls=1&hl=en&enablejsapi=1`}
-                title="Tsehay Campus Video"
-                className="w-full h-full border-0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowFullScreen
-              ></iframe>
-            ) : selectedModalVideo.videoSrc ? (
-              <video
-                src={selectedModalVideo.videoSrc}
-                controls
-                autoPlay
-                className="w-full h-full object-contain"
-              />
-            ) : null}
-          </div>
-        </div>
-      )}
+      {/* Fullscreen Pure Cinematic Video Modal */}
+      <CinematicVideoModal
+        isOpen={Boolean(selectedModalVideo)}
+        onClose={() => setSelectedModalVideo(null)}
+        videoUrl={selectedModalVideo ? (selectedModalVideo.youtubeUrl || (selectedModalVideo.youtubeId ? `https://www.youtube.com/watch?v=${selectedModalVideo.youtubeId}` : selectedModalVideo.videoSrc)) : ''}
+        title={selectedModalVideo?.title || 'YouTube Video'}
+      />
 
       {/* Embedded CSS Keyframes for Luxury Animations */}
       <style dangerouslySetInnerHTML={{__html: `

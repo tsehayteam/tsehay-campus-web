@@ -23,6 +23,7 @@ import Hero3DPopoutStage from '@/components/3d/Hero3DPopoutStage';
 import Tilt3DCard from '@/components/3d/Tilt3DCard';
 import { scrollTriggerEngine } from '@/lib/scrollTriggerEngine';
 import WaitlistModal from '@/components/WaitlistModal';
+import TypingCoursesHeadline from '@/components/TypingCoursesHeadline';
 import { 
   getCachedCourses, 
   saveCachedCourses, 
@@ -33,7 +34,8 @@ import {
   subscribeToCourses,
   DEFAULT_COURSES,
   getComingSoonCourses,
-  ComingSoonCourse
+  ComingSoonCourse,
+  formatCleanCategory
 } from '@/lib/courseCache';
 
 const PARTNER_BRANDS = [
@@ -462,7 +464,7 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
       {/* =========================================================================
           1. HERO SECTION (100vh Full Viewport Cinematic Terafab Standard)
          ========================================================================= */}
-      <section className="terafab-hero-container min-h-screen relative flex flex-col justify-center overflow-hidden border-b border-white/[0.08]" id="home">
+      <section className="terafab-hero-container min-h-screen min-h-[100dvh] relative flex flex-col justify-center items-center overflow-hidden border-b border-white/[0.08]" id="home">
         {/* Full-Cover Background with Continuous Ken Burns + Parallax */}
         <div 
           className="terafab-hero-bg" 
@@ -473,97 +475,94 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
         <div className="terafab-hero-vignette"></div>
 
         {/* Ambient Glow Spheres (Golden Yellow & Royal Blue) */}
-        <div className="absolute top-1/4 -left-32 w-[550px] h-[550px] bg-[#f9b03c]/15 rounded-full blur-[140px] pointer-events-none animate-pulse"></div>
-        <div className="absolute bottom-1/4 -right-32 w-[600px] h-[600px] bg-[#3268ba]/20 rounded-full blur-[160px] pointer-events-none"></div>
+        <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-[#f9b03c]/15 rounded-full blur-[160px] pointer-events-none animate-pulse"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-[650px] h-[650px] bg-[#3268ba]/20 rounded-full blur-[160px] pointer-events-none"></div>
 
-        {/* Hero Content Container */}
-        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-12 relative z-20 py-16 lg:py-24 w-full my-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
-            
-            {/* Left Column: Premium Cinematic Typography & CTA */}
-            <div className="lg:col-span-7 flex flex-col items-center lg:items-start text-center lg:text-left pt-6 sm:pt-10">
-              
-              {/* Top Slogan Badge: Glowing Golden Yellow Border */}
-              <div className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full bg-[#f9b03c]/10 border border-[#f9b03c]/40 backdrop-blur-xl mb-6 sm:mb-8 shadow-[0_0_25px_rgba(249,176,60,0.25)] transition-all duration-300">
-                <span className="w-2 h-2 rounded-full bg-[#f9b03c] shadow-[0_0_10px_#f9b03c] animate-pulse"></span>
-                <span className="text-xs sm:text-sm font-black font-heading tracking-wider text-[#f9b03c]">
-                  {lang === 'en' ? '✨ SHINING LIGHT ON YOUR SUCCESS ✨' : '✨ ለስኬትዎ የምታበራ ፀሐይ ✨'}
-                </span>
-              </div>
-
-              {/* Main Cinematic Typewriter Headline */}
-              <h1 className="font-heading font-black text-4xl sm:text-6xl md:text-7xl lg:text-[74px] tracking-tight leading-[1.14] sm:leading-[1.08] text-white mb-6 min-h-[120px] sm:min-h-[160px]">
-                <span>{typedWhite}</span>{' '}
-                <span className="relative inline-block mt-1 sm:mt-0">
-                  <span className="relative z-10 text-transparent bg-clip-text bg-gradient-to-r from-[#f9b03c] via-[#ffc66b] to-yellow-400 drop-shadow-[0_0_35px_rgba(249,176,60,0.4)]">
-                    {typedGold}
-                  </span>
-                  <span className="absolute -bottom-2 left-0 w-full h-3 bg-gradient-to-r from-[#f9b03c]/30 to-transparent blur-xs -z-0"></span>
-                </span>
-                <span className="inline-block w-1.5 h-8 sm:h-12 bg-[#f9b03c] animate-pulse ml-1.5 align-middle shadow-[0_0_8px_#f9b03c]"></span>
-              </h1>
-
-              {/* Subheadline */}
-              <p className="text-gray-300 dark:text-[#a0aec0] font-body text-base sm:text-lg md:text-xl max-w-2xl font-normal leading-relaxed mb-8 sm:mb-10">
-                በኢትዮጵያ የኦንላይን ክህሎት ስልጠና ቀዳሚ ፕላትፎርም። በተግባር እና በ AI የታገዘ ስልጠና ወስደው ቢዝነስዎን ዛሬውኑ ይጀምሩ።
-              </p>
-
-              {/* Global Search Bar with Pulsing Glow Border */}
-              <div className="w-full max-w-xl mb-8 sm:mb-10 p-0.5 rounded-2xl search-border-pulse border border-[#f9b03c]/40 bg-black/40 backdrop-blur-xl">
-                <SmartSearchInput 
-                  placeholder="ኮርሶችን፣ አስተማሪዎችን ወይም ርዕሶችን ይፈልጉ (ለምሳሌ: Shein, YouTube...)"
-                  onSelectCourse={(course) => router.push(`/courses/${getCourseSlug(course) || course.id}`)}
-                />
-              </div>
-
-              {/* Action Buttons (Primary & Secondary) */}
-              <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 sm:gap-5 w-full sm:w-auto">
-                {/* Primary CTA: Explore Courses */}
-                <MagneticLink 
-                  href="#courses"
-                  className="w-full sm:w-auto px-8 sm:px-9 py-4 rounded-2xl terafab-btn-primary flex items-center justify-center gap-3 text-sm sm:text-base cursor-pointer shadow-[0_0_30px_rgba(249,176,60,0.45)] hover:shadow-[0_0_45px_rgba(249,176,60,0.7)] group"
-                >
-                  <span>ኮርሶችን ያስሱ</span>
-                  <svg className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-1.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M5 12h14"></path>
-                    <path d="m12 5 7 7-7 7"></path>
-                  </svg>
-                </MagneticLink>
-
-                {/* Secondary CTA: 1-on-1 Mentorship with Smooth Glowing Pulse */}
-                <MagneticLink 
-                  href="/mentorship"
-                  className="w-full sm:w-auto px-8 sm:px-9 py-4 rounded-2xl terafab-btn-glass mentorship-pulse-glow flex items-center justify-center gap-3 text-sm sm:text-base cursor-pointer hover:border-[#f9b03c]/80 group"
-                >
-                  <i className="fa-solid fa-calendar-check text-[#f9b03c]"></i>
-                  <span className="font-bold">1-ለ-1 ማማከር (Mentorship)</span>
-                </MagneticLink>
-              </div>
-
-              {/* Social Proof Live Counter Strip */}
-              <div className="grid grid-cols-3 gap-4 sm:gap-8 pt-10 sm:pt-12 mt-4 border-t border-white/10 w-full max-w-xl">
-                <div className="text-center lg:text-left">
-                  <h4 className="font-heading font-black text-2xl sm:text-3xl text-white">530+</h4>
-                  <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold mt-0.5">የሰለጠኑ ተማሪዎች</p>
-                </div>
-                <div className="text-center lg:text-left border-x border-white/10 px-2">
-                  <h4 className="font-heading font-black text-2xl sm:text-3xl text-[#f9b03c]">4.9 / 5</h4>
-                  <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold mt-0.5">የተማሪዎች እርካታ</p>
-                </div>
-                <div className="text-center lg:text-left">
-                  <h4 className="font-heading font-black text-2xl sm:text-3xl text-white">100%</h4>
-                  <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold mt-0.5">ተግባራዊ ስልጠና</p>
-                </div>
-              </div>
-
-            </div>
-
-            {/* Right Column: 3D Billboard Anamorphic Video Stage */}
-            <div className="lg:col-span-5 flex items-center justify-center relative">
-              <Hero3DPopoutStage videoSrc="/assets/for_landing_page_first.mp4" />
-            </div>
-
+        {/* Hero Content Container - Cinematic Centered Hierarchy */}
+        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-12 relative z-20 py-16 lg:py-24 w-full my-auto flex flex-col items-center text-center">
+          
+          {/* Top Slogan Badge: Glowing Golden Yellow Border */}
+          <div className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full bg-[#f9b03c]/10 border border-[#f9b03c]/50 backdrop-blur-xl mb-5 sm:mb-6 shadow-[0_0_25px_rgba(249,176,60,0.35)] transition-all duration-300 hover:scale-105">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#f9b03c] shadow-[0_0_12px_#f9b03c] animate-pulse"></span>
+            <span className="text-xs sm:text-sm font-black font-heading tracking-wider text-[#f9b03c] drop-shadow-[0_0_10px_rgba(249,176,60,0.4)]">
+              {lang === 'en' ? '✨ LEARN. APPLY. GROW. • TSEHAY CAMPUS ✨' : '✨ ተማር። ተግብር። አደግ። • TSEHAY CAMPUS ✨'}
+            </span>
           </div>
+
+          {/* Main Cinematic Typewriter Headline with Continuous Glow Pulse */}
+          <h1 
+            className="font-heading font-black text-4xl sm:text-6xl md:text-7xl lg:text-[76px] tracking-tight leading-[1.15] sm:leading-[1.1] text-white mb-4 sm:mb-5 min-h-[90px] sm:min-h-[140px] max-w-4xl headline-glow-pulse"
+            style={{
+              wordWrap: 'break-word',
+              whiteSpace: 'pre-wrap',
+              overflowWrap: 'break-word',
+            }}
+          >
+            <span>{typedWhite}</span>{' '}
+            <span className="relative inline-block mt-1 sm:mt-0">
+              <span className="relative z-10 text-transparent bg-clip-text bg-gradient-to-r from-[#f9b03c] via-[#ffc66b] to-yellow-400 drop-shadow-[0_0_35px_rgba(249,176,60,0.4)]">
+                {typedGold}
+              </span>
+              <span className="absolute -bottom-2 left-0 w-full h-3 bg-gradient-to-r from-[#f9b03c]/30 to-transparent blur-xs -z-0"></span>
+            </span>
+            <span className="inline-block w-[3px] sm:w-[5px] h-[0.85em] bg-[#f9b03c] animate-pulse ml-2 align-middle rounded-full shadow-[0_0_12px_#f9b03c]"></span>
+          </h1>
+
+          {/* Subheadline */}
+          <p className="text-gray-300 dark:text-[#a0aec0] font-body text-base sm:text-lg md:text-xl max-w-3xl font-normal leading-relaxed mb-6 sm:mb-8">
+            በኢትዮጵያ የኦንላይን ክህሎት ስልጠና ቀዳሚ ፕላትፎርም። በተግባር እና በ AI የታገዘ ስልጠና ወስደው ቢዝነስዎን ዛሬውኑ ይጀምሩ።
+          </p>
+
+          {/* 🌟 1. HERO VIDEO ENHANCEMENT: Perfectly integrated below headline, spanning wide, central */}
+          <div className="w-full flex items-center justify-center my-4 sm:my-6">
+            <Hero3DPopoutStage />
+          </div>
+
+          {/* Global Search Bar with Pulsing Glow Border */}
+          <div className="w-full max-w-xl my-6 sm:my-8 p-0.5 rounded-2xl search-border-pulse border border-[#f9b03c]/40 bg-black/40 backdrop-blur-xl">
+            <SmartSearchInput 
+              placeholder="ኮርሶችን፣ አስተማሪዎችን ወይም ርዕሶችን ይፈልጉ (ለምሳሌ: Shein, YouTube...)"
+              onSelectCourse={(course) => router.push(`/courses/${getCourseSlug(course) || course.id}`)}
+            />
+          </div>
+
+          {/* Action Buttons (Primary & Secondary) */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-5 w-full sm:w-auto">
+            {/* Primary CTA: Explore Courses (Scale 1.05 + Sliding Arrow) */}
+            <MagneticLink 
+              href="#courses"
+              className="w-full sm:w-auto px-8 sm:px-9 py-4 rounded-2xl terafab-btn-primary flex items-center justify-center gap-3 text-sm sm:text-base cursor-pointer shadow-[0_0_30px_rgba(249,176,60,0.45)] hover:shadow-[0_0_45px_rgba(249,176,60,0.7)] group hover:scale-105 transition-all duration-300"
+            >
+              <span className="font-black">ኮርሶችን ያስሱ</span>
+              <i className="fa-solid fa-arrow-right text-sm transition-transform duration-300 group-hover:translate-x-2"></i>
+            </MagneticLink>
+
+            {/* Secondary CTA: About Us with Glassmorphism + Glowing Play Icon */}
+            <MagneticLink 
+              href="/about"
+              className="w-full sm:w-auto px-8 sm:px-9 py-4 rounded-2xl terafab-btn-glass flex items-center justify-center gap-3 text-sm sm:text-base cursor-pointer hover:border-[#f9b03c]/80 group transition-all duration-300 hover:scale-105 backdrop-blur-[15px] bg-white/[0.05] border border-white/15"
+            >
+              <i className="fa-solid fa-play text-xs text-white/80 group-hover:text-[#f9b03c] transition-colors duration-300 drop-shadow-[0_0_8px_rgba(249,176,60,0.6)]"></i>
+              <span className="font-bold">ስለ እኛ ይመልከቱ</span>
+            </MagneticLink>
+          </div>
+
+          {/* Social Proof Live Counter Strip */}
+          <div className="grid grid-cols-3 gap-4 sm:gap-8 pt-8 sm:pt-10 mt-6 border-t border-white/10 w-full max-w-xl">
+            <div className="text-center">
+              <h4 className="font-heading font-black text-2xl sm:text-3xl text-white">530+</h4>
+              <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold mt-0.5">የሰለጠኑ ተማሪዎች</p>
+            </div>
+            <div className="text-center border-x border-white/10 px-2">
+              <h4 className="font-heading font-black text-2xl sm:text-3xl text-[#f9b03c]">4.9 / 5</h4>
+              <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold mt-0.5">የተማሪዎች እርካታ</p>
+            </div>
+            <div className="text-center">
+              <h4 className="font-heading font-black text-2xl sm:text-3xl text-white">100%</h4>
+              <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold mt-0.5">ተግባራዊ ስልጠና</p>
+            </div>
+          </div>
+
         </div>
       </section>
 
@@ -606,7 +605,7 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
       </section>
 
       {/* =========================================================================
-          3. WHY CHOOSE US / "የእኛ ልዩነት" (3 Glassmorphism Cards)
+          3. WHY CHOOSE US / "የእኛ ልዩነት" (3 Glassmorphism Cards with Staggered Pop-up)
          ========================================================================= */}
       <section id="features" className="py-24 relative overflow-hidden bg-transparent border-b border-white/[0.08] transition-colors duration-300">
         <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
@@ -631,18 +630,18 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 lg:gap-10">
             
-            {/* Card 1: 100% Practical Training (Golden Yellow) */}
+            {/* Card 1: 100% Practical Training (Golden Yellow) - Stagger 1 */}
             <Tilt3DCard 
               maxTilt={12} 
               perspective={1000}
               onClick={() => document.getElementById('courses')?.scrollIntoView({behavior: 'smooth'})}
-              className="cursor-pointer"
+              className="cursor-pointer scrolly-card delay-1"
             >
               <div 
                 data-scrolly-order="1"
-                className="h-full rounded-3xl p-8 sm:p-10 flex flex-col justify-between group bg-[#0a0e17]/85 backdrop-blur-xl border border-[#f9b03c]/30 hover:border-[#f9b03c]/70 shadow-[0_15px_40px_rgba(0,0,0,0.7),0_0_20px_rgba(249,176,60,0.15)] hover:shadow-[0_20px_50px_rgba(249,176,60,0.3)] transition-all duration-300 relative overflow-hidden"
+                className="h-full rounded-3xl p-8 sm:p-10 flex flex-col justify-between group bg-[#0a0e17]/90 backdrop-blur-2xl border border-[#f9b03c]/35 hover:border-[#f9b03c]/80 shadow-[0_15px_40px_rgba(0,0,0,0.7),0_0_20px_rgba(249,176,60,0.18)] hover:shadow-[0_20px_50px_rgba(249,176,60,0.35)] transition-all duration-300 relative overflow-hidden"
               >
-                <div className="absolute -top-12 -left-12 w-32 h-32 bg-[#f9b03c]/10 rounded-full blur-2xl pointer-events-none group-hover:scale-150 transition-transform duration-500"></div>
+                <div className="absolute -top-12 -left-12 w-36 h-36 bg-[#f9b03c]/15 rounded-full blur-2xl pointer-events-none group-hover:scale-150 transition-transform duration-500"></div>
                 <div className="relative z-10">
                   <div 
                     className="w-16 h-16 sm:w-20 sm:h-20 bg-[#f9b03c]/15 text-[#f9b03c] border border-[#f9b03c]/40 rounded-2xl flex items-center justify-center text-3xl sm:text-4xl mb-6 sm:mb-8 group-hover:scale-110 group-hover:bg-[#f9b03c] group-hover:text-slate-950 transition-all duration-300 shadow-[0_0_20px_rgba(249,176,60,0.2)]"
@@ -664,18 +663,18 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
               </div>
             </Tilt3DCard>
 
-            {/* Card 2: 24/7 Personal AI Tutor (Featured Center Glow Card - Golden Yellow + Royal Blue) */}
+            {/* Card 2: 24/7 Personal AI Tutor (Featured Center Glow Card - Golden Yellow + Royal Blue) - Stagger 2 */}
             <Tilt3DCard 
               maxTilt={15}
               scale={1.03}
               perspective={1000}
               glare={true}
               onClick={() => router.push('/ai')}
-              className="cursor-pointer"
+              className="cursor-pointer scrolly-card delay-2"
             >
               <div 
                 data-scrolly-order="2"
-                className="h-full rounded-3xl p-8 sm:p-10 border-2 border-[#f9b03c]/70 hover:border-[#f9b03c] bg-[#0c121f]/90 backdrop-blur-2xl shadow-[0_25px_60px_rgba(0,0,0,0.9),0_0_35px_rgba(249,176,60,0.35)] relative overflow-hidden flex flex-col justify-between group transition-all duration-300"
+                className="h-full rounded-3xl p-8 sm:p-10 border-2 border-[#f9b03c]/75 hover:border-[#f9b03c] bg-[#0c121f]/95 backdrop-blur-2xl shadow-[0_25px_60px_rgba(0,0,0,0.9),0_0_35px_rgba(249,176,60,0.4)] relative overflow-hidden flex flex-col justify-between group transition-all duration-300"
                 style={{ transformStyle: 'preserve-3d' }}
               >
                 <div className="absolute -right-10 -top-10 bg-gradient-to-br from-[#f9b03c]/25 via-[#3268ba]/20 to-transparent w-48 h-48 rounded-full -z-10 group-hover:scale-150 transition-transform duration-700 pointer-events-none blur-xl"></div>
@@ -684,7 +683,7 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
                 </div>
                 <div className="relative z-10">
                   <div 
-                    className="w-16 h-16 sm:w-20 sm:h-20 bg-[#f9b03c]/20 text-[#f9b03c] border border-[#f9b03c]/50 rounded-2xl flex items-center justify-center text-3xl sm:text-4xl mb-6 sm:mb-8 group-hover:scale-110 group-hover:bg-[#f9b03c] group-hover:text-slate-950 transition-all duration-300 shadow-[0_0_25px_rgba(249,176,60,0.3)] relative z-10"
+                    className="w-16 h-16 sm:w-20 sm:h-20 bg-[#f9b03c]/20 text-[#f9b03c] border border-[#f9b03c]/50 rounded-2xl flex items-center justify-center text-3xl sm:text-4xl mb-6 sm:mb-8 group-hover:scale-110 group-hover:bg-[#f9b03c] group-hover:text-slate-950 transition-all duration-300 shadow-[0_0_25px_rgba(249,176,60,0.35)] relative z-10"
                     style={{ transform: 'translateZ(45px)' }}
                   >
                     <i className="fa-solid fa-robot"></i>
@@ -703,18 +702,18 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
               </div>
             </Tilt3DCard>
 
-            {/* Card 3: Accredited Certificate (Royal Blue) */}
+            {/* Card 3: Accredited Certificate (Royal Blue - NO GREEN) - Stagger 3 */}
             <Tilt3DCard 
               maxTilt={12}
               perspective={1000}
               onClick={() => document.getElementById('courses')?.scrollIntoView({behavior: 'smooth'})}
-              className="cursor-pointer"
+              className="cursor-pointer scrolly-card delay-3"
             >
               <div 
                 data-scrolly-order="3"
-                className="h-full rounded-3xl p-8 sm:p-10 flex flex-col justify-between group bg-[#080d1a]/85 backdrop-blur-xl border border-[#3268ba]/40 hover:border-[#3268ba]/80 shadow-[0_15px_40px_rgba(0,0,0,0.7),0_0_25px_rgba(50,104,186,0.2)] hover:shadow-[0_20px_50px_rgba(50,104,186,0.4)] transition-all duration-300 relative overflow-hidden"
+                className="h-full rounded-3xl p-8 sm:p-10 flex flex-col justify-between group bg-[#080d1a]/90 backdrop-blur-2xl border border-[#3268ba]/45 hover:border-[#3268ba]/90 shadow-[0_15px_40px_rgba(0,0,0,0.7),0_0_25px_rgba(50,104,186,0.22)] hover:shadow-[0_20px_50px_rgba(50,104,186,0.45)] transition-all duration-300 relative overflow-hidden"
               >
-                <div className="absolute -top-12 -right-12 w-32 h-32 bg-[#3268ba]/15 rounded-full blur-2xl pointer-events-none group-hover:scale-150 transition-transform duration-500"></div>
+                <div className="absolute -top-12 -right-12 w-36 h-36 bg-[#3268ba]/20 rounded-full blur-2xl pointer-events-none group-hover:scale-150 transition-transform duration-500"></div>
                 <div className="relative z-10">
                   <div 
                     className="w-16 h-16 sm:w-20 sm:h-20 bg-[#3268ba]/20 text-[#3268ba] border border-[#3268ba]/40 rounded-2xl flex items-center justify-center text-3xl sm:text-4xl mb-6 sm:mb-8 group-hover:scale-110 group-hover:bg-[#3268ba] group-hover:text-white transition-all duration-300 shadow-[0_0_20px_rgba(50,104,186,0.3)]"
@@ -740,273 +739,302 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
       </section>
 
       {/* =========================================================================
-          4. POPULAR COURSES / "በብዛት የሚፈለጉ ኮርሶች" (Live Real-Time Sync)
+          4. POPULAR COURSES / "በብዛት የሚፈለጉ ኮርሶች" (Cello.so Horizontal Pinned Track)
          ========================================================================= */}
-      <section id="courses" className="py-20 sm:py-28 bg-transparent border-b border-white/[0.08] relative overflow-hidden">
+      <section id="courses" className="min-h-screen relative overflow-hidden bg-transparent border-b border-white/[0.08] flex flex-col justify-center py-16 sm:py-24">
         {/* Atmospheric Aura & Cyber Mesh */}
         <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
           <div className="absolute -top-32 -right-32 w-[700px] h-[700px] bg-gradient-to-bl from-[#f9b03c]/15 via-transparent to-transparent rounded-full blur-[150px] animate-pulse"></div>
           <div className="absolute -bottom-32 -left-32 w-[700px] h-[700px] bg-gradient-to-tr from-[#3268ba]/20 via-transparent to-transparent rounded-full blur-[150px]"></div>
         </div>
 
-        <div className="max-w-[1300px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="flex flex-col items-center text-center mb-14 sm:mb-18 gap-3 scrolly-reveal">
-            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-400/15 via-[#f9b03c]/10 to-[#3268ba]/15 border border-[#f9b03c]/30 px-5 py-2 rounded-full shadow-[0_0_25px_rgba(249,176,60,0.2)] backdrop-blur-md">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#f9b03c] shadow-[0_0_10px_#f9b03c] animate-ping"></span>
-              <span className="text-xs font-black uppercase tracking-widest text-[#f9b03c]">FEATURED MASTERCLASSES</span>
+        <div id="courses-pin-container" className="relative z-10 w-full">
+          {/* Section Stationary Header */}
+          <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 mb-8 sm:mb-12">
+            <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 scrolly-reveal">
+              <div>
+                <div className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-400/15 via-[#f9b03c]/10 to-[#3268ba]/15 border border-[#f9b03c]/30 px-5 py-2 rounded-full shadow-[0_0_25px_rgba(249,176,60,0.2)] backdrop-blur-md mb-3">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#f9b03c] shadow-[0_0_10px_#f9b03c] animate-ping"></span>
+                  <span className="text-xs font-black uppercase tracking-widest text-[#f9b03c]">FEATURED MASTERCLASSES</span>
+                </div>
+                <h2 className="font-heading font-black text-3xl sm:text-5xl lg:text-6xl tracking-tight leading-tight">
+                  <TypingCoursesHeadline text="በብዛት የሚፈለጉ ኮርሶች" />
+                </h2>
+                <div className="w-28 h-1.5 bg-gradient-to-r from-transparent via-[#f9b03c] to-transparent rounded-full shadow-[0_0_15px_rgba(249,176,60,0.8)] mt-2"></div>
+              </div>
+              <div className="text-slate-400 text-xs sm:text-sm flex items-center gap-2">
+                <span>ወደ ታች በማሸብለል (Scroll) በአግድም ይመልከቱ</span>
+                <i className="fa-solid fa-arrow-right text-[#f9b03c] animate-pulse"></i>
+              </div>
             </div>
-            <h2 className="font-heading font-black text-3xl sm:text-5xl lg:text-6xl tracking-tight leading-tight">
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-[#f9b03c] to-[#5a93e8] drop-shadow-[0_5px_25px_rgba(249,176,60,0.3)]">
-                በብዛት የሚፈለጉ ኮርሶች
-              </span>
-            </h2>
-            <div className="w-28 h-1.5 bg-gradient-to-r from-transparent via-[#f9b03c] to-transparent mx-auto rounded-full shadow-[0_0_15px_rgba(249,176,60,0.8)]"></div>
-            <p className="text-[#a0aec0] font-body text-base sm:text-lg max-w-2xl mt-1">
-              ተማሪዎቻችን በአሁኑ ጊዜ በስፋት እየተከታተሉ ያሉ ስልጠናዎች
-            </p>
           </div>
 
           {(!isMounted || (loading && courses.length === 0)) ? (
-            <div className="w-full scrolly-reveal">
+            <div className="max-w-[1300px] mx-auto px-4 w-full scrolly-reveal">
               <CourseCardSkeleton count={3} />
             </div>
           ) : (
-            <div 
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 w-full max-w-full" 
-              id="courseList"
-            >
-              {[...courses, ...getComingSoonCourses().map(c => ({ ...c, isComingSoon: true }))].slice(0, 8).map((course, index) => {
-                const isComingSoon = Boolean(course.isComingSoon || course.status === 'Coming Soon');
-                const isFree = !isComingSoon && (course.isFree || course.price === 0 || course.price === '0' || course.price === 'Free');
+            /* Horizontal Sliding Track (Cello.so Style) */
+            <div className="w-full overflow-hidden relative py-4">
+              <div 
+                id="courses-horizontal-track" 
+                className="flex items-stretch gap-6 sm:gap-8 px-4 sm:px-8 lg:px-12 w-max will-change-transform"
+              >
+                {[...courses, ...getComingSoonCourses().map(c => ({ ...c, isComingSoon: true }))].slice(0, 8).map((course, index) => {
+                  const isComingSoon = Boolean(course.isComingSoon || course.status === 'Coming Soon');
+                  const isFree = !isComingSoon && (course.isFree || course.price === 0 || course.price === '0' || course.price === 'Free');
 
-                return (
-                  <Tilt3DCard
-                    key={course.id}
-                    maxTilt={12}
-                    scale={1.025}
-                    perspective={1100}
-                    glare={true}
-                    onClick={() => {
-                      if (isComingSoon) {
-                        setSelectedWaitlistCourse(course);
-                        setIsWaitlistModalOpen(true);
-                      } else {
-                        router.push(`/courses/${getCourseSlug(course) || course.id}`);
-                      }
-                    }}
-                    className="cursor-pointer group"
-                  >
+                  return (
                     <div 
-                      data-scrolly-order={index + 1}
-                      className={`h-full terafab-glass-card overflow-hidden flex flex-col justify-between relative select-none ${
-                        isComingSoon ? 'border-[#f9b03c]/40 hover:border-[#f9b03c]' : ''
-                      }`}
-                      style={{ transformStyle: 'preserve-3d' }}
+                      key={course.id} 
+                      className="w-[330px] sm:w-[390px] md:w-[420px] shrink-0 course-popup-card"
                     >
-                      <div>
-                        {/* Thumbnail with 3D Z-Popout */}
+                      <Tilt3DCard
+                        maxTilt={10}
+                        scale={1.02}
+                        perspective={1100}
+                        glare={true}
+                        onClick={() => {
+                          if (isComingSoon) {
+                            setSelectedWaitlistCourse(course);
+                            setIsWaitlistModalOpen(true);
+                          } else {
+                            router.push(`/courses/${getCourseSlug(course) || course.id}`);
+                          }
+                        }}
+                        className="cursor-pointer group h-full"
+                      >
                         <div 
-                          className="relative aspect-video w-full overflow-hidden bg-slate-950 flex items-center justify-center m-0"
-                          style={{ transform: 'translateZ(30px)' }}
+                          data-scrolly-order={index + 1}
+                          className={`h-full rounded-3xl backdrop-blur-[20px] bg-[#0a0e17]/85 border border-white/[0.08] hover:border-[#f9b03c]/70 shadow-[0_20px_50px_rgba(0,0,0,0.8),0_0_25px_rgba(249,176,60,0.08)] hover:shadow-[0_25px_60px_rgba(249,176,60,0.35)] overflow-hidden flex flex-col justify-between relative select-none transition-all duration-500 ease-out ${
+                            isComingSoon ? 'border-[#f9b03c]/40 hover:border-[#f9b03c]' : ''
+                          }`}
+                          style={{ transformStyle: 'preserve-3d' }}
                         >
-                          <img 
-                            src={getCleanCourseImage(course) || `https://placehold.co/600x400/3268BA/FFFFFF?text=${encodeURIComponent(course.title || 'Tsehay Campus')}&font=Montserrat`} 
-                            alt="" 
-                            aria-hidden="true" 
-                            className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-40 scale-125 pointer-events-none select-none" 
-                          />
-                          <img 
-                            src={getCleanCourseImage(course) || `https://placehold.co/600x400/3268BA/FFFFFF?text=${encodeURIComponent(course.title || 'Tsehay Campus')}&font=Montserrat`} 
-                            alt={course.title} 
-                            className="relative z-10 w-full h-full object-contain p-2 group-hover:scale-[1.04] transition-transform duration-500" 
-                          />
-                          
-                          {/* Floating Popout Badges */}
-                          {isComingSoon ? (
+                          <div>
+                            {/* Thumbnail with 3D Z-Popout */}
                             <div 
-                              className="absolute top-3.5 right-3.5 z-20 bg-gradient-to-r from-[#f9b03c] via-amber-400 to-yellow-400 text-slate-950 text-[11px] font-black px-3.5 py-1.5 rounded-full flex items-center gap-1.5 shadow-[0_4px_15px_rgba(249,176,60,0.55)] border border-amber-200/60 animate-pulse" 
-                              style={{ transform: 'translateZ(45px)' }}
+                              className="relative aspect-video w-full overflow-hidden bg-slate-950 flex items-center justify-center m-0"
+                              style={{ transform: 'translateZ(30px)' }}
                             >
-                              <i className="fa-solid fa-hourglass-half text-[10px]"></i>
-                              <span>በቅርቡ (Coming Soon)</span>
-                            </div>
-                          ) : !isFree ? (
-                            <div 
-                              className="absolute top-3.5 right-3.5 z-20 bg-gradient-to-r from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 text-[11px] font-black px-3.5 py-1.5 rounded-full flex items-center gap-1.5 shadow-[0_4px_15px_rgba(249,176,60,0.5)] border border-amber-200/50" 
-                              style={{ transform: 'translateZ(45px)' }}
-                            >
-                              <i className="fa-solid fa-crown text-[10px]"></i> PREMIUM
-                            </div>
-                          ) : (
-                            <div 
-                              className="absolute top-3.5 right-3.5 z-20 bg-[#3268ba] text-white text-[11px] font-black px-3.5 py-1.5 rounded-full flex items-center gap-1.5 shadow-[0_4px_15px_rgba(50,104,186,0.6)] backdrop-blur-md border border-white/25" 
-                              style={{ transform: 'translateZ(45px)' }}
-                            >
-                              <i className="fa-solid fa-sparkles text-[10px] text-[#f9b03c]"></i> FREE
-                            </div>
-                          )}
-
-                          {/* Category Badge */}
-                          {(course.category || course.tag) && (
-                            <div 
-                              className="absolute bottom-3.5 left-3.5 z-20 bg-[#030509]/85 backdrop-blur-md text-[#f9b03c] border border-white/15 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider shadow-md"
-                              style={{ transform: 'translateZ(40px)' }}
-                            >
-                              {course.category || course.tag}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Content Details */}
-                        <div className="p-6 sm:p-7">
-                          <h3 
-                            className="text-xl sm:text-2xl font-black text-white mb-3 line-clamp-2 leading-snug group-hover:text-[#f9b03c] transition-colors font-heading cursor-pointer"
-                            style={{ transform: 'translateZ(25px)' }}
-                          >
-                            {course.title || 'የፀሐይ ካምፓስ ስልጠና'}
-                          </h3>
-
-                          {/* Instructor & Rating */}
-                          <div 
-                            className="flex items-center justify-between gap-2 mb-3.5"
-                            style={{ transform: 'translateZ(22px)' }}
-                          >
-                            <div className="flex items-center gap-2 text-xs text-[#8a95a5] font-semibold">
-                              <div className="w-6 h-6 rounded-full bg-[#f9b03c]/15 text-[#f9b03c] flex items-center justify-center text-[11px]">
-                                <i className="fa-solid fa-chalkboard-user"></i>
-                              </div>
-                              <span>{course.instructor || 'Eyoub Sahle'}</span>
-                            </div>
-                            <div className="flex items-center gap-1.5 bg-gradient-to-r from-[#f9b03c]/25 via-amber-500/20 to-[#f9b03c]/15 text-[#f9b03c] font-black px-3 py-1 rounded-full text-xs sm:text-sm border border-[#f9b03c]/50 shadow-[0_0_15px_rgba(249,176,60,0.35)] backdrop-blur-md">
+                              <img 
+                                src={getCleanCourseImage(course) || `https://placehold.co/600x400/3268BA/FFFFFF?text=${encodeURIComponent(course.title || 'Tsehay Campus')}&font=Montserrat`} 
+                                alt="" 
+                                aria-hidden="true" 
+                                className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-40 scale-125 pointer-events-none select-none" 
+                              />
+                              <img 
+                                src={getCleanCourseImage(course) || `https://placehold.co/600x400/3268BA/FFFFFF?text=${encodeURIComponent(course.title || 'Tsehay Campus')}&font=Montserrat`} 
+                                alt={course.title} 
+                                className="relative z-10 w-full h-full object-contain p-2 group-hover:scale-[1.04] transition-transform duration-500" 
+                              />
+                              
+                              {/* Floating Popout Badges */}
                               {isComingSoon ? (
-                                <>
-                                  <i className="fa-solid fa-hourglass-half text-xs text-[#f9b03c]"></i>
-                                  <span className="font-black tracking-wide">{course.highlightBadge || 'Coming Soon'}</span>
-                                </>
+                                <div 
+                                  className="absolute top-3.5 right-3.5 z-20 bg-gradient-to-r from-[#f9b03c] via-amber-400 to-yellow-400 text-slate-950 text-[11px] font-black px-3.5 py-1.5 rounded-full flex items-center gap-1.5 shadow-[0_4px_15px_rgba(249,176,60,0.55)] border border-amber-200/60 animate-pulse" 
+                                  style={{ transform: 'translateZ(45px)' }}
+                                >
+                                  <i className="fa-solid fa-hourglass-half text-[10px]"></i>
+                                  <span>በቅርቡ (Coming Soon)</span>
+                                </div>
+                              ) : !isFree ? (
+                                <div 
+                                  className="absolute top-3.5 right-3.5 z-20 bg-gradient-to-r from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 text-[11px] font-black px-3.5 py-1.5 rounded-full flex items-center gap-1.5 shadow-[0_4px_15px_rgba(249,176,60,0.5)] border border-amber-200/50" 
+                                  style={{ transform: 'translateZ(45px)' }}
+                                >
+                                  <i className="fa-solid fa-crown text-[10px]"></i> PREMIUM
+                                </div>
+                              ) : (
+                                <div 
+                                  className="absolute top-3.5 right-3.5 z-20 bg-[#3268ba] text-white text-[11px] font-black px-3.5 py-1.5 rounded-full flex items-center gap-1.5 shadow-[0_4px_15px_rgba(50,104,186,0.6)] backdrop-blur-md border border-white/25" 
+                                  style={{ transform: 'translateZ(45px)' }}
+                                >
+                                  <i className="fa-solid fa-sparkles text-[10px] text-[#f9b03c]"></i> FREE
+                                </div>
+                              )}
+
+                              {/* Category Badge */}
+                              {(course.category || course.tag) && (
+                                <div 
+                                  className="absolute bottom-3.5 left-3.5 z-20 bg-[#030509]/90 backdrop-blur-md text-[#f9b03c] border border-[#f9b03c]/30 text-[10.5px] font-black px-3.5 py-1 rounded-full uppercase tracking-wider shadow-md"
+                                  style={{ transform: 'translateZ(40px)' }}
+                                >
+                                  {formatCleanCategory(course.category || course.tag)}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Content Details */}
+                            <div className="p-6 sm:p-7">
+                              <h3 
+                                className="text-xl sm:text-2xl font-black text-white mb-3 line-clamp-2 leading-snug group-hover:text-[#f9b03c] transition-colors font-heading cursor-pointer"
+                                style={{ transform: 'translateZ(25px)' }}
+                              >
+                                {course.title || 'የፀሐይ ካምፓስ ስልጠና'}
+                              </h3>
+
+                              {/* Instructor & Rating */}
+                              <div 
+                                className="flex items-center justify-between gap-2 mb-3.5"
+                                style={{ transform: 'translateZ(22px)' }}
+                              >
+                                <div className="flex items-center gap-2 text-xs text-[#8a95a5] font-semibold">
+                                  <div className="w-6 h-6 rounded-full bg-[#f9b03c]/15 text-[#f9b03c] flex items-center justify-center text-[11px]">
+                                    <i className="fa-solid fa-chalkboard-user"></i>
+                                  </div>
+                                  <span>{course.instructor || 'Eyoub Sahle'}</span>
+                                </div>
+                                <div className="flex items-center gap-1.5 bg-gradient-to-r from-[#f9b03c]/25 via-amber-500/20 to-[#f9b03c]/15 text-[#f9b03c] font-black px-3 py-1 rounded-full text-xs sm:text-sm border border-[#f9b03c]/50 shadow-[0_0_15px_rgba(249,176,60,0.35)] backdrop-blur-md">
+                                  {isComingSoon ? (
+                                    <>
+                                      <i className="fa-solid fa-hourglass-half text-xs text-[#f9b03c]"></i>
+                                      <span className="font-black tracking-wide">{course.highlightBadge || 'Coming Soon'}</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <i className="fa-solid fa-star text-xs text-[#f9b03c] drop-shadow-[0_0_6px_#f9b03c]"></i>
+                                      <span className="font-black text-[#f9b03c] tracking-wide">★ {course.ratingAvg || '4.9'}</span>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Description */}
+                              <p 
+                                className="text-[#a0aec0] text-xs sm:text-[13.5px] leading-relaxed line-clamp-3 mb-5 font-body"
+                                style={{ transform: 'translateZ(15px)' }}
+                              >
+                                {formatCourseDesc(course)}
+                              </p>
+                              
+                              {/* Meta Capsules */}
+                              <div 
+                                className="flex flex-wrap gap-2 mb-2"
+                                style={{ transform: 'translateZ(20px)' }}
+                              >
+                                <div className="flex items-center gap-1.5 bg-white/[0.05] text-gray-300 text-xs font-semibold px-3 py-1 rounded-full border border-white/[0.08] backdrop-blur-md">
+                                  <i className="fa-regular fa-clock text-[#f9b03c] text-[10px]"></i>
+                                  <span>{course.duration || '6+ ሰዓታት'}</span>
+                                </div>
+                                <div className="flex items-center gap-1.5 bg-white/[0.05] text-gray-300 text-xs font-semibold px-3 py-1 rounded-full border border-white/[0.08] backdrop-blur-md">
+                                  <i className="fa-solid fa-layer-group text-[#f9b03c] text-[10px]"></i>
+                                  <span>{course.lessons?.length ? `${course.lessons.length} ትምህርቶች` : 'የተሟላ ሞጁል'}</span>
+                                </div>
+                                <div className="flex items-center gap-1.5 bg-white/[0.05] text-gray-300 text-xs font-semibold px-3 py-1 rounded-full border border-white/[0.08] backdrop-blur-md">
+                                  <i className="fa-solid fa-signal text-[#f9b03c] text-[10px]"></i>
+                                  <span>{course.level || 'ጀማሪ እና መካከለኛ'}</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Price & CTA Row (Bottom) */}
+                          <div 
+                            className="px-6 sm:px-7 pb-6 sm:pb-7 pt-4 border-t border-white/[0.06] flex items-center justify-between gap-3 mt-auto bg-white/[0.01]"
+                            style={{ transform: 'translateZ(32px)' }}
+                          >
+                            <div>
+                              {isComingSoon ? (
+                                <div className="flex flex-col">
+                                  <span className="text-[10px] text-gray-400 uppercase font-black tracking-wider">ሁኔታ</span>
+                                  <span className="text-sm sm:text-base font-black text-[#f9b03c] tracking-tight flex items-center gap-1.5">
+                                    <i className="fa-solid fa-sparkles text-xs"></i> {course.expectedDate || 'በቅርቡ'}
+                                  </span>
+                                </div>
+                              ) : isFree ? (
+                                <span className="text-xl sm:text-2xl font-black text-[#f9b03c] tracking-tight">
+                                  ነፃ (Free)
+                                </span>
+                              ) : (
+                                <div className="flex items-baseline gap-1.5">
+                                  <span className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                                    {Number(course.price).toLocaleString()} ብር
+                                  </span>
+                                  {course.oldPrice && (
+                                    <span className="text-xs sm:text-sm font-medium text-gray-500 line-through">
+                                      {Number(course.oldPrice).toLocaleString()}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {isComingSoon ? (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedWaitlistCourse(course);
+                                    setIsWaitlistModalOpen(true);
+                                  }}
+                                  className="px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#f9b03c] text-slate-950 font-black text-xs flex items-center gap-1.5 sm:gap-2 shadow-[0_0_20px_rgba(249,176,60,0.4)] hover:shadow-[0_0_30px_rgba(249,176,60,0.6)] transition-all cursor-pointer active:scale-95 group"
+                                >
+                                  <i className="fa-solid fa-bell text-xs group-hover:rotate-12 transition-transform"></i>
+                                  <span>ተጠባባቂ ዝርዝር ውስጥ ግባ</span>
+                                </button>
                               ) : (
                                 <>
-                                  <i className="fa-solid fa-star text-xs text-[#f9b03c] drop-shadow-[0_0_6px_#f9b03c]"></i>
-                                  <span className="font-black text-[#f9b03c] tracking-wide">★ {course.ratingAvg || '4.9'}</span>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setPreviewModalCourse(course);
+                                    }}
+                                    className="bg-white/[0.05] hover:bg-white/10 text-white text-xs font-bold px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-xl transition border border-white/10 flex items-center gap-1.5 cursor-pointer hover:border-[#f9b03c]/40 active:scale-95"
+                                    title="ማስተዋወቂያ ቪዲዮ ይመልከቱ"
+                                  >
+                                    <i className="fa-solid fa-play text-[#f9b03c]"></i>
+                                    <span>ይመልከቱ</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      openPaymentModal(course);
+                                    }}
+                                    disabled={isEnrolling}
+                                    className="btn-shimmer-interactive px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl flex items-center gap-1.5 sm:gap-2 transition-all text-xs cursor-pointer active:scale-95 disabled:opacity-50 group font-black shadow-lg"
+                                  >
+                                    {isFree ? (
+                                      <>{isEnrolling ? 'እባክዎ ይጠብቁ...' : 'በነፃ ይጀምሩ'} <i className="fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform"></i></>
+                                    ) : (
+                                      <>አሁኑኑ ይግዙ <i className="fa-solid fa-cart-shopping buy-icon-animated group-hover:scale-110 group-hover:-rotate-6 transition-transform"></i></>
+                                    )}
+                                  </button>
                                 </>
                               )}
                             </div>
                           </div>
-
-                          {/* Description */}
-                          <p 
-                            className="text-[#a0aec0] text-xs sm:text-[13.5px] leading-relaxed line-clamp-3 mb-5 font-body"
-                            style={{ transform: 'translateZ(15px)' }}
-                          >
-                            {formatCourseDesc(course)}
-                          </p>
-                          
-                          {/* Meta Capsules */}
-                          <div 
-                            className="flex flex-wrap gap-2 mb-2"
-                            style={{ transform: 'translateZ(20px)' }}
-                          >
-                            <div className="flex items-center gap-1.5 bg-white/[0.05] text-gray-300 text-xs font-semibold px-3 py-1 rounded-full border border-white/[0.08] backdrop-blur-md">
-                              <i className="fa-regular fa-clock text-[#f9b03c] text-[10px]"></i>
-                              <span>{course.duration || '6+ ሰዓታት'}</span>
-                            </div>
-                            <div className="flex items-center gap-1.5 bg-white/[0.05] text-gray-300 text-xs font-semibold px-3 py-1 rounded-full border border-white/[0.08] backdrop-blur-md">
-                              <i className="fa-solid fa-layer-group text-[#f9b03c] text-[10px]"></i>
-                              <span>{course.lessons?.length ? `${course.lessons.length} ትምህርቶች` : 'የተሟላ ሞጁል'}</span>
-                            </div>
-                            <div className="flex items-center gap-1.5 bg-white/[0.05] text-gray-300 text-xs font-semibold px-3 py-1 rounded-full border border-white/[0.08] backdrop-blur-md">
-                              <i className="fa-solid fa-signal text-[#f9b03c] text-[10px]"></i>
-                              <span>{course.level || 'ጀማሪ እና መካከለኛ'}</span>
-                            </div>
-                          </div>
                         </div>
-                      </div>
-
-                      {/* Price & CTA Row (Bottom) */}
-                      <div 
-                        className="px-6 sm:px-7 pb-6 sm:pb-7 pt-4 border-t border-white/[0.06] flex items-center justify-between gap-3 mt-auto bg-white/[0.01]"
-                        style={{ transform: 'translateZ(32px)' }}
-                      >
-                        <div>
-                          {isComingSoon ? (
-                            <div className="flex flex-col">
-                              <span className="text-[10px] text-gray-400 uppercase font-black tracking-wider">ሁኔታ</span>
-                              <span className="text-sm sm:text-base font-black text-[#f9b03c] tracking-tight flex items-center gap-1.5">
-                                <i className="fa-solid fa-sparkles text-xs"></i> {course.expectedDate || 'በቅርቡ'}
-                              </span>
-                            </div>
-                          ) : isFree ? (
-                            <span className="text-xl sm:text-2xl font-black text-[#f9b03c] tracking-tight">
-                              ነፃ (Free)
-                            </span>
-                          ) : (
-                            <div className="flex items-baseline gap-1.5">
-                              <span className="text-xl sm:text-2xl font-black text-white tracking-tight">
-                                {Number(course.price).toLocaleString()} ብር
-                              </span>
-                              {course.oldPrice && (
-                                <span className="text-xs sm:text-sm font-medium text-gray-500 line-through">
-                                  {Number(course.oldPrice).toLocaleString()}
-                                </span>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {isComingSoon ? (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedWaitlistCourse(course);
-                                setIsWaitlistModalOpen(true);
-                              }}
-                              className="px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#f9b03c] text-slate-950 font-black text-xs flex items-center gap-1.5 sm:gap-2 shadow-[0_0_20px_rgba(249,176,60,0.4)] hover:shadow-[0_0_30px_rgba(249,176,60,0.6)] transition-all cursor-pointer active:scale-95 group"
-                            >
-                              <i className="fa-solid fa-bell text-xs group-hover:rotate-12 transition-transform"></i>
-                              <span>ተጠባባቂ ዝርዝር ውስጥ ግባ (Join Waitlist)</span>
-                            </button>
-                          ) : (
-                            <>
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setPreviewModalCourse(course);
-                                }}
-                                className="bg-white/[0.05] hover:bg-white/10 text-white text-xs font-bold px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-xl transition border border-white/10 flex items-center gap-1.5 cursor-pointer hover:border-[#f9b03c]/40 active:scale-95"
-                                title="ማስተዋወቂያ ቪዲዮ ይመልከቱ"
-                              >
-                                <i className="fa-solid fa-play text-[#f9b03c]"></i>
-                                <span>ይመልከቱ</span>
-                              </button>
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  openPaymentModal(course);
-                                }}
-                                disabled={isEnrolling}
-                                className="btn-shimmer-interactive px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl flex items-center gap-1.5 sm:gap-2 transition-all text-xs cursor-pointer active:scale-95 disabled:opacity-50 group font-black shadow-lg"
-                              >
-                                {isFree ? (
-                                  <>{isEnrolling ? 'እባክዎ ይጠብቁ...' : 'በነፃ ይጀምሩ'} <i className="fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform"></i></>
-                                ) : (
-                                  <>አሁኑኑ ይግዙ <i className="fa-solid fa-cart-shopping buy-icon-animated group-hover:scale-110 group-hover:-rotate-6 transition-transform"></i></>
-                                )}
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </div>
+                      </Tilt3DCard>
                     </div>
-                  </Tilt3DCard>
-                );
-              })}
+                  );
+                })}
+
+                {/* Final Cello Deck Card: Explore All Courses */}
+                <div className="w-[300px] sm:w-[350px] shrink-0 flex items-center justify-center">
+                  <Link 
+                    href="/courses"
+                    className="w-full h-[85%] rounded-3xl border-2 border-dashed border-[#f9b03c]/50 hover:border-[#f9b03c] bg-[#0c121f]/75 hover:bg-[#0c121f]/95 backdrop-blur-[16px] p-8 flex flex-col items-center justify-center text-center group transition-all duration-300 shadow-[0_20px_50px_rgba(0,0,0,0.8),0_0_30px_rgba(249,176,60,0.2)] hover:shadow-[0_25px_60px_rgba(249,176,60,0.45)] hover:scale-105"
+                  >
+                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-[#f9b03c] to-amber-400 text-slate-950 flex items-center justify-center text-2xl font-black mb-4 shadow-[0_0_25px_rgba(249,176,60,0.5)] group-hover:scale-110 transition-transform">
+                      <i className="fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
+                    </div>
+                    <h3 className="text-xl font-black text-white font-heading mb-2">
+                      ሁሉንም ኮርሶች ያስሱ
+                    </h3>
+                    <p className="text-xs text-slate-300">
+                      የእርስዎን የንግድ እና የቴክኖሎጂ ችሎታ የሚያሳድጉ ተጨማሪ ስልጠናዎች
+                    </p>
+                  </Link>
+                </div>
+              </div>
             </div>
           )}
 
           {/* Explore All Courses CTA Button */}
-          <div className="mt-14 sm:mt-18 text-center scrolly-reveal">
+          <div className="mt-10 sm:mt-14 text-center scrolly-reveal">
             <Link 
               href="/courses"
               className="inline-flex items-center gap-3 px-8 sm:px-10 py-4 sm:py-4.5 rounded-2xl bg-gradient-to-r from-[#3268ba] via-[#25549c] to-[#3268ba] text-white font-black text-sm sm:text-base border-2 border-white/20 hover:border-[#f9b03c] shadow-[0_15px_40px_rgba(50,104,186,0.35)] hover:shadow-[0_20px_50px_rgba(249,176,60,0.4)] transition-all duration-300 hover:scale-105 group cursor-pointer"
@@ -1018,7 +1046,6 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
           </div>
         </div>
       </section>
-
 
       {/* =========================================================================
           6. FREE LESSONS VIDEO SLIDER

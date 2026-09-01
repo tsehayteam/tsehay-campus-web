@@ -1,10 +1,21 @@
 /**
  * 🚀 Silicon Valley UX & WebGL ScrollTrigger Engine
+ * Powered by GSAP ScrollTrigger + Dual-Layer Fallback
  * Ensures 100% continuous, unbreakable, bidirectional scrollytelling
  * with instant refresh-recovery, resize adaptation, and zero freezing.
  */
 
-type TriggerCallback = (isVisible: boolean, element: HTMLElement) => void;
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { CustomEase } from 'gsap/CustomEase';
+
+// Register GSAP plugins & configure Silicon Valley smooth ease
+if (typeof window !== 'undefined') {
+  try {
+    gsap.registerPlugin(ScrollTrigger, CustomEase);
+    CustomEase.create('teraInward', '0.16, 1, 0.3, 1');
+  } catch (e) {}
+}
 
 interface ScrollTriggerOptions {
   threshold?: number;
@@ -17,12 +28,22 @@ class ScrollTriggerEngine {
   private elements: Set<HTMLElement> = new Set();
   private isRafScheduled = false;
   private onAiActiveChange?: (isActive: boolean) => void;
+  private gsapTriggers: ScrollTrigger[] = [];
+  private hasHorizontalPinned = false;
 
   public init(options: ScrollTriggerOptions = {}) {
     this.onAiActiveChange = options.onAiActiveChange;
     this.cleanup();
 
     if (typeof window === 'undefined') return;
+
+    // Register GSAP ScrollTrigger
+    try {
+      gsap.registerPlugin(ScrollTrigger, CustomEase);
+      this.initGsapTriggers();
+    } catch (err) {
+      console.warn('GSAP ScrollTrigger registration:', err);
+    }
 
     // 1. Dual-Layer Layer 1: Intersection Observer with Bidirectional Toggle
     const observerCallback: IntersectionObserverCallback = (entries) => {
@@ -69,6 +90,221 @@ class ScrollTriggerEngine {
     setTimeout(() => this.refresh(), 800);
   }
 
+  public initCoursesHorizontalScroll() {
+    if (typeof document === 'undefined') return;
+    const coursesSection = document.getElementById('courses');
+    const coursesTrack = document.getElementById('courses-horizontal-track');
+    if (!coursesSection || !coursesTrack) return;
+
+    // Remove existing horizontal trigger if already attached
+    const existingIdx = this.gsapTriggers.findIndex((t: any) => t.vars?.trigger === coursesSection);
+    if (existingIdx !== -1) {
+      this.gsapTriggers[existingIdx].kill();
+      this.gsapTriggers.splice(existingIdx, 1);
+    }
+
+    const getScrollDist = () => {
+      const trackW = coursesTrack.scrollWidth;
+      const viewW = window.innerWidth;
+      return Math.max(0, trackW - viewW + 120);
+    };
+
+    const hPinTrigger = ScrollTrigger.create({
+      trigger: coursesSection,
+      pin: true,
+      pinSpacing: true,
+      anticipatePin: 1,
+      start: 'top top',
+      end: () => `+=${Math.max(getScrollDist(), 1200)}`,
+      scrub: 1.2,
+      invalidateOnRefresh: true,
+      animation: gsap.to(coursesTrack, {
+        x: () => -getScrollDist(),
+        ease: 'none',
+      }),
+    });
+    this.gsapTriggers.push(hPinTrigger);
+    this.hasHorizontalPinned = true;
+  }
+
+  private initGsapTriggers() {
+    if (typeof document === 'undefined') return;
+
+    // 1. AI Feature Scrollytelling Section Trigger
+    const aiEl = document.getElementById('ai-feature');
+    if (aiEl) {
+      const trigger = ScrollTrigger.create({
+        trigger: aiEl,
+        start: 'top 85%',
+        end: 'bottom 15%',
+        toggleActions: 'play reverse play reverse',
+        onEnter: () => {
+          aiEl.classList.add('is-visible');
+          if (this.onAiActiveChange) this.onAiActiveChange(true);
+        },
+        onLeave: () => {
+          if (this.onAiActiveChange) this.onAiActiveChange(false);
+        },
+        onEnterBack: () => {
+          aiEl.classList.add('is-visible');
+          if (this.onAiActiveChange) this.onAiActiveChange(true);
+        },
+        onLeaveBack: () => {
+          aiEl.classList.remove('is-visible');
+          if (this.onAiActiveChange) this.onAiActiveChange(false);
+        },
+      });
+      this.gsapTriggers.push(trigger);
+    }
+
+    // 2. Footer Cascading Trigger
+    const footerEl = document.getElementById('footer');
+    if (footerEl) {
+      const trigger = ScrollTrigger.create({
+        trigger: footerEl,
+        start: 'top 92%',
+        end: 'bottom bottom',
+        toggleActions: 'play reverse play reverse',
+        onEnter: () => {
+          footerEl.classList.add('footer-cascade-active');
+        },
+        onLeaveBack: () => {
+          footerEl.classList.remove('footer-cascade-active');
+        },
+      });
+      this.gsapTriggers.push(trigger);
+    }
+
+    // 3. Universal Reveal ("Shoooo" Effect) on headers and cards
+    const revealEls = document.querySelectorAll<HTMLElement>('.scrolly-reveal, .scrolly-card');
+    revealEls.forEach((el) => {
+      const trigger = ScrollTrigger.create({
+        trigger: el,
+        start: 'top 88%',
+        end: 'bottom 12%',
+        toggleActions: 'play reverse play reverse',
+        onEnter: () => el.classList.add('is-visible'),
+        onEnterBack: () => el.classList.add('is-visible'),
+        onLeaveBack: () => {
+          const rect = el.getBoundingClientRect();
+          if (rect.top > window.innerHeight) el.classList.remove('is-visible');
+        },
+      });
+      this.gsapTriggers.push(trigger);
+    });
+
+    // 4. Horizontal Scroll Pinning for Popular Courses (Apple / Cello.so Scrollytelling)
+    this.initCoursesHorizontalScroll();
+
+    // 5. 3D Inward Fly-In Animation for Upcoming Events Section (scale: 1.1 -> 1)
+    const eventsSection = document.getElementById('events');
+    const eventCards = document.querySelectorAll<HTMLElement>('.event-fly-in-card');
+    if (eventsSection && eventCards.length > 0) {
+      const eventsTrigger = ScrollTrigger.create({
+        trigger: eventsSection,
+        start: 'top 82%',
+        end: 'bottom 20%',
+        toggleActions: 'play reverse play reverse',
+        onEnter: () => {
+          gsap.fromTo(
+            eventCards,
+            {
+              scale: 1.1,
+              opacity: 0,
+              y: 40,
+              transformOrigin: '50% 50%',
+            },
+            {
+              scale: 1,
+              opacity: 1,
+              y: 0,
+              duration: 1.2,
+              stagger: 0.15,
+              ease: 'teraInward',
+              overwrite: 'auto',
+            }
+          );
+        },
+        onEnterBack: () => {
+          gsap.to(eventCards, {
+            scale: 1,
+            opacity: 1,
+            y: 0,
+            duration: 0.8,
+            stagger: 0.1,
+            ease: 'teraInward',
+            overwrite: 'auto',
+          });
+        },
+        onLeaveBack: () => {
+          gsap.to(eventCards, {
+            scale: 1.1,
+            opacity: 0,
+            y: 40,
+            duration: 0.5,
+            ease: 'power2.in',
+            overwrite: 'auto',
+          });
+        },
+      });
+      this.gsapTriggers.push(eventsTrigger);
+    }
+
+    // 6. Staggered Pop-Up Entrance for Popular Course Cards (scale: 0.9 -> 1, opacity: 0 -> 1)
+    const coursesSection = document.getElementById('courses');
+    const courseCards = document.querySelectorAll<HTMLElement>('.course-popup-card, #courses-horizontal-track > div');
+    if (coursesSection && courseCards.length > 0) {
+      const coursePopupTrigger = ScrollTrigger.create({
+        trigger: coursesSection,
+        start: 'top 85%',
+        end: 'bottom 15%',
+        toggleActions: 'play reverse play reverse',
+        onEnter: () => {
+          gsap.fromTo(
+            courseCards,
+            {
+              scale: 0.9,
+              opacity: 0,
+              y: 25,
+              transformOrigin: '50% 50%',
+            },
+            {
+              scale: 1,
+              opacity: 1,
+              y: 0,
+              duration: 0.6,
+              stagger: 0.1,
+              ease: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
+              overwrite: 'auto',
+            }
+          );
+        },
+        onEnterBack: () => {
+          gsap.to(courseCards, {
+            scale: 1,
+            opacity: 1,
+            y: 0,
+            duration: 0.5,
+            stagger: 0.08,
+            ease: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
+            overwrite: 'auto',
+          });
+        },
+        onLeaveBack: () => {
+          gsap.to(courseCards, {
+            scale: 0.9,
+            opacity: 0,
+            y: 25,
+            duration: 0.4,
+            ease: 'power2.in',
+            overwrite: 'auto',
+          });
+        },
+      });
+      this.gsapTriggers.push(coursePopupTrigger);
+    }
+  }
+
   public registerAllElements() {
     if (typeof document === 'undefined') return;
 
@@ -78,6 +314,7 @@ class ScrollTriggerEngine {
       '.terafab-ai-box',
       '.footer-cascade-active',
       '#ai-feature',
+      '#courses-pin-container',
     ];
 
     const found = document.querySelectorAll<HTMLElement>(selectors.join(', '));
@@ -99,21 +336,19 @@ class ScrollTriggerEngine {
     });
   };
 
-  /**
-   * 🔄 ScrollTrigger.refresh()
-   * Recalculates every element's geometry and sets visibility immediately.
-   * Survives page reloads, dynamic content injection, and screen rotations.
-   */
   public refresh() {
     this.registerAllElements();
+    this.initCoursesHorizontalScroll();
     this.evaluateAllVisibility();
+    try {
+      ScrollTrigger.refresh();
+    } catch {}
   }
 
   private evaluateAllVisibility() {
     if (typeof window === 'undefined') return;
 
     const vh = window.innerHeight;
-    let aiVisible = false;
 
     this.elements.forEach((el) => {
       if (!el || !el.isConnected) {
@@ -126,8 +361,8 @@ class ScrollTriggerEngine {
 
       if (isInViewport) {
         el.classList.add('is-visible');
-        if (el.id === 'ai-feature') {
-          aiVisible = true;
+        if (el.id === 'ai-feature' && this.onAiActiveChange) {
+          this.onAiActiveChange(true);
         }
       } else {
         if (rect.top > vh + 40 || rect.bottom < -40) {
@@ -152,6 +387,9 @@ class ScrollTriggerEngine {
       this.observer = null;
     }
     this.elements.clear();
+
+    this.gsapTriggers.forEach((t) => t.kill());
+    this.gsapTriggers = [];
 
     if (typeof window !== 'undefined') {
       window.removeEventListener('scroll', this.handleScrollOrResize);
