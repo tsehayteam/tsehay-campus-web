@@ -16,7 +16,9 @@ export default function PWAInstallPrompt() {
   useEffect(() => {
     // 1. Register Service Worker
     if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').catch(() => {});
+      navigator.serviceWorker.register('/sw.js').then((reg) => {
+        reg.update().catch(() => {});
+      }).catch(() => {});
     }
 
     // 2. Check if already running in standalone / installed mode
