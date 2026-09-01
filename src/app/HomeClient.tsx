@@ -487,15 +487,22 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
             <div className="lg:col-span-7 flex flex-col items-center lg:items-start text-center lg:text-left pt-6 sm:pt-10">
               
               {/* Top Slogan Badge: Glowing Golden Yellow Border */}
-              <div className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full bg-[#f9b03c]/10 border border-[#f9b03c]/40 backdrop-blur-xl mb-6 sm:mb-8 shadow-[0_0_25px_rgba(249,176,60,0.25)] transition-all duration-300">
-                <span className="w-2 h-2 rounded-full bg-[#f9b03c] shadow-[0_0_10px_#f9b03c] animate-pulse"></span>
-                <span className="text-xs sm:text-sm font-black font-heading tracking-wider text-[#f9b03c]">
-                  {lang === 'en' ? '✨ SHINING LIGHT ON YOUR SUCCESS ✨' : '✨ ለስኬትዎ የምታበራ ፀሐይ ✨'}
+              <div className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full bg-[#f9b03c]/10 border border-[#f9b03c]/50 backdrop-blur-xl mb-6 sm:mb-8 shadow-[0_0_25px_rgba(249,176,60,0.35)] transition-all duration-300 hover:scale-105">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#f9b03c] shadow-[0_0_12px_#f9b03c] animate-pulse"></span>
+                <span className="text-xs sm:text-sm font-black font-heading tracking-wider text-[#f9b03c] drop-shadow-[0_0_10px_rgba(249,176,60,0.4)]">
+                  {lang === 'en' ? '✨ LEARN. APPLY. GROW. • TSEHAY CAMPUS ✨' : '✨ ተማር። ተግብር። አደግ። • TSEHAY CAMPUS ✨'}
                 </span>
               </div>
 
               {/* Main Cinematic Typewriter Headline with Subtle Continuous Glow Pulse */}
-              <h1 className="font-heading font-black text-4xl sm:text-6xl md:text-7xl lg:text-[74px] tracking-tight leading-[1.14] sm:leading-[1.08] text-white mb-6 min-h-[120px] sm:min-h-[160px] headline-glow-pulse">
+              <h1 
+                className="font-heading font-black text-4xl sm:text-6xl md:text-7xl lg:text-[72px] tracking-tight leading-[1.15] sm:leading-[1.1] text-white mb-6 min-h-[125px] sm:min-h-[160px] max-w-full lg:max-w-3xl headline-glow-pulse"
+                style={{
+                  wordWrap: 'break-word',
+                  whiteSpace: 'pre-wrap',
+                  overflowWrap: 'break-word',
+                }}
+              >
                 <span>{typedWhite}</span>{' '}
                 <span className="relative inline-block mt-1 sm:mt-0">
                   <span className="relative z-10 text-transparent bg-clip-text bg-gradient-to-r from-[#f9b03c] via-[#ffc66b] to-yellow-400 drop-shadow-[0_0_35px_rgba(249,176,60,0.4)]">
@@ -503,7 +510,7 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
                   </span>
                   <span className="absolute -bottom-2 left-0 w-full h-3 bg-gradient-to-r from-[#f9b03c]/30 to-transparent blur-xs -z-0"></span>
                 </span>
-                <span className="inline-block w-1.5 h-8 sm:h-12 bg-[#f9b03c] animate-pulse ml-1.5 align-middle shadow-[0_0_8px_#f9b03c]"></span>
+                <span className="inline-block w-[3px] sm:w-[5px] h-[0.85em] bg-[#f9b03c] animate-pulse ml-2 align-middle rounded-full shadow-[0_0_12px_#f9b03c]"></span>
               </h1>
 
               {/* Subheadline */}
@@ -560,7 +567,7 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
 
             {/* Right Column: 3D Billboard Anamorphic Video Stage */}
             <div className="lg:col-span-5 flex items-center justify-center relative">
-              <Hero3DPopoutStage videoSrc="/assets/for_landing_page_first.mp4" />
+              <Hero3DPopoutStage />
             </div>
 
           </div>

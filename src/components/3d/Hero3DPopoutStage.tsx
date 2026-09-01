@@ -11,7 +11,7 @@ interface Hero3DPopoutStageProps {
   videoSrc?: string;
 }
 
-const DEFAULT_LANDING_VIDEO = '/assets/for_landing_page_first.mp4';
+const DEFAULT_LANDING_VIDEO = 'https://www.youtube.com/watch?v=mgdOMtW6J8k';
 
 export default function Hero3DPopoutStage({
   videoSrc = DEFAULT_LANDING_VIDEO,
@@ -72,6 +72,7 @@ export default function Hero3DPopoutStage({
     // 3. Real-time Firestore Listeners
     let unsub1: any = null;
     let unsub2: any = null;
+    let unsub3: any = null;
     try {
       unsub1 = onSnapshot(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'site_settings', 'landing_video'), (snap) => {
         if (snap.exists()) {
@@ -92,6 +93,22 @@ export default function Hero3DPopoutStage({
           const url = d?.url || d?.videoUrl || d?.youtubeUrl;
           if (url && typeof url === 'string' && url.trim() && !isCancelled) {
             setActiveVideoUrl(url.trim());
+            try {
+              localStorage.setItem('tsehay_landing_video_cache', url.trim());
+            } catch (e) {}
+          }
+        }
+      }, () => {});
+
+      unsub3 = onSnapshot(doc(db, 'settings', 'landingVideo'), (snap) => {
+        if (snap.exists()) {
+          const d = snap.data();
+          const url = d?.url || d?.videoUrl || d?.youtubeUrl;
+          if (url && typeof url === 'string' && url.trim() && !isCancelled) {
+            setActiveVideoUrl(url.trim());
+            try {
+              localStorage.setItem('tsehay_landing_video_cache', url.trim());
+            } catch (e) {}
           }
         }
       }, () => {});
@@ -101,6 +118,7 @@ export default function Hero3DPopoutStage({
       isCancelled = true;
       if (unsub1) unsub1();
       if (unsub2) unsub2();
+      if (unsub3) unsub3();
     };
   }, []);
 
