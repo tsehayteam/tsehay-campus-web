@@ -11,6 +11,7 @@ import Link from 'next/link';
 
 // Components
 import Footer from '@/components/Footer';
+import AITutorSection from '@/components/AITutorSection';
 import PaymentModal from '@/components/PaymentModal';
 import RequireAuthModal from '@/components/RequireAuthModal';
 import SmartSearchInput from '@/components/SmartSearchInput';
@@ -462,7 +463,7 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
       {/* =========================================================================
           1. HERO SECTION (100vh Full Viewport Cinematic Terafab Standard)
          ========================================================================= */}
-      <section className="terafab-hero-container min-h-screen relative flex flex-col justify-center overflow-hidden border-b border-white/[0.08]" id="home">
+      <section className="terafab-hero-container min-h-screen min-h-[100dvh] relative flex flex-col justify-center items-center overflow-hidden border-b border-white/[0.08]" id="home">
         {/* Full-Cover Background with Continuous Ken Burns + Parallax */}
         <div 
           className="terafab-hero-bg" 
@@ -477,8 +478,8 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
         <div className="absolute bottom-1/4 -right-32 w-[600px] h-[600px] bg-[#3268ba]/20 rounded-full blur-[160px] pointer-events-none"></div>
 
         {/* Hero Content Container */}
-        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-12 relative z-20 py-16 lg:py-24 w-full my-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-12 relative z-20 py-16 lg:py-20 w-full my-auto flex items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center w-full">
             
             {/* Left Column: Premium Cinematic Typography & CTA */}
             <div className="lg:col-span-7 flex flex-col items-center lg:items-start text-center lg:text-left pt-6 sm:pt-10">
@@ -491,8 +492,8 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
                 </span>
               </div>
 
-              {/* Main Cinematic Typewriter Headline */}
-              <h1 className="font-heading font-black text-4xl sm:text-6xl md:text-7xl lg:text-[74px] tracking-tight leading-[1.14] sm:leading-[1.08] text-white mb-6 min-h-[120px] sm:min-h-[160px]">
+              {/* Main Cinematic Typewriter Headline with Subtle Continuous Glow Pulse */}
+              <h1 className="font-heading font-black text-4xl sm:text-6xl md:text-7xl lg:text-[74px] tracking-tight leading-[1.14] sm:leading-[1.08] text-white mb-6 min-h-[120px] sm:min-h-[160px] headline-glow-pulse">
                 <span>{typedWhite}</span>{' '}
                 <span className="relative inline-block mt-1 sm:mt-0">
                   <span className="relative z-10 text-transparent bg-clip-text bg-gradient-to-r from-[#f9b03c] via-[#ffc66b] to-yellow-400 drop-shadow-[0_0_35px_rgba(249,176,60,0.4)]">
@@ -518,25 +519,22 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
 
               {/* Action Buttons (Primary & Secondary) */}
               <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 sm:gap-5 w-full sm:w-auto">
-                {/* Primary CTA: Explore Courses */}
+                {/* Primary CTA: Explore Courses (Scale 1.05 + Sliding Arrow) */}
                 <MagneticLink 
                   href="#courses"
-                  className="w-full sm:w-auto px-8 sm:px-9 py-4 rounded-2xl terafab-btn-primary flex items-center justify-center gap-3 text-sm sm:text-base cursor-pointer shadow-[0_0_30px_rgba(249,176,60,0.45)] hover:shadow-[0_0_45px_rgba(249,176,60,0.7)] group"
+                  className="w-full sm:w-auto px-8 sm:px-9 py-4 rounded-2xl terafab-btn-primary flex items-center justify-center gap-3 text-sm sm:text-base cursor-pointer shadow-[0_0_30px_rgba(249,176,60,0.45)] hover:shadow-[0_0_45px_rgba(249,176,60,0.7)] group hover:scale-105 transition-all duration-300"
                 >
-                  <span>ኮርሶችን ያስሱ</span>
-                  <svg className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-1.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M5 12h14"></path>
-                    <path d="m12 5 7 7-7 7"></path>
-                  </svg>
+                  <span className="font-black">ኮርሶችን ያስሱ</span>
+                  <i className="fa-solid fa-arrow-right text-sm transition-transform duration-300 group-hover:translate-x-2"></i>
                 </MagneticLink>
 
-                {/* Secondary CTA: 1-on-1 Mentorship with Smooth Glowing Pulse */}
+                {/* Secondary CTA: About Us with Glassmorphism + Glowing Play Icon */}
                 <MagneticLink 
-                  href="/mentorship"
-                  className="w-full sm:w-auto px-8 sm:px-9 py-4 rounded-2xl terafab-btn-glass mentorship-pulse-glow flex items-center justify-center gap-3 text-sm sm:text-base cursor-pointer hover:border-[#f9b03c]/80 group"
+                  href="/about"
+                  className="w-full sm:w-auto px-8 sm:px-9 py-4 rounded-2xl terafab-btn-glass flex items-center justify-center gap-3 text-sm sm:text-base cursor-pointer hover:border-[#f9b03c]/80 group transition-all duration-300 hover:scale-105 backdrop-blur-[15px] bg-white/[0.05] border border-white/15"
                 >
-                  <i className="fa-solid fa-calendar-check text-[#f9b03c]"></i>
-                  <span className="font-bold">1-ለ-1 ማማከር (Mentorship)</span>
+                  <i className="fa-solid fa-play text-xs text-white/80 group-hover:text-[#f9b03c] transition-colors duration-300 drop-shadow-[0_0_8px_rgba(249,176,60,0.6)]"></i>
+                  <span className="font-bold">ስለ እኛ ይመልከቱ</span>
                 </MagneticLink>
               </div>
 
@@ -606,7 +604,7 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
       </section>
 
       {/* =========================================================================
-          3. WHY CHOOSE US / "የእኛ ልዩነት" (3 Glassmorphism Cards)
+          3. WHY CHOOSE US / "የእኛ ልዩነት" (3 Glassmorphism Cards with Staggered Pop-up)
          ========================================================================= */}
       <section id="features" className="py-24 relative overflow-hidden bg-transparent border-b border-white/[0.08] transition-colors duration-300">
         <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
@@ -631,18 +629,18 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 lg:gap-10">
             
-            {/* Card 1: 100% Practical Training (Golden Yellow) */}
+            {/* Card 1: 100% Practical Training (Golden Yellow) - Stagger 1 */}
             <Tilt3DCard 
               maxTilt={12} 
               perspective={1000}
               onClick={() => document.getElementById('courses')?.scrollIntoView({behavior: 'smooth'})}
-              className="cursor-pointer"
+              className="cursor-pointer scrolly-card delay-1"
             >
               <div 
                 data-scrolly-order="1"
-                className="h-full rounded-3xl p-8 sm:p-10 flex flex-col justify-between group bg-[#0a0e17]/85 backdrop-blur-xl border border-[#f9b03c]/30 hover:border-[#f9b03c]/70 shadow-[0_15px_40px_rgba(0,0,0,0.7),0_0_20px_rgba(249,176,60,0.15)] hover:shadow-[0_20px_50px_rgba(249,176,60,0.3)] transition-all duration-300 relative overflow-hidden"
+                className="h-full rounded-3xl p-8 sm:p-10 flex flex-col justify-between group bg-[#0a0e17]/90 backdrop-blur-2xl border border-[#f9b03c]/35 hover:border-[#f9b03c]/80 shadow-[0_15px_40px_rgba(0,0,0,0.7),0_0_20px_rgba(249,176,60,0.18)] hover:shadow-[0_20px_50px_rgba(249,176,60,0.35)] transition-all duration-300 relative overflow-hidden"
               >
-                <div className="absolute -top-12 -left-12 w-32 h-32 bg-[#f9b03c]/10 rounded-full blur-2xl pointer-events-none group-hover:scale-150 transition-transform duration-500"></div>
+                <div className="absolute -top-12 -left-12 w-36 h-36 bg-[#f9b03c]/15 rounded-full blur-2xl pointer-events-none group-hover:scale-150 transition-transform duration-500"></div>
                 <div className="relative z-10">
                   <div 
                     className="w-16 h-16 sm:w-20 sm:h-20 bg-[#f9b03c]/15 text-[#f9b03c] border border-[#f9b03c]/40 rounded-2xl flex items-center justify-center text-3xl sm:text-4xl mb-6 sm:mb-8 group-hover:scale-110 group-hover:bg-[#f9b03c] group-hover:text-slate-950 transition-all duration-300 shadow-[0_0_20px_rgba(249,176,60,0.2)]"
@@ -664,18 +662,18 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
               </div>
             </Tilt3DCard>
 
-            {/* Card 2: 24/7 Personal AI Tutor (Featured Center Glow Card - Golden Yellow + Royal Blue) */}
+            {/* Card 2: 24/7 Personal AI Tutor (Featured Center Glow Card - Golden Yellow + Royal Blue) - Stagger 2 */}
             <Tilt3DCard 
               maxTilt={15}
               scale={1.03}
               perspective={1000}
               glare={true}
               onClick={() => router.push('/ai')}
-              className="cursor-pointer"
+              className="cursor-pointer scrolly-card delay-2"
             >
               <div 
                 data-scrolly-order="2"
-                className="h-full rounded-3xl p-8 sm:p-10 border-2 border-[#f9b03c]/70 hover:border-[#f9b03c] bg-[#0c121f]/90 backdrop-blur-2xl shadow-[0_25px_60px_rgba(0,0,0,0.9),0_0_35px_rgba(249,176,60,0.35)] relative overflow-hidden flex flex-col justify-between group transition-all duration-300"
+                className="h-full rounded-3xl p-8 sm:p-10 border-2 border-[#f9b03c]/75 hover:border-[#f9b03c] bg-[#0c121f]/95 backdrop-blur-2xl shadow-[0_25px_60px_rgba(0,0,0,0.9),0_0_35px_rgba(249,176,60,0.4)] relative overflow-hidden flex flex-col justify-between group transition-all duration-300"
                 style={{ transformStyle: 'preserve-3d' }}
               >
                 <div className="absolute -right-10 -top-10 bg-gradient-to-br from-[#f9b03c]/25 via-[#3268ba]/20 to-transparent w-48 h-48 rounded-full -z-10 group-hover:scale-150 transition-transform duration-700 pointer-events-none blur-xl"></div>
@@ -684,7 +682,7 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
                 </div>
                 <div className="relative z-10">
                   <div 
-                    className="w-16 h-16 sm:w-20 sm:h-20 bg-[#f9b03c]/20 text-[#f9b03c] border border-[#f9b03c]/50 rounded-2xl flex items-center justify-center text-3xl sm:text-4xl mb-6 sm:mb-8 group-hover:scale-110 group-hover:bg-[#f9b03c] group-hover:text-slate-950 transition-all duration-300 shadow-[0_0_25px_rgba(249,176,60,0.3)] relative z-10"
+                    className="w-16 h-16 sm:w-20 sm:h-20 bg-[#f9b03c]/20 text-[#f9b03c] border border-[#f9b03c]/50 rounded-2xl flex items-center justify-center text-3xl sm:text-4xl mb-6 sm:mb-8 group-hover:scale-110 group-hover:bg-[#f9b03c] group-hover:text-slate-950 transition-all duration-300 shadow-[0_0_25px_rgba(249,176,60,0.35)] relative z-10"
                     style={{ transform: 'translateZ(45px)' }}
                   >
                     <i className="fa-solid fa-robot"></i>
@@ -703,18 +701,18 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
               </div>
             </Tilt3DCard>
 
-            {/* Card 3: Accredited Certificate (Royal Blue) */}
+            {/* Card 3: Accredited Certificate (Royal Blue - NO GREEN) - Stagger 3 */}
             <Tilt3DCard 
               maxTilt={12}
               perspective={1000}
               onClick={() => document.getElementById('courses')?.scrollIntoView({behavior: 'smooth'})}
-              className="cursor-pointer"
+              className="cursor-pointer scrolly-card delay-3"
             >
               <div 
                 data-scrolly-order="3"
-                className="h-full rounded-3xl p-8 sm:p-10 flex flex-col justify-between group bg-[#080d1a]/85 backdrop-blur-xl border border-[#3268ba]/40 hover:border-[#3268ba]/80 shadow-[0_15px_40px_rgba(0,0,0,0.7),0_0_25px_rgba(50,104,186,0.2)] hover:shadow-[0_20px_50px_rgba(50,104,186,0.4)] transition-all duration-300 relative overflow-hidden"
+                className="h-full rounded-3xl p-8 sm:p-10 flex flex-col justify-between group bg-[#080d1a]/90 backdrop-blur-2xl border border-[#3268ba]/45 hover:border-[#3268ba]/90 shadow-[0_15px_40px_rgba(0,0,0,0.7),0_0_25px_rgba(50,104,186,0.22)] hover:shadow-[0_20px_50px_rgba(50,104,186,0.45)] transition-all duration-300 relative overflow-hidden"
               >
-                <div className="absolute -top-12 -right-12 w-32 h-32 bg-[#3268ba]/15 rounded-full blur-2xl pointer-events-none group-hover:scale-150 transition-transform duration-500"></div>
+                <div className="absolute -top-12 -right-12 w-36 h-36 bg-[#3268ba]/20 rounded-full blur-2xl pointer-events-none group-hover:scale-150 transition-transform duration-500"></div>
                 <div className="relative z-10">
                   <div 
                     className="w-16 h-16 sm:w-20 sm:h-20 bg-[#3268ba]/20 text-[#3268ba] border border-[#3268ba]/40 rounded-2xl flex items-center justify-center text-3xl sm:text-4xl mb-6 sm:mb-8 group-hover:scale-110 group-hover:bg-[#3268ba] group-hover:text-white transition-all duration-300 shadow-[0_0_20px_rgba(50,104,186,0.3)]"
@@ -1019,6 +1017,10 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
         </div>
       </section>
 
+      {/* =========================================================================
+          5. TSEHAY AI INTERACTIVE SANDBOX ("TERAFAB" SCROLLYTELLING EXPERIENCE)
+         ========================================================================= */}
+      <AITutorSection />
 
       {/* =========================================================================
           6. FREE LESSONS VIDEO SLIDER

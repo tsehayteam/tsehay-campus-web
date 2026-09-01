@@ -1262,41 +1262,55 @@ img, video, canvas {
 }
 
 /* ==========================================================================
-   🚀 Terafab.ai Scrollytelling & Cinematic Reveal Engine
+   🚀 Terafab.ai Scrollytelling & Cinematic Reveal Engine ("Shoooo" Effect)
    ========================================================================== */
 
 .scrolly-reveal {
   opacity: 0;
-  transform: translateY(40px);
-  transition: opacity 0.85s cubic-bezier(0.16, 1, 0.3, 1), transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: translateY(40px) scale(0.95);
+  transition: opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1), transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: opacity, transform;
 }
 
 .scrolly-reveal.is-visible {
   opacity: 1;
-  transform: translateY(0);
+  transform: translateY(0) scale(1);
 }
 
 .scrolly-card {
   opacity: 0;
-  transform: translateY(40px);
-  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: translateY(40px) scale(0.95);
+  transition: opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1), transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: opacity, transform;
 }
 
+.is-visible .scrolly-card,
 .scrolly-card.is-visible {
   opacity: 1;
-  transform: translateY(0);
+  transform: translateY(0) scale(1);
 }
 
-.scrolly-stagger-1 { transition-delay: 0.08s; }
-.scrolly-stagger-2 { transition-delay: 0.22s; }
-.scrolly-stagger-3 { transition-delay: 0.36s; }
-.scrolly-stagger-4 { transition-delay: 0.50s; }
-.scrolly-stagger-5 { transition-delay: 0.62s; }
-.scrolly-stagger-6 { transition-delay: 0.74s; }
+.scrolly-stagger-1, .scrolly-card.delay-1 { transition-delay: 0.10s; }
+.scrolly-stagger-2, .scrolly-card.delay-2 { transition-delay: 0.25s; }
+.scrolly-stagger-3, .scrolly-card.delay-3 { transition-delay: 0.40s; }
+.scrolly-stagger-4, .scrolly-card.delay-4 { transition-delay: 0.55s; }
+.scrolly-stagger-5, .scrolly-card.delay-5 { transition-delay: 0.70s; }
+.scrolly-stagger-6, .scrolly-card.delay-6 { transition-delay: 0.85s; }
 
-/* Subtle continuous glowing pulse for main headline badge */
+/* Subtle continuous glowing pulse for main headline text & badge */
+@keyframes headlinePulseGlow {
+  0%, 100% {
+    text-shadow: 0 0 15px rgba(249, 176, 60, 0.35), 0 0 30px rgba(249, 176, 60, 0.18);
+  }
+  50% {
+    text-shadow: 0 0 35px rgba(249, 176, 60, 0.75), 0 0 65px rgba(249, 176, 60, 0.45), 0 0 90px rgba(50, 104, 186, 0.35);
+  }
+}
+
+.headline-glow-pulse {
+  animation: headlinePulseGlow 3.5s ease-in-out infinite;
+}
+
 @keyframes headlineGlowPulse {
   0%, 100% {
     box-shadow: 0 0 20px rgba(249, 176, 60, 0.25), inset 0 0 15px rgba(249, 176, 60, 0.08);
@@ -1318,7 +1332,7 @@ img, video, canvas {
 
 .terafab-ai-box {
   opacity: 0;
-  transform: scale(0.92) translateY(36px);
+  transform: scale(0.90) translateY(40px);
   filter: blur(8px);
   transition: opacity 0.95s cubic-bezier(0.16, 1, 0.3, 1), transform 0.95s cubic-bezier(0.16, 1, 0.3, 1), filter 0.95s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: opacity, transform, filter;
@@ -1366,9 +1380,9 @@ img, video, canvas {
   transform: translateY(0) scale(1);
 }
 
-.footer-delay-1 { transition-delay: 0.08s; }
-.footer-delay-2 { transition-delay: 0.22s; }
-.footer-delay-3 { transition-delay: 0.36s; }
+.footer-delay-1 { transition-delay: 0.05s; }
+.footer-delay-2 { transition-delay: 0.20s; }
+.footer-delay-3 { transition-delay: 0.35s; }
 .footer-delay-4 { transition-delay: 0.50s; }
 .footer-delay-5 { transition-delay: 0.65s; }
 

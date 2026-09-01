@@ -1,10 +1,12 @@
 /**
  * 🚀 Silicon Valley UX & WebGL ScrollTrigger Engine
+ * Powered by GSAP ScrollTrigger + Dual-Layer Fallback
  * Ensures 100% continuous, unbreakable, bidirectional scrollytelling
  * with instant refresh-recovery, resize adaptation, and zero freezing.
  */
 
-type TriggerCallback = (isVisible: boolean, element: HTMLElement) => void;
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 interface ScrollTriggerOptions {
   threshold?: number;
@@ -17,12 +19,21 @@ class ScrollTriggerEngine {
   private elements: Set<HTMLElement> = new Set();
   private isRafScheduled = false;
   private onAiActiveChange?: (isActive: boolean) => void;
+  private gsapTriggers: ScrollTrigger[] = [];
 
   public init(options: ScrollTriggerOptions = {}) {
     this.onAiActiveChange = options.onAiActiveChange;
     this.cleanup();
 
     if (typeof window === 'undefined') return;
+
+    // Register GSAP ScrollTrigger
+    try {
+      gsap.registerPlugin(ScrollTrigger);
+      this.initGsapTriggers();
+    } catch (err) {
+      console.warn('GSAP ScrollTrigger registration:', err);
+    }
 
     // 1. Dual-Layer Layer 1: Intersection Observer with Bidirectional Toggle
     const observerCallback: IntersectionObserverCallback = (entries) => {
@@ -69,6 +80,73 @@ class ScrollTriggerEngine {
     setTimeout(() => this.refresh(), 800);
   }
 
+  private initGsapTriggers() {
+    if (typeof document === 'undefined') return;
+
+    // 1. AI Feature Scrollytelling Section Trigger
+    const aiEl = document.getElementById('ai-feature');
+    if (aiEl) {
+      const trigger = ScrollTrigger.create({
+        trigger: aiEl,
+        start: 'top 85%',
+        end: 'bottom 15%',
+        toggleActions: 'play reverse play reverse',
+        onEnter: () => {
+          aiEl.classList.add('is-visible');
+          if (this.onAiActiveChange) this.onAiActiveChange(true);
+        },
+        onLeave: () => {
+          if (this.onAiActiveChange) this.onAiActiveChange(false);
+        },
+        onEnterBack: () => {
+          aiEl.classList.add('is-visible');
+          if (this.onAiActiveChange) this.onAiActiveChange(true);
+        },
+        onLeaveBack: () => {
+          aiEl.classList.remove('is-visible');
+          if (this.onAiActiveChange) this.onAiActiveChange(false);
+        },
+      });
+      this.gsapTriggers.push(trigger);
+    }
+
+    // 2. Footer Cascading Trigger
+    const footerEl = document.getElementById('footer');
+    if (footerEl) {
+      const trigger = ScrollTrigger.create({
+        trigger: footerEl,
+        start: 'top 92%',
+        end: 'bottom bottom',
+        toggleActions: 'play reverse play reverse',
+        onEnter: () => {
+          footerEl.classList.add('footer-cascade-active');
+        },
+        onLeaveBack: () => {
+          footerEl.classList.remove('footer-cascade-active');
+        },
+      });
+      this.gsapTriggers.push(trigger);
+    }
+
+    // 3. Universal Reveal ("Shoooo" Effect) on headers and cards
+    const revealEls = document.querySelectorAll<HTMLElement>('.scrolly-reveal, .scrolly-card');
+    revealEls.forEach((el) => {
+      const trigger = ScrollTrigger.create({
+        trigger: el,
+        start: 'top 88%',
+        end: 'bottom 12%',
+        toggleActions: 'play reverse play reverse',
+        onEnter: () => el.classList.add('is-visible'),
+        onEnterBack: () => el.classList.add('is-visible'),
+        onLeaveBack: () => {
+          const rect = el.getBoundingClientRect();
+          if (rect.top > window.innerHeight) el.classList.remove('is-visible');
+        },
+      });
+      this.gsapTriggers.push(trigger);
+    });
+  }
+
   public registerAllElements() {
     if (typeof document === 'undefined') return;
 
@@ -99,21 +177,18 @@ class ScrollTriggerEngine {
     });
   };
 
-  /**
-   * 🔄 ScrollTrigger.refresh()
-   * Recalculates every element's geometry and sets visibility immediately.
-   * Survives page reloads, dynamic content injection, and screen rotations.
-   */
   public refresh() {
     this.registerAllElements();
     this.evaluateAllVisibility();
+    try {
+      ScrollTrigger.refresh();
+    } catch {}
   }
 
   private evaluateAllVisibility() {
     if (typeof window === 'undefined') return;
 
     const vh = window.innerHeight;
-    let aiVisible = false;
 
     this.elements.forEach((el) => {
       if (!el || !el.isConnected) {
@@ -126,8 +201,8 @@ class ScrollTriggerEngine {
 
       if (isInViewport) {
         el.classList.add('is-visible');
-        if (el.id === 'ai-feature') {
-          aiVisible = true;
+        if (el.id === 'ai-feature' && this.onAiActiveChange) {
+          this.onAiActiveChange(true);
         }
       } else {
         if (rect.top > vh + 40 || rect.bottom < -40) {
@@ -152,6 +227,9 @@ class ScrollTriggerEngine {
       this.observer = null;
     }
     this.elements.clear();
+
+    this.gsapTriggers.forEach((t) => t.kill());
+    this.gsapTriggers = [];
 
     if (typeof window !== 'undefined') {
       window.removeEventListener('scroll', this.handleScrollOrResize);
