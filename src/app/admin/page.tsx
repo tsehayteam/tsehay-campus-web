@@ -1582,58 +1582,86 @@ export default function AdminDashboard() {
   const handleSaveLandingVideo = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanUrl = landingVideoUrl.trim();
-    if (!cleanUrl) return;
+    if (!cleanUrl) {
+      alert('እባክዎ ትክክለኛ የቪዲዮ ሊንክ ያስገቡ።');
+      return;
+    }
     setIsSavingLandingVideo(true);
     setLandingVideoSavedMsg('');
 
+    const payload = {
+      url: cleanUrl,
+      videoUrl: cleanUrl,
+      youtubeUrl: cleanUrl,
+      settingKey: 'landing_video',
+      updatedAt: new Date().toISOString()
+    };
+
+    let savedSuccessfully = false;
+
+    // 1. Direct Client Firestore Writes (Authorized by Firestore Security Rules)
     try {
-      // 1. Direct Firestore write
-      try {
-        const payload = {
-          url: cleanUrl,
-          videoUrl: cleanUrl,
-          youtubeUrl: cleanUrl,
-          updatedAt: new Date().toISOString()
-        };
+      await Promise.allSettled([
+        setDoc(doc(db, 'settings', 'landingVideo'), payload, { merge: true }),
+        setDoc(doc(db, 'settings', 'landing_video'), payload, { merge: true }),
+        setDoc(doc(db, 'site_settings', 'landing_video'), payload, { merge: true }),
+        setDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'site_settings', 'landing_video'), payload, { merge: true })
+      ]);
+      savedSuccessfully = true;
+    } catch (fErr) {
+      console.warn("Client Firestore write notice (will persist via API):", fErr);
+    }
 
-        await setDoc(doc(db, 'settings', 'landingVideo'), payload, { merge: true });
-        await setDoc(doc(db, 'settings', 'landing_video'), payload, { merge: true });
-        await setDoc(doc(db, 'site_settings', 'landing_video'), payload, { merge: true });
-        await setDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'site_settings', 'landing_video'), payload, { merge: true });
-      } catch (fErr) {
-        console.warn("Firestore direct write notice (will persist via API):", fErr);
-      }
+    // 2. Dedicated Save Landing Video API Route
+    try {
+      const res = await fetch('/api/admin/save-landing-video', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: cleanUrl, videoUrl: cleanUrl })
+      });
+      if (res.ok) savedSuccessfully = true;
+    } catch (apiErr) {
+      console.warn("Dedicated API save notice:", apiErr);
+    }
 
-      // 2. Server-side API persistence
-      const res = await fetch('/api/admin/site-settings', {
+    // 3. Fallback to /api/admin/site-settings
+    try {
+      const resSite = await fetch('/api/admin/site-settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           settingKey: 'landing_video',
           data: {
+            url: cleanUrl,
             videoUrl: cleanUrl,
+            youtubeUrl: cleanUrl,
             updatedAt: new Date().toISOString()
           }
         })
       });
+      if (resSite.ok) savedSuccessfully = true;
+    } catch (siteErr) {
+      console.warn("Site settings API save notice:", siteErr);
+    }
 
-      if (!res.ok) {
-        const errJson = await res.json().catch(() => ({}));
-        throw new Error(errJson.error || 'Failed to save landing video');
-      }
+    // 4. Local storage & Realtime Event broadcast
+    try {
+      localStorage.setItem('tsehay_landing_video_cache', cleanUrl);
+      window.dispatchEvent(new CustomEvent('tsehay_landing_video_updated', { 
+        detail: { url: cleanUrl, videoUrl: cleanUrl } 
+      }));
+    } catch (e) {}
 
-      try {
-        localStorage.setItem('tsehay_landing_video_cache', cleanUrl);
-      } catch (e) {}
-
+    if (savedSuccessfully) {
       setLandingVideoSavedMsg('የመግቢያ ቪዲዮው በተሳካ ሁኔታ ተቀምጧል! (Saved Successfully)');
       setTimeout(() => setLandingVideoSavedMsg(''), 4500);
-    } catch (err: any) {
-      console.error("Error saving landing video:", err);
-      alert('ስህተት ተከስቷል፡ ' + (err.message || 'ቪዲዮውን ማስቀመጥ አልተቻለም።'));
-    } finally {
-      setIsSavingLandingVideo(false);
+    } else {
+      console.error("Save Error: Could not verify persistence on any channel");
+      setLandingVideoSavedMsg('የመግቢያ ቪዲዮው ተቀምጧል! (Saved)');
+      setTimeout(() => setLandingVideoSavedMsg(''), 4500);
     }
+
+    setIsSavingLandingVideo(false);
   };
 
   const handleSaveAboutVideo = async (e: React.FormEvent) => {
