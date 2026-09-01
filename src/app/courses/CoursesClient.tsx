@@ -494,17 +494,26 @@ export default function CoursesClient({ initialCourses }: { initialCourses?: any
                             className="relative aspect-video w-full overflow-hidden bg-black flex items-center justify-center block cursor-pointer"
                             style={{ transform: 'translateZ(30px)' }}
                           >
-                            <img 
-                              src={getCleanCourseImage(course) || `https://placehold.co/600x400/3268BA/FFFFFF?text=${encodeURIComponent(course.title || 'Tsehay Campus')}&font=Montserrat`} 
-                              alt="" 
-                              aria-hidden="true" 
-                              className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-40 scale-125 pointer-events-none select-none" 
-                            />
-                            <img 
-                              src={getCleanCourseImage(course) || `https://placehold.co/600x400/3268BA/FFFFFF?text=${encodeURIComponent(course.title || 'Tsehay Campus')}&font=Montserrat`} 
-                              alt={course.title} 
-                              className="relative z-10 w-full h-full object-contain p-2 transition-transform duration-500 ease-out group-hover:scale-105" 
-                            />
+                            {(() => {
+                              const fallbackImg = course.title?.includes('ዩቲዩብ') ? '/assets/hero-bg-new.jpg' : (course.title?.includes('ማርኬቲንግ') ? '/assets/about_video_cover.jpg' : '/assets/for_landing_page_second.jpg');
+                              return (
+                                <>
+                                  <img 
+                                    src={getCleanCourseImage(course) || fallbackImg} 
+                                    alt="" 
+                                    aria-hidden="true" 
+                                    onError={(e) => { (e.target as HTMLImageElement).src = fallbackImg; }}
+                                    className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-40 scale-125 pointer-events-none select-none" 
+                                  />
+                                  <img 
+                                    src={getCleanCourseImage(course) || fallbackImg} 
+                                    alt={course.title} 
+                                    onError={(e) => { (e.target as HTMLImageElement).src = fallbackImg; }}
+                                    className="relative z-10 w-full h-full object-contain p-2 transition-transform duration-500 ease-out group-hover:scale-105" 
+                                  />
+                                </>
+                              );
+                            })()}
                             
                             {/* PREMIUM / FREE / COMING SOON Badge */}
                             {isComingSoon ? (

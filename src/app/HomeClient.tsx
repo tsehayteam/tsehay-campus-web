@@ -836,9 +836,10 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
                 className="flex items-stretch gap-6 sm:gap-8 overflow-x-auto scroll-smooth snap-x snap-mandatory py-4 px-1 scrollbar-none no-scrollbar select-none will-change-transform"
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
               >
-                {[...courses, ...getComingSoonCourses().map(c => ({ ...c, isComingSoon: true }))].slice(0, 8).map((course, index) => {
+                {courses.map((course, index) => {
                   const isComingSoon = Boolean(course.isComingSoon || course.status === 'Coming Soon');
                   const isFree = !isComingSoon && (course.isFree || course.price === 0 || course.price === '0' || course.price === 'Free');
+                  const fallbackImg = course.title?.includes('ዩቲዩብ') ? '/assets/hero-bg-new.jpg' : (course.title?.includes('ማርኬቲንግ') ? '/assets/about_video_cover.jpg' : '/assets/for_landing_page_second.jpg');
 
                   return (
                     <div 
@@ -874,14 +875,16 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
                               style={{ transform: 'translateZ(30px)' }}
                             >
                               <img 
-                                src={getCleanCourseImage(course) || `https://placehold.co/600x400/3268BA/FFFFFF?text=${encodeURIComponent(course.title || 'Tsehay Campus')}&font=Montserrat`} 
+                                src={getCleanCourseImage(course) || fallbackImg} 
                                 alt="" 
                                 aria-hidden="true" 
+                                onError={(e) => { (e.target as HTMLImageElement).src = fallbackImg; }}
                                 className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-40 scale-125 pointer-events-none select-none" 
                               />
                               <img 
-                                src={getCleanCourseImage(course) || `https://placehold.co/600x400/3268BA/FFFFFF?text=${encodeURIComponent(course.title || 'Tsehay Campus')}&font=Montserrat`} 
+                                src={getCleanCourseImage(course) || fallbackImg} 
                                 alt={course.title} 
+                                onError={(e) => { (e.target as HTMLImageElement).src = fallbackImg; }}
                                 className="relative z-10 w-full h-full object-contain p-2 group-hover:scale-[1.04] transition-transform duration-500" 
                               />
                               

@@ -4,61 +4,6 @@ import { collection, onSnapshot, query } from 'firebase/firestore';
 
 export const DEFAULT_COURSES = [
   {
-    id: "digital_marketing_free",
-    slug: "digital-marketing",
-    title: "ዲጂታል ማርኬቲንግ ለጀማሪዎች: ቢዝነስዎን በቀላሉ የሚያሳድጉበት መመሪያ",
-    description: "ይህ የ1 ሰዓት የዲጂታል ማርኬቲንግ ቅምሻ በነፃነት በመማር ወደፊት ለሚመጣው ትልቅ የዲጂታል ማርኬቲንግ ስልጠና እራስዎን ዝግጁ የሚያደርጉበት ወሳኝ ፕሮግራም ነው።",
-    desc: "ይህ የ1 ሰዓት የዲጂታል ማርኬቲንግ ቅምሻ በነፃነት በመማር ወደፊት ለሚመጣው ትልቅ የዲጂታል ማርኬቲንግ ስልጠና እራስዎን ዝግጁ የሚያደርጉበት ወሳኝ ፕሮግራም ነው።",
-    price: 0,
-    oldPrice: 4000,
-    status: "Active",
-    isFree: true,
-    category: "Marketing",
-    tag: "Marketing",
-    level: "ጀማሪ (Beginner)",
-    duration: "00:40:00",
-    image: "https://drive.google.com/thumbnail?id=1HZf1jV5AdSXyc7MJUf8vPgYm4z0-30O6&sz=w1000",
-    banner: "https://drive.google.com/thumbnail?id=1HZf1jV5AdSXyc7MJUf8vPgYm4z0-30O6&sz=w1000",
-    video: "https://www.youtube.com/embed/B-s71n0dHUk",
-    instructor: "Eyoub Sahle",
-    instructorTitle: "የቢዝነስ እና ዲጂታል ማርኬቲንግ ባለሙያ (Lead Instructor)",
-    instructorImage: "https://drive.google.com/thumbnail?id=1rdjkUc6ZwK6NbbgHaZ-7BtEi8A9aA5Uq&sz=w1000",
-    instructorTelegram: "@EyoubSahle",
-    instructorBio: "በኢ-ኮሜርስ፣ ዲጂታል ማርኬቲንግ እና ክሪፕቶ ከረንሲ ዘርፍ የብዙ አመታት የተግባር ልምድ ያለው እና በመቶዎች የሚቆጠሩ ተማሪዎችን ወደ ስኬት ያበቃ ባለሙያ።",
-    students: 580,
-    studentsCount: 580,
-    rating: 5,
-    ratingAvg: 5.0,
-    ratingCount: 52,
-    instructorRatingAvg: 4.9,
-    modulesCount: 4,
-    isPopular: true,
-    aiPrompt: "You are Tsehay AI. Your job is to help students learning the Digital Marketing course by Eyoub Sahle. Answer questions strictly related to marketing.",
-    whatYouWillLearn: [
-      "የዲጂታል ማርኬቲንግ መሰረታዊ መርሆች",
-      "ባህላዊ እና ዲጂታል ማርኬቲንግ ልዩነት",
-      "የሶሻል ሚዲያ ማርኬቲንግ አጠቃቀም",
-      "የፌስቡክ እና ቴሌግራም ገበያ ስልቶች"
-    ],
-    requirements: [
-      "ምንም ቅድመ ተሞክሮ አይጠይቅም",
-      "ስማርት ስልክ ወይም ኮምፒውተር",
-      "የኢንተርኔት ኮኔክሽን"
-    ],
-    includes: [
-      "በቪዲዮ የተደገፈ ትምህርት (On-demand video)",
-      "የተግባር አሳይመንቶች (Assignments)",
-      "በስልክ መጠቀም የሚያስችል (Mobile Access)",
-      "የኮርስ ማጠናቀቂያ ሰርተፊኬት (Certificate)"
-    ],
-    lessons: [
-      { title: "የኮርስ ማስታወቂያ (Course Intro)", duration: "02:30", video: "https://www.youtube.com/embed/B-s71n0dHUk", desc: "የዲጂታል ማርኬቲንግ መግቢያ", points: 10 },
-      { title: "ባህላዊ vs ዲጂታል ማርኬቲንግ", duration: "05:15", video: "https://www.youtube.com/embed/B-s71n0dHUk", desc: "የሁለቱ የግብይት አይነቶች ልዩነት", points: 50 },
-      { title: "የዲጂታል ማርኬቲንግ አይነቶች ክፍል 1", duration: "10:00", video: "https://www.youtube.com/embed/B-s71n0dHUk", desc: "ዋና ዋና የዲጂታል ማርኬቲንግ መንገዶች", points: 100 },
-      { title: "በተግባር የተደገፈ የፌስቡክ ማስታወቂያ", duration: "15:20", video: "https://www.youtube.com/embed/B-s71n0dHUk", desc: "የፌስቡክ ማስታወቂያ አሰራር በተግባር", points: 100 }
-    ]
-  },
-  {
     id: "course_1784885060875",
     slug: "shein-import-business",
     title: "የሼን ኢምፖርት ቢዝነስ ስልጠና (Shein Import Business Course)",
@@ -68,16 +13,16 @@ export const DEFAULT_COURSES = [
     oldPrice: 6000,
     status: "Active",
     isFree: false,
-    category: "Ecommerce",
-    tag: "Ecommerce",
+    category: "E-Commerce",
+    tag: "E-Commerce",
     level: "ጀማሪ (Beginner)",
     duration: "01:15:00",
-    image: "https://drive.google.com/thumbnail?id=1rdjkUc6ZwK6NbbgHaZ-7BtEi8A9aA5Uq&sz=w1000",
+    image: "/assets/for_landing_page_second.jpg",
     banner: "/assets/for_landing_page_second.jpg",
     video: "https://www.youtube.com/watch?v=mgdOMtW6J8k",
     instructor: "Eyoub Sahle",
     instructorTitle: "የቢዝነስ እና ዲጂታል ማርኬቲንግ ባለሙያ (Lead Instructor)",
-    instructorImage: "https://drive.google.com/thumbnail?id=1rdjkUc6ZwK6NbbgHaZ-7BtEi8A9aA5Uq&sz=w1000",
+    instructorImage: "/assets/eyob_new.png",
     instructorTelegram: "@EyoubSahle",
     instructorBio: "በኢ-ኮሜርስ፣ ዲጂታል ማርኬቲንግ እና ክሪፕቶ ከረንሲ ዘርፍ የብዙ አመታት የተግባር ልምድ ያለው እና በመቶዎች የሚቆጠሩ ተማሪዎችን ወደ ስኬት ያበቃ ባለሙያ።",
     students: 340,
@@ -122,12 +67,12 @@ export const DEFAULT_COURSES = [
     title: "የዩቲዩብ ስኬት ሚስጥሮች (YouTube Secrets Masterclass)",
     description: "ከዜሮ ተነስተው ስኬታማ እና ገቢ የሚያስገኝ የዩቲዩብ ቻናል ለመገንባት የሚያስፈልጉዎትን ሚስጥሮች፣ የቪዲዮ አሰራር፣ የ Thumbnail ዲዛይን፣ የ SEO እና የገቢ ማግኛ መንገዶችን ደረጃ በደረጃ በተግባር የሚያስተምር የተሟላ ማስተርክላስ።",
     desc: "ከዜሮ ተነስተው ስኬታማ እና ገቢ የሚያስገኝ የዩቲዩብ ቻናል ለመገንባት የሚያስፈልጉዎትን ሚስጥሮች፣ የቪዲዮ አሰራር፣ የ Thumbnail ዲዛይን፣ የ SEO እና የገቢ ማግኛ መንገዶችን ደረጃ በደረጃ በተግባር የሚያስተምር የተሟላ ማስተርክላስ።",
-    price: 600,
-    oldPrice: 900,
+    price: 900,
+    oldPrice: 1500,
     status: "Active",
     isFree: false,
-    category: "General",
-    tag: "General",
+    category: "YouTube & Content Creation",
+    tag: "YouTube & Content Creation",
     level: "ጀማሪ (Beginner)",
     duration: "04:00:00",
     image: "/assets/hero-bg-new.jpg",
@@ -135,7 +80,7 @@ export const DEFAULT_COURSES = [
     video: "https://www.youtube.com/watch?v=mgdOMtW6J8k",
     instructor: "Eyoub Sahle",
     instructorTitle: "የቢዝነስ እና ዲጂታል ማርኬቲንግ ባለሙያ (Lead Instructor)",
-    instructorImage: "https://drive.google.com/thumbnail?id=1rdjkUc6ZwK6NbbgHaZ-7BtEi8A9aA5Uq&sz=w1000",
+    instructorImage: "/assets/eyob_new.png",
     instructorTelegram: "@EyoubSahle",
     instructorBio: "በኢ-ኮሜርስ፣ ዲጂታል ማርኬቲንግ እና ክሪፕቶ ከረንሲ ዘርፍ የብዙ አመታት የተግባር ልምድ ያለው እና በመቶዎች የሚቆጠሩ ተማሪዎችን ወደ ስኬት ያበቃ ባለሙያ።",
     students: 420,
@@ -173,6 +118,61 @@ export const DEFAULT_COURSES = [
       { title: "ክፍል 3: የ Faceless ቻናሎች ምስጢር እና የ AI መሳሪያዎች", duration: "15:20", video: "https://www.youtube.com/watch?v=mgdOMtW6J8k", desc: "ፊት ሳያሳዩ በ AI ድምጽና ምስል ቪዲዮዎችን መስራት", points: 50 },
       { title: "ክፍል 4: ፕሮፌሽናል Thumbnail እና Title ዲዛይን", duration: "14:10", video: "https://www.youtube.com/watch?v=mgdOMtW6J8k", desc: "ተመልካች ክሊክ እንዲያደርግ የሚያስችሉ ስልቶች", points: 40 },
       { title: "ክፍል 5: የዩቲዩብ SEO እና አልጎሪዝም ሃክ", duration: "18:00", video: "https://www.youtube.com/watch?v=mgdOMtW6J8k", desc: "ቪዲዮዎችዎ በሰርች እና በ Suggested እንዲመጡ ማድረግ", points: 60 }
+    ]
+  },
+  {
+    id: "digital_marketing_free",
+    slug: "digital-marketing",
+    title: "ዲጂታል ማርኬቲንግ ለጀማሪዎች (Digital Marketing Masterclass)",
+    description: "ይህ የ1 ሰዓት የዲጂታል ማርኬቲንግ ቅምሻ በነፃነት በመማር ወደፊት ለሚመጣው ትልቅ የዲጂታል ማርኬቲንግ ስልጠና እራስዎን ዝግጁ የሚያደርጉበት ወሳኝ ፕሮግራም ነው።",
+    desc: "ይህ የ1 ሰዓት የዲጂታል ማርኬቲንግ ቅምሻ በነፃነት በመማር ወደፊት ለሚመጣው ትልቅ የዲጂታል ማርኬቲንግ ስልጠና እራስዎን ዝግጁ የሚያደርጉበት ወሳኝ ፕሮግራም ነው።",
+    price: 0,
+    oldPrice: 4000,
+    status: "Active",
+    isFree: true,
+    category: "Marketing",
+    tag: "Marketing",
+    level: "ጀማሪ (Beginner)",
+    duration: "00:40:00",
+    image: "/assets/about_video_cover.jpg",
+    banner: "/assets/about_video_cover.jpg",
+    video: "https://www.youtube.com/embed/B-s71n0dHUk",
+    instructor: "Eyoub Sahle",
+    instructorTitle: "የቢዝነስ እና ዲጂታል ማርኬቲንግ ባለሙያ (Lead Instructor)",
+    instructorImage: "/assets/eyob_new.png",
+    instructorTelegram: "@EyoubSahle",
+    instructorBio: "በኢ-ኮሜርስ፣ ዲጂታል ማርኬቲንግ እና ክሪፕቶ ከረንሲ ዘርፍ የብዙ አመታት የተግባር ልምድ ያለው እና በመቶዎች የሚቆጠሩ ተማሪዎችን ወደ ስኬት ያበቃ ባለሙያ።",
+    students: 580,
+    studentsCount: 580,
+    rating: 5,
+    ratingAvg: 5.0,
+    ratingCount: 52,
+    instructorRatingAvg: 4.9,
+    modulesCount: 4,
+    isPopular: true,
+    aiPrompt: "You are Tsehay AI. Your job is to help students learning the Digital Marketing course by Eyoub Sahle. Answer questions strictly related to marketing.",
+    whatYouWillLearn: [
+      "የዲጂታል ማርኬቲንግ መሰረታዊ መርሆች",
+      "ባህላዊ እና ዲጂታል ማርኬቲንግ ልዩነት",
+      "የሶሻል ሚዲያ ማርኬቲንግ አጠቃቀም",
+      "የፌስቡክ እና ቴሌግራም ገበያ ስልቶች"
+    ],
+    requirements: [
+      "ምንም ቅድመ ተሞክሮ አይጠይቅም",
+      "ስማርት ስልክ ወይም ኮምፒውተር",
+      "የኢንተርኔት ኮኔክሽን"
+    ],
+    includes: [
+      "በቪዲዮ የተደገፈ ትምህርት (On-demand video)",
+      "የተግባር አሳይመንቶች (Assignments)",
+      "በስልክ መጠቀም የሚያስችል (Mobile Access)",
+      "የኮርስ ማጠናቀቂያ ሰርተፊኬት (Certificate)"
+    ],
+    lessons: [
+      { title: "የኮርስ ማስታወቂያ (Course Intro)", duration: "02:30", video: "https://www.youtube.com/embed/B-s71n0dHUk", desc: "የዲጂታል ማርኬቲንግ መግቢያ", points: 10 },
+      { title: "ባህላዊ vs ዲጂታል ማርኬቲንግ", duration: "05:15", video: "https://www.youtube.com/embed/B-s71n0dHUk", desc: "የሁለቱ የግብይት አይነቶች ልዩነት", points: 50 },
+      { title: "የዲጂታል ማርኬቲንግ አይነቶች ክፍል 1", duration: "10:00", video: "https://www.youtube.com/embed/B-s71n0dHUk", desc: "ዋና ዋና የዲጂታል ማርኬቲንግ መንገዶች", points: 100 },
+      { title: "በተግባር የተደገፈ የፌስቡክ ማስታወቂያ", duration: "15:20", video: "https://www.youtube.com/embed/B-s71n0dHUk", desc: "የፌስቡክ ማስታወቂያ አሰራር በተግባር", points: 100 }
     ]
   }
 ];
@@ -420,14 +420,20 @@ export function formatDriveImageUrl(url: any): string {
   if (!clean) return '';
   const match = clean.match(/(?:file\/d\/|id=|thumbnail\?id=|\/d\/)([a-zA-Z0-9_-]{20,})/);
   if (match && match[1]) {
-    return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w1000`;
+    return `https://lh3.googleusercontent.com/d/${match[1]}`;
   }
   return clean;
 }
 
 export function getCleanCourseImage(c: any): string {
   if (!c || typeof c !== 'object') return '';
-  const rawImage = (c.image || c.thumbnail || c.banner || '').toString().trim();
+  const rawImage = (c.image || c.thumbnail || c.banner || c.thumbnailUrl || '').toString().trim();
+  if (!rawImage) {
+    if (c.title?.includes('ሼን') || c.id?.includes('shein')) return '/assets/for_landing_page_second.jpg';
+    if (c.title?.includes('ዩቲዩብ') || c.id?.includes('youtube')) return '/assets/hero-bg-new.jpg';
+    if (c.title?.includes('ማርኬቲንግ') || c.id?.includes('marketing')) return '/assets/about_video_cover.jpg';
+    return '/assets/for_landing_page_second.jpg';
+  }
   return formatDriveImageUrl(rawImage);
 }
 
