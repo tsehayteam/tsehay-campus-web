@@ -88,7 +88,7 @@ export function getYouTubeThumbnail(youtubeId?: string, customThumb?: string): s
 }
 
 export function parseVideoEmbedUrl(rawUrl: string, autoplay: boolean = false): ParsedVideo {
-  const ytParams = `rel=0&modestbranding=1&showinfo=0&autoplay=${autoplay ? 1 : 0}&controls=1&vq=hd1080&hd=1&playsinline=1&enablejsapi=1`;
+  const ytParams = `rel=0&modestbranding=1&showinfo=0&autoplay=${autoplay ? 1 : 0}&controls=1&vq=hd1080&hd=1&playsinline=1&enablejsapi=1&iv_load_policy=3`;
 
   if (!rawUrl || !rawUrl.trim()) {
     return {

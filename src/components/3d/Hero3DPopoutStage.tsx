@@ -134,6 +134,17 @@ export default function Hero3DPopoutStage({
     }
   }, []);
 
+  const [posterVisible, setPosterVisible] = useState(true);
+
+  // Split-second poster display on load/change, then smooth dissolve into autoplay
+  useEffect(() => {
+    setPosterVisible(true);
+    const timer = setTimeout(() => {
+      setPosterVisible(false);
+    }, 450);
+    return () => clearTimeout(timer);
+  }, [activeVideoUrl]);
+
   // Parse current active video
   const parsedVideo = parseVideoEmbedUrl(activeVideoUrl || DEFAULT_LANDING_VIDEO, false);
   const parsedModalVideo = parseVideoEmbedUrl(activeVideoUrl || DEFAULT_LANDING_VIDEO, true);
@@ -251,34 +262,68 @@ export default function Hero3DPopoutStage({
           className="relative w-full h-[240px] sm:h-[380px] md:h-[480px] lg:h-[540px] rounded-[1.8rem] sm:rounded-[2.4rem] shadow-[0_30px_90px_rgba(0,0,0,0.85)] border-2 border-white/20 dark:border-[#f9b03c]/45 overflow-hidden bg-black/90 group"
           style={{ transform: 'translateZ(0px)' }}
         >
-          {/* Main High-Definition Video or High-Res Thumbnail Feed */}
-          {isDirectVideo ? (
-            <video 
-              ref={videoRef}
-              id="hero-video" 
-              autoPlay 
-              loop 
-              muted 
-              playsInline 
-              preload="metadata" 
-              poster="/assets/hero-bg-new.jpg"
-              disablePictureInPicture 
-              controlsList="nodownload noremoteplayback" 
-              onContextMenu={(e) => e.preventDefault()} 
-              className="w-full h-full object-cover scale-102 group-hover:scale-105 transition-transform duration-500"
-            >
-              <source src={parsedVideo.src} type="video/mp4" />
-            </video>
-          ) : (
-            <div className="relative w-full h-full overflow-hidden bg-black">
-              <img 
-                src={displayThumbnail} 
-                alt="Tsehay Campus Hero Preview" 
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                onError={(e) => { e.currentTarget.src = '/assets/hero-bg-new.jpg'; }}
-              />
-            </div>
-          )}
+          {/* Main Autoplaying Video Engine (YouTube, Direct MP4, Drive, Dropbox, Embeds) */}
+          <div className="absolute inset-0 w-full h-full overflow-hidden bg-black flex items-center justify-center">
+            {isDirectVideo ? (
+              <video 
+                ref={videoRef}
+                id="hero-video" 
+                autoPlay 
+                loop 
+                muted 
+                playsInline 
+                preload="auto" 
+                poster={displayThumbnail}
+                disablePictureInPicture 
+                controlsList="nodownload noremoteplayback" 
+                onContextMenu={(e) => e.preventDefault()} 
+                className="w-full h-full object-cover scale-102 group-hover:scale-105 transition-transform duration-500"
+              >
+                <source src={parsedVideo.src} type="video/mp4" />
+              </video>
+            ) : parsedVideo.isYouTube && parsedVideo.youtubeId ? (
+              <div className="relative w-full h-full overflow-hidden pointer-events-none scale-110 sm:scale-125">
+                <iframe
+                  src={`https://www.youtube-nocookie.com/embed/${parsedVideo.youtubeId}?autoplay=1&mute=1&controls=0&loop=1&playlist=${parsedVideo.youtubeId}&playsinline=1&modestbranding=1&rel=0&iv_load_policy=3&disablekb=1&fs=0&enablejsapi=1`}
+                  title="Tsehay Campus Hero Video"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  className="w-full h-full border-0 absolute inset-0 pointer-events-none"
+                />
+              </div>
+            ) : parsedVideo.isGoogleDrive ? (
+              <div className="relative w-full h-full overflow-hidden pointer-events-none">
+                <iframe
+                  src={parsedVideo.src.includes('?') ? `${parsedVideo.src}&autoplay=1` : `${parsedVideo.src}?autoplay=1`}
+                  title="Tsehay Campus Hero Video"
+                  allow="autoplay"
+                  className="w-full h-full border-0 absolute inset-0 pointer-events-none"
+                />
+              </div>
+            ) : (
+              <div className="relative w-full h-full overflow-hidden pointer-events-none">
+                <iframe
+                  src={parsedVideo.src.includes('autoplay=') ? parsedVideo.src : (parsedVideo.src.includes('?') ? `${parsedVideo.src}&autoplay=1&mute=1` : `${parsedVideo.src}?autoplay=1&mute=1`)}
+                  title="Tsehay Campus Hero Video"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  className="w-full h-full border-0 absolute inset-0 pointer-events-none"
+                />
+              </div>
+            )}
+          </div>
+
+          {/* 🌟 Split-Second High-Definition Poster Layer (Dissolves Smoothly into Autoplay) */}
+          <div 
+            className={`absolute inset-0 z-10 transition-opacity duration-700 pointer-events-none ${
+              posterVisible ? 'opacity-100' : 'opacity-0'
+            }`}
+          >
+            <img 
+              src={displayThumbnail} 
+              alt="Tsehay Campus Hero Preview" 
+              className="w-full h-full object-cover"
+              onError={(e) => { e.currentTarget.src = '/assets/hero-bg-new.jpg'; }}
+            />
+          </div>
 
           {/* Dynamic 3D Specular Light Glare (Direct Ref) */}
           <div 

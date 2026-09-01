@@ -7,6 +7,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import DigitalTicketModal from '@/components/DigitalTicketModal';
 import ShareEventModal from '@/components/ShareEventModal';
+import CinematicVideoModal from '@/components/CinematicVideoModal';
 import { TsehayEvent, EventTicket, DEFAULT_EVENTS, getCachedEvents, getEventBySlugOrId, getRemainingSeats, formatDriveImageUrl } from '@/lib/eventCache';
 import { parseVideoEmbedUrl } from '@/lib/videoParser';
 import { useAuth } from '@/context/AuthContext';
@@ -903,59 +904,13 @@ export default function EventDetailClient() {
         eventLocation={event.location}
       />
 
-      {/* Universal Event Video Lightbox Modal */}
-      {isVideoModalOpen && event.videoUrl && (() => {
-        const parsed = parseVideoEmbedUrl(event.videoUrl, true);
-        return (
-          <div 
-            className="fixed inset-0 z-[999999] bg-black/95 backdrop-blur-3xl flex items-center justify-center p-4 sm:p-6 md:p-10 animate-in fade-in duration-300"
-            onClick={() => setIsVideoModalOpen(false)}
-          >
-            <div 
-              className="relative w-full max-w-5xl rounded-3xl bg-[#080d15] border border-[#f9b03c]/60 shadow-[0_0_100px_rgba(249,176,60,0.35)] overflow-hidden"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-white/10 bg-black/70">
-                <div className="flex items-center gap-2.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></span>
-                  <h3 className="text-sm sm:text-base font-black text-white font-heading truncate max-w-md">
-                    {event.title} • የክንውን ቪዲዮ (Event Preview)
-                  </h3>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setIsVideoModalOpen(false)}
-                  className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white flex items-center justify-center transition cursor-pointer text-sm"
-                  title="ዝጋ (Close)"
-                >
-                  <i className="fa-solid fa-xmark"></i>
-                </button>
-              </div>
-
-              <div className="relative aspect-video w-full bg-black">
-                {parsed.type === 'video' ? (
-                  <video
-                    src={parsed.src}
-                    autoPlay
-                    controls
-                    playsInline
-                    className="w-full h-full object-contain"
-                  />
-                ) : (
-                  <iframe
-                    src={parsed.src}
-                    title="Event Video Player"
-                    frameBorder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                    className="w-full h-full border-0"
-                  />
-                )}
-              </div>
-            </div>
-          </div>
-        );
-      })()}
+      {/* Fullscreen Cinematic Event Video Modal */}
+      <CinematicVideoModal
+        isOpen={isVideoModalOpen}
+        onClose={() => setIsVideoModalOpen(false)}
+        videoUrl={event?.videoUrl || ''}
+        title={event?.title || 'Event Video'}
+      />
 
       <Footer />
     </div>

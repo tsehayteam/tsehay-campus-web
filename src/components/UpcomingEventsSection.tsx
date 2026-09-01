@@ -9,6 +9,7 @@ import { collection, onSnapshot } from 'firebase/firestore';
 import DigitalTicketModal from '@/components/DigitalTicketModal';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { CustomEase } from 'gsap/CustomEase';
 
 export default function UpcomingEventsSection() {
   const { user } = useAuth();
@@ -28,11 +29,15 @@ export default function UpcomingEventsSection() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [bookingError, setBookingError] = useState<string | null>(null);
 
-  // 🌟 GSAP 3D Inward Fly-In Animation (scale: 1.1 -> scale: 1 with cubic-bezier)
+  // 🌟 GSAP 3D Inward Fly-In Animation (scale: 1.1 -> scale: 1 with cubic-bezier(0.16, 1, 0.3, 1))
   useEffect(() => {
     if (typeof window === 'undefined') return;
     try {
-      gsap.registerPlugin(ScrollTrigger);
+      gsap.registerPlugin(ScrollTrigger, CustomEase);
+      try {
+        CustomEase.create('teraInward', '0.16, 1, 0.3, 1');
+      } catch (e) {}
+
       const cards = document.querySelectorAll('.event-fly-in-card');
       if (cards.length > 0) {
         gsap.fromTo(
@@ -49,7 +54,7 @@ export default function UpcomingEventsSection() {
             y: 0,
             duration: 1.2,
             stagger: 0.15,
-            ease: 'cubic-bezier(0.16, 1, 0.3, 1)',
+            ease: 'teraInward',
             scrollTrigger: {
               trigger: '#events',
               start: 'top 82%',

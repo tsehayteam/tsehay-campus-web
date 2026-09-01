@@ -7,6 +7,15 @@
 
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { CustomEase } from 'gsap/CustomEase';
+
+// Register GSAP plugins & configure Silicon Valley smooth ease
+if (typeof window !== 'undefined') {
+  try {
+    gsap.registerPlugin(ScrollTrigger, CustomEase);
+    CustomEase.create('teraInward', '0.16, 1, 0.3, 1');
+  } catch (e) {}
+}
 
 interface ScrollTriggerOptions {
   threshold?: number;
@@ -20,6 +29,7 @@ class ScrollTriggerEngine {
   private isRafScheduled = false;
   private onAiActiveChange?: (isActive: boolean) => void;
   private gsapTriggers: ScrollTrigger[] = [];
+  private hasHorizontalPinned = false;
 
   public init(options: ScrollTriggerOptions = {}) {
     this.onAiActiveChange = options.onAiActiveChange;
@@ -29,7 +39,7 @@ class ScrollTriggerEngine {
 
     // Register GSAP ScrollTrigger
     try {
-      gsap.registerPlugin(ScrollTrigger);
+      gsap.registerPlugin(ScrollTrigger, CustomEase);
       this.initGsapTriggers();
     } catch (err) {
       console.warn('GSAP ScrollTrigger registration:', err);
@@ -78,6 +88,43 @@ class ScrollTriggerEngine {
     // Secondary refresh passes after DOM/images settle
     setTimeout(() => this.refresh(), 250);
     setTimeout(() => this.refresh(), 800);
+  }
+
+  public initCoursesHorizontalScroll() {
+    if (typeof document === 'undefined') return;
+    const coursesSection = document.getElementById('courses');
+    const coursesTrack = document.getElementById('courses-horizontal-track');
+    if (!coursesSection || !coursesTrack) return;
+
+    // Remove existing horizontal trigger if already attached
+    const existingIdx = this.gsapTriggers.findIndex((t: any) => t.vars?.trigger === coursesSection);
+    if (existingIdx !== -1) {
+      this.gsapTriggers[existingIdx].kill();
+      this.gsapTriggers.splice(existingIdx, 1);
+    }
+
+    const getScrollDist = () => {
+      const trackW = coursesTrack.scrollWidth;
+      const viewW = window.innerWidth;
+      return Math.max(0, trackW - viewW + 120);
+    };
+
+    const hPinTrigger = ScrollTrigger.create({
+      trigger: coursesSection,
+      pin: true,
+      pinSpacing: true,
+      anticipatePin: 1,
+      start: 'top top',
+      end: () => `+=${Math.max(getScrollDist(), 1200)}`,
+      scrub: 1.2,
+      invalidateOnRefresh: true,
+      animation: gsap.to(coursesTrack, {
+        x: () => -getScrollDist(),
+        ease: 'none',
+      }),
+    });
+    this.gsapTriggers.push(hPinTrigger);
+    this.hasHorizontalPinned = true;
   }
 
   private initGsapTriggers() {
@@ -147,31 +194,7 @@ class ScrollTriggerEngine {
     });
 
     // 4. Horizontal Scroll Pinning for Popular Courses (Apple / Cello.so Scrollytelling)
-    const coursesSection = document.getElementById('courses');
-    const coursesTrack = document.getElementById('courses-horizontal-track');
-    if (coursesSection && coursesTrack) {
-      const getScrollDist = () => {
-        const trackW = coursesTrack.scrollWidth;
-        const viewW = window.innerWidth;
-        return Math.max(0, trackW - viewW + 140);
-      };
-
-      const hPinTrigger = ScrollTrigger.create({
-        trigger: coursesSection,
-        pin: true,
-        pinSpacing: true,
-        anticipatePin: 1,
-        start: 'top top',
-        end: () => `+=${Math.max(getScrollDist(), 1000)}`,
-        scrub: 1.2,
-        invalidateOnRefresh: true,
-        animation: gsap.to(coursesTrack, {
-          x: () => -getScrollDist(),
-          ease: 'none',
-        }),
-      });
-      this.gsapTriggers.push(hPinTrigger);
-    }
+    this.initCoursesHorizontalScroll();
 
     // 5. 3D Inward Fly-In Animation for Upcoming Events Section (scale: 1.1 -> 1)
     const eventsSection = document.getElementById('events');
@@ -197,7 +220,7 @@ class ScrollTriggerEngine {
               y: 0,
               duration: 1.2,
               stagger: 0.15,
-              ease: 'cubic-bezier(0.16, 1, 0.3, 1)',
+              ease: 'teraInward',
               overwrite: 'auto',
             }
           );
@@ -209,7 +232,7 @@ class ScrollTriggerEngine {
             y: 0,
             duration: 0.8,
             stagger: 0.1,
-            ease: 'cubic-bezier(0.16, 1, 0.3, 1)',
+            ease: 'teraInward',
             overwrite: 'auto',
           });
         },
@@ -228,6 +251,7 @@ class ScrollTriggerEngine {
     }
 
     // 6. Staggered Pop-Up Entrance for Popular Course Cards (scale: 0.9 -> 1, opacity: 0 -> 1)
+    const coursesSection = document.getElementById('courses');
     const courseCards = document.querySelectorAll<HTMLElement>('.course-popup-card, #courses-horizontal-track > div');
     if (coursesSection && courseCards.length > 0) {
       const coursePopupTrigger = ScrollTrigger.create({
@@ -314,6 +338,7 @@ class ScrollTriggerEngine {
 
   public refresh() {
     this.registerAllElements();
+    this.initCoursesHorizontalScroll();
     this.evaluateAllVisibility();
     try {
       ScrollTrigger.refresh();
