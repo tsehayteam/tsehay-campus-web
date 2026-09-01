@@ -110,11 +110,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       message: 'Code sent successfully',
-<<<<<<< HEAD
-      email: 'eyoubsahle@gmail.com',
-=======
       email: 'eyobsahle@gmail.com',
->>>>>>> origin/main
       expiresInMinutes: 10
     });
   }
