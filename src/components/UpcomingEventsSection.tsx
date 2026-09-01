@@ -383,12 +383,16 @@ export default function UpcomingEventsSection() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {events.map((event) => {
             const capacity = Number(event.capacity) || 100;
-            const remainingSeats = getRemainingSeats(event);
+            const liveRegCount = (registrationsCountByEvent[event.id] || (event.slug ? registrationsCountByEvent[event.slug] : 0) || 0);
+            const baseReg = Number(event.registeredCount) || 0;
+            const totalReg = Math.max(baseReg, liveRegCount);
+            const remainingSeats = Math.max(0, capacity - totalReg);
             const isSoldOut = remainingSeats <= 0;
-            const percentTaken = Math.min(100, Math.round(((capacity - remainingSeats) / capacity) * 100));
+            const percentTaken = Math.min(100, Math.round((totalReg / capacity) * 100));
 
             const userTicket = userBookedTickets[event.id] || (event.slug ? userBookedTickets[event.slug] : null);
             const isAlreadyRegistered = Boolean(userTicket);
+
 
             return (
               <div 
