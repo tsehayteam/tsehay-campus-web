@@ -5,10 +5,11 @@ import { memoryAdminOtpCache } from '../send-otp/route';
 export const dynamic = 'force-dynamic';
 
 const AUTHORIZED_ADMIN_EMAILS = [
+  'eyobsahle@gmail.com',
+  'eyoubsahle@gmail.com',
   'admin@tsehaycampus.com',
   'tsehayoperation@gmail.com',
   'tsehayteam@gmail.com',
-  'eyoubsahle@gmail.com',
   'habte@gmail.com',
   'cryptomaster758@gmail.com',
   'admin@tsehay.com',

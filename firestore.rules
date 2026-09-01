@@ -13,10 +13,11 @@ service cloud.firestore {
       return request.auth != null && (
         (request.auth.token.admin == true) ||
         (request.auth.token.email in [
+          'eyobsahle@gmail.com',
+          'eyoubsahle@gmail.com',
           'admin@tsehaycampus.com',
           'tsehayoperation@gmail.com',
           'tsehayteam@gmail.com',
-          'eyoubsahle@gmail.com',
           'habte@gmail.com',
           'cryptomaster758@gmail.com',
           'admin@tsehay.com',
@@ -183,9 +184,10 @@ service cloud.firestore {
         return request.auth != null && (
           (request.auth.token.admin == true) ||
           (request.auth.token.email in [
+            'eyobsahle@gmail.com',
+            'eyoubsahle@gmail.com',
             'admin@tsehaycampus.com',
             'tsehayoperation@gmail.com',
-            'eyoubsahle@gmail.com',
             'habte@gmail.com',
             'cryptomaster758@gmail.com'
           ]) ||

@@ -135,7 +135,7 @@ export async function POST(req: NextRequest) {
       id: postId,
       authorId: body.authorId || 'admin_eyoub',
       authorName: authorName || 'Eyoub Sahle (Admin)',
-      authorEmail: authorEmail || 'eyoubsahle@gmail.com',
+      authorEmail: authorEmail || 'eyobsahle@gmail.com',
       authorPhoto: authorPhoto || '/assets/eyob_white.jpg',
       content: content || '',
       category: category || 'general',

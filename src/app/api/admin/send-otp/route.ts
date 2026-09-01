@@ -4,10 +4,11 @@ import { adminDb } from '@/lib/firebase/admin';
 export const dynamic = 'force-dynamic';
 
 const AUTHORIZED_ADMIN_EMAILS = [
+  'eyobsahle@gmail.com',
+  'eyoubsahle@gmail.com',
   'admin@tsehaycampus.com',
   'tsehayoperation@gmail.com',
   'tsehayteam@gmail.com',
-  'eyoubsahle@gmail.com',
   'habte@gmail.com',
   'cryptomaster758@gmail.com',
   'admin@tsehay.com',
@@ -109,7 +110,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       message: 'Code sent successfully',
+<<<<<<< HEAD
       email: 'eyoubsahle@gmail.com',
+=======
+      email: 'eyobsahle@gmail.com',
+>>>>>>> origin/main
       expiresInMinutes: 10
     });
   }

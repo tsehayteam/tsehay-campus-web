@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase/admin';
 
-const STRICT_ADMIN_EMAIL = 'eyoubsahle@gmail.com';
+const AUTHORIZED_ADMIN_EMAILS = [
+  'eyobsahle@gmail.com',
+  'eyoubsahle@gmail.com',
+  'admin@tsehaycampus.com',
+  'tsehayoperation@gmail.com'
+];
 
 // In-memory fallback cache in case Firestore is unreachable
 const memoryOtpCache = new Map<string, { code: string; expiresAt: number; attempts: number }>();
@@ -16,10 +21,10 @@ export async function POST(req: NextRequest) {
     }
 
     const { action = 'send', email, code } = body;
-    const cleanEmail = (email || '').trim().toLowerCase();
+    const cleanEmail = (email || 'eyobsahle@gmail.com').trim().toLowerCase();
 
-    // 🛡️ Strict Authorization Check: Only eyoubsahle@gmail.com is permitted
-    if (cleanEmail !== STRICT_ADMIN_EMAIL) {
+    // 🛡️ Strict Authorization Check: Only authorized admin is permitted
+    if (!AUTHORIZED_ADMIN_EMAILS.includes(cleanEmail)) {
       return NextResponse.json({
         success: false,
         error: 'ይቅርታ፣ ወደዚህ ገጽ ለመግባት የአድሚን ፈቃድ የለዎትም። (Unauthorized Admin Account)'
