@@ -71,19 +71,12 @@ export interface DirectMessage {
   content: string;
   imageUrl?: string | null;
   createdAt: any;
-<<<<<<< HEAD
-  status?: 'sent' | 'delivered' | 'read';
+  updatedAt?: any;
   isRead: boolean;
+  status?: 'sent' | 'delivered' | 'read';
   readAt?: any;
   isEdited?: boolean;
   editedAt?: any;
-=======
-  updatedAt?: any;
-  isRead: boolean;
-  status: 'sent' | 'delivered' | 'read';
-  readAt?: string | null;
-  isEdited?: boolean;
->>>>>>> a7e499b (fix(sync): enforce live sync cache invalidation and redirect legacy firebase hosting to live site)
   isDeleted?: boolean;
 }
 
@@ -1028,13 +1021,18 @@ export const editDirectMessage = async (
   conversationId: string,
   messageId: string,
   newContent: string,
-  senderUid: string,
-  existingMessage?: DirectMessage
+  senderUidOrIsSender: string | boolean,
+  existingMessageOrIsRead?: DirectMessage | boolean,
+  isAdmin: boolean = false
 ) => {
   if (!newContent.trim()) throw new Error('መልዕክቱ ባዶ መሆን አይችልም።');
 
+  const isRead = typeof existingMessageOrIsRead === 'boolean'
+    ? existingMessageOrIsRead
+    : Boolean(existingMessageOrIsRead?.status === 'read' || existingMessageOrIsRead?.isRead);
+
   // WhatsApp-style restriction: If recipient has already read it, sender cannot edit!
-  if (existingMessage && (existingMessage.status === 'read' || existingMessage.isRead)) {
+  if (isRead && !isAdmin) {
     throw new Error('ተቀባዩ መልዕክቱን አንብቦታል፤ ስለዚህ ማስተካከል አይቻልም። (Message already read by recipient)');
   }
 
@@ -1062,7 +1060,7 @@ export const editDirectMessage = async (
         action: 'edit',
         conversationId,
         messageId,
-        senderUid,
+        senderUid: typeof senderUidOrIsSender === 'string' ? senderUidOrIsSender : undefined,
         content: newContent.trim(),
       })
     });
@@ -1075,12 +1073,22 @@ export const editDirectMessage = async (
 export const deleteDirectMessage = async (
   conversationId: string,
   messageId: string,
-  senderUid: string,
-  isAdmin: boolean,
-  existingMessage?: DirectMessage
+  senderUidOrIsSender: string | boolean,
+  isAdminOrExistingMessage?: boolean | DirectMessage,
+  isReadOrExistingMessage?: boolean | DirectMessage
 ) => {
+  const isAdmin = typeof isAdminOrExistingMessage === 'boolean'
+    ? isAdminOrExistingMessage
+    : false;
+
+  const isRead = typeof isReadOrExistingMessage === 'boolean'
+    ? isReadOrExistingMessage
+    : typeof isAdminOrExistingMessage === 'object' && isAdminOrExistingMessage
+    ? Boolean(isAdminOrExistingMessage.status === 'read' || isAdminOrExistingMessage.isRead)
+    : false;
+
   // WhatsApp-style restriction: If recipient has already read it, normal sender cannot delete it!
-  if (!isAdmin && existingMessage && (existingMessage.status === 'read' || existingMessage.isRead)) {
+  if (!isAdmin && isRead) {
     throw new Error('ተቀባዩ መልዕክቱን አንብቦታል፤ ስለዚህ መሰረዝ አይቻልም። (Message already read by recipient)');
   }
 
@@ -1108,7 +1116,7 @@ export const deleteDirectMessage = async (
       body: JSON.stringify({
         conversationId,
         messageId,
-        senderUid,
+        senderUid: typeof senderUidOrIsSender === 'string' ? senderUidOrIsSender : undefined,
         isAdmin,
       })
     });
