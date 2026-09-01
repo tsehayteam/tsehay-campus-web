@@ -2,6 +2,7 @@
 
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
+import { gsap } from 'gsap';
 
 interface Hero3DPopoutStageProps {
   videoSrc?: string;
@@ -18,6 +19,17 @@ export default function Hero3DPopoutStage({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const isInteractingRef = useRef(false);
   const rafIdRef = useRef<number | null>(null);
+
+  // 🎬 Cinematic GSAP entrance on load: Scale 0.9 -> 1 with buttery cubic-bezier
+  useEffect(() => {
+    if (stageRef.current) {
+      gsap.fromTo(
+        stageRef.current,
+        { scale: 0.9, opacity: 0, y: 30 },
+        { scale: 1, opacity: 1, y: 0, duration: 1.2, ease: 'power3.out', delay: 0.15 }
+      );
+    }
+  }, []);
 
   // 🚀 Instant Video Kickstart (Ensures zero-delay video playback from first frame)
   useEffect(() => {
@@ -112,7 +124,8 @@ export default function Hero3DPopoutStage({
       {/* 🚀 Main 3D Anamorphic Tilt Rig */}
       <div
         ref={stageRef}
-        className="relative w-full rounded-[2rem] sm:rounded-[2.4rem] transition-transform duration-300 ease-out"
+        className="relative w-full rounded-[2rem] sm:rounded-[2.4rem] transition-transform duration-300 ease-out cursor-pointer"
+        onClick={() => setIsModalOpen(true)}
         style={{
           transformStyle: 'preserve-3d',
           transform: 'rotateX(0deg) rotateY(0deg)',
@@ -120,7 +133,7 @@ export default function Hero3DPopoutStage({
       >
         {/* Layer 1: Frame Glass Housing with Cyber Neon Bezel */}
         <div 
-          className="relative w-full h-[220px] sm:h-[320px] md:h-[390px] lg:h-[430px] rounded-[1.8rem] sm:rounded-[2.2rem] shadow-[0_30px_90px_rgba(0,0,0,0.85)] border-2 border-white/20 dark:border-[#f9b03c]/40 overflow-hidden bg-black/90"
+          className="relative w-full h-[220px] sm:h-[320px] md:h-[390px] lg:h-[430px] rounded-[1.8rem] sm:rounded-[2.2rem] shadow-[0_30px_90px_rgba(0,0,0,0.85)] border-2 border-white/20 dark:border-[#f9b03c]/40 overflow-hidden bg-black/90 group"
           style={{ transform: 'translateZ(0px)' }}
         >
           {/* Main High-Definition Video Feed with Instant Poster Preload */}
@@ -136,7 +149,7 @@ export default function Hero3DPopoutStage({
             disablePictureInPicture 
             controlsList="nodownload noremoteplayback" 
             onContextMenu={(e) => e.preventDefault()} 
-            className="w-full h-full object-cover scale-102"
+            className="w-full h-full object-cover scale-102 group-hover:scale-105 transition-transform duration-500"
           >
             <source src={videoSrc} type="video/mp4" />
           </video>
@@ -157,7 +170,10 @@ export default function Hero3DPopoutStage({
           <div className="absolute inset-0 flex items-center justify-center pointer-events-auto z-20">
             <button
               type="button"
-              onClick={() => setIsModalOpen(true)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsModalOpen(true);
+              }}
               className="relative group cursor-pointer active:scale-90 transition-transform duration-300"
               title="የመግቢያ ቪዲዮውን ይመልከቱ (Watch Intro Video)"
             >
@@ -221,19 +237,19 @@ export default function Hero3DPopoutStage({
         </div>
       </div>
 
-      {/* 🌟 FULL-SCREEN VIDEO LIGHTBOX / MODAL */}
+      {/* 🌟 FULL-SCREEN VIDEO LIGHTBOX / MODAL (Cello Style deep black) */}
       {isModalOpen && (
         <div 
-          className="fixed inset-0 z-[99999] bg-black/95 backdrop-blur-2xl flex items-center justify-center p-4 sm:p-6 md:p-10 animate-in fade-in duration-300"
+          className="fixed inset-0 z-[999999] bg-black/95 backdrop-blur-3xl flex items-center justify-center p-4 sm:p-6 md:p-10 animate-in fade-in duration-300"
           onClick={() => setIsModalOpen(false)}
         >
           {/* Modal Container */}
           <div 
-            className="relative w-full max-w-5xl rounded-3xl bg-[#0a0f18] border border-[#f9b03c]/50 shadow-[0_0_80px_rgba(249,176,60,0.3)] overflow-hidden"
+            className="relative w-full max-w-5xl rounded-3xl bg-[#080d15] border border-[#f9b03c]/60 shadow-[0_0_100px_rgba(249,176,60,0.35)] overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-white/10 bg-black/50">
+            <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-white/10 bg-black/70">
               <div className="flex items-center gap-2.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-[#f9b03c] animate-pulse"></span>
                 <h3 className="text-sm sm:text-base font-black text-white font-heading">

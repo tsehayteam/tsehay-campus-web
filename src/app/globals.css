@@ -1262,24 +1262,24 @@ img, video, canvas {
 }
 
 /* ==========================================================================
-   🚀 Terafab.ai Scrollytelling & Cinematic Reveal Engine ("Shoooo" Effect)
+   🚀 Cello.so & Terafab 3D Inward Fly-Through Reveal Engine
    ========================================================================== */
 
 .scrolly-reveal {
   opacity: 0;
-  transform: translateY(40px) scale(0.95);
+  transform: perspective(1200px) translateZ(-70px) scale(0.92) translateY(30px);
   transition: opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1), transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: opacity, transform;
 }
 
 .scrolly-reveal.is-visible {
   opacity: 1;
-  transform: translateY(0) scale(1);
+  transform: perspective(1200px) translateZ(0) scale(1) translateY(0);
 }
 
 .scrolly-card {
   opacity: 0;
-  transform: translateY(40px) scale(0.95);
+  transform: perspective(1200px) translateZ(-60px) scale(0.92) translateY(30px);
   transition: opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1), transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: opacity, transform;
 }
@@ -1287,7 +1287,7 @@ img, video, canvas {
 .is-visible .scrolly-card,
 .scrolly-card.is-visible {
   opacity: 1;
-  transform: translateY(0) scale(1);
+  transform: perspective(1200px) translateZ(0) scale(1) translateY(0);
 }
 
 .scrolly-stagger-1, .scrolly-card.delay-1 { transition-delay: 0.10s; }

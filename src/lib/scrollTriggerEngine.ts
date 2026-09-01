@@ -145,6 +145,31 @@ class ScrollTriggerEngine {
       });
       this.gsapTriggers.push(trigger);
     });
+
+    // 4. Horizontal Scroll Pinning for Popular Courses (Cello.so style)
+    const coursesPinContainer = document.getElementById('courses-pin-container');
+    const coursesTrack = document.getElementById('courses-horizontal-track');
+    if (coursesPinContainer && coursesTrack) {
+      const getScrollDist = () => {
+        const trackW = coursesTrack.scrollWidth;
+        const viewW = window.innerWidth;
+        return Math.max(0, trackW - viewW + 140);
+      };
+
+      const hPinTrigger = ScrollTrigger.create({
+        trigger: coursesPinContainer,
+        pin: true,
+        start: 'top top',
+        end: () => `+=${Math.max(getScrollDist(), 600)}`,
+        scrub: 1.1,
+        invalidateOnRefresh: true,
+        animation: gsap.to(coursesTrack, {
+          x: () => -getScrollDist(),
+          ease: 'none',
+        }),
+      });
+      this.gsapTriggers.push(hPinTrigger);
+    }
   }
 
   public registerAllElements() {
@@ -156,6 +181,7 @@ class ScrollTriggerEngine {
       '.terafab-ai-box',
       '.footer-cascade-active',
       '#ai-feature',
+      '#courses-pin-container',
     ];
 
     const found = document.querySelectorAll<HTMLElement>(selectors.join(', '));
