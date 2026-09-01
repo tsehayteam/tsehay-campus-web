@@ -11,7 +11,6 @@ import Link from 'next/link';
 
 // Components
 import Footer from '@/components/Footer';
-import AITutorSection from '@/components/AITutorSection';
 import PaymentModal from '@/components/PaymentModal';
 import RequireAuthModal from '@/components/RequireAuthModal';
 import SmartSearchInput from '@/components/SmartSearchInput';
@@ -1047,11 +1046,6 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
           </div>
         </div>
       </section>
-
-      {/* =========================================================================
-          5. TSEHAY AI INTERACTIVE SANDBOX ("TERAFAB" SCROLLYTELLING EXPERIENCE)
-         ========================================================================= */}
-      <AITutorSection />
 
       {/* =========================================================================
           6. FREE LESSONS VIDEO SLIDER
