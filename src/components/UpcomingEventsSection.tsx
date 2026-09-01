@@ -7,6 +7,8 @@ import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase/config';
 import { collection, onSnapshot } from 'firebase/firestore';
 import DigitalTicketModal from '@/components/DigitalTicketModal';
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 export default function UpcomingEventsSection() {
   const { user } = useAuth();
@@ -25,6 +27,42 @@ export default function UpcomingEventsSection() {
   const [attendeePhone, setAttendeePhone] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [bookingError, setBookingError] = useState<string | null>(null);
+
+  // 🌟 GSAP 3D Inward Fly-In Animation (scale: 1.1 -> scale: 1 with cubic-bezier)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      gsap.registerPlugin(ScrollTrigger);
+      const cards = document.querySelectorAll('.event-fly-in-card');
+      if (cards.length > 0) {
+        gsap.fromTo(
+          cards,
+          {
+            scale: 1.1,
+            opacity: 0,
+            y: 35,
+            transformOrigin: '50% 50%',
+          },
+          {
+            scale: 1,
+            opacity: 1,
+            y: 0,
+            duration: 1.2,
+            stagger: 0.15,
+            ease: 'cubic-bezier(0.16, 1, 0.3, 1)',
+            scrollTrigger: {
+              trigger: '#events',
+              start: 'top 82%',
+              end: 'bottom 20%',
+              toggleActions: 'play reverse play reverse',
+            },
+          }
+        );
+      }
+    } catch (err) {
+      console.warn('Events GSAP trigger initialization:', err);
+    }
+  }, [events]);
 
   // 🌟 Live Real-time Events Listener (Firestore + Local Broadcast + API)
   const [registrationsCountByEvent, setRegistrationsCountByEvent] = useState<Record<string, number>>({});
@@ -386,7 +424,8 @@ export default function UpcomingEventsSection() {
             return (
               <div 
                 key={event.id}
-                className="group relative rounded-3xl p-6 transition-all duration-500 hover:-translate-y-2 hover:scale-[1.01] flex flex-col justify-between backdrop-blur-xl bg-black/60 border border-white/10 hover:border-[#f9b03c]/60 shadow-[0_20px_50px_rgba(0,0,0,0.7)] hover:shadow-[0_25px_60px_rgba(249,176,60,0.25)]"
+                className="event-fly-in-card group relative rounded-3xl p-6 transition-all duration-500 hover:-translate-y-2 hover:scale-[1.01] flex flex-col justify-between backdrop-blur-xl bg-black/60 border border-white/10 hover:border-[#f9b03c]/60 shadow-[0_20px_50px_rgba(0,0,0,0.7)] hover:shadow-[0_25px_60px_rgba(249,176,60,0.25)] will-change-transform"
+                style={{ transformOrigin: 'center center', willChange: 'transform, opacity' }}
               >
                 {/* 3D Radial Glow on Hover */}
                 <div className="absolute inset-0 rounded-3xl bg-gradient-to-b from-[#f9b03c]/10 via-transparent to-[#3268ba]/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />

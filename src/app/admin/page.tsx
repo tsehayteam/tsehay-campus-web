@@ -6914,9 +6914,48 @@ export default function AdminDashboard() {
                   <input type="text" value={formData.banner || ''} onChange={e => setFormData({...formData, banner: e.target.value})} className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-dark dark:text-white outline-none focus:border-primary transition" placeholder="Optional" />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">የፕሪቪው ቪዲዮ ሊንክ (Preview Video URL) *</label>
-                  <input required type="text" value={formData.video} onChange={e => setFormData({...formData, video: e.target.value})} className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-dark dark:text-white outline-none focus:border-primary transition" />
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2 flex items-center justify-between">
+                    <span className="flex items-center gap-1.5"><i className="fa-solid fa-play text-red-500"></i> የፕሪቪው ቪዲዮ ሊንክ (Universal Video: YouTube, Shorts, GDrive, Dropbox, MP4) *</span>
+                    <span className="text-[11px] text-[#f9b03c] font-bold">Universal Support</span>
+                  </label>
+                  <input 
+                    required 
+                    type="text" 
+                    value={formData.video} 
+                    onChange={e => setFormData({...formData, video: e.target.value})} 
+                    placeholder="https://www.youtube.com/watch?v=... ወይም YouTube Shorts / Google Drive / Dropbox / Direct .mp4" 
+                    className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-dark dark:text-white outline-none focus:border-primary transition font-mono text-xs" 
+                  />
+                  <div className="mt-2 flex flex-wrap gap-2 text-[10px] text-gray-500 dark:text-gray-400 font-medium">
+                    <span className="bg-gray-100 dark:bg-slate-800 px-2 py-0.5 rounded">✓ YouTube (Watch & Shorts)</span>
+                    <span className="bg-gray-100 dark:bg-slate-800 px-2 py-0.5 rounded">✓ Google Drive Videos</span>
+                    <span className="bg-gray-100 dark:bg-slate-800 px-2 py-0.5 rounded">✓ Dropbox Links</span>
+                    <span className="bg-gray-100 dark:bg-slate-800 px-2 py-0.5 rounded">✓ Direct MP4 Files</span>
+                  </div>
+
+                  {formData.video && (() => {
+                    const parsed = parseVideoEmbedUrl(formData.video);
+                    return (
+                      <div className="mt-3 bg-slate-900/90 p-3 rounded-2xl border border-red-500/30">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs font-bold text-gray-300 flex items-center gap-1.5">
+                            <i className="fa-solid fa-video text-red-500"></i> የቪዲዮ ቅድመ-እይታ (Live Video Preview)
+                          </span>
+                          <span className="text-[10px] bg-red-500/20 text-red-400 border border-red-500/30 font-bold px-2 py-0.5 rounded-full">
+                            {parsed.type === 'video' ? 'Direct Stream' : 'Embed Player'}
+                          </span>
+                        </div>
+                        <div className="relative aspect-video w-full rounded-xl overflow-hidden bg-black border border-white/10">
+                          {parsed.type === 'video' ? (
+                            <video src={parsed.src} controls playsInline className="w-full h-full object-cover" />
+                          ) : (
+                            <iframe src={parsed.src} title="Course Preview" frameBorder="0" allowFullScreen className="w-full h-full" />
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 <div>

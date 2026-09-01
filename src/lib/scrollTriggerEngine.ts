@@ -146,22 +146,24 @@ class ScrollTriggerEngine {
       this.gsapTriggers.push(trigger);
     });
 
-    // 4. Horizontal Scroll Pinning for Popular Courses (Cello.so style)
-    const coursesPinContainer = document.getElementById('courses-pin-container');
+    // 4. Horizontal Scroll Pinning for Popular Courses (Apple / Cello.so style)
+    const coursesPinContainer = document.getElementById('courses-pin-container') || document.getElementById('courses');
     const coursesTrack = document.getElementById('courses-horizontal-track');
     if (coursesPinContainer && coursesTrack) {
       const getScrollDist = () => {
         const trackW = coursesTrack.scrollWidth;
         const viewW = window.innerWidth;
-        return Math.max(0, trackW - viewW + 140);
+        return Math.max(0, trackW - viewW + 180);
       };
 
       const hPinTrigger = ScrollTrigger.create({
         trigger: coursesPinContainer,
         pin: true,
+        pinSpacing: true,
+        anticipatePin: 1,
         start: 'top top',
-        end: () => `+=${Math.max(getScrollDist(), 600)}`,
-        scrub: 1.1,
+        end: () => `+=${Math.max(getScrollDist(), 800)}`,
+        scrub: 1,
         invalidateOnRefresh: true,
         animation: gsap.to(coursesTrack, {
           x: () => -getScrollDist(),
@@ -169,6 +171,60 @@ class ScrollTriggerEngine {
         }),
       });
       this.gsapTriggers.push(hPinTrigger);
+    }
+
+    // 5. 3D Inward Fly-In Animation for Upcoming Events Section (scale: 1.1 -> 1)
+    const eventsSection = document.getElementById('events');
+    const eventCards = document.querySelectorAll<HTMLElement>('.event-fly-in-card');
+    if (eventsSection && eventCards.length > 0) {
+      const eventsTrigger = ScrollTrigger.create({
+        trigger: eventsSection,
+        start: 'top 82%',
+        end: 'bottom 20%',
+        toggleActions: 'play reverse play reverse',
+        onEnter: () => {
+          gsap.fromTo(
+            eventCards,
+            {
+              scale: 1.1,
+              opacity: 0,
+              y: 40,
+              transformOrigin: '50% 50%',
+            },
+            {
+              scale: 1,
+              opacity: 1,
+              y: 0,
+              duration: 1.2,
+              stagger: 0.15,
+              ease: 'cubic-bezier(0.16, 1, 0.3, 1)',
+              overwrite: 'auto',
+            }
+          );
+        },
+        onEnterBack: () => {
+          gsap.to(eventCards, {
+            scale: 1,
+            opacity: 1,
+            y: 0,
+            duration: 0.8,
+            stagger: 0.1,
+            ease: 'cubic-bezier(0.16, 1, 0.3, 1)',
+            overwrite: 'auto',
+          });
+        },
+        onLeaveBack: () => {
+          gsap.to(eventCards, {
+            scale: 1.1,
+            opacity: 0,
+            y: 40,
+            duration: 0.5,
+            ease: 'power2.in',
+            overwrite: 'auto',
+          });
+        },
+      });
+      this.gsapTriggers.push(eventsTrigger);
     }
   }
 

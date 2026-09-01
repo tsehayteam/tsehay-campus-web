@@ -2068,4 +2068,22 @@ img, video, canvas {
   transform: translateY(-2px);
 }
 
+/* 🌟 Silicon Valley 3D Inward Fly-In Event Cards */
+.event-fly-in-card {
+  transform-style: preserve-3d;
+  perspective: 1200px;
+  will-change: transform, opacity;
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.6s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.4s ease;
+}
+
+#courses-pin-container {
+  will-change: transform;
+}
+
+#courses-horizontal-track {
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
+}
+
+
 

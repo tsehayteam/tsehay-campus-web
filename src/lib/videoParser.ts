@@ -1,7 +1,8 @@
 /**
  * Universal Video & Media Parser for Tsehay Campus
  * Handles YouTube (Watch, Shorts, Live, Embed), Google Drive (Videos & Images),
- * Direct Video files (.mp4, .webm, .mov), BunnyCDN, Vimeo, and Iframe embeds.
+ * Dropbox (Direct stream & raw embeds), Direct Video files (.mp4, .webm, .mov),
+ * BunnyCDN, Vimeo, Cloudflare Stream, and Iframe embeds.
  */
 
 export interface ParsedVideo {
@@ -9,6 +10,7 @@ export interface ParsedVideo {
   src: string;
   isYouTube: boolean;
   isGoogleDrive: boolean;
+  isDropbox: boolean;
   youtubeId?: string;
   thumbnailUrl?: string;
 }
@@ -35,6 +37,21 @@ export function extractGoogleDriveId(url: string): string {
   return match && match[1] ? match[1] : '';
 }
 
+export function parseDropboxUrl(url: string): { isDropbox: boolean; streamUrl: string } {
+  if (!url) return { isDropbox: false, streamUrl: '' };
+  const trimmed = url.trim();
+  if (trimmed.includes('dropbox.com')) {
+    let streamUrl = trimmed;
+    if (streamUrl.includes('dl=0')) {
+      streamUrl = streamUrl.replace('dl=0', 'raw=1');
+    } else if (!streamUrl.includes('raw=1') && !streamUrl.includes('dl=1')) {
+      streamUrl += (streamUrl.includes('?') ? '&' : '?') + 'raw=1';
+    }
+    return { isDropbox: true, streamUrl };
+  }
+  return { isDropbox: false, streamUrl: '' };
+}
+
 export function parseImageUrl(rawUrl?: string): string {
   if (!rawUrl || !rawUrl.trim()) return '/assets/hero-bg-new.jpg';
   const trimmed = rawUrl.trim();
@@ -45,7 +62,13 @@ export function parseImageUrl(rawUrl?: string): string {
     return `https://lh3.googleusercontent.com/d/${gDriveId}`;
   }
 
-  // 2. If user pasted a YouTube video URL as thumbnail -> return Max-Res thumbnail
+  // 2. Dropbox image link: convert dl=0 to raw=1
+  if (trimmed.includes('dropbox.com')) {
+    const { streamUrl } = parseDropboxUrl(trimmed);
+    return streamUrl;
+  }
+
+  // 3. If user pasted a YouTube video URL as thumbnail -> return Max-Res thumbnail
   const ytId = extractYouTubeId(trimmed);
   if (ytId) {
     return `https://img.youtube.com/vi/${ytId}/maxresdefault.jpg`;
@@ -72,7 +95,8 @@ export function parseVideoEmbedUrl(rawUrl: string, autoplay: boolean = false): P
       type: 'embed',
       src: '',
       isYouTube: false,
-      isGoogleDrive: false
+      isGoogleDrive: false,
+      isDropbox: false
     };
   }
 
@@ -96,6 +120,7 @@ export function parseVideoEmbedUrl(rawUrl: string, autoplay: boolean = false): P
         src, 
         isYouTube: !!ytId, 
         isGoogleDrive: src.includes('drive.google.com'),
+        isDropbox: src.includes('dropbox.com'),
         youtubeId: ytId || undefined,
         thumbnailUrl: ytId ? `https://img.youtube.com/vi/${ytId}/maxresdefault.jpg` : undefined
       };
@@ -110,11 +135,24 @@ export function parseVideoEmbedUrl(rawUrl: string, autoplay: boolean = false): P
       src: `https://drive.google.com/file/d/${gDriveId}/preview${autoplay ? '?autoplay=1' : ''}`,
       isYouTube: false,
       isGoogleDrive: true,
+      isDropbox: false,
       thumbnailUrl: `https://lh3.googleusercontent.com/d/${gDriveId}`
     };
   }
 
-  // 3. YouTube Watch, Shorts, youtu.be, Embed, or 11-char ID
+  // 3. Dropbox direct video link
+  if (trimmed.includes('dropbox.com')) {
+    const { streamUrl } = parseDropboxUrl(trimmed);
+    return {
+      type: 'video',
+      src: streamUrl,
+      isYouTube: false,
+      isGoogleDrive: false,
+      isDropbox: true
+    };
+  }
+
+  // 4. YouTube Watch, Shorts, youtu.be, Embed, or 11-char ID
   const ytId = extractYouTubeId(trimmed);
   if (ytId) {
     return {
@@ -122,12 +160,13 @@ export function parseVideoEmbedUrl(rawUrl: string, autoplay: boolean = false): P
       src: `https://www.youtube.com/embed/${ytId}?${ytParams}`,
       isYouTube: true,
       isGoogleDrive: false,
+      isDropbox: false,
       youtubeId: ytId,
       thumbnailUrl: `https://img.youtube.com/vi/${ytId}/maxresdefault.jpg`
     };
   }
 
-  // 4. Direct video file (mp4, webm, mov, ogg)
+  // 5. Direct video file (mp4, webm, mov, ogg)
   if (
     trimmed.endsWith('.mp4') || 
     trimmed.endsWith('.webm') || 
@@ -140,11 +179,12 @@ export function parseVideoEmbedUrl(rawUrl: string, autoplay: boolean = false): P
       type: 'video', 
       src: trimmed, 
       isYouTube: false, 
-      isGoogleDrive: false 
+      isGoogleDrive: false,
+      isDropbox: false
     };
   }
 
-  // 5. General Player / Embed URL (Vimeo, BunnyCDN, Cloudflare Stream, Custom Player)
+  // 6. General Player / Embed URL (Vimeo, BunnyCDN, Cloudflare Stream, Custom Player)
   let generalSrc = trimmed;
   if (autoplay) {
     if (!generalSrc.includes('autoplay=')) {
@@ -157,6 +197,7 @@ export function parseVideoEmbedUrl(rawUrl: string, autoplay: boolean = false): P
     type: 'embed', 
     src: generalSrc, 
     isYouTube: false, 
-    isGoogleDrive: false 
+    isGoogleDrive: false,
+    isDropbox: false
   };
 }

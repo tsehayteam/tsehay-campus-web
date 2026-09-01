@@ -12,6 +12,7 @@ import PaymentModal from '@/components/PaymentModal';
 import RequireAuthModal from '@/components/RequireAuthModal';
 import Footer from '@/components/Footer';
 import { getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl, getCleanCourseImage, getCourseSlug, getCourseBySlugOrId, mergeCoursesLists, subscribeToCourses } from '@/lib/courseCache';
+import { parseVideoEmbedUrl } from '@/lib/videoParser';
 
 function CoursePreviewContent() {
   const routeParams = useParams();
@@ -433,13 +434,8 @@ function CoursePreviewContent() {
     );
   }
 
-  const rawVideo = activeVideoUrl || course.previewVideoUrl || course.videoUrl || course.video || (course.lessons && course.lessons[0]?.video);
-  const embedUrl = rawVideo ? (
-    rawVideo.includes('embed') ? rawVideo :
-    rawVideo.includes('watch?v=') ? rawVideo.replace('watch?v=', 'embed/') :
-    rawVideo.includes('youtu.be/') ? rawVideo.replace('youtu.be/', 'www.youtube.com/embed/') :
-    rawVideo
-  ) : null;
+  const rawVideo = activeVideoUrl || course.previewVideoUrl || course.videoUrl || course.video || (course.lessons && course.lessons[0]?.video) || '';
+  const parsedVideo = rawVideo ? parseVideoEmbedUrl(rawVideo, true) : null;
 
   return (
     <div className="min-h-screen bg-[#030509] text-white selection:bg-[#f9b03c] selection:text-black">
@@ -598,18 +594,28 @@ function CoursePreviewContent() {
               
               {/* Video Player / Thumbnail Preview */}
               <div className="relative aspect-video w-full rounded-2xl overflow-hidden bg-black border border-white/10 shadow-lg group">
-                {isPlaying && embedUrl ? (
-                  <iframe
-                    src={`${embedUrl}?autoplay=1&rel=0`}
-                    title="Course Preview"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                    className="w-full h-full"
-                  />
+                {isPlaying && parsedVideo ? (
+                  parsedVideo.type === 'video' ? (
+                    <video 
+                      src={parsedVideo.src} 
+                      controls 
+                      autoPlay 
+                      playsInline 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <iframe
+                      src={parsedVideo.src}
+                      title="Course Preview"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                      className="w-full h-full"
+                    />
+                  )
                 ) : (
                   <div 
                     onClick={() => {
-                      if (embedUrl) setIsPlaying(true);
+                      if (parsedVideo) setIsPlaying(true);
                     }}
                     className="relative w-full h-full flex items-center justify-center cursor-pointer"
                   >
