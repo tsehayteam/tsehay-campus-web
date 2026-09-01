@@ -1,5 +1,5 @@
 // Tsehay Campus Lightweight PWA Service Worker (Strict Live-Sync NetworkFirst)
-const CACHE_NAME = 'tsehay-campus-live-v2';
+const CACHE_NAME = 'tsehay-campus-live-v4';
 const STATIC_PRECACHE = [
   '/manifest.json',
   '/favicon.png',
@@ -28,7 +28,7 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Only handle GET requests, avoid intercepting Firebase/API requests
+  // Only handle GET requests, avoid intercepting Firebase/API/Media requests
   if (
     event.request.method !== 'GET' ||
     event.request.url.includes('/api/') ||
@@ -41,8 +41,8 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // HTML page navigations -> ALWAYS fetch fresh from live network to prevent stale pages
-  if (event.request.mode === 'navigate') {
+  // HTML page navigations & Next.js chunks -> ALWAYS fetch fresh from live network
+  if (event.request.mode === 'navigate' || event.request.url.includes('/_next/')) {
     event.respondWith(
       fetch(event.request).catch(() => caches.match(event.request))
     );
@@ -60,3 +60,4 @@ self.addEventListener('fetch', (event) => {
       })
   );
 });
+

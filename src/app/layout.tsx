@@ -177,9 +177,18 @@ export default function RootLayout({
               } catch (e) {
                 document.documentElement.classList.add('dark');
               }
+              // Auto-update Service Worker & purge old cache to ensure latest live version everywhere
+              if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                  for (var reg of registrations) {
+                    reg.update().catch(function() {});
+                  }
+                }).catch(function() {});
+              }
             })();
           `}}
         />
+
         <LanguageProvider>
           <AuthProvider>
             <SmoothScrollAndScrollyProvider>

@@ -1,6 +1,11 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
+
 import React, { useEffect, useState, useRef, Suspense } from 'react';
+
 import { db, auth } from '@/lib/firebase/config';
 import { collection, getDocs, query, orderBy, doc, getDoc, updateDoc, setDoc, serverTimestamp, where, onSnapshot } from 'firebase/firestore';
 import { useAuth } from '@/context/AuthContext';
