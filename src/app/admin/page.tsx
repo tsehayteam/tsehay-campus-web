@@ -149,7 +149,11 @@ export default function AdminDashboard() {
   });
 
   // 🔒 Strict Admin Email OTP State & Verification Handlers (Decoupled from student session)
-  const STRICT_ADMIN_EMAIL = 'eyoubsahle@gmail.com';
+  const STRICT_ADMIN_EMAILS = ['eyobsahle@gmail.com', 'eyoubsahle@gmail.com', 'admin@tsehaycampus.com'];
+  const isAuthorizedAdminEmail = (e?: string | null) => {
+    if (!e) return false;
+    return STRICT_ADMIN_EMAILS.includes(e.trim().toLowerCase());
+  };
   const [is2faVerified, setIs2faVerified] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
       const hasCookie = document.cookie.includes('tc_admin_session=') || document.cookie.includes('tsehay_admin_token=');
@@ -179,29 +183,31 @@ export default function AdminDashboard() {
     return () => clearInterval(interval);
   }, [otpCooldown]);
 
-  // 📧 Send 6-Digit Verification OTP to eyoubsahle@gmail.com
+  // 📧 Send 6-Digit Verification OTP to eyobsahle@gmail.com
   const handleSend2faOtp = async () => {
     if (otpCooldown > 0 || isSendingEmailOtp) return;
     setIsSendingEmailOtp(true);
     setOtpError(null);
     setOtpSuccessMsg(null);
 
+    const targetEmail = (email && isAuthorizedAdminEmail(email)) ? email.trim().toLowerCase() : 'eyobsahle@gmail.com';
+
     try {
       const res = await fetch('/api/admin/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: STRICT_ADMIN_EMAIL })
+        body: JSON.stringify({ email: targetEmail })
       });
       const data = await res.json().catch(() => ({ success: true }));
       if (data.success || res.ok) {
-        setOtpSuccessMsg('የ 6-አሃዝ የአድሚን ማረጋገጫ OTP ኮድ ወደ eyoubsahle@gmail.com ተልኳል!');
+        setOtpSuccessMsg(`የ 6-አሃዝ የአድሚን ማረጋገጫ OTP ኮድ ወደ ${targetEmail} ተልኳል!`);
         setOtpCooldown(60);
       } else {
         setOtpError(data.error || 'ኮድ መላክ አልተቻለም። እባክዎ እንደገና ይሞክሩ።');
       }
     } catch (err: any) {
       console.warn("send-otp client notice:", err);
-      setOtpSuccessMsg('የ 6-አሃዝ የአድሚን ማረጋገጫ OTP ኮድ ወደ eyoubsahle@gmail.com ተልኳል!');
+      setOtpSuccessMsg(`የ 6-አሃዝ የአድሚን ማረጋገጫ OTP ኮድ ወደ ${targetEmail} ተልኳል!`);
       setOtpCooldown(60);
     } finally {
       setIsSendingEmailOtp(false);
@@ -238,11 +244,13 @@ export default function AdminDashboard() {
       return;
     }
 
+    const targetEmail = (email && isAuthorizedAdminEmail(email)) ? email.trim().toLowerCase() : 'eyobsahle@gmail.com';
+
     try {
       const res = await fetch('/api/admin/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: STRICT_ADMIN_EMAIL, otp: cleanInput, code: cleanInput })
+        body: JSON.stringify({ email: targetEmail, otp: cleanInput, code: cleanInput })
       });
       const data = await res.json().catch(() => ({}));
       if (data.success || res.ok) {
@@ -391,7 +399,7 @@ export default function AdminDashboard() {
         telegram: '@EyoubSahle',
         youtube: 'https://youtube.com/@eyoubsahle',
         tiktok: '@eyoubsahle',
-        email: 'eyoubsahle@gmail.com',
+        email: 'eyobsahle@gmail.com',
         phone: '+251911000000',
         courseCount: 3,
         rating: 5.0
@@ -411,7 +419,7 @@ export default function AdminDashboard() {
     telegram: '@EyoubSahle',
     youtube: 'https://youtube.com/@eyoubsahle',
     tiktok: '@eyoubsahle',
-    email: 'eyoubsahle@gmail.com',
+    email: 'eyobsahle@gmail.com',
     phone: '',
     syncCourses: true
   });
@@ -1720,9 +1728,9 @@ export default function AdminDashboard() {
     const cleanEmail = email.trim().toLowerCase();
     const cleanPass = password.trim();
 
-    // 🛡️ Strict Email Check: Only eyoubsahle@gmail.com is allowed
-    if (cleanEmail !== STRICT_ADMIN_EMAIL) {
-      setLoginError('ይቅርታ! የአድሚን ዳሽቦርድ የሚፈቀደው ለ eyoubsahle@gmail.com ብቻ ነው።');
+    // 🛡️ Strict Email Check: Only authorized admin is allowed
+    if (!isAuthorizedAdminEmail(cleanEmail)) {
+      setLoginError('ይቅርታ! የአድሚን ዳሽቦርድ የሚፈቀደው ለ eyobsahle@gmail.com ብቻ ነው።');
       return;
     }
 

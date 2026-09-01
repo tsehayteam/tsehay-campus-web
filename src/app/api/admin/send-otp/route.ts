@@ -3,7 +3,12 @@ import { adminDb } from '@/lib/firebase/admin';
 
 export const dynamic = 'force-dynamic';
 
-const STRICT_ADMIN_EMAIL = 'eyoubsahle@gmail.com';
+const AUTHORIZED_ADMIN_EMAILS = [
+  'eyobsahle@gmail.com',
+  'eyoubsahle@gmail.com',
+  'admin@tsehaycampus.com',
+  'tsehayoperation@gmail.com'
+];
 
 // In-memory fallback cache so OTP verification works seamlessly even without Firestore network access
 export const memoryAdminOtpCache = new Map<string, { otp: string; expiresAt: number; createdAt: number; attempts: number }>();
@@ -18,10 +23,10 @@ export async function POST(req: NextRequest) {
     }
 
     const { email } = body;
-    const cleanEmail = (email || STRICT_ADMIN_EMAIL).trim().toLowerCase();
+    const cleanEmail = (email || 'eyobsahle@gmail.com').trim().toLowerCase();
 
-    // 🛡️ Strict Authorization Check: Only eyoubsahle@gmail.com is permitted
-    if (cleanEmail !== STRICT_ADMIN_EMAIL) {
+    // 🛡️ Strict Authorization Check: Only authorized admin is permitted
+    if (!AUTHORIZED_ADMIN_EMAILS.includes(cleanEmail)) {
       return NextResponse.json({
         success: false,
         error: 'ይቅርታ፣ ወደዚህ ገጽ ለመግባት የአድሚን ፈቃድ የለዎትም። (Unauthorized Admin Account)'
@@ -100,7 +105,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       message: 'Code sent successfully',
-      email: STRICT_ADMIN_EMAIL,
+      email: 'eyobsahle@gmail.com',
       expiresInMinutes: 10
     });
   }

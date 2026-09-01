@@ -5,9 +5,10 @@ import { onAuthStateChanged, signOut, User } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 export const ADMIN_EMAILS = [
+  'eyobsahle@gmail.com',
+  'eyoubsahle@gmail.com',
   'admin@tsehaycampus.com',
   'tsehayoperation@gmail.com',
-  'eyoubsahle@gmail.com',
   'habte@gmail.com',
   'cryptomaster758@gmail.com'
 ];

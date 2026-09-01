@@ -4,7 +4,12 @@ import { memoryAdminOtpCache } from '../send-otp/route';
 
 export const dynamic = 'force-dynamic';
 
-const STRICT_ADMIN_EMAIL = 'eyoubsahle@gmail.com';
+const AUTHORIZED_ADMIN_EMAILS = [
+  'eyobsahle@gmail.com',
+  'eyoubsahle@gmail.com',
+  'admin@tsehaycampus.com',
+  'tsehayoperation@gmail.com'
+];
 const EMERGENCY_OWNER_PIN = process.env.ADMIN_MASTER_CODE || '202678';
 
 export async function POST(req: NextRequest) {
@@ -17,11 +22,11 @@ export async function POST(req: NextRequest) {
     }
 
     const { email, otp, code } = body;
-    const cleanEmail = (email || STRICT_ADMIN_EMAIL).trim().toLowerCase();
+    const cleanEmail = (email || 'eyobsahle@gmail.com').trim().toLowerCase();
     const inputCode = (otp || code || '').toString().trim();
 
-    // 🛡️ Strict Authorization Check: Only eyoubsahle@gmail.com is permitted
-    if (cleanEmail !== STRICT_ADMIN_EMAIL) {
+    // 🛡️ Strict Authorization Check: Only authorized admin is permitted
+    if (!AUTHORIZED_ADMIN_EMAILS.includes(cleanEmail)) {
       return NextResponse.json({
         success: false,
         error: 'ይቅርታ፣ ወደዚህ ገጽ ለመግባት የአድሚን ፈቃድ የለዎትም። (Unauthorized Admin Account)'

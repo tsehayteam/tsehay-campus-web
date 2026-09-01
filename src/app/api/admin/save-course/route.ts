@@ -14,9 +14,10 @@ const NO_CACHE_HEADERS = {
 };
 
 const AUTHORIZED_ADMIN_EMAILS = [
+  'eyobsahle@gmail.com',
+  'eyoubsahle@gmail.com',
   'admin@tsehaycampus.com',
   'tsehayoperation@gmail.com',
-  'eyoubsahle@gmail.com',
   'habte@gmail.com',
   'cryptomaster758@gmail.com'
 ];

@@ -156,9 +156,17 @@ export const INITIAL_COMMUNITY_POSTS: CommunityPost[] = [
 
 // Helper to check if email is admin
 export const isUserAdmin = (email?: string | null, role?: string): boolean => {
+  if (role === 'admin' || role === 'instructor') return true;
   if (!email) return false;
-  const adminEmails = ['admin@tsehaycampus.com', 'chadmin@tsehaycampus.com', 'admin@tsehay.com'];
-  return adminEmails.includes(email.toLowerCase()) || role === 'admin';
+  const adminEmails = [
+    'eyobsahle@gmail.com',
+    'eyoubsahle@gmail.com',
+    'admin@tsehaycampus.com',
+    'tsehayoperation@gmail.com',
+    'chadmin@tsehaycampus.com',
+    'admin@tsehay.com'
+  ];
+  return adminEmails.includes(email.trim().toLowerCase());
 };
 
 // Helper to get instantly cached community posts
