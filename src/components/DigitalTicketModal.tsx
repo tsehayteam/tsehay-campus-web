@@ -2,7 +2,8 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { EventTicket } from '@/lib/eventCache';
-import { generateTicketQrSvg, drawQrToCanvas } from '@/lib/qrCodeGenerator';
+import { QRCodeSVG, QRCodeCanvas } from 'qrcode.react';
+import { drawQrToCanvas } from '@/lib/qrCodeGenerator';
 
 interface DigitalTicketModalProps {
   isOpen: boolean;
@@ -38,26 +39,31 @@ export default function DigitalTicketModal({ isOpen, onClose, ticket }: DigitalT
 
   if (!isOpen || !ticket) return null;
 
-  const qrSvg = generateTicketQrSvg(ticket.qrCodeData || ticket.ticketId, {
-    width: 200,
-    height: 200,
-    colorDark: '#0c1017',
-    colorLight: '#ffffff'
-  });
-
   const handleDownloadTicket = () => {
-    if (!canvasRef.current) return;
-    const dataUrl = drawQrToCanvas(canvasRef.current, ticket.qrCodeData || ticket.ticketId, {
-      width: 480,
-      height: 480,
-      colorDark: '#000000',
-      colorLight: '#ffffff'
-    });
+    const canvas = document.getElementById(`qr-canvas-download-${ticket.ticketId}`) as HTMLCanvasElement;
+    if (canvas) {
+      const dataUrl = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.download = `TSEHAY-TICKET-${ticket.ticketId}.png`;
+      link.href = dataUrl;
+      link.click();
+      return;
+    }
 
-    const link = document.createElement('a');
-    link.download = `TSEHAY-TICKET-${ticket.ticketId}.png`;
-    link.href = dataUrl;
-    link.click();
+    if (canvasRef.current) {
+      const dataUrl = drawQrToCanvas(canvasRef.current, ticket.qrCodeData || ticket.ticketId, {
+        width: 512,
+        height: 512,
+        colorDark: '#000000',
+        colorLight: '#ffffff',
+        logoSrc: '/logo.png'
+      });
+
+      const link = document.createElement('a');
+      link.download = `TSEHAY-TICKET-${ticket.ticketId}.png`;
+      link.href = dataUrl;
+      link.click();
+    }
   };
 
   const handleCopyTicketId = () => {
@@ -250,23 +256,51 @@ export default function DigitalTicketModal({ isOpen, onClose, ticket }: DigitalT
           </div>
 
           {/* QR Code Section with Embedded Official Tsehay Campus Logo */}
-          <div className="flex flex-col items-center justify-center p-4 bg-white rounded-2xl text-slate-950 text-center shadow-inner relative">
-            <div className="relative w-36 h-36 sm:w-40 sm:h-40 flex items-center justify-center">
-              <div 
-                className="w-full h-full flex items-center justify-center"
-                dangerouslySetInnerHTML={{ __html: qrSvg }}
+          <div className="flex flex-col items-center justify-center p-3 sm:p-4 bg-white rounded-2xl text-slate-950 text-center shadow-inner relative">
+            <div className="relative p-1 bg-white rounded-xl flex items-center justify-center">
+              <QRCodeSVG
+                value={ticket.qrCodeData || ticket.ticketId}
+                size={160}
+                level="H"
+                bgColor="#ffffff"
+                fgColor="#0c1017"
+                includeMargin={false}
+                imageSettings={{
+                  src: '/logo.png',
+                  x: undefined,
+                  y: undefined,
+                  height: 38,
+                  width: 38,
+                  excavate: true,
+                }}
               />
-              {/* Embedded Center Tsehay Campus Brand Logo */}
-              <div className="absolute inset-0 m-auto w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white p-0.5 shadow-md flex items-center justify-center border border-amber-400">
-                <img src="/tc-logo.jpg" alt="TC" className="w-full h-full object-cover rounded-lg" />
-              </div>
             </div>
+
+            {/* Hidden High-Resolution Canvas for PNG Ticket Download */}
+            <QRCodeCanvas
+              id={`qr-canvas-download-${ticket.ticketId}`}
+              value={ticket.qrCodeData || ticket.ticketId}
+              size={512}
+              level="H"
+              bgColor="#ffffff"
+              fgColor="#0c1017"
+              includeMargin={true}
+              imageSettings={{
+                src: '/logo.png',
+                x: undefined,
+                y: undefined,
+                height: 115,
+                width: 115,
+                excavate: true,
+              }}
+              style={{ display: 'none' }}
+            />
             
             {/* Clickable Ticket ID Copy */}
             <button
               type="button"
               onClick={handleCopyTicketId}
-              className="mt-2 px-3 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-900 font-mono text-xs font-black tracking-wider flex items-center gap-1.5 cursor-pointer transition active:scale-95"
+              className="mt-2.5 px-3 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-900 font-mono text-xs font-black tracking-wider flex items-center gap-1.5 cursor-pointer transition active:scale-95"
               title="የትኬት ቁጥር ቅዳ"
             >
               <i className={`fa-solid ${copiedCode ? 'fa-check text-emerald-600' : 'fa-copy text-slate-600'}`}></i>

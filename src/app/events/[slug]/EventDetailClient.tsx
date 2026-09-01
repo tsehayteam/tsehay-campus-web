@@ -205,6 +205,15 @@ export default function EventDetailClient() {
       };
     }
 
+    // Ensure automated email dispatch is sent to the attendee
+    if (ticketObj && ticketObj.attendeeEmail) {
+      fetch('/api/events/send-ticket-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ticket: ticketObj, email: ticketObj.attendeeEmail })
+      }).catch(() => {});
+    }
+
     setActiveTicket(ticketObj);
     setIsBookingOpen(false);
     setIsTicketModalOpen(true);

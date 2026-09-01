@@ -305,6 +305,15 @@ export default function UpcomingEventsSection() {
         };
       }
 
+      // 4. Ensure automated email dispatch is sent to the attendee
+      if (issuedTicket && issuedTicket.attendeeEmail) {
+        fetch('/api/events/send-ticket-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ticket: issuedTicket, email: issuedTicket.attendeeEmail })
+        }).catch(() => {});
+      }
+
       // Display Apple Wallet Pass Modal
       setActiveTicket(issuedTicket);
       setIsBookingOpen(false);

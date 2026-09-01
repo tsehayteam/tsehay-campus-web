@@ -458,14 +458,23 @@ export default function AITutorSection() {
                   
                   {/* User Prompt Message */}
                   {displayedQuestion && (
-                    <div className="flex justify-end items-start gap-2.5 animate-in fade-in duration-200">
-                      <div className="bg-gradient-to-r from-[#3268ba] to-blue-600 text-white px-4 py-3 rounded-2xl rounded-tr-xs max-w-[88%] shadow-lg border border-white/15">
+                    <div className="flex justify-end items-start gap-2.5 animate-in fade-in duration-200 min-w-0">
+                      <div 
+                        className="bg-gradient-to-r from-[#3268ba] to-blue-600 text-white px-4 py-3 rounded-2xl rounded-tr-xs max-w-[88%] shadow-lg border border-white/15 min-w-0"
+                        style={{ wordBreak: 'break-word', overflowWrap: 'break-word', whiteSpace: 'pre-wrap' }}
+                      >
                         <div className="text-[10px] text-blue-200 font-mono mb-1 font-bold flex items-center gap-1.5">
                           <i className="fa-solid fa-user text-[9px]"></i>
                           <span>የተማሪ ጥያቄ</span>
                         </div>
-                        <p className="text-xs sm:text-sm font-bold leading-relaxed">
-                          {displayedQuestion}
+                        <p 
+                          className="text-xs sm:text-sm font-bold leading-relaxed terafab-typing-text"
+                          style={{ wordBreak: 'break-word', overflowWrap: 'break-word', whiteSpace: 'pre-wrap' }}
+                        >
+                          <span>{displayedQuestion}</span>
+                          {phase === 'typing_q' && (
+                            <span className="inline-block w-1.5 h-3.5 bg-white animate-pulse ml-1 align-middle shadow-[0_0_6px_#ffffff] rounded-xs"></span>
+                          )}
                         </p>
                       </div>
                       <div className="w-8 h-8 rounded-xl bg-[#3268ba] text-white flex items-center justify-center text-xs font-black shrink-0 border border-white/20 shadow-sm">
@@ -476,7 +485,7 @@ export default function AITutorSection() {
 
                   {/* AI Neural Thinking Animation */}
                   {isThinking && (
-                    <div className="flex items-start gap-2.5 animate-in fade-in duration-200">
+                    <div className="flex items-start gap-2.5 animate-in fade-in duration-200 min-w-0">
                       <div className="w-8 h-8 rounded-xl bg-[#f9b03c] text-slate-950 flex items-center justify-center text-xs font-black shrink-0 shadow-[0_0_15px_rgba(249,176,60,0.5)]">
                         <i className="fa-solid fa-robot"></i>
                       </div>
@@ -493,26 +502,29 @@ export default function AITutorSection() {
 
                   {/* AI Streaming Response Card */}
                   {displayedResponse && (
-                    <div className="flex items-start gap-2.5 animate-in fade-in duration-200">
+                    <div className="flex items-start gap-2.5 animate-in fade-in duration-200 min-w-0">
                       <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#f9b03c] to-amber-300 text-slate-950 flex items-center justify-center text-xs font-black shrink-0 shadow-[0_0_15px_rgba(249,176,60,0.5)]">
                         <i className="fa-solid fa-robot"></i>
                       </div>
 
-                      <div className="bg-white/[0.04] border border-white/15 backdrop-blur-2xl p-4 rounded-2xl rounded-tl-xs max-w-[92%] shadow-2xl relative w-full">
+                      <div 
+                        className="bg-white/[0.04] border border-white/15 backdrop-blur-2xl p-4 rounded-2xl rounded-tl-xs max-w-[92%] shadow-2xl relative w-full min-w-0 overflow-hidden"
+                        style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}
+                      >
                         
                         {/* Response Top Toolbar */}
                         <div className="flex items-center justify-between gap-2 mb-2.5 pb-2 border-b border-white/10">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-black text-[#f9b03c] flex items-center gap-1.5 font-heading">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="text-xs font-black text-[#f9b03c] flex items-center gap-1.5 font-heading shrink-0">
                               <i className="fa-solid fa-wand-magic-sparkles text-[11px]"></i> Tsehay AI
                             </span>
-                            <span className="text-[10px] bg-[#f9b03c]/20 text-[#f9b03c] border border-[#f9b03c]/40 px-2 py-0.5 rounded-full font-bold">
+                            <span className="text-[10px] bg-[#f9b03c]/20 text-[#f9b03c] border border-[#f9b03c]/40 px-2 py-0.5 rounded-full font-bold truncate">
                               {activeScenario.badge}
                             </span>
                           </div>
 
                           {/* Action Icons (Voice TTS & Copy) */}
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 shrink-0">
                             
                             {/* Live Sound Wave Equalizer animation when speaking */}
                             {isSpeaking && (
@@ -552,10 +564,16 @@ export default function AITutorSection() {
                           </div>
                         </div>
 
-                        {/* Streaming Text Body */}
-                        <p className="text-xs sm:text-[13px] text-slate-200 font-medium leading-relaxed whitespace-pre-line font-body">
-                          {displayedResponse}
-                        </p>
+                        {/* Streaming Text Body with Multi-line Wrapping & Inline Cursor */}
+                        <div 
+                          className="terafab-typing-text text-xs sm:text-[13px] text-slate-200 font-medium leading-relaxed font-body"
+                          style={{ wordBreak: 'break-word', overflowWrap: 'break-word', whiteSpace: 'pre-wrap' }}
+                        >
+                          <span>{displayedResponse}</span>
+                          {phase === 'typing_r' && (
+                            <span className="inline-block w-1.5 h-3.5 sm:h-4 bg-[#f9b03c] animate-pulse ml-1 align-middle shadow-[0_0_8px_#f9b03c] rounded-xs"></span>
+                          )}
+                        </div>
 
                         {/* Dynamic Course CTA Footer Badge */}
                         <div className="mt-3.5 pt-2.5 border-t border-white/10 flex items-center justify-between gap-2 flex-wrap">
