@@ -18,6 +18,7 @@ export interface TsehayEvent {
   speaker: string; // e.g. "ኢዮብ ሳህሌ (Eyoub Sahle)"
   speakerRole?: string; // e.g. "Founder & Lead Mentor"
   image: string;
+  videoUrl?: string;
   tags: string[];
   isFeatured?: boolean;
   status: 'upcoming' | 'ongoing' | 'completed' | 'sold_out';

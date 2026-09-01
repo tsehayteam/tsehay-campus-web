@@ -20,7 +20,8 @@ import {
   subscribePostComments,
   addCommentToPost,
   deleteCommentFromPost,
-  isUserAdmin
+  isUserAdmin,
+  getCachedCommunityPosts
 } from '@/lib/communityService';
 
 export default function CommunityPage() {
@@ -30,9 +31,9 @@ export default function CommunityPage() {
   const [authLoading, setAuthLoading] = useState(true);
   const [showAuthModal, setShowAuthModal] = useState(false);
 
-  // Posts State
-  const [posts, setPosts] = useState<CommunityPost[]>([]);
-  const [postsLoading, setPostsLoading] = useState(true);
+  // Posts State (Instant zero-latency hydration from cache)
+  const [posts, setPosts] = useState<CommunityPost[]>(() => getCachedCommunityPosts());
+  const [postsLoading, setPostsLoading] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
 

@@ -314,6 +314,19 @@ export default function UpcomingEventsSection() {
         }).catch(() => {});
       }
 
+      // Optimistically decrement remaining seats in local state
+      setEvents(prev => prev.map(ev => {
+        if (ev.id === selectedEvent.id || ev.slug === selectedEvent.slug) {
+          const curSeats = ev.remainingSeats !== undefined ? ev.remainingSeats : Math.max(0, (Number(ev.capacity) || 100) - (Number(ev.registeredCount) || 0));
+          return {
+            ...ev,
+            remainingSeats: Math.max(0, curSeats - 1),
+            registeredCount: (Number(ev.registeredCount) || 0) + 1
+          };
+        }
+        return ev;
+      }));
+
       // Display Apple Wallet Pass Modal
       setActiveTicket(issuedTicket);
       setIsBookingOpen(false);
@@ -393,6 +406,12 @@ export default function UpcomingEventsSection() {
                         <i className={`fa-solid ${event.isOnline ? 'fa-globe' : 'fa-location-dot'} text-[11px]`}></i>
                         <span>{event.isOnline ? 'Virtual Live Stream' : 'In-Person (አካል)'}</span>
                       </span>
+                      {event.videoUrl && (
+                        <span className="px-2.5 py-1 rounded-full bg-red-600/90 text-white text-[10px] font-black tracking-wider flex items-center gap-1 shadow-md animate-pulse">
+                          <i className="fa-solid fa-play text-[9px]"></i>
+                          <span>ቪዲዮ</span>
+                        </span>
+                      )}
                       {isSoldOut && (
                         <span className="px-2.5 py-1 rounded-full bg-red-600/90 text-white text-[10px] font-black tracking-wider uppercase shadow-md animate-pulse">
                           ❌ አልቋል (Sold Out)

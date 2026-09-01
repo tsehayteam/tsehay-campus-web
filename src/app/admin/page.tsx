@@ -303,6 +303,20 @@ export default function AdminDashboard() {
   const [isSavingAboutVideo, setIsSavingAboutVideo] = useState(false);
   const [aboutVideoSavedMessage, setAboutVideoSavedMessage] = useState('');
 
+  // 🌟 Landing Hero Video State
+  const [landingVideoUrl, setLandingVideoUrl] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('tsehay_landing_video_cache');
+        if (cached) return cached;
+      } catch (e) {}
+    }
+    return 'https://www.youtube.com/watch?v=mgdOMtW6J8k';
+  });
+  const [isSavingLandingVideo, setIsSavingLandingVideo] = useState(false);
+  const [landingVideoSavedMsg, setLandingVideoSavedMsg] = useState('');
+  const [landingVideoPreviewMode, setLandingVideoPreviewMode] = useState<'thumbnail' | 'player'>('thumbnail');
+
   // Portfolio Videos State - Synchronous lazy cache init so it NEVER reverts on refresh
   const [portfolioLocalUrl, setPortfolioLocalUrl] = useState<string>(() => {
     if (typeof window !== 'undefined') {
@@ -1530,6 +1544,61 @@ export default function AdminDashboard() {
       showToast('አስተያየቱ በተሳካ ሁኔታ ተሰርዟል! (Feedback deleted)', 'success');
     } catch (err) {
       console.error("Error deleting feedback:", err);
+    }
+  };
+
+  const handleSaveLandingVideo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanUrl = landingVideoUrl.trim();
+    if (!cleanUrl) return;
+    setIsSavingLandingVideo(true);
+    setLandingVideoSavedMsg('');
+
+    try {
+      // 1. Direct Firestore write
+      try {
+        await setDoc(doc(db, 'site_settings', 'landing_video'), {
+          videoUrl: cleanUrl,
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+
+        await setDoc(doc(db, 'settings', 'landing_video'), {
+          videoUrl: cleanUrl,
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+      } catch (fErr) {
+        console.warn("Firestore direct write notice (will persist via API):", fErr);
+      }
+
+      // 2. Server-side API persistence
+      const res = await fetch('/api/admin/site-settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          settingKey: 'landing_video',
+          data: {
+            videoUrl: cleanUrl,
+            updatedAt: new Date().toISOString()
+          }
+        })
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || 'Failed to save landing video');
+      }
+
+      try {
+        localStorage.setItem('tsehay_landing_video_cache', cleanUrl);
+      } catch (e) {}
+
+      setLandingVideoSavedMsg('የመግቢያ ቪዲዮው በተሳካ ሁኔታ ተቀምጧል! (Saved Successfully)');
+      setTimeout(() => setLandingVideoSavedMsg(''), 4500);
+    } catch (err: any) {
+      console.error("Error saving landing video:", err);
+      alert('ስህተት ተከስቷል፡ ' + (err.message || 'ቪዲዮውን ማስቀመጥ አልተቻለም።'));
+    } finally {
+      setIsSavingLandingVideo(false);
     }
   };
 
@@ -3158,6 +3227,7 @@ export default function AdminDashboard() {
                 {activeTab === 'portfolio' && <><i className="fa-brands fa-youtube text-red-500"></i> <span>የ YouTube Portfolio ማስተዳደሪያ</span></>}
                 {activeTab === 'youtube' && <><i className="fa-solid fa-play text-red-500"></i> <span>ነጻ የዩቲዩብ ቪዲዮዎች</span></>}
                 {activeTab === 'about_video' && <><i className="fa-solid fa-film text-[#f9b03c]"></i> <span>ስለ እኛ ገጽ ቪዲዮ</span></>}
+                {activeTab === 'landing_video' && <><i className="fa-solid fa-play text-[#f9b03c]"></i> <span>የመግቢያ ቪዲዮ ማስተዳደሪያ (Landing Video)</span></>}
                 {activeTab === 'students' && <><i className="fa-solid fa-user-graduate text-[#f9b03c]"></i> <span>የተማሪዎች ሙሉ መረጃ እና አስተዳደር</span></>}
                 {activeTab === 'waitlists' && <><i className="fa-solid fa-user-clock text-[#f9b03c]"></i> <span>የተጠባባቂ ተማሪዎች ዝርዝር (Course Waitlists)</span></>}
                 {activeTab === 'teachers' && <><i className="fa-solid fa-chalkboard-user text-blue-500"></i> <span>የአስተማሪዎች ዝርዝር</span></>}

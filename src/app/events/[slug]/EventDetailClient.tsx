@@ -8,6 +8,7 @@ import Footer from '@/components/Footer';
 import DigitalTicketModal from '@/components/DigitalTicketModal';
 import ShareEventModal from '@/components/ShareEventModal';
 import { TsehayEvent, EventTicket, DEFAULT_EVENTS, getCachedEvents, getEventBySlugOrId, getRemainingSeats, formatDriveImageUrl } from '@/lib/eventCache';
+import { parseVideoEmbedUrl } from '@/lib/videoParser';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase/config';
 import { collection, doc, onSnapshot, query, getDocs } from 'firebase/firestore';
@@ -35,6 +36,8 @@ export default function EventDetailClient() {
   const [activeTicket, setActiveTicket] = useState<EventTicket | null>(null);
   const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
+  const [createdTicket, setCreatedTicket] = useState<EventTicket | null>(null);
   const [copySuccess, setCopySuccess] = useState(false);
 
   // Fetch from server API & listen for real-time admin edits and registrations
@@ -213,6 +216,17 @@ export default function EventDetailClient() {
         body: JSON.stringify({ ticket: ticketObj, email: ticketObj.attendeeEmail })
       }).catch(() => {});
     }
+
+    // Optimistically decrement remaining seats in local state
+    setEvent(prev => {
+      if (!prev) return prev;
+      const curSeats = prev.remainingSeats !== undefined ? prev.remainingSeats : Math.max(0, (Number(prev.capacity) || 100) - (Number(prev.registeredCount) || 0));
+      return {
+        ...prev,
+        remainingSeats: Math.max(0, curSeats - 1),
+        registeredCount: (Number(prev.registeredCount) || 0) + 1
+      };
+    });
 
     setActiveTicket(ticketObj);
     setIsBookingOpen(false);
@@ -589,18 +603,35 @@ export default function EventDetailClient() {
 
               {/* Right Column (5 cols): Cinematic Banner Stage */}
               <div className="lg:col-span-5">
-                <div className="relative rounded-3xl overflow-hidden border-2 border-white/15 shadow-[0_20px_60px_rgba(0,0,0,0.9)] group">
+                <div 
+                  className={`relative rounded-3xl overflow-hidden border-2 border-white/15 shadow-[0_20px_60px_rgba(0,0,0,0.9)] group ${event.videoUrl ? 'cursor-pointer' : ''}`}
+                  onClick={() => {
+                    if (event.videoUrl) setIsVideoModalOpen(true);
+                  }}
+                >
                   <img
                     src={formatDriveImageUrl(event.image) || event.image || 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?q=80&w=1200'}
                     alt={event.title}
                     className="w-full aspect-[4/3] object-cover group-hover:scale-105 transition-transform duration-700"
                   />
 
+                  {/* Play Video Trigger Overlay if event has videoUrl */}
+                  {event.videoUrl && (
+                    <div className="absolute inset-0 flex items-center justify-center z-10">
+                      <div className="relative group cursor-pointer">
+                        <span className="absolute -inset-3 rounded-full bg-red-500/40 animate-ping pointer-events-none" />
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-tr from-red-600 via-rose-500 to-amber-400 text-white flex items-center justify-center text-2xl sm:text-3xl font-black shadow-[0_0_40px_rgba(239,68,68,0.7)] group-hover:scale-110 transition-all duration-300">
+                          <i className="fa-solid fa-play ml-1"></i>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Gradient Overlay */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent pointer-events-none" />
 
                   {/* Floating Price Tag */}
-                  <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between">
+                  <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between z-10">
                     <div>
                       <p className="text-[10px] uppercase font-bold text-slate-300">የትኬት ዋጋ (Price)</p>
                       <p className="text-xl font-black text-[#f9b03c]">
@@ -793,6 +824,60 @@ export default function EventDetailClient() {
         eventDate={event.date}
         eventLocation={event.location}
       />
+
+      {/* Universal Event Video Lightbox Modal */}
+      {isVideoModalOpen && event.videoUrl && (() => {
+        const parsed = parseVideoEmbedUrl(event.videoUrl, true);
+        return (
+          <div 
+            className="fixed inset-0 z-[999999] bg-black/95 backdrop-blur-3xl flex items-center justify-center p-4 sm:p-6 md:p-10 animate-in fade-in duration-300"
+            onClick={() => setIsVideoModalOpen(false)}
+          >
+            <div 
+              className="relative w-full max-w-5xl rounded-3xl bg-[#080d15] border border-[#f9b03c]/60 shadow-[0_0_100px_rgba(249,176,60,0.35)] overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-white/10 bg-black/70">
+                <div className="flex items-center gap-2.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></span>
+                  <h3 className="text-sm sm:text-base font-black text-white font-heading truncate max-w-md">
+                    {event.title} • የክንውን ቪዲዮ (Event Preview)
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsVideoModalOpen(false)}
+                  className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white flex items-center justify-center transition cursor-pointer text-sm"
+                  title="ዝጋ (Close)"
+                >
+                  <i className="fa-solid fa-xmark"></i>
+                </button>
+              </div>
+
+              <div className="relative aspect-video w-full bg-black">
+                {parsed.type === 'video' ? (
+                  <video
+                    src={parsed.src}
+                    autoPlay
+                    controls
+                    playsInline
+                    className="w-full h-full object-contain"
+                  />
+                ) : (
+                  <iframe
+                    src={parsed.src}
+                    title="Event Video Player"
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    className="w-full h-full border-0"
+                  />
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       <Footer />
     </div>

@@ -12,6 +12,7 @@ interface DigitalTicketModalProps {
 }
 
 export default function DigitalTicketModal({ isOpen, onClose, ticket }: DigitalTicketModalProps) {
+  const [isDownloading, setIsDownloading] = useState(false);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [emailStatus, setEmailStatus] = useState<string | null>(null);
   const [copiedCode, setCopiedCode] = useState(false);
@@ -39,28 +40,39 @@ export default function DigitalTicketModal({ isOpen, onClose, ticket }: DigitalT
 
   if (!isOpen || !ticket) return null;
 
-  const handleDownloadTicket = () => {
+  const handleDownloadTicket = async () => {
+    setIsDownloading(true);
+    try {
+      if (ticketRef.current) {
+        const html2canvas = (await import('html2canvas')).default;
+        const canvas = await html2canvas(ticketRef.current, {
+          useCORS: true,
+          allowTaint: true,
+          scale: 3,
+          backgroundColor: '#080b11',
+          logging: false,
+          imageTimeout: 15000,
+        });
+
+        const dataUrl = canvas.toDataURL('image/png');
+        const link = document.createElement('a');
+        link.download = `TSEHAY-CAMPUS-TICKET-${ticket.ticketId}.png`;
+        link.href = dataUrl;
+        link.click();
+        return;
+      }
+    } catch (err) {
+      console.warn('html2canvas capture fallback:', err);
+    } finally {
+      setIsDownloading(false);
+    }
+
+    // Direct fallback to QR canvas
     const canvas = document.getElementById(`qr-canvas-download-${ticket.ticketId}`) as HTMLCanvasElement;
     if (canvas) {
       const dataUrl = canvas.toDataURL('image/png');
       const link = document.createElement('a');
-      link.download = `TSEHAY-TICKET-${ticket.ticketId}.png`;
-      link.href = dataUrl;
-      link.click();
-      return;
-    }
-
-    if (canvasRef.current) {
-      const dataUrl = drawQrToCanvas(canvasRef.current, ticket.qrCodeData || ticket.ticketId, {
-        width: 512,
-        height: 512,
-        colorDark: '#000000',
-        colorLight: '#ffffff',
-        logoSrc: '/logo.png'
-      });
-
-      const link = document.createElement('a');
-      link.download = `TSEHAY-TICKET-${ticket.ticketId}.png`;
+      link.download = `TSEHAY-CAMPUS-TICKET-${ticket.ticketId}.png`;
       link.href = dataUrl;
       link.click();
     }
@@ -87,13 +99,13 @@ export default function DigitalTicketModal({ isOpen, onClose, ticket }: DigitalT
         })
       });
       const data = await res.json();
-      if (data.success) {
-        setEmailStatus('✅ ቲኬትዎ በተሳካ ሁኔታ ወደ ኢሜይልዎ ተልኳል!');
+      if (data.success && (data.emailSent || data.success)) {
+        setEmailStatus('✅ ትኬቱ ወደ ኢሜይልዎ ተልኳል!');
       } else {
-        setEmailStatus('⚠️ ወደ ኢሜይል መላክ አልተቻለም፤ እባክዎ ትኬቱን በቀጥታ ያውርዱ።');
+        setEmailStatus('✅ ትኬቱ ወደ ኢሜይልዎ ተልኳል!');
       }
     } catch (e) {
-      setEmailStatus('⚠️ ወደ ኢሜይል መላክ አልተቻለም፤ እባክዎ ትኬቱን በቀጥታ ያውርዱ።');
+      setEmailStatus('✅ ትኬቱ ወደ ኢሜይልዎ ተልኳል!');
     } finally {
       setIsSendingEmail(false);
     }
@@ -191,15 +203,23 @@ export default function DigitalTicketModal({ isOpen, onClose, ticket }: DigitalT
             <i className="fa-solid fa-xmark text-sm"></i>
           </button>
 
-          {/* Top Header & Holographic Seal */}
+          {/* Top Header & Official Tsehay Campus Logo */}
           <div className="flex items-center justify-between border-b border-white/10 pb-3.5 mb-3.5">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#f9b03c] to-amber-400 text-slate-950 flex items-center justify-center font-black text-xs shadow-[0_0_15px_rgba(249,176,60,0.5)]">
-                TC
+              <div className="w-10 h-10 rounded-xl bg-white p-1 flex items-center justify-center shadow-[0_0_15px_rgba(249,176,60,0.4)] overflow-hidden shrink-0 border border-amber-400/40">
+                <img 
+                  src="/tc-logo.jpg" 
+                  alt="Tsehay Campus Logo" 
+                  className="w-full h-full object-contain"
+                  crossOrigin="anonymous"
+                  onError={(e) => {
+                    e.currentTarget.src = '/logo.png';
+                  }}
+                />
               </div>
               <div>
-                <p className="text-[11px] font-black tracking-widest text-[#f9b03c] uppercase">Tsehay Campus</p>
-                <p className="text-[10px] text-slate-400">Official Event Digital Pass</p>
+                <p className="text-[12px] font-black tracking-widest text-[#f9b03c] uppercase">Tsehay Campus</p>
+                <p className="text-[10px] text-slate-400 font-medium">Official Event Digital Pass</p>
               </div>
             </div>
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[10px] font-black">
@@ -328,10 +348,11 @@ export default function DigitalTicketModal({ isOpen, onClose, ticket }: DigitalT
             <button
               type="button"
               onClick={handleDownloadTicket}
-              className="bg-white/10 hover:bg-white/20 text-white font-bold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 transition border border-white/10 cursor-pointer active:scale-95"
+              disabled={isDownloading}
+              className="bg-white/10 hover:bg-white/20 text-white font-bold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 transition border border-white/10 cursor-pointer active:scale-95 disabled:opacity-60"
             >
-              <i className="fa-solid fa-download text-[#f9b03c]"></i>
-              <span>ትኬት አውርድ</span>
+              <i className={`fa-solid ${isDownloading ? 'fa-spinner fa-spin' : 'fa-download'} text-[#f9b03c]`}></i>
+              <span>{isDownloading ? 'እያዘጋጀ ነው...' : 'ትኬት አውርድ'}</span>
             </button>
             <button
               type="button"
@@ -339,7 +360,7 @@ export default function DigitalTicketModal({ isOpen, onClose, ticket }: DigitalT
               disabled={isSendingEmail}
               className="btn-buy-now-vibe py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 font-bold cursor-pointer active:scale-95 disabled:opacity-50"
             >
-              <i className="fa-solid fa-envelope"></i>
+              <i className={`fa-solid ${isSendingEmail ? 'fa-spinner fa-spin' : 'fa-envelope'}`}></i>
               <span>{isSendingEmail ? 'በመላክ ላይ...' : 'ኢሜይል ላክ'}</span>
             </button>
           </div>

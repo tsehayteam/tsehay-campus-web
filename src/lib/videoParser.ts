@@ -1,19 +1,38 @@
+/**
+ * Universal Video & Media Parser for Tsehay Campus
+ * Handles YouTube (Watch, Shorts, Live, Embed), Google Drive (Videos & Images),
+ * Direct Video files (.mp4, .webm, .mov), BunnyCDN, Vimeo, and Iframe embeds.
+ */
+
 export interface ParsedVideo {
   type: 'embed' | 'video';
   src: string;
+  isYouTube: boolean;
+  isGoogleDrive: boolean;
+  youtubeId?: string;
+  thumbnailUrl?: string;
 }
 
 export function extractYouTubeId(urlOrId: string): string {
   if (!urlOrId) return '';
   const trimmed = urlOrId.trim();
   if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) return trimmed;
-  const matchWatch = trimmed.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
+  const matchWatch = trimmed.match(/[?&]v=([a-zA-Z0-9_-]{11})/i);
   if (matchWatch && matchWatch[1]) return matchWatch[1];
-  const matchYoutu = trimmed.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/);
+  const matchYoutu = trimmed.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/i);
   if (matchYoutu && matchYoutu[1]) return matchYoutu[1];
-  const matchEmbed = trimmed.match(/(?:embed|shorts|live)\/([a-zA-Z0-9_-]{11})/);
+  const matchEmbed = trimmed.match(/(?:embed|shorts|live|v)\/([a-zA-Z0-9_-]{11})/i);
   if (matchEmbed && matchEmbed[1]) return matchEmbed[1];
   return '';
+}
+
+export function extractGoogleDriveId(url: string): string {
+  if (!url) return '';
+  const trimmed = url.trim();
+  const match = trimmed.match(/\/file\/d\/([a-zA-Z0-9_-]+)/i) ||
+                trimmed.match(/drive\.google\.com\/(?:open|uc)\?.*id=([a-zA-Z0-9_-]+)/i) ||
+                trimmed.match(/[?&]id=([a-zA-Z0-9_-]+)/i);
+  return match && match[1] ? match[1] : '';
 }
 
 export function parseImageUrl(rawUrl?: string): string {
@@ -21,12 +40,9 @@ export function parseImageUrl(rawUrl?: string): string {
   const trimmed = rawUrl.trim();
 
   // 1. Google Drive Links: Extract ID and use Google's direct CDN high-res image rendering
-  const gDriveMatch = trimmed.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) ||
-                      trimmed.match(/drive\.google\.com\/(?:open|uc)\?.*id=([a-zA-Z0-9_-]+)/) ||
-                      trimmed.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-  if (gDriveMatch && gDriveMatch[1]) {
-    const fileId = gDriveMatch[1];
-    return `https://lh3.googleusercontent.com/d/${fileId}`;
+  const gDriveId = extractGoogleDriveId(trimmed);
+  if (gDriveId) {
+    return `https://lh3.googleusercontent.com/d/${gDriveId}`;
   }
 
   // 2. If user pasted a YouTube video URL as thumbnail -> return Max-Res thumbnail
@@ -54,7 +70,9 @@ export function parseVideoEmbedUrl(rawUrl: string, autoplay: boolean = false): P
   if (!rawUrl || !rawUrl.trim()) {
     return {
       type: 'embed',
-      src: ''
+      src: '',
+      isYouTube: false,
+      isGoogleDrive: false
     };
   }
 
@@ -72,68 +90,61 @@ export function parseVideoEmbedUrl(rawUrl: string, autoplay: boolean = false): P
           src = src.replace(/autoplay=0/g, 'autoplay=1');
         }
       }
-      return { type: 'embed', src };
+      const ytId = extractYouTubeId(src);
+      return { 
+        type: 'embed', 
+        src, 
+        isYouTube: !!ytId, 
+        isGoogleDrive: src.includes('drive.google.com'),
+        youtubeId: ytId || undefined,
+        thumbnailUrl: ytId ? `https://img.youtube.com/vi/${ytId}/maxresdefault.jpg` : undefined
+      };
     }
   }
 
   // 2. Google Drive Video: drive.google.com/file/d/.../view
-  const gDriveVideoMatch = trimmed.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) ||
-                          trimmed.match(/drive\.google\.com\/(?:open|uc)\?.*id=([a-zA-Z0-9_-]+)/);
-  if (gDriveVideoMatch && gDriveVideoMatch[1]) {
-    const fileId = gDriveVideoMatch[1];
+  const gDriveId = extractGoogleDriveId(trimmed);
+  if (gDriveId) {
     return {
       type: 'embed',
-      src: `https://drive.google.com/file/d/${fileId}/preview${autoplay ? '?autoplay=1' : ''}`
+      src: `https://drive.google.com/file/d/${gDriveId}/preview${autoplay ? '?autoplay=1' : ''}`,
+      isYouTube: false,
+      isGoogleDrive: true,
+      thumbnailUrl: `https://lh3.googleusercontent.com/d/${gDriveId}`
     };
   }
 
-  // 3. Direct video file (mp4, webm, mov)
+  // 3. YouTube Watch, Shorts, youtu.be, Embed, or 11-char ID
+  const ytId = extractYouTubeId(trimmed);
+  if (ytId) {
+    return {
+      type: 'embed',
+      src: `https://www.youtube.com/embed/${ytId}?${ytParams}`,
+      isYouTube: true,
+      isGoogleDrive: false,
+      youtubeId: ytId,
+      thumbnailUrl: `https://img.youtube.com/vi/${ytId}/maxresdefault.jpg`
+    };
+  }
+
+  // 4. Direct video file (mp4, webm, mov, ogg)
   if (
     trimmed.endsWith('.mp4') || 
     trimmed.endsWith('.webm') || 
     trimmed.endsWith('.mov') || 
+    trimmed.endsWith('.ogg') ||
     trimmed.includes('/assets/videos/') ||
     trimmed.includes('.mp4?')
   ) {
-    return { type: 'video', src: trimmed };
-  }
-
-  // 4. YouTube Watch URL: youtube.com/watch?v=...
-  const ytWatchMatch = trimmed.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
-  if (ytWatchMatch && ytWatchMatch[1]) {
-    return {
-      type: 'embed',
-      src: `https://www.youtube.com/embed/${ytWatchMatch[1]}?${ytParams}`
+    return { 
+      type: 'video', 
+      src: trimmed, 
+      isYouTube: false, 
+      isGoogleDrive: false 
     };
   }
 
-  // 5. YouTube Short Link: youtu.be/...
-  const ytuMatch = trimmed.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/);
-  if (ytuMatch && ytuMatch[1]) {
-    return {
-      type: 'embed',
-      src: `https://www.youtube.com/embed/${ytuMatch[1]}?${ytParams}`
-    };
-  }
-
-  // 6. YouTube Embed / Shorts / Live
-  const ytEmbedMatch = trimmed.match(/(?:embed|shorts|live)\/([a-zA-Z0-9_-]{11})/);
-  if (ytEmbedMatch && ytEmbedMatch[1]) {
-    return {
-      type: 'embed',
-      src: `https://www.youtube.com/embed/${ytEmbedMatch[1]}?${ytParams}`
-    };
-  }
-
-  // 7. Direct 11-char YouTube ID
-  if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) {
-    return {
-      type: 'embed',
-      src: `https://www.youtube.com/embed/${trimmed}?${ytParams}`
-    };
-  }
-
-  // 8. General Player / Embed URL (Vimeo, BunnyCDN, Cloudflare, Custom Player)
+  // 5. General Player / Embed URL (Vimeo, BunnyCDN, Cloudflare Stream, Custom Player)
   let generalSrc = trimmed;
   if (autoplay) {
     if (!generalSrc.includes('autoplay=')) {
@@ -142,5 +153,10 @@ export function parseVideoEmbedUrl(rawUrl: string, autoplay: boolean = false): P
       generalSrc = generalSrc.replace(/autoplay=0/g, 'autoplay=1');
     }
   }
-  return { type: 'embed', src: generalSrc };
+  return { 
+    type: 'embed', 
+    src: generalSrc, 
+    isYouTube: false, 
+    isGoogleDrive: false 
+  };
 }

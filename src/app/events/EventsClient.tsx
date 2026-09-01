@@ -164,6 +164,19 @@ export default function EventsClient() {
         setGeneratedTicket(data.ticket);
         setIsPaymentModalOpen(false);
         setIsTicketModalOpen(true);
+
+        // Optimistically decrement remaining seats in local state
+        setEvents(prev => prev.map(ev => {
+          if (ev.id === event.id || ev.slug === event.slug) {
+            const curSeats = ev.remainingSeats !== undefined ? ev.remainingSeats : Math.max(0, (Number(ev.capacity) || 100) - (Number(ev.registeredCount) || 0));
+            return {
+              ...ev,
+              remainingSeats: Math.max(0, curSeats - 1),
+              registeredCount: (Number(ev.registeredCount) || 0) + 1
+            };
+          }
+          return ev;
+        }));
       } else {
         alert(data.error || 'ትኬቱን መቁረጥ አልተቻለም። እባክዎ እንደገና ይሞክሩ።');
       }

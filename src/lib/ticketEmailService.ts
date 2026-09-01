@@ -184,10 +184,11 @@ export async function sendTicketEmail(ticket: EventTicket): Promise<{ success: b
     return { success: false, error: 'RESEND_API_KEY is not configured' };
   }
 
-  // Sender candidates in order of preference
+  // Sender candidates in order of preference (prioritizing verified official domain)
   const sendersToTry = Array.from(new Set([
-    process.env.RESEND_FROM_EMAIL || 'Tsehay Campus <events@tsehaycampus.com>',
+    process.env.RESEND_FROM_EMAIL || 'Tsehay Campus <support@tsehaycampus.com>',
     'Tsehay Campus <support@tsehaycampus.com>',
+    'Tsehay Campus <events@tsehaycampus.com>',
     'Tsehay Campus <onboarding@resend.dev>',
     'Tsehay Campus <noreply@tsehaycampus.com>',
     'Tsehay Campus <tsehayoperation@gmail.com>'

@@ -3,13 +3,18 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
 import { gsap } from 'gsap';
+import { parseVideoEmbedUrl, parseImageUrl } from '@/lib/videoParser';
+import { db } from '@/lib/firebase/config';
+import { doc, onSnapshot } from 'firebase/firestore';
 
 interface Hero3DPopoutStageProps {
   videoSrc?: string;
 }
 
+const DEFAULT_LANDING_VIDEO = '/assets/for_landing_page_first.mp4';
+
 export default function Hero3DPopoutStage({
-  videoSrc = '/assets/for_landing_page_first.mp4',
+  videoSrc = DEFAULT_LANDING_VIDEO,
 }: Hero3DPopoutStageProps) {
   const { t } = useLanguage();
   const stageRef = useRef<HTMLDivElement | null>(null);
@@ -17,10 +22,89 @@ export default function Hero3DPopoutStage({
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [studentCount, setStudentCount] = useState(530);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [activeVideoUrl, setActiveVideoUrl] = useState<string>(videoSrc);
   const isInteractingRef = useRef(false);
   const rafIdRef = useRef<number | null>(null);
 
-  // 🎬 Cinematic GSAP entrance on load: Scale 0.9 -> 1 with buttery cubic-bezier
+  // 🌟 Dynamic Landing Video Fetch from Firestore / Site Settings with graceful fallback
+  useEffect(() => {
+    let isCancelled = false;
+
+    // 1. Check local cache first for zero latency
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('tsehay_landing_video_cache');
+        if (cached && cached.trim()) {
+          setActiveVideoUrl(cached.trim());
+        }
+      } catch (e) {}
+    }
+
+    // 2. Fetch from /api/admin/site-settings API
+    const fetchLandingVideo = async () => {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3500); // 3.5s fail-safe timeout
+
+        const res = await fetch('/api/admin/site-settings?settingKey=landing_video', {
+          signal: controller.signal,
+          cache: 'no-store'
+        });
+        clearTimeout(timeoutId);
+
+        if (res.ok) {
+          const json = await res.json();
+          const fetchedUrl = json?.data?.url || json?.data?.videoUrl || json?.data?.youtubeUrl;
+          if (fetchedUrl && typeof fetchedUrl === 'string' && fetchedUrl.trim() && !isCancelled) {
+            setActiveVideoUrl(fetchedUrl.trim());
+            try {
+              localStorage.setItem('tsehay_landing_video_cache', fetchedUrl.trim());
+            } catch (e) {}
+          }
+        }
+      } catch (err) {
+        // Fallback gracefully to default video
+      }
+    };
+
+    fetchLandingVideo();
+
+    // 3. Real-time Firestore Listeners
+    let unsub1: any = null;
+    let unsub2: any = null;
+    try {
+      unsub1 = onSnapshot(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'site_settings', 'landing_video'), (snap) => {
+        if (snap.exists()) {
+          const d = snap.data();
+          const url = d?.url || d?.videoUrl || d?.youtubeUrl;
+          if (url && typeof url === 'string' && url.trim() && !isCancelled) {
+            setActiveVideoUrl(url.trim());
+            try {
+              localStorage.setItem('tsehay_landing_video_cache', url.trim());
+            } catch (e) {}
+          }
+        }
+      }, () => {});
+
+      unsub2 = onSnapshot(doc(db, 'settings', 'landing_video'), (snap) => {
+        if (snap.exists()) {
+          const d = snap.data();
+          const url = d?.url || d?.videoUrl || d?.youtubeUrl;
+          if (url && typeof url === 'string' && url.trim() && !isCancelled) {
+            setActiveVideoUrl(url.trim());
+          }
+        }
+      }, () => {});
+    } catch (e) {}
+
+    return () => {
+      isCancelled = true;
+      if (unsub1) unsub1();
+      if (unsub2) unsub2();
+    };
+  }, []);
+
+  // 🎬 Cinematic GSAP entrance on load: Scale 0.9 -> 1 with cubic-bezier
   useEffect(() => {
     if (stageRef.current) {
       gsap.fromTo(
@@ -31,10 +115,15 @@ export default function Hero3DPopoutStage({
     }
   }, []);
 
-  // 🚀 Instant Video Kickstart (Ensures zero-delay video playback from first frame)
+  // Parse current active video
+  const parsedVideo = parseVideoEmbedUrl(activeVideoUrl || DEFAULT_LANDING_VIDEO, false);
+  const parsedModalVideo = parseVideoEmbedUrl(activeVideoUrl || DEFAULT_LANDING_VIDEO, true);
+  const isDirectVideo = parsedVideo.type === 'video';
+
+  // 🚀 Instant Video Kickstart for direct MP4 videos
   useEffect(() => {
     const video = videoRef.current;
-    if (video) {
+    if (video && isDirectVideo) {
       video.muted = true;
       video.defaultMuted = true;
       video.playsInline = true;
@@ -61,7 +150,7 @@ export default function Hero3DPopoutStage({
         video.addEventListener('canplay', attemptPlay, { once: true });
       }
     }
-  }, [videoSrc]);
+  }, [activeVideoUrl, isDirectVideo]);
 
   // Live student counter pulse
   useEffect(() => {
@@ -104,6 +193,13 @@ export default function Hero3DPopoutStage({
     }
   }, []);
 
+  // Thumbnail resolver for non-direct video embeds
+  const displayThumbnail = parsedVideo.thumbnailUrl || (
+    parsedVideo.youtubeId 
+      ? `https://img.youtube.com/vi/${parsedVideo.youtubeId}/maxresdefault.jpg`
+      : '/assets/hero-bg-new.jpg'
+  );
+
   return (
     <div 
       className="w-full max-w-4xl relative select-none py-6 sm:py-8"
@@ -136,23 +232,34 @@ export default function Hero3DPopoutStage({
           className="relative w-full h-[220px] sm:h-[320px] md:h-[390px] lg:h-[430px] rounded-[1.8rem] sm:rounded-[2.2rem] shadow-[0_30px_90px_rgba(0,0,0,0.85)] border-2 border-white/20 dark:border-[#f9b03c]/40 overflow-hidden bg-black/90 group"
           style={{ transform: 'translateZ(0px)' }}
         >
-          {/* Main High-Definition Video Feed with Instant Poster Preload */}
-          <video 
-            ref={videoRef}
-            id="hero-video" 
-            autoPlay 
-            loop 
-            muted 
-            playsInline 
-            preload="metadata" 
-            poster="/assets/hero-bg-new.jpg"
-            disablePictureInPicture 
-            controlsList="nodownload noremoteplayback" 
-            onContextMenu={(e) => e.preventDefault()} 
-            className="w-full h-full object-cover scale-102 group-hover:scale-105 transition-transform duration-500"
-          >
-            <source src={videoSrc} type="video/mp4" />
-          </video>
+          {/* Main High-Definition Video or High-Res Thumbnail Feed */}
+          {isDirectVideo ? (
+            <video 
+              ref={videoRef}
+              id="hero-video" 
+              autoPlay 
+              loop 
+              muted 
+              playsInline 
+              preload="metadata" 
+              poster="/assets/hero-bg-new.jpg"
+              disablePictureInPicture 
+              controlsList="nodownload noremoteplayback" 
+              onContextMenu={(e) => e.preventDefault()} 
+              className="w-full h-full object-cover scale-102 group-hover:scale-105 transition-transform duration-500"
+            >
+              <source src={parsedVideo.src} type="video/mp4" />
+            </video>
+          ) : (
+            <div className="relative w-full h-full overflow-hidden bg-black">
+              <img 
+                src={displayThumbnail} 
+                alt="Tsehay Campus Hero Preview" 
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                onError={(e) => { e.currentTarget.src = '/assets/hero-bg-new.jpg'; }}
+              />
+            </div>
+          )}
 
           {/* Dynamic 3D Specular Light Glare (Direct Ref) */}
           <div 
@@ -266,15 +373,26 @@ export default function Hero3DPopoutStage({
               </button>
             </div>
 
-            {/* Video Player */}
+            {/* Universal Video / Embed Player */}
             <div className="relative aspect-video w-full bg-black">
-              <video
-                src={videoSrc}
-                autoPlay
-                controls
-                playsInline
-                className="w-full h-full object-contain"
-              />
+              {parsedModalVideo.type === 'video' ? (
+                <video
+                  src={parsedModalVideo.src}
+                  autoPlay
+                  controls
+                  playsInline
+                  className="w-full h-full object-contain"
+                />
+              ) : (
+                <iframe
+                  src={parsedModalVideo.src}
+                  title="Landing Video Player"
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  className="w-full h-full border-0"
+                />
+              )}
             </div>
           </div>
         </div>
