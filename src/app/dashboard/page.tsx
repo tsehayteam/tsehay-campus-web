@@ -423,6 +423,7 @@ function StudentDashboardContent() {
   const [showDashboardClearAiModal, setShowDashboardClearAiModal] = useState(false);
   const [isNavDrawerExpanded, setIsNavDrawerExpanded] = useState(false);
   const [isSyllabusCollapsed, setIsSyllabusCollapsed] = useState(false);
+  const [isFocusMode, setIsFocusMode] = useState(false);
   
   // 🗑️ Tsehay AI 15-Day Recycle Bin State
   const [showAiTrashModal, setShowAiTrashModal] = useState(false);
@@ -2016,8 +2017,27 @@ function StudentDashboardContent() {
   return (
     <div className="min-h-screen bg-[#030509] text-slate-200 flex flex-col md:flex-row font-body relative overflow-x-hidden selection:bg-[#f9b03c]/30">
       
-      {/* Sidebar Navigation */}
-      <aside className="w-full md:w-24 lg:w-72 bg-[#050811]/95 backdrop-blur-2xl border-b md:border-b-0 md:border-r border-white/[0.08] flex flex-col items-center lg:items-start shadow-2xl z-20 shrink-0">
+      {/* 🌟 Floating Exit Focus Mode Button */}
+      {isFocusMode && (
+        <div className="fixed top-5 right-5 z-[9999] animate-in fade-in zoom-in-95 duration-300">
+          <button
+            type="button"
+            onClick={() => setIsFocusMode(false)}
+            className="flex items-center gap-2.5 px-5 py-2.5 rounded-full bg-[#050811]/90 hover:bg-[#050811] text-white border border-[#3268ba]/70 hover:border-[#f9b03c] shadow-[0_0_30px_rgba(50,104,186,0.6)] backdrop-blur-2xl transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer text-xs font-black"
+            title="የትኩረት ሁነታን ዝጋ (Exit Focus Mode)"
+          >
+            <div className="w-5 h-5 rounded-full bg-[#f9b03c]/20 text-[#f9b03c] flex items-center justify-center">
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 9V4.5M9 9H4.5M9 9 3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5 5.25 5.25" />
+              </svg>
+            </div>
+            <span>የትኩረት ሁነታን ዝጋ (Exit Focus Mode)</span>
+          </button>
+        </div>
+      )}
+
+      {/* Sidebar Navigation - Deep Glassmorphism (Hidden in Focus Mode) */}
+      <aside className={`${isFocusMode ? 'hidden' : 'w-full md:w-24 lg:w-72'} bg-[#030509]/95 backdrop-blur-2xl border-b md:border-b-0 md:border-r border-white/[0.08] flex flex-col items-center lg:items-start shadow-2xl z-20 shrink-0 transition-all duration-500`}>
         <div className="h-16 md:h-20 w-full flex items-center justify-between md:justify-center lg:justify-start px-4 lg:px-6 border-b border-white/[0.06]">
           <a href="/" className="flex items-center cursor-pointer group brand-entrance">
             <div className="w-8 h-8 md:w-10 md:h-10 bg-white rounded-xl mx-auto flex items-center justify-center shadow-lg p-0.5 border border-white/20 brand-logo-img">
@@ -2031,7 +2051,7 @@ function StudentDashboardContent() {
           <div className="md:hidden flex items-center gap-2">
              <button 
                onClick={() => setCurrentView('settings')}
-               className="p-1 rounded-xl bg-slate-100 dark:bg-slate-700/80 text-slate-700 dark:text-slate-200 cursor-pointer"
+               className="p-1 rounded-xl bg-white/5 text-slate-200 cursor-pointer border border-white/10"
                title="ማስተካከያ (Settings)"
              >
                <img 
@@ -2057,25 +2077,27 @@ function StudentDashboardContent() {
 
         <nav className="flex-1 overflow-x-auto md:overflow-y-auto py-2 md:py-3 px-3 space-y-1 font-body no-scrollbar w-full flex flex-row md:flex-col gap-2 md:gap-0 items-center md:items-stretch">
           
-          {/* 🌟 ULTRA-PREMIUM UNIFIED MAIN MENU DOCK (ANIMATED SECONDARY TOGGLE BUTTON) */}
-          <div className="hidden lg:block w-full mb-3">
+          {/* 🌟 ULTRA-CLEAN CONSOLIDATED SINGLE MENU BUTTON (ACCORDION SLIDE-DOWN) */}
+          <div className="w-full mb-2">
             <button
               type="button"
               onClick={() => setIsNavDrawerExpanded(prev => !prev)}
               className={`w-full flex items-center justify-between p-3 rounded-2xl transition-all duration-300 group cursor-pointer active:scale-[0.98] border ${
                 isNavDrawerExpanded
-                  ? 'bg-white/[0.04] hover:bg-white/[0.08] border-white/10 hover:border-[#f9b03c]/40 shadow-md'
-                  : 'bg-gradient-to-r from-amber-500/15 via-[#f9b03c]/10 to-transparent border-[#f9b03c]/50 hover:border-[#f9b03c] shadow-[0_0_25px_rgba(249,176,60,0.2)] hover:shadow-[0_0_30px_rgba(249,176,60,0.35)]'
+                  ? 'bg-white/[0.06] border-white/15 shadow-md'
+                  : 'bg-gradient-to-r from-[#3268ba]/20 via-[#3268ba]/10 to-transparent border-[#3268ba]/50 hover:border-[#f9b03c] shadow-[0_0_20px_rgba(50,104,186,0.25)] hover:shadow-[0_0_25px_rgba(249,176,60,0.3)]'
               }`}
-              title={isNavDrawerExpanded ? "ማውጫውን እጠፍ (Collapse Menu)" : "ማውጫውን ዘርጋ (Expand Menu)"}
+              title={isNavDrawerExpanded ? "ማውጫውን እጠፍ (Collapse Menu)" : "ማውጫውን ክፈት (Open Menu)"}
             >
               <div className="flex items-center gap-3">
                 <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs shadow-sm transition-all duration-300 ${
                   isNavDrawerExpanded
-                    ? 'bg-gradient-to-tr from-[#f9b03c]/25 via-amber-400/15 to-transparent text-[#f9b03c] border border-[#f9b03c]/40 group-hover:scale-110'
-                    : 'bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 shadow-[0_0_15px_rgba(249,176,60,0.6)] animate-pulse'
+                    ? 'bg-white/10 text-white border border-white/20'
+                    : 'bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 shadow-[0_0_15px_rgba(249,176,60,0.6)]'
                 }`}>
-                  <i className={`fa-solid ${isNavDrawerExpanded ? 'fa-compass' : 'fa-bars-staggered'}`}></i>
+                  <svg className="w-4 h-4 text-current" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                  </svg>
                 </div>
                 <div className="text-left">
                   <span className="font-heading font-black text-xs sm:text-[13px] text-white tracking-wide block leading-tight">
@@ -2093,26 +2115,20 @@ function StudentDashboardContent() {
               </div>
 
               <div className="flex items-center gap-1.5">
-                {isNavDrawerExpanded ? (
-                  <span className="text-[10px] font-black text-white bg-slate-800/90 border border-white/20 hover:border-[#f9b03c]/60 px-3 py-1 rounded-full shadow-sm flex items-center gap-1.5 transition-all">
-                    <i className="fa-solid fa-chevron-up text-[9px] transition-transform group-hover:-translate-y-0.5"></i>
-                    <span>እጠፍ</span>
-                  </span>
-                ) : (
-                  <span className="text-[10px] font-black text-slate-950 bg-gradient-to-r from-[#f9b03c] via-amber-300 to-yellow-200 px-3 py-1 rounded-full shadow-[0_0_15px_rgba(249,176,60,0.6)] flex items-center gap-1.5 transition-all group-hover:scale-105 animate-pulse">
-                    <i className="fa-solid fa-chevron-down text-[9px] transition-transform group-hover:translate-y-0.5"></i>
-                    <span>✨ ዘርጋ</span>
-                  </span>
-                )}
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-slate-300 transition-transform duration-300 ${isNavDrawerExpanded ? 'rotate-180 text-[#f9b03c]' : 'rotate-0'}`}>
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                  </svg>
+                </div>
               </div>
             </button>
           </div>
 
-          {/* 🌟 UNIFIED ACCORDION ITEMS CONTAINER (SMOOTH EXPAND / COLLAPSE) */}
-          <div className={`space-y-1.5 w-full transition-all duration-300 flex flex-row md:flex-col gap-2 md:gap-1.5 items-center md:items-stretch overflow-hidden ${
+          {/* 🌟 SMOOTH SLIDE-DOWN ACCORDION MENU CONTAINER (translateY + max-height) */}
+          <div className={`space-y-1.5 w-full transition-all duration-500 ease-in-out flex flex-row md:flex-col gap-1.5 items-center md:items-stretch overflow-hidden ${
             isNavDrawerExpanded 
-              ? 'max-h-[600px] opacity-100 py-0.5' 
-              : 'max-h-0 lg:max-h-0 opacity-0 pointer-events-none lg:pointer-events-none'
+              ? 'max-h-[600px] opacity-100 transform translate-y-0 py-1' 
+              : 'max-h-0 lg:max-h-0 opacity-0 transform -translate-y-2 pointer-events-none lg:pointer-events-none'
           }`}>
 
             {/* 1. Classroom (መማሪያ ክፍል) */}
@@ -2130,14 +2146,18 @@ function StudentDashboardContent() {
                     ? 'bg-white/20 text-white shadow-inner'
                     : 'bg-white/[0.08] text-white group-hover:bg-[#3268ba]/20 group-hover:text-[#5a93e8]'
                 }`}>
-                  <i className="fa-solid fa-graduation-cap text-xs"></i>
+                  <svg className="w-4 h-4 text-current" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.26 10.147a60.438 60.438 0 0 0-.491 6.347A48.62 48.62 0 0 1 12 20.904a48.62 48.62 0 0 1 8.232-4.41 60.46 60.46 0 0 0-.491-6.347m-15.482 0a50.636 50.636 0 0 0-2.658-.813A59.906 59.906 0 0 1 12 3.493a59.903 59.903 0 0 1 10.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.717 50.717 0 0 1 12 13.489a50.702 50.702 0 0 1 7.74-3.342M6.75 15a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v-3.675A55.378 55.378 0 0 1 12 8.443m-5.25 6.557q0 .178.026.353" />
+                  </svg>
                 </span>
                 <span className="whitespace-nowrap md:whitespace-normal md:hidden lg:block font-black text-sm tracking-tight drop-shadow-xs">
                   {t('classroom')}
                 </span>
               </div>
               {currentView === 'classroom' && (
-                <i className="hidden lg:block fa-solid fa-chevron-right text-xs text-white/80 animate-in fade-in slide-in-from-left-1 duration-200"></i>
+                <svg className="hidden lg:block w-3.5 h-3.5 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                </svg>
               )}
             </button>
             
@@ -2156,14 +2176,18 @@ function StudentDashboardContent() {
                     ? 'bg-white/20 text-white shadow-inner'
                     : 'bg-white/[0.08] text-white group-hover:bg-[#3268ba]/20 group-hover:text-[#5a93e8]'
                 }`}>
-                  <i className="fa-solid fa-book-bookmark text-xs"></i>
+                  <svg className="w-4 h-4 text-current" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
+                  </svg>
                 </span>
                 <span className="whitespace-nowrap md:whitespace-normal md:hidden lg:block font-black text-sm tracking-tight drop-shadow-xs">
                   {t('my_courses')}
                 </span>
               </div>
               {currentView === 'courses' && (
-                <i className="hidden lg:block fa-solid fa-chevron-right text-xs text-white/80 animate-in fade-in slide-in-from-left-1 duration-200"></i>
+                <svg className="hidden lg:block w-3.5 h-3.5 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                </svg>
               )}
             </button>
 
@@ -2182,14 +2206,18 @@ function StudentDashboardContent() {
                     ? 'bg-white/20 text-white shadow-inner'
                     : 'bg-white/[0.08] text-white group-hover:bg-[#3268ba]/20 group-hover:text-[#5a93e8]'
                 }`}>
-                  <i className="fa-solid fa-headset text-xs"></i>
+                  <svg className="w-4 h-4 text-current" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a6 6 0 0 0 6-6v-1.5m-6 7.5a6 6 0 0 1-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 1.5a9 9 0 0 0-9 9v3.75a3 3 0 0 0 3 3h1.5a1.5 1.5 0 0 0 1.5-1.5v-4.5a1.5 1.5 0 0 0-1.5-1.5H4.5v-1.25a7.5 7.5 0 0 1 15 0v1.25h-2.25a1.5 1.5 0 0 0-1.5 1.5v4.5a1.5 1.5 0 0 0 1.5 1.5H19.5a3 3 0 0 0 3-3V10.5a9 9 0 0 0-9-9Z" />
+                  </svg>
                 </span>
                 <span className="whitespace-nowrap md:whitespace-normal md:hidden lg:block font-black text-sm tracking-tight drop-shadow-xs">
                   {t('messages')}
                 </span>
               </div>
               {currentView === 'messages' && (
-                <i className="hidden lg:block fa-solid fa-chevron-right text-xs text-white/80 animate-in fade-in slide-in-from-left-1 duration-200"></i>
+                <svg className="hidden lg:block w-3.5 h-3.5 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                </svg>
               )}
             </button>
 
@@ -2200,7 +2228,9 @@ function StudentDashboardContent() {
             >
               <div className="flex items-center gap-3">
                 <span className="w-8 h-8 rounded-xl flex items-center justify-center bg-white/[0.08] text-white group-hover:bg-[#f9b03c]/20 group-hover:text-[#f9b03c] transition-all">
-                  <i className="fa-solid fa-users text-xs"></i>
+                  <svg className="w-4 h-4 text-current" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
+                  </svg>
                 </span>
                 <span className="whitespace-nowrap md:whitespace-normal md:hidden lg:block font-black text-sm tracking-tight">
                   ማህበረሰብ (Community)
@@ -2208,7 +2238,7 @@ function StudentDashboardContent() {
               </div>
             </a>
 
-            {/* 4. Tsehay AI Tutor - Elevated Spotlight Gold Brand Item */}
+            {/* 4. Tsehay AI Tutor */}
             <button 
               onClick={() => setCurrentView('ai')} 
               className={`flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-auto md:w-full text-left text-sm cursor-pointer ${
@@ -2224,10 +2254,11 @@ function StudentDashboardContent() {
                       ? 'bg-slate-950 text-[#f9b03c] shadow-inner'
                       : 'bg-[#f9b03c]/20 text-[#f9b03c] border border-[#f9b03c]/40 group-hover:bg-[#f9b03c] group-hover:text-slate-950'
                   }`}>
-                    <i className="fa-solid fa-robot text-sm"></i>
+                    <svg className="w-4 h-4 text-current" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 0 0-2.456 2.456ZM16.894 20.567 16.5 21.75l-.394-1.183a2.25 2.25 0 0 0-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 0 0 1.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 0 0 1.423 1.423l1.183.394-1.183.394a2.25 2.25 0 0 0-1.423 1.423Z" />
+                    </svg>
                   </span>
-                  {/* Clean Steady Gold Glow Status Dot */}
-                  <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-[#f9b03c] border-2 border-white dark:border-slate-900 rounded-full shadow-[0_0_8px_#f9b03c]"></span>
+                  <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-[#f9b03c] border-2 border-slate-900 rounded-full shadow-[0_0_8px_#f9b03c]"></span>
                 </div>
                 <div className="flex flex-col">
                   <span className="whitespace-nowrap md:whitespace-normal md:hidden lg:block font-heading font-black text-sm tracking-tight drop-shadow-xs">
@@ -2252,18 +2283,22 @@ function StudentDashboardContent() {
                     ? 'bg-white/20 text-white shadow-inner'
                     : 'bg-white/[0.08] text-white group-hover:bg-[#3268ba]/20 group-hover:text-[#5a93e8]'
                 }`}>
-                  <i className="fa-solid fa-award text-sm"></i>
+                  <svg className="w-4 h-4 text-current" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 0 1 3 3h-15a3 3 0 0 1 3-3m9 0v-3.375c0-.621-.504-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.003 0H9.497m5.003 0a3 3 0 0 0 2.875-2.12l1.125-4.5A3 3 0 0 0 15.625 4.5h-7.25a3 3 0 0 0-2.875 3.38l1.125 4.5a3 3 0 0 0 2.875 2.12Z" />
+                  </svg>
                 </span>
                 <span className="whitespace-nowrap md:whitespace-normal md:hidden lg:block font-black text-sm tracking-tight drop-shadow-xs">
                   {t('certificates')}
                 </span>
               </div>
               {currentView === 'certificates' && (
-                <i className="hidden lg:block fa-solid fa-chevron-right text-xs text-white/80 animate-in fade-in slide-in-from-left-1 duration-200"></i>
+                <svg className="hidden lg:block w-3.5 h-3.5 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                </svg>
               )}
             </button>
 
-            {/* 6. Refer a Friend (ጓደኛዎን ይጋብዙ - Tsehay Campus Growth Program) */}
+            {/* 6. Refer a Friend */}
             <button 
               onClick={() => setCurrentView('referrals')} 
               className={`flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-auto md:w-full text-left text-sm cursor-pointer ${
@@ -2278,18 +2313,22 @@ function StudentDashboardContent() {
                     ? 'bg-slate-950 text-[#f9b03c] shadow-inner'
                     : 'bg-[#f9b03c]/20 text-[#f9b03c]'
                 }`}>
-                  <i className="fa-solid fa-gift text-sm"></i>
+                  <svg className="w-4 h-4 text-current" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 11.25v8.25a1.5 1.5 0 0 1-1.5 1.5H4.5a1.5 1.5 0 0 1-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 1 0 9.375 7.5H12m0-2.625V7.5m0-2.625A2.625 2.625 0 1 1 14.625 7.5H12m0 0V21m-8.625-9.75h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z" />
+                  </svg>
                 </span>
                 <span className="whitespace-nowrap md:whitespace-normal md:hidden lg:block font-black text-sm tracking-tight drop-shadow-xs">
                   ጓደኛዎን ይጋብዙ
                 </span>
               </div>
               {currentView === 'referrals' && (
-                <i className="hidden lg:block fa-solid fa-chevron-right text-xs text-slate-950 animate-in fade-in slide-in-from-left-1 duration-200"></i>
+                <svg className="hidden lg:block w-3.5 h-3.5 text-slate-950" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                </svg>
               )}
             </button>
             
-            {/* 7. Settings (መገለጫ እና ማስተካከያ) */}
+            {/* 7. Settings */}
             <button 
               onClick={() => setCurrentView('settings')} 
               className={`flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-auto md:w-full text-left text-sm cursor-pointer ${
@@ -2304,47 +2343,51 @@ function StudentDashboardContent() {
                     ? 'bg-white/20 text-white shadow-inner'
                     : 'bg-white/[0.08] text-white group-hover:bg-[#3268ba]/20 group-hover:text-[#5a93e8]'
                 }`}>
-                  <i className="fa-solid fa-sliders text-sm"></i>
+                  <svg className="w-4 h-4 text-current" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" />
+                  </svg>
                 </span>
                 <span className="whitespace-nowrap md:whitespace-normal md:hidden lg:block font-black text-sm tracking-tight drop-shadow-xs">
                   {t('settings')}
                 </span>
               </div>
               {currentView === 'settings' && (
-                <i className="hidden lg:block fa-solid fa-chevron-right text-xs text-white/80 animate-in fade-in slide-in-from-left-1 duration-200"></i>
+                <svg className="hidden lg:block w-3.5 h-3.5 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                </svg>
               )}
             </button>
           </div>
         </nav>
 
-        <div className="hidden md:block p-4 w-full border-t border-slate-100 dark:border-slate-700">
+        <div className="hidden md:block p-4 w-full border-t border-white/[0.06]">
           <div 
             onClick={() => setCurrentView('settings')}
-            className="flex items-center justify-center lg:justify-start gap-3 p-2 mb-2 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-700/50 transition cursor-pointer group"
+            className="flex items-center justify-center lg:justify-start gap-3 p-2 mb-2 rounded-2xl hover:bg-white/[0.06] transition cursor-pointer group"
             title="መገለጫዎን ለማስተካከል ይጫኑ"
           >
             <div className="relative shrink-0">
               <img 
                 src={studentPhotoUrl} 
-                className="w-10 h-10 rounded-full object-cover shadow-sm ring-2 ring-primary/40 group-hover:ring-primary transition" 
+                className="w-10 h-10 rounded-full object-cover shadow-sm ring-2 ring-[#3268ba]/40 group-hover:ring-[#f9b03c] transition" 
                 alt={studentDisplayName}
                 onError={(e) => {
                   (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(studentDisplayName)}&background=f9b03c&color=111827&bold=true`;
                 }}
               />
-              <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-white dark:ring-slate-800"></span>
+              <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-[#030509]"></span>
             </div>
             <div className="hidden lg:block overflow-hidden">
-              <p className="text-sm font-bold text-slate-800 dark:text-white leading-tight truncate group-hover:text-primary transition">
+              <p className="text-sm font-bold text-white leading-tight truncate group-hover:text-[#f9b03c] transition">
                 {studentDisplayName}
               </p>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              <p className="text-[11px] text-slate-400">
                 {courses.some(c => {
                   const isFree = c.isFree === true || c.price === 'Free' || c.price === '0' || c.price === 0 || Number(c.price) === 0;
                   return !isFree;
                 }) ? (
-                  <span className="text-amber-600 dark:text-primary font-bold flex items-center gap-1">
-                    <i className="fa-solid fa-crown text-[10px]"></i> {t('pro_member')}
+                  <span className="text-[#f9b03c] font-bold flex items-center gap-1">
+                    👑 {t('pro_member')}
                   </span>
                 ) : 'Free Member'}
               </p>
@@ -2353,13 +2396,15 @@ function StudentDashboardContent() {
           <button 
             onClick={handleLogout}
             disabled={isLoggingOut}
-            className="w-full flex items-center justify-center lg:justify-center gap-2 p-2.5 rounded-xl text-red-500 hover:text-white border border-red-500/20 hover:bg-red-500 font-bold transition duration-200 text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed group shadow-xs active:scale-95"
+            className="w-full flex items-center justify-center lg:justify-center gap-2 p-2.5 rounded-xl text-red-400 hover:text-white border border-red-500/20 hover:bg-red-500 font-bold transition duration-200 text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed group shadow-xs active:scale-95"
             title="ከአካውንትዎ ይውጡ (Sign Out)"
           >
              {isLoggingOut ? (
                <i className="fa-solid fa-spinner fa-spin"></i>
              ) : (
-               <i className="fa-solid fa-arrow-right-from-bracket group-hover:-translate-x-0.5 transition-transform"></i>
+               <svg className="w-4 h-4 text-current" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
+               </svg>
              )}
              <span className="hidden lg:block">{isLoggingOut ? (t('logging_out') || 'በመውጣት ላይ...') : (t('logout') || 'ውጣ (Logout)')}</span>
           </button>
@@ -2368,58 +2413,35 @@ function StudentDashboardContent() {
 
       {/* Main Content Wrapper */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Dashboard Header with Curtain Trigger & Focus Mode */}
-        <header className="h-[72px] bg-[#050811]/90 backdrop-blur-md border-b border-white/10 flex items-center justify-between px-4 sm:px-6 lg:px-8 z-20 shrink-0">
+        {/* Dashboard Header - Minimalist, Uncluttered (Hidden in Focus Mode) */}
+        <header className={`${isFocusMode ? 'hidden' : 'h-[72px]'} bg-[#050811]/90 backdrop-blur-md border-b border-white/10 flex items-center justify-between px-4 sm:px-6 lg:px-8 z-20 shrink-0 transition-all duration-300`}>
             <div className="flex items-center gap-3 sm:gap-4">
-                {/* Top-Left Curtain Navigation Trigger */}
-                <button
-                  type="button"
-                  onClick={() => setIsNavDrawerExpanded(prev => !prev)}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/15 via-[#f9b03c]/10 to-transparent border border-[#f9b03c]/40 hover:border-[#f9b03c] text-white transition-all shadow-[0_0_15px_rgba(249,176,60,0.15)] cursor-pointer active:scale-95"
-                  title="ዋና ማውጫ (Curtain Menu)"
-                >
-                  <div className="w-6 h-6 rounded-lg bg-[#f9b03c] text-slate-950 flex items-center justify-center text-xs font-black">
-                    <i className={`fa-solid ${isNavDrawerExpanded ? 'fa-xmark' : 'fa-bars'}`}></i>
-                  </div>
-                  <span className="text-xs font-black hidden sm:inline text-white">
-                    ማውጫ (Menu)
-                  </span>
-                </button>
-
-                <nav className="hidden md:flex text-sm font-semibold text-gray-400 items-center gap-2 font-body">
+                <nav className="flex text-sm font-semibold text-gray-400 items-center gap-2 font-body">
                     <span onClick={() => setCurrentView('courses')} className="hover:text-[#f9b03c] transition cursor-pointer">{t('courses')}</span>
-                    <i className="fa-solid fa-chevron-right text-[10px] text-gray-600"></i>
+                    <svg className="w-3 h-3 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                    </svg>
                     <span onClick={() => setCurrentView('courses')} className="hover:text-[#f9b03c] transition cursor-pointer">{t('my_courses')}</span>
-                    <i className="fa-solid fa-chevron-right text-[10px] text-gray-600"></i>
-                    <span className="text-white font-bold truncate max-w-[200px]">{activeCourse ? activeCourse.title : t('loading')}</span>
+                    <svg className="w-3 h-3 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                    </svg>
+                    <span className="text-white font-bold truncate max-w-[160px] sm:max-w-[280px]">{activeCourse ? activeCourse.title : t('loading')}</span>
                 </nav>
             </div>
-            <div className="flex items-center gap-2.5 sm:gap-4 shrink-0 relative">
+            
+            <div className="flex items-center gap-2.5 sm:gap-3.5 shrink-0 relative">
                 
-                {/* 🌟 Prominent High-Contrast Focus Mode Button in Header */}
-                <button
-                    type="button"
-                    onClick={() => setIsSyllabusCollapsed(prev => !prev)}
-                    className={`px-3 sm:px-4 py-1.5 rounded-xl font-heading text-xs font-black transition-all duration-300 flex items-center gap-2 cursor-pointer active:scale-95 border shadow-md ${
-                      isSyllabusCollapsed
-                        ? 'bg-gradient-to-r from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 border-amber-300/80 shadow-[0_0_20px_rgba(249,176,60,0.45)]'
-                        : 'bg-white/[0.08] hover:bg-[#f9b03c]/20 text-white hover:text-[#f9b03c] border-white/15 hover:border-[#f9b03c]/60'
-                    }`}
-                    title={isSyllabusCollapsed ? "የኮርስ ይዘት ዘርጋ (Exit Focus Mode)" : "የትኩረት ሁነታ (Focus Mode)"}
-                >
-                    <i className={`fa-solid ${isSyllabusCollapsed ? 'fa-compress text-slate-950' : 'fa-expand text-[#f9b03c]'} text-xs`}></i>
-                    <span className="hidden sm:inline">{isSyllabusCollapsed ? 'ይዘት ዘርጋ' : 'የትኩረት ሁነታ (Focus Mode)'}</span>
-                    <span className="sm:hidden">{isSyllabusCollapsed ? 'ዘርጋ' : 'የትኩረት'}</span>
-                </button>
-
+                {/* 🌟 Unified Points Counter Badge */}
                 <div 
-                  className="hidden sm:flex items-center gap-2 bg-gradient-to-r from-amber-500/20 to-yellow-500/10 border border-[#f9b03c]/40 px-3.5 py-1.5 rounded-full shadow-sm cursor-help hover:scale-105 transition" 
+                  className="flex items-center gap-2 bg-gradient-to-r from-amber-500/20 to-yellow-500/10 border border-[#f9b03c]/40 px-3 sm:px-4 py-1.5 rounded-full shadow-[0_0_15px_rgba(249,176,60,0.15)] cursor-help hover:scale-105 transition" 
                   title="የተከማቹ ፖይንቶች ከመቶ (Earned Points out of 100)"
                 >
-                    <div className="w-5 h-5 rounded-full bg-[#f9b03c]/20 flex items-center justify-center text-[#f9b03c] text-xs">
-                        <i className="fa-solid fa-bolt"></i>
+                    <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-[#f9b03c]/20 flex items-center justify-center text-[#f9b03c]">
+                      <svg className="w-3.5 h-3.5 text-[#f9b03c]" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+                      </svg>
                     </div>
-                    <span className="font-black text-dark dark:text-white text-sm font-heading">
+                    <span className="font-black text-white text-xs sm:text-sm font-heading">
                       {(() => {
                         const totalCoursesCount = courses && courses.length > 0 ? courses.length : 1;
                         const pointsPerCourse = 100 / totalCoursesCount;
@@ -2450,15 +2472,17 @@ function StudentDashboardContent() {
                     </span>
                 </div>
 
-                {/* Dynamic Notifications Bell with Active Badge */}
+                {/* Notifications Bell Icon Next to Points */}
                 <div className="relative">
                   <button 
                     onClick={() => setShowNotifications(!showNotifications)} 
-                    className="relative text-gray-400 hover:text-[#f9b03c] transition text-xl shrink-0 p-2 rounded-2xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10"
+                    className="relative text-gray-300 hover:text-[#f9b03c] transition shrink-0 p-2 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 shadow-sm cursor-pointer active:scale-95"
                     title="ማሳወቂያዎች (Notifications)"
                   >
-                      <i className="fa-regular fa-bell text-sm sm:text-base"></i>
-                      <span className="absolute -top-1 -right-1 bg-gradient-to-r from-red-600 to-rose-500 text-white font-black text-[9px] px-1.5 py-0.5 rounded-full ring-2 ring-[#050811] shadow-md animate-pulse">
+                      <svg className="w-4 h-4 text-current" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
+                      </svg>
+                      <span className="absolute -top-1 -right-1 bg-gradient-to-r from-red-600 to-rose-500 text-white font-black text-[9px] px-1.5 py-0.2 rounded-full ring-2 ring-[#050811] shadow-md animate-pulse">
                         10+
                       </span>
                   </button>
@@ -2472,14 +2496,16 @@ function StudentDashboardContent() {
                       />
 
                       {/* Clean Modern Notification Card */}
-                      <div className="absolute top-12 right-0 w-80 sm:w-88 bg-white dark:bg-[#0c121e] border border-gray-100 dark:border-slate-800 shadow-2xl rounded-2xl p-4 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                      <div className="absolute top-12 right-0 w-80 sm:w-88 bg-[#0c121e] border border-slate-800 shadow-2xl rounded-2xl p-4 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
                          {/* Header */}
-                         <div className="flex items-center justify-between border-b border-gray-100 dark:border-slate-800 pb-3 mb-3">
+                         <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-3">
                            <div className="flex items-center gap-2">
                              <div className="w-7 h-7 rounded-lg bg-[#f9b03c]/15 text-[#f9b03c] flex items-center justify-center text-xs">
-                               <i className="fa-solid fa-bell"></i>
+                               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                 <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
+                               </svg>
                              </div>
-                             <h4 className="text-sm font-black text-dark dark:text-white font-heading">ማሳወቂያዎች</h4>
+                             <h4 className="text-sm font-black text-white font-heading">ማሳወቂያዎች</h4>
                              {notificationsList.filter(n => !n.read).length > 0 && (
                                <span className="text-[10px] font-bold bg-[#f9b03c]/20 text-[#f9b03c] px-2 py-0.5 rounded-full">
                                  {notificationsList.filter(n => !n.read).length} አዲስ
@@ -2488,7 +2514,7 @@ function StudentDashboardContent() {
                            </div>
                            <button 
                              onClick={handleMarkAllNotificationsRead} 
-                             className="text-xs font-bold text-gray-400 hover:text-[#f9b03c] dark:hover:text-[#f9b03c] transition cursor-pointer"
+                             className="text-xs font-bold text-gray-400 hover:text-[#f9b03c] transition cursor-pointer"
                            >
                              ሁሉንም አንብብ
                            </button>
@@ -2498,7 +2524,6 @@ function StudentDashboardContent() {
                          <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
                             {notificationsList.length === 0 ? (
                               <div className="text-center py-6 text-gray-400 text-xs">
-                                <i className="fa-regular fa-bell-slash text-2xl mb-2 block opacity-40"></i>
                                 ምንም ማሳወቂያ የለም
                               </div>
                             ) : (
@@ -2507,19 +2532,21 @@ function StudentDashboardContent() {
                                   key={n.id} 
                                   className={`flex items-start gap-3 p-3 rounded-xl transition-all ${
                                     n.read 
-                                      ? 'bg-transparent hover:bg-gray-50 dark:hover:bg-slate-800/50 opacity-70' 
-                                      : 'bg-amber-500/10 dark:bg-amber-500/10 border border-amber-500/20'
+                                      ? 'bg-transparent hover:bg-slate-800/50 opacity-70' 
+                                      : 'bg-amber-500/10 border border-amber-500/20'
                                   }`}
                                 >
                                     <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#f9b03c] to-amber-400 text-slate-950 flex items-center justify-center shrink-0 mt-0.5 shadow-sm text-xs">
-                                      <i className="fa-solid fa-bullhorn"></i>
+                                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M10.34 15.84c-.688-.06-1.386-.09-2.09-.09H7.5a4.5 4.5 0 1 1 0-9h.75c.704 0 1.402-.03 2.09-.09m0 9.18c.253.962.584 1.892.985 2.783.247.55.06 1.21-.463 1.511l-.657.38c-.551.318-1.26.117-1.527-.455a28.047 28.047 0 0 1-1.38-3.419m3.042-.799c.306-.03.612-.063.918-.1M10.34 6.66c.253-.962.584-1.892.985-2.783.247-.55.06-1.21-.463-1.511l-.657-.38c-.551-.318-1.26-.117-1.527.455a28.047 28.047 0 0 0-1.38 3.419m3.042.799c.306.03.612.063.918.1m0 0a25.55 25.55 0 0 1 5.316.634 3.75 3.75 0 0 1 2.934 3.666v1.44a3.75 3.75 0 0 1-2.934 3.666 25.545 25.545 0 0 1-5.316.634" />
+                                      </svg>
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center justify-between gap-1">
-                                          <p className="text-xs font-bold text-dark dark:text-white truncate">{n.title}</p>
-                                          <span className="text-[10px] text-gray-400 dark:text-gray-500 whitespace-nowrap">{n.createdAt}</span>
+                                          <p className="text-xs font-bold text-white truncate">{n.title}</p>
+                                          <span className="text-[10px] text-gray-400 whitespace-nowrap">{n.createdAt}</span>
                                         </div>
-                                        <p className="text-xs text-gray-600 dark:text-gray-300 font-body leading-relaxed mt-0.5">{n.message}</p>
+                                        <p className="text-xs text-gray-300 font-body leading-relaxed mt-0.5">{n.message}</p>
                                     </div>
                                 </div>
                               ))
@@ -2547,37 +2574,50 @@ function StudentDashboardContent() {
           <div className="max-w-[1600px] mx-auto">
             <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl sm:text-3xl font-black font-heading text-dark dark:text-white mb-2">{activeCourse?.title || t('course_loading')}</h1>
-                    <p className="text-gray-500 dark:text-gray-400 font-body text-sm">{activeCourse?.category || 'Tsehay Campus Course'}</p>
+                    <h1 className="text-2xl sm:text-3xl font-black font-heading text-white mb-1.5">{activeCourse?.title || t('course_loading')}</h1>
+                    <p className="text-slate-400 font-body text-sm">{activeCourse?.category || 'Tsehay Campus Course'}</p>
                 </div>
 
-                {/* 🌟 Dedicated Cinema Mode / Syllabus Toggle with Animated Secondary Color */}
-                <div className="hidden lg:flex items-center gap-3">
+                {/* 🌟 Prominent "የትኩረት ሁኔታ" (Focus Mode) Action Button */}
+                <div className="flex items-center gap-3">
                     <button
                         type="button"
-                        onClick={() => setIsSyllabusCollapsed(prev => !prev)}
-                        className={`px-4 py-2 rounded-xl font-heading text-xs font-black transition-all duration-300 flex items-center gap-2 cursor-pointer active:scale-95 border shadow-md ${
-                          isSyllabusCollapsed
-                            ? 'bg-gradient-to-r from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 border-amber-300/80 shadow-[0_0_20px_rgba(249,176,60,0.45)]'
-                            : 'bg-white/[0.06] hover:bg-[#f9b03c]/15 text-white hover:text-[#f9b03c] border-white/10 hover:border-[#f9b03c]/50'
+                        onClick={() => {
+                          setIsFocusMode(prev => !prev);
+                          setIsSyllabusCollapsed(true);
+                        }}
+                        className={`px-4 sm:px-5 py-2.5 rounded-2xl font-heading text-xs sm:text-sm font-black transition-all duration-300 flex items-center gap-2.5 cursor-pointer active:scale-95 border backdrop-blur-xl ${
+                          isFocusMode
+                            ? 'bg-gradient-to-r from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 border-amber-300/80 shadow-[0_0_30px_rgba(249,176,60,0.6)] scale-105'
+                            : 'bg-[#3268ba]/20 hover:bg-[#3268ba]/30 text-blue-200 hover:text-white border-[#3268ba]/50 hover:border-[#3268ba] shadow-[0_0_25px_rgba(50,104,186,0.35)]'
                         }`}
-                        title={isSyllabusCollapsed ? "የኮርስ ይዘት ዘርጋ (Show Playlist)" : "🎬 ፎከስ ሞድ (Focus Mode)"}
+                        title={isFocusMode ? "የትኩረት ሁነታን ዝጋ (Exit Focus Mode)" : "የትኩረት ሁኔታ (Distraction-Free Focus Mode)"}
                     >
-                        <i className={`fa-solid ${isSyllabusCollapsed ? 'fa-list-check text-slate-950' : 'fa-expand text-[#f9b03c]'} text-xs`}></i>
-                        <span>{isSyllabusCollapsed ? '📚 የኮርስ ይዘት ዘርጋ' : '🎬 ፎከስ ሞድ (Focus Mode)'}</span>
+                        <div className="w-4 h-4 flex items-center justify-center">
+                          {isFocusMode ? (
+                            <svg className="w-4 h-4 text-slate-950" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M9 9V4.5M9 9H4.5M9 9 3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5 5.25 5.25" />
+                            </svg>
+                          ) : (
+                            <svg className="w-4 h-4 text-[#5a93e8]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
+                            </svg>
+                          )}
+                        </div>
+                        <span>{isFocusMode ? 'የትኩረት ሁነታ ✓ (Exit Focus)' : 'የትኩረት ሁኔታ (Focus Mode)'}</span>
                     </button>
                 </div>
             </div>
 
             <div className={`grid grid-cols-1 gap-6 lg:gap-8 transition-all duration-500 ${
-              isSyllabusCollapsed 
-                ? 'grid-cols-1' 
+              (isFocusMode || isSyllabusCollapsed) 
+                ? 'grid-cols-1 max-w-7xl mx-auto' 
                 : 'lg:grid-cols-3 xl:grid-cols-4'
             }`}>
                 
                 {/* Left Side: Video & Tabs */}
                 <div className={`flex flex-col gap-6 transition-all duration-500 ${
-                  isSyllabusCollapsed 
+                  (isFocusMode || isSyllabusCollapsed) 
                     ? 'w-full col-span-1' 
                     : 'lg:col-span-2 xl:col-span-3'
                 }`}>
@@ -2801,17 +2841,22 @@ function StudentDashboardContent() {
 
                                     <button 
                                         type="button"
-                                        onClick={() => setIsSyllabusCollapsed(prev => !prev)}
+                                        onClick={() => {
+                                          setIsFocusMode(prev => !prev);
+                                          setIsSyllabusCollapsed(true);
+                                        }}
                                         className={`px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl text-xs font-black transition-all duration-300 flex items-center gap-2 cursor-pointer border active:scale-95 shadow-md ${
-                                            isSyllabusCollapsed
+                                            isFocusMode
                                                 ? 'bg-gradient-to-r from-[#f9b03c] via-amber-400 to-yellow-400 text-slate-950 border-[#f9b03c] shadow-[0_0_20px_rgba(249,176,60,0.5)] scale-105'
-                                                : 'bg-slate-800/90 hover:bg-slate-700 text-slate-200 hover:text-white border-slate-600/80 hover:border-[#f9b03c]/60'
+                                                : 'bg-[#3268ba]/20 hover:bg-[#3268ba]/30 text-blue-200 hover:text-white border-[#3268ba]/50 hover:border-[#3268ba] shadow-[0_0_15px_rgba(50,104,186,0.3)]'
                                         }`}
-                                        title={isSyllabusCollapsed ? "የትኩረት ሁነታን ዝጋ (Exit Focus Mode)" : "የትኩረት ሁነታን ክፈት (Enter Focus Mode)"}
+                                        title={isFocusMode ? "የትኩረት ሁነታን ዝጋ (Exit Focus Mode)" : "የትኩረት ሁኔታ (Enter Focus Mode)"}
                                     >
-                                        <i className={`fa-solid ${isSyllabusCollapsed ? 'fa-compress text-slate-950' : 'fa-expand text-[#f9b03c]'} text-xs`}></i>
+                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2">
+                                          <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
+                                        </svg>
                                         <span className="font-extrabold tracking-tight">
-                                            {isSyllabusCollapsed ? (lang === 'am' ? 'የትኩረት ሁነታ ✓' : 'Focus Mode ✓') : (lang === 'am' ? 'የትኩረት ሁነታ (Focus)' : 'Focus Mode')}
+                                            {isFocusMode ? (lang === 'am' ? 'የትኩረት ሁኔታ ✓' : 'Focus Mode ✓') : (lang === 'am' ? 'የትኩረት ሁኔታ' : 'Focus Mode')}
                                         </span>
                                     </button>
 
@@ -3625,7 +3670,7 @@ function StudentDashboardContent() {
                 </div>
 
                 {/* Right Side: Curriculum/Course Content (Desktop Only, Collapsible Focus Mode) */}
-                {!isSyllabusCollapsed && (
+                {!isFocusMode && !isSyllabusCollapsed && (
                   <div className="hidden lg:block lg:col-span-1 xl:col-span-1 animate-in fade-in slide-in-from-right-4 duration-300">
                     <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-200 dark:border-slate-700 flex flex-col h-full lg:h-[calc(100vh-160px)] lg:sticky lg:top-4 overflow-hidden transition-colors duration-300">
                         
