@@ -85,16 +85,47 @@ export default function UpcomingEventsSection() {
 
     const syncAndSet = () => {
       const eventMap = new Map<string, TsehayEvent>();
+
+      // 1. Preload with DEFAULT_EVENTS
+      DEFAULT_EVENTS.forEach(ev => {
+        eventMap.set(ev.id, { ...ev });
+        if (ev.slug) eventMap.set(ev.slug, { ...ev });
+      });
+
+      // 2. Overlay live Firestore data
       [...artifactList, ...rootList].forEach(ev => {
-        if (ev && ev.id) {
-          eventMap.set(ev.id, {
+        if (ev && (ev.id || ev.slug)) {
+          const key = ev.id || ev.slug;
+          const existing: any = eventMap.get(key) || (ev.slug ? eventMap.get(ev.slug) : null) || {};
+          const cap = Number(ev.capacity || existing.capacity) || 100;
+          const reg = Number(ev.registeredCount !== undefined ? ev.registeredCount : existing.registeredCount) || 0;
+          const rem = ev.remainingSeats !== undefined && typeof ev.remainingSeats === 'number'
+            ? ev.remainingSeats
+            : (existing.remainingSeats !== undefined && typeof existing.remainingSeats === 'number' ? existing.remainingSeats : Math.max(0, cap - reg));
+
+          const merged: TsehayEvent = {
+            ...existing,
             ...ev,
-            image: formatDriveImageUrl(ev.image) || ev.image
-          });
+            capacity: cap,
+            registeredCount: reg,
+            remainingSeats: rem,
+            image: formatDriveImageUrl(ev.image || existing.image) || ev.image || existing.image
+          };
+
+          eventMap.set(key, merged);
+          if (ev.id && ev.slug) {
+            eventMap.set(ev.id, merged);
+            eventMap.set(ev.slug, merged);
+          }
         }
       });
 
-      const combined = Array.from(eventMap.values());
+      const uniqueEventsMap = new Map<string, TsehayEvent>();
+      eventMap.forEach(v => {
+        if (v && v.id) uniqueEventsMap.set(v.id, v);
+      });
+
+      const combined = Array.from(uniqueEventsMap.values());
       if (combined.length > 0) {
         setEvents(combined);
         try {
@@ -355,6 +386,40 @@ export default function UpcomingEventsSection() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ ticket: issuedTicket, email: issuedTicket.attendeeEmail })
         }).catch(() => {});
+      }
+
+      // Direct client-side atomic Firestore decrement & registration save
+      try {
+        const { doc, updateDoc, increment, setDoc } = await import('firebase/firestore');
+        const rootDocRef = doc(db, 'events', selectedEvent.id);
+        const curSeats = selectedEvent.remainingSeats !== undefined ? selectedEvent.remainingSeats : Math.max(0, (Number(selectedEvent.capacity) || 100) - (Number(selectedEvent.registeredCount) || 0));
+
+        await updateDoc(rootDocRef, {
+          remainingSeats: increment(-1),
+          registeredCount: increment(1),
+          updatedAt: new Date().toISOString()
+        }).catch(async () => {
+          await setDoc(rootDocRef, {
+            ...selectedEvent,
+            remainingSeats: Math.max(0, curSeats - 1),
+            registeredCount: (Number(selectedEvent.registeredCount) || 0) + 1,
+            updatedAt: new Date().toISOString()
+          }, { merge: true });
+        });
+
+        if (issuedTicket) {
+          await setDoc(doc(db, 'event_registrations', issuedTicket.ticketId), {
+            ...issuedTicket,
+            name: attendeeName.trim(),
+            email: attendeeEmail.trim(),
+            phone: attendeePhone.trim(),
+            registeredAt: new Date().toISOString(),
+            createdAt: new Date().toISOString(),
+            status: 'confirmed'
+          });
+        }
+      } catch (clientDbErr) {
+        console.warn('Client Firestore save notice:', clientDbErr);
       }
 
       // Optimistically decrement remaining seats in local state

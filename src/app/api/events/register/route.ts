@@ -85,36 +85,51 @@ export async function POST(req: NextRequest) {
     };
 
     const registrationRecord = {
-      ...ticket,
+      id: ticketId,
+      ticketId,
+      name: attendeeName,
+      email: attendeeEmail,
+      phone: attendeePhone,
+      attendeeName,
+      attendeeEmail,
+      attendeePhone,
+      eventId,
+      eventSlug,
+      eventTitle,
+      eventDate,
+      eventTime,
+      eventLocation,
+      isOnline,
+      meetingLink,
+      mapsUrl,
+      userId,
+      tier,
+      pricePaid,
+      price: pricePaid,
+      paymentMethod,
+      qrCodeData: qrPayload,
+      isUsed: false,
+      checkedIn: false,
+      usedAt: null,
       registeredAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      date: new Date().toISOString(),
       status: 'confirmed'
     };
 
     // Save to Firestore if available
     if (adminDb) {
       try {
-        // 1. Save to event_registrations
-        await adminDb
-          .collection('event_registrations')
-          .doc(ticketId)
-          .set(registrationRecord);
+        // 1. Save to event_registrations (all mirror collections for Admin Dashboard)
+        await Promise.allSettled([
+          adminDb.collection('event_registrations').doc(ticketId).set(registrationRecord),
+          adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('event_registrations').doc(ticketId).set(registrationRecord),
+          adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('public').doc('data').collection('event_registrations').doc(ticketId).set(registrationRecord),
+          adminDb.collection('tickets').doc(ticketId).set(registrationRecord),
+          adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('event_tickets').doc(ticketId).set(registrationRecord)
+        ]);
 
-        await adminDb
-          .collection('artifacts')
-          .doc('tsehaycampus-e1a6d')
-          .collection('event_registrations')
-          .doc(ticketId)
-          .set(registrationRecord);
-
-        // 2. Save to event_tickets
-        await adminDb
-          .collection('artifacts')
-          .doc('tsehaycampus-e1a6d')
-          .collection('event_tickets')
-          .doc(ticketId)
-          .set(ticket);
-
-        // 3. User sub-collection
+        // 2. User sub-collection
         if (userId && !userId.startsWith('guest_')) {
           await adminDb
             .collection('artifacts')
@@ -126,54 +141,76 @@ export async function POST(req: NextRequest) {
             .set(ticket);
         }
 
-        // 4. 🌟 ATOMIC SEAT DECREMENT & REGISTRATION INCREMENT
+        // 3. 🌟 ATOMIC SEAT DECREMENT & PERSISTENT SEAT COUNTER
         if (eventId && !eventId.startsWith('evt_fallback')) {
           try {
             const { FieldValue } = await import('firebase-admin/firestore');
             const inc = FieldValue.increment(1);
             const decSeat = FieldValue.increment(-1);
 
-            const updatePayload = {
-              registeredCount: inc,
-              remainingSeats: decSeat,
-              availableTickets: decSeat,
-              seatsLeft: decSeat
-            };
+            const docRefsToUpdate = [
+              adminDb.collection('events').doc(eventId),
+              adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('public').doc('data').collection('events').doc(eventId),
+              adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('events').doc(eventId)
+            ];
 
-            const promises: Promise<any>[] = [];
-
-            // Direct doc ID updates
-            promises.push(
-              adminDb.collection('events').doc(eventId).set(updatePayload, { merge: true }),
-              adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('public').doc('data').collection('events').doc(eventId).set(updatePayload, { merge: true }),
-              adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('events').doc(eventId).set(updatePayload, { merge: true })
-            );
-
-            // Also check if slug exists and might be a separate doc ID
             if (eventSlug && eventSlug !== eventId) {
-              promises.push(
-                adminDb.collection('events').doc(eventSlug).set(updatePayload, { merge: true }),
-                adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('public').doc('data').collection('events').doc(eventSlug).set(updatePayload, { merge: true }),
-                adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('events').doc(eventSlug).set(updatePayload, { merge: true })
+              docRefsToUpdate.push(
+                adminDb.collection('events').doc(eventSlug),
+                adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('public').doc('data').collection('events').doc(eventSlug),
+                adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('events').doc(eventSlug)
               );
             }
 
-            // Also query by slug if doc ID was different
-            const rootSlugSnap = await adminDb.collection('events').where('slug', '==', eventSlug || eventId).get().catch(() => null);
-            if (rootSlugSnap && !rootSlugSnap.empty) {
-              rootSlugSnap.docs.forEach(d => {
-                promises.push(d.ref.set(updatePayload, { merge: true }));
-              });
-            }
+            for (const docRef of docRefsToUpdate) {
+              try {
+                const snap = await docRef.get();
+                if (snap.exists) {
+                  // Execute atomic decrement on existing doc
+                  await docRef.update({
+                    remainingSeats: decSeat,
+                    registeredCount: inc,
+                    availableTickets: decSeat,
+                    seatsLeft: decSeat,
+                    updatedAt: new Date().toISOString()
+                  });
+                } else {
+                  // Document did not exist in Firestore yet: seed full event with remainingSeats - 1
+                  const baseEvent = matchedEvent || {
+                    id: eventId,
+                    slug: eventSlug || eventId,
+                    title: eventTitle,
+                    capacity: 100,
+                    registeredCount: 0,
+                    remainingSeats: 100,
+                    price: pricePaid,
+                    isFree: pricePaid === 0,
+                    date: eventDate,
+                    time: eventTime,
+                    location: eventLocation,
+                    isOnline,
+                    speaker: 'ኢዮብ ሳህሌ (Eyoub Sahle)',
+                    image: 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?q=80&w=1200'
+                  };
+                  const cap = Number(baseEvent.capacity) || 100;
+                  const reg = (Number(baseEvent.registeredCount) || 0) + 1;
+                  const rem = Math.max(0, (baseEvent.remainingSeats !== undefined ? baseEvent.remainingSeats : (cap - (baseEvent.registeredCount || 0))) - 1);
 
-            const nestedSlugSnap = await adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('public').doc('data').collection('events').where('slug', '==', eventSlug || eventId).get().catch(() => null);
-            if (nestedSlugSnap && !nestedSlugSnap.empty) {
-              nestedSlugSnap.docs.forEach(d => {
-                promises.push(d.ref.set(updatePayload, { merge: true }));
-              });
+                  await docRef.set({
+                    ...baseEvent,
+                    id: eventId,
+                    capacity: cap,
+                    registeredCount: reg,
+                    remainingSeats: rem,
+                    availableTickets: rem,
+                    seatsLeft: rem,
+                    updatedAt: new Date().toISOString()
+                  }, { merge: true });
+                }
+              } catch (updErr) {
+                console.warn('Doc ref atomic update notice:', updErr);
+              }
             }
-
-            await Promise.allSettled(promises);
           } catch (incErr) {
             console.warn('Event atomic seat decrement notice:', incErr);
           }

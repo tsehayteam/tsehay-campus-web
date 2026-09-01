@@ -113,29 +113,48 @@ export async function POST(req: NextRequest) {
     if (adminDb) {
       try {
         // 1. Save to global tickets & registrations collections
-        await adminDb
-          .collection('artifacts')
-          .doc('tsehaycampus-e1a6d')
-          .collection('event_tickets')
-          .doc(ticketId)
-          .set(newTicket);
+        const regRecord = {
+          ...newTicket,
+          id: ticketId,
+          name: attendeeName,
+          email: attendeeEmail,
+          phone: attendeePhone,
+          registeredAt: new Date().toISOString(),
+          createdAt: new Date().toISOString(),
+          status: 'confirmed'
+        };
 
-        await adminDb
-          .collection('event_registrations')
-          .doc(ticketId)
-          .set({ ...newTicket, registeredAt: new Date().toISOString() });
+        await Promise.allSettled([
+          adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('event_tickets').doc(ticketId).set(newTicket),
+          adminDb.collection('event_tickets').doc(ticketId).set(newTicket),
+          adminDb.collection('event_registrations').doc(ticketId).set(regRecord),
+          adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('event_registrations').doc(ticketId).set(regRecord),
+          adminDb.collection('tickets').doc(ticketId).set(regRecord)
+        ]);
 
-        // 2. Increment registeredCount on the event document so remaining tickets decrease
+        // 2. Increment registeredCount & decrement remainingSeats on the event document
         try {
           if (eventId) {
-            const eventRef = adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('events').doc(eventId);
-            const eventDoc = await eventRef.get();
-            if (eventDoc.exists) {
-              const currentCount = eventDoc.data()?.registeredCount || 0;
-              await eventRef.update({
-                registeredCount: currentCount + 1,
-                updatedAt: new Date().toISOString()
-              });
+            const { FieldValue } = await import('firebase-admin/firestore');
+            const inc = FieldValue.increment(1);
+            const decSeat = FieldValue.increment(-1);
+
+            const docRefs = [
+              adminDb.collection('events').doc(eventId),
+              adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('public').doc('data').collection('events').doc(eventId),
+              adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('events').doc(eventId)
+            ];
+
+            for (const ref of docRefs) {
+              try {
+                await ref.set({
+                  registeredCount: inc,
+                  remainingSeats: decSeat,
+                  availableTickets: decSeat,
+                  seatsLeft: decSeat,
+                  updatedAt: new Date().toISOString()
+                }, { merge: true });
+              } catch (e) {}
             }
           }
         } catch (cntErr) {

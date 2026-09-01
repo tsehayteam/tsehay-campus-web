@@ -218,6 +218,37 @@ export default function EventDetailClient() {
       }).catch(() => {});
     }
 
+    // Direct client-side atomic Firestore decrement & registration save
+    try {
+      const { doc, updateDoc, increment, setDoc } = await import('firebase/firestore');
+      const rootDocRef = doc(db, 'events', event.id);
+      const curSeats = event.remainingSeats !== undefined ? event.remainingSeats : Math.max(0, (Number(event.capacity) || 100) - (Number(event.registeredCount) || 0));
+      
+      await updateDoc(rootDocRef, {
+        remainingSeats: increment(-1),
+        registeredCount: increment(1),
+        updatedAt: new Date().toISOString()
+      }).catch(async () => {
+        await setDoc(rootDocRef, {
+          ...event,
+          remainingSeats: Math.max(0, curSeats - 1),
+          registeredCount: (Number(event.registeredCount) || 0) + 1,
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+      });
+
+      if (ticketObj) {
+        await setDoc(doc(db, 'event_registrations', ticketObj.ticketId), {
+          ...ticketObj,
+          registeredAt: new Date().toISOString(),
+          createdAt: new Date().toISOString(),
+          status: 'confirmed'
+        });
+      }
+    } catch (dbErr) {
+      console.warn('Client Firestore ticket save notice:', dbErr);
+    }
+
     // Optimistically decrement remaining seats in local state
     setEvent(prev => {
       if (!prev) return prev;
@@ -444,13 +475,13 @@ export default function EventDetailClient() {
     );
   }
 
-  const effectiveRegCount = Math.max(
-    Number(event.registeredCount) || 0,
-    liveRegistrationsCount
-  );
   const capacity = Number(event.capacity) || 100;
-  const remainingSeats = Math.max(0, capacity - effectiveRegCount);
+  const registeredCount = Number(event.registeredCount) || 0;
+  const remainingSeats = event.remainingSeats !== undefined && typeof event.remainingSeats === 'number'
+    ? Math.max(0, event.remainingSeats)
+    : Math.max(0, capacity - Math.max(registeredCount, liveRegistrationsCount));
   const isSoldOut = remainingSeats <= 0;
+  const effectiveRegCount = Math.max(registeredCount, capacity - remainingSeats);
   const percentTaken = Math.min(100, Math.round((effectiveRegCount / capacity) * 100));
 
   return (

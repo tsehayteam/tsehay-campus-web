@@ -1091,6 +1091,25 @@ export default function AdminDashboard() {
       });
     } catch (e) {}
 
+    // 🌟 Real-Time Firestore Listener for Events (Seats & Capacities Live Sync)
+    let unsubscribeEventsLive: any = () => {};
+    try {
+      const evCol = collection(db, 'events');
+      unsubscribeEventsLive = onSnapshot(evCol, (snapshot) => {
+        if (!snapshot.empty) {
+          const list = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as unknown as TsehayEvent));
+          setEvents(prev => {
+            const map = new Map<string, TsehayEvent>();
+            prev.forEach(p => map.set(p.id, p));
+            list.forEach(item => map.set(item.id, { ...(map.get(item.id) || {}), ...item }));
+            return Array.from(map.values());
+          });
+        }
+      }, (err) => {
+        console.warn('Real-time events sync note:', err);
+      });
+    } catch (e) {}
+
     // 🌟 Live Events & QR Tickets Data Loader
     const fetchEventsData = async () => {
       try {
@@ -1324,6 +1343,7 @@ export default function AdminDashboard() {
         unsubscribePayments();
         unsubscribeTickets();
         unsubscribeEventRegs();
+        if (typeof unsubscribeEventsLive === 'function') unsubscribeEventsLive();
         unsubscribeAboutVideo();
         unsubscribePortfolio1();
         unsubscribePortfolio2();
