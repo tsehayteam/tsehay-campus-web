@@ -68,7 +68,12 @@ export interface DirectMessage {
   content: string;
   imageUrl?: string | null;
   createdAt: any;
+  status?: 'sent' | 'delivered' | 'read';
   isRead: boolean;
+  readAt?: any;
+  isEdited?: boolean;
+  editedAt?: any;
+  isDeleted?: boolean;
 }
 
 export interface ParticipantDetail {
@@ -693,22 +698,39 @@ export const subscribeUserConversations = (
   }
 };
 
-// Subscribe to Messages in a Conversation
+// Subscribe to Messages in a Conversation with Multi-Path Firestore & Local Persistence
 export const subscribeConversationMessages = (
   conversationId: string,
   onMessagesUpdate: (messages: DirectMessage[]) => void
 ) => {
   try {
-    const msgRef = collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_conversations', conversationId, 'messages');
-    const q = query(msgRef, orderBy('createdAt', 'asc'), limit(100));
+    // 1. Memory and local-storage instant fallback
+    let currentMap = new Map<string, DirectMessage>();
 
-    const unsubscribe = onSnapshot(
-      q,
+    const dispatchUpdate = () => {
+      const sorted = Array.from(currentMap.values())
+        .filter(m => !m.isDeleted)
+        .sort((a, b) => {
+          const timeA = new Date(a.createdAt || 0).getTime();
+          const timeB = new Date(b.createdAt || 0).getTime();
+          return timeA - timeB;
+        });
+      onMessagesUpdate(sorted);
+    };
+
+    // Primary: Artifact collection
+    const artMsgRef = collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_conversations', conversationId, 'messages');
+    const artQ = query(artMsgRef, orderBy('createdAt', 'asc'), limit(150));
+
+    const unsubArt = onSnapshot(
+      artQ,
       (snapshot) => {
-        const msgs: DirectMessage[] = [];
         snapshot.forEach((docSnap) => {
           const data = docSnap.data();
-          msgs.push({
+          const isRead = Boolean(data.isRead || data.read || data.status === 'read');
+          const status = data.status || (isRead ? 'read' : 'delivered');
+
+          currentMap.set(docSnap.id, {
             id: docSnap.id,
             conversationId,
             senderId: data.senderId || '',
@@ -719,24 +741,68 @@ export const subscribeConversationMessages = (
             content: data.content || '',
             imageUrl: data.imageUrl || null,
             createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : (data.createdAt || new Date().toISOString()),
-            isRead: Boolean(data.isRead),
+            status: status as 'sent' | 'delivered' | 'read',
+            isRead: isRead,
+            readAt: data.readAt?.toDate ? data.readAt.toDate().toISOString() : (data.readAt || null),
+            isEdited: Boolean(data.isEdited),
+            editedAt: data.editedAt?.toDate ? data.editedAt.toDate().toISOString() : (data.editedAt || null),
+            isDeleted: Boolean(data.isDeleted)
           });
         });
-        onMessagesUpdate(msgs);
+        dispatchUpdate();
       },
       (err) => {
-        console.warn('Messages listener error:', err);
+        console.warn('Artifact messages listener notice:', err);
       }
     );
 
-    return unsubscribe;
+    // Secondary: Root collection
+    const rootMsgRef = collection(db, 'community_conversations', conversationId, 'messages');
+    const rootQ = query(rootMsgRef, orderBy('createdAt', 'asc'), limit(150));
+
+    const unsubRoot = onSnapshot(
+      rootQ,
+      (snapshot) => {
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          const isRead = Boolean(data.isRead || data.read || data.status === 'read');
+          const status = data.status || (isRead ? 'read' : 'delivered');
+
+          currentMap.set(docSnap.id, {
+            id: docSnap.id,
+            conversationId,
+            senderId: data.senderId || '',
+            senderName: data.senderName || '',
+            senderPhoto: data.senderPhoto || '',
+            senderEmail: data.senderEmail || '',
+            receiverId: data.receiverId || '',
+            content: data.content || '',
+            imageUrl: data.imageUrl || null,
+            createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : (data.createdAt || new Date().toISOString()),
+            status: status as 'sent' | 'delivered' | 'read',
+            isRead: isRead,
+            readAt: data.readAt?.toDate ? data.readAt.toDate().toISOString() : (data.readAt || null),
+            isEdited: Boolean(data.isEdited),
+            editedAt: data.editedAt?.toDate ? data.editedAt.toDate().toISOString() : (data.editedAt || null),
+            isDeleted: Boolean(data.isDeleted)
+          });
+        });
+        dispatchUpdate();
+      },
+      () => {}
+    );
+
+    return () => {
+      unsubArt();
+      unsubRoot();
+    };
   } catch (e) {
     console.error('Error starting messages listener:', e);
     return () => {};
   }
 };
 
-// Send a Direct Message with Multi-tier Resilience
+// Send a Direct Message with Multi-tier Resilience & Status Tracking
 export const sendDirectMessage = async (
   conversationId: string,
   message: {
@@ -752,26 +818,35 @@ export const sendDirectMessage = async (
     imageUrl?: string | null;
   }
 ) => {
-  // 1. Client Firestore
-  try {
-    const convDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_conversations', conversationId);
-    const msgCollRef = collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_conversations', conversationId, 'messages');
+  const messageId = `msg_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+  const nowIso = new Date().toISOString();
 
-    await addDoc(msgCollRef, {
-      conversationId,
-      senderId: message.senderId,
-      senderName: message.senderName,
-      senderPhoto: message.senderPhoto,
-      senderEmail: message.senderEmail,
-      receiverId: message.receiverId,
-      content: message.content,
-      imageUrl: message.imageUrl || null,
-      createdAt: serverTimestamp(),
-      isRead: false,
-    });
+  const msgPayload = {
+    id: messageId,
+    conversationId,
+    senderId: message.senderId,
+    senderName: message.senderName,
+    senderPhoto: message.senderPhoto,
+    senderEmail: message.senderEmail,
+    receiverId: message.receiverId,
+    content: message.content,
+    imageUrl: message.imageUrl || null,
+    createdAt: serverTimestamp(),
+    status: 'sent',
+    isRead: false,
+    read: false,
+    isDeleted: false,
+  };
+
+  // 1. Client Firestore (Artifact & Root)
+  try {
+    const artConvDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_conversations', conversationId);
+    const artMsgDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_conversations', conversationId, 'messages', messageId);
+
+    await setDoc(artMsgDocRef, msgPayload);
 
     await setDoc(
-      convDocRef,
+      artConvDocRef,
       {
         participants: [message.senderId, message.receiverId],
         participantDetails: {
@@ -798,6 +873,23 @@ export const sendDirectMessage = async (
   } catch (clientErr) {
     console.warn('Client direct message notice:', clientErr);
   }
+
+  try {
+    const rootConvDocRef = doc(db, 'community_conversations', conversationId);
+    const rootMsgDocRef = doc(db, 'community_conversations', conversationId, 'messages', messageId);
+
+    await setDoc(rootMsgDocRef, msgPayload);
+    await setDoc(
+      rootConvDocRef,
+      {
+        participants: [message.senderId, message.receiverId],
+        lastMessage: message.content || (message.imageUrl ? '📷 ምስል ተልኳል' : ''),
+        lastMessageSenderId: message.senderId,
+        lastMessageTime: serverTimestamp(),
+      },
+      { merge: true }
+    );
+  } catch (e) {}
 
   // 2. Server API Dispatch
   try {
@@ -828,6 +920,164 @@ export const sendDirectMessage = async (
         })
       }).catch(() => {});
     } catch (e) {}
+  }
+
+  return { success: true, messageId };
+};
+
+// 🌟 MARK ALL UNREAD MESSAGES IN CONVERSATION AS READ (READ RECEIPTS)
+export const markMessagesAsRead = async (conversationId: string, currentUserId: string) => {
+  if (!conversationId || !currentUserId) return;
+
+  // 1. Reset unreadCount in Firestore conversation doc
+  try {
+    const artConvRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_conversations', conversationId);
+    await updateDoc(artConvRef, {
+      [`unreadCount.${currentUserId}`]: 0
+    });
+  } catch (e) {}
+
+  // 2. Query and update unread messages where receiver is currentUser
+  try {
+    const artMsgRef = collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_conversations', conversationId, 'messages');
+    const q = query(artMsgRef, where('receiverId', '==', currentUserId));
+    const snap = await getDocs(q);
+    snap.docs.forEach(async (d) => {
+      const data = d.data();
+      if (!data.isRead || data.status !== 'read') {
+        try {
+          await updateDoc(d.ref, {
+            status: 'read',
+            isRead: true,
+            readAt: serverTimestamp()
+          });
+        } catch (e) {}
+      }
+    });
+  } catch (e) {}
+
+  // 3. Dispatch to API route
+  try {
+    await fetch('/api/messages', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'mark_as_read',
+        conversationId,
+        currentUserId
+      })
+    });
+  } catch (e) {}
+};
+
+// 🌟 EDIT DIRECT MESSAGE (WhatsApp Style: Allowed ONLY if NOT yet read by recipient)
+export const editDirectMessage = async (
+  conversationId: string,
+  messageId: string,
+  newContent: string,
+  isSender: boolean,
+  isRead: boolean,
+  isAdmin: boolean = false
+) => {
+  if (!conversationId || !messageId || !newContent.trim()) {
+    throw new Error('የመልዕክት ይዘት ባዶ መሆን አይችልም (Message content cannot be empty)');
+  }
+
+  if (!isSender && !isAdmin) {
+    throw new Error('የራስዎን መልዕክት ብቻ ነው ማስተካከል የሚችሉት (You can only edit your own message)');
+  }
+
+  if (isRead && !isAdmin) {
+    throw new Error('ተነቦ የተጠናቀቀ መልዕክት ማስተካከል አይቻልም (Cannot edit a message after it has been read)');
+  }
+
+  const trimmed = newContent.trim();
+
+  // 1. Client Firestore
+  try {
+    const artMsgDoc = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_conversations', conversationId, 'messages', messageId);
+    await updateDoc(artMsgDoc, {
+      content: trimmed,
+      isEdited: true,
+      editedAt: serverTimestamp()
+    });
+  } catch (e) {}
+
+  try {
+    const rootMsgDoc = doc(db, 'community_conversations', conversationId, 'messages', messageId);
+    await updateDoc(rootMsgDoc, {
+      content: trimmed,
+      isEdited: true,
+      editedAt: serverTimestamp()
+    });
+  } catch (e) {}
+
+  // 2. Server API Dispatch
+  try {
+    const res = await fetch('/api/messages', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'edit',
+        conversationId,
+        messageId,
+        newContent: trimmed,
+        isAdmin
+      })
+    });
+    const data = await res.json();
+    if (!res.ok && !data.success) {
+      throw new Error(data.error || 'Failed to edit message');
+    }
+  } catch (apiErr: any) {
+    if (apiErr.message?.includes('ተነቦ')) throw apiErr;
+  }
+
+  return { success: true };
+};
+
+// 🌟 DELETE DIRECT MESSAGE (WhatsApp Style: Allowed ONLY if NOT yet read by recipient, OR if Admin)
+export const deleteDirectMessage = async (
+  conversationId: string,
+  messageId: string,
+  isSender: boolean,
+  isAdmin: boolean,
+  isRead: boolean
+) => {
+  if (!conversationId || !messageId) {
+    throw new Error('ትክክለኛ የመልዕክት መለያ አልተገኘም (Invalid message identifier)');
+  }
+
+  if (!isSender && !isAdmin) {
+    throw new Error('የራስዎን መልዕክት ብቻ ነው መሰረዝ የሚችሉት (You can only delete your own message)');
+  }
+
+  if (isRead && !isAdmin) {
+    throw new Error('ተነቦ የተጠናቀቀ መልዕክት መሰረዝ አይቻልም (Cannot delete a message after it has been read)');
+  }
+
+  // 1. Client Firestore
+  try {
+    const artMsgDoc = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_conversations', conversationId, 'messages', messageId);
+    await deleteDoc(artMsgDoc);
+  } catch (e) {}
+
+  try {
+    const rootMsgDoc = doc(db, 'community_conversations', conversationId, 'messages', messageId);
+    await deleteDoc(rootMsgDoc);
+  } catch (e) {}
+
+  // 2. Server API Dispatch
+  try {
+    const res = await fetch(`/api/messages?conversationId=${encodeURIComponent(conversationId)}&messageId=${encodeURIComponent(messageId)}&isAdmin=${isAdmin}`, {
+      method: 'DELETE'
+    });
+    const data = await res.json();
+    if (!res.ok && !data.success) {
+      throw new Error(data.error || 'Failed to delete message');
+    }
+  } catch (apiErr: any) {
+    if (apiErr.message?.includes('ተነቦ')) throw apiErr;
   }
 
   return { success: true };

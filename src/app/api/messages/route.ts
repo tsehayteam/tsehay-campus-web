@@ -8,6 +8,7 @@ function getConversationId(uid1: string, uid2: string): string {
   return `conv_${sorted[0]}_${sorted[1]}`;
 }
 
+// 1. SEND DIRECT MESSAGE
 export async function POST(req: NextRequest) {
   try {
     let body: any = {};
@@ -63,7 +64,10 @@ export async function POST(req: NextRequest) {
       imageUrl: finalImage,
       createdAt: nowIso,
       timestamp: Date.now(),
-      read: false
+      status: 'sent',
+      isRead: false,
+      read: false,
+      isDeleted: false
     };
 
     if (adminDb) {
@@ -72,7 +76,7 @@ export async function POST(req: NextRequest) {
         await adminDb.collection('direct_messages').doc(messageId).set(msgPayload, { merge: true });
       } catch (e) {}
 
-      // 2. Subcollection under conversation
+      // 2. Subcollection under conversation (root & artifact)
       try {
         await adminDb
           .collection('community_conversations')
@@ -82,19 +86,18 @@ export async function POST(req: NextRequest) {
           .set(msgPayload, { merge: true });
       } catch (e) {}
 
-      // 3. Artifact collections fallback
       try {
         await adminDb
           .collection('artifacts')
           .doc('tsehaycampus-e1a6d')
-          .collection('public')
-          .doc('data')
-          .collection('direct_messages')
+          .collection('community_conversations')
+          .doc(conversationId)
+          .collection('messages')
           .doc(messageId)
           .set(msgPayload, { merge: true });
       } catch (e) {}
 
-      // 4. Update Conversation Metadata
+      // 3. Update Conversation Metadata in both collections
       const convData = {
         id: conversationId,
         participants: [senderId, receiverId],
@@ -110,7 +113,7 @@ export async function POST(req: NextRequest) {
             email: receiverEmail || '',
           }
         },
-        lastMessage: messageContent || (finalImage ? '📷 ፎቶ ተልኳል' : ''),
+        lastMessage: messageContent || (finalImage ? '📷 ምስል ተልኳል' : ''),
         lastMessageSenderId: senderId,
         lastMessageTime: nowIso,
         updatedAt: nowIso
@@ -118,6 +121,10 @@ export async function POST(req: NextRequest) {
 
       try {
         await adminDb.collection('community_conversations').doc(conversationId).set(convData, { merge: true });
+      } catch (e) {}
+
+      try {
+        await adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('community_conversations').doc(conversationId).set(convData, { merge: true });
       } catch (e) {}
     }
 
@@ -132,6 +139,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
+// 2. GET CONVERSATION MESSAGES
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -144,8 +152,10 @@ export async function GET(req: NextRequest) {
     let messages: any[] = [];
     if (adminDb && conversationId) {
       try {
-        // Try conversation subcollection first
+        // Try artifact subcollection first
         const snap = await adminDb
+          .collection('artifacts')
+          .doc('tsehaycampus-e1a6d')
           .collection('community_conversations')
           .doc(conversationId)
           .collection('messages')
@@ -154,17 +164,18 @@ export async function GET(req: NextRequest) {
           .get();
 
         if (!snap.empty) {
-          messages = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+          messages = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter((m: any) => !m.isDeleted);
         } else {
-          // Try root direct_messages with conversationId
+          // Try root subcollection
           const snap2 = await adminDb
-            .collection('direct_messages')
-            .where('conversationId', '==', conversationId)
+            .collection('community_conversations')
+            .doc(conversationId)
+            .collection('messages')
+            .orderBy('createdAt', 'asc')
             .limit(100)
             .get();
           if (!snap2.empty) {
-            messages = snap2.docs.map(d => ({ id: d.id, ...d.data() }));
-            messages.sort((a, b) => (a.createdAt || '').localeCompare(b.createdAt || ''));
+            messages = snap2.docs.map(d => ({ id: d.id, ...d.data() })).filter((m: any) => !m.isDeleted);
           }
         }
       } catch (e) {
@@ -180,5 +191,162 @@ export async function GET(req: NextRequest) {
   } catch (error: any) {
     console.error('Error in GET /api/messages:', error);
     return NextResponse.json({ success: true, count: 0, messages: [] });
+  }
+}
+
+// 3. PATCH (MARK AS READ OR EDIT MESSAGE)
+export async function PATCH(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const { action, conversationId, messageId, currentUserId, newContent, isSender, isAdmin } = body;
+
+    if (!adminDb || !conversationId) {
+      return NextResponse.json({ success: false, error: 'Invalid request' }, { status: 400 });
+    }
+
+    // Action: Mark all unread messages as read
+    if (action === 'mark_as_read') {
+      if (!currentUserId) {
+        return NextResponse.json({ success: false, error: 'Missing currentUserId' }, { status: 400 });
+      }
+
+      const paths = [
+        adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('community_conversations').doc(conversationId).collection('messages'),
+        adminDb.collection('community_conversations').doc(conversationId).collection('messages')
+      ];
+
+      for (const colRef of paths) {
+        try {
+          const snap = await colRef.where('receiverId', '==', currentUserId).get();
+          const batch = adminDb.batch();
+          let count = 0;
+          snap.docs.forEach(docSnap => {
+            const data = docSnap.data();
+            if (data.status !== 'read' || !data.isRead) {
+              batch.update(docSnap.ref, {
+                status: 'read',
+                isRead: true,
+                read: true,
+                readAt: new Date().toISOString()
+              });
+              count++;
+            }
+          });
+          if (count > 0) await batch.commit();
+        } catch (e) {}
+      }
+
+      return NextResponse.json({ success: true, message: 'Messages marked as read' });
+    }
+
+    // Action: Edit Message (Only if NOT read by recipient)
+    if (action === 'edit') {
+      if (!messageId || !newContent) {
+        return NextResponse.json({ success: false, error: 'Missing messageId or newContent' }, { status: 400 });
+      }
+
+      // Check message read status first
+      const msgRef = adminDb
+        .collection('artifacts')
+        .doc('tsehaycampus-e1a6d')
+        .collection('community_conversations')
+        .doc(conversationId)
+        .collection('messages')
+        .doc(messageId);
+
+      const msgDoc = await msgRef.get();
+      if (msgDoc.exists) {
+        const msgData = msgDoc.data();
+        if ((msgData?.status === 'read' || msgData?.isRead) && !isAdmin) {
+          return NextResponse.json({
+            success: false,
+            error: 'ተነቦ የተጠናቀቀ መልዕክት ማስተካከል አይቻልም (Cannot edit a read message)'
+          }, { status: 403 });
+        }
+      }
+
+      const updatePayload = {
+        content: newContent.trim(),
+        isEdited: true,
+        editedAt: new Date().toISOString()
+      };
+
+      try {
+        await msgRef.update(updatePayload);
+      } catch (e) {}
+
+      try {
+        await adminDb
+          .collection('community_conversations')
+          .doc(conversationId)
+          .collection('messages')
+          .doc(messageId)
+          .update(updatePayload);
+      } catch (e) {}
+
+      return NextResponse.json({ success: true, message: 'Message edited successfully' });
+    }
+
+    return NextResponse.json({ success: false, error: 'Unknown action' }, { status: 400 });
+  } catch (error: any) {
+    console.error('Error in PATCH /api/messages:', error);
+    return NextResponse.json({ success: false, error: error.message || 'Internal server error' }, { status: 500 });
+  }
+}
+
+// 4. DELETE MESSAGE (Only if unread, or if Admin)
+export async function DELETE(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const conversationId = searchParams.get('conversationId');
+    const messageId = searchParams.get('messageId');
+    const isAdmin = searchParams.get('isAdmin') === 'true';
+
+    if (!adminDb || !conversationId || !messageId) {
+      return NextResponse.json({ success: false, error: 'Missing conversationId or messageId' }, { status: 400 });
+    }
+
+    // Verify read status
+    const msgRef = adminDb
+      .collection('artifacts')
+      .doc('tsehaycampus-e1a6d')
+      .collection('community_conversations')
+      .doc(conversationId)
+      .collection('messages')
+      .doc(messageId);
+
+    const msgDoc = await msgRef.get();
+    if (msgDoc.exists) {
+      const msgData = msgDoc.data();
+      if ((msgData?.status === 'read' || msgData?.isRead) && !isAdmin) {
+        return NextResponse.json({
+          success: false,
+          error: 'ተነቦ የተጠናቀቀ መልዕክት መሰረዝ አይቻልም (Cannot delete a read message)'
+        }, { status: 403 });
+      }
+    }
+
+    // Delete or mark deleted
+    try {
+      await msgRef.delete();
+    } catch (e) {}
+
+    try {
+      await adminDb
+        .collection('community_conversations')
+        .doc(conversationId)
+        .collection('messages')
+        .doc(messageId)
+        .delete();
+    } catch (e) {}
+
+    try {
+      await adminDb.collection('direct_messages').doc(messageId).delete();
+    } catch (e) {}
+
+    return NextResponse.json({ success: true, message: 'Message deleted successfully' });
+  } catch (error: any) {
+    console.error('Error in DELETE /api/messages:', error);
+    return NextResponse.json({ success: false, error: error.message || 'Internal server error' }, { status: 500 });
   }
 }
