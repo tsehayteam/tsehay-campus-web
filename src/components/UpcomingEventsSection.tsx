@@ -2,10 +2,19 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { TsehayEvent, EventTicket, DEFAULT_EVENTS, getCachedEvents, getRemainingSeats, formatDriveImageUrl } from '@/lib/eventCache';
+import { 
+  TsehayEvent, 
+  EventTicket, 
+  DEFAULT_EVENTS, 
+  getCachedEvents, 
+  getRemainingSeats, 
+  formatDriveImageUrl,
+  getCachedUserTickets,
+  saveCachedUserTicket
+} from '@/lib/eventCache';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase/config';
-import { collection, onSnapshot } from 'firebase/firestore';
+import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import DigitalTicketModal from '@/components/DigitalTicketModal';
 
 export default function UpcomingEventsSection() {
@@ -26,6 +35,9 @@ export default function UpcomingEventsSection() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [bookingError, setBookingError] = useState<string | null>(null);
 
+  // 🌟 User Booked Tickets Map: eventId/slug -> EventTicket
+  const [userBookedTickets, setUserBookedTickets] = useState<Record<string, EventTicket>>(() => getCachedUserTickets());
+
   // 🌟 Live Real-time Events Listener (Firestore + Local Broadcast + API)
   const [registrationsCountByEvent, setRegistrationsCountByEvent] = useState<Record<string, number>>({});
 
@@ -36,6 +48,18 @@ export default function UpcomingEventsSection() {
       }
     };
     window.addEventListener('tsehay_events_updated', handleEventsUpdate);
+
+    const handleTicketSaved = (e: any) => {
+      if (e.detail?.ticket) {
+        const t = e.detail.ticket as EventTicket;
+        setUserBookedTickets(prev => ({
+          ...prev,
+          [t.eventId]: t,
+          ...(t.eventSlug ? { [t.eventSlug]: t } : {})
+        }));
+      }
+    };
+    window.addEventListener('tsehay_user_ticket_saved', handleTicketSaved);
 
     let artifactList: TsehayEvent[] = [];
     let rootList: TsehayEvent[] = [];
@@ -84,20 +108,37 @@ export default function UpcomingEventsSection() {
       }, (err) => {});
     } catch (e) {}
 
-    // 3. Live Firestore listener for event registrations to accurately decrement seats
+    // 3. Live Firestore listener for event registrations to accurately decrement seats & detect user registration
     let unsubRegs: any = null;
     try {
       const regsRef = collection(db, 'event_registrations');
       unsubRegs = onSnapshot(regsRef, (snapshot) => {
         const counts: Record<string, number> = {};
+        const userEmailLower = user?.email?.toLowerCase().trim();
+        const userUid = user?.uid;
+
         snapshot.docs.forEach(doc => {
-          const d = doc.data();
+          const d = doc.data() as EventTicket;
           const eId = d.eventId || d.eventSlug;
           if (eId) {
             counts[eId] = (counts[eId] || 0) + 1;
           }
           if (d.eventSlug && d.eventSlug !== eId) {
             counts[d.eventSlug] = (counts[d.eventSlug] || 0) + 1;
+          }
+
+          // Check if registered ticket belongs to current user
+          const ticketEmail = d.attendeeEmail?.toLowerCase().trim();
+          const ticketUid = d.userId;
+          const isUserTicket = (userEmailLower && ticketEmail === userEmailLower) || (userUid && ticketUid === userUid);
+
+          if (isUserTicket) {
+            saveCachedUserTicket(d);
+            setUserBookedTickets(prev => ({
+              ...prev,
+              [d.eventId]: d,
+              ...(d.eventSlug ? { [d.eventSlug]: d } : {})
+            }));
           }
         });
         setRegistrationsCountByEvent(counts);
@@ -124,11 +165,12 @@ export default function UpcomingEventsSection() {
 
     return () => {
       window.removeEventListener('tsehay_events_updated', handleEventsUpdate);
+      window.removeEventListener('tsehay_user_ticket_saved', handleTicketSaved);
       if (unsubRoot) unsubRoot();
       if (unsubNested) unsubNested();
       if (unsubRegs) unsubRegs();
     };
-  }, []);
+  }, [user]);
 
   // Update attendee form with user data
   useEffect(() => {
@@ -139,6 +181,14 @@ export default function UpcomingEventsSection() {
   }, [user]);
 
   const handleOpenBooking = (event: TsehayEvent) => {
+    // Check if already registered
+    const existingTicket = userBookedTickets[event.id] || (event.slug ? userBookedTickets[event.slug] : null);
+    if (existingTicket) {
+      setActiveTicket(existingTicket);
+      setIsTicketModalOpen(true);
+      return;
+    }
+
     setSelectedEvent(event);
     setBookingError(null);
     setIsBookingOpen(true);
@@ -149,7 +199,7 @@ export default function UpcomingEventsSection() {
     if (!selectedEvent) return;
 
     const trimmedName = attendeeName.trim();
-    const trimmedEmail = attendeeEmail.trim();
+    const trimmedEmail = attendeeEmail.trim().toLowerCase();
     const trimmedPhone = attendeePhone.trim();
 
     if (!trimmedName) {
@@ -182,7 +232,7 @@ export default function UpcomingEventsSection() {
               courseId: selectedEvent.id,
               title: selectedEvent.title,
               price: selectedEvent.price,
-              userEmail: attendeeEmail,
+              userEmail: trimmedEmail,
               userId: user?.uid || 'guest_user',
               paymethod: 'lakipay'
             })
@@ -203,16 +253,20 @@ export default function UpcomingEventsSection() {
       // Safe registration payload
       const registerPayload = {
         eventId: selectedEvent.id,
+        eventSlug: selectedEvent.slug || '',
         eventTitle: selectedEvent.title,
         eventDate: selectedEvent.date,
         eventTime: selectedEvent.time,
         eventLocation: selectedEvent.location,
-        name: attendeeName.trim(),
-        email: attendeeEmail.trim(),
-        phone: attendeePhone.trim(),
-        attendeeName: attendeeName.trim(),
-        attendeeEmail: attendeeEmail.trim(),
-        attendeePhone: attendeePhone.trim(),
+        isOnline: selectedEvent.isOnline || false,
+        meetingLink: selectedEvent.meetingLink || '',
+        mapsUrl: selectedEvent.mapsUrl || '',
+        name: trimmedName,
+        email: trimmedEmail,
+        phone: trimmedPhone,
+        attendeeName: trimmedName,
+        attendeeEmail: trimmedEmail,
+        attendeePhone: trimmedPhone,
         userId: user?.uid || `guest_${Date.now()}`,
         pricePaid: selectedEvent.price || 0,
         price: selectedEvent.price || 0,
@@ -230,30 +284,29 @@ export default function UpcomingEventsSection() {
           body: JSON.stringify(registerPayload)
         });
 
-        const contentType = res.headers.get('content-type') || '';
-        if (contentType.includes('application/json')) {
-          const data = await res.json();
-          if (data && (data.success || data.ticket || data.ticketId)) {
-            issuedTicket = data.ticket || {
-              ticketId: data.ticketId || `TC-EVT-${Date.now().toString(36).toUpperCase()}`,
-              eventId: selectedEvent.id,
-              eventTitle: selectedEvent.title,
-              eventDate: selectedEvent.date,
-              eventTime: selectedEvent.time,
-              eventLocation: selectedEvent.location,
-              attendeeName: attendeeName.trim(),
-              attendeeEmail: attendeeEmail.trim(),
-              attendeePhone: attendeePhone.trim(),
-              userId: user?.uid || `guest_${Date.now()}`,
-              tier: registerPayload.tier as any,
-              pricePaid: selectedEvent.price || 0,
-              paymentMethod: 'free',
-              qrCodeData: data.ticketId || selectedEvent.id,
-              isUsed: false,
-              usedAt: null,
-              issuedAt: new Date().toISOString()
-            };
-          }
+        const data = await res.json().catch(() => null);
+
+        // If user already registered, open existing ticket
+        if (data && data.alreadyRegistered && data.ticket) {
+          saveCachedUserTicket(data.ticket);
+          setUserBookedTickets(prev => ({
+            ...prev,
+            [selectedEvent.id]: data.ticket,
+            ...(selectedEvent.slug ? { [selectedEvent.slug]: data.ticket } : {})
+          }));
+          setActiveTicket(data.ticket);
+          setIsBookingOpen(false);
+          setIsTicketModalOpen(true);
+          return;
+        }
+
+        if (data && data.soldOut) {
+          setBookingError(data.error || 'ይቅርታ፣ የዚህ ዝግጅት ትኬት ሙሉ በሙሉ አልቋል! (Sold Out)');
+          return;
+        }
+
+        if (data && (data.success || data.ticket || data.ticketId)) {
+          issuedTicket = data.ticket;
         }
       } catch (regErr) {
         console.warn('/api/events/register notice:', regErr);
@@ -267,48 +320,28 @@ export default function UpcomingEventsSection() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(registerPayload)
           });
-          const cType = ticketRes.headers.get('content-type') || '';
-          if (cType.includes('application/json')) {
-            const tData = await ticketRes.json();
-            if (tData && (tData.success || tData.ticket)) {
-              issuedTicket = tData.ticket;
-            }
+          const tData = await ticketRes.json().catch(() => null);
+          if (tData && tData.ticket) {
+            issuedTicket = tData.ticket;
           }
         } catch (ticketErr) {
           console.warn('/api/events/tickets notice:', ticketErr);
         }
       }
 
-      // 3. Fail-safe client ticket generation so the student ALWAYS gets their pass
-      if (!issuedTicket) {
-        const timeHex = Date.now().toString(36).substring(4).toUpperCase();
-        const randHex = Math.random().toString(36).substring(2, 6).toUpperCase();
-        const localTicketId = `TC-EVT-${timeHex}-${randHex}`;
-        issuedTicket = {
-          ticketId: localTicketId,
-          eventId: selectedEvent.id,
-          eventTitle: selectedEvent.title,
-          eventDate: selectedEvent.date,
-          eventTime: selectedEvent.time,
-          eventLocation: selectedEvent.location,
-          attendeeName: attendeeName.trim(),
-          attendeeEmail: attendeeEmail.trim(),
-          attendeePhone: attendeePhone.trim(),
-          userId: user?.uid || `guest_${Date.now()}`,
-          tier: registerPayload.tier as any,
-          pricePaid: selectedEvent.price || 0,
-          paymentMethod: 'free',
-          qrCodeData: JSON.stringify({ tId: localTicketId, eId: selectedEvent.id, name: attendeeName.trim() }),
-          isUsed: false,
-          usedAt: null,
-          issuedAt: new Date().toISOString()
-        };
+      if (issuedTicket) {
+        saveCachedUserTicket(issuedTicket);
+        setUserBookedTickets(prev => ({
+          ...prev,
+          [selectedEvent.id]: issuedTicket!,
+          ...(selectedEvent.slug ? { [selectedEvent.slug]: issuedTicket! } : {})
+        }));
+        setActiveTicket(issuedTicket);
+        setIsBookingOpen(false);
+        setIsTicketModalOpen(true);
+      } else {
+        setBookingError('ምዝገባውን ማጠናቀቅ አልተቻለም፤ እባክዎ በድጋሚ ይሞክሩ።');
       }
-
-      // Display Apple Wallet Pass Modal
-      setActiveTicket(issuedTicket);
-      setIsBookingOpen(false);
-      setIsTicketModalOpen(true);
     } catch (err: any) {
       console.error("Booking error:", err);
       setBookingError(err?.message || 'ትኬቱን ማዘጋጀት አልተቻለም፤ እባክዎ በድጋሚ ይሞክሩ።');
@@ -349,22 +382,20 @@ export default function UpcomingEventsSection() {
         {/* Event Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {events.map((event) => {
-            const liveRegCount = Math.max(
-              Number(event.registeredCount) || 0,
-              registrationsCountByEvent[event.id] || 0,
-              event.slug ? (registrationsCountByEvent[event.slug] || 0) : 0
-            );
             const capacity = Number(event.capacity) || 100;
-            const remainingSeats = (event as any).remainingSeats !== undefined && typeof (event as any).remainingSeats === 'number'
-              ? Math.max(0, (event as any).remainingSeats)
-              : Math.max(0, capacity - liveRegCount);
+            const remainingSeats = getRemainingSeats(event);
             const isSoldOut = remainingSeats <= 0;
             const percentTaken = Math.min(100, Math.round(((capacity - remainingSeats) / capacity) * 100));
+
+            const userTicket = userBookedTickets[event.id] || (event.slug ? userBookedTickets[event.slug] : null);
+            const isAlreadyRegistered = Boolean(userTicket);
 
             return (
               <div 
                 key={event.id}
-                className="group relative rounded-3xl p-6 transition-all duration-500 hover:-translate-y-2 hover:scale-[1.01] flex flex-col justify-between backdrop-blur-xl bg-black/60 border border-white/10 hover:border-[#f9b03c]/60 shadow-[0_20px_50px_rgba(0,0,0,0.7)] hover:shadow-[0_25px_60px_rgba(249,176,60,0.25)]"
+                className={`group relative rounded-3xl p-6 transition-all duration-500 hover:-translate-y-2 hover:scale-[1.01] flex flex-col justify-between backdrop-blur-xl bg-black/60 border ${
+                  isAlreadyRegistered ? 'border-emerald-500/50 shadow-[0_15px_40px_rgba(16,185,129,0.2)]' : 'border-white/10 hover:border-[#f9b03c]/60'
+                } shadow-[0_20px_50px_rgba(0,0,0,0.7)] hover:shadow-[0_25px_60px_rgba(249,176,60,0.25)]`}
               >
                 {/* 3D Radial Glow on Hover */}
                 <div className="absolute inset-0 rounded-3xl bg-gradient-to-b from-[#f9b03c]/10 via-transparent to-[#3268ba]/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
@@ -378,20 +409,25 @@ export default function UpcomingEventsSection() {
                       className="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-700"
                     />
                     
-                    {/* Top Status Capsules: Cobalt Blue (#3268ba) Category Tag */}
+                    {/* Top Status Capsules */}
                     <div className="absolute top-3 left-3 flex flex-wrap items-center gap-2">
                       <span className="px-3 py-1 rounded-full bg-[#3268ba]/80 backdrop-blur-md text-white border border-[#3268ba] text-xs font-black shadow-md flex items-center gap-1.5">
                         <i className={`fa-solid ${event.isOnline ? 'fa-globe' : 'fa-location-dot'} text-[11px]`}></i>
                         <span>{event.isOnline ? 'Virtual Live Stream' : 'In-Person (አካል)'}</span>
                       </span>
-                      {isSoldOut && (
+                      {isAlreadyRegistered ? (
+                        <span className="px-2.5 py-1 rounded-full bg-emerald-600/95 text-white text-[10px] font-black tracking-wider uppercase shadow-md flex items-center gap-1">
+                          <i className="fa-solid fa-circle-check text-[10px]"></i>
+                          <span>ተመዝግበዋል</span>
+                        </span>
+                      ) : isSoldOut ? (
                         <span className="px-2.5 py-1 rounded-full bg-red-600/90 text-white text-[10px] font-black tracking-wider uppercase shadow-md animate-pulse">
                           ❌ አልቋል (Sold Out)
                         </span>
-                      )}
+                      ) : null}
                     </div>
 
-                    {/* Price Tag: Golden Orange (#f9b03c) Badge */}
+                    {/* Price Tag */}
                     <div className="absolute bottom-3 right-3">
                       <span className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#f9b03c] text-slate-950 text-xs font-black shadow-[0_0_20px_rgba(249,176,60,0.6)]">
                         {event.price === 0 || event.isFree ? '100% ነፃ (FREE)' : `${event.price.toLocaleString()} ብር`}
@@ -399,7 +435,7 @@ export default function UpcomingEventsSection() {
                     </div>
                   </Link>
 
-                  {/* Date & Time Capsule with Golden Orange Accent */}
+                  {/* Date & Time Capsule */}
                   <div className="flex items-center gap-2.5 text-xs text-slate-300 mb-3.5 font-semibold">
                     <div className="flex items-center gap-1.5 bg-[#f9b03c]/10 border border-[#f9b03c]/30 px-3 py-1.5 rounded-xl text-[#f9b03c] font-black">
                       <i className="fa-regular fa-calendar text-[#f9b03c]"></i>
@@ -461,19 +497,37 @@ export default function UpcomingEventsSection() {
 
                   {/* Action Buttons Row */}
                   <div className="flex items-center gap-2.5">
-                    <button
-                      type="button"
-                      disabled={isSoldOut}
-                      onClick={() => !isSoldOut && handleOpenBooking(event)}
-                      className={`flex-1 py-3.5 rounded-2xl text-xs sm:text-sm font-black flex items-center justify-center gap-2 transition-all cursor-pointer ${
-                        isSoldOut
-                          ? 'bg-slate-800/80 text-slate-500 border border-white/5 cursor-not-allowed'
-                          : 'bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#f9b03c] hover:brightness-110 text-slate-950 active:scale-95 shadow-[0_0_25px_rgba(249,176,60,0.35)] hover:shadow-[0_0_40px_rgba(249,176,60,0.6)]'
-                      }`}
-                    >
-                      <span>{isSoldOut ? 'ትኬቱ አልቋል (Sold Out)' : (event.price === 0 || event.isFree ? 'በነፃ ይመዝገቡ' : 'ትኬት ይቁረጡ')}</span>
-                      <i className={`fa-solid ${isSoldOut ? 'fa-lock' : 'fa-ticket'} text-xs`}></i>
-                    </button>
+                    {isAlreadyRegistered ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveTicket(userTicket);
+                          setIsTicketModalOpen(true);
+                        }}
+                        className="flex-1 py-3.5 rounded-2xl text-xs sm:text-sm font-black flex items-center justify-center gap-2 transition-all cursor-pointer bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-[0_0_25px_rgba(16,185,129,0.35)] border border-emerald-400/40 active:scale-95"
+                      >
+                        <i className="fa-solid fa-circle-check text-white text-sm"></i>
+                        <span>ቲኬት ቆርጠዋል (Already Registered)</span>
+                      </button>
+                    ) : isSoldOut ? (
+                      <button
+                        type="button"
+                        disabled
+                        className="flex-1 py-3.5 rounded-2xl text-xs sm:text-sm font-black flex items-center justify-center gap-2 bg-slate-800/80 text-slate-500 border border-white/5 cursor-not-allowed"
+                      >
+                        <i className="fa-solid fa-lock text-xs"></i>
+                        <span>አልቋል (Sold Out)</span>
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => handleOpenBooking(event)}
+                        className="flex-1 py-3.5 rounded-2xl text-xs sm:text-sm font-black flex items-center justify-center gap-2 transition-all cursor-pointer bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#f9b03c] hover:brightness-110 text-slate-950 active:scale-95 shadow-[0_0_25px_rgba(249,176,60,0.35)] hover:shadow-[0_0_40px_rgba(249,176,60,0.6)]"
+                      >
+                        <span>{event.price === 0 || event.isFree ? 'በነፃ ይመዝገቡ' : 'ትኬት ይቁረጡ'}</span>
+                        <i className="fa-solid fa-ticket text-xs"></i>
+                      </button>
+                    )}
 
                     <Link
                       href={`/events/${event.slug || event.id}`}
@@ -499,103 +553,105 @@ export default function UpcomingEventsSection() {
         >
           <div className="relative w-full max-w-md bg-[#0c1017] border border-amber-400/40 rounded-3xl p-6 shadow-[0_25px_80px_rgba(0,0,0,0.9)] text-white animate-in zoom-in-95 duration-200">
             
-            <button
-              type="button"
-              onClick={() => setIsBookingOpen(false)}
-              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/5 hover:bg-white/15 text-gray-400 hover:text-white flex items-center justify-center transition cursor-pointer border border-white/10"
-            >
-              <i className="fa-solid fa-xmark text-sm"></i>
-            </button>
-
-            <div className="text-center mb-5">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#f9b03c] to-amber-400 text-slate-950 flex items-center justify-center text-xl mx-auto mb-3 shadow-[0_0_20px_rgba(249,176,60,0.4)]">
-                <i className="fa-solid fa-ticket"></i>
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-4 mb-4 border-b border-white/10">
+              <div>
+                <span className="text-[10px] font-black text-[#f9b03c] uppercase tracking-widest block">
+                  {selectedEvent.price === 0 || selectedEvent.isFree ? 'ነፃ ምዝገባ (FREE REGISTRATION)' : 'የቲኬት መቁረጫ (TICKET BOOKING)'}
+                </span>
+                <h3 className="text-base font-black text-white line-clamp-1">{selectedEvent.title}</h3>
               </div>
-              <h3 className="text-xl font-black font-heading text-white">የትኬት ምዝገባ ማረጋገጫ</h3>
-              <p className="text-xs text-[#f9b03c] font-bold mt-1">{selectedEvent.title}</p>
+              <button 
+                type="button" 
+                onClick={() => setIsBookingOpen(false)}
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-slate-400 hover:text-white flex items-center justify-center text-xs transition"
+              >
+                <i className="fa-solid fa-xmark"></i>
+              </button>
             </div>
 
+            {/* Error Message */}
             {bookingError && (
-              <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-xs text-red-300 mb-4">
-                {bookingError}
+              <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs font-semibold flex items-center gap-2">
+                <i className="fa-solid fa-circle-exclamation text-red-400 shrink-0"></i>
+                <span>{bookingError}</span>
               </div>
             )}
 
+            {/* Event Overview Pill */}
+            <div className="p-3 rounded-2xl bg-white/5 border border-white/10 mb-4 flex items-center gap-3 text-xs">
+              <div className="w-10 h-10 rounded-xl bg-[#f9b03c]/20 text-[#f9b03c] flex items-center justify-center text-base shrink-0 font-black">
+                <i className="fa-solid fa-calendar-check"></i>
+              </div>
+              <div className="min-w-0">
+                <div className="font-bold text-white truncate">{selectedEvent.date} • {selectedEvent.time}</div>
+                <div className="text-[11px] text-slate-400 truncate">{selectedEvent.location}</div>
+              </div>
+            </div>
+
+            {/* Attendee Form */}
             <form onSubmit={handleConfirmBooking} className="space-y-3.5">
               <div>
-                <label className="block text-xs font-bold text-slate-200 mb-1">
-                  ሙሉ ስም (Full Name) <span className="text-red-400 font-black">* (ግዴታ)</span>
-                </label>
-                <input
+                <label className="block text-xs font-bold text-slate-300 mb-1">ሙሉ ስም (Full Name) *</label>
+                <input 
                   type="text"
                   required
+                  placeholder="ስምዎን ያስገቡ"
                   value={attendeeName}
                   onChange={(e) => setAttendeeName(e.target.value)}
-                  placeholder="ለምሳሌ፡ ኢዮብ ሳህሌ (Eyoub Sahle)"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-hidden focus:border-[#f9b03c]"
+                  className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/15 focus:border-[#f9b03c] text-white text-xs outline-none transition"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-200 mb-1">
-                  ኢሜይል (Email Address) <span className="text-red-400 font-black">* (ግዴታ)</span>
-                </label>
-                <input
+                <label className="block text-xs font-bold text-slate-300 mb-1">ኢሜይል አድራሻ (Email Address) *</label>
+                <input 
                   type="email"
                   required
+                  placeholder="name@example.com (ትኬቱ የሚላክበት)"
                   value={attendeeEmail}
                   onChange={(e) => setAttendeeEmail(e.target.value)}
-                  placeholder="eyoubsahle1@gmail.com (ዲጂታል ትኬቱ የሚላክበት)"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-hidden focus:border-[#f9b03c]"
+                  className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/15 focus:border-[#f9b03c] text-white text-xs outline-none transition"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-200 mb-1">
-                  ስልክ ቁጥር (Phone Number) <span className="text-red-400 font-black">* (ግዴታ)</span>
-                </label>
-                <input
+                <label className="block text-xs font-bold text-slate-300 mb-1">ስልክ ቁጥር (Phone Number) *</label>
+                <input 
                   type="tel"
                   required
+                  placeholder="0911223344"
                   value={attendeePhone}
                   onChange={(e) => setAttendeePhone(e.target.value)}
-                  placeholder="0911223344 ወይም +251911223344"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-hidden focus:border-[#f9b03c]"
+                  className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/15 focus:border-[#f9b03c] text-white text-xs outline-none transition"
                 />
-                <p className="text-[10px] text-amber-400/80 mt-1 flex items-center gap-1">
-                  <i className="fa-solid fa-shield-check"></i>
-                  <span>የማረጋገጫ SMS እና የትኬት QR ኮድ ወደዚህ ቁጥር ይላካል</span>
-                </p>
               </div>
 
-              <div className="p-3.5 rounded-2xl bg-white/[0.04] border border-white/[0.08] text-xs space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-300 font-semibold">የትኬት አይነት</span>
-                  <span className="font-bold text-slate-200">{selectedEvent.price > 1200 ? 'VIP Pass' : 'General Admission'}</span>
-                </div>
-                <div className="flex justify-between items-center pt-2 border-t border-white/5">
-                  <span className="text-slate-300 font-semibold">የትኬት ዋጋ</span>
-                  <span className="font-black text-[#f9b03c] text-sm">
-                    {selectedEvent.price === 0 || selectedEvent.isFree ? '100% ነፃ (Free)' : `${selectedEvent.price.toLocaleString()} ብር`}
-                  </span>
-                </div>
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#f9b03c] hover:brightness-110 text-slate-950 font-black text-sm flex items-center justify-center gap-2 shadow-[0_0_30px_rgba(249,176,60,0.4)] active:scale-98 transition disabled:opacity-50"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <i className="fa-solid fa-circle-notch fa-spin text-xs"></i>
+                      <span>ትኬትዎ እየተዘጋጀ ነው...</span>
+                    </>
+                  ) : (
+                    <>
+                      <i className="fa-solid fa-ticket text-xs"></i>
+                      <span>{selectedEvent.price === 0 || selectedEvent.isFree ? 'ምዝገባውን አጠናቅቅ (Confirm Ticket)' : `ክፍያ ፈጽመህ ትኬት ቁረጥ • ${selectedEvent.price.toLocaleString()} ብር`}</span>
+                    </>
+                  )}
+                </button>
               </div>
-
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full btn-buy-now-vibe py-3.5 rounded-xl text-sm font-black flex items-center justify-center gap-2 cursor-pointer active:scale-98 disabled:opacity-50 mt-2"
-              >
-                <span>{isSubmitting ? 'ትኬት በማዘጋጀት ላይ...' : selectedEvent.price === 0 ? 'ትኬቴን አዘጋጅልኝ (Get Free Ticket)' : 'ወደ ክፍያ ቀጥል (Proceed to Pay)'}</span>
-                <i className="fa-solid fa-arrow-right text-xs"></i>
-              </button>
             </form>
-
           </div>
         </div>
       )}
 
-      {/* Cinematic Digital Pass Modal */}
+      {/* Digital Apple Wallet Style Ticket Pass Modal */}
       <DigitalTicketModal
         isOpen={isTicketModalOpen}
         onClose={() => setIsTicketModalOpen(false)}

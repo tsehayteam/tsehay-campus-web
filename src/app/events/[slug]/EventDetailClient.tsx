@@ -7,7 +7,17 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import DigitalTicketModal from '@/components/DigitalTicketModal';
 import ShareEventModal from '@/components/ShareEventModal';
-import { TsehayEvent, EventTicket, DEFAULT_EVENTS, getCachedEvents, getEventBySlugOrId, getRemainingSeats, formatDriveImageUrl } from '@/lib/eventCache';
+import { 
+  TsehayEvent, 
+  EventTicket, 
+  DEFAULT_EVENTS, 
+  getCachedEvents, 
+  getEventBySlugOrId, 
+  getRemainingSeats, 
+  formatDriveImageUrl,
+  getCachedUserTickets,
+  saveCachedUserTicket
+} from '@/lib/eventCache';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase/config';
 import { collection, doc, onSnapshot, query, getDocs } from 'firebase/firestore';
@@ -24,6 +34,7 @@ export default function EventDetailClient() {
 
   // Booking & Payment Modal State
   const [isBookingOpen, setIsBookingOpen] = useState(false);
+  const [userBookedTickets, setUserBookedTickets] = useState<Record<string, EventTicket>>(() => getCachedUserTickets());
   const [attendeeName, setAttendeeName] = useState(user?.displayName || '');
   const [attendeeEmail, setAttendeeEmail] = useState(user?.email || '');
   const [attendeePhone, setAttendeePhone] = useState('');
@@ -79,10 +90,26 @@ export default function EventDetailClient() {
       const regsRef = collection(db, 'event_registrations');
       unsubRegs = onSnapshot(regsRef, (snapshot) => {
         let count = 0;
+        const userEmailLower = user?.email?.toLowerCase().trim();
+        const userUid = user?.uid;
+
         snapshot.docs.forEach(d => {
-          const r = d.data();
+          const r = d.data() as EventTicket;
           if (r.eventSlug === slug || (event && (r.eventId === event.id || r.eventSlug === event.slug))) {
             count++;
+          }
+
+          const ticketEmail = r.attendeeEmail?.toLowerCase().trim();
+          const ticketUid = r.userId;
+          const isUserTicket = (userEmailLower && ticketEmail === userEmailLower) || (userUid && ticketUid === userUid);
+
+          if (isUserTicket) {
+            saveCachedUserTicket(r);
+            setUserBookedTickets(prev => ({
+              ...prev,
+              [r.eventId]: r,
+              ...(r.eventSlug ? { [r.eventSlug]: r } : {})
+            }));
           }
         });
         setLiveRegistrationsCount(count);
@@ -544,25 +571,54 @@ export default function EventDetailClient() {
                   </div>
 
                   <div className="flex flex-col sm:flex-row items-center gap-4 pt-2">
-                    <button
-                      type="button"
-                      disabled={isSoldOut}
-                      onClick={() => !isSoldOut && setIsBookingOpen(true)}
-                      className={`w-full sm:flex-1 py-4 rounded-2xl text-base font-black flex items-center justify-center gap-2.5 transition-all ${
-                        isSoldOut 
-                          ? 'bg-slate-800/80 text-slate-500 border border-white/5 cursor-not-allowed'
-                          : 'btn-buy-now-vibe cursor-pointer active:scale-98 shadow-[0_0_35px_rgba(249,176,60,0.4)]'
-                      }`}
-                    >
-                      <i className={`fa-solid ${isSoldOut ? 'fa-lock' : 'fa-ticket'} text-lg`}></i>
-                      <span>
-                        {isSoldOut 
-                          ? 'ትኬቱ አልቋል (Sold Out)'
-                          : event.price === 0 || event.isFree 
-                          ? 'በነፃ ትኬት ይቁረጡ (Register Free)' 
-                          : `ትኬት ይቁረጡ • ${event.price.toLocaleString()} ብር`}
-                      </span>
-                    </button>
+                    {(() => {
+                      const userTicket = userBookedTickets[event.id] || (event.slug ? userBookedTickets[event.slug] : null);
+                      const isAlreadyRegistered = Boolean(userTicket);
+
+                      if (isAlreadyRegistered) {
+                        return (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveTicket(userTicket);
+                              setIsTicketModalOpen(true);
+                            }}
+                            className="w-full sm:flex-1 py-4 rounded-2xl text-base font-black flex items-center justify-center gap-2.5 transition-all cursor-pointer bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-[0_0_35px_rgba(16,185,129,0.4)] border border-emerald-400/40 active:scale-98"
+                          >
+                            <i className="fa-solid fa-circle-check text-white text-lg"></i>
+                            <span>ቲኬት ቆርጠዋል (Already Registered) • ትኬትህን እይ</span>
+                          </button>
+                        );
+                      }
+
+                      if (isSoldOut) {
+                        return (
+                          <button
+                            type="button"
+                            disabled
+                            className="w-full sm:flex-1 py-4 rounded-2xl text-base font-black flex items-center justify-center gap-2.5 bg-slate-800/80 text-slate-500 border border-white/5 cursor-not-allowed"
+                          >
+                            <i className="fa-solid fa-lock text-lg"></i>
+                            <span>ትኬቱ አልቋል (Sold Out)</span>
+                          </button>
+                        );
+                      }
+
+                      return (
+                        <button
+                          type="button"
+                          onClick={() => setIsBookingOpen(true)}
+                          className="w-full sm:flex-1 py-4 rounded-2xl text-base font-black flex items-center justify-center gap-2.5 transition-all btn-buy-now-vibe cursor-pointer active:scale-98 shadow-[0_0_35px_rgba(249,176,60,0.4)]"
+                        >
+                          <i className="fa-solid fa-ticket text-lg"></i>
+                          <span>
+                            {event.price === 0 || event.isFree 
+                              ? 'በነፃ ትኬት ይቁረጡ (Register Free)' 
+                              : `ትኬት ይቁረጡ • ${event.price.toLocaleString()} ብር`}
+                          </span>
+                        </button>
+                      );
+                    })()}
 
                     <button
                       type="button"

@@ -1031,18 +1031,67 @@ export default function AdminDashboard() {
       console.warn("Support tickets sync notice:", err);
     });
 
-    // 🌟 Real-Time Firestore Listener for Event Registrations & Tickets
+    // 🌟 [CRITICAL FIX 3: REAL-TIME ADMIN EVENT REGISTRATIONS & TICKETS SYNC]
     let unsubscribeEventRegs: any = () => {};
+    let unsubscribeArtifactEventRegs: any = () => {};
+    let unsubscribeEventsRoot: any = () => {};
+    let unsubscribeEventsArtifact: any = () => {};
+
     try {
       const regCol = collection(db, 'event_registrations');
       unsubscribeEventRegs = onSnapshot(regCol, (snapshot) => {
         if (!snapshot.empty) {
           const list = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as unknown as EventTicket));
-          setEventTickets(list);
+          setEventTickets(prev => {
+            const map = new Map<string, EventTicket>();
+            [...list, ...prev].forEach(t => {
+              if (t.ticketId || t.id) map.set(t.ticketId || t.id || '', t);
+            });
+            return Array.from(map.values());
+          });
         }
       }, (err) => {
         console.warn('Real-time event_registrations sync fallback:', err);
       });
+    } catch (e) {}
+
+    try {
+      const artRegCol = collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'event_registrations');
+      unsubscribeArtifactEventRegs = onSnapshot(artRegCol, (snapshot) => {
+        if (!snapshot.empty) {
+          const list = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as unknown as EventTicket));
+          setEventTickets(prev => {
+            const map = new Map<string, EventTicket>();
+            [...list, ...prev].forEach(t => {
+              if (t.ticketId || t.id) map.set(t.ticketId || t.id || '', t);
+            });
+            return Array.from(map.values());
+          });
+        }
+      }, () => {});
+    } catch (e) {}
+
+    // Real-Time Events Document Sync in Admin
+    try {
+      const evCol = collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'events');
+      unsubscribeEventsArtifact = onSnapshot(evCol, (snapshot) => {
+        if (!snapshot.empty) {
+          const list = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as TsehayEvent));
+          setEvents(list);
+          saveCachedEvents(list);
+        }
+      }, () => {});
+    } catch (e) {}
+
+    try {
+      const evRootCol = collection(db, 'events');
+      unsubscribeEventsRoot = onSnapshot(evRootCol, (snapshot) => {
+        if (!snapshot.empty) {
+          const list = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as TsehayEvent));
+          setEvents(list);
+          saveCachedEvents(list);
+        }
+      }, () => {});
     } catch (e) {}
 
     // 🌟 Live Events & QR Tickets Data Loader
@@ -1061,11 +1110,11 @@ export default function AdminDashboard() {
           const tickData = await tickRes.json();
           if (tickData.tickets && Array.isArray(tickData.tickets)) {
             setEventTickets(prev => {
-              const merged = [...tickData.tickets];
-              prev.forEach(p => {
-                if (!merged.some(m => m.ticketId === p.ticketId)) merged.push(p);
+              const map = new Map<string, EventTicket>();
+              [...tickData.tickets, ...prev].forEach(p => {
+                if (p.ticketId || p.id) map.set(p.ticketId || p.id || '', p);
               });
-              return merged;
+              return Array.from(map.values());
             });
           }
         }
@@ -1278,6 +1327,9 @@ export default function AdminDashboard() {
         unsubscribePayments();
         unsubscribeTickets();
         unsubscribeEventRegs();
+        unsubscribeArtifactEventRegs();
+        unsubscribeEventsRoot();
+        unsubscribeEventsArtifact();
         unsubscribeAboutVideo();
         unsubscribePortfolio1();
         unsubscribePortfolio2();

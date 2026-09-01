@@ -13,6 +13,8 @@ export interface TsehayEvent {
   capacity: number;
   registeredCount: number;
   remainingSeats?: number;
+  seatsLeft?: number;
+  availableTickets?: number;
   price: number; // 0 for Free
   isFree?: boolean;
   speaker: string; // e.g. "ኢዮብ ሳህሌ (Eyoub Sahle)"
@@ -219,10 +221,44 @@ export function getEventBySlugOrId(slugOrId: string, eventsList: TsehayEvent[] =
 }
 
 export function getRemainingSeats(event: TsehayEvent): number {
+  if (!event) return 0;
   if (event.remainingSeats !== undefined && typeof event.remainingSeats === 'number') {
     return Math.max(0, event.remainingSeats);
+  }
+  if (event.seatsLeft !== undefined && typeof event.seatsLeft === 'number') {
+    return Math.max(0, event.seatsLeft);
+  }
+  if (event.availableTickets !== undefined && typeof event.availableTickets === 'number') {
+    return Math.max(0, event.availableTickets);
   }
   const cap = Number(event.capacity) || 100;
   const reg = Number(event.registeredCount) || 0;
   return Math.max(0, cap - reg);
 }
+
+export const USER_TICKETS_CACHE_KEY = 'tsehay_user_event_tickets';
+
+export function getCachedUserTickets(): Record<string, EventTicket> {
+  if (typeof window === 'undefined') return {};
+  try {
+    const raw = localStorage.getItem(USER_TICKETS_CACHE_KEY);
+    if (raw) {
+      return JSON.parse(raw);
+    }
+  } catch (e) {}
+  return {};
+}
+
+export function saveCachedUserTicket(ticket: EventTicket): void {
+  if (typeof window === 'undefined' || !ticket) return;
+  try {
+    const existing = getCachedUserTickets();
+    const eventKey = ticket.eventId || ticket.eventSlug || ticket.ticketId;
+    existing[eventKey] = ticket;
+    if (ticket.eventId) existing[ticket.eventId] = ticket;
+    if (ticket.eventSlug) existing[ticket.eventSlug] = ticket;
+    localStorage.setItem(USER_TICKETS_CACHE_KEY, JSON.stringify(existing));
+    window.dispatchEvent(new CustomEvent('tsehay_user_ticket_saved', { detail: { ticket } }));
+  } catch (e) {}
+}
+

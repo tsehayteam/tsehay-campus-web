@@ -7,7 +7,16 @@ import Footer from '@/components/Footer';
 import DigitalTicketModal from '@/components/DigitalTicketModal';
 import PaymentModal from '@/components/PaymentModal';
 import RequireAuthModal from '@/components/RequireAuthModal';
-import { TsehayEvent, EventTicket, DEFAULT_EVENTS, getCachedEvents, getRemainingSeats, formatDriveImageUrl } from '@/lib/eventCache';
+import { 
+  TsehayEvent, 
+  EventTicket, 
+  DEFAULT_EVENTS, 
+  getCachedEvents, 
+  getRemainingSeats, 
+  formatDriveImageUrl,
+  getCachedUserTickets,
+  saveCachedUserTicket 
+} from '@/lib/eventCache';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase/config';
 import { collection, onSnapshot, query, getDocs } from 'firebase/firestore';
@@ -18,7 +27,7 @@ export default function EventsClient() {
   const [filter, setFilter] = useState<'all' | 'free' | 'paid' | 'online' | 'in-person'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   
-  // Registration & Modal states
+  const [userBookedTickets, setUserBookedTickets] = useState<Record<string, EventTicket>>(() => getCachedUserTickets());
   const [selectedEvent, setSelectedEvent] = useState<TsehayEvent | null>(null);
   const [isRegistering, setIsRegistering] = useState(false);
   const [generatedTicket, setGeneratedTicket] = useState<EventTicket | null>(null);
@@ -79,7 +88,31 @@ export default function EventsClient() {
       });
     } catch (e) {}
 
-    // 3. Direct HTTP fetch with cache-busting
+    // 3. Listen on event_registrations collection for user tickets & count
+    let unsubRegs = () => {};
+    try {
+      const qRegs = query(collection(db, 'event_registrations'));
+      unsubRegs = onSnapshot(qRegs, (snapshot) => {
+        const userEmailLower = user?.email?.toLowerCase().trim();
+        const userUid = user?.uid;
+        snapshot.docs.forEach(d => {
+          const r = d.data() as EventTicket;
+          const ticketEmail = r.attendeeEmail?.toLowerCase().trim();
+          const ticketUid = r.userId;
+          const isUserTicket = (userEmailLower && ticketEmail === userEmailLower) || (userUid && ticketUid === userUid);
+          if (isUserTicket) {
+            saveCachedUserTicket(r);
+            setUserBookedTickets(prev => ({
+              ...prev,
+              [r.eventId]: r,
+              ...(r.eventSlug ? { [r.eventSlug]: r } : {})
+            }));
+          }
+        });
+      }, () => {});
+    } catch (e) {}
+
+    // 4. Direct HTTP fetch with cache-busting
     fetch(`/api/events?t=${Date.now()}`, {
       cache: 'no-store',
       headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' }
@@ -96,8 +129,9 @@ export default function EventsClient() {
     return () => {
       unsubRoot();
       unsubArtifact();
+      unsubRegs();
     };
-  }, []);
+  }, [user]);
 
   const filteredEvents = events.filter((evt) => {
     // Filter type
@@ -341,19 +375,51 @@ export default function EventsClient() {
                       </Link>
                     </div>
 
-                    <button
-                      type="button"
-                      disabled={isSoldOut || isRegistering}
-                      onClick={() => handleBookTicket(evt)}
-                      className={`w-full py-3 rounded-2xl font-black font-heading text-xs uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer ${
-                        isSoldOut
-                          ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
-                          : 'bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#f9b03c] hover:from-amber-400 hover:to-[#f9b03c] text-slate-950 shadow-[0_0_25px_rgba(249,176,60,0.35)] hover:shadow-[0_0_35px_rgba(249,176,60,0.6)] active:scale-98'
-                      }`}
-                    >
-                      <i className="fa-solid fa-ticket" />
-                      <span>{isSoldOut ? 'ተይዞ አልቋል (Sold Out)' : evt.isFree || evt.price === 0 ? 'ነፃ ትኬት ቁረጥ (RSVP Free)' : `ትኬት ቁረጥ (${evt.price} ETB)`}</span>
-                    </button>
+                    {(() => {
+                      const userTicket = userBookedTickets[evt.id] || (evt.slug ? userBookedTickets[evt.slug] : null);
+                      const isAlreadyRegistered = Boolean(userTicket);
+
+                      if (isAlreadyRegistered) {
+                        return (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setGeneratedTicket(userTicket);
+                              setIsTicketModalOpen(true);
+                            }}
+                            className="w-full py-3 rounded-2xl font-black font-heading text-xs uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-[0_0_25px_rgba(16,185,129,0.4)] border border-emerald-400/40 active:scale-98"
+                          >
+                            <i className="fa-solid fa-circle-check" />
+                            <span>ቲኬት ቆርጠዋል (Already Registered)</span>
+                          </button>
+                        );
+                      }
+
+                      if (isSoldOut) {
+                        return (
+                          <button
+                            type="button"
+                            disabled
+                            className="w-full py-3 rounded-2xl font-black font-heading text-xs uppercase tracking-wider bg-slate-800 text-slate-500 cursor-not-allowed flex items-center justify-center gap-2"
+                          >
+                            <i className="fa-solid fa-lock" />
+                            <span>ተይዞ አልቋል (Sold Out)</span>
+                          </button>
+                        );
+                      }
+
+                      return (
+                        <button
+                          type="button"
+                          disabled={isRegistering}
+                          onClick={() => handleBookTicket(evt)}
+                          className="w-full py-3 rounded-2xl font-black font-heading text-xs uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#f9b03c] hover:from-amber-400 hover:to-[#f9b03c] text-slate-950 shadow-[0_0_25px_rgba(249,176,60,0.35)] hover:shadow-[0_0_35px_rgba(249,176,60,0.6)] active:scale-98"
+                        >
+                          <i className="fa-solid fa-ticket" />
+                          <span>{evt.isFree || evt.price === 0 ? 'ነፃ ትኬት ቁረጥ (RSVP Free)' : `ትኬት ቁረጥ (${evt.price} ETB)`}</span>
+                        </button>
+                      );
+                    })()}
                   </div>
                 </div>
               );
