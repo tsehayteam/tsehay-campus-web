@@ -221,7 +221,7 @@ export default function Hero3DPopoutStage({
 
   return (
     <div 
-      className="w-full max-w-4xl relative select-none py-6 sm:py-8"
+      className="w-full max-w-5xl lg:max-w-6xl relative select-none py-4 sm:py-6"
       style={{ perspective: '1400px' }}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
@@ -230,8 +230,8 @@ export default function Hero3DPopoutStage({
       <div 
         className="absolute -inset-6 sm:-inset-10 rounded-[3rem] opacity-70 pointer-events-none transition-transform duration-500 ease-out"
         style={{
-          background: 'radial-gradient(ellipse at center, rgba(249,176,60,0.22) 0%, rgba(50,104,186,0.25) 45%, transparent 75%)',
-          filter: 'blur(35px)',
+          background: 'radial-gradient(ellipse at center, rgba(249,176,60,0.25) 0%, rgba(50,104,186,0.28) 45%, transparent 75%)',
+          filter: 'blur(45px)',
           transform: 'translate3d(0, 0, -40px)',
         }}
       />
@@ -239,7 +239,7 @@ export default function Hero3DPopoutStage({
       {/* 🚀 Main 3D Anamorphic Tilt Rig */}
       <div
         ref={stageRef}
-        className="relative w-full rounded-[2rem] sm:rounded-[2.4rem] transition-transform duration-300 ease-out cursor-pointer"
+        className="relative w-full rounded-[2rem] sm:rounded-[2.5rem] transition-transform duration-300 ease-out cursor-pointer shadow-[0_30px_100px_rgba(0,0,0,0.9)]"
         onClick={() => setIsModalOpen(true)}
         style={{
           transformStyle: 'preserve-3d',
@@ -248,7 +248,7 @@ export default function Hero3DPopoutStage({
       >
         {/* Layer 1: Frame Glass Housing with Cyber Neon Bezel */}
         <div 
-          className="relative w-full h-[220px] sm:h-[320px] md:h-[390px] lg:h-[430px] rounded-[1.8rem] sm:rounded-[2.2rem] shadow-[0_30px_90px_rgba(0,0,0,0.85)] border-2 border-white/20 dark:border-[#f9b03c]/40 overflow-hidden bg-black/90 group"
+          className="relative w-full h-[240px] sm:h-[380px] md:h-[480px] lg:h-[540px] rounded-[1.8rem] sm:rounded-[2.4rem] shadow-[0_30px_90px_rgba(0,0,0,0.85)] border-2 border-white/20 dark:border-[#f9b03c]/45 overflow-hidden bg-black/90 group"
           style={{ transform: 'translateZ(0px)' }}
         >
           {/* Main High-Definition Video or High-Res Thumbnail Feed */}
@@ -320,21 +320,21 @@ export default function Hero3DPopoutStage({
 
         {/* 1. BOTTOM-LEFT POP-OUT: ACCREDITED CERTIFICATE BADGE */}
         <div 
-          className="hidden sm:flex absolute -bottom-6 -left-6 lg:-left-10 z-30 p-3.5 sm:p-4 rounded-2xl items-center gap-3.5 bg-gradient-to-br from-slate-950/95 via-slate-900/90 to-black/95 border-2 border-[#f9b03c]/60 shadow-[0_20px_50px_rgba(0,0,0,0.9),0_0_30px_rgba(249,176,60,0.35)] backdrop-blur-2xl transition-transform duration-300 group hover:scale-105 pointer-events-auto"
+          className="flex absolute -bottom-5 sm:-bottom-7 -left-3 sm:-left-6 lg:-left-8 z-30 p-3 sm:p-4 rounded-2xl items-center gap-3 sm:gap-3.5 bg-gradient-to-br from-slate-950/95 via-slate-900/90 to-black/95 border-2 border-[#f9b03c]/60 shadow-[0_20px_50px_rgba(0,0,0,0.9),0_0_30px_rgba(249,176,60,0.35)] backdrop-blur-2xl transition-transform duration-300 group hover:scale-105 pointer-events-auto scale-90 sm:scale-100 origin-bottom-left"
           style={{
             transform: 'translate3d(0, 0, 75px)',
           }}
         >
           {/* Holographic Glowing Seal */}
-          <div className="relative w-11 h-11 rounded-xl bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-200 text-slate-950 flex items-center justify-center text-xl font-black shadow-[0_0_20px_rgba(249,176,60,0.6)] shrink-0 animate-pulse">
+          <div className="relative w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-200 text-slate-950 flex items-center justify-center text-lg sm:text-xl font-black shadow-[0_0_20px_rgba(249,176,60,0.6)] shrink-0 animate-pulse">
             <i className="fa-solid fa-award"></i>
-            <span className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-400 rounded-full border-2 border-slate-950 shadow-[0_0_8px_#34d399]" />
+            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-400 rounded-full border-2 border-slate-950 shadow-[0_0_8px_#34d399]" />
           </div>
-          <div className="text-left pr-2">
-            <p className="text-[10px] text-amber-300/90 font-mono font-bold uppercase tracking-wider leading-none mb-1 flex items-center gap-1">
+          <div className="text-left pr-1 sm:pr-2">
+            <p className="text-[9px] sm:text-[10px] text-amber-300/90 font-mono font-bold uppercase tracking-wider leading-none mb-1 flex items-center gap-1">
               {t('practical_learning_badge') || '🎓 ከተግባራዊ ትምህርት ጋር'}
             </p>
-            <p className="text-white font-black text-sm tracking-tight drop-shadow-md">
+            <p className="text-white font-black text-xs sm:text-sm tracking-tight drop-shadow-md">
               {t('recognized_cert') || 'እውቅና ያለው ሰርተፍኬት'}
             </p>
           </div>
@@ -342,20 +342,20 @@ export default function Hero3DPopoutStage({
 
         {/* 2. TOP-RIGHT POP-OUT: ACTIVE STUDENTS COUNTER WITH RADAR WAVES */}
         <div 
-          className="hidden sm:flex absolute -top-6 -right-6 lg:-right-10 z-30 p-3.5 sm:p-4 rounded-2xl items-center gap-3.5 bg-gradient-to-br from-slate-950/95 via-slate-900/90 to-[#071328]/95 border-2 border-[#3268ba]/70 shadow-[0_20px_50px_rgba(0,0,0,0.9),0_0_30px_rgba(50,104,186,0.45)] backdrop-blur-2xl transition-transform duration-300 group hover:scale-105 pointer-events-auto"
+          className="flex absolute -top-5 sm:-top-7 -right-3 sm:-right-6 lg:-right-8 z-30 p-3 sm:p-4 rounded-2xl items-center gap-3 sm:gap-3.5 bg-gradient-to-br from-slate-950/95 via-slate-900/90 to-[#071328]/95 border-2 border-[#3268ba]/70 shadow-[0_20px_50px_rgba(0,0,0,0.9),0_0_30px_rgba(50,104,186,0.45)] backdrop-blur-2xl transition-transform duration-300 group hover:scale-105 pointer-events-auto scale-90 sm:scale-100 origin-top-right"
           style={{
             transform: 'translate3d(0, 0, 80px)',
           }}
         >
-          <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-[#1e4585] via-[#3268ba] to-[#3a75d2] text-white flex items-center justify-center text-xl font-black shadow-[0_0_20px_rgba(50,104,186,0.6)] shrink-0">
+          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-tr from-[#1e4585] via-[#3268ba] to-[#3a75d2] text-white flex items-center justify-center text-lg sm:text-xl font-black shadow-[0_0_20px_rgba(50,104,186,0.6)] shrink-0">
             <i className="fa-solid fa-users-viewfinder"></i>
           </div>
-          <div className="text-left pr-2">
-            <p className="text-[10px] text-blue-200/90 font-mono font-bold uppercase tracking-wider leading-none mb-1 flex items-center gap-1">
+          <div className="text-left pr-1 sm:pr-2">
+            <p className="text-[9px] sm:text-[10px] text-blue-200/90 font-mono font-bold uppercase tracking-wider leading-none mb-1 flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
               {t('students') || 'ተማሪዎች'}
             </p>
-            <p className="text-white font-black text-sm tracking-tight font-mono drop-shadow-md flex items-center gap-1.5">
+            <p className="text-white font-black text-xs sm:text-sm tracking-tight font-mono drop-shadow-md flex items-center gap-1.5">
               <span>{studentCount}+ ሰልጣኞች</span>
               <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399] animate-pulse" />
             </p>

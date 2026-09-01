@@ -146,24 +146,24 @@ class ScrollTriggerEngine {
       this.gsapTriggers.push(trigger);
     });
 
-    // 4. Horizontal Scroll Pinning for Popular Courses (Apple / Cello.so style)
-    const coursesPinContainer = document.getElementById('courses-pin-container') || document.getElementById('courses');
+    // 4. Horizontal Scroll Pinning for Popular Courses (Apple / Cello.so Scrollytelling)
+    const coursesSection = document.getElementById('courses');
     const coursesTrack = document.getElementById('courses-horizontal-track');
-    if (coursesPinContainer && coursesTrack) {
+    if (coursesSection && coursesTrack) {
       const getScrollDist = () => {
         const trackW = coursesTrack.scrollWidth;
         const viewW = window.innerWidth;
-        return Math.max(0, trackW - viewW + 180);
+        return Math.max(0, trackW - viewW + 140);
       };
 
       const hPinTrigger = ScrollTrigger.create({
-        trigger: coursesPinContainer,
+        trigger: coursesSection,
         pin: true,
         pinSpacing: true,
         anticipatePin: 1,
         start: 'top top',
-        end: () => `+=${Math.max(getScrollDist(), 800)}`,
-        scrub: 1,
+        end: () => `+=${Math.max(getScrollDist(), 1000)}`,
+        scrub: 1.2,
         invalidateOnRefresh: true,
         animation: gsap.to(coursesTrack, {
           x: () => -getScrollDist(),
@@ -228,7 +228,6 @@ class ScrollTriggerEngine {
     }
 
     // 6. Staggered Pop-Up Entrance for Popular Course Cards (scale: 0.9 -> 1, opacity: 0 -> 1)
-    const coursesSection = document.getElementById('courses');
     const courseCards = document.querySelectorAll<HTMLElement>('.course-popup-card, #courses-horizontal-track > div');
     if (coursesSection && courseCards.length > 0) {
       const coursePopupTrigger = ScrollTrigger.create({

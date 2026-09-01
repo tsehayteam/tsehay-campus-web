@@ -476,101 +476,94 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
         <div className="terafab-hero-vignette"></div>
 
         {/* Ambient Glow Spheres (Golden Yellow & Royal Blue) */}
-        <div className="absolute top-1/4 -left-32 w-[550px] h-[550px] bg-[#f9b03c]/15 rounded-full blur-[140px] pointer-events-none animate-pulse"></div>
-        <div className="absolute bottom-1/4 -right-32 w-[600px] h-[600px] bg-[#3268ba]/20 rounded-full blur-[160px] pointer-events-none"></div>
+        <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-[#f9b03c]/15 rounded-full blur-[160px] pointer-events-none animate-pulse"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-[650px] h-[650px] bg-[#3268ba]/20 rounded-full blur-[160px] pointer-events-none"></div>
 
-        {/* Hero Content Container */}
-        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-12 relative z-20 py-16 lg:py-20 w-full my-auto flex items-center">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center w-full">
-            
-            {/* Left Column: Premium Cinematic Typography & CTA */}
-            <div className="lg:col-span-7 flex flex-col items-center lg:items-start text-center lg:text-left pt-6 sm:pt-10">
-              
-              {/* Top Slogan Badge: Glowing Golden Yellow Border */}
-              <div className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full bg-[#f9b03c]/10 border border-[#f9b03c]/50 backdrop-blur-xl mb-6 sm:mb-8 shadow-[0_0_25px_rgba(249,176,60,0.35)] transition-all duration-300 hover:scale-105">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#f9b03c] shadow-[0_0_12px_#f9b03c] animate-pulse"></span>
-                <span className="text-xs sm:text-sm font-black font-heading tracking-wider text-[#f9b03c] drop-shadow-[0_0_10px_rgba(249,176,60,0.4)]">
-                  {lang === 'en' ? '✨ LEARN. APPLY. GROW. • TSEHAY CAMPUS ✨' : '✨ ተማር። ተግብር። አደግ። • TSEHAY CAMPUS ✨'}
-                </span>
-              </div>
-
-              {/* Main Cinematic Typewriter Headline with Subtle Continuous Glow Pulse */}
-              <h1 
-                className="font-heading font-black text-4xl sm:text-6xl md:text-7xl lg:text-[72px] tracking-tight leading-[1.15] sm:leading-[1.1] text-white mb-6 min-h-[125px] sm:min-h-[160px] max-w-full lg:max-w-3xl headline-glow-pulse"
-                style={{
-                  wordWrap: 'break-word',
-                  whiteSpace: 'pre-wrap',
-                  overflowWrap: 'break-word',
-                }}
-              >
-                <span>{typedWhite}</span>{' '}
-                <span className="relative inline-block mt-1 sm:mt-0">
-                  <span className="relative z-10 text-transparent bg-clip-text bg-gradient-to-r from-[#f9b03c] via-[#ffc66b] to-yellow-400 drop-shadow-[0_0_35px_rgba(249,176,60,0.4)]">
-                    {typedGold}
-                  </span>
-                  <span className="absolute -bottom-2 left-0 w-full h-3 bg-gradient-to-r from-[#f9b03c]/30 to-transparent blur-xs -z-0"></span>
-                </span>
-                <span className="inline-block w-[3px] sm:w-[5px] h-[0.85em] bg-[#f9b03c] animate-pulse ml-2 align-middle rounded-full shadow-[0_0_12px_#f9b03c]"></span>
-              </h1>
-
-              {/* Subheadline */}
-              <p className="text-gray-300 dark:text-[#a0aec0] font-body text-base sm:text-lg md:text-xl max-w-2xl font-normal leading-relaxed mb-8 sm:mb-10">
-                በኢትዮጵያ የኦንላይን ክህሎት ስልጠና ቀዳሚ ፕላትፎርም። በተግባር እና በ AI የታገዘ ስልጠና ወስደው ቢዝነስዎን ዛሬውኑ ይጀምሩ።
-              </p>
-
-              {/* Global Search Bar with Pulsing Glow Border */}
-              <div className="w-full max-w-xl mb-8 sm:mb-10 p-0.5 rounded-2xl search-border-pulse border border-[#f9b03c]/40 bg-black/40 backdrop-blur-xl">
-                <SmartSearchInput 
-                  placeholder="ኮርሶችን፣ አስተማሪዎችን ወይም ርዕሶችን ይፈልጉ (ለምሳሌ: Shein, YouTube...)"
-                  onSelectCourse={(course) => router.push(`/courses/${getCourseSlug(course) || course.id}`)}
-                />
-              </div>
-
-              {/* Action Buttons (Primary & Secondary) */}
-              <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 sm:gap-5 w-full sm:w-auto">
-                {/* Primary CTA: Explore Courses (Scale 1.05 + Sliding Arrow) */}
-                <MagneticLink 
-                  href="#courses"
-                  className="w-full sm:w-auto px-8 sm:px-9 py-4 rounded-2xl terafab-btn-primary flex items-center justify-center gap-3 text-sm sm:text-base cursor-pointer shadow-[0_0_30px_rgba(249,176,60,0.45)] hover:shadow-[0_0_45px_rgba(249,176,60,0.7)] group hover:scale-105 transition-all duration-300"
-                >
-                  <span className="font-black">ኮርሶችን ያስሱ</span>
-                  <i className="fa-solid fa-arrow-right text-sm transition-transform duration-300 group-hover:translate-x-2"></i>
-                </MagneticLink>
-
-                {/* Secondary CTA: About Us with Glassmorphism + Glowing Play Icon */}
-                <MagneticLink 
-                  href="/about"
-                  className="w-full sm:w-auto px-8 sm:px-9 py-4 rounded-2xl terafab-btn-glass flex items-center justify-center gap-3 text-sm sm:text-base cursor-pointer hover:border-[#f9b03c]/80 group transition-all duration-300 hover:scale-105 backdrop-blur-[15px] bg-white/[0.05] border border-white/15"
-                >
-                  <i className="fa-solid fa-play text-xs text-white/80 group-hover:text-[#f9b03c] transition-colors duration-300 drop-shadow-[0_0_8px_rgba(249,176,60,0.6)]"></i>
-                  <span className="font-bold">ስለ እኛ ይመልከቱ</span>
-                </MagneticLink>
-              </div>
-
-              {/* Social Proof Live Counter Strip */}
-              <div className="grid grid-cols-3 gap-4 sm:gap-8 pt-10 sm:pt-12 mt-4 border-t border-white/10 w-full max-w-xl">
-                <div className="text-center lg:text-left">
-                  <h4 className="font-heading font-black text-2xl sm:text-3xl text-white">530+</h4>
-                  <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold mt-0.5">የሰለጠኑ ተማሪዎች</p>
-                </div>
-                <div className="text-center lg:text-left border-x border-white/10 px-2">
-                  <h4 className="font-heading font-black text-2xl sm:text-3xl text-[#f9b03c]">4.9 / 5</h4>
-                  <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold mt-0.5">የተማሪዎች እርካታ</p>
-                </div>
-                <div className="text-center lg:text-left">
-                  <h4 className="font-heading font-black text-2xl sm:text-3xl text-white">100%</h4>
-                  <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold mt-0.5">ተግባራዊ ስልጠና</p>
-                </div>
-              </div>
-
-            </div>
-
-            {/* Right Column: 3D Billboard Anamorphic Video Stage */}
-            <div className="lg:col-span-5 flex items-center justify-center relative">
-              <Hero3DPopoutStage />
-            </div>
-
+        {/* Hero Content Container - Cinematic Centered Hierarchy */}
+        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-12 relative z-20 py-16 lg:py-24 w-full my-auto flex flex-col items-center text-center">
+          
+          {/* Top Slogan Badge: Glowing Golden Yellow Border */}
+          <div className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full bg-[#f9b03c]/10 border border-[#f9b03c]/50 backdrop-blur-xl mb-5 sm:mb-6 shadow-[0_0_25px_rgba(249,176,60,0.35)] transition-all duration-300 hover:scale-105">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#f9b03c] shadow-[0_0_12px_#f9b03c] animate-pulse"></span>
+            <span className="text-xs sm:text-sm font-black font-heading tracking-wider text-[#f9b03c] drop-shadow-[0_0_10px_rgba(249,176,60,0.4)]">
+              {lang === 'en' ? '✨ LEARN. APPLY. GROW. • TSEHAY CAMPUS ✨' : '✨ ተማር። ተግብር። አደግ። • TSEHAY CAMPUS ✨'}
+            </span>
           </div>
+
+          {/* Main Cinematic Typewriter Headline with Continuous Glow Pulse */}
+          <h1 
+            className="font-heading font-black text-4xl sm:text-6xl md:text-7xl lg:text-[76px] tracking-tight leading-[1.15] sm:leading-[1.1] text-white mb-4 sm:mb-5 min-h-[90px] sm:min-h-[140px] max-w-4xl headline-glow-pulse"
+            style={{
+              wordWrap: 'break-word',
+              whiteSpace: 'pre-wrap',
+              overflowWrap: 'break-word',
+            }}
+          >
+            <span>{typedWhite}</span>{' '}
+            <span className="relative inline-block mt-1 sm:mt-0">
+              <span className="relative z-10 text-transparent bg-clip-text bg-gradient-to-r from-[#f9b03c] via-[#ffc66b] to-yellow-400 drop-shadow-[0_0_35px_rgba(249,176,60,0.4)]">
+                {typedGold}
+              </span>
+              <span className="absolute -bottom-2 left-0 w-full h-3 bg-gradient-to-r from-[#f9b03c]/30 to-transparent blur-xs -z-0"></span>
+            </span>
+            <span className="inline-block w-[3px] sm:w-[5px] h-[0.85em] bg-[#f9b03c] animate-pulse ml-2 align-middle rounded-full shadow-[0_0_12px_#f9b03c]"></span>
+          </h1>
+
+          {/* Subheadline */}
+          <p className="text-gray-300 dark:text-[#a0aec0] font-body text-base sm:text-lg md:text-xl max-w-3xl font-normal leading-relaxed mb-6 sm:mb-8">
+            በኢትዮጵያ የኦንላይን ክህሎት ስልጠና ቀዳሚ ፕላትፎርም። በተግባር እና በ AI የታገዘ ስልጠና ወስደው ቢዝነስዎን ዛሬውኑ ይጀምሩ።
+          </p>
+
+          {/* 🌟 1. HERO VIDEO ENHANCEMENT: Perfectly integrated below headline, spanning wide, central */}
+          <div className="w-full flex items-center justify-center my-4 sm:my-6">
+            <Hero3DPopoutStage />
+          </div>
+
+          {/* Global Search Bar with Pulsing Glow Border */}
+          <div className="w-full max-w-xl my-6 sm:my-8 p-0.5 rounded-2xl search-border-pulse border border-[#f9b03c]/40 bg-black/40 backdrop-blur-xl">
+            <SmartSearchInput 
+              placeholder="ኮርሶችን፣ አስተማሪዎችን ወይም ርዕሶችን ይፈልጉ (ለምሳሌ: Shein, YouTube...)"
+              onSelectCourse={(course) => router.push(`/courses/${getCourseSlug(course) || course.id}`)}
+            />
+          </div>
+
+          {/* Action Buttons (Primary & Secondary) */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-5 w-full sm:w-auto">
+            {/* Primary CTA: Explore Courses (Scale 1.05 + Sliding Arrow) */}
+            <MagneticLink 
+              href="#courses"
+              className="w-full sm:w-auto px-8 sm:px-9 py-4 rounded-2xl terafab-btn-primary flex items-center justify-center gap-3 text-sm sm:text-base cursor-pointer shadow-[0_0_30px_rgba(249,176,60,0.45)] hover:shadow-[0_0_45px_rgba(249,176,60,0.7)] group hover:scale-105 transition-all duration-300"
+            >
+              <span className="font-black">ኮርሶችን ያስሱ</span>
+              <i className="fa-solid fa-arrow-right text-sm transition-transform duration-300 group-hover:translate-x-2"></i>
+            </MagneticLink>
+
+            {/* Secondary CTA: About Us with Glassmorphism + Glowing Play Icon */}
+            <MagneticLink 
+              href="/about"
+              className="w-full sm:w-auto px-8 sm:px-9 py-4 rounded-2xl terafab-btn-glass flex items-center justify-center gap-3 text-sm sm:text-base cursor-pointer hover:border-[#f9b03c]/80 group transition-all duration-300 hover:scale-105 backdrop-blur-[15px] bg-white/[0.05] border border-white/15"
+            >
+              <i className="fa-solid fa-play text-xs text-white/80 group-hover:text-[#f9b03c] transition-colors duration-300 drop-shadow-[0_0_8px_rgba(249,176,60,0.6)]"></i>
+              <span className="font-bold">ስለ እኛ ይመልከቱ</span>
+            </MagneticLink>
+          </div>
+
+          {/* Social Proof Live Counter Strip */}
+          <div className="grid grid-cols-3 gap-4 sm:gap-8 pt-8 sm:pt-10 mt-6 border-t border-white/10 w-full max-w-xl">
+            <div className="text-center">
+              <h4 className="font-heading font-black text-2xl sm:text-3xl text-white">530+</h4>
+              <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold mt-0.5">የሰለጠኑ ተማሪዎች</p>
+            </div>
+            <div className="text-center border-x border-white/10 px-2">
+              <h4 className="font-heading font-black text-2xl sm:text-3xl text-[#f9b03c]">4.9 / 5</h4>
+              <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold mt-0.5">የተማሪዎች እርካታ</p>
+            </div>
+            <div className="text-center">
+              <h4 className="font-heading font-black text-2xl sm:text-3xl text-white">100%</h4>
+              <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold mt-0.5">ተግባራዊ ስልጠና</p>
+            </div>
+          </div>
+
         </div>
       </section>
 
@@ -749,7 +742,7 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
       {/* =========================================================================
           4. POPULAR COURSES / "በብዛት የሚፈለጉ ኮርሶች" (Cello.so Horizontal Pinned Track)
          ========================================================================= */}
-      <section id="courses" className="py-20 sm:py-28 bg-transparent border-b border-white/[0.08] relative overflow-hidden">
+      <section id="courses" className="min-h-screen relative overflow-hidden bg-transparent border-b border-white/[0.08] flex flex-col justify-center py-16 sm:py-24">
         {/* Atmospheric Aura & Cyber Mesh */}
         <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
           <div className="absolute -top-32 -right-32 w-[700px] h-[700px] bg-gradient-to-bl from-[#f9b03c]/15 via-transparent to-transparent rounded-full blur-[150px] animate-pulse"></div>
