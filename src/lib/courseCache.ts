@@ -386,6 +386,8 @@ export function getCachedCourses(): any[] {
       if (Array.isArray(parsed) && parsed.length > 0) {
         const valid = parsed.filter(isValidCourse).map((c: any) => ({
           ...c,
+          image: getCleanCourseImage(c),
+          banner: getCleanCourseImage(c),
           desc: formatCourseDesc(c),
           description: formatCourseDesc(c)
         }));
@@ -403,6 +405,8 @@ export function saveCachedCourses(courses: any[]) {
   try {
     const sanitized = courses.filter(isValidCourse).map((c: any) => ({
       ...c,
+      image: getCleanCourseImage(c),
+      banner: getCleanCourseImage(c),
       desc: formatCourseDesc(c),
       description: formatCourseDesc(c)
     }));

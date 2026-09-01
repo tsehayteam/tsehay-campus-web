@@ -90,17 +90,10 @@ export async function GET(req: NextRequest) {
       console.warn("Primary collection A fetch notice:", e);
     }
 
-    // Proactively clean up any obsolete test documents from collections
-    try {
-      const junkDocs = ['5l,m4lmltml', 'Shien Business', 'shien-business-test', 'shien-business'];
-      junkDocs.forEach(jId => {
-        adminDb.collection('courses').doc(jId).delete().catch(() => {});
-        adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('courses').doc(jId).delete().catch(() => {});
-      });
-    } catch (e) {}
-
     let coursesList = Array.from(courseMap.values());
-    if (coursesList.length < 3) {
+    if (coursesList.length === 0) {
+      coursesList = DEFAULT_COURSES;
+    } else if (coursesList.length < 3) {
       coursesList = mergeCoursesLists(DEFAULT_COURSES, coursesList);
     }
 
