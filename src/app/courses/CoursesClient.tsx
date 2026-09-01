@@ -370,12 +370,8 @@ export default function CoursesClient({ initialCourses }: { initialCourses?: any
             </div>
 
             {/* Main Title */}
-            <h1 className="text-4xl sm:text-6xl md:text-7xl font-black font-heading tracking-tight leading-[1.1] mb-6">
-              <span className="text-white">ሁሉንም </span>
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#f9b03c] via-amber-300 to-yellow-400 drop-shadow-[0_5px_30px_rgba(249,176,60,0.4)]">
-                የተግባር ኮርሶች
-              </span>
-              <span className="text-white"> በአንድ ቦታ</span>
+            <h1 className="text-4xl sm:text-6xl md:text-7xl font-black font-heading tracking-tight leading-[1.1] mb-6 min-h-[80px] sm:min-h-[110px] course-title-glow-pulse">
+              <TypingCoursesHeadline text="ሁሉንም የተግባር ኮርሶች በአንድ ቦታ" />
             </h1>
 
             <p className="text-slate-300 text-base sm:text-xl max-w-2xl mx-auto mb-10 leading-relaxed font-body font-medium">

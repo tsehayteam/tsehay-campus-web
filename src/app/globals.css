@@ -2085,6 +2085,40 @@ img, video, canvas {
   transform: translate3d(0, 0, 0);
 }
 
+/* 🌟 Course Title Dual-Color Glow (Golden Yellow #f9b03c <-> Royal Blue #3268ba) */
+@keyframes courseTitleDualGlow {
+  0%, 100% {
+    text-shadow: 0 0 25px rgba(249, 176, 60, 0.65), 0 0 50px rgba(249, 176, 60, 0.35);
+    filter: drop-shadow(0 0 15px rgba(249, 176, 60, 0.45));
+  }
+  50% {
+    text-shadow: 0 0 25px rgba(50, 104, 186, 0.75), 0 0 50px rgba(50, 104, 186, 0.45);
+    filter: drop-shadow(0 0 15px rgba(50, 104, 186, 0.5));
+  }
+}
+
+.course-title-glow-pulse {
+  animation: courseTitleDualGlow 3.6s ease-in-out infinite alternate;
+  will-change: text-shadow, filter;
+}
+
+/* 🌟 Course Details Cinematic Pop-Up Entrance */
+@keyframes courseSectionPopUp {
+  0% {
+    opacity: 0;
+    transform: translateY(24px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.course-section-popout {
+  animation: courseSectionPopUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
+
 /* 🌟 Course Pop-Up Entrance & Hover Glow */
 .course-popup-card {
   will-change: transform, opacity;
@@ -2094,7 +2128,3 @@ img, video, canvas {
 .course-popup-card:hover {
   transform: translateY(-8px);
 }
-
-
-
-
