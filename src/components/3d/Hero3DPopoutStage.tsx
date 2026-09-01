@@ -134,53 +134,8 @@ export default function Hero3DPopoutStage({
     }
   }, []);
 
-  const [posterVisible, setPosterVisible] = useState(true);
-
-  // Split-second poster display on load/change, then smooth dissolve into autoplay
-  useEffect(() => {
-    setPosterVisible(true);
-    const timer = setTimeout(() => {
-      setPosterVisible(false);
-    }, 450);
-    return () => clearTimeout(timer);
-  }, [activeVideoUrl]);
-
-  // Parse current active video
+  // Parse current active video for thumbnail & modal playback
   const parsedVideo = parseVideoEmbedUrl(activeVideoUrl || DEFAULT_LANDING_VIDEO, false);
-  const parsedModalVideo = parseVideoEmbedUrl(activeVideoUrl || DEFAULT_LANDING_VIDEO, true);
-  const isDirectVideo = parsedVideo.type === 'video';
-
-  // 🚀 Instant Video Kickstart for direct MP4 videos
-  useEffect(() => {
-    const video = videoRef.current;
-    if (video && isDirectVideo) {
-      video.muted = true;
-      video.defaultMuted = true;
-      video.playsInline = true;
-      
-      const attemptPlay = () => {
-        const promise = video.play();
-        if (promise !== undefined) {
-          promise.catch(() => {
-            const handleFirstTouch = () => {
-              video.play().catch(() => {});
-              window.removeEventListener('touchstart', handleFirstTouch);
-              window.removeEventListener('scroll', handleFirstTouch);
-            };
-            window.addEventListener('touchstart', handleFirstTouch, { passive: true, once: true });
-            window.addEventListener('scroll', handleFirstTouch, { passive: true, once: true });
-          });
-        }
-      };
-
-      if (video.readyState >= 2) {
-        attemptPlay();
-      } else {
-        video.addEventListener('loadeddata', attemptPlay, { once: true });
-        video.addEventListener('canplay', attemptPlay, { once: true });
-      }
-    }
-  }, [activeVideoUrl, isDirectVideo]);
 
   // Live student counter pulse
   useEffect(() => {
@@ -259,103 +214,44 @@ export default function Hero3DPopoutStage({
       >
         {/* Layer 1: Frame Glass Housing with Cyber Neon Bezel */}
         <div 
-          className="relative w-full h-[240px] sm:h-[380px] md:h-[480px] lg:h-[540px] rounded-[1.8rem] sm:rounded-[2.4rem] shadow-[0_30px_90px_rgba(0,0,0,0.85)] border-2 border-white/20 dark:border-[#f9b03c]/45 overflow-hidden bg-black/90 group"
+          className="relative w-full h-[240px] sm:h-[380px] md:h-[480px] lg:h-[540px] rounded-[1.8rem] sm:rounded-[2.4rem] shadow-[0_30px_90px_rgba(0,0,0,0.85)] border-2 border-white/20 dark:border-[#f9b03c]/45 overflow-hidden bg-black group"
           style={{ transform: 'translateZ(0px)' }}
         >
-          {/* Main Autoplaying Video Engine (YouTube, Direct MP4, Drive, Dropbox, Embeds) */}
+          {/* Static High-Definition Poster Image (No autoplay on load) */}
           <div className="absolute inset-0 w-full h-full overflow-hidden bg-black flex items-center justify-center">
-            {isDirectVideo ? (
-              <video 
-                ref={videoRef}
-                id="hero-video" 
-                autoPlay 
-                loop 
-                muted 
-                playsInline 
-                preload="auto" 
-                poster={displayThumbnail}
-                disablePictureInPicture 
-                controlsList="nodownload noremoteplayback" 
-                onContextMenu={(e) => e.preventDefault()} 
-                className="w-full h-full object-cover scale-102 group-hover:scale-105 transition-transform duration-500"
-              >
-                <source src={parsedVideo.src} type="video/mp4" />
-              </video>
-            ) : parsedVideo.isYouTube && parsedVideo.youtubeId ? (
-              <div className="relative w-full h-full overflow-hidden pointer-events-none scale-110 sm:scale-125">
-                <iframe
-                  src={`https://www.youtube-nocookie.com/embed/${parsedVideo.youtubeId}?autoplay=1&mute=1&controls=0&loop=1&playlist=${parsedVideo.youtubeId}&playsinline=1&modestbranding=1&rel=0&iv_load_policy=3&disablekb=1&fs=0&enablejsapi=1`}
-                  title="Tsehay Campus Hero Video"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  className="w-full h-full border-0 absolute inset-0 pointer-events-none"
-                />
-              </div>
-            ) : parsedVideo.isGoogleDrive ? (
-              <div className="relative w-full h-full overflow-hidden pointer-events-none">
-                <iframe
-                  src={parsedVideo.src.includes('?') ? `${parsedVideo.src}&autoplay=1` : `${parsedVideo.src}?autoplay=1`}
-                  title="Tsehay Campus Hero Video"
-                  allow="autoplay"
-                  className="w-full h-full border-0 absolute inset-0 pointer-events-none"
-                />
-              </div>
-            ) : (
-              <div className="relative w-full h-full overflow-hidden pointer-events-none">
-                <iframe
-                  src={parsedVideo.src.includes('autoplay=') ? parsedVideo.src : (parsedVideo.src.includes('?') ? `${parsedVideo.src}&autoplay=1&mute=1` : `${parsedVideo.src}?autoplay=1&mute=1`)}
-                  title="Tsehay Campus Hero Video"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  className="w-full h-full border-0 absolute inset-0 pointer-events-none"
-                />
-              </div>
-            )}
-          </div>
-
-          {/* 🌟 Split-Second High-Definition Poster Layer (Dissolves Smoothly into Autoplay) */}
-          <div 
-            className={`absolute inset-0 z-10 transition-opacity duration-700 pointer-events-none ${
-              posterVisible ? 'opacity-100' : 'opacity-0'
-            }`}
-          >
             <img 
               src={displayThumbnail} 
               alt="Tsehay Campus Hero Preview" 
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover scale-100 group-hover:scale-105 transition-transform duration-700 ease-out"
               onError={(e) => { e.currentTarget.src = '/assets/hero-bg-new.jpg'; }}
             />
+            {/* Cinematic subtle dark overlay */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-black/40 group-hover:via-black/20 transition-all duration-500 pointer-events-none" />
           </div>
 
           {/* Dynamic 3D Specular Light Glare (Direct Ref) */}
           <div 
             ref={glareRef}
-            className="absolute inset-0 pointer-events-none mix-blend-screen opacity-40 transition-opacity duration-300"
+            className="absolute inset-0 pointer-events-none mix-blend-screen opacity-30 group-hover:opacity-60 transition-opacity duration-500"
             style={{
               background: 'radial-gradient(circle 380px at 50% 50%, rgba(255,255,255,0.7) 0%, rgba(249,176,60,0.2) 50%, transparent 80%)',
             }}
           />
 
-          {/* Video bottom subtle gradient */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-black/20 pointer-events-none" />
+          {/* Golden Yellow Play Button (Subtle initially, smoothly fades in & pulses on hover) */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
+            <div className="relative flex items-center justify-center opacity-40 sm:opacity-50 scale-95 group-hover:opacity-100 group-hover:scale-110 transition-all duration-500 ease-out">
+              {/* Pulsing Ripple Rings on Hover */}
+              <span className="absolute -inset-4 rounded-full bg-[#f9b03c]/30 opacity-0 group-hover:opacity-100 group-hover:animate-ping transition-opacity duration-500 pointer-events-none" />
+              <span className="absolute -inset-2 rounded-full bg-[#f9b03c]/50 blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
 
-          {/* Central Inviting Golden Yellow Play Button with Magnetic Ripple */}
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-auto z-20">
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsModalOpen(true);
-              }}
-              className="relative group cursor-pointer active:scale-90 transition-transform duration-300"
-              title="የመግቢያ ቪዲዮውን ይመልከቱ (Watch Intro Video)"
-            >
-              {/* Ripple Rings */}
-              <span className="absolute -inset-4 rounded-full bg-[#f9b03c]/40 animate-ping pointer-events-none" />
-              <span className="absolute -inset-2 rounded-full bg-[#f9b03c]/60 blur-sm pointer-events-none" />
-
-              <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 flex items-center justify-center text-2xl sm:text-3xl font-black shadow-[0_0_40px_rgba(249,176,60,0.8),0_10px_30px_rgba(0,0,0,0.8)] border-2 border-white/60 group-hover:scale-110 transition-all duration-300">
-                <i className="fa-solid fa-play ml-1 group-hover:scale-110 transition-transform"></i>
+              <div 
+                className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 flex items-center justify-center text-2xl sm:text-3xl font-black shadow-[0_0_40px_rgba(249,176,60,0.8),0_10px_30px_rgba(0,0,0,0.8)] border-2 border-white/80 group-hover:shadow-[0_0_55px_rgba(249,176,60,1)] transition-all duration-500 cursor-pointer"
+                title="የመግቢያ ቪዲዮውን ይመልከቱ (Watch Intro Video)"
+              >
+                <i className="fa-solid fa-play ml-1 text-slate-950 group-hover:scale-110 transition-transform duration-300"></i>
               </div>
-            </button>
+            </div>
           </div>
         </div>
 

@@ -91,40 +91,8 @@ class ScrollTriggerEngine {
   }
 
   public initCoursesHorizontalScroll() {
-    if (typeof document === 'undefined') return;
-    const coursesSection = document.getElementById('courses');
-    const coursesTrack = document.getElementById('courses-horizontal-track');
-    if (!coursesSection || !coursesTrack) return;
-
-    // Remove existing horizontal trigger if already attached
-    const existingIdx = this.gsapTriggers.findIndex((t: any) => t.vars?.trigger === coursesSection);
-    if (existingIdx !== -1) {
-      this.gsapTriggers[existingIdx].kill();
-      this.gsapTriggers.splice(existingIdx, 1);
-    }
-
-    const getScrollDist = () => {
-      const trackW = coursesTrack.scrollWidth;
-      const viewW = window.innerWidth;
-      return Math.max(0, trackW - viewW + 120);
-    };
-
-    const hPinTrigger = ScrollTrigger.create({
-      trigger: coursesSection,
-      pin: true,
-      pinSpacing: true,
-      anticipatePin: 1,
-      start: 'top top',
-      end: () => `+=${Math.max(getScrollDist(), 1200)}`,
-      scrub: 1.2,
-      invalidateOnRefresh: true,
-      animation: gsap.to(coursesTrack, {
-        x: () => -getScrollDist(),
-        ease: 'none',
-      }),
-    });
-    this.gsapTriggers.push(hPinTrigger);
-    this.hasHorizontalPinned = true;
+    // 🌟 Intentionally disabled: Courses now use a buttery-smooth native CSS horizontal carousel
+    // with Glassmorphism Left/Right navigation buttons to prevent vertical scroll hijacking and black-screen glitches.
   }
 
   private initGsapTriggers() {

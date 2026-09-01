@@ -181,6 +181,15 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
   const [authCourseTarget, setAuthCourseTarget] = useState<any>(null);
   const [openFaqId, setOpenFaqId] = useState<number | null>(1);
 
+  // Course Carousel Slider Ref & Navigation Handlers
+  const courseSliderRef = useRef<HTMLDivElement | null>(null);
+  const scrollCourses = (direction: 'left' | 'right') => {
+    if (courseSliderRef.current) {
+      const scrollAmount = direction === 'left' ? -420 : 420;
+      courseSliderRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    }
+  };
+
   // Synchronously initialize cached courses on mount & connect zero-refresh live sync
   useEffect(() => {
     setIsMounted(true);
@@ -739,19 +748,19 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
       </section>
 
       {/* =========================================================================
-          4. POPULAR COURSES / "በብዛት የሚፈለጉ ኮርሶች" (Cello.so Horizontal Pinned Track)
+          4. POPULAR COURSES / "በብዛት የሚፈለጉ ኮርሶች" (Sleek CSS Horizontal Carousel)
          ========================================================================= */}
-      <section id="courses" className="min-h-screen relative overflow-hidden bg-transparent border-b border-white/[0.08] flex flex-col justify-center py-16 sm:py-24">
+      <section id="courses" className="relative overflow-hidden bg-transparent border-b border-white/[0.08] py-16 sm:py-24">
         {/* Atmospheric Aura & Cyber Mesh */}
         <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
           <div className="absolute -top-32 -right-32 w-[700px] h-[700px] bg-gradient-to-bl from-[#f9b03c]/15 via-transparent to-transparent rounded-full blur-[150px] animate-pulse"></div>
           <div className="absolute -bottom-32 -left-32 w-[700px] h-[700px] bg-gradient-to-tr from-[#3268ba]/20 via-transparent to-transparent rounded-full blur-[150px]"></div>
         </div>
 
-        <div id="courses-pin-container" className="relative z-10 w-full">
-          {/* Section Stationary Header */}
-          <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 mb-8 sm:mb-12">
-            <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 scrolly-reveal">
+        <div className="relative z-10 w-full">
+          {/* Section Stationary Header with Glassmorphism Navigation Controls */}
+          <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 mb-8 sm:mb-10">
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-5 scrolly-reveal">
               <div>
                 <div className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-400/15 via-[#f9b03c]/10 to-[#3268ba]/15 border border-[#f9b03c]/30 px-5 py-2 rounded-full shadow-[0_0_25px_rgba(249,176,60,0.2)] backdrop-blur-md mb-3">
                   <span className="w-2.5 h-2.5 rounded-full bg-[#f9b03c] shadow-[0_0_10px_#f9b03c] animate-ping"></span>
@@ -762,9 +771,32 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
                 </h2>
                 <div className="w-28 h-1.5 bg-gradient-to-r from-transparent via-[#f9b03c] to-transparent rounded-full shadow-[0_0_15px_rgba(249,176,60,0.8)] mt-2"></div>
               </div>
-              <div className="text-slate-400 text-xs sm:text-sm flex items-center gap-2">
-                <span>ወደ ታች በማሸብለል (Scroll) በአግድም ይመልከቱ</span>
-                <i className="fa-solid fa-arrow-right text-[#f9b03c] animate-pulse"></i>
+
+              {/* Glassmorphism Quick Navigation Buttons & Indicator */}
+              <div className="flex items-center gap-3 self-start md:self-end">
+                <span className="hidden sm:inline-block text-slate-400 text-xs font-medium mr-2">
+                  ኮርሶችን ለማሰስ ቁልፎቹን ይጠቀሙ
+                </span>
+
+                <button
+                  type="button"
+                  onClick={() => scrollCourses('left')}
+                  className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-[#0a0e17]/90 hover:bg-[#0f172a] border border-[#f9b03c]/35 hover:border-[#f9b03c] text-white hover:text-[#f9b03c] shadow-[0_8px_25px_rgba(0,0,0,0.7),0_0_15px_rgba(249,176,60,0.15)] hover:shadow-[0_0_25px_rgba(249,176,60,0.4)] backdrop-blur-xl flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer group"
+                  title="ቀዳሚ ኮርሶች (Previous)"
+                  aria-label="Previous courses"
+                >
+                  <i className="fa-solid fa-chevron-left text-sm group-hover:-translate-x-0.5 transition-transform"></i>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => scrollCourses('right')}
+                  className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-[#0a0e17]/90 hover:bg-[#0f172a] border border-[#f9b03c]/35 hover:border-[#f9b03c] text-white hover:text-[#f9b03c] shadow-[0_8px_25px_rgba(0,0,0,0.7),0_0_15px_rgba(249,176,60,0.15)] hover:shadow-[0_0_25px_rgba(249,176,60,0.4)] backdrop-blur-xl flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer group"
+                  title="ቀጣይ ኮርሶች (Next)"
+                  aria-label="Next courses"
+                >
+                  <i className="fa-solid fa-chevron-right text-sm group-hover:translate-x-0.5 transition-transform"></i>
+                </button>
               </div>
             </div>
           </div>
@@ -774,11 +806,35 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
               <CourseCardSkeleton count={3} />
             </div>
           ) : (
-            /* Horizontal Sliding Track (Cello.so Style) */
-            <div className="w-full overflow-hidden relative py-4">
+            /* Horizontal Carousel Container with Side Navigation Overlays */
+            <div className="relative w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 group/carousel">
+              {/* Floating Side Left Navigation Button */}
+              <button
+                type="button"
+                onClick={() => scrollCourses('left')}
+                className="hidden lg:flex absolute left-0 top-1/2 -translate-y-1/2 z-30 w-13 h-13 rounded-2xl bg-[#0a0e17]/95 hover:bg-slate-900 border border-[#f9b03c]/40 hover:border-[#f9b03c] text-white hover:text-[#f9b03c] shadow-[0_15px_40px_rgba(0,0,0,0.9),0_0_25px_rgba(249,176,60,0.25)] backdrop-blur-2xl items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 cursor-pointer opacity-0 group-hover/carousel:opacity-100"
+                title="ቀዳሚ ኮርሶች"
+                aria-label="Previous courses"
+              >
+                <i className="fa-solid fa-chevron-left text-base"></i>
+              </button>
+
+              {/* Floating Side Right Navigation Button */}
+              <button
+                type="button"
+                onClick={() => scrollCourses('right')}
+                className="hidden lg:flex absolute right-0 top-1/2 -translate-y-1/2 z-30 w-13 h-13 rounded-2xl bg-[#0a0e17]/95 hover:bg-slate-900 border border-[#f9b03c]/40 hover:border-[#f9b03c] text-white hover:text-[#f9b03c] shadow-[0_15px_40px_rgba(0,0,0,0.9),0_0_25px_rgba(249,176,60,0.25)] backdrop-blur-2xl items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 cursor-pointer opacity-0 group-hover/carousel:opacity-100"
+                title="ቀጣይ ኮርሶች"
+                aria-label="Next courses"
+              >
+                <i className="fa-solid fa-chevron-right text-base"></i>
+              </button>
+
+              {/* Scrollable Horizontal Track */}
               <div 
-                id="courses-horizontal-track" 
-                className="flex items-stretch gap-6 sm:gap-8 px-4 sm:px-8 lg:px-12 w-max will-change-transform"
+                ref={courseSliderRef}
+                className="flex items-stretch gap-6 sm:gap-8 overflow-x-auto scroll-smooth snap-x snap-mandatory py-4 px-1 scrollbar-none no-scrollbar select-none will-change-transform"
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
               >
                 {[...courses, ...getComingSoonCourses().map(c => ({ ...c, isComingSoon: true }))].slice(0, 8).map((course, index) => {
                   const isComingSoon = Boolean(course.isComingSoon || course.status === 'Coming Soon');
@@ -787,7 +843,7 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
                   return (
                     <div 
                       key={course.id} 
-                      className="w-[330px] sm:w-[390px] md:w-[420px] shrink-0 course-popup-card"
+                      className="w-[310px] sm:w-[370px] md:w-[400px] shrink-0 snap-start course-popup-card"
                     >
                       <Tilt3DCard
                         maxTilt={10}
@@ -1012,8 +1068,8 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
                   );
                 })}
 
-                {/* Final Cello Deck Card: Explore All Courses */}
-                <div className="w-[300px] sm:w-[350px] shrink-0 flex items-center justify-center">
+                {/* Final Deck Card: Explore All Courses */}
+                <div className="w-[300px] sm:w-[350px] shrink-0 snap-start flex items-center justify-center">
                   <Link 
                     href="/courses"
                     className="w-full h-[85%] rounded-3xl border-2 border-dashed border-[#f9b03c]/50 hover:border-[#f9b03c] bg-[#0c121f]/75 hover:bg-[#0c121f]/95 backdrop-blur-[16px] p-8 flex flex-col items-center justify-center text-center group transition-all duration-300 shadow-[0_20px_50px_rgba(0,0,0,0.8),0_0_30px_rgba(249,176,60,0.2)] hover:shadow-[0_25px_60px_rgba(249,176,60,0.45)] hover:scale-105"
