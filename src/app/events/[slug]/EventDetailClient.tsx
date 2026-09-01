@@ -384,6 +384,37 @@ export default function EventDetailClient() {
     }
   };
 
+  const [copiedShare, setCopiedShare] = useState(false);
+
+  const handleShareEvent = async () => {
+    if (!event) return;
+    const url = typeof window !== 'undefined' ? window.location.href : '';
+    const shareData = {
+      title: event.title,
+      text: event.description ? event.description.slice(0, 120) + '...' : 'የፀሐይ ካምፓስ ዝግጅት',
+      url: url,
+    };
+
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch (err) {
+        // Fallback to clipboard
+      }
+    }
+
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      try {
+        await navigator.clipboard.writeText(url);
+        setCopiedShare(true);
+        setTimeout(() => setCopiedShare(false), 3000);
+      } catch (err) {
+        console.warn('Clipboard write failed:', err);
+      }
+    }
+  };
+
   if (loading && !event) {
     return (
       <div className="min-h-screen bg-[#06090e] text-white flex flex-col items-center justify-center p-4">
@@ -431,15 +462,37 @@ export default function EventDetailClient() {
 
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           
-          {/* Breadcrumb & Top Bar */}
+          {/* Breadcrumb & Top Bar with Prominent Royal Blue Glowing Share Button */}
           <div className="flex items-center justify-between gap-4 mb-8 pt-4">
             <Link 
               href="/#events" 
-              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-xs text-slate-300 transition"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-xs text-slate-300 transition hover:border-[#f9b03c]/40"
             >
               <i className="fa-solid fa-arrow-left text-[#f9b03c] text-xs"></i>
               <span>ወደ ዋናው ገጽ (All Events)</span>
             </Link>
+
+            {/* Prominent Glassmorphic Share Button with Royal Blue Glow */}
+            <button
+              type="button"
+              onClick={handleShareEvent}
+              className="relative inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full bg-[#3268ba]/15 hover:bg-[#3268ba]/25 text-white text-xs sm:text-sm font-bold border border-[#3268ba]/50 hover:border-[#3268ba] shadow-[0_0_25px_rgba(50,104,186,0.4)] hover:shadow-[0_0_35px_rgba(50,104,186,0.7)] backdrop-blur-xl transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer group"
+              title="ክንውኑን ለጓደኞችዎ ያጋሩ (Share Event)"
+            >
+              <svg 
+                className="w-4 h-4 text-[#5a93e8] group-hover:scale-110 transition-transform duration-300" 
+                fill="none" 
+                viewBox="0 0 24 24" 
+                stroke="currentColor" 
+                strokeWidth="2.2"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+              </svg>
+              <span>{copiedShare ? 'ተገልብጧል! (Link Copied)' : 'አጋራ (Share)'}</span>
+              {copiedShare && (
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+              )}
+            </button>
           </div>
 
           {/* Cinematic Hero Container */}
@@ -453,21 +506,42 @@ export default function EventDetailClient() {
             }}
           >
             {/* Top Event Badge & Format */}
-            <div className="flex flex-wrap items-center gap-3 mb-6">
-              <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-400/10 border border-amber-400/30 text-[#f9b03c] text-xs font-black">
-                <span className="w-2 h-2 rounded-full bg-[#f9b03c] animate-ping"></span>
-                <span>ይፋዊ የቀጥታ ዝግጅት • Official Event</span>
-              </span>
-
-              <span className="px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-slate-300 text-xs font-bold">
-                {event.isOnline ? '🌐 Virtual Live Stream (Online)' : `📍 በአካል (${event.location})`}
-              </span>
-
-              {isSoldOut && (
-                <span className="px-3 py-1.5 rounded-full bg-red-600 text-white text-xs font-black uppercase tracking-wider animate-pulse shadow-lg">
-                  ❌ ትኬቱ አልቋል (Sold Out)
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-400/10 border border-amber-400/30 text-[#f9b03c] text-xs font-black">
+                  <span className="w-2 h-2 rounded-full bg-[#f9b03c] animate-ping"></span>
+                  <span>ይፋዊ የቀጥታ ዝግጅት • Official Event</span>
                 </span>
-              )}
+
+                <span className="px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-slate-300 text-xs font-bold">
+                  {event.isOnline ? '🌐 Virtual Live Stream (Online)' : `📍 በአካል (${event.location})`}
+                </span>
+
+                {isSoldOut && (
+                  <span className="px-3 py-1.5 rounded-full bg-red-600 text-white text-xs font-black uppercase tracking-wider animate-pulse shadow-lg">
+                    ❌ ትኬቱ አልቋል (Sold Out)
+                  </span>
+                )}
+              </div>
+
+              {/* In-Hero Glassmorphic Share Action */}
+              <button
+                type="button"
+                onClick={handleShareEvent}
+                className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#3268ba]/20 hover:bg-[#3268ba]/30 text-blue-200 hover:text-white border border-[#3268ba]/50 hover:border-[#3268ba] text-xs font-black backdrop-blur-md shadow-[0_0_20px_rgba(50,104,186,0.35)] transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer group"
+                title="ክንውኑን ያጋሩ (Share)"
+              >
+                <svg 
+                  className="w-3.5 h-3.5 text-[#5a93e8] group-hover:scale-110 transition-transform" 
+                  fill="none" 
+                  viewBox="0 0 24 24" 
+                  stroke="currentColor" 
+                  strokeWidth="2.2"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                </svg>
+                <span>{copiedShare ? 'ሊንኩ ተገልብጧል' : 'አጋራ (Share)'}</span>
+              </button>
             </div>
 
             {/* Grid: Details (Left) + Banner Card (Right) */}
@@ -475,15 +549,19 @@ export default function EventDetailClient() {
               
               {/* Left Column (7 cols) */}
               <div className="lg:col-span-7 space-y-6">
-                <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black font-heading text-white tracking-tight leading-tight">
-                  {event.title}
-                </h1>
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                  <div className="flex-1">
+                    <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black font-heading text-white tracking-tight leading-tight">
+                      {event.title}
+                    </h1>
 
-                {event.titleEn && (
-                  <p className="text-sm font-semibold text-[#f9b03c] tracking-wide">
-                    {event.titleEn}
-                  </p>
-                )}
+                    {event.titleEn && (
+                      <p className="text-sm font-semibold text-[#f9b03c] tracking-wide mt-1.5">
+                        {event.titleEn}
+                      </p>
+                    )}
+                  </div>
+                </div>
 
                 <p className="text-slate-300 text-sm sm:text-base leading-relaxed font-body">
                   {event.description}

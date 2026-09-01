@@ -6,6 +6,7 @@ import { gsap } from 'gsap';
 import { parseVideoEmbedUrl, parseImageUrl } from '@/lib/videoParser';
 import { db } from '@/lib/firebase/config';
 import { doc, onSnapshot } from 'firebase/firestore';
+import CinematicVideoModal from '@/components/CinematicVideoModal';
 
 interface Hero3DPopoutStageProps {
   videoSrc?: string;
@@ -362,59 +363,13 @@ export default function Hero3DPopoutStage({
         </div>
       </div>
 
-      {/* 🌟 FULL-SCREEN VIDEO LIGHTBOX / MODAL (Cello Style deep black) */}
-      {isModalOpen && (
-        <div 
-          className="fixed inset-0 z-[999999] bg-black/95 backdrop-blur-3xl flex items-center justify-center p-4 sm:p-6 md:p-10 animate-in fade-in duration-300"
-          onClick={() => setIsModalOpen(false)}
-        >
-          {/* Modal Container */}
-          <div 
-            className="relative w-full max-w-5xl rounded-3xl bg-[#080d15] border border-[#f9b03c]/60 shadow-[0_0_100px_rgba(249,176,60,0.35)] overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Modal Header */}
-            <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-white/10 bg-black/70">
-              <div className="flex items-center gap-2.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#f9b03c] animate-pulse"></span>
-                <h3 className="text-sm sm:text-base font-black text-white font-heading">
-                  የፀሐይ ካምፓስ መግቢያ ቪዲዮ (Tsehay Campus Introduction)
-                </h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsModalOpen(false)}
-                className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white flex items-center justify-center transition cursor-pointer text-sm"
-                title="ዝጋ (Close)"
-              >
-                <i className="fa-solid fa-xmark"></i>
-              </button>
-            </div>
-
-            {/* Universal Video / Embed Player */}
-            <div className="relative aspect-video w-full bg-black">
-              {parsedModalVideo.type === 'video' ? (
-                <video
-                  src={parsedModalVideo.src}
-                  autoPlay
-                  controls
-                  playsInline
-                  className="w-full h-full object-contain"
-                />
-              ) : (
-                <iframe
-                  src={parsedModalVideo.src}
-                  title="Landing Video Player"
-                  frameBorder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  className="w-full h-full border-0"
-                />
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      {/* 🌟 FULL-SCREEN CINEMATIC VIDEO LIGHTBOX (100% Full-Screen Deep Void Black) */}
+      <CinematicVideoModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        videoUrl={activeVideoUrl}
+        title="የፀሐይ ካምፓስ መግቢያ ቪዲዮ (Tsehay Campus Introduction)"
+      />
     </div>
   );
 }
