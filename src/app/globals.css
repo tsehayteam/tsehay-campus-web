@@ -2085,5 +2085,16 @@ img, video, canvas {
   transform: translate3d(0, 0, 0);
 }
 
+/* 🌟 Course Pop-Up Entrance & Hover Glow */
+.course-popup-card {
+  will-change: transform, opacity;
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.course-popup-card:hover {
+  transform: translateY(-8px);
+}
+
+
 
 

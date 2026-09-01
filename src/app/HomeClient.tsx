@@ -24,6 +24,7 @@ import Hero3DPopoutStage from '@/components/3d/Hero3DPopoutStage';
 import Tilt3DCard from '@/components/3d/Tilt3DCard';
 import { scrollTriggerEngine } from '@/lib/scrollTriggerEngine';
 import WaitlistModal from '@/components/WaitlistModal';
+import TypingCoursesHeadline from '@/components/TypingCoursesHeadline';
 import { 
   getCachedCourses, 
   saveCachedCourses, 
@@ -34,7 +35,8 @@ import {
   subscribeToCourses,
   DEFAULT_COURSES,
   getComingSoonCourses,
-  ComingSoonCourse
+  ComingSoonCourse,
+  formatCleanCategory
 } from '@/lib/courseCache';
 
 const PARTNER_BRANDS = [
@@ -757,9 +759,7 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
                   <span className="text-xs font-black uppercase tracking-widest text-[#f9b03c]">FEATURED MASTERCLASSES</span>
                 </div>
                 <h2 className="font-heading font-black text-3xl sm:text-5xl lg:text-6xl tracking-tight leading-tight">
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-[#f9b03c] to-[#5a93e8] drop-shadow-[0_5px_25px_rgba(249,176,60,0.3)]">
-                    በብዛት የሚፈለጉ ኮርሶች
-                  </span>
+                  <TypingCoursesHeadline text="በብዛት የሚፈለጉ ኮርሶች" />
                 </h2>
                 <div className="w-28 h-1.5 bg-gradient-to-r from-transparent via-[#f9b03c] to-transparent rounded-full shadow-[0_0_15px_rgba(249,176,60,0.8)] mt-2"></div>
               </div>
@@ -788,7 +788,7 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
                   return (
                     <div 
                       key={course.id} 
-                      className="w-[330px] sm:w-[390px] md:w-[420px] shrink-0"
+                      className="w-[330px] sm:w-[390px] md:w-[420px] shrink-0 course-popup-card"
                     >
                       <Tilt3DCard
                         maxTilt={10}
@@ -807,7 +807,7 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
                       >
                         <div 
                           data-scrolly-order={index + 1}
-                          className={`h-full rounded-3xl backdrop-blur-[16px] bg-[#0a0e17]/85 border border-white/[0.08] hover:border-[#f9b03c]/60 shadow-[0_20px_50px_rgba(0,0,0,0.8),0_0_25px_rgba(249,176,60,0.1)] hover:shadow-[0_25px_60px_rgba(249,176,60,0.25)] overflow-hidden flex flex-col justify-between relative select-none transition-all duration-300 ${
+                          className={`h-full rounded-3xl backdrop-blur-[20px] bg-[#0a0e17]/85 border border-white/[0.08] hover:border-[#f9b03c]/70 shadow-[0_20px_50px_rgba(0,0,0,0.8),0_0_25px_rgba(249,176,60,0.08)] hover:shadow-[0_25px_60px_rgba(249,176,60,0.35)] overflow-hidden flex flex-col justify-between relative select-none transition-all duration-500 ease-out ${
                             isComingSoon ? 'border-[#f9b03c]/40 hover:border-[#f9b03c]' : ''
                           }`}
                           style={{ transformStyle: 'preserve-3d' }}
@@ -858,10 +858,10 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
                               {/* Category Badge */}
                               {(course.category || course.tag) && (
                                 <div 
-                                  className="absolute bottom-3.5 left-3.5 z-20 bg-[#030509]/85 backdrop-blur-md text-[#f9b03c] border border-white/15 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider shadow-md"
+                                  className="absolute bottom-3.5 left-3.5 z-20 bg-[#030509]/90 backdrop-blur-md text-[#f9b03c] border border-[#f9b03c]/30 text-[10.5px] font-black px-3.5 py-1 rounded-full uppercase tracking-wider shadow-md"
                                   style={{ transform: 'translateZ(40px)' }}
                                 >
-                                  {course.category || course.tag}
+                                  {formatCleanCategory(course.category || course.tag)}
                                 </div>
                               )}
                             </div>

@@ -226,6 +226,60 @@ class ScrollTriggerEngine {
       });
       this.gsapTriggers.push(eventsTrigger);
     }
+
+    // 6. Staggered Pop-Up Entrance for Popular Course Cards (scale: 0.9 -> 1, opacity: 0 -> 1)
+    const coursesSection = document.getElementById('courses');
+    const courseCards = document.querySelectorAll<HTMLElement>('.course-popup-card, #courses-horizontal-track > div');
+    if (coursesSection && courseCards.length > 0) {
+      const coursePopupTrigger = ScrollTrigger.create({
+        trigger: coursesSection,
+        start: 'top 85%',
+        end: 'bottom 15%',
+        toggleActions: 'play reverse play reverse',
+        onEnter: () => {
+          gsap.fromTo(
+            courseCards,
+            {
+              scale: 0.9,
+              opacity: 0,
+              y: 25,
+              transformOrigin: '50% 50%',
+            },
+            {
+              scale: 1,
+              opacity: 1,
+              y: 0,
+              duration: 0.6,
+              stagger: 0.1,
+              ease: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
+              overwrite: 'auto',
+            }
+          );
+        },
+        onEnterBack: () => {
+          gsap.to(courseCards, {
+            scale: 1,
+            opacity: 1,
+            y: 0,
+            duration: 0.5,
+            stagger: 0.08,
+            ease: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
+            overwrite: 'auto',
+          });
+        },
+        onLeaveBack: () => {
+          gsap.to(courseCards, {
+            scale: 0.9,
+            opacity: 0,
+            y: 25,
+            duration: 0.4,
+            ease: 'power2.in',
+            overwrite: 'auto',
+          });
+        },
+      });
+      this.gsapTriggers.push(coursePopupTrigger);
+    }
   }
 
   public registerAllElements() {
