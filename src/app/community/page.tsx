@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import RequireAuthModal from '@/components/RequireAuthModal';
@@ -11,6 +12,8 @@ import { doc, getDoc } from 'firebase/firestore';
 import { 
   CommunityPost, 
   CommunityComment,
+  DirectMessage,
+  Conversation,
   subscribeCommunityPosts, 
   createCommunityPost, 
   toggleLikePost, 
@@ -21,8 +24,31 @@ import {
   addCommentToPost,
   deleteCommentFromPost,
   isUserAdmin,
-  getCachedCommunityPosts
+  getCachedCommunityPosts,
+  getConversationId,
+  subscribeConversationMessages,
+  sendDirectMessage,
+  subscribeUserConversations
 } from '@/lib/communityService';
+import FormattedAiText from '@/components/FormattedAiText';
+
+const CATEGORIES = [
+  { id: 'all', label: 'ሁሉም (All)', icon: 'fa-globe' },
+  { id: 'general', label: 'አጠቃላይ (General)', icon: 'fa-comments' },
+  { id: 'questions', label: 'ጥያቄና መልስ (Q&A)', icon: 'fa-circle-question' },
+  { id: 'success', label: 'የስኬት ታሪኮች (Wins)', icon: 'fa-trophy' },
+  { id: 'business', label: 'ቢዝነስና ገበያ (Business)', icon: 'fa-chart-line' },
+  { id: 'tech', label: 'ቴክኖሎጂና AI (Tech)', icon: 'fa-microchip' },
+];
+
+const TRENDING_TAGS = [
+  '#YouTubeMastery',
+  '#SheinBusiness',
+  '#DigitalMarketing',
+  '#EcommerceEthiopia',
+  '#TsehayAI',
+  '#Dropshipping'
+];
 
 export default function CommunityPage() {
   const router = useRouter();
@@ -30,6 +56,8 @@ export default function CommunityPage() {
   const [userProfile, setUserProfile] = useState<{ displayName: string; photoURL: string; email: string; isPro: boolean; isAdmin: boolean } | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authModalTitle, setAuthModalTitle] = useState('ለመቀጠል እባክዎ አስቀድመው ይመዝገቡ');
+  const [authModalDescription, setAuthModalDescription] = useState('በማህበረሰቡ ውስጥ ፖስት ለማድረግ፣ አስተያየት ለመስጠት እና መልዕክት ለመላክ መጀመሪያ መለያዎን ይክፈቱ።');
 
   // Posts State (Instant zero-latency hydration from cache)
   const [posts, setPosts] = useState<CommunityPost[]>(() => getCachedCommunityPosts());
@@ -40,12 +68,10 @@ export default function CommunityPage() {
   // Post Creator State
   const [postContent, setPostContent] = useState('');
   const [postCategory, setPostCategory] = useState<'general' | 'questions' | 'success' | 'tech' | 'business'>('general');
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [customTagInput, setCustomTagInput] = useState('');
+  const [attachedImage, setAttachedImage] = useState<string | null>(null);
   const [showCodeInput, setShowCodeInput] = useState(false);
   const [codeLanguage, setCodeLanguage] = useState('javascript');
   const [codeText, setCodeText] = useState('');
-  const [attachedImage, setAttachedImage] = useState<string | null>(null);
   const [isSubmittingPost, setIsSubmittingPost] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -56,7 +82,19 @@ export default function CommunityPage() {
   const [submittingComment, setSubmittingComment] = useState<{ [postId: string]: boolean }>({});
   const [activeZoomImage, setActiveZoomImage] = useState<string | null>(null);
   const [copiedPostId, setCopiedPostId] = useState<string | null>(null);
-  const [copiedCodePostId, setCopiedCodePostId] = useState<string | null>(null);
+
+  // Direct Messaging (DM) State
+  const [activeDmUser, setActiveDmUser] = useState<{ id: string; name: string; photo: string; email: string; isPro?: boolean; isAdmin?: boolean } | null>(null);
+  const [dmConversationId, setDmConversationId] = useState<string | null>(null);
+  const [dmInput, setDmInput] = useState('');
+  const [dmSubmitting, setDmSubmitting] = useState(false);
+  const [dmList, setDmList] = useState<DirectMessage[]>([]);
+  const [isRecordingVoice, setIsRecordingVoice] = useState(false);
+  const [voiceDuration, setVoiceDuration] = useState(0);
+  const dmMessagesEndRef = useRef<HTMLDivElement>(null);
+  const voiceTimerRef = useRef<any>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
 
   // Auth Listener & User Pro Status Check
   useEffect(() => {
@@ -67,7 +105,6 @@ export default function CommunityPage() {
       if (user) {
         let isPro = false;
         try {
-          // Check if user has enrolled courses in Firestore or localStorage
           const userDoc = await getDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid));
           if (userDoc.exists()) {
             const data = userDoc.data();
@@ -109,7 +146,7 @@ export default function CommunityPage() {
     };
   }, [activeCategory]);
 
-  // Deep-link auto-scroll when visiting /community?post=ID or /community#post-ID
+  // Deep-link auto-scroll when visiting /community?post=ID
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const urlParams = new URLSearchParams(window.location.search);
@@ -128,12 +165,34 @@ export default function CommunityPage() {
     }
   }, [posts]);
 
+  // Direct Message Real-time Listener
+  useEffect(() => {
+    if (!currentUser || !activeDmUser) {
+      setDmConversationId(null);
+      setDmList([]);
+      return;
+    }
+
+    const convId = getConversationId(currentUser.uid, activeDmUser.id);
+    setDmConversationId(convId);
+
+    const unsub = subscribeConversationMessages(convId, (msgs) => {
+      setDmList(msgs);
+      setTimeout(() => {
+        dmMessagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    });
+
+    return () => {
+      if (typeof unsub === 'function') unsub();
+    };
+  }, [currentUser, activeDmUser]);
+
   // Handle Comments Toggle
   const toggleComments = (postId: string) => {
     setExpandedComments((prev) => {
       const nextState = !prev[postId];
       if (nextState && !commentsByPost[postId]) {
-        // Start listening to comments for this post
         subscribePostComments(postId, (comments) => {
           setCommentsByPost((cPrev) => ({ ...cPrev, [postId]: comments }));
         });
@@ -142,7 +201,7 @@ export default function CommunityPage() {
     });
   };
 
-  // Image upload handler (converts to optimized Base64 data URL)
+  // Image upload handler
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -163,6 +222,8 @@ export default function CommunityPage() {
   const handleCreatePost = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentUser) {
+      setAuthModalTitle('ፖስት ለማጋራት ይመዝገቡ');
+      setAuthModalDescription('ጥያቄዎን ለመጠየቅ ወይም ሃሳብዎን ለማጋራት እባክዎ መጀመሪያ ይግቡ።');
       setShowAuthModal(true);
       return;
     }
@@ -186,14 +247,13 @@ export default function CommunityPage() {
         codeSnippet: showCodeInput && codeText.trim() ? { code: codeText.trim(), language: codeLanguage } : null,
         imageUrl: attachedImage,
         category: postCategory,
-        tags: selectedTags,
+        tags: [],
         isPinned: false,
         isFeatured: false,
       };
 
       const docId = await createCommunityPost(newPostPayload);
 
-      // Optimistically insert to feed
       setPosts(prev => [{
         id: docId || `post_${Date.now()}`,
         ...newPostPayload,
@@ -202,13 +262,10 @@ export default function CommunityPage() {
         createdAt: new Date().toISOString()
       }, ...prev]);
 
-      // Reset Creator Form
       setPostContent('');
       setAttachedImage(null);
       setShowCodeInput(false);
       setCodeText('');
-      setSelectedTags([]);
-      setCustomTagInput('');
     } catch (err: any) {
       console.error('Error creating post:', err);
       alert('ፖስቱን ማጋራት አልተቻለም። እባክዎ እንደገና ይሞክሩ።');
@@ -217,16 +274,16 @@ export default function CommunityPage() {
     }
   };
 
-  // Handle Like Post (Instant Optimistic UI)
+  // Handle Like Post
   const handleLike = async (post: CommunityPost) => {
     if (!currentUser) {
+      setAuthModalTitle('ላይክ ለማድረግ ይመዝገቡ');
+      setAuthModalDescription('ፖስቶችን ላይክ ለማድረግ እና ድጋፍዎን ለመግለጽ እባክዎ ይግቡ።');
       setShowAuthModal(true);
       return;
     }
 
     const isLiked = post.likes.includes(currentUser.uid);
-    
-    // Instant Optimistic Update
     setPosts(prev => prev.map(p => {
       if (p.id === post.id) {
         return {
@@ -246,23 +303,19 @@ export default function CommunityPage() {
         postSnippet: post.content,
         likerName: userProfile?.displayName || currentUser.displayName || 'አንድ ተማሪ'
       });
-    } catch (e) {
-      console.error('Error toggling like:', e);
-    }
+    } catch (e) {}
   };
 
-  // Handle Toggle Pin (Optimistic UI)
+  // Handle Toggle Pin
   const handleTogglePin = async (post: CommunityPost) => {
     const nextPinned = !post.isPinned;
     setPosts(prev => prev.map(p => p.id === post.id ? { ...p, isPinned: nextPinned } : p));
     try {
       await pinCommunityPost(post.id, nextPinned);
-    } catch (e) {
-      console.error('Error pinning post:', e);
-    }
+    } catch (e) {}
   };
 
-  // Handle Share Post (Web Share API + Clipboard Copy)
+  // Handle Share Post
   const handleSharePost = async (post: CommunityPost) => {
     const postUrl = `${window.location.origin}/community?post=${encodeURIComponent(post.id)}`;
     if (typeof navigator !== 'undefined' && navigator.share) {
@@ -286,6 +339,8 @@ export default function CommunityPage() {
   // Handle Submit Comment
   const handleAddComment = async (postId: string) => {
     if (!currentUser) {
+      setAuthModalTitle('አስተያየት ለመጻፍ ይመዝገቡ');
+      setAuthModalDescription('በውይይቱ ለመሳተፍ እና አስተያየት ለመስጠት እባክዎ ይግቡ።');
       setShowAuthModal(true);
       return;
     }
@@ -307,807 +362,941 @@ export default function CommunityPage() {
       isAdmin: Boolean(userProfile?.isAdmin),
       isPro: Boolean(userProfile?.isPro),
       content: text,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
     };
 
-    // Optimistic comment and counter update
-    setCommentsByPost(prev => ({
+    setCommentsByPost((prev) => ({
       ...prev,
-      [postId]: [...(prev[postId] || []), newCommentObj]
+      [postId]: [...(prev[postId] || []), newCommentObj],
     }));
-    setPosts(prev => prev.map(p => p.id === postId ? { ...p, commentsCount: (p.commentsCount || 0) + 1 } : p));
+
+    setPosts((prev) =>
+      prev.map((p) =>
+        p.id === postId ? { ...p, commentsCount: (p.commentsCount || 0) + 1 } : p
+      )
+    );
+
     setCommentInputs((prev) => ({ ...prev, [postId]: '' }));
 
     try {
-      await addCommentToPost(postId, {
-        authorId: currentUser.uid,
-        authorName: userProfile?.displayName || 'ተማሪ',
-        authorEmail: currentUser.email || '',
-        authorPhoto: userProfile?.photoURL || '',
-        isAdmin: Boolean(userProfile?.isAdmin),
-        isPro: Boolean(userProfile?.isPro),
-        content: text,
-      }, {
+      await addCommentToPost(postId, newCommentObj, {
         authorEmail: targetPost?.authorEmail,
         authorName: targetPost?.authorName,
         postSnippet: targetPost?.content
       });
     } catch (err) {
-      console.error('Error posting comment:', err);
+      console.error('Error adding comment:', err);
     } finally {
       setSubmittingComment((prev) => ({ ...prev, [postId]: false }));
     }
   };
 
-  // Handle Delete Post (Admin or Post Author)
+  // Handle Delete Post
   const handleDeletePost = async (postId: string) => {
-    if (!confirm('ይህንን ፖስት መሰረዝ እርግጠኛ ነዎት? (Are you sure you want to delete this post?)')) return;
-    
-    // Instant Optimistic Removal
-    setPosts(prev => prev.filter(p => p.id !== postId));
-
+    if (!confirm('ይህንን ፖስት መሰረዝ እንደሚፈልጉ እርግጠኛ ነዎት?')) return;
+    setPosts((prev) => prev.filter((p) => p.id !== postId));
     try {
       await deleteCommunityPost(postId);
-    } catch (e) {
-      console.error('Error deleting post:', e);
-    }
+    } catch (e) {}
   };
 
-  // Handle Delete Comment
-  const handleDeleteComment = async (postId: string, commentId: string) => {
-    if (!confirm('አስተያየቱን መሰረዝ እርግጠኛ ነዎት?')) return;
-    
-    setCommentsByPost(prev => ({
-      ...prev,
-      [postId]: (prev[postId] || []).filter(c => c.id !== commentId)
-    }));
-    setPosts(prev => prev.map(p => p.id === postId ? { ...p, commentsCount: Math.max(0, (p.commentsCount || 1) - 1) } : p));
+  // Direct Message Sending
+  const handleSendDm = async (e?: React.FormEvent, overrideAudio?: string) => {
+    if (e) e.preventDefault();
+    if (!currentUser || !activeDmUser || !dmConversationId) return;
+
+    const messageText = overrideAudio ? '🎤 የድምፅ መልእክት (Voice Message)' : dmInput.trim();
+    if (!messageText && !overrideAudio) return;
+
+    setDmInput('');
+    setDmSubmitting(true);
+
+    const tempDm: DirectMessage = {
+      id: `dm_${Date.now()}`,
+      conversationId: dmConversationId,
+      senderId: currentUser.uid,
+      senderName: userProfile?.displayName || 'ተማሪ',
+      senderPhoto: userProfile?.photoURL || '',
+      senderEmail: currentUser.email || '',
+      receiverId: activeDmUser.id,
+      content: messageText,
+      imageUrl: overrideAudio || null,
+      createdAt: new Date().toISOString(),
+      isRead: false
+    };
+
+    setDmList(prev => [...prev, tempDm]);
 
     try {
-      await deleteCommentFromPost(postId, commentId);
+      await sendDirectMessage(dmConversationId, {
+        senderId: currentUser.uid,
+        senderName: userProfile?.displayName || 'ተማሪ',
+        senderPhoto: userProfile?.photoURL || '',
+        senderEmail: currentUser.email || '',
+        receiverId: activeDmUser.id,
+        receiverName: activeDmUser.name,
+        receiverPhoto: activeDmUser.photo,
+        receiverEmail: activeDmUser.email,
+        content: messageText,
+        imageUrl: overrideAudio || null
+      });
     } catch (e) {
-      console.error('Error deleting comment:', e);
+      console.error("Error sending direct message:", e);
+    } finally {
+      setDmSubmitting(false);
     }
   };
 
-  // Filter posts by search query
-  const displayedPosts = posts.filter((p) => {
-    if (!searchQuery.trim()) return true;
-    const queryLower = searchQuery.toLowerCase();
-    return (
-      p.content.toLowerCase().includes(queryLower) ||
-      p.authorName.toLowerCase().includes(queryLower) ||
-      (p.tags && p.tags.some((t) => t.toLowerCase().includes(queryLower)))
-    );
-  });
-
-  // Time formatter in Amharic
-  const formatTimeAgo = (dateStr: string) => {
+  // Voice recording for DM
+  const startVoiceRecording = async () => {
     try {
-      const d = new Date(dateStr);
-      const now = new Date();
-      const diffSecs = Math.floor((now.getTime() - d.getTime()) / 1000);
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioChunksRef.current = [];
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
 
-      if (diffSecs < 60) return 'ልክ አሁን';
-      if (diffSecs < 3600) return `ከ ${Math.floor(diffSecs / 60)} ደቂቃ በፊት`;
-      if (diffSecs < 86400) return `ከ ${Math.floor(diffSecs / 3600)} ሰዓት በፊት`;
-      if (diffSecs < 604800) return `ከ ${Math.floor(diffSecs / 86400)} ቀን በፊት`;
-      return d.toLocaleDateString('am-ET', { month: 'short', day: 'numeric' });
-    } catch (e) {
-      return '';
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+
+      mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64Audio = reader.result as string;
+          handleSendDm(undefined, base64Audio);
+        };
+        reader.readAsDataURL(audioBlob);
+        stream.getTracks().forEach(t => t.stop());
+      };
+
+      mediaRecorder.start();
+      setIsRecordingVoice(true);
+      setVoiceDuration(0);
+      voiceTimerRef.current = setInterval(() => setVoiceDuration(p => p + 1), 1000);
+    } catch (err) {
+      alert('የማይክሮፎን ፍቃድ አልተገኘም። እባክዎ በማይክሮፎን ለመጠቀም ፍቃድ ይስጡ።');
     }
   };
+
+  const stopVoiceRecording = () => {
+    if (mediaRecorderRef.current && isRecordingVoice) {
+      mediaRecorderRef.current.stop();
+    }
+    if (voiceTimerRef.current) clearInterval(voiceTimerRef.current);
+    setIsRecordingVoice(false);
+    setVoiceDuration(0);
+  };
+
+  // Open Direct Message modal
+  const openDmWithUser = (target: { id: string; name: string; photo: string; email: string; isPro?: boolean; isAdmin?: boolean }) => {
+    if (!currentUser) {
+      setAuthModalTitle('መልእክት ለመላክ ይመዝገቡ');
+      setAuthModalDescription('ከተማሪዎች ጋር በግል ለመወያየት እና መልእክት ለመለዋወጥ እባክዎ ይግቡ።');
+      setShowAuthModal(true);
+      return;
+    }
+    if (target.id === currentUser.uid) {
+      alert('ለራስዎ መልእክት መላክ አይችሉም።');
+      return;
+    }
+    setActiveDmUser(target);
+  };
+
+  // Filtered Posts
+  const filteredPosts = useMemo(() => {
+    let result = posts;
+    if (activeCategory !== 'all') {
+      result = result.filter(p => p.category === activeCategory);
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      result = result.filter(p => 
+        p.content.toLowerCase().includes(q) || 
+        p.authorName.toLowerCase().includes(q) ||
+        (p.tags && p.tags.some(t => t.toLowerCase().includes(q)))
+      );
+    }
+    return result;
+  }, [posts, activeCategory, searchQuery]);
 
   return (
-    <div className="min-h-screen bg-[#030509] text-slate-200 font-body selection:bg-[#f9b03c]/30">
+    <div className="min-h-screen bg-[#030509] text-white flex flex-col selection:bg-[#f9b03c]/30 selection:text-[#f9b03c]">
       <Navbar />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-20">
+      {/* Atmospheric Ambient Glow Spheres */}
+      <div className="fixed top-20 left-1/4 w-[600px] h-[600px] bg-[#f9b03c]/10 rounded-full blur-[180px] pointer-events-none -z-10" />
+      <div className="fixed bottom-10 right-1/4 w-[600px] h-[600px] bg-[#3268ba]/15 rounded-full blur-[180px] pointer-events-none -z-10" />
+
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-28 sm:pt-32 pb-16">
         
-        {/* 🌟 HERO COMMUNITY HEADER & STATS */}
-        <div className="relative rounded-3xl overflow-hidden border border-white/10 bg-gradient-to-r from-slate-900/90 via-[#050811] to-slate-900/90 backdrop-blur-2xl p-6 sm:p-10 mb-8 shadow-2xl">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-[#f9b03c]/10 rounded-full blur-3xl pointer-events-none"></div>
-          <div className="absolute bottom-0 left-0 w-96 h-96 bg-[#3268ba]/10 rounded-full blur-3xl pointer-events-none"></div>
-
-          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div className="max-w-2xl">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gradient-to-r from-[#f9b03c]/20 via-amber-400/10 to-transparent border border-[#f9b03c]/40 text-[#f9b03c] text-xs font-black uppercase tracking-wider mb-3">
-                <i className="fa-solid fa-users text-xs animate-pulse"></i>
-                <span>Tsehay Campus Student Community</span>
-              </div>
-              <h1 className="text-2xl sm:text-4xl font-heading font-black text-white tracking-tight leading-tight">
-                የተማሪዎች ማህበረሰብ እና <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#f9b03c] via-amber-300 to-yellow-200">የልምድ መጋሪያ</span>
-              </h1>
-              <p className="text-xs sm:text-sm text-slate-400 mt-2 leading-relaxed font-body">
-                ጥያቄዎችን ይጠይቁ፣ የቢዝነስና የኮርስ ስኬቶችዎን ያጋሩ፣ ከአስተማሪዎችና ከተማሪ ጓደኞችዎ ጋር በእውነተኛ ሰዓት (Real-Time) ይገናኙ።
-              </p>
+        {/* Top Header Banner */}
+        <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-slate-950/90 via-[#070d1a]/90 to-slate-950/90 border border-white/10 shadow-[0_0_40px_rgba(0,0,0,0.8)] backdrop-blur-2xl">
+          <div>
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#f9b03c]/15 border border-[#f9b03c]/30 text-[#f9b03c] text-xs font-black mb-3">
+              <span className="w-2 h-2 rounded-full bg-[#f9b03c] animate-ping" />
+              <span>TSEHAY STUDENT COMMUNITY</span>
             </div>
-
-            {/* Quick Community Action Hub */}
-            <div className="flex flex-wrap items-center gap-3">
-              <button
-                onClick={() => router.push('/inbox')}
-                className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-[#3268ba] via-blue-600 to-[#3268ba] text-white font-heading font-black text-xs shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 hover:scale-105 active:scale-95 transition-all duration-300 flex items-center gap-2 cursor-pointer"
-              >
-                <i className="fa-solid fa-paper-plane text-xs"></i>
-                <span>የመልዕክት ሳጥን (Inbox)</span>
-              </button>
-
-              <button
-                onClick={() => {
-                  const element = document.getElementById('post-creator-box');
-                  if (element) element.scrollIntoView({ behavior: 'smooth' });
-                }}
-                className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 font-heading font-black text-xs shadow-lg shadow-amber-400/25 hover:shadow-amber-400/40 hover:scale-105 active:scale-95 transition-all duration-300 flex items-center gap-2 cursor-pointer"
-              >
-                <i className="fa-solid fa-pen-nib text-xs"></i>
-                <span>ሀሳብ አጋራ (Create Post)</span>
-              </button>
-            </div>
+            <h1 className="text-2xl sm:text-4xl font-black font-heading text-white tracking-tight">
+              የተማሪዎች <span className="text-[#f9b03c]">ማህበረሰብ </span>
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-400 mt-1 max-w-2xl font-normal">
+              ከ 500+ በላይ ንቁ ተማሪዎች ጋር ይወያዩ፣ ጥያቄዎችን ይጠይቁ፣ የስኬት ታሪኮችዎን ያጋሩ እና እርስ በእርስ ይደጋገፉ።
+            </p>
           </div>
 
-          {/* Quick Search & Category Filters */}
-          <div className="mt-8 pt-6 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar w-full md:w-auto pb-2 md:pb-0">
-              {[
-                { id: 'all', label: 'ሁሉም (All)', icon: 'fa-layer-group' },
-                { id: 'questions', label: '❓ ጥያቄና መልስ', icon: 'fa-circle-question' },
-                { id: 'success', label: '🚀 የስራ ስኬቶች', icon: 'fa-trophy' },
-                { id: 'business', label: '💼 ቢዝነስና ኢምፖርት', icon: 'fa-briefcase' },
-                { id: 'tech', label: '💻 ቴክኖሎጂ', icon: 'fa-code' },
-              ].map((cat) => (
-                <button
-                  key={cat.id}
-                  onClick={() => setActiveCategory(cat.id)}
-                  className={`px-4 py-2 rounded-xl text-xs font-black transition-all duration-300 whitespace-nowrap flex items-center gap-2 cursor-pointer ${
-                    activeCategory === cat.id
-                      ? 'bg-gradient-to-r from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 shadow-md shadow-amber-400/20 scale-105'
-                      : 'bg-white/5 hover:bg-white/10 text-slate-300 border border-white/5 hover:border-white/20'
-                  }`}
-                >
-                  <i className={`fa-solid ${cat.icon} text-xs`}></i>
-                  <span>{cat.label}</span>
-                </button>
-              ))}
-            </div>
-
-            {/* Keyword Search Input */}
-            <div className="w-full md:w-72 relative">
-              <i className="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+          {/* Quick Search Input */}
+          <div className="w-full md:w-80">
+            <div className="relative">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="ማህበረሰቡን ፈልግ..."
-                className="w-full bg-white/5 border border-white/10 focus:border-[#f9b03c] focus:bg-white/10 rounded-xl py-2 pl-9 pr-4 text-xs text-white placeholder-slate-500 focus:outline-none transition-all"
+                placeholder="ውይይቶችን፣ ርዕሶችን ወይም ተማሪዎችን ይፈልጉ..."
+                className="w-full bg-white/5 border border-white/10 focus:border-[#f9b03c] rounded-2xl px-4 py-3 pl-10 text-xs text-white placeholder-slate-500 focus:outline-none transition shadow-inner"
               />
+              <svg className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+              </svg>
               {searchQuery && (
-                <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-white">✕</button>
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3.5 top-3.5 text-slate-400 hover:text-white"
+                >
+                  <i className="fa-solid fa-xmark text-xs"></i>
+                </button>
               )}
             </div>
           </div>
         </div>
 
-        {/* 🌟 2-COLUMN MAIN CONTENT GRID */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+        {/* 3-Column Community Grid Layout (Facebook / LinkedIn standard) */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           
-          {/* LEFT 2-3 COLS: MAIN FEED & POST CREATOR */}
-          <div className="lg:col-span-2 xl:col-span-3 space-y-6">
+          {/* ======================================================== */}
+          {/* LEFT SIDEBAR: User Card & Category Filters (3 Cols)      */}
+          {/* ======================================================== */}
+          <aside className="lg:col-span-3 space-y-6 lg:sticky lg:top-32">
             
-            {/* ✍️ POST CREATION CARD (GLASSMORPHISM) */}
-            <div id="post-creator-box" className="rounded-3xl border border-white/10 bg-[#050811]/90 backdrop-blur-xl p-5 sm:p-6 shadow-xl relative overflow-hidden transition-all duration-300 hover:border-[#f9b03c]/30">
-              <div className="flex items-start gap-3.5">
-                <img
-                  src={userProfile?.photoURL || 'https://ui-avatars.com/api/?name=User&background=f9b03c&color=111827&bold=true'}
-                  alt={userProfile?.displayName || 'User'}
-                  className="w-10 h-10 rounded-full object-cover ring-2 ring-[#f9b03c]/40 shrink-0"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=User&background=f9b03c&color=111827&bold=true`;
-                  }}
-                />
-
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="font-heading font-black text-sm text-white">
-                      {userProfile?.displayName || 'ተማሪ'}
-                    </span>
-                    {userProfile?.isAdmin && (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-black bg-blue-500/20 text-blue-400 border border-blue-500/40 px-2 py-0.5 rounded-full">
-                        <i className="fa-solid fa-circle-check text-blue-400 text-[10px]"></i>
-                        <span>Admin</span>
-                      </span>
-                    )}
-                    {userProfile?.isPro && (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-black bg-[#f9b03c]/20 text-[#f9b03c] border border-[#f9b03c]/40 px-2 py-0.5 rounded-full">
-                        ⭐ <span>Pro Student</span>
+            {/* User Profile Summary Card */}
+            <div className="p-5 rounded-3xl bg-slate-900/80 border border-white/10 backdrop-blur-2xl shadow-xl">
+              {currentUser && userProfile ? (
+                <div className="text-center">
+                  <div className="relative inline-block mb-3">
+                    <img 
+                      src={userProfile.photoURL} 
+                      alt={userProfile.displayName} 
+                      className="w-20 h-20 rounded-full object-cover ring-2 ring-[#f9b03c]/60 shadow-[0_0_20px_rgba(249,176,60,0.3)] mx-auto"
+                    />
+                    {userProfile.isPro && (
+                      <span className="absolute bottom-0 right-0 bg-[#f9b03c] text-slate-950 text-[10px] font-black px-2 py-0.5 rounded-full shadow-md border-2 border-slate-950">
+                        PRO
                       </span>
                     )}
                   </div>
+                  <h3 className="font-heading font-black text-base text-white">{userProfile.displayName}</h3>
+                  <p className="text-[11px] text-slate-400 truncate">{userProfile.email}</p>
+                  
+                  <div className="mt-4 pt-4 border-t border-white/10 grid grid-cols-2 gap-2 text-center text-xs">
+                    <div className="p-2 rounded-xl bg-white/[0.04]">
+                      <span className="block font-black text-white">{posts.filter(p => p.authorId === currentUser.uid).length}</span>
+                      <span className="text-[10px] text-slate-400 font-medium">የእኔ ፖስቶች</span>
+                    </div>
+                    <div className="p-2 rounded-xl bg-white/[0.04]">
+                      <span className="block font-black text-[#f9b03c]">
+                        {posts.filter(p => p.authorId === currentUser.uid).reduce((acc, p) => acc + (p.likes?.length || 0), 0)}
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-medium">ላይኮች</span>
+                    </div>
+                  </div>
 
-                  <form onSubmit={handleCreatePost} className="space-y-3">
+                  <Link
+                    href="/dashboard"
+                    className="mt-4 w-full block py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-200 hover:text-white font-bold text-xs border border-white/10 transition text-center"
+                  >
+                    ወደ መማሪያ ክፍል (Classroom)
+                  </Link>
+                </div>
+              ) : (
+                <div className="text-center py-4">
+                  <div className="w-14 h-14 rounded-2xl bg-[#f9b03c]/20 text-[#f9b03c] flex items-center justify-center text-2xl mx-auto mb-3 shadow-[0_0_20px_rgba(249,176,60,0.3)]">
+                    <i className="fa-solid fa-users"></i>
+                  </div>
+                  <h3 className="font-heading font-black text-base text-white">ይቀላቀሉን!</h3>
+                  <p className="text-xs text-slate-400 mt-1 mb-4 leading-relaxed">
+                    በውይይት ለመሳተፍ፣ ጥያቄ ለመጠየቅ እና መልእክት ለመላክ መለያ ይፍጠሩ።
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthModalTitle('ወደ ማህበረሰቡ ይቀላቀሉ');
+                      setAuthModalDescription('ከሌሎች ተማሪዎች ጋር ለመገናኘት እና ክህሎትዎን ለማሳደግ እባክዎ ይግቡ።');
+                      setShowAuthModal(true);
+                    }}
+                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 font-black text-xs shadow-lg shadow-[#f9b03c]/30 hover:scale-105 transition cursor-pointer"
+                  >
+                    ይግቡ / ይመዝገቡ (Login)
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Category Navigation Pills */}
+            <div className="p-5 rounded-3xl bg-slate-900/80 border border-white/10 backdrop-blur-2xl shadow-xl space-y-2">
+              <h4 className="text-xs font-black text-[#f9b03c] uppercase tracking-wider mb-3 flex items-center gap-2">
+                <i className="fa-solid fa-layer-group text-xs"></i>
+                <span>ምድቦች (Categories)</span>
+              </h4>
+              
+              {CATEGORIES.map(cat => (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => setActiveCategory(cat.id)}
+                  className={`w-full flex items-center justify-between p-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+                    activeCategory === cat.id
+                      ? 'bg-gradient-to-r from-[#3268ba] to-[#244f8e] text-white shadow-lg shadow-[#3268ba]/40 border border-white/20 scale-[1.02]'
+                      : 'text-slate-300 hover:bg-white/5 hover:text-white border border-transparent'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <i className={`fa-solid ${cat.icon} ${activeCategory === cat.id ? 'text-[#f9b03c]' : 'text-slate-400'}`}></i>
+                    <span>{cat.label}</span>
+                  </div>
+                  <span className="text-[10px] bg-white/10 px-2 py-0.5 rounded-full font-mono">
+                    {cat.id === 'all' ? posts.length : posts.filter(p => p.category === cat.id).length}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+          </aside>
+
+          {/* ======================================================== */}
+          {/* CENTER FEED: Post Creator & Stream (6 Cols)              */}
+          {/* ======================================================== */}
+          <section className="lg:col-span-6 space-y-6">
+            
+            {/* Interactive Post Creator Card */}
+            <div className="p-5 sm:p-6 rounded-3xl bg-slate-900/85 border border-white/10 backdrop-blur-2xl shadow-2xl">
+              <form onSubmit={handleCreatePost}>
+                <div className="flex items-start gap-3 mb-4">
+                  <img 
+                    src={userProfile?.photoURL || `https://ui-avatars.com/api/?name=User&background=f9b03c&color=111827&bold=true`} 
+                    alt="User" 
+                    className="w-10 h-10 rounded-full object-cover ring-2 ring-white/20 shrink-0 mt-0.5"
+                  />
+                  <div className="flex-1">
                     <textarea
                       value={postContent}
                       onChange={(e) => setPostContent(e.target.value)}
-                      placeholder="ምን አዲስ ሀሳብ ወይም ጥያቄ አለዎት? (What's on your mind?)"
+                      placeholder={currentUser ? `ሰላም ${userProfile?.displayName}፣ ምን ሃሳብ ወይም ጥያቄ አለዎት?...` : "ለማህበረሰቡ ጥያቄዎን ወይም ሃሳብዎን እዚህ ይጻፉ..."}
                       rows={3}
-                      className="w-full bg-white/[0.03] border border-white/10 focus:border-[#f9b03c]/60 focus:bg-white/[0.06] rounded-2xl p-4 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none transition-all resize-none font-body leading-relaxed"
+                      className="w-full bg-white/[0.04] border border-white/10 focus:border-[#f9b03c] rounded-2xl p-3.5 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none transition resize-none leading-relaxed font-body"
                     />
-
-                    {/* Code Snippet Box Toggle */}
-                    {showCodeInput && (
-                      <div className="bg-slate-950/90 border border-white/15 rounded-2xl p-3.5 space-y-2 animate-in fade-in duration-300">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[11px] font-black text-[#f9b03c] flex items-center gap-1.5">
-                            <i className="fa-solid fa-code"></i> የኮድ ማስገቢያ (Code Snippet)
-                          </span>
-                          <select
-                            value={codeLanguage}
-                            onChange={(e) => setCodeLanguage(e.target.value)}
-                            className="bg-slate-900 border border-white/10 text-[11px] text-slate-300 rounded-lg px-2 py-1 focus:outline-none"
-                          >
-                            <option value="javascript">JavaScript / TypeScript</option>
-                            <option value="python">Python</option>
-                            <option value="html">HTML / CSS</option>
-                            <option value="json">JSON</option>
-                            <option value="bash">Terminal / Command</option>
-                          </select>
-                        </div>
-                        <textarea
-                          value={codeText}
-                          onChange={(e) => setCodeText(e.target.value)}
-                          placeholder="// የኮድዎን ይዘት እዚህ ይጻፉ..."
-                          rows={4}
-                          className="w-full bg-black/60 border border-white/10 rounded-xl p-3 text-xs font-mono text-emerald-400 placeholder-slate-600 focus:outline-none focus:border-[#f9b03c]/50"
-                        />
-                      </div>
-                    )}
-
-                    {/* Image Attachment Preview */}
-                    {attachedImage && (
-                      <div className="relative rounded-2xl overflow-hidden border border-white/15 max-h-80 w-full group/img bg-slate-950">
-                        <img src={attachedImage} alt="Attachment" className="w-full h-full object-contain" />
-                        <button
-                          type="button"
-                          onClick={() => setAttachedImage(null)}
-                          className="absolute top-3 right-3 w-8 h-8 rounded-full bg-red-600/90 hover:bg-red-500 text-white flex items-center justify-center text-xs shadow-lg transition cursor-pointer"
-                          title="ምስሉን ሰርዝ"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    )}
-
-                    {/* Category and Tags Selector */}
-                    <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <select
-                          value={postCategory}
-                          onChange={(e: any) => setPostCategory(e.target.value)}
-                          className="bg-white/5 border border-white/10 text-xs font-black text-slate-200 rounded-xl px-3 py-1.5 focus:outline-none focus:border-[#f9b03c]"
-                        >
-                          <option value="general" className="bg-slate-900">🌟 አጠቃላይ (General)</option>
-                          <option value="questions" className="bg-slate-900">❓ ጥያቄና መልስ (Q&A)</option>
-                          <option value="success" className="bg-slate-900">🚀 የስራ ስኬት (Success)</option>
-                          <option value="business" className="bg-slate-900">💼 ቢዝነስና ኢምፖርት</option>
-                          <option value="tech" className="bg-slate-900">💻 ቴክኖሎጂና ኮዲንግ</option>
-                        </select>
-
-                        {/* Attach Image Button */}
-                        <button
-                          type="button"
-                          onClick={() => fileInputRef.current?.click()}
-                          className={`px-3 py-1.5 rounded-xl border text-xs font-black transition flex items-center gap-1.5 cursor-pointer ${
-                            attachedImage 
-                              ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40' 
-                              : 'bg-white/5 hover:bg-white/10 text-slate-300 border-white/10'
-                          }`}
-                        >
-                          <i className="fa-solid fa-image text-xs"></i>
-                          <span>{attachedImage ? 'ምስል ተመርጧል' : 'ምስል አያይዝ'}</span>
-                        </button>
-                        <input
-                          ref={fileInputRef}
-                          type="file"
-                          accept="image/*"
-                          onChange={handleImageSelect}
-                          className="hidden"
-                        />
-
-                        {/* Code Snippet Toggle Button */}
-                        <button
-                          type="button"
-                          onClick={() => setShowCodeInput(prev => !prev)}
-                          className={`px-3 py-1.5 rounded-xl border text-xs font-black transition flex items-center gap-1.5 cursor-pointer ${
-                            showCodeInput 
-                              ? 'bg-[#3268ba]/20 text-blue-400 border-blue-500/40' 
-                              : 'bg-white/5 hover:bg-white/10 text-slate-300 border-white/10'
-                          }`}
-                        >
-                          <i className="fa-solid fa-code text-xs"></i>
-                          <span>ኮድ አስገባ</span>
-                        </button>
-                      </div>
-
-                      {/* Submit Post Button */}
-                      <button
-                        type="submit"
-                        disabled={isSubmittingPost || (!postContent.trim() && !attachedImage && !codeText.trim())}
-                        className="px-6 py-2 rounded-xl bg-gradient-to-r from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 font-heading font-black text-xs shadow-md shadow-amber-400/20 hover:scale-105 active:scale-95 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 cursor-pointer"
-                      >
-                        {isSubmittingPost ? (
-                          <>
-                            <i className="fa-solid fa-spinner fa-spin"></i>
-                            <span>በማጋራት ላይ...</span>
-                          </>
-                        ) : (
-                          <>
-                            <i className="fa-solid fa-paper-plane"></i>
-                            <span>ፖስት አድርግ (Post)</span>
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </form>
+                  </div>
                 </div>
-              </div>
+
+                {/* Attached Image Thumbnail Preview */}
+                {attachedImage && (
+                  <div className="relative mb-4 rounded-2xl overflow-hidden border border-white/15 max-h-64 bg-black/50">
+                    <img src={attachedImage} alt="Attachment" className="w-full h-full object-contain max-h-64" />
+                    <button
+                      type="button"
+                      onClick={() => setAttachedImage(null)}
+                      className="absolute top-3 right-3 w-8 h-8 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center text-xs shadow-lg transition cursor-pointer"
+                      title="ምስሉን አስወግድ"
+                    >
+                      <i className="fa-solid fa-xmark"></i>
+                    </button>
+                  </div>
+                )}
+
+                {/* Optional Code Snippet Input */}
+                {showCodeInput && (
+                  <div className="mb-4 p-4 rounded-2xl bg-black/60 border border-white/15 space-y-3">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-bold text-[#f9b03c] flex items-center gap-1.5">
+                        <i className="fa-solid fa-code"></i>
+                        <span>የኮድ ይዘት (Code Snippet)</span>
+                      </span>
+                      <select
+                        value={codeLanguage}
+                        onChange={(e) => setCodeLanguage(e.target.value)}
+                        className="bg-slate-900 border border-white/20 rounded-xl px-2.5 py-1 text-white text-xs font-mono"
+                      >
+                        <option value="javascript">JavaScript</option>
+                        <option value="python">Python</option>
+                        <option value="html">HTML / CSS</option>
+                        <option value="json">JSON</option>
+                      </select>
+                    </div>
+                    <textarea
+                      value={codeText}
+                      onChange={(e) => setCodeText(e.target.value)}
+                      placeholder="// ኮድዎን እዚህ ይለጥፉ..."
+                      rows={4}
+                      className="w-full bg-black/80 font-mono text-xs text-amber-200 border border-white/10 rounded-xl p-3 focus:outline-none focus:border-[#f9b03c]"
+                    />
+                  </div>
+                )}
+
+                {/* Category Selector Chips & Actions */}
+                <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-white/10">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {/* Image Attachment Button */}
+                    <input 
+                      ref={fileInputRef} 
+                      type="file" 
+                      accept="image/*" 
+                      onChange={handleImageSelect} 
+                      className="hidden" 
+                    />
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-[#f9b03c] border border-white/10 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
+                    >
+                      <i className="fa-solid fa-image text-emerald-400"></i>
+                      <span>ፎቶ</span>
+                    </button>
+
+                    {/* Code Snippet Toggle Button */}
+                    <button
+                      type="button"
+                      onClick={() => setShowCodeInput(!showCodeInput)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition cursor-pointer border ${
+                        showCodeInput 
+                          ? 'bg-[#3268ba]/20 text-[#5a93e8] border-[#3268ba]/40' 
+                          : 'bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border-white/10'
+                      }`}
+                    >
+                      <i className="fa-solid fa-code text-[#3268ba]"></i>
+                      <span>ኮድ</span>
+                    </button>
+
+                    {/* Category Selector */}
+                    <select
+                      value={postCategory}
+                      onChange={(e: any) => setPostCategory(e.target.value)}
+                      className="bg-white/5 border border-white/10 text-slate-200 text-xs rounded-xl px-2.5 py-1.5 font-bold focus:outline-none focus:border-[#f9b03c] transition cursor-pointer"
+                    >
+                      <option value="general" className="bg-slate-900 text-white">አጠቃላይ (General)</option>
+                      <option value="questions" className="bg-slate-900 text-white">ጥያቄና መልስ (Q&A)</option>
+                      <option value="success" className="bg-slate-900 text-white">የስኬት ታሪክ (Wins)</option>
+                      <option value="business" className="bg-slate-900 text-white">ቢዝነስ (Business)</option>
+                      <option value="tech" className="bg-slate-900 text-white">ቴክኖሎጂ (Tech)</option>
+                    </select>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isSubmittingPost || (!postContent.trim() && !attachedImage && !codeText.trim())}
+                    className="px-5 py-2 rounded-xl bg-gradient-to-r from-[#f9b03c] via-amber-400 to-yellow-300 hover:brightness-110 active:scale-95 disabled:opacity-50 text-slate-950 font-black text-xs sm:text-sm flex items-center gap-2 shadow-[0_0_20px_rgba(249,176,60,0.35)] transition cursor-pointer"
+                  >
+                    {isSubmittingPost ? (
+                      <>
+                        <i className="fa-solid fa-spinner fa-spin"></i>
+                        <span>በማጋራት ላይ...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>አጋራ (Post)</span>
+                        <i className="fa-solid fa-paper-plane text-xs"></i>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
             </div>
 
-            {/* 📜 FEED POSTS LIST */}
-            {postsLoading ? (
-              <div className="space-y-4">
-                {[1, 2, 3].map((n) => (
-                  <div key={n} className="rounded-3xl border border-white/10 bg-[#050811]/60 p-6 animate-pulse space-y-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-white/10"></div>
-                      <div className="space-y-2 flex-1">
-                        <div className="h-4 w-32 bg-white/10 rounded"></div>
-                        <div className="h-3 w-20 bg-white/10 rounded"></div>
-                      </div>
-                    </div>
-                    <div className="h-16 bg-white/10 rounded-2xl"></div>
-                  </div>
-                ))}
-              </div>
-            ) : displayedPosts.length === 0 ? (
-              <div className="rounded-3xl border border-dashed border-white/15 bg-[#050811]/40 p-12 text-center space-y-3">
-                <i className="fa-solid fa-comments text-5xl text-slate-600 block"></i>
-                <h3 className="text-lg font-heading font-black text-white">ምንም ፖስት አልተገኘም</h3>
-                <p className="text-xs text-slate-400 max-w-sm mx-auto">
-                  በዚህ ዘርፍ የመጀመሪያውን ጠቃሚ ሀሳብ ወይም ጥያቄ እርስዎ ያጋሩ!
+            {/* Posts Feed List */}
+            {filteredPosts.length === 0 ? (
+              <div className="p-12 text-center rounded-3xl bg-slate-900/60 border border-white/10 backdrop-blur-xl">
+                <div className="w-16 h-16 rounded-2xl bg-white/5 text-slate-400 flex items-center justify-center text-2xl mx-auto mb-3">
+                  <i className="fa-solid fa-newspaper"></i>
+                </div>
+                <h3 className="font-heading font-black text-lg text-white">ምንም ፖስት አልተገኘም</h3>
+                <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                  {searchQuery ? "በፍለጋዎ መሰረት የተገኘ ፖስት የለም።" : "በዚህ ምድብ የመጀመሪያውን ፖስት እርስዎ ያጋሩ!"}
                 </p>
               </div>
             ) : (
-              <div className="space-y-6">
-                {displayedPosts.map((post) => {
-                  const isLiked = currentUser ? post.likes.includes(currentUser.uid) : false;
-                  const isAuthor = currentUser?.uid === post.authorId;
-                  const canDelete = isAuthor || userProfile?.isAdmin;
+              filteredPosts.map((post) => {
+                const isLiked = currentUser ? post.likes?.includes(currentUser.uid) : false;
+                const isPostAuthor = currentUser?.uid === post.authorId;
+                const canDelete = isPostAuthor || userProfile?.isAdmin;
 
-                  return (
-                    <article
-                      key={post.id}
-                      id={`post-${post.id}`}
-                      className="rounded-3xl border border-white/10 bg-[#050811]/90 backdrop-blur-xl p-5 sm:p-7 shadow-xl space-y-4 transition-all duration-300 hover:border-white/20"
-                    >
-                      {/* Pinned & Featured Badges */}
-                      {(post.isPinned || post.isFeatured) && (
-                        <div className="flex items-center gap-2 pb-2 border-b border-white/5">
-                          {post.isPinned && (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-black text-[#f9b03c] bg-[#f9b03c]/15 px-2.5 py-0.5 rounded-full border border-[#f9b03c]/30">
-                              <i className="fa-solid fa-thumbtack text-[9px]"></i>
-                              <span>የተሰካ ማስታወቂያ (Pinned)</span>
-                            </span>
-                          )}
-                          {post.isFeatured && (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-black text-amber-300 bg-amber-400/15 px-2.5 py-0.5 rounded-full border border-amber-400/30">
-                              ⭐ <span>ተመራጭ ስኬት (Featured)</span>
-                            </span>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Post Header: Avatar, Name, Badges, Timestamp & Menu */}
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex items-center gap-3">
-                          <img
-                            src={post.authorPhoto}
-                            alt={post.authorName}
-                            className={`w-11 h-11 rounded-full object-cover shrink-0 ring-2 ${
-                              post.isAdmin ? 'ring-blue-500' : post.isPro ? 'ring-[#f9b03c]' : 'ring-white/20'
-                            }`}
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(post.authorName)}&background=f9b03c&color=111827&bold=true`;
-                            }}
-                          />
-                          <div>
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="font-heading font-black text-sm text-white">
-                                {post.authorName}
-                              </span>
-
-                              {/* Verified Admin Blue Badge */}
-                              {post.isAdmin && (
-                                <span className="inline-flex items-center gap-1 text-[10px] font-black bg-blue-500/20 text-blue-400 border border-blue-500/40 px-2 py-0.5 rounded-full shadow-sm" title="ይፋዊ የ Tsehay Campus አስተዳዳሪ">
-                                  <i className="fa-solid fa-circle-check text-blue-400 text-[10px]"></i>
-                                  <span>Tsehay Campus Admin</span>
-                                </span>
-                              )}
-
-                              {/* Pro Student Golden Star Badge */}
-                              {!post.isAdmin && post.isPro && (
-                                <span className="inline-flex items-center gap-1 text-[10px] font-black bg-[#f9b03c]/20 text-[#f9b03c] border border-[#f9b03c]/40 px-2 py-0.5 rounded-full" title="ኮርስ የገዛ ንቁ ተማሪ">
-                                  ⭐ <span>Pro Student</span>
-                                </span>
-                              )}
-                            </div>
-
-                            <div className="flex items-center gap-2 text-[11px] text-slate-400 mt-0.5">
-                              <span>{formatTimeAgo(post.createdAt)}</span>
-                              <span>•</span>
-                              <span className="text-[#f9b03c] font-bold capitalize">
-                                {post.category === 'questions' && '❓ ጥያቄ'}
-                                {post.category === 'success' && '🚀 ስኬት'}
-                                {post.category === 'business' && '💼 ቢዝነስ'}
-                                {post.category === 'tech' && '💻 ቴክኖሎጂ'}
-                                {post.category === 'general' && '🌟 አጠቃላይ'}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Actions (Delete, Pin, Feature for Admin) */}
-                        <div className="flex items-center gap-1.5">
-                          {userProfile?.isAdmin && (
-                            <>
-                              <button
-                                onClick={() => handleTogglePin(post)}
-                                className={`w-8 h-8 rounded-xl border flex items-center justify-center text-xs transition cursor-pointer ${
-                                  post.isPinned ? 'bg-amber-400/20 text-amber-400 border-amber-400/40 shadow-[0_0_10px_rgba(249,176,60,0.3)]' : 'bg-white/5 text-slate-400 border-white/10 hover:text-white'
-                                }`}
-                                title={post.isPinned ? "ማስቀሪያን አንሳ" : "ወደ ላይ ሰካ (Pin Post)"}
-                              >
-                                <i className="fa-solid fa-thumbtack"></i>
-                              </button>
-                            </>
-                          )}
-
-                          {canDelete && (
-                            <button
-                              onClick={() => handleDeletePost(post.id)}
-                              className="w-8 h-8 rounded-xl bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white border border-red-500/20 flex items-center justify-center text-xs transition cursor-pointer"
-                              title="ፖስቱን ሰርዝ (Delete Post)"
-                            >
-                              <i className="fa-solid fa-trash"></i>
-                            </button>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Post Text Content */}
-                      <p className="text-xs sm:text-sm text-slate-200 font-body leading-relaxed whitespace-pre-line break-words">
-                        {post.content}
-                      </p>
-
-                      {/* Code Snippet Block */}
-                      {post.codeSnippet && (
-                        <div className="rounded-2xl bg-black/80 border border-white/15 overflow-hidden font-mono text-xs shadow-inner">
-                          <div className="flex items-center justify-between px-4 py-2 bg-white/5 border-b border-white/10 text-[11px] text-slate-400">
-                            <span className="flex items-center gap-1.5 text-emerald-400 font-black">
-                              <i className="fa-solid fa-terminal text-[10px]"></i> {post.codeSnippet.language}
-                            </span>
-                            <button
-                              onClick={() => {
-                                navigator.clipboard.writeText(post.codeSnippet?.code || '');
-                                setCopiedCodePostId(post.id);
-                                setTimeout(() => setCopiedCodePostId(null), 2000);
-                              }}
-                              className="text-[10px] text-slate-300 hover:text-white px-2 py-0.5 rounded bg-white/10 cursor-pointer"
-                            >
-                              {copiedCodePostId === post.id ? '✓ ተቀድቷል' : 'ኮዱን ቅዳ (Copy)'}
-                            </button>
-                          </div>
-                          <pre className="p-4 text-emerald-300 overflow-x-auto no-scrollbar whitespace-pre-wrap leading-relaxed">
-                            <code>{post.codeSnippet.code}</code>
-                          </pre>
-                        </div>
-                      )}
-
-                      {/* Attached Image (Click to Zoom Lightbox) */}
-                      {post.imageUrl && (
-                        <div
-                          onClick={() => setActiveZoomImage(post.imageUrl || null)}
-                          className="rounded-2xl overflow-hidden border border-white/10 max-h-96 w-full cursor-zoom-in bg-slate-950 group/img relative"
+                return (
+                  <article
+                    id={`post-${post.id}`}
+                    key={post.id}
+                    className="rounded-3xl bg-slate-900/85 border border-white/10 hover:border-white/20 backdrop-blur-2xl shadow-xl transition-all duration-300 p-5 sm:p-6 overflow-hidden space-y-4"
+                  >
+                    {/* Post Header: Author Meta & Badges */}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => openDmWithUser({
+                            id: post.authorId,
+                            name: post.authorName,
+                            photo: post.authorPhoto,
+                            email: post.authorEmail,
+                            isPro: post.isPro,
+                            isAdmin: post.isAdmin
+                          })}
+                          className="relative group cursor-pointer"
+                          title="መልእክት ለመላክ ይጫኑ"
                         >
                           <img
-                            src={post.imageUrl}
-                            alt="Post Media"
-                            className="w-full h-full object-cover group-hover/img:scale-[1.02] transition-transform duration-500"
+                            src={post.authorPhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(post.authorName)}&background=f9b03c&color=111827&bold=true`}
+                            alt={post.authorName}
+                            className="w-11 h-11 rounded-full object-cover ring-2 ring-white/10 group-hover:ring-[#f9b03c] transition shadow-md"
                           />
-                          <div className="absolute inset-0 bg-black/20 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
-                            <span className="bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-black text-white flex items-center gap-1.5">
-                              <i className="fa-solid fa-expand"></i> ምስሉን አጉላ
-                            </span>
-                          </div>
-                        </div>
-                      )}
+                          <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 rounded-full ring-2 ring-slate-900"></span>
+                        </button>
 
-                      {/* Tags */}
-                      {post.tags && post.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 pt-1">
-                          {post.tags.map((tag, tIdx) => (
-                            <span
-                              key={tIdx}
-                              className="text-[10px] font-black bg-white/5 text-[#f9b03c] border border-white/10 px-2.5 py-0.5 rounded-full"
-                            >
-                              #{tag}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* 🌟 ACTION BAR: Like, Comment, Share, Direct Message */}
-                      <div className="flex items-center justify-between pt-3 border-t border-white/10 text-xs">
-                        <div className="flex items-center gap-2 sm:gap-3">
-                          {/* Like Button */}
-                          <button
-                            onClick={() => handleLike(post)}
-                            className={`px-3.5 py-1.5 rounded-xl border flex items-center gap-2 font-black transition-all duration-300 cursor-pointer active:scale-95 ${
-                              isLiked
-                                ? 'bg-[#f9b03c]/20 text-[#f9b03c] border-[#f9b03c]/50 shadow-[0_0_12px_rgba(249,176,60,0.2)]'
-                                : 'bg-white/5 hover:bg-white/10 text-slate-300 border-white/10 hover:text-white'
-                            }`}
-                          >
-                            <i className={`fa-solid fa-thumbs-up text-xs transition-transform ${isLiked ? 'scale-125 text-[#f9b03c]' : ''}`}></i>
-                            <span>{post.likes.length} ወደድኩት</span>
-                          </button>
-
-                          {/* Comment Toggle Button */}
-                          <button
-                            onClick={() => toggleComments(post.id)}
-                            className={`px-3.5 py-1.5 rounded-xl border flex items-center gap-2 font-black transition-all duration-300 cursor-pointer ${
-                              expandedComments[post.id]
-                                ? 'bg-blue-500/20 text-blue-400 border-blue-500/50'
-                                : 'bg-white/5 hover:bg-white/10 text-slate-300 border-white/10 hover:text-white'
-                            }`}
-                          >
-                            <i className="fa-solid fa-message text-xs"></i>
-                            <span>{post.commentsCount || 0} አስተያየት</span>
-                          </button>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          {/* DM Author Button */}
-                          {currentUser && currentUser.uid !== post.authorId && (
+                        <div>
+                          <div className="flex items-center gap-2 flex-wrap">
                             <button
-                              onClick={() => router.push(`/inbox?user=${encodeURIComponent(post.authorId)}`)}
-                              className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-[#3268ba]/20 text-slate-300 hover:text-blue-400 border border-white/10 hover:border-blue-500/40 font-black text-xs transition flex items-center gap-1.5 cursor-pointer"
-                              title="ለፖስቱ ጸሐፊ ቀጥታ መልዕክት ላክ"
+                              type="button"
+                              onClick={() => openDmWithUser({
+                                id: post.authorId,
+                                name: post.authorName,
+                                photo: post.authorPhoto,
+                                email: post.authorEmail,
+                                isPro: post.isPro,
+                                isAdmin: post.isAdmin
+                              })}
+                              className="font-heading font-black text-sm text-white hover:text-[#f9b03c] transition text-left cursor-pointer"
                             >
-                              <i className="fa-solid fa-envelope text-[11px]"></i>
-                              <span className="hidden sm:inline">መልዕክት ላክ</span>
+                              {post.authorName}
                             </button>
-                          )}
 
-                          {/* Share / Copy Link */}
+                            {post.isAdmin ? (
+                              <span className="bg-[#f9b03c]/20 text-[#f9b03c] border border-[#f9b03c]/40 text-[9.5px] font-black px-2 py-0.2 rounded-full">
+                                👑 ADMIN
+                              </span>
+                            ) : post.isPro ? (
+                              <span className="bg-[#3268ba]/20 text-[#5a93e8] border border-[#3268ba]/40 text-[9.5px] font-black px-2 py-0.2 rounded-full">
+                                ★ PRO
+                              </span>
+                            ) : null}
+
+                            {post.isPinned && (
+                              <span className="bg-amber-400/20 text-amber-300 border border-amber-400/40 text-[9.5px] font-black px-2 py-0.2 rounded-full flex items-center gap-1">
+                                <i className="fa-solid fa-thumbtack text-[8px]"></i> የተሰካ
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[10.5px] text-slate-400 font-medium">
+                            {post.createdAt ? new Date(post.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric' }) : 'አሁን'} • {post.category || 'General'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Post Actions (Pin / Delete / DM) */}
+                      <div className="flex items-center gap-1.5">
+                        {userProfile?.isAdmin && (
                           <button
-                            onClick={() => handleSharePost(post)}
-                            className="px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-[#f9b03c] border border-white/10 text-xs transition cursor-pointer flex items-center gap-1.5 active:scale-95"
-                            title="የፖስቱን ሊንክ አጋራ / ቅዳ (Share Post)"
+                            type="button"
+                            onClick={() => handleTogglePin(post)}
+                            className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs transition cursor-pointer ${
+                              post.isPinned ? 'bg-amber-400/20 text-[#f9b03c]' : 'bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white'
+                            }`}
+                            title={post.isPinned ? "ፖስቱን ንቀል" : "ፖስቱን ሰካ (Pin)"}
                           >
-                            {copiedPostId === post.id ? (
-                              <span className="text-[#f9b03c] font-black text-[11px]">✓ ሊንኩ ተገልብጧል (Copied!)</span>
-                            ) : (
-                              <>
-                                <i className="fa-solid fa-share-nodes"></i>
-                                <span className="hidden sm:inline text-[11px]">አጋራ</span>
-                              </>
-                            )}
+                            <i className="fa-solid fa-thumbtack"></i>
                           </button>
-                        </div>
-                      </div>
+                        )}
 
-                      {/* 💬 EXPANDABLE REAL-TIME COMMENTS DRAWER */}
-                      {expandedComments[post.id] && (
-                        <div className="pt-4 border-t border-white/10 space-y-4 animate-in slide-in-from-top-2 duration-300">
-                          {/* New Comment Input */}
-                          <div className="flex items-center gap-2.5">
-                            <img
-                              src={userProfile?.photoURL || 'https://ui-avatars.com/api/?name=User&background=f9b03c&color=111827&bold=true'}
-                              alt="My Avatar"
-                              className="w-8 h-8 rounded-full object-cover shrink-0 ring-1 ring-white/20"
-                            />
-                            <div className="flex-1 flex items-center gap-2 bg-white/5 border border-white/10 rounded-2xl px-3 py-1.5 focus-within:border-[#f9b03c]/60">
-                              <input
-                                type="text"
-                                value={commentInputs[post.id] || ''}
-                                onChange={(e) => setCommentInputs({ ...commentInputs, [post.id]: e.target.value })}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter' && !e.shiftKey) {
-                                    e.preventDefault();
-                                    handleAddComment(post.id);
-                                  }
-                                }}
-                                placeholder="አስተያየትዎን እዚህ ይጻፉ... (Enter ን ይጫኑ)"
-                                className="w-full bg-transparent text-xs text-white placeholder-slate-500 focus:outline-none"
-                              />
-                              <button
-                                onClick={() => handleAddComment(post.id)}
-                                disabled={submittingComment[post.id] || !commentInputs[post.id]?.trim()}
-                                className="px-3 py-1 rounded-xl bg-[#f9b03c] text-slate-950 font-black text-xs hover:bg-amber-300 disabled:opacity-40 transition cursor-pointer shrink-0"
-                              >
-                                {submittingComment[post.id] ? <i className="fa-solid fa-spinner fa-spin"></i> : <i className="fa-solid fa-arrow-up"></i>}
-                              </button>
-                            </div>
-                          </div>
-
-                          {/* Comments List */}
-                          <div className="space-y-3 pl-2 sm:pl-4 border-l-2 border-white/10">
-                            {commentsByPost[post.id] && commentsByPost[post.id].length > 0 ? (
-                              commentsByPost[post.id].map((comm) => (
-                                <div key={comm.id} className="flex items-start justify-between gap-3 bg-white/[0.02] p-3 rounded-2xl border border-white/5">
-                                  <div className="flex items-start gap-2.5">
-                                    <img
-                                      src={comm.authorPhoto}
-                                      alt={comm.authorName}
-                                      className="w-7 h-7 rounded-full object-cover shrink-0"
-                                      onError={(e) => {
-                                        (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(comm.authorName)}&background=f9b03c&color=111827&bold=true`;
-                                      }}
-                                    />
-                                    <div>
-                                      <div className="flex items-center gap-1.5 flex-wrap">
-                                        <span className="font-heading font-black text-xs text-white">
-                                          {comm.authorName}
-                                        </span>
-                                        {comm.isAdmin && (
-                                          <span className="text-[9px] font-black bg-blue-500/20 text-blue-400 px-1.5 py-0.2 rounded-full border border-blue-500/40">
-                                            Admin
-                                          </span>
-                                        )}
-                                        {!comm.isAdmin && comm.isPro && (
-                                          <span className="text-[9px] font-black text-[#f9b03c]">
-                                            ⭐ Pro
-                                          </span>
-                                        )}
-                                        <span className="text-[10px] text-slate-500">
-                                          {formatTimeAgo(comm.createdAt)}
-                                        </span>
-                                      </div>
-                                      <p className="text-xs text-slate-300 mt-1 font-body leading-relaxed whitespace-pre-wrap">
-                                        {comm.content}
-                                      </p>
-                                    </div>
-                                  </div>
-
-                                  {(currentUser?.uid === comm.authorId || userProfile?.isAdmin) && (
-                                    <button
-                                      onClick={() => handleDeleteComment(post.id, comm.id)}
-                                      className="text-slate-500 hover:text-red-400 text-xs p-1 cursor-pointer transition"
-                                      title="አስተያየቱን ሰርዝ"
-                                    >
-                                      ✕
-                                    </button>
-                                  )}
-                                </div>
-                              ))
-                            ) : (
-                              <p className="text-xs text-slate-500 italic py-2">ምንም አስተያየት የለም። የመጀመሪያውን አስተያየት ይስጡ!</p>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </article>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          {/* RIGHT 1 COL: COMMUNITY SIDEBAR & GUIDELINES */}
-          <div className="space-y-6">
-            
-            {/* 💬 Quick Direct Message Link Banner */}
-            <div className="rounded-3xl border border-blue-500/30 bg-gradient-to-br from-blue-950/40 via-slate-900/90 to-slate-900 p-6 shadow-xl space-y-4">
-              <div className="w-12 h-12 rounded-2xl bg-blue-500/20 text-blue-400 border border-blue-500/40 flex items-center justify-center text-xl shadow-lg">
-                <i className="fa-solid fa-comments"></i>
-              </div>
-              <div>
-                <h3 className="font-heading font-black text-base text-white">ቀጥታ የመልዕክት ሳጥን (Direct Chat)</h3>
-                <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                  ከተማሪ ጓደኞችዎ እና ከአስተማሪዎች ጋር በግል (1-on-1) ለመወያየት ወደ Inbox ይግቡ።
-                </p>
-              </div>
-              <button
-                onClick={() => router.push('/inbox')}
-                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-[#3268ba] text-white font-heading font-black text-xs shadow-md shadow-blue-500/20 hover:scale-105 active:scale-95 transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <i className="fa-solid fa-inbox"></i>
-                <span>ወደ የመልዕክት ሳጥን ሂድ</span>
-              </button>
-            </div>
-
-            {/* 🏆 Top Active Contributors Leaderboard */}
-            <div className="rounded-3xl border border-white/10 bg-[#050811]/90 backdrop-blur-xl p-6 shadow-xl space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-white/10">
-                <h3 className="font-heading font-black text-sm text-white flex items-center gap-2">
-                  <i className="fa-solid fa-crown text-[#f9b03c]"></i>
-                  <span>ንቁ ተማሪዎች (Top Members)</span>
-                </h3>
-                <span className="text-[10px] text-[#f9b03c] font-black bg-[#f9b03c]/15 px-2 py-0.5 rounded-full">
-                  ሳምንታዊ
-                </span>
-              </div>
-
-              <div className="space-y-3">
-                {[
-                  { name: 'ዮሴፍ ተስፋዬ', badge: '⭐ Pro Student', points: '1,450 ነጥብ', avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=200&auto=format&fit=crop&q=80' },
-                  { name: 'ሰላም አበበ', badge: '⭐ Pro Student', points: '1,120 ነጥብ', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80' },
-                  { name: 'ዳዊት ግርማ', badge: '⭐ Pro Student', points: '980 ነጥብ', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80' },
-                ].map((member, mIdx) => (
-                  <div key={mIdx} className="flex items-center justify-between p-2.5 rounded-2xl bg-white/[0.02] hover:bg-white/[0.06] transition border border-white/5">
-                    <div className="flex items-center gap-2.5">
-                      <div className="relative">
-                        <img src={member.avatar} alt={member.name} className="w-8 h-8 rounded-full object-cover ring-1 ring-[#f9b03c]/50" />
-                        <span className="absolute -top-1 -left-1 w-4 h-4 rounded-full bg-[#f9b03c] text-slate-950 font-black text-[9px] flex items-center justify-center">
-                          {mIdx + 1}
-                        </span>
-                      </div>
-                      <div>
-                        <p className="text-xs font-black text-white">{member.name}</p>
-                        <p className="text-[10px] text-[#f9b03c] font-bold">{member.badge}</p>
+                        {canDelete && (
+                          <button
+                            type="button"
+                            onClick={() => handleDeletePost(post.id)}
+                            className="w-8 h-8 rounded-xl bg-white/5 hover:bg-red-500/20 text-slate-400 hover:text-red-400 flex items-center justify-center text-xs transition cursor-pointer"
+                            title="ፖስቱን ሰርዝ"
+                          >
+                            <i className="fa-solid fa-trash-can"></i>
+                          </button>
+                        )}
                       </div>
                     </div>
-                    <span className="text-[11px] font-black text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md">
-                      {member.points}
-                    </span>
-                  </div>
+
+                    {/* Post Content */}
+                    <div className="text-xs sm:text-[14px] leading-relaxed text-slate-200 font-normal">
+                      <FormattedAiText text={post.content} />
+                    </div>
+
+                    {/* Code Snippet Box */}
+                    {post.codeSnippet && post.codeSnippet.code && (
+                      <div className="rounded-2xl bg-black/75 border border-white/10 p-4 font-mono text-xs overflow-x-auto relative">
+                        <div className="flex items-center justify-between text-[11px] text-slate-400 mb-2 border-b border-white/10 pb-2">
+                          <span className="text-[#f9b03c] font-bold">{post.codeSnippet.language}</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(post.codeSnippet!.code);
+                              alert('ኮዱ ኮፒ ተደርጓል!');
+                            }}
+                            className="hover:text-white flex items-center gap-1 text-[10px]"
+                          >
+                            <i className="fa-solid fa-copy"></i>
+                            <span>ኮፒ</span>
+                          </button>
+                        </div>
+                        <pre className="text-amber-200 leading-relaxed">{post.codeSnippet.code}</pre>
+                      </div>
+                    )}
+
+                    {/* Attached Image with Lightbox Zoom */}
+                    {post.imageUrl && (
+                      <div 
+                        onClick={() => setActiveZoomImage(post.imageUrl!)}
+                        className="rounded-2xl overflow-hidden border border-white/15 bg-black/40 cursor-zoom-in max-h-96"
+                      >
+                        <img 
+                          src={post.imageUrl} 
+                          alt="Post attachment" 
+                          className="w-full h-full object-cover hover:scale-[1.02] transition-transform duration-300 max-h-96" 
+                        />
+                      </div>
+                    )}
+
+                    {/* Action Bar: Like, Comment, Share, Send DM */}
+                    <div className="pt-3 border-t border-white/10 flex items-center justify-between text-xs sm:text-sm text-slate-400">
+                      
+                      {/* Like Button */}
+                      <button
+                        type="button"
+                        onClick={() => handleLike(post)}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
+                          isLiked 
+                            ? 'bg-rose-500/20 text-rose-400 border border-rose-500/40' 
+                            : 'hover:bg-white/5 hover:text-white border border-transparent'
+                        }`}
+                      >
+                        <i className={`fa-heart ${isLiked ? 'fa-solid text-rose-500' : 'fa-regular'}`}></i>
+                        <span className="font-bold">{post.likes?.length || 0}</span>
+                      </button>
+
+                      {/* Comment Toggle Button */}
+                      <button
+                        type="button"
+                        onClick={() => toggleComments(post.id)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl hover:bg-white/5 hover:text-white transition cursor-pointer"
+                      >
+                        <i className="fa-regular fa-comment"></i>
+                        <span className="font-bold">{post.commentsCount || 0}</span>
+                        <span className="hidden sm:inline">አስተያየቶች</span>
+                      </button>
+
+                      {/* Direct Message Author */}
+                      <button
+                        type="button"
+                        onClick={() => openDmWithUser({
+                          id: post.authorId,
+                          name: post.authorName,
+                          photo: post.authorPhoto,
+                          email: post.authorEmail,
+                          isPro: post.isPro,
+                          isAdmin: post.isAdmin
+                        })}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl hover:bg-[#f9b03c]/15 hover:text-[#f9b03c] transition cursor-pointer text-xs"
+                        title="ለተጠቃሚው መልእክት ላክ"
+                      >
+                        <i className="fa-regular fa-paper-plane text-[#f9b03c]"></i>
+                        <span className="hidden sm:inline">መልእክት</span>
+                      </button>
+
+                      {/* Share Button */}
+                      <button
+                        type="button"
+                        onClick={() => handleSharePost(post)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl hover:bg-white/5 hover:text-white transition cursor-pointer"
+                        title="ፖስቱን አጋራ"
+                      >
+                        <i className="fa-solid fa-share-nodes"></i>
+                        <span>{copiedPostId === post.id ? 'ሊንኩ ተገልብጧል!' : 'አጋራ'}</span>
+                      </button>
+                    </div>
+
+                    {/* Expandable Comments Drawer */}
+                    {expandedComments[post.id] && (
+                      <div className="pt-4 border-t border-white/10 space-y-3 animate-in fade-in duration-300">
+                        {/* Comments List */}
+                        <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
+                          {(!commentsByPost[post.id] || commentsByPost[post.id].length === 0) ? (
+                            <p className="text-center py-4 text-xs text-slate-500">
+                              ምንም አስተያየት የለም። የመጀመሪያውን አስተያየት ይጻፉ!
+                            </p>
+                          ) : (
+                            commentsByPost[post.id].map((comm) => (
+                              <div 
+                                key={comm.id} 
+                                className="flex items-start gap-2.5 p-3 rounded-2xl bg-white/[0.03] border border-white/[0.06]"
+                              >
+                                <img
+                                  src={comm.authorPhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(comm.authorName)}&background=f9b03c&color=111827&bold=true`}
+                                  alt={comm.authorName}
+                                  className="w-7 h-7 rounded-full object-cover shrink-0 mt-0.5"
+                                />
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center justify-between gap-2">
+                                    <span className="font-bold text-xs text-white">{comm.authorName}</span>
+                                    <span className="text-[10px] text-slate-500">
+                                      {comm.createdAt ? new Date(comm.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                                    </span>
+                                  </div>
+                                  <p className="text-xs text-slate-300 font-body mt-0.5 whitespace-pre-wrap">{comm.content}</p>
+                                </div>
+                              </div>
+                            ))
+                          )}
+                        </div>
+
+                        {/* Comment Input Box */}
+                        <form
+                          onSubmit={(e) => {
+                            e.preventDefault();
+                            handleAddComment(post.id);
+                          }}
+                          className="flex items-center gap-2 pt-2"
+                        >
+                          <input
+                            type="text"
+                            value={commentInputs[post.id] || ''}
+                            onChange={(e) => setCommentInputs({ ...commentInputs, [post.id]: e.target.value })}
+                            placeholder="አስተያየትዎን እዚህ ይጻፉ..."
+                            className="flex-1 bg-white/5 border border-white/10 focus:border-[#f9b03c] rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none transition"
+                          />
+                          <button
+                            type="submit"
+                            disabled={submittingComment[post.id] || !commentInputs[post.id]?.trim()}
+                            className="px-4 py-2 rounded-xl bg-[#3268ba] hover:bg-[#2859a5] disabled:opacity-50 text-white font-bold text-xs transition cursor-pointer"
+                          >
+                            {submittingComment[post.id] ? '...' : 'ላክ'}
+                          </button>
+                        </form>
+                      </div>
+                    )}
+
+                  </article>
+                );
+              })
+            )}
+
+          </section>
+
+          {/* ======================================================== */}
+          {/* RIGHT SIDEBAR: Contributors & Trending Topics (3 Cols)   */}
+          {/* ======================================================== */}
+          <aside className="lg:col-span-3 space-y-6 lg:sticky lg:top-32">
+            
+            {/* Trending Topics */}
+            <div className="p-5 rounded-3xl bg-slate-900/80 border border-white/10 backdrop-blur-2xl shadow-xl space-y-3">
+              <h4 className="text-xs font-black text-[#f9b03c] uppercase tracking-wider flex items-center gap-2">
+                <i className="fa-solid fa-fire text-amber-400"></i>
+                <span>ትኩስ ርዕሶች (Trending)</span>
+              </h4>
+              <div className="flex flex-wrap gap-2 pt-1">
+                {TRENDING_TAGS.map((tag) => (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => setSearchQuery(tag)}
+                    className="text-xs px-3 py-1.5 rounded-full bg-white/5 hover:bg-[#f9b03c]/20 hover:text-[#f9b03c] border border-white/10 hover:border-[#f9b03c]/40 transition text-slate-300 font-bold cursor-pointer"
+                  >
+                    {tag}
+                  </button>
                 ))}
               </div>
             </div>
 
-            {/* 📜 Community Rules / የስነምግባር ደንቦች */}
-            <div className="rounded-3xl border border-white/10 bg-[#050811]/90 backdrop-blur-xl p-6 shadow-xl space-y-3">
-              <h3 className="font-heading font-black text-sm text-white flex items-center gap-2">
-                <i className="fa-solid fa-shield-halved text-emerald-400"></i>
-                <span>የማህበረሰብ ደንቦች (Guidelines)</span>
-              </h3>
-              <ul className="text-xs text-slate-400 space-y-2 font-body list-disc pl-4 leading-relaxed">
-                <li>እርስ በርስ መከባበርና መደጋገፍ ቀዳሚ መርሐችን ነው።</li>
-                <li>ጠቃሚ የኮርስ እና የቢዝነስ ልምዶችን በነጻነት ያጋሩ።</li>
-                <li>ያልተፈቀዱ የንግድ ማስታወቂያዎች (Spam) ማስገባት በጥብቅ የተከለከለ ነው።</li>
-                <li>ለጥያቄዎች ምላሽ በመስጠት ተጨማሪ የክብር ነጥቦችን ያግኙ!</li>
+            {/* Community Rules & Standards */}
+            <div className="p-5 rounded-3xl bg-slate-900/80 border border-white/10 backdrop-blur-2xl shadow-xl space-y-3">
+              <h4 className="text-xs font-black text-blue-400 uppercase tracking-wider flex items-center gap-2">
+                <i className="fa-solid fa-shield-halved"></i>
+                <span>የማህበረሰብ መመሪያ</span>
+              </h4>
+              <ul className="text-xs text-slate-400 space-y-2 font-normal leading-relaxed">
+                <li className="flex items-start gap-2">
+                  <i className="fa-solid fa-check text-emerald-400 text-[10px] mt-1"></i>
+                  <span>አክብሮት የተሞላበት እና ገንቢ ውይይት ያድርጉ።</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <i className="fa-solid fa-check text-emerald-400 text-[10px] mt-1"></i>
+                  <span>ስለ ስልጠናዎች እና ቢዝነስ ልምድዎን ያካፍሉ።</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <i className="fa-solid fa-check text-emerald-400 text-[10px] mt-1"></i>
+                  <span>ያልተፈቀደ ማስታወቂያ ወይም ስፓም (Spam) የተከለከለ ነው።</span>
+                </li>
               </ul>
             </div>
-          </div>
+
+          </aside>
+
         </div>
+
       </main>
 
-      {/* 🔍 LIGHTBOX MODAL FOR IMAGE ZOOM */}
-      {activeZoomImage && (
-        <div
-          onClick={() => setActiveZoomImage(null)}
-          className="fixed inset-0 z-50 bg-black/95 backdrop-blur-xl flex items-center justify-center p-4 animate-in fade-in duration-300 cursor-zoom-out"
-        >
-          <button
-            onClick={() => setActiveZoomImage(null)}
-            className="absolute top-6 right-6 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-lg font-black transition cursor-pointer"
-          >
-            ✕
-          </button>
-          <img
-            src={activeZoomImage}
-            alt="Zoomed"
-            className="max-w-full max-h-[90vh] object-contain rounded-2xl shadow-2xl border border-white/20"
-          />
+      {/* ======================================================== */}
+      {/* 💬 DIRECT MESSAGING (DM) MODAL DRAWER                     */}
+      {/* ======================================================== */}
+      {activeDmUser && (
+        <div className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="relative w-full max-w-lg bg-[#070b14] border border-white/15 rounded-3xl shadow-2xl overflow-hidden flex flex-col h-[600px] max-h-[90vh]">
+            
+            {/* DM Header */}
+            <div className="p-4 sm:p-5 border-b border-white/10 bg-slate-900/90 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <img
+                  src={activeDmUser.photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(activeDmUser.name)}&background=f9b03c&color=111827&bold=true`}
+                  alt={activeDmUser.name}
+                  className="w-10 h-10 rounded-full object-cover ring-2 ring-[#f9b03c]/40"
+                />
+                <div>
+                  <h4 className="font-heading font-black text-sm text-white flex items-center gap-1.5">
+                    <span>{activeDmUser.name}</span>
+                    {activeDmUser.isPro && <span className="text-[10px] text-[#f9b03c] font-black">★ PRO</span>}
+                  </h4>
+                  <span className="text-[11px] text-emerald-400 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span>ቀጥታ መልእክት (Direct Chat)</span>
+                  </span>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setActiveDmUser(null)}
+                className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white flex items-center justify-center text-sm transition cursor-pointer"
+              >
+                <i className="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+
+            {/* DM Messages Feed */}
+            <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-[#03060c]">
+              {dmList.length === 0 ? (
+                <div className="text-center py-16 text-slate-500 text-xs">
+                  <i className="fa-regular fa-comments text-3xl mb-2 block text-slate-600"></i>
+                  <span>ውይይቱን እርስዎ ይጀምሩ! የመጀመሪያውን መልእክት ይላኩ።</span>
+                </div>
+              ) : (
+                dmList.map((m) => {
+                  const isMe = m.senderId === currentUser?.uid;
+                  return (
+                    <div
+                      key={m.id}
+                      className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}
+                    >
+                      <div
+                        className={`max-w-[80%] p-3.5 rounded-2xl text-xs sm:text-[13px] leading-relaxed shadow-md ${
+                          isMe
+                            ? 'bg-gradient-to-r from-[#3268ba] to-[#244f8e] text-white rounded-br-none'
+                            : 'bg-slate-900 text-slate-200 border border-white/10 rounded-bl-none'
+                        }`}
+                      >
+                        {m.imageUrl && m.imageUrl.startsWith('data:audio') ? (
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <i className="fa-solid fa-microphone text-[#f9b03c]"></i>
+                              <span className="font-bold">የድምፅ መልእክት</span>
+                            </div>
+                            <audio controls src={m.imageUrl} className="w-full max-w-[240px] h-8 mt-1" />
+                          </div>
+                        ) : (
+                          <p className="whitespace-pre-wrap">{m.content}</p>
+                        )}
+                        <span className="text-[9.5px] opacity-70 block text-right mt-1">
+                          {m.createdAt ? new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+              <div ref={dmMessagesEndRef} />
+            </div>
+
+            {/* DM Input Bar with Voice Message Support */}
+            <div className="p-3 sm:p-4 border-t border-white/10 bg-slate-900/90">
+              {isRecordingVoice ? (
+                <div className="flex items-center justify-between gap-3 p-2 bg-red-500/15 border border-red-500/30 rounded-2xl animate-pulse">
+                  <div className="flex items-center gap-2 text-red-400 font-bold text-xs">
+                    <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping"></span>
+                    <span>ድምፅ በመቅዳት ላይ ({voiceDuration}s)...</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={stopVoiceRecording}
+                    className="px-4 py-1.5 rounded-xl bg-red-500 hover:bg-red-600 text-white font-black text-xs cursor-pointer"
+                  >
+                    አቁም & ላክ
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={handleSendDm} className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={startVoiceRecording}
+                    className="w-10 h-10 rounded-xl bg-white/5 hover:bg-red-500/20 text-slate-300 hover:text-red-400 border border-white/10 flex items-center justify-center text-sm transition cursor-pointer shrink-0"
+                    title="የድምፅ መልእክት ይቅረጹ"
+                  >
+                    <i className="fa-solid fa-microphone"></i>
+                  </button>
+
+                  <input
+                    type="text"
+                    value={dmInput}
+                    onChange={(e) => setDmInput(e.target.value)}
+                    placeholder="መልእክትዎን እዚህ ይጻፉ..."
+                    className="flex-1 bg-white/5 border border-white/10 focus:border-[#f9b03c] rounded-xl px-4 py-2.5 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none transition"
+                  />
+
+                  <button
+                    type="submit"
+                    disabled={dmSubmitting || !dmInput.trim()}
+                    className="px-4 py-2.5 rounded-xl bg-[#f9b03c] hover:bg-amber-400 disabled:opacity-50 text-slate-950 font-black text-xs transition cursor-pointer shrink-0"
+                  >
+                    {dmSubmitting ? '...' : <i className="fa-solid fa-paper-plane"></i>}
+                  </button>
+                </form>
+              )}
+            </div>
+
+          </div>
         </div>
       )}
 
-      {/* REQUIRE AUTH MODAL */}
+      {/* Lightbox Zoom Modal for Images */}
+      {activeZoomImage && (
+        <div 
+          onClick={() => setActiveZoomImage(null)}
+          className="fixed inset-0 z-[99999] bg-black/90 backdrop-blur-xl flex items-center justify-center p-4 cursor-zoom-out animate-in fade-in duration-200"
+        >
+          <div className="relative max-w-4xl max-h-[90vh]">
+            <img src={activeZoomImage} alt="Zoomed view" className="w-auto h-auto max-h-[85vh] rounded-2xl object-contain shadow-2xl" />
+            <button
+              onClick={() => setActiveZoomImage(null)}
+              className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition"
+            >
+              <i className="fa-solid fa-xmark text-sm"></i>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Universal Require Auth Modal */}
       <RequireAuthModal
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
-        title="ወደ ማህበረሰቡ ለመቀላቀል ይግቡ"
-        description="ፖስት ለማጋራት፣ አስተያየት ለመስጠት እና ከጓደኞችዎ ጋር ቀጥታ መልዕክት ለመለዋወጥ እባክዎ አካውንትዎን ይክፈቱ።"
+        title={authModalTitle}
+        description={authModalDescription}
       />
 
       <Footer />
