@@ -16,9 +16,12 @@ const NO_CACHE_HEADERS = {
 const AUTHORIZED_ADMIN_EMAILS = [
   'admin@tsehaycampus.com',
   'tsehayoperation@gmail.com',
+  'tsehayteam@gmail.com',
   'eyoubsahle@gmail.com',
   'habte@gmail.com',
-  'cryptomaster758@gmail.com'
+  'cryptomaster758@gmail.com',
+  'admin@tsehay.com',
+  'chadmin@tsehaycampus.com'
 ];
 
 export async function GET(req: NextRequest) {

@@ -6,7 +6,7 @@ import { useAuth, ADMIN_EMAILS, isEmailAdmin } from '@/context/AuthContext';
 import { collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc, serverTimestamp, query, orderBy, collectionGroup } from 'firebase/firestore';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
-import { DEFAULT_COURSES, getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl, getCourseSlug, getCourseBySlugOrId, generateCourseSlug, broadcastCourseUpdate } from '@/lib/courseCache';
+import { DEFAULT_COURSES, getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl, getCourseSlug, getCourseBySlugOrId, generateCourseSlug, broadcastCourseUpdate, mergeCoursesLists } from '@/lib/courseCache';
 import { DEFAULT_EVENTS, getCachedEvents, saveCachedEvents, getRemainingSeats, generateEventSlug, TsehayEvent, EventTicket } from '@/lib/eventCache';
 import AdminQrScanner from '@/components/AdminQrScanner';
 
@@ -844,17 +844,40 @@ export default function AdminDashboard() {
       }
     });
     
-    // 1. Fail-Safe Server API Fetch for Courses
+    // 1. Dual-Collection & Server API Real-Time Sync for Courses
+    let artifactCoursesList: any[] = [];
+    let rootCoursesList: any[] = [];
+
+    const syncAndMergeAdminCourses = () => {
+      let merged: any[] = [];
+      if (artifactCoursesList.length > 0 || rootCoursesList.length > 0) {
+        merged = mergeCoursesLists(artifactCoursesList, rootCoursesList);
+      } else {
+        const cached = getCachedCourses();
+        merged = cached.length > 0 ? cached : DEFAULT_COURSES;
+      }
+      if (merged.length > 0) {
+        setCourses(merged);
+        try {
+          localStorage.setItem('tsehay_admin_courses_cache', JSON.stringify(merged));
+          localStorage.setItem('tsehay_courses_cache', JSON.stringify(merged));
+        } catch (e) {}
+      }
+      setLoading(false);
+    };
+
+    // 1a. Server Admin API Fetch for Courses
     const fetchCoursesFromApi = async () => {
       try {
-        const res = await fetch('/api/admin/save-course');
+        const res = await fetch(`/api/admin/courses?t=${Date.now()}`, {
+          cache: 'no-store',
+          headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' }
+        });
         if (res.ok) {
           const data = await res.json();
           if (data.courses && Array.isArray(data.courses) && data.courses.length > 0) {
-            setCourses(data.courses);
-            try {
-              localStorage.setItem('tsehay_admin_courses_cache', JSON.stringify(data.courses));
-            } catch (e) {}
+            artifactCoursesList = data.courses;
+            syncAndMergeAdminCourses();
           }
         }
       } catch (err) {
@@ -863,40 +886,60 @@ export default function AdminDashboard() {
         setLoading(false);
       }
     };
-
-    // Execute initial backend fetch immediately
     fetchCoursesFromApi();
 
-    // 2. Real-Time Firestore Listener with Robust Try-Catch-Finally
-    const q = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses'));
-    const unsubscribe = onSnapshot(
-      q, 
-      (snapshot) => {
-        try {
-          const list = snapshot.docs
-            .map(doc => ({ id: doc.id, ...doc.data() }))
-            .filter((c: any) => c && c.status !== 'Deleted' && !c.isDeleted);
-          if (list.length > 0) {
-            setCourses(list);
-            try {
-              localStorage.setItem('tsehay_admin_courses_cache', JSON.stringify(list));
-              localStorage.setItem('tsehay_courses_cache', JSON.stringify(list));
-            } catch (e) {}
+    // 1b. Real-Time Firestore Listener for Nested Artifacts Courses
+    let unsubscribeArtifactCourses = () => {};
+    try {
+      const qArtifact = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses'));
+      unsubscribeArtifactCourses = onSnapshot(
+        qArtifact, 
+        (snapshot) => {
+          try {
+            artifactCoursesList = snapshot.docs
+              .map(doc => ({ id: doc.id, ...doc.data() }))
+              .filter((c: any) => c && c.status !== 'Deleted' && !c.isDeleted);
+            syncAndMergeAdminCourses();
+          } catch (err) {
+            console.error("Error processing artifact courses snapshot:", err);
+          } finally {
+            setLoading(false);
           }
-        } catch (err) {
-          console.error("Error processing courses snapshot:", err);
-        } finally {
+        },
+        (err) => {
+          console.warn("Client Firestore artifact courses sync notice:", err);
+          fetchCoursesFromApi();
           setLoading(false);
         }
-      },
-      (err) => {
-        console.warn("Client Firestore courses sync note (falling back to server API):", err);
-        fetchCoursesFromApi();
-        setLoading(false);
-      }
-    );
+      );
+    } catch (e) {}
 
-    // 3. Safety Liveness Timer: GUARANTEES setLoading(false) is called within 2 seconds
+    // 1c. Real-Time Firestore Listener for Root Courses
+    let unsubscribeRootCourses = () => {};
+    try {
+      const qRoot = query(collection(db, 'courses'));
+      unsubscribeRootCourses = onSnapshot(
+        qRoot,
+        (snapshot) => {
+          try {
+            rootCoursesList = snapshot.docs
+              .map(doc => ({ id: doc.id, ...doc.data() }))
+              .filter((c: any) => c && c.status !== 'Deleted' && !c.isDeleted);
+            syncAndMergeAdminCourses();
+          } catch (err) {
+            console.error("Error processing root courses snapshot:", err);
+          } finally {
+            setLoading(false);
+          }
+        },
+        (err) => {
+          console.warn("Client Firestore root courses sync notice:", err);
+          setLoading(false);
+        }
+      );
+    } catch (e) {}
+
+    // Safety Liveness Timer: GUARANTEES setLoading(false) is called within 2 seconds
     const safetyTimer = setTimeout(() => {
       setLoading(false);
     }, 2000);
@@ -1319,7 +1362,8 @@ export default function AdminDashboard() {
 
     return () => {
         unsubscribeAuth();
-        unsubscribe();
+        unsubscribeArtifactCourses();
+        unsubscribeRootCourses();
         unsubscribeYouTube();
         unsubscribeProfiles();
         unsubscribeArtifactUsers();

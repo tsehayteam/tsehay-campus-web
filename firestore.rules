@@ -15,9 +15,12 @@ service cloud.firestore {
         (request.auth.token.email in [
           'admin@tsehaycampus.com',
           'tsehayoperation@gmail.com',
+          'tsehayteam@gmail.com',
           'eyoubsahle@gmail.com',
           'habte@gmail.com',
-          'cryptomaster758@gmail.com'
+          'cryptomaster758@gmail.com',
+          'admin@tsehay.com',
+          'chadmin@tsehaycampus.com'
         ])
       );
     }

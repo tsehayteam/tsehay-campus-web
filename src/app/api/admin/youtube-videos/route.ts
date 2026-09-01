@@ -4,9 +4,12 @@ import { adminDb, adminAuth } from '@/lib/firebase/admin';
 const AUTHORIZED_ADMIN_EMAILS = [
   'admin@tsehaycampus.com',
   'tsehayoperation@gmail.com',
+  'tsehayteam@gmail.com',
   'eyoubsahle@gmail.com',
   'habte@gmail.com',
-  'cryptomaster758@gmail.com'
+  'cryptomaster758@gmail.com',
+  'admin@tsehay.com',
+  'chadmin@tsehaycampus.com'
 ];
 
 async function verifyAdminAuth(req: NextRequest, emailParam?: string | null): Promise<boolean> {
