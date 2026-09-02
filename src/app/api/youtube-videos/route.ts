@@ -3,7 +3,7 @@ export const revalidate = 0;
 export const fetchCache = 'force-no-store';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase/admin';
+import { adminDb, hasAdminCredentials } from '@/lib/firebase/admin';
 
 const NO_CACHE_HEADERS = {
   'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
@@ -64,7 +64,7 @@ function extractYouTubeId(url: string): string {
 
 export async function GET(req: NextRequest) {
   try {
-    if (!adminDb) {
+    if (!hasAdminCredentials || !adminDb || typeof adminDb.collection !== 'function') {
       return NextResponse.json(
         { success: true, count: DEFAULT_VIDEOS.length, videos: DEFAULT_VIDEOS },
         { headers: NO_CACHE_HEADERS }

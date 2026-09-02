@@ -51,6 +51,17 @@ service cloud.firestore {
       }
     }
 
+    // 2.2 Root YouTube Videos Collection
+    match /youtube_videos/{videoId} {
+      allow read: if true;
+      allow write: if true;
+
+      match /{sub=**} {
+        allow read: if true;
+        allow write: if true;
+      }
+    }
+
     // 3. Root Users Collection (Users have full access to their own document & subcollections)
     match /users/{userId} {
       allow read, write: if (isAuthenticated() && request.auth.uid == userId) || isGlobalAdmin();

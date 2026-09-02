@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
         .get();
 
       if (!snap.empty) {
-        postsList = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        postsList = snap.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
       }
     } catch (e) {}
 
@@ -63,7 +63,7 @@ export async function GET(req: NextRequest) {
       try {
         const rootSnap = await adminDb.collection('community_posts').get();
         if (!rootSnap.empty) {
-          postsList = rootSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          postsList = rootSnap.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
         }
       } catch (e) {}
     }
