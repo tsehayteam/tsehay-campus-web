@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase/admin';
+import { adminDb, hasAdminCredentials } from '@/lib/firebase/admin';
 import { DEFAULT_EVENTS, TsehayEvent, formatDriveImageUrl } from '@/lib/eventCache';
 
 const AUTHORIZED_ADMIN_EMAILS = [
@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const eventId = searchParams.get('id') || searchParams.get('eventId');
 
-    if (!adminDb) {
+    if (!adminDb || !hasAdminCredentials) {
       if (eventId) {
         const found = DEFAULT_EVENTS.find(e => e.id === eventId || e.slug === eventId);
         return NextResponse.json({ 
