@@ -273,6 +273,18 @@ export default function InstructorYouTubePortfolio() {
           } catch (e) {}
         }
 
+        if (!fetchedLocal || !fetchedIntl) {
+          try {
+            let res = await fetch('/api/site-settings?settingKey=youtube_portfolio', { cache: 'no-store' });
+            if (!res.ok) res = await fetch('/api/admin/site-settings?settingKey=youtube_portfolio', { cache: 'no-store' });
+            if (res.ok) {
+              const j = await res.json();
+              if (j?.data?.localVideoUrl && !fetchedLocal) fetchedLocal = j.data.localVideoUrl.trim();
+              if (j?.data?.internationalVideoUrl && !fetchedIntl) fetchedIntl = j.data.internationalVideoUrl.trim();
+            }
+          } catch (e) {}
+        }
+
         if (isMounted) {
           if (fetchedLocal) setLocalVideoUrl(fetchedLocal);
           if (fetchedIntl) setInternationalVideoUrl(fetchedIntl);

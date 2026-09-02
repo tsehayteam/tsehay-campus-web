@@ -47,10 +47,16 @@ export default function Hero3DPopoutStage({
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 3500); // 3.5s fail-safe timeout
 
-        const res = await fetch('/api/admin/site-settings?settingKey=landing_video', {
+        let res = await fetch('/api/site-settings?settingKey=landing_video', {
           signal: controller.signal,
           cache: 'no-store'
         });
+        if (!res.ok) {
+          res = await fetch('/api/admin/site-settings?settingKey=landing_video', {
+            signal: controller.signal,
+            cache: 'no-store'
+          });
+        }
         clearTimeout(timeoutId);
 
         if (res.ok) {
