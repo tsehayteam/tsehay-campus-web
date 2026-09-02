@@ -394,13 +394,13 @@ export const COURSE_CACHE_VERSION = 'v5_2026_authentic_3_courses';
 export function getCachedCourses(): any[] {
   if (typeof window === 'undefined') return DEFAULT_COURSES;
   try {
-    const version = localStorage.getItem('tsehay_courses_cache_version');
-    if (version !== COURSE_CACHE_VERSION) {
-      localStorage.removeItem('tsehay_courses_cache');
-      localStorage.removeItem('tsehay_admin_courses_cache');
-      localStorage.setItem('tsehay_courses_cache_version', COURSE_CACHE_VERSION);
-      saveCachedCourses(DEFAULT_COURSES);
-      return DEFAULT_COURSES;
+    const adminCached = localStorage.getItem('tsehay_admin_courses_cache');
+    if (adminCached) {
+      const parsedAdmin = JSON.parse(adminCached);
+      if (Array.isArray(parsedAdmin) && parsedAdmin.length > 0) {
+        const valid = parsedAdmin.filter(isValidCourse);
+        if (valid.length > 0) return valid;
+      }
     }
 
     const cached = localStorage.getItem('tsehay_courses_cache');
@@ -426,7 +426,7 @@ export function getCachedCourses(): any[] {
             description: formatCourseDesc(c)
           };
         });
-        if (sanitized.length >= 3) return sanitized;
+        if (sanitized.length > 0) return sanitized;
       }
     }
   } catch (err) {
@@ -459,6 +459,7 @@ export function saveCachedCourses(courses: any[]) {
     });
     if (sanitized.length > 0) {
       localStorage.setItem('tsehay_courses_cache', JSON.stringify(sanitized));
+      localStorage.setItem('tsehay_admin_courses_cache', JSON.stringify(sanitized));
       localStorage.setItem('tsehay_courses_cache_version', COURSE_CACHE_VERSION);
     }
   } catch (err) {
