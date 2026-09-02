@@ -327,18 +327,8 @@ export function formatCourseDesc(course: any): string {
 export function isValidCourse(c: any): boolean {
   if (!c || typeof c !== 'object') return false;
   if (c.status === 'Deleted' || c.isDeleted === true) return false;
-  const id = (c.id || '').toString().trim().toLowerCase();
   const rawTitle = (c.title || '').toString().trim();
-  const title = rawTitle.toLowerCase();
-  const desc = (c.desc || c.description || '').toString().trim().toLowerCase();
-
-  // Filter out corrupted/broken test entries
-  if (id === '5l,m4lmltml' || title.includes('5l,m4lmltml') || desc.includes('2354t4554t4t4')) return false;
-  if (title === 'shien business' || title.includes('shien business') || desc.includes('focused on shien business')) return false;
-  if (id === 'web-development-bootcamp' || id === 'crypto-finance-mastery' || id === 'digital_marketing_pro') return false;
-  
-  if (!rawTitle || rawTitle.length < 3) return false;
-
+  if (!rawTitle || rawTitle.length < 2) return false;
   return true;
 }
 

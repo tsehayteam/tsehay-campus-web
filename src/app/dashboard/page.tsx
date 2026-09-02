@@ -2563,19 +2563,11 @@ function StudentDashboardContent() {
       <main className="flex-1 overflow-y-auto bg-gray-50 dark:bg-[#111111] p-4 lg:p-8">
         
         {currentView === 'classroom' && (
-          <>
-            {courses.length === 0 ? (
-          <div className="text-center py-20 max-w-7xl mx-auto">
-            <i className="fa-solid fa-box-open text-6xl text-slate-300 dark:text-slate-700 mb-4"></i>
-            <h2 className="text-xl font-bold text-slate-500">{t('no_purchased_courses')}</h2>
-            <a href="/courses" className="mt-4 inline-block bg-primary text-dark font-bold px-6 py-3 rounded-xl hover:bg-yellow-400 transition shadow-lg">{t('visit_courses')}</a>
-          </div>
-        ) : (
           <div className="max-w-[1600px] mx-auto">
             <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl sm:text-3xl font-black font-heading text-white mb-1.5">{activeCourse?.title || t('course_loading')}</h1>
-                    <p className="text-slate-400 font-body text-sm">{activeCourse?.category || 'Tsehay Campus Course'}</p>
+                    <h1 className="text-2xl sm:text-3xl font-black font-heading text-white mb-1.5">{(activeCourse || courses[0] || DEFAULT_COURSES[0])?.title || 'የመማሪያ ክፍል (Classroom)'}</h1>
+                    <p className="text-slate-400 font-body text-sm">{(activeCourse || courses[0] || DEFAULT_COURSES[0])?.category || 'Tsehay Campus Course'}</p>
                 </div>
 
                 {/* 🌟 Prominent "የትኩረት ሁኔታ" (Focus Mode) Action Button */}
@@ -3806,8 +3798,6 @@ function StudentDashboardContent() {
             </div>
           </div>
         )}
-        </>
-      )}
 
         {currentView === 'courses' && (
           <div className="max-w-7xl mx-auto py-10">

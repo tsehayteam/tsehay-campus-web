@@ -293,8 +293,8 @@ export const subscribeCommunityPosts = (
   } catch (e) {}
 
   // 3. Parallel Server API Fetch (Ensures fresh sync across servers)
-  fetch(`/api/admin/community?t=${Date.now()}`)
-    .then(res => res.json())
+  fetch(`/api/community?t=${Date.now()}`)
+    .then(res => res.ok ? res.json() : fetch(`/api/admin/community?t=${Date.now()}`).then(r => r.json()))
     .then(json => {
       if (json.success && Array.isArray(json.posts)) {
         json.posts.forEach((p: any) => {
@@ -351,11 +351,18 @@ export const createCommunityPost = async (post: Omit<CommunityPost, 'id' | 'like
 
   // 2. Server API Persistence
   try {
-    const res = await fetch('/api/admin/community', {
+    let res = await fetch('/api/community', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...post, id: docId })
     });
+    if (!res.ok) {
+      res = await fetch('/api/admin/community', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...post, id: docId })
+      });
+    }
     if (res.ok) {
       const data = await res.json();
       if (data.post?.id) {

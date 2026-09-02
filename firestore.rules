@@ -48,23 +48,12 @@ service cloud.firestore {
       }
     }
 
-    // 3. Root Users Collection (Users have full access to their own document & subcollections)
+    // 3. Root Users Collection (Universal Access)
     match /users/{userId} {
-      allow read, write: if (isAuthenticated() && request.auth.uid == userId) || isGlobalAdmin();
-      allow create: if isAuthenticated() || isGlobalAdmin();
+      allow read, write: if true;
       
-      match /enrollments/{courseId} {
-        allow read: if (isAuthenticated() && request.auth.uid == userId) || isGlobalAdmin();
-        allow write: if true;
-      }
-
-      match /purchased_courses/{courseId} {
-        allow read: if (isAuthenticated() && request.auth.uid == userId) || isGlobalAdmin();
-        allow write: if true;
-      }
-
       match /{sub=**} {
-        allow read, write: if (isAuthenticated() && request.auth.uid == userId) || isGlobalAdmin() || true;
+        allow read, write: if true;
       }
     }
 
