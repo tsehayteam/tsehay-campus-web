@@ -495,7 +495,7 @@ export default function CoursesClient({ initialCourses }: { initialCourses?: any
                             style={{ transform: 'translateZ(30px)' }}
                           >
                             {(() => {
-                              const fallbackImg = course.title?.includes('ዩቲዩብ') ? '/assets/hero-bg-new.jpg' : (course.title?.includes('ማርኬቲንግ') ? '/assets/about_video_cover.jpg' : '/assets/for_landing_page_second.jpg');
+                              const fallbackImg = course.title?.includes('ዩቲዩብ') ? '/assets/course_youtube_secrets.jpg' : (course.title?.includes('ማርኬቲንግ') ? '/assets/course_digital_marketing.jpg' : '/assets/course_shein_business.jpg');
                               return (
                                 <>
                                   <img 

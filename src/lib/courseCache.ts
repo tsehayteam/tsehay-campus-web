@@ -17,8 +17,8 @@ export const DEFAULT_COURSES = [
     tag: "E-Commerce",
     level: "ጀማሪ (Beginner)",
     duration: "01:15:00",
-    image: "/assets/for_landing_page_second.jpg",
-    banner: "/assets/for_landing_page_second.jpg",
+    image: "/assets/course_shein_business.jpg",
+    banner: "/assets/course_shein_business.jpg",
     video: "https://www.youtube.com/watch?v=mgdOMtW6J8k",
     instructor: "Eyoub Sahle",
     instructorTitle: "የቢዝነስ እና ዲጂታል ማርኬቲንግ ባለሙያ (Lead Instructor)",
@@ -75,8 +75,8 @@ export const DEFAULT_COURSES = [
     tag: "YouTube & Content Creation",
     level: "ጀማሪ (Beginner)",
     duration: "04:00:00",
-    image: "/assets/hero-bg-new.jpg",
-    banner: "/assets/hero-bg-new.jpg",
+    image: "/assets/course_youtube_secrets.jpg",
+    banner: "/assets/course_youtube_secrets.jpg",
     video: "https://www.youtube.com/watch?v=mgdOMtW6J8k",
     instructor: "Eyoub Sahle",
     instructorTitle: "የቢዝነስ እና ዲጂታል ማርኬቲንግ ባለሙያ (Lead Instructor)",
@@ -134,8 +134,8 @@ export const DEFAULT_COURSES = [
     tag: "Marketing",
     level: "ጀማሪ (Beginner)",
     duration: "00:40:00",
-    image: "/assets/about_video_cover.jpg",
-    banner: "/assets/about_video_cover.jpg",
+    image: "/assets/course_digital_marketing.jpg",
+    banner: "/assets/course_digital_marketing.jpg",
     video: "https://www.youtube.com/embed/B-s71n0dHUk",
     instructor: "Eyoub Sahle",
     instructorTitle: "የቢዝነስ እና ዲጂታል ማርኬቲንግ ባለሙያ (Lead Instructor)",
@@ -377,21 +377,45 @@ export function mergeCoursesLists(...lists: any[][]): any[] {
 /**
  * Reads verified live course data previously synced from Firestore or LocalStorage cache.
  */
+export const COURSE_CACHE_VERSION = 'v5_2026_authentic_3_courses';
+
 export function getCachedCourses(): any[] {
   if (typeof window === 'undefined') return DEFAULT_COURSES;
   try {
+    const version = localStorage.getItem('tsehay_courses_cache_version');
+    if (version !== COURSE_CACHE_VERSION) {
+      localStorage.removeItem('tsehay_courses_cache');
+      localStorage.removeItem('tsehay_admin_courses_cache');
+      localStorage.setItem('tsehay_courses_cache_version', COURSE_CACHE_VERSION);
+      saveCachedCourses(DEFAULT_COURSES);
+      return DEFAULT_COURSES;
+    }
+
     const cached = localStorage.getItem('tsehay_courses_cache');
     if (cached) {
       const parsed = JSON.parse(cached);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        const valid = parsed.filter(isValidCourse).map((c: any) => ({
-          ...c,
-          image: getCleanCourseImage(c),
-          banner: getCleanCourseImage(c),
-          desc: formatCourseDesc(c),
-          description: formatCourseDesc(c)
-        }));
-        if (valid.length >= 3) return valid;
+        const sanitized = parsed.filter(isValidCourse).map((c: any) => {
+          let price = c.price;
+          let title = c.title;
+          if (c.title?.includes('ዩቲዩብ') || c.id?.includes('youtube')) {
+            price = 900;
+          }
+          if (c.title?.includes('ማርኬቲንግ') || c.id?.includes('marketing')) {
+            title = 'ዲጂታል ማርኬቲንግ ለጀማሪዎች (Digital Marketing Masterclass)';
+            price = 0;
+          }
+          return {
+            ...c,
+            title,
+            price,
+            image: getCleanCourseImage({ ...c, title }),
+            banner: getCleanCourseImage({ ...c, title }),
+            desc: formatCourseDesc(c),
+            description: formatCourseDesc(c)
+          };
+        });
+        if (sanitized.length >= 3) return sanitized;
       }
     }
   } catch (err) {
@@ -403,15 +427,29 @@ export function getCachedCourses(): any[] {
 export function saveCachedCourses(courses: any[]) {
   if (typeof window === 'undefined' || !Array.isArray(courses) || courses.length === 0) return;
   try {
-    const sanitized = courses.filter(isValidCourse).map((c: any) => ({
-      ...c,
-      image: getCleanCourseImage(c),
-      banner: getCleanCourseImage(c),
-      desc: formatCourseDesc(c),
-      description: formatCourseDesc(c)
-    }));
+    const sanitized = courses.filter(isValidCourse).map((c: any) => {
+      let price = c.price;
+      let title = c.title;
+      if (c.title?.includes('ዩቲዩብ') || c.id?.includes('youtube')) {
+        price = 900;
+      }
+      if (c.title?.includes('ማርኬቲንግ') || c.id?.includes('marketing')) {
+        title = 'ዲጂታል ማርኬቲንግ ለጀማሪዎች (Digital Marketing Masterclass)';
+        price = 0;
+      }
+      return {
+        ...c,
+        title,
+        price,
+        image: getCleanCourseImage({ ...c, title }),
+        banner: getCleanCourseImage({ ...c, title }),
+        desc: formatCourseDesc(c),
+        description: formatCourseDesc(c)
+      };
+    });
     if (sanitized.length > 0) {
       localStorage.setItem('tsehay_courses_cache', JSON.stringify(sanitized));
+      localStorage.setItem('tsehay_courses_cache_version', COURSE_CACHE_VERSION);
     }
   } catch (err) {
     console.warn("Course cache save error:", err);
@@ -430,15 +468,37 @@ export function formatDriveImageUrl(url: any): string {
 }
 
 export function getCleanCourseImage(c: any): string {
-  if (!c || typeof c !== 'object') return '';
+  if (!c || typeof c !== 'object') return '/assets/course_shein_business.jpg';
+  const rawTitle = (c.title || '').toString();
+  const rawId = (c.id || '').toString().toLowerCase();
   const rawImage = (c.image || c.thumbnail || c.banner || c.thumbnailUrl || '').toString().trim();
-  if (!rawImage) {
-    if (c.title?.includes('ሼን') || c.id?.includes('shein')) return '/assets/for_landing_page_second.jpg';
-    if (c.title?.includes('ዩቲዩብ') || c.id?.includes('youtube')) return '/assets/hero-bg-new.jpg';
-    if (c.title?.includes('ማርኬቲንግ') || c.id?.includes('marketing')) return '/assets/about_video_cover.jpg';
-    return '/assets/for_landing_page_second.jpg';
+
+  // 1. Shein Import Business
+  if (rawTitle.includes('ሼን') || rawTitle.toLowerCase().includes('shein') || rawId.includes('shein')) {
+    if (!rawImage || rawImage.includes('1HZf1jV5') || rawImage.includes('1rdjkUc6') || rawImage.includes('hero-bg-new') || rawImage.includes('for_landing_page_second') || rawImage.includes('about_video_cover') || rawImage.includes('eyob_')) {
+      return '/assets/course_shein_business.jpg';
+    }
+    return formatDriveImageUrl(rawImage);
   }
-  return formatDriveImageUrl(rawImage);
+
+  // 2. YouTube Secrets Masterclass
+  if (rawTitle.includes('ዩቲዩብ') || rawTitle.toLowerCase().includes('youtube') || rawId.includes('youtube')) {
+    if (!rawImage || rawImage.includes('hero-bg-new') || rawImage.includes('1HZf1jV5') || rawImage.includes('1rdjkUc6') || rawImage.includes('for_landing_page_second') || rawImage.includes('eyob_')) {
+      return '/assets/course_youtube_secrets.jpg';
+    }
+    return formatDriveImageUrl(rawImage);
+  }
+
+  // 3. Digital Marketing Masterclass
+  if (rawTitle.includes('ማርኬቲንግ') || rawTitle.toLowerCase().includes('marketing') || rawId.includes('marketing')) {
+    if (!rawImage || rawImage.includes('hero-bg-new') || rawImage.includes('1HZf1jV5') || rawImage.includes('for_landing_page_second') || rawImage.includes('about_video_cover')) {
+      return '/assets/course_digital_marketing.jpg';
+    }
+    return formatDriveImageUrl(rawImage);
+  }
+
+  if (rawImage) return formatDriveImageUrl(rawImage);
+  return '/assets/course_shein_business.jpg';
 }
 
 /**
