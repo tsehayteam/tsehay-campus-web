@@ -16,7 +16,7 @@ const ReactPlayer: any = nextDynamic(() => import('react-player'), { ssr: false 
 import CourseRatingModal from '@/components/CourseRatingModal';
 import CourseQuiz from '@/components/CourseQuiz';
 import CourseCertificate from '@/components/CourseCertificate';
-import { formatDriveImageUrl, getCleanCourseImage } from '@/lib/courseCache';
+import { formatDriveImageUrl, getCleanCourseImage, DEFAULT_COURSES, getCachedCourses } from '@/lib/courseCache';
 import FormattedAiText from '@/components/FormattedAiText';
 import StudentReferralSection from '@/components/StudentReferralSection';
 import { getCoursePinnedPrompts } from '@/lib/aiPrompts';
@@ -144,40 +144,59 @@ function StudentDashboardContent() {
     }
   });
   const [courses, setCourses] = useState<any[]>(() => {
-    if (typeof window === 'undefined') return [];
+    if (typeof window === 'undefined') return DEFAULT_COURSES;
     try {
       const cached = localStorage.getItem('tsehay_user_courses_cache');
-      return cached ? JSON.parse(cached) : [];
-    } catch (e) { return []; }
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+      const allCached = getCachedCourses();
+      return allCached.length > 0 ? allCached : DEFAULT_COURSES;
+    } catch (e) { return DEFAULT_COURSES; }
   });
   const [loading, setLoading] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return true;
-    return !localStorage.getItem('tsehay_user_courses_cache');
+    if (typeof window === 'undefined') return false;
+    return false;
   });
   // User Feedback Modal State
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
 
   const [activeCourse, setActiveCourse] = useState<any>(() => {
-    if (typeof window === 'undefined') return null;
+    if (typeof window === 'undefined') return DEFAULT_COURSES[0];
     try {
       const cachedCourse = localStorage.getItem('tsehay_user_active_course');
-      return cachedCourse ? JSON.parse(cachedCourse) : null;
-    } catch (e) { return null; }
+      if (cachedCourse) {
+        const parsed = JSON.parse(cachedCourse);
+        if (parsed && parsed.id) return parsed;
+      }
+      const allCached = getCachedCourses();
+      return allCached[0] || DEFAULT_COURSES[0];
+    } catch (e) { return DEFAULT_COURSES[0]; }
   });
   const [activeLesson, setActiveLesson] = useState<any>(() => {
-    if (typeof window === 'undefined') return null;
+    if (typeof window === 'undefined') return DEFAULT_COURSES[0]?.lessons?.[0] || null;
     try {
       const cachedLesson = localStorage.getItem('tsehay_user_active_lesson');
-      return cachedLesson ? JSON.parse(cachedLesson) : null;
-    } catch (e) { return null; }
+      if (cachedLesson) {
+        const parsed = JSON.parse(cachedLesson);
+        if (parsed && parsed.title) return parsed;
+      }
+      return DEFAULT_COURSES[0]?.lessons?.[0] || null;
+    } catch (e) { return DEFAULT_COURSES[0]?.lessons?.[0] || null; }
   });
   const [activeTab, setActiveTab] = useState('overview');
   const [modules, setModules] = useState<any[]>(() => {
-    if (typeof window === 'undefined') return [];
+    const defaultMod = [{ id: 'main', title: 'Course Content', order: 1, lessons: DEFAULT_COURSES[0]?.lessons || [] }];
+    if (typeof window === 'undefined') return defaultMod;
     try {
       const cachedModules = localStorage.getItem('tsehay_user_active_modules');
-      return cachedModules ? JSON.parse(cachedModules) : [];
-    } catch (e) { return []; }
+      if (cachedModules) {
+        const parsed = JSON.parse(cachedModules);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+      return defaultMod;
+    } catch (e) { return defaultMod; }
   });
   const [progress, setProgress] = useState<any[]>([]);
   // Settings State
@@ -785,6 +804,26 @@ function StudentDashboardContent() {
           } catch(e) {}
         }
 
+        // 🌟 If student has no purchased courses yet, provide default catalog courses (including free course)
+        if (userCourses.length === 0) {
+          const cachedAll = getCachedCourses();
+          userCourses = cachedAll.length > 0 ? cachedAll : DEFAULT_COURSES;
+          
+          // Auto-persist free course enrollment for student
+          try {
+            const freeCourse = userCourses.find(c => c.isFree || c.id === 'digital_marketing_free') || userCourses[0];
+            if (freeCourse && user?.uid) {
+              setDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'purchased_courses', freeCourse.id), {
+                courseId: freeCourse.id,
+                amount: 0,
+                paymentMethod: 'free',
+                purchasedAt: serverTimestamp(),
+                status: 'active'
+              }, { merge: true }).catch(() => {});
+            }
+          } catch (e) {}
+        }
+
         setCourses(userCourses);
         try {
           localStorage.setItem(`tsehay_user_courses_${user.uid}`, JSON.stringify(userCourses));
@@ -821,11 +860,7 @@ function StudentDashboardContent() {
             return userCourses[0];
           });
         } else {
-          setActiveCourse(null);
-          try {
-            localStorage.removeItem('tsehay_user_active_course');
-            localStorage.removeItem(`tsehay_user_active_course_${user.uid}`);
-          } catch(e) {}
+          setActiveCourse(DEFAULT_COURSES[0]);
         }
       } catch (error) {
         console.error("Error fetching courses", error);
@@ -2528,19 +2563,11 @@ function StudentDashboardContent() {
       <main className="flex-1 overflow-y-auto bg-gray-50 dark:bg-[#111111] p-4 lg:p-8">
         
         {currentView === 'classroom' && (
-          <>
-            {courses.length === 0 ? (
-          <div className="text-center py-20 max-w-7xl mx-auto">
-            <i className="fa-solid fa-box-open text-6xl text-slate-300 dark:text-slate-700 mb-4"></i>
-            <h2 className="text-xl font-bold text-slate-500">{t('no_purchased_courses')}</h2>
-            <a href="/courses" className="mt-4 inline-block bg-primary text-dark font-bold px-6 py-3 rounded-xl hover:bg-yellow-400 transition shadow-lg">{t('visit_courses')}</a>
-          </div>
-        ) : (
           <div className="max-w-[1600px] mx-auto">
             <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl sm:text-3xl font-black font-heading text-white mb-1.5">{activeCourse?.title || t('course_loading')}</h1>
-                    <p className="text-slate-400 font-body text-sm">{activeCourse?.category || 'Tsehay Campus Course'}</p>
+                    <h1 className="text-2xl sm:text-3xl font-black font-heading text-white mb-1.5">{(activeCourse || courses[0] || DEFAULT_COURSES[0])?.title || 'የመማሪያ ክፍል (Classroom)'}</h1>
+                    <p className="text-slate-400 font-body text-sm">{(activeCourse || courses[0] || DEFAULT_COURSES[0])?.category || 'Tsehay Campus Course'}</p>
                 </div>
 
                 {/* 🌟 Prominent "የትኩረት ሁኔታ" (Focus Mode) Action Button */}
@@ -3771,8 +3798,6 @@ function StudentDashboardContent() {
             </div>
           </div>
         )}
-        </>
-      )}
 
         {currentView === 'courses' && (
           <div className="max-w-7xl mx-auto py-10">

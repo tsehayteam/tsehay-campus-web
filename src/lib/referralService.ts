@@ -78,10 +78,11 @@ export async function validateReferralCode(
       }
     }
 
-    // 3. Fallback to Server Admin API (Bypasses all client security rules)
+    // 3. Fallback to Server API (Bypasses all client security rules)
     if (!data) {
       try {
-        const res = await fetch('/api/admin/referral-codes');
+        let res = await fetch('/api/referral-codes');
+        if (!res.ok) res = await fetch('/api/admin/referral-codes');
         if (res.ok) {
           const json = await res.json();
           if (json.codes && Array.isArray(json.codes)) {

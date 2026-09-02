@@ -22,14 +22,15 @@ export async function POST(request: Request) {
                     decodedToken.email === 'habte@gmail.com' ||
                     decodedToken.email === 'cryptomaster758@gmail.com';
 
-    if (!isAdmin) {
-      return NextResponse.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
-    }
-
     const { courseId, userId, paymentMethod, amount, tx_ref } = await request.json();
 
     if (!courseId || !userId) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    }
+
+    const isSelf = decodedToken.uid === userId;
+    if (!isAdmin && !isSelf) {
+      return NextResponse.json({ error: 'Forbidden: Unauthorized enrollment target' }, { status: 403 });
     }
 
     const userDocRef = adminDb

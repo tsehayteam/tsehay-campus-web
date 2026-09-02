@@ -100,7 +100,10 @@ export default function YouTubeVideoSlider() {
     // 1. Fail-Safe Server API Fetch
     const fetchApiVideos = async () => {
       try {
-        const res = await fetch('/api/admin/youtube-videos');
+        let res = await fetch('/api/youtube-videos', { cache: 'no-store' });
+        if (!res.ok) {
+          res = await fetch('/api/admin/youtube-videos', { cache: 'no-store' });
+        }
         if (res.ok) {
           const data = await res.json();
           if (data.videos && Array.isArray(data.videos) && data.videos.length > 0) {
@@ -211,9 +214,7 @@ export default function YouTubeVideoSlider() {
     touchStartX.current = null;
   };
 
-  if (!videos || videos.length === 0) {
-    return null;
-  }
+  const displayVideos = (videos && Array.isArray(videos) && videos.length > 0) ? videos : DEFAULT_VIDEOS;
 
   return (
     <section id="youtube-section" className="bg-[#050810]/75 backdrop-blur-xs py-14 sm:py-24 text-white relative overflow-hidden border-b border-white/5 select-none">
