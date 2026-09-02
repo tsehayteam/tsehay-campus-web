@@ -3,12 +3,7 @@ import { adminDb } from '@/lib/firebase/admin';
 import { DEFAULT_EVENTS, TsehayEvent, formatDriveImageUrl } from '@/lib/eventCache';
 
 const AUTHORIZED_ADMIN_EMAILS = [
-  'eyobsahle@gmail.com',
-  'eyoubsahle@gmail.com',
-  'admin@tsehaycampus.com',
-  'tsehayoperation@gmail.com',
-  'habte@gmail.com',
-  'cryptomaster758@gmail.com'
+  'eyobsahle@gmail.com'
 ];
 
 export async function GET(req: NextRequest) {

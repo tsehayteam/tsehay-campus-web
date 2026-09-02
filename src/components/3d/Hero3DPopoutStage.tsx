@@ -24,8 +24,23 @@ export default function Hero3DPopoutStage({
   const [studentCount, setStudentCount] = useState(530);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeVideoUrl, setActiveVideoUrl] = useState<string>(videoSrc);
+  const [customThumbnail, setCustomThumbnail] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        return localStorage.getItem('tsehay_landing_video_thumb') || '';
+      } catch (e) {}
+    }
+    return '';
+  });
   const isInteractingRef = useRef(false);
   const rafIdRef = useRef<number | null>(null);
+
+  // Sync prop changes from SSR into active state
+  useEffect(() => {
+    if (videoSrc && videoSrc.trim()) {
+      setActiveVideoUrl(videoSrc.trim());
+    }
+  }, [videoSrc]);
 
   // 🌟 Dynamic Landing Video Fetch from Firestore / Site Settings with graceful fallback
   useEffect(() => {
@@ -38,6 +53,10 @@ export default function Hero3DPopoutStage({
         if (cached && cached.trim()) {
           setActiveVideoUrl(cached.trim());
         }
+        const cachedThumb = localStorage.getItem('tsehay_landing_video_thumb');
+        if (cachedThumb && cachedThumb.trim()) {
+          setCustomThumbnail(cachedThumb.trim());
+        }
       } catch (e) {}
     }
 
@@ -47,21 +66,45 @@ export default function Hero3DPopoutStage({
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 3500); // 3.5s fail-safe timeout
 
-        const res = await fetch('/api/admin/site-settings?settingKey=landing_video', {
-          signal: controller.signal,
-          cache: 'no-store'
-        });
+        let fetchedUrl = '';
+        let fetchedThumb = '';
+
+        try {
+          const res = await fetch('/api/admin/site-settings?settingKey=landing_video', {
+            signal: controller.signal,
+            cache: 'no-store'
+          });
+          if (res.ok) {
+            const json = await res.json();
+            fetchedUrl = json?.data?.url || json?.data?.videoUrl || json?.data?.youtubeUrl || '';
+            fetchedThumb = json?.data?.thumbnail || json?.data?.thumbUrl || '';
+          }
+        } catch (e) {}
+
+        if (!fetchedUrl) {
+          try {
+            const res2 = await fetch('/api/admin/save-landing-video', { cache: 'no-store' });
+            if (res2.ok) {
+              const json2 = await res2.json();
+              fetchedUrl = json2?.videoUrl || json2?.url || '';
+              fetchedThumb = json2?.data?.thumbnail || '';
+            }
+          } catch (e) {}
+        }
+
         clearTimeout(timeoutId);
 
-        if (res.ok) {
-          const json = await res.json();
-          const fetchedUrl = json?.data?.url || json?.data?.videoUrl || json?.data?.youtubeUrl;
-          if (fetchedUrl && typeof fetchedUrl === 'string' && fetchedUrl.trim() && !isCancelled) {
-            setActiveVideoUrl(fetchedUrl.trim());
-            try {
-              localStorage.setItem('tsehay_landing_video_cache', fetchedUrl.trim());
-            } catch (e) {}
-          }
+        if (fetchedUrl && typeof fetchedUrl === 'string' && fetchedUrl.trim() && !isCancelled) {
+          setActiveVideoUrl(fetchedUrl.trim());
+          try {
+            localStorage.setItem('tsehay_landing_video_cache', fetchedUrl.trim());
+          } catch (e) {}
+        }
+        if (fetchedThumb && typeof fetchedThumb === 'string' && fetchedThumb.trim() && !isCancelled) {
+          setCustomThumbnail(fetchedThumb.trim());
+          try {
+            localStorage.setItem('tsehay_landing_video_thumb', fetchedThumb.trim());
+          } catch (e) {}
         }
       } catch (err) {
         // Fallback gracefully to default video
@@ -70,56 +113,84 @@ export default function Hero3DPopoutStage({
 
     fetchLandingVideo();
 
-    // 3. Real-time Firestore Listeners
+    // 3. Real-time Firestore Listeners across all valid namespaces
     let unsub1: any = null;
     let unsub2: any = null;
     let unsub3: any = null;
+    let unsub4: any = null;
+
+    const handleDocUpdate = (snap: any) => {
+      if (snap.exists()) {
+        const d = snap.data();
+        const url = d?.url || d?.videoUrl || d?.youtubeUrl;
+        const thumb = d?.thumbnail || d?.thumbUrl;
+        if (url && typeof url === 'string' && url.trim() && !isCancelled) {
+          setActiveVideoUrl(url.trim());
+          try {
+            localStorage.setItem('tsehay_landing_video_cache', url.trim());
+          } catch (e) {}
+        }
+        if (thumb && typeof thumb === 'string' && thumb.trim() && !isCancelled) {
+          setCustomThumbnail(thumb.trim());
+          try {
+            localStorage.setItem('tsehay_landing_video_thumb', thumb.trim());
+          } catch (e) {}
+        }
+      }
+    };
+
     try {
-      unsub1 = onSnapshot(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'site_settings', 'landing_video'), (snap) => {
-        if (snap.exists()) {
-          const d = snap.data();
-          const url = d?.url || d?.videoUrl || d?.youtubeUrl;
-          if (url && typeof url === 'string' && url.trim() && !isCancelled) {
-            setActiveVideoUrl(url.trim());
-            try {
-              localStorage.setItem('tsehay_landing_video_cache', url.trim());
-            } catch (e) {}
-          }
-        }
-      }, () => {});
-
-      unsub2 = onSnapshot(doc(db, 'settings', 'landing_video'), (snap) => {
-        if (snap.exists()) {
-          const d = snap.data();
-          const url = d?.url || d?.videoUrl || d?.youtubeUrl;
-          if (url && typeof url === 'string' && url.trim() && !isCancelled) {
-            setActiveVideoUrl(url.trim());
-            try {
-              localStorage.setItem('tsehay_landing_video_cache', url.trim());
-            } catch (e) {}
-          }
-        }
-      }, () => {});
-
-      unsub3 = onSnapshot(doc(db, 'settings', 'landingVideo'), (snap) => {
-        if (snap.exists()) {
-          const d = snap.data();
-          const url = d?.url || d?.videoUrl || d?.youtubeUrl;
-          if (url && typeof url === 'string' && url.trim() && !isCancelled) {
-            setActiveVideoUrl(url.trim());
-            try {
-              localStorage.setItem('tsehay_landing_video_cache', url.trim());
-            } catch (e) {}
-          }
-        }
-      }, () => {});
+      unsub1 = onSnapshot(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'site_settings', 'landing_video'), handleDocUpdate, () => {});
+      unsub2 = onSnapshot(doc(db, 'site_settings', 'landing_video'), handleDocUpdate, () => {});
+      unsub3 = onSnapshot(doc(db, 'settings', 'landing_video'), handleDocUpdate, () => {});
+      unsub4 = onSnapshot(doc(db, 'settings', 'landingVideo'), handleDocUpdate, () => {});
     } catch (e) {}
+
+    // 4. Cross-tab Broadcast Channel & Custom Event Listeners
+    let bc: BroadcastChannel | null = null;
+    try {
+      if (typeof BroadcastChannel !== 'undefined') {
+        bc = new BroadcastChannel('tsehay_landing_video_channel');
+        bc.onmessage = (event) => {
+          if (event.data?.videoUrl) {
+            setActiveVideoUrl(event.data.videoUrl);
+            if (event.data.thumbnail) setCustomThumbnail(event.data.thumbnail);
+          }
+        };
+      }
+    } catch (e) {}
+
+    const handleCustomLandingUpdate = (e: any) => {
+      if (e.detail?.videoUrl) {
+        setActiveVideoUrl(e.detail.videoUrl);
+      }
+      if (e.detail?.thumbnail) {
+        setCustomThumbnail(e.detail.thumbnail);
+      }
+    };
+    window.addEventListener('tsehay_landing_video_updated', handleCustomLandingUpdate);
+
+    const handleStorageUpdate = (e: StorageEvent) => {
+      if (!e.key || e.key === 'tsehay_landing_video_cache') {
+        const val = localStorage.getItem('tsehay_landing_video_cache');
+        if (val) setActiveVideoUrl(val);
+      }
+      if (!e.key || e.key === 'tsehay_landing_video_thumb') {
+        const thumb = localStorage.getItem('tsehay_landing_video_thumb');
+        if (thumb) setCustomThumbnail(thumb);
+      }
+    };
+    window.addEventListener('storage', handleStorageUpdate);
 
     return () => {
       isCancelled = true;
       if (unsub1) unsub1();
       if (unsub2) unsub2();
       if (unsub3) unsub3();
+      if (unsub4) unsub4();
+      if (bc) bc.close();
+      window.removeEventListener('tsehay_landing_video_updated', handleCustomLandingUpdate);
+      window.removeEventListener('storage', handleStorageUpdate);
     };
   }, []);
 
@@ -179,11 +250,13 @@ export default function Hero3DPopoutStage({
   }, []);
 
   // Thumbnail resolver for non-direct video embeds
-  const displayThumbnail = parsedVideo.thumbnailUrl || (
-    parsedVideo.youtubeId 
-      ? `https://img.youtube.com/vi/${parsedVideo.youtubeId}/maxresdefault.jpg`
-      : '/assets/hero-bg-new.jpg'
-  );
+  const displayThumbnail = 
+    customThumbnail ||
+    parsedVideo.thumbnailUrl || (
+      parsedVideo.youtubeId 
+        ? `https://img.youtube.com/vi/${parsedVideo.youtubeId}/maxresdefault.jpg`
+        : '/assets/hero-bg-new.jpg'
+    );
 
   return (
     <div 

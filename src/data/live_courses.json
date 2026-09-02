@@ -1,0 +1,258 @@
+[
+  {
+    "id": "digital_marketing_free",
+    "slug": "digital-marketing",
+    "title": "ዲጂታል ማርኬቲንግ ለጀማሪዎች: ቢዝነስዎን በቀላሉ የሚያሳድጉበት መመሪያ",
+    "description": "ይህ የ1 ሰዓት የዲጂታል ማርኬቲንግ ቅምሻ በነፃነት በመማር ወደፊት ለሚመጣው ትልቅ የዲጂታል ማርኬቲንግ ስልጠና እራስዎን ዝግጁ የሚያደርጉበት ወሳኝ ፕሮግራም ነው።",
+    "desc": "ይህ የ1 ሰዓት የዲጂታል ማርኬቲንግ ቅምሻ በነፃነት በመማር ወደፊት ለሚመጣው ትልቅ የዲጂታል ማርኬቲንግ ስልጠና እራስዎን ዝግጁ የሚያደርጉበት ወሳኝ ፕሮግራም ነው።",
+    "price": 0,
+    "oldPrice": 4000,
+    "status": "Active",
+    "isFree": true,
+    "category": "Marketing",
+    "tag": "Marketing",
+    "level": "ጀማሪ (Beginner)",
+    "duration": "00:40:00",
+    "image": "https://drive.google.com/thumbnail?id=1HZf1jV5AdSXyc7MJUf8vPgYm4z0-30O6&sz=w1000",
+    "banner": "https://drive.google.com/thumbnail?id=1HZf1jV5AdSXyc7MJUf8vPgYm4z0-30O6&sz=w1000",
+    "video": "https://www.youtube.com/embed/B-s71n0dHUk",
+    "instructor": "Eyoub Sahle",
+    "instructorTitle": "የቢዝነስ እና ዲጂታል ማርኬቲንግ ባለሙያ (Lead Instructor)",
+    "instructorImage": "https://drive.google.com/thumbnail?id=1rdjkUc6ZwK6NbbgHaZ-7BtEi8A9aA5Uq&sz=w1000",
+    "instructorTelegram": "@EyoubSahle",
+    "instructorBio": "በኢ-ኮሜርስ፣ ዲጂታል ማርኬቲንግ እና ክሪፕቶ ከረንሲ ዘርፍ የብዙ አመታት የተግባር ልምድ ያለው እና በመቶዎች የሚቆጠሩ ተማሪዎችን ወደ ስኬት ያበቃ ባለሙያ።",
+    "students": 580,
+    "studentsCount": 580,
+    "rating": 5,
+    "ratingAvg": 5,
+    "ratingCount": 52,
+    "instructorRatingAvg": 4.9,
+    "modulesCount": 4,
+    "isPopular": true,
+    "aiPrompt": "You are Tsehay AI. Your job is to help students learning the Digital Marketing course by Eyoub Sahle. Answer questions strictly related to marketing.",
+    "whatYouWillLearn": [
+      "የዲጂታል ማርኬቲንግ መሰረታዊ መርሆች",
+      "ባህላዊ እና ዲጂታል ማርኬቲንግ ልዩነት",
+      "የሶሻል ሚዲያ ማርኬቲንግ አጠቃቀም",
+      "የፌስቡክ እና ቴሌግራም ገበያ ስልቶች"
+    ],
+    "requirements": [
+      "ምንም ቅድመ ተሞክሮ አይጠይቅም",
+      "ስማርት ስልክ ወይም ኮምፒውተር",
+      "የኢንተርኔት ኮኔክሽን"
+    ],
+    "includes": [
+      "በቪዲዮ የተደገፈ ትምህርት (On-demand video)",
+      "የተግባር አሳይመንቶች (Assignments)",
+      "በስልክ መጠቀም የሚያስችል (Mobile Access)",
+      "የኮርስ ማጠናቀቂያ ሰርተፊኬት (Certificate)"
+    ],
+    "lessons": [
+      {
+        "title": "የኮርስ ማስታወቂያ (Course Intro)",
+        "duration": "02:30",
+        "video": "https://www.youtube.com/embed/B-s71n0dHUk",
+        "desc": "የዲጂታል ማርኬቲንግ መግቢያ",
+        "points": 10
+      },
+      {
+        "title": "ባህላዊ vs ዲጂታል ማርኬቲንግ",
+        "duration": "05:15",
+        "video": "https://www.youtube.com/embed/B-s71n0dHUk",
+        "desc": "የሁለቱ የግብይት አይነቶች ልዩነት",
+        "points": 50
+      },
+      {
+        "title": "የዲጂታል ማርኬቲንግ አይነቶች ክፍል 1",
+        "duration": "10:00",
+        "video": "https://www.youtube.com/embed/B-s71n0dHUk",
+        "desc": "ዋና ዋና የዲጂታል ማርኬቲንግ መንገዶች",
+        "points": 100
+      },
+      {
+        "title": "በተግባር የተደገፈ የፌስቡክ ማስታወቂያ",
+        "duration": "15:20",
+        "video": "https://www.youtube.com/embed/B-s71n0dHUk",
+        "desc": "የፌስቡክ ማስታወቂያ አሰራር በተግባር",
+        "points": 100
+      }
+    ]
+  },
+  {
+    "id": "course_1784885060875",
+    "slug": "shein-import-business",
+    "title": "የሼን ኢምፖርት ቢዝነስ ስልጠና (Shein Import Business Course)",
+    "description": "በቀላሉ በትንሽ ካፒታል ከሼን (Shein) እቃዎችን እንዴት ማስመጣት እንደሚችሉ፣ የኦንላይን ካርድ ክፍያ፣ የጉምሩክ አሰራር እና እቃዎችን በከፍተኛ ትርፍ መሸጫ ስልቶች የሚያስተምር 100% ተግባራዊ ኮርስ።",
+    "desc": "በቀላሉ በትንሽ ካፒታል ከሼን (Shein) እቃዎችን እንዴት ማስመጣት እንደሚችሉ፣ የኦንላይን ካርድ ክፍያ፣ የጉምሩክ አሰራር እና እቃዎችን በከፍተኛ ትርፍ መሸጫ ስልቶች የሚያስተምር 100% ተግባራዊ ኮርስ።",
+    "price": 4500,
+    "oldPrice": 6000,
+    "status": "Active",
+    "isFree": false,
+    "category": "Ecommerce",
+    "tag": "Ecommerce",
+    "level": "ጀማሪ (Beginner)",
+    "duration": "01:15:00",
+    "image": "https://drive.google.com/thumbnail?id=1rdjkUc6ZwK6NbbgHaZ-7BtEi8A9aA5Uq&sz=w1000",
+    "banner": "/assets/for_landing_page_second.jpg",
+    "video": "https://www.youtube.com/watch?v=mgdOMtW6J8k",
+    "instructor": "Eyoub Sahle",
+    "instructorTitle": "የቢዝነስ እና ዲጂታል ማርኬቲንግ ባለሙያ (Lead Instructor)",
+    "instructorImage": "https://drive.google.com/thumbnail?id=1rdjkUc6ZwK6NbbgHaZ-7BtEi8A9aA5Uq&sz=w1000",
+    "instructorTelegram": "@EyoubSahle",
+    "instructorBio": "በኢ-ኮሜርስ፣ ዲጂታል ማርኬቲንግ እና ክሪፕቶ ከረንሲ ዘርፍ የብዙ አመታት የተግባር ልምድ ያለው እና በመቶዎች የሚቆጠሩ ተማሪዎችን ወደ ስኬት ያበቃ ባለሙያ።",
+    "students": 340,
+    "studentsCount": 340,
+    "rating": 4.9,
+    "ratingAvg": 4.9,
+    "ratingCount": 48,
+    "instructorRatingAvg": 5,
+    "modulesCount": 5,
+    "isPopular": true,
+    "aiPrompt": "You are Tsehay AI, the dedicated and universal mentor for the Shein Import Business Course by Eyoub Sahle. Answer all questions about product sourcing, foreign payments, customs, freight, e-commerce, digital marketing, and practical business growth with rich, actionable guidance.",
+    "whatYouWillLearn": [
+      "ከሼን (SHEIN) ተፈላጊ እና ፈጣን ሽያጭ ያላቸውን ምርጥ እቃዎች የመምረጫ ስልቶች",
+      "በኢትዮጵያ ውስጥ ሆነው በቀላሉ በዶላር እና በኦንላይን ካርዶች ክፍያ የመፈጸሚያ መንገዶች",
+      "የካርጎ፣ የትራንስፖርት እና የጉምሩክ ወጪዎችን በከፍተኛ ደረጃ መቀነሻ ዘዴዎች",
+      "በ TikTok እና Telegram ቻናሎች እቃዎችን በከፍተኛ ትርፍ እና ፍጥነት መሸጫ ስልቶች",
+      "የደንበኞች አያያዝ እና የረጅም ጊዜ የኢ-ኮሜርስ ቢዝነስ ግንባታ"
+    ],
+    "requirements": [
+      "ስማርት ስልክ ወይም ላፕቶፕ",
+      "የኢንተርኔት ኮኔክሽን",
+      "የመማር እና በተግባር የመስራት ፍላጎት"
+    ],
+    "includes": [
+      "የተሟሉ የተግባር የቪዲዮ ትምህርቶች (Video Lessons)",
+      "የቀጥታ የአሰልጣኝ ድጋፍ (Mentor Support)",
+      "የአቅራቢዎች እና የካርጎ አድራሻዎች (Supplier & Cargo Contacts)",
+      "የኮርስ ማጠናቀቂያ ሰርተፊኬት (Certificate of Completion)",
+      "የሁልጊዜ መዳረሻ (Lifetime Access)"
+    ],
+    "lessons": [
+      {
+        "title": "ክፍል 1: የሼን ኢምፖርት ቢዝነስ መግቢያና መሰረታዊ እውነታዎች",
+        "duration": "08:30",
+        "video": "https://www.youtube.com/watch?v=mgdOMtW6J8k",
+        "desc": "የኢ-ኮሜርስ እድሎች እና የኮርሱ አጠቃላይ ገለጻ",
+        "points": 20
+      },
+      {
+        "title": "ክፍል 2: አዋጭ ምርቶችን መምረጥ (Winning Product Research)",
+        "duration": "14:15",
+        "video": "https://www.youtube.com/watch?v=mgdOMtW6J8k",
+        "desc": "በኢትዮጵያ ገበያ ተፈላጊ እቃዎችን የመለያ ስልቶች",
+        "points": 30
+      },
+      {
+        "title": "ክፍል 3: የዶላር እና የኦንላይን ካርድ ክፍያ አፈጻጸም",
+        "duration": "16:40",
+        "video": "https://www.youtube.com/watch?v=mgdOMtW6J8k",
+        "desc": "ከኢትዮጵያ ሆነው በካርድ ክፍያ መፈጸሚያ መንገዶች",
+        "points": 50
+      },
+      {
+        "title": "ክፍል 4: ካርጎ፣ ማጓጓዣ እና የጉምሩክ አሰራር",
+        "duration": "15:20",
+        "video": "https://www.youtube.com/watch?v=mgdOMtW6J8k",
+        "desc": "እቃዎችን በሰላም እና በትንሽ ወጪ ማስገባት",
+        "points": 40
+      },
+      {
+        "title": "ክፍል 5: በ TikTok እና Telegram ከፍተኛ ሽያጭ መፍጠር",
+        "duration": "18:00",
+        "video": "https://www.youtube.com/watch?v=mgdOMtW6J8k",
+        "desc": "የማርኬቲንግ እና የሽያጭ ስልቶች",
+        "points": 60
+      }
+    ]
+  },
+  {
+    "id": "course_1784885267254",
+    "slug": "youtube-secrets-masterclass",
+    "title": "የዩቲዩብ ስኬት ሚስጥሮች (YouTube Secrets Masterclass)",
+    "description": "ከዜሮ ተነስተው ስኬታማ እና ገቢ የሚያስገኝ የዩቲዩብ ቻናል ለመገንባት የሚያስፈልጉዎትን ሚስጥሮች፣ የቪዲዮ አሰራር፣ የ Thumbnail ዲዛይን፣ የ SEO እና የገቢ ማግኛ መንገዶችን ደረጃ በደረጃ በተግባር የሚያስተምር የተሟላ ማስተርክላስ።",
+    "desc": "ከዜሮ ተነስተው ስኬታማ እና ገቢ የሚያስገኝ የዩቲዩብ ቻናል ለመገንባት የሚያስፈልጉዎትን ሚስጥሮች፣ የቪዲዮ አሰራር፣ የ Thumbnail ዲዛይን፣ የ SEO እና የገቢ ማግኛ መንገዶችን ደረጃ በደረጃ በተግባር የሚያስተምር የተሟላ ማስተርክላስ።",
+    "price": 600,
+    "oldPrice": 900,
+    "status": "Active",
+    "isFree": false,
+    "category": "General",
+    "tag": "General",
+    "level": "ጀማሪ (Beginner)",
+    "duration": "04:00:00",
+    "image": "/assets/hero-bg-new.jpg",
+    "banner": "/assets/hero-bg-new.jpg",
+    "video": "https://www.youtube.com/watch?v=mgdOMtW6J8k",
+    "instructor": "Eyoub Sahle",
+    "instructorTitle": "የቢዝነስ እና ዲጂታል ማርኬቲንግ ባለሙያ (Lead Instructor)",
+    "instructorImage": "https://drive.google.com/thumbnail?id=1rdjkUc6ZwK6NbbgHaZ-7BtEi8A9aA5Uq&sz=w1000",
+    "instructorTelegram": "@EyoubSahle",
+    "instructorBio": "በኢ-ኮሜርስ፣ ዲጂታል ማርኬቲንግ እና ክሪፕቶ ከረንሲ ዘርፍ የብዙ አመታት የተግባር ልምድ ያለው እና በመቶዎች የሚቆጠሩ ተማሪዎችን ወደ ስኬት ያበቃ ባለሙያ።",
+    "students": 420,
+    "studentsCount": 420,
+    "rating": 4.9,
+    "ratingAvg": 4.9,
+    "ratingCount": 38,
+    "instructorRatingAvg": 5,
+    "modulesCount": 5,
+    "isPopular": true,
+    "aiPrompt": "You are Tsehay AI, the dedicated and universal mentor for the YouTube Secrets Masterclass by Eyoub Sahle. Answer all questions about YouTube channel building, monetization, SEO, video editing, script writing, algorithms, audience growth, and digital content creation with rich, actionable guidance.",
+    "whatYouWillLearn": [
+      "ከዜሮ ተነስቶ ስኬታማ የዩቲዩብ ቻናል አከፋፈት እና ሴቲንግ",
+      "ያለ ፊት ገጽታ (Faceless) ቪዲዮዎችን በ AI የማዘጋጀት ጥበብ",
+      "ከፍተኛ ተመልካች የሚስብ Thumbnail እና Title አሰራር",
+      "የዩቲዩብ አልጎሪዝም እና SEO ሚስጥሮች",
+      "የገቢ ማግኛ (Monetization) እና ክፍያ አወሳሰድ በኢትዮጵያ"
+    ],
+    "requirements": [
+      "መሰረታዊ የኮምፒውተር ወይም የስልክ እውቀት",
+      "ስማርት ስልክ ወይም ላፕቶፕ",
+      "የኢንተርኔት ኮኔክሽን",
+      "የመማር ፍላጎት እና ትጋት"
+    ],
+    "includes": [
+      "በቪዲዮ የተደገፈ ትምህርት (On-demand video)",
+      "የተግባር አሳይመንቶች እና ፕሮጀክቶች (Assignments & Projects)",
+      "በስልክ እና በቲቪ መጠቀም የሚያስችል (Access on mobile and TV)",
+      "የኮርስ ማጠናቀቂያ ሰርተፊኬት (Certificate of completion)",
+      "የሁልጊዜ መዳረሻ (Full lifetime access)"
+    ],
+    "lessons": [
+      {
+        "title": "ክፍል 1: መግቢያ እና የዩቲዩብ መሰረታዊ እውነታዎች",
+        "duration": "08:30",
+        "video": "https://www.youtube.com/watch?v=mgdOMtW6J8k",
+        "desc": "የዩቲዩብ እድሎችና የኮርሱ አጠቃላይ ገለጻ",
+        "points": 20
+      },
+      {
+        "title": "ክፍል 2: አዋጭ ኒች (Profitable Niche) መምረጥ",
+        "duration": "12:45",
+        "video": "https://www.youtube.com/watch?v=mgdOMtW6J8k",
+        "desc": "ከፍተኛ ተከፋይ እና ተወዳጅ የሆኑ የዩቲዩብ ርዕሶችን የመምረጫ ስልቶች",
+        "points": 30
+      },
+      {
+        "title": "ክፍል 3: የ Faceless ቻናሎች ምስጢር እና የ AI መሳሪያዎች",
+        "duration": "15:20",
+        "video": "https://www.youtube.com/watch?v=mgdOMtW6J8k",
+        "desc": "ፊት ሳያሳዩ በ AI ድምጽና ምስል ቪዲዮዎችን መስራት",
+        "points": 50
+      },
+      {
+        "title": "ክፍል 4: ፕሮፌሽናል Thumbnail እና Title ዲዛይን",
+        "duration": "14:10",
+        "video": "https://www.youtube.com/watch?v=mgdOMtW6J8k",
+        "desc": "ተመልካች ክሊክ እንዲያደርግ የሚያስችሉ ስልቶች",
+        "points": 40
+      },
+      {
+        "title": "ክፍል 5: የዩቲዩብ SEO እና አልጎሪዝም ሃክ",
+        "duration": "18:00",
+        "video": "https://www.youtube.com/watch?v=mgdOMtW6J8k",
+        "desc": "ቪዲዮዎችዎ በሰርች እና በ Suggested እንዲመጡ ማድረግ",
+        "points": 60
+      }
+    ]
+  }
+]

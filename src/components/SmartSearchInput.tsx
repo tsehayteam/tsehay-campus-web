@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { searchCourses } from '@/lib/smartSearch';
-import { getCourseSlug, getCachedCourses, getCleanCourseImage } from '@/lib/courseCache';
+import { getCourseSlug, getCachedCourses, getCleanCourseImage, subscribeToCourses } from '@/lib/courseCache';
 
 interface SmartSearchInputProps {
   courses?: any[];
@@ -41,27 +41,19 @@ export default function SmartSearchInput({
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
-  // Load fallback courses if not provided
+  // Load and continuously synchronize live courses
   useEffect(() => {
     if (courses && courses.length > 0) {
       setInternalCourses(courses);
-    } else {
-      try {
-        const cached = getCachedCourses();
-        if (cached && cached.length > 0) {
-          setInternalCourses(cached);
-        } else {
-          fetch('/api/courses')
-            .then(res => res.json())
-            .then(data => {
-              if (data && Array.isArray(data.courses) && data.courses.length > 0) {
-                setInternalCourses(data.courses);
-              }
-            })
-            .catch(() => {});
-        }
-      } catch (e) {}
     }
+
+    const unsub = subscribeToCourses((coursesList) => {
+      if (Array.isArray(coursesList) && coursesList.length > 0) {
+        setInternalCourses(coursesList);
+      }
+    });
+
+    return () => unsub();
   }, [courses]);
 
   const activeCourses = useMemo(() => {

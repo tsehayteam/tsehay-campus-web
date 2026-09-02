@@ -159,12 +159,7 @@ export const isUserAdmin = (email?: string | null, role?: string): boolean => {
   if (role === 'admin' || role === 'instructor') return true;
   if (!email) return false;
   const adminEmails = [
-    'eyobsahle@gmail.com',
-    'eyoubsahle@gmail.com',
-    'admin@tsehaycampus.com',
-    'tsehayoperation@gmail.com',
-    'chadmin@tsehaycampus.com',
-    'admin@tsehay.com'
+    'eyobsahle@gmail.com'
   ];
   return adminEmails.includes(email.trim().toLowerCase());
 };

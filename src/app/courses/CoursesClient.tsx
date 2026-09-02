@@ -78,7 +78,9 @@ export default function CoursesClient({ initialCourses }: { initialCourses?: any
     const syncAndMerge = () => {
       let merged: any[] = [];
       if (artifactList.length > 0 || rootList.length > 0) {
-        merged = mergeCoursesLists(artifactList, rootList);
+        merged = mergeCoursesLists(DEFAULT_COURSES, artifactList, rootList);
+      } else if (initialCourses && initialCourses.length > 0) {
+        merged = initialCourses;
       } else {
         const cached = getCachedCourses();
         merged = cached.length > 0 ? cached : DEFAULT_COURSES;
@@ -137,9 +139,32 @@ export default function CoursesClient({ initialCourses }: { initialCourses?: any
       .catch(err => console.warn("API courses fetch notice:", err))
       .finally(() => setLoading(false));
 
+    // 4. Cross-tab Broadcast Channel listener
+    let bc: BroadcastChannel | null = null;
+    try {
+      if (typeof BroadcastChannel !== 'undefined') {
+        bc = new BroadcastChannel('tsehay_live_courses_channel');
+        bc.onmessage = (event) => {
+          if (event.data && event.data.type === 'COURSES_UPDATED' && Array.isArray(event.data.courses)) {
+            setCourses(event.data.courses);
+            saveCachedCourses(event.data.courses);
+          }
+        };
+      }
+    } catch (e) {}
+
+    const handleCustomUpdate = (event: any) => {
+      if (event.detail && Array.isArray(event.detail)) {
+        setCourses(event.detail);
+      }
+    };
+    window.addEventListener('tsehay_courses_updated', handleCustomUpdate);
+
     return () => {
       unsubArtifact();
       unsubRoot();
+      if (bc) bc.close();
+      window.removeEventListener('tsehay_courses_updated', handleCustomUpdate);
     };
   }, []);
 

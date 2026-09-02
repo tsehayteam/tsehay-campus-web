@@ -13,12 +13,7 @@ service cloud.firestore {
       return request.auth != null && (
         (request.auth.token.admin == true) ||
         (request.auth.token.email in [
-          'eyobsahle@gmail.com',
-          'eyoubsahle@gmail.com',
-          'admin@tsehaycampus.com',
-          'tsehayoperation@gmail.com',
-          'habte@gmail.com',
-          'cryptomaster758@gmail.com'
+          'eyobsahle@gmail.com'
         ])
       );
     }
@@ -36,6 +31,17 @@ service cloud.firestore {
     
     // 2. Root Site Settings Collection
     match /site_settings/{settingKey} {
+      allow read: if true;
+      allow write: if true;
+
+      match /{sub=**} {
+        allow read: if true;
+        allow write: if true;
+      }
+    }
+
+    // 2.1 Root Settings Collection (Landing Video & Legacy Settings)
+    match /settings/{settingKey} {
       allow read: if true;
       allow write: if true;
 
@@ -181,12 +187,7 @@ service cloud.firestore {
         return request.auth != null && (
           (request.auth.token.admin == true) ||
           (request.auth.token.email in [
-            'eyobsahle@gmail.com',
-            'eyoubsahle@gmail.com',
-            'admin@tsehaycampus.com',
-            'tsehayoperation@gmail.com',
-            'habte@gmail.com',
-            'cryptomaster758@gmail.com'
+            'eyobsahle@gmail.com'
           ]) ||
           exists(/databases/$(database)/documents/artifacts/$(appId)/admins/$(request.auth.uid))
         );

@@ -7,17 +7,21 @@ let dbInstance: Firestore | null = null;
 let authInstance: Auth | null = null;
 
 try {
+  const defaultProjectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'tsehaycampus-e1a6d';
   if (!getApps().length) {
     if (process.env.FIREBASE_SERVICE_ACCOUNT) {
       try {
         const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-        adminApp = initializeApp({ credential: cert(serviceAccount) });
+        adminApp = initializeApp({
+          credential: cert(serviceAccount),
+          projectId: serviceAccount.project_id || defaultProjectId
+        });
       } catch (parseErr) {
         console.warn('Failed parsing FIREBASE_SERVICE_ACCOUNT, falling back to default:', parseErr);
-        adminApp = initializeApp();
+        adminApp = initializeApp({ projectId: defaultProjectId });
       }
     } else {
-      adminApp = initializeApp();
+      adminApp = initializeApp({ projectId: defaultProjectId });
     }
   } else {
     adminApp = getApps()[0];
@@ -39,5 +43,6 @@ try {
   console.warn('Firebase Admin initialization deferred/skipped:', error);
 }
 
+export const hasAdminCredentials = Boolean(process.env.FIREBASE_SERVICE_ACCOUNT);
 export const adminDb = dbInstance as Firestore;
 export const adminAuth = authInstance as Auth;

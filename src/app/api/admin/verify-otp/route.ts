@@ -5,10 +5,7 @@ import { memoryAdminOtpCache } from '../send-otp/route';
 export const dynamic = 'force-dynamic';
 
 const AUTHORIZED_ADMIN_EMAILS = [
-  'eyobsahle@gmail.com',
-  'eyoubsahle@gmail.com',
-  'admin@tsehaycampus.com',
-  'tsehayoperation@gmail.com'
+  'eyobsahle@gmail.com'
 ];
 const EMERGENCY_OWNER_PIN = process.env.ADMIN_MASTER_CODE || '202678';
 

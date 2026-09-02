@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb, adminAuth } from '@/lib/firebase/admin';
+import { adminDb, adminAuth, hasAdminCredentials } from '@/lib/firebase/admin';
+import { saveSinglePersistedCourse } from '@/lib/memoryStore';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -14,12 +15,7 @@ const NO_CACHE_HEADERS = {
 };
 
 const AUTHORIZED_ADMIN_EMAILS = [
-  'eyobsahle@gmail.com',
-  'eyoubsahle@gmail.com',
-  'admin@tsehaycampus.com',
-  'tsehayoperation@gmail.com',
-  'habte@gmail.com',
-  'cryptomaster758@gmail.com'
+  'eyobsahle@gmail.com'
 ];
 
 export async function GET(req: NextRequest) {
@@ -144,7 +140,9 @@ export async function POST(req: NextRequest) {
       modules: Array.isArray(courseData.modules) ? courseData.modules : []
     };
 
-    if (adminDb && typeof adminDb.collection === 'function') {
+    saveSinglePersistedCourse(formattedPayload);
+
+    if (adminDb && hasAdminCredentials && typeof adminDb.collection === 'function') {
       try {
         await adminDb
           .collection('artifacts')

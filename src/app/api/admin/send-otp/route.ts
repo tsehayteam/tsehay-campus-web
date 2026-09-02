@@ -4,10 +4,7 @@ import { adminDb } from '@/lib/firebase/admin';
 export const dynamic = 'force-dynamic';
 
 const AUTHORIZED_ADMIN_EMAILS = [
-  'eyobsahle@gmail.com',
-  'eyoubsahle@gmail.com',
-  'admin@tsehaycampus.com',
-  'tsehayoperation@gmail.com'
+  'eyobsahle@gmail.com'
 ];
 
 // In-memory fallback cache so OTP verification works seamlessly even without Firestore network access

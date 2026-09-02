@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase/admin';
+import { adminDb, hasAdminCredentials } from '@/lib/firebase/admin';
+import { sharedSiteSettingsCache, savePersistedSetting } from '@/lib/memoryStore';
 
 export async function GET(req: NextRequest) {
   try {
-    if (adminDb) {
+    if (adminDb && hasAdminCredentials) {
       // Check all possible doc paths
       const paths = [
         adminDb.collection('settings').doc('landingVideo'),
@@ -26,6 +27,14 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    if (sharedSiteSettingsCache.has('landing_video')) {
+      const cached = sharedSiteSettingsCache.get('landing_video');
+      const videoUrl = cached?.url || cached?.videoUrl || cached?.youtubeUrl;
+      if (videoUrl) {
+        return NextResponse.json({ success: true, videoUrl, url: videoUrl, data: cached });
+      }
+    }
+
     return NextResponse.json({ success: true, videoUrl: null, url: null, data: null });
   } catch (error: any) {
     console.error('Error fetching landing video in API route:', error);
@@ -42,15 +51,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'የቪዲዮ ሊንክ አልተገለጸም (Video URL is required)' }, { status: 400 });
     }
 
+    const thumbnail = (body.thumbnail || body.data?.thumbnail || '').trim();
+
     const payload = {
       url: videoUrl,
       videoUrl: videoUrl,
       youtubeUrl: videoUrl,
+      thumbnail,
       settingKey: 'landing_video',
       updatedAt: new Date().toISOString()
     };
 
-    if (adminDb) {
+    sharedSiteSettingsCache.set('landing_video', payload);
+    savePersistedSetting('landing_video', payload);
+
+    if (adminDb && hasAdminCredentials) {
       const promises = [
         adminDb.collection('settings').doc('landingVideo').set(payload, { merge: true }),
         adminDb.collection('settings').doc('landing_video').set(payload, { merge: true }),

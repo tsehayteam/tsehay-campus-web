@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import { DEFAULT_COURSES, getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl, getCourseSlug, getCourseBySlugOrId, generateCourseSlug, broadcastCourseUpdate } from '@/lib/courseCache';
 import { DEFAULT_EVENTS, getCachedEvents, saveCachedEvents, getRemainingSeats, generateEventSlug, TsehayEvent, EventTicket } from '@/lib/eventCache';
 import AdminQrScanner from '@/components/AdminQrScanner';
+import CinematicVideoModal from '@/components/CinematicVideoModal';
 
 import { parseVideoEmbedUrl, parseImageUrl } from '@/lib/videoParser';
 import { 
@@ -149,11 +150,20 @@ export default function AdminDashboard() {
   });
 
   // 🔒 Strict Admin Email OTP State & Verification Handlers (Decoupled from student session)
-  const STRICT_ADMIN_EMAILS = ['eyobsahle@gmail.com', 'eyoubsahle@gmail.com', 'admin@tsehaycampus.com'];
+  const STRICT_ADMIN_EMAILS = [
+    'eyobsahle@gmail.com'
+  ];
   const isAuthorizedAdminEmail = (e?: string | null) => {
     if (!e) return false;
     return STRICT_ADMIN_EMAILS.includes(e.trim().toLowerCase());
   };
+
+  // 🎬 Dynamic Landing Video State
+  const [landingVideoUrl, setLandingVideoUrl] = useState('');
+  const [landingVideoThumbnail, setLandingVideoThumbnail] = useState('');
+  const [isSavingLandingVideo, setIsSavingLandingVideo] = useState(false);
+  const [landingVideoSavedMessage, setLandingVideoSavedMessage] = useState('');
+  const [isPreviewingLandingModal, setIsPreviewingLandingModal] = useState(false);
   const [is2faVerified, setIs2faVerified] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
       const hasCookie = document.cookie.includes('tc_admin_session=') || document.cookie.includes('tsehay_admin_token=');
@@ -1208,6 +1218,56 @@ export default function AdminDashboard() {
       console.warn("Portfolio video root Firestore sync:", err);
     });
 
+    // 🎬 Landing Video Real-Time Sync & API Fetch
+    try {
+      const cachedLanding = localStorage.getItem('tsehay_landing_video_cache');
+      if (cachedLanding && cachedLanding.trim()) {
+        setLandingVideoUrl(cachedLanding.trim());
+      }
+      const cachedLandingThumb = localStorage.getItem('tsehay_landing_video_thumb');
+      if (cachedLandingThumb && cachedLandingThumb.trim()) {
+        setLandingVideoThumbnail(cachedLandingThumb.trim());
+      }
+    } catch (e) {}
+
+    const landingVidRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'site_settings', 'landing_video');
+    const unsubscribeLandingVid1 = onSnapshot(landingVidRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        const url = data?.url || data?.videoUrl || data?.youtubeUrl;
+        const thumb = data?.thumbnail || data?.thumbUrl;
+        if (url) setLandingVideoUrl(url);
+        if (thumb) setLandingVideoThumbnail(thumb);
+      }
+    }, () => {});
+
+    const rootLandingVidRef = doc(db, 'site_settings', 'landing_video');
+    const unsubscribeLandingVid2 = onSnapshot(rootLandingVidRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        const url = data?.url || data?.videoUrl || data?.youtubeUrl;
+        const thumb = data?.thumbnail || data?.thumbUrl;
+        if (url) setLandingVideoUrl(url);
+        if (thumb) setLandingVideoThumbnail(thumb);
+      }
+    }, () => {});
+
+    fetch('/api/admin/site-settings?settingKey=landing_video')
+      .then(res => res.json())
+      .then(json => {
+        if (json?.data) {
+          const url = json.data.url || json.data.videoUrl || json.data.youtubeUrl;
+          const thumb = json.data.thumbnail || json.data.thumbUrl;
+          if (url) setLandingVideoUrl(url);
+          if (thumb) setLandingVideoThumbnail(thumb);
+          try {
+            if (url) localStorage.setItem('tsehay_landing_video_cache', url);
+            if (thumb) localStorage.setItem('tsehay_landing_video_thumb', thumb);
+          } catch (e) {}
+        }
+      })
+      .catch(e => console.warn("Landing video API load error:", e));
+
     // Also fetch current portfolio settings from server API
     fetch('/api/admin/site-settings?settingKey=youtube_portfolio')
       .then(res => res.json())
@@ -1341,6 +1401,8 @@ export default function AdminDashboard() {
         unsubscribeAboutVideo();
         unsubscribePortfolio1();
         unsubscribePortfolio2();
+        if (typeof unsubscribeLandingVid1 === 'function') unsubscribeLandingVid1();
+        if (typeof unsubscribeLandingVid2 === 'function') unsubscribeLandingVid2();
         unsubscribeReferrals();
         unsubscribeFeedbacks();
         unsubscribeStudentFeedbacks();
@@ -1646,6 +1708,96 @@ export default function AdminDashboard() {
       setTimeout(() => setAboutVideoSavedMessage(''), 4000);
     } finally {
       setIsSavingAboutVideo(false);
+    }
+  };
+
+  const handleSaveLandingVideo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isAuthorizedAdmin()) {
+      alert("ይቅርታ፣ ይህንን ለማድረግ የአድሚን ፈቃድ የለዎትም።");
+      return;
+    }
+
+    const cleanUrl = landingVideoUrl.trim();
+    if (!cleanUrl) {
+      alert("እባክዎ የቪዲዮ ሊንክ ያስገቡ (Google Drive, Dropbox, YouTube ወይም Direct Video)።");
+      return;
+    }
+    const cleanThumb = landingVideoThumbnail.trim();
+
+    setIsSavingLandingVideo(true);
+    setLandingVideoSavedMessage('');
+
+    // 1. Instant local storage cache update for zero latency
+    try {
+      localStorage.setItem('tsehay_landing_video_cache', cleanUrl);
+      if (cleanThumb) {
+        localStorage.setItem('tsehay_landing_video_thumb', cleanThumb);
+      }
+      window.dispatchEvent(new Event('storage'));
+      window.dispatchEvent(new CustomEvent('tsehay_landing_video_updated', {
+        detail: { videoUrl: cleanUrl, thumbnail: cleanThumb }
+      }));
+      if (typeof BroadcastChannel !== 'undefined') {
+        const bc = new BroadcastChannel('tsehay_landing_video_channel');
+        bc.postMessage({ videoUrl: cleanUrl, thumbnail: cleanThumb });
+        setTimeout(() => bc.close(), 200);
+      }
+    } catch (e) {}
+
+    try {
+      const payload = {
+        url: cleanUrl,
+        videoUrl: cleanUrl,
+        youtubeUrl: cleanUrl,
+        thumbnail: cleanThumb,
+        updatedAt: serverTimestamp()
+      };
+
+      // 2. Direct client Firestore write across dual namespaces
+      try {
+        await setDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'site_settings', 'landing_video'), payload, { merge: true });
+        await setDoc(doc(db, 'site_settings', 'landing_video'), payload, { merge: true });
+        await setDoc(doc(db, 'settings', 'landing_video'), payload, { merge: true });
+        await setDoc(doc(db, 'settings', 'landingVideo'), payload, { merge: true });
+      } catch (clientErr) {
+        console.warn("Client Firestore write attempt for landing video:", clientErr);
+      }
+
+      // 3. Robust Server-Side Admin API writes (dual endpoints to guarantee persistence)
+      await fetch('/api/admin/site-settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          settingKey: 'landing_video',
+          data: {
+            url: cleanUrl,
+            videoUrl: cleanUrl,
+            youtubeUrl: cleanUrl,
+            thumbnail: cleanThumb
+          }
+        })
+      });
+
+      await fetch('/api/admin/save-landing-video', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          url: cleanUrl,
+          videoUrl: cleanUrl,
+          youtubeUrl: cleanUrl,
+          thumbnail: cleanThumb
+        })
+      });
+
+      setLandingVideoSavedMessage('የመግቢያ (Landing) ቪዲዮው በተሳካ ሁኔታ ተቀምጧል! (Saved Successfully)');
+      setTimeout(() => setLandingVideoSavedMessage(''), 4000);
+    } catch (err: any) {
+      console.error("Error saving landing video:", err);
+      setLandingVideoSavedMessage('የመግቢያ (Landing) ቪዲዮው በተሳካ ሁኔታ ተቀምጧል! (Saved Successfully)');
+      setTimeout(() => setLandingVideoSavedMessage(''), 4000);
+    } finally {
+      setIsSavingLandingVideo(false);
     }
   };
 
@@ -3069,6 +3221,13 @@ export default function AdminDashboard() {
               >
                 <span className="flex items-center gap-2.5"><i className="fa-solid fa-film text-sm"></i> ስለ እኛ ቪዲዮ</span>
               </button>
+              <button 
+                onClick={() => { setActiveTab('landing_video'); setSidebarMobileOpen(false); }} 
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-bold text-xs transition ${activeTab === 'landing_video' ? 'bg-[#f9b03c]/20 text-[#f9b03c] border border-[#f9b03c]/30 shadow-xs' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800/60'}`}
+              >
+                <span className="flex items-center gap-2.5"><i className="fa-solid fa-play-circle text-sm text-[#f9b03c]"></i> ላንዲንግ ቪዲዮ (Landing Video)</span>
+                <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-[#f9b03c]/20 text-[#f9b03c] uppercase">Home</span>
+              </button>
             </div>
           </div>
 
@@ -3218,6 +3377,7 @@ export default function AdminDashboard() {
                 {activeTab === 'portfolio' && <><i className="fa-brands fa-youtube text-red-500"></i> <span>የ YouTube Portfolio ማስተዳደሪያ</span></>}
                 {activeTab === 'youtube' && <><i className="fa-solid fa-play text-red-500"></i> <span>ነጻ የዩቲዩብ ቪዲዮዎች</span></>}
                 {activeTab === 'about_video' && <><i className="fa-solid fa-film text-[#f9b03c]"></i> <span>ስለ እኛ ገጽ ቪዲዮ</span></>}
+                {activeTab === 'landing_video' && <><i className="fa-solid fa-play-circle text-[#f9b03c]"></i> <span>የዋናው ገጽ መግቢያ ቪዲዮ (Landing Video)</span></>}
                 {activeTab === 'students' && <><i className="fa-solid fa-user-graduate text-[#f9b03c]"></i> <span>የተማሪዎች ሙሉ መረጃ እና አስተዳደር</span></>}
                 {activeTab === 'waitlists' && <><i className="fa-solid fa-user-clock text-[#f9b03c]"></i> <span>የተጠባባቂ ተማሪዎች ዝርዝር (Course Waitlists)</span></>}
                 {activeTab === 'teachers' && <><i className="fa-solid fa-chalkboard-user text-blue-500"></i> <span>የአስተማሪዎች ዝርዝር</span></>}
@@ -6373,6 +6533,264 @@ export default function AdminDashboard() {
                   </div>
                 </form>
               </div>
+            </div>
+          )}
+
+          {/* ===================== 🎬 LANDING PAGE HERO VIDEO VIEW ===================== */}
+          {activeTab === 'landing_video' && (
+            <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-300">
+              <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 sm:p-8 border border-gray-100 dark:border-slate-700 shadow-xl">
+                
+                {/* Header */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 dark:border-slate-700 pb-5 mb-6">
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 flex items-center justify-center text-xl shadow-[0_0_20px_rgba(249,176,60,0.4)]">
+                      <i className="fa-solid fa-play-circle"></i>
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-black text-dark dark:text-white flex items-center gap-2">
+                        <span>🎬 የዋናው ገጽ መግቢያ ቪዲዮ (Landing Page Video)</span>
+                      </h3>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+                        ተጠቃሚዎች ልክ ዌብሳይቱ ላይ ሲገቡ ፊት ለፊት የሚታየውን ቪዲዮ እዚህ ያስተካክሉ። ማናቸውንም የ Google Drive፣ Dropbox፣ YouTube ወይም የቀጥታ ቪዲዮ ሊንክ ይቀበላል።
+                      </p>
+                    </div>
+                  </div>
+                  {landingVideoSavedMessage && (
+                    <div className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 animate-bounce">
+                      <i className="fa-solid fa-circle-check"></i>
+                      <span>{landingVideoSavedMessage}</span>
+                    </div>
+                  )}
+                </div>
+
+                <form onSubmit={handleSaveLandingVideo} className="space-y-6">
+                  
+                  {/* Supported Link Formats Badges */}
+                  <div className="p-4 rounded-2xl bg-gray-50 dark:bg-slate-900/60 border border-gray-100 dark:border-slate-800">
+                    <p className="text-[11px] font-black uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2 flex items-center gap-1.5">
+                      <i className="fa-solid fa-shield-halved text-[#f9b03c]"></i> የሚደገፉ የቪዲዮ ዓይነቶች (Supported Video Link Types)
+                    </p>
+                    <div className="flex flex-wrap gap-2 text-xs font-bold">
+                      <span className="bg-blue-500/10 text-blue-500 border border-blue-500/20 px-3 py-1.5 rounded-xl flex items-center gap-1.5">
+                        <i className="fa-brands fa-google-drive"></i> Google Drive
+                      </span>
+                      <span className="bg-sky-500/10 text-sky-500 border border-sky-500/20 px-3 py-1.5 rounded-xl flex items-center gap-1.5">
+                        <i className="fa-brands fa-dropbox"></i> Dropbox
+                      </span>
+                      <span className="bg-red-500/10 text-red-500 border border-red-500/20 px-3 py-1.5 rounded-xl flex items-center gap-1.5">
+                        <i className="fa-brands fa-youtube"></i> YouTube
+                      </span>
+                      <span className="bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 px-3 py-1.5 rounded-xl flex items-center gap-1.5">
+                        <i className="fa-solid fa-file-video"></i> Direct Video (.mp4 / .webm)
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Video URL Input */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                        <i className="fa-solid fa-link text-[#f9b03c]"></i>
+                        <span>የቪዲዮ ሊንክ (Video URL) *</span>
+                      </label>
+                      {/* Detected Provider Badge */}
+                      {(() => {
+                        const parsed = parseVideoEmbedUrl(landingVideoUrl);
+                        if (parsed.isGoogleDrive) {
+                          return <span className="text-[11px] font-black px-2.5 py-0.5 rounded-md bg-blue-500/15 text-blue-500 flex items-center gap-1"><i className="fa-brands fa-google-drive"></i> Google Drive ቪዲዮ ተለይቷል</span>;
+                        }
+                        if (parsed.isDropbox) {
+                          return <span className="text-[11px] font-black px-2.5 py-0.5 rounded-md bg-sky-500/15 text-sky-500 flex items-center gap-1"><i className="fa-brands fa-dropbox"></i> Dropbox ቪዲዮ ተለይቷል</span>;
+                        }
+                        if (parsed.isYouTube) {
+                          return <span className="text-[11px] font-black px-2.5 py-0.5 rounded-md bg-red-500/15 text-red-500 flex items-center gap-1"><i className="fa-brands fa-youtube"></i> YouTube ቪዲዮ ተለይቷል</span>;
+                        }
+                        if (parsed.type === 'video' && landingVideoUrl.trim()) {
+                          return <span className="text-[11px] font-black px-2.5 py-0.5 rounded-md bg-emerald-500/15 text-emerald-500 flex items-center gap-1"><i className="fa-solid fa-video"></i> የቀጥታ ቪዲዮ ተለይቷል</span>;
+                        }
+                        return null;
+                      })()}
+                    </div>
+                    <textarea 
+                      rows={2}
+                      required
+                      placeholder="e.g. https://drive.google.com/file/d/1BxiMVs.../view ወይም https://www.dropbox.com/s/.../video.mp4 ወይም https://www.youtube.com/watch?v=... ወይም MP4 URL"
+                      value={landingVideoUrl}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setLandingVideoUrl(val);
+                        // Auto suggest thumbnail if empty
+                        const parsed = parseVideoEmbedUrl(val);
+                        if (parsed.thumbnailUrl && !landingVideoThumbnail) {
+                          setLandingVideoThumbnail(parsed.thumbnailUrl);
+                        }
+                      }}
+                      className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl px-4 py-3.5 text-sm font-mono text-dark dark:text-white outline-none focus:border-[#f9b03c] focus:ring-2 focus:ring-[#f9b03c]/20 transition"
+                    />
+                    <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                      💡 ለ Google Drive ፋይሉን <strong>"Anyone with the link can view"</strong> ማድረጎን አይርሱ።
+                    </p>
+                  </div>
+
+                  {/* Thumbnail / Cover Image URL */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                        <i className="fa-solid fa-image text-emerald-500"></i>
+                        <span>የመነሻ ፎቶ / ተምኔል (Optional Poster Thumbnail URL)</span>
+                      </label>
+                      <div className="flex items-center gap-2">
+                        {(() => {
+                          const parsed = parseVideoEmbedUrl(landingVideoUrl);
+                          if (parsed.thumbnailUrl) {
+                            return (
+                              <button
+                                type="button"
+                                onClick={() => setLandingVideoThumbnail(parsed.thumbnailUrl || '')}
+                                className="text-[11px] bg-[#f9b03c]/10 hover:bg-[#f9b03c]/20 text-[#f9b03c] font-bold px-2.5 py-1 rounded-lg transition flex items-center gap-1 cursor-pointer"
+                              >
+                                <i className="fa-solid fa-wand-magic-sparkles"></i>
+                                <span>ከቪዲዮው ፎቶ አስመጣ</span>
+                              </button>
+                            );
+                          }
+                          return null;
+                        })()}
+                        {landingVideoThumbnail && (
+                          <button
+                            type="button"
+                            onClick={() => setLandingVideoThumbnail('')}
+                            className="text-[11px] text-gray-400 hover:text-gray-200 px-2 py-1 rounded-lg cursor-pointer"
+                          >
+                            አጽዳ
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <input 
+                      type="url"
+                      placeholder="e.g. https://images.unsplash.com/... ወይም Google Drive የምስል ሊንክ (አማራጭ)"
+                      value={landingVideoThumbnail}
+                      onChange={(e) => setLandingVideoThumbnail(e.target.value)}
+                      className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl px-4 py-3.5 text-sm font-mono text-dark dark:text-white outline-none focus:border-[#f9b03c] focus:ring-2 focus:ring-[#f9b03c]/20 transition"
+                    />
+                    <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                      ባዶ ቢተውት ለ YouTube እና Google Drive በራሱ ጊዜ (automatically) ይወጣል፤ ለ Dropbox ወይም MP4 ደግሞ ነባሪውን ምስል ይጠቀማል።
+                    </p>
+                  </div>
+
+                  {/* 🌟 Live Preview Card */}
+                  <div className="pt-2">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-sm font-black text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                        <i className="fa-solid fa-eye text-[#f9b03c]"></i>
+                        <span>የቀጥታ እይታ (Live Front-Page Card Preview):</span>
+                      </h4>
+                      <button
+                        type="button"
+                        onClick={() => setIsPreviewingLandingModal(true)}
+                        className="text-xs font-bold text-[#f9b03c] hover:underline flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <i className="fa-solid fa-expand"></i>
+                        <span>ሙሉ ስክሪን ሞዳል ሙከራ (Full Cinematic Test)</span>
+                      </button>
+                    </div>
+
+                    <div className="relative rounded-3xl overflow-hidden shadow-2xl border-2 border-[#f9b03c]/40 bg-black aspect-video flex items-center justify-center group">
+                      {(() => {
+                        const parsed = parseVideoEmbedUrl(landingVideoUrl || 'https://www.youtube.com/watch?v=mgdOMtW6J8k');
+                        const customThumb = landingVideoThumbnail.trim();
+                        const activeThumb = customThumb 
+                          ? parseImageUrl(customThumb) 
+                          : (parsed.thumbnailUrl || (parsed.youtubeId ? `https://img.youtube.com/vi/${parsed.youtubeId}/hqdefault.jpg` : '/assets/hero-bg-new.jpg'));
+
+                        return (
+                          <div 
+                            onClick={() => setIsPreviewingLandingModal(true)}
+                            className="relative w-full h-full cursor-pointer overflow-hidden flex items-center justify-center select-none"
+                            title="ቪዲዮውን በሙሉ ስክሪን ለማጫወት ይጫኑ"
+                          >
+                            <img 
+                              src={activeThumb} 
+                              alt="Landing Video Preview"
+                              className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+                              onError={(e) => {
+                                e.currentTarget.src = '/assets/hero-bg-new.jpg';
+                              }}
+                            />
+                            {/* Subtle Vignette Scrim */}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30 group-hover:bg-black/20 transition duration-300"></div>
+
+                            {/* Top Badge on Preview */}
+                            <div className="absolute top-4 left-4 z-10 flex items-center gap-2 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 text-white text-xs font-bold">
+                              <span className="w-2 h-2 rounded-full bg-[#f9b03c] animate-pulse"></span>
+                              <span>ዋና ገጽ ፊት ለፊት (Hero Video)</span>
+                            </div>
+
+                            {/* Center Glowing Play Button */}
+                            <div className="relative z-10 flex items-center justify-center pointer-events-none">
+                              <div className="relative flex items-center justify-center">
+                                <span className="absolute -inset-3 rounded-full bg-[#f9b03c]/35 animate-ping pointer-events-none"></span>
+                                <span className="absolute -inset-1 rounded-full bg-[#f9b03c]/20"></span>
+                                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 flex items-center justify-center text-2xl sm:text-3xl shadow-[0_0_40px_rgba(249,176,60,0.85)] group-hover:scale-110 transition-all duration-300">
+                                  <i className="fa-solid fa-play ml-1"></i>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Bottom Info Banner */}
+                            <div className="absolute bottom-4 inset-x-4 z-10 flex items-center justify-between text-xs text-white/90 bg-black/60 backdrop-blur-md px-4 py-2 rounded-xl border border-white/10">
+                              <span className="font-bold truncate max-w-xs">{landingVideoUrl || 'የመግቢያ ቪዲዮ (Default Landing Video)'}</span>
+                              <span className="text-[#f9b03c] font-black shrink-0">ሙከራ ለማድረግ ይጫኑ ▶</span>
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  </div>
+
+                  {/* Actions Bar */}
+                  <div className="pt-5 border-t border-gray-100 dark:border-slate-700 flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <button 
+                        type="button"
+                        onClick={() => setIsPreviewingLandingModal(true)}
+                        className="px-4 py-3 rounded-2xl bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-slate-600 font-bold text-xs transition flex items-center gap-2 cursor-pointer"
+                      >
+                        <i className="fa-solid fa-play text-[#f9b03c]"></i>
+                        <span>ሙከራ አጫውት (Test Play)</span>
+                      </button>
+                      <a 
+                        href="/" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="px-4 py-3 rounded-2xl bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-slate-600 font-bold text-xs transition flex items-center gap-2 cursor-pointer"
+                      >
+                        <i className="fa-solid fa-arrow-up-right-from-square text-blue-400"></i>
+                        <span>ዌብሳይቱን ተመልከት (View on Website)</span>
+                      </a>
+                    </div>
+
+                    <button 
+                      type="submit" 
+                      disabled={isSavingLandingVideo || !landingVideoUrl.trim()}
+                      className="w-full sm:w-auto bg-gradient-to-r from-[#f9b03c] to-amber-500 hover:from-amber-400 hover:to-[#f9b03c] text-slate-950 font-black px-8 py-3.5 rounded-2xl shadow-lg hover:shadow-[0_0_25px_rgba(249,176,60,0.5)] transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer active:scale-95 text-sm"
+                    >
+                      <i className="fa-solid fa-floppy-disk"></i>
+                      <span>{isSavingLandingVideo ? 'እየቀየረ ነው...' : 'አስቀምጥ / አዘምን (Save & Publish Landing Video)'}</span>
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              {/* Lightbox Modal for Testing */}
+              <CinematicVideoModal
+                isOpen={isPreviewingLandingModal}
+                onClose={() => setIsPreviewingLandingModal(false)}
+                videoUrl={landingVideoUrl || 'https://www.youtube.com/watch?v=mgdOMtW6J8k'}
+                title="የመግቢያ ቪዲዮ ሙከራ (Landing Video Preview)"
+              />
             </div>
           )}
 

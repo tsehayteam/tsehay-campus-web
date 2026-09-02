@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase/admin';
-import { generateCourseSlug } from '@/lib/courseCache';
+import { adminDb, hasAdminCredentials } from '@/lib/firebase/admin';
+import { generateCourseSlug, DEFAULT_COURSES } from '@/lib/courseCache';
+import { loadPersistedCourses, saveSinglePersistedCourse, deletePersistedCourse, sharedCoursesCache } from '@/lib/memoryStore';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -19,80 +20,74 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const courseId = searchParams.get('courseId') || searchParams.get('id');
 
-    if (!adminDb) {
-      return NextResponse.json({ success: true, count: 0, courses: [] }, { headers: NO_CACHE_HEADERS });
-    }
+    const courseMap = new Map<string, any>();
+    DEFAULT_COURSES.forEach(c => {
+      if (c && c.id) courseMap.set(c.id, c);
+    });
+
+    try {
+      const persisted = loadPersistedCourses();
+      persisted.forEach(c => {
+        if (c && c.id && c.status !== 'Deleted' && !c.isDeleted) {
+          courseMap.set(c.id, { ...courseMap.get(c.id), ...c });
+        }
+      });
+    } catch (e) {}
 
     if (courseId) {
       const cleanId = courseId.trim();
       const cleanLower = cleanId.toLowerCase();
 
-      // 1. Direct doc lookup in primary artifact collection
-      const docRef = adminDb
-        .collection('artifacts')
-        .doc('tsehaycampus-e1a6d')
-        .collection('public')
-        .doc('data')
-        .collection('courses')
-        .doc(cleanId);
-
-      const snap = await docRef.get();
-      if (snap.exists) {
-        return NextResponse.json({ success: true, course: { id: snap.id, ...snap.data() } }, { headers: NO_CACHE_HEADERS });
+      if (courseMap.has(cleanId)) {
+        return NextResponse.json({ success: true, course: courseMap.get(cleanId) }, { headers: NO_CACHE_HEADERS });
       }
 
-      // 2. Direct root doc lookup
-      try {
-        const rootSnap = await adminDb.collection('courses').doc(cleanId).get();
-        if (rootSnap.exists) {
-          return NextResponse.json({ success: true, course: { id: rootSnap.id, ...rootSnap.data() } }, { headers: NO_CACHE_HEADERS });
+      for (const course of courseMap.values()) {
+        if (course.slug === cleanLower || (course.title && generateCourseSlug(course.title) === cleanLower)) {
+          return NextResponse.json({ success: true, course }, { headers: NO_CACHE_HEADERS });
         }
-      } catch (e) {}
+      }
 
-      // 3. Alternative artifact collection lookup
-      try {
-        const altSnap = await adminDb
-          .collection('artifacts')
-          .doc('tsehaycampus-e1a6d')
-          .collection('courses')
-          .doc(cleanId)
-          .get();
-        if (altSnap.exists) {
-          return NextResponse.json({ success: true, course: { id: altSnap.id, ...altSnap.data() } }, { headers: NO_CACHE_HEADERS });
-        }
-      } catch (e) {}
+      if (adminDb && hasAdminCredentials) {
+        // 1. Direct doc lookup in primary artifact collection
+        try {
+          const docRef = adminDb
+            .collection('artifacts')
+            .doc('tsehaycampus-e1a6d')
+            .collection('public')
+            .doc('data')
+            .collection('courses')
+            .doc(cleanId);
 
-      // 4. Slug query lookup
-      const slugSnap = await adminDb
-        .collection('artifacts')
-        .doc('tsehaycampus-e1a6d')
-        .collection('public')
-        .doc('data')
-        .collection('courses')
-        .where('slug', '==', cleanLower)
-        .limit(1)
-        .get();
+          const snap = await docRef.get();
+          if (snap.exists) {
+            return NextResponse.json({ success: true, course: { id: snap.id, ...snap.data() } }, { headers: NO_CACHE_HEADERS });
+          }
+        } catch (e) {}
 
-      if (!slugSnap.empty) {
-        const doc = slugSnap.docs[0];
-        return NextResponse.json({ success: true, course: { id: doc.id, ...doc.data() } }, { headers: NO_CACHE_HEADERS });
+        // 2. Direct root doc lookup
+        try {
+          const rootSnap = await adminDb.collection('courses').doc(cleanId).get();
+          if (rootSnap.exists) {
+            return NextResponse.json({ success: true, course: { id: rootSnap.id, ...rootSnap.data() } }, { headers: NO_CACHE_HEADERS });
+          }
+        } catch (e) {}
       }
 
       return NextResponse.json({ success: false, error: 'Course not found' }, { status: 404, headers: NO_CACHE_HEADERS });
     }
 
-    const courseMap = new Map<string, any>();
-
-    // Collection 1: artifacts/tsehaycampus-e1a6d/public/data/courses
-    try {
-      const snap1 = await adminDb
-        .collection('artifacts')
-        .doc('tsehaycampus-e1a6d')
-        .collection('public')
-        .doc('data')
-        .collection('courses')
-        .get();
-      snap1.docs.forEach(doc => {
+    // Bulk query: If adminDb credentials exist, merge from Firestore
+    if (adminDb && hasAdminCredentials) {
+      try {
+        const snap1 = await adminDb
+          .collection('artifacts')
+          .doc('tsehaycampus-e1a6d')
+          .collection('public')
+          .doc('data')
+          .collection('courses')
+          .get();
+        snap1.docs.forEach(doc => {
         if (doc.exists) {
           const data = doc.data();
           if (data && data.status !== 'Deleted' && !data.isDeleted) {
@@ -139,6 +134,7 @@ export async function GET(req: NextRequest) {
         }
       });
     } catch (e) {}
+    }
 
     const courses = Array.from(courseMap.values());
     return NextResponse.json({ success: true, count: courses.length, courses }, { headers: NO_CACHE_HEADERS });
@@ -176,7 +172,9 @@ export async function POST(req: NextRequest) {
       updatedAt: new Date().toISOString()
     };
 
-    if (adminDb) {
+    saveSinglePersistedCourse(payload);
+
+    if (adminDb && hasAdminCredentials) {
       try {
         await adminDb
           .collection('artifacts')
@@ -240,7 +238,9 @@ export async function PUT(req: NextRequest) {
       updatedAt: new Date().toISOString()
     };
 
-    if (adminDb) {
+    saveSinglePersistedCourse(payload);
+
+    if (adminDb && hasAdminCredentials) {
       try {
         await adminDb
           .collection('artifacts')
@@ -300,7 +300,9 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Missing id parameter' }, { status: 400, headers: NO_CACHE_HEADERS });
     }
 
-    if (adminDb) {
+    deletePersistedCourse(courseId);
+
+    if (adminDb && hasAdminCredentials) {
       try {
         await adminDb
           .collection('artifacts')

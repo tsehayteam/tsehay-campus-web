@@ -153,7 +153,13 @@ function MagneticLink({ children, className, href, ...props }: any) {
   );
 }
 
-export default function HomeClient({ initialCourses }: { initialCourses?: any[] }) {
+export default function HomeClient({ 
+  initialCourses, 
+  initialLandingVideo 
+}: { 
+  initialCourses?: any[]; 
+  initialLandingVideo?: string; 
+}) {
   const { user } = useAuth();
   const router = useRouter();
   const { t, lang } = useLanguage();
@@ -200,7 +206,7 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
     const syncAndMerge = () => {
       let merged: any[] = [];
       if (artifactList.length > 0 || rootList.length > 0) {
-        merged = mergeCoursesLists(artifactList, rootList);
+        merged = mergeCoursesLists(DEFAULT_COURSES, rootList, artifactList);
       } else {
         const cached = getCachedCourses();
         merged = cached.length > 0 ? cached : DEFAULT_COURSES;
@@ -259,9 +265,31 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
       .catch(err => console.warn("API courses fetch notice:", err))
       .finally(() => setLoading(false));
 
+    // 4. Cross-Tab Broadcast Channel & Custom Event Listeners
+    let bc: BroadcastChannel | null = null;
+    try {
+      if (typeof BroadcastChannel !== 'undefined') {
+        bc = new BroadcastChannel('tsehay_live_courses_channel');
+        bc.onmessage = (event) => {
+          if (event.data && event.data.type === 'COURSES_UPDATED' && Array.isArray(event.data.courses)) {
+            setCourses(event.data.courses);
+          }
+        };
+      }
+    } catch (e) {}
+
+    const handleCustomCoursesUpdate = (e: any) => {
+      if (e.detail?.courses && Array.isArray(e.detail.courses)) {
+        setCourses(e.detail.courses);
+      }
+    };
+    window.addEventListener('tsehay_courses_updated', handleCustomCoursesUpdate);
+
     return () => {
       unsubArtifact();
       unsubRoot();
+      if (bc) bc.close();
+      window.removeEventListener('tsehay_courses_updated', handleCustomCoursesUpdate);
     };
   }, []);
 
@@ -524,7 +552,7 @@ export default function HomeClient({ initialCourses }: { initialCourses?: any[] 
 
           {/* 🌟 1. HERO VIDEO ENHANCEMENT: Perfectly integrated below headline, spanning wide, central */}
           <div className="w-full flex items-center justify-center my-4 sm:my-6">
-            <Hero3DPopoutStage />
+            <Hero3DPopoutStage videoSrc={initialLandingVideo} />
           </div>
 
           {/* Global Search Bar with Pulsing Glow Border */}

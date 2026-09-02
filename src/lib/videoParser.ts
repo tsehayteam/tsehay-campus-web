@@ -31,8 +31,11 @@ export function extractYouTubeId(urlOrId: string): string {
 export function extractGoogleDriveId(url: string): string {
   if (!url) return '';
   const trimmed = url.trim();
-  const match = trimmed.match(/\/file\/d\/([a-zA-Z0-9_-]+)/i) ||
-                trimmed.match(/drive\.google\.com\/(?:open|uc)\?.*id=([a-zA-Z0-9_-]+)/i) ||
+  // Do not match folder URLs as video IDs
+  if (trimmed.includes('/folders/')) return '';
+  const match = trimmed.match(/\/file\/(?:u\/\d+\/)?d\/([a-zA-Z0-9_-]+)/i) ||
+                trimmed.match(/\/d\/([a-zA-Z0-9_-]+)/i) ||
+                trimmed.match(/drive\.google\.com\/(?:open|uc|file)\?.*id=([a-zA-Z0-9_-]+)/i) ||
                 trimmed.match(/[?&]id=([a-zA-Z0-9_-]+)/i);
   return match && match[1] ? match[1] : '';
 }
@@ -40,10 +43,11 @@ export function extractGoogleDriveId(url: string): string {
 export function parseDropboxUrl(url: string): { isDropbox: boolean; streamUrl: string } {
   if (!url) return { isDropbox: false, streamUrl: '' };
   const trimmed = url.trim();
-  if (trimmed.includes('dropbox.com')) {
+  if (trimmed.includes('dropbox.com') || trimmed.includes('dropboxusercontent.com')) {
     let streamUrl = trimmed;
+    // Normalize dropbox links for raw direct streaming
     if (streamUrl.includes('dl=0')) {
-      streamUrl = streamUrl.replace('dl=0', 'raw=1');
+      streamUrl = streamUrl.replace(/([?&])dl=0/g, '$1raw=1');
     } else if (!streamUrl.includes('raw=1') && !streamUrl.includes('dl=1')) {
       streamUrl += (streamUrl.includes('?') ? '&' : '?') + 'raw=1';
     }

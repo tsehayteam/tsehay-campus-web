@@ -3,14 +3,17 @@ export const revalidate = 0;
 export const fetchCache = 'force-no-store';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase/admin';
+import { adminDb, hasAdminCredentials } from '@/lib/firebase/admin';
+import { sharedSiteSettingsCache, savePersistedSetting } from '@/lib/memoryStore';
+
+export const memorySiteSettingsCache = sharedSiteSettingsCache;
 
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const settingKey = searchParams.get('settingKey') || searchParams.get('key') || 'youtube_portfolio';
 
-    if (adminDb) {
+    if (adminDb && hasAdminCredentials) {
       // 1. Check nested artifacts collection
       const docRef = adminDb
         .collection('artifacts')
@@ -31,6 +34,10 @@ export async function GET(req: NextRequest) {
       if (rootSnap.exists) {
         return NextResponse.json({ success: true, settingKey, data: rootSnap.data() });
       }
+    }
+
+    if (memorySiteSettingsCache.has(settingKey)) {
+      return NextResponse.json({ success: true, settingKey, data: memorySiteSettingsCache.get(settingKey) });
     }
 
     return NextResponse.json({ success: true, settingKey, data: null });
@@ -55,7 +62,10 @@ export async function POST(req: NextRequest) {
       updatedAt: new Date().toISOString()
     };
 
-    if (adminDb) {
+    memorySiteSettingsCache.set(settingKey, payload);
+    savePersistedSetting(settingKey, payload);
+
+    if (adminDb && hasAdminCredentials) {
       try {
         // 1. Write to artifacts/tsehaycampus-e1a6d/public/data/site_settings/${settingKey}
         const docRef = adminDb

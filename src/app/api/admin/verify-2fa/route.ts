@@ -2,10 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase/admin';
 
 const AUTHORIZED_ADMIN_EMAILS = [
-  'eyobsahle@gmail.com',
-  'eyoubsahle@gmail.com',
-  'admin@tsehaycampus.com',
-  'tsehayoperation@gmail.com'
+  'eyobsahle@gmail.com'
 ];
 
 // In-memory fallback cache in case Firestore is unreachable
