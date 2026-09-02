@@ -94,6 +94,14 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    if (!adminDb || !hasAdminCredentials) {
+      const courses = Array.from(courseMap.values());
+      return NextResponse.json(
+        { success: true, count: courses.length, courses },
+        { headers: NO_CACHE_HEADERS }
+      );
+    }
+
     // 2. Fetch All Live Courses from Authoritative Firestore Collection
     if (adminDb && hasAdminCredentials) {
       // Collection 1 (Primary): artifacts/tsehaycampus-e1a6d/public/data/courses
