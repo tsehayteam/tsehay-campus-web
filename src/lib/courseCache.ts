@@ -355,12 +355,24 @@ export function mergeCoursesLists(...lists: any[][]): any[] {
           const cleanDesc = formatCourseDesc(c);
           const slug = getCourseSlug(c);
           const existing = map.get(c.id);
+
+          let mergedObj = c;
+          if (existing) {
+            const timeExisting = existing.updatedAt ? new Date(existing.updatedAt).getTime() : (existing.timestamp || 0);
+            const timeC = c.updatedAt ? new Date(c.updatedAt).getTime() : (c.timestamp || 0);
+
+            if (timeExisting > timeC) {
+              mergedObj = { ...c, ...existing };
+            } else {
+              mergedObj = { ...existing, ...c };
+            }
+          }
+
           map.set(c.id, {
-            ...existing,
-            ...c,
-            slug: slug || existing?.slug || '',
-            desc: cleanDesc,
-            description: cleanDesc
+            ...mergedObj,
+            slug: slug || mergedObj?.slug || '',
+            desc: cleanDesc || mergedObj?.desc || '',
+            description: cleanDesc || mergedObj?.description || ''
           });
         }
       });
@@ -532,10 +544,8 @@ export function subscribeToCourses(callback: (courses: any[]) => void): () => vo
     .then(data => {
       if (!isCleanedUp && data.courses && Array.isArray(data.courses)) {
         const validList = data.courses.filter(isValidCourse);
-        if (validList.length >= 3) {
+        if (validList.length > 0) {
           emitIfChanged(validList, true);
-        } else if (validList.length > 0) {
-          emitIfChanged(mergeCoursesLists(DEFAULT_COURSES, validList), true);
         }
       }
     })
@@ -551,10 +561,8 @@ export function subscribeToCourses(callback: (courses: any[]) => void): () => vo
         const list = snap.docs
           .map(doc => ({ id: doc.id, ...doc.data() }))
           .filter(isValidCourse);
-        if (list.length >= 3) {
+        if (list.length > 0) {
           emitIfChanged(list, true);
-        } else if (list.length > 0) {
-          emitIfChanged(mergeCoursesLists(DEFAULT_COURSES, list), true);
         }
       }
     }, (err) => {

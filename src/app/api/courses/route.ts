@@ -93,8 +93,6 @@ export async function GET(req: NextRequest) {
     let coursesList = Array.from(courseMap.values());
     if (coursesList.length === 0) {
       coursesList = DEFAULT_COURSES;
-    } else if (coursesList.length < 3) {
-      coursesList = mergeCoursesLists(DEFAULT_COURSES, coursesList);
     }
 
     return NextResponse.json(
