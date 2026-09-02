@@ -971,7 +971,9 @@ export default function AdminDashboard() {
     };
     fetchApiYouTubeVideos();
 
-    // 🌟 Fail-Safe Server API Fetch for Instructors / Teachers
+    // 🌟 Multi-source Real-time Firestore Sync for Instructors / Teachers
+    let unsubscribeInstructorsRoot: any = () => {};
+    let unsubscribeInstructorsArtifact: any = () => {};
     const fetchInstructors = async () => {
       try {
         const res = await fetch('/api/admin/instructors');
@@ -990,7 +992,50 @@ export default function AdminDashboard() {
     };
     fetchInstructors();
 
-    // Fetch AI Settings from server API
+    try {
+      const instRootRef = collection(db, 'instructors');
+      unsubscribeInstructorsRoot = onSnapshot(instRootRef, (snapshot) => {
+        if (!snapshot.empty) {
+          const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          setInstructorsList(prev => {
+            const map = new Map();
+            [...prev, ...list].forEach(i => map.set(i.id || i.name, { ...(map.get(i.id || i.name) || {}), ...i }));
+            const merged = Array.from(map.values());
+            try { localStorage.setItem('tsehay_admin_instructors_cache', JSON.stringify(merged)); } catch(e) {}
+            return merged;
+          });
+        }
+      }, (err) => console.warn('Instructors root sync notice:', err));
+    } catch (e) {}
+
+    try {
+      const instArtRef = collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'instructors');
+      unsubscribeInstructorsArtifact = onSnapshot(instArtRef, (snapshot) => {
+        if (!snapshot.empty) {
+          const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          setInstructorsList(prev => {
+            const map = new Map();
+            [...prev, ...list].forEach(i => map.set(i.id || i.name, { ...(map.get(i.id || i.name) || {}), ...i }));
+            const merged = Array.from(map.values());
+            try { localStorage.setItem('tsehay_admin_instructors_cache', JSON.stringify(merged)); } catch(e) {}
+            return merged;
+          });
+        }
+      }, (err) => console.warn('Instructors artifact sync notice:', err));
+    } catch (e) {}
+
+    // Real-Time Sync for AI Site Settings
+    let unsubscribeAiSettings: any = () => {};
+    try {
+      const aiSetRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'site_settings', 'ai_settings');
+      unsubscribeAiSettings = onSnapshot(aiSetRef, (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          if (data && data.apiKey) setGeminiApiKey(data.apiKey);
+        }
+      }, () => {});
+    } catch(e) {}
+
     fetch('/api/admin/site-settings?key=ai_settings')
       .then(res => res.json())
       .then(json => {
@@ -1000,17 +1045,34 @@ export default function AdminDashboard() {
       })
       .catch(e => console.warn("AI Settings load error:", e));
 
-    const yq = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'youtube_videos'), orderBy('order', 'asc'));
-    const unsubscribeYouTube = onSnapshot(yq, (snapshot) => {
-      const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setYoutubeVideos(list);
-      try {
-        localStorage.setItem('tsehay_youtube_videos_cache', JSON.stringify(list));
-      } catch (e) {}
-    }, (err) => {
-      console.warn("YouTube videos Firestore sync:", err);
-      fetchApiYouTubeVideos();
-    });
+    let unsubscribeYouTube: any = () => {};
+    let unsubscribeYouTubeRoot: any = () => {};
+    try {
+      const yq = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'youtube_videos'), orderBy('order', 'asc'));
+      unsubscribeYouTube = onSnapshot(yq, (snapshot) => {
+        const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setYoutubeVideos(list);
+        try {
+          localStorage.setItem('tsehay_youtube_videos_cache', JSON.stringify(list));
+        } catch (e) {}
+      }, (err) => {
+        console.warn("YouTube videos Firestore sync:", err);
+        fetchApiYouTubeVideos();
+      });
+    } catch (e) {}
+
+    try {
+      const yqRoot = query(collection(db, 'youtube_videos'), orderBy('order', 'asc'));
+      unsubscribeYouTubeRoot = onSnapshot(yqRoot, (snapshot) => {
+        if (!snapshot.empty) {
+          const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          setYoutubeVideos(list);
+          try {
+            localStorage.setItem('tsehay_youtube_videos_cache', JSON.stringify(list));
+          } catch (e) {}
+        }
+      }, () => {});
+    } catch (e) {}
 
     // 🌟 1. Multi-source Real-time Sync for User Profiles (Subcollections)
     let unsubscribeProfiles: any = () => {};
@@ -1298,19 +1360,54 @@ export default function AdminDashboard() {
     };
     fetchApiReferralCodes();
 
-    const refQuery = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'referral_codes'));
-    const unsubscribeReferrals = onSnapshot(refQuery, (snapshot) => {
-      if (!snapshot.empty) {
-        const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setReferralCodes(list);
-        try {
-          localStorage.setItem('tsehay_referral_codes_cache', JSON.stringify(list));
-        } catch (e) {}
+    let unsubscribeReferrals: any = () => {};
+    let unsubscribeReferralsRoot: any = () => {};
+    try {
+      const refQuery = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'referral_codes'));
+      unsubscribeReferrals = onSnapshot(refQuery, (snapshot) => {
+        if (!snapshot.empty) {
+          const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          setReferralCodes(list);
+          try {
+            localStorage.setItem('tsehay_referral_codes_cache', JSON.stringify(list));
+          } catch (e) {}
+        }
+      }, (err) => {
+        console.warn("Referral codes sync fallback:", err);
+        fetchApiReferralCodes();
+      });
+    } catch (e) {}
+
+    try {
+      const refRootQuery = query(collection(db, 'referral_codes'));
+      unsubscribeReferralsRoot = onSnapshot(refRootQuery, (snapshot) => {
+        if (!snapshot.empty) {
+          const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          setReferralCodes(list);
+          try {
+            localStorage.setItem('tsehay_referral_codes_cache', JSON.stringify(list));
+          } catch (e) {}
+        }
+      }, () => {});
+    } catch (e) {}
+
+    // 🌟 Real-time Cross-Tab & Cross-Admin Broadcast Channel Sync
+    let adminChannel: BroadcastChannel | null = null;
+    try {
+      if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+        adminChannel = new BroadcastChannel('tsehay_admin_realtime_sync');
+        adminChannel.onmessage = (event) => {
+          if (event.data && event.data.type === 'ADMIN_DATA_UPDATED') {
+            fetchCoursesFromApi();
+            fetchInstructors();
+            fetchEventsData();
+            fetchWaitlistsData();
+            fetchApiReferralCodes();
+            fetchApiYouTubeVideos();
+          }
+        };
       }
-    }, (err) => {
-      console.warn("Referral codes sync fallback:", err);
-      fetchApiReferralCodes();
-    });
+    } catch (e) {}
 
     // 🌟 Real-time Sync for Community Posts & Discussions
     const unsubscribeCommunity = subscribeCommunityPosts((posts) => {
@@ -1369,27 +1466,33 @@ export default function AdminDashboard() {
     } catch (e) {}
 
     return () => {
-        unsubscribeAuth();
-        unsubscribeArtifactCourses();
-        unsubscribeRootCourses();
-        unsubscribeYouTube();
-        unsubscribeProfiles();
-        unsubscribeArtifactUsers();
-        unsubscribeRootUsers();
-        unsubscribePayments();
-        unsubscribeTickets();
-        unsubscribeEventRegs();
-        unsubscribeArtifactEventRegs();
-        unsubscribeEventsRoot();
-        unsubscribeEventsArtifact();
-        unsubscribeAboutVideo();
-        unsubscribePortfolio1();
-        unsubscribePortfolio2();
-        unsubscribeReferrals();
-        unsubscribeFeedbacks();
-        unsubscribeStudentFeedbacks();
+        if (typeof unsubscribeAuth === 'function') unsubscribeAuth();
+        if (typeof unsubscribeArtifactCourses === 'function') unsubscribeArtifactCourses();
+        if (typeof unsubscribeRootCourses === 'function') unsubscribeRootCourses();
+        if (typeof unsubscribeInstructorsRoot === 'function') unsubscribeInstructorsRoot();
+        if (typeof unsubscribeInstructorsArtifact === 'function') unsubscribeInstructorsArtifact();
+        if (typeof unsubscribeAiSettings === 'function') unsubscribeAiSettings();
+        if (typeof unsubscribeYouTube === 'function') unsubscribeYouTube();
+        if (typeof unsubscribeYouTubeRoot === 'function') unsubscribeYouTubeRoot();
+        if (typeof unsubscribeProfiles === 'function') unsubscribeProfiles();
+        if (typeof unsubscribeArtifactUsers === 'function') unsubscribeArtifactUsers();
+        if (typeof unsubscribeRootUsers === 'function') unsubscribeRootUsers();
+        if (typeof unsubscribePayments === 'function') unsubscribePayments();
+        if (typeof unsubscribeTickets === 'function') unsubscribeTickets();
+        if (typeof unsubscribeEventRegs === 'function') unsubscribeEventRegs();
+        if (typeof unsubscribeArtifactEventRegs === 'function') unsubscribeArtifactEventRegs();
+        if (typeof unsubscribeEventsRoot === 'function') unsubscribeEventsRoot();
+        if (typeof unsubscribeEventsArtifact === 'function') unsubscribeEventsArtifact();
+        if (typeof unsubscribeAboutVideo === 'function') unsubscribeAboutVideo();
+        if (typeof unsubscribePortfolio1 === 'function') unsubscribePortfolio1();
+        if (typeof unsubscribePortfolio2 === 'function') unsubscribePortfolio2();
+        if (typeof unsubscribeReferrals === 'function') unsubscribeReferrals();
+        if (typeof unsubscribeReferralsRoot === 'function') unsubscribeReferralsRoot();
+        if (typeof unsubscribeFeedbacks === 'function') unsubscribeFeedbacks();
+        if (typeof unsubscribeStudentFeedbacks === 'function') unsubscribeStudentFeedbacks();
         if (typeof unsubscribeWaitlists === 'function') unsubscribeWaitlists();
         if (typeof unsubscribeCommunity === 'function') unsubscribeCommunity();
+        if (adminChannel) adminChannel.close();
         clearTimeout(safetyTimer);
     };
   }, []);
