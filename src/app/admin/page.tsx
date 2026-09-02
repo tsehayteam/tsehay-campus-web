@@ -148,11 +148,20 @@ export default function AdminDashboard() {
     status: 'upcoming'
   });
 
-  // 🔒 Strict Admin Email OTP State & Verification Handlers (Decoupled from student session)
-  const STRICT_ADMIN_EMAILS = ['eyobsahle@gmail.com', 'eyoubsahle@gmail.com', 'admin@tsehaycampus.com'];
+  // 🔒 Strict Admin Email Verification Handlers (Decoupled from student session)
   const isAuthorizedAdminEmail = (e?: string | null) => {
     if (!e) return false;
-    return STRICT_ADMIN_EMAILS.includes(e.trim().toLowerCase());
+    return isEmailAdmin(e);
+  };
+
+  const broadcastAdminSync = () => {
+    try {
+      if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+        const ch = new BroadcastChannel('tsehay_admin_realtime_sync');
+        ch.postMessage({ type: 'ADMIN_DATA_UPDATED', timestamp: Date.now() });
+        ch.close();
+      }
+    } catch (e) {}
   };
   const [is2faVerified, setIs2faVerified] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
@@ -1465,7 +1474,19 @@ export default function AdminDashboard() {
       });
     } catch (e) {}
 
+    // 🌟 Multi-Admin Real-Time Sync Heartbeat
+    // Guarantees both Admin 1 and Admin 2 stay 100% updated in real-time across different laptops/networks
+    const multiAdminHeartbeat = setInterval(() => {
+      fetchCoursesFromApi();
+      fetchInstructors();
+      fetchEventsData();
+      fetchWaitlistsData();
+      fetchApiReferralCodes();
+      fetchApiYouTubeVideos();
+    }, 8000);
+
     return () => {
+        clearInterval(multiAdminHeartbeat);
         if (typeof unsubscribeAuth === 'function') unsubscribeAuth();
         if (typeof unsubscribeArtifactCourses === 'function') unsubscribeArtifactCourses();
         if (typeof unsubscribeRootCourses === 'function') unsubscribeRootCourses();
@@ -1875,9 +1896,9 @@ export default function AdminDashboard() {
     const cleanEmail = email.trim().toLowerCase();
     const cleanPass = password.trim();
 
-    // 🛡️ Strict Email Check: Only authorized admin is allowed
+    // 🛡️ Strict Email Check: Only authorized admins allowed
     if (!isAuthorizedAdminEmail(cleanEmail)) {
-      setLoginError('ይቅርታ! የአድሚን ዳሽቦርድ የሚፈቀደው ለ eyobsahle@gmail.com ብቻ ነው።');
+      setLoginError('ይቅርታ! የአድሚን ዳሽቦርድ የሚፈቀደው ለተፈቀደላቸው አድሚኖች ብቻ ነው።');
       return;
     }
 

@@ -408,14 +408,13 @@ export function getCachedCourses(): any[] {
       const parsed = JSON.parse(cached);
       if (Array.isArray(parsed) && parsed.length > 0) {
         const sanitized = parsed.filter(isValidCourse).map((c: any) => {
-          let price = c.price;
-          let title = c.title;
-          if (c.title?.includes('ዩቲዩብ') || c.id?.includes('youtube')) {
-            price = 900;
-          }
-          if (c.title?.includes('ማርኬቲንግ') || c.id?.includes('marketing')) {
-            title = 'ዲጂታል ማርኬቲንግ ለጀማሪዎች (Digital Marketing Masterclass)';
-            price = 0;
+          const rawTitle = (c.title || '').toString();
+          let price = (c.price !== undefined && c.price !== null && c.price !== '') ? Number(c.price) : (c.isFree ? 0 : 0);
+          let title = rawTitle;
+          if (!title) {
+            if (c.id?.includes('youtube')) title = 'የዩቲዩብ ሚስጥሮች ማስተርክላስ (YouTube Secrets Masterclass)';
+            else if (c.id?.includes('shein')) title = 'የሼን (Shein) እና ዓለም አቀፍ ንግድ ስልጠና';
+            else if (c.id?.includes('marketing')) title = 'ዲጂታል ማርኬቲንግ ለጀማሪዎች (Digital Marketing Masterclass)';
           }
           return {
             ...c,
@@ -440,14 +439,13 @@ export function saveCachedCourses(courses: any[]) {
   if (typeof window === 'undefined' || !Array.isArray(courses) || courses.length === 0) return;
   try {
     const sanitized = courses.filter(isValidCourse).map((c: any) => {
-      let price = c.price;
-      let title = c.title;
-      if (c.title?.includes('ዩቲዩብ') || c.id?.includes('youtube')) {
-        price = 900;
-      }
-      if (c.title?.includes('ማርኬቲንግ') || c.id?.includes('marketing')) {
-        title = 'ዲጂታል ማርኬቲንግ ለጀማሪዎች (Digital Marketing Masterclass)';
-        price = 0;
+      const rawTitle = (c.title || '').toString();
+      let price = (c.price !== undefined && c.price !== null && c.price !== '') ? Number(c.price) : (c.isFree ? 0 : 0);
+      let title = rawTitle;
+      if (!title) {
+        if (c.id?.includes('youtube')) title = 'የዩቲዩብ ሚስጥሮች ማስተርክላስ (YouTube Secrets Masterclass)';
+        else if (c.id?.includes('shein')) title = 'የሼን (Shein) እና ዓለም አቀፍ ንግድ ስልጠና';
+        else if (c.id?.includes('marketing')) title = 'ዲጂታል ማርኬቲንግ ለጀማሪዎች (Digital Marketing Masterclass)';
       }
       return {
         ...c,

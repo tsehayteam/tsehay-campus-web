@@ -90,6 +90,31 @@ export async function GET(req: NextRequest) {
       console.warn("Primary collection A fetch notice:", e);
     }
 
+    try {
+      const snapRoot = await adminDb.collection('courses').get();
+      snapRoot.docs.forEach(d => {
+        if (d.exists) {
+          const data = d.data();
+          if (isValidCourse({ id: d.id, ...data })) {
+            const existing = courseMap.get(d.id);
+            if (!existing) {
+              courseMap.set(d.id, { id: d.id, ...data });
+            } else {
+              const timeExisting = existing.updatedAt ? new Date(existing.updatedAt).getTime() : (existing.timestamp || 0);
+              const timeRoot = data.updatedAt ? new Date(data.updatedAt).getTime() : (data.timestamp || 0);
+              if (timeRoot > timeExisting) {
+                courseMap.set(d.id, { ...existing, id: d.id, ...data });
+              } else {
+                courseMap.set(d.id, { id: d.id, ...data, ...existing });
+              }
+            }
+          }
+        }
+      });
+    } catch (e) {
+      console.warn("Root collection fetch notice:", e);
+    }
+
     let coursesList = Array.from(courseMap.values());
     if (coursesList.length === 0) {
       coursesList = DEFAULT_COURSES;
