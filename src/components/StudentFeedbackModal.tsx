@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { db, storage } from '@/lib/firebase/config';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 export interface StudentFeedbackModalProps {
@@ -336,19 +336,21 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
         createdAtISO: new Date().toISOString()
       };
 
-      // 3. Direct Client Firestore Writes to student_feedback & user_feedbacks
+      // 3. Direct Client Firestore Writes to user_feedbacks & student_feedback
       try {
-        await addDoc(collection(db, 'student_feedback'), {
+        await setDoc(doc(db, 'user_feedbacks', feedbackId), {
           ...feedbackPayload,
           createdAt: serverTimestamp(),
-        });
+          createdAtClient: new Date().toISOString()
+        }, { merge: true });
       } catch (fsErr) {}
 
       try {
-        await addDoc(collection(db, 'user_feedbacks'), {
+        await setDoc(doc(db, 'student_feedback', feedbackId), {
           ...feedbackPayload,
           createdAt: serverTimestamp(),
-        });
+          createdAtClient: new Date().toISOString()
+        }, { merge: true });
       } catch (fsErr) {}
 
       // 4. Server API Dispatch

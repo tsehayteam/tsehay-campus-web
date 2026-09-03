@@ -20,7 +20,7 @@ import {
 } from '@/lib/eventCache';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase/config';
-import { collection, doc, onSnapshot, query, getDocs } from 'firebase/firestore';
+import { collection, doc, onSnapshot, query, getDocs, setDoc } from 'firebase/firestore';
 
 export default function EventDetailClient() {
   const params = useParams();
@@ -230,6 +230,20 @@ export default function EventDetailClient() {
         usedAt: null,
         issuedAt: new Date().toISOString()
       };
+    }
+
+    if (ticketObj) {
+      try {
+        const regRecord = {
+          ...ticketObj,
+          registeredAt: new Date().toISOString(),
+          status: 'confirmed'
+        };
+        await setDoc(doc(db, 'event_registrations', ticketObj.ticketId), regRecord, { merge: true });
+        await setDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'event_registrations', ticketObj.ticketId), regRecord, { merge: true }).catch(() => {});
+      } catch (clientWriteErr) {
+        console.warn('Direct event_registrations client write notice:', clientWriteErr);
+      }
     }
 
     setActiveTicket(ticketObj);

@@ -13,8 +13,16 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const settingKey = searchParams.get('settingKey') || searchParams.get('key') || 'youtube_portfolio';
 
-    if (adminDb && hasAdminCredentials) {
-      // 1. Check nested artifacts collection
+      // 1. Check root settings collection
+      try {
+        const settingsDocRef = adminDb.collection('settings').doc(settingKey);
+        const settingsSnap = await settingsDocRef.get();
+        if (settingsSnap.exists) {
+          return NextResponse.json({ success: true, settingKey, data: settingsSnap.data() });
+        }
+      } catch (e) {}
+
+      // 2. Check nested artifacts collection
       const docRef = adminDb
         .collection('artifacts')
         .doc('tsehaycampus-e1a6d')
@@ -28,13 +36,12 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ success: true, settingKey, data: snap.data() });
       }
 
-      // 2. Check root collection fallback
+      // 3. Check root collection fallback
       const rootDocRef = adminDb.collection('site_settings').doc(settingKey);
       const rootSnap = await rootDocRef.get();
       if (rootSnap.exists) {
         return NextResponse.json({ success: true, settingKey, data: rootSnap.data() });
       }
-    }
 
     if (memorySiteSettingsCache.has(settingKey)) {
       return NextResponse.json({ success: true, settingKey, data: memorySiteSettingsCache.get(settingKey) });
@@ -81,10 +88,14 @@ export async function POST(req: NextRequest) {
         // 2. Mirror to root site_settings
         await adminDb.collection('site_settings').doc(settingKey).set(payload, { merge: true });
 
-        // 3. Mirror to settings/landingVideo & settings/landing_video if landing video
+        // 3. Mirror to settings collection
         if (settingKey === 'landing_video' || settingKey === 'landingVideo') {
           await adminDb.collection('settings').doc('landingVideo').set(payload, { merge: true });
           await adminDb.collection('settings').doc('landing_video').set(payload, { merge: true });
+        } else if (settingKey === 'youtube_portfolio') {
+          await adminDb.collection('settings').doc('youtube_portfolio').set(payload, { merge: true });
+        } else {
+          await adminDb.collection('settings').doc(settingKey).set(payload, { merge: true });
         }
       } catch (dbErr) {
         console.warn('Firebase Admin write warning in site-settings:', dbErr);

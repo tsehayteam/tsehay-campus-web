@@ -258,30 +258,60 @@ export const subscribeCommunityPosts = (
   let unsubRoot = () => {};
   try {
     const rootRef = collection(db, 'community_posts');
-    const qRoot = query(rootRef, orderBy('createdAt', 'desc'), limit(100));
-    unsubRoot = onSnapshot(qRoot, (snapshot) => {
+    const handleSnapshot = (snapshot: any) => {
       if (!snapshot.empty) {
-        snapshot.forEach(processDoc);
+        snapshot.docChanges().forEach((change: any) => {
+          if (change.type === 'removed') {
+            postMap.delete(change.doc.id);
+          } else {
+            processDoc(change.doc);
+          }
+        });
         publishPosts();
       }
-    }, (err) => {
-      console.warn('Root community_posts onSnapshot notice:', err);
-    });
+    };
+
+    try {
+      const qRoot = query(rootRef, orderBy('createdAt', 'desc'), limit(100));
+      unsubRoot = onSnapshot(qRoot, handleSnapshot, (err) => {
+        console.warn('Root community_posts orderBy index notice, falling back to direct collection listener:', err);
+        try {
+          unsubRoot = onSnapshot(query(rootRef, limit(100)), handleSnapshot, () => {});
+        } catch (e2) {}
+      });
+    } catch (e) {
+      unsubRoot = onSnapshot(query(rootRef, limit(100)), handleSnapshot, () => {});
+    }
   } catch (e) {}
 
   // 2. Listen on Artifact community_posts
   let unsubArtifact = () => {};
   try {
     const artifactRef = collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_posts');
-    const qArtifact = query(artifactRef, orderBy('createdAt', 'desc'), limit(100));
-    unsubArtifact = onSnapshot(qArtifact, (snapshot) => {
+    const handleArtifactSnapshot = (snapshot: any) => {
       if (!snapshot.empty) {
-        snapshot.forEach(processDoc);
+        snapshot.docChanges().forEach((change: any) => {
+          if (change.type === 'removed') {
+            postMap.delete(change.doc.id);
+          } else {
+            processDoc(change.doc);
+          }
+        });
         publishPosts();
       }
-    }, (err) => {
-      console.warn('Artifact community_posts onSnapshot notice:', err);
-    });
+    };
+
+    try {
+      const qArtifact = query(artifactRef, orderBy('createdAt', 'desc'), limit(100));
+      unsubArtifact = onSnapshot(qArtifact, handleArtifactSnapshot, (err) => {
+        console.warn('Artifact community_posts index notice, falling back to direct collection listener:', err);
+        try {
+          unsubArtifact = onSnapshot(query(artifactRef, limit(100)), handleArtifactSnapshot, () => {});
+        } catch (e2) {}
+      });
+    } catch (e) {
+      unsubArtifact = onSnapshot(query(artifactRef, limit(100)), handleArtifactSnapshot, () => {});
+    }
   } catch (e) {}
 
   // 3. Parallel Server API Fetch (Ensures fresh sync across servers)
@@ -848,6 +878,18 @@ export const subscribeConversationMessages = (
         snap.forEach(processMsg);
         publish();
       }, () => {}));
+    } catch (e) {}
+
+    // 3. Root direct_messages collection (Directly queried by conversationId)
+    try {
+      const dmRef = collection(db, 'direct_messages');
+      const qDm = query(dmRef, where('conversationId', '==', cId), limit(150));
+      unsubs.push(onSnapshot(qDm, (snap) => {
+        snap.forEach(processMsg);
+        publish();
+      }, (err) => {
+        console.warn('direct_messages query notice:', err);
+      }));
     } catch (e) {}
   });
 

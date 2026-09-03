@@ -251,15 +251,28 @@ export default function InstructorYouTubePortfolio() {
         let fetchedLocal = '';
         let fetchedIntl = '';
 
+        // 1. Primary: Check root 'settings' collection
         try {
-          const docRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'site_settings', 'youtube_portfolio');
-          const snap = await getDoc(docRef);
-          if (snap.exists()) {
-            const data = snap.data();
-            if (data?.localVideoUrl) fetchedLocal = data.localVideoUrl.trim();
-            if (data?.internationalVideoUrl) fetchedIntl = data.internationalVideoUrl.trim();
+          const settingsRef = doc(db, 'settings', 'youtube_portfolio');
+          const settingsSnap = await getDoc(settingsRef);
+          if (settingsSnap.exists()) {
+            const sData = settingsSnap.data();
+            if (sData?.localVideoUrl) fetchedLocal = sData.localVideoUrl.trim();
+            if (sData?.internationalVideoUrl) fetchedIntl = sData.internationalVideoUrl.trim();
           }
         } catch (e) {}
+
+        if (!fetchedLocal || !fetchedIntl) {
+          try {
+            const docRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'site_settings', 'youtube_portfolio');
+            const snap = await getDoc(docRef);
+            if (snap.exists()) {
+              const data = snap.data();
+              if (data?.localVideoUrl && !fetchedLocal) fetchedLocal = data.localVideoUrl.trim();
+              if (data?.internationalVideoUrl && !fetchedIntl) fetchedIntl = data.internationalVideoUrl.trim();
+            }
+          } catch (e) {}
+        }
 
         if (!fetchedLocal || !fetchedIntl) {
           try {
@@ -295,7 +308,25 @@ export default function InstructorYouTubePortfolio() {
     fetchPortfolio();
 
     let unsubscribe = () => {};
+    let unsubscribeSettings = () => {};
     try {
+      // Listen to primary settings/youtube_portfolio
+      const settingsDocRef = doc(db, 'settings', 'youtube_portfolio');
+      unsubscribeSettings = onSnapshot(settingsDocRef, (snap) => {
+        if (snap.exists() && isMounted) {
+          const data = snap.data();
+          if (data?.localVideoUrl) setLocalVideoUrl(data.localVideoUrl.trim());
+          if (data?.internationalVideoUrl) setInternationalVideoUrl(data.internationalVideoUrl.trim());
+          try {
+            localStorage.setItem('tsehay_youtube_portfolio_cache', JSON.stringify({
+              localVideoUrl: data.localVideoUrl || DEFAULT_PORTFOLIO_LOCAL,
+              internationalVideoUrl: data.internationalVideoUrl || DEFAULT_PORTFOLIO_INTL
+            }));
+          } catch (e) {}
+        }
+      }, () => {});
+
+      // Fallback listener on artifacts collection
       const docRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'site_settings', 'youtube_portfolio');
       unsubscribe = onSnapshot(docRef, (snap) => {
         if (snap.exists() && isMounted) {
@@ -337,6 +368,7 @@ export default function InstructorYouTubePortfolio() {
     return () => {
       isMounted = false;
       unsubscribe();
+      unsubscribeSettings();
       window.removeEventListener('storage', handleStorage);
       window.removeEventListener('tsehay_portfolio_updated', handleCustom);
     };

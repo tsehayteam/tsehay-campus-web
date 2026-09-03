@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { db } from '@/lib/firebase/config';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, doc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 export interface FeedbackModalProps {
   isOpen: boolean;
@@ -35,7 +35,10 @@ export default function FeedbackModal({ isOpen, onClose, user }: FeedbackModalPr
     setIsSubmitting(true);
     setError(null);
 
+    const feedbackId = `fb_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+
     const feedbackPayload = {
+      id: feedbackId,
       rating: Number(rating) || 5,
       type: feedbackType,
       message: message.trim(),
@@ -48,9 +51,10 @@ export default function FeedbackModal({ isOpen, onClose, user }: FeedbackModalPr
     };
 
     try {
-      // 1. Save to Firestore
+      // 1. Save to Firestore (user_feedbacks & student_feedback)
       try {
-        await addDoc(collection(db, 'user_feedbacks'), feedbackPayload);
+        await setDoc(doc(db, 'user_feedbacks', feedbackId), feedbackPayload, { merge: true });
+        await setDoc(doc(db, 'student_feedback', feedbackId), feedbackPayload, { merge: true });
       } catch (fsErr) {
         console.warn("Direct Firestore feedback write notice:", fsErr);
       }

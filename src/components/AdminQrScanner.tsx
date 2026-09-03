@@ -237,6 +237,7 @@ export default function AdminQrScanner({ onTicketScanned }: AdminQrScannerProps)
           const nowIso = new Date().toISOString();
           const updateData = {
             isUsed: true,
+            checkedIn: true,
             usedAt: nowIso,
             verifiedBy: 'Admin Scanner (Client)'
           };
@@ -245,9 +246,14 @@ export default function AdminQrScanner({ onTicketScanned }: AdminQrScannerProps)
             await setDoc(foundDocRef, updateData, { merge: true });
           }
 
+          try {
+            await setDoc(doc(db, 'event_registrations', ticketId), updateData, { merge: true });
+          } catch (e) {}
+
           const updated = {
             ...foundTicketData,
             isUsed: true,
+            checkedIn: true,
             usedAt: nowIso
           };
 

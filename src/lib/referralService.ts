@@ -32,12 +32,12 @@ export async function validateReferralCode(
     let data: PromoCode | null = null;
     let foundId = cleanCode;
 
-    // 1. Check direct client Firestore paths
+    // 1. Check direct client Firestore paths (Prioritize root promo_codes)
     const possibleDocPaths = [
-      doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'referral_codes', cleanCode),
-      doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'promo_codes', cleanCode),
-      doc(db, 'referral_codes', cleanCode),
       doc(db, 'promo_codes', cleanCode),
+      doc(db, 'referral_codes', cleanCode),
+      doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'promo_codes', cleanCode),
+      doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'referral_codes', cleanCode),
     ];
 
     for (const docRef of possibleDocPaths) {
@@ -56,10 +56,10 @@ export async function validateReferralCode(
     // 2. Query collections by 'code' field if doc ID wasn't uppercase match
     if (!data) {
       const collectionsToQuery = [
-        collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'referral_codes'),
-        collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'promo_codes'),
-        collection(db, 'referral_codes'),
         collection(db, 'promo_codes'),
+        collection(db, 'referral_codes'),
+        collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'promo_codes'),
+        collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'referral_codes'),
       ];
 
       for (const colRef of collectionsToQuery) {
@@ -202,16 +202,16 @@ export async function recordReferralUsage(code: string) {
   if (!code) return;
   const cleanCode = code.trim().toUpperCase();
   try {
-    const codeRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'referral_codes', cleanCode);
-    await setDoc(codeRef, {
+    const rootRef = doc(db, 'promo_codes', cleanCode);
+    await setDoc(rootRef, {
       usageCount: increment(1),
       lastUsedAt: serverTimestamp()
     }, { merge: true });
 
-    // Also mirror to root promo_codes
+    // Also mirror to artifacts referral_codes
     try {
-      const rootRef = doc(db, 'promo_codes', cleanCode);
-      await setDoc(rootRef, {
+      const codeRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'referral_codes', cleanCode);
+      await setDoc(codeRef, {
         usageCount: increment(1),
         lastUsedAt: serverTimestamp()
       }, { merge: true });

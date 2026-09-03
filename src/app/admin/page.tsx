@@ -1218,6 +1218,24 @@ export default function AdminDashboard() {
       console.warn("Portfolio video root Firestore sync:", err);
     });
 
+    // Root 'settings' collection listener for YouTube Portfolio
+    const settingsPortfolioDocRef = doc(db, 'settings', 'youtube_portfolio');
+    const unsubscribePortfolio3 = onSnapshot(settingsPortfolioDocRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (data) {
+          if (data.localVideoUrl) setPortfolioLocalUrl(data.localVideoUrl);
+          if (data.internationalVideoUrl) setPortfolioInternationalUrl(data.internationalVideoUrl);
+          try {
+            localStorage.setItem('tsehay_youtube_portfolio_cache', JSON.stringify({
+              localVideoUrl: data.localVideoUrl,
+              internationalVideoUrl: data.internationalVideoUrl
+            }));
+          } catch (e) {}
+        }
+      }
+    }, () => {});
+
     // 🎬 Landing Video Real-Time Sync & API Fetch
     try {
       const cachedLanding = localStorage.getItem('tsehay_landing_video_cache');
@@ -1243,6 +1261,18 @@ export default function AdminDashboard() {
 
     const rootLandingVidRef = doc(db, 'site_settings', 'landing_video');
     const unsubscribeLandingVid2 = onSnapshot(rootLandingVidRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        const url = data?.url || data?.videoUrl || data?.youtubeUrl;
+        const thumb = data?.thumbnail || data?.thumbUrl;
+        if (url) setLandingVideoUrl(url);
+        if (thumb) setLandingVideoThumbnail(thumb);
+      }
+    }, () => {});
+
+    // Root 'settings' collection listener for Landing Video
+    const settingsLandingVidRef = doc(db, 'settings', 'landing_video');
+    const unsubscribeLandingVid3 = onSnapshot(settingsLandingVidRef, (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
         const url = data?.url || data?.videoUrl || data?.youtubeUrl;
@@ -1319,15 +1349,33 @@ export default function AdminDashboard() {
     const unsubscribeReferrals = onSnapshot(refQuery, (snapshot) => {
       if (!snapshot.empty) {
         const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setReferralCodes(list);
-        try {
-          localStorage.setItem('tsehay_referral_codes_cache', JSON.stringify(list));
-        } catch (e) {}
+        setReferralCodes(prev => {
+          const map = new Map();
+          [...prev, ...list].forEach(item => map.set(item.id, item));
+          return Array.from(map.values());
+        });
       }
     }, (err) => {
       console.warn("Referral codes sync fallback:", err);
       fetchApiReferralCodes();
     });
+
+    // Root 'promo_codes' collection listener
+    const promoCodesQuery = query(collection(db, 'promo_codes'));
+    const unsubscribePromoCodes = onSnapshot(promoCodesQuery, (snapshot) => {
+      if (!snapshot.empty) {
+        const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setReferralCodes(prev => {
+          const map = new Map();
+          [...prev, ...list].forEach(item => map.set(item.id, item));
+          const merged = Array.from(map.values());
+          try {
+            localStorage.setItem('tsehay_referral_codes_cache', JSON.stringify(merged));
+          } catch (e) {}
+          return merged;
+        });
+      }
+    }, () => {});
 
     // 🌟 Real-time Sync for Community Posts & Discussions
     const unsubscribeCommunity = subscribeCommunityPosts((posts) => {
@@ -1401,9 +1449,12 @@ export default function AdminDashboard() {
         unsubscribeAboutVideo();
         unsubscribePortfolio1();
         unsubscribePortfolio2();
+        if (typeof unsubscribePortfolio3 === 'function') unsubscribePortfolio3();
         if (typeof unsubscribeLandingVid1 === 'function') unsubscribeLandingVid1();
         if (typeof unsubscribeLandingVid2 === 'function') unsubscribeLandingVid2();
+        if (typeof unsubscribeLandingVid3 === 'function') unsubscribeLandingVid3();
         unsubscribeReferrals();
+        if (typeof unsubscribePromoCodes === 'function') unsubscribePromoCodes();
         unsubscribeFeedbacks();
         unsubscribeStudentFeedbacks();
         if (typeof unsubscribeWaitlists === 'function') unsubscribeWaitlists();
@@ -1454,10 +1505,9 @@ export default function AdminDashboard() {
     });
 
     try {
-      // 2. Direct client Firestore write attempt
+      // 2. Direct client Firestore write attempt across promo_codes and referral_codes
       try {
-        const codeRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'referral_codes', cleanCode);
-        await setDoc(codeRef, {
+        const promoDoc = {
           code: cleanCode,
           discountPercent: Number(newDiscountPercent),
           targetCourseId: newTargetCourseId || 'all',
@@ -1466,7 +1516,13 @@ export default function AdminDashboard() {
           isActive: true,
           usageCount: 0,
           createdAt: serverTimestamp()
-        }, { merge: true });
+        };
+
+        const rootPromoRef = doc(db, 'promo_codes', cleanCode);
+        await setDoc(rootPromoRef, promoDoc, { merge: true });
+
+        const codeRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'referral_codes', cleanCode);
+        await setDoc(codeRef, promoDoc, { merge: true });
       } catch (clientErr) {
         console.warn("Client Firestore write attempt:", clientErr);
       }
@@ -1532,8 +1588,9 @@ export default function AdminDashboard() {
     });
 
     try {
-      // 2. Direct client write
+      // 2. Direct client write to root promo_codes and artifacts
       try {
+        await setDoc(doc(db, 'promo_codes', codeItem.id), { isActive: updatedStatus }, { merge: true });
         const codeRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'referral_codes', codeItem.id);
         await setDoc(codeRef, { isActive: updatedStatus }, { merge: true });
       } catch (clientErr) {
@@ -1571,8 +1628,9 @@ export default function AdminDashboard() {
       });
 
       try {
-        // 2. Direct client delete
+        // 2. Direct client delete from root promo_codes and artifacts
         try {
+          await deleteDoc(doc(db, 'promo_codes', codeId));
           await deleteDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'referral_codes', codeId));
         } catch (clientErr) {
           console.warn("Client Firestore delete attempt:", clientErr);
@@ -1831,8 +1889,15 @@ export default function AdminDashboard() {
     } catch (e) {}
 
     try {
-      // 2. Direct client Firestore write (dual path: nested artifacts and root)
+      // 2. Direct client Firestore write (dual path: root settings, nested artifacts and site_settings)
       try {
+        const settingsPortfolioRef = doc(db, 'settings', 'youtube_portfolio');
+        await setDoc(settingsPortfolioRef, {
+          localVideoUrl: portfolioLocalUrl.trim(),
+          internationalVideoUrl: portfolioInternationalUrl.trim(),
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+
         const portfolioDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'site_settings', 'youtube_portfolio');
         await setDoc(portfolioDocRef, {
           localVideoUrl: portfolioLocalUrl.trim(),
