@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb, hasAdminCredentials } from '@/lib/firebase/admin';
 import { DEFAULT_EVENTS, TsehayEvent, formatDriveImageUrl } from '@/lib/eventCache';
+import { 
+  loadPersistedEvents, 
+  savePersistedEvents, 
+  saveSinglePersistedEvent, 
+  deletePersistedEvent 
+} from '@/lib/memoryStore';
 
 const AUTHORIZED_ADMIN_EMAILS = [
   'eyobsahle@gmail.com'
@@ -11,109 +17,90 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const eventId = searchParams.get('id') || searchParams.get('eventId');
 
-    if (!adminDb || !hasAdminCredentials) {
-      if (eventId) {
-        const found = DEFAULT_EVENTS.find(e => e.id === eventId || e.slug === eventId);
-        return NextResponse.json({ 
-          success: true, 
-          event: found ? { ...found, image: formatDriveImageUrl(found.image) || found.image } : null 
-        });
-      }
-      return NextResponse.json({ 
-        success: true, 
-        events: DEFAULT_EVENTS.map(e => ({ ...e, image: formatDriveImageUrl(e.image) || e.image })), 
-        count: DEFAULT_EVENTS.length 
-      });
-    }
+    // 1. Check in-memory / persisted events
+    const memoryEvents = loadPersistedEvents();
 
     if (eventId) {
-      // 1. Try nested collection
-      const docRef = adminDb
-        .collection('artifacts')
-        .doc('tsehaycampus-e1a6d')
-        .collection('public')
-        .doc('data')
-        .collection('events')
-        .doc(eventId);
+      if (adminDb && hasAdminCredentials && typeof adminDb.collection === 'function') {
+        try {
+          const docRef = adminDb
+            .collection('artifacts')
+            .doc('tsehaycampus-e1a6d')
+            .collection('public')
+            .doc('data')
+            .collection('events')
+            .doc(eventId);
 
-      let snap = await docRef.get();
-      if (!snap.exists) {
-        snap = await adminDb.collection('events').doc(eventId).get();
+          let snap = await docRef.get();
+          if (!snap.exists) {
+            snap = await adminDb.collection('events').doc(eventId).get();
+          }
+
+          if (snap.exists) {
+            const evData: any = { id: snap.id, ...snap.data() };
+            evData.image = formatDriveImageUrl(evData.image) || evData.image;
+            const cap = Number(evData.capacity) || 100;
+            const reg = Number(evData.registeredCount) || 0;
+            evData.remainingSeats = evData.remainingSeats !== undefined && typeof evData.remainingSeats === 'number'
+              ? Math.max(0, evData.remainingSeats)
+              : Math.max(0, cap - reg);
+            saveSinglePersistedEvent(evData);
+            return NextResponse.json({ success: true, event: evData });
+          }
+        } catch (dbErr) {}
       }
 
-      if (snap.exists) {
-        const evData: any = { id: snap.id, ...snap.data() };
-        evData.image = formatDriveImageUrl(evData.image) || evData.image;
-        const cap = Number(evData.capacity) || 100;
-        const reg = Number(evData.registeredCount) || 0;
-        evData.remainingSeats = evData.remainingSeats !== undefined && typeof evData.remainingSeats === 'number'
-          ? Math.max(0, evData.remainingSeats)
-          : Math.max(0, cap - reg);
-        return NextResponse.json({ success: true, event: evData });
-      }
-
-      const defaultMatch = DEFAULT_EVENTS.find(e => e.id === eventId || e.slug === eventId);
-      if (defaultMatch) {
-        const cap = Number(defaultMatch.capacity) || 100;
-        const reg = Number(defaultMatch.registeredCount) || 0;
-        const remaining = defaultMatch.remainingSeats ?? Math.max(0, cap - reg);
+      const found = memoryEvents.find(e => e.id === eventId || e.slug === eventId) ||
+                    DEFAULT_EVENTS.find(e => e.id === eventId || e.slug === eventId);
+      if (found) {
         return NextResponse.json({ 
           success: true, 
-          event: { 
-            ...defaultMatch, 
-            remainingSeats: remaining,
-            image: formatDriveImageUrl(defaultMatch.image) || defaultMatch.image 
-          } 
+          event: { ...found, image: formatDriveImageUrl(found.image) || found.image } 
         });
       }
 
       return NextResponse.json({ error: 'Event not found' }, { status: 404 });
     }
 
-    // List all events
-    const snapshot = await adminDb
-      .collection('artifacts')
-      .doc('tsehaycampus-e1a6d')
-      .collection('public')
-      .doc('data')
-      .collection('events')
-      .get();
+    // List all events: build unified map starting with DEFAULT_EVENTS, then memoryEvents
+    const eventMap = new Map<string, any>();
+    DEFAULT_EVENTS.forEach(e => {
+      eventMap.set(e.id, { ...e });
+    });
+    memoryEvents.forEach(e => {
+      if (e && e.id) {
+        eventMap.set(e.id, { ...(eventMap.get(e.id) || {}), ...e });
+      }
+    });
 
-    let events: any[] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-    if (events.length === 0) {
+    if (adminDb && hasAdminCredentials && typeof adminDb.collection === 'function') {
       try {
+        const snapshot = await adminDb
+          .collection('artifacts')
+          .doc('tsehaycampus-e1a6d')
+          .collection('public')
+          .doc('data')
+          .collection('events')
+          .get();
+
+        snapshot.docs.forEach(doc => {
+          if (doc.exists) {
+            eventMap.set(doc.id, { id: doc.id, ...doc.data() });
+          }
+        });
+
         const rootSnap = await adminDb.collection('events').get();
-        if (!rootSnap.empty) {
-          events = rootSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        }
-      } catch (e) {}
-    }
-
-    // Auto-seed default events with persistent remainingSeats if collection was empty
-    if (events.length === 0) {
-      events = DEFAULT_EVENTS;
-      try {
-        for (const ev of DEFAULT_EVENTS) {
-          const cap = Number(ev.capacity) || 100;
-          const reg = Number(ev.registeredCount) || 0;
-          const rem = ev.remainingSeats ?? Math.max(0, cap - reg);
-          const seeded = {
-            ...ev,
-            remainingSeats: rem,
-            registeredCount: reg,
-            capacity: cap,
-            updatedAt: new Date().toISOString()
-          };
-          await adminDb.collection('events').doc(ev.id).set(seeded, { merge: true });
-          await adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('public').doc('data').collection('events').doc(ev.id).set(seeded, { merge: true });
-        }
-      } catch (seedErr) {
-        console.warn('Auto-seed default events note:', seedErr);
+        rootSnap.docs.forEach(doc => {
+          if (doc.exists) {
+            eventMap.set(doc.id, { id: doc.id, ...doc.data() });
+          }
+        });
+      } catch (e) {
+        console.warn('AdminDb events listing notice:', e);
       }
     }
 
-    events = events.map(e => {
+    const events = Array.from(eventMap.values()).map(e => {
       const cap = Number(e.capacity) || 100;
       const reg = Number(e.registeredCount) || 0;
       const rem = e.remainingSeats !== undefined && typeof e.remainingSeats === 'number'
@@ -129,15 +116,13 @@ export async function GET(req: NextRequest) {
       };
     });
 
+    savePersistedEvents(events);
+
     return NextResponse.json({ success: true, events, count: events.length });
   } catch (error: any) {
     console.error('Error fetching events:', error);
-    const fallbackEvents = DEFAULT_EVENTS.map(e => ({
-      ...e,
-      remainingSeats: e.remainingSeats ?? (e.capacity - e.registeredCount),
-      image: formatDriveImageUrl(e.image) || e.image
-    }));
-    return NextResponse.json({ success: true, events: fallbackEvents, count: fallbackEvents.length, error: error.message });
+    const fallback = loadPersistedEvents();
+    return NextResponse.json({ success: true, events: fallback, count: fallback.length, error: error.message });
   }
 }
 
@@ -166,7 +151,9 @@ export async function POST(req: NextRequest) {
       remainingSeats: rem
     };
 
-    if (adminDb) {
+    saveSinglePersistedEvent(payload);
+
+    if (adminDb && hasAdminCredentials && typeof adminDb.collection === 'function') {
       try {
         await adminDb
           .collection('artifacts')
@@ -199,7 +186,9 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'Event ID required' }, { status: 400 });
     }
 
-    if (adminDb) {
+    deletePersistedEvent(eventId);
+
+    if (adminDb && hasAdminCredentials && typeof adminDb.collection === 'function') {
       try {
         await adminDb
           .collection('artifacts')

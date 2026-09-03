@@ -885,22 +885,46 @@ export default function AdminDashboard() {
     // Execute initial backend fetch immediately
     fetchCoursesFromApi();
 
-    // 2. Real-Time Firestore Listener with Robust Try-Catch-Finally
+    // 2. Real-Time Firestore Listeners for Courses (Both Artifact and Root Collections)
+    let unsubscribeCoursesRoot: any = () => {};
+    const coursesArtifactMap = new Map<string, any>();
+    const coursesRootMap = new Map<string, any>();
+
+    const mergeAndSetCourses = () => {
+      const courseMap = new Map<string, any>();
+      // Preload with cached courses
+      getCachedCourses().forEach(c => {
+        if (c && c.id) courseMap.set(c.id, c);
+      });
+      // Overlay artifact & root collections
+      coursesArtifactMap.forEach((c, id) => {
+        if (c && c.status !== 'Deleted' && !c.isDeleted) courseMap.set(id, { ...(courseMap.get(id) || {}), ...c });
+      });
+      coursesRootMap.forEach((c, id) => {
+        if (c && c.status !== 'Deleted' && !c.isDeleted) courseMap.set(id, { ...(courseMap.get(id) || {}), ...c });
+      });
+      const list = Array.from(courseMap.values());
+      if (list.length > 0) {
+        setCourses(list);
+        try {
+          localStorage.setItem('tsehay_admin_courses_cache', JSON.stringify(list));
+          localStorage.setItem('tsehay_courses_cache', JSON.stringify(list));
+        } catch (e) {}
+      }
+    };
+
     const q = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses'));
     const unsubscribe = onSnapshot(
       q, 
       (snapshot) => {
         try {
-          const list = snapshot.docs
-            .map(doc => ({ id: doc.id, ...doc.data() }))
-            .filter((c: any) => c && c.status !== 'Deleted' && !c.isDeleted);
-          if (list.length > 0) {
-            setCourses(list);
-            try {
-              localStorage.setItem('tsehay_admin_courses_cache', JSON.stringify(list));
-              localStorage.setItem('tsehay_courses_cache', JSON.stringify(list));
-            } catch (e) {}
-          }
+          snapshot.docs.forEach(doc => {
+            const data = doc.data();
+            if (data && data.status !== 'Deleted' && !data.isDeleted) {
+              coursesArtifactMap.set(doc.id, { id: doc.id, ...data });
+            }
+          });
+          mergeAndSetCourses();
         } catch (err) {
           console.error("Error processing courses snapshot:", err);
         } finally {
@@ -913,6 +937,21 @@ export default function AdminDashboard() {
         setLoading(false);
       }
     );
+
+    try {
+      const qRoot = query(collection(db, 'courses'));
+      unsubscribeCoursesRoot = onSnapshot(qRoot, (snapshot) => {
+        try {
+          snapshot.docs.forEach(doc => {
+            const data = doc.data();
+            if (data && data.status !== 'Deleted' && !data.isDeleted) {
+              coursesRootMap.set(doc.id, { id: doc.id, ...data });
+            }
+          });
+          mergeAndSetCourses();
+        } catch (err) {}
+      }, () => {});
+    } catch (e) {}
 
     // 3. Safety Liveness Timer: GUARANTEES setLoading(false) is called within 2 seconds
     const safetyTimer = setTimeout(() => {
@@ -1089,14 +1128,66 @@ export default function AdminDashboard() {
       }, () => {});
     } catch (e) {}
 
-    // Real-Time Events Document Sync in Admin
+    // Real-Time Events Document Sync in Admin with Unified Multi-Source Merge
+    const artifactEventsMap = new Map<string, TsehayEvent>();
+    const rootEventsMap = new Map<string, TsehayEvent>();
+
+    const getDeletedEventIds = (): string[] => {
+      if (typeof window === 'undefined') return [];
+      try {
+        const raw = localStorage.getItem('tsehay_deleted_events');
+        return raw ? JSON.parse(raw) : [];
+      } catch (e) {
+        return [];
+      }
+    };
+
+    const syncAndSetAdminEvents = () => {
+      const deletedIds = getDeletedEventIds();
+      const eventMap = new Map<string, TsehayEvent>();
+
+      // 1. Preload DEFAULT_EVENTS
+      DEFAULT_EVENTS.forEach(ev => {
+        if (!deletedIds.includes(ev.id)) {
+          eventMap.set(ev.id, { ...ev });
+        }
+      });
+
+      // 2. Overlay LocalStorage Cached Events (preserves edits immediately across refresh)
+      getCachedEvents().forEach(ev => {
+        if (ev && ev.id && !deletedIds.includes(ev.id)) {
+          eventMap.set(ev.id, { ...(eventMap.get(ev.id) || {}), ...ev });
+        }
+      });
+
+      // 3. Overlay Live Firestore Artifact & Root Documents
+      artifactEventsMap.forEach((ev, id) => {
+        if (ev && !deletedIds.includes(id)) {
+          eventMap.set(id, { ...(eventMap.get(id) || {}), ...ev });
+        }
+      });
+
+      rootEventsMap.forEach((ev, id) => {
+        if (ev && !deletedIds.includes(id)) {
+          eventMap.set(id, { ...(eventMap.get(id) || {}), ...ev });
+        }
+      });
+
+      const mergedList = Array.from(eventMap.values());
+      if (mergedList.length > 0) {
+        setEvents(mergedList);
+        saveCachedEvents(mergedList);
+      }
+    };
+
     try {
       const evCol = collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'events');
       unsubscribeEventsArtifact = onSnapshot(evCol, (snapshot) => {
         if (!snapshot.empty) {
-          const list = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as TsehayEvent));
-          setEvents(list);
-          saveCachedEvents(list);
+          snapshot.docs.forEach(d => {
+            artifactEventsMap.set(d.id, { id: d.id, ...d.data() } as TsehayEvent);
+          });
+          syncAndSetAdminEvents();
         }
       }, () => {});
     } catch (e) {}
@@ -1105,9 +1196,10 @@ export default function AdminDashboard() {
       const evRootCol = collection(db, 'events');
       unsubscribeEventsRoot = onSnapshot(evRootCol, (snapshot) => {
         if (!snapshot.empty) {
-          const list = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as TsehayEvent));
-          setEvents(list);
-          saveCachedEvents(list);
+          snapshot.docs.forEach(d => {
+            rootEventsMap.set(d.id, { id: d.id, ...d.data() } as TsehayEvent);
+          });
+          syncAndSetAdminEvents();
         }
       }, () => {});
     } catch (e) {}
@@ -1119,8 +1211,12 @@ export default function AdminDashboard() {
         if (evRes.ok) {
           const evData = await evRes.json();
           if (evData.events && Array.isArray(evData.events) && evData.events.length > 0) {
-            setEvents(evData.events);
-            saveCachedEvents(evData.events);
+            evData.events.forEach((apiEv: TsehayEvent) => {
+              if (apiEv && apiEv.id && !artifactEventsMap.has(apiEv.id) && !rootEventsMap.has(apiEv.id)) {
+                rootEventsMap.set(apiEv.id, apiEv);
+              }
+            });
+            syncAndSetAdminEvents();
           }
         }
         const tickRes = await fetch('/api/events/tickets');
@@ -1436,6 +1532,7 @@ export default function AdminDashboard() {
     return () => {
         unsubscribeAuth();
         unsubscribe();
+        if (typeof unsubscribeCoursesRoot === 'function') unsubscribeCoursesRoot();
         unsubscribeYouTube();
         unsubscribeProfiles();
         unsubscribeArtifactUsers();
@@ -2915,7 +3012,8 @@ export default function AdminDashboard() {
         speakerRole: eventForm.speakerRole,
         image: formatDriveImageUrl(eventForm.image) || (eventForm.image || '').trim() || 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?q=80&w=1200',
         tags: typeof eventForm.tags === 'string' ? eventForm.tags.split(',').map(t => t.trim()).filter(Boolean) : eventForm.tags,
-        status: (eventForm.status as any) || 'upcoming'
+        status: (eventForm.status as any) || 'upcoming',
+        updatedAt: new Date().toISOString()
       };
 
       // 1. Direct Client-Side Firestore Persistence (Primary + Root Collections)
@@ -2938,6 +3036,14 @@ export default function AdminDashboard() {
       } catch (apiErr) {
         console.warn("Server API event save warning:", apiErr);
       }
+
+      // Clear from deleted events tracking if previously deleted
+      try {
+        const deleted = JSON.parse(localStorage.getItem('tsehay_deleted_events') || '[]');
+        if (deleted.includes(eventId)) {
+          localStorage.setItem('tsehay_deleted_events', JSON.stringify(deleted.filter((d: string) => d !== eventId)));
+        }
+      } catch (e) {}
 
       // 3. React State & Synchronous LocalStorage & Global Broadcast
       const updatedEvents = editingEvent
@@ -2970,6 +3076,14 @@ export default function AdminDashboard() {
       try {
         localStorage.setItem('tsehay_events_cache', JSON.stringify(updatedEvents));
         window.dispatchEvent(new CustomEvent('tsehay_events_updated', { detail: { events: updatedEvents } }));
+      } catch (e) {}
+
+      // Record in deleted events list so default events don't reappear on reload
+      try {
+        const deleted = JSON.parse(localStorage.getItem('tsehay_deleted_events') || '[]');
+        if (!deleted.includes(id)) {
+          localStorage.setItem('tsehay_deleted_events', JSON.stringify([...deleted, id]));
+        }
       } catch (e) {}
 
       try {

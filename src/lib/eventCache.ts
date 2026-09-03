@@ -25,6 +25,7 @@ export interface TsehayEvent {
   isFeatured?: boolean;
   status: 'upcoming' | 'ongoing' | 'completed' | 'sold_out';
   createdAt?: any;
+  updatedAt?: any;
 }
 
 export interface EventTicket {
