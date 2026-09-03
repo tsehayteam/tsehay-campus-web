@@ -1211,12 +1211,16 @@ export default function AdminDashboard() {
         if (evRes.ok) {
           const evData = await evRes.json();
           if (evData.events && Array.isArray(evData.events) && evData.events.length > 0) {
-            evData.events.forEach((apiEv: TsehayEvent) => {
-              if (apiEv && apiEv.id && !artifactEventsMap.has(apiEv.id) && !rootEventsMap.has(apiEv.id)) {
-                rootEventsMap.set(apiEv.id, apiEv);
+            setEvents(prev => {
+              const currentIds = new Set(prev.map(p => p.id));
+              const newItems = evData.events.filter((apiEv: TsehayEvent) => apiEv && apiEv.id && !currentIds.has(apiEv.id));
+              if (newItems.length > 0) {
+                const combined = [...prev, ...newItems];
+                saveCachedEvents(combined);
+                return combined;
               }
+              return prev;
             });
-            syncAndSetAdminEvents();
           }
         }
         const tickRes = await fetch('/api/events/tickets');
@@ -2990,40 +2994,64 @@ export default function AdminDashboard() {
     try {
       const eventId = editingEvent ? editingEvent.id : `evt_${Date.now()}`;
       const cleanSlug = (eventForm.slug || '').trim() || generateEventSlug(eventForm.title, eventId);
+      const cleanImage = formatDriveImageUrl(eventForm.image) || (eventForm.image || '').trim() || 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?q=80&w=1200';
+      const nowIso = new Date().toISOString();
+
       const payload: TsehayEvent = {
         id: eventId,
         slug: cleanSlug,
-        title: eventForm.title,
-        titleEn: eventForm.titleEn,
-        description: eventForm.description,
-        date: eventForm.date,
-        time: eventForm.time,
+        title: eventForm.title.trim(),
+        titleEn: (eventForm.titleEn || '').trim(),
+        description: (eventForm.description || '').trim(),
+        date: (eventForm.date || '').trim(),
+        time: (eventForm.time || '').trim(),
         location: eventForm.isOnline 
           ? (eventForm.location || 'Online Google Meet') 
           : (eventForm.location || 'Bole, Addis Ababa'),
         isOnline: Boolean(eventForm.isOnline),
-        meetingLink: eventForm.meetingLink || '',
-        mapsUrl: eventForm.mapsUrl || '',
+        meetingLink: (eventForm.meetingLink || '').trim(),
+        mapsUrl: (eventForm.mapsUrl || '').trim(),
         capacity: Number(eventForm.capacity) || 100,
         registeredCount: editingEvent ? (editingEvent.registeredCount || 0) : 0,
         price: eventForm.isFree ? 0 : Number(eventForm.price) || 0,
         isFree: Boolean(eventForm.isFree),
-        speaker: eventForm.speaker,
-        speakerRole: eventForm.speakerRole,
-        image: formatDriveImageUrl(eventForm.image) || (eventForm.image || '').trim() || 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?q=80&w=1200',
-        tags: typeof eventForm.tags === 'string' ? eventForm.tags.split(',').map(t => t.trim()).filter(Boolean) : eventForm.tags,
+        speaker: (eventForm.speaker || '').trim(),
+        speakerRole: (eventForm.speakerRole || '').trim(),
+        image: cleanImage,
+        tags: typeof eventForm.tags === 'string' ? eventForm.tags.split(',').map(t => t.trim()).filter(Boolean) : (Array.isArray(eventForm.tags) ? eventForm.tags : []),
         status: (eventForm.status as any) || 'upcoming',
-        updatedAt: new Date().toISOString()
+        updatedAt: nowIso
       };
 
-      // 1. Direct Client-Side Firestore Persistence (Primary + Root Collections)
-      try {
-        const nestedDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'events', eventId);
-        await setDoc(nestedDocRef, payload, { merge: true });
-        const rootDocRef = doc(db, 'events', eventId);
-        await setDoc(rootDocRef, payload, { merge: true });
-      } catch (dbErr) {
-        console.warn("Client Firestore event sync warning:", dbErr);
+      // Sanitize payload to guarantee no field is undefined for Firestore Web SDK
+      const sanitizedPayload: Record<string, any> = {};
+      Object.entries(payload).forEach(([k, v]) => {
+        if (v !== undefined) sanitizedPayload[k] = v;
+      });
+
+      // 1. Direct Client-Side Firestore Persistence using updateDoc for existing events, setDoc for new
+      const rootDocRef = doc(db, 'events', eventId);
+      const nestedDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'events', eventId);
+
+      if (editingEvent) {
+        // Use updateDoc to explicitly update the specific event document in Firestore
+        try {
+          await updateDoc(rootDocRef, sanitizedPayload);
+        } catch (uErr) {
+          // If document does not exist yet in root collection, create/merge
+          await setDoc(rootDocRef, sanitizedPayload, { merge: true });
+        }
+
+        try {
+          await updateDoc(nestedDocRef, sanitizedPayload);
+        } catch (uErr) {
+          // If document does not exist yet in nested collection, create/merge
+          await setDoc(nestedDocRef, sanitizedPayload, { merge: true });
+        }
+      } else {
+        // Create new event documents
+        await setDoc(rootDocRef, sanitizedPayload, { merge: true });
+        await setDoc(nestedDocRef, sanitizedPayload, { merge: true });
       }
 
       // 2. Server API Route Persistence

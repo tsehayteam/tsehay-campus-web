@@ -49,7 +49,15 @@ export default function EventsClient() {
         if (ev.slug) eventMap.set(ev.slug, { ...ev });
       });
 
-      // 2. Overlay live Firestore data
+      // 2. Overlay LocalStorage Cached Events
+      getCachedEvents().forEach(ev => {
+        if (ev && (ev.id || ev.slug)) {
+          const key = ev.id || ev.slug!;
+          eventMap.set(key, { ...(eventMap.get(key) || {}), ...ev });
+        }
+      });
+
+      // 3. Overlay live Firestore data
       [...artifactList, ...rootList].forEach(ev => {
         if (ev && (ev.id || ev.slug)) {
           const key = ev.id || ev.slug;
@@ -60,13 +68,15 @@ export default function EventsClient() {
             ? ev.remainingSeats
             : (existing.remainingSeats !== undefined && typeof existing.remainingSeats === 'number' ? existing.remainingSeats : Math.max(0, cap - reg));
 
+          const cleanImage = formatDriveImageUrl(ev.image) || ev.image || existing.image;
+
           const merged: TsehayEvent = {
             ...existing,
             ...ev,
             capacity: cap,
             registeredCount: reg,
             remainingSeats: rem,
-            image: formatDriveImageUrl(ev.image || existing.image) || ev.image || existing.image
+            image: cleanImage
           };
 
           eventMap.set(key, merged);

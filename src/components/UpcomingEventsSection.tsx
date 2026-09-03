@@ -66,16 +66,44 @@ export default function UpcomingEventsSection() {
 
     const syncAndSet = () => {
       const eventMap = new Map<string, TsehayEvent>();
-      [...artifactList, ...rootList].forEach(ev => {
-        if (ev && ev.id) {
-          eventMap.set(ev.id, {
-            ...ev,
-            image: formatDriveImageUrl(ev.image) || ev.image
-          });
+
+      // 1. Preload DEFAULT_EVENTS
+      DEFAULT_EVENTS.forEach(ev => {
+        eventMap.set(ev.id, { ...ev });
+        if (ev.slug) eventMap.set(ev.slug, { ...ev });
+      });
+
+      // 2. Overlay LocalStorage Cached Events
+      getCachedEvents().forEach(ev => {
+        if (ev && (ev.id || ev.slug)) {
+          const key = ev.id || ev.slug!;
+          eventMap.set(key, { ...(eventMap.get(key) || {}), ...ev });
         }
       });
 
-      const combined = Array.from(eventMap.values());
+      // 3. Overlay Live Firestore Documents (Root & Artifact)
+      [...artifactList, ...rootList].forEach(ev => {
+        if (ev && (ev.id || ev.slug)) {
+          const key = ev.id || ev.slug!;
+          const existing: any = eventMap.get(key) || (ev.slug ? eventMap.get(ev.slug) : null) || {};
+          const cleanImage = formatDriveImageUrl(ev.image) || ev.image || existing.image;
+          const merged: TsehayEvent = {
+            ...existing,
+            ...ev,
+            image: cleanImage
+          };
+          eventMap.set(key, merged);
+          if (ev.id) eventMap.set(ev.id, merged);
+          if (ev.slug) eventMap.set(ev.slug, merged);
+        }
+      });
+
+      const uniqueMap = new Map<string, TsehayEvent>();
+      eventMap.forEach(v => {
+        if (v && v.id) uniqueMap.set(v.id, v);
+      });
+
+      const combined = Array.from(uniqueMap.values());
       if (combined.length > 0) {
         setEvents(combined);
         try {
