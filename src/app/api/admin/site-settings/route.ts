@@ -5,6 +5,7 @@ export const fetchCache = 'force-no-store';
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb, hasAdminCredentials } from '@/lib/firebase/admin';
 import { sharedSiteSettingsCache, savePersistedSetting } from '@/lib/memoryStore';
+import { supabase } from '@/lib/supabase/client';
 
 export const memorySiteSettingsCache = sharedSiteSettingsCache;
 
@@ -12,6 +13,19 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const settingKey = searchParams.get('settingKey') || searchParams.get('key') || 'youtube_portfolio';
+
+    // 0. Primary Supabase Lookup
+    try {
+      const { data: sbRow, error: sbErr } = await supabase
+        .from('site_settings')
+        .select('*')
+        .eq('key', settingKey)
+        .maybeSingle();
+
+      if (sbRow && !sbErr && sbRow.data) {
+        return NextResponse.json({ success: true, settingKey, data: sbRow.data });
+      }
+    } catch (sbE) {}
 
       // 1. Check root settings collection
       try {
@@ -71,6 +85,19 @@ export async function POST(req: NextRequest) {
 
     memorySiteSettingsCache.set(settingKey, payload);
     savePersistedSetting(settingKey, payload);
+
+    // 0. Primary Supabase Upsert
+    try {
+      await supabase
+        .from('site_settings')
+        .upsert({
+          key: settingKey,
+          data: payload,
+          updated_at: new Date().toISOString()
+        });
+    } catch (sbSaveErr) {
+      console.warn('Supabase site-settings save warning:', sbSaveErr);
+    }
 
     if (adminDb && hasAdminCredentials) {
       try {
