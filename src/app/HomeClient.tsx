@@ -521,11 +521,12 @@ export default function HomeClient({
         <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-12 relative z-20 py-16 lg:py-24 w-full my-auto flex flex-col items-center text-center">
           
           {/* Top Slogan Badge: Glowing Golden Yellow Border */}
-          <div className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full bg-[#f9b03c]/10 border border-[#f9b03c]/50 backdrop-blur-xl mb-5 sm:mb-6 shadow-[0_0_25px_rgba(249,176,60,0.35)] transition-all duration-300 hover:scale-105">
+          <div className="inline-flex items-center gap-2.5 sm:gap-3 px-6 sm:px-8 py-2.5 sm:py-3 rounded-full bg-[#030509]/80 border border-[#f9b03c]/60 backdrop-blur-2xl mb-5 sm:mb-6 shadow-[0_0_35px_rgba(249,176,60,0.4)] hover:shadow-[0_0_50px_rgba(249,176,60,0.65)] transition-all duration-300 hover:scale-105 group">
             <span className="w-2.5 h-2.5 rounded-full bg-[#f9b03c] shadow-[0_0_12px_#f9b03c] animate-pulse"></span>
-            <span className="text-xs sm:text-sm font-black font-heading tracking-wider text-[#f9b03c] drop-shadow-[0_0_10px_rgba(249,176,60,0.4)]">
-              {lang === 'en' ? '✨ LEARN. APPLY. GROW. • TSEHAY CAMPUS ✨' : '✨ ተማር። ተግብር። አደግ። • TSEHAY CAMPUS ✨'}
+            <span className="text-sm sm:text-base md:text-lg font-black font-heading tracking-widest uppercase text-transparent bg-clip-text bg-gradient-to-r from-[#f9b03c] via-[#ffe082] to-[#f9b03c] drop-shadow-[0_0_16px_rgba(249,176,60,0.5)]">
+              {lang === 'en' ? 'LEARN • APPLY • GROW' : 'ተማር ፣ ተግብር ፣ እደግ'}
             </span>
+            <span className="w-2.5 h-2.5 rounded-full bg-[#f9b03c] shadow-[0_0_12px_#f9b03c] animate-pulse"></span>
           </div>
 
           {/* Main Cinematic Typewriter Headline with Continuous Glow Pulse */}
