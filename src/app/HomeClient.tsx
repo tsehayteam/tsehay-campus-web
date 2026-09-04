@@ -187,7 +187,7 @@ export default function HomeClient({
   const [isEnrolling, setIsEnrolling] = useState(false);
   const [showRequireAuthModal, setShowRequireAuthModal] = useState(false);
   const [authCourseTarget, setAuthCourseTarget] = useState<any>(null);
-  const [openFaqId, setOpenFaqId] = useState<number | null>(1);
+  const [openFaqId, setOpenFaqId] = useState<number | null>(null);
 
   // Course Carousel Slider Ref & Navigation Handlers
   const courseSliderRef = useRef<HTMLDivElement | null>(null);
@@ -1168,28 +1168,6 @@ export default function HomeClient({
                 <div className="px-5 sm:px-6 pb-6 text-[#a0aec0] border-t border-white/[0.06] pt-4 font-body text-sm sm:text-[15px] leading-relaxed">
                   <p className="ml-8">
                     በፍጹም! የ Tsehay AI ረዳት በካምፓሳችን ውስጥ ለሚገኙ ሁሉም ተማሪዎች በነፃ የተካተተ ነው። 24/7 ከጎንዎ ሆኖ ጥያቄዎችዎን ይመልሳል፣ የቢዝነስ ስትራቴጂዎችን ይነድፋል እንዲሁም ያማክርዎታል። ምንም ዓይነት ተጨማሪ ወርሃዊ ክፍያ የለውም።
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {/* FAQ 4 */}
-            <div className="terafab-glass-card rounded-2xl overflow-hidden transition-all duration-300">
-              <button 
-                type="button"
-                className="w-full text-left p-5 sm:p-6 font-bold flex justify-between items-center transition cursor-pointer hover:bg-white/[0.02]" 
-                onClick={() => setOpenFaqId(openFaqId === 4 ? null : 4)}
-              >
-                <span className="text-white text-base sm:text-lg flex items-center gap-3 font-heading font-black">
-                  <i className="fa-solid fa-circle-question text-[#f9b03c]"></i>
-                  የክፍያ አማራጮች ምንድን ናቸው?
-                </span>
-                <i className={`fa-solid fa-chevron-down text-[#f9b03c] transition-transform duration-300 ${openFaqId === 4 ? 'rotate-180' : ''}`}></i>
-              </button>
-              {openFaqId === 4 && (
-                <div className="px-5 sm:px-6 pb-6 text-[#a0aec0] border-t border-white/[0.06] pt-4 font-body text-sm sm:text-[15px] leading-relaxed">
-                  <p className="ml-8">
-                    በኢትዮጵያ ውስጥ በቴሌብር (Telebirr)፣ በኢትዮጵያ ንግድ ባንክ (CBE)፣ በአቢሲኒያ እና በሁሉም ባንኮች በቀላሉ መክፈል ይችላሉ። ከውጭ ሀገር ደግሞ በ PayPal፣ በቪዛ/ማስተርካርድ እንዲሁም በ Crypto (USDT) መክፈል ይችላሉ።
                   </p>
                 </div>
               )}
