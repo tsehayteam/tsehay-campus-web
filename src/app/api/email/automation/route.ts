@@ -34,7 +34,13 @@ export async function POST(req: Request) {
     }
 
     const resendApiKey = process.env.RESEND_API_KEY;
-    const fromEmail = process.env.RESEND_FROM_EMAIL || '"Tsehay Campus" <tsehayoperation@gmail.com>';
+    /**
+     * 💡 ADMIN NOTICE REGARDING EMAIL SENDER PROFILE AVATAR / BRANDING:
+     * Inbox avatars (Gmail, Apple Mail) are controlled via the Google Workspace account or Gravatar profile
+     * associated with support@tsehaycampus.com. To display the official brand logo, configure the profile picture
+     * in Google Admin Console (admin.google.com) and on Gravatar (gravatar.com).
+     */
+    const fromEmail = process.env.RESEND_FROM_EMAIL || 'Tsehay Campus <support@tsehaycampus.com>';
 
     let subject = '';
     let htmlContent = '';

@@ -6,7 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import FormattedAiText from '@/components/FormattedAiText';
 import { getCachedCourses, subscribeToCourses } from '@/lib/courseCache';
-import { speakWithLanguageDetection } from '@/lib/ttsHelper';
+import { speakWithLanguageDetection, stopSpeech } from '@/lib/ttsHelper';
 import Footer from '@/components/Footer';
 
 interface Message {
@@ -193,15 +193,14 @@ export default function AiClient() {
     if (typeof window === 'undefined') return;
 
     if (speakingMessageId === id) {
-      if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-      }
+      stopSpeech();
       setSpeakingMessageId(null);
       return;
     }
 
     speakWithLanguageDetection({
       text,
+      siteLang: lang,
       onStart: () => setSpeakingMessageId(id),
       onEnd: () => setSpeakingMessageId(null),
       onError: () => setSpeakingMessageId(null),
@@ -212,9 +211,7 @@ export default function AiClient() {
     const userText = overrideText !== undefined ? overrideText : input.trim();
     if (!userText && !attachedImage && !audioUrl) return;
 
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-    }
+    stopSpeech();
     setSpeakingMessageId(null);
 
     const currentImage = attachedImage;
@@ -374,13 +371,16 @@ export default function AiClient() {
               <span className="w-2 h-2 rounded-full bg-[#f9b03c] animate-pulse"></span>
               <span>💡 ፈጣን ጥያቄዎች (Quick Starters)</span>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <div 
+              className="flex items-center gap-3 overflow-x-auto no-scrollbar pb-2"
+              style={{ display: 'flex', overflowX: 'auto', whiteSpace: 'nowrap', scrollbarWidth: 'none' }}
+            >
               {STARTER_PROMPTS.map((starter, idx) => (
                 <button
                   key={idx}
                   type="button"
                   onClick={() => sendMessage(starter.prompt)}
-                  className="p-4 sm:p-5 rounded-2xl bg-slate-900/80 hover:bg-[#0b1324] border border-white/10 hover:border-[#f9b03c]/60 text-left transition-all duration-300 group cursor-pointer shadow-lg hover:shadow-[0_0_30px_rgba(249,176,60,0.25)] hover:scale-[1.02] active:scale-[0.98] backdrop-blur-xl"
+                  className="p-4 rounded-2xl bg-slate-900/80 hover:bg-[#0b1324] border border-white/10 hover:border-[#f9b03c]/60 text-left transition-all duration-300 group cursor-pointer shadow-lg hover:shadow-[0_0_30px_rgba(249,176,60,0.25)] hover:scale-[1.02] active:scale-[0.98] backdrop-blur-xl shrink-0 min-w-[240px] max-w-[280px]"
                 >
                   <div className="flex items-center gap-2.5 mb-2">
                     <div
@@ -393,7 +393,7 @@ export default function AiClient() {
                       {starter.category}
                     </span>
                   </div>
-                  <h4 className="text-xs sm:text-sm font-bold text-white group-hover:text-[#f9b03c] transition-colors leading-snug">
+                  <h4 className="text-xs sm:text-sm font-bold text-white group-hover:text-[#f9b03c] transition-colors leading-snug whitespace-normal line-clamp-2">
                     {starter.title}
                   </h4>
                 </button>
@@ -516,6 +516,24 @@ export default function AiClient() {
         </div>
 
         <div className="bg-slate-900/80 backdrop-blur-2xl border border-white/15 rounded-3xl p-3 sm:p-4 mb-8 shadow-2xl">
+          {/* Horizontally Scrollable AI Quick Starters / FAQ chips */}
+          <div 
+            className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-2.5 mb-2 border-b border-white/5"
+            style={{ display: 'flex', overflowX: 'auto', whiteSpace: 'nowrap', scrollbarWidth: 'none' }}
+          >
+            {STARTER_PROMPTS.map((starter, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => sendMessage(starter.prompt)}
+                className="text-xs font-semibold px-3 py-1.5 rounded-xl bg-white/5 hover:bg-[#f9b03c]/20 hover:text-[#f9b03c] border border-white/10 hover:border-[#f9b03c]/40 text-slate-300 transition-all shrink-0 cursor-pointer flex items-center gap-1.5 whitespace-nowrap"
+              >
+                <i className={`fa-solid ${starter.icon} text-[10px] text-[#f9b03c]`}></i>
+                <span>{starter.title}</span>
+              </button>
+            ))}
+          </div>
+
           {attachedImage && (
             <div className="mb-2 inline-flex items-center gap-2 bg-white/10 border border-[#f9b03c]/50 px-3 py-1.5 rounded-xl text-xs">
               <i className="fa-solid fa-image text-[#f9b03c]"></i>

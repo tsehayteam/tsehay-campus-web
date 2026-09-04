@@ -10,12 +10,14 @@ import CinematicVideoModal from '@/components/CinematicVideoModal';
 
 interface Hero3DPopoutStageProps {
   videoSrc?: string;
+  initialThumbnail?: string;
 }
 
 const DEFAULT_LANDING_VIDEO = 'https://www.youtube.com/watch?v=mgdOMtW6J8k';
 
 export default function Hero3DPopoutStage({
   videoSrc = DEFAULT_LANDING_VIDEO,
+  initialThumbnail = '',
 }: Hero3DPopoutStageProps) {
   const { t } = useLanguage();
   const stageRef = useRef<HTMLDivElement | null>(null);
@@ -25,6 +27,7 @@ export default function Hero3DPopoutStage({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeVideoUrl, setActiveVideoUrl] = useState<string>(videoSrc);
   const [customThumbnail, setCustomThumbnail] = useState<string>(() => {
+    if (initialThumbnail && initialThumbnail.trim()) return initialThumbnail.trim();
     if (typeof window !== 'undefined') {
       try {
         return localStorage.getItem('tsehay_landing_video_thumb') || '';
@@ -41,6 +44,12 @@ export default function Hero3DPopoutStage({
       setActiveVideoUrl(videoSrc.trim());
     }
   }, [videoSrc]);
+
+  useEffect(() => {
+    if (initialThumbnail && initialThumbnail.trim()) {
+      setCustomThumbnail(initialThumbnail.trim());
+    }
+  }, [initialThumbnail]);
 
   // 🌟 Dynamic Landing Video Fetch from Firestore / Site Settings with graceful fallback
   useEffect(() => {
@@ -77,7 +86,7 @@ export default function Hero3DPopoutStage({
           if (res.ok) {
             const json = await res.json();
             fetchedUrl = json?.data?.url || json?.data?.videoUrl || json?.data?.youtubeUrl || '';
-            fetchedThumb = json?.data?.thumbnail || json?.data?.thumbUrl || '';
+            fetchedThumb = json?.data?.landingVideoThumbnail || json?.thumbnail || json?.data?.thumbnail || json?.data?.thumbnailUrl || json?.data?.thumbUrl || json?.data?.poster || '';
           }
         } catch (e) {}
 
@@ -87,7 +96,7 @@ export default function Hero3DPopoutStage({
             if (res2.ok) {
               const json2 = await res2.json();
               fetchedUrl = json2?.videoUrl || json2?.url || '';
-              fetchedThumb = json2?.data?.thumbnail || '';
+              fetchedThumb = json2?.landingVideoThumbnail || json2?.thumbnail || json2?.data?.landingVideoThumbnail || json2?.data?.thumbnail || json2?.data?.thumbnailUrl || json2?.data?.poster || '';
             }
           } catch (e) {}
         }
@@ -123,7 +132,7 @@ export default function Hero3DPopoutStage({
       if (snap.exists()) {
         const d = snap.data();
         const url = d?.url || d?.videoUrl || d?.youtubeUrl;
-        const thumb = d?.thumbnail || d?.thumbUrl;
+        const thumb = d?.landingVideoThumbnail || d?.thumbnail || d?.thumbnailUrl || d?.thumbUrl || d?.poster;
         if (url && typeof url === 'string' && url.trim() && !isCancelled) {
           setActiveVideoUrl(url.trim());
           try {
@@ -250,8 +259,9 @@ export default function Hero3DPopoutStage({
   }, []);
 
   // Thumbnail resolver for non-direct video embeds
+  const resolvedCustomThumb = customThumbnail && customThumbnail.trim() ? parseImageUrl(customThumbnail.trim()) : '';
   const displayThumbnail = 
-    customThumbnail ||
+    resolvedCustomThumb ||
     parsedVideo.thumbnailUrl || (
       parsedVideo.youtubeId 
         ? `https://img.youtube.com/vi/${parsedVideo.youtubeId}/maxresdefault.jpg`
@@ -382,6 +392,7 @@ export default function Hero3DPopoutStage({
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         videoUrl={activeVideoUrl}
+        poster={displayThumbnail}
         title="የፀሐይ ካምፓስ መግቢያ ቪዲዮ (Tsehay Campus Introduction)"
       />
     </div>

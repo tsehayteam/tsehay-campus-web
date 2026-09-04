@@ -19,8 +19,9 @@ export async function GET(req: NextRequest) {
           if (snap.exists) {
             const data = snap.data();
             const videoUrl = data?.url || data?.videoUrl || data?.youtubeUrl;
-            if (videoUrl) {
-              return NextResponse.json({ success: true, videoUrl, url: videoUrl, data });
+            const thumbnail = data?.landingVideoThumbnail || data?.thumbnail || data?.thumbnailUrl || data?.thumbUrl || data?.poster || '';
+            if (videoUrl || thumbnail) {
+              return NextResponse.json({ success: true, videoUrl, url: videoUrl, thumbnail, landingVideoThumbnail: thumbnail, data });
             }
           }
         } catch (e) {}
@@ -30,15 +31,16 @@ export async function GET(req: NextRequest) {
     if (sharedSiteSettingsCache.has('landing_video')) {
       const cached = sharedSiteSettingsCache.get('landing_video');
       const videoUrl = cached?.url || cached?.videoUrl || cached?.youtubeUrl;
-      if (videoUrl) {
-        return NextResponse.json({ success: true, videoUrl, url: videoUrl, data: cached });
+      const thumbnail = cached?.landingVideoThumbnail || cached?.thumbnail || cached?.thumbnailUrl || cached?.thumbUrl || cached?.poster || '';
+      if (videoUrl || thumbnail) {
+        return NextResponse.json({ success: true, videoUrl, url: videoUrl, thumbnail, landingVideoThumbnail: thumbnail, data: cached });
       }
     }
 
-    return NextResponse.json({ success: true, videoUrl: null, url: null, data: null });
+    return NextResponse.json({ success: true, videoUrl: null, url: null, thumbnail: '', data: null });
   } catch (error: any) {
     console.error('Error fetching landing video in API route:', error);
-    return NextResponse.json({ success: true, url: 'https://www.youtube.com/watch?v=mgdOMtW6J8k', videoUrl: 'https://www.youtube.com/watch?v=mgdOMtW6J8k' });
+    return NextResponse.json({ success: true, url: 'https://www.youtube.com/watch?v=mgdOMtW6J8k', videoUrl: 'https://www.youtube.com/watch?v=mgdOMtW6J8k', thumbnail: '' });
   }
 }
 
@@ -51,13 +53,26 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'የቪዲዮ ሊንክ አልተገለጸም (Video URL is required)' }, { status: 400 });
     }
 
-    const thumbnail = (body.thumbnail || body.data?.thumbnail || '').trim();
+    const thumbnail = (
+      body.landingVideoThumbnail || 
+      body.thumbnail || 
+      body.thumbnailUrl || 
+      body.thumbUrl || 
+      body.poster || 
+      body.data?.landingVideoThumbnail || 
+      body.data?.thumbnail || 
+      ''
+    ).trim();
 
     const payload = {
       url: videoUrl,
       videoUrl: videoUrl,
       youtubeUrl: videoUrl,
       thumbnail,
+      landingVideoThumbnail: thumbnail,
+      thumbnailUrl: thumbnail,
+      thumbUrl: thumbnail,
+      poster: thumbnail,
       settingKey: 'landing_video',
       updatedAt: new Date().toISOString()
     };

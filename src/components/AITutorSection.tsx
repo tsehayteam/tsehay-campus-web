@@ -7,6 +7,8 @@ import { getCachedCourses, getCourseSlug, getCourseBySlugOrId } from '@/lib/cour
 import { db } from '@/lib/firebase/config';
 import { collection, getDocs, query } from 'firebase/firestore';
 import Tilt3DCard from '@/components/3d/Tilt3DCard';
+import { useLanguage } from '@/context/LanguageContext';
+import { speakWithLanguageDetection, stopSpeech } from '@/lib/ttsHelper';
 
 export interface PromptScenario {
   id: string;
@@ -62,7 +64,9 @@ export const PROMPT_SCENARIOS: PromptScenario[] = [
 
 export default function AITutorSection() {
   const router = useRouter();
+  const { lang } = useLanguage();
   const [activeScenarioIdx, setActiveScenarioIdx] = useState(0);
+  const [coursesList, setCoursesList] = useState<any[]>([]);
   const [displayedQuestion, setDisplayedQuestion] = useState('');
   const [displayedResponse, setDisplayedResponse] = useState('');
   const [isThinking, setIsThinking] = useState(false);
@@ -70,7 +74,6 @@ export default function AITutorSection() {
   const [copied, setCopied] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [customInput, setCustomInput] = useState('');
-  const [coursesList, setCoursesList] = useState<any[]>([]);
   const [isSectionVisible, setIsSectionVisible] = useState(false);
 
   const sectionRef = useRef<HTMLElement>(null);
@@ -210,33 +213,24 @@ export default function AITutorSection() {
     }
   };
 
-  // Voice TTS (Live Speech Synthesis)
+  // Voice TTS (Live Speech Synthesis with Bilingual am-ET / en-US detection)
   const handleToggleTTS = () => {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
 
     if (isSpeaking) {
-      window.speechSynthesis.cancel();
+      stopSpeech();
       setIsSpeaking(false);
       return;
     }
 
-    window.speechSynthesis.cancel();
     const textToSpeak = displayedResponse || activeScenario.response;
-    const cleanText = textToSpeak.replace(/[📦🎬📈💡⚡•\-*#]/g, '').trim();
-
-    const utterance = new SpeechSynthesisUtterance(cleanText);
-    utterance.rate = 0.95;
-    utterance.pitch = 1.0;
-
-    const voices = window.speechSynthesis.getVoices();
-    const amVoice = voices.find(v => v.lang.includes('am') || v.lang.includes('AM'));
-    if (amVoice) utterance.voice = amVoice;
-
-    utterance.onend = () => setIsSpeaking(false);
-    utterance.onerror = () => setIsSpeaking(false);
-
-    setIsSpeaking(true);
-    window.speechSynthesis.speak(utterance);
+    speakWithLanguageDetection({
+      text: textToSpeak,
+      siteLang: lang,
+      onStart: () => setIsSpeaking(true),
+      onEnd: () => setIsSpeaking(false),
+      onError: () => setIsSpeaking(false)
+    });
   };
 
   // Resolve target course route
@@ -429,19 +423,22 @@ export default function AITutorSection() {
                     <span>የተዘጋጁ ጥያቄዎችን ይምረጡ (Quick Chips):</span>
                   </p>
                   
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <div 
+                    className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1"
+                    style={{ display: 'flex', overflowX: 'auto', whiteSpace: 'nowrap', scrollbarWidth: 'none' }}
+                  >
                     {PROMPT_SCENARIOS.map((sc, idx) => (
                       <button
                         key={sc.id}
                         type="button"
                         onClick={() => handleSelectScenario(idx)}
-                        className={`text-xs font-bold px-3 py-2 rounded-xl transition-all duration-300 cursor-pointer flex items-center justify-between sm:justify-center gap-1.5 active:scale-95 border ${
+                        className={`text-xs font-bold px-3.5 py-2 rounded-xl transition-all duration-300 cursor-pointer flex items-center justify-between sm:justify-center gap-1.5 active:scale-95 border shrink-0 ${
                           activeScenarioIdx === idx
                             ? 'bg-gradient-to-r from-[#f9b03c] to-amber-400 text-slate-950 shadow-[0_0_20px_rgba(249,176,60,0.35)] font-black border-[#f9b03c]'
                             : 'bg-white/[0.04] text-slate-300 hover:bg-white/[0.08] hover:text-white border-white/10'
                         }`}
                       >
-                        <span className="truncate">{sc.category}</span>
+                        <span>{sc.category}</span>
                         {activeScenarioIdx === idx && (
                           <i className="fa-solid fa-check text-[10px]"></i>
                         )}

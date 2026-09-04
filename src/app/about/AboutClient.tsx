@@ -5,9 +5,19 @@ import { useLanguage } from '@/context/LanguageContext';
 import Footer from '@/components/Footer';
 import { db } from '@/lib/firebase/config';
 import { doc, onSnapshot, collection, query, orderBy } from 'firebase/firestore';
-import { parseVideoEmbedUrl, parseImageUrl } from '@/lib/videoParser';
+import { parseVideoEmbedUrl, parseImageUrl, getMediaThumbnail } from '@/lib/videoParser';
 
-export default function AboutClient() {
+interface AboutClientProps {
+  initialVideoUrl?: string;
+  initialThumbnail?: string;
+  initialTitle?: string;
+}
+
+export default function AboutClient({
+  initialVideoUrl,
+  initialThumbnail,
+  initialTitle,
+}: AboutClientProps) {
   const { t, lang } = useLanguage();
 
   return (
@@ -35,7 +45,11 @@ export default function AboutClient() {
 
             {/* Main Intro Video With Rotating Conic-Gradient Glowing Border (20px) */}
             <div>
-              <AboutHeroPlayer />
+              <AboutHeroPlayer 
+                initialVideoUrl={initialVideoUrl}
+                initialThumbnail={initialThumbnail}
+                initialTitle={initialTitle}
+              />
             </div>
 
             {/* =========================================================================
@@ -394,8 +408,25 @@ export default function AboutClient() {
 // =========================================================================
 // 🌟 1. HERO VIDEO PLAYER WITH ROTATING CONIC-GRADIENT BORDER (20px)
 // =========================================================================
-function AboutHeroPlayer() {
+interface AboutHeroPlayerProps {
+  initialVideoUrl?: string;
+  initialThumbnail?: string;
+  initialTitle?: string;
+}
+
+function AboutHeroPlayer({
+  initialVideoUrl,
+  initialThumbnail,
+  initialTitle,
+}: AboutHeroPlayerProps) {
   const [videoData, setVideoData] = useState<{ videoUrl: string; title: string; thumbnail: string }>(() => {
+    if (initialVideoUrl && initialVideoUrl.trim() && initialVideoUrl !== 'https://www.youtube.com/watch?v=mgdOMtW6J8k') {
+      return {
+        videoUrl: initialVideoUrl.trim(),
+        title: initialTitle?.trim() || 'ስለ ፀሐይ ካምፓስ',
+        thumbnail: initialThumbnail?.trim() || ''
+      };
+    }
     if (typeof window !== 'undefined') {
       try {
         const cached = localStorage.getItem('tsehay_about_video_cache');
@@ -403,61 +434,136 @@ function AboutHeroPlayer() {
           const parsed = JSON.parse(cached);
           if (parsed && typeof parsed === 'object' && (parsed.videoUrl || parsed.thumbnail)) {
             return {
-              videoUrl: parsed.videoUrl || 'https://www.youtube.com/watch?v=mgdOMtW6J8k',
-              title: parsed.title || 'ስለ ፀሐይ ካምፓስ',
-              thumbnail: parsed.thumbnail || ''
+              videoUrl: parsed.videoUrl || initialVideoUrl || 'https://www.youtube.com/watch?v=mgdOMtW6J8k',
+              title: parsed.title || initialTitle || 'ስለ ፀሐይ ካምፓስ',
+              thumbnail: parsed.thumbnail || initialThumbnail || ''
             };
           }
         }
       } catch (e) {}
     }
     return {
-      videoUrl: 'https://www.youtube.com/watch?v=mgdOMtW6J8k',
-      title: 'ስለ ፀሐይ ካምፓስ',
-      thumbnail: ''
+      videoUrl: initialVideoUrl?.trim() || 'https://www.youtube.com/watch?v=mgdOMtW6J8k',
+      title: initialTitle?.trim() || 'ስለ ፀሐይ ካምፓስ',
+      thumbnail: initialThumbnail?.trim() || ''
     };
   });
   const [isPlaying, setIsPlaying] = useState(false);
 
+  // Sync prop changes from SSR into active state
   useEffect(() => {
-    try {
-      const docRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'site_settings', 'about_video');
-      const unsubscribe = onSnapshot(docRef, (docSnap) => {
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          if (data) {
-            const nextData = {
-              videoUrl: data.videoUrl || 'https://www.youtube.com/watch?v=mgdOMtW6J8k',
-              title: data.title || 'ስለ ፀሐይ ካምፓስ',
-              thumbnail: data.thumbnail || ''
-            };
-            setVideoData(nextData);
+    if (initialVideoUrl && initialVideoUrl.trim()) {
+      setVideoData(prev => ({
+        ...prev,
+        videoUrl: initialVideoUrl.trim(),
+        ...(initialThumbnail ? { thumbnail: initialThumbnail.trim() } : {}),
+        ...(initialTitle ? { title: initialTitle.trim() } : {})
+      }));
+    }
+  }, [initialVideoUrl, initialThumbnail, initialTitle]);
+
+  // Instant local updates from admin dashboard broadcasts
+  useEffect(() => {
+    const handleUpdate = (data: any) => {
+      if (!data) return;
+      setVideoData(prev => ({
+        videoUrl: data.videoUrl || data.url || prev.videoUrl,
+        thumbnail: data.thumbnail !== undefined ? data.thumbnail : (data.thumbUrl || prev.thumbnail),
+        title: data.title || prev.title
+      }));
+    };
+
+    const handleCustom = (e: any) => handleUpdate(e.detail);
+    window.addEventListener('tsehay_about_video_updated', handleCustom);
+
+    let bc: BroadcastChannel | null = null;
+    if (typeof BroadcastChannel !== 'undefined') {
+      bc = new BroadcastChannel('tsehay_about_video_channel');
+      bc.onmessage = (ev) => handleUpdate(ev.data);
+    }
+
+    return () => {
+      window.removeEventListener('tsehay_about_video_updated', handleCustom);
+      if (bc) bc.close();
+    };
+  }, []);
+
+  // Multi-namespace Firestore and Server API listener
+  useEffect(() => {
+    let isCancelled = false;
+
+    fetch('/api/admin/site-settings?settingKey=about_video')
+      .then(res => res.json())
+      .then(json => {
+        if (!isCancelled && json?.data) {
+          const url = json.data.url || json.data.videoUrl || json.data.youtubeUrl;
+          const thumb = json.data.thumbnail || json.data.thumbnailUrl || json.data.thumbUrl || json.data.poster;
+          const title = json.data.title;
+          if (url && typeof url === 'string' && url.trim()) {
+            setVideoData(prev => ({
+              videoUrl: url.trim(),
+              thumbnail: thumb !== undefined ? thumb : prev.thumbnail,
+              title: title || prev.title
+            }));
             try {
-              localStorage.setItem('tsehay_about_video_cache', JSON.stringify(nextData));
+              localStorage.setItem('tsehay_about_video_cache', JSON.stringify({
+                videoUrl: url.trim(),
+                thumbnail: thumb,
+                title: title
+              }));
             } catch (e) {}
           }
         }
-      }, (err) => {
-        console.warn("About video listener error:", err);
+      })
+      .catch(() => {});
+
+    const docPaths = [
+      doc(db, 'settings', 'about_video'),
+      doc(db, 'settings', 'aboutVideo'),
+      doc(db, 'site_settings', 'about_video'),
+      doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'site_settings', 'about_video')
+    ];
+
+    const unsubs: (() => void)[] = [];
+    docPaths.forEach(dRef => {
+      try {
+        const unsub = onSnapshot(dRef, (snap) => {
+          if (!isCancelled && snap.exists()) {
+            const d = snap.data();
+            const url = d?.url || d?.videoUrl || d?.youtubeUrl;
+            const thumb = d?.thumbnail || d?.thumbnailUrl || d?.thumbUrl || d?.poster;
+            const title = d?.title;
+            if (url && typeof url === 'string' && url.trim()) {
+              setVideoData(prev => ({
+                videoUrl: url.trim(),
+                thumbnail: thumb !== undefined ? thumb : prev.thumbnail,
+                title: title || prev.title
+              }));
+              try {
+                localStorage.setItem('tsehay_about_video_cache', JSON.stringify({
+                  videoUrl: url.trim(),
+                  thumbnail: thumb,
+                  title: title
+                }));
+              } catch (e) {}
+            }
+          }
+        }, () => {});
+        unsubs.push(unsub);
+      } catch (e) {}
+    });
+
+    return () => {
+      isCancelled = true;
+      unsubs.forEach(u => {
+        try { u(); } catch (e) {}
       });
-      return () => unsubscribe();
-    } catch (e) {
-      console.warn("About video listener setup error:", e);
-    }
+    };
   }, []);
 
   const parsed = parseVideoEmbedUrl(videoData.videoUrl, true);
   const customThumb = videoData.thumbnail?.trim();
-  
-  let activeThumbnail = customThumb ? parseImageUrl(customThumb) : '';
-  if (!activeThumbnail || activeThumbnail === '/assets/about_video_cover.jpg') {
-    const ytMatch = videoData.videoUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
-    if (ytMatch && ytMatch[1]) {
-      activeThumbnail = `https://img.youtube.com/vi/${ytMatch[1]}/maxresdefault.jpg`;
-    } else {
-      activeThumbnail = '/assets/about_video_cover.jpg';
-    }
-  }
+  const activeThumbnail = getMediaThumbnail(customThumb, customThumb || videoData.videoUrl) || '/assets/about_video_cover.jpg';
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -508,6 +614,7 @@ function AboutHeroPlayer() {
                   id="about-html5-player"
                   className="w-full h-full object-cover" 
                   src={parsed.src}
+                  poster={activeThumbnail}
                   autoPlay
                   controls
                   preload="auto"

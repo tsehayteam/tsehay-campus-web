@@ -2,6 +2,18 @@ import { EventTicket } from './eventCache';
 
 export const BRAND_LOGO_URL = 'https://www.tsehaycampus.com/tc-logo.jpg';
 export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.tsehaycampus.com';
+/**
+ * 💡 ADMIN NOTICE REGARDING EMAIL SENDER PROFILE AVATAR / BRANDING:
+ * In email clients like Gmail, Apple Mail, and Outlook, the profile picture/avatar
+ * displayed next to the sender name in the inbox is NOT controlled by email HTML headers.
+ * It is tied directly to the profile associated with the sending address:
+ * 1. Google Workspace: Configure the profile picture for "support@tsehaycampus.com"
+ *    inside the Google Workspace Admin Console (admin.google.com -> Users -> Profile Photo).
+ * 2. Gravatar: Register "support@tsehaycampus.com" at https://gravatar.com and upload the
+ *    official Tsehay Campus gold/dark brand avatar.
+ * 3. BIMI (Brand Indicators for Message Identification): Configure DNS records (VMC certificate)
+ *    to display a verified inbox checkmark and brand logo automatically in supported clients.
+ */
 export const SENDER_EMAIL = process.env.RESEND_FROM_EMAIL || "Tsehay Campus <support@tsehaycampus.com>";
 
 export interface SendEmailOptions {
@@ -33,9 +45,9 @@ export async function sendEmail({
   const primaryFrom = from || SENDER_EMAIL;
   const fallbackFromList = [
     primaryFrom,
-    'Tsehay Campus <onboarding@resend.dev>',
-    'Tsehay Campus <tsehayoperation@gmail.com>',
     'Tsehay Campus <support@tsehaycampus.com>',
+    'Tsehay Campus <events@tsehaycampus.com>',
+    'Tsehay Campus <onboarding@resend.dev>',
     'Tsehay Campus <noreply@tsehaycampus.com>'
   ];
 

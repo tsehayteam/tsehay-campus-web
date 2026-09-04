@@ -1,3 +1,5 @@
+import { getMediaThumbnail } from './videoParser';
+
 export interface TsehayEvent {
   id: string;
   slug: string; // e.g. "youtube-masterclass", "shein-ecommerce-seminar"
@@ -67,11 +69,7 @@ export function formatDriveImageUrl(url: any): string {
   if (!url || typeof url !== 'string') return '';
   const clean = url.trim();
   if (!clean) return '';
-  const match = clean.match(/(?:file\/d\/|id=|thumbnail\?id=|\/d\/)([a-zA-Z0-9_-]{20,})/);
-  if (match && match[1]) {
-    return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w1200`;
-  }
-  return clean;
+  return getMediaThumbnail(clean, clean);
 }
 
 export function generateEventSlug(title: string, fallbackId?: string): string {

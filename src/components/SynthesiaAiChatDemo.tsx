@@ -225,13 +225,16 @@ export default function SynthesiaAiChatDemo({ isActive = true }: SynthesiaAiChat
       </div>
 
       {/* 2. Interactive Topic Chips */}
-      <div className="flex flex-wrap items-center gap-2 mb-4 relative z-10">
+      <div 
+        className="flex items-center gap-2 mb-4 relative z-10 overflow-x-auto no-scrollbar pb-1"
+        style={{ display: 'flex', overflowX: 'auto', whiteSpace: 'nowrap', scrollbarWidth: 'none' }}
+      >
         {SCENARIOS.map((sc, i) => (
           <button
             key={sc.id}
             type="button"
             onClick={() => handleSelectScenario(i)}
-            className={`text-xs font-bold px-3 py-1.5 rounded-xl transition-all duration-300 cursor-pointer flex items-center gap-1.5 active:scale-95 ${
+            className={`text-xs font-bold px-3 py-1.5 rounded-xl transition-all duration-300 cursor-pointer flex items-center gap-1.5 active:scale-95 shrink-0 ${
               scenarioIndex === i
                 ? 'bg-gradient-to-r from-[#f9b03c] to-amber-400 text-slate-950 shadow-[0_0_18px_rgba(249,176,60,0.4)] font-black border border-[#f9b03c]'
                 : 'bg-white/[0.04] text-gray-300 hover:bg-white/[0.08] hover:text-white border border-white/[0.08]'

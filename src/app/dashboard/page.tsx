@@ -23,6 +23,7 @@ import { getCoursePinnedPrompts } from '@/lib/aiPrompts';
 import { ETHIOPIAN_AVATARS, EthiopianAvatar } from '@/lib/ethiopianAvatars';
 import FeedbackModal from '@/components/FeedbackModal';
 import { speakWithLanguageDetection } from '@/lib/ttsHelper';
+import { parseVideoUrl } from '@/lib/videoParser';
 
 function DashboardLoadingScreen({ message }: { message?: string }) {
   return (
@@ -1523,6 +1524,7 @@ function StudentDashboardContent() {
 
     speakWithLanguageDetection({
       text: cleanText,
+      siteLang: dashboardAiLang,
       onStart: () => setPlayingAiAudioIdx(idx),
       onEnd: () => setPlayingAiAudioIdx(null),
       onError: () => tryAudioEndpoint(cleanText, idx)
@@ -2682,15 +2684,25 @@ function StudentDashboardContent() {
                             const rawUrl = activeLesson?.video || activeLesson?.videoUrl || activeLesson?.url || activeCourse?.video || activeCourse?.videoUrl || activeCourse?.promoVideo || activeCourse?.previewVideo;
                             if (!rawUrl) return null;
                             
-                            let cleanUrl = rawUrl.trim();
-                            if (cleanUrl.includes('<iframe') && cleanUrl.includes('src="')) {
-                                const match = cleanUrl.match(/src="([^"]+)"/);
-                                if (match) cleanUrl = match[1];
+                            const parsed = parseVideoUrl(rawUrl, true);
+                            if (!parsed.src) return null;
+
+                            // 1. Google Drive preview iframe
+                            if (parsed.isGoogleDrive) {
+                                return (
+                                    <iframe
+                                        src={parsed.src}
+                                        loading="lazy"
+                                        className="absolute inset-0 w-full h-full border-none"
+                                        allow="autoplay; encrypted-media"
+                                        allowFullScreen
+                                    ></iframe>
+                                );
                             }
-                            cleanUrl = cleanUrl.replace(/&amp;/g, '&');
-                            
-                            if (cleanUrl.includes('mediadelivery.net')) {
-                                let embedUrl = cleanUrl.replace('/play/', '/embed/').replace('video.mediadelivery.net', 'iframe.mediadelivery.net');
+
+                            // 2. mediadelivery.net CDN iframe
+                            if (rawUrl.includes('mediadelivery.net')) {
+                                let embedUrl = rawUrl.trim().replace('/play/', '/embed/').replace('video.mediadelivery.net', 'iframe.mediadelivery.net');
                                 if (!embedUrl.includes('autoplay=')) {
                                     embedUrl += (embedUrl.includes('?') ? '&' : '?') + 'autoplay=true';
                                 }
@@ -2703,25 +2715,19 @@ function StudentDashboardContent() {
                                         referrerPolicy="no-referrer-when-downgrade"
                                     ></iframe>
                                 );
-                            } else if (cleanUrl.includes('drive.google.com')) {
-                                return (
-                                    <iframe
-                                        src={cleanUrl.replace(/\/view.*$/, '/preview').replace(/\/edit.*$/, '/preview')}
-                                        loading="lazy"
-                                        className="absolute inset-0 w-full h-full border-none"
-                                        allow="autoplay; encrypted-media"
-                                        allowFullScreen
-                                    ></iframe>
-                                );
-                            } else {
-                                return (
-                                    <ReactPlayer
-                                        ref={playerRef}
-                                        key={cleanUrl}
-                                        url={cleanUrl}
-                                        width="100%"
-                                        height="100%"
-                                        controls={true}
+                            }
+
+                            // 3. Direct video (MP4, WebM, Dropbox direct stream) or player-compatible URL (YouTube, Vimeo)
+                            const playerUrl = (parsed.isDropbox || parsed.isDirectVideo) ? parsed.src : rawUrl.trim();
+
+                            return (
+                                <ReactPlayer
+                                    ref={playerRef}
+                                    key={playerUrl}
+                                    url={playerUrl}
+                                    width="100%"
+                                    height="100%"
+                                    controls={true}
                                         playing={true}
                                         playbackRate={playbackSpeed}
                                         onProgress={({ played, playedSeconds }: { played: number; playedSeconds: number }) => {
@@ -2744,7 +2750,6 @@ function StudentDashboardContent() {
                                         className="absolute inset-0"
                                     />
                                 );
-                            }
                         })() || (
                             <>
                                 <img src={getCleanCourseImage(activeCourse) || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1200'} className="absolute inset-0 w-full h-full object-cover opacity-60" alt="Video cover" />
@@ -4298,7 +4303,7 @@ function StudentDashboardContent() {
                  )}
 
                   {/* Quick Action Suggestion Chips - Dynamically adapt to selected course or general campus */}
-                  <div className="relative z-10 flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
+                  <div style={{ display: 'flex', overflowX: 'auto', whiteSpace: 'nowrap', scrollbarWidth: 'none' }} className="relative z-10 flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
                       {getCoursePinnedPrompts(selectedAiCourse, dashboardAiLang).map((item, idx) => (
                         <button
                           key={idx}

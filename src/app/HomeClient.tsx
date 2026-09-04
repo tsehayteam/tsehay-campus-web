@@ -155,10 +155,12 @@ function MagneticLink({ children, className, href, ...props }: any) {
 
 export default function HomeClient({ 
   initialCourses, 
-  initialLandingVideo 
+  initialLandingVideo,
+  initialLandingVideoThumbnail
 }: { 
   initialCourses?: any[]; 
-  initialLandingVideo?: string; 
+  initialLandingVideo?: string;
+  initialLandingVideoThumbnail?: string;
 }) {
   const { user } = useAuth();
   const router = useRouter();
@@ -552,7 +554,7 @@ export default function HomeClient({
 
           {/* 🌟 1. HERO VIDEO ENHANCEMENT: Perfectly integrated below headline, spanning wide, central */}
           <div className="w-full flex items-center justify-center my-4 sm:my-6">
-            <Hero3DPopoutStage videoSrc={initialLandingVideo} />
+            <Hero3DPopoutStage videoSrc={initialLandingVideo} initialThumbnail={initialLandingVideoThumbnail} />
           </div>
 
           {/* Global Search Bar with Pulsing Glow Border */}
@@ -786,46 +788,17 @@ export default function HomeClient({
         </div>
 
         <div className="relative z-10 w-full">
-          {/* Section Stationary Header with Glassmorphism Navigation Controls */}
+          {/* Section Stationary Header */}
           <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 mb-8 sm:mb-10">
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-5 scrolly-reveal">
-              <div>
-                <div className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-400/15 via-[#f9b03c]/10 to-[#3268ba]/15 border border-[#f9b03c]/30 px-5 py-2 rounded-full shadow-[0_0_25px_rgba(249,176,60,0.2)] backdrop-blur-md mb-3">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#f9b03c] shadow-[0_0_10px_#f9b03c] animate-ping"></span>
-                  <span className="text-xs font-black uppercase tracking-widest text-[#f9b03c]">FEATURED MASTERCLASSES</span>
-                </div>
-                <h2 className="font-heading font-black text-3xl sm:text-5xl lg:text-6xl tracking-tight leading-tight">
-                  <TypingCoursesHeadline text="በብዛት የሚፈለጉ ኮርሶች" />
-                </h2>
-                <div className="w-28 h-1.5 bg-gradient-to-r from-transparent via-[#f9b03c] to-transparent rounded-full shadow-[0_0_15px_rgba(249,176,60,0.8)] mt-2"></div>
+            <div className="scrolly-reveal">
+              <div className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-400/15 via-[#f9b03c]/10 to-[#3268ba]/15 border border-[#f9b03c]/30 px-5 py-2 rounded-full shadow-[0_0_25px_rgba(249,176,60,0.2)] backdrop-blur-md mb-3">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#f9b03c] shadow-[0_0_10px_#f9b03c] animate-ping"></span>
+                <span className="text-xs font-black uppercase tracking-widest text-[#f9b03c]">FEATURED MASTERCLASSES</span>
               </div>
-
-              {/* Glassmorphism Quick Navigation Buttons & Indicator */}
-              <div className="flex items-center gap-3 self-start md:self-end">
-                <span className="hidden sm:inline-block text-slate-400 text-xs font-medium mr-2">
-                  ኮርሶችን ለማሰስ ቁልፎቹን ይጠቀሙ
-                </span>
-
-                <button
-                  type="button"
-                  onClick={() => scrollCourses('left')}
-                  className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-[#0a0e17]/90 hover:bg-[#0f172a] border border-[#f9b03c]/35 hover:border-[#f9b03c] text-white hover:text-[#f9b03c] shadow-[0_8px_25px_rgba(0,0,0,0.7),0_0_15px_rgba(249,176,60,0.15)] hover:shadow-[0_0_25px_rgba(249,176,60,0.4)] backdrop-blur-xl flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer group"
-                  title="ቀዳሚ ኮርሶች (Previous)"
-                  aria-label="Previous courses"
-                >
-                  <i className="fa-solid fa-chevron-left text-sm group-hover:-translate-x-0.5 transition-transform"></i>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => scrollCourses('right')}
-                  className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-[#0a0e17]/90 hover:bg-[#0f172a] border border-[#f9b03c]/35 hover:border-[#f9b03c] text-white hover:text-[#f9b03c] shadow-[0_8px_25px_rgba(0,0,0,0.7),0_0_15px_rgba(249,176,60,0.15)] hover:shadow-[0_0_25px_rgba(249,176,60,0.4)] backdrop-blur-xl flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer group"
-                  title="ቀጣይ ኮርሶች (Next)"
-                  aria-label="Next courses"
-                >
-                  <i className="fa-solid fa-chevron-right text-sm group-hover:translate-x-0.5 transition-transform"></i>
-                </button>
-              </div>
+              <h2 className="font-heading font-black text-3xl sm:text-5xl lg:text-6xl tracking-tight leading-tight">
+                <TypingCoursesHeadline text="በብዛት የሚፈለጉ ኮርሶች" />
+              </h2>
+              <div className="w-28 h-1.5 bg-gradient-to-r from-transparent via-[#f9b03c] to-transparent rounded-full shadow-[0_0_15px_rgba(249,176,60,0.8)] mt-2"></div>
             </div>
           </div>
 
@@ -834,28 +807,28 @@ export default function HomeClient({
               <CourseCardSkeleton count={3} />
             </div>
           ) : (
-            /* Horizontal Carousel Container with Side Navigation Overlays */
+            /* Horizontal Carousel Container with Centered Glassmorphism Navigation Arrows */
             <div className="relative w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 group/carousel">
-              {/* Floating Side Left Navigation Button */}
+              {/* Centered Left Navigation Arrow (Glassmorphism & Subtle Golden Glow) */}
               <button
                 type="button"
                 onClick={() => scrollCourses('left')}
-                className="hidden lg:flex absolute left-0 top-1/2 -translate-y-1/2 z-30 w-13 h-13 rounded-2xl bg-[#0a0e17]/95 hover:bg-slate-900 border border-[#f9b03c]/40 hover:border-[#f9b03c] text-white hover:text-[#f9b03c] shadow-[0_15px_40px_rgba(0,0,0,0.9),0_0_25px_rgba(249,176,60,0.25)] backdrop-blur-2xl items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 cursor-pointer opacity-0 group-hover/carousel:opacity-100"
-                title="ቀዳሚ ኮርሶች"
+                className="flex absolute left-2 sm:left-4 lg:left-2 xl:-left-4 top-1/2 -translate-y-1/2 z-30 w-11 h-11 sm:w-12 sm:h-12 lg:w-14 lg:h-14 rounded-full bg-[#0a0e17]/85 hover:bg-[#0c121e] border border-white/20 hover:border-[#f9b03c] text-white hover:text-[#f9b03c] shadow-[0_10px_35px_rgba(0,0,0,0.8),0_0_15px_rgba(249,176,60,0.12)] hover:shadow-[0_0_25px_rgba(249,176,60,0.6),0_0_50px_rgba(249,176,60,0.25)] backdrop-blur-2xl items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 cursor-pointer opacity-90 hover:opacity-100 group/btn"
+                title="ቀዳሚ ኮርሶች (Previous)"
                 aria-label="Previous courses"
               >
-                <i className="fa-solid fa-chevron-left text-base"></i>
+                <i className="fa-solid fa-chevron-left text-sm sm:text-base group-hover/btn:-translate-x-0.5 transition-transform"></i>
               </button>
 
-              {/* Floating Side Right Navigation Button */}
+              {/* Centered Right Navigation Arrow (Glassmorphism & Subtle Golden Glow) */}
               <button
                 type="button"
                 onClick={() => scrollCourses('right')}
-                className="hidden lg:flex absolute right-0 top-1/2 -translate-y-1/2 z-30 w-13 h-13 rounded-2xl bg-[#0a0e17]/95 hover:bg-slate-900 border border-[#f9b03c]/40 hover:border-[#f9b03c] text-white hover:text-[#f9b03c] shadow-[0_15px_40px_rgba(0,0,0,0.9),0_0_25px_rgba(249,176,60,0.25)] backdrop-blur-2xl items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 cursor-pointer opacity-0 group-hover/carousel:opacity-100"
-                title="ቀጣይ ኮርሶች"
+                className="flex absolute right-2 sm:right-4 lg:right-2 xl:-right-4 top-1/2 -translate-y-1/2 z-30 w-11 h-11 sm:w-12 sm:h-12 lg:w-14 lg:h-14 rounded-full bg-[#0a0e17]/85 hover:bg-[#0c121e] border border-white/20 hover:border-[#f9b03c] text-white hover:text-[#f9b03c] shadow-[0_10px_35px_rgba(0,0,0,0.8),0_0_15px_rgba(249,176,60,0.12)] hover:shadow-[0_0_25px_rgba(249,176,60,0.6),0_0_50px_rgba(249,176,60,0.25)] backdrop-blur-2xl items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 cursor-pointer opacity-90 hover:opacity-100 group/btn"
+                title="ቀጣይ ኮርሶች (Next)"
                 aria-label="Next courses"
               >
-                <i className="fa-solid fa-chevron-right text-base"></i>
+                <i className="fa-solid fa-chevron-right text-sm sm:text-base group-hover/btn:translate-x-0.5 transition-transform"></i>
               </button>
 
               {/* Scrollable Horizontal Track */}
@@ -1117,17 +1090,7 @@ export default function HomeClient({
             </div>
           )}
 
-          {/* Explore All Courses CTA Button */}
-          <div className="mt-10 sm:mt-14 text-center scrolly-reveal">
-            <Link 
-              href="/courses"
-              className="inline-flex items-center gap-3 px-8 sm:px-10 py-4 sm:py-4.5 rounded-2xl bg-gradient-to-r from-[#3268ba] via-[#25549c] to-[#3268ba] text-white font-black text-sm sm:text-base border-2 border-white/20 hover:border-[#f9b03c] shadow-[0_15px_40px_rgba(50,104,186,0.35)] hover:shadow-[0_20px_50px_rgba(249,176,60,0.4)] transition-all duration-300 hover:scale-105 group cursor-pointer"
-            >
-              <i className="fa-solid fa-layer-group text-[#f9b03c] text-lg group-hover:rotate-12 transition-transform"></i>
-              <span>ሁሉንም ኮርሶች ያስሱ</span>
-              <i className="fa-solid fa-arrow-right text-xs group-hover:translate-x-1.5 transition-transform"></i>
-            </Link>
-          </div>
+
         </div>
       </section>
 

@@ -3,11 +3,13 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { db } from '@/lib/firebase/config';
 import { collection, doc, getDocs, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import FormattedAiText from '@/components/FormattedAiText';
 import { getCourseBySlugOrId, subscribeToCourses } from '@/lib/courseCache';
 import { getCoursePinnedPrompts } from '@/lib/aiPrompts';
+import { speakWithLanguageDetection, stopSpeech } from '@/lib/ttsHelper';
 
 interface Message {
   role: 'user' | 'ai';
@@ -20,12 +22,20 @@ interface Message {
 
 export default function FloatingAIButton() {
   const { user } = useAuth();
+  const { lang: siteLang } = useLanguage();
   const pathname = usePathname();
 
   const [isOpen, setIsOpen] = useState(false);
   const [courses, setCourses] = useState<any[]>([]);
   const [selectedCourse, setSelectedCourse] = useState<any>(null);
   const [aiLang, setAiLang] = useState<'am' | 'en'>('am');
+
+  // Synchronize AI assistant language with site language
+  useEffect(() => {
+    if (siteLang) {
+      setAiLang(siteLang);
+    }
+  }, [siteLang]);
 
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -396,7 +406,7 @@ export default function FloatingAIButton() {
 
     // If currently speaking this message, stop it
     if (playingAudioIdx === idx) {
-      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      stopSpeech();
       if (currentAudioRef.current) {
         currentAudioRef.current.pause();
         currentAudioRef.current = null;
@@ -406,7 +416,7 @@ export default function FloatingAIButton() {
     }
 
     // Stop any existing speech
-    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    stopSpeech();
     if (currentAudioRef.current) {
       currentAudioRef.current.pause();
       currentAudioRef.current = null;
@@ -423,54 +433,13 @@ export default function FloatingAIButton() {
 
     if (!cleanText) return;
 
-    if ('speechSynthesis' in window) {
-      const utterance = new SpeechSynthesisUtterance(cleanText);
-      const voices = window.speechSynthesis.getVoices();
-
-      // Find the best pleasant voice:
-      // 1. Amharic voice if installed
-      // 2. High-quality natural, warm female voice (Google, Microsoft Zira/Jenny/Aria, Samantha)
-      let selectedVoice = voices.find(v => 
-        v.lang.toLowerCase().includes('am') || 
-        v.lang.toLowerCase().includes('et') || 
-        v.name.toLowerCase().includes('amharic') ||
-        v.name.toLowerCase().includes('ethiopia')
-      );
-
-      if (!selectedVoice) {
-        selectedVoice = voices.find(v => 
-          (v.name.toLowerCase().includes('natural') || 
-           v.name.toLowerCase().includes('zira') || 
-           v.name.toLowerCase().includes('jenny') || 
-           v.name.toLowerCase().includes('aria') || 
-           v.name.toLowerCase().includes('samantha') || 
-           v.name.toLowerCase().includes('google') ||
-           v.name.toLowerCase().includes('female')) &&
-          (v.lang.startsWith('en') || v.lang.startsWith('am'))
-        );
-      }
-
-      if (selectedVoice) {
-        utterance.voice = selectedVoice;
-      }
-
-      // Warm, natural pitch and rate for an authentic, pleasant mentor tone
-      utterance.lang = selectedVoice?.lang || 'am-ET';
-      utterance.rate = 0.94;
-      utterance.pitch = 1.05;
-      utterance.volume = 1.0;
-
-      utterance.onstart = () => setPlayingAudioIdx(idx);
-      utterance.onend = () => setPlayingAudioIdx(null);
-      utterance.onerror = () => {
-        tryAudioEndpoint(cleanText, idx);
-      };
-
-      setPlayingAudioIdx(idx);
-      window.speechSynthesis.speak(utterance);
-    } else {
-      tryAudioEndpoint(cleanText, idx);
-    }
+    speakWithLanguageDetection({
+      text: cleanText,
+      siteLang: aiLang,
+      onStart: () => setPlayingAudioIdx(idx),
+      onEnd: () => setPlayingAudioIdx(null),
+      onError: () => tryAudioEndpoint(cleanText, idx)
+    });
   };
 
   const tryAudioEndpoint = (cleanText: string, idx: number) => {
@@ -884,7 +853,10 @@ export default function FloatingAIButton() {
           )}
 
           {/* Quick Action Suggestion Pills */}
-          <div className="relative px-3 py-2 bg-black/40 border-t border-white/10 flex items-center gap-1.5 overflow-x-auto no-scrollbar z-10">
+          <div 
+            className="relative px-3 py-2 bg-black/40 border-t border-white/10 flex items-center gap-1.5 overflow-x-auto no-scrollbar z-10"
+            style={{ display: 'flex', overflowX: 'auto', whiteSpace: 'nowrap', scrollbarWidth: 'none' }}
+          >
             {quickPrompts.map((qp, i) => (
               <button
                 key={i}

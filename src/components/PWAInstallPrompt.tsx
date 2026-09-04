@@ -119,26 +119,43 @@ export default function PWAInstallPrompt() {
         className="fixed inset-0 bg-black/60 backdrop-blur-xs sm:hidden pointer-events-auto transition-opacity"
       />
 
-      {/* 🌟 3D FLOATING CARD CONTAINER WITH ROTATING BEAM LIGHT BORDER */}
-      <div className="relative w-full max-w-[340px] sm:w-[350px] p-[2px] rounded-3xl overflow-hidden pointer-events-auto select-none shadow-[0_20px_60px_rgba(0,0,0,0.8),0_0_30px_rgba(249,176,60,0.25)] transition-all duration-300 hover:scale-[1.02]">
-        
-        {/* ⚡ ROTATING BEAM OF LIGHT (Conic Gradient Beam circling the 4 corners) */}
-        <div className="absolute -inset-[150%] bg-[conic-gradient(from_0deg,transparent_0_300deg,#f9b03c_330deg,#ffffff_350deg,#f9b03c_360deg)] animate-[spin_3.5s_linear_infinite] pointer-events-none" />
+      {/* 🌟 RECTANGULAR FLOATING CARD CONTAINER WITH CONTINUOUS SUBTLE PULSING GLOW */}
+      <div 
+        className="relative w-full max-w-[340px] sm:w-[350px] p-[1.5px] overflow-hidden pointer-events-auto select-none pwa-pulse-glow transition-all duration-300 hover:scale-[1.01]"
+        style={{
+          borderRadius: '8px',
+          boxShadow: '0 0 20px rgba(249, 176, 60, 0.3), 0 20px 50px rgba(0, 0, 0, 0.9)'
+        }}
+      >
+        {/* Subtle Conic Beam */}
+        <div className="absolute -inset-[150%] bg-[conic-gradient(from_0deg,transparent_0_300deg,#f9b03c_330deg,#ffffff_350deg,#f9b03c_360deg)] animate-[spin_4s_linear_infinite] pointer-events-none opacity-80" />
 
         {/* Ambient Glowing Aura Behind */}
-        <div className="absolute -inset-1 bg-gradient-to-r from-amber-500/30 to-[#f9b03c]/40 rounded-3xl blur-md -z-10 pointer-events-none" />
+        <div 
+          className="absolute -inset-1 bg-gradient-to-r from-amber-500/25 to-[#f9b03c]/35 blur-md -z-10 pointer-events-none" 
+          style={{ borderRadius: '8px' }}
+        />
 
-        {/* Inner Card Body with High-End Glassmorphic Texture */}
-        <div className="relative bg-[#070b14]/95 dark:bg-[#050811]/95 backdrop-blur-2xl rounded-[22px] p-4 sm:p-4.5 text-white border border-white/15 overflow-hidden">
-          
+        {/* Inner Card Body with High-End Glassmorphic Texture & 8px Corners */}
+        <div 
+          className="relative text-white border border-white/15 overflow-hidden p-4 sm:p-4.5"
+          style={{
+            borderRadius: '7px',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+            background: 'rgba(3, 5, 9, 0.9)'
+          }}
+        >
           {/* Subtle 3D Top Reflection Line */}
           <div className="absolute top-0 inset-x-4 h-[1px] bg-gradient-to-r from-transparent via-white/40 to-transparent" />
 
           {/* Close Button */}
           <button 
             onClick={handleDismiss}
-            className="absolute top-3 right-3 w-6 h-6 rounded-full bg-white/10 hover:bg-white/20 text-gray-300 hover:text-white flex items-center justify-center text-[10px] transition cursor-pointer active:scale-90 z-20"
+            className="absolute top-3 right-3 w-6 h-6 bg-white/10 hover:bg-white/20 text-gray-300 hover:text-white flex items-center justify-center text-[10px] transition cursor-pointer active:scale-90 z-20 border border-white/10"
+            style={{ borderRadius: '6px' }}
             title="ዝጋ (Close)"
+            aria-label="Close"
           >
             <i className="fa-solid fa-xmark"></i>
           </button>
@@ -146,7 +163,10 @@ export default function PWAInstallPrompt() {
           {isInstalledSuccess ? (
             /* Success Screen */
             <div className="text-center py-4 space-y-2 animate-in zoom-in-95 duration-200">
-              <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 text-2xl flex items-center justify-center mx-auto shadow-lg border border-emerald-500/30 animate-bounce">
+              <div 
+                className="w-12 h-12 bg-emerald-500/20 text-emerald-400 text-2xl flex items-center justify-center mx-auto shadow-lg border border-emerald-500/30 animate-bounce"
+                style={{ borderRadius: '8px' }}
+              >
                 <i className="fa-solid fa-circle-check"></i>
               </div>
               <h3 className="text-sm font-black text-white font-heading">በተሳካ ሁኔታ ተጭኗል! 🎉</h3>
@@ -158,14 +178,18 @@ export default function PWAInstallPrompt() {
             /* Compact High-Converting Install Prompt */
             <div className="space-y-3">
               
-              {/* 3D App Icon + Title Header */}
+              {/* Rectangular App Icon + Title Header */}
               <div className="flex items-center gap-3 pr-6">
                 <div className="relative shrink-0 group">
-                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-200 p-[2px] shadow-[0_8px_20px_rgba(249,176,60,0.45)] transform group-hover:rotate-6 transition-transform">
+                  <div 
+                    className="w-12 h-12 bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-200 p-[2px] shadow-[0_8px_20px_rgba(249,176,60,0.45)] transform group-hover:scale-105 transition-transform"
+                    style={{ borderRadius: '8px' }}
+                  >
                     <img 
                       src="/tc-logo.jpg" 
                       alt="Tsehay Campus" 
-                      className="w-full h-full rounded-[14px] object-cover"
+                      className="w-full h-full object-cover"
+                      style={{ borderRadius: '6px' }}
                       onError={(e) => {
                         (e.currentTarget as HTMLImageElement).src = '/favicon.png';
                       }}
@@ -181,7 +205,10 @@ export default function PWAInstallPrompt() {
                     <h3 className="font-heading font-black text-white text-sm tracking-wide truncate">
                       ፀሐይ ካምፓስ አፕ
                     </h3>
-                    <span className="text-[8px] bg-emerald-500/20 text-emerald-400 font-black px-1.5 py-0.2 rounded-full border border-emerald-500/30">
+                    <span 
+                      className="text-[8px] bg-emerald-500/20 text-emerald-400 font-black px-1.5 py-0.2 border border-emerald-500/30"
+                      style={{ borderRadius: '4px' }}
+                    >
                       PWA
                     </span>
                   </div>
@@ -193,11 +220,17 @@ export default function PWAInstallPrompt() {
 
               {/* Compact Benefits Bar */}
               <div className="grid grid-cols-2 gap-1.5 py-1 text-[10px] text-gray-300">
-                <div className="bg-white/5 border border-white/10 rounded-xl px-2 py-1.5 flex items-center gap-1.5">
+                <div 
+                  className="bg-white/5 border border-white/10 px-2 py-1.5 flex items-center gap-1.5"
+                  style={{ borderRadius: '8px' }}
+                >
                   <i className="fa-solid fa-bolt text-[#f9b03c] text-xs"></i>
                   <span className="font-bold">ፈጣን መዳረሻ</span>
                 </div>
-                <div className="bg-white/5 border border-white/10 rounded-xl px-2 py-1.5 flex items-center gap-1.5">
+                <div 
+                  className="bg-white/5 border border-white/10 px-2 py-1.5 flex items-center gap-1.5"
+                  style={{ borderRadius: '8px' }}
+                >
                   <i className="fa-solid fa-bell text-emerald-400 text-xs"></i>
                   <span className="font-bold">የፈተና ማሳወቂያ</span>
                 </div>
@@ -207,7 +240,10 @@ export default function PWAInstallPrompt() {
               {isIOS ? (
                 /* iOS Safari Micro-Guide */
                 <div className="space-y-2 pt-0.5">
-                  <div className="bg-amber-500/10 border border-amber-500/25 rounded-2xl p-2.5 text-[11px] space-y-1.5 text-gray-200">
+                  <div 
+                    className="bg-amber-500/10 border border-amber-500/25 p-2.5 text-[11px] space-y-1.5 text-gray-200"
+                    style={{ borderRadius: '8px' }}
+                  >
                     <p className="font-bold text-[#f9b03c] text-[10px] flex items-center gap-1">
                       <i className="fa-brands fa-apple"></i>
                       <span>በ iPhone ለመጫን 3 ቀላል ደረጃዎች፦</span>
@@ -231,7 +267,8 @@ export default function PWAInstallPrompt() {
                   <button 
                     type="button" 
                     onClick={handleDismiss}
-                    className="w-full bg-white/10 hover:bg-white/20 text-gray-200 font-bold py-2 rounded-xl text-xs transition cursor-pointer text-center active:scale-95"
+                    className="w-full bg-white/10 hover:bg-white/20 text-gray-200 font-bold py-2 text-xs transition cursor-pointer text-center active:scale-95 border border-white/10"
+                    style={{ borderRadius: '8px' }}
                   >
                     ገባኝ (Got it)
                   </button>
@@ -242,7 +279,8 @@ export default function PWAInstallPrompt() {
                   <button 
                     type="button"
                     onClick={handleInstallClick}
-                    className="group w-full bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#f9b03c] hover:brightness-110 text-slate-950 font-black py-2.5 px-4 rounded-xl shadow-[0_0_20px_rgba(249,176,60,0.5)] flex items-center justify-center gap-2 text-xs transition-all duration-200 active:scale-90 cursor-pointer"
+                    className="group w-full bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#f9b03c] hover:brightness-110 text-slate-950 font-black py-2.5 px-4 shadow-[0_0_20px_rgba(249,176,60,0.5)] flex items-center justify-center gap-2 text-xs transition-all duration-200 active:scale-95 cursor-pointer"
+                    style={{ borderRadius: '8px' }}
                   >
                     <i className="fa-solid fa-download text-xs animate-bounce"></i>
                     <span>አፕሊኬሽኑን ጫን (Install App)</span>

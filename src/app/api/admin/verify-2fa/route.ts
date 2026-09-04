@@ -61,8 +61,14 @@ export async function POST(req: NextRequest) {
 
       // 3. Send HTML Email via Resend
       const resendApiKey = process.env.RESEND_API_KEY;
-      const fromEmail = process.env.RESEND_FROM_EMAIL || '"Tsehay Campus" <tsehayoperation@gmail.com>';
-      const fallbackFrom = '"Tsehay Campus" <tsehayoperation@gmail.com>';
+      /**
+       * 💡 ADMIN NOTICE REGARDING EMAIL SENDER PROFILE AVATAR / BRANDING:
+       * Inbox avatars (Gmail, Apple Mail) are controlled via the Google Workspace account or Gravatar profile
+       * associated with support@tsehaycampus.com. To show the brand logo, configure the profile picture in
+       * Google Admin Console and at https://gravatar.com.
+       */
+      const fromEmail = process.env.RESEND_FROM_EMAIL || 'Tsehay Campus <support@tsehaycampus.com>';
+      const fallbackFrom = 'Tsehay Campus <support@tsehaycampus.com>';
       const websiteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.tsehaycampus.com';
 
       const emailHtml = `

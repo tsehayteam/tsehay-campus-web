@@ -12,6 +12,7 @@ import {
   EventTicket, 
   DEFAULT_EVENTS, 
   getCachedEvents, 
+  saveCachedEvents,
   getEventBySlugOrId, 
   getRemainingSeats, 
   formatDriveImageUrl,
@@ -20,7 +21,8 @@ import {
 } from '@/lib/eventCache';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase/config';
-import { collection, doc, onSnapshot, query, getDocs, setDoc } from 'firebase/firestore';
+import { collection, doc, onSnapshot, query, getDocs, setDoc, updateDoc, increment } from 'firebase/firestore';
+import { parseVideoEmbedUrl, parseImageUrl, isMediaVideo, getMediaThumbnail } from '@/lib/videoParser';
 
 export default function EventDetailClient() {
   const params = useParams();
@@ -31,6 +33,7 @@ export default function EventDetailClient() {
   const [event, setEvent] = useState<TsehayEvent | null>(() => getEventBySlugOrId(slug, getCachedEvents()));
   const [liveRegistrationsCount, setLiveRegistrationsCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
+  const [isPlayingVideo, setIsPlayingVideo] = useState(false);
 
   // Booking & Payment Modal State
   const [isBookingOpen, setIsBookingOpen] = useState(false);
@@ -57,6 +60,18 @@ export default function EventDetailClient() {
       }
     };
     window.addEventListener('tsehay_events_updated', handleEventsUpdate);
+
+    // Cross-Tab BroadcastChannel synchronization
+    let bc: BroadcastChannel | null = null;
+    try {
+      bc = new BroadcastChannel('tsehay_events_sync');
+      bc.onmessage = (msg) => {
+        if (msg.data?.events && Array.isArray(msg.data.events)) {
+          const found = getEventBySlugOrId(slug, msg.data.events);
+          if (found) setEvent(found);
+        }
+      };
+    } catch (e) {}
 
     // 1. Live Firestore Event Listener on Artifacts
     let unsubEvent: any = null;
@@ -143,6 +158,9 @@ export default function EventDetailClient() {
 
     return () => {
       window.removeEventListener('tsehay_events_updated', handleEventsUpdate);
+      if (bc) {
+        try { bc.close(); } catch (e) {}
+      }
       if (unsubEvent) unsubEvent();
       if (unsubRootEvent) unsubRootEvent();
       if (unsubRegs) unsubRegs();
@@ -241,10 +259,51 @@ export default function EventDetailClient() {
         };
         await setDoc(doc(db, 'event_registrations', ticketObj.ticketId), regRecord, { merge: true });
         await setDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'event_registrations', ticketObj.ticketId), regRecord, { merge: true }).catch(() => {});
+
+        // 🌟 [CRITICAL FIX 2: ATOMIC SEAT DECREMENT (increment(-1))]
+        if (event.id) {
+          const seatDecUpdate = {
+            remainingSeats: increment(-1),
+            seatsLeft: increment(-1),
+            availableTickets: increment(-1),
+            registeredCount: increment(1),
+            updatedAt: new Date().toISOString()
+          };
+          await Promise.allSettled([
+            updateDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'events', event.id), seatDecUpdate),
+            updateDoc(doc(db, 'events', event.id), seatDecUpdate),
+            event.slug ? updateDoc(doc(db, 'events', event.slug), seatDecUpdate) : Promise.resolve(),
+            event.slug ? updateDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'events', event.slug), seatDecUpdate) : Promise.resolve()
+          ]);
+        }
       } catch (clientWriteErr) {
         console.warn('Direct event_registrations client write notice:', clientWriteErr);
       }
     }
+
+    // 🌟 Instantly update local React state and persistent cache (e.g. 105 -> 104)
+    setEvent(prev => {
+      if (!prev) return prev;
+      const curRemaining = prev.remainingSeats !== undefined 
+        ? prev.remainingSeats 
+        : Math.max(0, (Number(prev.capacity) || 100) - (Number(prev.registeredCount) || 0));
+      const nextRemaining = Math.max(0, curRemaining - 1);
+      const nextRegCount = (Number(prev.registeredCount) || 0) + 1;
+      const updated = {
+        ...prev,
+        remainingSeats: nextRemaining,
+        seatsLeft: nextRemaining,
+        availableTickets: nextRemaining,
+        registeredCount: nextRegCount
+      };
+      try {
+        const cached = getCachedEvents();
+        const nextList = cached.map(e => (e.id === prev.id || e.slug === prev.slug) ? { ...e, remainingSeats: nextRemaining, seatsLeft: nextRemaining, availableTickets: nextRemaining, registeredCount: nextRegCount } : e);
+        saveCachedEvents(nextList);
+        window.dispatchEvent(new CustomEvent('tsehay_events_updated', { detail: { events: nextList, eventId: prev.id } }));
+      } catch (e) {}
+      return updated;
+    });
 
     setActiveTicket(ticketObj);
     setIsBookingOpen(false);
@@ -430,12 +489,12 @@ export default function EventDetailClient() {
     );
   }
 
+  const remainingSeats = getRemainingSeats(event);
+  const capacity = Number(event.capacity) || 100;
   const effectiveRegCount = Math.max(
     Number(event.registeredCount) || 0,
-    liveRegistrationsCount
+    capacity - remainingSeats
   );
-  const capacity = Number(event.capacity) || 100;
-  const remainingSeats = Math.max(0, capacity - effectiveRegCount);
   const isSoldOut = remainingSeats <= 0;
   const percentTaken = Math.min(100, Math.round((effectiveRegCount / capacity) * 100));
 
@@ -648,33 +707,107 @@ export default function EventDetailClient() {
 
               </div>
 
-              {/* Right Column (5 cols): Cinematic Banner Stage */}
+              {/* Right Column (5 cols): Cinematic Banner & Universal Video Stage */}
               <div className="lg:col-span-5">
-                <div className="relative rounded-3xl overflow-hidden border-2 border-white/15 shadow-[0_20px_60px_rgba(0,0,0,0.9)] group">
-                  <img
-                    src={formatDriveImageUrl(event.image) || event.image || 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?q=80&w=1200'}
-                    alt={event.title}
-                    className="w-full aspect-[4/3] object-cover group-hover:scale-105 transition-transform duration-700"
-                  />
+                {(() => {
+                  const hasVideo = Boolean(event.videoUrl || (event.image && isMediaVideo(event.image)));
+                  const effectiveVideoUrl = event.videoUrl || (event.image && isMediaVideo(event.image) ? event.image : '');
+                  const parsedVideo = effectiveVideoUrl ? parseVideoEmbedUrl(effectiveVideoUrl, true) : null;
+                  const posterUrl = formatDriveImageUrl(event.image) || (effectiveVideoUrl ? getMediaThumbnail(effectiveVideoUrl) : '') || 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?q=80&w=1200';
 
-                  {/* Gradient Overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent pointer-events-none" />
+                  if (hasVideo && isPlayingVideo && parsedVideo && parsedVideo.src) {
+                    return (
+                      <div className="relative rounded-3xl overflow-hidden border-2 border-[#f9b03c]/40 shadow-[0_20px_60px_rgba(0,0,0,0.95)] aspect-[4/3] bg-black group">
+                        {parsedVideo.type === 'video' ? (
+                          <video 
+                            src={parsedVideo.src} 
+                            controls 
+                            autoPlay 
+                            playsInline
+                            className="w-full h-full object-contain"
+                          />
+                        ) : (
+                          <iframe
+                            src={parsedVideo.src}
+                            title={event.title || 'Event Trailer Video'}
+                            className="w-full h-full border-0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                            allowFullScreen
+                          />
+                        )}
+                        {/* Switch Back to Poster Button */}
+                        <button
+                          type="button"
+                          onClick={() => setIsPlayingVideo(false)}
+                          className="absolute top-4 right-4 px-3.5 py-1.5 rounded-full bg-black/80 hover:bg-black text-white text-xs font-bold backdrop-blur-md border border-white/20 flex items-center gap-1.5 z-30 cursor-pointer transition shadow-xl hover:scale-105 active:scale-95"
+                          title="ወደ ባነር ፎቶ ተመለስ"
+                        >
+                          <i className="fa-solid fa-image text-[11px] text-[#f9b03c]"></i>
+                          <span>ባነር (Poster)</span>
+                        </button>
+                      </div>
+                    );
+                  }
 
-                  {/* Floating Price Tag */}
-                  <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between">
-                    <div>
-                      <p className="text-[10px] uppercase font-bold text-slate-300">የትኬት ዋጋ (Price)</p>
-                      <p className="text-xl font-black text-[#f9b03c]">
-                        {event.price === 0 || event.isFree ? '100% ነፃ (FREE)' : `${event.price.toLocaleString()} ብር`}
-                      </p>
+                  return (
+                    <div className="relative rounded-3xl overflow-hidden border-2 border-white/15 shadow-[0_20px_60px_rgba(0,0,0,0.9)] group aspect-[4/3] bg-slate-900">
+                      <img
+                        src={posterUrl}
+                        alt={event.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?q=80&w=1200';
+                        }}
+                      />
+
+                      {/* Gradient Overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent pointer-events-none" />
+
+                      {/* Video Indicator / Play Trailer Button */}
+                      {hasVideo && (
+                        <>
+                          <div className="absolute top-4 left-4 z-10 px-3 py-1 rounded-full bg-red-600/90 text-white text-[11px] font-black flex items-center gap-1.5 shadow-lg backdrop-blur-md border border-white/20">
+                            <i className="fa-solid fa-film text-[9px]"></i>
+                            <span>የቪዲዮ ማስተዋወቂያ አለው</span>
+                          </div>
+
+                          <div className="absolute inset-0 flex items-center justify-center z-10">
+                            <button
+                              type="button"
+                              onClick={() => setIsPlayingVideo(true)}
+                              className="group/btn relative flex flex-col items-center justify-center cursor-pointer transition-transform duration-300 hover:scale-110 active:scale-95"
+                              aria-label="የክንውኑን ማስተዋወቂያ ቪዲዮ ተመልከት"
+                            >
+                              <div className="absolute -inset-4 rounded-full bg-amber-500/25 blur-xl group-hover/btn:bg-amber-500/45 transition duration-500 animate-pulse"></div>
+                              <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-tr from-amber-500 to-[#f9b03c] text-slate-950 flex items-center justify-center shadow-[0_0_35px_rgba(249,176,60,0.7)] border-2 border-white/40">
+                                <i className="fa-solid fa-play text-xl sm:text-2xl ml-1 text-slate-950 group-hover/btn:scale-110 transition-transform"></i>
+                              </div>
+                              <div className="mt-3 px-3.5 py-1.5 rounded-full bg-black/80 backdrop-blur-md border border-white/20 text-[11px] font-bold text-white whitespace-nowrap shadow-lg flex items-center gap-1.5">
+                                <i className="fa-solid fa-play text-[9px] text-[#f9b03c]"></i>
+                                <span>ቪዲዮውን ተመልከት (Watch Trailer)</span>
+                              </div>
+                            </button>
+                          </div>
+                        </>
+                      )}
+
+                      {/* Floating Price Tag */}
+                      <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between z-10">
+                        <div>
+                          <p className="text-[10px] uppercase font-bold text-slate-300">የትኬት ዋጋ (Price)</p>
+                          <p className="text-xl font-black text-[#f9b03c]">
+                            {event.price === 0 || event.isFree ? '100% ነፃ (FREE)' : `${event.price.toLocaleString()} ብር`}
+                          </p>
+                        </div>
+
+                        <div className="px-3.5 py-1.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-xs font-black flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                          <span>ቅበላ ክፍት ነው</span>
+                        </div>
+                      </div>
                     </div>
-
-                    <div className="px-3.5 py-1.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-xs font-black flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                      <span>ቅበላ ክፍት ነው</span>
-                    </div>
-                  </div>
-                </div>
+                  );
+                })()}
               </div>
 
             </div>

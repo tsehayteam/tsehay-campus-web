@@ -20,6 +20,32 @@ export default function AdminQrScanner({ onTicketScanned }: AdminQrScannerProps)
     ticket?: EventTicket;
   } | null>(null);
 
+  // 🔔 Floating Success Toast State
+  const [toast, setToast] = useState<{
+    type: 'success' | 'warning' | 'error';
+    title: string;
+    message: string;
+    attendee?: string;
+    ticketId?: string;
+    tier?: string;
+  } | null>(null);
+  const toastTimeoutRef = useRef<any>(null);
+
+  const showToastNotification = (t: {
+    type: 'success' | 'warning' | 'error';
+    title: string;
+    message: string;
+    attendee?: string;
+    ticketId?: string;
+    tier?: string;
+  }) => {
+    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+    setToast(t);
+    toastTimeoutRef.current = setTimeout(() => {
+      setToast(null);
+    }, 4500);
+  };
+
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const scanIntervalRef = useRef<any>(null);
@@ -142,6 +168,17 @@ export default function AdminQrScanner({ onTicketScanned }: AdminQrScannerProps)
               message: 'ትክክለኛ ቲኬት! ተማሪውን ማሳለፍ ይችላሉ (Valid Ticket, Access Granted).',
               ticket: data.ticket
             });
+            showToastNotification({
+              type: 'success',
+              title: '✅ ትኬት በተሳካ ሁኔታ ተረጋግጧል! (Ticket Verified)',
+              message: `${data.ticket?.attendeeName || 'ተማሪ'} መገኘታቸው ተረጋግጧል (Access Granted)`,
+              attendee: data.ticket?.attendeeName,
+              ticketId: data.ticket?.ticketId,
+              tier: data.ticket?.tier
+            });
+            try {
+              window.dispatchEvent(new CustomEvent('tsehay_ticket_scanned', { detail: { ticket: data.ticket } }));
+            } catch(e) {}
             if (onTicketScanned && data.ticket) onTicketScanned(data.ticket);
           } else if (data.status === 'already_used') {
             playBeep('warning');
@@ -150,11 +187,24 @@ export default function AdminQrScanner({ onTicketScanned }: AdminQrScannerProps)
               message: 'ይህ ቲኬት ከዚህ በፊት ጥቅም ላይ ውሏል (Ticket already used).',
               ticket: data.ticket
             });
+            showToastNotification({
+              type: 'warning',
+              title: '⚠️ ይህ ቲኬት ከዚህ በፊት ጥቅም ላይ ውሏል!',
+              message: `ይህ ቲኬት ቀደም ሲል ጥቅም ላይ ውሏል (${data.ticket?.attendeeName || 'ተሳታፊ'})`,
+              attendee: data.ticket?.attendeeName,
+              ticketId: data.ticket?.ticketId
+            });
           } else if (data.status === 'not_found') {
             playBeep('error');
             setScanResult({
               status: 'not_found',
               message: 'ይቅርታ፣ ይህ ቲኬት አልተገኘም (Invalid Ticket).'
+            });
+            showToastNotification({
+              type: 'error',
+              title: '❌ ያልተገኘ ቲኬት (Invalid Ticket)',
+              message: 'የገባው የትኬት መለያ በትምህርት ክፍሉ ዳታቤዝ ውስጥ አልተገኘም',
+              ticketId
             });
           } else {
             apiSuccess = false; // Fallback to client Firestore check
@@ -219,6 +269,12 @@ export default function AdminQrScanner({ onTicketScanned }: AdminQrScannerProps)
               status: 'not_found',
               message: 'ይቅርታ፣ ይህ ቲኬት አልተገኘም (Invalid Ticket).'
             });
+            showToastNotification({
+              type: 'error',
+              title: '❌ ያልተገኘ ቲኬት (Invalid Ticket)',
+              message: 'የገባው የትኬት መለያ በትምህርት ክፍሉ ዳታቤዝ ውስጥ አልተገኘም',
+              ticketId
+            });
             return;
           }
 
@@ -230,6 +286,13 @@ export default function AdminQrScanner({ onTicketScanned }: AdminQrScannerProps)
               message: 'ይህ ቲኬት ከዚህ በፊት ጥቅም ላይ ውሏል (Ticket already used).',
               ticket: foundTicketData
             });
+            showToastNotification({
+              type: 'warning',
+              title: '⚠️ ይህ ቲኬት ከዚህ በፊት ጥቅም ላይ ውሏል!',
+              message: `ይህ ቲኬት ቀደም ሲል ጥቅም ላይ ውሏል (${foundTicketData.attendeeName || 'ተሳታፊ'})`,
+              attendee: foundTicketData.attendeeName,
+              ticketId: foundTicketData.ticketId
+            });
             return;
           }
 
@@ -239,6 +302,7 @@ export default function AdminQrScanner({ onTicketScanned }: AdminQrScannerProps)
             isUsed: true,
             checkedIn: true,
             usedAt: nowIso,
+            status: 'checked_in',
             verifiedBy: 'Admin Scanner (Client)'
           };
 
@@ -248,13 +312,15 @@ export default function AdminQrScanner({ onTicketScanned }: AdminQrScannerProps)
 
           try {
             await setDoc(doc(db, 'event_registrations', ticketId), updateData, { merge: true });
+            await setDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'event_registrations', ticketId), updateData, { merge: true });
           } catch (e) {}
 
           const updated = {
             ...foundTicketData,
             isUsed: true,
             checkedIn: true,
-            usedAt: nowIso
+            usedAt: nowIso,
+            status: 'checked_in'
           };
 
           playBeep('success');
@@ -263,6 +329,19 @@ export default function AdminQrScanner({ onTicketScanned }: AdminQrScannerProps)
             message: 'ትክክለኛ ቲኬት! ተማሪውን ማሳለፍ ይችላሉ (Valid Ticket, Access Granted).',
             ticket: updated
           });
+
+          showToastNotification({
+            type: 'success',
+            title: '✅ ትኬት በተሳካ ሁኔታ ተረጋግጧል! (Ticket Verified)',
+            message: `${updated.attendeeName || 'ተማሪ'} መገኘታቸው ተረጋግጧል (Access Granted)`,
+            attendee: updated.attendeeName,
+            ticketId: updated.ticketId,
+            tier: updated.tier
+          });
+
+          try {
+            window.dispatchEvent(new CustomEvent('tsehay_ticket_scanned', { detail: { ticket: updated } }));
+          } catch(e) {}
 
           if (onTicketScanned) onTicketScanned(updated);
         } catch (clientDbErr: any) {
@@ -286,8 +365,19 @@ export default function AdminQrScanner({ onTicketScanned }: AdminQrScannerProps)
     }
   };
 
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
   const startScannerLoop = () => {
     const BarcodeDetectorClass = (window as any).BarcodeDetector;
+
+    // Load jsQR script as fallback if native BarcodeDetector is unavailable
+    if (!BarcodeDetectorClass && typeof window !== 'undefined' && !(window as any).jsQR) {
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js';
+      script.async = true;
+      document.head.appendChild(script);
+    }
+
     if (BarcodeDetectorClass) {
       const detector = new BarcodeDetectorClass({ formats: ['qr_code'] });
       scanIntervalRef.current = setInterval(async () => {
@@ -299,6 +389,37 @@ export default function AdminQrScanner({ onTicketScanned }: AdminQrScannerProps)
             if (rawValue) {
               stopCamera();
               verifyTicketData(rawValue);
+            }
+          }
+        } catch (e) {}
+      }, 300);
+    } else {
+      // Robust Canvas-based jsQR frame grabber fallback
+      scanIntervalRef.current = setInterval(() => {
+        if (!videoRef.current || videoRef.current.readyState < 2 || isVerifying) return;
+        try {
+          const jsQR = (window as any).jsQR;
+          if (!jsQR) return;
+
+          if (!canvasRef.current) {
+            canvasRef.current = document.createElement('canvas');
+          }
+          const canvas = canvasRef.current;
+          const video = videoRef.current;
+          if (video.videoWidth && video.videoHeight) {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
+            if (ctx) {
+              ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+              const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+              const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                inversionAttempts: 'dontInvert'
+              });
+              if (code && code.data) {
+                stopCamera();
+                verifyTicketData(code.data);
+              }
             }
           }
         } catch (e) {}
@@ -465,6 +586,42 @@ export default function AdminQrScanner({ onTicketScanned }: AdminQrScannerProps)
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Floating Toast Notification */}
+      {toast && (
+        <div className="fixed top-6 right-6 z-[999999] max-w-md animate-in slide-in-from-top-4 fade-in duration-300">
+          <div className={`p-4 rounded-2xl border shadow-2xl flex items-start gap-3 backdrop-blur-xl ${
+            toast.type === 'success'
+              ? 'bg-emerald-950/95 border-emerald-500/60 text-emerald-100 shadow-[0_10px_35px_rgba(16,185,129,0.35)]'
+              : toast.type === 'warning'
+              ? 'bg-amber-950/95 border-amber-500/60 text-amber-100 shadow-[0_10px_35px_rgba(245,158,11,0.35)]'
+              : 'bg-red-950/95 border-red-500/60 text-red-100 shadow-[0_10px_35px_rgba(239,68,68,0.35)]'
+          }`}>
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-slate-950 font-bold ${
+              toast.type === 'success' ? 'bg-emerald-400' : toast.type === 'warning' ? 'bg-amber-400' : 'bg-red-400'
+            }`}>
+              <i className={toast.type === 'success' ? 'fa-solid fa-check text-lg' : toast.type === 'warning' ? 'fa-solid fa-triangle-exclamation' : 'fa-solid fa-xmark text-lg'}></i>
+            </div>
+            <div className="flex-1 min-w-0 pr-2">
+              <h5 className="font-black text-sm text-white leading-tight">{toast.title}</h5>
+              <p className="text-xs text-slate-200 mt-0.5 leading-normal">{toast.message}</p>
+              {(toast.attendee || toast.ticketId) && (
+                <div className="mt-2 pt-2 border-t border-white/10 flex items-center gap-2 text-[11px] text-slate-300">
+                  {toast.attendee && <span className="font-semibold text-white truncate">{toast.attendee}</span>}
+                  {toast.ticketId && <span className="font-mono text-amber-300 bg-black/50 px-1.5 py-0.5 rounded border border-white/10 text-[10px]">{toast.ticketId}</span>}
+                </div>
+              )}
+            </div>
+            <button
+              onClick={() => setToast(null)}
+              className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors"
+              aria-label="Dismiss toast"
+            >
+              <i className="fa-solid fa-xmark text-sm"></i>
+            </button>
           </div>
         </div>
       )}

@@ -20,6 +20,15 @@ export async function GET(req: NextRequest) {
         if (settingsSnap.exists) {
           return NextResponse.json({ success: true, settingKey, data: settingsSnap.data() });
         }
+
+        // Check camelCase / snake_case aliases
+        const aliasKey = settingKey === 'landing_video' ? 'landingVideo' : (settingKey === 'about_video' ? 'aboutVideo' : (settingKey === 'landingVideo' ? 'landing_video' : (settingKey === 'aboutVideo' ? 'about_video' : '')));
+        if (aliasKey) {
+          const aliasSnap = await adminDb.collection('settings').doc(aliasKey).get();
+          if (aliasSnap.exists) {
+            return NextResponse.json({ success: true, settingKey, data: aliasSnap.data() });
+          }
+        }
       } catch (e) {}
 
       // 2. Check nested artifacts collection
@@ -92,6 +101,10 @@ export async function POST(req: NextRequest) {
         if (settingKey === 'landing_video' || settingKey === 'landingVideo') {
           await adminDb.collection('settings').doc('landingVideo').set(payload, { merge: true });
           await adminDb.collection('settings').doc('landing_video').set(payload, { merge: true });
+        } else if (settingKey === 'about_video' || settingKey === 'aboutVideo') {
+          await adminDb.collection('settings').doc('about_video').set(payload, { merge: true });
+          await adminDb.collection('settings').doc('aboutVideo').set(payload, { merge: true });
+          await adminDb.collection('site_settings').doc('about_video').set(payload, { merge: true });
         } else if (settingKey === 'youtube_portfolio') {
           await adminDb.collection('settings').doc('youtube_portfolio').set(payload, { merge: true });
         } else {

@@ -20,6 +20,7 @@ import {
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase/config';
 import { collection, onSnapshot, query, getDocs } from 'firebase/firestore';
+import { parseVideoEmbedUrl, isMediaVideo, getMediaThumbnail } from '@/lib/videoParser';
 
 export default function EventsClient() {
   const { user } = useAuth();
@@ -29,6 +30,7 @@ export default function EventsClient() {
   
   const [userBookedTickets, setUserBookedTickets] = useState<Record<string, EventTicket>>(() => getCachedUserTickets());
   const [selectedEvent, setSelectedEvent] = useState<TsehayEvent | null>(null);
+  const [previewVideoEvent, setPreviewVideoEvent] = useState<TsehayEvent | null>(null);
   const [isRegistering, setIsRegistering] = useState(false);
   const [generatedTicket, setGeneratedTicket] = useState<EventTicket | null>(null);
   const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
@@ -37,6 +39,23 @@ export default function EventsClient() {
 
   // Real-time Firestore sync on both collections
   useEffect(() => {
+    const handleCustomEventsUpdate = (e: any) => {
+      if (e.detail?.events && Array.isArray(e.detail.events)) {
+        setEvents(e.detail.events);
+      }
+    };
+    window.addEventListener('tsehay_events_updated', handleCustomEventsUpdate);
+
+    let bc: BroadcastChannel | null = null;
+    try {
+      bc = new BroadcastChannel('tsehay_events_sync');
+      bc.onmessage = (msg) => {
+        if (msg.data?.events && Array.isArray(msg.data.events)) {
+          setEvents(msg.data.events);
+        }
+      };
+    } catch (e) {}
+
     let artifactList: TsehayEvent[] = [];
     let rootList: TsehayEvent[] = [];
 
@@ -76,7 +95,8 @@ export default function EventsClient() {
             capacity: cap,
             registeredCount: reg,
             remainingSeats: rem,
-            image: cleanImage
+            image: cleanImage,
+            videoUrl: ev.videoUrl || existing.videoUrl || ''
           };
 
           eventMap.set(key, merged);
@@ -169,6 +189,10 @@ export default function EventsClient() {
       .catch(() => {});
 
     return () => {
+      window.removeEventListener('tsehay_events_updated', handleCustomEventsUpdate);
+      if (bc) {
+        try { bc.close(); } catch (e) {}
+      }
       unsubRoot();
       unsubArtifact();
       unsubRegs();
@@ -379,7 +403,9 @@ export default function EventsClient() {
             {filteredEvents.map((evt) => {
               const remaining = getRemainingSeats(evt);
               const isSoldOut = remaining <= 0;
-              const imageUrl = formatDriveImageUrl(evt.image || '');
+              const hasVideo = Boolean(evt.videoUrl || (evt.image && isMediaVideo(evt.image)));
+              const effectiveVideoUrl = evt.videoUrl || (evt.image && isMediaVideo(evt.image) ? evt.image : '');
+              const imageUrl = formatDriveImageUrl(evt.image || '') || (effectiveVideoUrl ? getMediaThumbnail(effectiveVideoUrl) : '') || 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?q=80&w=1200';
 
               return (
                 <div
@@ -388,28 +414,54 @@ export default function EventsClient() {
                 >
                   <div>
                     {/* Event Banner */}
-                    <div className="relative h-48 w-full overflow-hidden bg-slate-900">
-                      {imageUrl ? (
-                        <img
-                          src={imageUrl}
-                          alt={evt.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-tr from-[#090d16] to-[#1a2333] text-4xl text-[#f9b03c]">
-                          <i className="fa-solid fa-calendar-star" />
-                        </div>
+                    <div className="relative h-48 w-full overflow-hidden bg-slate-900 group/banner">
+                      <img
+                        src={imageUrl}
+                        alt={evt.title}
+                        className="w-full h-full object-cover group-hover/banner:scale-105 transition-transform duration-500"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?q=80&w=1200';
+                        }}
+                      />
+
+                      {/* Video Trailer Overlay Button */}
+                      {hasVideo && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setPreviewVideoEvent(evt);
+                          }}
+                          className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 hover:bg-black/60 transition-colors cursor-pointer group/vbtn z-10"
+                          title="የክንውኑን ማስተዋወቂያ ቪዲዮ ይመልከቱ"
+                        >
+                          <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-amber-500 to-[#f9b03c] text-slate-950 flex items-center justify-center shadow-[0_0_25px_rgba(249,176,60,0.8)] border border-white/50 group-hover/vbtn:scale-115 transition-transform">
+                            <i className="fa-solid fa-play text-base ml-0.5 text-slate-950"></i>
+                          </div>
+                          <span className="mt-2 px-2.5 py-0.5 rounded-full bg-black/80 backdrop-blur-md text-[10px] font-bold text-white border border-white/20 whitespace-nowrap shadow-md">
+                            ቪዲዮውን ተመልከት (Watch Trailer)
+                          </span>
+                        </button>
                       )}
 
                       {/* Online / Location Badge */}
-                      <div className="absolute top-3 left-3 flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/80 backdrop-blur-md border border-white/15 text-[10px] font-bold text-white">
+                      <div className="absolute top-3 left-3 flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/80 backdrop-blur-md border border-white/15 text-[10px] font-bold text-white z-20 pointer-events-none">
                         <i className={`fa-solid ${evt.isOnline ? 'fa-video text-blue-400' : 'fa-location-dot text-red-400'}`} />
                         <span>{evt.isOnline ? 'Google Meet / Online' : evt.location}</span>
                       </div>
 
-                      {/* Price Badge */}
-                      <div className="absolute top-3 right-3 px-3 py-1 rounded-full bg-[#f9b03c] text-slate-950 font-black text-[11px] shadow-[0_0_15px_rgba(249,176,60,0.5)]">
-                        {evt.isFree || evt.price === 0 ? 'ነፃ (FREE)' : `${evt.price} ETB`}
+                      {/* Badges */}
+                      <div className="absolute top-3 right-3 flex items-center gap-1.5 z-20">
+                        {hasVideo && (
+                          <span className="px-2 py-0.5 rounded-full bg-red-600/90 backdrop-blur-md text-white font-bold text-[10px] shadow-sm flex items-center gap-1 pointer-events-none">
+                            <i className="fa-solid fa-film text-[8px]"></i>
+                            <span>ቪዲዮ</span>
+                          </span>
+                        )}
+                        <div className="px-3 py-1 rounded-full bg-[#f9b03c] text-slate-950 font-black text-[11px] shadow-[0_0_15px_rgba(249,176,60,0.5)] pointer-events-none">
+                          {evt.isFree || evt.price === 0 ? 'ነፃ (FREE)' : `${evt.price} ETB`}
+                        </div>
                       </div>
                     </div>
 
@@ -553,6 +605,88 @@ export default function EventsClient() {
         onClose={() => setIsAuthModalOpen(false)}
         title="ትኬት ለመቁረጥ ይግቡ"
       />
+
+      {/* Universal Video Trailer Lightbox Modal */}
+      {previewVideoEvent && (
+        <div 
+          className="fixed inset-0 z-[999999] flex items-center justify-center p-4 bg-black/85 backdrop-blur-xl animate-in fade-in duration-200"
+          onClick={(e) => { if (e.target === e.currentTarget) setPreviewVideoEvent(null); }}
+        >
+          <div className="relative w-full max-w-3xl bg-slate-950 border border-white/15 rounded-3xl overflow-hidden shadow-2xl">
+            {/* Modal Header */}
+            <div className="p-4 sm:p-5 border-b border-white/10 flex items-center justify-between bg-white/[0.02]">
+              <div className="flex items-center gap-2.5">
+                <span className="w-8 h-8 rounded-xl bg-amber-500/20 text-[#f9b03c] flex items-center justify-center">
+                  <i className="fa-solid fa-circle-play text-sm"></i>
+                </span>
+                <div>
+                  <h3 className="font-heading font-black text-sm sm:text-base text-white line-clamp-1">
+                    {previewVideoEvent.title}
+                  </h3>
+                  <p className="text-[11px] text-gray-400">የክንውን ቪዲዮ ማስተዋወቂያ (Event Trailer)</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPreviewVideoEvent(null)}
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-xs transition cursor-pointer"
+                title="ዝጋ (Close)"
+              >
+                <i className="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+
+            {/* Video Player Stage */}
+            <div className="relative aspect-video w-full bg-black">
+              {(() => {
+                const vidUrl = previewVideoEvent.videoUrl || (previewVideoEvent.image && isMediaVideo(previewVideoEvent.image) ? previewVideoEvent.image : '');
+                const parsed = parseVideoEmbedUrl(vidUrl, true);
+                if (parsed.type === 'video') {
+                  return (
+                    <video
+                      src={parsed.src}
+                      controls
+                      autoPlay
+                      playsInline
+                      className="w-full h-full object-contain"
+                    />
+                  );
+                }
+                if (parsed.src) {
+                  return (
+                    <iframe
+                      src={parsed.src}
+                      title={previewVideoEvent.title}
+                      className="w-full h-full border-0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      allowFullScreen
+                    />
+                  );
+                }
+                return (
+                  <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
+                    ቪዲዮውን መክፈት አልተቻለም
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 border-t border-white/10 flex items-center justify-between bg-slate-900/50">
+              <div className="text-xs text-gray-300">
+                <span className="font-bold text-[#f9b03c]">{previewVideoEvent.date}</span> • {previewVideoEvent.time}
+              </div>
+              <Link
+                href={`/events/${previewVideoEvent.slug || previewVideoEvent.id}`}
+                className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-[#f9b03c] text-slate-950 font-black text-xs hover:opacity-95 transition flex items-center gap-1.5 shadow-md"
+              >
+                <span>ሙሉ መረጃውን እይ</span>
+                <i className="fa-solid fa-arrow-right text-[10px]"></i>
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Footer />
     </main>

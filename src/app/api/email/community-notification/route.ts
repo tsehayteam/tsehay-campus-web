@@ -136,7 +136,13 @@ export async function POST(req: Request) {
     }
 
     const resendApiKey = process.env.RESEND_API_KEY;
-    const fromEmail = process.env.RESEND_FROM_EMAIL || '"Tsehay Campus Community" <tsehayoperation@gmail.com>';
+    /**
+     * 💡 ADMIN NOTICE REGARDING EMAIL SENDER PROFILE AVATAR / BRANDING:
+     * Inbox avatars (Gmail, Apple Mail) are controlled via the Google Workspace account or Gravatar profile
+     * associated with support@tsehaycampus.com. To show the official logo, ensure support@tsehaycampus.com
+     * has a profile picture configured in Google Admin Console and at https://gravatar.com.
+     */
+    const fromEmail = process.env.RESEND_FROM_EMAIL || 'Tsehay Campus <support@tsehaycampus.com>';
 
     if (!resendApiKey) {
       return NextResponse.json({ success: true, warning: 'RESEND_API_KEY not configured, skipped email dispatch' });

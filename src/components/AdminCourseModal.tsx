@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { parseVideoUrl, parseImageUrl } from '@/lib/videoParser';
 
 export const COURSE_CATEGORIES = [
   'E-Commerce',
@@ -213,16 +214,107 @@ export default function AdminCourseModal({
 
           {/* Preview Video / Embed URL */}
           <div>
-            <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
-              የማስተዋወቂያ ቪዲዮ ሊንክ (Preview Video / Embed URL)
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider">
+                የማስተዋወቂያ ቪዲዮ ሊንክ (Preview Video / Universal URL)
+              </label>
+              {(() => {
+                const curVideo = formData.previewVideoUrl || formData.video || formData.videoUrl;
+                if (!curVideo) return null;
+                const parsed = parseVideoUrl(curVideo);
+                const badgeLabel = parsed.isYouTube 
+                  ? 'YouTube' 
+                  : parsed.isGoogleDrive 
+                  ? 'Google Drive' 
+                  : parsed.isDropbox 
+                  ? 'Dropbox' 
+                  : parsed.isVimeo 
+                  ? 'Vimeo' 
+                  : parsed.isDirectVideo 
+                  ? 'Direct MP4' 
+                  : 'Universal Embed';
+                return (
+                  <span className="text-[10px] bg-amber-400/20 text-[#f9b03c] border border-amber-400/30 font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <i className="fa-solid fa-circle-play text-[9px]"></i>
+                    <span>{badgeLabel}</span>
+                  </span>
+                );
+              })()}
+            </div>
             <input
               type="text"
               value={formData.previewVideoUrl || formData.video || formData.videoUrl}
-              onChange={(e) => setFormData({ ...formData, previewVideoUrl: e.target.value, video: e.target.value, videoUrl: e.target.value })}
-              placeholder="https://www.youtube.com/watch?v=... ወይም iframe link"
-              className="w-full bg-slate-900/80 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-[#f9b03c] outline-none transition"
+              onChange={(e) => {
+                const val = e.target.value;
+                const parsed = parseVideoUrl(val);
+                setFormData(prev => ({
+                  ...prev,
+                  previewVideoUrl: val,
+                  video: val,
+                  videoUrl: val,
+                  // Auto-suggest thumbnail if empty and thumbnail is available
+                  thumbnailUrl: !prev.thumbnailUrl && parsed.thumbnailUrl ? parsed.thumbnailUrl : prev.thumbnailUrl,
+                  image: !prev.image && parsed.thumbnailUrl ? parsed.thumbnailUrl : prev.image,
+                  thumbnail: !prev.thumbnail && parsed.thumbnailUrl ? parsed.thumbnailUrl : prev.thumbnail,
+                }));
+              }}
+              placeholder="YouTube (Watch, Shorts), Google Drive, Dropbox, Vimeo, ወይም .mp4 ሊንክ"
+              className="w-full bg-slate-900/80 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-[#f9b03c] outline-none transition font-mono text-xs"
             />
+
+            {/* Live Video Preview Box */}
+            {(() => {
+              const curVideo = formData.previewVideoUrl || formData.video || formData.videoUrl;
+              if (!curVideo || !curVideo.trim()) return null;
+              const parsed = parseVideoUrl(curVideo);
+              if (!parsed.src) return null;
+
+              return (
+                <div className="mt-3 rounded-2xl overflow-hidden border border-white/15 bg-black/60 shadow-lg p-2 space-y-2">
+                  <div className="flex items-center justify-between px-2 text-xs text-slate-400">
+                    <span className="flex items-center gap-1.5 font-bold text-slate-300">
+                      <i className="fa-solid fa-eye text-[#f9b03c]"></i>
+                      <span>የቪዲዮ ቅድመ-እይታ (Live Preview)</span>
+                    </span>
+                    {parsed.thumbnailUrl && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFormData(prev => ({
+                            ...prev,
+                            image: parsed.thumbnailUrl || prev.image,
+                            thumbnail: parsed.thumbnailUrl || prev.thumbnail,
+                            thumbnailUrl: parsed.thumbnailUrl || prev.thumbnailUrl
+                          }));
+                        }}
+                        className="text-[11px] text-[#f9b03c] hover:underline flex items-center gap-1 cursor-pointer"
+                      >
+                        <i className="fa-solid fa-image"></i>
+                        <span>እንደ ምስል ተጠቀም (Use Thumbnail)</span>
+                      </button>
+                    )}
+                  </div>
+                  <div className="relative aspect-video w-full rounded-xl overflow-hidden bg-black">
+                    {parsed.type === 'video' ? (
+                      <video
+                        src={parsed.src}
+                        controls
+                        playsInline
+                        className="w-full h-full object-contain"
+                      />
+                    ) : (
+                      <iframe
+                        src={parsed.src}
+                        title="Live Course Video Preview"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                        className="w-full h-full border-none"
+                      />
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
 
           {/* Description */}

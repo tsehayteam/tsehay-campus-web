@@ -11,7 +11,7 @@ import { DEFAULT_EVENTS, getCachedEvents, saveCachedEvents, getRemainingSeats, g
 import AdminQrScanner from '@/components/AdminQrScanner';
 import CinematicVideoModal from '@/components/CinematicVideoModal';
 
-import { parseVideoEmbedUrl, parseImageUrl } from '@/lib/videoParser';
+import { parseVideoUrl, parseVideoEmbedUrl, parseImageUrl, isMediaVideo, getMediaThumbnail, extractYouTubeId } from '@/lib/videoParser';
 import { 
   CommunityPost, 
   subscribeCommunityPosts, 
@@ -37,21 +37,7 @@ const PRESET_INCLUDES = [
   'የሁልጊዜ መዳረሻ (Full lifetime access)',
   'የሚወርዱ የትምህርት ማቴሪያሎች (Downloadable PDF resources)'
 ];
-
-export function extractYouTubeId(urlOrId: string): string {
-  if (!urlOrId) return '';
-  const trimmed = urlOrId.trim();
-  if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) return trimmed;
-  const matchWatch = trimmed.match(/[?&]v=([a-zA-Z0-9_-]{11})/i);
-  if (matchWatch && matchWatch[1]) return matchWatch[1];
-  const matchYoutu = trimmed.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/i);
-  if (matchYoutu && matchYoutu[1]) return matchYoutu[1];
-  const matchPath = trimmed.match(/(?:embed|shorts|live|v)\/([a-zA-Z0-9_-]{11})/i);
-  if (matchPath && matchPath[1]) return matchPath[1];
-  const matchAny11 = trimmed.match(/(?:[=/&?]|^)([a-zA-Z0-9_-]{11})(?:[?&/#]|$)/);
-  if (matchAny11 && matchAny11[1]) return matchAny11[1];
-  return trimmed;
-}
+export { extractYouTubeId };
 
 export function getYouTubeThumbnail(youtubeId?: string, customThumb?: string): string {
   if (customThumb && customThumb.trim()) return customThumb;
@@ -145,6 +131,7 @@ export default function AdminDashboard() {
     speaker: 'ኢዮብ ሳህሌ (Eyoub Sahle)',
     speakerRole: 'የፀሐይ ካምፓስ መስራች እና የዩቲዩብ ስፔሻሊስት',
     image: 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?q=80&w=1200',
+    videoUrl: '',
     tags: 'YouTube, Workshop',
     status: 'upcoming'
   });
@@ -1268,17 +1255,71 @@ export default function AdminDashboard() {
       });
     } catch (e) {}
 
-    const aboutVidRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'site_settings', 'about_video');
-    const unsubscribeAboutVideo = onSnapshot(aboutVidRef, (docSnap) => {
+    let unsubAbout1: any = null;
+    let unsubAbout2: any = null;
+    let unsubAbout3: any = null;
+    let unsubAbout4: any = null;
+
+    const handleAboutDocUpdate = (docSnap: any) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
-        if (data && data.videoUrl !== undefined) setAboutVideoUrl(data.videoUrl);
-        if (data && data.title !== undefined) setAboutVideoTitle(data.title);
-        if (data && data.thumbnail !== undefined) setAboutVideoThumbnail(data.thumbnail);
+        const url = data?.url || data?.videoUrl || data?.youtubeUrl;
+        const thumb = data?.thumbnail || data?.thumbnailUrl || data?.thumbUrl || data?.poster;
+        if (url) setAboutVideoUrl(url);
+        if (data?.title) setAboutVideoTitle(data.title);
+        if (thumb) setAboutVideoThumbnail(thumb);
       }
-    }, (err) => {
-      console.warn("About video Firestore sync:", err);
-    });
+    };
+
+    try {
+      const cachedAbout = localStorage.getItem('tsehay_about_video_cache');
+      if (cachedAbout) {
+        const parsed = JSON.parse(cachedAbout);
+        if (parsed?.videoUrl) setAboutVideoUrl(parsed.videoUrl);
+        if (parsed?.title) setAboutVideoTitle(parsed.title);
+        if (parsed?.thumbnail) setAboutVideoThumbnail(parsed.thumbnail);
+      }
+    } catch (e) {}
+
+    try {
+      const aboutVidRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'site_settings', 'about_video');
+      unsubAbout1 = onSnapshot(aboutVidRef, handleAboutDocUpdate, () => {});
+    } catch (e) {}
+
+    try {
+      const rootAboutVidRef = doc(db, 'site_settings', 'about_video');
+      unsubAbout2 = onSnapshot(rootAboutVidRef, handleAboutDocUpdate, () => {});
+    } catch (e) {}
+
+    try {
+      const settingsAboutVidRef1 = doc(db, 'settings', 'about_video');
+      unsubAbout3 = onSnapshot(settingsAboutVidRef1, handleAboutDocUpdate, () => {});
+    } catch (e) {}
+
+    try {
+      const settingsAboutVidRef2 = doc(db, 'settings', 'aboutVideo');
+      unsubAbout4 = onSnapshot(settingsAboutVidRef2, handleAboutDocUpdate, () => {});
+    } catch (e) {}
+
+    fetch('/api/admin/site-settings?settingKey=about_video')
+      .then(res => res.json())
+      .then(json => {
+        if (json?.data) {
+          const url = json.data.url || json.data.videoUrl || json.data.youtubeUrl;
+          const thumb = json.data.thumbnail || json.data.thumbnailUrl || json.data.thumbUrl || json.data.poster;
+          if (url) setAboutVideoUrl(url);
+          if (json.data.title) setAboutVideoTitle(json.data.title);
+          if (thumb) setAboutVideoThumbnail(thumb);
+          try {
+            localStorage.setItem('tsehay_about_video_cache', JSON.stringify({
+              videoUrl: url,
+              thumbnail: thumb,
+              title: json.data.title
+            }));
+          } catch (e) {}
+        }
+      })
+      .catch(e => console.warn("About video API load error:", e));
 
     const portfolioDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'site_settings', 'youtube_portfolio');
     const unsubscribePortfolio1 = onSnapshot(portfolioDocRef, (docSnap) => {
@@ -1353,7 +1394,7 @@ export default function AdminDashboard() {
       if (docSnap.exists()) {
         const data = docSnap.data();
         const url = data?.url || data?.videoUrl || data?.youtubeUrl;
-        const thumb = data?.thumbnail || data?.thumbUrl;
+        const thumb = data?.landingVideoThumbnail || data?.thumbnail || data?.thumbnailUrl || data?.thumbUrl || data?.poster;
         if (url) setLandingVideoUrl(url);
         if (thumb) setLandingVideoThumbnail(thumb);
       }
@@ -1364,7 +1405,7 @@ export default function AdminDashboard() {
       if (docSnap.exists()) {
         const data = docSnap.data();
         const url = data?.url || data?.videoUrl || data?.youtubeUrl;
-        const thumb = data?.thumbnail || data?.thumbUrl;
+        const thumb = data?.landingVideoThumbnail || data?.thumbnail || data?.thumbnailUrl || data?.thumbUrl || data?.poster;
         if (url) setLandingVideoUrl(url);
         if (thumb) setLandingVideoThumbnail(thumb);
       }
@@ -1376,7 +1417,18 @@ export default function AdminDashboard() {
       if (docSnap.exists()) {
         const data = docSnap.data();
         const url = data?.url || data?.videoUrl || data?.youtubeUrl;
-        const thumb = data?.thumbnail || data?.thumbUrl;
+        const thumb = data?.landingVideoThumbnail || data?.thumbnail || data?.thumbnailUrl || data?.thumbUrl || data?.poster;
+        if (url) setLandingVideoUrl(url);
+        if (thumb) setLandingVideoThumbnail(thumb);
+      }
+    }, () => {});
+
+    const settingsLandingVidRef2 = doc(db, 'settings', 'landingVideo');
+    const unsubscribeLandingVid4 = onSnapshot(settingsLandingVidRef2, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        const url = data?.url || data?.videoUrl || data?.youtubeUrl;
+        const thumb = data?.landingVideoThumbnail || data?.thumbnail || data?.thumbnailUrl || data?.thumbUrl || data?.poster;
         if (url) setLandingVideoUrl(url);
         if (thumb) setLandingVideoThumbnail(thumb);
       }
@@ -1387,7 +1439,7 @@ export default function AdminDashboard() {
       .then(json => {
         if (json?.data) {
           const url = json.data.url || json.data.videoUrl || json.data.youtubeUrl;
-          const thumb = json.data.thumbnail || json.data.thumbUrl;
+          const thumb = json.data.landingVideoThumbnail || json.data.thumbnail || json.data.thumbnailUrl || json.data.thumbUrl || json.data.poster;
           if (url) setLandingVideoUrl(url);
           if (thumb) setLandingVideoThumbnail(thumb);
           try {
@@ -1547,13 +1599,17 @@ export default function AdminDashboard() {
         unsubscribeArtifactEventRegs();
         unsubscribeEventsRoot();
         unsubscribeEventsArtifact();
-        unsubscribeAboutVideo();
+        if (typeof unsubAbout1 === 'function') unsubAbout1();
+        if (typeof unsubAbout2 === 'function') unsubAbout2();
+        if (typeof unsubAbout3 === 'function') unsubAbout3();
+        if (typeof unsubAbout4 === 'function') unsubAbout4();
         unsubscribePortfolio1();
         unsubscribePortfolio2();
         if (typeof unsubscribePortfolio3 === 'function') unsubscribePortfolio3();
         if (typeof unsubscribeLandingVid1 === 'function') unsubscribeLandingVid1();
         if (typeof unsubscribeLandingVid2 === 'function') unsubscribeLandingVid2();
         if (typeof unsubscribeLandingVid3 === 'function') unsubscribeLandingVid3();
+        if (typeof unsubscribeLandingVid4 === 'function') unsubscribeLandingVid4();
         unsubscribeReferrals();
         if (typeof unsubscribePromoCodes === 'function') unsubscribePromoCodes();
         unsubscribeFeedbacks();
@@ -1821,26 +1877,57 @@ export default function AdminDashboard() {
       return;
     }
 
+    const cleanUrl = aboutVideoUrl.trim();
+    if (!cleanUrl) {
+      alert("እባክዎ የቪዲዮ ሊንክ ያስገቡ (YouTube, Google Drive, Dropbox, Direct MP4)።");
+      return;
+    }
+    const cleanThumb = aboutVideoThumbnail.trim();
+    const cleanTitle = (aboutVideoTitle || 'ስለ ፀሐይ ካምፓስ').trim();
+
     setIsSavingAboutVideo(true);
     setAboutVideoSavedMessage('');
 
+    const videoPayload = {
+      videoUrl: cleanUrl,
+      url: cleanUrl,
+      youtubeUrl: cleanUrl,
+      thumbnail: cleanThumb,
+      thumbnailUrl: cleanThumb,
+      thumbUrl: cleanThumb,
+      poster: cleanThumb,
+      title: cleanTitle
+    };
+
     // 1. Instant local storage cache update for immediate zero-latency UI preview
     try {
-      localStorage.setItem('tsehay_about_video_cache', JSON.stringify({
-        videoUrl: aboutVideoUrl.trim(),
-        thumbnail: aboutVideoThumbnail.trim()
+      localStorage.setItem('tsehay_about_video_cache', JSON.stringify(videoPayload));
+      window.dispatchEvent(new Event('storage'));
+      window.dispatchEvent(new CustomEvent('tsehay_about_video_updated', {
+        detail: videoPayload
       }));
+      if (typeof BroadcastChannel !== 'undefined') {
+        const bc = new BroadcastChannel('tsehay_about_video_channel');
+        bc.postMessage(videoPayload);
+        setTimeout(() => bc.close(), 200);
+      }
     } catch (e) {}
 
     try {
-      // 2. Direct client Firestore write
+      const fsPayload = {
+        ...videoPayload,
+        settingKey: 'about_video',
+        updatedAt: serverTimestamp()
+      };
+
+      // 2. Direct client Firestore write across multiple namespaces
       try {
-        const aboutVidRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'site_settings', 'about_video');
-        await setDoc(aboutVidRef, {
-          videoUrl: aboutVideoUrl.trim(),
-          thumbnail: aboutVideoThumbnail.trim(),
-          updatedAt: serverTimestamp()
-        }, { merge: true });
+        await Promise.allSettled([
+          setDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'site_settings', 'about_video'), fsPayload, { merge: true }),
+          setDoc(doc(db, 'site_settings', 'about_video'), fsPayload, { merge: true }),
+          setDoc(doc(db, 'settings', 'about_video'), fsPayload, { merge: true }),
+          setDoc(doc(db, 'settings', 'aboutVideo'), fsPayload, { merge: true })
+        ]);
       } catch (clientErr) {
         console.warn("Client Firestore write attempt:", clientErr);
       }
@@ -1851,10 +1938,7 @@ export default function AdminDashboard() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           settingKey: 'about_video',
-          data: {
-            videoUrl: aboutVideoUrl.trim(),
-            thumbnail: aboutVideoThumbnail.trim()
-          }
+          data: videoPayload
         })
       });
 
@@ -1910,6 +1994,10 @@ export default function AdminDashboard() {
         videoUrl: cleanUrl,
         youtubeUrl: cleanUrl,
         thumbnail: cleanThumb,
+        landingVideoThumbnail: cleanThumb,
+        thumbnailUrl: cleanThumb,
+        thumbUrl: cleanThumb,
+        poster: cleanThumb,
         updatedAt: serverTimestamp()
       };
 
@@ -1933,7 +2021,11 @@ export default function AdminDashboard() {
             url: cleanUrl,
             videoUrl: cleanUrl,
             youtubeUrl: cleanUrl,
-            thumbnail: cleanThumb
+            thumbnail: cleanThumb,
+            landingVideoThumbnail: cleanThumb,
+            thumbnailUrl: cleanThumb,
+            thumbUrl: cleanThumb,
+            poster: cleanThumb
           }
         })
       });
@@ -1945,7 +2037,11 @@ export default function AdminDashboard() {
           url: cleanUrl,
           videoUrl: cleanUrl,
           youtubeUrl: cleanUrl,
-          thumbnail: cleanThumb
+          thumbnail: cleanThumb,
+          landingVideoThumbnail: cleanThumb,
+          thumbnailUrl: cleanThumb,
+          thumbUrl: cleanThumb,
+          poster: cleanThumb
         })
       });
 
@@ -2950,6 +3046,7 @@ export default function AdminDashboard() {
       speaker: 'ኢዮብ ሳህሌ (Eyoub Sahle)',
       speakerRole: 'የፀሐይ ካምፓስ መስራች እና የዩቲዩብ ስፔሻሊስት',
       image: 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?q=80&w=1200',
+      videoUrl: '',
       tags: 'YouTube, Workshop',
       status: 'upcoming'
     });
@@ -2976,6 +3073,7 @@ export default function AdminDashboard() {
       speaker: event.speaker || 'ኢዮብ ሳህሌ',
       speakerRole: event.speakerRole || 'Lead Mentor',
       image: event.image || '',
+      videoUrl: event.videoUrl || '',
       tags: Array.isArray(event.tags) ? event.tags.join(', ') : (event.tags || ''),
       status: event.status || 'upcoming'
     });
@@ -2994,7 +3092,25 @@ export default function AdminDashboard() {
     try {
       const eventId = editingEvent ? editingEvent.id : `evt_${Date.now()}`;
       const cleanSlug = (eventForm.slug || '').trim() || generateEventSlug(eventForm.title, eventId);
-      const cleanImage = formatDriveImageUrl(eventForm.image) || (eventForm.image || '').trim() || 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?q=80&w=1200';
+
+      let cleanVideoUrl = (eventForm.videoUrl || '').trim();
+      let rawImage = (eventForm.image || '').trim();
+
+      // If rawImage is a video link and cleanVideoUrl is empty, treat as videoUrl
+      if (rawImage && isMediaVideo(rawImage) && !cleanVideoUrl) {
+        cleanVideoUrl = rawImage;
+      }
+
+      // If image is empty or default, but cleanVideoUrl exists, extract high-res thumbnail
+      let cleanImage = '';
+      if (rawImage && !isMediaVideo(rawImage)) {
+        cleanImage = formatDriveImageUrl(rawImage) || rawImage;
+      } else if (cleanVideoUrl) {
+        cleanImage = getMediaThumbnail(cleanVideoUrl);
+      } else {
+        cleanImage = 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?q=80&w=1200';
+      }
+
       const nowIso = new Date().toISOString();
 
       const payload: TsehayEvent = {
@@ -3018,6 +3134,7 @@ export default function AdminDashboard() {
         speaker: (eventForm.speaker || '').trim(),
         speakerRole: (eventForm.speakerRole || '').trim(),
         image: cleanImage,
+        videoUrl: cleanVideoUrl || undefined,
         tags: typeof eventForm.tags === 'string' ? eventForm.tags.split(',').map(t => t.trim()).filter(Boolean) : (Array.isArray(eventForm.tags) ? eventForm.tags : []),
         status: (eventForm.status as any) || 'upcoming',
         updatedAt: nowIso
@@ -3082,7 +3199,10 @@ export default function AdminDashboard() {
       saveCachedEvents(updatedEvents);
       try {
         localStorage.setItem('tsehay_events_cache', JSON.stringify(updatedEvents));
-        window.dispatchEvent(new CustomEvent('tsehay_events_updated', { detail: { events: updatedEvents } }));
+        window.dispatchEvent(new CustomEvent('tsehay_events_updated', { detail: { events: updatedEvents, event: payload } }));
+        const bc = new BroadcastChannel('tsehay_events_sync');
+        bc.postMessage({ type: 'EVENT_SAVED', events: updatedEvents, event: payload });
+        bc.close();
       } catch (e) {}
 
       setEventSuccessMsg('ክንውኑ በተሳካ ሁኔታ ተቀምጧል! (Event saved successfully)');
@@ -3104,6 +3224,9 @@ export default function AdminDashboard() {
       try {
         localStorage.setItem('tsehay_events_cache', JSON.stringify(updatedEvents));
         window.dispatchEvent(new CustomEvent('tsehay_events_updated', { detail: { events: updatedEvents } }));
+        const bc = new BroadcastChannel('tsehay_events_sync');
+        bc.postMessage({ type: 'EVENT_DELETED', events: updatedEvents, deletedId: id });
+        bc.close();
       } catch (e) {}
 
       // Record in deleted events list so default events don't reappear on reload
@@ -3987,14 +4110,32 @@ export default function AdminDashboard() {
                           <tr key={event.id} className="border-b border-gray-50 dark:border-slate-700/50 hover:bg-gray-50 dark:hover:bg-slate-700/20 transition group">
                             <td className="p-4">
                               <div className="flex items-center gap-3">
-                                <img 
-                                  src={formatDriveImageUrl(event.image) || event.image || 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?q=80&w=1200'} 
-                                  className="w-12 h-12 rounded-xl object-cover border border-gray-200 dark:border-white/10 shrink-0" 
-                                  alt={event.title}
-                                />
+                                <div className="relative w-12 h-12 rounded-xl overflow-hidden shrink-0 border border-gray-200 dark:border-white/10 bg-slate-900">
+                                  <img 
+                                    src={formatDriveImageUrl(event.image) || (event.videoUrl ? getMediaThumbnail(event.videoUrl) : '') || 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?q=80&w=1200'} 
+                                    className="w-full h-full object-cover" 
+                                    alt={event.title}
+                                    onError={(e) => {
+                                      (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?q=80&w=1200';
+                                    }}
+                                  />
+                                  {Boolean(event.videoUrl || (event.image && isMediaVideo(event.image))) && (
+                                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-white" title="ቪዲዮ አለው">
+                                      <i className="fa-solid fa-play text-[9px] text-[#f9b03c]"></i>
+                                    </div>
+                                  )}
+                                </div>
                                 <div>
                                   <p className="font-bold text-sm text-dark dark:text-white line-clamp-1">{event.title}</p>
-                                  <p className="text-xs text-gray-500 font-semibold">{event.speaker}</p>
+                                  <div className="text-xs text-gray-500 font-semibold flex items-center gap-1.5">
+                                    <span>{event.speaker}</span>
+                                    {Boolean(event.videoUrl || (event.image && isMediaVideo(event.image))) && (
+                                      <span className="text-[10px] bg-red-500/15 text-red-500 px-1.5 py-0.2 rounded-md font-bold flex items-center gap-1">
+                                        <i className="fa-solid fa-play text-[7px]"></i>
+                                        <span>ቪዲዮ</span>
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
                             </td>
@@ -7530,8 +7671,95 @@ export default function AdminDashboard() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">የፕሪቪው ቪዲዮ ሊንክ (Preview Video URL) *</label>
-                  <input required type="text" value={formData.video} onChange={e => setFormData({...formData, video: e.target.value})} className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-dark dark:text-white outline-none focus:border-primary transition" />
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300">
+                      የፕሪቪው ቪዲዮ ሊንክ (Preview Video URL) *
+                    </label>
+                    {(() => {
+                      if (!formData.video) return null;
+                      const parsed = parseVideoUrl(formData.video);
+                      const badgeLabel = parsed.isYouTube 
+                        ? 'YouTube' 
+                        : parsed.isGoogleDrive 
+                        ? 'Google Drive' 
+                        : parsed.isDropbox 
+                        ? 'Dropbox' 
+                        : parsed.isVimeo 
+                        ? 'Vimeo' 
+                        : parsed.isDirectVideo 
+                        ? 'Direct MP4' 
+                        : 'Universal Embed';
+                      return (
+                        <span className="text-[11px] bg-primary/20 text-primary border border-primary/30 font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                          <i className="fa-solid fa-circle-play text-[10px]"></i>
+                          <span>{badgeLabel}</span>
+                        </span>
+                      );
+                    })()}
+                  </div>
+                  <input
+                    required
+                    type="text"
+                    placeholder="YouTube, Shorts, Google Drive, Dropbox, Vimeo, or .mp4 URL"
+                    value={formData.video}
+                    onChange={e => {
+                      const val = e.target.value;
+                      const parsed = parseVideoUrl(val);
+                      setFormData(prev => ({
+                        ...prev,
+                        video: val,
+                        image: !prev.image && parsed.thumbnailUrl ? parsed.thumbnailUrl : prev.image
+                      }));
+                    }}
+                    className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-dark dark:text-white outline-none focus:border-primary transition"
+                  />
+                  {/* Live Video Preview Box */}
+                  {(() => {
+                    if (!formData.video || !formData.video.trim()) return null;
+                    const parsed = parseVideoUrl(formData.video);
+                    if (!parsed.src) return null;
+
+                    return (
+                      <div className="mt-3 rounded-xl overflow-hidden border border-gray-200 dark:border-slate-700 bg-black/80 shadow-md p-2 space-y-2">
+                        <div className="flex items-center justify-between px-2 text-xs text-gray-400">
+                          <span className="flex items-center gap-1.5 font-bold text-gray-300">
+                            <i className="fa-solid fa-eye text-primary"></i>
+                            <span>የቪዲዮ ቅድመ-እይታ (Live Preview)</span>
+                          </span>
+                          {parsed.thumbnailUrl && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setFormData(prev => ({ ...prev, image: parsed.thumbnailUrl || prev.image }));
+                              }}
+                              className="text-[11px] text-primary hover:underline flex items-center gap-1 cursor-pointer"
+                            >
+                              <i className="fa-solid fa-image"></i>
+                              <span>እንደ ሽፋን ፎቶ ተጠቀም (Use Thumbnail)</span>
+                            </button>
+                          )}
+                        </div>
+                        <div className="relative aspect-video w-full rounded-lg overflow-hidden bg-black">
+                          {parsed.type === 'video' ? (
+                            <video
+                              src={parsed.src}
+                              controls
+                              playsInline
+                              className="w-full h-full object-contain"
+                            />
+                          ) : (
+                            <iframe
+                              src={parsed.src}
+                              title="Course Preview Video"
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                              allowFullScreen
+                              className="w-full h-full border-none"
+                            />
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 <div>
@@ -8225,45 +8453,150 @@ export default function AdminDashboard() {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold mb-1 flex items-center justify-between">
-                    <span>የባነር ፎቶ ሊንክ (Banner Image / Google Drive URL)</span>
-                    <span className="text-[10px] text-amber-500 font-normal">Google Drive ሊንክ ይቀበላል</span>
-                  </label>
+                {/* 1. Banner Image Input */}
+                <div className="sm:col-span-2">
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-bold flex items-center gap-1.5 text-gray-700 dark:text-gray-200">
+                      <i className="fa-regular fa-image text-emerald-500"></i>
+                      <span>የባነር ፎቶ ሊንክ (Banner Image / Cover URL)</span>
+                    </label>
+                    {eventForm.videoUrl && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const thumb = getMediaThumbnail(eventForm.videoUrl);
+                          if (thumb) setEventForm({ ...eventForm, image: thumb });
+                        }}
+                        className="text-[10px] bg-amber-500/15 hover:bg-amber-500/25 text-amber-600 dark:text-amber-400 font-bold px-2 py-0.5 rounded-lg transition flex items-center gap-1 cursor-pointer"
+                        title="ከቪዲዮው ተምኔል አስመጣ"
+                      >
+                        <i className="fa-solid fa-wand-magic-sparkles text-[10px]"></i>
+                        <span>ከቪዲዮው ፎቶ አምጣ</span>
+                      </button>
+                    )}
+                  </div>
                   <input
                     type="text"
                     value={eventForm.image}
                     onChange={(e) => setEventForm({ ...eventForm, image: e.target.value })}
-                    placeholder="https://drive.google.com/file/d/... ወይም የምስል ሊንክ"
-                    className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-dark dark:text-white outline-none focus:border-[#f9b03c]"
+                    placeholder="https://drive.google.com/file/d/... ወይም Unsplash ወይም የምስል ሊንክ"
+                    className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-dark dark:text-white outline-none focus:border-[#f9b03c] font-mono"
                   />
                   <p className="text-[10px] text-gray-400 mt-1">
-                    ማስታወሻ፡ የ Google Drive ሊንክ ቢያስገቡም ስርዓቱ ወዲያውኑ ወደ ቀጥታ ምስል ይቀይረዋል።
+                    ማስታወሻ፡ የ Google Drive፣ Unsplash ወይም ሌላ ማንኛውንም የፎቶ ሊንክ በቀጥታ ይቀበላል።
                   </p>
                 </div>
 
-                {/* Live 16:9 Banner Image Preview */}
-                {eventForm.image && (
-                  <div className="sm:col-span-2 bg-slate-900/80 p-3.5 rounded-2xl border border-white/10">
-                    <div className="flex items-center justify-between mb-2">
+                {/* 2. Video Promo URL Input */}
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-bold mb-1 flex items-center gap-1.5 text-gray-700 dark:text-gray-200">
+                    <i className="fa-solid fa-film text-[#f9b03c]"></i>
+                    <span>የቪዲዮ ማስተዋወቂያ / የቀጥታ ስርጭት ሊንክ (Promo Video / Live Stream URL)</span>
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={eventForm.videoUrl}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setEventForm(prev => {
+                        const next = { ...prev, videoUrl: val };
+                        const yId = extractYouTubeId(val);
+                        if (yId && (!prev.image || prev.image.includes('unsplash'))) {
+                          next.image = `https://img.youtube.com/vi/${yId}/maxresdefault.jpg`;
+                        }
+                        return next;
+                      });
+                    }}
+                    placeholder="e.g. YouTube (Watch/Shorts/Embed), Google Drive Video Link, Dropbox Video, Direct MP4, Vimeo, ወይም <iframe> Embed"
+                    className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-dark dark:text-white outline-none focus:border-[#f9b03c] font-mono"
+                  />
+                  <div className="mt-1.5 flex flex-wrap gap-1.5 text-[10px] text-gray-500 dark:text-gray-400 font-medium">
+                    <span className="bg-gray-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-gray-200 dark:border-white/5">✓ YouTube</span>
+                    <span className="bg-gray-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-gray-200 dark:border-white/5">✓ Google Drive Video</span>
+                    <span className="bg-gray-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-gray-200 dark:border-white/5">✓ Dropbox Stream</span>
+                    <span className="bg-gray-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-gray-200 dark:border-white/5">✓ Direct MP4</span>
+                    <span className="bg-gray-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-gray-200 dark:border-white/5">✓ Vimeo</span>
+                    <span className="bg-gray-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-gray-200 dark:border-white/5">✓ Iframe Embed</span>
+                  </div>
+                </div>
+
+                {/* 3. Live Media Preview Stage (Banner & Video) */}
+                {(eventForm.videoUrl || eventForm.image) && (
+                  <div className="sm:col-span-2 bg-slate-900 p-4 rounded-2xl border border-white/10 space-y-3">
+                    <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-gray-300 flex items-center gap-1.5">
-                        <i className="fa-regular fa-image text-[#f9b03c]"></i>
-                        የባነር ምስል ቅድመ-እይታ (Live Banner Preview)
+                        <i className="fa-solid fa-display text-[#f9b03c]"></i>
+                        የክንውን ሚዲያ ቅድመ-እይታ (Live Media Preview)
                       </span>
-                      <span className="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-bold px-2 py-0.5 rounded-full">
-                        ተዘጋጅቷል
-                      </span>
+                      {(() => {
+                        if (eventForm.videoUrl) {
+                          const parsed = parseVideoEmbedUrl(eventForm.videoUrl);
+                          return (
+                            <span className="text-[10px] bg-amber-500/20 text-amber-400 border border-amber-500/30 font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                              <i className="fa-solid fa-circle-play text-[9px]"></i>
+                              <span>
+                                {parsed.isYouTube ? 'YouTube Video' : 
+                                 parsed.isGoogleDrive ? 'Google Drive Video' : 
+                                 parsed.isDropbox ? 'Dropbox Stream' : 
+                                 parsed.isVimeo ? 'Vimeo Video' : 
+                                 parsed.type === 'video' ? 'Direct MP4 Video' : 'Video Embed'}
+                              </span>
+                            </span>
+                          );
+                        }
+                        return (
+                          <span className="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                            <i className="fa-regular fa-image text-[9px]"></i>
+                            <span>የባነር ምስል (Poster Image)</span>
+                          </span>
+                        );
+                      })()}
                     </div>
-                    <div className="relative aspect-video w-full rounded-xl overflow-hidden bg-black border border-white/10">
-                      <img 
-                        src={formatDriveImageUrl(eventForm.image) || eventForm.image} 
-                        alt="Event Banner Preview" 
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?q=80&w=1200';
-                        }}
-                      />
-                    </div>
+
+                    {/* Live Video Player Preview */}
+                    {eventForm.videoUrl ? (
+                      (() => {
+                        const parsed = parseVideoEmbedUrl(eventForm.videoUrl);
+                        if (parsed.type === 'video') {
+                          return (
+                            <div className="relative aspect-video w-full rounded-xl overflow-hidden bg-black border border-white/10 shadow-lg">
+                              <video 
+                                src={parsed.src} 
+                                controls 
+                                playsInline
+                                className="w-full h-full object-contain"
+                              />
+                            </div>
+                          );
+                        }
+                        if (parsed.src) {
+                          return (
+                            <div className="relative aspect-video w-full rounded-xl overflow-hidden bg-black border border-white/10 shadow-lg">
+                              <iframe
+                                src={parsed.src}
+                                title="Event Video Preview"
+                                className="w-full h-full border-0"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                allowFullScreen
+                              />
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()
+                    ) : (
+                      /* Live Banner Image Preview */
+                      <div className="relative aspect-video w-full rounded-xl overflow-hidden bg-black border border-white/10">
+                        <img 
+                          src={formatDriveImageUrl(eventForm.image) || parseImageUrl(eventForm.image) || eventForm.image} 
+                          alt="Event Banner Preview" 
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?q=80&w=1200';
+                          }}
+                        />
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

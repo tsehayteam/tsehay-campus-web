@@ -6,9 +6,20 @@ import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import RequireAuthModal from '@/components/RequireAuthModal';
+import { useAuth } from '@/context/AuthContext';
 import { auth, db } from '@/lib/firebase/config';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
+
+function getLocalCachedUser(): { uid: string; email?: string | null; displayName?: string | null; photoURL?: string | null } | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem('tsehay_auth_user_cache');
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
 import { 
   CommunityPost, 
   CommunityComment,
@@ -53,12 +64,44 @@ const TRENDING_TAGS = [
 
 export default function CommunityClient() {
   const router = useRouter();
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const { user: contextUser } = useAuth();
+  const [currentUser, setCurrentUser] = useState<User | null>(() => auth.currentUser);
   const [userProfile, setUserProfile] = useState<{ displayName: string; photoURL: string; email: string; isPro: boolean; isAdmin: boolean } | null>(null);
-  const [authLoading, setAuthLoading] = useState(true);
+  const [authLoading, setAuthLoading] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authModalTitle, setAuthModalTitle] = useState('ለመቀጠል እባክዎ አስቀድመው ይመዝገቡ');
   const [authModalDescription, setAuthModalDescription] = useState('በማህበረሰቡ ውስጥ ፖስት ለማድረግ፣ አስተያየት ለመስጠት እና መልዕክት ለመላክ መጀመሪያ መለያዎን ይክፈቱ።');
+
+  // Compute effective user from Firebase auth, contextUser, or local cache
+  const effectiveUser = useMemo(() => {
+    if (currentUser) return currentUser;
+    if (contextUser) return contextUser;
+    if (auth.currentUser) return auth.currentUser;
+    return getLocalCachedUser();
+  }, [currentUser, contextUser]);
+
+  // Compute effective profile with instant fallback so authenticated users never see logged-out state
+  const effectiveProfile = useMemo(() => {
+    if (userProfile) return userProfile;
+    if (!effectiveUser) return null;
+    const name = effectiveUser.displayName || effectiveUser.email?.split('@')[0] || 'ተማሪ';
+    const photo = effectiveUser.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=f9b03c&color=111827&bold=true`;
+    const isAdmin = isUserAdmin(effectiveUser.email);
+    return {
+      displayName: name,
+      photoURL: photo,
+      email: effectiveUser.email || '',
+      isPro: false,
+      isAdmin,
+    };
+  }, [userProfile, effectiveUser]);
+
+  // Auto-dismiss auth modal when authenticated user is detected
+  useEffect(() => {
+    if (effectiveUser && showAuthModal) {
+      setShowAuthModal(false);
+    }
+  }, [effectiveUser, showAuthModal]);
 
   // Posts State
   const [posts, setPosts] = useState<CommunityPost[]>(() => getCachedCommunityPosts());
@@ -97,28 +140,46 @@ export default function CommunityClient() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
 
-  // Auth Listener & User Pro Status Check
+  // Auth Listener
   useEffect(() => {
-    const unsubAuth = onAuthStateChanged(auth, async (user) => {
+    const unsubAuth = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
       setAuthLoading(false);
+    });
 
-      if (user) {
-        let isPro = false;
+    return () => unsubAuth();
+  }, []);
+
+  // Sync profile metadata & pro status when effective user is active
+  useEffect(() => {
+    if (!effectiveUser) {
+      setUserProfile(null);
+      return;
+    }
+
+    const activeUser = effectiveUser;
+    let isMounted = true;
+    async function syncProfile(user: { uid: string; email?: string | null; displayName?: string | null; photoURL?: string | null }) {
+      let isPro = false;
+      try {
+        const userDoc = await getDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid));
+        if (userDoc.exists()) {
+          const data = userDoc.data();
+          isPro = Boolean(data?.enrolledCourses?.length > 0 || data?.isPro || data?.purchasedCourses?.length > 0);
+        }
+      } catch (e) {}
+
+      if (typeof window !== 'undefined') {
         try {
-          const userDoc = await getDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid));
-          if (userDoc.exists()) {
-            const data = userDoc.data();
-            isPro = Boolean(data?.enrolledCourses?.length > 0 || data?.isPro || data?.purchasedCourses?.length > 0);
+          const cachedCourses = localStorage.getItem('tsehay_user_purchased_courses');
+          if (cachedCourses && JSON.parse(cachedCourses)?.length > 0) {
+            isPro = true;
           }
         } catch (e) {}
+      }
 
-        const cachedCourses = typeof window !== 'undefined' ? localStorage.getItem('tsehay_user_purchased_courses') : null;
-        if (cachedCourses && JSON.parse(cachedCourses)?.length > 0) {
-          isPro = true;
-        }
-
-        const isAdmin = isUserAdmin(user.email);
+      const isAdmin = isUserAdmin(user.email);
+      if (isMounted) {
         setUserProfile({
           displayName: user.displayName || user.email?.split('@')[0] || 'ተማሪ',
           photoURL: user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || 'User')}&background=f9b03c&color=111827&bold=true`,
@@ -126,13 +187,15 @@ export default function CommunityClient() {
           isPro,
           isAdmin,
         });
-      } else {
-        setUserProfile(null);
       }
-    });
+    }
 
-    return () => unsubAuth();
-  }, []);
+    syncProfile(activeUser);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [effectiveUser?.uid, effectiveUser?.email]);
 
   // Real-time Posts Subscription
   useEffect(() => {
@@ -168,32 +231,33 @@ export default function CommunityClient() {
 
   // Direct Message Real-time Listener
   useEffect(() => {
-    if (!currentUser || !activeDmUser) {
+    if (!effectiveUser || !activeDmUser) {
       setDmConversationId(null);
       setDmList([]);
       return;
     }
 
-    const convId = getConversationId(currentUser.uid, activeDmUser.id);
+    const currentUserId = effectiveUser.uid;
+    const convId = getConversationId(currentUserId, activeDmUser.id);
     setDmConversationId(convId);
 
     const unsub = subscribeConversationMessages(convId, (msgs) => {
       setDmList(msgs);
-      const hasUnread = msgs.some(m => m.receiverId === currentUser.uid && (!m.isRead || m.status !== 'read'));
+      const hasUnread = msgs.some(m => m.receiverId === currentUserId && (!m.isRead || m.status !== 'read'));
       if (hasUnread) {
-        markMessagesAsRead(convId, currentUser.uid);
+        markMessagesAsRead(convId, currentUserId);
       }
       setTimeout(() => {
         dmMessagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
       }, 100);
     });
 
-    markMessagesAsRead(convId, currentUser.uid);
+    markMessagesAsRead(convId, currentUserId);
 
     return () => {
       if (typeof unsub === 'function') unsub();
     };
-  }, [currentUser, activeDmUser]);
+  }, [effectiveUser?.uid, activeDmUser]);
 
   // Handle Comments Toggle
   const toggleComments = (postId: string) => {
@@ -228,7 +292,7 @@ export default function CommunityClient() {
   // Handle Post Creation
   const handleCreatePost = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentUser) {
+    if (!effectiveUser) {
       setAuthModalTitle('ፖስት ለማጋራት ይመዝገቡ');
       setAuthModalDescription('ጥያቄዎን ለመጠየቅ ወይም ሃሳብዎን ለማጋራት እባክዎ መጀመሪያ ይግቡ።');
       setShowAuthModal(true);
@@ -243,13 +307,13 @@ export default function CommunityClient() {
     setIsSubmittingPost(true);
     try {
       const newPostPayload = {
-        authorId: currentUser.uid,
-        authorName: userProfile?.displayName || 'ተማሪ',
-        authorEmail: currentUser.email || '',
-        authorPhoto: userProfile?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(userProfile?.displayName || 'User')}&background=f9b03c&color=111827&bold=true`,
-        authorRole: (userProfile?.isAdmin ? 'admin' : 'student') as 'admin' | 'student' | 'instructor',
-        isAdmin: Boolean(userProfile?.isAdmin),
-        isPro: Boolean(userProfile?.isPro),
+        authorId: effectiveUser.uid,
+        authorName: effectiveProfile?.displayName || 'ተማሪ',
+        authorEmail: effectiveUser.email || '',
+        authorPhoto: effectiveProfile?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(effectiveProfile?.displayName || 'User')}&background=f9b03c&color=111827&bold=true`,
+        authorRole: (effectiveProfile?.isAdmin ? 'admin' : 'student') as 'admin' | 'student' | 'instructor',
+        isAdmin: Boolean(effectiveProfile?.isAdmin),
+        isPro: Boolean(effectiveProfile?.isPro),
         content: postContent.trim(),
         codeSnippet: showCodeInput && codeText.trim() ? { code: codeText.trim(), language: codeLanguage } : null,
         imageUrl: attachedImage,
@@ -283,32 +347,32 @@ export default function CommunityClient() {
 
   // Handle Like Post
   const handleLike = async (post: CommunityPost) => {
-    if (!currentUser) {
+    if (!effectiveUser) {
       setAuthModalTitle('ላይክ ለማድረግ ይመዝገቡ');
       setAuthModalDescription('ፖስቶችን ላይክ ለማድረግ እና ድጋፍዎን ለመግለጽ እባክዎ ይግቡ።');
       setShowAuthModal(true);
       return;
     }
 
-    const isLiked = post.likes.includes(currentUser.uid);
+    const isLiked = post.likes.includes(effectiveUser.uid);
     setPosts(prev => prev.map(p => {
       if (p.id === post.id) {
         return {
           ...p,
           likes: isLiked 
-            ? p.likes.filter(id => id !== currentUser.uid) 
-            : [...p.likes, currentUser.uid]
+            ? p.likes.filter(id => id !== effectiveUser.uid) 
+            : [...p.likes, effectiveUser.uid]
         };
       }
       return p;
     }));
 
     try {
-      await toggleLikePost(post.id, currentUser.uid, isLiked, {
+      await toggleLikePost(post.id, effectiveUser.uid, isLiked, {
         postAuthorEmail: post.authorEmail,
         postAuthorName: post.authorName,
         postSnippet: post.content,
-        likerName: userProfile?.displayName || currentUser.displayName || 'አንድ ተማሪ'
+        likerName: effectiveProfile?.displayName || effectiveUser.displayName || 'አንድ ተማሪ'
       });
     } catch (e) {}
   };
@@ -345,7 +409,7 @@ export default function CommunityClient() {
 
   // Handle Submit Comment
   const handleAddComment = async (postId: string) => {
-    if (!currentUser) {
+    if (!effectiveUser) {
       setAuthModalTitle('አስተያየት ለመጻፍ ይመዝገቡ');
       setAuthModalDescription('በውይይቱ ለመሳተፍ እና አስተያየት ለመስጠት እባክዎ ይግቡ።');
       setShowAuthModal(true);
@@ -362,12 +426,12 @@ export default function CommunityClient() {
     const newCommentObj = {
       id: tempCommentId,
       postId,
-      authorId: currentUser.uid,
-      authorName: userProfile?.displayName || 'ተማሪ',
-      authorEmail: currentUser.email || '',
-      authorPhoto: userProfile?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(userProfile?.displayName || 'User')}&background=f9b03c&color=111827&bold=true`,
-      isAdmin: Boolean(userProfile?.isAdmin),
-      isPro: Boolean(userProfile?.isPro),
+      authorId: effectiveUser.uid,
+      authorName: effectiveProfile?.displayName || 'ተማሪ',
+      authorEmail: effectiveUser.email || '',
+      authorPhoto: effectiveProfile?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(effectiveProfile?.displayName || 'User')}&background=f9b03c&color=111827&bold=true`,
+      isAdmin: Boolean(effectiveProfile?.isAdmin),
+      isPro: Boolean(effectiveProfile?.isPro),
       content: text,
       createdAt: new Date().toISOString(),
     };
@@ -410,7 +474,7 @@ export default function CommunityClient() {
   // Direct Message Sending
   const handleSendDm = async (e?: React.FormEvent, overrideAudio?: string) => {
     if (e) e.preventDefault();
-    if (!currentUser || !activeDmUser || !dmConversationId) return;
+    if (!effectiveUser || !activeDmUser || !dmConversationId) return;
 
     const messageText = overrideAudio ? '🎤 የድምፅ መልእክት (Voice Message)' : dmInput.trim();
     if (!messageText && !overrideAudio) return;
@@ -421,10 +485,10 @@ export default function CommunityClient() {
     const tempDm: DirectMessage = {
       id: `dm_${Date.now()}`,
       conversationId: dmConversationId,
-      senderId: currentUser.uid,
-      senderName: userProfile?.displayName || 'ተማሪ',
-      senderPhoto: userProfile?.photoURL || '',
-      senderEmail: currentUser.email || '',
+      senderId: effectiveUser.uid,
+      senderName: effectiveProfile?.displayName || 'ተማሪ',
+      senderPhoto: effectiveProfile?.photoURL || '',
+      senderEmail: effectiveUser.email || '',
       receiverId: activeDmUser.id,
       content: messageText,
       imageUrl: overrideAudio || null,
@@ -436,10 +500,10 @@ export default function CommunityClient() {
 
     try {
       await sendDirectMessage(dmConversationId, {
-        senderId: currentUser.uid,
-        senderName: userProfile?.displayName || 'ተማሪ',
-        senderPhoto: userProfile?.photoURL || '',
-        senderEmail: currentUser.email || '',
+        senderId: effectiveUser.uid,
+        senderName: effectiveProfile?.displayName || 'ተማሪ',
+        senderPhoto: effectiveProfile?.photoURL || '',
+        senderEmail: effectiveUser.email || '',
         receiverId: activeDmUser.id,
         receiverName: activeDmUser.name,
         receiverPhoto: activeDmUser.photo,
@@ -497,13 +561,13 @@ export default function CommunityClient() {
 
   // Open Direct Message modal
   const openDmWithUser = (target: { id: string; name: string; photo: string; email: string; isPro?: boolean; isAdmin?: boolean }) => {
-    if (!currentUser) {
+    if (!effectiveUser) {
       setAuthModalTitle('መልእክት ለመላክ ይመዝገቡ');
       setAuthModalDescription('ከተማሪዎች ጋር በግል ለመወያየት እና መልእክት ለመለዋወጥ እባክዎ ይግቡ።');
       setShowAuthModal(true);
       return;
     }
-    if (target.id === currentUser.uid) {
+    if (target.id === effectiveUser.uid) {
       alert('ለራስዎ መልእክት መላክ አይችሉም።');
       return;
     }
@@ -581,31 +645,31 @@ export default function CommunityClient() {
           {/* LEFT SIDEBAR */}
           <aside className="lg:col-span-3 space-y-6 lg:sticky lg:top-32">
             <div className="p-5 rounded-3xl bg-slate-900/80 border border-white/10 backdrop-blur-2xl shadow-xl">
-              {currentUser && userProfile ? (
+              {effectiveUser && effectiveProfile ? (
                 <div className="text-center">
                   <div className="relative inline-block mb-3">
                     <img 
-                      src={userProfile.photoURL} 
-                      alt={userProfile.displayName} 
+                      src={effectiveProfile.photoURL} 
+                      alt={effectiveProfile.displayName} 
                       className="w-20 h-20 rounded-full object-cover ring-2 ring-[#f9b03c]/60 shadow-[0_0_20px_rgba(249,176,60,0.3)] mx-auto"
                     />
-                    {userProfile.isPro && (
+                    {effectiveProfile.isPro && (
                       <span className="absolute bottom-0 right-0 bg-[#f9b03c] text-slate-950 text-[10px] font-black px-2 py-0.5 rounded-full shadow-md border-2 border-slate-950">
                         PRO
                       </span>
                     )}
                   </div>
-                  <h3 className="font-heading font-black text-base text-white">{userProfile.displayName}</h3>
-                  <p className="text-[11px] text-slate-400 truncate">{userProfile.email}</p>
+                  <h3 className="font-heading font-black text-base text-white">{effectiveProfile.displayName}</h3>
+                  <p className="text-[11px] text-slate-400 truncate">{effectiveProfile.email}</p>
                   
                   <div className="mt-4 pt-4 border-t border-white/10 grid grid-cols-2 gap-2 text-center text-xs">
                     <div className="p-2 rounded-xl bg-white/[0.04]">
-                      <span className="block font-black text-white">{posts.filter(p => p.authorId === currentUser.uid).length}</span>
+                      <span className="block font-black text-white">{posts.filter(p => p.authorId === effectiveUser.uid).length}</span>
                       <span className="text-[10px] text-slate-400 font-medium">የእኔ ፖስቶች</span>
                     </div>
                     <div className="p-2 rounded-xl bg-white/[0.04]">
                       <span className="block font-black text-[#f9b03c]">
-                        {posts.filter(p => p.authorId === currentUser.uid).reduce((acc, p) => acc + (p.likes?.length || 0), 0)}
+                        {posts.filter(p => p.authorId === effectiveUser.uid).reduce((acc, p) => acc + (p.likes?.length || 0), 0)}
                       </span>
                       <span className="text-[10px] text-slate-400 font-medium">ላይኮች</span>
                     </div>
@@ -677,7 +741,7 @@ export default function CommunityClient() {
               <form onSubmit={handleCreatePost}>
                 <div className="flex items-start gap-3 mb-4">
                   <img 
-                    src={userProfile?.photoURL || `https://ui-avatars.com/api/?name=User&background=f9b03c&color=111827&bold=true`} 
+                    src={effectiveProfile?.photoURL || `https://ui-avatars.com/api/?name=User&background=f9b03c&color=111827&bold=true`} 
                     alt="User" 
                     className="w-10 h-10 rounded-full object-cover ring-2 ring-white/20 shrink-0 mt-0.5"
                   />
@@ -685,7 +749,7 @@ export default function CommunityClient() {
                     <textarea
                       value={postContent}
                       onChange={(e) => setPostContent(e.target.value)}
-                      placeholder={currentUser ? `ሰላም ${userProfile?.displayName}፣ ምን ሃሳብ ወይም ጥያቄ አለዎት?...` : "ለማህበረሰቡ ጥያቄዎን ወይም ሃሳብዎን እዚህ ይጻፉ..."}
+                      placeholder={effectiveUser ? `ሰላም ${effectiveProfile?.displayName}፣ ምን ሃሳብ ወይም ጥያቄ አለዎት?...` : "ለማህበረሰቡ ጥያቄዎን ወይም ሃሳብዎን እዚህ ይጻፉ..."}
                       rows={3}
                       className="w-full bg-white/[0.04] border border-white/10 focus:border-[#f9b03c] rounded-2xl p-3.5 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none transition resize-none leading-relaxed font-body"
                     />
@@ -811,9 +875,9 @@ export default function CommunityClient() {
               </div>
             ) : (
               filteredPosts.map((post) => {
-                const isLiked = currentUser ? post.likes?.includes(currentUser.uid) : false;
-                const isPostAuthor = currentUser?.uid === post.authorId;
-                const canDelete = isPostAuthor || userProfile?.isAdmin;
+                const isLiked = effectiveUser ? post.likes?.includes(effectiveUser.uid) : false;
+                const isPostAuthor = effectiveUser?.uid === post.authorId;
+                const canDelete = isPostAuthor || effectiveProfile?.isAdmin;
 
                 return (
                   <article
@@ -884,7 +948,7 @@ export default function CommunityClient() {
                       </div>
 
                       <div className="flex items-center gap-1.5">
-                        {userProfile?.isAdmin && (
+                        {effectiveProfile?.isAdmin && (
                           <button
                             type="button"
                             onClick={() => handleTogglePin(post)}
@@ -1160,7 +1224,7 @@ export default function CommunityClient() {
                 </div>
               ) : (
                 dmList.map((m) => {
-                  const isMe = m.senderId === currentUser?.uid;
+                  const isMe = m.senderId === effectiveUser?.uid;
                   const isRead = m.status === 'read' || m.isRead;
                   const isDelivered = m.status === 'delivered';
 
@@ -1285,7 +1349,7 @@ export default function CommunityClient() {
       )}
 
       <RequireAuthModal
-        isOpen={showAuthModal}
+        isOpen={showAuthModal && !effectiveUser}
         onClose={() => setShowAuthModal(false)}
         title={authModalTitle}
         description={authModalDescription}

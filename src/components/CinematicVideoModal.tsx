@@ -9,12 +9,14 @@ interface CinematicVideoModalProps {
   onClose: () => void;
   videoUrl?: string;
   title?: string;
+  poster?: string;
 }
 
 export default function CinematicVideoModal({
   isOpen,
   onClose,
   videoUrl,
+  poster,
 }: CinematicVideoModalProps) {
   const [mounted, setMounted] = useState(false);
 
@@ -79,6 +81,7 @@ export default function CinematicVideoModal({
         {parsed.type === 'video' ? (
           <video
             src={parsed.src}
+            poster={poster}
             autoPlay
             controls
             playsInline
