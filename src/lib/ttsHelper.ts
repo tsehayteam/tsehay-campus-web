@@ -261,26 +261,62 @@ function playServerTTS(
   onError?: (err?: any) => void
 ) {
   try {
-    const encoded = encodeURIComponent(cleanText.slice(0, 300));
+    // Immediate UI feedback so button shows active / reading state right away
+    if (onStart) onStart();
+
+    const encoded = encodeURIComponent(cleanText.slice(0, 750));
     const audioUrl = `/api/ai/tts?text=${encoded}&lang=${lang}`;
     const audio = new Audio(audioUrl);
     fallbackAudio = audio;
 
-    audio.onplay = () => {
-      if (onStart) onStart();
+    let hasEnded = false;
+    const handleEnd = () => {
+      if (!hasEnded) {
+        hasEnded = true;
+        fallbackAudio = null;
+        if (onEnd) onEnd();
+      }
     };
-    audio.onended = () => {
-      fallbackAudio = null;
-      if (onEnd) onEnd();
-    };
+
+    audio.onended = handleEnd;
     audio.onerror = (e) => {
+      console.warn('Server TTS audio playback error, falling back to speech synthesis:', e);
       fallbackAudio = null;
-      if (onError) onError(e);
+      // Secondary fallback to window.speechSynthesis so user is never left with silence
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        const u = new SpeechSynthesisUtterance(cleanText.slice(0, 300));
+        u.lang = lang === 'am' ? 'am-ET' : 'en-US';
+        u.rate = 0.92;
+        u.onend = handleEnd;
+        u.onerror = () => {
+          hasEnded = true;
+          if (onError) onError(e);
+        };
+        activeUtterances = [u];
+        window.speechSynthesis.speak(u);
+      } else {
+        hasEnded = true;
+        if (onError) onError(e);
+      }
     };
 
     audio.play().catch(err => {
-      fallbackAudio = null;
-      if (onError) onError(err);
+      console.warn('Audio play promise rejected:', err);
+      // If play fails (e.g. autoplay restriction), fallback to speech synthesis
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        const u = new SpeechSynthesisUtterance(cleanText.slice(0, 300));
+        u.lang = lang === 'am' ? 'am-ET' : 'en-US';
+        u.onend = handleEnd;
+        u.onerror = () => {
+          hasEnded = true;
+          if (onError) onError(err);
+        };
+        activeUtterances = [u];
+        window.speechSynthesis.speak(u);
+      } else {
+        fallbackAudio = null;
+        if (onError) onError(err);
+      }
     });
   } catch (err) {
     fallbackAudio = null;

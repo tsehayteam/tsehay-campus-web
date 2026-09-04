@@ -1522,6 +1522,9 @@ function StudentDashboardContent() {
 
     if (!cleanText) return;
 
+    // Immediate visual feedback
+    setPlayingAiAudioIdx(idx);
+
     speakWithLanguageDetection({
       text: cleanText,
       siteLang: dashboardAiLang,
@@ -4208,17 +4211,30 @@ function StudentDashboardContent() {
                                  <div className="flex items-center gap-2 mt-1.5 ml-9 flex-wrap">
                                      {/* 🔊 Voice Audio Player Button */}
                                      <button 
-                                       onClick={() => playAiVoiceResponse(m.text, i)}
-                                       className={`text-[11px] font-bold px-2.5 py-1 rounded-lg border flex items-center gap-1 transition cursor-pointer active:scale-95 ${
-                                         playingAiAudioIdx === i
-                                           ? 'bg-amber-500/20 text-amber-500 dark:text-amber-300 border-amber-500/40 animate-pulse'
-                                           : 'bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/15 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-white/10'
-                                       }`}
-                                       title={playingAiAudioIdx === i ? 'ድምፁን አቁም (Stop Voice)' : 'በድምፅ አዳምጥ (Listen via Voice)'}
-                                     >
-                                       <i className={`fa-solid ${playingAiAudioIdx === i ? 'fa-pause text-amber-500' : 'fa-volume-high text-[#f9b03c]'}`}></i>
-                                       <span>{playingAiAudioIdx === i ? 'አቁም' : 'አዳምጥ'}</span>
-                                     </button>
+                                        onClick={() => playAiVoiceResponse(m.text, i)}
+                                        className={`text-[11px] font-bold px-3 py-1 rounded-xl border flex items-center gap-1.5 transition cursor-pointer active:scale-95 shadow-xs ${
+                                          playingAiAudioIdx === i
+                                            ? 'bg-amber-500/25 text-amber-500 dark:text-[#f9b03c] border-amber-500/50 shadow-[0_0_15px_rgba(249,176,60,0.4)]'
+                                            : 'bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/15 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-white/10'
+                                        }`}
+                                        title={playingAiAudioIdx === i ? 'ድምፁን አቁም (Stop Voice)' : 'በድምፅ አዳምጥ (Listen via Voice)'}
+                                      >
+                                        {playingAiAudioIdx === i ? (
+                                          <>
+                                            <div className="flex items-center gap-0.5 h-3">
+                                              <span className="w-1 h-3 bg-[#f9b03c] rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                                              <span className="w-1 h-2 bg-[#f9b03c] rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                                              <span className="w-1 h-3.5 bg-[#f9b03c] rounded-full animate-bounce"></span>
+                                            </div>
+                                            <span>አቁም</span>
+                                          </>
+                                        ) : (
+                                          <>
+                                            <i className="fa-solid fa-volume-high text-[#f9b03c]"></i>
+                                            <span>አዳምጥ</span>
+                                          </>
+                                        )}
+                                      </button>
 
                                      <button
                                          onClick={() => {

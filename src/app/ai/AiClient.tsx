@@ -46,6 +46,20 @@ const STARTER_PROMPTS = [
     title: 'ለእኔ የሚስማማኝን ስልጠና ምረጥልኝ',
     prompt: 'ጀማሪ ነኝ፣ ኦንላይን ሰርቼ ገቢ ለማግኘት ለእኔ የሚስማማኝ የመጀመሪያ ስልጠና የትኛው ነው?',
     color: '#5a93e8'
+  },
+  {
+    icon: 'fa-laptop-code',
+    category: 'Coding & Tech',
+    title: 'የዌብሳይት እና ኮዲንግ ስልጠናዎች',
+    prompt: 'የዌብ ዴቨሎፕመንት እና የኮዲንግ ስልጠናዎችን ከዜሮ እንዴት መጀመር እችላለሁ? በምን ያህል ጊዜ ውስጥ ገቢ ፈጣሪ መሆን ይቻላል?',
+    color: '#10b981'
+  },
+  {
+    icon: 'fa-credit-card',
+    category: 'Payments & Pricing',
+    title: 'የስልጠናዎች ክፍያ እና ምዝገባ',
+    prompt: 'በቴሌብር ወይም በባንክ ለስልጠናዎቹ እንዴት መክፈል እችላለሁ? ክፍያ እንደፈጸምኩ ትምህርቱ ወዲያውኑ ይከፈትልኛል?',
+    color: '#a855f7'
   }
 ];
 
@@ -59,7 +73,7 @@ export default function AiClient() {
     {
       id: 'welcome-1',
       role: 'ai',
-      text: 'ሰላም! እንኳን ወደ **Tsehay AI Workspace** በደህና መጡ! ☀️\n\nእኔ የፀሐይ ካምፓስ የ 24/7 የግል መምህር እና አማካሪ ነኝ። ስለ ስልጠናዎቻችን (የዩቲዩብ ስኬት፣ የሼን ቢዝነስ፣ ዲጂታል ማርኬቲንግ)፣ ተግባራዊ እርምጃዎች ወይም ስለ ምዝገባ ማንኛውንም ጥያቄ በጽሑፍ፣ በስክሪንሾት ወይም በድምፅ መጠየቅ ይችላሉ!',
+      text: 'ሰላም! እንኳን ወደ **Tsehay AI Workspace** በደህና መጡ! ☀️\n\nእኔ የፀሐይ ካምፓስ የ 24/7 የግል መምህር እና አማካሪ ነኝ። ስለ ስልጠናዎቻችን (የዩቲዩብ ስኬት፣ የሼን ቢዝነስ፣ ዲጂታል ማርኬቲንግ፣ ኮዲንግ)፣ ተግባራዊ እርምጃዎች ወይም ስለ ምዝገባ ማንኛውንም ጥያቄ በጽሑፍ፣ በስክሪንሾት ወይም በድምፅ መጠየቅ ይችላሉ! 🚀',
       timestamp: 'አሁን'
     }
   ]);
@@ -198,6 +212,9 @@ export default function AiClient() {
       return;
     }
 
+    // Set immediate visual feedback
+    setSpeakingMessageId(id);
+
     speakWithLanguageDetection({
       text,
       siteLang: lang,
@@ -245,6 +262,7 @@ export default function AiClient() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          prompt: userText,
           messages: [
             ...messages.map((m) => ({ role: m.role === 'ai' ? 'assistant' : 'user', content: m.text })),
             { role: 'user', content: userText }
@@ -272,7 +290,6 @@ export default function AiClient() {
           timestamp: 'አሁን'
         }
       ]);
-      toggleSpeech(newAiId, replyText);
     } catch (err) {
       console.error('AI chat error:', err);
       setMessages((prev) => [
@@ -296,9 +313,7 @@ export default function AiClient() {
   };
 
   const clearChat = () => {
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-    }
+    stopSpeech();
     setSpeakingMessageId(null);
     setMessages([
       {
@@ -311,68 +326,79 @@ export default function AiClient() {
   };
 
   return (
-    <div className="min-h-screen bg-[#030509] text-white flex flex-col pt-24 sm:pt-28 selection:bg-[#f9b03c] selection:text-black">
-      <div className="fixed top-0 left-1/3 w-[600px] h-[600px] bg-[#f9b03c]/10 rounded-full blur-[160px] pointer-events-none -z-10" />
-      <div className="fixed bottom-0 right-1/4 w-[600px] h-[600px] bg-[#3268ba]/10 rounded-full blur-[160px] pointer-events-none -z-10" />
+    <div className="min-h-screen bg-[#030509] text-white flex flex-col pt-20 sm:pt-24 selection:bg-[#f9b03c] selection:text-black relative overflow-hidden">
+      {/* 🌟 Ambient Atmospheric Glows */}
+      <div className="fixed top-12 left-1/4 w-[550px] h-[550px] bg-[#f9b03c]/12 rounded-full blur-[150px] pointer-events-none -z-10 animate-pulse" style={{ animationDuration: '6s' }} />
+      <div className="fixed bottom-10 right-1/4 w-[600px] h-[600px] bg-[#3268ba]/15 rounded-full blur-[160px] pointer-events-none -z-10" />
+      <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[750px] h-[750px] bg-amber-500/5 rounded-full blur-[200px] pointer-events-none -z-10" />
 
-      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 flex flex-col">
-        <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-white/10">
+      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 flex flex-col pb-4">
+        {/* 🛸 Top Futuristic Command Header */}
+        <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-3xl bg-[#090f1d]/80 border border-white/10 backdrop-blur-2xl shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
           <div className="flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#f9b03c] to-amber-500 flex items-center justify-center text-slate-950 text-xl font-black shadow-[0_0_25px_rgba(249,176,60,0.4)]">
-              <i className="fa-solid fa-robot"></i>
+            <div className="relative">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-200 text-slate-950 flex items-center justify-center text-xl font-black shadow-[0_0_25px_rgba(249,176,60,0.5)] border border-white/20">
+                <i className="fa-solid fa-robot"></i>
+              </div>
+              <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-emerald-400 border-2 border-[#030509] rounded-full animate-pulse shadow-[0_0_10px_#10b981]"></span>
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-xl sm:text-2xl font-black text-white font-heading">
+                <h1 className="text-lg sm:text-2xl font-black text-white font-heading tracking-tight">
                   Tsehay <span className="text-[#f9b03c]">AI Workspace</span>
                 </h1>
-                <span className="inline-flex items-center gap-1 bg-[#3268ba]/20 text-[#5a93e8] border border-[#3268ba]/40 text-[10px] font-black px-2.5 py-0.5 rounded-full">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#5a93e8] animate-pulse"></span>
-                  24/7 ONLINE
+                <span className="inline-flex items-center gap-1.5 bg-[#f9b03c]/15 text-[#f9b03c] border border-[#f9b03c]/30 text-[10px] font-black px-2.5 py-0.5 rounded-full shadow-[0_0_10px_rgba(249,176,60,0.2)]">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#f9b03c] animate-ping"></span>
+                  24/7 LIVE
                 </span>
               </div>
-              <p className="text-xs text-slate-400 font-medium">
-                የፀሐይ ካምፓስ ፕሪሚየም የ 24/7 የግል መምህር እና አማካሪ
+              <p className="text-xs text-slate-400 font-medium flex items-center gap-1.5 mt-0.5">
+                <span>የፀሐይ ካምፓስ የላቀ የ 24/7 የግል መምህር እና አማካሪ</span>
+                <span className="text-[10px] text-slate-500">•</span>
+                <span className="text-[11px] text-emerald-400 font-bold">Multimodal AI</span>
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5">
-            <select
-              value={selectedCourseId}
-              onChange={(e) => setSelectedCourseId(e.target.value)}
-              className="bg-white/5 border border-white/10 text-slate-200 text-xs rounded-xl px-3 py-2 font-bold focus:outline-none focus:border-[#f9b03c] transition cursor-pointer"
-            >
-              <option value="all" className="bg-slate-900 text-white">
-                🌐 አጠቃላይ ጥያቄዎች (General)
-              </option>
-              {courses.map((course) => (
-                <option key={course.id} value={course.id} className="bg-slate-900 text-white">
-                  📚 {course.title}
+          <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
+            <div className="relative flex-1 sm:flex-initial">
+              <select
+                value={selectedCourseId}
+                onChange={(e) => setSelectedCourseId(e.target.value)}
+                className="w-full sm:w-auto bg-[#0d162b] border border-white/15 text-slate-200 text-xs rounded-xl px-3.5 py-2 font-bold focus:outline-none focus:border-[#f9b03c] focus:ring-2 focus:ring-[#f9b03c]/20 transition cursor-pointer shadow-inner pr-8"
+              >
+                <option value="all" className="bg-[#090f1d] text-white">
+                  🌐 አጠቃላይ ጥያቄዎች (All Topics)
                 </option>
-              ))}
-            </select>
+                {courses.map((course) => (
+                  <option key={course.id} value={course.id} className="bg-[#090f1d] text-white">
+                    📚 {course.title}
+                  </option>
+                ))}
+              </select>
+            </div>
 
             <button
               type="button"
               onClick={clearChat}
-              className="px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white border border-white/10 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+              className="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 active:scale-95 text-slate-400 hover:text-white border border-white/10 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-xs"
               title="ውይይቱን አጽዳ"
             >
-              <i className="fa-solid fa-rotate-left text-[11px]"></i>
-              <span className="hidden sm:inline">አጽዳ</span>
+              <i className="fa-solid fa-rotate-left text-[11px] text-[#f9b03c]"></i>
+              <span className="hidden sm:inline">አዲስ ቻት</span>
             </button>
           </div>
         </div>
 
+        {/* 💡 Prompts Carousel / Deck */}
         {messages.length <= 1 && (
-          <div className="mb-6 animate-in fade-in duration-500">
-            <div className="text-xs text-[#f9b03c] font-black uppercase tracking-wider mb-3 flex items-center gap-2">
+          <div className="mb-4 sm:mb-6 animate-in fade-in duration-500">
+            <div className="text-xs text-[#f9b03c] font-black uppercase tracking-wider mb-2.5 flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-[#f9b03c] animate-pulse"></span>
               <span>💡 ፈጣን ጥያቄዎች (Quick Starters)</span>
             </div>
             <div 
-              className="flex items-center gap-3 overflow-x-auto no-scrollbar pb-2"
+              className="flex items-center gap-3 overflow-x-auto no-scrollbar pb-2 pt-1"
               style={{ display: 'flex', overflowX: 'auto', whiteSpace: 'nowrap', scrollbarWidth: 'none' }}
             >
               {STARTER_PROMPTS.map((starter, idx) => (
@@ -380,7 +406,7 @@ export default function AiClient() {
                   key={idx}
                   type="button"
                   onClick={() => sendMessage(starter.prompt)}
-                  className="p-4 rounded-2xl bg-slate-900/80 hover:bg-[#0b1324] border border-white/10 hover:border-[#f9b03c]/60 text-left transition-all duration-300 group cursor-pointer shadow-lg hover:shadow-[0_0_30px_rgba(249,176,60,0.25)] hover:scale-[1.02] active:scale-[0.98] backdrop-blur-xl shrink-0 min-w-[240px] max-w-[280px]"
+                  className="p-4 rounded-2xl bg-[#090f1d]/85 hover:bg-[#0f1a35] border border-white/10 hover:border-[#f9b03c]/60 text-left transition-all duration-300 group cursor-pointer shadow-lg hover:shadow-[0_0_30px_rgba(249,176,60,0.25)] hover:scale-[1.02] active:scale-[0.98] backdrop-blur-2xl shrink-0 min-w-[250px] max-w-[290px]"
                 >
                   <div className="flex items-center gap-2.5 mb-2">
                     <div
@@ -402,41 +428,44 @@ export default function AiClient() {
           </div>
         )}
 
-        <div className="flex-1 bg-slate-900/40 backdrop-blur-xl border border-white/10 rounded-3xl p-4 sm:p-6 overflow-y-auto mb-4 space-y-4 min-h-[380px] max-h-[58vh] shadow-[inset_0_2px_15px_rgba(0,0,0,0.5)]">
+        {/* 💬 Chat Messages Feed */}
+        <div className="flex-1 bg-[#070b16]/75 backdrop-blur-2xl border border-white/10 rounded-3xl p-4 sm:p-6 overflow-y-auto mb-4 space-y-4 min-h-[400px] max-h-[60vh] shadow-[inset_0_2px_25px_rgba(0,0,0,0.6)]">
           {messages.map((m) => {
             const isAi = m.role === 'ai';
+            const isSpeakingThis = speakingMessageId === m.id;
+
             return (
               <div
                 key={m.id}
                 className={`flex gap-3 sm:gap-4 ${isAi ? 'justify-start' : 'justify-end'} animate-in fade-in slide-in-from-bottom-2 duration-300`}
               >
                 {isAi && (
-                  <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-tr from-[#f9b03c] to-amber-500 text-slate-950 flex items-center justify-center text-sm font-black shrink-0 shadow-md">
+                  <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-tr from-[#f9b03c] to-amber-500 text-slate-950 flex items-center justify-center text-sm font-black shrink-0 shadow-[0_0_15px_rgba(249,176,60,0.35)] mt-1">
                     <i className="fa-solid fa-robot"></i>
                   </div>
                 )}
 
                 <div
-                  className={`max-w-[85%] sm:max-w-[75%] rounded-2xl p-4 ${
+                  className={`max-w-[88%] sm:max-w-[78%] rounded-2xl p-4 sm:p-5 ${
                     isAi
-                      ? 'bg-slate-900/90 border border-white/10 text-slate-200'
-                      : 'bg-gradient-to-r from-[#3268ba] to-[#25549c] text-white border border-blue-400/30'
-                  } shadow-lg`}
+                      ? 'bg-[#0c1427]/95 border border-white/10 hover:border-[#f9b03c]/30 text-slate-100 shadow-[0_8px_32px_rgba(0,0,0,0.4)] transition-all'
+                      : 'bg-gradient-to-r from-[#f9b03c] via-amber-500 to-amber-600 text-slate-950 font-bold shadow-[0_4px_20px_rgba(249,176,60,0.25)] border border-amber-300/40 rounded-tr-xs'
+                  }`}
                 >
                   {m.image && (
-                    <div className="mb-3 rounded-xl overflow-hidden border border-white/20">
-                      <img src={m.image} alt="User upload" className="max-h-56 w-auto object-cover" />
+                    <div className="mb-3 rounded-xl overflow-hidden border border-white/20 shadow-md">
+                      <img src={m.image} alt="User upload" className="max-h-64 w-auto object-cover rounded-xl" />
                     </div>
                   )}
 
                   {m.audioUrl && (
-                    <div className="mb-2 flex items-center gap-2 bg-black/30 p-2.5 rounded-xl">
+                    <div className="mb-2.5 flex items-center gap-2 bg-black/40 p-2.5 rounded-xl border border-white/10">
                       <i className="fa-solid fa-microphone text-[#f9b03c]"></i>
-                      <audio controls src={m.audioUrl} className="h-8 w-full max-w-[240px]" />
+                      <audio controls src={m.audioUrl} className="h-8 w-full max-w-[250px]" />
                     </div>
                   )}
 
-                  <div className="text-xs sm:text-[13.5px] leading-relaxed">
+                  <div className={`text-xs sm:text-[14px] leading-relaxed ${isAi ? 'text-slate-100' : 'text-slate-950 font-medium'}`}>
                     {isAi ? (
                       <FormattedAiText text={m.text} />
                     ) : (
@@ -444,24 +473,33 @@ export default function AiClient() {
                     )}
                   </div>
 
-                  <div className="mt-2.5 pt-2 border-t border-white/10 flex items-center justify-between text-[11px] text-slate-400">
+                  {/* Message Bottom Action Bar */}
+                  <div className={`mt-3 pt-2.5 border-t flex items-center justify-between text-[11px] ${
+                    isAi ? 'border-white/10 text-slate-400' : 'border-black/10 text-slate-900 font-semibold'
+                  }`}>
                     <div className="flex items-center gap-3">
                       <span>{m.timestamp}</span>
+
+                      {/* 🔊 Voice Audio Reader Button */}
                       {isAi && (
                         <button
                           type="button"
                           onClick={() => toggleSpeech(m.id, m.text)}
-                          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
-                            speakingMessageId === m.id
-                              ? 'bg-amber-400/20 text-[#f9b03c] border border-amber-400/50 shadow-[0_0_15px_rgba(249,176,60,0.4)] animate-pulse'
-                              : 'bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border border-white/10'
+                          className={`flex items-center gap-1.5 px-3 py-1 rounded-xl text-[11px] font-black transition-all cursor-pointer shadow-xs active:scale-95 ${
+                            isSpeakingThis
+                              ? 'bg-amber-400/25 text-[#f9b03c] border border-amber-400/60 shadow-[0_0_20px_rgba(249,176,60,0.45)]'
+                              : 'bg-white/5 hover:bg-white/15 text-slate-300 hover:text-white border border-white/10'
                           }`}
-                          title={speakingMessageId === m.id ? "ድምፁን አቁም (Stop Speech)" : "በድምፅ አዳምጥ (Listen via Voice)"}
+                          title={isSpeakingThis ? "ድምፁን አቁም (Stop Speech)" : "በድምፅ አዳምጥ (Listen via Voice)"}
                         >
-                          {speakingMessageId === m.id ? (
+                          {isSpeakingThis ? (
                             <>
-                              <span className="w-2 h-2 rounded-full bg-[#f9b03c] animate-ping"></span>
-                              <span>ድምፅ አቁም</span>
+                              <div className="flex items-center gap-0.5 h-3">
+                                <span className="w-1 h-3 bg-[#f9b03c] rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                                <span className="w-1 h-2 bg-[#f9b03c] rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                                <span className="w-1 h-3.5 bg-[#f9b03c] rounded-full animate-bounce"></span>
+                              </div>
+                              <span className="text-[#f9b03c] font-black">ድምፅ አቁም</span>
                             </>
                           ) : (
                             <>
@@ -477,22 +515,24 @@ export default function AiClient() {
                       <button
                         type="button"
                         onClick={() => copyMessage(m.id, m.text)}
-                        className="hover:text-white transition flex items-center gap-1 cursor-pointer"
+                        className="hover:text-white transition flex items-center gap-1.5 text-slate-400 hover:text-white cursor-pointer px-2 py-0.5 rounded-lg hover:bg-white/5"
                         title="ጽሑፉን ኮፒ አድርግ"
                       >
                         <i
                           className={`fa-solid ${
-                            copiedId === m.id ? 'fa-check text-green-400' : 'fa-copy'
+                            copiedId === m.id ? 'fa-check text-emerald-400' : 'fa-copy'
                           }`}
                         ></i>
-                        <span>{copiedId === m.id ? 'ተገልብጧል!' : 'ኮፒ'}</span>
+                        <span className={copiedId === m.id ? 'text-emerald-400 font-bold' : ''}>
+                          {copiedId === m.id ? 'ተገልብጧል!' : 'ኮፒ'}
+                        </span>
                       </button>
                     )}
                   </div>
                 </div>
 
                 {!isAi && (
-                  <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center text-sm font-black shrink-0 shadow-md">
+                  <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-tr from-[#3268ba] to-blue-500 text-white flex items-center justify-center text-sm font-black shrink-0 shadow-md mt-1">
                     <i className="fa-solid fa-user"></i>
                   </div>
                 )}
@@ -501,13 +541,17 @@ export default function AiClient() {
           })}
 
           {isLoading && (
-            <div className="flex gap-3 items-center text-slate-400 text-xs animate-pulse">
-              <div className="w-8 h-8 rounded-xl bg-[#f9b03c]/20 text-[#f9b03c] flex items-center justify-center">
+            <div className="flex gap-3 items-center text-slate-400 text-xs animate-in fade-in duration-300">
+              <div className="w-8 h-8 rounded-xl bg-[#f9b03c]/20 text-[#f9b03c] border border-[#f9b03c]/30 flex items-center justify-center">
                 <i className="fa-solid fa-robot"></i>
               </div>
-              <div className="p-3.5 rounded-2xl bg-slate-900 border border-white/10 flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-[#f9b03c] animate-ping"></span>
-                <span>Tsehay AI እያሰበ ነው...</span>
+              <div className="p-3.5 rounded-2xl bg-[#0c1427] border border-white/10 flex items-center gap-2.5 shadow-lg">
+                <div className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-[#f9b03c] animate-bounce [animation-delay:-0.3s]"></span>
+                  <span className="w-2 h-2 rounded-full bg-[#f9b03c] animate-bounce [animation-delay:-0.15s]"></span>
+                  <span className="w-2 h-2 rounded-full bg-[#f9b03c] animate-bounce"></span>
+                </div>
+                <span className="text-slate-300 font-bold text-xs">Tsehay AI እያሰላሰለ ነው...</span>
               </div>
             </div>
           )}
@@ -515,10 +559,11 @@ export default function AiClient() {
           <div ref={messagesEndRef} />
         </div>
 
-        <div className="bg-slate-900/80 backdrop-blur-2xl border border-white/15 rounded-3xl p-3 sm:p-4 mb-8 shadow-2xl">
-          {/* Horizontally Scrollable AI Quick Starters / FAQ chips */}
+        {/* 🚀 Futuristic Input Dock */}
+        <div className="bg-[#090f1d]/90 backdrop-blur-3xl border border-[#f9b03c]/25 rounded-3xl p-3 sm:p-4 mb-6 shadow-[0_10px_40px_rgba(0,0,0,0.6)]">
+          {/* Horizontally Scrollable AI Quick Starters / FAQ chips directly above input */}
           <div 
-            className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-2.5 mb-2 border-b border-white/5"
+            className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-2.5 mb-2.5 border-b border-white/5"
             style={{ display: 'flex', overflowX: 'auto', whiteSpace: 'nowrap', scrollbarWidth: 'none' }}
           >
             {STARTER_PROMPTS.map((starter, idx) => (
@@ -526,7 +571,7 @@ export default function AiClient() {
                 key={idx}
                 type="button"
                 onClick={() => sendMessage(starter.prompt)}
-                className="text-xs font-semibold px-3 py-1.5 rounded-xl bg-white/5 hover:bg-[#f9b03c]/20 hover:text-[#f9b03c] border border-white/10 hover:border-[#f9b03c]/40 text-slate-300 transition-all shrink-0 cursor-pointer flex items-center gap-1.5 whitespace-nowrap"
+                className="text-[11px] font-bold px-3 py-1.5 rounded-xl bg-white/5 hover:bg-[#f9b03c]/20 hover:text-[#f9b03c] border border-white/10 hover:border-[#f9b03c]/40 text-slate-300 transition-all shrink-0 cursor-pointer flex items-center gap-1.5 whitespace-nowrap active:scale-95"
               >
                 <i className={`fa-solid ${starter.icon} text-[10px] text-[#f9b03c]`}></i>
                 <span>{starter.title}</span>
@@ -534,14 +579,16 @@ export default function AiClient() {
             ))}
           </div>
 
+          {/* Attached Image Thumbnail */}
           {attachedImage && (
-            <div className="mb-2 inline-flex items-center gap-2 bg-white/10 border border-[#f9b03c]/50 px-3 py-1.5 rounded-xl text-xs">
+            <div className="mb-2.5 inline-flex items-center gap-2 bg-white/10 border border-[#f9b03c]/50 px-3 py-1.5 rounded-xl text-xs shadow-md">
               <i className="fa-solid fa-image text-[#f9b03c]"></i>
-              <span>ፎቶ ተያይዟል</span>
+              <span className="font-bold">ፎቶ ተያይዟል</span>
               <button
                 type="button"
                 onClick={() => setAttachedImage(null)}
                 className="text-red-400 hover:text-red-300 ml-1 cursor-pointer"
+                title="ፎቶ አስወግድ"
               >
                 <i className="fa-solid fa-xmark"></i>
               </button>
@@ -549,7 +596,7 @@ export default function AiClient() {
           )}
 
           {isRecording ? (
-            <div className="flex items-center justify-between gap-3 p-2.5 bg-red-500/15 border border-red-500/30 rounded-2xl animate-pulse">
+            <div className="flex items-center justify-between gap-3 p-3 bg-red-500/15 border border-red-500/30 rounded-2xl animate-pulse">
               <div className="flex items-center gap-2 text-red-400 font-bold text-xs">
                 <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping"></span>
                 <span>ድምፅ በመቅዳት ላይ ({recordingDuration}s)...</span>
@@ -557,7 +604,7 @@ export default function AiClient() {
               <button
                 type="button"
                 onClick={stopVoiceRecording}
-                className="px-4 py-1.5 rounded-xl bg-red-500 hover:bg-red-600 text-white font-black text-xs cursor-pointer"
+                className="px-4 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white font-black text-xs cursor-pointer shadow-lg active:scale-95"
               >
                 አቁም & ላክ
               </button>
@@ -580,34 +627,34 @@ export default function AiClient() {
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="w-10 h-10 rounded-2xl bg-white/5 hover:bg-white/10 text-slate-300 hover:text-[#f9b03c] border border-white/10 flex items-center justify-center transition cursor-pointer shrink-0"
+                className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-white/5 hover:bg-white/10 active:scale-95 text-slate-300 hover:text-[#f9b03c] border border-white/10 flex items-center justify-center transition cursor-pointer shrink-0 shadow-xs"
                 title="ፎቶ ወይም ስክሪንሾት አያይዝ"
               >
-                <i className="fa-solid fa-paperclip"></i>
+                <i className="fa-solid fa-paperclip text-sm"></i>
               </button>
 
               <button
                 type="button"
                 onClick={startVoiceRecording}
-                className="w-10 h-10 rounded-2xl bg-white/5 hover:bg-red-500/20 text-slate-300 hover:text-red-400 border border-white/10 flex items-center justify-center transition cursor-pointer shrink-0"
+                className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-white/5 hover:bg-red-500/20 active:scale-95 text-slate-300 hover:text-red-400 border border-white/10 flex items-center justify-center transition cursor-pointer shrink-0 shadow-xs"
                 title="በድምፅ ጠይቅ"
               >
-                <i className="fa-solid fa-microphone"></i>
+                <i className="fa-solid fa-microphone text-sm"></i>
               </button>
 
               <input
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="ስለ ዩቲዩብ፣ ስለ ሼን፣ ስለ ማርኬቲንግ ወይም ስለ ስልጠናዎች ይጠይቁ..."
+                placeholder="ስለ ዩቲዩብ፣ ስለ ሼን፣ ስለ ማርኬቲንግ፣ ኮዲንግ ወይም ስልጠናዎች ማንኛውንም ጥያቄ ይጠይቁ..."
                 disabled={isLoading}
-                className="flex-1 bg-white/5 border border-white/10 focus:border-[#f9b03c] rounded-2xl px-4 py-3 text-xs sm:text-sm text-white placeholder:text-slate-500 focus:outline-none transition font-medium"
+                className="flex-1 bg-white/5 border border-white/10 focus:border-[#f9b03c] focus:ring-2 focus:ring-[#f9b03c]/20 rounded-2xl px-4 py-3 text-xs sm:text-sm text-white placeholder:text-slate-500 focus:outline-none transition font-medium"
               />
 
               <button
                 type="submit"
                 disabled={isLoading || (!input.trim() && !attachedImage)}
-                className="px-5 py-3 rounded-2xl bg-gradient-to-r from-[#f9b03c] to-amber-500 hover:brightness-110 active:scale-95 disabled:opacity-50 text-slate-950 font-black text-xs sm:text-sm flex items-center gap-2 shadow-[0_0_20px_rgba(249,176,60,0.4)] transition cursor-pointer shrink-0"
+                className="px-5 py-3 rounded-2xl bg-gradient-to-r from-[#f9b03c] via-amber-400 to-amber-500 hover:brightness-110 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed text-slate-950 font-black text-xs sm:text-sm flex items-center gap-2 shadow-[0_0_20px_rgba(249,176,60,0.4)] transition cursor-pointer shrink-0"
               >
                 <span>ላክ</span>
                 <i className="fa-solid fa-paper-plane text-xs"></i>

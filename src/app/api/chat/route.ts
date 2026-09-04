@@ -317,14 +317,18 @@ function getSmartFallbackReply(userPrompt: string, courseContext?: any, hasImage
         return `በ**"${courseContext.courseTitle}"** ስልጠና ውስጥ ያሉትን ዋና ዋና ደረጃዎች በተግባር መተግበር እና የተሰጡትን የመማሪያ ማስታወሻዎች መከታተል ወሳኝ ነው።\n\nተጨማሪ ዝርዝር ማብራሪያ ወይም የደረጃ በደረጃ መመሪያ ከፈለጉ ጥያቄዎን በዝርዝር ይጻፉልኝ ወይም በድምፅ ይላኩልኝ! 💡`;
     }
 
+    // 14. Universal Knowledge & Actionable Answer Synthesizer (NEVER REFUSE)
+    const cleanPrompt = raw || (courseContext?.courseTitle ? `በ${courseContext.courseTitle} ዙሪያ` : 'የዲጂታል ስራ እና ክህሎት');
+    
     if (isEnglish) {
-        return `I apologize, but I do not have sufficient information regarding this specific question right now.\n\nFor accurate and complete details, please reach out directly to the **Tsehay Team**:\n• **Phone & WhatsApp**: **0980209090** (+251980209090)\n• **Telegram Support**: **@TsehayTeam** (https://t.me/tsehaycampus)\n• **Office**: Bole, Addis Ababa, Ethiopia\n\nOur support team will be delighted to assist you! ✨`;
+        return `### 💡 Tsehay AI Comprehensive Advisory\n\nRegarding your question: **"${cleanPrompt}"**\n\n1. **Core Insight**: Success in any digital endeavor relies on identifying high-value market demand and executing with consistency.\n2. **Practical Action Steps**:\n   • **Step 1 (Skill Acquisition)**: Master the exact practical workflow rather than just theoretical concepts.\n   • **Step 2 (Tooling & Setup)**: Utilize modern AI tools (ChatGPT, Midjourney, Canva) and automated systems to multiply your output.\n   • **Step 3 (Audience & Sales)**: Distribute your value through high-engagement platforms like Telegram, TikTok, and YouTube.\n   • **Step 4 (Monetization)**: Accept payments locally via Telebirr/CBE Birr or internationally via PayPal and global gateways.\n\n3. **Recommendation**: Check out our specialized masterclasses on Tsehay Campus to accelerate your results with step-by-step video guidance!\n\nFeel free to ask any follow-up question or ask for a deeper breakdown of any step! ✨`;
     }
-    return `ይቅርታ፣ ስለዚህ ጉዳይ አሁን ላይ በቂ መረጃ የለኝም።\n\nትክክለኛና የተሟላ ይፋዊ መረጃ ለማግኘት እባክዎ የእኛን የድጋፍ ሰጪ ቡድን (**ፀሐይ ቲም / Tsehay Team**) በቀጥታ ያግኙ፦\n• **ስልክ እና ዋትስአፕ**፦ **0980209090** (0980-20-90-90 / +251980209090)\n• **ቴሌግራም**፦ **@TsehayTeam** (https://t.me/tsehaycampus)\n• **አድራሻ**፦ ቦሌ፣ አዲስ አበባ፣ ኢትዮጵያ\n\nየፀሐይ ቲም አባላት በደስታ ያስተናግዱዎታል! ✨`;
+
+    return `### 💡 የፀሐይ AI ሁለንተናዊ ተግባራዊ ማብራሪያ\n\nስለ **"${cleanPrompt}"** ላነሱት ጥያቄ፦\n\n1. **ዋነኛ መርህ**፦ በማንኛውም የዲጂታል ስራ ወይም ክህሎት ውስጥ ስኬታማ ለመሆን ዋናው ሚስጥር በገበያው ውስጥ ከፍተኛ ፍላጎት ያለውን ዘርፍ መለየት እና በተግባር መተግበር ነው።\n2. **የተግባር ቅደም-ተከተል (Step-by-Step Action Plan)**፦\n   • **ደረጃ 1 (ክህሎትን ማዳበር)**፦ ቲዎሪ ብቻ ሳይሆን በቀጥታ ገቢ ሊያስገኙ የሚችሉ ተግባራዊ መንገዶችን ይማሩ።\n   • **ደረጃ 2 (ዘመናዊ መሳሪያዎችን መጠቀም)**፦ ስራዎን በ AI መሳሪያዎች (እንደ ChatGPT፣ CapCut፣ Canva) በማገዝ ጥራቱንና ፍጥነቱን ያሳድጉ።\n   • **ደረጃ 3 (የገበያ ትስስር መፍጠር)**፦ በቴሌግራም ቻናሎች፣ በቲክቶክ እና በዩቲዩብ አማካኝነት ለተጠቃሚዎች ዋጋ ያለው ይዘት በማቅረብ ታማኝነትን ገንቡ።\n   • **ደረጃ 4 (ገቢ መሰብሰብ)**፦ በሀገር ውስጥ በቴሌብር እና በሞባይል ባንኪንግ፤ ከውጭ ሀገር ደግሞ በ PayPal ወይም በካርዶች ክፍያዎችን በቀላሉ ይቀበሉ።\n\n3. **የፀሐይ ካምፓስ ምክር**፦ የተማሩትን በፍጥነት ወደ እውነተኛ ገቢ ለመቀየር በካምፓሳችን ያሉትን የተግባር ኮርሶች ይከታተሉ!\n\nበዚህ ዙሪያ ተጨማሪ ዝርዝር ማብራሪያ ወይም ያልገባዎት ነጥብ ካለ በነፃነት ይጠይቁኝ! ✨`;
 }
 
 export async function POST(req: Request) {
-  let reqBody = {};
+  let reqBody: any = {};
   try { reqBody = await req.json(); } catch(e) {}
   
   // 🔒 CORS validation
@@ -392,7 +396,15 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { prompt, courseContext, image, audio, preferredLanguage } = reqBody;
+    let { prompt, messages, courseContext, image, audio, preferredLanguage } = reqBody;
+
+    // 💡 If prompt is not directly supplied, extract the last user message from messages array
+    if (!prompt && Array.isArray(messages) && messages.length > 0) {
+      const userMsgs = messages.filter((m: any) => m.role === 'user' || m.role === 'client');
+      if (userMsgs.length > 0) {
+        prompt = userMsgs[userMsgs.length - 1]?.content || userMsgs[userMsgs.length - 1]?.text || '';
+      }
+    }
     
     if (!prompt && !image && !audio) {
         return NextResponse.json({ reply: getSmartFallbackReply("", courseContext, false, false, preferredLanguage) }, { status: 200 });
@@ -622,10 +634,10 @@ ${contextualCourseSection}`;
         return NextResponse.json({ reply: replyText }, { status: 200 });
     }
 
-    return NextResponse.json({ reply: getSmartFallbackReply(prompt, courseContext, Boolean(image), Boolean(audio)) }, { status: 200 });
+    return NextResponse.json({ reply: getSmartFallbackReply(prompt, courseContext, Boolean(image), Boolean(audio), preferredLanguage) }, { status: 200 });
 
   } catch (error: any) {
     console.error("Chat API Critical Error:", error);
-    return NextResponse.json({ reply: getSmartFallbackReply(reqBody?.prompt || "", reqBody?.courseContext, false, false) }, { status: 200 });
+    return NextResponse.json({ reply: getSmartFallbackReply(reqBody?.prompt || "", reqBody?.courseContext, false, false, reqBody?.preferredLanguage) }, { status: 200 });
   }
-}
+}
