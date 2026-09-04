@@ -511,7 +511,7 @@ ${courseContext.courseAiPrompt ? courseContext.courseAiPrompt : `You are the mas
   2. YouTube Secrets Masterclass & Monetization
   3. Digital Marketing Mastery (100% FREE)
   4. Video Editing Masterclass
-  5. Advanced Paid Digital Marketing
+  5. Advanced Digital Marketing (Meta, TikTok & Google Ads)
   6. Real Estate & Business Brokerage
   7. Career Development & Leadership`
       : `Flagship Courses:
@@ -519,7 +519,7 @@ ${courseContext.courseAiPrompt ? courseContext.courseAiPrompt : `You are the mas
   2. **YouTube Secrets Masterclass & Monetization (የዩቲዩብ ስኬት ሚስጥሮች)**
   3. **Digital Marketing Mastery (ዲጂታል ማርኬቲንግ)** - 100% FREE
   4. **Video Editing Masterclass (የቪዲዮ ኤዲቲንግ)**
-  5. **Advanced Paid Digital Marketing (የከፋይ ዲጂታል ማርኬቲንግ)**
+  5. **Advanced Digital Marketing (የላቀ ዲጂታል ማርኬቲንግ)**
   6. **Real Estate & Business Brokerage (የደላላነትና ብሮከሬጅ)**
   7. **Career Development & Leadership (የስራ እና ካሪየር እድገት)**`;
 

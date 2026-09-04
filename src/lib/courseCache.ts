@@ -763,8 +763,8 @@ export const COMING_SOON_COURSES: ComingSoonCourse[] = [
   {
     id: "cs-paid-ads-marketing",
     slug: "advanced-paid-digital-marketing",
-    title: "የከፋይ ዲጂታል ማርኬቲንግ (Advanced Paid Marketing)",
-    titleEn: "Advanced Paid Digital Marketing",
+    title: "የላቀ ዲጂታል ማርኬቲንግ (Advanced Digital Marketing)",
+    titleEn: "Advanced Digital Marketing",
     tag: "Digital Marketing",
     category: "Digital Marketing",
     description: "በ Meta (Facebook/Instagram) Ads፣ TikTok Ads እና Google Search Ads ከፍተኛ ሽያጭ የሚያመጡ ማስታወቂያዎችን መስራት፣ Target Audience መምረጥ እና ROAS ማሳደግ።",

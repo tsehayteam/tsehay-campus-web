@@ -5123,7 +5123,7 @@ export default function AdminDashboard() {
                   >
                     <option value="all">ሁሉም ኮርሶች ({waitlists.length})</option>
                     <option value="cs-video-editing">የቪዲዮ ኤዲቲንግ ኮርስ</option>
-                    <option value="cs-paid-ads-marketing">የከፋይ ዲጂታል ማርኬቲንግ</option>
+                    <option value="cs-paid-ads-marketing">የላቀ ዲጂታል ማርኬቲንግ</option>
                     <option value="cs-real-estate-brokerage">የደላላነት እና ብሮከሬጅ ኮርስ</option>
                     <option value="cs-career-leadership">የስራ እና ካሪየር እድገት</option>
                   </select>
