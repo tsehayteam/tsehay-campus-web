@@ -1,0 +1,37 @@
+body { font-family: 'Roboto', 'Noto Sans Ethiopic', sans-serif; scroll-behavior: smooth; background-color: var(--bodyBg); transition: background-color 0.3s ease; }
+.dark body { background-color: #000000; }
+h1, h2, h3, h4, h5, h6 { font-family: 'Montserrat', 'Noto Sans Ethiopic', sans-serif; }
+
+.glass-nav { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-bottom: 1px solid rgba(229, 231, 235, 0.6); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03); }
+.dark .glass-nav { background: rgba(0, 0, 0, 0.85); border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+
+.course-card { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); transform-style: preserve-3d; }
+.course-card:hover { box-shadow: 0 20px 25px -5px rgba(50, 104, 186, 0.15), 0 10px 10px -5px rgba(50, 104, 186, 0.05); transform: translateY(-6px); border-color: rgba(249, 176, 60, 0.4); }
+.dark .course-card:hover { box-shadow: 0 20px 25px -5px rgba(249, 176, 60, 0.1); }
+
+.search-bar { transition: all 0.3s ease; background: rgba(243, 244, 246, 0.8); }
+.dark .search-bar { background: #111111; border-color: rgba(255, 255, 255, 0.1); }
+.search-bar:focus-within { background: #ffffff; border-color: #3268BA; box-shadow: 0 0 0 4px rgba(50, 104, 186, 0.1); }
+.dark .search-bar:focus-within { background: #000000; border-color: #F9B03C; box-shadow: 0 0 0 4px rgba(249, 176, 60, 0.1); }
+
+.text-gradient { background: linear-gradient(135deg, #3268BA 0%, #F9B03C 100%, #3268BA 200%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-size: 200% auto; animation: textShine 4s linear infinite; }
+@keyframes textShine { to { background-position: 200% center; } }
+
+/* 💡 Original Beautiful Dark Mesh for BOTH Light and Dark mode */
+.hero-mesh { background-color: #0f172a; background-image: radial-gradient(at 0% 0%, rgba(50, 104, 186, 0.4) 0px, transparent 50%), radial-gradient(at 100% 0%, rgba(249, 176, 60, 0.3) 0px, transparent 50%), radial-gradient(at 100% 100%, rgba(50, 104, 186, 0.4) 0px, transparent 50%), radial-gradient(at 0% 100%, rgba(249, 176, 60, 0.3) 0px, transparent 50%); animation: gradient-x 15s ease infinite; }
+/* Make it pure black in dark mode */
+.dark .hero-mesh { background-color: #000000; background-image: radial-gradient(at 0% 0%, rgba(50, 104, 186, 0.3) 0px, transparent 50%), radial-gradient(at 100% 0%, rgba(249, 176, 60, 0.2) 0px, transparent 50%), radial-gradient(at 100% 100%, rgba(50, 104, 186, 0.3) 0px, transparent 50%), radial-gradient(at 0% 100%, rgba(249, 176, 60, 0.1) 0px, transparent 50%); }
+
+.btn-glow { transition: all 0.3s ease; }
+.btn-glow:hover { box-shadow: 0 0 20px rgba(249, 176, 60, 0.5); transform: translateY(-2px); }
+
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #3268BA; }
+.dark ::-webkit-scrollbar-thumb { background: #333333; }
+
+body { top: 0px !important; position: static !important; }
+html { top: 0 !important; height: 100%; }
+
+#mobile-menu.open { max-height: 500px !important; }

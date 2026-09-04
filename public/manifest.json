@@ -1,0 +1,39 @@
+{
+  "name": "Tsehay Campus - ፀሐይ ካምፓስ",
+  "short_name": "Tsehay Campus",
+  "description": "የኦንላይን እና የተግባር የክህሎት ማሰልጠኛ ፕላትፎርም በኢትዮጵያ",
+  "start_url": "/",
+  "id": "/",
+  "display": "standalone",
+  "background_color": "#0d0d0d",
+  "theme_color": "#F9B03C",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "categories": ["education", "business", "productivity"],
+  "icons": [
+    {
+      "src": "/tc-logo.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

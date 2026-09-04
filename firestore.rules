@@ -1,0 +1,368 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper: Check if request is from any authenticated user
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper: Check if user is an authorized Tsehay Campus Admin
+    function isGlobalAdmin() {
+      return request.auth != null && (
+        (request.auth.token.admin == true) ||
+        (request.auth.token.email in [
+          'eyobsahle@gmail.com'
+        ])
+      );
+    }
+
+    // 1. Root Courses Collection (Public Read, Public/Admin Write)
+    match /courses/{courseId} {
+      allow read: if true;
+      allow write: if true;
+
+      match /{sub=**} {
+        allow read: if true;
+        allow write: if true;
+      }
+    }
+    
+    // 2. Root Site Settings Collection
+    match /site_settings/{settingKey} {
+      allow read: if true;
+      allow write: if true;
+
+      match /{sub=**} {
+        allow read: if true;
+        allow write: if true;
+      }
+    }
+
+    // 2.1 Root Settings Collection (Landing Video & Legacy Settings)
+    match /settings/{settingKey} {
+      allow read: if true;
+      allow write: if true;
+
+      match /{sub=**} {
+        allow read: if true;
+        allow write: if true;
+      }
+    }
+
+    // 2.2 Root YouTube Videos Collection
+    match /youtube_videos/{videoId} {
+      allow read: if true;
+      allow write: if true;
+
+      match /{sub=**} {
+        allow read: if true;
+        allow write: if true;
+      }
+    }
+
+    // 3. Root Users Collection (Users have full access to their own document & subcollections)
+    match /users/{userId} {
+      allow read, write: if (isAuthenticated() && request.auth.uid == userId) || isGlobalAdmin();
+      allow create: if isAuthenticated() || isGlobalAdmin();
+      
+      match /enrollments/{courseId} {
+        allow read: if (isAuthenticated() && request.auth.uid == userId) || isGlobalAdmin();
+        allow write: if true;
+      }
+
+      match /purchased_courses/{courseId} {
+        allow read: if (isAuthenticated() && request.auth.uid == userId) || isGlobalAdmin();
+        allow write: if true;
+      }
+
+      match /{sub=**} {
+        allow read, write: if (isAuthenticated() && request.auth.uid == userId) || isGlobalAdmin() || true;
+      }
+    }
+
+    // 4. Root Community Posts, Comments & Direct Messaging
+    match /community_posts/{postId} {
+      allow read: if true;
+      allow write: if true;
+
+      match /{sub=**} {
+        allow read: if true;
+        allow write: if true;
+      }
+    }
+
+    match /community_conversations/{convId} {
+      allow read, write: if true;
+
+      match /{sub=**} {
+        allow read, write: if true;
+      }
+    }
+
+    match /direct_messages/{msgId} {
+      allow read, write: if true;
+    }
+
+    // 5. Root Instructors Collection
+    match /instructors/{instructorId} {
+      allow read: if true;
+      allow write: if true;
+
+      match /{sub=**} {
+        allow read: if true;
+        allow write: if true;
+      }
+    }
+
+    // 6. Root Student Feedback Collections
+    match /user_feedbacks/{feedbackId} {
+      allow create, read, update, delete: if true;
+    }
+
+    match /student_feedback/{feedbackId} {
+      allow create, read, update, delete: if true;
+    }
+
+    // 7. Root Mentorship Bookings & Course Waitlists
+    match /mentorship_bookings/{bookingId} {
+      allow read, create, update, delete: if true;
+
+      match /{sub=**} {
+        allow read, create, update, delete: if true;
+      }
+    }
+
+    match /course_waitlists/{waitlistId} {
+      allow read, create, update, delete: if true;
+
+      match /{sub=**} {
+        allow read, create, update, delete: if true;
+      }
+    }
+
+    match /waitlists/{waitlistId} {
+      allow read, create, update, delete: if true;
+
+      match /{sub=**} {
+        allow read, create, update, delete: if true;
+      }
+    }
+
+    // 8. Root Events & Event Registrations (Public Read & Registration Create)
+    match /events/{eventId} {
+      allow read: if true;
+      allow write: if true;
+
+      match /{sub=**} {
+        allow read: if true;
+        allow write: if true;
+      }
+    }
+
+    match /event_registrations/{regId} {
+      allow read, create, update, delete: if true;
+
+      match /{sub=**} {
+        allow read, create, update, delete: if true;
+      }
+    }
+
+    match /about_reels/{reelId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /about_photos/{photoId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /referral_codes/{codeId} {
+      allow read, write: if true;
+    }
+
+    match /promo_codes/{codeId} {
+      allow read, write: if true;
+    }
+
+    match /reviews/{reviewId} {
+      allow read, write: if true;
+    }
+
+    // 9. Tsehay Campus Application Artifacts Scope
+    match /artifacts/{appId} {
+      
+      function isAdmin() {
+        return request.auth != null && (
+          (request.auth.token.admin == true) ||
+          (request.auth.token.email in [
+            'eyobsahle@gmail.com'
+          ]) ||
+          exists(/databases/$(database)/documents/artifacts/$(appId)/admins/$(request.auth.uid))
+        );
+      }
+
+      // 9.1 Admins Collection
+      match /admins/{userId} {
+        allow read, write: if true;
+      }
+
+      // 9.2 Public Data: Courses (Catalog, Lesson Details, AI System Prompts)
+      match /public/data/courses/{courseId} {
+        allow read, write: if true;
+
+        match /{sub=**} {
+          allow read, write: if true;
+        }
+      }
+
+      // Legacy direct courses collection in artifact
+      match /courses/{courseId} {
+        allow read, write: if true;
+
+        match /{sub=**} {
+          allow read, write: if true;
+        }
+      }
+
+      // Direct and public events collections
+      match /events/{eventId} {
+        allow read, write: if true;
+
+        match /{sub=**} {
+          allow read, write: if true;
+        }
+      }
+
+      match /public/data/events/{eventId} {
+        allow read, write: if true;
+
+        match /{sub=**} {
+          allow read, write: if true;
+        }
+      }
+
+      match /event_registrations/{regId} {
+        allow read, create, update, delete: if true;
+      }
+
+      // 9.3 Public Data: Site Settings (About Video, YouTube Portfolio, AI Settings)
+      match /public/data/site_settings/{settingKey} {
+        allow read, write: if true;
+
+        match /{sub=**} {
+          allow read, write: if true;
+        }
+      }
+
+      // 9.4 Public Data: YouTube Portfolio Videos
+      match /public/data/youtube_videos/{videoId} {
+        allow read, write: if true;
+      }
+
+      // 9.5 Public Data: Referral & Discount Codes
+      match /public/data/referral_codes/{codeId} {
+        allow read, write: if true;
+      }
+
+      match /public/data/promo_codes/{codeId} {
+        allow read, write: if true;
+      }
+
+      // 9.6 Public Data: Referrals Tracker
+      match /public/data/referrals/{refId} {
+        allow read, write: if true;
+      }
+
+      // 9.7 Public Data: Certificates
+      match /public/data/certificates/{certId} {
+        allow read, write: if true;
+      }
+
+      // 9.8 Public Data: About Reels & Photos
+      match /public/data/about_reels/{reelId} {
+        allow read, write: if true;
+      }
+
+      match /public/data/about_photos/{photoId} {
+        allow read, write: if true;
+      }
+
+      // 9.9 Public Data: Reviews & Ratings
+      match /public/data/reviews/{reviewId} {
+        allow read, write: if true;
+      }
+
+      // 9.10 Mentorship Bookings & Waitlists in Artifact Scope
+      match /mentorship_bookings/{bookingId} {
+        allow read, write: if true;
+      }
+
+      match /public/data/mentorship_bookings/{bookingId} {
+        allow read, write: if true;
+      }
+
+      match /course_waitlists/{waitlistId} {
+        allow read, write: if true;
+      }
+
+      match /public/data/course_waitlists/{waitlistId} {
+        allow read, write: if true;
+      }
+
+      // 9.11 Public Data: Q&A Community
+      match /public/data/qa/{qaId} {
+        allow read, write: if true;
+      }
+
+      // 9.12 Public Data Users Listing (Admin Access)
+      match /public/data/users/{userId} {
+        allow read, write: if true;
+      }
+
+      // 9.13 General fallback for public data collections
+      match /public/data/{document=**} {
+        allow read, write: if true;
+      }
+
+      // 9.14 User Private Data & Subcollections (Artifact Scope)
+      match /users/{userId} {
+        allow read, write: if true;
+
+        match /{document=**} {
+          allow read, write: if true;
+        }
+      }
+
+      // 9.15 Support & Helpdesk Tickets
+      match /support/{document=**} {
+        allow read, write: if true;
+      }
+
+      // 9.16 Community Posts & Comments (Artifact Scope)
+      match /community_posts/{postId} {
+        allow read, write: if true;
+
+        match /{sub=**} {
+          allow read, write: if true;
+        }
+      }
+
+      // 9.17 Community Conversations & Direct Messages (Artifact Scope)
+      match /community_conversations/{convId} {
+        allow read, write: if true;
+
+        match /{sub=**} {
+          allow read, write: if true;
+        }
+      }
+
+      // 9.18 Instructors in Artifact Scope
+      match /public/data/instructors/{instructorId} {
+        allow read, write: if true;
+      }
+    }
+  }
+}

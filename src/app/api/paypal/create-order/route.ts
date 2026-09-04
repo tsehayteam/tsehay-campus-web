@@ -1,0 +1,138 @@
+import { NextResponse } from 'next/server';
+
+async function getPayPalAccessToken() {
+  const clientId = (
+    process.env.PAYPAL_CLIENT_ID || 
+    process.env.PAYPAL_CLIENT || 
+    process.env.PAYPAL_KEY ||
+    ''
+  ).trim();
+  
+  const secret = (
+    process.env.PAYPAL_CLIENT_SECRET || 
+    process.env.PAYPAL_SECRET || 
+    process.env.PAYPAL_SECRET_KEY || 
+    process.env.PAYPAL_PRIVATE_KEY ||
+    ''
+  ).trim();
+
+  if (!clientId || !secret) {
+    throw new Error('PayPal credentials not configured');
+  }
+
+  const isLive = process.env.PAYPAL_MODE === 'live' || process.env.PAYPAL_ENV === 'live';
+  const mode = isLive ? 'https://api-m.paypal.com' : 'https://api-m.sandbox.paypal.com';
+  const auth = Buffer.from(`${clientId}:${secret}`).toString('base64');
+
+  const response = await fetch(`${mode}/v1/oauth2/token`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Basic ${auth}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: 'grant_type=client_credentials',
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.error_description || 'Failed to authenticate with PayPal');
+  }
+
+  return { accessToken: data.access_token, mode };
+}
+
+export async function POST(request: Request) {
+  try {
+    const { courseId, title, price } = await request.json();
+
+    if (!courseId || !price) {
+      return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 });
+    }
+
+    let authenticatedUserId = 'anonymous';
+    const authHeader = request.headers.get('authorization');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      try {
+        const { adminAuth } = await import('@/lib/firebase/admin');
+        if (adminAuth) {
+          const decoded = await adminAuth.verifyIdToken(authHeader.split('Bearer ')[1].trim());
+          authenticatedUserId = decoded.uid;
+        }
+      } catch (tokenErr) {
+        console.warn("PayPal create-order token verification note:", tokenErr);
+      }
+    }
+    const userId = authenticatedUserId;
+
+    const host = request.headers.get('host') || 'tsehaycampus.com';
+    const protocol = host.includes('localhost') ? 'http' : 'https';
+    const origin = process.env.NEXT_PUBLIC_APP_URL || `${protocol}://${host}`;
+
+    // Check for direct PayPal link configured in env
+    const directPayPalUrl = process.env.PAYPAL_DIRECT_URL || process.env.PAYPAL_ME_URL || process.env.PAYPAL_CHECKOUT_URL;
+    if (directPayPalUrl && directPayPalUrl.startsWith('http')) {
+      return NextResponse.json({ checkoutUrl: directPayPalUrl });
+    }
+
+    let accessToken = '';
+    let mode = '';
+    try {
+      const authResult = await getPayPalAccessToken();
+      accessToken = authResult.accessToken;
+      mode = authResult.mode;
+    } catch (err: any) {
+      console.warn("PayPal direct API credentials notice:", err.message);
+      return NextResponse.json({ useClientFallback: true });
+    }
+
+    const usdPrice = (Number(price) / 120).toFixed(2); // Convert ETB to USD estimate
+
+    const orderPayload = {
+      intent: 'CAPTURE',
+      purchase_units: [
+        {
+          reference_id: `tsehay_${courseId}_${userId}_${Date.now()}`,
+          custom_id: `${userId}:${courseId}`,
+          description: `Tsehay Campus - ${title}`,
+          amount: {
+            currency_code: 'USD',
+            value: Number(usdPrice) > 1.0 ? usdPrice : '5.00'
+          }
+        }
+      ],
+      application_context: {
+        brand_name: 'Tsehay Campus',
+        user_action: 'PAY_NOW',
+        return_url: `${origin}/dashboard?success=true&course=${courseId}`,
+        cancel_url: `${origin}/dashboard?canceled=true`
+      }
+    };
+
+    const response = await fetch(`${mode}/v2/checkout/orders`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`
+      },
+      body: JSON.stringify(orderPayload)
+    });
+
+    const orderData = await response.json();
+
+    if (!response.ok) {
+      console.error("PayPal Create Order Error:", orderData);
+      return NextResponse.json({ error: orderData.message || 'Failed to create PayPal order' }, { status: 400 });
+    }
+
+    const approvalUrl = orderData.links?.find((link: any) => link.rel === 'approve')?.href;
+
+    return NextResponse.json({
+      orderID: orderData.id,
+      checkoutUrl: approvalUrl || orderData.links?.[0]?.href
+    });
+
+  } catch (error: any) {
+    console.error("PayPal Order Creation Error:", error);
+    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+  }
+}
