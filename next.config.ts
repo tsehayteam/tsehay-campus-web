@@ -81,3 +81,4 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
+// Build trigger: 2026-09-05T02:04:00+03:00 - UI/UX & Tsehay AI TTS Updates
