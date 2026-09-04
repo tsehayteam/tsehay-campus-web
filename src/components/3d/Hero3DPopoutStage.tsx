@@ -5,6 +5,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { gsap } from 'gsap';
 import { parseVideoEmbedUrl, parseImageUrl } from '@/lib/videoParser';
 import { db } from '@/lib/firebase/config';
+import { supabase } from '@/lib/supabase/client';
 import { doc, onSnapshot } from 'firebase/firestore';
 import CinematicVideoModal from '@/components/CinematicVideoModal';
 
@@ -146,6 +147,36 @@ export default function Hero3DPopoutStage({
       unsub4 = onSnapshot(doc(db, 'settings', 'landingVideo'), handleDocUpdate, () => {});
     } catch (e) {}
 
+    // 3.5. Supabase Realtime Stream for landing_video
+    let sbChannel: any = null;
+    try {
+      const fetchSupabaseLanding = async () => {
+        try {
+          const { data } = await supabase.from('site_settings').select('*').eq('key', 'landing_video').maybeSingle();
+          if (data && data.data && !isCancelled) {
+            const url = data.data.url || data.data.videoUrl;
+            const thumb = data.data.thumbnail;
+            if (url && typeof url === 'string' && url.trim()) {
+              setActiveVideoUrl(url.trim());
+              try { localStorage.setItem('tsehay_landing_video_cache', url.trim()); } catch (e) {}
+            }
+            if (thumb && typeof thumb === 'string' && thumb.trim()) {
+              setCustomThumbnail(thumb.trim());
+              try { localStorage.setItem('tsehay_landing_video_thumb', thumb.trim()); } catch (e) {}
+            }
+          }
+        } catch (e) {}
+      };
+      fetchSupabaseLanding();
+
+      sbChannel = supabase
+        .channel('public:site_settings:landing')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'site_settings', filter: 'key=eq.landing_video' }, () => {
+          fetchSupabaseLanding();
+        })
+        .subscribe();
+    } catch (e) {}
+
     // 4. Cross-tab Broadcast Channel & Custom Event Listeners
     let bc: BroadcastChannel | null = null;
     try {
@@ -188,6 +219,7 @@ export default function Hero3DPopoutStage({
       if (unsub2) unsub2();
       if (unsub3) unsub3();
       if (unsub4) unsub4();
+      if (sbChannel) supabase.removeChannel(sbChannel);
       if (bc) bc.close();
       window.removeEventListener('tsehay_landing_video_updated', handleCustomLandingUpdate);
       window.removeEventListener('storage', handleStorageUpdate);

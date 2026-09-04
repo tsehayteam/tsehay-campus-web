@@ -20,6 +20,7 @@ import {
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase/config';
 import { collection, onSnapshot, query, getDocs } from 'firebase/firestore';
+import { supabase } from '@/lib/supabase/client';
 
 export default function EventsClient() {
   const { user } = useAuth();
@@ -168,10 +169,42 @@ export default function EventsClient() {
       })
       .catch(() => {});
 
+    // 5. Live Supabase Events Fetch & Realtime Channel
+    let sbEventsChannel: any = null;
+    const fetchSupabaseEvents = async () => {
+      try {
+        const { data, error } = await supabase.from('events').select('*');
+        if (!error && Array.isArray(data) && data.length > 0) {
+          const parsed = data.map(item => ({
+            ...item,
+            isOnline: item.is_online ?? item.isOnline,
+            meetingLink: item.meeting_link ?? item.meetingLink,
+            mapsUrl: item.maps_url ?? item.mapsUrl,
+            registeredCount: item.registered_count ?? item.registeredCount,
+            speakerRole: item.speaker_role ?? item.speakerRole,
+            tags: Array.isArray(item.tags) ? item.tags : []
+          } as TsehayEvent));
+          artifactList = parsed;
+          syncAndSet();
+        }
+      } catch (e) {}
+    };
+    fetchSupabaseEvents();
+
+    try {
+      sbEventsChannel = supabase
+        .channel('public:events_page')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'events' }, () => {
+          fetchSupabaseEvents();
+        })
+        .subscribe();
+    } catch (e) {}
+
     return () => {
       unsubRoot();
       unsubArtifact();
       unsubRegs();
+      if (sbEventsChannel) supabase.removeChannel(sbEventsChannel);
     };
   }, [user]);
 

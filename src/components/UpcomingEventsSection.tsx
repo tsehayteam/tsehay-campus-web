@@ -15,6 +15,7 @@ import {
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase/config';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
+import { supabase } from '@/lib/supabase/client';
 import DigitalTicketModal from '@/components/DigitalTicketModal';
 
 export default function UpcomingEventsSection() {
@@ -191,12 +192,44 @@ export default function UpcomingEventsSection() {
     };
     fetchEvents();
 
+    // 5. Live Supabase Events Fetch & Realtime Channel
+    let sbEventsChannel: any = null;
+    const fetchSupabaseEvents = async () => {
+      try {
+        const { data, error } = await supabase.from('events').select('*');
+        if (!error && Array.isArray(data) && data.length > 0) {
+          const parsed = data.map(item => ({
+            ...item,
+            isOnline: item.is_online ?? item.isOnline,
+            meetingLink: item.meeting_link ?? item.meetingLink,
+            mapsUrl: item.maps_url ?? item.mapsUrl,
+            registeredCount: item.registered_count ?? item.registeredCount,
+            speakerRole: item.speaker_role ?? item.speakerRole,
+            tags: Array.isArray(item.tags) ? item.tags : []
+          } as TsehayEvent));
+          artifactList = parsed;
+          syncAndSet();
+        }
+      } catch (e) {}
+    };
+    fetchSupabaseEvents();
+
+    try {
+      sbEventsChannel = supabase
+        .channel('public:upcoming_events')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'events' }, () => {
+          fetchSupabaseEvents();
+        })
+        .subscribe();
+    } catch (e) {}
+
     return () => {
       window.removeEventListener('tsehay_events_updated', handleEventsUpdate);
       window.removeEventListener('tsehay_user_ticket_saved', handleTicketSaved);
       if (unsubRoot) unsubRoot();
       if (unsubNested) unsubNested();
       if (unsubRegs) unsubRegs();
+      if (sbEventsChannel) supabase.removeChannel(sbEventsChannel);
     };
   }, [user]);
 

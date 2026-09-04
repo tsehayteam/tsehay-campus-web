@@ -1,5 +1,6 @@
 import { db } from '@/lib/firebase/config';
 import { doc, getDoc, setDoc, serverTimestamp, increment, collection, getDocs, query, where } from 'firebase/firestore';
+import { supabase } from '@/lib/supabase/client';
 
 export interface PromoCode {
   id?: string;
@@ -16,7 +17,7 @@ export interface PromoCode {
 export type ReferralCodeData = PromoCode;
 
 /**
- * Validate a Promo / Referral code against Firestore and return discount details
+ * Validate a Promo / Referral code against Supabase / Firestore and return discount details
  */
 export async function validateReferralCode(
   inputCode: string, 
@@ -31,6 +32,29 @@ export async function validateReferralCode(
   try {
     let data: PromoCode | null = null;
     let foundId = cleanCode;
+
+    // 0. Check Supabase referral_codes table first!
+    try {
+      const { data: sbPromo, error: sbPromoErr } = await supabase
+        .from('referral_codes')
+        .select('*')
+        .or(`code.ilike.${cleanCode},id.ilike.${cleanCode}`)
+        .maybeSingle();
+
+      if (sbPromo && !sbPromoErr) {
+        data = {
+          id: sbPromo.id,
+          code: sbPromo.code,
+          discountPercent: Number(sbPromo.discount_percent) || 0,
+          targetCourseId: sbPromo.target_course_id || 'all',
+          description: sbPromo.description,
+          isActive: sbPromo.is_active ?? true,
+          usageCount: Number(sbPromo.usage_count) || 0,
+          maxUsageLimit: Number(sbPromo.max_usage_limit) || 0
+        };
+        foundId = sbPromo.id || cleanCode;
+      }
+    } catch (e) {}
 
     // 1. Check direct client Firestore paths (Prioritize root promo_codes)
     const possibleDocPaths = [
@@ -202,6 +226,25 @@ export async function recordReferralUsage(code: string) {
   if (!code) return;
   const cleanCode = code.trim().toUpperCase();
   try {
+    // Update in Supabase referral_codes table
+    try {
+      const { data: existing } = await supabase
+        .from('referral_codes')
+        .select('usage_count')
+        .or(`code.ilike.${cleanCode},id.ilike.${cleanCode}`)
+        .maybeSingle();
+
+      if (existing) {
+        await supabase
+          .from('referral_codes')
+          .update({
+            usage_count: (Number(existing.usage_count) || 0) + 1,
+            updated_at: new Date().toISOString()
+          })
+          .or(`code.ilike.${cleanCode},id.ilike.${cleanCode}`);
+      }
+    } catch (sbUsageErr) {}
+
     const rootRef = doc(db, 'promo_codes', cleanCode);
     await setDoc(rootRef, {
       usageCount: increment(1),

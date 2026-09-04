@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { db } from '@/lib/firebase/config';
 import { collection, onSnapshot, query } from 'firebase/firestore';
+import { supabase } from '@/lib/supabase/client';
 
 export const DEFAULT_COURSES = [
   {
@@ -637,6 +638,46 @@ export function subscribeToCourses(callback: (courses: any[]) => void): () => vo
     }, (err) => {});
   } catch (e) {}
 
+  // 3.5. Supabase Live Realtime Channel & Table Fetch
+  let sbChannel: any = null;
+  try {
+    const fetchSupabaseCourses = async () => {
+      try {
+        const { data, error } = await supabase.from('courses').select('*');
+        if (!error && Array.isArray(data) && data.length > 0) {
+          const formatted = data.map((item: any) => ({
+            ...item,
+            id: item.id,
+            title: item.title,
+            price: Number(item.price) || 0,
+            desc: item.desc || item.description,
+            description: item.description || item.desc,
+            lessons: Array.isArray(item.lessons) ? item.lessons : [],
+            modules: Array.isArray(item.modules) ? item.modules : [],
+            requirements: Array.isArray(item.requirements) ? item.requirements : [],
+            includes: Array.isArray(item.includes) ? item.includes : [],
+            whatYouWillLearn: Array.isArray(item.what_you_will_learn) ? item.what_you_will_learn : [],
+            ...(item.raw_data || {})
+          })).filter(isValidCourse);
+          if (formatted.length > 0) {
+            emitIfChanged(formatted, true);
+          }
+        }
+      } catch (err) {}
+    };
+
+    fetchSupabaseCourses();
+
+    sbChannel = supabase
+      .channel('public:courses')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'courses' }, () => {
+        fetchSupabaseCourses();
+      })
+      .subscribe();
+  } catch (sbErr) {
+    console.warn('Supabase real-time channel note:', sbErr);
+  }
+
   // 4. Cross-Tab Broadcast Channel Listener (Nanosecond Live Sync across multiple browser tabs)
   let bc: BroadcastChannel | null = null;
   try {
@@ -674,8 +715,8 @@ export function subscribeToCourses(callback: (courses: any[]) => void): () => vo
     isCleanedUp = true;
     unsubNested();
     unsubRoot();
-    if (bc) {
-      bc.close();
+    if (sbChannel) {
+      supabase.removeChannel(sbChannel);
     }
     window.removeEventListener('tsehay_courses_updated', handleCustomUpdate);
     window.removeEventListener('storage', handleStorage);

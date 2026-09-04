@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { db, auth } from '@/lib/firebase/config';
+import { supabase } from '@/lib/supabase/client';
 import { useAuth, ADMIN_EMAILS, isEmailAdmin } from '@/context/AuthContext';
 import { collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc, serverTimestamp, query, orderBy, collectionGroup } from 'firebase/firestore';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile } from 'firebase/auth';
@@ -951,6 +952,40 @@ export default function AdminDashboard() {
           mergeAndSetCourses();
         } catch (err) {}
       }, () => {});
+    } catch (e) {}
+
+    // Supabase Real-time loader & channel for Admin
+    let sbAdminChannel: any = null;
+    const fetchAdminSupabaseCourses = async () => {
+      try {
+        const { data, error } = await supabase.from('courses').select('*');
+        if (!error && Array.isArray(data) && data.length > 0) {
+          data.forEach(item => {
+            if (item && item.status !== 'Deleted') {
+              coursesArtifactMap.set(item.id, {
+                ...item,
+                lessons: Array.isArray(item.lessons) ? item.lessons : [],
+                modules: Array.isArray(item.modules) ? item.modules : [],
+                requirements: Array.isArray(item.requirements) ? item.requirements : [],
+                includes: Array.isArray(item.includes) ? item.includes : [],
+                whatYouWillLearn: Array.isArray(item.what_you_will_learn) ? item.what_you_will_learn : [],
+                ...(item.raw_data || {})
+              });
+            }
+          });
+          mergeAndSetCourses();
+        }
+      } catch (e) {}
+    };
+    fetchAdminSupabaseCourses();
+
+    try {
+      sbAdminChannel = supabase
+        .channel('admin:courses')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'courses' }, () => {
+          fetchAdminSupabaseCourses();
+        })
+        .subscribe();
     } catch (e) {}
 
     // 3. Safety Liveness Timer: GUARANTEES setLoading(false) is called within 2 seconds
@@ -1923,6 +1958,17 @@ export default function AdminDashboard() {
         console.warn("Client Firestore write attempt for landing video:", clientErr);
       }
 
+      // Direct Supabase Write
+      try {
+        await supabase.from('site_settings').upsert({
+          key: 'landing_video',
+          data: { url: cleanUrl, videoUrl: cleanUrl, youtubeUrl: cleanUrl, thumbnail: cleanThumb },
+          updated_at: new Date().toISOString()
+        });
+      } catch (sbErr) {
+        console.warn("Supabase landing video save note:", sbErr);
+      }
+
       // 3. Robust Server-Side Admin API writes (dual endpoints to guarantee persistence)
       await fetch('/api/admin/site-settings', {
         method: 'POST',
@@ -2235,6 +2281,25 @@ export default function AdminDashboard() {
         console.warn("Client Firestore write warning for youtube video:", clientErr);
       }
 
+      // Direct Supabase Write
+      try {
+        await supabase.from('youtube_videos').upsert({
+          id: docId,
+          title,
+          youtube_url: youtubeForm.youtubeUrl.trim(),
+          youtube_id: yId,
+          thumbnail: youtubeForm.thumbnail.trim() || autoThumb,
+          video_src: youtubeForm.videoSrc.trim() || '',
+          order_num: Number(youtubeForm.order) || 0,
+          is_public: true,
+          status: 'Active',
+          timestamp: videoPayload.timestamp,
+          updated_at: new Date().toISOString()
+        });
+      } catch (sbYtErr) {
+        console.warn("Supabase youtube video write note:", sbYtErr);
+      }
+
       // 3. Server-side Admin API write
       await fetch('/api/admin/youtube-videos', {
         method: 'POST',
@@ -2290,6 +2355,11 @@ export default function AdminDashboard() {
         } catch (clientErr) {
           console.warn("Client delete warning:", clientErr);
         }
+
+        // Supabase direct delete
+        try {
+          await supabase.from('youtube_videos').delete().eq('id', id);
+        } catch (e) {}
 
         // 3. Server-side API delete
         await fetch(`/api/admin/youtube-videos?id=${encodeURIComponent(id)}&email=${encodeURIComponent(auth.currentUser?.email || user?.email || '')}`, {
@@ -2552,6 +2622,44 @@ export default function AdminDashboard() {
         console.warn('Client Firestore write warning:', clientWriteErr);
       }
 
+      // 🚀 2. Direct Supabase Database Write (Zero AdBlock / Zero Permission Error)
+      try {
+        const p = coursePayload as any;
+        await supabase.from('courses').upsert({
+          id: docId,
+          slug: p.slug || docId,
+          title: p.title || '',
+          title_en: p.titleEn || p.title || '',
+          description: p.description || p.desc || '',
+          desc: p.desc || p.description || '',
+          price: priceNum,
+          old_price: p.oldPrice ? Number(p.oldPrice) : null,
+          instructor: p.instructor || 'Eyoub Sahle',
+          instructor_name: p.instructor || 'Eyoub Sahle',
+          instructor_image: p.instructorImage || '',
+          instructor_bio: p.instructorBio || '',
+          image: p.image || '',
+          banner: p.banner || '',
+          video: p.video || '',
+          status: p.status || 'Active',
+          is_published: true,
+          is_public: true,
+          category: p.category || 'Digital Marketing',
+          tag: p.tag || '',
+          lessons: formattedLessons,
+          modules: p.modules || [],
+          requirements: requirementsArray,
+          includes: p.includes || [],
+          what_you_will_learn: whatYouWillLearnArray,
+          ai_prompt: p.aiPrompt || '',
+          raw_data: coursePayload,
+          timestamp: p.timestamp,
+          updated_at: new Date().toISOString()
+        });
+      } catch (sbWriteErr) {
+        console.warn('Supabase course write notice:', sbWriteErr);
+      }
+
       // 🚀 3. Server Admin API Call (Sync & Admin SDK write)
       try {
         await fetch('/api/admin/courses', {
@@ -2673,6 +2781,14 @@ export default function AdminDashboard() {
         broadcastCourseUpdate(updated);
         return updated;
       });
+
+      // Direct Supabase delete
+      try {
+        await supabase.from('courses').delete().eq('id', id);
+        await supabase.from('courses').delete().eq('slug', id);
+      } catch (sbDelErr) {
+        console.warn('Supabase course delete error:', sbDelErr);
+      }
 
       // Direct client Firestore delete (dual path)
       try {
@@ -3054,6 +3170,35 @@ export default function AdminDashboard() {
         await setDoc(nestedDocRef, sanitizedPayload, { merge: true });
       }
 
+      // 1.5 Direct Supabase Events Table Upsert
+      try {
+        await supabase.from('events').upsert({
+          id: eventId,
+          slug: cleanSlug,
+          title: eventForm.title.trim(),
+          title_en: (eventForm.titleEn || '').trim(),
+          description: (eventForm.description || '').trim(),
+          date: (eventForm.date || '').trim(),
+          time: (eventForm.time || '').trim(),
+          location: payload.location,
+          is_online: payload.isOnline,
+          meeting_link: payload.meetingLink,
+          maps_url: payload.mapsUrl,
+          capacity: payload.capacity,
+          registered_count: payload.registeredCount,
+          price: payload.price,
+          is_free: payload.isFree,
+          speaker: payload.speaker,
+          speaker_role: payload.speakerRole,
+          image: cleanImage,
+          tags: Array.isArray(payload.tags) ? payload.tags : [],
+          status: payload.status,
+          updated_at: nowIso
+        });
+      } catch (sbEvErr) {
+        console.warn("Supabase event upsert note:", sbEvErr);
+      }
+
       // 2. Server API Route Persistence
       try {
         await fetch('/api/events', {
@@ -3122,6 +3267,11 @@ export default function AdminDashboard() {
       } catch (dbErr) {
         console.warn("Client Firestore event delete warning:", dbErr);
       }
+
+      // Supabase direct delete
+      try {
+        await supabase.from('events').delete().eq('id', id);
+      } catch (e) {}
 
       try {
         await fetch(`/api/events?id=${encodeURIComponent(id)}`, { method: 'DELETE' });

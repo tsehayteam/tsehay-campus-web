@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { db } from '@/lib/firebase/config';
+import { supabase } from '@/lib/supabase/client';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import CinematicVideoModal from '@/components/CinematicVideoModal';
 
@@ -131,10 +132,45 @@ export default function YouTubeVideoSlider() {
     };
     fetchApiVideos();
 
-    // 2. Real-time Firestore snapshot listener
+    // 2. Real-time Supabase Table & Realtime Channel
+    let sbYtChannel: any = null;
+    try {
+      const fetchSupabaseVideos = async () => {
+        try {
+          const { data, error } = await supabase.from('youtube_videos').select('*').order('order_num', { ascending: true });
+          if (!error && Array.isArray(data) && data.length > 0) {
+            const list: YouTubeItem[] = data.map((item: any) => ({
+              id: item.id,
+              title: item.title || 'ነፃ የዩቲዩብ ስልጠና',
+              youtubeUrl: item.youtube_url || (item.youtube_id ? `https://www.youtube.com/watch?v=${item.youtube_id}` : ''),
+              youtubeId: item.youtube_id,
+              thumbnail: item.thumbnail || getYouTubeThumbnail(item.youtube_id, item.thumbnail),
+              videoSrc: item.video_src || '',
+              order: item.order_num ?? 0
+            }));
+            setVideos(list);
+            try {
+              localStorage.setItem('tsehay_youtube_videos_cache', JSON.stringify(list));
+            } catch (e) {}
+          }
+        } catch (e) {}
+      };
+
+      fetchSupabaseVideos();
+
+      sbYtChannel = supabase
+        .channel('public:youtube_videos')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'youtube_videos' }, () => {
+          fetchSupabaseVideos();
+        })
+        .subscribe();
+    } catch (e) {}
+
+    // 3. Fallback Firestore snapshot listener
+    let unsubscribe = () => {};
     try {
       const q = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'youtube_videos'), orderBy('order', 'asc'));
-      const unsubscribe = onSnapshot(q, (snapshot) => {
+      unsubscribe = onSnapshot(q, (snapshot) => {
         if (!snapshot.empty) {
           const list: YouTubeItem[] = snapshot.docs.map((doc) => {
             const data = doc.data();
@@ -156,13 +192,15 @@ export default function YouTubeVideoSlider() {
         }
       }, (error) => {
         console.warn("Firestore youtube_videos listener fallback:", error);
-        fetchApiVideos();
       });
-
-      return () => unsubscribe();
     } catch (e) {
       console.warn("Firestore listener init failed:", e);
     }
+
+    return () => {
+      if (sbYtChannel) supabase.removeChannel(sbYtChannel);
+      unsubscribe();
+    };
   }, []);
 
   const total = videos.length || 1;
