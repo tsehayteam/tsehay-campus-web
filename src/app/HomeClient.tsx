@@ -625,7 +625,7 @@ export default function HomeClient({
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 lg:gap-10">
             
-            {/* Card 1: 100% Practical Training (Golden Yellow) - Stagger 1 */}
+            {/* Card 1: 100% Practical Training (Cyber Gold / Amber Glow) - Stagger 1 */}
             <Tilt3DCard 
               maxTilt={12} 
               perspective={1000}
@@ -634,31 +634,36 @@ export default function HomeClient({
             >
               <div 
                 data-scrolly-order="1"
-                className="h-full rounded-3xl p-8 sm:p-10 flex flex-col justify-between group bg-[#0a0e17]/90 backdrop-blur-2xl border border-[#f9b03c]/35 hover:border-[#f9b03c]/80 shadow-[0_15px_40px_rgba(0,0,0,0.7),0_0_20px_rgba(249,176,60,0.18)] hover:shadow-[0_20px_50px_rgba(249,176,60,0.35)] transition-all duration-300 relative overflow-hidden"
+                className="h-full rounded-3xl p-8 sm:p-10 flex flex-col justify-between group bg-gradient-to-b from-[#1a1409]/90 via-[#0d1017]/95 to-[#080c14]/95 backdrop-blur-2xl border-2 border-[#f9b03c]/60 hover:border-[#f9b03c] shadow-[0_20px_50px_rgba(0,0,0,0.85),0_0_35px_rgba(249,176,60,0.28)] hover:shadow-[0_25px_65px_rgba(249,176,60,0.55),0_0_45px_rgba(249,176,60,0.4)] transition-all duration-300 relative overflow-hidden"
+                style={{ transformStyle: 'preserve-3d' }}
               >
-                <div className="absolute -top-12 -left-12 w-36 h-36 bg-[#f9b03c]/15 rounded-full blur-2xl pointer-events-none group-hover:scale-150 transition-transform duration-500"></div>
+                <div className="absolute -top-14 -left-14 w-44 h-44 bg-[#f9b03c]/20 rounded-full blur-3xl pointer-events-none group-hover:scale-150 transition-transform duration-500"></div>
+                <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl pointer-events-none"></div>
+                <div className="absolute top-4 sm:top-6 right-4 sm:right-6 bg-gradient-to-r from-amber-500/30 to-[#f9b03c]/30 border border-[#f9b03c]/60 text-[#f9b03c] text-xs font-black px-3 py-1 rounded-full shadow-[0_0_15px_rgba(249,176,60,0.3)] tracking-wider uppercase" style={{ transform: 'translateZ(40px)' }}>
+                  100% PRACTICAL
+                </div>
                 <div className="relative z-10">
                   <div 
-                    className="w-16 h-16 sm:w-20 sm:h-20 bg-[#f9b03c]/15 text-[#f9b03c] border border-[#f9b03c]/40 rounded-2xl flex items-center justify-center text-3xl sm:text-4xl mb-6 sm:mb-8 group-hover:scale-110 group-hover:bg-[#f9b03c] group-hover:text-slate-950 transition-all duration-300 shadow-[0_0_20px_rgba(249,176,60,0.2)]"
+                    className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-[#f9b03c]/25 to-amber-600/10 text-[#f9b03c] border-2 border-[#f9b03c]/60 rounded-2xl flex items-center justify-center text-3xl sm:text-4xl mb-6 sm:mb-8 group-hover:scale-110 group-hover:bg-[#f9b03c] group-hover:text-slate-950 transition-all duration-300 shadow-[0_0_30px_rgba(249,176,60,0.4)]"
                     style={{ transform: 'translateZ(35px)' }}
                   >
                     <i className="fa-solid fa-laptop-code"></i>
                   </div>
-                  <h3 className="font-black text-xl sm:text-2xl text-white mb-3 sm:mb-4 font-heading" style={{ transform: 'translateZ(25px)' }}>
+                  <h3 className="font-black text-2xl sm:text-3xl text-white mb-3 sm:mb-4 font-heading group-hover:text-[#f9b03c] transition-colors" style={{ transform: 'translateZ(25px)' }}>
                     100% የተግባር ስልጠና
                   </h3>
-                  <p className="text-[#a0aec0] font-body leading-relaxed text-sm sm:text-[15px]" style={{ transform: 'translateZ(15px)' }}>
+                  <p className="text-slate-300 font-body font-medium leading-relaxed text-sm sm:text-base" style={{ transform: 'translateZ(15px)' }}>
                     በባዶ ቲዎሪ ሳይሆን፣ ገበያ ላይ ወዲያውኑ ገቢ የሚያስገኙ በተግባር የተፈተኑ ስልጠናዎች።
                   </p>
                 </div>
-                <div className="mt-8 flex items-center gap-2 text-xs sm:text-sm font-bold text-[#f9b03c] group-hover:translate-x-1.5 transition-transform duration-300 relative z-10" style={{ transform: 'translateZ(20px)' }}>
+                <div className="mt-8 flex items-center gap-2.5 text-sm sm:text-base font-black text-[#f9b03c] group-hover:translate-x-2 transition-transform duration-300 relative z-10" style={{ transform: 'translateZ(20px)' }}>
                   <span>ተጨማሪ ዝርዝር</span>
                   <i className="fa-solid fa-arrow-right text-xs"></i>
                 </div>
               </div>
             </Tilt3DCard>
 
-            {/* Card 2: 24/7 Personal AI Tutor (Featured Center Glow Card - Golden Yellow + Royal Blue) - Stagger 2 */}
+            {/* Card 2: 24/7 Personal AI Tutor (Electric Purple / Neon Violet & Fuchsia) - Stagger 2 */}
             <Tilt3DCard 
               maxTilt={15}
               scale={1.03}
@@ -669,35 +674,36 @@ export default function HomeClient({
             >
               <div 
                 data-scrolly-order="2"
-                className="h-full rounded-3xl p-8 sm:p-10 border-2 border-[#f9b03c]/75 hover:border-[#f9b03c] bg-[#0c121f]/95 backdrop-blur-2xl shadow-[0_25px_60px_rgba(0,0,0,0.9),0_0_35px_rgba(249,176,60,0.4)] relative overflow-hidden flex flex-col justify-between group transition-all duration-300"
+                className="h-full rounded-3xl p-8 sm:p-10 border-2 border-purple-500/80 hover:border-purple-400 bg-gradient-to-b from-[#180a28]/95 via-[#0d1017]/95 to-[#080c14]/95 backdrop-blur-2xl shadow-[0_25px_65px_rgba(0,0,0,0.9),0_0_45px_rgba(168,85,247,0.4)] hover:shadow-[0_30px_75px_rgba(168,85,247,0.7),0_0_60px_rgba(192,132,252,0.45)] relative overflow-hidden flex flex-col justify-between group transition-all duration-300"
                 style={{ transformStyle: 'preserve-3d' }}
               >
-                <div className="absolute -right-10 -top-10 bg-gradient-to-br from-[#f9b03c]/25 via-[#3268ba]/20 to-transparent w-48 h-48 rounded-full -z-10 group-hover:scale-150 transition-transform duration-700 pointer-events-none blur-xl"></div>
-                <div className="absolute top-4 sm:top-6 right-4 sm:right-6 bg-gradient-to-r from-[#f9b03c] to-amber-400 text-slate-950 text-xs font-black px-3.5 py-1 rounded-full shadow-md animate-pulse" style={{ transform: 'translateZ(40px)' }}>
-                  አዲስ
+                <div className="absolute -top-16 -right-16 w-52 h-52 bg-gradient-to-br from-purple-600/35 via-fuchsia-600/25 to-transparent rounded-full blur-3xl -z-10 group-hover:scale-150 transition-transform duration-700 pointer-events-none"></div>
+                <div className="absolute -bottom-12 -left-12 w-36 h-36 bg-purple-900/20 rounded-full blur-2xl pointer-events-none"></div>
+                <div className="absolute top-4 sm:top-6 right-4 sm:right-6 bg-gradient-to-r from-purple-500 to-fuchsia-500 text-white text-xs font-black px-3.5 py-1 rounded-full shadow-[0_0_20px_rgba(168,85,247,0.7)] animate-pulse tracking-wide" style={{ transform: 'translateZ(40px)' }}>
+                  ✨ አዲስ AI
                 </div>
                 <div className="relative z-10">
                   <div 
-                    className="w-16 h-16 sm:w-20 sm:h-20 bg-[#f9b03c]/20 text-[#f9b03c] border border-[#f9b03c]/50 rounded-2xl flex items-center justify-center text-3xl sm:text-4xl mb-6 sm:mb-8 group-hover:scale-110 group-hover:bg-[#f9b03c] group-hover:text-slate-950 transition-all duration-300 shadow-[0_0_25px_rgba(249,176,60,0.35)] relative z-10"
+                    className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-purple-500/30 to-fuchsia-500/15 text-purple-300 border-2 border-purple-400/60 rounded-2xl flex items-center justify-center text-3xl sm:text-4xl mb-6 sm:mb-8 group-hover:scale-110 group-hover:bg-gradient-to-br group-hover:from-purple-500 group-hover:to-fuchsia-500 group-hover:text-white transition-all duration-300 shadow-[0_0_30px_rgba(168,85,247,0.5)] relative z-10"
                     style={{ transform: 'translateZ(45px)' }}
                   >
                     <i className="fa-solid fa-robot"></i>
                   </div>
-                  <h3 className="font-black text-xl sm:text-2xl text-white mb-3 sm:mb-4 font-heading relative z-10" style={{ transform: 'translateZ(30px)' }}>
+                  <h3 className="font-black text-2xl sm:text-3xl text-white mb-3 sm:mb-4 font-heading group-hover:text-purple-300 transition-colors relative z-10" style={{ transform: 'translateZ(30px)' }}>
                     የ 24/7 የግል AI መምህር
                   </h3>
-                  <p className="text-slate-300 font-body leading-relaxed text-sm sm:text-[15px] relative z-10" style={{ transform: 'translateZ(20px)' }}>
+                  <p className="text-slate-200 font-body font-medium leading-relaxed text-sm sm:text-base relative z-10" style={{ transform: 'translateZ(20px)' }}>
                     በማንኛውም ሰዓት ከጎንዎ ሆኖ ጥያቄዎችዎን የሚመልስ እና የሚያማክር የ AI ረዳት (Tsehay AI)።
                   </p>
                 </div>
-                <div className="mt-8 flex items-center gap-2 text-xs sm:text-sm font-black text-[#f9b03c] group-hover:translate-x-1.5 transition-transform duration-300 relative z-10" style={{ transform: 'translateZ(25px)' }}>
+                <div className="mt-8 flex items-center gap-2.5 text-sm sm:text-base font-black text-purple-400 group-hover:text-purple-300 group-hover:translate-x-2 transition-transform duration-300 relative z-10" style={{ transform: 'translateZ(25px)' }}>
                   <span>Tsehay AI ን ይሞክሩ</span>
                   <i className="fa-solid fa-wand-magic-sparkles text-xs"></i>
                 </div>
               </div>
             </Tilt3DCard>
 
-            {/* Card 3: Accredited Certificate (Royal Blue - NO GREEN) - Stagger 3 */}
+            {/* Card 3: Accredited Certificate (Electric Cyan / Azure Sky) - Stagger 3 */}
             <Tilt3DCard 
               maxTilt={12}
               perspective={1000}
@@ -706,24 +712,29 @@ export default function HomeClient({
             >
               <div 
                 data-scrolly-order="3"
-                className="h-full rounded-3xl p-8 sm:p-10 flex flex-col justify-between group bg-[#080d1a]/90 backdrop-blur-2xl border border-[#3268ba]/45 hover:border-[#3268ba]/90 shadow-[0_15px_40px_rgba(0,0,0,0.7),0_0_25px_rgba(50,104,186,0.22)] hover:shadow-[0_20px_50px_rgba(50,104,186,0.45)] transition-all duration-300 relative overflow-hidden"
+                className="h-full rounded-3xl p-8 sm:p-10 flex flex-col justify-between group bg-gradient-to-b from-[#051928]/90 via-[#0d1017]/95 to-[#080c14]/95 backdrop-blur-2xl border-2 border-cyan-400/65 hover:border-cyan-300 shadow-[0_20px_50px_rgba(0,0,0,0.85),0_0_35px_rgba(6,182,212,0.3)] hover:shadow-[0_25px_65px_rgba(6,182,212,0.6),0_0_45px_rgba(56,189,248,0.4)] transition-all duration-300 relative overflow-hidden"
+                style={{ transformStyle: 'preserve-3d' }}
               >
-                <div className="absolute -top-12 -right-12 w-36 h-36 bg-[#3268ba]/20 rounded-full blur-2xl pointer-events-none group-hover:scale-150 transition-transform duration-500"></div>
+                <div className="absolute -top-14 -right-14 w-44 h-44 bg-cyan-400/20 rounded-full blur-3xl pointer-events-none group-hover:scale-150 transition-transform duration-500"></div>
+                <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-sky-500/10 rounded-full blur-2xl pointer-events-none"></div>
+                <div className="absolute top-4 sm:top-6 right-4 sm:right-6 bg-gradient-to-r from-cyan-500/30 to-sky-500/30 border border-cyan-400/60 text-cyan-300 text-xs font-black px-3 py-1 rounded-full shadow-[0_0_15px_rgba(6,182,212,0.3)] tracking-wider uppercase" style={{ transform: 'translateZ(40px)' }}>
+                  VERIFIED
+                </div>
                 <div className="relative z-10">
                   <div 
-                    className="w-16 h-16 sm:w-20 sm:h-20 bg-[#3268ba]/20 text-[#3268ba] border border-[#3268ba]/40 rounded-2xl flex items-center justify-center text-3xl sm:text-4xl mb-6 sm:mb-8 group-hover:scale-110 group-hover:bg-[#3268ba] group-hover:text-white transition-all duration-300 shadow-[0_0_20px_rgba(50,104,186,0.3)]"
+                    className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-cyan-500/25 to-blue-600/10 text-cyan-300 border-2 border-cyan-400/60 rounded-2xl flex items-center justify-center text-3xl sm:text-4xl mb-6 sm:mb-8 group-hover:scale-110 group-hover:bg-cyan-400 group-hover:text-slate-950 transition-all duration-300 shadow-[0_0_30px_rgba(6,182,212,0.4)]"
                     style={{ transform: 'translateZ(35px)' }}
                   >
                     <i className="fa-solid fa-award"></i>
                   </div>
-                  <h3 className="font-black text-xl sm:text-2xl text-white mb-3 sm:mb-4 font-heading" style={{ transform: 'translateZ(25px)' }}>
+                  <h3 className="font-black text-2xl sm:text-3xl text-white mb-3 sm:mb-4 font-heading group-hover:text-cyan-300 transition-colors" style={{ transform: 'translateZ(25px)' }}>
                     እውቅና ያለው ሰርተፍኬት
                   </h3>
-                  <p className="text-[#a0aec0] font-body leading-relaxed text-sm sm:text-[15px]" style={{ transform: 'translateZ(15px)' }}>
+                  <p className="text-slate-300 font-body font-medium leading-relaxed text-sm sm:text-base" style={{ transform: 'translateZ(15px)' }}>
                     ትምህርትዎን እንዳጠናቀቁ፣ ክህሎትዎን የሚያረጋግጥ ዲጂታል ሰርተፍኬት።
                   </p>
                 </div>
-                <div className="mt-8 flex items-center gap-2 text-xs sm:text-sm font-bold text-[#3268ba] group-hover:text-[#5a93e8] group-hover:translate-x-1.5 transition-transform duration-300 relative z-10" style={{ transform: 'translateZ(20px)' }}>
+                <div className="mt-8 flex items-center gap-2.5 text-sm sm:text-base font-black text-cyan-400 group-hover:text-cyan-300 group-hover:translate-x-2 transition-transform duration-300 relative z-10" style={{ transform: 'translateZ(20px)' }}>
                   <span>ሰርተፍኬት ያረጋግጡ</span>
                   <i className="fa-solid fa-arrow-right text-xs"></i>
                 </div>
