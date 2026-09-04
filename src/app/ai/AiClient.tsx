@@ -18,7 +18,7 @@ interface Message {
   timestamp: string;
 }
 
-const STARTER_PROMPTS = [
+const STARTER_PROMPTS_AM = [
   {
     icon: 'fa-youtube',
     category: 'YouTube Mastery',
@@ -63,9 +63,56 @@ const STARTER_PROMPTS = [
   }
 ];
 
+const STARTER_PROMPTS_EN = [
+  {
+    icon: 'fa-youtube',
+    category: 'YouTube Mastery',
+    title: 'How to Monetize a YouTube Channel',
+    prompt: 'How can I launch a profitable YouTube channel from Ethiopia and earn in USD? Explain step-by-step.',
+    color: '#FF0000'
+  },
+  {
+    icon: 'fa-bag-shopping',
+    category: 'Shein & E-commerce',
+    title: 'Importing Shein Products to Ethiopia',
+    prompt: 'How can I import products from Shein to Ethiopia with small capital and resell them with high profit margins?',
+    color: '#f9b03c'
+  },
+  {
+    icon: 'fa-bullhorn',
+    category: 'Digital Marketing',
+    title: 'Telegram & TikTok Marketing',
+    prompt: 'How do I build an effective marketing and sales strategy on Telegram and TikTok for local businesses?',
+    color: '#3268ba'
+  },
+  {
+    icon: 'fa-graduation-cap',
+    category: 'Course Advisory',
+    title: 'Recommend the Best Course for Me',
+    prompt: 'I am a beginner wanting to earn online. Which Tsehay Campus course should I start with first?',
+    color: '#5a93e8'
+  },
+  {
+    icon: 'fa-laptop-code',
+    category: 'Coding & Tech',
+    title: 'Web Development & Coding Roadmap',
+    prompt: 'How do I start learning web development from zero, and how long until I can earn as a developer?',
+    color: '#10b981'
+  },
+  {
+    icon: 'fa-credit-card',
+    category: 'Payments & Pricing',
+    title: 'Course Tuition & Instant Access',
+    prompt: 'How can I pay via Telebirr or Bank transfer, and do lessons unlock immediately after payment?',
+    color: '#a855f7'
+  }
+];
+
 export default function AiClient() {
   const { user } = useAuth();
-  const { lang, t } = useLanguage();
+  const { lang, setLanguage, toggleLanguage, t } = useLanguage();
+
+  const starterPrompts = lang === 'en' ? STARTER_PROMPTS_EN : STARTER_PROMPTS_AM;
 
   const [courses, setCourses] = useState<any[]>(() => getCachedCourses());
   const [selectedCourseId, setSelectedCourseId] = useState<string>('all');
@@ -73,8 +120,10 @@ export default function AiClient() {
     {
       id: 'welcome-1',
       role: 'ai',
-      text: 'ሰላም! እንኳን ወደ **Tsehay AI Workspace** በደህና መጡ! ☀️\n\nእኔ የፀሐይ ካምፓስ የ 24/7 የግል መምህር እና አማካሪ ነኝ። ስለ ስልጠናዎቻችን (የዩቲዩብ ስኬት፣ የሼን ቢዝነስ፣ ዲጂታል ማርኬቲንግ፣ ኮዲንግ)፣ ተግባራዊ እርምጃዎች ወይም ስለ ምዝገባ ማንኛውንም ጥያቄ በጽሑፍ፣ በስክሪንሾት ወይም በድምፅ መጠየቅ ይችላሉ! 🚀',
-      timestamp: 'አሁን'
+      text: lang === 'en'
+        ? 'Hello! Welcome to **Tsehay AI Workspace**! ☀️\n\nI am your 24/7 personal tutor and business advisor for Tsehay Campus. Feel free to ask any question regarding our masterclasses (YouTube Secrets, Shein Import, Digital Marketing, Coding), practical action roadmaps, or enrollment via text, screenshot, or voice! 🚀'
+        : 'ሰላም! እንኳን ወደ **Tsehay AI Workspace** በደህና መጡ! ☀️\n\nእኔ የፀሐይ ካምፓስ የ 24/7 የግል መምህር እና አማካሪ ነኝ። ስለ ስልጠናዎቻችን (የዩቲዩብ ስኬት፣ የሼን ቢዝነስ፣ ዲጂታል ማርኬቲንግ፣ ኮዲንግ)፣ ተግባራዊ እርምጃዎች ወይም ስለ ምዝገባ ማንኛውንም ጥያቄ በጽሑፍ፣ በስክሪንሾት ወይም በድምፅ መጠየቅ ይችላሉ! 🚀',
+      timestamp: lang === 'en' ? 'Just now' : 'አሁን'
     }
   ]);
   const [input, setInput] = useState('');
@@ -92,6 +141,23 @@ export default function AiClient() {
   const audioChunksRef = useRef<Blob[]>([]);
   const recognitionRef = useRef<any>(null);
   const voiceTranscriptRef = useRef<string>('');
+
+  // Automatically sync initial welcome message with language toggle
+  useEffect(() => {
+    setMessages(prev => {
+      if (prev.length === 1 && (prev[0].id === 'welcome-1' || prev[0].id === 'welcome-reset')) {
+        return [{
+          id: 'welcome-1',
+          role: 'ai',
+          text: lang === 'en'
+            ? 'Hello! Welcome to **Tsehay AI Workspace**! ☀️\n\nI am your 24/7 personal tutor and business advisor for Tsehay Campus. Feel free to ask any question regarding our masterclasses (YouTube Secrets, Shein Import, Digital Marketing, Coding), practical action roadmaps, or enrollment via text, screenshot, or voice! 🚀'
+            : 'ሰላም! እንኳን ወደ **Tsehay AI Workspace** በደህና መጡ! ☀️\n\nእኔ የፀሐይ ካምፓስ የ 24/7 የግል መምህር እና አማካሪ ነኝ። ስለ ስልጠናዎቻችን (የዩቲዩብ ስኬት፣ የሼን ቢዝነስ፣ ዲጂታል ማርኬቲንግ፣ ኮዲንግ)፣ ተግባራዊ እርምጃዎች ወይም ስለ ምዝገባ ማንኛውንም ጥያቄ በጽሑፍ፣ በስክሪንሾት ወይም በድምፅ መጠየቅ ይችላሉ! 🚀',
+          timestamp: lang === 'en' ? 'Just now' : 'አሁን'
+        }];
+      }
+      return prev;
+    });
+  }, [lang]);
 
   // Subscribe to real-time courses
   useEffect(() => {
@@ -113,7 +179,7 @@ export default function AiClient() {
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
-      alert('የፎቶው መጠን ከ 5MB ማነስ አለበት።');
+      alert(lang === 'en' ? 'Image size must be under 5MB.' : 'የፎቶው መጠን ከ 5MB ማነስ አለበት።');
       return;
     }
 
@@ -156,7 +222,7 @@ export default function AiClient() {
       const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
       if (SpeechRecognition) {
         const recognition = new SpeechRecognition();
-        recognition.lang = 'am-ET';
+        recognition.lang = lang === 'en' ? 'en-US' : 'am-ET';
         recognition.continuous = false;
         recognition.interimResults = false;
 
@@ -183,7 +249,11 @@ export default function AiClient() {
       }
     } catch (err) {
       console.warn('Microphone access error:', err);
-      alert('የማይክሮፎን ፍቃድ አልተገኘም። እባክዎ በማይክሮፎን ለመጠቀም ፍቃድ ይስጡ።');
+      alert(
+        lang === 'en'
+          ? 'Microphone access is required. Please check your browser mic permissions.'
+          : 'የማይክሮፎን ፍቃድ አልተገኘም። እባክዎ በማይክሮፎን ለመጠቀም ፍቃድ ይስጡ።'
+      );
     }
   };
 
@@ -238,10 +308,10 @@ export default function AiClient() {
     const userMessage: Message = {
       id: `user-${Date.now()}`,
       role: 'user',
-      text: userText,
+      text: userText || (audioUrl ? (lang === 'en' ? '🎤 Voice message' : '🎤 የድምፅ መልእክት') : ''),
       image: currentImage || undefined,
       audioUrl: audioUrl,
-      timestamp: 'አሁን'
+      timestamp: lang === 'en' ? 'Just now' : 'አሁን'
     };
 
     setMessages((prev) => [...prev, userMessage]);
@@ -278,7 +348,9 @@ export default function AiClient() {
       const replyText =
         data.reply ||
         data.content ||
-        'ይቅርታ፣ አሁን ላይ መልስ ለመስጠት አልቻልኩም። እባክዎ ጥያቄዎን በድጋሚ ይሞክሩ።';
+        (lang === 'en'
+          ? 'Sorry, I am unable to reply at the moment. Please try again.'
+          : 'ይቅርታ፣ አሁን ላይ መልስ ለመስጠት አልቻልኩም። እባክዎ ጥያቄዎን በድጋሚ ይሞክሩ።');
 
       const newAiId = `ai-${Date.now()}`;
       setMessages((prev) => [
@@ -287,7 +359,7 @@ export default function AiClient() {
           id: newAiId,
           role: 'ai',
           text: replyText,
-          timestamp: 'አሁን'
+          timestamp: lang === 'en' ? 'Just now' : 'አሁን'
         }
       ]);
     } catch (err) {
@@ -297,8 +369,11 @@ export default function AiClient() {
         {
           id: `ai-err-${Date.now()}`,
           role: 'ai',
-          text: 'ይቅርታ፣ የኔትወርክ ችግር አጋጥሟል። እባክዎ የኢንተርኔት ግንኙነትዎን ያረጋግጡና በድጋሚ ይሞክሩ።',
-          timestamp: 'አሁን'
+          text:
+            lang === 'en'
+              ? 'Sorry, a network connection error occurred. Please check your internet connection and try again.'
+              : 'ይቅርታ፣ የኔትወርክ ችግር አጋጥሟል። እባክዎ የኢንተርኔት ግንኙነትዎን ያረጋግጡና በድጋሚ ይሞክሩ።',
+          timestamp: lang === 'en' ? 'Just now' : 'አሁን'
         }
       ]);
     } finally {
@@ -319,8 +394,11 @@ export default function AiClient() {
       {
         id: 'welcome-reset',
         role: 'ai',
-        text: 'ውይይቱ ጸድቷል! አዲስ ጥያቄዎን መጠየቅ ይችላሉ። ✨',
-        timestamp: 'አሁን'
+        text:
+          lang === 'en'
+            ? 'Conversation cleared! You can ask a new question. ✨'
+            : 'ውይይቱ ጸድቷል! አዲስ ጥያቄዎን መጠየቅ ይችላሉ። ✨',
+        timestamp: lang === 'en' ? 'Just now' : 'አሁን'
       }
     ]);
   };
@@ -353,7 +431,7 @@ export default function AiClient() {
                 </span>
               </div>
               <p className="text-xs text-slate-400 font-medium flex items-center gap-1.5 mt-0.5">
-                <span>የፀሐይ ካምፓስ የላቀ የ 24/7 የግል መምህር እና አማካሪ</span>
+                <span>{lang === 'en' ? 'Tsehay Campus 24/7 Advanced AI Tutor & Advisor' : 'የፀሐይ ካምፓስ የላቀ የ 24/7 የግል መምህር እና አማካሪ'}</span>
                 <span className="text-[10px] text-slate-500">•</span>
                 <span className="text-[11px] text-emerald-400 font-bold">Multimodal AI</span>
               </p>
@@ -361,6 +439,36 @@ export default function AiClient() {
           </div>
 
           <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
+            {/* 🌐 Segmented Cyber Language Switcher */}
+            <div className="flex items-center p-1 rounded-2xl bg-[#0d162b] border border-white/15 shadow-inner">
+              <button
+                type="button"
+                onClick={() => setLanguage('am')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all duration-300 flex items-center gap-1.5 cursor-pointer ${
+                  lang === 'am'
+                    ? 'bg-gradient-to-r from-[#f9b03c] via-amber-400 to-amber-500 text-slate-950 shadow-[0_0_15px_rgba(249,176,60,0.4)] scale-[1.02]'
+                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                }`}
+                title="አማርኛ (Amharic)"
+              >
+                <span>🇪🇹</span>
+                <span>አማ</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setLanguage('en')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all duration-300 flex items-center gap-1.5 cursor-pointer ${
+                  lang === 'en'
+                    ? 'bg-gradient-to-r from-[#f9b03c] via-amber-400 to-amber-500 text-slate-950 shadow-[0_0_15px_rgba(249,176,60,0.4)] scale-[1.02]'
+                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                }`}
+                title="English"
+              >
+                <span>🇬🇧</span>
+                <span>EN</span>
+              </button>
+            </div>
+
             <div className="relative flex-1 sm:flex-initial">
               <select
                 value={selectedCourseId}
@@ -368,7 +476,7 @@ export default function AiClient() {
                 className="w-full sm:w-auto bg-[#0d162b] border border-white/15 text-slate-200 text-xs rounded-xl px-3.5 py-2 font-bold focus:outline-none focus:border-[#f9b03c] focus:ring-2 focus:ring-[#f9b03c]/20 transition cursor-pointer shadow-inner pr-8"
               >
                 <option value="all" className="bg-[#090f1d] text-white">
-                  🌐 አጠቃላይ ጥያቄዎች (All Topics)
+                  {lang === 'en' ? '🌐 All Topics & Inquiries' : '🌐 አጠቃላይ ጥያቄዎች (All Topics)'}
                 </option>
                 {courses.map((course) => (
                   <option key={course.id} value={course.id} className="bg-[#090f1d] text-white">
@@ -382,10 +490,10 @@ export default function AiClient() {
               type="button"
               onClick={clearChat}
               className="px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 active:scale-95 text-slate-400 hover:text-white border border-white/10 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-xs"
-              title="ውይይቱን አጽዳ"
+              title={lang === 'en' ? 'Start New Chat' : 'ውይይቱን አጽዳ'}
             >
               <i className="fa-solid fa-rotate-left text-[11px] text-[#f9b03c]"></i>
-              <span className="hidden sm:inline">አዲስ ቻት</span>
+              <span className="hidden sm:inline">{lang === 'en' ? 'New Chat' : 'አዲስ ቻት'}</span>
             </button>
           </div>
         </div>
@@ -395,13 +503,13 @@ export default function AiClient() {
           <div className="mb-4 sm:mb-6 animate-in fade-in duration-500">
             <div className="text-xs text-[#f9b03c] font-black uppercase tracking-wider mb-2.5 flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-[#f9b03c] animate-pulse"></span>
-              <span>💡 ፈጣን ጥያቄዎች (Quick Starters)</span>
+              <span>{lang === 'en' ? '💡 Quick Starters' : '💡 ፈጣን ጥያቄዎች (Quick Starters)'}</span>
             </div>
             <div 
               className="flex items-center gap-3 overflow-x-auto no-scrollbar pb-2 pt-1"
               style={{ display: 'flex', overflowX: 'auto', whiteSpace: 'nowrap', scrollbarWidth: 'none' }}
             >
-              {STARTER_PROMPTS.map((starter, idx) => (
+              {starterPrompts.map((starter, idx) => (
                 <button
                   key={idx}
                   type="button"
@@ -490,7 +598,7 @@ export default function AiClient() {
                               ? 'bg-amber-400/25 text-[#f9b03c] border border-amber-400/60 shadow-[0_0_20px_rgba(249,176,60,0.45)]'
                               : 'bg-white/5 hover:bg-white/15 text-slate-300 hover:text-white border border-white/10'
                           }`}
-                          title={isSpeakingThis ? "ድምፁን አቁም (Stop Speech)" : "በድምፅ አዳምጥ (Listen via Voice)"}
+                          title={isSpeakingThis ? (lang === 'en' ? 'Stop Speech' : 'ድምፁን አቁም (Stop Speech)') : (lang === 'en' ? 'Listen via Voice' : 'በድምፅ አዳምጥ (Listen via Voice)')}
                         >
                           {isSpeakingThis ? (
                             <>
@@ -499,12 +607,12 @@ export default function AiClient() {
                                 <span className="w-1 h-2 bg-[#f9b03c] rounded-full animate-bounce [animation-delay:-0.15s]"></span>
                                 <span className="w-1 h-3.5 bg-[#f9b03c] rounded-full animate-bounce"></span>
                               </div>
-                              <span className="text-[#f9b03c] font-black">ድምፅ አቁም</span>
+                              <span className="text-[#f9b03c] font-black">{lang === 'en' ? 'Stop Voice' : 'ድምፅ አቁም'}</span>
                             </>
                           ) : (
                             <>
                               <i className="fa-solid fa-volume-high text-[#f9b03c] text-xs"></i>
-                              <span>አዳምጥ</span>
+                              <span>{lang === 'en' ? 'Listen' : 'አዳምጥ'}</span>
                             </>
                           )}
                         </button>
@@ -516,7 +624,7 @@ export default function AiClient() {
                         type="button"
                         onClick={() => copyMessage(m.id, m.text)}
                         className="hover:text-white transition flex items-center gap-1.5 text-slate-400 hover:text-white cursor-pointer px-2 py-0.5 rounded-lg hover:bg-white/5"
-                        title="ጽሑፉን ኮፒ አድርግ"
+                        title={lang === 'en' ? 'Copy text' : 'ጽሑፉን ኮፒ አድርግ'}
                       >
                         <i
                           className={`fa-solid ${
@@ -524,7 +632,7 @@ export default function AiClient() {
                           }`}
                         ></i>
                         <span className={copiedId === m.id ? 'text-emerald-400 font-bold' : ''}>
-                          {copiedId === m.id ? 'ተገልብጧል!' : 'ኮፒ'}
+                          {copiedId === m.id ? (lang === 'en' ? 'Copied!' : 'ተገልብጧል!') : (lang === 'en' ? 'Copy' : 'ኮፒ')}
                         </span>
                       </button>
                     )}
@@ -551,7 +659,9 @@ export default function AiClient() {
                   <span className="w-2 h-2 rounded-full bg-[#f9b03c] animate-bounce [animation-delay:-0.15s]"></span>
                   <span className="w-2 h-2 rounded-full bg-[#f9b03c] animate-bounce"></span>
                 </div>
-                <span className="text-slate-300 font-bold text-xs">Tsehay AI እያሰላሰለ ነው...</span>
+                <span className="text-slate-300 font-bold text-xs">
+                  {lang === 'en' ? 'Tsehay AI is thinking...' : 'Tsehay AI እያሰላሰለ ነው...'}
+                </span>
               </div>
             </div>
           )}
@@ -566,7 +676,7 @@ export default function AiClient() {
             className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-2.5 mb-2.5 border-b border-white/5"
             style={{ display: 'flex', overflowX: 'auto', whiteSpace: 'nowrap', scrollbarWidth: 'none' }}
           >
-            {STARTER_PROMPTS.map((starter, idx) => (
+            {starterPrompts.map((starter, idx) => (
               <button
                 key={idx}
                 type="button"
@@ -583,12 +693,12 @@ export default function AiClient() {
           {attachedImage && (
             <div className="mb-2.5 inline-flex items-center gap-2 bg-white/10 border border-[#f9b03c]/50 px-3 py-1.5 rounded-xl text-xs shadow-md">
               <i className="fa-solid fa-image text-[#f9b03c]"></i>
-              <span className="font-bold">ፎቶ ተያይዟል</span>
+              <span className="font-bold">{lang === 'en' ? 'Image Attached' : 'ፎቶ ተያይዟል'}</span>
               <button
                 type="button"
                 onClick={() => setAttachedImage(null)}
                 className="text-red-400 hover:text-red-300 ml-1 cursor-pointer"
-                title="ፎቶ አስወግድ"
+                title={lang === 'en' ? 'Remove Image' : 'ፎቶ አስወግድ'}
               >
                 <i className="fa-solid fa-xmark"></i>
               </button>
@@ -599,14 +709,14 @@ export default function AiClient() {
             <div className="flex items-center justify-between gap-3 p-3 bg-red-500/15 border border-red-500/30 rounded-2xl animate-pulse">
               <div className="flex items-center gap-2 text-red-400 font-bold text-xs">
                 <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping"></span>
-                <span>ድምፅ በመቅዳት ላይ ({recordingDuration}s)...</span>
+                <span>{lang === 'en' ? `Recording Audio (${recordingDuration}s)...` : `ድምፅ በመቅዳት ላይ (${recordingDuration}s)...`}</span>
               </div>
               <button
                 type="button"
                 onClick={stopVoiceRecording}
                 className="px-4 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white font-black text-xs cursor-pointer shadow-lg active:scale-95"
               >
-                አቁም & ላክ
+                {lang === 'en' ? 'Stop & Send' : 'አቁም & ላክ'}
               </button>
             </div>
           ) : (
@@ -628,7 +738,7 @@ export default function AiClient() {
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-white/5 hover:bg-white/10 active:scale-95 text-slate-300 hover:text-[#f9b03c] border border-white/10 flex items-center justify-center transition cursor-pointer shrink-0 shadow-xs"
-                title="ፎቶ ወይም ስክሪንሾት አያይዝ"
+                title={lang === 'en' ? 'Attach photo or screenshot' : 'ፎቶ ወይም ስክሪንሾት አያይዝ'}
               >
                 <i className="fa-solid fa-paperclip text-sm"></i>
               </button>
@@ -637,7 +747,7 @@ export default function AiClient() {
                 type="button"
                 onClick={startVoiceRecording}
                 className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-white/5 hover:bg-red-500/20 active:scale-95 text-slate-300 hover:text-red-400 border border-white/10 flex items-center justify-center transition cursor-pointer shrink-0 shadow-xs"
-                title="በድምፅ ጠይቅ"
+                title={lang === 'en' ? 'Ask with voice' : 'በድምፅ ጠይቅ'}
               >
                 <i className="fa-solid fa-microphone text-sm"></i>
               </button>
@@ -646,7 +756,7 @@ export default function AiClient() {
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="ስለ ዩቲዩብ፣ ስለ ሼን፣ ስለ ማርኬቲንግ፣ ኮዲንግ ወይም ስልጠናዎች ማንኛውንም ጥያቄ ይጠይቁ..."
+                placeholder={lang === 'en' ? 'Ask anything about YouTube, Shein, Marketing, Coding, or Courses...' : 'ስለ ዩቲዩብ፣ ስለ ሼን፣ ስለ ማርኬቲንግ፣ ኮዲንግ ወይም ስልጠናዎች ማንኛውንም ጥያቄ ይጠይቁ...'}
                 disabled={isLoading}
                 className="flex-1 bg-white/5 border border-white/10 focus:border-[#f9b03c] focus:ring-2 focus:ring-[#f9b03c]/20 rounded-2xl px-4 py-3 text-xs sm:text-sm text-white placeholder:text-slate-500 focus:outline-none transition font-medium"
               />
@@ -656,7 +766,7 @@ export default function AiClient() {
                 disabled={isLoading || (!input.trim() && !attachedImage)}
                 className="px-5 py-3 rounded-2xl bg-gradient-to-r from-[#f9b03c] via-amber-400 to-amber-500 hover:brightness-110 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed text-slate-950 font-black text-xs sm:text-sm flex items-center gap-2 shadow-[0_0_20px_rgba(249,176,60,0.4)] transition cursor-pointer shrink-0"
               >
-                <span>ላክ</span>
+                <span>{lang === 'en' ? 'Send' : 'ላክ'}</span>
                 <i className="fa-solid fa-paper-plane text-xs"></i>
               </button>
             </form>

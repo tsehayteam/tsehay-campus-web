@@ -551,12 +551,12 @@ export default function Navbar() {
               {/* Language Switcher */}
               <button 
                 onClick={toggleLanguage} 
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded-full border border-white/10 hover:border-[#f9b03c]/50 bg-white/5 text-slate-300 hover:text-white font-bold text-xs transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer notranslate" 
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[#f9b03c]/35 hover:border-[#f9b03c] bg-[#0c1427]/90 hover:bg-[#f9b03c]/15 text-white font-black text-xs transition-all duration-300 hover:scale-[1.05] active:scale-[0.95] cursor-pointer shadow-[0_0_12px_rgba(249,176,60,0.15)] notranslate" 
                 translate="no"
-                title="ቋንቋ ይቀይሩ / Switch Language"
+                title={lang === 'am' ? 'Switch to English' : 'ወደ አማርኛ ቀይር'}
               >
-                <i className="fa-solid fa-globe text-[11px] text-[#f9b03c]"></i>
-                <span>{lang === 'am' ? 'EN' : 'አማ'}</span>
+                <span className="text-xs">{lang === 'am' ? '🇬🇧' : '🇪🇹'}</span>
+                <span className="text-amber-400 font-black tracking-wide">{lang === 'am' ? 'EN' : 'አማ'}</span>
               </button>
 
               {/* Dark/Light Mode Toggle */}

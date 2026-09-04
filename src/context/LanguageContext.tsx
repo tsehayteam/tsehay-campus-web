@@ -6,6 +6,7 @@ type Language = 'am' | 'en';
 interface LanguageContextType {
   lang: Language;
   toggleLanguage: () => void;
+  setLanguage: (lang: Language) => void;
   t: (key: string) => string;
 }
 
@@ -215,6 +216,11 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('lang', newLang);
   };
 
+  const setLanguage = (newLang: Language) => {
+    setLang(newLang);
+    localStorage.setItem('lang', newLang);
+  };
+
   const t = (key: string): string => {
     if (translations[key]) {
       return translations[key][lang];
@@ -223,7 +229,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <LanguageContext.Provider value={{ lang, toggleLanguage, t }}>
+    <LanguageContext.Provider value={{ lang, toggleLanguage, setLanguage, t }}>
       {children}
     </LanguageContext.Provider>
   );
@@ -235,6 +241,7 @@ export function useLanguage() {
     return {
       lang: 'am' as Language,
       toggleLanguage: () => {},
+      setLanguage: () => {},
       t: (key: string) => key
     };
   }
