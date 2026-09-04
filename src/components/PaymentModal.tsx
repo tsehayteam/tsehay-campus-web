@@ -229,7 +229,7 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
         } catch (e) {}
 
         try {
-          const idToken = await user.getIdToken();
+          const idToken = user?.getIdToken ? await user.getIdToken() : '';
           fetch('/api/enroll-free', {
             method: 'POST',
             headers: {

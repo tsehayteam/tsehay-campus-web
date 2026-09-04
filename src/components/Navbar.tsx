@@ -7,13 +7,11 @@ import { useLanguage } from "@/context/LanguageContext";
 import { useState, useEffect, useRef } from "react";
 import AuthModal from "./AuthModal";
 import SmartSearchInput from "./SmartSearchInput";
-import { auth } from "@/lib/firebase/config";
-import { signOut } from "firebase/auth";
 import { getCachedCourses, subscribeToCourses } from "@/lib/courseCache";
 import Tilt3DLoginButton from "@/components/3d/Tilt3DLoginButton";
 
 export default function Navbar() {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, logout } = useAuth();
   const [mounted, setMounted] = useState(false);
   const [isCurtainOpen, setIsCurtainOpen] = useState(false);
   const [touchStartY, setTouchStartY] = useState<number | null>(null);
@@ -241,7 +239,7 @@ export default function Navbar() {
 
   const handleSignOut = async () => {
     try {
-      await signOut(auth);
+      await logout();
     } catch (e) {
       console.warn("Signout warning:", e);
     } finally {

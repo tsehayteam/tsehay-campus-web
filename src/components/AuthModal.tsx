@@ -1,25 +1,22 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { auth, db } from "@/lib/firebase/config";
-import { 
-  signInWithEmailAndPassword, 
-  signInWithCustomToken,
-  createUserWithEmailAndPassword, 
-  sendPasswordResetEmail,
-  sendEmailVerification, 
-  signOut, 
-  updateProfile, 
-  GoogleAuthProvider, 
-  signInWithPopup, 
-  User 
-} from "firebase/auth";
-import { doc, setDoc, serverTimestamp, getDoc } from "firebase/firestore";
+import { supabase } from "@/lib/supabase/client";
+import { isEmailAdmin } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { validateEmailForSignup } from "@/lib/disposableEmailBlocker";
 import { recordReferralUsage } from "@/lib/referralService";
 import { getStoredReferrerUid, clearStoredReferrerUid } from "@/lib/referralTrackingService";
 import { generateOtpCode, saveOtpForEmail, verifyOtpForEmail } from "@/lib/otpService";
+
+interface UserLike {
+  uid: string;
+  id?: string;
+  email: string | null;
+  displayName: string | null;
+  photoURL?: string | null;
+  [key: string]: any;
+}
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -90,7 +87,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [pendingGoogleAuth, setPendingGoogleAuth] = useState<User | null>(null);
+  const [pendingGoogleAuth, setPendingGoogleAuth] = useState<UserLike | null>(null);
   const router = useRouter();
 
   // Reset modal state on open/close
@@ -134,7 +131,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
   }, [isOtpMode, isResetMode, resetStep, resendCountdown, resetResendCountdown]);
 
   // 🌟 Seamless "Return to Action" Post-Auth Handler
-  const handlePostAuthSuccess = useCallback((authenticatedUser: User) => {
+  const handlePostAuthSuccess = useCallback((authenticatedUser: UserLike) => {
     if (typeof window !== 'undefined') {
       try {
         const serialized = {
@@ -313,11 +310,13 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
 
     setLoading(true);
     try {
-      // 1. Firebase Native Password Reset Email Link
+      // 1. Supabase Native Password Reset Email Link
       try {
-        await sendPasswordResetEmail(auth, cleanEmail);
-      } catch (fbResetErr: any) {
-        console.warn("Firebase sendPasswordResetEmail notice:", fbResetErr);
+        await supabase.auth.resetPasswordForEmail(cleanEmail, {
+          redirectTo: typeof window !== 'undefined' ? `${window.location.origin}/reset-password` : undefined
+        });
+      } catch (sbResetErr: any) {
+        console.warn("Supabase resetPasswordForEmail notice:", sbResetErr);
       }
 
       // 2. Custom 6-Digit OTP Email
@@ -351,63 +350,16 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
     setError("");
     setLoading(true);
     try {
-      const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-      const userEmail = (user.email || "").trim().toLowerCase();
-
-      // Strict Check: Ensure Google Account is @gmail.com
-      if (!userEmail.endsWith('@gmail.com')) {
-        await signOut(auth);
-        setError('ይቅርታ! የፀሐይ ካምፓስ የሚቀበለው ትክክለኛ የ Gmail (@gmail.com) አድራሻዎችን ብቻ ነው። እባክዎ በ @gmail.com አካውንትዎ ይግቡ።');
-        setLoading(false);
-        return;
-      }
-
-      let existingData: any = null;
-      try {
-        const docRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'profile', 'info');
-        const docSnap = await getDoc(docRef).catch(() => null);
-        existingData = docSnap && docSnap.exists() ? docSnap.data() : null;
-      } catch (readErr) {}
-
-      if (existingData && isProfileDataComplete(existingData)) {
-        try {
-          await setDoc(doc(db, "users", user.uid), { 
-            email: user.email, 
-            name: user.displayName || existingData.name || userEmail.split('@')[0], 
-            createdAt: Date.now() 
-          }, { merge: true }).catch(() => {});
-
-          const docRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'profile', 'info');
-          await setDoc(docRef, {
-            lastLogin: serverTimestamp(),
-            photoURL: user.photoURL || existingData.photoURL || null,
-            email: user.email || existingData.email || "",
-          }, { merge: true }).catch(() => {});
-        } catch (writeErr) {}
-
-        setPendingGoogleAuth(null);
-        setError("");
-        handlePostAuthSuccess(user);
-        return;
-      } else {
-        setPendingGoogleAuth(user);
-        setName(existingData?.name || user.displayName || "");
-        setEmail(user.email || "");
-        setPhone(existingData?.phone || "");
-        setCity(existingData?.city || "");
-        setSource(existingData?.source || "");
-        setAgreedToTerms(false);
-        setIsSignupMode(true);
-      }
+      const { data, error: oauthErr } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: typeof window !== 'undefined' ? window.location.origin : undefined
+        }
+      });
+      if (oauthErr) throw oauthErr;
     } catch (err: any) {
-      if (err?.code === 'auth/popup-closed-by-user' || err?.code === 'auth/cancelled-popup-request') {
-        setError("");
-      } else {
-        console.error("Google Auth Error:", err);
-        setError(getFriendlyErrorMessage(err));
-      }
+      console.error("Google Auth Error:", err);
+      setError(getFriendlyErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -520,23 +472,37 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
         return;
       }
 
-      let authedUser: User | null = null;
+      let authedUser: UserLike | null = null;
 
       if (pendingSignupData) {
         const { cred, userData, password: pass } = pendingSignupData;
+        authedUser = cred.user;
+
+        // Upsert into Supabase profiles
         try {
-          await setDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', cred.user.uid, 'profile', 'info'), {
-            ...userData,
-            emailVerified: true
-          }, { merge: true });
+          await supabase.from('profiles').upsert({
+            id: cred.user.uid || cred.user.id,
+            email: targetEmail,
+            full_name: userData?.name || targetEmail.split('@')[0],
+            phone: userData?.phone || null,
+            is_admin: isEmailAdmin(targetEmail),
+            role: isEmailAdmin(targetEmail) ? 'admin' : 'student',
+            updated_at: new Date().toISOString()
+          });
         } catch (e) {}
 
         try {
-          const reAuth = await signInWithEmailAndPassword(auth, targetEmail, pass);
-          authedUser = reAuth.user;
-        } catch (e) {
-          authedUser = cred.user;
-        }
+          const { data: reAuth } = await supabase.auth.signInWithPassword({ email: targetEmail, password: pass });
+          if (reAuth?.user) {
+            authedUser = {
+              uid: reAuth.user.id,
+              id: reAuth.user.id,
+              email: targetEmail,
+              displayName: userData?.name || targetEmail.split('@')[0],
+              photoURL: null
+            };
+          }
+        } catch (e) {}
 
         // Welcome Email
         fetch('/api/email/automation', {
@@ -569,8 +535,8 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
       setResendSuccessMessage("🎉 ኢሜልዎ በተሳካ ሁኔታ ተረጋግጧል! እንኳን ደህና መጡ!");
       setTimeout(() => {
         setIsOtpMode(false);
-        if (authedUser || auth.currentUser) {
-          handlePostAuthSuccess(authedUser || auth.currentUser!);
+        if (authedUser) {
+          handlePostAuthSuccess(authedUser);
         } else {
           onClose();
         }
@@ -712,11 +678,13 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
     setResendSuccessMessage("");
 
     try {
-      // 1. Firebase Native Password Reset Email Link
+      // 1. Supabase Native Password Reset Email Link
       try {
-        await sendPasswordResetEmail(auth, cleanEmail);
-      } catch (fbResetErr: any) {
-        console.warn("Firebase sendPasswordResetEmail notice:", fbResetErr);
+        await supabase.auth.resetPasswordForEmail(cleanEmail, {
+          redirectTo: typeof window !== 'undefined' ? `${window.location.origin}/reset-password` : undefined
+        });
+      } catch (sbResetErr: any) {
+        console.warn("Supabase sendPasswordResetEmail notice:", sbResetErr);
       }
 
       // 2. Custom 6-Digit OTP Email
@@ -784,31 +752,27 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
         return;
       }
 
-      // Auto sign-in with customToken or newly set password
-      let authedUser: User | null = null;
-      if (data.customToken) {
-        try {
-          const customCred = await signInWithCustomToken(auth, data.customToken);
-          authedUser = customCred.user;
-        } catch (tokenErr) {
-          try {
-            const passCred = await signInWithEmailAndPassword(auth, targetEmail, cleanPass);
-            authedUser = passCred.user;
-          } catch (e) {}
+      // Auto sign-in with newly set password via Supabase
+      let authedUser: UserLike | null = null;
+      try {
+        const { data: passCred } = await supabase.auth.signInWithPassword({ email: targetEmail, password: cleanPass });
+        if (passCred?.user) {
+          authedUser = {
+            uid: passCred.user.id,
+            id: passCred.user.id,
+            email: targetEmail,
+            displayName: passCred.user.user_metadata?.full_name || targetEmail.split('@')[0],
+            photoURL: passCred.user.user_metadata?.avatar_url || null
+          };
         }
-      } else {
-        try {
-          const passCred = await signInWithEmailAndPassword(auth, targetEmail, cleanPass);
-          authedUser = passCred.user;
-        } catch (e) {}
-      }
+      } catch (e) {}
 
       setResetStep('success');
       setResendSuccessMessage('የይለፍ ቃልዎ በተሳካ ሁኔታ ተቀይሯል!');
       setTimeout(() => {
         setIsResetMode(false);
-        if (authedUser || auth.currentUser) {
-          handlePostAuthSuccess(authedUser || auth.currentUser!);
+        if (authedUser) {
+          handlePostAuthSuccess(authedUser);
         } else {
           onClose();
         }
@@ -864,31 +828,20 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
       setLoading(true);
       try {
         const storedReferrerUid = getStoredReferrerUid();
-        const userData = {
-          name: name.trim() || pendingGoogleAuth.displayName || "ተጠቃሚ",
-          email: pendingGoogleAuth.email || cleanEmail,
-          phone: phone.trim(),
-          city: city.trim(),
-          source: source || "Google",
-          photoURL: pendingGoogleAuth.photoURL || null,
-          referredBy: storedReferrerUid || null,
-          createdAt: serverTimestamp(),
-          lastLogin: serverTimestamp(),
-          isAdmin: false,
-        };
+        const userName = name.trim() || pendingGoogleAuth.displayName || "ተጠቃሚ";
+        const userEmail = pendingGoogleAuth.email || cleanEmail;
 
         try {
-          const userName = name.trim() || pendingGoogleAuth.displayName || "ተጠቃሚ";
-          await setDoc(doc(db, "users", pendingGoogleAuth.uid), { 
-            email: pendingGoogleAuth.email || cleanEmail, 
-            name: userName, 
+          await supabase.from('profiles').upsert({
+            id: pendingGoogleAuth.uid || pendingGoogleAuth.id,
+            email: userEmail,
+            full_name: userName,
             phone: phone.trim(),
-            city: city.trim(),
-            createdAt: Date.now() 
-          }, { merge: true }).catch(() => {});
-
-          const docRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', pendingGoogleAuth.uid, 'profile', 'info');
-          await setDoc(docRef, userData, { merge: true }).catch(() => {});
+            avatar_url: pendingGoogleAuth.photoURL || null,
+            is_admin: isEmailAdmin(userEmail),
+            role: isEmailAdmin(userEmail) ? 'admin' : 'student',
+            updated_at: new Date().toISOString()
+          });
         } catch (dbErr) {
           console.warn("Google profile save note:", dbErr);
         }
@@ -899,18 +852,12 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               newUserUid: pendingGoogleAuth.uid,
-              newUserName: userData.name,
-              newUserEmail: userData.email,
+              newUserName: userName,
+              newUserEmail: userEmail,
               referrerUid: storedReferrerUid
             })
           }).catch(() => {});
           clearStoredReferrerUid();
-        }
-
-        if (name.trim()) {
-          try {
-            await updateProfile(pendingGoogleAuth, { displayName: name.trim() });
-          } catch (e) {}
         }
 
         setPendingGoogleAuth(null);
@@ -971,12 +918,52 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
 
       setLoading(true);
       try {
-        const cred = await createUserWithEmailAndPassword(auth, cleanEmail, password);
-        
-        if (name.trim()) {
-          try {
-            await updateProfile(cred.user, { displayName: name.trim() });
-          } catch (e) {}
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+          email: cleanEmail,
+          password: password,
+          options: {
+            data: {
+              full_name: name.trim(),
+              phone: phone.trim(),
+              city: city.trim(),
+              source: source || "Direct",
+              referral_code: referralCode.trim().toUpperCase() || null
+            }
+          }
+        });
+
+        if (signUpError) {
+          const errMsg = (signUpError.message || '').toLowerCase();
+          if (errMsg.includes('already registered') || errMsg.includes('already in use')) {
+            setIsSignupMode(false);
+            setError('ይህ የ Gmail አድራሻ አስቀድሞ ተመዝግቧል! እባክዎ የይለፍ ቃልዎን አስገብተው በቀጥታ ይግቡ።');
+            setLoading(false);
+            return;
+          }
+          throw signUpError;
+        }
+
+        const credUser: UserLike = {
+          uid: signUpData?.user?.id || `user_${Date.now()}`,
+          id: signUpData?.user?.id || `user_${Date.now()}`,
+          email: cleanEmail,
+          displayName: name.trim(),
+          photoURL: null
+        };
+
+        // Write profile row to Supabase profiles table
+        try {
+          await supabase.from('profiles').upsert({
+            id: credUser.uid,
+            email: cleanEmail,
+            full_name: name.trim(),
+            phone: phone.trim(),
+            is_admin: isEmailAdmin(cleanEmail),
+            role: isEmailAdmin(cleanEmail) ? 'admin' : 'student',
+            updated_at: new Date().toISOString()
+          });
+        } catch (dbErr) {
+          console.warn("Supabase profile initialization notice:", dbErr);
         }
 
         const storedReferrerUid = getStoredReferrerUid();
@@ -988,8 +975,6 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
           source: source || "Direct",
           referralCode: referralCode.trim().toUpperCase() || null,
           referredBy: storedReferrerUid || null,
-          createdAt: serverTimestamp(),
-          lastLogin: serverTimestamp(),
           isAdmin: false,
           photoURL: null
         };
@@ -1001,24 +986,6 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
           } catch (e) {}
         }
 
-        try {
-          // 1. Root users collection write (safe fallback)
-          await setDoc(doc(db, "users", cred.user.uid), {
-            uid: cred.user.uid,
-            name: name.trim(),
-            email: cleanEmail,
-            phone: phone.trim(),
-            city: city.trim(),
-            createdAt: serverTimestamp(),
-            lastLogin: serverTimestamp()
-          }, { merge: true }).catch(() => {});
-
-          // 2. Artifact profile info collection write
-          await setDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', cred.user.uid, 'profile', 'info'), userData, { merge: true }).catch(() => {});
-        } catch (dbErr) {
-          console.warn("Firestore profile initialization notice:", dbErr);
-        }
-
         const otpCode = generateOtpCode();
         await saveOtpForEmail(cleanEmail, otpCode).catch(() => {});
 
@@ -1028,11 +995,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
           body: JSON.stringify({ email: cleanEmail })
         }).catch(() => {});
 
-        try {
-          await sendEmailVerification(cred.user);
-        } catch (e) {}
-
-        setPendingSignupData({ cred, userData, password });
+        setPendingSignupData({ cred: { user: credUser }, userData, password });
         setRegisteredEmail(cleanEmail);
         setIsOtpMode(true);
         setResendCountdown(60);
@@ -1040,13 +1003,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
         setError("");
       } catch (err: any) {
         console.error("Email signup error:", err);
-        const code = err?.code || '';
-        if (code === 'auth/email-already-in-use') {
-          setIsSignupMode(false);
-          setError('ይህ የ Gmail አድራሻ አስቀድሞ ተመዝግቧል! እባክዎ የይለፍ ቃልዎን አስገብተው በቀጥታ ይግቡ።');
-        } else {
-          setError(getFriendlyErrorMessage(err));
-        }
+        setError(err.message || 'ምዝገባው አልተሳካም። እባክዎ በድጋሚ ይሞክሩ።');
       } finally {
         setLoading(false);
       }
@@ -1065,44 +1022,42 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
 
     setLoading(true);
     try {
-      const cred = await signInWithEmailAndPassword(auth, cleanEmail, password);
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email: cleanEmail,
+        password: password
+      });
 
-      // Safely ensure user document exists without crashing on permission errors
-      try {
-        setDoc(doc(db, "users", cred.user.uid), {
-          uid: cred.user.uid,
-          email: cleanEmail,
-          lastLogin: serverTimestamp()
-        }, { merge: true }).catch(() => {});
-
-        setDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', cred.user.uid, 'profile', 'info'), {
-          lastLogin: serverTimestamp()
-        }, { merge: true }).catch(() => {});
-      } catch (profileErr) {
-        console.warn("Background profile sync note:", profileErr);
+      if (signInError) {
+        const msg = (signInError.message || '').toLowerCase();
+        if (msg.includes('invalid login credentials') || msg.includes('user not found')) {
+          setIsSignupMode(true);
+          setSignupStep(1);
+          setEmail(cleanEmail);
+          setError('አካውንት ስላላገኘን ወይም የተሳሳተ መረጃ ስለሆነ እባክዎ አዲስ ይመዝገቡ (Account not found, please sign up)።');
+          setLoading(false);
+          return;
+        }
+        throw signInError;
       }
+
+      if (!signInData?.user) {
+        throw new Error('መግባት አልተቻለም። እባክዎ በድጋሚ ይሞክሩ።');
+      }
+
+      const meta = signInData.user.user_metadata || {};
+      const appUser: UserLike = {
+        uid: signInData.user.id,
+        id: signInData.user.id,
+        email: cleanEmail,
+        displayName: meta.full_name || meta.name || cleanEmail.split('@')[0],
+        photoURL: meta.avatar_url || null
+      };
 
       setError("");
-      handlePostAuthSuccess(cred.user);
+      handlePostAuthSuccess(appUser);
     } catch (err: any) {
       console.error("Email login error:", err);
-      const code = err?.code || '';
-      
-      // 🌟 SMART ROUTING: If account is not found, automatically switch to Sign Up mode!
-      if (
-        code === 'auth/user-not-found' || 
-        code === 'auth/invalid-credential' || 
-        code === 'auth/invalid-login-credentials'
-      ) {
-        setIsSignupMode(true);
-        setSignupStep(1);
-        setEmail(cleanEmail);
-        setError('አካውንት ስላላገኘን እባክዎ አዲስ ይመዝገቡ (Account not found, please sign up)።');
-      } else if (code === 'auth/wrong-password') {
-        setError('የተሳሳተ የይለፍ ቃል አስገብተዋል። እባክዎ በትክክል ያስገቡ ወይም "የይለፍ ቃል ረሱ?" የሚለውን ይጫኑ።');
-      } else {
-        setError(getFriendlyErrorMessage(err));
-      }
+      setError(err.message || 'የተሳሳተ የይለፍ ቃል ወይም የ Gmail አድራሻ አስገብተዋል።');
     } finally {
       setLoading(false);
     }

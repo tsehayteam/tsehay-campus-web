@@ -1,8 +1,6 @@
 'use client';
 import { createContext, useContext, useEffect, useState } from 'react';
-import { auth, db } from '@/lib/firebase/config';
-import { onAuthStateChanged, signOut, User } from 'firebase/auth';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { supabase } from '@/lib/supabase/client';
 
 export const ADMIN_EMAILS = [
   'eyobsahle@gmail.com'
@@ -33,8 +31,21 @@ export const clearUserSessionData = (previousUid?: string) => {
   } catch (e) {}
 };
 
+export interface AppUser {
+  uid: string;
+  id: string;
+  email: string;
+  displayName: string;
+  photoURL?: string | null;
+  phone?: string | null;
+  user_metadata?: any;
+  getIdTokenResult: () => Promise<{ claims: { admin?: boolean; role?: string } }>;
+  getIdToken: () => Promise<string>;
+  [key: string]: any;
+}
+
 interface AuthContextType {
-  user: User | null;
+  user: AppUser | null;
   loading: boolean;
   authInitialized: boolean;
   isAdmin: boolean;
@@ -51,8 +62,33 @@ const AuthContext = createContext<AuthContextType>({
   logout: async () => {}
 });
 
+function formatSupabaseUser(sbUser: any): AppUser | null {
+  if (!sbUser) return null;
+  const meta = sbUser.user_metadata || {};
+  const displayName = meta.full_name || meta.name || meta.displayName || sbUser.email?.split('@')[0] || 'ተጠቃሚ';
+  const photoURL = meta.avatar_url || meta.picture || meta.photoURL || null;
+
+  return {
+    uid: sbUser.id,
+    id: sbUser.id,
+    email: sbUser.email || '',
+    displayName,
+    photoURL,
+    phone: sbUser.phone || meta.phone || null,
+    user_metadata: meta,
+    getIdTokenResult: async () => {
+      const isAdm = isEmailAdmin(sbUser.email) || meta.is_admin === true || meta.role === 'admin';
+      return { claims: { admin: isAdm, role: isAdm ? 'admin' : 'student' } };
+    },
+    getIdToken: async () => {
+      const { data } = await supabase.auth.getSession();
+      return data?.session?.access_token || '';
+    }
+  };
+}
+
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [cachedUserObj] = useState<User | null>(() => {
+  const [cachedUserObj] = useState<AppUser | null>(() => {
     if (typeof window === 'undefined') return null;
     try {
       const cachedUser = localStorage.getItem('tsehay_auth_user_cache');
@@ -62,7 +98,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   });
 
-  const [user, setUser] = useState<User | null>(cachedUserObj);
+  const [user, setUser] = useState<AppUser | null>(cachedUserObj);
 
   const [isAdmin, setIsAdmin] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
@@ -71,10 +107,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (cachedUser) {
         const parsed = JSON.parse(cachedUser);
         if (isEmailAdmin(parsed?.email)) return true;
-        // Non-admin email is strictly NOT an admin
         return false;
       }
-      // If no user is logged in, check session-scoped admin token
       if (sessionStorage.getItem('tsehay_admin_verified') === 'true' || sessionStorage.getItem('tsehay_admin_2fa_token')) {
         return true;
       }
@@ -88,7 +122,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [authInitialized, setAuthInitialized] = useState<boolean>(!!cachedUserObj);
 
   const verifyAdminStatus = async (): Promise<boolean> => {
-    const currentUser = auth.currentUser || user;
+    const currentUser = user;
     if (!currentUser) {
       if (typeof window !== 'undefined') {
         const isVerified = sessionStorage.getItem('tsehay_admin_verified') === 'true' || !!sessionStorage.getItem('tsehay_admin_2fa_token');
@@ -106,16 +140,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     try {
-      const idTokenResult = await currentUser.getIdTokenResult(true);
-      if (idTokenResult.claims.admin === true || idTokenResult.claims.role === 'admin') {
-        setIsAdmin(true);
-        return true;
-      }
-    } catch (e) {}
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role, is_admin')
+        .eq('id', currentUser.uid)
+        .maybeSingle();
 
-    try {
-      const userDoc = await getDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', currentUser.uid, 'profile', 'info'));
-      if (userDoc.exists() && (userDoc.data().isAdmin === true || userDoc.data().role === 'admin')) {
+      if (profile && (profile.is_admin === true || profile.role === 'admin')) {
         setIsAdmin(true);
         return true;
       }
@@ -137,78 +168,73 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
       setIsAdmin(false);
       setUser(null);
-      await signOut(auth);
+      await supabase.auth.signOut();
     } catch (err) {
       console.warn("Logout error:", err);
     }
   };
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      setUser(firebaseUser);
-
-      if (firebaseUser) {
-        try {
-          const serialized = {
-            uid: firebaseUser.uid,
-            email: firebaseUser.email,
-            displayName: firebaseUser.displayName,
-            photoURL: firebaseUser.photoURL,
-          };
-          localStorage.setItem('tsehay_auth_user_cache', JSON.stringify(serialized));
-        } catch (e) {}
-
-        // Safely ensure user profile doc exists without throwing
-        try {
-          setDoc(doc(db, 'users', firebaseUser.uid), {
-            uid: firebaseUser.uid,
-            email: firebaseUser.email,
-            displayName: firebaseUser.displayName || '',
-            photoURL: firebaseUser.photoURL || null,
-            lastLogin: serverTimestamp()
-          }, { merge: true }).catch(() => {});
-
-          setDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', firebaseUser.uid, 'profile', 'info'), {
-            uid: firebaseUser.uid,
-            email: firebaseUser.email,
-            name: firebaseUser.displayName || '',
-            photoURL: firebaseUser.photoURL || null,
-            lastLogin: serverTimestamp()
-          }, { merge: true }).catch(() => {});
-        } catch (syncErr) {}
-
-        // Determine Admin Role strictly
-        let userIsAdmin = isEmailAdmin(firebaseUser.email);
-
-        if (!userIsAdmin) {
+    // 1. Check initial Supabase session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        const appUser = formatSupabaseUser(session.user);
+        setUser(appUser);
+        if (appUser) {
           try {
-            const tokenResult = await firebaseUser.getIdTokenResult();
-            if (tokenResult.claims.admin === true || tokenResult.claims.role === 'admin') {
-              userIsAdmin = true;
-            }
+            localStorage.setItem('tsehay_auth_user_cache', JSON.stringify(appUser));
           } catch (e) {}
+          const userIsAdmin = isEmailAdmin(appUser.email);
+          setIsAdmin(userIsAdmin);
         }
+      } else if (!cachedUserObj) {
+        setUser(null);
+      }
+      setLoading(false);
+      setAuthInitialized(true);
+    }).catch(() => {
+      setLoading(false);
+      setAuthInitialized(true);
+    });
 
-        if (!userIsAdmin) {
+    // 2. Listen to Supabase Auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        const appUser = formatSupabaseUser(session.user);
+        setUser(appUser);
+
+        if (appUser) {
           try {
-            const userDoc = await getDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', firebaseUser.uid, 'profile', 'info'));
-            if (userDoc.exists() && (userDoc.data().isAdmin === true || userDoc.data().role === 'admin')) {
-              userIsAdmin = true;
-            }
-          } catch (err) {}
-        }
+            localStorage.setItem('tsehay_auth_user_cache', JSON.stringify(appUser));
+          } catch (e) {}
 
-        setIsAdmin(userIsAdmin);
-        try {
-          localStorage.setItem('tsehay_auth_is_admin', userIsAdmin ? 'true' : 'false');
-        } catch (e) {}
+          const userIsAdmin = isEmailAdmin(appUser.email);
+          setIsAdmin(userIsAdmin);
+          try {
+            localStorage.setItem('tsehay_auth_is_admin', userIsAdmin ? 'true' : 'false');
+          } catch (e) {}
+
+          // Ensure profile row in Supabase profiles table
+          try {
+            await supabase.from('profiles').upsert({
+              id: appUser.uid,
+              email: appUser.email,
+              full_name: appUser.displayName,
+              phone: appUser.phone || null,
+              avatar_url: appUser.photoURL || null,
+              is_admin: userIsAdmin,
+              role: userIsAdmin ? 'admin' : 'student',
+              updated_at: new Date().toISOString()
+            });
+          } catch (profileErr) {}
+        }
       } else {
-        // No user signed in
         const sessionAdmin = typeof window !== 'undefined' && (
           sessionStorage.getItem('tsehay_admin_verified') === 'true' ||
           !!sessionStorage.getItem('tsehay_admin_2fa_token')
         );
         setIsAdmin(sessionAdmin);
+        setUser(null);
         try {
           localStorage.removeItem('tsehay_auth_user_cache');
           if (!sessionAdmin) {
@@ -231,7 +257,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     window.addEventListener('tsehay_auth_state_changed', handleAuthCustomEvent);
 
     return () => {
-      unsubscribe();
+      subscription.unsubscribe();
       window.removeEventListener('tsehay_auth_state_changed', handleAuthCustomEvent);
     };
   }, []);

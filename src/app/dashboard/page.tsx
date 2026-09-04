@@ -4,9 +4,9 @@ import React, { useEffect, useState, useRef, Suspense } from 'react';
 
 
 import { db, auth } from '@/lib/firebase/config';
-import { collection, getDocs, query, orderBy, doc, getDoc, updateDoc, setDoc, serverTimestamp, where, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, getDocs, onSnapshot, query, where, orderBy, serverTimestamp } from 'firebase/firestore';
 import { useAuth } from '@/context/AuthContext';
-import { updateProfile } from 'firebase/auth';
+import { supabase } from '@/lib/supabase/client';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageContext';
 import nextDynamic from 'next/dynamic';
@@ -1905,9 +1905,18 @@ function StudentDashboardContent() {
       const finalPhoto = settingsPhotoUrl || user.photoURL || '';
 
       try {
-        await updateProfile(user, {
-          displayName: finalName,
-          photoURL: finalPhoto || undefined
+        await supabase.auth.updateUser({
+          data: {
+            full_name: finalName,
+            avatar_url: finalPhoto || undefined
+          }
+        });
+        await supabase.from('profiles').upsert({
+          id: user.uid || user.id,
+          full_name: finalName,
+          avatar_url: finalPhoto || null,
+          phone: settingsPhone || null,
+          updated_at: new Date().toISOString()
         });
       } catch (authErr) {
         console.warn("Client auth update warning:", authErr);
@@ -4549,7 +4558,7 @@ function StudentDashboardContent() {
               onCourseUnlocked={(unlockedId) => {
                 try {
                   const userRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user?.uid || '', 'purchased_courses', unlockedId);
-                  getDoc(userRef).then(snap => {
+                  getDoc(userRef).then((snap: any) => {
                     if (snap.exists()) {
                       setCourses(prev => [...prev.filter(c => c.id !== unlockedId), { id: unlockedId, ...snap.data() }]);
                     }

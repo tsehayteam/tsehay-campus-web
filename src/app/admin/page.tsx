@@ -2609,7 +2609,7 @@ export default function AdminDashboard() {
       const adminEmail = user?.email || (typeof window !== 'undefined' ? localStorage.getItem('adminEmail') : '') || 'tsehayoperation@gmail.com';
       let idToken = '';
       try {
-        if (user) {
+        if (user?.getIdToken) {
           idToken = await user.getIdToken();
         }
       } catch (tokenErr) {}
