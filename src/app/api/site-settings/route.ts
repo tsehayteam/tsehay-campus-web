@@ -3,7 +3,7 @@ export const revalidate = 0;
 export const fetchCache = 'force-no-store';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb, hasAdminCredentials } from '@/lib/firebase/admin';
+import { supabase } from '@/lib/supabase/client';
 
 const NO_CACHE_HEADERS = {
   'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
@@ -30,38 +30,20 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const settingKey = searchParams.get('settingKey') || searchParams.get('key') || 'youtube_portfolio';
 
-    if (hasAdminCredentials && adminDb && typeof adminDb.collection === 'function') {
-      // 1. Check nested artifacts collection
-      try {
-        const docRef = adminDb
-          .collection('artifacts')
-          .doc('tsehaycampus-e1a6d')
-          .collection('public')
-          .doc('data')
-          .collection('site_settings')
-          .doc(settingKey);
-        
-        const snap = await docRef.get();
-        if (snap.exists) {
-          return NextResponse.json(
-            { success: true, settingKey, data: snap.data() },
-            { headers: NO_CACHE_HEADERS }
-          );
-        }
-      } catch (e) {}
+    try {
+      const { data: row, error } = await supabase
+        .from('site_settings')
+        .select('*')
+        .eq('key', settingKey)
+        .maybeSingle();
 
-      // 2. Check root collection fallback
-      try {
-        const rootDocRef = adminDb.collection('site_settings').doc(settingKey);
-        const rootSnap = await rootDocRef.get();
-        if (rootSnap.exists) {
-          return NextResponse.json(
-            { success: true, settingKey, data: rootSnap.data() },
-            { headers: NO_CACHE_HEADERS }
-          );
-        }
-      } catch (e) {}
-    }
+      if (!error && row && row.data) {
+        return NextResponse.json(
+          { success: true, settingKey, data: row.data },
+          { headers: NO_CACHE_HEADERS }
+        );
+      }
+    } catch (e) {}
 
     const fallbackData = DEFAULT_SETTINGS[settingKey] || null;
     return NextResponse.json(

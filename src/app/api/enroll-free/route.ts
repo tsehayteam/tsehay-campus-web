@@ -1,60 +1,49 @@
 import { NextResponse } from 'next/server';
-import { adminAuth, adminDb } from '@/lib/firebase/admin';
+import { supabase } from '@/lib/supabase/client';
+
+export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
   try {
     const authHeader = request.headers.get('authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Unauthorized: Missing or invalid authorization token' }, { status: 401 });
-    }
-
-    const idToken = authHeader.split('Bearer ')[1].trim();
-    if (!idToken) {
-      return NextResponse.json({ error: 'Unauthorized: Missing token' }, { status: 401 });
-    }
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.split('Bearer ')[1].trim() : '';
 
     let authenticatedUserId: string = 'user';
-    if (adminAuth) {
+    let userEmail: string = '';
+
+    if (token) {
       try {
-        const decodedToken = await adminAuth.verifyIdToken(idToken);
-        authenticatedUserId = decodedToken.uid;
+        const { data: { user } } = await supabase.auth.getUser(token);
+        if (user) {
+          authenticatedUserId = user.id;
+          userEmail = user.email || '';
+        }
       } catch (authErr) {
-        console.warn("Token verification warning in enroll-free (proceeding gracefully):", authErr);
+        console.warn("Token verification notice in enroll-free:", authErr);
       }
     }
 
-    const { courseId } = await request.json();
+    const body = await request.json().catch(() => ({}));
+    const { courseId } = body;
     if (!courseId) {
       return NextResponse.json({ error: 'Missing courseId' }, { status: 400 });
     }
 
-    if (adminDb && authenticatedUserId && authenticatedUserId !== 'user') {
+    if (authenticatedUserId && authenticatedUserId !== 'user') {
       try {
-        const userDocRef = adminDb
-          .collection('artifacts')
-          .doc('tsehaycampus-e1a6d')
-          .collection('users')
-          .doc(authenticatedUserId);
-
-        // Save to purchased_courses
-        await userDocRef.collection('purchased_courses').doc(courseId).set({
-          courseId,
+        await supabase.from('enrollments').upsert({
+          id: `${authenticatedUserId}_${courseId}`,
+          user_id: authenticatedUserId,
+          user_email: userEmail,
+          course_id: courseId,
           amount: 0,
-          paymentMethod: 'free',
-          purchasedAt: new Date(),
-          status: 'active'
-        }, { merge: true });
-
-        try {
-          const { FieldValue } = await import('firebase-admin/firestore');
-          await userDocRef.set({
-            enrolledCourses: FieldValue.arrayUnion(courseId)
-          }, { merge: true });
-        } catch (arrErr) {
-          console.warn("Could not update enrolledCourses array:", arrErr);
-        }
+          currency: 'ETB',
+          payment_method: 'free',
+          status: 'completed',
+          created_at: new Date().toISOString()
+        });
       } catch (dbErr) {
-        console.warn("Admin DB write failed, relying on client sync:", dbErr);
+        console.warn("Supabase enroll-free write warning:", dbErr);
       }
     }
 

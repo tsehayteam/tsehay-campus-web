@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ['firebase-admin'],
+  turbopack: {},
   compress: true,
   poweredByHeader: false,
   reactStrictMode: true,
@@ -67,14 +67,6 @@ const nextConfig: NextConfig = {
           { key: 'Pragma', value: 'no-cache' },
           { key: 'Expires', value: '0' },
         ],
-      },
-    ];
-  },
-  async rewrites() {
-    return [
-      {
-        source: '/__/auth/:path*',
-        destination: 'https://tsehaycampus-e1a6d.firebaseapp.com/__/auth/:path*',
       },
     ];
   },

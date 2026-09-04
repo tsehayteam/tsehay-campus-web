@@ -6,8 +6,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import PaymentModal from '@/components/PaymentModal';
 import { useAuth } from '@/context/AuthContext';
-import { db } from '@/lib/firebase/config';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { supabase } from '@/lib/supabase/client';
 
 interface MentorshipTier {
   id: string;
@@ -435,18 +434,22 @@ export default function MentorshipClient() {
 
     try {
       try {
-        await addDoc(collection(db, 'mentorship_bookings'), {
-          ...bookingPayload,
+        await supabase.from('mentorship_bookings').insert({
+          id: generatedId,
+          tier_id: selectedTier.id,
+          tier_name: selectedTier.name,
+          full_name: fullName.trim(),
+          email: email.trim(),
+          phone: phone.trim(),
+          meeting_mode: meetingMode,
+          selected_time: `${selectedDate} ${selectedTime}`,
+          topic: topic.trim() || 'አጠቃላይ የ 1-ለ-1 ማማከር',
+          price: selectedTier.price,
           status: 'confirmed',
-          createdAtServer: serverTimestamp()
+          created_at: new Date().toISOString()
         });
-        await addDoc(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'mentorship_bookings'), {
-          ...bookingPayload,
-          status: 'confirmed',
-          createdAtServer: serverTimestamp()
-        });
-      } catch (firestoreErr) {
-        console.warn('Direct client firestore save warning:', firestoreErr);
+      } catch (supabaseErr) {
+        console.warn('Direct Supabase mentorship save warning:', supabaseErr);
       }
 
       try {

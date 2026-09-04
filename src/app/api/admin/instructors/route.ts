@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase/admin';
-import { DEFAULT_COURSES } from '@/lib/courseCache';
+import { supabase } from '@/lib/supabase/client';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,53 +40,18 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
 
-    if (!adminDb) {
-      return NextResponse.json({
-        success: true,
-        instructors: [DEFAULT_INSTRUCTOR]
-      });
-    }
-
-    // 1. Fetch instructors collection from Firestore
-    let instructorsList: InstructorData[] = [];
+    let instructorsList: InstructorData[] = [DEFAULT_INSTRUCTOR];
     try {
-      const snap = await adminDb.collection('instructors').get();
-      if (!snap.empty) {
-        instructorsList = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as InstructorData));
+      const { data: row } = await supabase
+        .from('site_settings')
+        .select('data')
+        .eq('key', 'instructors')
+        .maybeSingle();
+
+      if (row?.data && Array.isArray(row.data) && row.data.length > 0) {
+        instructorsList = row.data;
       }
     } catch (e) {}
-
-    // 2. Also check artifact instructors collection
-    if (instructorsList.length === 0) {
-      try {
-        const artifactSnap = await adminDb
-          .collection('artifacts')
-          .doc('tsehaycampus-e1a6d')
-          .collection('public')
-          .doc('data')
-          .collection('instructors')
-          .get();
-        if (!artifactSnap.empty) {
-          instructorsList = artifactSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as InstructorData));
-        }
-      } catch (e) {}
-    }
-
-    // 3. Fallback / seed with default instructor if empty
-    if (instructorsList.length === 0) {
-      instructorsList = [DEFAULT_INSTRUCTOR];
-      try {
-        await adminDb.collection('instructors').doc(DEFAULT_INSTRUCTOR.id).set(DEFAULT_INSTRUCTOR, { merge: true });
-        await adminDb
-          .collection('artifacts')
-          .doc('tsehaycampus-e1a6d')
-          .collection('public')
-          .doc('data')
-          .collection('instructors')
-          .doc(DEFAULT_INSTRUCTOR.id)
-          .set(DEFAULT_INSTRUCTOR, { merge: true });
-      } catch (e) {}
-    }
 
     if (id) {
       const found = instructorsList.find(i => i.id === id || i.name.toLowerCase().includes(id.toLowerCase()));
@@ -138,10 +102,6 @@ async function handleSaveInstructor(req: NextRequest) {
     const instructorData = body.instructorData || body;
     const instructorId = idParam || body.id || instructorData.id || 'eyoub_sahle';
 
-    if (!instructorData || Object.keys(instructorData).length === 0) {
-      return NextResponse.json({ success: false, error: 'Missing instructorData payload' }, { status: 400 });
-    }
-
     const payload: InstructorData = {
       id: instructorId,
       name: instructorData.name || 'Eyoub Sahle (ኢዮብ ሳህሌ)',
@@ -158,75 +118,33 @@ async function handleSaveInstructor(req: NextRequest) {
       updatedAt: new Date().toISOString()
     };
 
-    if (adminDb) {
-      // 1. Save to root instructors collection
-      try {
-        await adminDb.collection('instructors').doc(instructorId).set(payload, { merge: true });
-      } catch (e) {}
-
-      // 2. Save to artifacts instructors collection
-      try {
-        await adminDb
-          .collection('artifacts')
-          .doc('tsehaycampus-e1a6d')
-          .collection('public')
-          .doc('data')
-          .collection('instructors')
-          .doc(instructorId)
-          .set(payload, { merge: true });
-      } catch (e) {}
-
-      // 3. Cascade update instructor info across all matching courses if requested
-      const shouldSyncCourses = body.syncCourses !== false;
-      if (shouldSyncCourses) {
-        try {
-          const courseCollections = [
-            adminDb.collection('courses'),
-            adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('public').doc('data').collection('courses')
-          ];
-
-          for (const col of courseCollections) {
-            const snap = await col.get();
-            if (!snap.empty) {
-              const batch = adminDb.batch();
-              snap.docs.forEach(docSnap => {
-                const cData = docSnap.data();
-                const instName = (cData.instructor || cData.instructorName || '').toLowerCase();
-                const isMatch = !instName || 
-                  instName.includes('eyoub') || 
-                  instName.includes('eyob') || 
-                  instName.includes('ኢዮብ') ||
-                  instName.includes(payload.name.toLowerCase().split(' ')[0]);
-
-                if (isMatch) {
-                  batch.set(docSnap.ref, {
-                    instructor: payload.name,
-                    instructorName: payload.name,
-                    instructorImage: payload.image,
-                    instructorBio: payload.bio,
-                    instructorTelegram: payload.telegram,
-                    updatedAt: new Date().toISOString()
-                  }, { merge: true });
-                }
-              });
-              await batch.commit();
-            }
-          }
-        } catch (cascadeErr) {
-          console.warn('Cascade instructor sync to courses warning:', cascadeErr);
-        }
-      }
-
-      return NextResponse.json({
-        success: true,
-        message: 'የአስተማሪው መረጃ በተሳካ ሁኔታ ተስተካክሏል! (Instructor updated successfully)',
-        instructor: payload
+    // Save to Supabase site_settings
+    try {
+      await supabase.from('site_settings').upsert({
+        key: 'instructors',
+        data: [payload],
+        updated_at: new Date().toISOString()
       });
+
+      // Update instructor info on all courses
+      await supabase
+        .from('courses')
+        .update({
+          instructor: payload.name,
+          instructor_name: payload.name,
+          instructor_image: payload.image,
+          instructor_bio: payload.bio,
+          instructor_telegram: payload.telegram,
+          updated_at: new Date().toISOString()
+        })
+        .neq('id', '');
+    } catch (err) {
+      console.warn('Supabase instructor save warning:', err);
     }
 
     return NextResponse.json({
       success: true,
-      message: 'Instructor saved (client sync)',
+      message: 'የአስተማሪው መረጃ በተሳካ ሁኔታ ተስተካክሏል! (Instructor updated successfully)',
       instructor: payload
     });
   } catch (error: any) {

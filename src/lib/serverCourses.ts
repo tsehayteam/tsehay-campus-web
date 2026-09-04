@@ -1,4 +1,4 @@
-import { adminDb, hasAdminCredentials } from '@/lib/firebase/admin';
+import { supabaseServer } from '@/lib/supabase/server';
 import { DEFAULT_COURSES, formatCourseDesc, mergeCoursesLists } from '@/lib/courseCache';
 import { sharedSiteSettingsCache, loadPersistedCourses, loadPersistedSettings } from '@/lib/memoryStore';
 
@@ -22,71 +22,22 @@ export async function getLiveCoursesServer(): Promise<any[]> {
       });
     } catch (e) {}
 
-    // 3. Query Firestore if admin credentials are configured
-    if (adminDb && hasAdminCredentials) {
-
-    // 1. Nested collection: artifacts/tsehaycampus-e1a6d/public/data/courses
+    // 3. Query native Supabase courses table
     try {
-      const snapA = await adminDb
-        .collection('artifacts')
-        .doc('tsehaycampus-e1a6d')
-        .collection('public')
-        .doc('data')
-        .collection('courses')
-        .get();
+      const { data: supaCourses, error } = await supabaseServer
+        .from('courses')
+        .select('*');
 
-      snapA.docs.forEach(doc => {
-        if (doc.exists) {
-          const data = doc.data();
-          if (data && data.status !== 'Deleted' && !data.isDeleted) {
-            const cleanDesc = formatCourseDesc(data);
-            courseMap.set(doc.id, { id: doc.id, ...data, desc: cleanDesc, description: cleanDesc });
+      if (!error && supaCourses && Array.isArray(supaCourses)) {
+        supaCourses.forEach((c: any) => {
+          if (c && c.id && c.status !== 'Deleted' && !c.isDeleted) {
+            const cleanDesc = formatCourseDesc(c);
+            const existing = courseMap.get(c.id) || {};
+            courseMap.set(c.id, { ...existing, ...c, desc: cleanDesc, description: cleanDesc });
           }
-        }
-      });
+        });
+      }
     } catch (e) {}
-
-    // 2. Root collection: courses
-    try {
-      const snapB = await adminDb.collection('courses').get();
-      snapB.docs.forEach(doc => {
-        if (doc.exists) {
-          const data = doc.data();
-          if (data && data.status !== 'Deleted' && !data.isDeleted) {
-            const cleanDesc = formatCourseDesc(data);
-            if (!courseMap.has(doc.id)) {
-              courseMap.set(doc.id, { id: doc.id, ...data, desc: cleanDesc, description: cleanDesc });
-            } else {
-              courseMap.set(doc.id, { ...courseMap.get(doc.id), ...data, id: doc.id, desc: cleanDesc, description: cleanDesc });
-            }
-          }
-        }
-      });
-    } catch (e) {}
-
-    // 3. Alt collection: artifacts/tsehaycampus-e1a6d/courses
-    try {
-      const snapC = await adminDb
-        .collection('artifacts')
-        .doc('tsehaycampus-e1a6d')
-        .collection('courses')
-        .get();
-
-      snapC.docs.forEach(doc => {
-        if (doc.exists) {
-          const data = doc.data();
-          if (data && data.status !== 'Deleted' && !data.isDeleted) {
-            const cleanDesc = formatCourseDesc(data);
-            if (!courseMap.has(doc.id)) {
-              courseMap.set(doc.id, { id: doc.id, ...data, desc: cleanDesc, description: cleanDesc });
-            } else {
-              courseMap.set(doc.id, { ...courseMap.get(doc.id), ...data, id: doc.id, desc: cleanDesc, description: cleanDesc });
-            }
-          }
-        }
-      });
-    } catch (e) {}
-    }
 
     const list = Array.from(courseMap.values());
     if (list.length > 0) {
@@ -122,30 +73,24 @@ export async function getLiveLandingVideoServer(): Promise<string> {
       }
     } catch (e) {}
 
-    if (!adminDb || !hasAdminCredentials) return DEFAULT_LANDING_VIDEO;
+    // Fetch from Supabase site_settings
+    try {
+      const { data, error } = await supabaseServer
+        .from('site_settings')
+        .select('data')
+        .eq('key', 'landing_video')
+        .maybeSingle();
 
-    const paths = [
-      adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('public').doc('data').collection('site_settings').doc('landing_video'),
-      adminDb.collection('site_settings').doc('landing_video'),
-      adminDb.collection('settings').doc('landing_video'),
-      adminDb.collection('settings').doc('landingVideo')
-    ];
-
-    for (const p of paths) {
-      try {
-        const snap = await p.get();
-        if (snap.exists) {
-          const data = snap.data();
-          const url = data?.url || data?.videoUrl || data?.youtubeUrl;
-          if (url && typeof url === 'string' && url.trim()) {
-            return url.trim();
-          }
+      if (!error && data?.data) {
+        const landingData = data.data;
+        const url = landingData?.url || landingData?.videoUrl || landingData?.youtubeUrl;
+        if (url && typeof url === 'string' && url.trim()) {
+          return url.trim();
         }
-      } catch (e) {}
-    }
+      }
+    } catch (e) {}
   } catch (err) {
     console.warn('getLiveLandingVideoServer fallback notice:', err);
   }
   return DEFAULT_LANDING_VIDEO;
 }
-

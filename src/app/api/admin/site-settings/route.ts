@@ -3,7 +3,6 @@ export const revalidate = 0;
 export const fetchCache = 'force-no-store';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb, hasAdminCredentials } from '@/lib/firebase/admin';
 import { sharedSiteSettingsCache, savePersistedSetting } from '@/lib/memoryStore';
 import { supabase } from '@/lib/supabase/client';
 
@@ -14,7 +13,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const settingKey = searchParams.get('settingKey') || searchParams.get('key') || 'youtube_portfolio';
 
-    // 0. Primary Supabase Lookup
+    // 1. Primary Supabase Lookup
     try {
       const { data: sbRow, error: sbErr } = await supabase
         .from('site_settings')
@@ -27,44 +26,15 @@ export async function GET(req: NextRequest) {
       }
     } catch (sbE) {}
 
-      // 1. Check root settings collection
-      try {
-        const settingsDocRef = adminDb.collection('settings').doc(settingKey);
-        const settingsSnap = await settingsDocRef.get();
-        if (settingsSnap.exists) {
-          return NextResponse.json({ success: true, settingKey, data: settingsSnap.data() });
-        }
-      } catch (e) {}
-
-      // 2. Check nested artifacts collection
-      const docRef = adminDb
-        .collection('artifacts')
-        .doc('tsehaycampus-e1a6d')
-        .collection('public')
-        .doc('data')
-        .collection('site_settings')
-        .doc(settingKey);
-      
-      const snap = await docRef.get();
-      if (snap.exists) {
-        return NextResponse.json({ success: true, settingKey, data: snap.data() });
-      }
-
-      // 3. Check root collection fallback
-      const rootDocRef = adminDb.collection('site_settings').doc(settingKey);
-      const rootSnap = await rootDocRef.get();
-      if (rootSnap.exists) {
-        return NextResponse.json({ success: true, settingKey, data: rootSnap.data() });
-      }
-
+    // 2. Memory cache fallback
     if (memorySiteSettingsCache.has(settingKey)) {
       return NextResponse.json({ success: true, settingKey, data: memorySiteSettingsCache.get(settingKey) });
     }
 
     return NextResponse.json({ success: true, settingKey, data: null });
   } catch (error: any) {
-    console.error('Error fetching site settings in API route:', error);
-    return NextResponse.json({ success: true, settingKey: 'landing_video', data: null, fallback: true });
+    console.error('Error fetching admin site settings:', error);
+    return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -73,67 +43,28 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { settingKey, data } = body;
 
-    if (!settingKey || !data) {
-      return NextResponse.json({ error: 'Missing settingKey or data' }, { status: 400 });
+    if (!settingKey) {
+      return NextResponse.json({ error: 'Missing settingKey' }, { status: 400 });
     }
 
-    const payload = {
-      ...data,
-      settingKey,
-      updatedAt: new Date().toISOString()
-    };
-
+    const payload = data || body;
     memorySiteSettingsCache.set(settingKey, payload);
     savePersistedSetting(settingKey, payload);
 
-    // 0. Primary Supabase Upsert
+    // Save to Supabase site_settings table
     try {
-      await supabase
-        .from('site_settings')
-        .upsert({
-          key: settingKey,
-          data: payload,
-          updated_at: new Date().toISOString()
-        });
-    } catch (sbSaveErr) {
-      console.warn('Supabase site-settings save warning:', sbSaveErr);
+      await supabase.from('site_settings').upsert({
+        key: settingKey,
+        data: payload,
+        updated_at: new Date().toISOString()
+      });
+    } catch (sbErr) {
+      console.warn('Supabase site_settings save warning:', sbErr);
     }
 
-    if (adminDb && hasAdminCredentials) {
-      try {
-        // 1. Write to artifacts/tsehaycampus-e1a6d/public/data/site_settings/${settingKey}
-        const docRef = adminDb
-          .collection('artifacts')
-          .doc('tsehaycampus-e1a6d')
-          .collection('public')
-          .doc('data')
-          .collection('site_settings')
-          .doc(settingKey);
-        
-        await docRef.set(payload, { merge: true });
-
-        // 2. Mirror to root site_settings
-        await adminDb.collection('site_settings').doc(settingKey).set(payload, { merge: true });
-
-        // 3. Mirror to settings collection
-        if (settingKey === 'landing_video' || settingKey === 'landingVideo') {
-          await adminDb.collection('settings').doc('landingVideo').set(payload, { merge: true });
-          await adminDb.collection('settings').doc('landing_video').set(payload, { merge: true });
-        } else if (settingKey === 'youtube_portfolio') {
-          await adminDb.collection('settings').doc('youtube_portfolio').set(payload, { merge: true });
-        } else {
-          await adminDb.collection('settings').doc(settingKey).set(payload, { merge: true });
-        }
-      } catch (dbErr) {
-        console.warn('Firebase Admin write warning in site-settings:', dbErr);
-      }
-
-      return NextResponse.json({ success: true, message: 'Settings saved via Admin SDK', data: payload });
-    }
-
-    return NextResponse.json({ success: true, message: 'Saved with client sync', data: payload });
+    return NextResponse.json({ success: true, message: `Setting ${settingKey} saved successfully`, data: payload });
   } catch (error: any) {
-    console.error('Error saving site settings in API route:', error);
-    return NextResponse.json({ success: true, warning: error.message, message: 'Saved with client sync' });
+    console.error('Error saving admin site settings:', error);
+    return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
   }
 }

@@ -1,29 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase/admin';
+import { supabase } from '@/lib/supabase/client';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
   try {
-    if (!adminDb) {
-      return NextResponse.json({ success: true, count: 0, waitlists: [] });
-    }
-
     const { searchParams } = new URL(req.url);
     const courseId = searchParams.get('courseId');
 
-    let query: any = adminDb
-      .collection('artifacts')
-      .doc('tsehaycampus-e1a6d')
-      .collection('course_waitlists')
-      .orderBy('timestamp', 'desc');
+    let query = supabase
+      .from('waitlists')
+      .select('*')
+      .order('created_at', { ascending: false });
 
     if (courseId && courseId !== 'all') {
-      query = query.where('courseId', '==', courseId);
+      query = query.eq('course_id', courseId);
     }
 
-    const snapshot = await query.limit(500).get();
-    const waitlists = snapshot.docs.map((doc: any) => ({ ...doc.data() }));
+    const { data: list, error } = await query.limit(500);
+    if (error) {
+      console.warn('Supabase waitlists fetch error:', error);
+      return NextResponse.json({ success: true, count: 0, waitlists: [] });
+    }
+
+    const waitlists = (list || []).map(w => ({
+      id: w.id,
+      studentName: w.student_name,
+      email: w.email,
+      phone: w.phone,
+      courseId: w.course_id,
+      courseTitle: w.course_title,
+      createdAt: w.created_at
+    }));
 
     return NextResponse.json({
       success: true,
@@ -45,22 +53,9 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Missing waitlist ID' }, { status: 400 });
     }
 
-    if (adminDb) {
-      try {
-        await adminDb
-          .collection('artifacts')
-          .doc('tsehaycampus-e1a6d')
-          .collection('course_waitlists')
-          .doc(id)
-          .delete();
-
-        await adminDb
-          .collection('course_waitlists')
-          .doc(id)
-          .delete();
-      } catch (dbErr) {
-        console.warn('Firestore delete notice:', dbErr);
-      }
+    const { error } = await supabase.from('waitlists').delete().eq('id', id);
+    if (error) {
+      console.warn('Supabase delete waitlist error:', error);
     }
 
     return NextResponse.json({

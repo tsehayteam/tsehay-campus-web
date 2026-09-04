@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { db } from '@/lib/firebase/config';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { supabase } from '@/lib/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { ComingSoonCourse } from '@/lib/courseCache';
 
@@ -79,18 +78,19 @@ export default function WaitlistModal({ isOpen, onClose, course }: WaitlistModal
     };
 
     try {
-      // 1. Direct resilient client Firestore write
+      // 1. Direct resilient Supabase write
       try {
-        await setDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'course_waitlists', waitlistId), {
-          ...waitlistPayload,
-          serverCreated: serverTimestamp()
-        });
-        await setDoc(doc(db, 'course_waitlists', waitlistId), {
-          ...waitlistPayload,
-          serverCreated: serverTimestamp()
+        await supabase.from('waitlists').insert({
+          id: waitlistId,
+          course_id: course.id,
+          course_title: course.title,
+          student_name: studentName.trim(),
+          phone: phone.trim(),
+          email: (email || '').trim().toLowerCase(),
+          created_at: new Date().toISOString()
         });
       } catch (dbErr) {
-        console.warn('Client Firestore waitlist write attempt:', dbErr);
+        console.warn('Supabase waitlist write attempt:', dbErr);
       }
 
       // 2. Server API call

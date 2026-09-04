@@ -3,13 +3,7 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { auth } from '@/lib/firebase/config';
-import { 
-  signInWithCustomToken, 
-  signInWithEmailAndPassword,
-  confirmPasswordReset,
-  verifyPasswordResetCode 
-} from 'firebase/auth';
+import { supabase } from '@/lib/supabase/client';
 
 function ResetPasswordForm() {
   const searchParams = useSearchParams();
@@ -34,20 +28,20 @@ function ResetPasswordForm() {
     if (urlEmail) setEmail(urlEmail);
     if (urlCode) {
       setCode(urlCode);
-      // If code looks like a Firebase action code (long string)
       if (urlCode.length > 10) {
         setIsOobCode(true);
-        verifyPasswordResetCode(auth, urlCode)
-          .then((verifiedEmail) => {
-            if (verifiedEmail) {
-              setEmail(verifiedEmail);
-            }
-          })
-          .catch((err) => {
-            console.warn('Firebase action code verification notice:', err);
-          });
       }
     }
+
+    // Check if user reached page from Supabase password recovery link
+    supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setIsOobCode(true);
+        if (session?.user?.email) {
+          setEmail(session.user.email);
+        }
+      }
+    });
   }, [urlEmail, urlCode]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -69,11 +63,6 @@ function ResetPasswordForm() {
       return;
     }
 
-    if (!cleanCode) {
-      setError('እባክዎ የማረጋገጫ ኮድ ወይም ሊንክ ያስገቡ።');
-      return;
-    }
-
     if (cleanPass.length < 6) {
       setError('አዲሱ የይለፍ ቃል ቢያንስ 6 ፊደላት ወይም ቁጥሮች መሆን አለበት።');
       return;
@@ -89,26 +78,27 @@ function ResetPasswordForm() {
     try {
       let resetSuccess = false;
 
-      // 1. Try Firebase Native Action Code Reset if code is an oobCode
-      if (cleanCode.length > 10) {
-        try {
-          await confirmPasswordReset(auth, cleanCode, cleanPass);
+      // 1. If user has OTP code, verify recovery token with Supabase
+      if (cleanCode && cleanCode.length <= 8) {
+        const { error: otpError } = await supabase.auth.verifyOtp({
+          email: cleanEmail,
+          token: cleanCode,
+          type: 'recovery'
+        });
+        if (otpError) {
+          console.warn('Supabase recovery OTP check notice:', otpError.message);
+        } else {
           resetSuccess = true;
-        } catch (fbErr: any) {
-          console.warn('Native confirmPasswordReset attempt fallback to API:', fbErr);
-          const code = fbErr?.code || '';
-          if (code === 'auth/expired-action-code') {
-            throw new Error('የማረጋገጫ ሊንኩ ጊዜው አልፎበታል (Expired)። እባክዎ አዲስ የይለፍ ቃል መቀየሪያ ሊንክ ይጠይቁ።');
-          } else if (code === 'auth/invalid-action-code') {
-            // Might be a custom OTP or handled by backend, continue to API fallback
-          } else {
-            throw new Error(fbErr?.message || 'የይለፍ ቃል መቀየር አልተቻለም።');
-          }
         }
       }
 
-      // 2. Fallback to API route (handles 6-digit OTP or Firebase Admin password sync)
-      if (!resetSuccess) {
+      // 2. Update user password in Supabase
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: cleanPass
+      });
+
+      if (updateError && !resetSuccess) {
+        // Also call fallback API route if configured
         const res = await fetch('/api/auth/reset-password', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -118,33 +108,13 @@ function ResetPasswordForm() {
             newPassword: cleanPass,
           }),
         });
-
         const data = await res.json().catch(() => ({}));
-
         if (!res.ok || !data.success) {
-          throw new Error(data.error || 'የይለፍ ቃል መቀየር አልተቻለም። እባክዎ እንደገና ይሞክሩ።');
-        }
-
-        // Auto sign in with customToken if provided
-        if (data.customToken) {
-          try {
-            const cred = await signInWithCustomToken(auth, data.customToken);
-            window.dispatchEvent(new CustomEvent('tsehay_auth_state_changed', { detail: cred.user }));
-            window.dispatchEvent(new CustomEvent('tsehay_user_logged_in', { detail: cred.user }));
-          } catch (tokenErr) {}
+          throw new Error(updateError.message || data.error || 'የይለፍ ቃል መቀየር አልተቻለም። እባክዎ እንደገና ይሞክሩ።');
         }
       }
 
       setIsSuccess(true);
-
-      // Attempt immediate password sign in if not already logged in
-      try {
-        const cred = await signInWithEmailAndPassword(auth, cleanEmail, cleanPass);
-        window.dispatchEvent(new CustomEvent('tsehay_auth_state_changed', { detail: cred.user }));
-        window.dispatchEvent(new CustomEvent('tsehay_user_logged_in', { detail: cred.user }));
-      } catch (passErr) {
-        console.warn('Password login notice:', passErr);
-      }
 
       // Check for pending actions in sessionStorage to return seamlessly
       setTimeout(() => {

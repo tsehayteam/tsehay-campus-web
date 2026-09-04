@@ -3,9 +3,7 @@
 import React, { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { auth, db } from '@/lib/firebase/config';
-import { applyActionCode } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { supabase } from '@/lib/supabase/client';
 
 function AuthActionHandler() {
   const searchParams = useSearchParams();
@@ -30,18 +28,17 @@ function AuthActionHandler() {
       return;
     }
 
-    // 2. Email Verification Action -> Verify inline using applyActionCode
+    // 2. Email Verification Action -> Verify inline using Supabase verifyOtp
     if (mode === 'verifyEmail' || mode === 'verify') {
-      applyActionCode(auth, oobCode)
-        .then(async () => {
-          setStatus('verified');
-          if (auth.currentUser) {
-            try {
-              await auth.currentUser.reload();
-              const userRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', auth.currentUser.uid, 'profile', 'info');
-              await setDoc(userRef, { emailVerified: true }, { merge: true });
-            } catch (e) {}
+      supabase.auth.verifyOtp({ token_hash: oobCode, type: 'email' })
+        .then(async ({ error }) => {
+          if (error) {
+            console.warn('Supabase email verification error:', error);
+            setStatus('error');
+            setErrorMessage('የማረጋገጫ ሊንኩ ልክ ያልሆነ ነው ወይም ጊዜው አልፎበታል። እባክዎ በድጋሚ ይሞክሩ።');
+            return;
           }
+          setStatus('verified');
           setTimeout(() => {
             router.push('/dashboard');
           }, 2200);
@@ -49,14 +46,7 @@ function AuthActionHandler() {
         .catch((err: any) => {
           console.error('Email verification error:', err);
           setStatus('error');
-          const code = err?.code || '';
-          if (code === 'auth/expired-action-code') {
-            setErrorMessage('የማረጋገጫ ሊንኩ ጊዜው አልፎበታል (Expired)። እባክዎ አዲስ የማረጋገጫ ሊንክ ይጠይቁ።');
-          } else if (code === 'auth/invalid-action-code') {
-            setErrorMessage('የማረጋገጫ ሊንኩ ልክ ያልሆነ ነው ወይም ቀደም ሲል ስራ ላይ ውሏል።');
-          } else {
-            setErrorMessage('ኢሜሉን ማረጋገጥ አልተቻለም። እባክዎ በድጋሚ ይሞክሩ።');
-          }
+          setErrorMessage('ኢሜሉን ማረጋገጥ አልተቻለም። እባክዎ በድጋሚ ይሞክሩ።');
         });
       return;
     }

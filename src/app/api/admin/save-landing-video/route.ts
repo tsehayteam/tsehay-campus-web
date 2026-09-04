@@ -1,31 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb, hasAdminCredentials } from '@/lib/firebase/admin';
+import { supabase } from '@/lib/supabase/client';
 import { sharedSiteSettingsCache, savePersistedSetting } from '@/lib/memoryStore';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
   try {
-    if (adminDb && hasAdminCredentials) {
-      // Check all possible doc paths
-      const paths = [
-        adminDb.collection('settings').doc('landingVideo'),
-        adminDb.collection('settings').doc('landing_video'),
-        adminDb.collection('site_settings').doc('landing_video'),
-        adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('public').doc('data').collection('site_settings').doc('landing_video')
-      ];
+    try {
+      const { data: row } = await supabase
+        .from('site_settings')
+        .select('data')
+        .eq('key', 'landing_video')
+        .maybeSingle();
 
-      for (const p of paths) {
-        try {
-          const snap = await p.get();
-          if (snap.exists) {
-            const data = snap.data();
-            const videoUrl = data?.url || data?.videoUrl || data?.youtubeUrl;
-            if (videoUrl) {
-              return NextResponse.json({ success: true, videoUrl, url: videoUrl, data });
-            }
-          }
-        } catch (e) {}
+      if (row?.data) {
+        const videoUrl = row.data?.url || row.data?.videoUrl || row.data?.youtubeUrl;
+        if (videoUrl) {
+          return NextResponse.json({ success: true, videoUrl, url: videoUrl, data: row.data });
+        }
       }
-    }
+    } catch (e) {}
 
     if (sharedSiteSettingsCache.has('landing_video')) {
       const cached = sharedSiteSettingsCache.get('landing_video');
@@ -65,19 +59,15 @@ export async function POST(req: NextRequest) {
     sharedSiteSettingsCache.set('landing_video', payload);
     savePersistedSetting('landing_video', payload);
 
-    if (adminDb && hasAdminCredentials) {
-      const promises = [
-        adminDb.collection('settings').doc('landingVideo').set(payload, { merge: true }),
-        adminDb.collection('settings').doc('landing_video').set(payload, { merge: true }),
-        adminDb.collection('site_settings').doc('landing_video').set(payload, { merge: true }),
-        adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('public').doc('data').collection('site_settings').doc('landing_video').set(payload, { merge: true })
-      ];
-
-      try {
-        await Promise.allSettled(promises);
-      } catch (dbErr) {
-        console.warn('Firebase Admin write warning:', dbErr);
-      }
+    // Save to Supabase site_settings
+    try {
+      await supabase.from('site_settings').upsert({
+        key: 'landing_video',
+        data: payload,
+        updated_at: new Date().toISOString()
+      });
+    } catch (dbErr) {
+      console.warn('Supabase site_settings save warning:', dbErr);
     }
 
     return NextResponse.json({

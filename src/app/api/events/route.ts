@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb, hasAdminCredentials } from '@/lib/firebase/admin';
+
 import { DEFAULT_EVENTS, TsehayEvent, formatDriveImageUrl } from '@/lib/eventCache';
 import { supabase } from '@/lib/supabase/client';
 import { 
@@ -50,34 +50,7 @@ export async function GET(req: NextRequest) {
         }
       } catch (sbE) {}
 
-      if (adminDb && hasAdminCredentials && typeof adminDb.collection === 'function') {
-        try {
-          const docRef = adminDb
-            .collection('artifacts')
-            .doc('tsehaycampus-e1a6d')
-            .collection('public')
-            .doc('data')
-            .collection('events')
-            .doc(eventId);
 
-          let snap = await docRef.get();
-          if (!snap.exists) {
-            snap = await adminDb.collection('events').doc(eventId).get();
-          }
-
-          if (snap.exists) {
-            const evData: any = { id: snap.id, ...snap.data() };
-            evData.image = formatDriveImageUrl(evData.image) || evData.image;
-            const cap = Number(evData.capacity) || 100;
-            const reg = Number(evData.registeredCount) || 0;
-            evData.remainingSeats = evData.remainingSeats !== undefined && typeof evData.remainingSeats === 'number'
-              ? Math.max(0, evData.remainingSeats)
-              : Math.max(0, cap - reg);
-            saveSinglePersistedEvent(evData);
-            return NextResponse.json({ success: true, event: evData });
-          }
-        } catch (dbErr) {}
-      }
 
       const found = memoryEvents.find(e => e.id === eventId || e.slug === eventId) ||
                     DEFAULT_EVENTS.find(e => e.id === eventId || e.slug === eventId);
@@ -122,32 +95,7 @@ export async function GET(req: NextRequest) {
       }
     } catch (sbListE) {}
 
-    if (adminDb && hasAdminCredentials && typeof adminDb.collection === 'function') {
-      try {
-        const snapshot = await adminDb
-          .collection('artifacts')
-          .doc('tsehaycampus-e1a6d')
-          .collection('public')
-          .doc('data')
-          .collection('events')
-          .get();
 
-        snapshot.docs.forEach(doc => {
-          if (doc.exists) {
-            eventMap.set(doc.id, { id: doc.id, ...doc.data() });
-          }
-        });
-
-        const rootSnap = await adminDb.collection('events').get();
-        rootSnap.docs.forEach(doc => {
-          if (doc.exists) {
-            eventMap.set(doc.id, { id: doc.id, ...doc.data() });
-          }
-        });
-      } catch (e) {
-        console.warn('AdminDb events listing notice:', e);
-      }
-    }
 
     const events = Array.from(eventMap.values()).map(e => {
       const cap = Number(e.capacity) || 100;
@@ -231,23 +179,6 @@ export async function POST(req: NextRequest) {
       console.warn('Supabase event save warning:', sbSaveErr);
     }
 
-    if (adminDb && hasAdminCredentials && typeof adminDb.collection === 'function') {
-      try {
-        await adminDb
-          .collection('artifacts')
-          .doc('tsehaycampus-e1a6d')
-          .collection('public')
-          .doc('data')
-          .collection('events')
-          .doc(eventId)
-          .set(payload, { merge: true });
-
-        await adminDb.collection('events').doc(eventId).set(payload, { merge: true });
-      } catch (dbErr) {
-        console.warn('Firebase Admin event save warning:', dbErr);
-      }
-    }
-
     return NextResponse.json({ success: true, event: payload });
   } catch (error: any) {
     console.error('Error saving event:', error);
@@ -272,23 +203,6 @@ export async function DELETE(req: NextRequest) {
       await supabase.from('events').delete().eq('slug', eventId);
     } catch (sbDelErr) {
       console.warn('Supabase event delete warning:', sbDelErr);
-    }
-
-    if (adminDb && hasAdminCredentials && typeof adminDb.collection === 'function') {
-      try {
-        await adminDb
-          .collection('artifacts')
-          .doc('tsehaycampus-e1a6d')
-          .collection('public')
-          .doc('data')
-          .collection('events')
-          .doc(eventId)
-          .delete();
-
-        await adminDb.collection('events').doc(eventId).delete();
-      } catch (dbErr) {
-        console.warn('Firebase Admin event delete warning:', dbErr);
-      }
     }
 
     return NextResponse.json({ success: true, deletedId: eventId });

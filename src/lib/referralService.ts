@@ -1,5 +1,3 @@
-import { db } from '@/lib/firebase/config';
-import { doc, getDoc, setDoc, serverTimestamp, increment, collection, getDocs, query, where } from 'firebase/firestore';
 import { supabase } from '@/lib/supabase/client';
 
 export interface PromoCode {
@@ -17,7 +15,7 @@ export interface PromoCode {
 export type ReferralCodeData = PromoCode;
 
 /**
- * Validate a Promo / Referral code against Supabase / Firestore and return discount details
+ * Validate a Promo / Referral code against Supabase and return discount details
  */
 export async function validateReferralCode(
   inputCode: string, 
@@ -33,7 +31,7 @@ export async function validateReferralCode(
     let data: PromoCode | null = null;
     let foundId = cleanCode;
 
-    // 0. Check Supabase referral_codes table first!
+    // 1. Check Supabase referral_codes table
     try {
       const { data: sbPromo, error: sbPromoErr } = await supabase
         .from('referral_codes')
@@ -56,53 +54,7 @@ export async function validateReferralCode(
       }
     } catch (e) {}
 
-    // 1. Check direct client Firestore paths (Prioritize root promo_codes)
-    const possibleDocPaths = [
-      doc(db, 'promo_codes', cleanCode),
-      doc(db, 'referral_codes', cleanCode),
-      doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'promo_codes', cleanCode),
-      doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'referral_codes', cleanCode),
-    ];
-
-    for (const docRef of possibleDocPaths) {
-      try {
-        const snap = await getDoc(docRef);
-        if (snap.exists()) {
-          data = snap.data() as PromoCode;
-          foundId = snap.id;
-          break;
-        }
-      } catch (err) {
-        // Continue checking next path
-      }
-    }
-
-    // 2. Query collections by 'code' field if doc ID wasn't uppercase match
-    if (!data) {
-      const collectionsToQuery = [
-        collection(db, 'promo_codes'),
-        collection(db, 'referral_codes'),
-        collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'promo_codes'),
-        collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'referral_codes'),
-      ];
-
-      for (const colRef of collectionsToQuery) {
-        try {
-          const q = query(colRef, where('code', '==', cleanCode));
-          const querySnap = await getDocs(q);
-          if (!querySnap.empty) {
-            const firstDoc = querySnap.docs[0];
-            data = firstDoc.data() as PromoCode;
-            foundId = firstDoc.id;
-            break;
-          }
-        } catch (err) {
-          // Continue checking next query
-        }
-      }
-    }
-
-    // 3. Fallback to Server API (Bypasses all client security rules)
+    // 2. Fallback to Server API
     if (!data) {
       try {
         let res = await fetch('/api/referral-codes');
@@ -115,7 +67,16 @@ export async function validateReferralCode(
               c.id?.trim().toUpperCase() === cleanCode
             );
             if (match) {
-              data = match;
+              data = {
+                id: match.id,
+                code: match.code,
+                discountPercent: Number(match.discountPercent || match.discount_percent) || 0,
+                targetCourseId: match.targetCourseId || match.target_course_id || 'all',
+                description: match.description,
+                isActive: match.isActive ?? match.is_active ?? true,
+                usageCount: Number(match.usageCount || match.usage_count) || 0,
+                maxUsageLimit: Number(match.maxUsageLimit || match.max_usage_limit) || 0
+              };
               foundId = match.id || cleanCode;
             }
           }
@@ -125,7 +86,7 @@ export async function validateReferralCode(
       }
     }
 
-    // 4. Local storage fallback cache
+    // 3. Local storage fallback cache
     if (!data && typeof window !== 'undefined') {
       try {
         const cached = localStorage.getItem('tsehay_referral_codes_cache');
@@ -145,58 +106,56 @@ export async function validateReferralCode(
       } catch (cacheErr) {}
     }
 
-    // If still not found
     if (!data) {
       return { 
         isValid: false, 
         discountPercent: 0, 
         isFree: false, 
-        message: 'ትክክል ያልሆነ ኮድ' 
+        message: 'ይቅርታ፣ ያስገቡት የቅናሽ ኮድ አልተገኘም ወይም ልክ አይደለም።' 
       };
     }
 
-    // Check if active
+    // Validate active status
     if (data.isActive === false) {
       return { 
         isValid: false, 
         discountPercent: 0, 
         isFree: false, 
-        message: 'ይህ የቅናሽ ኮድ ጊዜው አልፏል ወይም ተሰርዟል' 
+        message: 'ይህ የቅናሽ ኮድ በአሁኑ ሰዓት አገልግሎት ላይ አይውልም።' 
       };
     }
 
-    // 🌟 Check Max Usage Limit (የተጠቃሚ ብዛት ገደብ)
-    const maxLimit = Number(data.maxUsageLimit) || 0;
-    const currentUsage = Number(data.usageCount) || 0;
-    if (maxLimit > 0 && currentUsage >= maxLimit) {
-      return {
-        isValid: false,
-        discountPercent: 0,
-        isFree: false,
-        message: `ይቅርታ፣ የዚህ የቅናሽ ኮድ የተጠቃሚዎች ቁጥር ገደብ (${maxLimit} ሰው) ሞልቷል`
-      };
-    }
-
-    // Check course applicability
-    if (courseId && data.targetCourseId && data.targetCourseId !== 'all') {
-      const normalizedTarget = data.targetCourseId.toLowerCase().trim();
-      const normalizedCurrent = courseId.toLowerCase().trim();
+    // Validate target course constraint
+    const targetCourse = data.targetCourseId || 'all';
+    if (targetCourse !== 'all' && courseId) {
+      const matchCourse = 
+        targetCourse.toLowerCase() === courseId.toLowerCase() ||
+        courseId.toLowerCase().includes(targetCourse.toLowerCase()) ||
+        targetCourse.toLowerCase().includes(courseId.toLowerCase());
       
-      const isMatch = normalizedTarget === normalizedCurrent ||
-        normalizedCurrent.includes(normalizedTarget) ||
-        normalizedTarget.includes(normalizedCurrent);
-
-      if (!isMatch) {
+      if (!matchCourse) {
         return { 
           isValid: false, 
           discountPercent: 0, 
           isFree: false, 
-          message: 'ይህ የቅናሽ ኮድ ለተመረጠው ኮርስ አይሰራም' 
+          message: `ይህ ኮድ ለዚህ ኮርስ አይሰራም። ለተመረጡ ኮርሶች ብቻ ነው የሚያገለግለው።` 
         };
       }
     }
 
-    const discountPercent = Math.min(100, Math.max(1, Number(data.discountPercent) || 10));
+    // Validate max usage limit
+    const currentUsage = Number(data.usageCount) || 0;
+    const maxLimit = Number(data.maxUsageLimit) || 0;
+    if (maxLimit > 0 && currentUsage >= maxLimit) {
+      return { 
+        isValid: false, 
+        discountPercent: 0, 
+        isFree: false, 
+        message: 'ይህ የቅናሽ ኮድ የተፈቀደለትን ከፍተኛ የመጠቀም ገደብ ጨርሷል።' 
+      };
+    }
+
+    const discountPercent = Math.min(Math.max(Number(data.discountPercent) || 0, 0), 100);
     const isFree = discountPercent >= 100;
 
     return {
@@ -226,40 +185,22 @@ export async function recordReferralUsage(code: string) {
   if (!code) return;
   const cleanCode = code.trim().toUpperCase();
   try {
-    // Update in Supabase referral_codes table
-    try {
-      const { data: existing } = await supabase
+    const { data: existing } = await supabase
+      .from('referral_codes')
+      .select('usage_count')
+      .or(`code.ilike.${cleanCode},id.ilike.${cleanCode}`)
+      .maybeSingle();
+
+    if (existing) {
+      await supabase
         .from('referral_codes')
-        .select('usage_count')
-        .or(`code.ilike.${cleanCode},id.ilike.${cleanCode}`)
-        .maybeSingle();
-
-      if (existing) {
-        await supabase
-          .from('referral_codes')
-          .update({
-            usage_count: (Number(existing.usage_count) || 0) + 1,
-            updated_at: new Date().toISOString()
-          })
-          .or(`code.ilike.${cleanCode},id.ilike.${cleanCode}`);
-      }
-    } catch (sbUsageErr) {}
-
-    const rootRef = doc(db, 'promo_codes', cleanCode);
-    await setDoc(rootRef, {
-      usageCount: increment(1),
-      lastUsedAt: serverTimestamp()
-    }, { merge: true });
-
-    // Also mirror to artifacts referral_codes
-    try {
-      const codeRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'referral_codes', cleanCode);
-      await setDoc(codeRef, {
-        usageCount: increment(1),
-        lastUsedAt: serverTimestamp()
-      }, { merge: true });
-    } catch (e) {}
+        .update({
+          usage_count: (Number(existing.usage_count) || 0) + 1,
+          updated_at: new Date().toISOString()
+        })
+        .or(`code.ilike.${cleanCode},id.ilike.${cleanCode}`);
+    }
   } catch (e) {
-    console.warn("Could not record promo code usage via client:", e);
+    console.warn("Could not record promo code usage via Supabase:", e);
   }
 }

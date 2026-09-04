@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb, hasAdminCredentials } from '@/lib/firebase/admin';
+import { supabase } from '@/lib/supabase/client';
 import { generateCourseSlug, DEFAULT_COURSES } from '@/lib/courseCache';
-import { loadPersistedCourses, saveSinglePersistedCourse, deletePersistedCourse, sharedCoursesCache } from '@/lib/memoryStore';
+import { loadPersistedCourses, saveSinglePersistedCourse, deletePersistedCourse } from '@/lib/memoryStore';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -34,9 +34,23 @@ export async function GET(req: NextRequest) {
       });
     } catch (e) {}
 
+    // 1. Single Course Lookup
     if (courseId) {
       const cleanId = courseId.trim();
       const cleanLower = cleanId.toLowerCase();
+
+      try {
+        const { data: sbCourse, error: sbErr } = await supabase
+          .from('courses')
+          .select('*')
+          .or(`id.eq.${cleanId},slug.eq.${cleanId},slug.eq.${cleanLower}`)
+          .maybeSingle();
+
+        if (sbCourse && !sbErr) {
+          const merged = { ...sbCourse, ...(sbCourse.raw_data || {}) };
+          return NextResponse.json({ success: true, course: merged }, { headers: NO_CACHE_HEADERS });
+        }
+      } catch (sbE) {}
 
       if (courseMap.has(cleanId)) {
         return NextResponse.json({ success: true, course: courseMap.get(cleanId) }, { headers: NO_CACHE_HEADERS });
@@ -48,301 +62,103 @@ export async function GET(req: NextRequest) {
         }
       }
 
-      if (adminDb && hasAdminCredentials) {
-        // 1. Direct doc lookup in primary artifact collection
-        try {
-          const docRef = adminDb
-            .collection('artifacts')
-            .doc('tsehaycampus-e1a6d')
-            .collection('public')
-            .doc('data')
-            .collection('courses')
-            .doc(cleanId);
-
-          const snap = await docRef.get();
-          if (snap.exists) {
-            return NextResponse.json({ success: true, course: { id: snap.id, ...snap.data() } }, { headers: NO_CACHE_HEADERS });
-          }
-        } catch (e) {}
-
-        // 2. Direct root doc lookup
-        try {
-          const rootSnap = await adminDb.collection('courses').doc(cleanId).get();
-          if (rootSnap.exists) {
-            return NextResponse.json({ success: true, course: { id: rootSnap.id, ...rootSnap.data() } }, { headers: NO_CACHE_HEADERS });
-          }
-        } catch (e) {}
-      }
-
       return NextResponse.json({ success: false, error: 'Course not found' }, { status: 404, headers: NO_CACHE_HEADERS });
     }
 
-    // Bulk query: If adminDb credentials exist, merge from Firestore
-    if (adminDb && hasAdminCredentials) {
-      try {
-        const snap1 = await adminDb
-          .collection('artifacts')
-          .doc('tsehaycampus-e1a6d')
-          .collection('public')
-          .doc('data')
-          .collection('courses')
-          .get();
-        snap1.docs.forEach(doc => {
-        if (doc.exists) {
-          const data = doc.data();
-          if (data && data.status !== 'Deleted' && !data.isDeleted) {
-            courseMap.set(doc.id, { id: doc.id, ...data });
-          }
-        }
-      });
-    } catch (e) {}
-
-    // Collection 2: root courses
+    // 2. Fetch All Courses from Supabase
     try {
-      const snap2 = await adminDb.collection('courses').get();
-      snap2.docs.forEach(doc => {
-        if (doc.exists) {
-          const data = doc.data();
-          if (data && data.status !== 'Deleted' && !data.isDeleted) {
-            if (!courseMap.has(doc.id)) {
-              courseMap.set(doc.id, { id: doc.id, ...data });
-            } else {
-              courseMap.set(doc.id, { ...courseMap.get(doc.id), ...data, id: doc.id });
-            }
-          }
-        }
-      });
-    } catch (e) {}
+      const { data: sbCourses, error: sbErr } = await supabase
+        .from('courses')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-    // Collection 3: artifacts/tsehaycampus-e1a6d/courses
-    try {
-      const snap3 = await adminDb
-        .collection('artifacts')
-        .doc('tsehaycampus-e1a6d')
-        .collection('courses')
-        .get();
-      snap3.docs.forEach(doc => {
-        if (doc.exists) {
-          const data = doc.data();
-          if (data && data.status !== 'Deleted' && !data.isDeleted) {
-            if (!courseMap.has(doc.id)) {
-              courseMap.set(doc.id, { id: doc.id, ...data });
-            } else {
-              courseMap.set(doc.id, { ...courseMap.get(doc.id), ...data, id: doc.id });
-            }
+      if (!sbErr && Array.isArray(sbCourses)) {
+        sbCourses.forEach(item => {
+          if (item && item.id) {
+            const merged = { ...item, ...(item.raw_data || {}) };
+            courseMap.set(item.id, merged);
           }
-        }
-      });
-    } catch (e) {}
-    }
+        });
+      }
+    } catch (sbE) {}
 
-    const courses = Array.from(courseMap.values());
+    const courses = Array.from(courseMap.values()).filter(c => c.status !== 'Deleted' && !c.isDeleted);
     return NextResponse.json({ success: true, count: courses.length, courses }, { headers: NO_CACHE_HEADERS });
   } catch (error: any) {
-    console.error('Error fetching courses in Admin API route:', error);
-    return NextResponse.json({ success: false, count: 0, courses: [], error: error.message }, { status: 500, headers: NO_CACHE_HEADERS });
+    console.error('Error fetching admin courses:', error);
+    return NextResponse.json({ success: false, error: error.message }, { status: 500, headers: NO_CACHE_HEADERS });
   }
 }
 
 export async function POST(req: NextRequest) {
   try {
-    let body: any = {};
-    try {
-      body = await req.json();
-    } catch (e) {
-      body = {};
-    }
-
-    const courseData = body.courseData || body;
-    const courseId = body.courseId || body.id || courseData.id;
-
-    if (!courseData || Object.keys(courseData).length === 0) {
-      return NextResponse.json({ error: 'Missing courseData payload' }, { status: 400, headers: NO_CACHE_HEADERS });
-    }
-
-    const docId = courseId || `course_${Date.now()}`;
-    const slug = (courseData.slug && typeof courseData.slug === 'string' && courseData.slug.trim()) 
-      ? courseData.slug.trim().toLowerCase() 
-      : generateCourseSlug(courseData.title || docId);
+    const body = await req.json().catch(() => ({}));
+    const courseId = body.id || `course_${Date.now()}`;
+    const slug = body.slug || generateCourseSlug(body.title || courseId);
 
     const payload = {
-      ...courseData,
-      id: docId,
+      ...body,
+      id: courseId,
       slug,
       updatedAt: new Date().toISOString()
     };
 
     saveSinglePersistedCourse(payload);
 
-    if (adminDb && hasAdminCredentials) {
-      try {
-        await adminDb
-          .collection('artifacts')
-          .doc('tsehaycampus-e1a6d')
-          .collection('public')
-          .doc('data')
-          .collection('courses')
-          .doc(docId)
-          .set(payload, { merge: true });
-      } catch (e) {}
-
-      try {
-        await adminDb.collection('courses').doc(docId).set(payload, { merge: true });
-      } catch (e) {}
-
-      try {
-        await adminDb
-          .collection('artifacts')
-          .doc('tsehaycampus-e1a6d')
-          .collection('courses')
-          .doc(docId)
-          .set(payload, { merge: true });
-      } catch (e) {}
-
-      return NextResponse.json({ 
-        success: true, 
-        message: 'Course saved successfully via Admin SDK', 
-        docId, 
-        id: docId, 
-        course: payload 
-      }, { headers: NO_CACHE_HEADERS });
-    }
-
-    return NextResponse.json({ success: true, message: 'Saved with client sync', docId, id: docId, course: payload }, { headers: NO_CACHE_HEADERS });
-  } catch (error: any) {
-    console.error('Error saving course in Admin API route:', error);
-    return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500, headers: NO_CACHE_HEADERS });
-  }
-}
-
-export async function PUT(req: NextRequest) {
-  try {
-    let body: any = {};
-    try {
-      body = await req.json();
-    } catch (e) {
-      body = {};
-    }
-
-    const { searchParams } = new URL(req.url);
-    const courseId = searchParams.get('id') || searchParams.get('courseId') || body.id || body.courseId;
-    const courseData = body.courseData || body;
-
-    if (!courseId) {
-      return NextResponse.json({ success: false, error: 'Missing courseId parameter' }, { status: 400, headers: NO_CACHE_HEADERS });
-    }
-
-    const payload = {
-      ...courseData,
+    // Write to Supabase courses table
+    const { error: sbErr } = await supabase.from('courses').upsert({
       id: courseId,
-      updatedAt: new Date().toISOString()
-    };
+      slug,
+      title: payload.title || 'Masterclass',
+      title_en: payload.title_en || payload.titleEn || null,
+      description: payload.description || payload.desc || '',
+      price: Number(payload.price) || 0,
+      old_price: Number(payload.old_price ?? payload.oldPrice) || null,
+      instructor: payload.instructor || payload.instructorName || 'Eyob Sahle',
+      instructor_name: payload.instructorName || payload.instructor || 'Eyob Sahle',
+      instructor_image: payload.instructorImage || payload.instructorPhoto || null,
+      instructor_photo: payload.instructorPhoto || payload.instructorImage || null,
+      image: payload.image || null,
+      banner: payload.banner || payload.image || null,
+      video: payload.video || null,
+      status: payload.status || 'Active',
+      is_published: payload.isPublished ?? payload.is_published ?? true,
+      category: payload.category || 'Digital Marketing',
+      lessons: Array.isArray(payload.lessons) ? payload.lessons : [],
+      modules: Array.isArray(payload.modules) ? payload.modules : [],
+      raw_data: payload,
+      updated_at: new Date().toISOString()
+    });
 
-    saveSinglePersistedCourse(payload);
-
-    if (adminDb && hasAdminCredentials) {
-      try {
-        await adminDb
-          .collection('artifacts')
-          .doc('tsehaycampus-e1a6d')
-          .collection('public')
-          .doc('data')
-          .collection('courses')
-          .doc(courseId)
-          .set(payload, { merge: true });
-      } catch (e) {}
-
-      try {
-        await adminDb.collection('courses').doc(courseId).set(payload, { merge: true });
-      } catch (e) {}
-
-      try {
-        await adminDb
-          .collection('artifacts')
-          .doc('tsehaycampus-e1a6d')
-          .collection('courses')
-          .doc(courseId)
-          .set(payload, { merge: true });
-      } catch (e) {}
-
-      return NextResponse.json({ 
-        success: true, 
-        message: 'Course updated successfully', 
-        id: courseId, 
-        course: payload 
-      }, { headers: NO_CACHE_HEADERS });
+    if (sbErr) {
+      console.warn('Supabase course upsert warning:', sbErr);
     }
 
-    return NextResponse.json({ success: true, message: 'Course updated', id: courseId, course: payload }, { headers: NO_CACHE_HEADERS });
+    return NextResponse.json({ success: true, message: 'Course saved successfully', course: payload });
   } catch (error: any) {
-    console.error('Error in PUT /api/admin/courses:', error);
-    return NextResponse.json({ success: false, error: error.message || 'Internal server error' }, { status: 500, headers: NO_CACHE_HEADERS });
+    console.error('Error saving admin course:', error);
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
-}
-
-export async function PATCH(req: NextRequest) {
-  return PUT(req);
 }
 
 export async function DELETE(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    let courseId = searchParams.get('id') || searchParams.get('courseId');
+    const courseId = searchParams.get('courseId') || searchParams.get('id');
 
     if (!courseId) {
-      try {
-        const body = await req.json();
-        courseId = body?.id || body?.courseId;
-      } catch (e) {}
-    }
-
-    if (!courseId) {
-      return NextResponse.json({ success: false, error: 'Missing id parameter' }, { status: 400, headers: NO_CACHE_HEADERS });
+      return NextResponse.json({ success: false, error: 'Missing courseId' }, { status: 400 });
     }
 
     deletePersistedCourse(courseId);
 
-    if (adminDb && hasAdminCredentials) {
-      try {
-        await adminDb
-          .collection('artifacts')
-          .doc('tsehaycampus-e1a6d')
-          .collection('public')
-          .doc('data')
-          .collection('courses')
-          .doc(courseId)
-          .delete();
-      } catch (e) {}
+    // Delete from Supabase
+    await supabase.from('courses').delete().eq('id', courseId);
+    await supabase.from('courses').delete().eq('slug', courseId);
 
-      try {
-        await adminDb.collection('courses').doc(courseId).delete();
-      } catch (e) {}
-
-      try {
-        await adminDb
-          .collection('artifacts')
-          .doc('tsehaycampus-e1a6d')
-          .collection('courses')
-          .doc(courseId)
-          .delete();
-      } catch (e) {}
-
-      return NextResponse.json({ 
-        success: true, 
-        message: 'Course deleted successfully', 
-        id: courseId, 
-        courseId 
-      }, { headers: NO_CACHE_HEADERS });
-    }
-
-    return NextResponse.json({ 
-      success: true, 
-      message: 'Course deleted successfully', 
-      id: courseId, 
-      courseId 
-    }, { headers: NO_CACHE_HEADERS });
+    return NextResponse.json({ success: true, message: 'Course deleted successfully', deletedId: courseId });
   } catch (error: any) {
-    console.error('Error deleting course in Admin API route:', error);
-    return NextResponse.json({ success: false, error: error.message || 'Internal server error' }, { status: 500, headers: NO_CACHE_HEADERS });
+    console.error('Error deleting admin course:', error);
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

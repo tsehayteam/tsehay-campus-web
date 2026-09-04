@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase/admin';
+import { supabase } from '@/lib/supabase/client';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,33 +18,17 @@ export async function POST(req: NextRequest) {
     const waitlistId = `wl_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
     const newEntry = {
       id: waitlistId,
-      studentName: studentName.trim(),
+      student_name: studentName.trim(),
       email: (email || '').trim().toLowerCase(),
       phone: phone.trim(),
-      courseId,
-      courseTitle,
-      createdAt: new Date().toISOString(),
-      timestamp: Date.now(),
-      status: 'pending'
+      course_id: courseId,
+      course_title: courseTitle,
+      created_at: new Date().toISOString()
     };
 
-    if (adminDb) {
-      try {
-        // Dual write for nested artifacts and root collection
-        await adminDb
-          .collection('artifacts')
-          .doc('tsehaycampus-e1a6d')
-          .collection('course_waitlists')
-          .doc(waitlistId)
-          .set(newEntry);
-
-        await adminDb
-          .collection('course_waitlists')
-          .doc(waitlistId)
-          .set(newEntry);
-      } catch (dbErr) {
-        console.warn('Firestore waitlist write notice:', dbErr);
-      }
+    const { error } = await supabase.from('waitlists').insert(newEntry);
+    if (error) {
+      console.warn('Supabase waitlist write warning:', error);
     }
 
     return NextResponse.json({
@@ -63,30 +47,27 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
-    if (!adminDb) {
-      return NextResponse.json({ success: true, count: 0, waitlists: [] });
-    }
-
     const { searchParams } = new URL(req.url);
     const courseId = searchParams.get('courseId');
 
-    let query: any = adminDb
-      .collection('artifacts')
-      .doc('tsehaycampus-e1a6d')
-      .collection('course_waitlists')
-      .orderBy('timestamp', 'desc');
+    let query = supabase
+      .from('waitlists')
+      .select('*')
+      .order('created_at', { ascending: false });
 
     if (courseId && courseId !== 'all') {
-      query = query.where('courseId', '==', courseId);
+      query = query.eq('course_id', courseId);
     }
 
-    const snapshot = await query.limit(100).get();
-    const waitlists = snapshot.docs.map((doc: any) => ({ ...doc.data() }));
+    const { data: waitlists, error } = await query.limit(100);
+    if (error) {
+      console.warn('Supabase waitlist fetch warning:', error);
+    }
 
     return NextResponse.json({
       success: true,
-      count: waitlists.length,
-      waitlists
+      count: waitlists?.length || 0,
+      waitlists: waitlists || []
     });
   } catch (error: any) {
     console.warn('Waitlist GET error:', error);

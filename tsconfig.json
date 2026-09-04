@@ -19,7 +19,13 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "firebase/app": ["./src/lib/firebase/compat/app.ts"],
+      "firebase/auth": ["./src/lib/firebase/compat/auth.ts"],
+      "firebase/firestore": ["./src/lib/firebase/compat/firestore.ts"],
+      "firebase/storage": ["./src/lib/firebase/compat/storage.ts"],
+      "firebase-admin": ["./src/lib/firebase/compat/admin.ts"],
+      "firebase-admin/*": ["./src/lib/firebase/compat/admin.ts"]
     }
   },
   "include": [

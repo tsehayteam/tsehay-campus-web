@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase/admin';
+import { supabase } from '@/lib/supabase/client';
 import { EventTicket, DEFAULT_EVENTS } from '@/lib/eventCache';
 import { sendTicketEmail } from '@/lib/ticketEmailService';
+
+export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
@@ -39,89 +41,38 @@ export async function POST(req: NextRequest) {
     const mapsUrl = body.mapsUrl || matchedEvent?.mapsUrl || '';
     const eventLocation = body.eventLocation || body.location || (isOnline ? 'Online Google Meet' : (matchedEvent?.location || 'Addis Ababa, Ethiopia'));
 
-    // 🛡️ [CRITICAL FIX 2: ONE TICKET PER USER LIMIT]
-    // Check if attendee (by Email or authenticated UID) has already registered for this specific event
-    if (adminDb) {
-      try {
-        const checkQuery = adminDb.collection('event_registrations');
-        const snap = await checkQuery.get();
+    // Check if already registered
+    try {
+      const { data: existingRegDoc } = await supabase
+        .from('event_registrations')
+        .select('*')
+        .or(`event_id.eq.${eventId},event_slug.eq.${eventSlug}`)
+        .eq('attendee_email', attendeeEmail)
+        .maybeSingle();
 
-        const existingRegDoc = snap.docs.find(d => {
-          const data = d.data();
-          const matchesEvent = 
-            data.eventId === eventId || 
-            (eventSlug && (data.eventSlug === eventSlug || data.eventId === eventSlug)) || 
-            (data.eventId && data.eventId.toLowerCase() === eventId.toLowerCase()) ||
-            (data.eventSlug && eventSlug && data.eventSlug.toLowerCase() === eventSlug.toLowerCase());
-
-          if (!matchesEvent) return false;
-
-          const matchesEmail = data.attendeeEmail && data.attendeeEmail.toString().trim().toLowerCase() === attendeeEmail;
-          const matchesUser = userId && !userId.startsWith('guest_') && !userId.startsWith('anon_') && data.userId === userId;
-
-          return matchesEmail || matchesUser;
+      if (existingRegDoc) {
+        const existingTicketData = existingRegDoc.raw_data || existingRegDoc;
+        return NextResponse.json({
+          success: true,
+          isAlreadyRegistered: true,
+          message: 'እርስዎ ቀደም ሲል ለዚህ ዝግጅት ቲኬት ወስደዋል! (You already have a valid ticket for this event)',
+          ticket: existingTicketData
         });
-
-        if (existingRegDoc) {
-          const existingData = existingRegDoc.data() as EventTicket;
-          return NextResponse.json({
-            success: false,
-            alreadyRegistered: true,
-            ticketId: existingData.ticketId || existingRegDoc.id,
-            ticket: existingData,
-            error: `ለዚህ ዝግጅት (${eventTitle}) አስቀድመው ትኬት ቆርጠዋል! (You have already registered for this event. Ticket ID: ${existingData.ticketId || existingRegDoc.id})`
-          }, { status: 400 });
-        }
-      } catch (checkErr) {
-        console.warn('Duplicate registration verification notice:', checkErr);
       }
+    } catch (checkErr) {
+      console.warn("Supabase duplicate check notice:", checkErr);
     }
 
-    // 🛡️ [CRITICAL FIX 1: CAPACITY & PERSISTENT REMAINING SEATS CHECK]
-    if (adminDb && eventId && !eventId.startsWith('evt_fallback')) {
-      try {
-        let currentRemainingSeats: number | null = null;
-        let currentCapacity = 100;
-        let currentRegisteredCount = 0;
-
-        // Check primary event doc
-        const eventDocSnap = await adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('public').doc('data').collection('events').doc(eventId).get();
-        if (eventDocSnap.exists) {
-          const ev = eventDocSnap.data() || {};
-          currentCapacity = Number(ev.capacity) || 100;
-          currentRegisteredCount = Number(ev.registeredCount) || 0;
-          if (ev.remainingSeats !== undefined && typeof ev.remainingSeats === 'number') {
-            currentRemainingSeats = ev.remainingSeats;
-          } else {
-            currentRemainingSeats = Math.max(0, currentCapacity - currentRegisteredCount);
-          }
-        }
-
-        // If remainingSeats is already 0, reject with Sold Out
-        if (currentRemainingSeats !== null && currentRemainingSeats <= 0) {
-          return NextResponse.json({
-            success: false,
-            soldOut: true,
-            error: 'ይቅርታ፣ የዚህ ዝግጅት ትኬት ሙሉ በሙሉ አልቋል! (This event is Sold Out)'
-          }, { status: 400 });
-        }
-      } catch (seatCheckErr) {
-        console.warn('Seat availability check notice:', seatCheckErr);
-      }
-    }
-
-    // Generate unique Ticket ID (e.g. TC-EVT-XXXX-YYYY)
+    // Generate unique Ticket ID
     const randomHex = Math.random().toString(36).substring(2, 6).toUpperCase();
     const timeHex = Date.now().toString(36).substring(4).toUpperCase();
     const ticketId = `TC-EVT-${timeHex}-${randomHex}`;
 
-    // Scannable QR Payload (Standardized Verification Schema)
     const qrPayload = JSON.stringify({
       ticketId,
-      eventId,
-      userId,
-      code: ticketId,
       tId: ticketId,
+      eventId,
+      eId: eventId,
       slug: eventSlug,
       name: attendeeName,
       email: attendeeEmail,
@@ -155,154 +106,65 @@ export async function POST(req: NextRequest) {
       issuedAt: new Date().toISOString()
     };
 
-    const registrationRecord = {
-      ...ticket,
-      registeredAt: new Date().toISOString(),
-      status: 'confirmed'
-    };
+    // Save to Supabase event_registrations
+    try {
+      await supabase.from('event_registrations').insert({
+        id: ticketId,
+        ticket_id: ticketId,
+        event_id: eventId,
+        event_slug: eventSlug,
+        event_title: eventTitle,
+        user_id: userId,
+        attendee_name: attendeeName,
+        attendee_email: attendeeEmail,
+        attendee_phone: attendeePhone,
+        ticket_type: isOnline ? 'online' : 'in_person',
+        status: 'registered',
+        attended: false,
+        qr_code_data: qrPayload,
+        raw_data: ticket,
+        created_at: new Date().toISOString()
+      });
 
-    // Save to Firestore if available
-    if (adminDb) {
-      try {
-        // 1. Save to global event_registrations collections
-        await Promise.allSettled([
-          adminDb.collection('event_registrations').doc(ticketId).set(registrationRecord),
-          adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('event_registrations').doc(ticketId).set(registrationRecord),
-          adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('event_tickets').doc(ticketId).set(ticket)
-        ]);
+      // Increment registered_count on events
+      const { data: ev } = await supabase
+        .from('events')
+        .select('registered_count')
+        .or(`id.eq.${eventId},slug.eq.${eventId}`)
+        .maybeSingle();
 
-        // 2. User sub-collection
-        if (userId && !userId.startsWith('guest_') && !userId.startsWith('anon_')) {
-          await adminDb
-            .collection('artifacts')
-            .doc('tsehaycampus-e1a6d')
-            .collection('users')
-            .doc(userId)
-            .collection('event_tickets')
-            .doc(ticketId)
-            .set(ticket)
-            .catch(() => {});
-        }
-
-        // 3. 🌟 [CRITICAL FIX 1: ATOMIC SEAT DECREMENT & REGISTRATION INCREMENT]
-        if (eventId && !eventId.startsWith('evt_fallback')) {
-          try {
-            const { FieldValue } = await import('firebase-admin/firestore');
-            const inc = FieldValue.increment(1);
-            const decSeat = FieldValue.increment(-1);
-
-            const updatePayload = {
-              registeredCount: inc,
-              remainingSeats: decSeat,
-              availableTickets: decSeat,
-              seatsLeft: decSeat,
-              updatedAt: new Date().toISOString()
-            };
-
-            const promises: Promise<any>[] = [
-              adminDb.collection('events').doc(eventId).set(updatePayload, { merge: true }),
-              adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('public').doc('data').collection('events').doc(eventId).set(updatePayload, { merge: true }),
-              adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('events').doc(eventId).set(updatePayload, { merge: true })
-            ];
-
-            if (eventSlug && eventSlug !== eventId) {
-              promises.push(
-                adminDb.collection('events').doc(eventSlug).set(updatePayload, { merge: true }),
-                adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('public').doc('data').collection('events').doc(eventSlug).set(updatePayload, { merge: true }),
-                adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('events').doc(eventSlug).set(updatePayload, { merge: true })
-              );
-            }
-
-            await Promise.allSettled(promises);
-          } catch (incErr) {
-            console.warn('Event atomic seat decrement notice:', incErr);
-          }
-        }
-
-        // 4. 🔔 [CRITICAL FIX 3: TRIGGER REAL-TIME ADMIN NOTIFICATION]
-        try {
-          const notifId = `notif_ticket_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-          const notifData = {
-            id: notifId,
-            type: 'event_registration',
-            title: '🎟️ አዲስ የኢቨንት ትኬት ተመዝግቧል!',
-            message: `${attendeeName} (${attendeeEmail}) ለ "${eventTitle}" ትኬት ቆርጠዋል [${tier} - ${pricePaid > 0 ? `${pricePaid.toLocaleString()} ETB` : 'ነፃ'}]።`,
-            eventId,
-            eventTitle,
-            ticketId,
-            attendeeName,
-            attendeeEmail,
-            tier,
-            pricePaid,
-            createdAt: new Date().toISOString(),
-            isRead: false,
-          };
-
-          await Promise.allSettled([
-            adminDb.collection('admin_notifications').doc(notifId).set(notifData),
-            adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('notifications').doc(notifId).set(notifData),
-            adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('admin_notifications').doc(notifId).set(notifData)
-          ]);
-        } catch (notifErr) {
-          console.warn('Admin notification notice:', notifErr);
-        }
-      } catch (dbErr) {
-        console.warn('Firestore event registration save notice:', dbErr);
+      if (ev) {
+        await supabase
+          .from('events')
+          .update({
+            registered_count: (Number(ev.registered_count) || 0) + 1,
+            updated_at: new Date().toISOString()
+          })
+          .or(`id.eq.${eventId},slug.eq.${eventId}`);
       }
+    } catch (saveErr) {
+      console.warn('Supabase event registration save warning:', saveErr);
     }
 
-    // 📧 Automatically trigger Ticket Email delivery to the student
-    let emailResult = { success: false };
+    // Send confirmation email with QR Ticket
     try {
-      emailResult = await sendTicketEmail(ticket);
+      await sendTicketEmail(ticket);
     } catch (emailErr) {
-      console.warn('Automated ticket email delivery notice:', emailErr);
+      console.warn("Ticket email dispatch error:", emailErr);
     }
 
     return NextResponse.json({
       success: true,
       ticketId,
       ticket,
-      emailSent: emailResult.success,
-      message: 'ምዝገባዎ በተሳካ ሁኔታ ተጠናቋል! ትኬትዎ ተዘጋጅቷል፤ ወደ ኢሜይልዎም ተልኳል። (Registration confirmed)'
+      message: 'የኢቨንት ትኬትዎ በተሳካ ሁኔታ ተዘጋጅቷል! (Event ticket generated successfully)'
     });
+
   } catch (error: any) {
-    console.error('Error in /api/events/register:', error);
-    
+    console.error('Error registering for event:', error);
     return NextResponse.json({
       success: false,
-      error: error.message || 'ምዝገባውን ማጠናቀቅ አልተቻለም። እባክዎ እንደገና ይሞክሩ።'
+      error: error.message || 'ትኬት ማዘጋጀት አልተቻለም፤ እባክዎ እንደገና ይሞክሩ።'
     }, { status: 500 });
-  }
-}
-
-export async function GET(req: NextRequest) {
-  try {
-    const { searchParams } = new URL(req.url);
-    const eventId = searchParams.get('eventId');
-    const email = searchParams.get('email');
-    const userId = searchParams.get('userId');
-
-    if (!adminDb) {
-      return NextResponse.json({ success: true, count: 0, registrations: [] });
-    }
-
-    let query: any = adminDb.collection('event_registrations');
-    if (eventId) {
-      query = query.where('eventId', '==', eventId);
-    }
-    if (email) {
-      query = query.where('attendeeEmail', '==', email.trim().toLowerCase());
-    }
-    if (userId) {
-      query = query.where('userId', '==', userId);
-    }
-
-    const snapshot = await query.get();
-    const registrations = snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
-
-    return NextResponse.json({ success: true, count: registrations.length, registrations });
-  } catch (err: any) {
-    return NextResponse.json({ success: true, count: 0, registrations: [], error: err.message });
   }
 }

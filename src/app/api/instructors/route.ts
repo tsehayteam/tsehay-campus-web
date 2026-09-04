@@ -3,7 +3,7 @@ export const revalidate = 0;
 export const fetchCache = 'force-no-store';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase/admin';
+import { supabase } from '@/lib/supabase/client';
 
 const NO_CACHE_HEADERS = {
   'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
@@ -34,49 +34,26 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
 
-    if (!adminDb) {
-      return NextResponse.json({
-        success: true,
-        instructors: [DEFAULT_INSTRUCTOR]
-      }, { headers: NO_CACHE_HEADERS });
-    }
-
-    let instructorsList: any[] = [];
-    try {
-      const snap = await adminDb.collection('instructors').get();
-      if (!snap.empty) {
-        instructorsList = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      }
-    } catch (e) {}
+    let instructorsList: any[] = [DEFAULT_INSTRUCTOR];
 
     try {
-      const artifactSnap = await adminDb
-        .collection('artifacts')
-        .doc('tsehaycampus-e1a6d')
-        .collection('public')
-        .doc('data')
-        .collection('instructors')
-        .get();
-      
-      if (!artifactSnap.empty) {
-        artifactSnap.docs.forEach(doc => {
-          if (!instructorsList.some(i => i.id === doc.id)) {
-            instructorsList.push({ id: doc.id, ...doc.data() });
-          }
-        });
+      const { data: row } = await supabase
+        .from('site_settings')
+        .select('data')
+        .eq('key', 'instructors')
+        .maybeSingle();
+
+      if (row?.data && Array.isArray(row.data) && row.data.length > 0) {
+        instructorsList = row.data;
       }
     } catch (e) {}
-
-    if (instructorsList.length === 0) {
-      instructorsList = [DEFAULT_INSTRUCTOR];
-    }
 
     if (id) {
       const found = instructorsList.find(i => i.id === id);
-      if (found) {
-        return NextResponse.json({ success: true, instructor: found }, { headers: NO_CACHE_HEADERS });
-      }
-      return NextResponse.json({ success: true, instructor: DEFAULT_INSTRUCTOR }, { headers: NO_CACHE_HEADERS });
+      return NextResponse.json(
+        { success: true, instructor: found || DEFAULT_INSTRUCTOR },
+        { headers: NO_CACHE_HEADERS }
+      );
     }
 
     return NextResponse.json({

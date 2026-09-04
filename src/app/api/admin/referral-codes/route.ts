@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb, getAdminDb } from '@/lib/firebase/admin';
+import { supabase } from '@/lib/supabase/client';
 
 export interface PromoCodeItem {
   id: string;
@@ -9,7 +9,7 @@ export interface PromoCodeItem {
   description?: string;
   isActive?: boolean;
   usageCount?: number;
-  maxUsageLimit?: number; // 0 or undefined for Unlimited
+  maxUsageLimit?: number;
   createdAt?: string;
   updatedAt?: string;
   [key: string]: any;
@@ -17,34 +17,30 @@ export interface PromoCodeItem {
 
 export async function GET() {
   try {
-    const db = getAdminDb();
-    if (db && typeof db.collection === 'function') {
-      const snap = await db
-        .collection('artifacts')
-        .doc('tsehaycampus-e1a6d')
-        .collection('public')
-        .doc('data')
-        .collection('referral_codes')
-        .get();
+    const { data: sbCodes, error: sbErr } = await supabase
+      .from('referral_codes')
+      .select('*')
+      .order('created_at', { ascending: false });
 
-      const list: PromoCodeItem[] = snap.docs.map(d => ({ id: d.id, ...(d.data() as any) }));
-
-      // Also check root promo_codes collection if any exist
-      try {
-        const rootSnap = await db.collection('promo_codes').get();
-        rootSnap.docs.forEach(d => {
-          const docData = d.data() as any;
-          const codeVal = docData?.code || d.id;
-          if (!list.some(item => item.id === d.id || item.code === codeVal)) {
-            list.push({ id: d.id, ...docData });
-          }
-        });
-      } catch (e) {}
-
-      return NextResponse.json({ success: true, codes: list });
+    if (sbErr) {
+      console.warn('Supabase fetch referral codes warning:', sbErr);
+      return NextResponse.json({ success: true, codes: [] });
     }
 
-    return NextResponse.json({ success: true, codes: [] });
+    const list: PromoCodeItem[] = (sbCodes || []).map(c => ({
+      id: c.id,
+      code: c.code,
+      discountPercent: Number(c.discount_percent) || 0,
+      targetCourseId: c.target_course_id || 'all',
+      description: c.description || '',
+      isActive: c.is_active ?? true,
+      usageCount: Number(c.usage_count) || 0,
+      maxUsageLimit: Number(c.max_usage_limit) || 0,
+      createdAt: c.created_at,
+      updatedAt: c.updated_at
+    }));
+
+    return NextResponse.json({ success: true, codes: list });
   } catch (error: any) {
     console.warn('Notice fetching referral codes in API route:', error);
     return NextResponse.json({ success: true, codes: [] });
@@ -62,39 +58,38 @@ export async function POST(req: NextRequest) {
 
     const cleanCode = code.trim().toUpperCase();
 
-    if (adminDb) {
-      const codeRef = adminDb
-        .collection('artifacts')
-        .doc('tsehaycampus-e1a6d')
-        .collection('public')
-        .doc('data')
-        .collection('referral_codes')
-        .doc(cleanCode);
+    const codeData = {
+      id: cleanCode,
+      code: cleanCode,
+      discount_percent: Number(discountPercent) || 0,
+      target_course_id: targetCourseId || 'all',
+      description: description?.trim() || '',
+      is_active: isActive !== false,
+      usage_count: Number(body.usageCount) || 0,
+      max_usage_limit: Number(maxUsageLimit) || 0,
+      updated_at: new Date().toISOString()
+    };
 
-      const codeData: PromoCodeItem = {
-        id: cleanCode,
-        code: cleanCode,
-        discountPercent: Number(discountPercent) || 0,
-        targetCourseId: targetCourseId || 'all',
-        description: description?.trim() || '',
-        isActive: isActive !== false,
-        usageCount: Number(body.usageCount) || 0,
-        maxUsageLimit: Number(maxUsageLimit) || 0,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-
-      await codeRef.set(codeData, { merge: true });
-
-      // Also mirror to root promo_codes
-      try {
-        await adminDb.collection('promo_codes').doc(cleanCode).set(codeData, { merge: true });
-      } catch (e) {}
-
-      return NextResponse.json({ success: true, message: `Code ${cleanCode} saved successfully`, data: codeData });
+    const { error } = await supabase.from('referral_codes').upsert(codeData);
+    if (error) {
+      console.error('Supabase upsert referral_code error:', error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true, message: 'Saved via client sync' });
+    return NextResponse.json({ 
+      success: true, 
+      message: `Code ${cleanCode} saved successfully`, 
+      data: {
+        id: cleanCode,
+        code: cleanCode,
+        discountPercent: codeData.discount_percent,
+        targetCourseId: codeData.target_course_id,
+        description: codeData.description,
+        isActive: codeData.is_active,
+        usageCount: codeData.usage_count,
+        maxUsageLimit: codeData.max_usage_limit
+      }
+    });
   } catch (error: any) {
     console.error('Error creating referral code in API route:', error);
     return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
@@ -112,25 +107,13 @@ export async function DELETE(req: NextRequest) {
 
     const cleanCode = codeId.trim().toUpperCase();
 
-    if (adminDb) {
-      const codeRef = adminDb
-        .collection('artifacts')
-        .doc('tsehaycampus-e1a6d')
-        .collection('public')
-        .doc('data')
-        .collection('referral_codes')
-        .doc(cleanCode);
-
-      await codeRef.delete();
-
-      try {
-        await adminDb.collection('promo_codes').doc(cleanCode).delete();
-      } catch (e) {}
-
-      return NextResponse.json({ success: true, message: `Code ${cleanCode} deleted successfully` });
+    const { error } = await supabase.from('referral_codes').delete().eq('id', cleanCode);
+    if (error) {
+      console.error('Supabase delete referral_code error:', error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, message: `Code ${cleanCode} deleted successfully` });
   } catch (error: any) {
     console.error('Error deleting referral code in API route:', error);
     return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
@@ -147,29 +130,16 @@ export async function PATCH(req: NextRequest) {
     }
 
     const cleanCode = codeId.trim().toUpperCase();
+    const updateData: any = {
+      updated_at: new Date().toISOString()
+    };
+    if (isActive !== undefined) updateData.is_active = Boolean(isActive);
+    if (maxUsageLimit !== undefined) updateData.max_usage_limit = Number(maxUsageLimit) || 0;
 
-    if (adminDb) {
-      const codeRef = adminDb
-        .collection('artifacts')
-        .doc('tsehaycampus-e1a6d')
-        .collection('public')
-        .doc('data')
-        .collection('referral_codes')
-        .doc(cleanCode);
-
-      const updateData: any = {
-        updatedAt: new Date().toISOString()
-      };
-      if (isActive !== undefined) updateData.isActive = Boolean(isActive);
-      if (maxUsageLimit !== undefined) updateData.maxUsageLimit = Number(maxUsageLimit) || 0;
-
-      await codeRef.set(updateData, { merge: true });
-
-      try {
-        await adminDb.collection('promo_codes').doc(cleanCode).set(updateData, { merge: true });
-      } catch (e) {}
-
-      return NextResponse.json({ success: true });
+    const { error } = await supabase.from('referral_codes').update(updateData).eq('id', cleanCode);
+    if (error) {
+      console.error('Supabase update referral_code error:', error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });
