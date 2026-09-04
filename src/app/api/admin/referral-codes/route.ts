@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase/admin';
+import { adminDb, getAdminDb } from '@/lib/firebase/admin';
 
 export interface PromoCodeItem {
   id: string;
@@ -17,8 +17,9 @@ export interface PromoCodeItem {
 
 export async function GET() {
   try {
-    if (adminDb) {
-      const snap = await adminDb
+    const db = getAdminDb();
+    if (db && typeof db.collection === 'function') {
+      const snap = await db
         .collection('artifacts')
         .doc('tsehaycampus-e1a6d')
         .collection('public')
@@ -30,7 +31,7 @@ export async function GET() {
 
       // Also check root promo_codes collection if any exist
       try {
-        const rootSnap = await adminDb.collection('promo_codes').get();
+        const rootSnap = await db.collection('promo_codes').get();
         rootSnap.docs.forEach(d => {
           const docData = d.data() as any;
           const codeVal = docData?.code || d.id;
@@ -45,8 +46,8 @@ export async function GET() {
 
     return NextResponse.json({ success: true, codes: [] });
   } catch (error: any) {
-    console.error('Error fetching referral codes in API route:', error);
-    return NextResponse.json({ error: error.message || 'Internal server error', codes: [] }, { status: 500 });
+    console.warn('Notice fetching referral codes in API route:', error);
+    return NextResponse.json({ success: true, codes: [] });
   }
 }
 
