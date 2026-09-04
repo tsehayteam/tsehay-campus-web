@@ -504,18 +504,23 @@ export default function HomeClient({
           1. HERO SECTION (100vh Full Viewport Cinematic Terafab Standard)
          ========================================================================= */}
       <section className="terafab-hero-container min-h-screen min-h-[100dvh] relative flex flex-col justify-center items-center overflow-hidden border-b border-white/[0.08]" id="home">
-        {/* Full-Cover Background with Continuous Ken Burns + Parallax */}
+        {/* Full-Cover Authentic Founders Background (Ribka, Eyob, Afomia) with Continuous Ken Burns */}
         <div 
           className="terafab-hero-bg" 
-          style={{ backgroundImage: "url('/assets/hero-bg-new.jpg')" }}
+          style={{ 
+            backgroundImage: "url('/assets/hero-bg-new.jpg')",
+            backgroundPosition: "center 20%",
+            backgroundSize: "cover",
+            backgroundRepeat: "no-repeat"
+          }}
         ></div>
         
-        {/* Deep Void Black Vignette */}
+        {/* Cinematic Translucent Void Vignette */}
         <div className="terafab-hero-vignette"></div>
 
-        {/* Ambient Glow Spheres (Golden Yellow & Royal Blue) */}
-        <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-[#f9b03c]/15 rounded-full blur-[160px] pointer-events-none animate-pulse"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-[650px] h-[650px] bg-[#3268ba]/20 rounded-full blur-[160px] pointer-events-none"></div>
+        {/* Atmospheric Ambient Glow Spheres (Perimeter Glow Framing) */}
+        <div className="absolute -top-20 -left-20 w-[550px] h-[550px] bg-[#f9b03c]/10 rounded-full blur-[160px] pointer-events-none animate-pulse"></div>
+        <div className="absolute -bottom-20 -right-20 w-[600px] h-[600px] bg-[#3268ba]/15 rounded-full blur-[160px] pointer-events-none"></div>
 
         {/* Hero Content Container - Cinematic Centered Hierarchy */}
         <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-12 relative z-20 py-16 lg:py-24 w-full my-auto flex flex-col items-center text-center">

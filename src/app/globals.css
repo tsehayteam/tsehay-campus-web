@@ -922,17 +922,16 @@ body {
 
 .terafab-hero-bg {
   position: absolute;
-  inset: -6% -6% -6% -6%;
-  width: 112%;
-  height: 112%;
+  inset: -4% -4% -4% -4%;
+  width: 108%;
+  height: 108%;
   object-fit: cover;
   background-size: cover;
-  background-position: center top;
+  background-position: center 20%;
   background-repeat: no-repeat;
   z-index: 0;
   pointer-events: none;
-  opacity: 0.25;
-  mix-blend-mode: luminosity;
+  opacity: 0.44;
   animation: kenBurnsSlow 28s infinite alternate ease-in-out;
   will-change: transform;
 }
@@ -940,8 +939,8 @@ body {
 .terafab-hero-vignette {
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at 50% 35%, rgba(3, 5, 9, 0.1) 0%, rgba(3, 5, 9, 0.65) 75%, #030509 100%),
-              linear-gradient(180deg, rgba(3, 5, 9, 0.4) 0%, rgba(3, 5, 9, 0.05) 30%, rgba(3, 5, 9, 0.6) 80%, #030509 100%);
+  background: radial-gradient(ellipse at 50% 36%, rgba(3, 5, 9, 0.18) 0%, rgba(3, 5, 9, 0.62) 68%, #030509 100%),
+              linear-gradient(180deg, rgba(3, 5, 9, 0.72) 0%, rgba(3, 5, 9, 0.12) 28%, rgba(3, 5, 9, 0.5) 72%, #030509 100%);
   z-index: 1;
   pointer-events: none;
 }
@@ -2015,30 +2014,6 @@ img, video, canvas {
   background-color: #030509;
 }
 
-.terafab-hero-bg {
-  position: absolute;
-  inset: 0;
-  background-size: cover;
-  background-position: center;
-  opacity: 0.22;
-  filter: blur(1px);
-  transform: scale(1.05);
-  animation: kenBurnsHero 24s ease-in-out infinite alternate;
-  pointer-events: none;
-}
-
-@keyframes kenBurnsHero {
-  0% { transform: scale(1.03) translate(0, 0); }
-  100% { transform: scale(1.12) translate(-1%, -1%); }
-}
-
-.terafab-hero-vignette {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at center, transparent 0%, rgba(3, 5, 9, 0.75) 65%, #030509 100%);
-  pointer-events: none;
-}
-
 .terafab-btn-primary {
   background: linear-gradient(135deg, #f9b03c 0%, #f59e0b 50%, #d97706 100%);
   color: #030509;
@@ -2198,40 +2173,6 @@ img, video, canvas {
   background: rgba(255, 255, 255, 0.045);
   border-color: rgba(249, 176, 60, 0.45);
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), 0 0 30px rgba(249, 176, 60, 0.18);
-}
-
-.terafab-hero-container {
-  position: relative;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  overflow: hidden;
-  background-color: #030509;
-}
-
-.terafab-hero-bg {
-  position: absolute;
-  inset: 0;
-  background-size: cover;
-  background-position: center;
-  opacity: 0.22;
-  filter: blur(1px);
-  transform: scale(1.05);
-  animation: kenBurnsHero 24s ease-in-out infinite alternate;
-  pointer-events: none;
-}
-
-@keyframes kenBurnsHero {
-  0% { transform: scale(1.03) translate(0, 0); }
-  100% { transform: scale(1.12) translate(-1%, -1%); }
-}
-
-.terafab-hero-vignette {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at center, transparent 0%, rgba(3, 5, 9, 0.75) 65%, #030509 100%);
-  pointer-events: none;
 }
 
 .terafab-btn-primary {
