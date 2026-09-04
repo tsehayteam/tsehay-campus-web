@@ -558,51 +558,6 @@ export default function HomeClient({
             <Hero3DPopoutStage videoSrc={initialLandingVideo} initialThumbnail={initialLandingVideoThumbnail} />
           </div>
 
-          {/* Global Search Bar with Pulsing Glow Border */}
-          <div className="w-full max-w-xl my-6 sm:my-8 p-0.5 rounded-2xl search-border-pulse border border-[#f9b03c]/40 bg-black/40 backdrop-blur-xl">
-            <SmartSearchInput 
-              placeholder="ኮርሶችን፣ አስተማሪዎችን ወይም ርዕሶችን ይፈልጉ (ለምሳሌ: Shein, YouTube...)"
-              onSelectCourse={(course) => router.push(`/courses/${getCourseSlug(course) || course.id}`)}
-            />
-          </div>
-
-          {/* Action Buttons (Primary & Secondary) */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-5 w-full sm:w-auto">
-            {/* Primary CTA: Explore Courses (Scale 1.05 + Sliding Arrow) */}
-            <MagneticLink 
-              href="#courses"
-              className="w-full sm:w-auto px-8 sm:px-9 py-4 rounded-2xl terafab-btn-primary flex items-center justify-center gap-3 text-sm sm:text-base cursor-pointer shadow-[0_0_30px_rgba(249,176,60,0.45)] hover:shadow-[0_0_45px_rgba(249,176,60,0.7)] group hover:scale-105 transition-all duration-300"
-            >
-              <span className="font-black">ኮርሶችን ያስሱ</span>
-              <i className="fa-solid fa-arrow-right text-sm transition-transform duration-300 group-hover:translate-x-2"></i>
-            </MagneticLink>
-
-            {/* Secondary CTA: About Us with Glassmorphism + Glowing Play Icon */}
-            <MagneticLink 
-              href="/about"
-              className="w-full sm:w-auto px-8 sm:px-9 py-4 rounded-2xl terafab-btn-glass flex items-center justify-center gap-3 text-sm sm:text-base cursor-pointer hover:border-[#f9b03c]/80 group transition-all duration-300 hover:scale-105 backdrop-blur-[15px] bg-white/[0.05] border border-white/15"
-            >
-              <i className="fa-solid fa-play text-xs text-white/80 group-hover:text-[#f9b03c] transition-colors duration-300 drop-shadow-[0_0_8px_rgba(249,176,60,0.6)]"></i>
-              <span className="font-bold">ስለ እኛ ይመልከቱ</span>
-            </MagneticLink>
-          </div>
-
-          {/* Social Proof Live Counter Strip */}
-          <div className="grid grid-cols-3 gap-4 sm:gap-8 pt-8 sm:pt-10 mt-6 border-t border-white/10 w-full max-w-xl">
-            <div className="text-center">
-              <h4 className="font-heading font-black text-2xl sm:text-3xl text-white">530+</h4>
-              <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold mt-0.5">የሰለጠኑ ተማሪዎች</p>
-            </div>
-            <div className="text-center border-x border-white/10 px-2">
-              <h4 className="font-heading font-black text-2xl sm:text-3xl text-[#f9b03c]">4.9 / 5</h4>
-              <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold mt-0.5">የተማሪዎች እርካታ</p>
-            </div>
-            <div className="text-center">
-              <h4 className="font-heading font-black text-2xl sm:text-3xl text-white">100%</h4>
-              <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold mt-0.5">ተግባራዊ ስልጠና</p>
-            </div>
-          </div>
-
         </div>
       </section>
 
