@@ -6,24 +6,59 @@ import type { Auth } from 'firebase-admin/auth';
 let adminApp: App | null = null;
 let dbInstance: Firestore | null = null;
 let authInstance: Auth | null = null;
-let initialized = false;
 
 function initFirebaseAdmin() {
-  if (initialized) return;
-  initialized = true;
+  if (adminApp && dbInstance && authInstance) return;
 
   try {
-    const raw = process.env.FIREBASE_SERVICE_ACCOUNT;
-    if (!raw || !raw.trim()) return;
-
     let serviceAccount: any = null;
-    try {
-      serviceAccount = JSON.parse(raw);
-    } catch {
-      return;
+    const raw = process.env.FIREBASE_SERVICE_ACCOUNT;
+
+    if (raw && raw.trim()) {
+      try {
+        serviceAccount = JSON.parse(raw);
+      } catch {
+        try {
+          const decoded = Buffer.from(raw, 'base64').toString('utf8');
+          serviceAccount = JSON.parse(decoded);
+        } catch {
+          try {
+            // eslint-disable-next-line @typescript-eslint/no-require-imports
+            const fs = require('fs');
+            if (fs.existsSync(raw.trim())) {
+              serviceAccount = JSON.parse(fs.readFileSync(raw.trim(), 'utf8'));
+            }
+          } catch {}
+        }
+      }
+    }
+
+    if (!serviceAccount) {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const fs = require('fs');
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const path = require('path');
+        const localKeyPath = path.join(process.cwd(), 'src/lib/firebase/serviceAccountKey.json');
+        if (fs.existsSync(localKeyPath)) {
+          serviceAccount = JSON.parse(fs.readFileSync(localKeyPath, 'utf8'));
+        }
+      } catch {}
+    }
+
+    if (!serviceAccount && process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL) {
+      serviceAccount = {
+        project_id: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'tsehaycampus-e1a6d',
+        client_email: process.env.FIREBASE_CLIENT_EMAIL,
+        private_key: process.env.FIREBASE_PRIVATE_KEY
+      };
     }
 
     if (!serviceAccount?.private_key || !serviceAccount?.client_email) return;
+
+    if (typeof serviceAccount.private_key === 'string' && serviceAccount.private_key.includes('\\n')) {
+      serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+    }
 
     // Dynamically require firebase-admin at runtime
     // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -59,8 +94,8 @@ export function getAdminAuth(): Auth | null {
 export const hasAdminCredentials = Boolean(
   typeof process !== 'undefined' &&
   process.env &&
-  process.env.FIREBASE_SERVICE_ACCOUNT &&
-  process.env.FIREBASE_SERVICE_ACCOUNT.trim().length > 10
+  ((process.env.FIREBASE_SERVICE_ACCOUNT && process.env.FIREBASE_SERVICE_ACCOUNT.trim().length > 10) ||
+   (process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL))
 );
 
 // Resilient Proxy that never crashes during module evaluation or if credentials are absent

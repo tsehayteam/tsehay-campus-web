@@ -17,9 +17,11 @@ function ResetPasswordForm() {
 
   const urlEmail = searchParams.get('email') || '';
   const urlCode = searchParams.get('code') || searchParams.get('oobCode') || '';
+  const urlOobCode = searchParams.get('oobCode') || '';
 
   const [email, setEmail] = useState(urlEmail);
   const [code, setCode] = useState(urlCode);
+  const [oobCode, setOobCode] = useState(urlOobCode);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -28,27 +30,25 @@ function ResetPasswordForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
-  const [isOobCode, setIsOobCode] = useState(false);
 
   useEffect(() => {
     if (urlEmail) setEmail(urlEmail);
-    if (urlCode) {
-      setCode(urlCode);
-      // If code looks like a Firebase action code (long string)
-      if (urlCode.length > 10) {
-        setIsOobCode(true);
-        verifyPasswordResetCode(auth, urlCode)
-          .then((verifiedEmail) => {
-            if (verifiedEmail) {
-              setEmail(verifiedEmail);
-            }
-          })
-          .catch((err) => {
-            console.warn('Firebase action code verification notice:', err);
-          });
-      }
+    if (urlCode) setCode(urlCode);
+    if (urlOobCode) setOobCode(urlOobCode);
+
+    const checkCode = urlOobCode || (urlCode.length > 10 ? urlCode : '');
+    if (checkCode) {
+      verifyPasswordResetCode(auth, checkCode)
+        .then((verifiedEmail) => {
+          if (verifiedEmail) {
+            setEmail(verifiedEmail);
+          }
+        })
+        .catch((err) => {
+          console.warn('Firebase action code verification notice:', err);
+        });
     }
-  }, [urlEmail, urlCode]);
+  }, [urlEmail, urlCode, urlOobCode]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,6 +58,7 @@ function ResetPasswordForm() {
     const cleanCode = code.trim();
     const cleanPass = newPassword.trim();
     const cleanConfirm = confirmPassword.trim();
+    const targetOobCode = oobCode || (cleanCode.length > 10 ? cleanCode : '');
 
     if (!cleanEmail) {
       setError('እባክዎ የ Gmail አድራሻዎን ያስገቡ።');
@@ -69,7 +70,7 @@ function ResetPasswordForm() {
       return;
     }
 
-    if (!cleanCode) {
+    if (!cleanCode && !targetOobCode) {
       setError('እባክዎ የማረጋገጫ ኮድ ወይም ሊንክ ያስገቡ።');
       return;
     }
@@ -89,50 +90,47 @@ function ResetPasswordForm() {
     try {
       let resetSuccess = false;
 
-      // 1. Try Firebase Native Action Code Reset if code is an oobCode
-      if (cleanCode.length > 10) {
+      // 1. If an action code is available, attempt native client-side reset
+      if (targetOobCode) {
         try {
-          await confirmPasswordReset(auth, cleanCode, cleanPass);
+          await confirmPasswordReset(auth, targetOobCode, cleanPass);
           resetSuccess = true;
+          console.log('[reset-password] Native confirmPasswordReset succeeded');
         } catch (fbErr: any) {
-          console.warn('Native confirmPasswordReset attempt fallback to API:', fbErr);
-          const code = fbErr?.code || '';
-          if (code === 'auth/expired-action-code') {
-            throw new Error('የማረጋገጫ ሊንኩ ጊዜው አልፎበታል (Expired)። እባክዎ አዲስ የይለፍ ቃል መቀየሪያ ሊንክ ይጠይቁ።');
-          } else if (code === 'auth/invalid-action-code') {
-            // Might be a custom OTP or handled by backend, continue to API fallback
-          } else {
-            throw new Error(fbErr?.message || 'የይለፍ ቃል መቀየር አልተቻለም።');
+          console.warn('[reset-password] Native confirmPasswordReset notice:', fbErr);
+          const fbErrCode = fbErr?.code || '';
+          if (fbErrCode === 'auth/expired-action-code') {
+            // Action code expired; will proceed with API route fallback
           }
         }
       }
 
-      // 2. Fallback to API route (handles 6-digit OTP or Firebase Admin password sync)
-      if (!resetSuccess) {
-        const res = await fetch('/api/auth/reset-password', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: cleanEmail,
-            code: cleanCode,
-            newPassword: cleanPass,
-          }),
-        });
+      // 2. Call API route (handles 6-digit OTP, Identity Toolkit REST, or Firebase Admin update/create)
+      const res = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: cleanEmail,
+          code: cleanCode,
+          newPassword: cleanPass,
+          oobCode: targetOobCode || undefined,
+          alreadyReset: resetSuccess
+        }),
+      });
 
-        const data = await res.json().catch(() => ({}));
+      const data = await res.json().catch(() => ({}));
 
-        if (!res.ok || !data.success) {
-          throw new Error(data.error || 'የይለፍ ቃል መቀየር አልተቻለም። እባክዎ እንደገና ይሞክሩ።');
-        }
+      if (!resetSuccess && (!res.ok || !data.success)) {
+        throw new Error(data.error || 'የይለፍ ቃል መቀየር አልተቻለም። እባክዎ እንደገና ይሞክሩ።');
+      }
 
-        // Auto sign in with customToken if provided
-        if (data.customToken) {
-          try {
-            const cred = await signInWithCustomToken(auth, data.customToken);
-            window.dispatchEvent(new CustomEvent('tsehay_auth_state_changed', { detail: cred.user }));
-            window.dispatchEvent(new CustomEvent('tsehay_user_logged_in', { detail: cred.user }));
-          } catch (tokenErr) {}
-        }
+      // Auto sign in with customToken if provided
+      if (data.customToken) {
+        try {
+          const cred = await signInWithCustomToken(auth, data.customToken);
+          window.dispatchEvent(new CustomEvent('tsehay_auth_state_changed', { detail: cred.user }));
+          window.dispatchEvent(new CustomEvent('tsehay_user_logged_in', { detail: cred.user }));
+        } catch (tokenErr) {}
       }
 
       setIsSuccess(true);
@@ -248,14 +246,20 @@ function ResetPasswordForm() {
 
           {/* OTP Code Input */}
           <div>
-            <label className="block text-xs font-bold text-slate-300 mb-1.5">
-              ባለ 6-አሃዝ የማረጋገጫ ኮድ (Verification Code)
-            </label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs font-bold text-slate-300">
+                ባለ 6-አሃዝ የማረጋገጫ ኮድ (Verification Code)
+              </label>
+              {(urlCode || urlOobCode) && (
+                <span className="text-[10px] text-emerald-400 font-bold flex items-center gap-1">
+                  <i className="fa-solid fa-circle-check"></i> ከሊንኩ ተያይዟል
+                </span>
+              )}
+            </div>
             <div className="relative">
               <input
                 type="text"
                 required
-                maxLength={8}
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
                 placeholder="123456"

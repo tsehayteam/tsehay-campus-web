@@ -6,7 +6,6 @@ import {
   signInWithEmailAndPassword, 
   signInWithCustomToken,
   createUserWithEmailAndPassword, 
-  sendPasswordResetEmail,
   sendEmailVerification, 
   signOut, 
   updateProfile, 
@@ -309,24 +308,18 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
 
     setLoading(true);
     try {
-      // 1. Firebase Native Password Reset Email Link
-      try {
-        await sendPasswordResetEmail(auth, cleanEmail);
-      } catch (fbResetErr: any) {
-        console.warn("Firebase sendPasswordResetEmail notice:", fbResetErr);
-      }
+      // Send Single Branded 6-Digit OTP Email via Resend
+      const localCode = generateOtpCode();
+      await saveOtpForEmail(cleanEmail, localCode).catch(() => {});
 
-      // 2. Custom 6-Digit OTP Email
-      try {
-        const localCode = generateOtpCode();
-        await saveOtpForEmail(cleanEmail, localCode).catch(() => {});
-        await fetch('/api/auth/send-reset-otp', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: cleanEmail })
-        });
-      } catch (otpErr) {
-        console.warn("OTP send notice:", otpErr);
+      const res = await fetch('/api/auth/send-reset-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: cleanEmail, code: localCode })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (data?.code) {
+        await saveOtpForEmail(cleanEmail, data.code).catch(() => {});
       }
 
       setRegisteredEmail(cleanEmail);
@@ -708,24 +701,19 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
     setResendSuccessMessage("");
 
     try {
-      // 1. Firebase Native Password Reset Email Link
-      try {
-        await sendPasswordResetEmail(auth, cleanEmail);
-      } catch (fbResetErr: any) {
-        console.warn("Firebase sendPasswordResetEmail notice:", fbResetErr);
+      // Send Single Branded 6-Digit OTP Email via Resend
+      const localCode = generateOtpCode();
+      await saveOtpForEmail(cleanEmail, localCode).catch(() => {});
+
+      const res = await fetch('/api/auth/send-reset-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: cleanEmail, code: localCode })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (data?.code) {
+        await saveOtpForEmail(cleanEmail, data.code).catch(() => {});
       }
-
-      // 2. Custom 6-Digit OTP Email
-      try {
-        const localCode = generateOtpCode();
-        await saveOtpForEmail(cleanEmail, localCode).catch(() => {});
-
-        await fetch('/api/auth/send-reset-otp', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: cleanEmail })
-        }).catch(() => {});
-      } catch (otpErr) {}
 
       setRegisteredEmail(cleanEmail);
       setResetStep('otp');
