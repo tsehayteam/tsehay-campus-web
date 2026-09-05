@@ -479,8 +479,8 @@ export default function Navbar() {
               {!mounted || !user ? (
                 <Tilt3DLoginButton
                   onClick={() => {
-                    closeCurtain();
                     openAuthModal(false);
+                    closeCurtain();
                   }}
                   label={lang === 'en' ? 'Login' : 'ይግቡ (Login)'}
                 />
@@ -697,8 +697,8 @@ export default function Navbar() {
                   <Tilt3DLoginButton
                     className="w-full justify-center py-3.5"
                     onClick={() => {
-                      closeCurtain();
                       openAuthModal(false);
+                      closeCurtain();
                     }}
                     label={t('login') || (lang === 'en' ? 'Login / Sign Up' : 'ግባ ወይም ተመዝገብ (Login / Sign Up)')}
                   />

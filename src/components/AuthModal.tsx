@@ -209,13 +209,9 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
           photoURL: data.photoURL
         });
 
-        // Automatically switch mode based on existence if user hasn't completed full multi-step
+        // Only if user was on signup step 1 and an existing account was found, switch to login so they don't create a duplicate
         if (data.exists && isSignupMode && signupStep === 1) {
           setIsSignupMode(false);
-          setError("");
-        } else if (!data.exists && !isSignupMode && cleanEmail.endsWith('@gmail.com')) {
-          setIsSignupMode(true);
-          setSignupStep(1);
           setError("");
         }
       }
@@ -1088,18 +1084,13 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
       console.error("Email login error:", err);
       const code = err?.code || '';
       
-      // 🌟 SMART ROUTING: If account is not found, automatically switch to Sign Up mode!
       if (
+        code === 'auth/wrong-password' || 
         code === 'auth/user-not-found' || 
         code === 'auth/invalid-credential' || 
         code === 'auth/invalid-login-credentials'
       ) {
-        setIsSignupMode(true);
-        setSignupStep(1);
-        setEmail(cleanEmail);
-        setError('አካውንት ስላላገኘን እባክዎ አዲስ ይመዝገቡ (Account not found, please sign up)።');
-      } else if (code === 'auth/wrong-password') {
-        setError('የተሳሳተ የይለፍ ቃል አስገብተዋል። እባክዎ በትክክል ያስገቡ ወይም "የይለፍ ቃል ረሱ?" የሚለውን ይጫኑ።');
+        setError('የተሳሳተ የ Gmail አድራሻ ወይም የይለፍ ቃል አስገብተዋል። እባክዎ በትክክል ያስገቡ ወይም "የይለፍ ቃል ረሱ?" የሚለውን ይጫኑ።');
       } else {
         setError(getFriendlyErrorMessage(err));
       }
@@ -2064,7 +2055,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
                     <button 
                       type="submit" 
                       disabled={loading} 
-                      className="w-full bg-[#f9b03c] hover:bg-[#ffbe53] text-black font-black py-3.5 rounded-2xl transition shadow-[0_0_20px_rgba(249,176,60,0.35)] mt-4 flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
+                      className="w-full bg-[#f9b03c] hover:bg-[#ffbe53] text-black font-black py-3.5 rounded-2xl transition shadow-[0_0_20px_rgba(249,176,60,0.35)] mt-4 flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99] touch-manipulation select-none"
                     >
                       {loading ? (
                         <>
