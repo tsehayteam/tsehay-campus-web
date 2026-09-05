@@ -9,6 +9,7 @@ interface SmartSearchInputProps {
   placeholder?: string;
   onSearchChange?: (filteredCourses: any[], query: string) => void;
   onSelectCourse?: (course: any) => void;
+  onSearchActive?: (active: boolean) => void;
   className?: string;
   compact?: boolean;
 }
@@ -29,6 +30,7 @@ export default function SmartSearchInput({
   placeholder = "ኮርሶችን ይፈልጉ (e.g. Shein, YouTube, Marketing)...",
   onSearchChange,
   onSelectCourse,
+  onSearchActive,
   className = "",
   compact = false
 }: SmartSearchInputProps) {
@@ -87,6 +89,10 @@ export default function SmartSearchInput({
       onSearchChangeRef.current(filteredResults, query);
     }
   }, [query, filteredResults]);
+
+  useEffect(() => {
+    onSearchActive?.(isOpen);
+  }, [isOpen, onSearchActive]);
 
   // Outside click listener
   useEffect(() => {
@@ -222,22 +228,12 @@ export default function SmartSearchInput({
       {/* 🌟 Futuristic YouTube/Algolia Style Live Predictive Autocomplete Dropdown */}
       {isOpen && (
         <div 
-          className={`absolute top-full mt-2 bg-black/95 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-[9999] max-h-[420px] overflow-y-auto animate-in slide-in-from-top-2 duration-200 divide-y divide-white/10 ${
+          className={`absolute top-full mt-2 bg-black/95 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-[10001] max-h-[420px] overflow-y-auto animate-in slide-in-from-top-2 duration-200 divide-y divide-white/10 ${
             compact 
               ? 'right-0 w-[360px] sm:w-[440px] md:w-[460px] max-w-[92vw]' 
               : 'left-0 right-0 w-full'
           }`}
         >
-          {/* Header Status Bar */}
-          <div className="px-3.5 py-2 bg-gradient-to-r from-[#3268ba]/20 via-transparent to-[#f9b03c]/10 flex items-center justify-between">
-            <span className="text-[10px] font-black uppercase text-[#f9b03c] tracking-wider flex items-center gap-1.5 font-heading">
-              <i className="fa-solid fa-wand-magic-sparkles text-[9px]"></i> 
-              <span>ተዛማጅ ውጤቶች ({filteredResults.length})</span>
-            </span>
-            <span className="text-[9px] bg-blue-500/20 text-blue-300 border border-blue-400/30 font-bold px-2 py-0.5 rounded-full font-mono">
-              Live Typeahead
-            </span>
-          </div>
 
           {/* 1. Quick Topic Chips / Predictive Keywords */}
           {matchingTopics.length > 0 && (

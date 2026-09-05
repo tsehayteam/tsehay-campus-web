@@ -23,6 +23,7 @@ export default function Navbar() {
   const [theme, setTheme] = useState('dark');
   const { lang, toggleLanguage, t } = useLanguage();
   const [animationKey, setAnimationKey] = useState(0);
+  const [isSearchActive, setIsSearchActive] = useState(false);
 
   // Brand Name animated reveal
   const fullBrandName = "Tsehay Campus";
@@ -111,6 +112,7 @@ export default function Navbar() {
   const closeCurtain = (e?: React.MouseEvent | React.TouchEvent) => {
     if (e) e.stopPropagation();
     setIsCurtainOpen(false);
+    setIsSearchActive(false);
   };
 
   // Auto-collapse smoothly on scroll down
@@ -120,6 +122,7 @@ export default function Navbar() {
       const currentScrollY = window.scrollY;
       if (currentScrollY > 120 && currentScrollY > lastScrollY + 25 && isCurtainOpen) {
         setIsCurtainOpen(false);
+        setIsSearchActive(false);
       }
       lastScrollY = currentScrollY;
     };
@@ -133,7 +136,10 @@ export default function Navbar() {
       setIsCurtainOpen(true);
       setAnimationKey(prev => prev + 1);
     };
-    const handleCloseCurtain = () => setIsCurtainOpen(false);
+    const handleCloseCurtain = () => {
+      setIsCurtainOpen(false);
+      setIsSearchActive(false);
+    };
     const handleToggleCurtain = () => {
       setIsCurtainOpen(prev => {
         if (!prev) setAnimationKey(k => k + 1);
@@ -155,6 +161,7 @@ export default function Navbar() {
   const navigateTo = (url: string) => {
     setShowProfileDropdown(false);
     setIsCurtainOpen(false);
+    setIsSearchActive(false);
 
     if (url.startsWith('/#') || url.startsWith('#')) {
       const hash = url.replace('/#', '').replace('#', '');
@@ -445,6 +452,7 @@ export default function Navbar() {
                   courses={allCourses} 
                   compact={true}
                   placeholder={t('search_placeholder') || "ኮርሶችን ይፈልጉ..."} 
+                  onSearchActive={setIsSearchActive}
                 />
               </div>
 
@@ -583,6 +591,7 @@ export default function Navbar() {
                 courses={allCourses} 
                 compact={true}
                 placeholder={t('search_placeholder') || "ኮርሶችን ይፈልጉ (Marketing, Python)..."} 
+                onSearchActive={setIsSearchActive}
               />
             </div>
 
@@ -767,7 +776,7 @@ export default function Navbar() {
       </nav>
 
       {/* Bottom-Edge Handle Attached to Navigation Container */}
-      {isCurtainOpen && (
+      {isCurtainOpen && !isSearchActive && (
         <div className="absolute bottom-0 translate-y-full left-1/2 -translate-x-1/2 z-[10000] pointer-events-auto flex justify-center select-none">
           <button 
             type="button"
