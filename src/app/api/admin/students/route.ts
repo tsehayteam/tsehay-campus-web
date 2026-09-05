@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
       console.warn('Supabase enrollments fetch error in admin/students:', enrollmentError);
     }
 
-    const safeProfiles = (profiles || []).map(p => ({
+    const safeProfiles = (profiles || []).map((p: any) => ({
       id: p.id,
       uid: p.id,
       name: p.full_name || '',
@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
       updatedAt: p.updated_at
     }));
 
-    const safeEnrollments = (enrollments || []).map(e => ({
+    const safeEnrollments = (enrollments || []).map((e: any) => ({
       id: e.id,
       userId: e.user_id,
       studentEmail: e.user_email,

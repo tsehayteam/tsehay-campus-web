@@ -24,6 +24,7 @@ import { ETHIOPIAN_AVATARS, EthiopianAvatar } from '@/lib/ethiopianAvatars';
 import FeedbackModal from '@/components/FeedbackModal';
 import { speakWithLanguageDetection } from '@/lib/ttsHelper';
 import { parseVideoUrl } from '@/lib/videoParser';
+import { supabase } from '@/lib/supabase/client';
 
 function DashboardLoadingScreen({ message }: { message?: string }) {
   return (

@@ -163,7 +163,7 @@ export const getDocs = async (queryRef?: any): Promise<QuerySnapshot> => {
       if (userId) {
         const { data: enrollments } = await supabase.from('enrollments').select('*').eq('user_id', userId);
         if (enrollments && enrollments.length > 0) {
-          enrollments.forEach(enr => {
+          enrollments.forEach((enr: any) => {
             if (!docs.some(d => d.id === enr.course_id)) {
               docs.push({
                 id: enr.course_id,
