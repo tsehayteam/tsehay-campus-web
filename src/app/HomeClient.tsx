@@ -31,6 +31,7 @@ import {
   formatDriveImageUrl, 
   getCleanCourseImage,
   getCourseSlug, 
+  mergeCoursesLists,
   subscribeToCourses,
   DEFAULT_COURSES,
   getComingSoonCourses,

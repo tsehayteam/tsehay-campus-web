@@ -1005,6 +1005,25 @@ export default function AdminDashboard() {
       fetchApiYouTubeVideos();
     });
 
+    // 🌟 Primary Supabase Sync for Students and Enrollments
+    const fetchSupabaseStudents = async () => {
+      try {
+        const res = await fetch('/api/admin/students');
+        if (res.ok) {
+          const json = await res.json();
+          if (json.profiles && Array.isArray(json.profiles)) {
+            setRawProfiles(json.profiles);
+          }
+          if (json.enrollments && Array.isArray(json.enrollments)) {
+            setPayments(json.enrollments);
+          }
+        }
+      } catch (err) {
+        console.warn("Supabase students sync notice:", err);
+      }
+    };
+    fetchSupabaseStudents();
+
     // 🌟 1. Multi-source Real-time Sync for User Profiles (Subcollections)
     let unsubscribeProfiles: any = () => {};
     try {

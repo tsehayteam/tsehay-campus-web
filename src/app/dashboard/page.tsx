@@ -764,72 +764,90 @@ function StudentDashboardContent() {
           }
         }
 
-        const purchasesRef = collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'purchased_courses');
-        const purchasesSnap = await getDocs(purchasesRef);
-        let userCourses: any[] = [];
-        
-        if (!purchasesSnap.empty) {
-          const coursePromises = purchasesSnap.docs.map(async (purchaseDoc) => {
-              const courseId = purchaseDoc.data().courseId;
-              const courseRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses', courseId);
-              const courseSnap = await getDoc(courseRef);
-              if (courseSnap.exists()) {
-                  return { id: courseSnap.id, ...courseSnap.data() };
-              }
-              // Also check root collection
-              try {
-                const rootSnap = await getDoc(doc(db, 'courses', courseId));
-                if (rootSnap.exists()) {
-                  return { id: rootSnap.id, ...rootSnap.data() };
-                }
-              } catch(e) {}
-              return null;
-          });
-
-          const allCourses = (await Promise.all(coursePromises)).filter(c => c !== null);
-          userCourses = allCourses;
-        }
-
-        // Resilient fallback for URL courseId or newly enrolled free course
-        if (urlCourseId && !userCourses.some((c: any) => c.id === urlCourseId)) {
-          try {
-            const directSnap = await getDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses', urlCourseId));
-            if (directSnap.exists()) {
-              userCourses = [{ id: directSnap.id, ...directSnap.data() }, ...userCourses];
-            } else {
-              const rootDirectSnap = await getDoc(doc(db, 'courses', urlCourseId));
-              if (rootDirectSnap.exists()) {
-                userCourses = [{ id: rootDirectSnap.id, ...rootDirectSnap.data() }, ...userCourses];
-              }
+        // 1. Fetch authoritative courses from /api/courses (backed by Supabase)
+        let allCatalogCourses: any[] = [];
+        try {
+          const apiRes = await fetch('/api/courses');
+          if (apiRes.ok) {
+            const apiData = await apiRes.json();
+            if (apiData.courses && Array.isArray(apiData.courses) && apiData.courses.length > 0) {
+              allCatalogCourses = apiData.courses;
             }
-          } catch(e) {}
+          }
+        } catch (e) {}
+
+        if (allCatalogCourses.length === 0) {
+          const cachedAll = getCachedCourses();
+          allCatalogCourses = cachedAll.length > 0 ? cachedAll : DEFAULT_COURSES;
         }
 
-        // 🌟 If student has no purchased courses yet, provide default catalog courses (including free course)
+        // 2. Fetch student enrollments from Supabase enrollments table
+        let userCourses: any[] = [];
+        try {
+          const { data: enrollments } = await supabase
+            .from('enrollments')
+            .select('*')
+            .eq('user_id', user.uid);
+
+          if (enrollments && Array.isArray(enrollments) && enrollments.length > 0) {
+            const enrolledIds = enrollments.map((enr: any) => enr.course_id);
+            userCourses = allCatalogCourses.filter(c => enrolledIds.includes(c.id) || enrolledIds.includes(c.slug));
+          }
+        } catch (e) {}
+
+        // Fallback: check local purchasesRef
         if (userCourses.length === 0) {
-          const cachedAll = getCachedCourses();
-          userCourses = cachedAll.length > 0 ? cachedAll : DEFAULT_COURSES;
-          
-          // Auto-persist free course enrollment for student
           try {
-            const freeCourse = userCourses.find(c => c.isFree || c.id === 'digital_marketing_free') || userCourses[0];
-            if (freeCourse && user?.uid) {
-              setDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'purchased_courses', freeCourse.id), {
-                courseId: freeCourse.id,
-                amount: 0,
-                paymentMethod: 'free',
-                purchasedAt: serverTimestamp(),
-                status: 'active'
-              }, { merge: true }).catch(() => {});
+            const purchasesRef = collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'purchased_courses');
+            const purchasesSnap = await getDocs(purchasesRef);
+            if (!purchasesSnap.empty) {
+              const enrolledIds = purchasesSnap.docs.map(doc => doc.data().courseId || doc.id);
+              userCourses = allCatalogCourses.filter(c => enrolledIds.includes(c.id) || enrolledIds.includes(c.slug));
             }
           } catch (e) {}
         }
+
+        // Resilient fallback for URL courseId
+        if (urlCourseId) {
+          const urlMatch = allCatalogCourses.find(c => c.id === urlCourseId || c.slug === urlCourseId);
+          if (urlMatch && !userCourses.some(c => c.id === urlMatch.id)) {
+            userCourses = [urlMatch, ...userCourses];
+          }
+        }
+
+        // 🌟 If student has no purchased courses yet, provide full catalog (including free course)
+        if (userCourses.length === 0) {
+          userCourses = allCatalogCourses;
+
+          // Auto-persist free course enrollment for student in Supabase
+          try {
+            const freeCourse = userCourses.find(c => c.isFree || c.id === 'digital_marketing_free') || userCourses[0];
+            if (freeCourse) {
+              (async () => {
+                try {
+                  await supabase.from('enrollments').upsert({
+                    id: `enr_${user.uid}_${freeCourse.id}`,
+                    user_id: user.uid,
+                    user_email: user.email || '',
+                    course_id: freeCourse.id,
+                    course_title: freeCourse.title,
+                    amount: 0,
+                    payment_method: 'free',
+                    status: 'completed'
+                  });
+                } catch (e) {}
+              })();
+            }
+          } catch (e) {}
+        }
+
 
         setCourses(userCourses);
         try {
           localStorage.setItem(`tsehay_user_courses_${user.uid}`, JSON.stringify(userCourses));
           localStorage.setItem('tsehay_user_courses_cache', JSON.stringify(userCourses));
         } catch(e) {}
+
           
         if (userCourses.length > 0) {
           setActiveCourse((prev: any) => {

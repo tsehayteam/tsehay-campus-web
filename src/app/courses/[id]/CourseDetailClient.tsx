@@ -84,15 +84,41 @@ function CoursePreviewContent() {
         let loadedCourseData: any = null;
         let loadedCourseId = id;
 
-        // 1. Fetch from artifacts/tsehaycampus-e1a6d/public/data/courses
+        // 0. Authoritative Fetch from /api/courses (Supabase)
         try {
-          const courseRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses', id);
-          const courseSnap = await getDoc(courseRef);
-          if (courseSnap.exists()) {
-            loadedCourseData = courseSnap.data();
-            loadedCourseId = courseSnap.id;
+          const apiRes = await fetch(`/api/courses?id=${encodeURIComponent(id)}`);
+          if (apiRes.ok) {
+            const apiData = await apiRes.json();
+            if (apiData.success && apiData.course) {
+              loadedCourseData = apiData.course;
+              loadedCourseId = apiData.course.id || id;
+            }
           }
         } catch (e) {}
+
+        // Fetch all courses from /api/courses
+        let allList: any[] = [];
+        try {
+          const allRes = await fetch('/api/courses');
+          if (allRes.ok) {
+            const allData = await allRes.json();
+            if (allData.courses && Array.isArray(allData.courses)) {
+              allList = allData.courses;
+            }
+          }
+        } catch (e) {}
+
+        // 1. Fallback Fetch from artifacts/tsehaycampus-e1a6d/public/data/courses
+        if (!loadedCourseData) {
+          try {
+            const courseRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses', id);
+            const courseSnap = await getDoc(courseRef);
+            if (courseSnap.exists()) {
+              loadedCourseData = courseSnap.data();
+              loadedCourseId = courseSnap.id;
+            }
+          } catch (e) {}
+        }
 
         // 2. Fetch from root /courses
         if (!loadedCourseData) {
@@ -106,36 +132,6 @@ function CoursePreviewContent() {
           } catch (e) {}
         }
 
-        // 3. Fetch from artifacts/tsehaycampus-e1a6d/courses
-        if (!loadedCourseData) {
-          try {
-            const altRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'courses', id);
-            const altSnap = await getDoc(altRef);
-            if (altSnap.exists()) {
-              loadedCourseData = altSnap.data();
-              loadedCourseId = altSnap.id;
-            }
-          } catch (e) {}
-        }
-
-        // 4. Fetch all live courses from Firestore
-        let allList: any[] = [];
-        try {
-          const allCoursesQuery = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses'));
-          const allCoursesSnap = await getDocs(allCoursesQuery);
-          if (!allCoursesSnap.empty) {
-            allList = allCoursesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-          }
-        } catch (allErr) {}
-
-        try {
-          const rootQuery = query(collection(db, 'courses'));
-          const rootSnap = await getDocs(rootQuery);
-          if (!rootSnap.empty) {
-            const rootDocs = rootSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-            allList = mergeCoursesLists(allList, rootDocs);
-          }
-        } catch (rootErr) {}
 
         try {
           const altQuery = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'courses'));
