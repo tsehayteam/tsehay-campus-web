@@ -14,10 +14,9 @@ import FloatingAIButton from "@/components/FloatingAIButton";
 import StudentFeedbackModal from "@/components/StudentFeedbackModal";
 import ReferralTracker from "@/components/ReferralTracker";
 import { LanguageProvider } from "@/context/LanguageContext";
-import Global3DBackgroundCanvas from "@/components/scrollytelling/Global3DBackgroundCanvas";
 import SmoothScrollAndScrollyProvider from "@/components/scrollytelling/SmoothScrollAndScrollyProvider";
 import PageTransitionWrapper from "@/components/scrollytelling/PageTransitionWrapper";
-import AmbientIntroAudio from "@/components/AmbientIntroAudio";
+import TsehayExperienceProvider from "@/components/experience/TsehayExperienceProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -193,8 +192,8 @@ export default function RootLayout({
         <LanguageProvider>
           <AuthProvider>
             <SmoothScrollAndScrollyProvider>
-              {/* Global Context-Aware 3D Particle Network Canvas */}
-              <Global3DBackgroundCanvas />
+              {/* 🌟 Lusion.co-Level Solar Gravity Atmosphere & Synesthetic Audio Engine */}
+              <TsehayExperienceProvider />
               
               <ContentProtection />
               <Navbar />
@@ -212,7 +211,6 @@ export default function RootLayout({
               <PWAInstallBanner />
               <FloatingAIButton />
               <StudentFeedbackModal />
-              <AmbientIntroAudio />
             </SmoothScrollAndScrollyProvider>
           </AuthProvider>
         </LanguageProvider>

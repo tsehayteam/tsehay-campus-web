@@ -227,7 +227,7 @@ export default function Hero3DPopoutStage({
     ? `https://www.youtube-nocookie.com/embed/${parsedVideo.youtubeId}?autoplay=1&mute=1&loop=1&playlist=${parsedVideo.youtubeId}&controls=0&playsinline=1&enablejsapi=1&rel=0&modestbranding=1&iv_load_policy=3`
     : '';
 
-  // 🚀 Guaranteed Immediate Video Auto-play on Mount & URL Change
+  // 🚀 Guaranteed Immediate Video Auto-play & Viewport Sync for Audio Ducking
   useEffect(() => {
     setIsPlaying(true);
 
@@ -238,16 +238,16 @@ export default function Hero3DPopoutStage({
           '*'
         );
       } else if (videoRef.current) {
-        videoRef.current.muted = true;
+        videoRef.current.muted = isMuted;
         videoRef.current.play().catch(() => {});
       }
     };
 
     // Immediate and staged triggers to handle iframe/player initialization delays
     triggerPlay();
-    const timer1 = setTimeout(triggerPlay, 400);
-    const timer2 = setTimeout(triggerPlay, 1000);
-    const timer3 = setTimeout(triggerPlay, 2200);
+    const timer1 = setTimeout(triggerPlay, 300);
+    const timer2 = setTimeout(triggerPlay, 800);
+    const timer3 = setTimeout(triggerPlay, 1800);
 
     // Browser policy gesture fallback: kick off autoplay on first interaction
     const onUserGesture = () => {
@@ -261,6 +261,24 @@ export default function Hero3DPopoutStage({
     window.addEventListener('scroll', onUserGesture, { once: true, passive: true });
     window.addEventListener('keydown', onUserGesture, { once: true, passive: true });
 
+    // 🎧 Viewport IntersectionObserver to trigger Audio Ducking
+    let observer: IntersectionObserver | null = null;
+    if (stageRef.current && typeof window !== 'undefined' && 'IntersectionObserver' in window) {
+      observer = new IntersectionObserver(
+        (entries) => {
+          const entry = entries[0];
+          const inView = entry.isIntersecting && entry.intersectionRatio > 0.25;
+          window.dispatchEvent(
+            new CustomEvent('tsehay-hero-video-inview', {
+              detail: { inView, hasSound: inView && !isMuted }
+            })
+          );
+        },
+        { threshold: [0, 0.25, 0.5, 0.75, 1.0] }
+      );
+      observer.observe(stageRef.current);
+    }
+
     return () => {
       clearTimeout(timer1);
       clearTimeout(timer2);
@@ -268,8 +286,14 @@ export default function Hero3DPopoutStage({
       window.removeEventListener('pointerdown', onUserGesture);
       window.removeEventListener('scroll', onUserGesture);
       window.removeEventListener('keydown', onUserGesture);
+      if (observer) observer.disconnect();
+      window.dispatchEvent(
+        new CustomEvent('tsehay-hero-video-inview', {
+          detail: { inView: false, hasSound: false }
+        })
+      );
     };
-  }, [activeVideoUrl, parsedVideo.isYouTube, parsedVideo.youtubeId]);
+  }, [activeVideoUrl, parsedVideo.isYouTube, parsedVideo.youtubeId, isMuted]);
 
   // Minimalist Play/Pause Toggle Handler (Works with YouTube postMessage and HTML5 video)
   const togglePlayPause = (e?: React.MouseEvent) => {
@@ -474,20 +498,6 @@ export default function Hero3DPopoutStage({
             }}
           />
 
-          {/* Paused State Subtle Central Indicator */}
-          {!isPlaying && (
-            <div 
-              className="absolute inset-0 z-20 flex items-center justify-center bg-black/45 backdrop-blur-[2px] transition-all duration-300 animate-in fade-in"
-              onClick={togglePlayPause}
-            >
-              <div className="flex flex-col items-center gap-2 px-5 py-3 rounded-2xl bg-black/80 border border-[#f9b03c]/50 shadow-[0_0_35px_rgba(249,176,60,0.35)] backdrop-blur-md">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 flex items-center justify-center text-xl shadow-lg">
-                  <i className="fa-solid fa-play ml-0.5"></i>
-                </div>
-                <span className="text-xs font-bold text-[#f9b03c] tracking-wide font-heading">ቪዲዮው ቆሟል • ለማጫወት ይጫኑ</span>
-              </div>
-            </div>
-          )}
 
           {/* 🎛️ Minimalist Subtle Video Controls Bar (Bottom-Right, non-distracting) */}
           <div 
