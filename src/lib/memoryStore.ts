@@ -178,3 +178,103 @@ export function deletePersistedEvent(eventId: string): void {
     console.warn('deletePersistedEvent warning:', e);
   }
 }
+
+// 💬 Community In-Memory & File Store
+interface TsehayCommunityGlobalStore extends TsehayGlobalStore {
+  __tsehay_community_posts_cache?: Map<string, any>;
+  __tsehay_community_comments_cache?: Map<string, any[]>;
+}
+
+const communityGlobalStore = global as unknown as TsehayCommunityGlobalStore;
+
+if (!communityGlobalStore.__tsehay_community_posts_cache) {
+  communityGlobalStore.__tsehay_community_posts_cache = new Map<string, any>();
+}
+
+if (!communityGlobalStore.__tsehay_community_comments_cache) {
+  communityGlobalStore.__tsehay_community_comments_cache = new Map<string, any[]>();
+}
+
+export const sharedCommunityPostsCache: Map<string, any> = communityGlobalStore.__tsehay_community_posts_cache!;
+export const sharedCommunityCommentsCache: Map<string, any[]> = communityGlobalStore.__tsehay_community_comments_cache!;
+
+export function loadPersistedCommunityPosts(): any[] {
+  try {
+    const list = Array.from(sharedCommunityPostsCache.values());
+    if (list.length > 0) {
+      return list.sort((a, b) => {
+        if (a.isPinned && !b.isPinned) return -1;
+        if (!a.isPinned && b.isPinned) return 1;
+        const timeA = new Date(a.createdAt || 0).getTime();
+        const timeB = new Date(b.createdAt || 0).getTime();
+        return timeB - timeA;
+      });
+    }
+  } catch (e) {
+    console.warn('loadPersistedCommunityPosts warning:', e);
+  }
+  return [];
+}
+
+export function savePersistedCommunityPosts(posts: any[]): void {
+  try {
+    if (Array.isArray(posts)) {
+      sharedCommunityPostsCache.clear();
+      posts.forEach(p => {
+        if (p && p.id) sharedCommunityPostsCache.set(p.id, p);
+      });
+    }
+  } catch (e) {
+    console.warn('savePersistedCommunityPosts warning:', e);
+  }
+}
+
+export function saveSingleCommunityPost(post: any): void {
+  try {
+    if (post && post.id) {
+      sharedCommunityPostsCache.set(post.id, post);
+    }
+  } catch (e) {
+    console.warn('saveSingleCommunityPost warning:', e);
+  }
+}
+
+export function deletePersistedCommunityPost(postId: string): void {
+  try {
+    if (postId) {
+      sharedCommunityPostsCache.delete(postId);
+      sharedCommunityCommentsCache.delete(postId);
+    }
+  } catch (e) {
+    console.warn('deletePersistedCommunityPost warning:', e);
+  }
+}
+
+export function loadPersistedCommunityComments(postId: string): any[] {
+  try {
+    if (!postId) return [];
+    return sharedCommunityCommentsCache.get(postId) || [];
+  } catch (e) {
+    return [];
+  }
+}
+
+export function savePersistedCommunityComment(postId: string, comment: any): void {
+  try {
+    if (!postId || !comment || !comment.id) return;
+    const existing = sharedCommunityCommentsCache.get(postId) || [];
+    const filtered = existing.filter(c => c.id !== comment.id);
+    filtered.push(comment);
+    sharedCommunityCommentsCache.set(postId, filtered);
+  } catch (e) {}
+}
+
+export function deletePersistedCommunityComment(postId: string, commentId: string): void {
+  try {
+    if (!postId || !commentId) return;
+    const existing = sharedCommunityCommentsCache.get(postId) || [];
+    const filtered = existing.filter(c => c.id !== commentId);
+    sharedCommunityCommentsCache.set(postId, filtered);
+  } catch (e) {}
+}
+

@@ -62,7 +62,7 @@ const TRENDING_TAGS = [
   '#Dropshipping'
 ];
 
-export default function CommunityClient() {
+export default function CommunityClient({ initialPosts }: { initialPosts?: CommunityPost[] }) {
   const router = useRouter();
   const { user: contextUser } = useAuth();
   const [currentUser, setCurrentUser] = useState<User | null>(() => auth.currentUser);
@@ -104,10 +104,11 @@ export default function CommunityClient() {
   }, [effectiveUser, showAuthModal]);
 
   // Posts State
-  const [posts, setPosts] = useState<CommunityPost[]>(() => getCachedCommunityPosts());
+  const [posts, setPosts] = useState<CommunityPost[]>(() => (initialPosts && initialPosts.length > 0) ? initialPosts : getCachedCommunityPosts());
   const [postsLoading, setPostsLoading] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+
 
   // Post Creator State
   const [postContent, setPostContent] = useState('');

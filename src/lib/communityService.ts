@@ -164,6 +164,8 @@ export const isUserAdmin = (email?: string | null, role?: string): boolean => {
   return adminEmails.includes(email.trim().toLowerCase());
 };
 
+import { supabase } from '@/lib/supabase/client';
+
 // Helper to get instantly cached community posts
 export const getCachedCommunityPosts = (): CommunityPost[] => {
   if (typeof window === 'undefined') return INITIAL_COMMUNITY_POSTS;
@@ -180,7 +182,7 @@ export const getCachedCommunityPosts = (): CommunityPost[] => {
   return INITIAL_COMMUNITY_POSTS;
 };
 
-// 1. Subscribe to Live Community Posts (Multi-Collection + API Real-Time Sync)
+// 1. Subscribe to Live Community Posts (Supabase Realtime + BroadcastChannel + API)
 export const subscribeCommunityPosts = (
   onPostsUpdate: (posts: CommunityPost[]) => void,
   categoryFilter: string = 'all'
@@ -208,14 +210,14 @@ export const subscribeCommunityPosts = (
     allPosts.sort((a, b) => {
       if (a.isPinned && !b.isPinned) return -1;
       if (!a.isPinned && b.isPinned) return 1;
-      const timeA = new Date(a.createdAt).getTime();
-      const timeB = new Date(b.createdAt).getTime();
+      const timeA = new Date(a.createdAt || 0).getTime();
+      const timeB = new Date(b.createdAt || 0).getTime();
       return timeB - timeA;
     });
 
     const filtered = categoryFilter === 'all' 
       ? allPosts 
-      : allPosts.filter(p => p.category === categoryFilter);
+      : (categoryFilter === 'pinned' ? allPosts.filter(p => p.isPinned) : allPosts.filter(p => p.category === categoryFilter));
 
     onPostsUpdate(filtered);
     if (typeof window !== 'undefined') {
@@ -225,128 +227,124 @@ export const subscribeCommunityPosts = (
     }
   };
 
-  const processDoc = (docSnap: any) => {
-    const data = docSnap.data();
-    const id = docSnap.id;
+  const applyPostList = (posts: any[]) => {
+    if (!Array.isArray(posts)) return;
     const deletedIds = getDeletedIds();
-    if (deletedIds.includes(id)) return;
-
-    postMap.set(id, {
-      id,
-      authorId: data.authorId || '',
-      authorName: data.authorName || 'ተማሪ',
-      authorEmail: data.authorEmail || '',
-      authorPhoto: data.authorPhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(data.authorName || 'User')}&background=f9b03c&color=111827&bold=true`,
-      authorRole: data.authorRole,
-      isAdmin: Boolean(data.isAdmin || isUserAdmin(data.authorEmail, data.authorRole)),
-      isPro: Boolean(data.isPro),
-      content: data.content || '',
-      codeSnippet: data.codeSnippet || null,
-      imageUrl: data.imageUrl || null,
-      category: data.category || 'general',
-      tags: Array.isArray(data.tags) ? data.tags : [],
-      likes: Array.isArray(data.likes) ? data.likes : [],
-      commentsCount: Number(data.commentsCount || 0),
-      isPinned: Boolean(data.isPinned),
-      isFeatured: Boolean(data.isFeatured),
-      createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : (data.createdAt || new Date().toISOString()),
-      updatedAt: data.updatedAt,
+    posts.forEach((data: any) => {
+      if (!data || !data.id || deletedIds.includes(data.id)) return;
+      postMap.set(data.id, {
+        id: data.id,
+        authorId: data.authorId || '',
+        authorName: data.authorName || 'ተማሪ',
+        authorEmail: data.authorEmail || '',
+        authorPhoto: data.authorPhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(data.authorName || 'User')}&background=f9b03c&color=111827&bold=true`,
+        authorRole: data.authorRole,
+        isAdmin: Boolean(data.isAdmin || isUserAdmin(data.authorEmail, data.authorRole)),
+        isPro: Boolean(data.isPro),
+        content: data.content || '',
+        codeSnippet: data.codeSnippet || null,
+        imageUrl: data.imageUrl || null,
+        category: data.category || 'general',
+        tags: Array.isArray(data.tags) ? data.tags : [],
+        likes: Array.isArray(data.likes) ? data.likes : [],
+        commentsCount: Number(data.commentsCount || 0),
+        isPinned: Boolean(data.isPinned),
+        isFeatured: Boolean(data.isFeatured),
+        createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : (data.createdAt || new Date().toISOString()),
+        updatedAt: data.updatedAt,
+      });
     });
+    publishPosts();
   };
 
-  // 1. Listen on Root community_posts
-  let unsubRoot = () => {};
-  try {
-    const rootRef = collection(db, 'community_posts');
-    const handleSnapshot = (snapshot: any) => {
-      if (!snapshot.empty) {
-        snapshot.docChanges().forEach((change: any) => {
-          if (change.type === 'removed') {
-            postMap.delete(change.doc.id);
-          } else {
-            processDoc(change.doc);
-          }
-        });
-        publishPosts();
-      }
-    };
-
+  const fetchFreshPosts = async () => {
     try {
-      const qRoot = query(rootRef, orderBy('createdAt', 'desc'), limit(100));
-      unsubRoot = onSnapshot(qRoot, handleSnapshot, (err) => {
-        console.warn('Root community_posts orderBy index notice, falling back to direct collection listener:', err);
-        try {
-          unsubRoot = onSnapshot(query(rootRef, limit(100)), handleSnapshot, () => {});
-        } catch (e2) {}
-      });
-    } catch (e) {
-      unsubRoot = onSnapshot(query(rootRef, limit(100)), handleSnapshot, () => {});
-    }
-  } catch (e) {}
-
-  // 2. Listen on Artifact community_posts
-  let unsubArtifact = () => {};
-  try {
-    const artifactRef = collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_posts');
-    const handleArtifactSnapshot = (snapshot: any) => {
-      if (!snapshot.empty) {
-        snapshot.docChanges().forEach((change: any) => {
-          if (change.type === 'removed') {
-            postMap.delete(change.doc.id);
-          } else {
-            processDoc(change.doc);
-          }
-        });
-        publishPosts();
+      const res = await fetch(`/api/community?t=${Date.now()}`, { cache: 'no-store' });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && Array.isArray(json.posts) && json.posts.length > 0) {
+          applyPostList(json.posts);
+        }
       }
-    };
-
-    try {
-      const qArtifact = query(artifactRef, orderBy('createdAt', 'desc'), limit(100));
-      unsubArtifact = onSnapshot(qArtifact, handleArtifactSnapshot, (err) => {
-        console.warn('Artifact community_posts index notice, falling back to direct collection listener:', err);
-        try {
-          unsubArtifact = onSnapshot(query(artifactRef, limit(100)), handleArtifactSnapshot, () => {});
-        } catch (e2) {}
-      });
     } catch (e) {
-      unsubArtifact = onSnapshot(query(artifactRef, limit(100)), handleArtifactSnapshot, () => {});
+      console.warn('Fresh community posts fetch error:', e);
     }
-  } catch (e) {}
+  };
 
-  // 3. Parallel Server API Fetch (Ensures fresh sync across servers)
-  fetch(`/api/admin/community?t=${Date.now()}`)
-    .then(res => res.json())
-    .then(json => {
-      if (json.success && Array.isArray(json.posts)) {
-        json.posts.forEach((p: any) => {
-          if (p && p.id) {
-            postMap.set(p.id, {
-              ...p,
-              createdAt: p.createdAt || new Date().toISOString(),
-              likes: Array.isArray(p.likes) ? p.likes : [],
-              commentsCount: Number(p.commentsCount || 0)
-            });
-          }
-        });
-        publishPosts();
-      }
-    })
-    .catch(e => console.warn('Community API load error:', e));
-
-  // Initial trigger with current cached state
+  // 1. Initial immediate trigger & parallel fetch
   publishPosts();
+  fetchFreshPosts();
+
+  // 2. Supabase Realtime WebSocket Subscription
+  const channel = supabase
+    .channel(`realtime_community_posts_${Date.now()}`)
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'site_settings',
+        filter: 'key=eq.community_posts'
+      },
+      (payload) => {
+        const row = payload.new as any;
+        if (row && row.data && Array.isArray(row.data)) {
+          applyPostList(row.data);
+        } else {
+          fetchFreshPosts();
+        }
+      }
+    )
+    .subscribe();
+
+  // 3. Cross-Tab 0ms BroadcastChannel
+  let broadcastChan: BroadcastChannel | null = null;
+  if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+    try {
+      broadcastChan = new BroadcastChannel('tsehay_community_channel');
+      broadcastChan.onmessage = (event) => {
+        if (event.data?.type === 'post_deleted' && event.data.postId) {
+          postMap.delete(event.data.postId);
+          publishPosts();
+        } else if (event.data?.type === 'post_created' && event.data.post) {
+          postMap.set(event.data.post.id, event.data.post);
+          publishPosts();
+        } else {
+          fetchFreshPosts();
+        }
+      };
+    } catch (e) {}
+  }
+
+  // 4. Window Event & Focus Listeners
+  const handleCustomEvent = () => fetchFreshPosts();
+  const handleFocus = () => fetchFreshPosts();
+
+  if (typeof window !== 'undefined') {
+    window.addEventListener('tsehay_community_updated', handleCustomEvent);
+    window.addEventListener('tsehay_community_post_deleted', handleCustomEvent);
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('visibilitychange', handleFocus);
+  }
 
   return () => {
-    unsubRoot();
-    unsubArtifact();
+    supabase.removeChannel(channel);
+    if (broadcastChan) broadcastChan.close();
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('tsehay_community_updated', handleCustomEvent);
+      window.removeEventListener('tsehay_community_post_deleted', handleCustomEvent);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('visibilitychange', handleFocus);
+    }
   };
 };
 
 // 2. Create Community Post (Multi-Tier Robust Persistence)
 export const createCommunityPost = async (post: Omit<CommunityPost, 'id' | 'likes' | 'commentsCount' | 'createdAt'>) => {
-  const newPostData = {
+  let docId = `post_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+  const newPostData: CommunityPost = {
     ...post,
+    id: docId,
     likes: [],
     commentsCount: 0,
     isPinned: Boolean(post.isPinned),
@@ -354,29 +352,21 @@ export const createCommunityPost = async (post: Omit<CommunityPost, 'id' | 'like
     createdAt: new Date().toISOString(),
   };
 
-  let docId = `post_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-
-  // 1. Direct Firestore writes (Root + Artifact)
-  try {
-    const rootDocRef = doc(db, 'community_posts', docId);
-    await setDoc(rootDocRef, { ...newPostData, id: docId });
-  } catch (e) {
-    console.warn('Direct root create post notice:', e);
+  // 1. Update localStorage cache immediately
+  if (typeof window !== 'undefined') {
+    try {
+      const cached = getCachedCommunityPosts();
+      const updated = [newPostData, ...cached.filter(p => p.id !== docId)];
+      localStorage.setItem('tsehay_cached_community_posts', JSON.stringify(updated));
+    } catch (e) {}
   }
 
+  // 2. Server API Persistence (writes to Supabase site_settings)
   try {
-    const artifactDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_posts', docId);
-    await setDoc(artifactDocRef, { ...newPostData, id: docId });
-  } catch (e) {
-    console.warn('Direct artifact create post notice:', e);
-  }
-
-  // 2. Server API Persistence
-  try {
-    const res = await fetch('/api/admin/community', {
+    const res = await fetch('/api/community', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...post, id: docId })
+      body: JSON.stringify(newPostData)
     });
     if (res.ok) {
       const data = await res.json();
@@ -388,16 +378,15 @@ export const createCommunityPost = async (post: Omit<CommunityPost, 'id' | 'like
     console.warn('Server create post API notice:', apiErr);
   }
 
-  // 3. Update localStorage cache immediately
+  // 3. Cross-Tab & Intra-window Broadcast
   if (typeof window !== 'undefined') {
     try {
-      const cached = getCachedCommunityPosts();
-      const newPost: CommunityPost = {
-        id: docId,
-        ...newPostData,
-      };
-      const updated = [newPost, ...cached.filter(p => p.id !== docId)];
-      localStorage.setItem('tsehay_cached_community_posts', JSON.stringify(updated));
+      if ('BroadcastChannel' in window) {
+        const bc = new BroadcastChannel('tsehay_community_channel');
+        bc.postMessage({ type: 'post_created', post: newPostData });
+        setTimeout(() => bc.close(), 100);
+      }
+      window.dispatchEvent(new CustomEvent('tsehay_community_updated', { detail: { post: newPostData } }));
     } catch (e) {}
   }
 
@@ -416,20 +405,29 @@ export const toggleLikePost = async (
     likerName?: string;
   }
 ) => {
-  // 1. Client Firestore Updates
-  try {
-    const postDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_posts', postId);
-    await updateDoc(postDocRef, {
-      likes: isLiked ? arrayRemove(userId) : arrayUnion(userId)
-    });
-  } catch (err) {}
-
-  try {
-    const rootDocRef = doc(db, 'community_posts', postId);
-    await updateDoc(rootDocRef, {
-      likes: isLiked ? arrayRemove(userId) : arrayUnion(userId)
-    });
-  } catch (err) {}
+  // 1. Update local cache
+  if (typeof window !== 'undefined') {
+    try {
+      const cached = getCachedCommunityPosts();
+      const updated = cached.map(p => {
+        if (p.id === postId) {
+          const likes = Array.isArray(p.likes) ? p.likes : [];
+          return {
+            ...p,
+            likes: isLiked ? likes.filter(id => id !== userId) : [...likes, userId]
+          };
+        }
+        return p;
+      });
+      localStorage.setItem('tsehay_cached_community_posts', JSON.stringify(updated));
+      window.dispatchEvent(new CustomEvent('tsehay_community_updated', { detail: { postId, isLiked, userId } }));
+      if ('BroadcastChannel' in window) {
+        const bc = new BroadcastChannel('tsehay_community_channel');
+        bc.postMessage({ type: 'post_liked', postId, isLiked, userId });
+        setTimeout(() => bc.close(), 100);
+      }
+    } catch (e) {}
+  }
 
   // 2. Server API Dispatch
   try {
@@ -476,23 +474,17 @@ export const deleteCommunityPost = async (postId: string) => {
         localStorage.setItem('tsehay_cached_community_posts', JSON.stringify(filtered));
       }
       window.dispatchEvent(new CustomEvent('tsehay_community_post_deleted', { detail: { postId } }));
+      if ('BroadcastChannel' in window) {
+        const bc = new BroadcastChannel('tsehay_community_channel');
+        bc.postMessage({ type: 'post_deleted', postId });
+        setTimeout(() => bc.close(), 100);
+      }
     } catch (e) {}
   }
 
-  // 2. Client Firestore Deletions
+  // 2. Server API Deletion via Supabase API
   try {
-    const postDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_posts', postId);
-    await deleteDoc(postDocRef);
-  } catch (e) {}
-
-  try {
-    const rootDocRef = doc(db, 'community_posts', postId);
-    await deleteDoc(rootDocRef);
-  } catch (e) {}
-
-  // 3. Server API Deletion via Admin SDK
-  try {
-    await fetch(`/api/admin/community?id=${encodeURIComponent(postId)}`, {
+    await fetch(`/api/community?id=${encodeURIComponent(postId)}`, {
       method: 'DELETE'
     });
   } catch (apiErr) {}
@@ -502,14 +494,19 @@ export const deleteCommunityPost = async (postId: string) => {
 
 // 5. Pin / Unpin Post
 export const pinCommunityPost = async (postId: string, isPinned: boolean) => {
-  try {
-    const postDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_posts', postId);
-    await updateDoc(postDocRef, { isPinned });
-  } catch (e) {}
-
-  try {
-    await updateDoc(doc(db, 'community_posts', postId), { isPinned });
-  } catch (e) {}
+  if (typeof window !== 'undefined') {
+    try {
+      const cached = getCachedCommunityPosts();
+      const updated = cached.map(p => p.id === postId ? { ...p, isPinned } : p);
+      localStorage.setItem('tsehay_cached_community_posts', JSON.stringify(updated));
+      window.dispatchEvent(new CustomEvent('tsehay_community_updated'));
+      if ('BroadcastChannel' in window) {
+        const bc = new BroadcastChannel('tsehay_community_channel');
+        bc.postMessage({ type: 'post_pinned', postId, isPinned });
+        setTimeout(() => bc.close(), 100);
+      }
+    } catch (e) {}
+  }
 
   try {
     await fetch('/api/community/pin', {
@@ -522,17 +519,22 @@ export const pinCommunityPost = async (postId: string, isPinned: boolean) => {
 
 // 6. Feature Post
 export const featureCommunityPost = async (postId: string, isFeatured: boolean) => {
-  try {
-    const postDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_posts', postId);
-    await updateDoc(postDocRef, { isFeatured });
-  } catch (e) {}
+  if (typeof window !== 'undefined') {
+    try {
+      const cached = getCachedCommunityPosts();
+      const updated = cached.map(p => p.id === postId ? { ...p, isFeatured } : p);
+      localStorage.setItem('tsehay_cached_community_posts', JSON.stringify(updated));
+      window.dispatchEvent(new CustomEvent('tsehay_community_updated'));
+      if ('BroadcastChannel' in window) {
+        const bc = new BroadcastChannel('tsehay_community_channel');
+        bc.postMessage({ type: 'post_featured', postId, isFeatured });
+        setTimeout(() => bc.close(), 100);
+      }
+    } catch (e) {}
+  }
 
   try {
-    await updateDoc(doc(db, 'community_posts', postId), { isFeatured });
-  } catch (e) {}
-
-  try {
-    await fetch('/api/admin/community', {
+    await fetch('/api/community', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: postId, isFeatured })
@@ -549,53 +551,85 @@ export const subscribePostComments = (
 
   const publishComments = () => {
     const list = Array.from(commentMap.values());
-    list.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    list.sort((a, b) => new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime());
     onCommentsUpdate(list);
   };
 
-  const processComment = (docSnap: any) => {
-    const data = docSnap.data();
-    commentMap.set(docSnap.id, {
-      id: docSnap.id,
-      postId,
-      authorId: data.authorId || '',
-      authorName: data.authorName || 'ተጠቃሚ',
-      authorEmail: data.authorEmail || '',
-      authorPhoto: data.authorPhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(data.authorName || 'User')}&background=f9b03c&color=111827&bold=true`,
-      isAdmin: Boolean(data.isAdmin || isUserAdmin(data.authorEmail)),
-      isPro: Boolean(data.isPro),
-      content: data.content || '',
-      createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : (data.createdAt || new Date().toISOString()),
+  const applyComments = (comments: any[]) => {
+    if (!Array.isArray(comments)) return;
+    comments.forEach(c => {
+      if (c && c.id) {
+        commentMap.set(c.id, {
+          id: c.id,
+          postId: c.postId || postId,
+          authorId: c.authorId || '',
+          authorName: c.authorName || 'ተጠቃሚ',
+          authorEmail: c.authorEmail || '',
+          authorPhoto: c.authorPhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(c.authorName || 'User')}&background=f9b03c&color=111827&bold=true`,
+          isAdmin: Boolean(c.isAdmin || isUserAdmin(c.authorEmail)),
+          isPro: Boolean(c.isPro),
+          content: c.content || '',
+          createdAt: c.createdAt || new Date().toISOString(),
+        });
+      }
     });
+    publishComments();
   };
 
-  let unsubArtifact = () => {};
-  try {
-    const artifactRef = collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_posts', postId, 'comments');
-    const qArtifact = query(artifactRef, orderBy('createdAt', 'asc'), limit(100));
-    unsubArtifact = onSnapshot(qArtifact, (snap) => {
-      if (!snap.empty) {
-        snap.forEach(processComment);
-        publishComments();
+  const fetchComments = async () => {
+    try {
+      const res = await fetch(`/api/community/comment?postId=${encodeURIComponent(postId)}&t=${Date.now()}`, { cache: 'no-store' });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && Array.isArray(json.comments)) {
+          applyComments(json.comments);
+        }
       }
-    }, () => {});
-  } catch (e) {}
+    } catch (e) {}
+  };
 
-  let unsubRoot = () => {};
-  try {
-    const rootRef = collection(db, 'community_posts', postId, 'comments');
-    const qRoot = query(rootRef, orderBy('createdAt', 'asc'), limit(100));
-    unsubRoot = onSnapshot(qRoot, (snap) => {
-      if (!snap.empty) {
-        snap.forEach(processComment);
-        publishComments();
+  fetchComments();
+
+  // Supabase Realtime channel for comments
+  const channel = supabase
+    .channel(`realtime_comments_${postId}_${Date.now()}`)
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'site_settings',
+        filter: 'key=eq.community_comments'
+      },
+      () => {
+        fetchComments();
       }
-    }, () => {});
-  } catch (e) {}
+    )
+    .subscribe();
+
+  let bc: BroadcastChannel | null = null;
+  if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+    try {
+      bc = new BroadcastChannel('tsehay_community_channel');
+      bc.onmessage = (ev) => {
+        if (ev.data?.postId === postId) {
+          fetchComments();
+        }
+      };
+    } catch (e) {}
+  }
+
+  const handleUpdate = () => fetchComments();
+  if (typeof window !== 'undefined') {
+    window.addEventListener(`tsehay_comment_updated_${postId}`, handleUpdate);
+  }
 
   return () => {
-    unsubArtifact();
-    unsubRoot();
+    supabase.removeChannel(channel);
+    if (bc) bc.close();
+    if (typeof window !== 'undefined') {
+      window.removeEventListener(`tsehay_comment_updated_${postId}`, handleUpdate);
+    }
   };
 };
 
@@ -625,22 +659,7 @@ export const addCommentToPost = async (
     createdAt: new Date().toISOString(),
   };
 
-  // 1. Client Firestore (Root + Artifact)
-  try {
-    const rootCommentsRef = doc(db, 'community_posts', postId, 'comments', commentId);
-    const rootPostRef = doc(db, 'community_posts', postId);
-    await setDoc(rootCommentsRef, fullComment);
-    await updateDoc(rootPostRef, { commentsCount: increment(1) });
-  } catch (e) {}
-
-  try {
-    const artCommentsRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_posts', postId, 'comments', commentId);
-    const artPostRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_posts', postId);
-    await setDoc(artCommentsRef, fullComment);
-    await updateDoc(artPostRef, { commentsCount: increment(1) });
-  } catch (e) {}
-
-  // 2. Server API Dispatch
+  // 1. Server API Dispatch (Persists in Supabase)
   try {
     await fetch('/api/community/comment', {
       method: 'POST',
@@ -648,6 +667,19 @@ export const addCommentToPost = async (
       body: JSON.stringify({ postId, ...commentData, id: commentId })
     });
   } catch (apiErr) {}
+
+  // 2. Broadcast across channels
+  if (typeof window !== 'undefined') {
+    try {
+      window.dispatchEvent(new CustomEvent(`tsehay_comment_updated_${postId}`, { detail: fullComment }));
+      window.dispatchEvent(new CustomEvent('tsehay_community_updated'));
+      if ('BroadcastChannel' in window) {
+        const bc = new BroadcastChannel('tsehay_community_channel');
+        bc.postMessage({ type: 'comment_added', postId, comment: fullComment });
+        setTimeout(() => bc.close(), 100);
+      }
+    } catch (e) {}
+  }
 
   // 3. Automated Email Notification to Post Author
   if (postAuthorMeta?.authorEmail && postAuthorMeta.authorEmail !== commentData.authorEmail) {
@@ -672,15 +704,21 @@ export const addCommentToPost = async (
 // 9. Delete Comment
 export const deleteCommentFromPost = async (postId: string, commentId: string) => {
   try {
-    const commentDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_posts', postId, 'comments', commentId);
-    const postDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_posts', postId);
-
-    await deleteDoc(commentDocRef);
-    await updateDoc(postDocRef, {
-      commentsCount: increment(-1),
+    await fetch(`/api/community/comment?postId=${encodeURIComponent(postId)}&commentId=${encodeURIComponent(commentId)}`, {
+      method: 'DELETE'
     });
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent(`tsehay_comment_updated_${postId}`));
+      window.dispatchEvent(new CustomEvent('tsehay_community_updated'));
+      if ('BroadcastChannel' in window) {
+        const bc = new BroadcastChannel('tsehay_community_channel');
+        bc.postMessage({ type: 'comment_deleted', postId, commentId });
+        setTimeout(() => bc.close(), 100);
+      }
+    }
   } catch (e) {}
 };
+
 
 // ==========================================
 // 💬 DIRECT MESSAGING & INBOX CHAT SYSTEM

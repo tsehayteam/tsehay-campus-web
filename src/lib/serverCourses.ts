@@ -194,3 +194,85 @@ export async function getLiveYouTubeVideosServer(): Promise<LiveYouTubeVideoItem
 
   return [];
 }
+
+export const INITIAL_SERVER_COMMUNITY_POSTS = [
+  {
+    id: 'sample-admin-welcome',
+    authorId: 'admin-tsehay',
+    authorName: 'Tsehay Campus Admin',
+    authorEmail: 'admin@tsehaycampus.com',
+    authorPhoto: '/tc-logo.jpg',
+    isAdmin: true,
+    isPro: true,
+    content: '🎉 እንኳን ወደ Tsehay Campus የተማሪዎች ማህበረሰብ (Student Community & Social Network) በደህና መጡ! \n\nእዚህ ክፍል ውስጥ የኮርስ ጥያቄዎችዎን መጠየቅ፣ ያገኛችሁትን የስራ እና የቢዝነስ ስኬት ማጋራት፣ እንዲሁም ከአስተማሪዎች እና ከተማሪ ጓደኞቻችሁ ጋር ቀጥታ መወያየት ትችላላችሁ። መልካም የመማር እና የማደግ ጊዜ ይሁንልን! 🚀',
+    category: 'general',
+    tags: ['አጠቃላይ', 'ማስታወቂያ', 'እንኳን_ደህና_መጡ'],
+    likes: ['user-sample-1', 'user-sample-2', 'user-sample-3'],
+    commentsCount: 2,
+    isPinned: true,
+    isFeatured: true,
+    createdAt: new Date(Date.now() - 3600000 * 2).toISOString(),
+  },
+  {
+    id: 'sample-student-success',
+    authorId: 'student-yosef',
+    authorName: 'ዮሴፍ ተስፋዬ',
+    authorEmail: 'yosef.tesfaye@gmail.com',
+    authorPhoto: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=200&auto=format&fit=crop&q=80',
+    isAdmin: false,
+    isPro: true,
+    content: '🔥 የፌስቡክ ማስታወቂያ (Meta Ads) ኮርሱን ጨርሼ የመጀመሪያ የደንበኛ ዘመቻዬን (Campaign) ጀምሬ ነበር። በ 3 ቀናት ውስጥ ብቻ ከ 45 በላይ ደንበኞች በቴሌግራም ደውለው እቃውን ገዝተውኛል! ኮርሱ በእውነት ዓይን ከፋች ነው። ለተዘጋጀው እጅግ አመሰግናለሁ!',
+    imageUrl: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&auto=format&fit=crop&q=80',
+    category: 'success',
+    tags: ['ስኬት', 'ማርኬቲንግ', 'ፌስቡክ_ማስታወቂያ'],
+    likes: ['user-sample-1', 'admin-tsehay', 'user-sample-4', 'user-sample-5'],
+    commentsCount: 3,
+    isPinned: false,
+    isFeatured: true,
+    createdAt: new Date(Date.now() - 3600000 * 5).toISOString(),
+  },
+  {
+    id: 'sample-tech-question',
+    authorId: 'student-selam',
+    authorName: 'ሰላም አበበ',
+    authorEmail: 'selam.abebe@gmail.com',
+    authorPhoto: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80',
+    isAdmin: false,
+    isPro: true,
+    content: 'ጥያቄ ነበረኝ፤ በ Shein እና 1688 እቃዎችን አስመጥተን በካርጎ ስናስገባ የጉምሩክ ቀረጥ ስሌት እንዴት ነው የሚሰራው? ልምድ ያላችሁ ተማሪዎች ወይም መምህራን ብታጋሩኝ ደስ ይለኛል። 🙏',
+    category: 'questions',
+    tags: ['ጥያቄ', 'ሼን_ኢምፖርት', 'ካርጎ'],
+    likes: ['user-sample-2'],
+    commentsCount: 1,
+    isPinned: false,
+    isFeatured: false,
+    createdAt: new Date(Date.now() - 3600000 * 12).toISOString(),
+  }
+];
+
+export async function getLiveCommunityPostsServer(category?: string): Promise<any[]> {
+  try {
+    const { data: setting } = await supabaseServer
+      .from('site_settings')
+      .select('data')
+      .eq('key', 'community_posts')
+      .maybeSingle();
+
+    if (setting && setting.data && Array.isArray(setting.data)) {
+      let list = setting.data;
+      if (category && category !== 'all') {
+        if (category === 'pinned') {
+          list = list.filter((p: any) => p.isPinned);
+        } else {
+          list = list.filter((p: any) => p.category === category);
+        }
+      }
+      return list;
+    }
+  } catch (err) {
+    console.warn('getLiveCommunityPostsServer error:', err);
+  }
+
+  return INITIAL_SERVER_COMMUNITY_POSTS;
+}
+
