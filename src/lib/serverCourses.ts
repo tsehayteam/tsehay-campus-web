@@ -122,3 +122,75 @@ export async function getLiveAboutVideoDataServer(): Promise<LiveAboutVideoData>
 
   return result;
 }
+
+export interface LivePortfolioData {
+  localVideoUrl: string;
+  internationalVideoUrl: string;
+}
+
+const DEFAULT_PORTFOLIO_LOCAL = 'https://youtu.be/h9JsGCkd_4o?si=qoSHzmD3-EWjin8k';
+const DEFAULT_PORTFOLIO_INTL = 'https://youtu.be/6Ssyn7H3nWk?si=CGFugLZIcMiAW4oe';
+
+export async function getLivePortfolioVideosServer(): Promise<LivePortfolioData> {
+  const result: LivePortfolioData = {
+    localVideoUrl: DEFAULT_PORTFOLIO_LOCAL,
+    internationalVideoUrl: DEFAULT_PORTFOLIO_INTL
+  };
+
+  try {
+    const { data: setting } = await supabaseServer
+      .from('site_settings')
+      .select('data')
+      .eq('key', 'youtube_portfolio')
+      .maybeSingle();
+
+    if (setting && setting.data) {
+      const d = setting.data;
+      if (d.localVideoUrl && typeof d.localVideoUrl === 'string' && d.localVideoUrl.trim()) {
+        result.localVideoUrl = d.localVideoUrl.trim();
+      }
+      if (d.internationalVideoUrl && typeof d.internationalVideoUrl === 'string' && d.internationalVideoUrl.trim()) {
+        result.internationalVideoUrl = d.internationalVideoUrl.trim();
+      }
+    }
+  } catch (err) {
+    console.warn('getLivePortfolioVideosServer error:', err);
+  }
+
+  return result;
+}
+
+export interface LiveYouTubeVideoItem {
+  id: string;
+  title: string;
+  youtubeUrl: string;
+  youtubeId?: string;
+  thumbnail?: string;
+  videoSrc?: string;
+  order?: number;
+}
+
+export async function getLiveYouTubeVideosServer(): Promise<LiveYouTubeVideoItem[]> {
+  try {
+    const { data: rows, error } = await supabaseServer
+      .from('youtube_videos')
+      .select('*')
+      .order('order_num', { ascending: true });
+
+    if (!error && Array.isArray(rows) && rows.length > 0) {
+      return rows.map(r => ({
+        id: r.id,
+        title: r.title || 'ነፃ የዩቲዩብ ስልጠና',
+        youtubeUrl: r.youtube_url || (r.youtube_id ? `https://www.youtube.com/watch?v=${r.youtube_id}` : ''),
+        youtubeId: r.youtube_id || '',
+        thumbnail: r.thumbnail || (r.youtube_id ? `https://img.youtube.com/vi/${r.youtube_id}/hqdefault.jpg` : ''),
+        videoSrc: r.video_src || '',
+        order: r.order_num ?? 0
+      }));
+    }
+  } catch (err) {
+    console.warn('getLiveYouTubeVideosServer error:', err);
+  }
+
+  return [];
+}

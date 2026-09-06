@@ -2043,6 +2043,14 @@ export default function AdminDashboard() {
           internationalVideoUrl: portfolioInternationalUrl.trim()
         }
       }));
+      if (typeof BroadcastChannel !== 'undefined') {
+        const bc = new BroadcastChannel('tsehay_youtube_portfolio_channel');
+        bc.postMessage({
+          localVideoUrl: portfolioLocalUrl.trim(),
+          internationalVideoUrl: portfolioInternationalUrl.trim()
+        });
+        setTimeout(() => bc.close(), 200);
+      }
     } catch (e) {}
 
     try {
@@ -2278,6 +2286,13 @@ export default function AdminDashboard() {
       const updated = [...filtered, videoPayload].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
       try {
         localStorage.setItem('tsehay_youtube_videos_cache', JSON.stringify(updated));
+        window.dispatchEvent(new Event('storage'));
+        window.dispatchEvent(new CustomEvent('tsehay_youtube_videos_updated', { detail: { videos: updated } }));
+        if (typeof BroadcastChannel !== 'undefined') {
+          const bc = new BroadcastChannel('tsehay_youtube_videos_channel');
+          bc.postMessage(updated);
+          setTimeout(() => bc.close(), 200);
+        }
       } catch (e) {}
       return updated;
     });
@@ -2335,6 +2350,13 @@ export default function AdminDashboard() {
         const updated = prev.filter(v => v.id !== id);
         try {
           localStorage.setItem('tsehay_youtube_videos_cache', JSON.stringify(updated));
+          window.dispatchEvent(new Event('storage'));
+          window.dispatchEvent(new CustomEvent('tsehay_youtube_videos_updated', { detail: { videos: updated } }));
+          if (typeof BroadcastChannel !== 'undefined') {
+            const bc = new BroadcastChannel('tsehay_youtube_videos_channel');
+            bc.postMessage(updated);
+            setTimeout(() => bc.close(), 200);
+          }
         } catch (e) {}
         return updated;
       });

@@ -3,6 +3,7 @@ export const revalidate = 0;
 export const fetchCache = 'force-no-store';
 
 import { NextRequest, NextResponse } from 'next/server';
+import { supabaseServer } from '@/lib/supabase/server';
 import { adminDb, hasAdminCredentials } from '@/lib/firebase/admin';
 
 const NO_CACHE_HEADERS = {
@@ -56,76 +57,59 @@ const DEFAULT_VIDEOS = [
   },
 ];
 
-function extractYouTubeId(url: string): string {
-  if (!url) return '';
-  const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
-  return match ? match[1] : '';
-}
-
 export async function GET(req: NextRequest) {
   try {
-    if (!hasAdminCredentials || !adminDb || typeof adminDb.collection !== 'function') {
-      return NextResponse.json(
-        { success: true, count: DEFAULT_VIDEOS.length, videos: DEFAULT_VIDEOS },
-        { headers: NO_CACHE_HEADERS }
-      );
+    // 1. Primary: Fetch from Supabase youtube_videos table
+    try {
+      const { data: rows, error: sbErr } = await supabaseServer
+        .from('youtube_videos')
+        .select('*')
+        .order('order_num', { ascending: true });
+
+      if (!sbErr && Array.isArray(rows) && rows.length > 0) {
+        const list = rows.map(r => ({
+          id: r.id,
+          title: r.title || 'ነፃ የዩቲዩብ ስልጠና',
+          youtubeUrl: r.youtube_url || (r.youtube_id ? `https://www.youtube.com/watch?v=${r.youtube_id}` : ''),
+          youtubeId: r.youtube_id || '',
+          thumbnail: r.thumbnail || (r.youtube_id ? `https://img.youtube.com/vi/${r.youtube_id}/hqdefault.jpg` : ''),
+          videoSrc: r.video_src || '',
+          order: r.order_num ?? 0,
+        }));
+
+        return NextResponse.json(
+          { success: true, count: list.length, videos: list },
+          { headers: NO_CACHE_HEADERS }
+        );
+      }
+    } catch (e) {
+      console.warn('Supabase youtube_videos GET error in public API:', e);
     }
 
-    const videoMap = new Map<string, any>();
+    // 2. Firebase Admin fallback
+    if (hasAdminCredentials && adminDb && typeof adminDb.collection === 'function') {
+      try {
+        const snap = await adminDb
+          .collection('artifacts')
+          .doc('tsehaycampus-e1a6d')
+          .collection('public')
+          .doc('data')
+          .collection('youtube_videos')
+          .orderBy('order', 'asc')
+          .get();
 
-    // 1. Fetch from artifacts collection
-    try {
-      const snap = await adminDb
-        .collection('artifacts')
-        .doc('tsehaycampus-e1a6d')
-        .collection('public')
-        .doc('data')
-        .collection('youtube_videos')
-        .orderBy('order', 'asc')
-        .get();
-
-      snap.docs.forEach((doc) => {
-        const d = doc.data();
-        const yId = d.youtubeId || extractYouTubeId(d.youtubeUrl || '');
-        videoMap.set(doc.id, {
-          id: doc.id,
-          title: d.title || 'ነፃ የዩቲዩብ ስልጠና',
-          youtubeUrl: d.youtubeUrl || (yId ? `https://www.youtube.com/watch?v=${yId}` : ''),
-          youtubeId: yId,
-          thumbnail: d.thumbnail || (yId ? `https://img.youtube.com/vi/${yId}/hqdefault.jpg` : ''),
-          videoSrc: d.videoSrc || '',
-          order: d.order ?? 0,
-        });
-      });
-    } catch (e) {}
-
-    // 2. Fetch from root collection fallback
-    try {
-      const rootSnap = await adminDb.collection('youtube_videos').get();
-      rootSnap.docs.forEach((doc) => {
-        if (!videoMap.has(doc.id)) {
-          const d = doc.data();
-          const yId = d.youtubeId || extractYouTubeId(d.youtubeUrl || '');
-          videoMap.set(doc.id, {
-            id: doc.id,
-            title: d.title || 'ነፃ የዩቲዩብ ስልጠና',
-            youtubeUrl: d.youtubeUrl || (yId ? `https://www.youtube.com/watch?v=${yId}` : ''),
-            youtubeId: yId,
-            thumbnail: d.thumbnail || (yId ? `https://img.youtube.com/vi/${yId}/hqdefault.jpg` : ''),
-            videoSrc: d.videoSrc || '',
-            order: d.order ?? 0,
-          });
+        if (!snap.empty) {
+          const list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          return NextResponse.json(
+            { success: true, count: list.length, videos: list },
+            { headers: NO_CACHE_HEADERS }
+          );
         }
-      });
-    } catch (e) {}
-
-    let list = Array.from(videoMap.values());
-    if (list.length === 0) {
-      list = DEFAULT_VIDEOS;
+      } catch (e) {}
     }
 
     return NextResponse.json(
-      { success: true, count: list.length, videos: list },
+      { success: true, count: DEFAULT_VIDEOS.length, videos: DEFAULT_VIDEOS },
       { headers: NO_CACHE_HEADERS }
     );
   } catch (error: any) {

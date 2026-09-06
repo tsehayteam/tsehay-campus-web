@@ -74,8 +74,15 @@ const DEFAULT_VIDEOS: YouTubeItem[] = [
   },
 ];
 
-export default function YouTubeVideoSlider() {
+interface YouTubeVideoSliderProps {
+  initialVideos?: YouTubeItem[];
+}
+
+export default function YouTubeVideoSlider({ initialVideos }: YouTubeVideoSliderProps = {}) {
   const [videos, setVideos] = useState<YouTubeItem[]>(() => {
+    if (initialVideos && Array.isArray(initialVideos) && initialVideos.length > 0) {
+      return initialVideos;
+    }
     if (typeof window !== 'undefined') {
       try {
         const cached = localStorage.getItem('tsehay_youtube_videos_cache');
@@ -95,8 +102,10 @@ export default function YouTubeVideoSlider() {
   const videoRefs = useRef<{ [key: string]: HTMLVideoElement | null }>({});
   const touchStartX = useRef<number | null>(null);
 
-  // Real-time Firestore sync and server API fetch for dynamic YouTube videos from Admin
+  // Real-time Supabase API sync & local storage / BroadcastChannel listener
   useEffect(() => {
+    let isMounted = true;
+
     // 1. Fail-Safe Server API Fetch
     const fetchApiVideos = async () => {
       try {
@@ -104,7 +113,7 @@ export default function YouTubeVideoSlider() {
         if (!res.ok) {
           res = await fetch('/api/admin/youtube-videos', { cache: 'no-store' });
         }
-        if (res.ok) {
+        if (res.ok && isMounted) {
           const data = await res.json();
           if (data.videos && Array.isArray(data.videos) && data.videos.length > 0) {
             const list: YouTubeItem[] = data.videos.map((item: any) => {
@@ -131,38 +140,52 @@ export default function YouTubeVideoSlider() {
     };
     fetchApiVideos();
 
-    // 2. Real-time Firestore snapshot listener
-    try {
-      const q = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'youtube_videos'), orderBy('order', 'asc'));
-      const unsubscribe = onSnapshot(q, (snapshot) => {
-        if (!snapshot.empty) {
-          const list: YouTubeItem[] = snapshot.docs.map((doc) => {
-            const data = doc.data();
-            const yId = data.youtubeId || extractYouTubeId(data.youtubeUrl || '');
-            return {
-              id: doc.id,
-              title: data.title || 'ነፃ የዩቲዩብ ስልጠና',
-              youtubeUrl: data.youtubeUrl || (yId ? `https://www.youtube.com/watch?v=${yId}` : ''),
-              youtubeId: yId,
-              thumbnail: data.thumbnail || getYouTubeThumbnail(yId, data.thumbnail),
-              videoSrc: data.videoSrc || '',
-              order: data.order ?? 0,
-            };
-          });
-          setVideos(list);
-          try {
-            localStorage.setItem('tsehay_youtube_videos_cache', JSON.stringify(list));
-          } catch (e) {}
-        }
-      }, (error) => {
-        console.warn("Firestore youtube_videos listener fallback:", error);
-        fetchApiVideos();
-      });
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === 'tsehay_youtube_videos_cache' && e.newValue && isMounted) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setVideos(parsed);
+          }
+        } catch (err) {}
+      }
+    };
 
-      return () => unsubscribe();
-    } catch (e) {
-      console.warn("Firestore listener init failed:", e);
+    const handleCustom = (e: any) => {
+      if (e.detail?.videos && Array.isArray(e.detail.videos) && isMounted) {
+        setVideos(e.detail.videos);
+      } else {
+        fetchApiVideos();
+      }
+    };
+
+    let bc: BroadcastChannel | null = null;
+    if (typeof BroadcastChannel !== 'undefined') {
+      try {
+        bc = new BroadcastChannel('tsehay_youtube_videos_channel');
+        bc.onmessage = (event) => {
+          if (event?.data && isMounted) {
+            if (Array.isArray(event.data)) {
+              setVideos(event.data);
+            } else if (event.data?.videos && Array.isArray(event.data.videos)) {
+              setVideos(event.data.videos);
+            } else {
+              fetchApiVideos();
+            }
+          }
+        };
+      } catch (e) {}
     }
+
+    window.addEventListener('storage', handleStorage);
+    window.addEventListener('tsehay_youtube_videos_updated', handleCustom);
+
+    return () => {
+      isMounted = false;
+      if (bc) bc.close();
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('tsehay_youtube_videos_updated', handleCustom);
+    };
   }, []);
 
   const total = videos.length || 1;

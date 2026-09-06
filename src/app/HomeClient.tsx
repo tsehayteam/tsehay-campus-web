@@ -157,11 +157,15 @@ function MagneticLink({ children, className, href, ...props }: any) {
 export default function HomeClient({ 
   initialCourses, 
   initialLandingVideo,
-  initialLandingVideoThumbnail
+  initialLandingVideoThumbnail,
+  initialPortfolio,
+  initialYouTubeVideos
 }: { 
   initialCourses?: any[]; 
   initialLandingVideo?: string;
   initialLandingVideoThumbnail?: string;
+  initialPortfolio?: { localVideoUrl?: string; internationalVideoUrl?: string };
+  initialYouTubeVideos?: any[];
 }) {
   const { user } = useAuth();
   const router = useRouter();
@@ -1038,14 +1042,14 @@ export default function HomeClient({
           6. FREE LESSONS VIDEO SLIDER
          ========================================================================= */}
       <div className="scrolly-reveal">
-        <YouTubeVideoSlider />
+        <YouTubeVideoSlider initialVideos={initialYouTubeVideos} />
       </div>
 
       {/* =========================================================================
           7. INSTRUCTOR YOUTUBE PORTFOLIO (2-Column Terafab Glassmorphism Section)
          ========================================================================= */}
       <div className="scrolly-reveal">
-        <InstructorYouTubePortfolio />
+        <InstructorYouTubePortfolio initialData={initialPortfolio} />
       </div>
       
       {/* =========================================================================

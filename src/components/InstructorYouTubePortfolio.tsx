@@ -34,18 +34,28 @@ export function extractYouTubeId(urlOrId: string): string {
   return trimmed;
 }
 
-export const DEFAULT_PORTFOLIO_LOCAL = 'https://www.youtube.com/watch?v=h9JsGCkd_4o';
-export const DEFAULT_PORTFOLIO_INTL = 'https://www.youtube.com/watch?v=icbzxQv-m3g';
+export const DEFAULT_PORTFOLIO_LOCAL = 'https://youtu.be/h9JsGCkd_4o?si=qoSHzmD3-EWjin8k';
+export const DEFAULT_PORTFOLIO_INTL = 'https://youtu.be/6Ssyn7H3nWk?si=CGFugLZIcMiAW4oe';
 
-export default function InstructorYouTubePortfolio() {
+interface InstructorYouTubePortfolioProps {
+  initialData?: {
+    localVideoUrl?: string;
+    internationalVideoUrl?: string;
+  };
+}
+
+export default function InstructorYouTubePortfolio({ initialData }: InstructorYouTubePortfolioProps = {}) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Synchronously initialize with cached settings or verified portfolio videos
+  // Synchronously initialize with server props, cached settings or verified portfolio videos
   const [localVideoUrl, setLocalVideoUrl] = useState<string>(() => {
+    if (initialData?.localVideoUrl && typeof initialData.localVideoUrl === 'string' && initialData.localVideoUrl.trim()) {
+      return initialData.localVideoUrl.trim();
+    }
     if (typeof window !== 'undefined') {
       try {
         const cached = localStorage.getItem('tsehay_youtube_portfolio_cache');
@@ -61,6 +71,9 @@ export default function InstructorYouTubePortfolio() {
   });
 
   const [internationalVideoUrl, setInternationalVideoUrl] = useState<string>(() => {
+    if (initialData?.internationalVideoUrl && typeof initialData.internationalVideoUrl === 'string' && initialData.internationalVideoUrl.trim()) {
+      return initialData.internationalVideoUrl.trim();
+    }
     if (typeof window !== 'undefined') {
       try {
         const cached = localStorage.getItem('tsehay_youtube_portfolio_cache');
@@ -242,7 +255,7 @@ export default function InstructorYouTubePortfolio() {
     };
   }, []);
 
-  // 3. Robust Real-time Firestore & Admin Sync (Matches Free YouTube Videos Slider)
+  // 3. Robust Real-time Sync (Supabase API + Real-time Local Broadcast & Events)
   useEffect(() => {
     let isMounted = true;
 
@@ -251,99 +264,36 @@ export default function InstructorYouTubePortfolio() {
         let fetchedLocal = '';
         let fetchedIntl = '';
 
-        // 1. Primary: Check root 'settings' collection
         try {
-          const settingsRef = doc(db, 'settings', 'youtube_portfolio');
-          const settingsSnap = await getDoc(settingsRef);
-          if (settingsSnap.exists()) {
-            const sData = settingsSnap.data();
-            if (sData?.localVideoUrl) fetchedLocal = sData.localVideoUrl.trim();
-            if (sData?.internationalVideoUrl) fetchedIntl = sData.internationalVideoUrl.trim();
+          let res = await fetch('/api/site-settings?settingKey=youtube_portfolio', { cache: 'no-store' });
+          if (!res.ok) res = await fetch('/api/admin/site-settings?settingKey=youtube_portfolio', { cache: 'no-store' });
+          if (res.ok) {
+            const j = await res.json();
+            if (j?.data?.localVideoUrl && typeof j.data.localVideoUrl === 'string') {
+              fetchedLocal = j.data.localVideoUrl.trim();
+            }
+            if (j?.data?.internationalVideoUrl && typeof j.data.internationalVideoUrl === 'string') {
+              fetchedIntl = j.data.internationalVideoUrl.trim();
+            }
           }
         } catch (e) {}
-
-        if (!fetchedLocal || !fetchedIntl) {
-          try {
-            const docRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'site_settings', 'youtube_portfolio');
-            const snap = await getDoc(docRef);
-            if (snap.exists()) {
-              const data = snap.data();
-              if (data?.localVideoUrl && !fetchedLocal) fetchedLocal = data.localVideoUrl.trim();
-              if (data?.internationalVideoUrl && !fetchedIntl) fetchedIntl = data.internationalVideoUrl.trim();
-            }
-          } catch (e) {}
-        }
-
-        if (!fetchedLocal || !fetchedIntl) {
-          try {
-            const rootRef = doc(db, 'site_settings', 'youtube_portfolio');
-            const rootSnap = await getDoc(rootRef);
-            if (rootSnap.exists()) {
-              const rData = rootSnap.data();
-              if (rData?.localVideoUrl && !fetchedLocal) fetchedLocal = rData.localVideoUrl.trim();
-              if (rData?.internationalVideoUrl && !fetchedIntl) fetchedIntl = rData.internationalVideoUrl.trim();
-            }
-          } catch (e) {}
-        }
-
-        if (!fetchedLocal || !fetchedIntl) {
-          try {
-            let res = await fetch('/api/site-settings?settingKey=youtube_portfolio', { cache: 'no-store' });
-            if (!res.ok) res = await fetch('/api/admin/site-settings?settingKey=youtube_portfolio', { cache: 'no-store' });
-            if (res.ok) {
-              const j = await res.json();
-              if (j?.data?.localVideoUrl && !fetchedLocal) fetchedLocal = j.data.localVideoUrl.trim();
-              if (j?.data?.internationalVideoUrl && !fetchedIntl) fetchedIntl = j.data.internationalVideoUrl.trim();
-            }
-          } catch (e) {}
-        }
 
         if (isMounted) {
           if (fetchedLocal) setLocalVideoUrl(fetchedLocal);
           if (fetchedIntl) setInternationalVideoUrl(fetchedIntl);
+          if (fetchedLocal || fetchedIntl) {
+            try {
+              localStorage.setItem('tsehay_youtube_portfolio_cache', JSON.stringify({
+                localVideoUrl: fetchedLocal || localVideoUrl,
+                internationalVideoUrl: fetchedIntl || internationalVideoUrl
+              }));
+            } catch (e) {}
+          }
         }
       } catch (err) {}
     };
 
     fetchPortfolio();
-
-    let unsubscribe = () => {};
-    let unsubscribeSettings = () => {};
-    try {
-      // Listen to primary settings/youtube_portfolio
-      const settingsDocRef = doc(db, 'settings', 'youtube_portfolio');
-      unsubscribeSettings = onSnapshot(settingsDocRef, (snap) => {
-        if (snap.exists() && isMounted) {
-          const data = snap.data();
-          if (data?.localVideoUrl) setLocalVideoUrl(data.localVideoUrl.trim());
-          if (data?.internationalVideoUrl) setInternationalVideoUrl(data.internationalVideoUrl.trim());
-          try {
-            localStorage.setItem('tsehay_youtube_portfolio_cache', JSON.stringify({
-              localVideoUrl: data.localVideoUrl || DEFAULT_PORTFOLIO_LOCAL,
-              internationalVideoUrl: data.internationalVideoUrl || DEFAULT_PORTFOLIO_INTL
-            }));
-          } catch (e) {}
-        }
-      }, () => {});
-
-      // Fallback listener on artifacts collection
-      const docRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'site_settings', 'youtube_portfolio');
-      unsubscribe = onSnapshot(docRef, (snap) => {
-        if (snap.exists() && isMounted) {
-          const data = snap.data();
-          if (data?.localVideoUrl) setLocalVideoUrl(data.localVideoUrl.trim());
-          if (data?.internationalVideoUrl) setInternationalVideoUrl(data.internationalVideoUrl.trim());
-          try {
-            localStorage.setItem('tsehay_youtube_portfolio_cache', JSON.stringify({
-              localVideoUrl: data.localVideoUrl || DEFAULT_PORTFOLIO_LOCAL,
-              internationalVideoUrl: data.internationalVideoUrl || DEFAULT_PORTFOLIO_INTL
-            }));
-          } catch (e) {}
-        }
-      }, (err) => {
-        // Handled silently to prevent uncaught console errors
-      });
-    } catch (e) {}
 
     const handleStorage = (e: StorageEvent) => {
       if (e.key === 'tsehay_youtube_portfolio_cache' && e.newValue && isMounted) {
@@ -362,13 +312,25 @@ export default function InstructorYouTubePortfolio() {
       }
     };
 
+    let bc: BroadcastChannel | null = null;
+    if (typeof BroadcastChannel !== 'undefined') {
+      try {
+        bc = new BroadcastChannel('tsehay_youtube_portfolio_channel');
+        bc.onmessage = (event) => {
+          if (event?.data && isMounted) {
+            if (event.data.localVideoUrl) setLocalVideoUrl(event.data.localVideoUrl);
+            if (event.data.internationalVideoUrl) setInternationalVideoUrl(event.data.internationalVideoUrl);
+          }
+        };
+      } catch (e) {}
+    }
+
     window.addEventListener('storage', handleStorage);
     window.addEventListener('tsehay_portfolio_updated', handleCustom);
 
     return () => {
       isMounted = false;
-      unsubscribe();
-      unsubscribeSettings();
+      if (bc) bc.close();
       window.removeEventListener('storage', handleStorage);
       window.removeEventListener('tsehay_portfolio_updated', handleCustom);
     };

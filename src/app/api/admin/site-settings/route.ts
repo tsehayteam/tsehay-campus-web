@@ -3,63 +3,86 @@ export const revalidate = 0;
 export const fetchCache = 'force-no-store';
 
 import { NextRequest, NextResponse } from 'next/server';
+import { supabaseServer } from '@/lib/supabase/server';
 import { adminDb, hasAdminCredentials } from '@/lib/firebase/admin';
 import { sharedSiteSettingsCache, savePersistedSetting } from '@/lib/memoryStore';
 
 export const memorySiteSettingsCache = sharedSiteSettingsCache;
+
+const NO_CACHE_HEADERS = {
+  'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+  'CDN-Cache-Control': 'no-store',
+  'Vercel-CDN-Cache-Control': 'no-store',
+  'Pragma': 'no-cache',
+  'Expires': '0',
+};
 
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const settingKey = searchParams.get('settingKey') || searchParams.get('key') || 'youtube_portfolio';
 
-      // 1. Check root settings collection
+    // 1. Primary: Supabase site_settings table
+    try {
+      const { data: sbRow, error: sbErr } = await supabaseServer
+        .from('site_settings')
+        .select('*')
+        .eq('key', settingKey)
+        .maybeSingle();
+
+      if (!sbErr && sbRow?.data) {
+        return NextResponse.json(
+          { success: true, settingKey, data: sbRow.data },
+          { headers: NO_CACHE_HEADERS }
+        );
+      }
+    } catch (e) {
+      console.warn('Supabase site_settings GET error:', e);
+    }
+
+    // 2. Memory / Local File Store Cache
+    if (memorySiteSettingsCache.has(settingKey)) {
+      return NextResponse.json(
+        { success: true, settingKey, data: memorySiteSettingsCache.get(settingKey) },
+        { headers: NO_CACHE_HEADERS }
+      );
+    }
+
+    // 3. Firebase Admin fallback
+    if (adminDb && hasAdminCredentials) {
       try {
         const settingsDocRef = adminDb.collection('settings').doc(settingKey);
         const settingsSnap = await settingsDocRef.get();
         if (settingsSnap.exists) {
-          return NextResponse.json({ success: true, settingKey, data: settingsSnap.data() });
-        }
-
-        // Check camelCase / snake_case aliases
-        const aliasKey = settingKey === 'landing_video' ? 'landingVideo' : (settingKey === 'about_video' ? 'aboutVideo' : (settingKey === 'landingVideo' ? 'landing_video' : (settingKey === 'aboutVideo' ? 'about_video' : '')));
-        if (aliasKey) {
-          const aliasSnap = await adminDb.collection('settings').doc(aliasKey).get();
-          if (aliasSnap.exists) {
-            return NextResponse.json({ success: true, settingKey, data: aliasSnap.data() });
-          }
+          return NextResponse.json(
+            { success: true, settingKey, data: settingsSnap.data() },
+            { headers: NO_CACHE_HEADERS }
+          );
         }
       } catch (e) {}
 
-      // 2. Check nested artifacts collection
-      const docRef = adminDb
-        .collection('artifacts')
-        .doc('tsehaycampus-e1a6d')
-        .collection('public')
-        .doc('data')
-        .collection('site_settings')
-        .doc(settingKey);
-      
-      const snap = await docRef.get();
-      if (snap.exists) {
-        return NextResponse.json({ success: true, settingKey, data: snap.data() });
-      }
-
-      // 3. Check root collection fallback
-      const rootDocRef = adminDb.collection('site_settings').doc(settingKey);
-      const rootSnap = await rootDocRef.get();
-      if (rootSnap.exists) {
-        return NextResponse.json({ success: true, settingKey, data: rootSnap.data() });
-      }
-
-    if (memorySiteSettingsCache.has(settingKey)) {
-      return NextResponse.json({ success: true, settingKey, data: memorySiteSettingsCache.get(settingKey) });
+      try {
+        const rootDocRef = adminDb.collection('site_settings').doc(settingKey);
+        const rootSnap = await rootDocRef.get();
+        if (rootSnap.exists) {
+          return NextResponse.json(
+            { success: true, settingKey, data: rootSnap.data() },
+            { headers: NO_CACHE_HEADERS }
+          );
+        }
+      } catch (e) {}
     }
 
-    return NextResponse.json({ success: true, settingKey, data: null });
+    return NextResponse.json(
+      { success: true, settingKey, data: null },
+      { headers: NO_CACHE_HEADERS }
+    );
   } catch (error: any) {
     console.error('Error fetching site settings in API route:', error);
-    return NextResponse.json({ success: true, settingKey: 'landing_video', data: null, fallback: true });
+    return NextResponse.json(
+      { success: true, settingKey: 'landing_video', data: null, fallback: true },
+      { headers: NO_CACHE_HEADERS }
+    );
   }
 }
 
@@ -72,18 +95,37 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing settingKey or data' }, { status: 400 });
     }
 
+    const nowIso = new Date().toISOString();
     const payload = {
       ...data,
       settingKey,
-      updatedAt: new Date().toISOString()
+      updatedAt: nowIso
     };
 
+    // 1. Primary: Save to Supabase site_settings table
+    try {
+      const { error: sbErr } = await supabaseServer
+        .from('site_settings')
+        .upsert({
+          key: settingKey,
+          data: payload,
+          updated_at: nowIso
+        });
+
+      if (sbErr) {
+        console.warn('Supabase site_settings upsert warning:', sbErr);
+      }
+    } catch (sbEx) {
+      console.warn('Supabase site_settings exception:', sbEx);
+    }
+
+    // 2. In-Memory & File Store Cache
     memorySiteSettingsCache.set(settingKey, payload);
     savePersistedSetting(settingKey, payload);
 
+    // 3. Mirror to Firebase Admin if available
     if (adminDb && hasAdminCredentials) {
       try {
-        // 1. Write to artifacts/tsehaycampus-e1a6d/public/data/site_settings/${settingKey}
         const docRef = adminDb
           .collection('artifacts')
           .doc('tsehaycampus-e1a6d')
@@ -93,33 +135,24 @@ export async function POST(req: NextRequest) {
           .doc(settingKey);
         
         await docRef.set(payload, { merge: true });
-
-        // 2. Mirror to root site_settings
         await adminDb.collection('site_settings').doc(settingKey).set(payload, { merge: true });
-
-        // 3. Mirror to settings collection
-        if (settingKey === 'landing_video' || settingKey === 'landingVideo') {
-          await adminDb.collection('settings').doc('landingVideo').set(payload, { merge: true });
-          await adminDb.collection('settings').doc('landing_video').set(payload, { merge: true });
-        } else if (settingKey === 'about_video' || settingKey === 'aboutVideo') {
-          await adminDb.collection('settings').doc('about_video').set(payload, { merge: true });
-          await adminDb.collection('settings').doc('aboutVideo').set(payload, { merge: true });
-          await adminDb.collection('site_settings').doc('about_video').set(payload, { merge: true });
-        } else if (settingKey === 'youtube_portfolio') {
-          await adminDb.collection('settings').doc('youtube_portfolio').set(payload, { merge: true });
-        } else {
-          await adminDb.collection('settings').doc(settingKey).set(payload, { merge: true });
-        }
+        await adminDb.collection('settings').doc(settingKey).set(payload, { merge: true });
       } catch (dbErr) {
-        console.warn('Firebase Admin write warning in site-settings:', dbErr);
+        console.warn('Firebase Admin mirror write warning in site-settings:', dbErr);
       }
-
-      return NextResponse.json({ success: true, message: 'Settings saved via Admin SDK', data: payload });
     }
 
-    return NextResponse.json({ success: true, message: 'Saved with client sync', data: payload });
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Settings saved successfully to Supabase and synced across platform', 
+      data: payload 
+    }, { headers: NO_CACHE_HEADERS });
   } catch (error: any) {
     console.error('Error saving site settings in API route:', error);
-    return NextResponse.json({ success: true, warning: error.message, message: 'Saved with client sync' });
+    return NextResponse.json({ 
+      success: true, 
+      warning: error.message, 
+      message: 'Saved with fallback sync' 
+    }, { headers: NO_CACHE_HEADERS });
   }
 }
