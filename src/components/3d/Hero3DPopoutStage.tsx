@@ -227,6 +227,50 @@ export default function Hero3DPopoutStage({
     ? `https://www.youtube-nocookie.com/embed/${parsedVideo.youtubeId}?autoplay=1&mute=1&loop=1&playlist=${parsedVideo.youtubeId}&controls=0&playsinline=1&enablejsapi=1&rel=0&modestbranding=1&iv_load_policy=3`
     : '';
 
+  // 🚀 Guaranteed Immediate Video Auto-play on Mount & URL Change
+  useEffect(() => {
+    setIsPlaying(true);
+
+    const triggerPlay = () => {
+      if (parsedVideo.isYouTube && iframeRef.current?.contentWindow) {
+        iframeRef.current.contentWindow.postMessage(
+          JSON.stringify({ event: 'command', func: 'playVideo', args: '' }),
+          '*'
+        );
+      } else if (videoRef.current) {
+        videoRef.current.muted = true;
+        videoRef.current.play().catch(() => {});
+      }
+    };
+
+    // Immediate and staged triggers to handle iframe/player initialization delays
+    triggerPlay();
+    const timer1 = setTimeout(triggerPlay, 400);
+    const timer2 = setTimeout(triggerPlay, 1000);
+    const timer3 = setTimeout(triggerPlay, 2200);
+
+    // Browser policy gesture fallback: kick off autoplay on first interaction
+    const onUserGesture = () => {
+      triggerPlay();
+      window.removeEventListener('pointerdown', onUserGesture);
+      window.removeEventListener('scroll', onUserGesture);
+      window.removeEventListener('keydown', onUserGesture);
+    };
+
+    window.addEventListener('pointerdown', onUserGesture, { once: true, passive: true });
+    window.addEventListener('scroll', onUserGesture, { once: true, passive: true });
+    window.addEventListener('keydown', onUserGesture, { once: true, passive: true });
+
+    return () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+      clearTimeout(timer3);
+      window.removeEventListener('pointerdown', onUserGesture);
+      window.removeEventListener('scroll', onUserGesture);
+      window.removeEventListener('keydown', onUserGesture);
+    };
+  }, [activeVideoUrl, parsedVideo.isYouTube, parsedVideo.youtubeId]);
+
   // Minimalist Play/Pause Toggle Handler (Works with YouTube postMessage and HTML5 video)
   const togglePlayPause = (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
@@ -258,6 +302,9 @@ export default function Hero3DPopoutStage({
         videoRef.current.muted = false;
       }
       setIsMuted(false);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('duck-ambient-audio'));
+      }
     } else {
       if (parsedVideo.isYouTube && iframeRef.current?.contentWindow) {
         iframeRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'mute', args: '' }), '*');
@@ -265,12 +312,18 @@ export default function Hero3DPopoutStage({
         videoRef.current.muted = true;
       }
       setIsMuted(true);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('restore-ambient-audio'));
+      }
     }
   };
 
   const handleOpenModal = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsModalOpen(true);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('duck-ambient-audio'));
+    }
   };
 
   // Live student counter pulse
@@ -364,8 +417,17 @@ export default function Hero3DPopoutStage({
                 src={ytAutoplaySrc}
                 title="Tsehay Campus Hero Video"
                 className="w-[125%] h-[125%] -mt-[6%] -ml-[12.5%] object-cover pointer-events-none border-0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                onLoad={() => setIsVideoReady(true)}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                onLoad={() => {
+                  setIsVideoReady(true);
+                  setIsPlaying(true);
+                  if (iframeRef.current?.contentWindow) {
+                    iframeRef.current.contentWindow.postMessage(
+                      JSON.stringify({ event: 'command', func: 'playVideo', args: '' }),
+                      '*'
+                    );
+                  }
+                }}
               />
             </div>
           ) : parsedVideo.isDirectVideo || parsedVideo.type === 'video' ? (
@@ -378,7 +440,14 @@ export default function Hero3DPopoutStage({
                 loop
                 playsInline
                 className="w-full h-full object-cover"
-                onCanPlay={() => setIsVideoReady(true)}
+                onCanPlay={() => {
+                  setIsVideoReady(true);
+                  setIsPlaying(true);
+                  if (videoRef.current) {
+                    videoRef.current.muted = isMuted;
+                    videoRef.current.play().catch(() => {});
+                  }
+                }}
               />
             </div>
           ) : (
@@ -512,7 +581,12 @@ export default function Hero3DPopoutStage({
       {/* 🌟 FULL-SCREEN CINEMATIC VIDEO LIGHTBOX (100% Full-Screen Deep Void Black) */}
       <CinematicVideoModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => {
+          setIsModalOpen(false);
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('restore-ambient-audio'));
+          }
+        }}
         videoUrl={activeVideoUrl}
         poster={displayThumbnail}
         title="የፀሐይ ካምፓስ መግቢያ ቪዲዮ (Tsehay Campus Introduction)"
