@@ -28,28 +28,28 @@ export default function Global3DBackgroundCanvas() {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    // 1. Three.js Scene, Fog & Camera Setup
+    // 1. Three.js Scene, Void Fog & Camera Setup (Lusion.co Inspired Deep Obsidian Depth)
     const scene = new THREE.Scene();
-    // Deep void black atmosphere (#030509)
     scene.background = new THREE.Color(0x030509);
-    scene.fog = new THREE.FogExp2(0x030509, 0.0012);
+    scene.fog = new THREE.FogExp2(0x030509, 0.0010);
 
     let width = window.innerWidth;
     let height = window.innerHeight;
 
-    const camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 3500);
-    camera.position.set(0, 0, 500);
+    const camera = new THREE.PerspectiveCamera(65, width / height, 0.1, 4000);
+    camera.position.set(0, 0, 600);
 
     const renderer = new THREE.WebGLRenderer({
       canvas,
       antialias: true,
       powerPreference: 'high-performance',
+      alpha: false,
     });
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-    // 2. High-Performance Glowing Particle Circular Texture Generator
-    const createGlowTexture = () => {
+    // 2. High-Performance Glowing Radial Particle Texture Generator
+    const createParticleTexture = () => {
       const pCanvas = document.createElement('canvas');
       pCanvas.width = 64;
       pCanvas.height = 64;
@@ -57,8 +57,9 @@ export default function Global3DBackgroundCanvas() {
       if (pCtx) {
         const gradient = pCtx.createRadialGradient(32, 32, 0, 32, 32, 32);
         gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
-        gradient.addColorStop(0.25, 'rgba(249, 176, 60, 0.9)');
-        gradient.addColorStop(0.55, 'rgba(50, 104, 186, 0.45)');
+        gradient.addColorStop(0.2, 'rgba(249, 176, 60, 0.95)');
+        gradient.addColorStop(0.5, 'rgba(0, 210, 255, 0.4)');
+        gradient.addColorStop(0.8, 'rgba(50, 104, 186, 0.15)');
         gradient.addColorStop(1, 'rgba(3, 5, 9, 0)');
         pCtx.fillStyle = gradient;
         pCtx.fillRect(0, 0, 64, 64);
@@ -66,102 +67,90 @@ export default function Global3DBackgroundCanvas() {
       return new THREE.CanvasTexture(pCanvas);
     };
 
-    const particleTexture = createGlowTexture();
+    const particleTexture = createParticleTexture();
 
-    // 3. Deep Cinematic Cosmic Particle Tunnel (1,200+ Nodes)
-    const PARTICLE_COUNT = 1200;
-    const TUNNEL_DEPTH = 3200;
-    const geometry = new THREE.BufferGeometry();
+    // 3. Cosmic Particle Tunnel & Floating Organic Lattice (1,400 Nodes)
+    const PARTICLE_COUNT = 1400;
+    const TUNNEL_DEPTH = 3600;
+    const particleGeometry = new THREE.BufferGeometry();
     const positions = new Float32Array(PARTICLE_COUNT * 3);
+    const initialPositions = new Float32Array(PARTICLE_COUNT * 3);
     const colors = new Float32Array(PARTICLE_COUNT * 3);
     const sizes = new Float32Array(PARTICLE_COUNT);
 
-    // Color Palette: Golden Yellow (#f9b03c), Royal Blue (#3268ba), Pure Diamond (#ffffff)
     const colorGold = new THREE.Color('#f9b03c');
+    const colorCyan = new THREE.Color('#00d2ff');
     const colorBlue = new THREE.Color('#3268ba');
     const colorWhite = new THREE.Color('#ffffff');
 
     for (let i = 0; i < PARTICLE_COUNT; i++) {
-      // Cylindrical distribution around camera pathway
-      const radius = 120 + Math.random() * 850;
+      const radius = 100 + Math.random() * 950;
       const theta = Math.random() * Math.PI * 2;
-      
-      positions[i * 3] = Math.cos(theta) * radius + (Math.random() - 0.5) * 100;
-      positions[i * 3 + 1] = Math.sin(theta) * radius * 0.75 + (Math.random() - 0.5) * 100;
-      positions[i * 3 + 2] = (Math.random() - 0.5) * TUNNEL_DEPTH;
 
-      // Color distribution: 50% Gold, 35% Royal Blue, 15% Bright Star
+      const px = Math.cos(theta) * radius + (Math.random() - 0.5) * 120;
+      const py = Math.sin(theta) * radius * 0.72 + (Math.random() - 0.5) * 120;
+      const pz = (Math.random() - 0.5) * TUNNEL_DEPTH;
+
+      positions[i * 3] = px;
+      positions[i * 3 + 1] = py;
+      positions[i * 3 + 2] = pz;
+
+      initialPositions[i * 3] = px;
+      initialPositions[i * 3 + 1] = py;
+      initialPositions[i * 3 + 2] = pz;
+
+      // Rich chromatic distribution (Gold 45%, Cyan 30%, Blue 15%, Pure White 10%)
       const rand = Math.random();
       let chosenColor = colorGold;
-      if (rand > 0.65) chosenColor = colorBlue;
-      else if (rand > 0.50) chosenColor = colorWhite;
+      if (rand > 0.85) chosenColor = colorWhite;
+      else if (rand > 0.55) chosenColor = colorCyan;
+      else if (rand > 0.40) chosenColor = colorBlue;
 
       colors[i * 3] = chosenColor.r;
       colors[i * 3 + 1] = chosenColor.g;
       colors[i * 3 + 2] = chosenColor.b;
 
-      sizes[i] = Math.random() * 8 + 3.5;
+      sizes[i] = Math.random() * 8.5 + 4.0;
     }
 
-    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-    geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+    particleGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    particleGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    particleGeometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
 
-    const material = new THREE.PointsMaterial({
-      size: 9,
+    const particleMaterial = new THREE.PointsMaterial({
+      size: 9.5,
       vertexColors: true,
       map: particleTexture,
       transparent: true,
-      opacity: 0.85,
+      opacity: 0.9,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
     });
 
-    const particles = new THREE.Points(geometry, material);
+    const particles = new THREE.Points(particleGeometry, particleMaterial);
     scene.add(particles);
 
-    // 4. Digital Neural Pathways (Plexus Line Segments)
-    const lineCount = 180;
-    const lineGeometry = new THREE.BufferGeometry();
-    const linePositions = new Float32Array(lineCount * 6);
-    const lineColors = new Float32Array(lineCount * 6);
+    // 4. Lusion-Style Organic Morphing Ribbon Surface (Fluid Parametric Mesh)
+    const ribbonSegmentsU = 48;
+    const ribbonSegmentsV = 24;
+    const ribbonGeometry = new THREE.PlaneGeometry(1600, 1600, ribbonSegmentsU, ribbonSegmentsV);
+    const ribbonPositions = ribbonGeometry.attributes.position;
 
-    for (let i = 0; i < lineCount; i++) {
-      const idxA = Math.floor(Math.random() * (PARTICLE_COUNT / 2));
-      const idxB = Math.floor(Math.random() * (PARTICLE_COUNT / 2));
-
-      linePositions[i * 6] = positions[idxA * 3];
-      linePositions[i * 6 + 1] = positions[idxA * 3 + 1];
-      linePositions[i * 6 + 2] = positions[idxA * 3 + 2];
-
-      linePositions[i * 6 + 3] = positions[idxB * 3];
-      linePositions[i * 6 + 4] = positions[idxB * 3 + 1];
-      linePositions[i * 6 + 5] = positions[idxB * 3 + 2];
-
-      const c = (i % 2 === 0) ? colorGold : colorBlue;
-      lineColors[i * 6] = c.r;
-      lineColors[i * 6 + 1] = c.g;
-      lineColors[i * 6 + 2] = c.b;
-
-      lineColors[i * 6 + 3] = c.r;
-      lineColors[i * 6 + 4] = c.g;
-      lineColors[i * 6 + 5] = c.b;
-    }
-
-    lineGeometry.setAttribute('position', new THREE.BufferAttribute(linePositions, 3));
-    lineGeometry.setAttribute('color', new THREE.BufferAttribute(lineColors, 3));
-
-    const lineMaterial = new THREE.LineBasicMaterial({
-      vertexColors: true,
+    const ribbonMaterial = new THREE.MeshBasicMaterial({
+      color: 0xf9b03c,
+      wireframe: true,
       transparent: true,
-      opacity: 0.22,
+      opacity: 0.12,
       blending: THREE.AdditiveBlending,
+      depthWrite: false,
     });
 
-    const lineMesh = new THREE.LineSegments(lineGeometry, lineMaterial);
-    scene.add(lineMesh);
+    const ribbonMesh = new THREE.Mesh(ribbonGeometry, ribbonMaterial);
+    ribbonMesh.position.set(0, -250, -400);
+    ribbonMesh.rotation.x = -Math.PI / 2.4;
+    scene.add(ribbonMesh);
 
-    // 5. Orbital Gyroscope Rings (Gold & Royal Blue)
+    // 5. Orbital Kinetic Rings (Gold, Cyan & Indigo)
     const ringGroup = new THREE.Group();
     scene.add(ringGroup);
 
@@ -169,7 +158,15 @@ export default function Global3DBackgroundCanvas() {
       color: 0xf9b03c,
       wireframe: true,
       transparent: true,
-      opacity: 0.25,
+      opacity: 0.28,
+      blending: THREE.AdditiveBlending,
+    });
+
+    const ringMatCyan = new THREE.MeshBasicMaterial({
+      color: 0x00d2ff,
+      wireframe: true,
+      transparent: true,
+      opacity: 0.22,
       blending: THREE.AdditiveBlending,
     });
 
@@ -177,25 +174,33 @@ export default function Global3DBackgroundCanvas() {
       color: 0x3268ba,
       wireframe: true,
       transparent: true,
-      opacity: 0.25,
+      opacity: 0.20,
       blending: THREE.AdditiveBlending,
     });
 
-    const ring1 = new THREE.Mesh(new THREE.TorusGeometry(320, 1.2, 8, 48), ringMatGold);
-    ring1.rotation.x = Math.PI / 2.8;
+    const ring1 = new THREE.Mesh(new THREE.TorusGeometry(340, 1.4, 8, 52), ringMatGold);
+    ring1.rotation.x = Math.PI / 2.6;
     ringGroup.add(ring1);
 
-    const ring2 = new THREE.Mesh(new THREE.TorusGeometry(460, 1.2, 8, 56), ringMatBlue);
-    ring2.rotation.y = Math.PI / 3.2;
+    const ring2 = new THREE.Mesh(new THREE.TorusGeometry(480, 1.2, 8, 64), ringMatCyan);
+    ring2.rotation.y = Math.PI / 3.0;
     ringGroup.add(ring2);
 
-    // 6. Scroll & Mouse Tracking for Cinematic Fly-Through
+    const ring3 = new THREE.Mesh(new THREE.TorusGeometry(620, 1.0, 8, 72), ringMatBlue);
+    ring3.rotation.z = Math.PI / 4.0;
+    ringGroup.add(ring3);
+
+    // 6. Interactive Mouse Velocity & Scroll Inertia Engine
     let targetScrollY = 0;
     let currentScrollY = 0;
-    let mouseX = 0;
-    let mouseY = 0;
     let targetMouseX = 0;
     let targetMouseY = 0;
+    let mouseX = 0;
+    let mouseY = 0;
+    let mouseVelX = 0;
+    let mouseVelY = 0;
+    let lastClientX = 0;
+    let lastClientY = 0;
 
     const onScroll = () => {
       targetScrollY = window.scrollY || window.pageYOffset || 0;
@@ -204,8 +209,16 @@ export default function Global3DBackgroundCanvas() {
     onScroll();
 
     const onMouseMove = (e: MouseEvent) => {
-      targetMouseX = (e.clientX / window.innerWidth - 0.5) * 70;
-      targetMouseY = -(e.clientY / window.innerHeight - 0.5) * 50;
+      const normX = (e.clientX / window.innerWidth - 0.5) * 2;
+      const normY = -(e.clientY / window.innerHeight - 0.5) * 2;
+
+      mouseVelX = e.clientX - lastClientX;
+      mouseVelY = e.clientY - lastClientY;
+      lastClientX = e.clientX;
+      lastClientY = e.clientY;
+
+      targetMouseX = normX * 85;
+      targetMouseY = normY * 65;
     };
     window.addEventListener('mousemove', onMouseMove, { passive: true });
 
@@ -219,59 +232,76 @@ export default function Global3DBackgroundCanvas() {
     };
     window.addEventListener('resize', onResize, { passive: true });
 
-    // 7. Render Loop with Smooth Camera Fly-Through Animation
+    // 7. Render Loop with Fluid Lusion Physics & Reactive Morphing
     let animId: number;
-    let clock = new THREE.Clock();
+    const clock = new THREE.Clock();
 
     const animate = () => {
       animId = requestAnimationFrame(animate);
 
-      const delta = clock.getDelta();
       const elapsedTime = clock.getElapsedTime();
 
-      // Smooth interpolation for scroll and mouse
-      currentScrollY += (targetScrollY - currentScrollY) * 0.06;
-      mouseX += (targetMouseX - mouseX) * 0.05;
-      mouseY += (targetMouseY - mouseY) * 0.05;
+      // Fluid dampening for mouse and scroll
+      currentScrollY += (targetScrollY - currentScrollY) * 0.055;
+      mouseX += (targetMouseX - mouseX) * 0.045;
+      mouseY += (targetMouseY - mouseY) * 0.045;
+      mouseVelX *= 0.92;
+      mouseVelY *= 0.92;
 
-      // Calculate max page scroll height
+      // Max page scroll height
       const maxScroll = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
-      const scrollProgress = currentScrollY / maxScroll;
+      const scrollProgress = Math.min(1, Math.max(0, currentScrollY / maxScroll));
 
-      // 🚀 SCROLL FLY-THROUGH: Camera flies forward deep into the 3D particle space
-      const baseZ = 500;
-      const flyDistance = 2400;
+      // 🚀 Fly-Through Camera Journey
+      const baseZ = 600;
+      const flyDistance = 2600;
       const targetCamZ = baseZ - (scrollProgress * flyDistance);
 
-      camera.position.z += (targetCamZ - camera.position.z) * 0.08;
-      camera.position.x += (mouseX - camera.position.x) * 0.05;
-      camera.position.y += (mouseY - camera.position.y) * 0.05;
+      camera.position.z += (targetCamZ - camera.position.z) * 0.07;
+      camera.position.x += (mouseX - camera.position.x) * 0.045;
+      camera.position.y += (mouseY - camera.position.y) * 0.045;
 
-      // Center ring group relative to camera depth
-      ringGroup.position.z = camera.position.z - 450;
-      ring1.rotation.z += 0.002;
-      ring2.rotation.x += 0.0015;
+      // Keep kinetic rings floating ahead of the camera
+      ringGroup.position.z = camera.position.z - 480;
+      ring1.rotation.z += 0.0022;
+      ring1.rotation.y += 0.0012;
+      ring2.rotation.x += 0.0018;
+      ring2.rotation.z -= 0.0014;
+      ring3.rotation.y += 0.0011;
 
-      // Subtle particle slow rotation
-      particles.rotation.y = elapsedTime * 0.02;
-      lineMesh.rotation.y = elapsedTime * 0.02;
+      // 🌊 Lusion Fluid Ribbon Wave Distortion
+      const posAttr = ribbonGeometry.attributes.position;
+      const timeOffset = elapsedTime * 0.8;
+      for (let i = 0; i < posAttr.count; i++) {
+        const u = (i % (ribbonSegmentsU + 1)) / ribbonSegmentsU;
+        const v = Math.floor(i / (ribbonSegmentsU + 1)) / ribbonSegmentsV;
+        const wave = Math.sin(u * 7 + timeOffset) * 45 + Math.cos(v * 6 + timeOffset * 1.2) * 35;
+        const mouseDistort = (mouseX * 0.15) * Math.sin(u * Math.PI) + (mouseY * 0.15) * Math.cos(v * Math.PI);
+        posAttr.setZ(i, wave + mouseDistort);
+      }
+      posAttr.needsUpdate = true;
+      ribbonMesh.rotation.z = Math.sin(elapsedTime * 0.2) * 0.08;
 
-      // Ensure particles wrap around camera position for infinite tunnel feeling
-      const posArray = geometry.attributes.position.array as Float32Array;
+      // ✨ Infinite Particle Tunnel Wrapping with Mouse Magnetic Deflection
+      const posArray = particleGeometry.attributes.position.array as Float32Array;
       for (let i = 0; i < PARTICLE_COUNT; i++) {
         let z = posArray[i * 3 + 2];
-        // If particle has passed behind camera, push it forward into the deep distance
-        if (z > camera.position.z + 100) {
+        if (z > camera.position.z + 120) {
           posArray[i * 3 + 2] -= TUNNEL_DEPTH;
-        } else if (z < camera.position.z - TUNNEL_DEPTH + 100) {
+        } else if (z < camera.position.z - TUNNEL_DEPTH + 120) {
           posArray[i * 3 + 2] += TUNNEL_DEPTH;
         }
+
+        // Gentle cosmic ambient breathing
+        const initX = initialPositions[i * 3];
+        const initY = initialPositions[i * 3 + 1];
+        const breath = Math.sin(elapsedTime * 0.5 + i) * 8;
+        posArray[i * 3] = initX + breath + (mouseVelX * 0.02);
+        posArray[i * 3 + 1] = initY + breath + (mouseVelY * 0.02);
       }
-      geometry.attributes.position.needsUpdate = true;
+      particleGeometry.attributes.position.needsUpdate = true;
 
-      // Look slightly ahead into the portal
       camera.lookAt(0, 0, camera.position.z - 500);
-
       renderer.render(scene, camera);
     };
 
@@ -282,10 +312,16 @@ export default function Global3DBackgroundCanvas() {
       window.removeEventListener('scroll', onScroll);
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('resize', onResize);
-      geometry.dispose();
-      material.dispose();
-      lineGeometry.dispose();
-      lineMaterial.dispose();
+      particleGeometry.dispose();
+      particleMaterial.dispose();
+      ribbonGeometry.dispose();
+      ribbonMaterial.dispose();
+      ring1.geometry.dispose();
+      ring2.geometry.dispose();
+      ring3.geometry.dispose();
+      ringMatGold.dispose();
+      ringMatCyan.dispose();
+      ringMatBlue.dispose();
       particleTexture.dispose();
       renderer.dispose();
     };

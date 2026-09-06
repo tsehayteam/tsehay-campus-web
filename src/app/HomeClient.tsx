@@ -846,26 +846,26 @@ export default function HomeClient({
           ) : (
             /* Horizontal Carousel Container with Centered Glassmorphism Navigation Arrows */
             <div className="relative w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 group/carousel">
-              {/* Centered Left Navigation Arrow (Glassmorphism & Subtle Golden Glow) */}
+              {/* Centered Left Navigation Arrow (High-Contrast Golden Glassmorphism) */}
               <button
                 type="button"
                 onClick={() => scrollCourses('left')}
-                className="flex absolute left-2 sm:left-4 lg:left-2 xl:-left-4 top-1/2 -translate-y-1/2 z-30 w-11 h-11 sm:w-12 sm:h-12 lg:w-14 lg:h-14 rounded-full bg-[#0a0e17]/85 hover:bg-[#0c121e] border border-white/20 hover:border-[#f9b03c] text-white hover:text-[#f9b03c] shadow-[0_10px_35px_rgba(0,0,0,0.8),0_0_15px_rgba(249,176,60,0.12)] hover:shadow-[0_0_25px_rgba(249,176,60,0.6),0_0_50px_rgba(249,176,60,0.25)] backdrop-blur-2xl items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 cursor-pointer opacity-90 hover:opacity-100 group/btn"
+                className="flex absolute left-1 sm:left-2 lg:-left-5 xl:-left-7 top-1/2 -translate-y-1/2 z-40 w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 rounded-full bg-[#080e1c]/95 hover:bg-[#0f1b33] border-2 border-[#f9b03c]/70 hover:border-[#f9b03c] text-[#f9b03c] hover:text-white shadow-[0_12px_40px_rgba(0,0,0,0.9),0_0_25px_rgba(249,176,60,0.45)] hover:shadow-[0_0_45px_rgba(249,176,60,0.85),0_0_70px_rgba(249,176,60,0.4)] backdrop-blur-2xl items-center justify-center transition-all duration-300 hover:scale-115 active:scale-95 cursor-pointer opacity-95 hover:opacity-100 group/btn"
                 title="ቀዳሚ ኮርሶች (Previous)"
                 aria-label="Previous courses"
               >
-                <i className="fa-solid fa-chevron-left text-sm sm:text-base group-hover/btn:-translate-x-0.5 transition-transform"></i>
+                <i className="fa-solid fa-chevron-left text-base sm:text-lg lg:text-xl group-hover/btn:-translate-x-1 transition-transform"></i>
               </button>
 
-              {/* Centered Right Navigation Arrow (Glassmorphism & Subtle Golden Glow) */}
+              {/* Centered Right Navigation Arrow (High-Contrast Golden Glassmorphism) */}
               <button
                 type="button"
                 onClick={() => scrollCourses('right')}
-                className="flex absolute right-2 sm:right-4 lg:right-2 xl:-right-4 top-1/2 -translate-y-1/2 z-30 w-11 h-11 sm:w-12 sm:h-12 lg:w-14 lg:h-14 rounded-full bg-[#0a0e17]/85 hover:bg-[#0c121e] border border-white/20 hover:border-[#f9b03c] text-white hover:text-[#f9b03c] shadow-[0_10px_35px_rgba(0,0,0,0.8),0_0_15px_rgba(249,176,60,0.12)] hover:shadow-[0_0_25px_rgba(249,176,60,0.6),0_0_50px_rgba(249,176,60,0.25)] backdrop-blur-2xl items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 cursor-pointer opacity-90 hover:opacity-100 group/btn"
+                className="flex absolute right-1 sm:right-2 lg:-right-5 xl:-right-7 top-1/2 -translate-y-1/2 z-40 w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 rounded-full bg-[#080e1c]/95 hover:bg-[#0f1b33] border-2 border-[#f9b03c]/70 hover:border-[#f9b03c] text-[#f9b03c] hover:text-white shadow-[0_12px_40px_rgba(0,0,0,0.9),0_0_25px_rgba(249,176,60,0.45)] hover:shadow-[0_0_45px_rgba(249,176,60,0.85),0_0_70px_rgba(249,176,60,0.4)] backdrop-blur-2xl items-center justify-center transition-all duration-300 hover:scale-115 active:scale-95 cursor-pointer opacity-95 hover:opacity-100 group/btn"
                 title="ቀጣይ ኮርሶች (Next)"
                 aria-label="Next courses"
               >
-                <i className="fa-solid fa-chevron-right text-sm sm:text-base group-hover/btn:translate-x-0.5 transition-transform"></i>
+                <i className="fa-solid fa-chevron-right text-base sm:text-lg lg:text-xl group-hover/btn:translate-x-1 transition-transform"></i>
               </button>
 
               {/* Scrollable Horizontal Track */}
@@ -1106,23 +1106,6 @@ export default function HomeClient({
                   );
                 })}
 
-                {/* Final Deck Card: Explore All Courses */}
-                <div className="w-[300px] sm:w-[350px] shrink-0 snap-start flex items-center justify-center">
-                  <Link 
-                    href="/courses"
-                    className="w-full h-[85%] rounded-3xl border-2 border-dashed border-[#f9b03c]/50 hover:border-[#f9b03c] bg-[#0c121f]/75 hover:bg-[#0c121f]/95 backdrop-blur-[16px] p-8 flex flex-col items-center justify-center text-center group transition-all duration-300 shadow-[0_20px_50px_rgba(0,0,0,0.8),0_0_30px_rgba(249,176,60,0.2)] hover:shadow-[0_25px_60px_rgba(249,176,60,0.45)] hover:scale-105"
-                  >
-                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-[#f9b03c] to-amber-400 text-slate-950 flex items-center justify-center text-2xl font-black mb-4 shadow-[0_0_25px_rgba(249,176,60,0.5)] group-hover:scale-110 transition-transform">
-                      <i className="fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
-                    </div>
-                    <h3 className="text-xl font-black text-white font-heading mb-2">
-                      ሁሉንም ኮርሶች ያስሱ
-                    </h3>
-                    <p className="text-xs text-slate-300">
-                      የእርስዎን የንግድ እና የቴክኖሎጂ ችሎታ የሚያሳድጉ ተጨማሪ ስልጠናዎች
-                    </p>
-                  </Link>
-                </div>
               </div>
             </div>
           )}

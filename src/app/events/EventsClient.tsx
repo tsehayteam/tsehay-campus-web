@@ -19,6 +19,7 @@ import {
 } from '@/lib/eventCache';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase/config';
+import { supabase } from '@/lib/supabase/client';
 import { collection, onSnapshot, query, getDocs } from 'firebase/firestore';
 import { parseVideoEmbedUrl, isMediaVideo, getMediaThumbnail } from '@/lib/videoParser';
 
@@ -37,7 +38,7 @@ export default function EventsClient() {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
-  // Real-time Firestore sync on both collections
+  // Real-time Firestore & Supabase sync on events
   useEffect(() => {
     const handleCustomEventsUpdate = (e: any) => {
       if (e.detail?.events && Array.isArray(e.detail.events)) {
@@ -55,6 +56,39 @@ export default function EventsClient() {
         }
       };
     } catch (e) {}
+
+    // ⚡ Real-Time Multi-Device Inventory Sync via Supabase Broadcast
+    let supabaseChannel: any = null;
+    try {
+      supabaseChannel = supabase
+        .channel('event_inventory_sync')
+        .on('broadcast', { event: 'seat_decrement' }, (msg: any) => {
+          const data = msg?.payload;
+          if (data && data.eventId) {
+            setEvents(prev => prev.map(ev => {
+              if (ev.id === data.eventId || ev.slug === data.eventSlug || ev.slug === data.eventId) {
+                const nextRem = typeof data.remainingSeats === 'number' 
+                  ? data.remainingSeats 
+                  : Math.max(0, (ev.remainingSeats ?? 100) - 1);
+                const nextReg = typeof data.registeredCount === 'number' 
+                  ? data.registeredCount 
+                  : (Number(ev.registeredCount) || 0) + 1;
+                return {
+                  ...ev,
+                  remainingSeats: nextRem,
+                  seatsLeft: nextRem,
+                  availableTickets: nextRem,
+                  registeredCount: nextReg
+                };
+              }
+              return ev;
+            }));
+          }
+        })
+        .subscribe();
+    } catch (sbErr) {
+      console.warn('Supabase realtime client subscribe notice:', sbErr);
+    }
 
     let artifactList: TsehayEvent[] = [];
     let rootList: TsehayEvent[] = [];
@@ -193,6 +227,9 @@ export default function EventsClient() {
       if (bc) {
         try { bc.close(); } catch (e) {}
       }
+      if (supabaseChannel) {
+        try { supabase.removeChannel(supabaseChannel); } catch (e) {}
+      }
       unsubRoot();
       unsubArtifact();
       unsubRegs();
@@ -224,6 +261,32 @@ export default function EventsClient() {
     const seats = getRemainingSeats(event);
     if (seats <= 0) {
       alert('ይህ ዝግጅት ሙሉ በሙሉ ተይዟል (Sold Out)!');
+      return;
+    }
+
+    // 🔒 Mandatory Authentication Check
+    if (!user) {
+      try {
+        sessionStorage.setItem('tsehay_pending_event_reg', JSON.stringify({
+          eventId: event.id,
+          eventSlug: event.slug,
+          eventTitle: event.title,
+          returnUrl: `/events/${event.slug || event.id}`
+        }));
+        sessionStorage.setItem('tsehay_pending_action', JSON.stringify({
+          action: 'book_ticket',
+          eventId: event.id,
+          eventSlug: event.slug,
+          returnUrl: `/events/${event.slug || event.id}`
+        }));
+      } catch (e) {}
+      window.dispatchEvent(new CustomEvent('open-auth-modal', {
+        detail: {
+          isSignupMode: false,
+          returnUrl: `/events/${event.slug || event.id}`,
+          message: 'ትኬት ለመቁረጥ እባክዎ መጀመሪያ ወደ አካውንትዎ ይግቡ (ወይም ይመዝገቡ)።'
+        }
+      }));
       return;
     }
 
@@ -289,10 +352,10 @@ export default function EventsClient() {
           mapsUrl: event.mapsUrl || '',
           name: user?.displayName || (user?.email ? user.email.split('@')[0] : 'ተማሪ'),
           email: user?.email || 'student@tsehaycampus.com',
-          phone: '',
+          phone: user?.phoneNumber || '',
           attendeeName: user?.displayName || (user?.email ? user.email.split('@')[0] : 'ተማሪ'),
-          attendeeEmail: user?.email || 'student@tsehaycampus.com',
-          userId: user?.uid || 'guest_student',
+          attendeeEmail: user?.email || '',
+          userId: user?.uid,
           pricePaid,
           paymentMethod,
           tier: pricePaid > 1200 ? 'VIP Pass' : 'General Admission'
@@ -304,6 +367,22 @@ export default function EventsClient() {
         setGeneratedTicket(data.ticket);
         setIsPaymentModalOpen(false);
         setIsTicketModalOpen(true);
+
+        // ⚡ Multi-device inventory broadcast
+        try {
+          supabase.channel('event_inventory_sync').send({
+            type: 'broadcast',
+            event: 'seat_decrement',
+            payload: {
+              eventId: event.id,
+              eventSlug: event.slug,
+              remainingSeats: newRemaining,
+              registeredCount: newRegisteredCount,
+              ticketId: data.ticket.ticketId,
+              timestamp: Date.now()
+            }
+          });
+        } catch (sbErr) {}
 
         // Also save to client-side Firestore event_registrations
         try {
@@ -545,10 +624,23 @@ export default function EventsClient() {
                           <button
                             type="button"
                             disabled
-                            className="w-full py-3 rounded-2xl font-black font-heading text-xs uppercase tracking-wider bg-slate-800 text-slate-500 cursor-not-allowed flex items-center justify-center gap-2"
+                            className="w-full py-3 rounded-2xl font-black font-heading text-xs uppercase tracking-wider bg-red-950/40 text-red-400 border border-red-500/40 cursor-not-allowed flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(239,68,68,0.2)] opacity-80"
                           >
-                            <i className="fa-solid fa-lock" />
+                            <i className="fa-solid fa-ban text-red-400" />
                             <span>ተይዞ አልቋል (Sold Out)</span>
+                          </button>
+                        );
+                      }
+
+                      if (!user) {
+                        return (
+                          <button
+                            type="button"
+                            onClick={() => handleBookTicket(evt)}
+                            className="w-full py-3 rounded-2xl font-black font-heading text-xs uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#f9b03c] hover:from-amber-400 hover:to-[#f9b03c] text-slate-950 shadow-[0_0_25px_rgba(249,176,60,0.35)] hover:shadow-[0_0_35px_rgba(249,176,60,0.6)] active:scale-98"
+                          >
+                            <i className="fa-solid fa-right-to-bracket" />
+                            <span>ይግቡና ትኬት ይቁረጡ (Login)</span>
                           </button>
                         );
                       }

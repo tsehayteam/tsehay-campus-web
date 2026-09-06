@@ -219,6 +219,29 @@ export default function UpcomingEventsSection() {
           }
         }
       )
+      .on('broadcast', { event: 'seat_decrement' }, (msg: any) => {
+        const data = msg?.payload;
+        if (data && data.eventId) {
+          setEvents(prev => prev.map(ev => {
+            if (ev.id === data.eventId || ev.slug === data.eventSlug || ev.slug === data.eventId) {
+              const nextRem = typeof data.remainingSeats === 'number' 
+                ? data.remainingSeats 
+                : Math.max(0, (ev.remainingSeats ?? 100) - 1);
+              const nextReg = typeof data.registeredCount === 'number' 
+                ? data.registeredCount 
+                : (Number(ev.registeredCount) || 0) + 1;
+              return {
+                ...ev,
+                remainingSeats: nextRem,
+                seatsLeft: nextRem,
+                availableTickets: nextRem,
+                registeredCount: nextReg
+              };
+            }
+            return ev;
+          }));
+        }
+      })
       .subscribe();
 
     const handleVisibility = () => {
@@ -256,6 +279,37 @@ export default function UpcomingEventsSection() {
     if (existingTicket) {
       setActiveTicket(existingTicket);
       setIsTicketModalOpen(true);
+      return;
+    }
+
+    const remaining = getRemainingSeats(event);
+    if (remaining <= 0) {
+      return;
+    }
+
+    // 🔒 Mandatory Authentication Check
+    if (!user) {
+      try {
+        sessionStorage.setItem('tsehay_pending_event_reg', JSON.stringify({
+          eventId: event.id,
+          eventSlug: event.slug,
+          eventTitle: event.title,
+          returnUrl: `/events/${event.slug || event.id}`
+        }));
+        sessionStorage.setItem('tsehay_pending_action', JSON.stringify({
+          action: 'book_ticket',
+          eventId: event.id,
+          eventSlug: event.slug,
+          returnUrl: `/events/${event.slug || event.id}`
+        }));
+      } catch (e) {}
+      window.dispatchEvent(new CustomEvent('open-auth-modal', {
+        detail: {
+          isSignupMode: false,
+          returnUrl: `/events/${event.slug || event.id}`,
+          message: 'ትኬት ለመቁረጥ እባክዎ መጀመሪያ ወደ አካውንትዎ ይግቡ (ወይም ይመዝገቡ)።'
+        }
+      }));
       return;
     }
 
@@ -642,10 +696,19 @@ export default function UpcomingEventsSection() {
                       <button
                         type="button"
                         disabled
-                        className="flex-1 py-3.5 rounded-2xl text-xs sm:text-sm font-black flex items-center justify-center gap-2 bg-slate-800/80 text-slate-500 border border-white/5 cursor-not-allowed"
+                        className="flex-1 py-3.5 rounded-2xl text-xs sm:text-sm font-black flex items-center justify-center gap-2 bg-red-950/40 text-red-400 border border-red-500/40 cursor-not-allowed shadow-[0_0_15px_rgba(239,68,68,0.2)] opacity-80"
                       >
-                        <i className="fa-solid fa-lock text-xs"></i>
+                        <i className="fa-solid fa-ban text-xs text-red-400"></i>
                         <span>አልቋል (Sold Out)</span>
+                      </button>
+                    ) : !user ? (
+                      <button
+                        type="button"
+                        onClick={() => handleOpenBooking(event)}
+                        className="flex-1 py-3.5 rounded-2xl text-xs sm:text-sm font-black flex items-center justify-center gap-2 transition-all cursor-pointer bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#f9b03c] hover:brightness-110 text-slate-950 active:scale-95 shadow-[0_0_25px_rgba(249,176,60,0.35)] hover:shadow-[0_0_40px_rgba(249,176,60,0.6)]"
+                      >
+                        <i className="fa-solid fa-right-to-bracket text-xs"></i>
+                        <span>ይግቡና ትኬት ይቁረጡ (Login)</span>
                       </button>
                     ) : (
                       <button

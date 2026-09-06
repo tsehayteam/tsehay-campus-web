@@ -17,6 +17,7 @@ import { LanguageProvider } from "@/context/LanguageContext";
 import Global3DBackgroundCanvas from "@/components/scrollytelling/Global3DBackgroundCanvas";
 import SmoothScrollAndScrollyProvider from "@/components/scrollytelling/SmoothScrollAndScrollyProvider";
 import PageTransitionWrapper from "@/components/scrollytelling/PageTransitionWrapper";
+import AmbientIntroAudio from "@/components/AmbientIntroAudio";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -211,6 +212,7 @@ export default function RootLayout({
               <PWAInstallBanner />
               <FloatingAIButton />
               <StudentFeedbackModal />
+              <AmbientIntroAudio />
             </SmoothScrollAndScrollyProvider>
           </AuthProvider>
         </LanguageProvider>

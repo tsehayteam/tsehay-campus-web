@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebase/admin';
 import { EventTicket, DEFAULT_EVENTS } from '@/lib/eventCache';
 import { sendTicketEmail } from '@/lib/ticketEmailService';
+import { supabaseServer } from '@/lib/supabase/server';
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,10 +17,19 @@ export async function POST(req: NextRequest) {
     const attendeeEmail = (body.email || body.attendeeEmail || '').toString().trim().toLowerCase();
     const attendeePhone = (body.phone || body.attendeePhone || '').toString().trim();
     const eventId = (body.eventId || 'evt_general').toString().trim();
-    const userId = (body.userId || `guest_${Date.now()}`).toString().trim();
+    const userId = (body.userId || '').toString().trim();
     const pricePaid = Number(body.pricePaid || body.price || 0);
     const paymentMethod = body.paymentMethod || (pricePaid === 0 ? 'free' : 'lakipay');
     const tier = body.tier || (pricePaid > 1200 ? 'VIP Pass' : 'General Admission');
+
+    // 🔒 1. Mandatory Authentication Check (Unauthenticated guests CANNOT book tickets)
+    if (!userId || userId.startsWith('guest_') || userId.startsWith('anon_')) {
+      return NextResponse.json({
+        success: false,
+        requireAuth: true,
+        error: 'ትኬት ለመቁረጥ እባክዎ መጀመሪያ ወደ አካውንትዎ ይግቡ (Authentication is required to book a ticket).'
+      }, { status: 401 });
+    }
 
     if (!attendeeEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(attendeeEmail)) {
       return NextResponse.json({
@@ -78,12 +88,12 @@ export async function POST(req: NextRequest) {
     }
 
     // 🛡️ [CRITICAL FIX 1: CAPACITY & PERSISTENT REMAINING SEATS CHECK]
+    let currentRemainingSeats: number | null = null;
+    let currentCapacity = 100;
+    let currentRegisteredCount = 0;
+
     if (adminDb && eventId && !eventId.startsWith('evt_fallback')) {
       try {
-        let currentRemainingSeats: number | null = null;
-        let currentCapacity = 100;
-        let currentRegisteredCount = 0;
-
         // Check primary event doc
         const eventDocSnap = await adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('public').doc('data').collection('events').doc(eventId).get();
         if (eventDocSnap.exists) {
@@ -161,6 +171,9 @@ export async function POST(req: NextRequest) {
       status: 'confirmed'
     };
 
+    const nextRemaining = currentRemainingSeats !== null ? Math.max(0, currentRemainingSeats - 1) : null;
+    const nextRegisteredCount = currentRegisteredCount + 1;
+
     // Save to Firestore if available
     if (adminDb) {
       try {
@@ -184,7 +197,7 @@ export async function POST(req: NextRequest) {
             .catch(() => {});
         }
 
-        // 3. 🌟 [CRITICAL FIX 1: ATOMIC SEAT DECREMENT & REGISTRATION INCREMENT]
+        // 3. 🌟 [ATOMIC SEAT DECREMENT & REGISTRATION INCREMENT]
         if (eventId && !eventId.startsWith('evt_fallback')) {
           try {
             const { FieldValue } = await import('firebase-admin/firestore');
@@ -219,7 +232,7 @@ export async function POST(req: NextRequest) {
           }
         }
 
-        // 4. 🔔 [CRITICAL FIX 3: TRIGGER REAL-TIME ADMIN NOTIFICATION]
+        // 4. 🔔 [TRIGGER REAL-TIME ADMIN NOTIFICATION]
         try {
           const notifId = `notif_ticket_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
           const notifData = {
@@ -232,6 +245,7 @@ export async function POST(req: NextRequest) {
             ticketId,
             attendeeName,
             attendeeEmail,
+            attendeePhone,
             tier,
             pricePaid,
             createdAt: new Date().toISOString(),
@@ -250,6 +264,46 @@ export async function POST(req: NextRequest) {
         console.warn('Firestore event registration save notice:', dbErr);
       }
     }
+
+    // ⚡ 5. Real-Time Multi-Device Inventory Sync via Supabase Broadcast
+    try {
+      if (supabaseServer) {
+        await supabaseServer.channel('event_inventory_sync').send({
+          type: 'broadcast',
+          event: 'seat_decrement',
+          payload: {
+            eventId,
+            eventSlug,
+            remainingSeats: nextRemaining,
+            registeredCount: nextRegisteredCount,
+            ticketId,
+            timestamp: Date.now()
+          }
+        });
+      }
+    } catch (realtimeErr) {
+      console.warn('Supabase realtime broadcast notice:', realtimeErr);
+    }
+
+    // Optional Supabase DB recording
+    try {
+      if (supabaseServer) {
+        await supabaseServer.from('event_registrations').insert({
+          ticket_id: ticketId,
+          event_id: eventId,
+          event_slug: eventSlug,
+          event_title: eventTitle,
+          attendee_name: attendeeName,
+          attendee_email: attendeeEmail,
+          attendee_phone: attendeePhone,
+          user_id: userId,
+          price_paid: pricePaid,
+          payment_method: paymentMethod,
+          tier,
+          created_at: new Date().toISOString()
+        });
+      }
+    } catch (sbInsertErr) {}
 
     // 📧 Automatically trigger Ticket Email delivery to the student
     let emailResult = { success: false };

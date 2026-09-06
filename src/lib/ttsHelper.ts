@@ -50,8 +50,16 @@ export function cleanTextForSpeech(text: string): string {
  * Takes active siteLang into account as a preference or contextual hint.
  */
 export function detectTextLanguage(text: string, siteLang?: 'am' | 'en' | string): 'am-ET' | 'en-US' {
+  // Strict site language preference takes absolute precedence
+  if (siteLang === 'en') {
+    return 'en-US';
+  }
+  if (siteLang === 'am') {
+    return 'am-ET';
+  }
+
   if (!text) {
-    return siteLang === 'en' ? 'en-US' : 'am-ET';
+    return 'am-ET';
   }
 
   const ethiopicMatches = text.match(/[\u1200-\u137F\u1380-\u139F\u2D80-\u2DDF\uAB00-\uAB2F]/g);
@@ -60,14 +68,9 @@ export function detectTextLanguage(text: string, siteLang?: 'am' | 'en' | string
   const latinMatches = text.match(/[a-zA-Z]/g);
   const latinCount = latinMatches ? latinMatches.length : 0;
 
-  // If text contains ANY Ethiopic character, it is definitely Amharic
+  // If text contains Ethiopic character, use Amharic
   if (ethiopicCount > 0) {
     return 'am-ET';
-  }
-
-  // If site language is English and no Ethiopic characters exist, use English
-  if (siteLang === 'en') {
-    return 'en-US';
   }
 
   // If text has Latin characters, use English
@@ -75,8 +78,7 @@ export function detectTextLanguage(text: string, siteLang?: 'am' | 'en' | string
     return 'en-US';
   }
 
-  // Fallback to site language or Amharic
-  return siteLang === 'en' ? 'en-US' : 'am-ET';
+  return 'am-ET';
 }
 
 /**

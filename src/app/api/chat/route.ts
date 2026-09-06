@@ -132,13 +132,17 @@ function getSmartFallbackReply(userPrompt: string, courseContext?: any, hasImage
                    `You can book a personal 1-on-1 mentorship session directly on Tsehay Campus:\n\n` +
                    `• **Focus Areas**: YouTube Growth & Monetization, Shein & E-Commerce Business, Digital Marketing, or scaling an online venture.\n` +
                    `• **Format**: 45-Minute private video consultation + custom action plan.\n` +
-                   `• **How to Book**: Navigate to the **/mentorship** page, select your preferred date & time, fill in your details, and submit! 🚀`;
+                   `• **How to Book**: Navigate to the **/mentorship** page, select your preferred date & time, fill in your details, and submit! 🚀\n\n` +
+                   `[COURSE_CTA: mentorship: 1-on-1 Private Mentorship: 1,500 ብር]\n\n` +
+                   `> 💡 **Notice**: This is just a practical teaser! Unlimited 24/7 personal AI tutor and mentor support is unlocked exclusively inside the Classroom once enrolled.`;
         }
         return `🤝 **ከኢዮብ ሳህሌ ጋር የ 1-ለ-1 የቀጥታ የማማከር ክፍለ-ጊዜ (Mentorship)**\n\n` +
                `በማንኛውም የኦንላይን ቢዝነስ ዙሪያ ከኢዮብ ሳህሌ ጋር በግል ተገናኝተው መማከር ይችላሉ፦\n\n` +
                `• **የማማከሪያ ርዕሶች**፦ የዩቲዩብ ቻናል ስትራቴጂ፣ የሼን እና የኢ-ኮሜርስ ንግድ፣ ዲጂታል ማርኬቲንግ ወይም የኦንላይን ገቢ ማሳደግ።\n` +
                `• **አካሄድ**፦ የ 45 ደቂቃ የቀጥታ የቪዲዮ ቆይታ እና ለቢዝነስዎ የሚሆን ልዩ የድርጊት መርሃግብር (Action Plan)።\n` +
-               `• **ቀጠሮ ለማስያዝ**፦ ወደ **/mentorship** ገጽ በመሄድ የቀንና ሰዓት ምርጫዎን ያስገቡና ቀጠሮ ይያዙ! 🚀`;
+               `• **ቀጠሮ ለማስያዝ**፦ ወደ **/mentorship** ገጽ በመሄድ የቀንና ሰዓት ምርጫዎን ያስገቡና ቀጠሮ ይያዙ! 🚀\n\n` +
+               `[COURSE_CTA: mentorship: 1-on-1 Private Mentorship: 1,500 ብር]\n\n` +
+               `> 💡 **ማሳሰቢያ**፦ ይህ አጭር ፍንጭ ብቻ ነው! ሙሉውንና ያልተገደበውን የ 24/7 የግል AI ረዳት ድጋፍ ማግኘት የሚችሉት ተመዝግበው መማሪያ ክፍል (Classroom) ውስጥ ሲገቡ ብቻ ነው።`;
     }
 
     // 4. YouTube Secrets Masterclass & Channel Creation
@@ -153,7 +157,8 @@ function getSmartFallbackReply(userPrompt: string, courseContext?: any, hasImage
                    `  3. **High-CTR Thumbnails**: Designing irresistible thumbnails that drive viral click rates\n` +
                    `  4. **Monetization & Payouts**: Reaching 1,000 Subscribers & 4,000 Watch Hours fast, and withdrawing earnings in USD\n\n` +
                    `🎁 **Bonus**: Full Amharic YouTube Masterclass E-Book included for free!\n\n` +
-                   `Enroll now via Telebirr, CBE Birr, LakiPay, or PayPal/Cards!`;
+                   `[COURSE_CTA: youtube-secrets-masterclass: YouTube Secrets Masterclass: 2,500 ብር]\n\n` +
+                   `> 💡 **Notice**: This is just a practical teaser! Unlimited 24/7 personal AI tutor and mentor support is unlocked exclusively inside the Classroom once enrolled.`;
         }
         return `📹 **የዩቲዩብ ስኬት ሚስጥሮች (YouTube Secrets Masterclass)**\n\n` +
                `ይህ ስልጠና በኢትዮጵያ ውስጥ እና በዓለም አቀፍ ደረጃ አትራፊ የዩቲዩብ ቻናል ለመገንባት የሚያስፈልጉ ተግባራዊ ሚስጥሮችን ያካትታል፦\n\n` +
@@ -164,7 +169,8 @@ function getSmartFallbackReply(userPrompt: string, courseContext?: any, hasImage
                `  3. **High-CTR Thumbnails**፦ ተመልካች ሳይወድ በግድ የሚጫናቸው ታምብኔሎች (Cover Images) አሰራር\n` +
                `  4. **Monetization & Payouts**፦ 1,000 Subscribers እና 4,000 Watch Hours በአጭር ጊዜ ማሟላት እና ከኢትዮጵያ ሆነው በዶላር ገቢ ማውጣት\n\n` +
                `🎁 **ልዩ ስጦታ**፦ የተሟላ የአማርኛ የዩቲዩብ ማስተርክላስ E-Book በነፃ ተካቷል!\n\n` +
-               `ለመመዝገብ በቴሌብር፣ በሲቢኢ ብር ወይም በLakiPay መክፈል ይችላሉ።`;
+               `[COURSE_CTA: youtube-secrets-masterclass: YouTube Secrets Masterclass: 2,500 ብር]\n\n` +
+               `> 💡 **ማሳሰቢያ**፦ ይህ አጭር ፍንጭ ብቻ ነው! ሙሉውንና ያልተገደበውን የ 24/7 የግል AI ረዳት ድጋፍ ማግኘት የሚችሉት ተመዝግበው መማሪያ ክፍል (Classroom) ውስጥ ሲገቡ ብቻ ነው።`;
     }
 
     // 5. Shein Import Business
@@ -178,7 +184,8 @@ function getSmartFallbackReply(userPrompt: string, courseContext?: any, hasImage
                    `  2. **Online Card Payments**: Making dollar payments smoothly from Ethiopia\n` +
                    `  3. **Cargo & Logistics**: Minimizing customs, tax, and freight fees\n` +
                    `  4. **TikTok & Telegram Marketing**: Selling items rapidly with premium profits\n\n` +
-                   `Visit the Courses page to enroll and start learning instantly!`;
+                   `[COURSE_CTA: shein-import-business: Shein Import Business: 2,500 ብር]\n\n` +
+                   `> 💡 **Notice**: This is just a practical teaser! Unlimited 24/7 personal AI tutor and mentor support is unlocked exclusively inside the Classroom once enrolled.`;
         }
         return `🛍️ **የሼን ኢምፖርት ቢዝነስ (Shein Import Business)**\n\n` +
                `ከሼን (SHEIN) በቀጥታ ተፈላጊ እቃዎችን በማስመጣት በኢትዮጵያ ውስጥ ከፍተኛ ትርፍ የሚያገኙበት የተሟላ ስልጠና፦\n\n` +
@@ -188,7 +195,8 @@ function getSmartFallbackReply(userPrompt: string, courseContext?: any, hasImage
                `  2. **የክፍያ ዘዴዎች (Card & Dollar Payments)**፦ በኢትዮጵያ ውስጥ ሆነው በቀላሉ በዶላር እና በኦንላይን ካርዶች ክፍያ መፈጸም\n` +
                `  3. **ካርጎ እና ማጓጓዣ (Shipping & Customs)**፦ የጉምሩክ እና የትራንስፖርት ወጪን በእጅጉ መቀነሻ ስልቶች\n` +
                `  4. **የሽያጭ ማስተዋወቅ (Marketing)**፦ በ TikTok እና በ Telegram ቻናሎች እቃዎችን በከፍተኛ ትርፍ መሸጫ ዘዴዎች\n\n` +
-               `ለመመዝገብ ከፈለጉ "ኮርሶች" ገጽ ላይ በመግባት በቴሌብር ወይም በባንክ ክፍያ ፈጽመው ወዲያውኑ መማር መጀመር ይችላሉ!`;
+               `[COURSE_CTA: shein-import-business: Shein Import Business: 2,500 ብር]\n\n` +
+               `> 💡 **ማሳሰቢያ**፦ ይህ አጭር ፍንጭ ብቻ ነው! ሙሉውንና ያልተገደበውን የ 24/7 የግል AI ረዳት ድጋፍ ማግኘት የሚችሉት ተመዝግበው መማሪያ ክፍል (Classroom) ውስጥ ሲገቡ ብቻ ነው።`;
     }
 
     // 6. Digital Marketing (Free Course)
@@ -200,7 +208,8 @@ function getSmartFallbackReply(userPrompt: string, courseContext?: any, hasImage
                    `  - High-performing Meta Ads (Facebook & Instagram)\n` +
                    `  - Strategic Content Planning & Online Audience Growth\n` +
                    `  - Search Engine Optimization (SEO) & Sales Conversion Optimization\n\n` +
-                   `Enroll now for free and earn your Certificate of Completion!`;
+                   `[COURSE_CTA: digital-marketing-mastery: Digital Marketing Mastery: 100% Free]\n\n` +
+                   `> 💡 **Notice**: Enroll now to get instant free access to all lessons and certification!`;
         }
         return `🚀 **የዲጂታል ማርኬቲንግ ስልጠና (Digital Marketing Mastery)**\n\n` +
                `• **ዋጋ**፦ 100% ነፃ (FREE)\n` +
@@ -208,7 +217,8 @@ function getSmartFallbackReply(userPrompt: string, courseContext?: any, hasImage
                `  - የፌስቡክ እና የኢንስታግራም ማስታወቂያዎችን (Meta Ads) ውጤታማ በሆነ መንገድ ማስኬድ\n` +
                `  - የይዘት ስልት (Content Strategy) እና የደንበኞችን ቁጥር በኦንላይን ማሳደግ\n` +
                `  - የጉግል ፍለጋ ማሻሻያ (SEO) እና የዲጂታል ሽያጭ መጨመሪያ ስልቶች\n\n` +
-               `ይህንን ስልጠና አሁኑኑ በነፃ ገብተው መከታተል እና ሰርተፊኬት ማግኘት ይችላሉ!`;
+               `[COURSE_CTA: digital-marketing-mastery: Digital Marketing Mastery: 100% Free]\n\n` +
+               `> 💡 **ማሳሰቢያ**፦ አሁኑኑ በነፃ ተመዝግበው የክፍል ውስጥ ትምህርቶችን መከታተል እና ሰርተፊኬት ማግኘት ይችላሉ!`;
     }
 
     // 7. Web Development & Coding
@@ -552,6 +562,22 @@ ${languageDirective}
 - ${platformCourses}
 - 1-on-1 Mentorship: Available with Eyoub Sahle at /mentorship for 45-minute private strategy sessions.
 - Certification: Free official Digital Certificate of Completion upon passing the course quiz (80%+).
+
+[🌟 CONVERSION & LEAD GENERATION STRATEGY (CRITICAL)]:
+- When users ask questions on practical skills (e.g. YouTube monetization, Shein import, TikTok/Telegram marketing, Coding, Video Editing, Brokerage):
+  1. Provide 2-3 brilliant, actionable, high-value teaser tips/hints that immediately satisfy their initial question.
+  2. Explain that the full, complete step-by-step masterclass with practical templates, supplier lists, video blueprints, and community support is taught inside the specific course on Tsehay Campus.
+  3. ALWAYS include the interactive CTA tag for that course at the end of your response:
+     - For YouTube: [COURSE_CTA: youtube-secrets-masterclass: YouTube Secrets Masterclass: 2,500 ብር]
+     - For Shein/Import: [COURSE_CTA: shein-import-business: Shein Import Business: 2,500 ብር]
+     - For Digital Marketing: [COURSE_CTA: digital-marketing-mastery: Digital Marketing Mastery: 100% Free]
+     - For Video Editing: [COURSE_CTA: video-editing-masterclass: Video Editing Masterclass: 2,000 ብር]
+     - For Mentorship: [COURSE_CTA: mentorship: 1-on-1 Private Mentorship: 1,500 ብር]
+  4. Create urgency and curiosity by adding this exact callout blockquote at the very bottom:
+     - If answering in Amharic:
+       > 💡 **ማሳሰቢያ**፦ ይህ አጭር ፍንጭ ብቻ ነው! ሙሉውንና ያልተገደበውን የ 24/7 የግል AI ረዳት ድጋፍ ማግኘት የሚችሉት ተመዝግበው መማሪያ ክፍል (Classroom) ውስጥ ሲገቡ ብቻ ነው።
+     - If answering in English:
+       > 💡 **Notice**: This is just a practical teaser! Unlimited 24/7 personal AI tutor and mentor support is unlocked exclusively inside the Classroom once enrolled.
 
 ${contextualCourseSection}`;
 

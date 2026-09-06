@@ -11,6 +11,7 @@ import { auth } from "@/lib/firebase/config";
 import { signOut } from "firebase/auth";
 import { getCachedCourses, subscribeToCourses } from "@/lib/courseCache";
 import Tilt3DLoginButton from "@/components/3d/Tilt3DLoginButton";
+import LanguageToggleSwitch from "@/components/LanguageToggleSwitch";
 
 export default function Navbar() {
   const { user, isAdmin } = useAuth();
@@ -474,24 +475,6 @@ export default function Navbar() {
                 />
               </div>
 
-              {/* Distinct Glowing Golden Orange Tsehay AI Button */}
-              <button 
-                type="button"
-                onClick={() => {
-                  closeCurtain();
-                  navigateTo('/ai');
-                }} 
-                className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-[#f9b03c] to-[#e09825] text-slate-950 font-black text-xs cursor-pointer notranslate shadow-lg shadow-[#f9b03c]/20 hover:scale-105 active:scale-95 transition-all duration-300"
-                title="Tsehay AI 24/7 የግል መምህር (Classroom AI Assistant)"
-              >
-                <div className="w-5 h-5 rounded-md bg-black text-[#f9b03c] flex items-center justify-center font-black shadow-xs shrink-0">
-                  <i className="fa-solid fa-robot text-[10px]"></i>
-                </div>
-                <span className="text-xs font-black tracking-wide text-slate-950">
-                  Tsehay AI
-                </span>
-                <span className="w-1.5 h-1.5 rounded-full bg-black ml-0.5 animate-pulse"></span>
-              </button>
 
               {/* 3D Magnetic Hover Tilt "ይግቡ / Login" Button or User Profile with Sleek Dropdown */}
               {!mounted || !user ? (
@@ -574,16 +557,8 @@ export default function Navbar() {
                 <span className="hidden lg:inline">አፕ ጫን</span>
               </button>
 
-              {/* Language Switcher */}
-              <button 
-                onClick={toggleLanguage} 
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[#f9b03c]/35 hover:border-[#f9b03c] bg-[#0c1427]/90 hover:bg-[#f9b03c]/15 text-white font-black text-xs transition-all duration-300 hover:scale-[1.05] active:scale-[0.95] cursor-pointer shadow-[0_0_12px_rgba(249,176,60,0.15)] notranslate" 
-                translate="no"
-                title={lang === 'am' ? 'Switch to English' : 'ወደ አማርኛ ቀይር'}
-              >
-                <span className="text-xs">{lang === 'am' ? '🇬🇧' : '🇪🇹'}</span>
-                <span className="text-amber-400 font-black tracking-wide">{lang === 'am' ? 'EN' : 'አማ'}</span>
-              </button>
+              {/* Sliding Language Switcher Toggle */}
+              <LanguageToggleSwitch compact />
 
               {/* Dark/Light Mode Toggle */}
               <button 
@@ -664,27 +639,11 @@ export default function Navbar() {
                 <span className="text-[10px] text-gray-400 mt-0.5">Discussions</span>
               </button>
 
-              {/* Tsehay AI */}
-              <button 
-                type="button" 
-                onClick={() => { 
-                  closeCurtain(); 
-                  navigateTo('/ai');
-                }} 
-                className="p-3.5 rounded-2xl mobile-nav-card flex flex-col items-center justify-center text-center cursor-pointer group transition-all duration-200 bg-amber-500/10 border-amber-500/30"
-              >
-                <span className="text-xs font-black text-[#f9b03c] notranslate font-heading flex items-center gap-1">
-                  <span>Tsehay AI</span>
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#f9b03c] animate-pulse"></span>
-                </span>
-                <span className="text-[10px] text-amber-200/70 mt-0.5">24/7 AI Tutor</span>
-              </button>
-
               {/* About Us */}
               <button 
                 type="button" 
                 onClick={() => { closeCurtain(); navigateTo('/about'); }} 
-                className={`p-3.5 rounded-2xl mobile-nav-card flex flex-col items-center justify-center text-center cursor-pointer group transition-all duration-200 ${isAbout ? 'mobile-nav-card-active' : ''}`}
+                className={`p-3.5 rounded-2xl mobile-nav-card flex flex-col items-center justify-center text-center cursor-pointer group transition-all duration-200 col-span-2 ${isAbout ? 'mobile-nav-card-active' : ''}`}
               >
                 <span className="text-xs font-black text-white font-heading">
                   {t('about_us') || 'ስለ እኛ'}

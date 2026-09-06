@@ -699,7 +699,7 @@ function AboutHeroPlayer({
                   frameBorder="0" 
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen" 
                   allowFullScreen
-                  loading="eager"
+                  loading="lazy"
                 ></iframe>
               )}
             </div>
@@ -907,7 +907,7 @@ function AboutSingleReelSlider() {
               webkit-playsinline="true"
               disablePictureInPicture
               controlsList="nodownload noremoteplayback"
-              preload="auto"
+              preload="none"
               onPlay={() => {
                 if (idx === currentIndex) setIsPlaying(true);
               }}
@@ -1008,6 +1008,8 @@ function AboutSingleCleanPhoto() {
         <img
           src={photoSrc}
           alt="Tsehay Campus Community"
+          loading="lazy"
+          decoding="async"
           className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
           onError={(e) => {
             (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=1200&auto=format&fit=crop';

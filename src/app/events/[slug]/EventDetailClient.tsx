@@ -21,6 +21,7 @@ import {
 } from '@/lib/eventCache';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase/config';
+import { supabase } from '@/lib/supabase/client';
 import { collection, doc, onSnapshot, query, getDocs, setDoc, updateDoc, increment } from 'firebase/firestore';
 import { parseVideoEmbedUrl, parseImageUrl, isMediaVideo, getMediaThumbnail } from '@/lib/videoParser';
 
@@ -72,6 +73,37 @@ export default function EventDetailClient() {
         }
       };
     } catch (e) {}
+
+    // ⚡ Real-Time Multi-Device Inventory Sync via Supabase Broadcast
+    let supabaseChannel: any = null;
+    try {
+      supabaseChannel = supabase
+        .channel('event_inventory_sync')
+        .on('broadcast', { event: 'seat_decrement' }, (msg: any) => {
+          const data = msg?.payload;
+          if (data && (data.eventId === slug || data.eventSlug === slug || (event && (data.eventId === event.id || data.eventSlug === event.slug)))) {
+            setEvent(prev => {
+              if (!prev) return prev;
+              const nextRem = typeof data.remainingSeats === 'number' 
+                ? data.remainingSeats 
+                : Math.max(0, (prev.remainingSeats ?? 100) - 1);
+              const nextReg = typeof data.registeredCount === 'number' 
+                ? data.registeredCount 
+                : (Number(prev.registeredCount) || 0) + 1;
+              return {
+                ...prev,
+                remainingSeats: nextRem,
+                seatsLeft: nextRem,
+                availableTickets: nextRem,
+                registeredCount: nextReg
+              };
+            });
+          }
+        })
+        .subscribe();
+    } catch (sbErr) {
+      console.warn('Supabase realtime client subscribe notice:', sbErr);
+    }
 
     // 1. Live Firestore Event Listener on Artifacts
     let unsubEvent: any = null;
@@ -161,6 +193,9 @@ export default function EventDetailClient() {
       if (bc) {
         try { bc.close(); } catch (e) {}
       }
+      if (supabaseChannel) {
+        try { supabase.removeChannel(supabaseChannel); } catch (e) {}
+      }
       if (unsubEvent) unsubEvent();
       if (unsubRootEvent) unsubRootEvent();
       if (unsubRegs) unsubRegs();
@@ -179,6 +214,11 @@ export default function EventDetailClient() {
   const issueConfirmedTicket = async (customPayload?: any) => {
     if (!event) return null;
 
+    if (!user) {
+      handleInitiateBooking();
+      return null;
+    }
+
     const payload = customPayload || {
       eventId: event.id,
       eventSlug: event.slug,
@@ -195,7 +235,7 @@ export default function EventDetailClient() {
       attendeeName: attendeeName.trim(),
       attendeeEmail: attendeeEmail.trim(),
       attendeePhone: attendeePhone.trim(),
-      userId: user?.uid || `guest_${Date.now()}`,
+      userId: user?.uid,
       pricePaid: event.price || 0,
       paymentMethod: event.price === 0 || event.isFree ? 'free' : selectedPaymentMethod,
       tier: event.price > 1200 ? 'VIP Pass' : 'General Admission'
@@ -260,7 +300,7 @@ export default function EventDetailClient() {
         await setDoc(doc(db, 'event_registrations', ticketObj.ticketId), regRecord, { merge: true });
         await setDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'event_registrations', ticketObj.ticketId), regRecord, { merge: true }).catch(() => {});
 
-        // 🌟 [CRITICAL FIX 2: ATOMIC SEAT DECREMENT (increment(-1))]
+        // 🌟 [ATOMIC SEAT DECREMENT (increment(-1))]
         if (event.id) {
           const seatDecUpdate = {
             remainingSeats: increment(-1),
@@ -282,13 +322,14 @@ export default function EventDetailClient() {
     }
 
     // 🌟 Instantly update local React state and persistent cache (e.g. 105 -> 104)
+    const curRemaining = event.remainingSeats !== undefined 
+      ? event.remainingSeats 
+      : Math.max(0, (Number(event.capacity) || 100) - (Number(event.registeredCount) || 0));
+    const nextRemaining = Math.max(0, curRemaining - 1);
+    const nextRegCount = (Number(event.registeredCount) || 0) + 1;
+
     setEvent(prev => {
       if (!prev) return prev;
-      const curRemaining = prev.remainingSeats !== undefined 
-        ? prev.remainingSeats 
-        : Math.max(0, (Number(prev.capacity) || 100) - (Number(prev.registeredCount) || 0));
-      const nextRemaining = Math.max(0, curRemaining - 1);
-      const nextRegCount = (Number(prev.registeredCount) || 0) + 1;
       const updated = {
         ...prev,
         remainingSeats: nextRemaining,
@@ -305,10 +346,62 @@ export default function EventDetailClient() {
       return updated;
     });
 
+    // ⚡ Real-Time Multi-Device Inventory Sync via Supabase Broadcast
+    try {
+      supabase.channel('event_inventory_sync').send({
+        type: 'broadcast',
+        event: 'seat_decrement',
+        payload: {
+          eventId: event.id,
+          eventSlug: event.slug,
+          remainingSeats: nextRemaining,
+          registeredCount: nextRegCount,
+          ticketId: ticketObj.ticketId,
+          timestamp: Date.now()
+        }
+      });
+    } catch (realtimeErr) {
+      console.warn('Supabase realtime broadcast notice:', realtimeErr);
+    }
+
     setActiveTicket(ticketObj);
     setIsBookingOpen(false);
     setIsTicketModalOpen(true);
     return ticketObj;
+  };
+
+  // 🔒 Dedicated Auth Check Gate Before Booking
+  const handleInitiateBooking = () => {
+    if (!event) return;
+    const remaining = getRemainingSeats(event);
+    if (remaining <= 0) return;
+
+    if (!user) {
+      try {
+        sessionStorage.setItem('tsehay_pending_event_reg', JSON.stringify({
+          eventId: event.id,
+          eventSlug: event.slug,
+          eventTitle: event.title,
+          returnUrl: `/events/${event.slug || event.id}`
+        }));
+        sessionStorage.setItem('tsehay_pending_action', JSON.stringify({
+          action: 'book_ticket',
+          eventId: event.id,
+          eventSlug: event.slug,
+          returnUrl: `/events/${event.slug || event.id}`
+        }));
+      } catch (e) {}
+      window.dispatchEvent(new CustomEvent('open-auth-modal', {
+        detail: {
+          isSignupMode: false,
+          returnUrl: `/events/${event.slug || event.id}`,
+          message: 'ትኬት ለመቁረጥ እባክዎ መጀመሪያ ወደ አካውንትዎ ይግቡ (ወይም ይመዝገቡ)።'
+        }
+      }));
+      return;
+    }
+
+    setIsBookingOpen(true);
   };
 
   // 🌟 Post-Payment Return & Post-Login Action Resume Listener
@@ -627,17 +720,32 @@ export default function EventDetailClient() {
                 {/* Action CTA & Progress Bar */}
                 <div className="pt-4 space-y-4">
                   <div>
-                    <div className="flex justify-between text-xs font-bold mb-1.5">
-                      <span className="text-slate-300">የተያዙ ቦታዎች ({percentTaken}%)</span>
+                    <div className="flex items-center justify-between text-xs font-bold mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-slate-300">የተያዙ ቦታዎች ({percentTaken}%)</span>
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-mono border border-emerald-500/25">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                          <span>Live Sync</span>
+                        </span>
+                      </div>
                       {isSoldOut ? (
-                        <span className="text-red-400 font-black">ትኬቱ ሙሉ በሙሉ አልቋል!</span>
+                        <span className="px-2.5 py-1 rounded-full bg-red-500/20 text-red-400 border border-red-500/30 text-xs font-black animate-pulse flex items-center gap-1">
+                          <i className="fa-solid fa-ban"></i>
+                          <span>ትኬቱ ሙሉ በሙሉ አልቋል!</span>
+                        </span>
                       ) : (
-                        <span className="text-[#f9b03c]">{remainingSeats} ቦታዎች ብቻ ቀርተዋል!</span>
+                        <span className="text-[#f9b03c] font-black flex items-center gap-1.5 text-xs sm:text-sm">
+                          <span>🔥</span>
+                          <span>የቀሩ ቦታዎች:</span>
+                          <span className="font-mono text-base font-black text-white bg-amber-400/20 px-2 py-0.5 rounded-lg border border-amber-400/40">
+                            {remainingSeats}
+                          </span>
+                        </span>
                       )}
                     </div>
-                    <div className="w-full h-2.5 bg-white/10 rounded-full overflow-hidden">
+                    <div className="w-full h-2.5 bg-white/10 rounded-full overflow-hidden p-0.5 border border-white/5">
                       <div 
-                        className={`h-full rounded-full transition-all duration-1000 ${isSoldOut ? 'bg-red-500' : 'bg-gradient-to-r from-amber-500 to-[#f9b03c]'}`}
+                        className={`h-full rounded-full transition-all duration-700 ${isSoldOut ? 'bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.8)]' : 'bg-gradient-to-r from-amber-500 to-[#f9b03c] shadow-[0_0_12px_rgba(249,176,60,0.8)]'}`}
                         style={{ width: `${percentTaken}%` }}
                       />
                     </div>
@@ -669,10 +777,23 @@ export default function EventDetailClient() {
                           <button
                             type="button"
                             disabled
-                            className="w-full sm:flex-1 py-4 rounded-2xl text-base font-black flex items-center justify-center gap-2.5 bg-slate-800/80 text-slate-500 border border-white/5 cursor-not-allowed"
+                            className="w-full sm:flex-1 py-4 rounded-2xl text-base font-black flex items-center justify-center gap-2.5 bg-red-950/40 text-red-400 border border-red-500/40 cursor-not-allowed shadow-[0_0_20px_rgba(239,68,68,0.2)] opacity-80"
                           >
-                            <i className="fa-solid fa-lock text-lg"></i>
-                            <span>ትኬቱ አልቋል (Sold Out)</span>
+                            <i className="fa-solid fa-ban text-lg text-red-400"></i>
+                            <span>ትኬቱ ሙሉ በሙሉ አልቋል (Sold Out)</span>
+                          </button>
+                        );
+                      }
+
+                      if (!user) {
+                        return (
+                          <button
+                            type="button"
+                            onClick={handleInitiateBooking}
+                            className="w-full sm:flex-1 py-4 rounded-2xl text-base font-black flex items-center justify-center gap-2.5 transition-all btn-buy-now-vibe cursor-pointer active:scale-98 shadow-[0_0_35px_rgba(249,176,60,0.4)]"
+                          >
+                            <i className="fa-solid fa-right-to-bracket text-lg"></i>
+                            <span>ይግቡና ትኬት ይቁረጡ (Login to Book Ticket)</span>
                           </button>
                         );
                       }
@@ -680,7 +801,7 @@ export default function EventDetailClient() {
                       return (
                         <button
                           type="button"
-                          onClick={() => setIsBookingOpen(true)}
+                          onClick={handleInitiateBooking}
                           className="w-full sm:flex-1 py-4 rounded-2xl text-base font-black flex items-center justify-center gap-2.5 transition-all btn-buy-now-vibe cursor-pointer active:scale-98 shadow-[0_0_35px_rgba(249,176,60,0.4)]"
                         >
                           <i className="fa-solid fa-ticket text-lg"></i>
@@ -850,6 +971,25 @@ export default function EventDetailClient() {
             {bookingError && (
               <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 text-xs text-red-300 mb-4">
                 {bookingError}
+              </div>
+            )}
+
+            {!user && (
+              <div className="p-4 rounded-2xl bg-amber-500/15 border border-amber-500/30 mb-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5 text-xs text-amber-200">
+                  <i className="fa-solid fa-triangle-exclamation text-amber-400 text-base shrink-0"></i>
+                  <span>ትኬት ለመቁረጥ መጀመሪያ ወደ አካውንትዎ መግባት አለብዎት።</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsBookingOpen(false);
+                    window.dispatchEvent(new CustomEvent('open-auth-modal', { detail: { isSignupMode: false } }));
+                  }}
+                  className="w-full sm:w-auto px-4 py-2 rounded-xl bg-[#f9b03c] text-slate-950 text-xs font-black shrink-0 hover:scale-105 active:scale-95 transition cursor-pointer text-center"
+                >
+                  ይግቡ / ይመዝገቡ (Login)
+                </button>
               </div>
             )}
 

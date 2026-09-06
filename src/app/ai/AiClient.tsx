@@ -8,6 +8,7 @@ import FormattedAiText from '@/components/FormattedAiText';
 import { getCachedCourses, subscribeToCourses } from '@/lib/courseCache';
 import { speakWithLanguageDetection, stopSpeech } from '@/lib/ttsHelper';
 import Footer from '@/components/Footer';
+import LanguageToggleSwitch from '@/components/LanguageToggleSwitch';
 
 interface Message {
   id: string;
@@ -21,10 +22,17 @@ interface Message {
 const STARTER_PROMPTS_AM = [
   {
     icon: 'fa-youtube',
-    category: 'YouTube Mastery',
+    category: 'YouTube',
     title: 'የዩቲዩብ ቻናል ገቢ ማግኛ መንገዶች',
     prompt: 'የዩቲዩብ ቻናል በኢትዮጵያ ከፍቼ በምን በምን መንገዶች ገቢ ማግኘት እችላለሁ? ደረጃ በደረጃ አስረዳኝ።',
     color: '#FF0000'
+  },
+  {
+    icon: 'fa-video',
+    category: 'YouTube',
+    title: 'ፊት ሳያሳዩ በ AI ቪዲዮ ማዘጋጀት (Faceless)',
+    prompt: 'ፊት ሳያሳዩ በ AI እና በእውነተኛ ምስሎች ከፍተኛ እይታ የሚስቡ የዩቲዩብ ቪዲዮዎችን እንዴት ማዘጋጀት ይቻላል?',
+    color: '#ef4444'
   },
   {
     icon: 'fa-bag-shopping',
@@ -34,6 +42,13 @@ const STARTER_PROMPTS_AM = [
     color: '#f9b03c'
   },
   {
+    icon: 'fa-credit-card',
+    category: 'Shein & E-commerce',
+    title: 'በኢትዮጵያ ሆነው በዶላር የመክፈያ መንገዶች',
+    prompt: 'ከኢትዮጵያ ሆነን ለሼን እና ለኦንላይን ግዢዎች በዶላር ወይም በኦንላይን ካርድ እንዴት መክፈል እንችላለን?',
+    color: '#f59e0b'
+  },
+  {
     icon: 'fa-bullhorn',
     category: 'Digital Marketing',
     title: 'በቴሌግራም እና ቲክቶክ ማርኬቲንግ',
@@ -41,11 +56,18 @@ const STARTER_PROMPTS_AM = [
     color: '#3268ba'
   },
   {
-    icon: 'fa-graduation-cap',
-    category: 'Course Advisory',
-    title: 'ለእኔ የሚስማማኝን ስልጠና ምረጥልኝ',
-    prompt: 'ጀማሪ ነኝ፣ ኦንላይን ሰርቼ ገቢ ለማግኘት ለእኔ የሚስማማኝ የመጀመሪያ ስልጠና የትኛው ነው?',
-    color: '#5a93e8'
+    icon: 'fa-gift',
+    category: 'Digital Marketing',
+    title: 'ነፃ የዲጂታል ማርኬቲንግ ስልጠና',
+    prompt: 'የ 100% ነፃ የዲጂታል ማርኬቲንግ ስልጠናውን እንዴት መጀመር እችላለሁ? ምን ምን ትምህርቶች ተካትተዋል?',
+    color: '#06b6d4'
+  },
+  {
+    icon: 'fa-film',
+    category: 'Video Editing',
+    title: 'የቪዲዮ ኤዲቲንግ በሞባይልና ኮምፒተር',
+    prompt: 'የቪዲዮ ኤዲቲንግን በ CapCut እና በ Premiere Pro ከዜሮ ተምሬ እንዴት በቪዲዮ ስራ ገቢ ማግኘት እችላለሁ?',
+    color: '#8b5cf6'
   },
   {
     icon: 'fa-laptop-code',
@@ -55,21 +77,49 @@ const STARTER_PROMPTS_AM = [
     color: '#10b981'
   },
   {
-    icon: 'fa-credit-card',
-    category: 'Payments & Pricing',
-    title: 'የስልጠናዎች ክፍያ እና ምዝገባ',
+    icon: 'fa-handshake',
+    category: 'Mentorship',
+    title: 'ከኢዮብ ሳህሌ ጋር የ 1-ለ-1 ማማከር',
+    prompt: 'ከኢዮብ ሳህሌ ጋር የ 1-ለ-1 የቀጥታ የማማከር ክፍለ-ጊዜ (Mentorship) እንዴት ማስያዝ እችላለሁ?',
+    color: '#ec4899'
+  },
+  {
+    icon: 'fa-money-bill-wave',
+    category: 'Payments',
+    title: 'የስልጠናዎች ክፍያ በቴሌብር እና ባንክ',
     prompt: 'በቴሌብር ወይም በባንክ ለስልጠናዎቹ እንዴት መክፈል እችላለሁ? ክፍያ እንደፈጸምኩ ትምህርቱ ወዲያውኑ ይከፈትልኛል?',
     color: '#a855f7'
+  },
+  {
+    icon: 'fa-certificate',
+    category: 'Certificate',
+    title: 'የሰርተፊኬት አሰጣጥ እና ማረጋገጫ',
+    prompt: 'ስልጠናውን ካጠናቀቅኩ በኋላ ሰርተፊኬቴን እንዴት አገኛለሁ? ሰርተፊኬቱ በኦንላይን ይረጋገጣል?',
+    color: '#14b8a6'
+  },
+  {
+    icon: 'fa-chart-line',
+    category: 'Crypto',
+    title: 'የክሪፕቶ ግብይት እና Binance አጠቃቀም',
+    prompt: 'የክሪፕቶ ከረንሲ ግብይትን (Crypto Trading) ከዜሮ በ Binance ተጠቅሜ እንዴት መጀመር እችላለሁ?',
+    color: '#f97316'
   }
 ];
 
 const STARTER_PROMPTS_EN = [
   {
     icon: 'fa-youtube',
-    category: 'YouTube Mastery',
+    category: 'YouTube',
     title: 'How to Monetize a YouTube Channel',
     prompt: 'How can I launch a profitable YouTube channel from Ethiopia and earn in USD? Explain step-by-step.',
     color: '#FF0000'
+  },
+  {
+    icon: 'fa-video',
+    category: 'YouTube',
+    title: 'Faceless AI YouTube Videos',
+    prompt: 'How can I create high-view viral YouTube videos using AI without showing my face or real identity?',
+    color: '#ef4444'
   },
   {
     icon: 'fa-bag-shopping',
@@ -79,6 +129,13 @@ const STARTER_PROMPTS_EN = [
     color: '#f9b03c'
   },
   {
+    icon: 'fa-credit-card',
+    category: 'Shein & E-commerce',
+    title: 'International Card & Dollar Payments',
+    prompt: 'How can I make foreign dollar card payments from Ethiopia for Shein and international tools?',
+    color: '#f59e0b'
+  },
+  {
     icon: 'fa-bullhorn',
     category: 'Digital Marketing',
     title: 'Telegram & TikTok Marketing',
@@ -86,11 +143,18 @@ const STARTER_PROMPTS_EN = [
     color: '#3268ba'
   },
   {
-    icon: 'fa-graduation-cap',
-    category: 'Course Advisory',
-    title: 'Recommend the Best Course for Me',
-    prompt: 'I am a beginner wanting to earn online. Which Tsehay Campus course should I start with first?',
-    color: '#5a93e8'
+    icon: 'fa-gift',
+    category: 'Digital Marketing',
+    title: 'Free Digital Marketing Masterclass',
+    prompt: 'How can I enroll in the 100% Free Digital Marketing course, and what topics are covered?',
+    color: '#06b6d4'
+  },
+  {
+    icon: 'fa-film',
+    category: 'Video Editing',
+    title: 'Mobile & Desktop Video Editing',
+    prompt: 'How can I learn CapCut and Premiere Pro video editing from scratch to land paid client work?',
+    color: '#8b5cf6'
   },
   {
     icon: 'fa-laptop-code',
@@ -100,11 +164,32 @@ const STARTER_PROMPTS_EN = [
     color: '#10b981'
   },
   {
-    icon: 'fa-credit-card',
-    category: 'Payments & Pricing',
+    icon: 'fa-handshake',
+    category: 'Mentorship',
+    title: '1-on-1 Mentorship with Eyoub Sahle',
+    prompt: 'How can I book a 45-minute private 1-on-1 strategy mentorship consultation with Eyoub Sahle?',
+    color: '#ec4899'
+  },
+  {
+    icon: 'fa-money-bill-wave',
+    category: 'Payments',
     title: 'Course Tuition & Instant Access',
     prompt: 'How can I pay via Telebirr or Bank transfer, and do lessons unlock immediately after payment?',
     color: '#a855f7'
+  },
+  {
+    icon: 'fa-certificate',
+    category: 'Certificate',
+    title: 'Accredited Digital Certificate',
+    prompt: 'How do I earn my accredited certificate upon graduation, and how can employers verify it online?',
+    color: '#14b8a6'
+  },
+  {
+    icon: 'fa-chart-line',
+    category: 'Crypto',
+    title: 'Crypto Trading & Binance Setup',
+    prompt: 'How can I start crypto trading with proper risk management and technical analysis in Ethiopia?',
+    color: '#f97316'
   }
 ];
 
@@ -439,35 +524,8 @@ export default function AiClient() {
           </div>
 
           <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
-            {/* 🌐 Segmented Cyber Language Switcher */}
-            <div className="flex items-center p-1 rounded-2xl bg-[#0d162b] border border-white/15 shadow-inner">
-              <button
-                type="button"
-                onClick={() => setLanguage('am')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all duration-300 flex items-center gap-1.5 cursor-pointer ${
-                  lang === 'am'
-                    ? 'bg-gradient-to-r from-[#f9b03c] via-amber-400 to-amber-500 text-slate-950 shadow-[0_0_15px_rgba(249,176,60,0.4)] scale-[1.02]'
-                    : 'text-slate-400 hover:text-white hover:bg-white/5'
-                }`}
-                title="አማርኛ (Amharic)"
-              >
-                <span>🇪🇹</span>
-                <span>አማ</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setLanguage('en')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all duration-300 flex items-center gap-1.5 cursor-pointer ${
-                  lang === 'en'
-                    ? 'bg-gradient-to-r from-[#f9b03c] via-amber-400 to-amber-500 text-slate-950 shadow-[0_0_15px_rgba(249,176,60,0.4)] scale-[1.02]'
-                    : 'text-slate-400 hover:text-white hover:bg-white/5'
-                }`}
-                title="English"
-              >
-                <span>🇬🇧</span>
-                <span>EN</span>
-              </button>
-            </div>
+            {/* Sliding Language Switcher Toggle */}
+            <LanguageToggleSwitch compact />
 
             <div className="relative flex-1 sm:flex-initial">
               <select
