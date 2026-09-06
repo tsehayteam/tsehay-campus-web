@@ -61,80 +61,19 @@ export async function getLiveLandingVideoDataServer(): Promise<LiveLandingVideoD
   };
 
   try {
-    // 1. Primary: Supabase site_settings table
-    try {
-      const { data: setting } = await supabaseServer
-        .from('site_settings')
-        .select('data')
-        .eq('key', 'landing_video')
-        .maybeSingle();
+    const { data: setting } = await supabaseServer
+      .from('site_settings')
+      .select('data')
+      .eq('key', 'landing_video')
+      .maybeSingle();
 
-      if (setting && setting.data) {
-        const data = setting.data;
-        const url = data.url || data.videoUrl || data.youtubeUrl;
-        const thumb = data.landingVideoThumbnail || data.thumbnail || data.thumbnailUrl || data.poster;
-        if (url && typeof url === 'string' && url.trim()) result.videoUrl = url.trim();
-        if (thumb && typeof thumb === 'string' && thumb.trim()) result.thumbnail = thumb.trim();
-        if (result.videoUrl !== DEFAULT_LANDING_VIDEO) {
-          return result;
-        }
-      }
-    } catch (e) {}
-
-    // 2. Firebase Admin fallback
-    if (adminDb && hasAdminCredentials) {
-      const paths = [
-        adminDb.collection('settings').doc('landing_video'),
-        adminDb.collection('settings').doc('landingVideo'),
-        adminDb.collection('site_settings').doc('landing_video'),
-        adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('public').doc('data').collection('site_settings').doc('landing_video')
-      ];
-
-      for (const p of paths) {
-        try {
-          const snap = await p.get();
-          if (snap.exists) {
-            const data = snap.data();
-            const url = data?.url || data?.videoUrl || data?.youtubeUrl;
-            const thumb = data?.landingVideoThumbnail || data?.thumbnail || data?.thumbnailUrl || data?.thumbUrl || data?.poster;
-            if (url && typeof url === 'string' && url.trim()) {
-              result.videoUrl = url.trim();
-            }
-            if (thumb && typeof thumb === 'string' && thumb.trim()) {
-              result.thumbnail = thumb.trim();
-            }
-            if (url || thumb) {
-              sharedSiteSettingsCache.set('landing_video', data);
-              return result;
-            }
-          }
-        } catch (e) {}
-      }
-    }
-
-    // 3. Check in-memory shared cache
-    if (sharedSiteSettingsCache.has('landing_video')) {
-      const cached = sharedSiteSettingsCache.get('landing_video');
-      const url = cached?.url || cached?.videoUrl || cached?.youtubeUrl;
-      const thumb = cached?.landingVideoThumbnail || cached?.thumbnail || cached?.thumbnailUrl || cached?.thumbUrl || cached?.poster;
+    if (setting && setting.data) {
+      const data = setting.data;
+      const url = data.url || data.videoUrl || data.youtubeUrl;
+      const thumb = data.landingVideoThumbnail || data.thumbnail || data.thumbnailUrl || data.poster;
       if (url && typeof url === 'string' && url.trim()) result.videoUrl = url.trim();
       if (thumb && typeof thumb === 'string' && thumb.trim()) result.thumbnail = thumb.trim();
-      if (result.videoUrl !== DEFAULT_LANDING_VIDEO || result.thumbnail !== '/assets/hero-bg-new.jpg') {
-        return result;
-      }
     }
-
-    // 4. Fallback to persisted disk settings
-    try {
-      const persistedSettings = loadPersistedSettings();
-      if (persistedSettings && persistedSettings['landing_video']) {
-        const data = persistedSettings['landing_video'];
-        const url = data?.url || data?.videoUrl || data?.youtubeUrl;
-        const thumb = data?.landingVideoThumbnail || data?.thumbnail || data?.thumbnailUrl || data?.thumbUrl || data?.poster;
-        if (url && typeof url === 'string' && url.trim()) result.videoUrl = url.trim();
-        if (thumb && typeof thumb === 'string' && thumb.trim()) result.thumbnail = thumb.trim();
-      }
-    } catch (e) {}
   } catch (err) {
     console.warn('getLiveLandingVideoDataServer error:', err);
   }
