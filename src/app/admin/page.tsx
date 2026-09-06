@@ -85,6 +85,8 @@ export default function AdminDashboard() {
   const [waitlistSearchTerm, setWaitlistSearchTerm] = useState('');
   const [waitlistCourseFilter, setWaitlistCourseFilter] = useState('all');
   const [isDeletingWaitlist, setIsDeletingWaitlist] = useState<string | null>(null);
+  const [isBroadcastingLaunch, setIsBroadcastingLaunch] = useState(false);
+  const [notifyingWaitlistId, setNotifyingWaitlistId] = useState<string | null>(null);
 
   // 🌟 Events & QR Tickets State
   const [events, setEvents] = useState<TsehayEvent[]>(() => getCachedEvents());
@@ -3314,6 +3316,67 @@ export default function AdminDashboard() {
     showToast(`${uniquePhones.length} ስልኮች ኮፒ ተደርገዋል! (Copied)`, 'success');
   };
 
+  // 🚀 Broadcast Course Launch Email to Waitlisted Students
+  const handleBroadcastLaunch = async (targetCourseId?: string) => {
+    const courseId = targetCourseId || waitlistCourseFilter;
+    const courseLabel = courseId === 'all' ? 'ሁሉንም ኮርሶች' : courseId;
+    if (!confirm(`ለ"${courseLabel}" ተጠባባቂ ተማሪዎች "ኮርሱ ተለቋል" የሚል አውቶማቲክ የLaunch ኢሜይል መላክ ይፈልጋሉ?`)) return;
+
+    setIsBroadcastingLaunch(true);
+    try {
+      const res = await fetch('/api/admin/waitlists/launch-notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ courseId })
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast(data.message || 'የLaunch ኢሜይል በተሳካ ሁኔታ ተልኳል!', 'success');
+        setWaitlists(prev => prev.map(w => {
+          if (courseId === 'all' || w.courseId === courseId) {
+            return { ...w, status: 'notified', notifiedAt: new Date().toISOString() };
+          }
+          return w;
+        }));
+      } else {
+        showToast(data.error || 'ኢሜይል መላክ አልተቻለም', 'error');
+      }
+    } catch (e: any) {
+      showToast('የኢሜይል ስህተት ተከስቷል', 'error');
+    } finally {
+      setIsBroadcastingLaunch(false);
+    }
+  };
+
+  // 🚀 Send Launch Email to Individual Student
+  const handleNotifySingleStudent = async (item: any) => {
+    if (!item.email) {
+      showToast('ይህ ተማሪ ያስገባው ኢሜይል የለም', 'error');
+      return;
+    }
+    if (!confirm(`ለ ${item.studentName} (${item.email}) "ኮርሱ ተለቋል" የሚል የLaunch ኢሜይል መላክ ይፈልጋሉ?`)) return;
+
+    setNotifyingWaitlistId(item.id);
+    try {
+      const res = await fetch('/api/admin/waitlists/launch-notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ waitlistId: item.id })
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast(`ለ ${item.studentName} የLaunch ኢሜይል ተልኳል!`, 'success');
+        setWaitlists(prev => prev.map(w => w.id === item.id ? { ...w, status: 'notified', notifiedAt: new Date().toISOString() } : w));
+      } else {
+        showToast(data.error || 'መላክ አልተቻለም', 'error');
+      }
+    } catch (e) {
+      showToast('ስህተት ተከስቷል', 'error');
+    } finally {
+      setNotifyingWaitlistId(null);
+    }
+  };
+
   // 🛡️ SECURITY GUARD: Decoupled Admin Gateway requiring OTP Verification
   if (!isAuthorizedAdmin() && !is2faVerified) {
     return (
@@ -5131,6 +5194,26 @@ export default function AdminDashboard() {
                     <i className="fa-solid fa-file-csv"></i>
                     <span>CSV አውርድ</span>
                   </button>
+
+                  <button
+                    type="button"
+                    disabled={isBroadcastingLaunch}
+                    onClick={() => handleBroadcastLaunch()}
+                    className="px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#f9b03c] hover:brightness-110 active:scale-95 text-slate-950 font-black text-xs transition flex items-center gap-1.5 cursor-pointer shadow-xs disabled:opacity-50"
+                    title="ለተጠባባቂዎች ኮርሱ ተለቋል የሚል ኢሜይል ላክ"
+                  >
+                    {isBroadcastingLaunch ? (
+                      <>
+                        <i className="fa-solid fa-spinner fa-spin"></i>
+                        <span>በመላክ ላይ...</span>
+                      </>
+                    ) : (
+                      <>
+                        <i className="fa-solid fa-paper-plane"></i>
+                        <span>የLaunch ኢሜይል ላክ (Broadcast)</span>
+                      </>
+                    )}
+                  </button>
                 </div>
               </div>
 
@@ -5171,6 +5254,7 @@ export default function AdminDashboard() {
                             <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">ኢሜይል</th>
                             <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">የተመረጠው ኮርስ</th>
                             <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">የተመዘገቡበት ቀን</th>
+                            <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">ሁኔታ</th>
                             <th className="p-4 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">እርምጃዎች</th>
                           </tr>
                         </thead>
@@ -5258,9 +5342,39 @@ export default function AdminDashboard() {
                                   {dateStr}
                                 </td>
 
+                                {/* Status */}
+                                <td className="p-4">
+                                  {item.status === 'notified' ? (
+                                    <span className="text-[10.5px] font-bold px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 inline-flex items-center gap-1">
+                                      <i className="fa-solid fa-check text-[9px]"></i>
+                                      <span>ተልኳል (Notified)</span>
+                                    </span>
+                                  ) : (
+                                    <span className="text-[10.5px] font-bold px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 inline-flex items-center gap-1">
+                                      <i className="fa-solid fa-clock text-[9px]"></i>
+                                      <span>በጥበቃ ላይ (Pending)</span>
+                                    </span>
+                                  )}
+                                </td>
+
                                 {/* Actions */}
                                 <td className="p-4 text-right">
                                   <div className="flex items-center justify-end gap-1.5">
+                                    {item.email && (
+                                      <button
+                                        type="button"
+                                        disabled={notifyingWaitlistId === item.id}
+                                        onClick={() => handleNotifySingleStudent(item)}
+                                        className="w-8 h-8 rounded-lg bg-[#f9b03c]/15 text-[#f9b03c] hover:bg-[#f9b03c] hover:text-slate-950 flex items-center justify-center text-xs transition cursor-pointer disabled:opacity-50"
+                                        title="የLaunch ኢሜይል ላክ (Send Launch Email)"
+                                      >
+                                        {notifyingWaitlistId === item.id ? (
+                                          <i className="fa-solid fa-spinner fa-spin text-[10px]"></i>
+                                        ) : (
+                                          <i className="fa-solid fa-paper-plane text-[10px]"></i>
+                                        )}
+                                      </button>
+                                    )}
                                     {item.phone && (
                                       <>
                                         <a

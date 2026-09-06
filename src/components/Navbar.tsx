@@ -12,6 +12,7 @@ import { signOut } from "firebase/auth";
 import { getCachedCourses, subscribeToCourses } from "@/lib/courseCache";
 import Tilt3DLoginButton from "@/components/3d/Tilt3DLoginButton";
 import LanguageToggleSwitch from "@/components/LanguageToggleSwitch";
+import { subscribeUserConversations, Conversation } from "@/lib/communityService";
 
 export default function Navbar() {
   const { user, isAdmin } = useAuth();
@@ -68,6 +69,12 @@ export default function Navbar() {
 
   const [allCourses, setAllCourses] = useState<any[]>(() => getCachedCourses());
   const profileDropdownRef = useRef<HTMLDivElement>(null);
+  const notificationDropdownRef = useRef<HTMLDivElement>(null);
+
+  // 🔔 Real-Time Messages & Notification State
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
+  const [recentConversations, setRecentConversations] = useState<Conversation[]>([]);
+  const [showNotificationDropdown, setShowNotificationDropdown] = useState(false);
 
   const navUserName = customName || user?.displayName || user?.email?.split('@')[0] || 'User';
   const navUserPhoto = customPhoto || user?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(navUserName)}&background=f9b03c&color=111827&bold=true`;
@@ -198,6 +205,7 @@ export default function Navbar() {
 
   useEffect(() => {
     setShowProfileDropdown(false);
+    setShowNotificationDropdown(false);
     setIsCurtainOpen(false);
   }, [pathname]);
 
@@ -215,6 +223,9 @@ export default function Navbar() {
       if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target as Node)) {
         setShowProfileDropdown(false);
       }
+      if (notificationDropdownRef.current && !notificationDropdownRef.current.contains(event.target as Node)) {
+        setShowNotificationDropdown(false);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
 
@@ -230,6 +241,26 @@ export default function Navbar() {
       unsubscribeCourses();
     };
   }, []);
+
+  // 🔔 Real-Time Direct Message & Notification Subscription
+  useEffect(() => {
+    if (!user?.uid) {
+      setUnreadMessagesCount(0);
+      setRecentConversations([]);
+      return;
+    }
+
+    const unsubscribe = subscribeUserConversations(user.uid, (convList) => {
+      setRecentConversations(convList);
+      const totalUnread = convList.reduce((acc, c) => {
+        const count = c.unreadCount?.[user.uid] || 0;
+        return acc + count;
+      }, 0);
+      setUnreadMessagesCount(totalUnread);
+    });
+
+    return () => unsubscribe();
+  }, [user?.uid]);
 
   const toggleTheme = () => {
     const newTheme = theme === 'dark' ? 'light' : 'dark';
@@ -297,6 +328,12 @@ export default function Navbar() {
           >
             <span className="text-xs sm:text-[13px] font-black tracking-wide whitespace-nowrap flex items-center gap-1.5 font-heading text-white group-hover:text-[#f9b03c] transition-colors">
               🧭 ዋና ማውጫ ▾
+              {unreadMessagesCount > 0 && (
+                <span className="relative flex h-2 w-2 ml-0.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+                </span>
+              )}
             </span>
           </button>
         </div>
@@ -486,63 +523,179 @@ export default function Navbar() {
                   label={lang === 'en' ? 'Login' : 'ይግቡ (Login)'}
                 />
               ) : (
-                <div className="relative" ref={profileDropdownRef}>
-                  <button
-                    type="button"
-                    onClick={() => setShowProfileDropdown(prev => !prev)}
-                    className="flex items-center gap-2 p-1 pr-3 rounded-full bg-white/5 hover:bg-white/10 border border-[#f9b03c]/40 hover:border-[#f9b03c] transition-all cursor-pointer group shadow-sm"
-                    title="የተጠቃሚ መረጃ (User Profile)"
-                  >
-                    <img
-                      src={navUserPhoto}
-                      alt={navUserName}
-                      className="w-7 h-7 rounded-full border border-[#f9b03c] object-cover shrink-0"
-                    />
-                    <span className="text-xs font-bold text-slate-200 group-hover:text-[#f9b03c] transition-colors truncate max-w-[90px]">
-                      {navUserName.split(' ')[0]}
-                    </span>
-                    <i className={`fa-solid fa-chevron-down text-[10px] text-gray-400 transition-transform duration-200 ${showProfileDropdown ? 'rotate-180 text-[#f9b03c]' : ''}`}></i>
-                  </button>
+                <div className="flex items-center gap-2">
+                  {/* 🔔 Real-Time Notification Bell with Live Unread Badge */}
+                  <div className="relative" ref={notificationDropdownRef}>
+                    <button
+                      type="button"
+                      onClick={() => setShowNotificationDropdown(prev => !prev)}
+                      className="relative w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 hover:border-[#f9b03c]/60 flex items-center justify-center text-slate-300 hover:text-[#f9b03c] transition-all cursor-pointer group shadow-xs"
+                      title="ማሳወቂያዎች እና መልዕክቶች (Notifications & Messages)"
+                    >
+                      <i className={`fa-solid fa-bell text-xs sm:text-sm transition-transform group-hover:rotate-12 ${unreadMessagesCount > 0 ? 'text-[#f9b03c]' : ''}`}></i>
+                      {unreadMessagesCount > 0 && (
+                        <span className="absolute -top-1 -right-1 min-w-[17px] h-[17px] px-1 bg-gradient-to-r from-red-500 to-rose-600 text-white text-[9.5px] font-black rounded-full flex items-center justify-center border-2 border-slate-950 shadow-md animate-pulse">
+                          {unreadMessagesCount > 9 ? '9+' : unreadMessagesCount}
+                        </span>
+                      )}
+                    </button>
 
-                  {/* Sleek Animated Frosted-Glass Profile Dropdown */}
-                  {showProfileDropdown && (
-                    <div className="absolute right-0 top-full mt-2 min-w-[220px] max-w-[280px] rounded-2xl bg-black/90 backdrop-blur-2xl border border-white/10 shadow-2xl p-3 z-[9999] animate-in fade-in zoom-in-95 duration-200 space-y-2">
-                      {/* User Info Header */}
-                      <div className="flex items-center gap-2.5 px-2 py-1.5 pb-2.5 border-b border-white/10">
-                        <img
-                          src={navUserPhoto}
-                          alt={navUserName}
-                          className="w-9 h-9 rounded-full border border-[#f9b03c] object-cover shrink-0"
-                        />
-                        <div className="overflow-hidden text-left">
-                          <div className="text-xs font-black text-white truncate font-heading">{navUserName}</div>
-                          <div className="text-[10px] text-gray-400 truncate">{user?.email}</div>
+                    {/* Notification Frosted Dropdown Popover */}
+                    {showNotificationDropdown && (
+                      <div className="absolute right-0 top-full mt-2 w-72 sm:w-80 rounded-2xl bg-black/95 backdrop-blur-2xl border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.9)] p-3 z-[9999] animate-in fade-in zoom-in-95 duration-200 space-y-2">
+                        <div className="flex items-center justify-between pb-2 border-b border-white/10">
+                          <div className="flex items-center gap-1.5">
+                            <i className="fa-solid fa-bell text-[#f9b03c] text-xs"></i>
+                            <span className="font-heading font-black text-xs text-white uppercase tracking-wider">ማሳወቂያዎች</span>
+                          </div>
+                          {unreadMessagesCount > 0 ? (
+                            <span className="px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 text-[10px] font-black border border-rose-500/30">
+                              {unreadMessagesCount} አዲስ መልዕክት
+                            </span>
+                          ) : (
+                            <span className="text-[10px] text-gray-400">ሁሉም ታይቷል</span>
+                          )}
+                        </div>
+
+                        {recentConversations.length === 0 ? (
+                          <div className="py-6 text-center">
+                            <div className="w-9 h-9 rounded-full bg-white/5 text-slate-400 flex items-center justify-center text-xs mx-auto mb-2">
+                              <i className="fa-regular fa-envelope-open"></i>
+                            </div>
+                            <p className="text-xs text-slate-400">ምንም የውይይት መልዕክት የለም</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-1 max-h-56 overflow-y-auto pr-1">
+                            {recentConversations.slice(0, 4).map((conv) => {
+                              const otherUid = conv.participants.find(p => p !== user?.uid) || '';
+                              const otherUser = conv.participantDetails?.[otherUid] || { name: 'ተማሪ', photo: '' };
+                              const isUnread = Boolean(conv.unreadCount?.[user?.uid || ''] && conv.unreadCount[user!.uid] > 0);
+
+                              return (
+                                <button
+                                  key={conv.id}
+                                  type="button"
+                                  onClick={() => {
+                                    setShowNotificationDropdown(false);
+                                    closeCurtain();
+                                    router.push(`/inbox?user=${encodeURIComponent(otherUid)}`);
+                                  }}
+                                  className={`w-full flex items-center gap-2.5 p-2 rounded-xl text-left transition cursor-pointer ${
+                                    isUnread ? 'bg-[#f9b03c]/15 border border-[#f9b03c]/40' : 'hover:bg-white/5 border border-transparent'
+                                  }`}
+                                >
+                                  <img
+                                    src={otherUser.photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(otherUser.name)}&background=f9b03c&color=111827&bold=true`}
+                                    alt={otherUser.name}
+                                    className="w-8 h-8 rounded-full object-cover shrink-0 border border-white/10"
+                                  />
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center justify-between">
+                                      <span className="font-heading font-bold text-xs text-white truncate">{otherUser.name}</span>
+                                      {isUnread && <span className="w-2 h-2 rounded-full bg-[#f9b03c] shrink-0"></span>}
+                                    </div>
+                                    <p className="text-[11px] text-slate-400 truncate">{conv.lastMessage || 'አዲስ መልዕክት'}</p>
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+
+                        <div className="pt-2 border-t border-white/10">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowNotificationDropdown(false);
+                              closeCurtain();
+                              router.push('/inbox');
+                            }}
+                            className="w-full py-2 rounded-xl bg-white/5 hover:bg-white/10 text-[#f9b03c] hover:text-amber-300 font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer border border-white/10"
+                          >
+                            <i className="fa-solid fa-paper-plane text-xs"></i>
+                            <span>ወደ መልዕክት ሳጥን (Open Inbox)</span>
+                          </button>
                         </div>
                       </div>
+                    )}
+                  </div>
 
-                      {/* Option 1: 🎓 Go to Classroom */}
-                      <button
-                        type="button"
-                        onClick={() => navigateTo('/dashboard')}
-                        className="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#f9b03c] hover:brightness-110 active:scale-[0.98] text-slate-950 font-black text-xs transition-all cursor-pointer shadow-md group"
-                      >
-                        <div className="w-6 h-6 rounded-lg bg-black/15 flex items-center justify-center text-slate-950 group-hover:scale-110 transition-transform shrink-0">
-                          <i className="fa-solid fa-graduation-cap text-base"></i>
+                  {/* Profile Dropdown */}
+                  <div className="relative" ref={profileDropdownRef}>
+                    <button
+                      type="button"
+                      onClick={() => setShowProfileDropdown(prev => !prev)}
+                      className="flex items-center gap-2 p-1 pr-3 rounded-full bg-white/5 hover:bg-white/10 border border-[#f9b03c]/40 hover:border-[#f9b03c] transition-all cursor-pointer group shadow-sm"
+                      title="የተጠቃሚ መረጃ (User Profile)"
+                    >
+                      <img
+                        src={navUserPhoto}
+                        alt={navUserName}
+                        className="w-7 h-7 rounded-full border border-[#f9b03c] object-cover shrink-0"
+                      />
+                      <span className="text-xs font-bold text-slate-200 group-hover:text-[#f9b03c] transition-colors truncate max-w-[90px]">
+                        {navUserName.split(' ')[0]}
+                      </span>
+                      <i className={`fa-solid fa-chevron-down text-[10px] text-gray-400 transition-transform duration-200 ${showProfileDropdown ? 'rotate-180 text-[#f9b03c]' : ''}`}></i>
+                    </button>
+
+                    {/* Sleek Animated Frosted-Glass Profile Dropdown */}
+                    {showProfileDropdown && (
+                      <div className="absolute right-0 top-full mt-2 min-w-[220px] max-w-[280px] rounded-2xl bg-black/90 backdrop-blur-2xl border border-white/10 shadow-2xl p-3 z-[9999] animate-in fade-in zoom-in-95 duration-200 space-y-2">
+                        {/* User Info Header */}
+                        <div className="flex items-center gap-2.5 px-2 py-1.5 pb-2.5 border-b border-white/10">
+                          <img
+                            src={navUserPhoto}
+                            alt={navUserName}
+                            className="w-9 h-9 rounded-full border border-[#f9b03c] object-cover shrink-0"
+                          />
+                          <div className="overflow-hidden text-left">
+                            <div className="text-xs font-black text-white truncate font-heading">{navUserName}</div>
+                            <div className="text-[10px] text-gray-400 truncate">{user?.email}</div>
+                          </div>
                         </div>
-                        <span className="font-heading tracking-wide text-xs">ወደ መማሪያ ክፍል</span>
-                      </button>
 
-                      {/* Option 2: 🚪 Log Out */}
-                      <button
-                        type="button"
-                        onClick={handleSignOut}
-                        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-white/5 hover:bg-red-500/15 text-slate-300 hover:text-red-400 border border-transparent hover:border-red-500/30 font-bold text-xs transition-all cursor-pointer"
-                      >
-                        <i className="fa-solid fa-arrow-right-from-bracket text-xs text-red-400"></i>
-                        <span>ውጣ (Log Out)</span>
-                      </button>
-                    </div>
-                  )}
+                        {/* Option 1: 🎓 Go to Classroom */}
+                        <button
+                          type="button"
+                          onClick={() => navigateTo('/dashboard')}
+                          className="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#f9b03c] hover:brightness-110 active:scale-[0.98] text-slate-950 font-black text-xs transition-all cursor-pointer shadow-md group"
+                        >
+                          <div className="w-6 h-6 rounded-lg bg-black/15 flex items-center justify-center text-slate-950 group-hover:scale-110 transition-transform shrink-0">
+                            <i className="fa-solid fa-graduation-cap text-base"></i>
+                          </div>
+                          <span className="font-heading tracking-wide text-xs">ወደ መማሪያ ክፍል</span>
+                        </button>
+
+                        {/* Option 2: 💬 Go to Inbox */}
+                        <button
+                          type="button"
+                          onClick={() => navigateTo('/inbox')}
+                          className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-200 hover:text-white border border-white/10 font-bold text-xs transition-all cursor-pointer"
+                        >
+                          <span className="flex items-center gap-2.5">
+                            <i className="fa-solid fa-paper-plane text-xs text-blue-400"></i>
+                            <span>የመልዕክት ሳጥን (Inbox)</span>
+                          </span>
+                          {unreadMessagesCount > 0 && (
+                            <span className="px-1.5 py-0.5 rounded-full bg-rose-500 text-white text-[10px] font-black">
+                              {unreadMessagesCount}
+                            </span>
+                          )}
+                        </button>
+
+                        {/* Option 3: 🚪 Log Out */}
+                        <button
+                          type="button"
+                          onClick={handleSignOut}
+                          className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl bg-white/5 hover:bg-red-500/15 text-slate-300 hover:text-red-400 border border-transparent hover:border-red-500/30 font-bold text-xs transition-all cursor-pointer"
+                        >
+                          <i className="fa-solid fa-arrow-right-from-bracket text-xs text-red-400"></i>
+                          <span>ውጣ (Log Out)</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -730,10 +883,15 @@ export default function Navbar() {
                     <button 
                       type="button" 
                       onClick={() => { closeCurtain(); navigateTo('/inbox'); }} 
-                      className="flex items-center justify-center gap-1.5 px-3 py-2.5 bg-blue-600/30 text-blue-300 font-black rounded-xl hover:bg-blue-600/40 border border-blue-500/40 transition cursor-pointer text-xs"
+                      className="flex items-center justify-center gap-1.5 px-3 py-2.5 bg-blue-600/30 text-blue-300 font-black rounded-xl hover:bg-blue-600/40 border border-blue-500/40 transition cursor-pointer text-xs relative"
                     >
                       <i className="fa-solid fa-paper-plane"></i>
                       <span>መልዕክት</span>
+                      {unreadMessagesCount > 0 && (
+                        <span className="ml-1 px-1.5 py-0.5 rounded-full bg-rose-500 text-white text-[10px] font-black animate-pulse">
+                          {unreadMessagesCount}
+                        </span>
+                      )}
                     </button>
                   </div>
 

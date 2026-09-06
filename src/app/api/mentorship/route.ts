@@ -37,7 +37,7 @@ export async function POST(req: Request) {
       time: String(time).trim(),
       topic: (topic || 'አጠቃላይ የ 1-ለ-1 ማማከር').trim(),
       tier: tier || '1-Hour Strategy Consultation',
-      amount: Number(amount) || 4600,
+      amount: Number(amount) || 1950,
       meetingMode: meetingMode || 'online',
       paymentMethod: paymentMethod || 'telebirr',
       userId: validUserId,

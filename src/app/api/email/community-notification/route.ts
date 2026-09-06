@@ -18,7 +18,9 @@ interface CommunityNotificationPayload {
 function generateEmailTemplate(data: CommunityNotificationPayload): { subject: string; html: string } {
   const { type, recipientName, senderName, postTitleOrSnippet, commentSnippet, messageSnippet, postId } = data;
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.tsehaycampus.com';
-  const postUrl = postId ? `${siteUrl}/community?post=${encodeURIComponent(postId)}` : `${siteUrl}/community`;
+  const targetCtaUrl = type === 'message' 
+    ? `${siteUrl}/inbox` 
+    : (postId ? `${siteUrl}/community?post=${encodeURIComponent(postId)}` : `${siteUrl}/community`);
   const logoUrl = `${siteUrl}/tc-logo.jpg`;
 
   let subject = '';
@@ -98,7 +100,7 @@ function generateEmailTemplate(data: CommunityNotificationPayload): { subject: s
           <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom: 16px;">
             <tr>
               <td align="center">
-                <a href="${postUrl}" target="_blank" style="display: inline-block; background: linear-gradient(90deg, #f9b03c 0%, #ffc66b 100%); color: #020617; font-weight: 900; font-size: 14px; text-decoration: none; padding: 14px 28px; border-radius: 14px; box-shadow: 0 0 25px rgba(249,176,60,0.5); text-transform: uppercase; letter-spacing: 0.5px;">
+                <a href="${targetCtaUrl}" target="_blank" style="display: inline-block; background: linear-gradient(90deg, #f9b03c 0%, #ffc66b 100%); color: #020617; font-weight: 900; font-size: 14px; text-decoration: none; padding: 14px 28px; border-radius: 14px; box-shadow: 0 0 25px rgba(249,176,60,0.5); text-transform: uppercase; letter-spacing: 0.5px;">
                   ${ctaText} →
                 </a>
               </td>
