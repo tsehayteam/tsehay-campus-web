@@ -8,6 +8,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { supabase } from '@/lib/supabase/client';
 
 // Components
 import Footer from '@/components/Footer';
@@ -229,7 +230,28 @@ export default function HomeClient({
 
     fetchLiveCourses();
 
-    // Cross-Tab Broadcast Channel & Custom Event Listeners
+    // 1. Supabase Realtime WebSocket subscriptions on courses & site_settings
+    const coursesChannel = supabase
+      .channel('realtime_home_courses_sync')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'courses' },
+        () => {
+          fetchLiveCourses();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'site_settings' },
+        (payload: any) => {
+          if (payload?.new && payload.new.key === 'deleted_courses') {
+            fetchLiveCourses();
+          }
+        }
+      )
+      .subscribe();
+
+    // 2. Cross-Tab Broadcast Channel & Custom Event Listeners
     let bc: BroadcastChannel | null = null;
     try {
       if (typeof BroadcastChannel !== 'undefined') {
@@ -252,6 +274,12 @@ export default function HomeClient({
       }
     };
 
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        fetchLiveCourses();
+      }
+    };
+
     window.addEventListener('tsehay_courses_updated', handleCustomCoursesUpdate);
     window.addEventListener('tsehay_course_update', handleCustomCoursesUpdate);
     window.addEventListener('storage', (e) => {
@@ -259,11 +287,16 @@ export default function HomeClient({
         fetchLiveCourses();
       }
     });
+    window.addEventListener('focus', fetchLiveCourses);
+    document.addEventListener('visibilitychange', handleVisibility);
 
     return () => {
+      supabase.removeChannel(coursesChannel);
       if (bc) bc.close();
       window.removeEventListener('tsehay_courses_updated', handleCustomCoursesUpdate);
       window.removeEventListener('tsehay_course_update', handleCustomCoursesUpdate);
+      window.removeEventListener('focus', fetchLiveCourses);
+      document.removeEventListener('visibilitychange', handleVisibility);
     };
   }, []);
 

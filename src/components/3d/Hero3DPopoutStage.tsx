@@ -6,6 +6,7 @@ import { gsap } from 'gsap';
 import { parseVideoEmbedUrl, parseImageUrl } from '@/lib/videoParser';
 import { db } from '@/lib/firebase/config';
 import { doc, onSnapshot } from 'firebase/firestore';
+import { supabase } from '@/lib/supabase/client';
 import CinematicVideoModal from '@/components/CinematicVideoModal';
 
 interface Hero3DPopoutStageProps {
@@ -122,38 +123,33 @@ export default function Hero3DPopoutStage({
 
     fetchLandingVideo();
 
-    // 3. Real-time Firestore Listeners across all valid namespaces
-    let unsub1: any = null;
-    let unsub2: any = null;
-    let unsub3: any = null;
-    let unsub4: any = null;
-
-    const handleDocUpdate = (snap: any) => {
-      if (snap.exists()) {
-        const d = snap.data();
-        const url = d?.url || d?.videoUrl || d?.youtubeUrl;
-        const thumb = d?.landingVideoThumbnail || d?.thumbnail || d?.thumbnailUrl || d?.thumbUrl || d?.poster;
-        if (url && typeof url === 'string' && url.trim() && !isCancelled) {
-          setActiveVideoUrl(url.trim());
-          try {
-            localStorage.setItem('tsehay_landing_video_cache', url.trim());
-          } catch (e) {}
+    // 3. Supabase Realtime WebSocket subscription on site_settings (landing_video)
+    const sbChannel = supabase
+      .channel('realtime_landing_video_popout')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'site_settings' },
+        (payload: any) => {
+          if (payload?.new && payload.new.key === 'landing_video' && !isCancelled) {
+            const d = payload.new.data;
+            const url = d?.url || d?.videoUrl || d?.youtubeUrl;
+            const thumb = d?.landingVideoThumbnail || d?.thumbnail || d?.thumbnailUrl || d?.poster;
+            if (url && typeof url === 'string' && url.trim()) {
+              setActiveVideoUrl(url.trim());
+              try {
+                localStorage.setItem('tsehay_landing_video_cache', url.trim());
+              } catch (e) {}
+            }
+            if (thumb && typeof thumb === 'string' && thumb.trim()) {
+              setCustomThumbnail(thumb.trim());
+              try {
+                localStorage.setItem('tsehay_landing_video_thumb', thumb.trim());
+              } catch (e) {}
+            }
+          }
         }
-        if (thumb && typeof thumb === 'string' && thumb.trim() && !isCancelled) {
-          setCustomThumbnail(thumb.trim());
-          try {
-            localStorage.setItem('tsehay_landing_video_thumb', thumb.trim());
-          } catch (e) {}
-        }
-      }
-    };
-
-    try {
-      unsub1 = onSnapshot(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'site_settings', 'landing_video'), handleDocUpdate, () => {});
-      unsub2 = onSnapshot(doc(db, 'site_settings', 'landing_video'), handleDocUpdate, () => {});
-      unsub3 = onSnapshot(doc(db, 'settings', 'landing_video'), handleDocUpdate, () => {});
-      unsub4 = onSnapshot(doc(db, 'settings', 'landingVideo'), handleDocUpdate, () => {});
-    } catch (e) {}
+      )
+      .subscribe();
 
     // 4. Cross-tab Broadcast Channel & Custom Event Listeners
     let bc: BroadcastChannel | null = null;
@@ -191,15 +187,22 @@ export default function Hero3DPopoutStage({
     };
     window.addEventListener('storage', handleStorageUpdate);
 
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        fetchLandingVideo();
+      }
+    };
+    window.addEventListener('focus', fetchLandingVideo);
+    document.addEventListener('visibilitychange', handleVisibility);
+
     return () => {
       isCancelled = true;
-      if (unsub1) unsub1();
-      if (unsub2) unsub2();
-      if (unsub3) unsub3();
-      if (unsub4) unsub4();
+      supabase.removeChannel(sbChannel);
       if (bc) bc.close();
       window.removeEventListener('tsehay_landing_video_updated', handleCustomLandingUpdate);
       window.removeEventListener('storage', handleStorageUpdate);
+      window.removeEventListener('focus', fetchLandingVideo);
+      document.removeEventListener('visibilitychange', handleVisibility);
     };
   }, []);
 

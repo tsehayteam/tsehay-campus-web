@@ -5,6 +5,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import Footer from '@/components/Footer';
 import { db } from '@/lib/firebase/config';
 import { doc, onSnapshot, collection, query, orderBy } from 'firebase/firestore';
+import { supabase } from '@/lib/supabase/client';
 import { parseVideoEmbedUrl, parseImageUrl, getMediaThumbnail } from '@/lib/videoParser';
 
 interface AboutClientProps {
@@ -488,48 +489,49 @@ function AboutHeroPlayer({
     };
   }, []);
 
-  // Multi-namespace Firestore and Server API listener
+  // Supabase Realtime, Broadcast Channel, and Server API sync
   useEffect(() => {
     let isCancelled = false;
 
-    fetch('/api/admin/site-settings?settingKey=about_video')
-      .then(res => res.json())
-      .then(json => {
-        if (!isCancelled && json?.data) {
-          const url = json.data.url || json.data.videoUrl || json.data.youtubeUrl;
-          const thumb = json.data.thumbnail || json.data.thumbnailUrl || json.data.thumbUrl || json.data.poster;
-          const title = json.data.title;
-          if (url && typeof url === 'string' && url.trim()) {
-            setVideoData(prev => ({
-              videoUrl: url.trim(),
-              thumbnail: thumb !== undefined ? thumb : prev.thumbnail,
-              title: title || prev.title
-            }));
-            try {
-              localStorage.setItem('tsehay_about_video_cache', JSON.stringify({
+    const fetchAboutVideo = async () => {
+      try {
+        const res = await fetch('/api/admin/site-settings?settingKey=about_video', { cache: 'no-store' });
+        if (res.ok) {
+          const json = await res.json();
+          if (!isCancelled && json?.data) {
+            const url = json.data.url || json.data.videoUrl || json.data.youtubeUrl;
+            const thumb = json.data.thumbnail || json.data.thumbnailUrl || json.data.thumbUrl || json.data.poster;
+            const title = json.data.title;
+            if (url && typeof url === 'string' && url.trim()) {
+              setVideoData(prev => ({
                 videoUrl: url.trim(),
-                thumbnail: thumb,
-                title: title
+                thumbnail: thumb !== undefined ? thumb : prev.thumbnail,
+                title: title || prev.title
               }));
-            } catch (e) {}
+              try {
+                localStorage.setItem('tsehay_about_video_cache', JSON.stringify({
+                  videoUrl: url.trim(),
+                  thumbnail: thumb,
+                  title: title
+                }));
+              } catch (e) {}
+            }
           }
         }
-      })
-      .catch(() => {});
+      } catch (e) {}
+    };
 
-    const docPaths = [
-      doc(db, 'settings', 'about_video'),
-      doc(db, 'settings', 'aboutVideo'),
-      doc(db, 'site_settings', 'about_video'),
-      doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'site_settings', 'about_video')
-    ];
+    fetchAboutVideo();
 
-    const unsubs: (() => void)[] = [];
-    docPaths.forEach(dRef => {
-      try {
-        const unsub = onSnapshot(dRef, (snap) => {
-          if (!isCancelled && snap.exists()) {
-            const d = snap.data();
+    // 1. Supabase Realtime WebSocket subscription on site_settings (about_video)
+    const sbChannel = supabase
+      .channel('realtime_about_video_sync')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'site_settings' },
+        (payload: any) => {
+          if (payload?.new && payload.new.key === 'about_video' && !isCancelled) {
+            const d = payload.new.data;
             const url = d?.url || d?.videoUrl || d?.youtubeUrl;
             const thumb = d?.thumbnail || d?.thumbnailUrl || d?.thumbUrl || d?.poster;
             const title = d?.title;
@@ -548,16 +550,80 @@ function AboutHeroPlayer({
               } catch (e) {}
             }
           }
-        }, () => {});
-        unsubs.push(unsub);
-      } catch (e) {}
-    });
+        }
+      )
+      .subscribe();
+
+    // 2. Broadcast Channel & Custom Event Listeners
+    let bc: BroadcastChannel | null = null;
+    try {
+      if (typeof BroadcastChannel !== 'undefined') {
+        bc = new BroadcastChannel('tsehay_about_video_channel');
+        bc.onmessage = (event) => {
+          if (event.data && !isCancelled) {
+            const url = event.data.videoUrl || event.data.url;
+            const thumb = event.data.thumbnail;
+            const title = event.data.title;
+            if (url && typeof url === 'string' && url.trim()) {
+              setVideoData(prev => ({
+                videoUrl: url.trim(),
+                thumbnail: thumb !== undefined ? thumb : prev.thumbnail,
+                title: title || prev.title
+              }));
+            }
+          }
+        };
+      }
+    } catch (e) {}
+
+    const handleCustomAboutUpdate = (e: any) => {
+      if (e.detail && !isCancelled) {
+        const url = e.detail.videoUrl || e.detail.url;
+        const thumb = e.detail.thumbnail;
+        const title = e.detail.title;
+        if (url && typeof url === 'string' && url.trim()) {
+          setVideoData(prev => ({
+            videoUrl: url.trim(),
+            thumbnail: thumb !== undefined ? thumb : prev.thumbnail,
+            title: title || prev.title
+          }));
+        }
+      }
+    };
+    window.addEventListener('tsehay_about_video_updated', handleCustomAboutUpdate);
+
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === 'tsehay_about_video_cache' && e.newValue && !isCancelled) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (parsed?.videoUrl) {
+            setVideoData(prev => ({
+              videoUrl: parsed.videoUrl,
+              thumbnail: parsed.thumbnail !== undefined ? parsed.thumbnail : prev.thumbnail,
+              title: parsed.title || prev.title
+            }));
+          }
+        } catch (err) {}
+      }
+    };
+    window.addEventListener('storage', handleStorage);
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        fetchAboutVideo();
+      }
+    };
+    window.addEventListener('focus', fetchAboutVideo);
+    document.addEventListener('visibilitychange', handleVisibility);
 
     return () => {
       isCancelled = true;
-      unsubs.forEach(u => {
-        try { u(); } catch (e) {}
-      });
+      supabase.removeChannel(sbChannel);
+      if (bc) bc.close();
+      window.removeEventListener('tsehay_about_video_updated', handleCustomAboutUpdate);
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('focus', fetchAboutVideo);
+      document.removeEventListener('visibilitychange', handleVisibility);
     };
   }, []);
 

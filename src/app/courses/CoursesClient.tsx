@@ -10,6 +10,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import Footer from '@/components/Footer';
 import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase/client';
 
 import SmartSearchInput from '@/components/SmartSearchInput';
 import CourseCardSkeleton from '@/components/CourseCardSkeleton';
@@ -94,7 +95,28 @@ export default function CoursesClient({ initialCourses }: { initialCourses?: any
 
     fetchLiveCourses();
 
-    // Cross-tab Broadcast Channel listener
+    // 1. Supabase Realtime WebSocket subscriptions on courses & site_settings
+    const coursesChannel = supabase
+      .channel('realtime_courses_page_sync')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'courses' },
+        () => {
+          fetchLiveCourses();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'site_settings' },
+        (payload: any) => {
+          if (payload?.new && payload.new.key === 'deleted_courses') {
+            fetchLiveCourses();
+          }
+        }
+      )
+      .subscribe();
+
+    // 2. Cross-tab Broadcast Channel listener
     let bc: BroadcastChannel | null = null;
     try {
       if (typeof BroadcastChannel !== 'undefined') {
@@ -120,6 +142,12 @@ export default function CoursesClient({ initialCourses }: { initialCourses?: any
       }
     };
 
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        fetchLiveCourses();
+      }
+    };
+
     window.addEventListener('tsehay_courses_updated', handleCustomUpdate);
     window.addEventListener('tsehay_course_update', handleCustomUpdate);
     window.addEventListener('storage', (e) => {
@@ -127,11 +155,16 @@ export default function CoursesClient({ initialCourses }: { initialCourses?: any
         fetchLiveCourses();
       }
     });
+    window.addEventListener('focus', fetchLiveCourses);
+    document.addEventListener('visibilitychange', handleVisibility);
 
     return () => {
+      supabase.removeChannel(coursesChannel);
       if (bc) bc.close();
       window.removeEventListener('tsehay_courses_updated', handleCustomUpdate);
       window.removeEventListener('tsehay_course_update', handleCustomUpdate);
+      window.removeEventListener('focus', fetchLiveCourses);
+      document.removeEventListener('visibilitychange', handleVisibility);
     };
   }, []);
 

@@ -15,6 +15,7 @@ import {
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase/config';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
+import { supabase } from '@/lib/supabase/client';
 import DigitalTicketModal from '@/components/DigitalTicketModal';
 import { parseVideoEmbedUrl, isMediaVideo, getMediaThumbnail } from '@/lib/videoParser';
 
@@ -206,12 +207,35 @@ export default function UpcomingEventsSection() {
     };
     fetchEvents();
 
+    // 5. Supabase Realtime WebSocket subscription for live event updates
+    const eventsChannel = supabase
+      .channel('realtime_events_section_sync')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'site_settings' },
+        (payload: any) => {
+          if (payload?.new && payload.new.key === 'events') {
+            fetchEvents();
+          }
+        }
+      )
+      .subscribe();
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        fetchEvents();
+      }
+    };
+    window.addEventListener('focus', fetchEvents);
+    document.addEventListener('visibilitychange', handleVisibility);
+
     return () => {
+      supabase.removeChannel(eventsChannel);
       window.removeEventListener('tsehay_events_updated', handleEventsUpdate);
       window.removeEventListener('tsehay_user_ticket_saved', handleTicketSaved);
-      if (bc) {
-        try { bc.close(); } catch (e) {}
-      }
+      window.removeEventListener('focus', fetchEvents);
+      document.removeEventListener('visibilitychange', handleVisibility);
+      if (bc) bc.close();
       if (unsubRoot) unsubRoot();
       if (unsubNested) unsubNested();
       if (unsubRegs) unsubRegs();

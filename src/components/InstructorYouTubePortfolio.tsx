@@ -7,6 +7,8 @@ import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import Tilt3DCard from '@/components/3d/Tilt3DCard';
 import CinematicVideoModal from '@/components/CinematicVideoModal';
 
+import { supabase } from '@/lib/supabase/client';
+
 export function extractYouTubeId(urlOrId: string): string {
   if (!urlOrId || typeof urlOrId !== 'string') return '';
   const trimmed = urlOrId.trim();
@@ -255,7 +257,7 @@ export default function InstructorYouTubePortfolio({ initialData }: InstructorYo
     };
   }, []);
 
-  // 3. Robust Real-time Sync (Supabase API + Real-time Local Broadcast & Events)
+  // 3. Robust Real-time Sync (Supabase Realtime WebSockets + API + Local Broadcast & Events)
   useEffect(() => {
     let isMounted = true;
 
@@ -295,6 +297,29 @@ export default function InstructorYouTubePortfolio({ initialData }: InstructorYo
 
     fetchPortfolio();
 
+    // 1. Supabase Realtime WebSocket subscription
+    const channel = supabase
+      .channel('realtime_youtube_portfolio')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'site_settings' },
+        (payload: any) => {
+          if (payload?.new && payload.new.key === 'youtube_portfolio' && isMounted) {
+            const d = payload.new.data;
+            if (d?.localVideoUrl) setLocalVideoUrl(d.localVideoUrl.trim());
+            if (d?.internationalVideoUrl) setInternationalVideoUrl(d.internationalVideoUrl.trim());
+            try {
+              localStorage.setItem('tsehay_youtube_portfolio_cache', JSON.stringify({
+                localVideoUrl: d?.localVideoUrl || localVideoUrl,
+                internationalVideoUrl: d?.internationalVideoUrl || internationalVideoUrl
+              }));
+            } catch (e) {}
+          }
+        }
+      )
+      .subscribe();
+
+    // 2. Storage & Custom Event Handlers
     const handleStorage = (e: StorageEvent) => {
       if (e.key === 'tsehay_youtube_portfolio_cache' && e.newValue && isMounted) {
         try {
@@ -312,6 +337,7 @@ export default function InstructorYouTubePortfolio({ initialData }: InstructorYo
       }
     };
 
+    // 3. Cross-Tab Broadcast Channel
     let bc: BroadcastChannel | null = null;
     if (typeof BroadcastChannel !== 'undefined') {
       try {
@@ -325,14 +351,26 @@ export default function InstructorYouTubePortfolio({ initialData }: InstructorYo
       } catch (e) {}
     }
 
+    // 4. Focus and Visibility Revalidation
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        fetchPortfolio();
+      }
+    };
+
     window.addEventListener('storage', handleStorage);
     window.addEventListener('tsehay_portfolio_updated', handleCustom);
+    window.addEventListener('focus', fetchPortfolio);
+    document.addEventListener('visibilitychange', handleVisibility);
 
     return () => {
       isMounted = false;
+      supabase.removeChannel(channel);
       if (bc) bc.close();
       window.removeEventListener('storage', handleStorage);
       window.removeEventListener('tsehay_portfolio_updated', handleCustom);
+      window.removeEventListener('focus', fetchPortfolio);
+      document.removeEventListener('visibilitychange', handleVisibility);
     };
   }, []);
 

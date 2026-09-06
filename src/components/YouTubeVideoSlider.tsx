@@ -5,6 +5,8 @@ import { db } from '@/lib/firebase/config';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import CinematicVideoModal from '@/components/CinematicVideoModal';
 
+import { supabase } from '@/lib/supabase/client';
+
 export interface YouTubeItem {
   id: string;
   title: string;
@@ -102,7 +104,7 @@ export default function YouTubeVideoSlider({ initialVideos }: YouTubeVideoSlider
   const videoRefs = useRef<{ [key: string]: HTMLVideoElement | null }>({});
   const touchStartX = useRef<number | null>(null);
 
-  // Real-time Supabase API sync & local storage / BroadcastChannel listener
+  // Real-time Supabase WebSockets + API sync & local storage / BroadcastChannel listener
   useEffect(() => {
     let isMounted = true;
 
@@ -139,6 +141,18 @@ export default function YouTubeVideoSlider({ initialVideos }: YouTubeVideoSlider
       }
     };
     fetchApiVideos();
+
+    // 2. Supabase Realtime WebSocket subscription on youtube_videos table
+    const channel = supabase
+      .channel('realtime_youtube_videos_table')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'youtube_videos' },
+        () => {
+          fetchApiVideos();
+        }
+      )
+      .subscribe();
 
     const handleStorage = (e: StorageEvent) => {
       if (e.key === 'tsehay_youtube_videos_cache' && e.newValue && isMounted) {
@@ -177,14 +191,25 @@ export default function YouTubeVideoSlider({ initialVideos }: YouTubeVideoSlider
       } catch (e) {}
     }
 
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        fetchApiVideos();
+      }
+    };
+
     window.addEventListener('storage', handleStorage);
     window.addEventListener('tsehay_youtube_videos_updated', handleCustom);
+    window.addEventListener('focus', fetchApiVideos);
+    document.addEventListener('visibilitychange', handleVisibility);
 
     return () => {
       isMounted = false;
+      supabase.removeChannel(channel);
       if (bc) bc.close();
       window.removeEventListener('storage', handleStorage);
       window.removeEventListener('tsehay_youtube_videos_updated', handleCustom);
+      window.removeEventListener('focus', fetchApiVideos);
+      document.removeEventListener('visibilitychange', handleVisibility);
     };
   }, []);
 
