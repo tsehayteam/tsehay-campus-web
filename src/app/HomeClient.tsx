@@ -580,7 +580,6 @@ export default function HomeClient({
               >
                 <i className="fa-solid fa-award text-[11px] text-cyan-400"></i>
                 <span>እውቅና ያለው ሰርተፍኬት</span>
-                <i className="fa-solid fa-arrow-up-right-from-square text-[9px] opacity-70"></i>
               </Link>
               <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-400/35 text-emerald-300 text-xs sm:text-[13px] font-semibold backdrop-blur-md shadow-xs hover:border-emerald-400 transition-colors">
                 <i className="fa-solid fa-briefcase text-[11px]"></i>

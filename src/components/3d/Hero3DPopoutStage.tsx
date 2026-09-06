@@ -249,6 +249,14 @@ export default function Hero3DPopoutStage({
     const timer2 = setTimeout(triggerPlay, 800);
     const timer3 = setTimeout(triggerPlay, 1800);
 
+    // Preloader reveal event: kick off video immediately when counter reaches 100
+    const onPreloaderComplete = () => {
+      triggerPlay();
+      setTimeout(triggerPlay, 150);
+      setTimeout(triggerPlay, 500);
+    };
+    window.addEventListener('tsehay-preloader-complete', onPreloaderComplete);
+
     // Browser policy gesture fallback: kick off autoplay on first interaction
     const onUserGesture = () => {
       triggerPlay();
@@ -283,6 +291,7 @@ export default function Hero3DPopoutStage({
       clearTimeout(timer1);
       clearTimeout(timer2);
       clearTimeout(timer3);
+      window.removeEventListener('tsehay-preloader-complete', onPreloaderComplete);
       window.removeEventListener('pointerdown', onUserGesture);
       window.removeEventListener('scroll', onUserGesture);
       window.removeEventListener('keydown', onUserGesture);

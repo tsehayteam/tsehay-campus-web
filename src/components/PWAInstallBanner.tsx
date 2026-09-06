@@ -130,68 +130,57 @@ export default function PWAInstallBanner() {
           : 'translate-y-12 opacity-0 pointer-events-none'
       }`}
     >
+      {/* Rectangular Glassmorphic Modal with Attractive Amber Border */}
       <div 
-        className="relative p-3.5 sm:p-4 border border-[#f9b03c]/50 flex items-center gap-3.5 pwa-pulse-glow"
-        style={{
-          borderRadius: '8px',
-          backdropFilter: 'blur(20px)',
-          WebkitBackdropFilter: 'blur(20px)',
-          background: 'rgba(3, 5, 9, 0.9)',
-          boxShadow: '0 0 20px rgba(249, 176, 60, 0.3)'
-        }}
+        className="relative p-4 border border-[#f9b03c]/60 rounded-xl flex items-center gap-3.5 shadow-[0_10px_40px_rgba(0,0,0,0.9),0_0_25px_rgba(249,176,60,0.3)] select-none backdrop-blur-2xl bg-[#03060d]/95"
       >
         {/* App Icon */}
         <div className="relative shrink-0">
           <img 
             src="/tc-logo.jpg" 
             alt="Tsehay Campus" 
-            className="w-11 h-11 object-cover shadow-md border border-[#f9b03c]/40"
-            style={{ borderRadius: '8px' }}
+            className="w-12 h-12 object-cover rounded-xl shadow-md border border-[#f9b03c]/40"
           />
-          <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+          <span className="absolute -top-1 -right-1 flex h-3 w-3">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#f9b03c] opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#f9b03c]"></span>
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-[#f9b03c]"></span>
           </span>
         </div>
 
-        {/* Text Details */}
+        {/* Short, Attractive & Action-Oriented Text Details */}
         <div className="flex-1 min-w-0 pr-1">
-          <div className="flex items-center gap-1.5 mb-0.5">
+          <div className="flex items-center gap-1.5 mb-1">
             <span className="text-xs sm:text-sm font-black text-white font-heading truncate tracking-wide">
-              📱 Tsehay Campus
+              ፀሐይ ካምፓስን በስልክዎ ይጫኑ
             </span>
-            <span 
-              className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 bg-[#f9b03c]/15 text-[#f9b03c] border border-[#f9b03c]/30"
-              style={{ borderRadius: '4px' }}
-            >
-              App
+            <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-[#f9b03c]/20 text-[#f9b03c] border border-[#f9b03c]/35">
+              PWA
             </span>
           </div>
-          <p className="text-[11px] sm:text-xs text-slate-300 line-clamp-1 font-body">
-            የ Tsehay Campus አፕሊኬሽንን በስልክዎ ላይ ይጫኑ
+          <p className="text-[11px] text-slate-300 font-medium leading-tight">
+            ⚡ ፈጣን ትምህርት፣ ዳታ ቆጣቢ እና የቀጥታ ማሳወቂያዎች ለማግኘት አሁኑኑ በነፃ ይጫኑ!
           </p>
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            type="button"
-            onClick={handleInstall}
-            className="px-3.5 py-2 bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#f9b03c] hover:brightness-110 text-slate-950 font-black text-xs transition active:scale-95 shadow-[0_0_15px_rgba(249,176,60,0.4)] cursor-pointer whitespace-nowrap"
-            style={{ borderRadius: '8px' }}
-          >
-            አፕ ጫን (Install)
-          </button>
-          
+        <div className="flex flex-col items-end gap-1.5 shrink-0">
           <button
             type="button"
             onClick={handleDismiss}
-            className="w-7 h-7 bg-white/5 hover:bg-white/15 text-slate-400 hover:text-white flex items-center justify-center transition cursor-pointer border border-white/10 text-xs"
-            style={{ borderRadius: '8px' }}
+            className="w-6 h-6 rounded-lg bg-white/5 hover:bg-white/15 text-slate-400 hover:text-white flex items-center justify-center transition cursor-pointer border border-white/10 text-[11px]"
             title="ዝጋ (Close)"
-            aria-label="Close install app notification"
+            aria-label="Close install notification"
           >
             <i className="fa-solid fa-xmark"></i>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleInstall}
+            className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#f9b03c] hover:brightness-110 active:scale-95 text-slate-950 font-black text-xs transition shadow-[0_0_15px_rgba(249,176,60,0.5)] cursor-pointer whitespace-nowrap flex items-center gap-1.5"
+          >
+            <i className="fa-solid fa-download text-[11px] animate-bounce"></i>
+            <span>አሁኑኑ ጫን</span>
           </button>
         </div>
       </div>

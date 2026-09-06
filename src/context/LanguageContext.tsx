@@ -194,10 +194,18 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [lang, setLang] = useState<Language>('am');
 
   useEffect(() => {
-    const saved = localStorage.getItem('lang') as Language;
-    if (saved === 'am' || saved === 'en') {
-      setLang(saved);
-    } else {
+    try {
+      const saved = localStorage.getItem('lang') as Language;
+      if (saved === 'en') {
+        setLang('en');
+      } else {
+        // Default strictly to Amharic (አማርኛ)
+        setLang('am');
+        if (!saved) {
+          localStorage.setItem('lang', 'am');
+        }
+      }
+    } catch (e) {
       setLang('am');
     }
   }, []);

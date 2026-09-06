@@ -54,12 +54,34 @@ export default function UpcomingEventsSection() {
     };
     window.addEventListener('tsehay_events_updated', handleEventsUpdate);
 
+    const handleLiveTicketDecrement = (e: any) => {
+      const eId = e.detail?.eventId;
+      const eSlug = e.detail?.eventSlug;
+      if (eId) {
+        setRegistrationsCountByEvent(prev => ({
+          ...prev,
+          [eId]: (prev[eId] || 0) + 1,
+          ...(eSlug ? { [eSlug]: (prev[eSlug] || 0) + 1 } : {})
+        }));
+      }
+    };
+    window.addEventListener('tsehay_ticket_registered', handleLiveTicketDecrement);
+
     let bc: BroadcastChannel | null = null;
     try {
       bc = new BroadcastChannel('tsehay_events_sync');
       bc.onmessage = (msg) => {
         if (msg.data?.events && Array.isArray(msg.data.events)) {
           setEvents(msg.data.events);
+        }
+        if (msg.data?.type === 'ticket_registered' && msg.data?.eventId) {
+          const eId = msg.data.eventId;
+          const eSlug = msg.data.eventSlug;
+          setRegistrationsCountByEvent(prev => ({
+            ...prev,
+            [eId]: (prev[eId] || 0) + 1,
+            ...(eSlug ? { [eSlug]: (prev[eSlug] || 0) + 1 } : {})
+          }));
         }
       };
     } catch (e) {}
@@ -497,6 +519,30 @@ export default function UpcomingEventsSection() {
           [selectedEvent.id]: issuedTicket!,
           ...(selectedEvent.slug ? { [selectedEvent.slug]: issuedTicket! } : {})
         }));
+        
+        // Instant Live Auto Deduction on current screen
+        setRegistrationsCountByEvent(prev => ({
+          ...prev,
+          [selectedEvent.id]: (prev[selectedEvent.id] || 0) + 1,
+          ...(selectedEvent.slug ? { [selectedEvent.slug]: (prev[selectedEvent.slug] || 0) + 1 } : {})
+        }));
+
+        // Broadcast to all other open tabs and components
+        window.dispatchEvent(new CustomEvent('tsehay_ticket_registered', {
+          detail: { eventId: selectedEvent.id, eventSlug: selectedEvent.slug }
+        }));
+        try {
+          if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+            const channel = new BroadcastChannel('tsehay_ticket_sync');
+            channel.postMessage({
+              type: 'ticket_registered',
+              eventId: selectedEvent.id,
+              eventSlug: selectedEvent.slug
+            });
+            channel.close();
+          }
+        } catch (e) {}
+
         setActiveTicket(issuedTicket);
         setIsBookingOpen(false);
         setIsTicketModalOpen(true);
@@ -568,8 +614,8 @@ export default function UpcomingEventsSection() {
                 <div className="absolute inset-0 rounded-3xl bg-gradient-to-b from-[#f9b03c]/10 via-transparent to-[#3268ba]/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
 
                 <div>
-                  {/* Event Thumbnail & Badges */}
-                  <div className="relative h-48 rounded-2xl overflow-hidden mb-5 border border-white/10 group/img bg-slate-900">
+                  {/* Event Thumbnail & Badges - Unified 16:9 Banner */}
+                  <div className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden mb-5 border border-white/10 group/img bg-slate-900">
                     <img 
                       src={posterUrl} 
                       alt={event.title}

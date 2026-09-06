@@ -65,6 +65,41 @@ export default function FloatingAIButton() {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+  const faqScrollRef = useRef<HTMLDivElement>(null);
+  const [showScrollDown, setShowScrollDown] = useState(false);
+  const [showScrollUp, setShowScrollUp] = useState(false);
+  const [canScrollFaqLeft, setCanScrollFaqLeft] = useState(false);
+  const [canScrollFaqRight, setCanScrollFaqRight] = useState(true);
+
+  const handleChatScroll = () => {
+    if (!chatContainerRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
+    setShowScrollDown(scrollHeight - scrollTop - clientHeight > 45);
+    setShowScrollUp(scrollTop > 45);
+  };
+
+  const handleFaqScroll = () => {
+    if (!faqScrollRef.current) return;
+    const { scrollLeft, scrollWidth, clientWidth } = faqScrollRef.current;
+    setCanScrollFaqLeft(scrollLeft > 10);
+    setCanScrollFaqRight(scrollWidth - scrollLeft - clientWidth > 10);
+  };
+
+  const scrollFaq = (direction: 'left' | 'right') => {
+    if (!faqScrollRef.current) return;
+    const offset = direction === 'left' ? -220 : 220;
+    faqScrollRef.current.scrollBy({ left: offset, behavior: 'smooth' });
+  };
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const scrollToTop = () => {
+    chatContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   // 🌟 Freely Draggable Physics States
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
@@ -584,7 +619,7 @@ export default function FloatingAIButton() {
 
       {/* 🌟 1. EXPANDABLE CHAT MODAL */}
       {isOpen && (
-        <div className="mb-4 w-[92vw] sm:w-[420px] md:w-[450px] bg-[#070b14]/95 backdrop-blur-3xl border border-white/20 rounded-3xl shadow-[0_25px_80px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden transition-all duration-300 relative h-[600px] sm:h-[640px] max-h-[85vh] animate-in fade-in slide-in-from-bottom-4 duration-200">
+        <div className="mb-4 w-[94vw] sm:w-[460px] md:w-[500px] bg-[#070b14]/95 backdrop-blur-3xl border border-white/20 rounded-3xl shadow-[0_25px_80px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden transition-all duration-300 relative h-[640px] sm:h-[700px] max-h-[90vh] animate-in fade-in slide-in-from-bottom-4 duration-200">
           
           {/* Subtle Glowing Background Mesh */}
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(249,176,60,0.12),transparent_50%),radial-gradient(ellipse_at_bottom_left,rgba(50,104,186,0.15),transparent_50%)] pointer-events-none" />
@@ -725,16 +760,32 @@ export default function FloatingAIButton() {
             </button>
           </div>
 
-          {/* Messages Body */}
-          <div className="relative flex-1 overflow-y-auto p-4 space-y-4 text-xs z-10">
+          {/* Messages Body with Custom Glowing Scrollbar & Blinking Directional Indicators */}
+          <div 
+            ref={chatContainerRef}
+            onScroll={handleChatScroll}
+            className="relative flex-1 overflow-y-auto p-4 space-y-4 text-xs z-10 tsehay-ai-scrollbar"
+          >
+            {/* 🌟 Floating Scroll Up Indicator */}
+            {showScrollUp && (
+              <button
+                type="button"
+                onClick={scrollToTop}
+                className="sticky top-1 left-1/2 -translate-x-1/2 z-20 px-3 py-1 rounded-full bg-[#0b1224]/95 border border-[#f9b03c]/70 text-[#f9b03c] text-[10px] font-black shadow-[0_0_15px_rgba(249,176,60,0.5)] flex items-center gap-1.5 blink-indicator cursor-pointer backdrop-blur-md mx-auto"
+              >
+                <i className="fa-solid fa-arrow-up text-[9px]"></i>
+                <span>ወደ ላይ ይሸብልሉ</span>
+              </button>
+            )}
+
             {messages.map((m, idx) => {
               const isUser = m.role === 'user';
               return (
                 <div 
                   key={idx} 
-                  className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} animate-in fade-in slide-in-from-bottom-2 duration-300`}
+                  className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} animate-in fade-in slide-in-from-bottom-2 duration-300 w-full`}
                 >
-                  <div className="flex items-end gap-2 max-w-[90%] sm:max-w-[86%]">
+                  <div className={`flex items-end gap-2 w-full ${isUser ? 'justify-end' : 'justify-start'}`}>
                     {!isUser && (
                       <div className="w-7 h-7 rounded-xl bg-[#f9b03c]/20 text-[#f9b03c] border border-[#f9b03c]/30 flex items-center justify-center shrink-0 mb-1">
                         <i className="fa-solid fa-robot text-xs"></i>
@@ -742,7 +793,7 @@ export default function FloatingAIButton() {
                     )}
 
                     <div 
-                      className={`p-3.5 sm:p-4 rounded-2xl text-xs sm:text-[13px] leading-relaxed shadow-sm break-words ${
+                      className={`p-3.5 sm:p-4 rounded-2xl text-xs sm:text-[13px] leading-relaxed shadow-sm break-words overflow-visible max-w-[95%] sm:max-w-[92%] ${
                         isUser
                           ? 'bg-gradient-to-r from-[#f9b03c] to-amber-400 text-slate-950 font-bold rounded-br-none shadow-[0_4px_25px_rgba(249,176,60,0.28)]'
                           : 'bg-[#0f1629]/95 text-slate-100 border border-white/15 rounded-bl-none font-medium'
@@ -755,13 +806,15 @@ export default function FloatingAIButton() {
                         </div>
                       )}
 
-                      {/* Rich Formatted AI / User Message */}
+                      {/* Rich Formatted AI / User Message - Auto Expand Full View */}
                       {isUser ? (
-                        <div className="whitespace-pre-wrap font-body">
+                        <div className="whitespace-pre-wrap font-body break-words">
                           {m.text}
                         </div>
                       ) : (
-                        <FormattedAiText text={m.text} isUser={false} />
+                        <div className="break-words overflow-visible">
+                          <FormattedAiText text={m.text} isUser={false} />
+                        </div>
                       )}
 
                       <div className={`flex items-center justify-end gap-1.5 mt-2 text-[10px] ${isUser ? 'text-slate-900/80 font-bold' : 'text-gray-400'}`}>
@@ -829,6 +882,18 @@ export default function FloatingAIButton() {
               </div>
             )}
 
+            {/* 🌟 Floating Scroll Down Indicator (Blink-Blink) */}
+            {showScrollDown && (
+              <button
+                type="button"
+                onClick={scrollToBottom}
+                className="sticky bottom-1 left-1/2 -translate-x-1/2 z-20 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-[#f9b03c] to-amber-400 text-slate-950 font-black text-[10px] sm:text-[11px] shadow-[0_0_20px_rgba(249,176,60,0.85)] flex items-center gap-1.5 blink-indicator cursor-pointer mx-auto"
+              >
+                <span>ወደ ታች ይሸብልሉ</span>
+                <i className="fa-solid fa-angles-down text-[10px]"></i>
+              </button>
+            )}
+
             <div ref={messagesEndRef} />
           </div>
 
@@ -852,20 +917,62 @@ export default function FloatingAIButton() {
             </div>
           )}
 
-          {/* Quick Action Suggestion Pills */}
-          <div 
-            className="relative px-3 py-2 bg-black/40 border-t border-white/10 flex items-center gap-1.5 overflow-x-auto no-scrollbar z-10"
-            style={{ display: 'flex', overflowX: 'auto', whiteSpace: 'nowrap', scrollbarWidth: 'none' }}
-          >
-            {quickPrompts.map((qp, i) => (
-              <button
-                key={i}
-                onClick={() => handleSendMessage(qp.prompt)}
-                className="text-[11px] font-bold text-gray-300 hover:text-white bg-white/5 hover:bg-[#f9b03c]/20 hover:border-[#f9b03c]/40 px-2.5 py-1 rounded-full border border-white/10 whitespace-nowrap transition-all duration-200 active:scale-95 cursor-pointer shrink-0"
-              >
-                {qp.label}
-              </button>
-            ))}
+          {/* 🌟 HORIZONTAL FAQ CAROUSEL WITH BLINKING INDICATOR & ARROW CONTROLS */}
+          <div className="relative px-3 py-2 bg-gradient-to-r from-[#070c18] via-[#0d162a] to-[#070c18] border-t border-white/10 z-10">
+            <div className="flex items-center justify-between gap-2 mb-1.5 px-0.5">
+              <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-slate-300">
+                <i className="fa-solid fa-circle-question text-[#f9b03c]"></i>
+                <span className="text-white">ተደጋግመው የሚጠየቁ ጥያቄዎች (FAQs)</span>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                {/* Blinking Horizontal Swipe Guide */}
+                <span className="blink-indicator text-[#f9b03c] text-[10px] font-black flex items-center gap-1">
+                  <span>ወደ ጎን ያንሸራትቱ</span>
+                  <i className="fa-solid fa-arrow-right-long text-[9px]"></i>
+                </span>
+
+                {/* Left/Right Navigation Chevrons */}
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => scrollFaq('left')}
+                    className="w-5 h-5 rounded-md bg-white/10 hover:bg-[#f9b03c] hover:text-slate-950 text-white text-[9px] flex items-center justify-center transition cursor-pointer"
+                    title="ወደ ግራ ሸብልል"
+                  >
+                    <i className="fa-solid fa-chevron-left"></i>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => scrollFaq('right')}
+                    className="w-5 h-5 rounded-md bg-white/10 hover:bg-[#f9b03c] hover:text-slate-950 text-white text-[9px] flex items-center justify-center transition cursor-pointer"
+                    title="ወደ ቀኝ ሸብልል"
+                  >
+                    <i className="fa-solid fa-chevron-right"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Horizontal Scrollable Track */}
+            <div 
+              ref={faqScrollRef}
+              onScroll={handleFaqScroll}
+              className="flex items-center gap-2 overflow-x-auto tsehay-ai-scrollbar pb-1 pt-0.5"
+              style={{ scrollBehavior: 'smooth' }}
+            >
+              {quickPrompts.map((qp, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => handleSendMessage(qp.prompt)}
+                  className="text-[11px] font-bold text-gray-200 hover:text-white bg-[#0f172a] hover:bg-[#f9b03c]/20 hover:border-[#f9b03c]/70 px-3 py-1.5 rounded-xl border border-white/15 whitespace-nowrap transition-all duration-200 active:scale-95 cursor-pointer shrink-0 shadow-sm flex items-center gap-1.5 hover:shadow-[0_0_15px_rgba(249,176,60,0.3)]"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#f9b03c]"></span>
+                  <span>{qp.label}</span>
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* ✍️ Clean Single Persistent Input Bar (Photo, Text Input, Live Mic / Send) */}

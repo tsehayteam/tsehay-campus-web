@@ -220,6 +220,27 @@ export default function AiClient() {
   const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const starterCarouselRef = useRef<HTMLDivElement>(null);
+  const chipsTrackRef = useRef<HTMLDivElement>(null);
+  const [showScrollDown, setShowScrollDown] = useState(false);
+  const [showScrollUp, setShowScrollUp] = useState(false);
+
+  const handleScrollMessages = () => {
+    if (!messagesContainerRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
+    setShowScrollDown(scrollHeight - scrollTop - clientHeight > 50);
+    setShowScrollUp(scrollTop > 50);
+  };
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const scrollToTop = () => {
+    messagesContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const recordingTimerRef = useRef<any>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -559,13 +580,42 @@ export default function AiClient() {
         {/* 💡 Prompts Carousel / Deck */}
         {messages.length <= 1 && (
           <div className="mb-4 sm:mb-6 animate-in fade-in duration-500">
-            <div className="text-xs text-[#f9b03c] font-black uppercase tracking-wider mb-2.5 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-[#f9b03c] animate-pulse"></span>
-              <span>{lang === 'en' ? '💡 Quick Starters' : '💡 ፈጣን ጥያቄዎች (Quick Starters)'}</span>
+            <div className="flex items-center justify-between gap-2 mb-2.5">
+              <div className="text-xs text-[#f9b03c] font-black uppercase tracking-wider flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-[#f9b03c] animate-pulse"></span>
+                <span>{lang === 'en' ? '💡 Quick Starters & FAQs' : '💡 ፈጣን ጥያቄዎች እና FAQs'}</span>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <span className="blink-indicator text-[#f9b03c] text-[11px] font-black flex items-center gap-1.5">
+                  <i className="fa-solid fa-arrows-left-right text-[10px]"></i>
+                  <span>{lang === 'en' ? 'Swipe Horizontally ➔' : 'ወደ ጎን ያንሸራትቱ ➔'}</span>
+                </span>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => starterCarouselRef.current?.scrollBy({ left: -280, behavior: 'smooth' })}
+                    className="w-6 h-6 rounded-lg bg-white/10 hover:bg-[#f9b03c] hover:text-slate-950 text-white text-xs flex items-center justify-center transition cursor-pointer"
+                    title="ወደ ግራ"
+                  >
+                    <i className="fa-solid fa-chevron-left text-[10px]"></i>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => starterCarouselRef.current?.scrollBy({ left: 280, behavior: 'smooth' })}
+                    className="w-6 h-6 rounded-lg bg-white/10 hover:bg-[#f9b03c] hover:text-slate-950 text-white text-xs flex items-center justify-center transition cursor-pointer"
+                    title="ወደ ቀኝ"
+                  >
+                    <i className="fa-solid fa-chevron-right text-[10px]"></i>
+                  </button>
+                </div>
+              </div>
             </div>
+
             <div 
-              className="flex items-center gap-3 overflow-x-auto no-scrollbar pb-2 pt-1"
-              style={{ display: 'flex', overflowX: 'auto', whiteSpace: 'nowrap', scrollbarWidth: 'none' }}
+              ref={starterCarouselRef}
+              className="flex items-center gap-3 overflow-x-auto tsehay-ai-scrollbar pb-2.5 pt-1"
+              style={{ scrollBehavior: 'smooth' }}
             >
               {starterPrompts.map((starter, idx) => (
                 <button
@@ -594,8 +644,24 @@ export default function AiClient() {
           </div>
         )}
 
-        {/* 💬 Chat Messages Feed */}
-        <div className="flex-1 bg-[#070b16]/75 backdrop-blur-2xl border border-white/10 rounded-3xl p-4 sm:p-6 overflow-y-auto mb-4 space-y-4 min-h-[400px] max-h-[60vh] shadow-[inset_0_2px_25px_rgba(0,0,0,0.6)]">
+        {/* 💬 Chat Messages Feed with Glowing Scrollbar & Indicators */}
+        <div 
+          ref={messagesContainerRef}
+          onScroll={handleScrollMessages}
+          className="relative flex-1 bg-[#070b16]/75 backdrop-blur-2xl border border-white/10 rounded-3xl p-4 sm:p-6 overflow-y-auto mb-4 space-y-4 min-h-[480px] max-h-[75vh] shadow-[inset_0_2px_25px_rgba(0,0,0,0.6)] tsehay-ai-scrollbar"
+        >
+          {/* Scroll Up Blink Indicator */}
+          {showScrollUp && (
+            <button
+              type="button"
+              onClick={scrollToTop}
+              className="sticky top-2 left-1/2 -translate-x-1/2 z-20 px-3.5 py-1 rounded-full bg-[#0b1224]/95 border border-[#f9b03c]/70 text-[#f9b03c] text-[11px] font-black shadow-[0_0_15px_rgba(249,176,60,0.5)] flex items-center gap-1.5 blink-indicator cursor-pointer backdrop-blur-md mx-auto"
+            >
+              <i className="fa-solid fa-arrow-up text-[10px]"></i>
+              <span>{lang === 'en' ? 'Scroll Up' : 'ወደ ላይ ይሸብልሉ'}</span>
+            </button>
+          )}
+
           {messages.map((m) => {
             const isAi = m.role === 'ai';
             const isSpeakingThis = speakingMessageId === m.id;
@@ -603,7 +669,7 @@ export default function AiClient() {
             return (
               <div
                 key={m.id}
-                className={`flex gap-3 sm:gap-4 ${isAi ? 'justify-start' : 'justify-end'} animate-in fade-in slide-in-from-bottom-2 duration-300`}
+                className={`flex gap-3 sm:gap-4 ${isAi ? 'justify-start' : 'justify-end'} animate-in fade-in slide-in-from-bottom-2 duration-300 w-full`}
               >
                 {isAi && (
                   <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-tr from-[#f9b03c] to-amber-500 text-slate-950 flex items-center justify-center text-sm font-black shrink-0 shadow-[0_0_15px_rgba(249,176,60,0.35)] mt-1">
@@ -612,7 +678,7 @@ export default function AiClient() {
                 )}
 
                 <div
-                  className={`max-w-[88%] sm:max-w-[78%] rounded-2xl p-4 sm:p-5 ${
+                  className={`max-w-[94%] sm:max-w-[88%] rounded-2xl p-4 sm:p-5 overflow-visible break-words ${
                     isAi
                       ? 'bg-[#0c1427]/95 border border-white/10 hover:border-[#f9b03c]/30 text-slate-100 shadow-[0_8px_32px_rgba(0,0,0,0.4)] transition-all'
                       : 'bg-gradient-to-r from-[#f9b03c] via-amber-500 to-amber-600 text-slate-950 font-bold shadow-[0_4px_20px_rgba(249,176,60,0.25)] border border-amber-300/40 rounded-tr-xs'
@@ -631,11 +697,11 @@ export default function AiClient() {
                     </div>
                   )}
 
-                  <div className={`text-xs sm:text-[14px] leading-relaxed ${isAi ? 'text-slate-100' : 'text-slate-950 font-medium'}`}>
+                  <div className={`text-xs sm:text-[14px] leading-relaxed break-words overflow-visible ${isAi ? 'text-slate-100' : 'text-slate-950 font-medium'}`}>
                     {isAi ? (
                       <FormattedAiText text={m.text} />
                     ) : (
-                      <p className="whitespace-pre-wrap">{m.text}</p>
+                      <p className="whitespace-pre-wrap break-words">{m.text}</p>
                     )}
                   </div>
 
@@ -724,22 +790,57 @@ export default function AiClient() {
             </div>
           )}
 
+          {/* Scroll Down Blink Indicator */}
+          {showScrollDown && (
+            <button
+              type="button"
+              onClick={scrollToBottom}
+              className="sticky bottom-2 left-1/2 -translate-x-1/2 z-20 px-4 py-1.5 rounded-full bg-gradient-to-r from-[#f9b03c] to-amber-400 text-slate-950 font-black text-[11px] shadow-[0_0_20px_rgba(249,176,60,0.85)] flex items-center gap-1.5 blink-indicator cursor-pointer mx-auto"
+            >
+              <span>{lang === 'en' ? 'Scroll Down' : 'ወደ ታች ይሸብልሉ'}</span>
+              <i className="fa-solid fa-angles-down text-[10px]"></i>
+            </button>
+          )}
+
           <div ref={messagesEndRef} />
         </div>
 
         {/* 🚀 Futuristic Input Dock */}
         <div className="bg-[#090f1d]/90 backdrop-blur-3xl border border-[#f9b03c]/25 rounded-3xl p-3 sm:p-4 mb-6 shadow-[0_10px_40px_rgba(0,0,0,0.6)]">
           {/* Horizontally Scrollable AI Quick Starters / FAQ chips directly above input */}
+          <div className="flex items-center justify-between gap-2 pb-1.5 mb-1.5 border-b border-white/5">
+            <span className="text-[10px] font-black uppercase text-slate-400 flex items-center gap-1">
+              <i className="fa-solid fa-sparkles text-[#f9b03c]"></i>
+              <span>{lang === 'en' ? 'Quick Topics' : 'ፈጣን ርዕሶች'}</span>
+            </span>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => chipsTrackRef.current?.scrollBy({ left: -200, behavior: 'smooth' })}
+                className="w-5 h-5 rounded-md bg-white/10 hover:bg-[#f9b03c] hover:text-slate-950 text-white text-[9px] flex items-center justify-center transition cursor-pointer"
+              >
+                <i className="fa-solid fa-chevron-left"></i>
+              </button>
+              <button
+                type="button"
+                onClick={() => chipsTrackRef.current?.scrollBy({ left: 200, behavior: 'smooth' })}
+                className="w-5 h-5 rounded-md bg-white/10 hover:bg-[#f9b03c] hover:text-slate-950 text-white text-[9px] flex items-center justify-center transition cursor-pointer"
+              >
+                <i className="fa-solid fa-chevron-right"></i>
+              </button>
+            </div>
+          </div>
           <div 
-            className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-2.5 mb-2.5 border-b border-white/5"
-            style={{ display: 'flex', overflowX: 'auto', whiteSpace: 'nowrap', scrollbarWidth: 'none' }}
+            ref={chipsTrackRef}
+            className="flex items-center gap-2 overflow-x-auto tsehay-ai-scrollbar pb-2 mb-2"
+            style={{ scrollBehavior: 'smooth' }}
           >
             {starterPrompts.map((starter, idx) => (
               <button
                 key={idx}
                 type="button"
                 onClick={() => sendMessage(starter.prompt)}
-                className="text-[11px] font-bold px-3 py-1.5 rounded-xl bg-white/5 hover:bg-[#f9b03c]/20 hover:text-[#f9b03c] border border-white/10 hover:border-[#f9b03c]/40 text-slate-300 transition-all shrink-0 cursor-pointer flex items-center gap-1.5 whitespace-nowrap active:scale-95"
+                className="text-[11px] font-bold px-3 py-1.5 rounded-xl bg-white/5 hover:bg-[#f9b03c]/20 hover:text-[#f9b03c] border border-white/10 hover:border-[#f9b03c]/40 text-slate-300 transition-all shrink-0 cursor-pointer flex items-center gap-1.5 whitespace-nowrap active:scale-95 shadow-sm"
               >
                 <i className={`fa-solid ${starter.icon} text-[10px] text-[#f9b03c]`}></i>
                 <span>{starter.title}</span>

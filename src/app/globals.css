@@ -2289,3 +2289,44 @@ img, video, canvas {
 .no-scrollbar::-webkit-scrollbar {
   display: none; /* Chrome, Safari, Opera */
 }
+
+/* 🌟 Tsehay AI Glowing Scrollbars & Blinking Indicators */
+@keyframes blinkIndicator {
+  0%, 100% {
+    opacity: 0.35;
+    transform: scale(0.96);
+    box-shadow: 0 0 4px rgba(249, 176, 60, 0.2);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+    box-shadow: 0 0 18px rgba(249, 176, 60, 0.9);
+  }
+}
+
+.blink-indicator {
+  animation: blinkIndicator 1.4s ease-in-out infinite;
+}
+
+.tsehay-ai-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.tsehay-ai-scrollbar::-webkit-scrollbar-track {
+  background: rgba(11, 19, 41, 0.7);
+  border-radius: 9999px;
+}
+.tsehay-ai-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #f9b03c, #eab308);
+  border-radius: 9999px;
+  box-shadow: 0 0 10px rgba(249, 176, 60, 0.6);
+}
+.tsehay-ai-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #fde047;
+  box-shadow: 0 0 18px rgba(249, 176, 60, 1);
+}
+.tsehay-ai-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #f9b03c rgba(11, 19, 41, 0.7);
+}
+

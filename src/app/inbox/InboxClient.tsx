@@ -17,7 +17,9 @@ import {
   editDirectMessage,
   deleteDirectMessage,
   getConversationId,
-  isUserAdmin
+  isUserAdmin,
+  getCachedConversationMessages,
+  saveCachedConversationMessages
 } from '@/lib/communityService';
 
 function InboxContent() {
@@ -182,10 +184,13 @@ function InboxContent() {
           });
         }
       } else if (!activeConversationId && liveConvs.length > 0) {
-        const first = liveConvs[0];
-        setActiveConversationId(first.id);
-        const otherUid = first.participants.find(p => p !== currentUser.uid) || '';
-        const details = first.participantDetails[otherUid];
+        // 🌟 Restore last active conversation on page refresh so user never loses their active chat
+        const savedConvId = typeof window !== 'undefined' ? localStorage.getItem(`tsehay_last_active_conv_${currentUser.uid}`) : null;
+        const targetConv = (savedConvId && liveConvs.find(c => c.id === savedConvId)) || liveConvs[0];
+
+        setActiveConversationId(targetConv.id);
+        const otherUid = targetConv.participants.find(p => p !== currentUser.uid) || '';
+        const details = targetConv.participantDetails[otherUid];
         if (details) {
           setActiveRecipient({
             uid: otherUid,
@@ -204,6 +209,15 @@ function InboxContent() {
     };
   }, [currentUser, targetUserId, availableContacts]);
 
+  // Save last active conversation to ensure permanent lifetime persistence across refreshes
+  useEffect(() => {
+    if (activeConversationId && currentUser?.uid) {
+      try {
+        localStorage.setItem(`tsehay_last_active_conv_${currentUser.uid}`, activeConversationId);
+      } catch (e) {}
+    }
+  }, [activeConversationId, currentUser?.uid]);
+
   // Subscribe to messages in active conversation + Real-time Read Receipts
   useEffect(() => {
     if (!activeConversationId || !currentUser) {
@@ -212,7 +226,14 @@ function InboxContent() {
       return;
     }
 
-    setMessagesLoading(true);
+    // Instant zero-latency hydration from cache: guarantees messages never disappear on page refresh
+    const cached = getCachedConversationMessages(activeConversationId);
+    if (cached.length > 0) {
+      setMessages(cached);
+      setMessagesLoading(false);
+    } else {
+      setMessagesLoading(true);
+    }
 
     const fetchApiMessages = async () => {
       try {

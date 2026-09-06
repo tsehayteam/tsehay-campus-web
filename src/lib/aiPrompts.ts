@@ -5,19 +5,33 @@ export interface PinnedPrompt {
 
 export function getCoursePinnedPrompts(course: any, lang: string = 'am'): PinnedPrompt[] {
   if (!course) {
-    // 🌐 General Campus AI Pinned Prompts
+    // 🌐 General Campus AI Pinned Prompts / FAQs (Abundant Horizontal Carousel)
     return lang === 'am' ? [
       { label: '💡 ስለ ካምፓሱ ንገረኝ', prompt: 'ስለ ፀሐይ ካምፓስ (Tsehay Campus) ዓላማ፣ የሚሰጡ ስልጠናዎች እና የመማሪያ ሂደቱ አጠቃላይ ማብራሪያ ስጠኝ።' },
+      { label: '🎬 የዩቲዩብ ገቢ ማግኛ መንገዶች', prompt: 'የዩቲዩብ ቻናል በኢትዮጵያ ከፍቼ በምን በምን መንገዶች ገቢ ማግኘት እችላለሁ? ደረጃ በደረጃ አስረዳኝ።' },
+      { label: '🛍️ የሼን እቃዎችን ማስመጣት', prompt: 'የሼን (Shein) እቃዎችን ከውጭ ሀገር ወደ ኢትዮጵያ በትንሽ ካፒታል አስመጥቼ እንዴት መሸጥ እችላለሁ?' },
       { label: '💳 የክፍያ እና ምዝገባ ሁኔታ', prompt: 'ለስልጠናዎች በቴሌብር (Telebirr)፣ በሲቢኢ ብር (CBE Birr) ወይም በካርድ እንዴት እከፍላለሁ? ምዝገባስ እንዴት ይፈጸማል?' },
-      { label: '📞 አድራሻ እና ስልክ ቁጥር', prompt: 'የፀሐይ ካምፓስ ይፋዊ አድራሻ፣ ስልክ ቁጥር እና የቴሌግራም መገናኛዎችን ንገረኝ።' },
+      { label: '📜 ስለ ሰርተፊኬት ማረጋገጫ', prompt: 'ስልጠናዎችን ስጨርስ ይፋዊ ዲጂታል ሰርተፊኬት (Certificate of Completion) እንዴት ማግኘት እችላለሁ? በኦንላይን ይረጋገጣል?' },
       { label: '🤝 1-ለ-1 ማማከር (Mentorship)', prompt: 'ከኢዮብ ሳህሌ (Eyoub Sahle) ጋር የቀጥታ የ 1-ለ-1 የማማከር ቀጠሮ እንዴት ማስያዝ እችላለሁ?' },
-      { label: '📜 ስለ ሰርተፊኬት', prompt: 'ስልጠናዎችን ስጨርስ ይፋዊ ዲጂታል ሰርተፊኬት (Certificate of Completion) እንዴት ማግኘት እችላለሁ?' }
+      { label: '🎁 ነፃ የዲጂታል ማርኬቲንግ', prompt: 'የ 100% ነፃ የዲጂታል ማርኬቲንግ ስልጠናውን እንዴት መጀመር እችላለሁ? ምን ምን ትምህርቶች ተካትተዋል?' },
+      { label: '✂️ የቪዲዮ ኤዲቲንግ በሞባይል', prompt: 'የቪዲዮ ኤዲቲንግን በ CapCut እና Premiere Pro ከዜሮ ተምሬ በቪዲዮ ስራ ገቢ ማግኘት የምችለው እንዴት ነው?' },
+      { label: '💻 የዌብሳይት እና ኮዲንግ ስልጠና', prompt: 'የዌብ ዴቨሎፕመንት እና የኮዲንግ ስልጠናዎችን ከዜሮ እንዴት መጀመር እችላለሁ? በምን ያህል ጊዜ ውስጥ ገቢ ፈጣሪ መሆን ይቻላል?' },
+      { label: '🪙 የክሪፕቶ ግብይት በ Binance', prompt: 'የክሪፕቶ ከረንሲ ግብይትን (Crypto Trading) ከዜሮ በ Binance ተጠቅሜ እንዴት መጀመር እችላለሁ?' },
+      { label: '📱 ትምህርቱን በስልክ መከታተል', prompt: 'ትምህርቶቹን በስልክ (Mobile Phone) መከታተል ይቻላል? ቪዲዮዎችን ደግሞ ማየት እችላለሁ?' },
+      { label: '📞 አድራሻ እና ስልክ ቁጥር', prompt: 'የፀሐይ ካምፓስ ይፋዊ አድራሻ፣ ስልክ ቁጥር እና የቴሌግራም መገናኛዎችን ንገረኝ።' }
     ] : [
       { label: '💡 About Tsehay Campus', prompt: 'Tell me about Tsehay Campus, the available courses, and the learning experience.' },
+      { label: '🎬 YouTube Monetization', prompt: 'How can I launch a profitable YouTube channel from Ethiopia and earn in USD? Explain step-by-step.' },
+      { label: '🛍️ SHEIN Import Secrets', prompt: 'How can I import products from Shein to Ethiopia with small capital and resell them with high profit margins?' },
       { label: '💳 Payment & Enrollment', prompt: 'How do I pay and enroll using Telebirr, CBE Birr, or International Cards?' },
-      { label: '📞 Contact & Location', prompt: 'What are the official contact numbers, Telegram handle, and office location for Tsehay Campus?' },
+      { label: '📜 Accredited Certificate', prompt: 'How do I earn my accredited certificate upon graduation, and how can employers verify it online?' },
       { label: '🤝 1-on-1 Mentorship', prompt: 'How can I schedule a 1-on-1 strategy consultation session with Eyoub Sahle?' },
-      { label: '📜 Certificates', prompt: 'How do I earn a verified Certificate of Completion after finishing a course?' }
+      { label: '🎁 Free Masterclass', prompt: 'How can I enroll in the 100% Free Digital Marketing course, and what topics are covered?' },
+      { label: '✂️ Video Editing Mastery', prompt: 'How can I learn CapCut and Premiere Pro video editing from scratch to land paid client work?' },
+      { label: '💻 Web Development', prompt: 'How do I start learning web development from zero, and how long until I can earn as a developer?' },
+      { label: '🪙 Crypto & Binance', prompt: 'How can I start crypto trading with proper risk management and technical analysis in Ethiopia?' },
+      { label: '📱 Mobile Accessibility', prompt: 'Can I attend all courses and watch video lessons from my mobile smartphone?' },
+      { label: '📞 Contact & Location', prompt: 'What are the official contact numbers, Telegram handle, and office location for Tsehay Campus?' }
     ];
   }
 

@@ -373,6 +373,20 @@ export default function EventDetailClient() {
       console.warn('Supabase realtime broadcast notice:', realtimeErr);
     }
 
+    // Instant local window and cross-tab multi-screen inventory decrement sync
+    window.dispatchEvent(new CustomEvent('tsehay_ticket_registered', {
+      detail: { eventId: event.id, eventSlug: event.slug }
+    }));
+    try {
+      const bc = new BroadcastChannel('tsehay_events_sync');
+      bc.postMessage({
+        type: 'ticket_registered',
+        eventId: event.id,
+        eventSlug: event.slug
+      });
+      bc.close();
+    } catch (e) {}
+
     setActiveTicket(ticketObj);
     setIsBookingOpen(false);
     setIsTicketModalOpen(true);
@@ -847,7 +861,7 @@ export default function EventDetailClient() {
 
                   if (hasVideo && isPlayingVideo && parsedVideo && parsedVideo.src) {
                     return (
-                      <div className="relative rounded-3xl overflow-hidden border-2 border-[#f9b03c]/40 shadow-[0_20px_60px_rgba(0,0,0,0.95)] aspect-[4/3] bg-black group">
+                      <div className="relative rounded-3xl overflow-hidden border-2 border-[#f9b03c]/40 shadow-[0_20px_60px_rgba(0,0,0,0.95)] aspect-[16/9] bg-black group">
                         {parsedVideo.type === 'video' ? (
                           <video 
                             src={parsedVideo.src} 
@@ -880,7 +894,7 @@ export default function EventDetailClient() {
                   }
 
                   return (
-                    <div className="relative rounded-3xl overflow-hidden border-2 border-white/15 shadow-[0_20px_60px_rgba(0,0,0,0.9)] group aspect-[4/3] bg-slate-900">
+                    <div className="relative rounded-3xl overflow-hidden border-2 border-white/15 shadow-[0_20px_60px_rgba(0,0,0,0.9)] group aspect-[16/9] bg-slate-900">
                       <img
                         src={posterUrl}
                         alt={event.title}

@@ -317,7 +317,7 @@ export default function Navbar() {
       {/* ===================== 1. FLOATING CAPSULE (ONLY WHEN CLOSED) ===================== */}
       {!isCurtainOpen && (
         <div 
-          className="fixed top-3 flex justify-center pointer-events-auto select-none transition-all duration-300 left-1/2 -translate-x-1/2 z-50 animate-in fade-in"
+          className="fixed top-3 flex items-center gap-2 justify-center pointer-events-auto select-none transition-all duration-300 left-1/2 -translate-x-1/2 z-50 animate-in fade-in"
           title="ዋና ማውጫ / Menu"
         >
           {/* Subtle #f9b03c ambient breathing glow */}
@@ -326,7 +326,7 @@ export default function Navbar() {
           <button
             type="button"
             onClick={openCurtain}
-            className="relative pointer-events-auto px-5 sm:px-6 py-1.5 sm:py-2 rounded-full flex items-center gap-2 group transition-all duration-300 active:scale-95 cursor-pointer whitespace-nowrap backdrop-blur-2xl bg-black/90 border border-white/20 hover:border-[#f9b03c] text-white hover:text-[#f9b03c] shadow-[0_10px_30px_rgba(0,0,0,0.8),0_0_20px_rgba(249,176,60,0.25)]"
+            className="relative pointer-events-auto px-4 sm:px-6 py-1.5 sm:py-2 rounded-full flex items-center gap-2 group transition-all duration-300 active:scale-95 cursor-pointer whitespace-nowrap backdrop-blur-2xl bg-black/90 border border-white/20 hover:border-[#f9b03c] text-white hover:text-[#f9b03c] shadow-[0_10px_30px_rgba(0,0,0,0.8),0_0_20px_rgba(249,176,60,0.25)]"
           >
             <span className="text-xs sm:text-[13px] font-black tracking-wide whitespace-nowrap flex items-center gap-1.5 font-heading text-white group-hover:text-[#f9b03c] transition-colors">
               🧭 ዋና ማውጫ ▾
@@ -338,6 +338,21 @@ export default function Navbar() {
               )}
             </span>
           </button>
+
+          {!user && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                openAuthModal(false);
+              }}
+              className="relative pointer-events-auto px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full flex items-center gap-1.5 font-heading font-black text-xs text-slate-950 bg-gradient-to-r from-[#f9b03c] via-amber-300 to-[#f9b03c] border border-amber-300 shadow-[0_0_20px_rgba(249,176,60,0.5)] active:scale-95 transition-all cursor-pointer hover:brightness-110"
+              title="ይግቡ (Login)"
+            >
+              <i className="fa-solid fa-arrow-right-to-bracket text-[11px]"></i>
+              <span className="tracking-wide">{lang === 'en' ? 'Login' : 'ይግቡ'}</span>
+            </button>
+          )}
         </div>
       )}
 
@@ -410,8 +425,9 @@ export default function Navbar() {
               {/* መነሻ */}
               <Link 
                 href="/" 
-                onClick={() => {
-                  if (pathname === '/') window.scrollTo({ top: 0, behavior: 'smooth' });
+                onClick={(e) => {
+                  e.preventDefault();
+                  navigateTo('/');
                 }} 
                 className={`py-2 text-[14px] lg:text-[15px] font-bold tracking-wide transition-all duration-300 ${
                   isHome 
@@ -425,8 +441,9 @@ export default function Navbar() {
               {/* ኮርሶች */}
               <Link 
                 href="/courses" 
-                onClick={() => {
-                  if (pathname === '/courses') window.scrollTo({ top: 0, behavior: 'smooth' });
+                onClick={(e) => {
+                  e.preventDefault();
+                  navigateTo('/courses');
                 }} 
                 className={`py-2 text-[14px] lg:text-[15px] font-bold tracking-wide transition-all duration-300 ${
                   isCourses 
@@ -440,8 +457,9 @@ export default function Navbar() {
               {/* ማማከር */}
               <Link 
                 href="/mentorship" 
-                onClick={() => {
-                  if (pathname === '/mentorship') window.scrollTo({ top: 0, behavior: 'smooth' });
+                onClick={(e) => {
+                  e.preventDefault();
+                  navigateTo('/mentorship');
                 }} 
                 className={`py-2 text-[14px] lg:text-[15px] font-bold tracking-wide transition-all duration-300 ${
                   isMentorship 
@@ -455,8 +473,9 @@ export default function Navbar() {
               {/* ማህበረሰብ */}
               <Link 
                 href="/community" 
-                onClick={() => {
-                  if (pathname === '/community') window.scrollTo({ top: 0, behavior: 'smooth' });
+                onClick={(e) => {
+                  e.preventDefault();
+                  navigateTo('/community');
                 }} 
                 className={`py-2 text-[14px] lg:text-[15px] font-bold tracking-wide transition-all duration-300 ${
                   isCommunity 
@@ -470,8 +489,9 @@ export default function Navbar() {
               {/* ስለ እኛ */}
               <Link 
                 href="/about" 
-                onClick={() => {
-                  if (pathname === '/about') window.scrollTo({ top: 0, behavior: 'smooth' });
+                onClick={(e) => {
+                  e.preventDefault();
+                  navigateTo('/about');
                 }} 
                 className={`py-2 text-[14px] lg:text-[15px] font-bold tracking-wide transition-all duration-300 ${
                   isAbout 
@@ -485,8 +505,9 @@ export default function Navbar() {
               {/* ሰርተፊኬት ማረጋገጫ */}
               <Link 
                 href="/verify-certificate" 
-                onClick={() => {
-                  if (pathname === '/verify-certificate') window.scrollTo({ top: 0, behavior: 'smooth' });
+                onClick={(e) => {
+                  e.preventDefault();
+                  navigateTo('/verify-certificate');
                 }} 
                 className={`py-2 text-[14px] lg:text-[15px] font-bold tracking-wide transition-all duration-300 ${
                   pathname === '/verify-certificate' 
@@ -701,15 +722,18 @@ export default function Navbar() {
                 </div>
               )}
 
-              {/* Compact Install App Trigger */}
+              {/* Animated Phone + Download App Action Button */}
               <button 
                 type="button"
                 onClick={() => window.dispatchEvent(new CustomEvent('open-pwa-install'))}
-                className="btn-install-pwa hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full font-bold text-xs cursor-pointer notranslate border border-white/10 hover:border-white/20 bg-white/5 hover:bg-white/10 text-slate-200 group transition-all"
+                className="btn-install-pwa hidden md:flex items-center gap-2 px-3 sm:px-3.5 py-1.5 rounded-full font-heading font-black text-xs cursor-pointer notranslate border border-[#f9b03c]/45 bg-[#f9b03c]/10 hover:bg-[#f9b03c]/20 text-white hover:text-[#f9b03c] shadow-[0_0_15px_rgba(249,176,60,0.25)] hover:shadow-[0_0_25px_rgba(249,176,60,0.5)] group transition-all duration-300 animate-pulse hover:animate-none active:scale-95"
                 title="አፕሊኬሽኑን በስልክዎ ወይም በኮምፒተርዎ ላይ ይጫኑ (Install App)"
               >
-                <i className="fa-solid fa-mobile-screen-button text-xs opacity-75 group-hover:scale-110 transition-transform"></i>
-                <span className="hidden lg:inline">አፕ ጫን</span>
+                <span className="relative flex items-center justify-center text-[#f9b03c]">
+                  <i className="fa-solid fa-mobile-screen text-xs group-hover:scale-110 transition-transform"></i>
+                  <i className="fa-solid fa-arrow-down text-[9px] -ml-1 text-white bg-slate-950 rounded-full animate-bounce"></i>
+                </span>
+                <span className="hidden lg:inline tracking-wide font-black">አፕ አውርድ</span>
               </button>
 
               {/* Sliding Language Switcher Toggle */}
@@ -820,17 +844,20 @@ export default function Navbar() {
               </button>
             </div>
 
-            {/* Install App Trigger Pill */}
+            {/* Install App Trigger Pill with Animated Phone + Download */}
             <button 
               type="button" 
               onClick={() => {
                 closeCurtain();
                 window.dispatchEvent(new CustomEvent('open-pwa-install'));
               }} 
-              className="w-full py-2.5 px-4 rounded-xl mobile-nav-card bg-white/5 border-white/10 hover:border-[#f9b03c]/40 flex items-center justify-center gap-2 text-center cursor-pointer group transition-all duration-200"
+              className="w-full py-3 px-4 rounded-2xl mobile-nav-card bg-gradient-to-r from-[#f9b03c]/15 via-amber-400/10 to-[#3268ba]/15 border border-[#f9b03c]/40 hover:border-[#f9b03c] flex items-center justify-center gap-2.5 text-center cursor-pointer group transition-all duration-200 active:scale-95 shadow-[0_0_15px_rgba(249,176,60,0.15)]"
             >
-              <i className="fa-solid fa-mobile-screen-button text-xs text-[#f9b03c]"></i>
-              <span className="text-xs font-black text-white font-heading">
+              <span className="relative flex items-center text-[#f9b03c]">
+                <i className="fa-solid fa-mobile-screen text-sm group-hover:scale-110 transition-transform"></i>
+                <i className="fa-solid fa-arrow-down text-[9px] -ml-1 text-white bg-slate-950 rounded-full animate-bounce"></i>
+              </span>
+              <span className="text-xs font-black text-white font-heading tracking-wide">
                 አፕሊኬሽኑን በስልክዎ ይጫኑ (Install App)
               </span>
             </button>
