@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase/client';
 import { generateCourseSlug, DEFAULT_COURSES } from '@/lib/courseCache';
-import { loadPersistedCourses, saveSinglePersistedCourse, deletePersistedCourse } from '@/lib/memoryStore';
+import { saveSinglePersistedCourse, deletePersistedCourse } from '@/lib/memoryStore';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -33,22 +33,6 @@ export async function GET(req: NextRequest) {
       }
     } catch (e) {}
 
-    const courseMap = new Map<string, any>();
-    DEFAULT_COURSES.forEach(c => {
-      if (c && c.id && !deletedCourses.includes(c.id) && !deletedCourses.includes(c.slug)) {
-        courseMap.set(c.id, c);
-      }
-    });
-
-    try {
-      const persisted = loadPersistedCourses();
-      persisted.forEach(c => {
-        if (c && c.id && c.status !== 'Deleted' && !c.isDeleted && !deletedCourses.includes(c.id) && !deletedCourses.includes(c.slug)) {
-          courseMap.set(c.id, { ...courseMap.get(c.id), ...c });
-        }
-      });
-    } catch (e) {}
-
     // 1. Single Course Lookup
     if (courseId) {
       const cleanId = courseId.trim();
@@ -71,44 +55,49 @@ export async function GET(req: NextRequest) {
         }
       } catch (sbE) {}
 
-      if (courseMap.has(cleanId)) {
-        return NextResponse.json({ success: true, course: courseMap.get(cleanId) }, { headers: NO_CACHE_HEADERS });
-      }
-
-      for (const course of courseMap.values()) {
-        if (course.slug === cleanLower || (course.title && generateCourseSlug(course.title) === cleanLower)) {
-          return NextResponse.json({ success: true, course }, { headers: NO_CACHE_HEADERS });
-        }
+      // Fallback to DEFAULT_COURSES only if matching ID/slug
+      const defMatch = DEFAULT_COURSES.find(c => (c.id === cleanId || c.slug === cleanLower) && !deletedCourses.includes(c.id) && !deletedCourses.includes(c.slug));
+      if (defMatch) {
+        return NextResponse.json({ success: true, course: defMatch }, { headers: NO_CACHE_HEADERS });
       }
 
       return NextResponse.json({ success: false, error: 'Course not found' }, { status: 404, headers: NO_CACHE_HEADERS });
     }
 
-    // 2. Fetch All Courses from Supabase
-    try {
-      const { data: sbCourses, error: sbErr } = await supabase
-        .from('courses')
-        .select('*')
-        .order('created_at', { ascending: false });
+    // 2. Fetch All Courses directly from Supabase (Source of Truth)
+    const { data: sbCourses, error: sbErr } = await supabase
+      .from('courses')
+      .select('*')
+      .order('created_at', { ascending: false });
 
-      if (!sbErr && Array.isArray(sbCourses)) {
-        sbCourses.forEach(item => {
-          if (item && item.id && item.status !== 'Deleted' && !item.isDeleted && !deletedCourses.includes(item.id) && !deletedCourses.includes(item.slug)) {
-            const merged = { ...item, ...(item.raw_data || {}) };
-            courseMap.set(item.id, merged);
-          }
-        });
-      }
-    } catch (sbE) {}
+    let activeCourses: any[] = [];
 
-    const courses = Array.from(courseMap.values()).filter(c => 
-      c.status !== 'Deleted' && 
-      !c.isDeleted && 
-      !deletedCourses.includes(c.id) && 
-      !deletedCourses.includes(c.slug)
-    );
+    if (!sbErr && Array.isArray(sbCourses) && sbCourses.length > 0) {
+      activeCourses = sbCourses
+        .filter(item => 
+          item && 
+          item.id && 
+          item.status !== 'Deleted' && 
+          !item.isDeleted && 
+          !deletedCourses.includes(item.id) && 
+          !deletedCourses.includes(item.slug)
+        )
+        .map(item => ({
+          ...item,
+          ...(item.raw_data || {})
+        }));
+    }
 
-    return NextResponse.json({ success: true, count: courses.length, courses }, { headers: NO_CACHE_HEADERS });
+    // If Supabase table is completely empty and no courses were deleted by user, seed default courses
+    if (activeCourses.length === 0 && (!sbCourses || sbCourses.length === 0) && deletedCourses.length === 0) {
+      activeCourses = DEFAULT_COURSES.filter(c => !deletedCourses.includes(c.id) && !deletedCourses.includes(c.slug));
+    }
+
+    return NextResponse.json({ 
+      success: true, 
+      count: activeCourses.length, 
+      courses: activeCourses 
+    }, { headers: NO_CACHE_HEADERS });
   } catch (error: any) {
     console.error('Error fetching admin courses:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500, headers: NO_CACHE_HEADERS });
@@ -127,25 +116,32 @@ export async function POST(req: NextRequest) {
       id: courseId,
       slug,
       video: body.video || body.previewVideo || body.previewVideoUrl || body.videoUrl || '',
+      status: body.status || 'Active',
+      isDeleted: false,
       updatedAt: new Date().toISOString()
     };
 
     saveSinglePersistedCourse(payload);
 
-    // If this course was previously deleted, remove it from the deleted blacklist
+    // If previously in deleted_courses blacklist, remove it
     try {
-      const { data: delData } = await supabase.from('site_settings').select('data').eq('key', 'deleted_courses').maybeSingle();
-      if (Array.isArray(delData?.data)) {
-        const filtered = delData.data.filter((d: string) => d !== courseId && d !== slug);
+      const { data: currentSettings } = await supabase
+        .from('site_settings')
+        .select('data')
+        .eq('key', 'deleted_courses')
+        .maybeSingle();
+
+      if (Array.isArray(currentSettings?.data) && (currentSettings.data.includes(courseId) || currentSettings.data.includes(slug))) {
+        const updatedList = currentSettings.data.filter((id: string) => id !== courseId && id !== slug);
         await supabase.from('site_settings').upsert({
           key: 'deleted_courses',
-          data: filtered,
+          data: updatedList,
           updated_at: new Date().toISOString()
         });
       }
     } catch (e) {}
 
-    // Write to Supabase courses table with explicit video, title, and all metadata
+    // Save/Upsert directly to Supabase courses table
     const { error: sbErr } = await supabase.from('courses').upsert({
       id: courseId,
       slug,
@@ -162,7 +158,7 @@ export async function POST(req: NextRequest) {
       image: payload.image || null,
       banner: payload.banner || payload.image || null,
       video: payload.video || null,
-      status: payload.status || 'Active',
+      status: 'Active',
       is_published: payload.isPublished ?? payload.is_published ?? true,
       category: payload.category || 'Digital Marketing',
       lessons: Array.isArray(payload.lessons) ? payload.lessons : [],
@@ -176,36 +172,41 @@ export async function POST(req: NextRequest) {
     });
 
     if (sbErr) {
-      console.warn('Supabase course upsert warning:', sbErr);
+      console.warn('Supabase save course warning:', sbErr);
     }
 
-    return NextResponse.json({ success: true, message: 'Course saved successfully', course: payload });
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Course saved successfully', 
+      id: courseId, 
+      course: payload 
+    }, { headers: NO_CACHE_HEADERS });
   } catch (error: any) {
     console.error('Error saving admin course:', error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: error.message }, { status: 500, headers: NO_CACHE_HEADERS });
   }
+}
+
+export async function PUT(req: NextRequest) {
+  return POST(req);
 }
 
 export async function DELETE(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const courseId = searchParams.get('courseId') || searchParams.get('id');
+    const courseId = searchParams.get('id') || searchParams.get('courseId');
 
     if (!courseId) {
-      return NextResponse.json({ success: false, error: 'Missing courseId' }, { status: 400 });
+      return NextResponse.json({ success: false, error: 'Missing courseId parameter' }, { status: 400, headers: NO_CACHE_HEADERS });
     }
 
     deletePersistedCourse(courseId);
 
-    // 1. Mark as Deleted in Supabase courses
-    await supabase.from('courses').update({ status: 'Deleted', is_published: false }).eq('id', courseId);
-    await supabase.from('courses').update({ status: 'Deleted', is_published: false }).eq('slug', courseId);
-
-    // 2. Delete rows directly from Supabase
+    // 1. Delete rows directly from Supabase
     await supabase.from('courses').delete().eq('id', courseId);
     await supabase.from('courses').delete().eq('slug', courseId);
 
-    // 3. Add to deleted_courses blacklist in site_settings so DEFAULT_COURSES NEVER resurrects it
+    // 2. Add to deleted_courses blacklist in site_settings so default courses NEVER resurrect it
     try {
       const { data: currentSettings } = await supabase
         .from('site_settings')
@@ -226,9 +227,13 @@ export async function DELETE(req: NextRequest) {
       console.warn('Error recording deleted course in site_settings:', e);
     }
 
-    return NextResponse.json({ success: true, message: 'Course deleted permanently', deletedId: courseId });
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Course deleted permanently', 
+      deletedId: courseId 
+    }, { headers: NO_CACHE_HEADERS });
   } catch (error: any) {
     console.error('Error deleting admin course:', error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: error.message }, { status: 500, headers: NO_CACHE_HEADERS });
   }
 }

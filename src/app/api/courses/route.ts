@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase/client';
 import { generateCourseSlug, DEFAULT_COURSES, isValidCourse } from '@/lib/courseCache';
-import { loadPersistedCourses } from '@/lib/memoryStore';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -33,23 +32,6 @@ export async function GET(req: NextRequest) {
       }
     } catch (e) {}
 
-    // Build authoritative base courseMap seeded with DEFAULT_COURSES and persisted storage
-    const courseMap = new Map<string, any>();
-    DEFAULT_COURSES.forEach(c => {
-      if (c && c.id && !deletedCourses.includes(c.id) && !deletedCourses.includes(c.slug)) {
-        courseMap.set(c.id, c);
-      }
-    });
-
-    try {
-      const persisted = loadPersistedCourses();
-      persisted.forEach(c => {
-        if (c && c.id && c.status !== 'Deleted' && !c.isDeleted && !deletedCourses.includes(c.id) && !deletedCourses.includes(c.slug)) {
-          courseMap.set(c.id, { ...courseMap.get(c.id), ...c });
-        }
-      });
-    } catch (e) {}
-
     // 1. Single Course Lookup
     if (courseId) {
       const cleanId = courseId.trim();
@@ -75,22 +57,13 @@ export async function GET(req: NextRequest) {
         }
       } catch (sbE) {}
 
-      // Check courseMap directly
-      if (courseMap.has(cleanId)) {
+      // Fallback only to matching default course
+      const defMatch = DEFAULT_COURSES.find(c => (c.id === cleanId || c.slug === cleanLower) && !deletedCourses.includes(c.id) && !deletedCourses.includes(c.slug));
+      if (defMatch) {
         return NextResponse.json(
-          { success: true, course: courseMap.get(cleanId) },
+          { success: true, course: defMatch },
           { headers: NO_CACHE_HEADERS }
         );
-      }
-
-      // Check slug match in courseMap
-      for (const course of courseMap.values()) {
-        if (course.slug === cleanLower || (course.title && generateCourseSlug(course.title) === cleanLower)) {
-          return NextResponse.json(
-            { success: true, course },
-            { headers: NO_CACHE_HEADERS }
-          );
-        }
       }
 
       return NextResponse.json(
@@ -100,37 +73,44 @@ export async function GET(req: NextRequest) {
     }
 
     // 2. Fetch All Courses from Supabase
-    try {
-      const { data: sbCourses, error: sbErr } = await supabase
-        .from('courses')
-        .select('*')
-        .order('created_at', { ascending: false });
+    const { data: sbCourses, error: sbErr } = await supabase
+      .from('courses')
+      .select('*')
+      .order('created_at', { ascending: false });
 
-      if (!sbErr && Array.isArray(sbCourses)) {
-        sbCourses.forEach(item => {
-          if (item && item.id && isValidCourse(item) && item.status !== 'Deleted' && !item.isDeleted && !deletedCourses.includes(item.id) && !deletedCourses.includes(item.slug)) {
-            const merged = { ...item, ...(item.raw_data || {}) };
-            courseMap.set(item.id, merged);
-          }
-        });
-      }
-    } catch (sbE) {}
+    let activeCourses: any[] = [];
 
-    const courses = Array.from(courseMap.values()).filter(c => 
-      c.status !== 'Deleted' && 
-      !c.isDeleted && 
-      !deletedCourses.includes(c.id) && 
-      !deletedCourses.includes(c.slug)
-    );
+    if (!sbErr && Array.isArray(sbCourses) && sbCourses.length > 0) {
+      activeCourses = sbCourses
+        .filter(item => 
+          item && 
+          item.id && 
+          isValidCourse(item) && 
+          item.status !== 'Deleted' && 
+          !item.isDeleted && 
+          !deletedCourses.includes(item.id) && 
+          !deletedCourses.includes(item.slug)
+        )
+        .map(item => ({
+          ...item,
+          ...(item.raw_data || {})
+        }));
+    }
 
-    return NextResponse.json(
-      { success: true, count: courses.length, courses },
-      { headers: NO_CACHE_HEADERS }
-    );
+    // If Supabase table has 0 rows and no courses have been deleted, seed defaults
+    if (activeCourses.length === 0 && (!sbCourses || sbCourses.length === 0) && deletedCourses.length === 0) {
+      activeCourses = DEFAULT_COURSES.filter(c => !deletedCourses.includes(c.id) && !deletedCourses.includes(c.slug));
+    }
+
+    return NextResponse.json({
+      success: true,
+      count: activeCourses.length,
+      courses: activeCourses
+    }, { headers: NO_CACHE_HEADERS });
   } catch (error: any) {
-    console.error('Error in /api/courses route:', error);
+    console.error('Error in GET /api/courses:', error);
     return NextResponse.json(
-      { success: false, error: error.message || 'Failed to fetch courses', courses: DEFAULT_COURSES },
+      { success: false, error: error.message || 'Internal server error', courses: [] },
       { status: 500, headers: NO_CACHE_HEADERS }
     );
   }

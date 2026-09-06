@@ -203,72 +203,29 @@ export default function HomeClient({
   useEffect(() => {
     setIsMounted(true);
 
-    let artifactList: any[] = [];
-    let rootList: any[] = [];
-
-    const syncAndMerge = () => {
-      let merged: any[] = [];
-      if (artifactList.length > 0 || rootList.length > 0) {
-        merged = mergeCoursesLists(DEFAULT_COURSES, rootList, artifactList);
-      } else {
-        const cached = getCachedCourses();
-        merged = cached.length > 0 ? cached : DEFAULT_COURSES;
+    const fetchLiveCourses = async () => {
+      try {
+        const res = await fetch(`/api/courses?t=${Date.now()}`, {
+          cache: 'no-store',
+          headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data && Array.isArray(data.courses)) {
+            setCourses(data.courses);
+            saveCachedCourses(data.courses);
+          }
+        }
+      } catch (err) {
+        console.warn("API courses fetch notice:", err);
+      } finally {
+        setLoading(false);
       }
-      if (merged.length > 0) {
-        setCourses(merged);
-        saveCachedCourses(merged);
-      }
-      setLoading(false);
     };
 
-    // 1. Live listener on artifacts collection
-    let unsubArtifact = () => {};
-    try {
-      const qArtifact = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses'));
-      unsubArtifact = onSnapshot(qArtifact, (snapshot) => {
-        if (!snapshot.empty) {
-          artifactList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          syncAndMerge();
-        }
-        setLoading(false);
-      }, (error) => {
-        console.warn("Artifacts courses sync notice:", error);
-        setLoading(false);
-      });
-    } catch (e) {}
+    fetchLiveCourses();
 
-    // 2. Live listener on root courses collection
-    let unsubRoot = () => {};
-    try {
-      const qRoot = query(collection(db, 'courses'));
-      unsubRoot = onSnapshot(qRoot, (snapshot) => {
-        if (!snapshot.empty) {
-          rootList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          syncAndMerge();
-        }
-        setLoading(false);
-      }, (error) => {
-        console.warn("Root courses sync notice:", error);
-        setLoading(false);
-      });
-    } catch (e) {}
-
-    // 3. Immediate HTTP fallback fetch
-    fetch(`/api/courses?t=${Date.now()}`, {
-      cache: 'no-store',
-      headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' }
-    })
-      .then(res => res.json())
-      .then(data => {
-        if (data && Array.isArray(data.courses) && data.courses.length > 0) {
-          artifactList = data.courses;
-          syncAndMerge();
-        }
-      })
-      .catch(err => console.warn("API courses fetch notice:", err))
-      .finally(() => setLoading(false));
-
-    // 4. Cross-Tab Broadcast Channel & Custom Event Listeners
+    // Cross-Tab Broadcast Channel & Custom Event Listeners
     let bc: BroadcastChannel | null = null;
     try {
       if (typeof BroadcastChannel !== 'undefined') {
@@ -276,6 +233,8 @@ export default function HomeClient({
         bc.onmessage = (event) => {
           if (event.data && event.data.type === 'COURSES_UPDATED' && Array.isArray(event.data.courses)) {
             setCourses(event.data.courses);
+          } else {
+            fetchLiveCourses();
           }
         };
       }
@@ -284,15 +243,23 @@ export default function HomeClient({
     const handleCustomCoursesUpdate = (e: any) => {
       if (e.detail?.courses && Array.isArray(e.detail.courses)) {
         setCourses(e.detail.courses);
+      } else {
+        fetchLiveCourses();
       }
     };
+
     window.addEventListener('tsehay_courses_updated', handleCustomCoursesUpdate);
+    window.addEventListener('tsehay_course_update', handleCustomCoursesUpdate);
+    window.addEventListener('storage', (e) => {
+      if (e.key === 'tsehay_courses_cache' || e.key === 'tsehay_admin_courses_cache') {
+        fetchLiveCourses();
+      }
+    });
 
     return () => {
-      unsubArtifact();
-      unsubRoot();
       if (bc) bc.close();
       window.removeEventListener('tsehay_courses_updated', handleCustomCoursesUpdate);
+      window.removeEventListener('tsehay_course_update', handleCustomCoursesUpdate);
     };
   }, []);
 

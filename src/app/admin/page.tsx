@@ -47,23 +47,7 @@ export function getYouTubeThumbnail(youtubeId?: string, customThumb?: string): s
 
 export default function AdminDashboard() {
   const { user, isAdmin: contextIsAdmin, verifyAdminStatus } = useAuth();
-  const [courses, setCourses] = useState<any[]>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const cached = localStorage.getItem('tsehay_admin_courses_cache');
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-        }
-        const siteCached = localStorage.getItem('tsehay_courses_cache');
-        if (siteCached) {
-          const parsed = JSON.parse(siteCached);
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-        }
-      } catch (e) {}
-    }
-    return DEFAULT_COURSES;
-  });
+  const [courses, setCourses] = useState<any[]>([]);
   const [youtubeVideos, setYoutubeVideos] = useState<any[]>(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -849,21 +833,22 @@ export default function AdminDashboard() {
       }
     });
     
-    // 1. Fail-Safe Server API Fetch for Courses
+    // 1. Authoritative Server API Fetch for Courses
     const fetchCoursesFromApi = async () => {
       try {
-        const res = await fetch('/api/admin/save-course');
+        const res = await fetch('/api/admin/courses', { cache: 'no-store' });
         if (res.ok) {
           const data = await res.json();
-          if (data.courses && Array.isArray(data.courses) && data.courses.length > 0) {
+          if (data.courses && Array.isArray(data.courses)) {
             setCourses(data.courses);
             try {
               localStorage.setItem('tsehay_admin_courses_cache', JSON.stringify(data.courses));
+              localStorage.setItem('tsehay_courses_cache', JSON.stringify(data.courses));
             } catch (e) {}
           }
         }
       } catch (err) {
-        console.warn("Fallback API fetchCourses error:", err);
+        console.warn("API fetchCourses error:", err);
       } finally {
         setLoading(false);
       }
@@ -872,73 +857,29 @@ export default function AdminDashboard() {
     // Execute initial backend fetch immediately
     fetchCoursesFromApi();
 
-    // 2. Real-Time Firestore Listeners for Courses (Both Artifact and Root Collections)
-    let unsubscribeCoursesRoot: any = () => {};
-    const coursesArtifactMap = new Map<string, any>();
-    const coursesRootMap = new Map<string, any>();
-
-    const mergeAndSetCourses = () => {
-      const courseMap = new Map<string, any>();
-      // Preload with cached courses
-      getCachedCourses().forEach(c => {
-        if (c && c.id) courseMap.set(c.id, c);
-      });
-      // Overlay artifact & root collections
-      coursesArtifactMap.forEach((c, id) => {
-        if (c && c.status !== 'Deleted' && !c.isDeleted) courseMap.set(id, { ...(courseMap.get(id) || {}), ...c });
-      });
-      coursesRootMap.forEach((c, id) => {
-        if (c && c.status !== 'Deleted' && !c.isDeleted) courseMap.set(id, { ...(courseMap.get(id) || {}), ...c });
-      });
-      const list = Array.from(courseMap.values());
-      if (list.length > 0) {
-        setCourses(list);
-        try {
-          localStorage.setItem('tsehay_admin_courses_cache', JSON.stringify(list));
-          localStorage.setItem('tsehay_courses_cache', JSON.stringify(list));
-        } catch (e) {}
+    const handleCourseSync = (e: any) => {
+      if (e?.detail?.courses && Array.isArray(e.detail.courses)) {
+        setCourses(e.detail.courses);
+      } else {
+        fetchCoursesFromApi();
       }
     };
 
-    const q = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses'));
-    const unsubscribe = onSnapshot(
-      q, 
-      (snapshot) => {
-        try {
-          snapshot.docs.forEach(doc => {
-            const data = doc.data();
-            if (data && data.status !== 'Deleted' && !data.isDeleted) {
-              coursesArtifactMap.set(doc.id, { id: doc.id, ...data });
-            }
-          });
-          mergeAndSetCourses();
-        } catch (err) {
-          console.error("Error processing courses snapshot:", err);
-        } finally {
-          setLoading(false);
+    if (typeof window !== 'undefined') {
+      window.addEventListener('tsehay_course_update', handleCourseSync);
+      window.addEventListener('storage', (e) => {
+        if (e.key === 'tsehay_courses_cache' || e.key === 'tsehay_admin_courses_cache') {
+          fetchCoursesFromApi();
         }
-      },
-      (err) => {
-        console.warn("Client Firestore courses sync note (falling back to server API):", err);
-        fetchCoursesFromApi();
-        setLoading(false);
-      }
-    );
+      });
+    }
 
-    try {
-      const qRoot = query(collection(db, 'courses'));
-      unsubscribeCoursesRoot = onSnapshot(qRoot, (snapshot) => {
-        try {
-          snapshot.docs.forEach(doc => {
-            const data = doc.data();
-            if (data && data.status !== 'Deleted' && !data.isDeleted) {
-              coursesRootMap.set(doc.id, { id: doc.id, ...data });
-            }
-          });
-          mergeAndSetCourses();
-        } catch (err) {}
-      }, () => {});
-    } catch (e) {}
+    const unsubscribe = () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('tsehay_course_update', handleCourseSync);
+      }
+    };
+    const unsubscribeCoursesRoot = () => {};
 
     // 3. Safety Liveness Timer: GUARANTEES setLoading(false) is called within 2 seconds
     const safetyTimer = setTimeout(() => {
@@ -2786,6 +2727,10 @@ export default function AdminDashboard() {
       setCourses(prev => {
         const updated = prev.filter(c => c.id !== id && c.slug !== id);
         broadcastCourseUpdate(updated);
+        try {
+          localStorage.setItem('tsehay_admin_courses_cache', JSON.stringify(updated));
+          localStorage.setItem('tsehay_courses_cache', JSON.stringify(updated));
+        } catch (e) {}
         return updated;
       });
 
