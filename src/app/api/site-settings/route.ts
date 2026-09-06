@@ -55,6 +55,30 @@ export async function GET(req: NextRequest) {
 
     // 2. Firebase Admin fallback
     if (hasAdminCredentials && adminDb && typeof adminDb.collection === 'function') {
+      // Check root settings collection & aliases
+      try {
+        const settingsDocRef = adminDb.collection('settings').doc(settingKey);
+        const settingsSnap = await settingsDocRef.get();
+        if (settingsSnap.exists) {
+          return NextResponse.json(
+            { success: true, settingKey, data: settingsSnap.data() },
+            { headers: NO_CACHE_HEADERS }
+          );
+        }
+
+        const aliasKey = settingKey === 'landing_video' ? 'landingVideo' : (settingKey === 'landingVideo' ? 'landing_video' : '');
+        if (aliasKey) {
+          const aliasSnap = await adminDb.collection('settings').doc(aliasKey).get();
+          if (aliasSnap.exists) {
+            return NextResponse.json(
+              { success: true, settingKey, data: aliasSnap.data() },
+              { headers: NO_CACHE_HEADERS }
+            );
+          }
+        }
+      } catch (e) {}
+
+      // Check nested artifacts collection
       try {
         const docRef = adminDb
           .collection('artifacts')
@@ -73,6 +97,7 @@ export async function GET(req: NextRequest) {
         }
       } catch (e) {}
 
+      // Check root collection fallback
       try {
         const rootDocRef = adminDb.collection('site_settings').doc(settingKey);
         const rootSnap = await rootDocRef.get();

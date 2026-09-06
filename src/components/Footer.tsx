@@ -256,6 +256,12 @@ export default function Footer() {
                                     <span>ስለ እኛ</span>
                                 </Link>
                             </li>
+                            <li>
+                                <Link href="/verify-certificate" className="hover:text-cyan-400 hover:translate-x-1 transition-all duration-200 flex items-center gap-2 group cursor-pointer text-cyan-300">
+                                    <i className="fa-solid fa-award text-xs text-cyan-400"></i>
+                                    <span>የሰርተፊኬት ማረጋገጫ</span>
+                                </Link>
+                            </li>
                         </ul>
                     </div>
 

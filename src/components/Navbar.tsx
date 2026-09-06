@@ -441,6 +441,24 @@ export default function Navbar() {
               >
                 <span>{t('about_us') || 'ስለ እኛ'}</span>
               </Link>
+
+              {/* ሰርተፊኬት ማረጋገጫ */}
+              <Link 
+                href="/verify-certificate" 
+                onClick={() => {
+                  if (pathname === '/verify-certificate') window.scrollTo({ top: 0, behavior: 'smooth' });
+                }} 
+                className={`py-2 text-[14px] lg:text-[15px] font-bold tracking-wide transition-all duration-300 ${
+                  pathname === '/verify-certificate' 
+                    ? 'terafab-nav-link-active' 
+                    : 'terafab-nav-link text-cyan-300/90 hover:text-cyan-200'
+                }`}
+              >
+                <span className="flex items-center gap-1.5">
+                  <i className="fa-solid fa-award text-xs text-cyan-400"></i>
+                  <span>ሰርተፊኬት</span>
+                </span>
+              </Link>
             </div>
 
             {/* 3. RIGHT: Search Input + Tsehay AI + Install + Lang/Theme + Integrated Close Toggle */}
@@ -672,6 +690,19 @@ export default function Navbar() {
                   {t('about_us') || 'ስለ እኛ'}
                 </span>
                 <span className="text-[10px] text-gray-400 mt-0.5">About Us</span>
+              </button>
+
+              {/* Certificate Verification */}
+              <button 
+                type="button" 
+                onClick={() => { closeCurtain(); navigateTo('/verify-certificate'); }} 
+                className={`p-3.5 rounded-2xl mobile-nav-card flex flex-col items-center justify-center text-center cursor-pointer group transition-all duration-200 col-span-2 bg-cyan-500/10 border-cyan-500/30 ${pathname === '/verify-certificate' ? 'mobile-nav-card-active' : ''}`}
+              >
+                <span className="text-xs font-black text-cyan-300 font-heading flex items-center gap-1.5">
+                  <i className="fa-solid fa-award text-cyan-400"></i>
+                  <span>ሰርተፊኬት ማረጋገጫ (Verify Certificate)</span>
+                </span>
+                <span className="text-[10px] text-cyan-200/70 mt-0.5">ይፋዊ ማረጋገጫ ፖርታል • Verify Credential</span>
               </button>
             </div>
 

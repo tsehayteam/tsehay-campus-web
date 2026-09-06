@@ -539,7 +539,7 @@ export default function HomeClient({
             <span className="w-2.5 h-2.5 rounded-full bg-[#f9b03c] shadow-[0_0_12px_#f9b03c] animate-pulse"></span>
           </div>
 
-          {/* Main Cinematic Typewriter Headline with Continuous Glow Pulse */}
+          {/* Main Cinematic Typewriter Headline with Continuous Glow Pulse (Cursor Removed) */}
           <h1 
             className="font-heading font-black text-4xl sm:text-6xl md:text-7xl lg:text-[76px] tracking-tight leading-[1.15] sm:leading-[1.1] text-white mb-4 sm:mb-5 min-h-[90px] sm:min-h-[140px] max-w-4xl headline-glow-pulse"
             style={{
@@ -555,13 +555,39 @@ export default function HomeClient({
               </span>
               <span className="absolute -bottom-2 left-0 w-full h-3 bg-gradient-to-r from-[#f9b03c]/30 to-transparent blur-xs -z-0"></span>
             </span>
-            <span className="inline-block w-[3px] sm:w-[5px] h-[0.85em] bg-[#f9b03c] animate-pulse ml-2 align-middle rounded-full shadow-[0_0_12px_#f9b03c]"></span>
           </h1>
 
-          {/* Subheadline */}
-          <p className="text-gray-300 dark:text-[#a0aec0] font-body text-base sm:text-lg md:text-xl max-w-3xl font-normal leading-relaxed mb-6 sm:mb-8">
-            በኢትዮጵያ የኦንላይን ክህሎት ስልጠና ቀዳሚ ፕላትፎርም። በተግባር እና በ AI የታገዘ ስልጠና ወስደው ቢዝነስዎን ዛሬውኑ ይጀምሩ።
-          </p>
+          {/* Well-organized, high-impact Subheadline & Value Pillars */}
+          <div className="max-w-3xl mx-auto mb-6 sm:mb-8 space-y-4">
+            <p className="text-gray-200 dark:text-slate-200 font-body text-base sm:text-lg md:text-xl font-medium leading-relaxed drop-shadow-xs">
+              በኢትዮጵያ የኦንላይን ክህሎት ስልጠና ቀዳሚ ፕላትፎርም — በገበያ ላይ የተፈተኑ፣ በ AI የታገዙ የቢዝነስ እና የዲጂታል ክህሎቶችን በተግባር ይማሩ።
+            </p>
+
+            {/* Core Value Pillars (Glass Badges) */}
+            <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 pt-1">
+              <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-amber-400/10 border border-[#f9b03c]/35 text-[#f9b03c] text-xs sm:text-[13px] font-semibold backdrop-blur-md shadow-xs hover:border-[#f9b03c] transition-colors">
+                <i className="fa-solid fa-laptop-code text-[11px]"></i>
+                <span>100% የተግባር ስልጠና</span>
+              </span>
+              <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-purple-500/10 border border-purple-400/35 text-purple-300 text-xs sm:text-[13px] font-semibold backdrop-blur-md shadow-xs hover:border-purple-400 transition-colors">
+                <i className="fa-solid fa-robot text-[11px]"></i>
+                <span>24/7 የግል AI መምህር</span>
+              </span>
+              <Link 
+                href="/verify-certificate" 
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-400/35 text-cyan-300 hover:text-white text-xs sm:text-[13px] font-semibold backdrop-blur-md shadow-xs hover:border-cyan-400 hover:bg-cyan-500/20 transition-all cursor-pointer"
+                title="እውቅና ያለው ሰርተፊኬት ያረጋግጡ"
+              >
+                <i className="fa-solid fa-award text-[11px] text-cyan-400"></i>
+                <span>እውቅና ያለው ሰርተፍኬት</span>
+                <i className="fa-solid fa-arrow-up-right-from-square text-[9px] opacity-70"></i>
+              </Link>
+              <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-400/35 text-emerald-300 text-xs sm:text-[13px] font-semibold backdrop-blur-md shadow-xs hover:border-emerald-400 transition-colors">
+                <i className="fa-solid fa-briefcase text-[11px]"></i>
+                <span>ቀጥታ ገቢ ማስገኛ</span>
+              </span>
+            </div>
+          </div>
 
           {/* 🌟 1. HERO VIDEO ENHANCEMENT: Perfectly integrated below headline, spanning wide, central */}
           <div className="w-full flex items-center justify-center my-4 sm:my-6">
@@ -717,7 +743,7 @@ export default function HomeClient({
             <Tilt3DCard 
               maxTilt={12}
               perspective={1000}
-              onClick={() => document.getElementById('courses')?.scrollIntoView({behavior: 'smooth'})}
+              onClick={() => router.push('/verify-certificate')}
               className="cursor-pointer scrolly-card delay-3"
             >
               <div 
@@ -741,15 +767,49 @@ export default function HomeClient({
                     እውቅና ያለው ሰርተፍኬት
                   </h3>
                   <p className="text-slate-300 font-body font-medium leading-relaxed text-sm sm:text-base" style={{ transform: 'translateZ(15px)' }}>
-                    ትምህርትዎን እንዳጠናቀቁ፣ ክህሎትዎን የሚያረጋግጥ ዲጂታል ሰርተፍኬት።
+                    ትምህርትዎን እንዳጠናቀቁ፣ ክህሎትዎን የሚያረጋግጥ እና በኦንላይን የሚረጋገጥ ይፋዊ ዲጂታል ሰርተፍኬት።
                   </p>
                 </div>
-                <div className="mt-8 flex items-center gap-2.5 text-sm sm:text-base font-black text-cyan-400 group-hover:text-cyan-300 group-hover:translate-x-2 transition-transform duration-300 relative z-10" style={{ transform: 'translateZ(20px)' }}>
-                  <span>ሰርተፍኬት ያረጋግጡ</span>
-                  <i className="fa-solid fa-arrow-right text-xs"></i>
+                <div className="mt-8 flex items-center justify-between gap-3 relative z-10" style={{ transform: 'translateZ(20px)' }}>
+                  <span className="inline-flex items-center gap-2 text-sm sm:text-base font-black text-cyan-400 group-hover:text-cyan-300 group-hover:translate-x-1.5 transition-transform duration-300">
+                    <span>እውቅና ያለው ሰርተፍኬት ያረጋግጡ</span>
+                    <i className="fa-solid fa-arrow-right text-xs"></i>
+                  </span>
+                  <span className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_#22d3ee] animate-pulse"></span>
                 </div>
               </div>
             </Tilt3DCard>
+          </div>
+
+          {/* 🌟 Dedicated Certificate Verification Section Callout Banner */}
+          <div className="mt-12 sm:mt-16 p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-[#051928]/85 via-[#0d1017]/90 to-[#1a1409]/85 border-2 border-cyan-500/40 backdrop-blur-2xl flex flex-col md:flex-row items-center justify-between gap-6 shadow-[0_20px_50px_rgba(0,0,0,0.7),0_0_35px_rgba(6,182,212,0.2)]">
+            <div className="flex items-center gap-4 sm:gap-5 text-left w-full md:w-auto">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-cyan-500/15 border-2 border-cyan-400/50 text-cyan-300 flex items-center justify-center text-2xl sm:text-3xl shrink-0 shadow-[0_0_25px_rgba(6,182,212,0.35)] animate-pulse">
+                <i className="fa-solid fa-certificate"></i>
+              </div>
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 text-[10px] font-mono uppercase tracking-wider font-bold">
+                    Official Verification Portal
+                  </span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                </div>
+                <h4 className="font-heading font-black text-white text-base sm:text-xl">
+                  እውቅና ያለው ሰርተፊኬት ማረጋገጫ (Certificate Verification)
+                </h4>
+                <p className="text-slate-300 font-body text-xs sm:text-sm mt-0.5">
+                  በፀሐይ ካምፓስ የተሰጡትን ሰርተፊኬቶች በመለያ ኮዳቸው (Serial Code) ትክክለኛነታቸውን በቅጽበት በኦንላይን ያረጋግጡ።
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/verify-certificate"
+              className="w-full md:w-auto px-7 py-3.5 rounded-2xl bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 hover:from-cyan-300 hover:to-blue-400 text-slate-950 font-black text-sm tracking-wide shadow-[0_0_25px_rgba(6,182,212,0.5)] hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2.5 whitespace-nowrap cursor-pointer shrink-0 group"
+            >
+              <i className="fa-solid fa-shield-check text-base"></i>
+              <span>ሰርተፊኬት አሁን ያረጋግጡ</span>
+              <i className="fa-solid fa-arrow-right text-xs group-hover:translate-x-1 transition-transform"></i>
+            </Link>
           </div>
         </div>
       </section>

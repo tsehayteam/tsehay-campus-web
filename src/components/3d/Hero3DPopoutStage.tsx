@@ -24,22 +24,20 @@ export default function Hero3DPopoutStage({
   const stageRef = useRef<HTMLDivElement | null>(null);
   const glareRef = useRef<HTMLDivElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
+
   const [studentCount, setStudentCount] = useState(530);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [activeVideoUrl, setActiveVideoUrl] = useState<string>(videoSrc);
-  const [customThumbnail, setCustomThumbnail] = useState<string>(() => {
-    if (initialThumbnail && initialThumbnail.trim()) return initialThumbnail.trim();
-    if (typeof window !== 'undefined') {
-      try {
-        return localStorage.getItem('tsehay_landing_video_thumb') || '';
-      } catch (e) {}
-    }
-    return '';
-  });
+  const [activeVideoUrl, setActiveVideoUrl] = useState<string>(videoSrc || DEFAULT_LANDING_VIDEO);
+  const [isPlaying, setIsPlaying] = useState<boolean>(true);
+  const [isMuted, setIsMuted] = useState<boolean>(true);
+  const [isVideoReady, setIsVideoReady] = useState<boolean>(false);
+  const [customThumbnail, setCustomThumbnail] = useState<string>(initialThumbnail || '');
+
   const isInteractingRef = useRef(false);
   const rafIdRef = useRef<number | null>(null);
 
-  // Sync prop changes from SSR into active state
+  // Sync prop changes from SSR into active state (Latest Video always takes priority)
   useEffect(() => {
     if (videoSrc && videoSrc.trim()) {
       setActiveVideoUrl(videoSrc.trim());
@@ -52,35 +50,21 @@ export default function Hero3DPopoutStage({
     }
   }, [initialThumbnail]);
 
-  // 🌟 Dynamic Landing Video Fetch from Firestore / Site Settings with graceful fallback
+  // 🌟 Dynamic Landing Video Fetch from Firestore / Site Settings (Always Latest Video)
   useEffect(() => {
     let isCancelled = false;
 
-    // 1. Check local cache first for zero latency
-    if (typeof window !== 'undefined') {
-      try {
-        const cached = localStorage.getItem('tsehay_landing_video_cache');
-        if (cached && cached.trim()) {
-          setActiveVideoUrl(cached.trim());
-        }
-        const cachedThumb = localStorage.getItem('tsehay_landing_video_thumb');
-        if (cachedThumb && cachedThumb.trim()) {
-          setCustomThumbnail(cachedThumb.trim());
-        }
-      } catch (e) {}
-    }
-
-    // 2. Fetch from /api/admin/site-settings API
+    // Fetch from site-settings API with cache-busting
     const fetchLandingVideo = async () => {
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 3500); // 3.5s fail-safe timeout
+        const timeoutId = setTimeout(() => controller.abort(), 4000);
 
         let fetchedUrl = '';
         let fetchedThumb = '';
 
         try {
-          const res = await fetch('/api/admin/site-settings?settingKey=landing_video', {
+          const res = await fetch(`/api/site-settings?settingKey=landing_video&_t=${Date.now()}`, {
             signal: controller.signal,
             cache: 'no-store'
           });
@@ -93,7 +77,7 @@ export default function Hero3DPopoutStage({
 
         if (!fetchedUrl) {
           try {
-            const res2 = await fetch('/api/admin/save-landing-video', { cache: 'no-store' });
+            const res2 = await fetch(`/api/admin/save-landing-video?_t=${Date.now()}`, { cache: 'no-store' });
             if (res2.ok) {
               const json2 = await res2.json();
               fetchedUrl = json2?.videoUrl || json2?.url || '';
@@ -106,50 +90,68 @@ export default function Hero3DPopoutStage({
 
         if (fetchedUrl && typeof fetchedUrl === 'string' && fetchedUrl.trim() && !isCancelled) {
           setActiveVideoUrl(fetchedUrl.trim());
-          try {
-            localStorage.setItem('tsehay_landing_video_cache', fetchedUrl.trim());
-          } catch (e) {}
         }
         if (fetchedThumb && typeof fetchedThumb === 'string' && fetchedThumb.trim() && !isCancelled) {
           setCustomThumbnail(fetchedThumb.trim());
-          try {
-            localStorage.setItem('tsehay_landing_video_thumb', fetchedThumb.trim());
-          } catch (e) {}
         }
       } catch (err) {
-        // Fallback gracefully to default video
+        // Keep activeVideoUrl as initialized from SSR
       }
     };
 
     fetchLandingVideo();
 
     // 3. Supabase Realtime WebSocket subscription on site_settings (landing_video)
-    const sbChannel = supabase
-      .channel('realtime_landing_video_popout')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'site_settings' },
-        (payload: any) => {
-          if (payload?.new && payload.new.key === 'landing_video' && !isCancelled) {
-            const d = payload.new.data;
-            const url = d?.url || d?.videoUrl || d?.youtubeUrl;
-            const thumb = d?.landingVideoThumbnail || d?.thumbnail || d?.thumbnailUrl || d?.poster;
-            if (url && typeof url === 'string' && url.trim()) {
-              setActiveVideoUrl(url.trim());
-              try {
-                localStorage.setItem('tsehay_landing_video_cache', url.trim());
-              } catch (e) {}
-            }
-            if (thumb && typeof thumb === 'string' && thumb.trim()) {
-              setCustomThumbnail(thumb.trim());
-              try {
-                localStorage.setItem('tsehay_landing_video_thumb', thumb.trim());
-              } catch (e) {}
+    let sbChannel: any = null;
+    try {
+      sbChannel = supabase
+        .channel('realtime_landing_video_popout')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'site_settings' },
+          (payload: any) => {
+            if (payload?.new && payload.new.key === 'landing_video' && !isCancelled) {
+              const d = payload.new.data;
+              const url = d?.url || d?.videoUrl || d?.youtubeUrl;
+              const thumb = d?.landingVideoThumbnail || d?.thumbnail || d?.thumbnailUrl || d?.poster;
+              if (url && typeof url === 'string' && url.trim()) {
+                setActiveVideoUrl(url.trim());
+              }
+              if (thumb && typeof thumb === 'string' && thumb.trim()) {
+                setCustomThumbnail(thumb.trim());
+              }
             }
           }
+        )
+        .subscribe();
+    } catch (e) {}
+
+    // 4. Real-time Firestore Listeners across all valid namespaces
+    let unsub1: any = null;
+    let unsub2: any = null;
+    let unsub3: any = null;
+    let unsub4: any = null;
+
+    const handleDocUpdate = (snap: any) => {
+      if (snap.exists()) {
+        const d = snap.data();
+        const url = d?.url || d?.videoUrl || d?.youtubeUrl;
+        const thumb = d?.landingVideoThumbnail || d?.thumbnail || d?.thumbnailUrl || d?.thumbUrl || d?.poster;
+        if (url && typeof url === 'string' && url.trim() && !isCancelled) {
+          setActiveVideoUrl(url.trim());
         }
-      )
-      .subscribe();
+        if (thumb && typeof thumb === 'string' && thumb.trim() && !isCancelled) {
+          setCustomThumbnail(thumb.trim());
+        }
+      }
+    };
+
+    try {
+      unsub1 = onSnapshot(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'site_settings', 'landing_video'), handleDocUpdate, () => {});
+      unsub2 = onSnapshot(doc(db, 'site_settings', 'landing_video'), handleDocUpdate, () => {});
+      unsub3 = onSnapshot(doc(db, 'settings', 'landing_video'), handleDocUpdate, () => {});
+      unsub4 = onSnapshot(doc(db, 'settings', 'landingVideo'), handleDocUpdate, () => {});
+    } catch (e) {}
 
     // 4. Cross-tab Broadcast Channel & Custom Event Listeners
     let bc: BroadcastChannel | null = null;
@@ -217,8 +219,59 @@ export default function Hero3DPopoutStage({
     }
   }, []);
 
-  // Parse current active video for thumbnail & modal playback
+  // Parse current active video for thumbnail & playback
   const parsedVideo = parseVideoEmbedUrl(activeVideoUrl || DEFAULT_LANDING_VIDEO, false);
+
+  // Generate YouTube Autoplay Embed URL with loop and mute enabled for browser compliance
+  const ytAutoplaySrc = parsedVideo.youtubeId
+    ? `https://www.youtube-nocookie.com/embed/${parsedVideo.youtubeId}?autoplay=1&mute=1&loop=1&playlist=${parsedVideo.youtubeId}&controls=0&playsinline=1&enablejsapi=1&rel=0&modestbranding=1&iv_load_policy=3`
+    : '';
+
+  // Minimalist Play/Pause Toggle Handler (Works with YouTube postMessage and HTML5 video)
+  const togglePlayPause = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (isPlaying) {
+      if (parsedVideo.isYouTube && iframeRef.current?.contentWindow) {
+        iframeRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'pauseVideo', args: '' }), '*');
+      } else if (videoRef.current) {
+        videoRef.current.pause();
+      }
+      setIsPlaying(false);
+    } else {
+      if (parsedVideo.isYouTube && iframeRef.current?.contentWindow) {
+        iframeRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'playVideo', args: '' }), '*');
+      } else if (videoRef.current) {
+        videoRef.current.play().catch(() => {});
+      }
+      setIsPlaying(true);
+    }
+  };
+
+  // Subtle Audio (Mute / Unmute) Toggle Handler
+  const toggleMute = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (isMuted) {
+      if (parsedVideo.isYouTube && iframeRef.current?.contentWindow) {
+        iframeRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'unMute', args: '' }), '*');
+        iframeRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'setVolume', args: [90] }), '*');
+      } else if (videoRef.current) {
+        videoRef.current.muted = false;
+      }
+      setIsMuted(false);
+    } else {
+      if (parsedVideo.isYouTube && iframeRef.current?.contentWindow) {
+        iframeRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'mute', args: '' }), '*');
+      } else if (videoRef.current) {
+        videoRef.current.muted = true;
+      }
+      setIsMuted(true);
+    }
+  };
+
+  const handleOpenModal = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsModalOpen(true);
+  };
 
   // Live student counter pulse
   useEffect(() => {
@@ -291,53 +344,119 @@ export default function Hero3DPopoutStage({
       {/* 🚀 Main 3D Anamorphic Tilt Rig */}
       <div
         ref={stageRef}
-        className="relative w-full rounded-[2rem] sm:rounded-[2.5rem] transition-transform duration-300 ease-out cursor-pointer shadow-[0_30px_100px_rgba(0,0,0,0.9)]"
-        onClick={() => setIsModalOpen(true)}
+        className="relative w-full rounded-[2rem] sm:rounded-[2.5rem] transition-transform duration-300 ease-out shadow-[0_30px_100px_rgba(0,0,0,0.9)]"
         style={{
           transformStyle: 'preserve-3d',
           transform: 'rotateX(0deg) rotateY(0deg)',
         }}
       >
-        {/* Layer 1: Frame Glass Housing with Cyber Neon Bezel */}
+        {/* Layer 1: Frame Glass Housing with Cyber Neon Bezel & Auto-playing Video */}
         <div 
-          className="relative w-full h-[240px] sm:h-[380px] md:h-[480px] lg:h-[540px] rounded-[1.8rem] sm:rounded-[2.4rem] shadow-[0_30px_90px_rgba(0,0,0,0.85)] border-2 border-white/20 dark:border-[#f9b03c]/45 overflow-hidden bg-black group"
+          className="relative w-full h-[240px] sm:h-[380px] md:h-[480px] lg:h-[540px] rounded-[1.8rem] sm:rounded-[2.4rem] shadow-[0_30px_90px_rgba(0,0,0,0.85)] border-2 border-white/20 dark:border-[#f9b03c]/45 overflow-hidden bg-black group select-none cursor-pointer"
           style={{ transform: 'translateZ(0px)' }}
+          onClick={togglePlayPause}
         >
-          {/* Static High-Definition Poster Image (No autoplay on load) */}
-          <div className="absolute inset-0 w-full h-full overflow-hidden bg-black flex items-center justify-center">
-            <img 
-              src={displayThumbnail} 
-              alt="Tsehay Campus Hero Preview" 
-              className="w-full h-full object-cover scale-100 group-hover:scale-105 transition-transform duration-700 ease-out"
-              onError={(e) => { e.currentTarget.src = '/assets/hero-bg-new.jpg'; }}
-            />
-            {/* Cinematic subtle dark overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-black/40 group-hover:via-black/20 transition-all duration-500 pointer-events-none" />
-          </div>
+          {/* Autoplaying Video: YouTube iframe or Direct HTML5 Video */}
+          {parsedVideo.isYouTube && parsedVideo.youtubeId ? (
+            <div className="absolute inset-0 w-full h-full overflow-hidden bg-black flex items-center justify-center pointer-events-none">
+              <iframe
+                ref={iframeRef}
+                src={ytAutoplaySrc}
+                title="Tsehay Campus Hero Video"
+                className="w-[125%] h-[125%] -mt-[6%] -ml-[12.5%] object-cover pointer-events-none border-0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                onLoad={() => setIsVideoReady(true)}
+              />
+            </div>
+          ) : parsedVideo.isDirectVideo || parsedVideo.type === 'video' ? (
+            <div className="absolute inset-0 w-full h-full overflow-hidden bg-black flex items-center justify-center">
+              <video
+                ref={videoRef}
+                src={activeVideoUrl}
+                autoPlay
+                muted={isMuted}
+                loop
+                playsInline
+                className="w-full h-full object-cover"
+                onCanPlay={() => setIsVideoReady(true)}
+              />
+            </div>
+          ) : (
+            /* High-Definition Poster Image Fallback */
+            <div className="absolute inset-0 w-full h-full overflow-hidden bg-black flex items-center justify-center">
+              <img 
+                src={displayThumbnail} 
+                alt="Tsehay Campus Hero Preview" 
+                className="w-full h-full object-cover scale-100 group-hover:scale-105 transition-transform duration-700 ease-out"
+                onError={(e) => { e.currentTarget.src = '/assets/hero-bg-new.jpg'; }}
+              />
+            </div>
+          )}
+
+          {/* Cinematic subtle dark gradient vignette */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/25 pointer-events-none z-10" />
 
           {/* Dynamic 3D Specular Light Glare (Direct Ref) */}
           <div 
             ref={glareRef}
-            className="absolute inset-0 pointer-events-none mix-blend-screen opacity-30 group-hover:opacity-60 transition-opacity duration-500"
+            className="absolute inset-0 pointer-events-none mix-blend-screen opacity-20 group-hover:opacity-40 transition-opacity duration-500 z-10"
             style={{
               background: 'radial-gradient(circle 380px at 50% 50%, rgba(255,255,255,0.7) 0%, rgba(249,176,60,0.2) 50%, transparent 80%)',
             }}
           />
 
-          {/* Golden Yellow Play Button (Subtle initially, smoothly fades in & pulses on hover) */}
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
-            <div className="relative flex items-center justify-center opacity-40 sm:opacity-50 scale-95 group-hover:opacity-100 group-hover:scale-110 transition-all duration-500 ease-out">
-              {/* Pulsing Ripple Rings on Hover */}
-              <span className="absolute -inset-4 rounded-full bg-[#f9b03c]/30 opacity-0 group-hover:opacity-100 group-hover:animate-ping transition-opacity duration-500 pointer-events-none" />
-              <span className="absolute -inset-2 rounded-full bg-[#f9b03c]/50 blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-
-              <div 
-                className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 flex items-center justify-center text-2xl sm:text-3xl font-black shadow-[0_0_40px_rgba(249,176,60,0.8),0_10px_30px_rgba(0,0,0,0.8)] border-2 border-white/80 group-hover:shadow-[0_0_55px_rgba(249,176,60,1)] transition-all duration-500 cursor-pointer"
-                title="የመግቢያ ቪዲዮውን ይመልከቱ (Watch Intro Video)"
-              >
-                <i className="fa-solid fa-play ml-1 text-slate-950 group-hover:scale-110 transition-transform duration-300"></i>
+          {/* Paused State Subtle Central Indicator */}
+          {!isPlaying && (
+            <div 
+              className="absolute inset-0 z-20 flex items-center justify-center bg-black/45 backdrop-blur-[2px] transition-all duration-300 animate-in fade-in"
+              onClick={togglePlayPause}
+            >
+              <div className="flex flex-col items-center gap-2 px-5 py-3 rounded-2xl bg-black/80 border border-[#f9b03c]/50 shadow-[0_0_35px_rgba(249,176,60,0.35)] backdrop-blur-md">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 flex items-center justify-center text-xl shadow-lg">
+                  <i className="fa-solid fa-play ml-0.5"></i>
+                </div>
+                <span className="text-xs font-bold text-[#f9b03c] tracking-wide font-heading">ቪዲዮው ቆሟል • ለማጫወት ይጫኑ</span>
               </div>
             </div>
+          )}
+
+          {/* 🎛️ Minimalist Subtle Video Controls Bar (Bottom-Right, non-distracting) */}
+          <div 
+            className="absolute bottom-3.5 sm:bottom-5 right-3.5 sm:right-6 z-25 flex items-center gap-2 pointer-events-auto select-none"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Subtle Minimalist Pause / Play Button */}
+            <button
+              type="button"
+              onClick={togglePlayPause}
+              className="group/btn relative px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full bg-black/65 hover:bg-black/90 backdrop-blur-xl border border-white/20 hover:border-[#f9b03c] text-white hover:text-[#f9b03c] transition-all duration-300 flex items-center gap-2 text-xs font-bold shadow-[0_4px_20px_rgba(0,0,0,0.6)] cursor-pointer active:scale-95"
+              title={isPlaying ? "ቪዲዮውን አቁም (Pause Video)" : "ቪዲዮውን አስጀምር (Play Video)"}
+            >
+              <i className={`fa-solid ${isPlaying ? 'fa-pause text-amber-300' : 'fa-play text-[#f9b03c]'} text-xs transition-transform group-hover/btn:scale-110`}></i>
+              <span className="text-[11px] sm:text-xs font-mono font-bold tracking-tight text-white/90 group-hover/btn:text-white">
+                {isPlaying ? 'አቁም' : 'አጫውት'}
+              </span>
+            </button>
+
+            {/* Subtle Audio Toggle (Mute / Unmute) */}
+            <button
+              type="button"
+              onClick={toggleMute}
+              className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-black/65 hover:bg-black/90 backdrop-blur-xl border border-white/20 hover:border-[#3268ba] text-white hover:text-cyan-300 transition-all duration-300 flex items-center justify-center text-xs shadow-[0_4px_20px_rgba(0,0,0,0.6)] cursor-pointer active:scale-95"
+              title={isMuted ? "ድምጽ ክፈት (Unmute Sound)" : "ድምጽ አጥፋ (Mute Sound)"}
+            >
+              <i className={`fa-solid ${isMuted ? 'fa-volume-xmark text-slate-300' : 'fa-volume-high text-emerald-400'}`}></i>
+            </button>
+
+            {/* Subtle Fullscreen / Expand Button */}
+            <button
+              type="button"
+              onClick={handleOpenModal}
+              className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-black/65 hover:bg-black/90 backdrop-blur-xl border border-white/20 hover:border-white/50 text-white hover:text-[#f9b03c] transition-all duration-300 flex items-center justify-center text-xs shadow-[0_4px_20px_rgba(0,0,0,0.6)] cursor-pointer active:scale-95"
+              title="ቪዲዮውን በሙሉ ስክሪን ይመልከቱ (Expand Video)"
+            >
+              <i className="fa-solid fa-expand"></i>
+            </button>
           </div>
         </div>
 
