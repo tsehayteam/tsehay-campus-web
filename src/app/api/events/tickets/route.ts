@@ -82,7 +82,9 @@ export async function POST(req: NextRequest) {
       userId = `anon_${Date.now()}`,
       pricePaid = 0,
       paymentMethod = 'free',
-      tier = 'General Admission'
+      tier = 'General Admission',
+      eventImage = '',
+      image = ''
     } = body;
 
     const normalizedEmail = (attendeeEmail || '').toString().trim().toLowerCase();
@@ -158,6 +160,8 @@ export async function POST(req: NextRequest) {
       pricePaid: Number(pricePaid) || 0,
       paymentMethod,
       qrCodeData: qrPayload,
+      eventImage: eventImage || image || '',
+      image: image || eventImage || '',
       isUsed: false,
       usedAt: null,
       issuedAt: new Date().toISOString()

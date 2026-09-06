@@ -716,6 +716,7 @@ function AboutHeroPlayer({
 interface ShortReel {
   id: string;
   src: string;
+  poster?: string;
   title?: string;
 }
 
@@ -723,11 +724,13 @@ const DEFAULT_REELS: ShortReel[] = [
   {
     id: 'reel-1',
     src: '/assets/videos/Tsehay.mp4',
+    poster: '/assets/about_video_cover.jpg',
     title: 'የካምፓሳችን አጭር ቪዲዮ (Campus Reel 1)'
   },
   {
     id: 'reel-2',
     src: '/assets/videos/Marketing%20and%20psyco.mp4',
+    poster: '/assets/hero-bg-new.jpg',
     title: 'የማርኬቲንግ እና ሳይኮሎጂ ስልጠና (Campus Reel 2)'
   }
 ];
@@ -751,6 +754,7 @@ function AboutSingleReelSlider() {
           const list: ShortReel[] = snapshot.docs.map((d) => ({
             id: d.id,
             src: d.data().src || d.data().videoUrl || '/assets/videos/Tsehay.mp4',
+            poster: d.data().poster || d.data().thumbnail || d.data().thumbnailUrl || '/assets/about_video_cover.jpg',
             title: d.data().title || ''
           }));
           if (list.length > 0) setReels(list);
@@ -903,11 +907,12 @@ function AboutSingleReelSlider() {
                 }
               }}
               src={`${reel.src}#t=0.001`}
+              poster={reel.poster || '/assets/about_video_cover.jpg'}
               playsInline
               webkit-playsinline="true"
               disablePictureInPicture
               controlsList="nodownload noremoteplayback"
-              preload="none"
+              preload={idx === currentIndex ? 'auto' : 'metadata'}
               onPlay={() => {
                 if (idx === currentIndex) setIsPlaying(true);
               }}
@@ -924,7 +929,7 @@ function AboutSingleReelSlider() {
             />
           ))}
 
-          <div className={`absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/30 z-15 pointer-events-none transition-opacity duration-300 ${isPlaying ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'}`} />
+          <div className={`absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-black/15 z-15 pointer-events-none transition-opacity duration-300 ${isPlaying ? 'opacity-0' : 'opacity-100'}`} />
 
           <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
             {!isPlaying && (

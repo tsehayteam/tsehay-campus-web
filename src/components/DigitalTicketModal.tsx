@@ -228,12 +228,31 @@ export default function DigitalTicketModal({ isOpen, onClose, ticket }: DigitalT
             </div>
           </div>
 
-          {/* Event Title & Tier Badge */}
-          <div className="mb-3.5">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-400/15 border border-amber-400/30 text-[#f9b03c] text-[10px] font-black uppercase mb-1.5">
-              <i className="fa-solid fa-crown text-[9px]"></i>
-              <span>{ticket.tier || 'VIP Access Pass'}</span>
+          {/* Official Event Banner Thumbnail (Exact consistency with outside card) */}
+          <div className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden mb-3.5 border border-white/15 shadow-md bg-slate-900">
+            <img 
+              src={ticket.eventImage || ticket.image || 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?q=80&w=1200'} 
+              alt={ticket.eventTitle} 
+              className="w-full h-full object-cover"
+              crossOrigin="anonymous"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?q=80&w=1200';
+              }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent pointer-events-none" />
+            <div className="absolute bottom-2 left-3 right-3 flex items-center justify-between text-[10.5px] font-black">
+              <span className="px-2.5 py-0.5 rounded-full bg-[#f9b03c] text-slate-950 font-heading shadow-sm">
+                {ticket.tier || 'VIP Access Pass'}
+              </span>
+              <span className="text-white drop-shadow-md flex items-center gap-1 font-mono">
+                <i className="fa-solid fa-calendar-day text-[10px] text-[#f9b03c]"></i>
+                <span>{ticket.eventDate}</span>
+              </span>
             </div>
+          </div>
+
+          {/* Event Title */}
+          <div className="mb-3.5">
             <h3 className="text-base sm:text-lg font-black text-white font-heading leading-snug">
               {ticket.eventTitle}
             </h3>

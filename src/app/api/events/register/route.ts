@@ -48,6 +48,7 @@ export async function POST(req: NextRequest) {
     const meetingLink = body.meetingLink || matchedEvent?.meetingLink || '';
     const mapsUrl = body.mapsUrl || matchedEvent?.mapsUrl || '';
     const eventLocation = body.eventLocation || body.location || (isOnline ? 'Online Google Meet' : (matchedEvent?.location || 'Addis Ababa, Ethiopia'));
+    const eventImage = (body.eventImage || body.image || matchedEvent?.image || '').toString().trim();
 
     // 🛡️ [CRITICAL FIX 2: ONE TICKET PER USER LIMIT]
     // Check if attendee (by Email or authenticated UID) has already registered for this specific event
@@ -146,6 +147,8 @@ export async function POST(req: NextRequest) {
       eventId,
       eventSlug,
       eventTitle,
+      eventImage,
+      image: eventImage,
       eventDate,
       eventTime,
       eventLocation,

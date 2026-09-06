@@ -219,6 +219,7 @@ export default function EventDetailClient() {
       return null;
     }
 
+    const cleanEventImage = formatDriveImageUrl(event.image) || event.image || '';
     const payload = customPayload || {
       eventId: event.id,
       eventSlug: event.slug,
@@ -226,6 +227,8 @@ export default function EventDetailClient() {
       eventDate: event.date,
       eventTime: event.time,
       eventLocation: event.location,
+      eventImage: cleanEventImage,
+      image: cleanEventImage,
       isOnline: event.isOnline,
       meetingLink: event.meetingLink,
       mapsUrl: event.mapsUrl,
@@ -254,7 +257,11 @@ export default function EventDetailClient() {
       if (contentType.includes('application/json')) {
         const data = await res.json();
         if (data && (data.ticket || data.ticketId)) {
-          ticketObj = data.ticket;
+          ticketObj = data.ticket ? {
+            ...data.ticket,
+            eventImage: data.ticket.eventImage || cleanEventImage,
+            image: data.ticket.image || cleanEventImage
+          } : null;
         }
       }
     } catch (apiErr) {
@@ -273,6 +280,8 @@ export default function EventDetailClient() {
         eventDate: event.date,
         eventTime: event.time,
         eventLocation: event.location,
+        eventImage: cleanEventImage,
+        image: cleanEventImage,
         isOnline: event.isOnline,
         meetingLink: event.meetingLink,
         mapsUrl: event.mapsUrl,

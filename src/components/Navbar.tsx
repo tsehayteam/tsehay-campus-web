@@ -214,6 +214,8 @@ export default function Navbar() {
     setTheme(document.documentElement.classList.contains('dark') ? 'dark' : 'light');
 
     const handleOpenAuth = (e: any) => {
+      // 🌟 Smart Pop-up: ተጠቃሚው ካልተመዘገበ/ካልገባ ብቻ የመመዝገቢያ ፖፕ-አፕ (Pop-up) እንዲመጣ ይደረግ
+      if (user) return;
       setIsSignupMode(e.detail?.isSignupMode ?? e.detail?.isSignUp ?? false);
       setIsAuthModalOpen(true);
     };

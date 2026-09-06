@@ -36,6 +36,8 @@ export interface EventTicket {
   eventId: string;
   eventSlug?: string;
   eventTitle: string;
+  eventImage?: string;
+  image?: string;
   eventDate: string;
   eventTime: string;
   eventLocation: string;

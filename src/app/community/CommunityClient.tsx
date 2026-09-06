@@ -616,8 +616,16 @@ export default function CommunityClient({ initialPosts }: { initialPosts?: Commu
             </p>
           </div>
 
-          <div className="w-full md:w-80">
-            <div className="relative">
+          <div className="w-full md:w-auto flex flex-col sm:flex-row items-center gap-3">
+            <Link
+              href="/inbox"
+              className="w-full sm:w-auto px-4 py-3 rounded-2xl bg-gradient-to-r from-[#3268ba] to-[#254f8e] hover:from-[#3b7bdd] hover:to-[#2e62b0] text-white font-black text-xs shadow-lg shadow-blue-500/20 border border-blue-400/30 transition flex items-center justify-center gap-2 group cursor-pointer shrink-0"
+            >
+              <i className="fa-solid fa-paper-plane text-sky-300 group-hover:scale-110 transition-transform"></i>
+              <span>የመልዕክት ሳጥን (Messenger)</span>
+            </Link>
+
+            <div className="relative w-full sm:w-72 md:w-80">
               <input
                 type="text"
                 value={searchQuery}
@@ -676,12 +684,22 @@ export default function CommunityClient({ initialPosts }: { initialPosts?: Commu
                     </div>
                   </div>
 
-                  <Link
-                    href="/dashboard"
-                    className="mt-4 w-full block py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-200 hover:text-white font-bold text-xs border border-white/10 transition text-center"
-                  >
-                    ወደ መማሪያ ክፍል (Classroom)
-                  </Link>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2 mt-4">
+                    <Link
+                      href="/inbox"
+                      className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-[#3268ba] to-[#254f8e] hover:from-[#3b7bdd] hover:to-[#2e62b0] text-white font-black text-xs border border-blue-400/30 transition flex items-center justify-center gap-2 shadow-md shadow-blue-900/30 group"
+                    >
+                      <i className="fa-solid fa-paper-plane text-sky-300 group-hover:scale-110 transition-transform"></i>
+                      <span>የመልዕክት ሳጥን (Messenger)</span>
+                    </Link>
+
+                    <Link
+                      href="/dashboard"
+                      className="w-full py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-200 hover:text-white font-bold text-xs border border-white/10 transition text-center"
+                    >
+                      ወደ መማሪያ ክፍል (Classroom)
+                    </Link>
+                  </div>
                 </div>
               ) : (
                 <div className="text-center py-4">
@@ -1259,20 +1277,10 @@ export default function CommunityClient({ initialPosts }: { initialPosts?: Commu
                           <span>
                             {m.createdAt ? new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
                           </span>
-                          {isMe && (
-                            isRead ? (
-                              <span className="text-sky-400 font-bold ml-0.5 drop-shadow-[0_0_6px_rgba(56,189,248,0.8)]" title="ተነቧል (Read)">
-                                <i className="fa-solid fa-check-double text-[9px]"></i>
-                              </span>
-                            ) : isDelivered ? (
-                              <span className="text-slate-400 ml-0.5" title="ደርሷል (Delivered)">
-                                <i className="fa-solid fa-check-double text-[9px]"></i>
-                              </span>
-                            ) : (
-                              <span className="text-slate-400 ml-0.5" title="ተልኳል (Sent)">
-                                <i className="fa-solid fa-check text-[9px]"></i>
-                              </span>
-                            )
+                          {isMe && isRead && (
+                            <span className="text-sky-400 font-bold ml-0.5 drop-shadow-[0_0_6px_rgba(56,189,248,0.8)]" title="ተነቧል (Read)">
+                              <i className="fa-solid fa-check-double text-[9px]"></i>
+                            </span>
                           )}
                         </div>
                       </div>

@@ -418,8 +418,8 @@ function InboxContent() {
   const renderMessageStatus = (msg: DirectMessage, isMe: boolean) => {
     if (!isMe) return null;
     const isRead = msg.status === 'read' || msg.isRead;
-    const isDelivered = msg.status === 'delivered';
 
+    // 🌟 Read Receipts: መልእክቱ ሲነበብ ሁለት የራይት ምልክት (Double Checkmarks)፣ ካልታየ ደግሞ ምንም ምልክት እንዳያሳይ ይደረግ
     if (isRead) {
       return (
         <span className="inline-flex items-center text-sky-400 font-bold ml-1 drop-shadow-[0_0_6px_rgba(56,189,248,0.8)]" title="ተነቧል (Read)">
@@ -428,19 +428,8 @@ function InboxContent() {
       );
     }
 
-    if (isDelivered) {
-      return (
-        <span className="inline-flex items-center text-slate-400 ml-1" title="ደርሷል (Delivered)">
-          <i className="fa-solid fa-check-double text-[10px]"></i>
-        </span>
-      );
-    }
-
-    return (
-      <span className="inline-flex items-center text-slate-400 ml-1" title="ተልኳል (Sent)">
-        <i className="fa-solid fa-check text-[10px]"></i>
-      </span>
-    );
+    // ካልታየ ምንም ምልክት እንዳያሳይ (Show NO mark when unread)
+    return null;
   };
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {

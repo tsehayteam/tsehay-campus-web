@@ -28,7 +28,7 @@ interface AuthModalProps {
 }
 
 const isProfileDataComplete = (data: any): boolean => {
-  return Boolean(data && (data.name || data.fullName) && (data.phone || data.phoneNumber));
+  return Boolean(data && (data.name || data.fullName || data.email));
 };
 
 export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMode }: AuthModalProps) {
@@ -208,9 +208,11 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
           photoURL: data.photoURL
         });
 
-        // Only if user was on signup step 1 and an existing account was found, switch to login so they don't create a duplicate
-        if (data.exists && isSignupMode && signupStep === 1) {
-          setIsSignupMode(false);
+        // 🌟 Auto-detect Registered User: Switch directly to Login mode so they are never asked to re-register
+        if (data.exists) {
+          if (isSignupMode) {
+            setIsSignupMode(false);
+          }
           setError("");
         }
       }
@@ -289,7 +291,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
     return err?.message || 'የሆነ ችግር አጋጥሟል። እባክዎ በድጋሚ ይሞክሩ።';
   };
 
-  if (!isOpen) return null;
+  if (!isOpen || (auth.currentUser && !pendingGoogleAuth)) return null;
 
   // Handle Forgot Password
   const handlePasswordReset = async (e: React.FormEvent) => {
@@ -335,7 +337,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
     }
   };
 
-  // Google Authentication Flow (Enforcing @gmail.com)
+  // Google Authentication Flow (Enforcing @gmail.com & Instant Direct Login for registered/authenticated users)
   const handleGoogleAuth = async () => {
     setError("");
     setLoading(true);
@@ -360,36 +362,30 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
         existingData = docSnap && docSnap.exists() ? docSnap.data() : null;
       } catch (readErr) {}
 
-      if (existingData && isProfileDataComplete(existingData)) {
-        try {
-          await setDoc(doc(db, "users", user.uid), { 
-            email: user.email, 
-            name: user.displayName || existingData.name || userEmail.split('@')[0], 
-            createdAt: Date.now() 
-          }, { merge: true }).catch(() => {});
+      // 🌟 [Auto-detect Registered Users]: Directly Log In Without Re-Asking Registration Form
+      const userName = user.displayName || existingData?.name || userEmail.split('@')[0];
+      try {
+        await setDoc(doc(db, "users", user.uid), { 
+          email: user.email, 
+          name: userName, 
+          photoURL: user.photoURL || existingData?.photoURL || null,
+          createdAt: existingData?.createdAt || Date.now(),
+          lastLogin: serverTimestamp() 
+        }, { merge: true }).catch(() => {});
 
-          const docRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'profile', 'info');
-          await setDoc(docRef, {
-            lastLogin: serverTimestamp(),
-            photoURL: user.photoURL || existingData.photoURL || null,
-            email: user.email || existingData.email || "",
-          }, { merge: true }).catch(() => {});
-        } catch (writeErr) {}
+        const docRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'profile', 'info');
+        await setDoc(docRef, {
+          name: userName,
+          email: user.email || existingData?.email || "",
+          photoURL: user.photoURL || existingData?.photoURL || null,
+          lastLogin: serverTimestamp(),
+        }, { merge: true }).catch(() => {});
+      } catch (writeErr) {}
 
-        setPendingGoogleAuth(null);
-        setError("");
-        handlePostAuthSuccess(user);
-        return;
-      } else {
-        setPendingGoogleAuth(user);
-        setName(existingData?.name || user.displayName || "");
-        setEmail(user.email || "");
-        setPhone(existingData?.phone || "");
-        setCity(existingData?.city || "");
-        setSource(existingData?.source || "");
-        setAgreedToTerms(false);
-        setIsSignupMode(true);
-      }
+      setPendingGoogleAuth(null);
+      setError("");
+      handlePostAuthSuccess(user);
+      return;
     } catch (err: any) {
       if (err?.code === 'auth/popup-closed-by-user' || err?.code === 'auth/cancelled-popup-request') {
         setError("");

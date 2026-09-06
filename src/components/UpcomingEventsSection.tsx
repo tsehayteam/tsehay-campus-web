@@ -382,6 +382,8 @@ export default function UpcomingEventsSection() {
         eventDate: selectedEvent.date,
         eventTime: selectedEvent.time,
         eventLocation: selectedEvent.location,
+        eventImage: formatDriveImageUrl(selectedEvent.image) || selectedEvent.image || '',
+        image: formatDriveImageUrl(selectedEvent.image) || selectedEvent.image || '',
         isOnline: selectedEvent.isOnline || false,
         meetingLink: selectedEvent.meetingLink || '',
         mapsUrl: selectedEvent.mapsUrl || '',
@@ -413,13 +415,18 @@ export default function UpcomingEventsSection() {
 
         // If user already registered, open existing ticket
         if (data && data.alreadyRegistered && data.ticket) {
-          saveCachedUserTicket(data.ticket);
+          const loadedTicket = {
+            ...data.ticket,
+            eventImage: data.ticket.eventImage || formatDriveImageUrl(selectedEvent.image) || selectedEvent.image || '',
+            image: data.ticket.image || formatDriveImageUrl(selectedEvent.image) || selectedEvent.image || ''
+          };
+          saveCachedUserTicket(loadedTicket);
           setUserBookedTickets(prev => ({
             ...prev,
-            [selectedEvent.id]: data.ticket,
-            ...(selectedEvent.slug ? { [selectedEvent.slug]: data.ticket } : {})
+            [selectedEvent.id]: loadedTicket,
+            ...(selectedEvent.slug ? { [selectedEvent.slug]: loadedTicket } : {})
           }));
-          setActiveTicket(data.ticket);
+          setActiveTicket(loadedTicket);
           setIsBookingOpen(false);
           setIsTicketModalOpen(true);
           return;
@@ -432,7 +439,12 @@ export default function UpcomingEventsSection() {
 
         if (data && (data.success || data.ticket || data.ticketId)) {
           registerHandled = true;
-          issuedTicket = data.ticket || {
+          const cleanImage = formatDriveImageUrl(selectedEvent.image) || selectedEvent.image || '';
+          issuedTicket = data.ticket ? {
+            ...data.ticket,
+            eventImage: data.ticket.eventImage || cleanImage,
+            image: data.ticket.image || cleanImage
+          } : {
             ticketId: data.ticketId || `TC-EVT-${Date.now().toString(36).toUpperCase()}`,
             eventId: selectedEvent.id,
             eventSlug: selectedEvent.slug || '',
@@ -440,6 +452,8 @@ export default function UpcomingEventsSection() {
             eventDate: selectedEvent.date,
             eventTime: selectedEvent.time,
             eventLocation: selectedEvent.location,
+            eventImage: cleanImage,
+            image: cleanImage,
             isOnline: selectedEvent.isOnline,
             meetingLink: selectedEvent.meetingLink || '',
             mapsUrl: selectedEvent.mapsUrl || '',
