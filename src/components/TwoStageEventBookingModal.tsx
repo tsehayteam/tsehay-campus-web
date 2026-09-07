@@ -200,6 +200,8 @@ export default function TwoStageEventBookingModal({
           attendeeName: trimmedName,
           attendeeEmail: trimmedEmail,
           attendeePhone: trimmedPhone,
+          eventImage: event.image || '',
+          image: event.image || '',
           userId: user?.uid || `guest_${Date.now()}`,
           pricePaid,
           paymentMethod: method,
@@ -214,10 +216,20 @@ export default function TwoStageEventBookingModal({
         if (appliedCode) {
           recordReferralUsage(appliedCode).catch(() => {});
         }
-        onSuccess(data.ticket);
+        const unifiedTicket = {
+          ...data.ticket,
+          eventImage: data.ticket.eventImage || event.image || '',
+          image: data.ticket.image || event.image || ''
+        };
+        onSuccess(unifiedTicket);
         onClose();
       } else if (data && data.alreadyRegistered && data.ticket) {
-        onSuccess(data.ticket);
+        const unifiedTicket = {
+          ...data.ticket,
+          eventImage: data.ticket.eventImage || event.image || '',
+          image: data.ticket.image || event.image || ''
+        };
+        onSuccess(unifiedTicket);
         onClose();
       } else {
         const msg = data?.error || 'ትኬት መቁረጥ አልተቻለም። እባክዎ እንደገና ይሞክሩ።';

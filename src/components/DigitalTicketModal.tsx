@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
-import { EventTicket, DEFAULT_EVENT_BANNER, formatEventBannerUrl } from '@/lib/eventCache';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { EventTicket, DEFAULT_EVENT_BANNER, formatEventBannerUrl, getCachedEvents } from '@/lib/eventCache';
 import { QRCodeSVG, QRCodeCanvas } from 'qrcode.react';
 import { drawQrToCanvas } from '@/lib/qrCodeGenerator';
 
@@ -228,29 +228,52 @@ export default function DigitalTicketModal({ isOpen, onClose, ticket }: DigitalT
             </div>
           </div>
 
-          {/* Official Event Banner Thumbnail (Exact consistency with outside card) */}
-          <div className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden mb-3.5 border border-white/15 shadow-md bg-slate-900">
-            <img 
-              src={formatEventBannerUrl(ticket.eventImage || ticket.image || '') || DEFAULT_EVENT_BANNER} 
-              alt={ticket.eventTitle} 
-              className="w-full h-full object-cover"
-              crossOrigin="anonymous"
-              referrerPolicy="no-referrer"
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = DEFAULT_EVENT_BANNER;
-              }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent pointer-events-none" />
-            <div className="absolute bottom-2 left-3 right-3 flex items-center justify-between text-[10.5px] font-black">
-              <span className="px-2.5 py-0.5 rounded-full bg-[#f9b03c] text-slate-950 font-heading shadow-sm">
-                {ticket.tier || 'VIP Access Pass'}
-              </span>
-              <span className="text-white drop-shadow-md flex items-center gap-1 font-mono">
-                <i className="fa-solid fa-calendar-day text-[10px] text-[#f9b03c]"></i>
-                <span>{ticket.eventDate}</span>
-              </span>
-            </div>
-          </div>
+          {/* Official Event Banner Thumbnail (Exact consistency with outside card and preview) */}
+          {(() => {
+            const bannerSrc = (() => {
+              const raw = ticket.eventImage || ticket.image;
+              if (raw && typeof raw === 'string' && raw.trim()) {
+                return formatEventBannerUrl(raw.trim());
+              }
+              const allEvents = getCachedEvents();
+              const matched = allEvents.find(e => e.id === ticket.eventId || (ticket.eventSlug && e.slug === ticket.eventSlug));
+              if (matched && matched.image) {
+                return formatEventBannerUrl(matched.image);
+              }
+              return DEFAULT_EVENT_BANNER;
+            })();
+
+            return (
+              <div className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden mb-3.5 border border-white/15 shadow-md bg-slate-900">
+                <img 
+                  src={bannerSrc} 
+                  alt={ticket.eventTitle} 
+                  className="w-full h-full object-cover"
+                  loading="eager"
+                  decoding="async"
+                  onError={(e) => {
+                    const allEvents = getCachedEvents();
+                    const matched = allEvents.find(ev => ev.id === ticket.eventId || (ticket.eventSlug && ev.slug === ticket.eventSlug));
+                    if (matched?.image && (e.target as HTMLImageElement).src !== matched.image) {
+                      (e.target as HTMLImageElement).src = formatEventBannerUrl(matched.image);
+                    } else {
+                      (e.target as HTMLImageElement).src = DEFAULT_EVENT_BANNER;
+                    }
+                  }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent pointer-events-none" />
+                <div className="absolute bottom-2 left-3 right-3 flex items-center justify-between text-[10.5px] font-black">
+                  <span className="px-2.5 py-0.5 rounded-full bg-[#f9b03c] text-slate-950 font-heading shadow-sm">
+                    {ticket.tier || 'VIP Access Pass'}
+                  </span>
+                  <span className="text-white drop-shadow-md flex items-center gap-1 font-mono">
+                    <i className="fa-solid fa-calendar-day text-[10px] text-[#f9b03c]"></i>
+                    <span>{ticket.eventDate}</span>
+                  </span>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Event Title */}
           <div className="mb-3.5">

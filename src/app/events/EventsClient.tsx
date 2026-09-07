@@ -238,6 +238,8 @@ export default function EventsClient() {
           phone: '',
           attendeeName: user?.displayName || (user?.email ? user.email.split('@')[0] : 'ተማሪ'),
           attendeeEmail: user?.email || 'student@tsehaycampus.com',
+          eventImage: event.image || '',
+          image: event.image || '',
           userId: user?.uid || 'guest_student',
           pricePaid,
           paymentMethod,
@@ -247,10 +249,15 @@ export default function EventsClient() {
 
       const data = await res.json();
       if (data.success && data.ticket) {
-        setGeneratedTicket(data.ticket);
+        const unifiedTicket = {
+          ...data.ticket,
+          eventImage: data.ticket.eventImage || event.image || '',
+          image: data.ticket.image || event.image || ''
+        };
+        setGeneratedTicket(unifiedTicket);
         setIsBookingOpen(false);
         setIsTicketModalOpen(true);
-        saveCachedUserTicket(data.ticket);
+        saveCachedUserTicket(unifiedTicket);
       } else {
         alert(data.error || 'ትኬቱን መቁረጥ አልተቻለም። እባክዎ እንደገና ይሞክሩ።');
       }
@@ -359,8 +366,8 @@ export default function EventsClient() {
                         src={imageUrl}
                         alt={evt.title}
                         className="w-full h-full object-cover group-hover/banner:scale-105 transition-transform duration-500"
-                        referrerPolicy="no-referrer"
-                        crossOrigin="anonymous"
+                        loading="eager"
+                        decoding="async"
                         onError={(e) => {
                           (e.target as HTMLImageElement).src = DEFAULT_EVENT_BANNER;
                         }}
@@ -497,15 +504,20 @@ export default function EventsClient() {
         initialAttendeeName={user?.displayName || ''}
         initialAttendeeEmail={user?.email || ''}
         onSuccess={(ticket) => {
-          saveCachedUserTicket(ticket);
+          const unifiedTicket = {
+            ...ticket,
+            eventImage: ticket.eventImage || selectedEvent?.image || '',
+            image: ticket.image || selectedEvent?.image || ''
+          };
+          saveCachedUserTicket(unifiedTicket);
           if (selectedEvent) {
             setUserBookedTickets(prev => ({
               ...prev,
-              [selectedEvent.id]: ticket,
-              ...(selectedEvent.slug ? { [selectedEvent.slug]: ticket } : {})
+              [selectedEvent.id]: unifiedTicket,
+              ...(selectedEvent.slug ? { [selectedEvent.slug]: unifiedTicket } : {})
             }));
           }
-          setGeneratedTicket(ticket);
+          setGeneratedTicket(unifiedTicket);
           setIsBookingOpen(false);
           setIsTicketModalOpen(true);
         }}

@@ -76,6 +76,7 @@ export async function POST(req: NextRequest) {
     const meetingLink = body.meetingLink || matchedEvent?.meetingLink || '';
     const mapsUrl = body.mapsUrl || matchedEvent?.mapsUrl || '';
     const eventLocation = body.eventLocation || body.location || (isOnline ? 'Online Google Meet' : (matchedEvent?.location || 'Addis Ababa, Ethiopia'));
+    const eventImage = (body.eventImage || body.image || matchedEvent?.image || '').toString().trim();
 
     const existingTickets = await getTickets();
     const alreadyRegistered = existingTickets.find(t => {
@@ -87,11 +88,16 @@ export async function POST(req: NextRequest) {
     });
 
     if (alreadyRegistered) {
+      const enrichedTicket = {
+        ...alreadyRegistered,
+        eventImage: alreadyRegistered.eventImage || alreadyRegistered.image || eventImage,
+        image: alreadyRegistered.image || alreadyRegistered.eventImage || eventImage
+      };
       return NextResponse.json({
         success: false,
         alreadyRegistered: true,
         ticketId: alreadyRegistered.ticketId,
-        ticket: alreadyRegistered,
+        ticket: enrichedTicket,
         error: `ለዚህ ዝግጅት (${eventTitle}) አስቀድመው ትኬት ቆርጠዋል! (You have already registered for this event. Ticket ID: ${alreadyRegistered.ticketId})`
       }, { status: 400, headers: NO_CACHE_HEADERS });
     }
@@ -120,6 +126,8 @@ export async function POST(req: NextRequest) {
       eventId,
       eventSlug,
       eventTitle,
+      eventImage,
+      image: eventImage,
       eventDate,
       eventTime,
       eventLocation,

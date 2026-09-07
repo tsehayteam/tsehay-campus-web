@@ -32,7 +32,12 @@ export default function Hero3DPopoutStage({
   const [isVideoReady, setIsVideoReady] = useState<boolean>(false);
   const [showInitialThumbnail, setShowInitialThumbnail] = useState<boolean>(true);
   const [customThumbnail, setCustomThumbnail] = useState<string>(initialThumbnail || '');
-  const [siteOrigin, setSiteOrigin] = useState<string>('');
+  const [siteOrigin, setSiteOrigin] = useState<string>(() => {
+    if (typeof window !== 'undefined' && window.location?.origin) {
+      return window.location.origin;
+    }
+    return '';
+  });
 
   // Synchronized refs for zero-latency instant video control and scroll auto-pause
   const isPlayingRef = useRef<boolean>(true);
@@ -42,6 +47,33 @@ export default function Hero3DPopoutStage({
   useEffect(() => {
     isMutedRef.current = isMuted;
   }, [isMuted]);
+
+  // ⚡ Instant YouTube Player State Synchronization via Window Message Events
+  useEffect(() => {
+    const handleYouTubeMessage = (event: MessageEvent) => {
+      try {
+        let data = event.data;
+        if (typeof data === 'string') {
+          try { data = JSON.parse(data); } catch (_) {}
+        }
+        if (data && typeof data === 'object') {
+          // YouTube API onStateChange: 1 = Playing, 2 = Paused, 0 = Ended
+          const info = data.info;
+          const state = typeof info === 'number' ? info : info?.playerState;
+          if (state === 1) {
+            isPlayingRef.current = true;
+            setIsPlaying(true);
+          } else if (state === 2 || state === 0) {
+            isPlayingRef.current = false;
+            setIsPlaying(false);
+          }
+        }
+      } catch (_) {}
+    };
+
+    window.addEventListener('message', handleYouTubeMessage);
+    return () => window.removeEventListener('message', handleYouTubeMessage);
+  }, []);
 
   // 3D Glassmorphic Flash Pop Feedback State
   const [flashAction, setFlashAction] = useState<'play' | 'pause' | null>(null);
@@ -241,6 +273,7 @@ export default function Hero3DPopoutStage({
 
     if (parsedVideo.isYouTube && iframeRef.current?.contentWindow) {
       iframeRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'pauseVideo', args: [] }), '*');
+      iframeRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'pauseVideo', args: '' }), '*');
     } else if (videoRef.current) {
       videoRef.current.pause();
     }
@@ -258,6 +291,7 @@ export default function Hero3DPopoutStage({
         iframeRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'setVolume', args: [100] }), '*');
       }
       iframeRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'playVideo', args: [] }), '*');
+      iframeRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'playVideo', args: '' }), '*');
     } else if (videoRef.current) {
       videoRef.current.muted = isMutedRef.current;
       videoRef.current.play().catch(() => {
@@ -515,11 +549,15 @@ export default function Hero3DPopoutStage({
                   setIsPlaying(true);
                   if (iframeRef.current?.contentWindow) {
                     iframeRef.current.contentWindow.postMessage(
+                      JSON.stringify({ event: 'listening', id: parsedVideo.youtubeId }),
+                      '*'
+                    );
+                    iframeRef.current.contentWindow.postMessage(
                       JSON.stringify({ event: 'command', func: 'setPlaybackQuality', args: ['hd2160'] }),
                       '*'
                     );
                     iframeRef.current.contentWindow.postMessage(
-                      JSON.stringify({ event: 'command', func: 'playVideo', args: '' }),
+                      JSON.stringify({ event: 'command', func: 'playVideo', args: [] }),
                       '*'
                     );
                   }
@@ -631,55 +669,53 @@ export default function Hero3DPopoutStage({
           )}
 
           {/* ⏸️ / ▶️ Persistent 3D Glassmorphic Center Play/Pause Button */}
-          {!flashAction && (
-            <div 
-              className="absolute inset-0 z-25 flex items-center justify-center pointer-events-none"
-              style={{ transform: 'translateZ(60px)' }}
+          <div 
+            className="absolute inset-0 z-25 flex items-center justify-center pointer-events-none"
+            style={{ transform: 'translateZ(60px)' }}
+          >
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                togglePlayPause(e);
+              }}
+              aria-label={isPlaying ? "ቪዲዮውን አቁም (Pause Video)" : "ቪዲዮውን አስጀምር (Play Video)"}
+              className={`pointer-events-auto w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-black/55 hover:bg-black/80 backdrop-blur-2xl border-2 border-white/30 hover:border-[#f9b03c] text-white hover:text-[#f9b03c] shadow-[0_15px_45px_rgba(0,0,0,0.9),0_0_25px_rgba(249,176,60,0.35)] transition-all duration-200 flex items-center justify-center cursor-pointer active:scale-90 hover:scale-110 ${
+                isPlaying 
+                  ? 'opacity-0 group-hover:opacity-90 group-focus-within:opacity-90' 
+                  : 'opacity-100 ring-4 ring-[#f9b03c]/40 animate-pulse'
+              }`}
             >
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  togglePlayPause(e);
-                }}
-                aria-label={isPlaying ? "ቪዲዮውን አቁም (Pause Video)" : "ቪዲዮውን አስጀምር (Play Video)"}
-                className={`pointer-events-auto w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-black/45 hover:bg-black/75 backdrop-blur-2xl border-2 border-white/30 hover:border-[#f9b03c] text-white hover:text-[#f9b03c] shadow-[0_15px_45px_rgba(0,0,0,0.9),0_0_25px_rgba(249,176,60,0.35)] transition-all duration-300 flex items-center justify-center cursor-pointer active:scale-90 hover:scale-110 ${
-                  isPlaying 
-                    ? 'opacity-0 group-hover:opacity-90 group-focus-within:opacity-90' 
-                    : 'opacity-100 ring-4 ring-[#f9b03c]/40 animate-pulse'
-                }`}
-              >
-                {isPlaying ? (
-                  <i className="fa-solid fa-pause text-xl sm:text-2xl text-white/90 drop-shadow-md"></i>
-                ) : (
-                  <i className="fa-solid fa-play text-xl sm:text-2xl text-[#f9b03c] translate-x-0.5 drop-shadow-md"></i>
-                )}
-              </button>
-            </div>
-          )}
+              {isPlaying ? (
+                <i className="fa-solid fa-pause text-xl sm:text-2xl text-white/90 drop-shadow-md"></i>
+              ) : (
+                <i className="fa-solid fa-play text-xl sm:text-2xl text-[#f9b03c] translate-x-0.5 drop-shadow-md"></i>
+              )}
+            </button>
+          </div>
         </div>
 
         {/* ------------------------------------------------------------------ */}
         {/* 🎆 ANAMORPHIC DEPTH BADGES (Floating smoothly outside the frame)   */}
         {/* ------------------------------------------------------------------ */}
 
-        {/* 1. BOTTOM-LEFT POP-OUT: ACCREDITED CERTIFICATE BADGE (Responsive Mobile Scaling) */}
+        {/* 1. BOTTOM-LEFT POP-OUT: ACCREDITED CERTIFICATE BADGE (Strictly Contained Inside Box Boundaries) */}
         <div 
-          className="flex absolute -bottom-3 xs:-bottom-4 sm:-bottom-7 -left-1 xs:-left-2 sm:-left-6 lg:-left-8 z-30 p-1.5 xs:p-2.5 sm:p-4 rounded-xl sm:rounded-2xl items-center gap-2 sm:gap-3.5 bg-gradient-to-br from-slate-950/95 via-slate-900/90 to-black/95 border sm:border-2 border-[#f9b03c]/60 shadow-[0_15px_35px_rgba(0,0,0,0.9),0_0_20px_rgba(249,176,60,0.3)] sm:shadow-[0_20px_50px_rgba(0,0,0,0.9),0_0_30px_rgba(249,176,60,0.35)] backdrop-blur-2xl transition-transform duration-300 group hover:scale-105 pointer-events-auto scale-[0.82] xs:scale-90 sm:scale-100 origin-bottom-left max-w-[200px] xs:max-w-none"
+          className="flex absolute bottom-2.5 xs:bottom-3 sm:bottom-4 left-2.5 xs:left-3 sm:left-4 z-30 p-1.5 xs:p-2 sm:p-3 rounded-xl sm:rounded-2xl items-center gap-2 sm:gap-3 bg-gradient-to-br from-slate-950/95 via-slate-900/90 to-black/95 border border-[#f9b03c]/60 shadow-[0_12px_30px_rgba(0,0,0,0.9),0_0_15px_rgba(249,176,60,0.25)] backdrop-blur-2xl transition-transform duration-300 pointer-events-auto origin-bottom-left max-w-[calc(100%-1.5rem)] sm:max-w-xs"
           style={{
             transform: 'translate3d(0, 0, 75px)',
           }}
         >
           {/* Holographic Glowing Seal */}
-          <div className="relative w-7 h-7 xs:w-8 xs:h-8 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-200 text-slate-950 flex items-center justify-center text-xs xs:text-sm sm:text-xl font-black shadow-[0_0_20px_rgba(249,176,60,0.6)] shrink-0 animate-pulse">
+          <div className="relative w-7 h-7 xs:w-8 xs:h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-200 text-slate-950 flex items-center justify-center text-xs xs:text-sm sm:text-lg font-black shadow-[0_0_15px_rgba(249,176,60,0.5)] shrink-0 animate-pulse">
             <i className="fa-solid fa-award"></i>
             <span className="absolute -top-1 -right-1 w-2 h-2 sm:w-2.5 sm:h-2.5 bg-emerald-400 rounded-full border border-slate-950 shadow-[0_0_8px_#34d399]" />
           </div>
-          <div className="text-left pr-1 sm:pr-2">
-            <p className="text-[8px] xs:text-[9px] sm:text-[10px] text-amber-300/90 font-mono font-bold uppercase tracking-wider leading-none mb-0.5 sm:mb-1 flex items-center gap-1">
+          <div className="text-left pr-1 sm:pr-2 min-w-0">
+            <p className="text-[8px] xs:text-[9px] sm:text-[10px] text-amber-300/90 font-mono font-bold uppercase tracking-wider leading-none mb-0.5 sm:mb-1 flex items-center gap-1 truncate">
               {t('practical_learning_badge') || '🎓 ከተግባራዊ ትምህርት ጋር'}
             </p>
-            <p className="text-white font-black text-[10px] xs:text-xs sm:text-sm tracking-tight drop-shadow-md whitespace-nowrap">
+            <p className="text-white font-black text-[10px] xs:text-xs sm:text-sm tracking-tight drop-shadow-md truncate">
               {t('recognized_cert') || 'እውቅና ያለው ሰርተፍኬት'}
             </p>
           </div>
@@ -687,16 +723,16 @@ export default function Hero3DPopoutStage({
 
         {/* 2. TOP-RIGHT POP-OUT: ACTIVE STUDENTS COUNTER WITH RADAR WAVES (Responsive Mobile Scaling) */}
         <div 
-          className="flex absolute -top-3 xs:-top-4 sm:-top-7 -right-1 xs:-right-2 sm:-right-6 lg:-right-8 z-30 p-1.5 xs:p-2.5 sm:p-4 rounded-xl sm:rounded-2xl items-center gap-2 sm:gap-3.5 bg-gradient-to-br from-slate-950/95 via-slate-900/90 to-[#071328]/95 border sm:border-2 border-[#3268ba]/70 shadow-[0_15px_35px_rgba(0,0,0,0.9),0_0_20px_rgba(50,104,186,0.35)] sm:shadow-[0_20px_50px_rgba(0,0,0,0.9),0_0_30px_rgba(50,104,186,0.45)] backdrop-blur-2xl transition-transform duration-300 group hover:scale-105 pointer-events-auto scale-[0.82] xs:scale-90 sm:scale-100 origin-top-right max-w-[180px] xs:max-w-none"
+          className="flex absolute top-2.5 xs:top-3 sm:-top-5 right-2.5 xs:right-3 sm:-right-4 lg:-right-6 z-30 p-1.5 xs:p-2 sm:p-3 rounded-xl sm:rounded-2xl items-center gap-2 sm:gap-3 bg-gradient-to-br from-slate-950/95 via-slate-900/90 to-[#071328]/95 border sm:border-2 border-[#3268ba]/70 shadow-[0_12px_30px_rgba(0,0,0,0.9),0_0_15px_rgba(50,104,186,0.3)] backdrop-blur-2xl transition-transform duration-300 pointer-events-auto origin-top-right max-w-[calc(100%-1.5rem)] sm:max-w-none"
           style={{
             transform: 'translate3d(0, 0, 80px)',
           }}
         >
-          <div className="w-7 h-7 xs:w-8 xs:h-8 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl bg-gradient-to-tr from-[#1e4585] via-[#3268ba] to-[#3a75d2] text-white flex items-center justify-center text-xs xs:text-sm sm:text-xl font-black shadow-[0_0_20px_rgba(50,104,186,0.6)] shrink-0">
+          <div className="w-7 h-7 xs:w-8 xs:h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gradient-to-tr from-[#1e4585] via-[#3268ba] to-[#3a75d2] text-white flex items-center justify-center text-xs xs:text-sm sm:text-lg font-black shadow-[0_0_15px_rgba(50,104,186,0.5)] shrink-0">
             <i className="fa-solid fa-users-viewfinder"></i>
           </div>
-          <div className="text-left pr-1 sm:pr-2">
-            <p className="text-[8px] xs:text-[9px] sm:text-[10px] text-blue-200/90 font-mono font-bold uppercase tracking-wider leading-none mb-0.5 sm:mb-1 flex items-center gap-1">
+          <div className="text-left pr-1 sm:pr-2 min-w-0">
+            <p className="text-[8px] xs:text-[9px] sm:text-[10px] text-blue-200/90 font-mono font-bold uppercase tracking-wider leading-none mb-0.5 sm:mb-1 flex items-center gap-1 truncate">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
               {t('students') || 'ተማሪዎች'}
             </p>

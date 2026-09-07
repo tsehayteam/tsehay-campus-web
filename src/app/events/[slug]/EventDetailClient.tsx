@@ -145,6 +145,8 @@ export default function EventDetailClient() {
       eventId: event.id,
       eventSlug: event.slug,
       eventTitle: event.title,
+      eventImage: event.image || event.eventImage || '',
+      image: event.image || event.eventImage || '',
       eventDate: event.date,
       eventTime: event.time,
       eventLocation: event.location,
@@ -177,6 +179,10 @@ export default function EventDetailClient() {
         const data = await res.json();
         if (data && (data.ticket || data.ticketId)) {
           ticketObj = data.ticket;
+          if (ticketObj) {
+            ticketObj.eventImage = ticketObj.eventImage || event.image || '';
+            ticketObj.image = ticketObj.image || event.image || '';
+          }
         }
       }
     } catch (apiErr) {
@@ -192,6 +198,8 @@ export default function EventDetailClient() {
         eventId: event.id,
         eventSlug: event.slug,
         eventTitle: event.title,
+        eventImage: event.image || event.eventImage || '',
+        image: event.image || event.eventImage || '',
         eventDate: event.date,
         eventTime: event.time,
         eventLocation: event.location,
@@ -685,42 +693,59 @@ export default function EventDetailClient() {
                   }
 
                   return (
-                    <div className="relative rounded-3xl overflow-hidden border-2 border-white/15 shadow-[0_20px_60px_rgba(0,0,0,0.9)] group aspect-[16/9] bg-slate-900">
+                    <div 
+                      onClick={() => {
+                        if (hasVideo) setIsPlayingVideo(true);
+                      }}
+                      className={`relative rounded-3xl overflow-hidden border-2 border-white/15 shadow-[0_20px_60px_rgba(0,0,0,0.9)] group aspect-[16/9] bg-slate-900 ${
+                        hasVideo ? 'cursor-pointer' : ''
+                      }`}
+                      title={hasVideo ? "የክንውኑን ማስተዋወቂያ ቪዲዮ ይመልከቱ (Watch Trailer)" : event.title}
+                    >
                       <img
                         src={posterUrl}
                         alt={event.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                        referrerPolicy="no-referrer"
-                        crossOrigin="anonymous"
+                        loading="eager"
+                        decoding="async"
                         onError={(e) => {
                           (e.target as HTMLImageElement).src = DEFAULT_EVENT_BANNER;
                         }}
                       />
 
                       {/* Gradient Overlay */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent pointer-events-none" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent pointer-events-none" />
 
-                      {/* Video Indicator / Play Trailer Button */}
+                      {/* Optional Discrete Trailer Pill Tag in Top-Right */}
                       {hasVideo && (
-                        <>
-                          <div className="absolute inset-0 flex items-center justify-center z-10">
-                            <button
-                              type="button"
-                              onClick={() => setIsPlayingVideo(true)}
-                              className="group/btn relative flex flex-col items-center justify-center cursor-pointer transition-transform duration-300 hover:scale-110 active:scale-95"
-                              aria-label="የክንውኑን ማስተዋወቂያ ቪዲዮ ተመልከት"
-                            >
-                              <div className="absolute -inset-4 rounded-full bg-amber-500/25 blur-xl group-hover/btn:bg-amber-500/45 transition duration-500 animate-pulse"></div>
-                              <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-tr from-amber-500 to-[#f9b03c] text-slate-950 flex items-center justify-center shadow-[0_0_35px_rgba(249,176,60,0.7)] border-2 border-white/40">
-                                <i className="fa-solid fa-play text-xl sm:text-2xl ml-1 text-slate-950 group-hover/btn:scale-110 transition-transform"></i>
-                              </div>
-                              <div className="mt-3 px-3.5 py-1.5 rounded-full bg-black/80 backdrop-blur-md border border-white/20 text-[11px] font-bold text-white whitespace-nowrap shadow-lg flex items-center gap-1.5">
-                                <i className="fa-solid fa-play text-[9px] text-[#f9b03c]"></i>
-                                <span>ቪዲዮውን ተመልከት (Watch Trailer)</span>
-                              </div>
-                            </button>
-                          </div>
-                        </>
+                        <div className="absolute top-3.5 right-3.5 px-3 py-1 rounded-full bg-black/75 backdrop-blur-md border border-white/15 text-white text-[11px] font-bold z-10 flex items-center gap-1.5 shadow-md group-hover:border-[#f9b03c]/60 transition-colors">
+                          <i className="fa-solid fa-circle-play text-[11px] text-[#f9b03c]"></i>
+                          <span>ቪዲዮ አለው (Trailer)</span>
+                        </div>
+                      )}
+
+                      {/* Video Indicator / Play Trailer Button (Hidden by default; Smoothly appears on Hover / Tap / Interaction) */}
+                      {hasVideo && (
+                        <div className="absolute inset-0 flex items-center justify-center z-20 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 group-active:opacity-100 transition-all duration-300 pointer-events-none group-hover:pointer-events-auto">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setIsPlayingVideo(true);
+                            }}
+                            className="group/btn relative flex flex-col items-center justify-center cursor-pointer transition-all duration-300 hover:scale-110 active:scale-95 scale-90 group-hover:scale-100"
+                            aria-label="የክንውኑን ማስተዋወቂያ ቪዲዮ ተመልከት"
+                          >
+                            <div className="absolute -inset-4 rounded-full bg-amber-500/25 blur-xl group-hover/btn:bg-amber-500/50 transition duration-500 animate-pulse"></div>
+                            <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-tr from-amber-500 to-[#f9b03c] text-slate-950 flex items-center justify-center shadow-[0_0_35px_rgba(249,176,60,0.7)] border-2 border-white/40">
+                              <i className="fa-solid fa-play text-xl sm:text-2xl ml-1 text-slate-950 group-hover/btn:scale-110 transition-transform"></i>
+                            </div>
+                            <div className="mt-3 px-3.5 py-1.5 rounded-full bg-black/85 backdrop-blur-md border border-white/20 text-[11px] font-bold text-white whitespace-nowrap shadow-lg flex items-center gap-1.5">
+                              <i className="fa-solid fa-play text-[9px] text-[#f9b03c]"></i>
+                              <span>ቪዲዮውን ተመልከት (Watch Trailer)</span>
+                            </div>
+                          </button>
+                        </div>
                       )}
 
                       {/* Floating Price Tag */}

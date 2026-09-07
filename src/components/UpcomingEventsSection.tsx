@@ -574,8 +574,8 @@ export default function UpcomingEventsSection() {
                       src={posterUrl} 
                       alt={event.title} 
                       className="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-700"
-                      referrerPolicy="no-referrer"
-                      crossOrigin="anonymous"
+                      loading="eager"
+                      decoding="async"
                       onError={(e) => {
                         (e.target as HTMLImageElement).src = DEFAULT_EVENT_BANNER;
                       }}
