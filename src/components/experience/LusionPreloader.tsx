@@ -85,10 +85,10 @@ export default function LusionPreloader() {
     if (shouldRemove) return;
 
     const TYPING_PHRASES = [
-      'የወደፊት የቢዝነስ እና የክህሎት ጉዞዎን ዛሬ ይጀምሩ...',
-      'በኢትዮጵያ ቀዳሚው የተግባራዊ ክህሎት ማዕከል...',
-      'የሺን፣ ዲጂታል ማርኬቲንግ እና የቪዲዮ ኤዲቲንግ ስልጠናዎች...',
-      'እውቀትዎን ወደ ገቢ የሚቀይሩበት ትክክለኛ ካምፓስ...',
+      'የወደፊት የቢዝነስ እና የክህሎት ጉዞዎን ዛሬ ይጀምሩ',
+      'በኢትዮጵያ ቀዳሚው የተግባራዊ ክህሎት ማዕከል',
+      'የሺን፣ ዲጂታል ማርኬቲንግ እና የቪዲዮ ኤዲቲንግ ስልጠናዎች',
+      'እውቀትዎን ወደ ገቢ የሚቀይሩበት ትክክለኛ ካምፓስ',
     ];
 
     const currentPhrase = TYPING_PHRASES[phraseIdx % TYPING_PHRASES.length];
@@ -357,11 +357,10 @@ export default function LusionPreloader() {
 
         {/* Dynamic Subtitle Typing Animation Under Logo */}
         <div className="mt-8 sm:mt-10 flex flex-col items-center justify-center text-center px-4 max-w-xl">
-          <div className="min-h-[32px] sm:min-h-[38px] flex items-center justify-center gap-1.5">
+          <div className="min-h-[32px] sm:min-h-[38px] flex items-center justify-center">
             <p className="font-heading font-semibold text-sm sm:text-base md:text-lg text-slate-100 tracking-wide drop-shadow-md">
               {typedText}
             </p>
-            <span className="brand-typing-cursor" />
           </div>
         </div>
       </div>

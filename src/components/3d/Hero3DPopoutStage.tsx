@@ -28,7 +28,7 @@ export default function Hero3DPopoutStage({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeVideoUrl, setActiveVideoUrl] = useState<string>(videoSrc || DEFAULT_LANDING_VIDEO);
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
-  const [isMuted, setIsMuted] = useState<boolean>(false);
+  const [isMuted, setIsMuted] = useState<boolean>(true);
   const [isVideoReady, setIsVideoReady] = useState<boolean>(false);
   const [showInitialThumbnail, setShowInitialThumbnail] = useState<boolean>(true);
   const [customThumbnail, setCustomThumbnail] = useState<string>(initialThumbnail || '');
@@ -41,7 +41,7 @@ export default function Hero3DPopoutStage({
 
   // Synchronized refs for zero-latency instant video control and scroll auto-pause
   const isPlayingRef = useRef<boolean>(true);
-  const isMutedRef = useRef<boolean>(false);
+  const isMutedRef = useRef<boolean>(true);
   const wasAutoPausedByScrollRef = useRef<boolean>(false);
 
   useEffect(() => {
@@ -88,51 +88,44 @@ export default function Hero3DPopoutStage({
     }
   }, []);
 
-  const triggerFlashFeedback = (action: 'play' | 'pause') => {
+  const triggerFlashFeedback = useCallback((action: 'play' | 'pause') => {
     if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
     setFlashAction(action);
     flashTimerRef.current = setTimeout(() => {
       setFlashAction(null);
-    }, 950);
-  };
+    }, 600);
+  }, []);
 
-
-
-  // Sync prop changes from SSR into active state (Latest Video always takes priority)
-  useEffect(() => {
-    if (videoSrc && videoSrc.trim()) {
-      setActiveVideoUrl(videoSrc.trim());
-    }
-  }, [videoSrc]);
-
-  useEffect(() => {
-    if (initialThumbnail && initialThumbnail.trim()) {
-      setCustomThumbnail(initialThumbnail.trim());
-    }
-  }, [initialThumbnail]);
-
-  // 🌟 Dynamic Landing Video Fetch from Firestore / Site Settings (Always Latest Video)
+  // 1. Initial Load & Persistent Cache Recovery
   useEffect(() => {
     let isCancelled = false;
 
-    // Fetch from site-settings API with cache-busting
+    // A. Instant LocalStorage Cache Warm-up
+    try {
+      const cachedUrl = localStorage.getItem('tsehay_landing_video_cache');
+      const cachedThumb = localStorage.getItem('tsehay_landing_video_thumb');
+      if (cachedUrl && cachedUrl.trim() && !videoSrc) {
+        setActiveVideoUrl(cachedUrl.trim());
+      }
+      if (cachedThumb && cachedThumb.trim() && !initialThumbnail) {
+        setCustomThumbnail(cachedThumb.trim());
+      }
+    } catch (e) {}
+
+    // B. Live Fetch & Supabase Edge Sync
     const fetchLandingVideo = async () => {
       try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 4000);
-
         let fetchedUrl = '';
         let fetchedThumb = '';
 
         try {
-          const res = await fetch(`/api/site-settings?settingKey=landing_video&_t=${Date.now()}`, {
-            signal: controller.signal,
+          const res = await fetch(`/api/admin/site-settings?key=landing_video&_t=${Date.now()}`, {
             cache: 'no-store'
           });
           if (res.ok) {
             const json = await res.json();
             fetchedUrl = json?.data?.url || json?.data?.videoUrl || json?.data?.youtubeUrl || '';
-            fetchedThumb = json?.data?.landingVideoThumbnail || json?.thumbnail || json?.data?.thumbnail || json?.data?.thumbnailUrl || json?.data?.thumbUrl || json?.data?.poster || '';
+            fetchedThumb = json?.data?.landingVideoThumbnail || json?.data?.thumbnail || json?.data?.thumbnailUrl || json?.data?.poster || '';
           }
         } catch (e) {}
 
@@ -147,26 +140,33 @@ export default function Hero3DPopoutStage({
           } catch (e) {}
         }
 
-        clearTimeout(timeoutId);
+        if (isCancelled) return;
 
-        if (fetchedUrl && typeof fetchedUrl === 'string' && fetchedUrl.trim() && !isCancelled) {
+        if (fetchedUrl && typeof fetchedUrl === 'string' && fetchedUrl.trim()) {
           setActiveVideoUrl(fetchedUrl.trim());
+          try {
+            localStorage.setItem('tsehay_landing_video_cache', fetchedUrl.trim());
+          } catch (e) {}
         }
-        if (fetchedThumb && typeof fetchedThumb === 'string' && fetchedThumb.trim() && !isCancelled) {
+
+        if (fetchedThumb && typeof fetchedThumb === 'string' && fetchedThumb.trim()) {
           setCustomThumbnail(fetchedThumb.trim());
+          try {
+            localStorage.setItem('tsehay_landing_video_thumb', fetchedThumb.trim());
+          } catch (e) {}
         }
       } catch (err) {
-        // Keep activeVideoUrl as initialized from SSR
+        console.warn("Landing video live sync skipped:", err);
       }
     };
 
     fetchLandingVideo();
 
-    // 3. Supabase Realtime WebSocket subscription on site_settings (landing_video)
+    // 3. Supabase Realtime WebSocket Listener
     let sbChannel: any = null;
     try {
       sbChannel = supabase
-        .channel('realtime_landing_video_popout')
+        .channel('public:site_settings_landing_video')
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'site_settings' },
@@ -258,7 +258,7 @@ export default function Hero3DPopoutStage({
 
   // Generate YouTube Autoplay Embed URL with loop and mute enabled for browser compliance & 4K UHD preference
   const ytAutoplaySrc = parsedVideo.youtubeId
-    ? `https://www.youtube.com/embed/${parsedVideo.youtubeId}?autoplay=1&mute=0&loop=1&playlist=${parsedVideo.youtubeId}&controls=0&playsinline=1&enablejsapi=1&origin=${encodeURIComponent(siteOrigin || 'http://localhost:3000')}&rel=0&modestbranding=1&iv_load_policy=3&vq=hd2160&quality=hd2160&hd=1`
+    ? `https://www.youtube.com/embed/${parsedVideo.youtubeId}?autoplay=1&mute=1&loop=1&playlist=${parsedVideo.youtubeId}&controls=0&playsinline=1&enablejsapi=1&origin=${encodeURIComponent(siteOrigin || 'http://localhost:3000')}&rel=0&modestbranding=1&iv_load_policy=3&vq=hd2160&quality=hd2160&hd=1`
     : '';
 
   // Execute instant pause with zero delay
@@ -276,6 +276,11 @@ export default function Hero3DPopoutStage({
       iframeRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'pauseVideo', args: '' }), '*');
     } else if (videoRef.current) {
       videoRef.current.pause();
+    }
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('restore-ambient-audio'));
+      window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: false } }));
     }
   }, [parsedVideo.isYouTube]);
 
@@ -301,8 +306,13 @@ export default function Hero3DPopoutStage({
         }
       });
     }
+
     if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('duck-ambient-audio'));
+      const hasSound = !isMutedRef.current;
+      if (hasSound) {
+        window.dispatchEvent(new CustomEvent('duck-ambient-audio'));
+        window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: true } }));
+      }
     }
   }, [parsedVideo.isYouTube]);
 
@@ -318,7 +328,7 @@ export default function Hero3DPopoutStage({
       executePlay(false);
       triggerFlashFeedback('play');
     }
-  }, [executePause, executePlay]);
+  }, [executePause, executePlay, triggerFlashFeedback]);
 
   // 🚀 Guaranteed Immediate Video Auto-play & Viewport Sync for Audio Ducking + Scroll Auto-Pause
   useEffect(() => {
@@ -337,10 +347,10 @@ export default function Hero3DPopoutStage({
       executePlay(false);
       setTimeout(() => executePlay(false), 150);
       setTimeout(() => executePlay(false), 500);
-      // Immediately notify ambient audio to remain silent while hero video is on screen
+      const hasSound = isPlayingRef.current && !isMutedRef.current;
       window.dispatchEvent(
         new CustomEvent('tsehay-hero-video-inview', {
-          detail: { inView: true, hasSound: true }
+          detail: { inView: true, hasSound }
         })
       );
     };
@@ -350,9 +360,10 @@ export default function Hero3DPopoutStage({
     const onUserGesture = () => {
       setShowInitialThumbnail(false);
       executePlay(false);
+      const hasSound = isPlayingRef.current && !isMutedRef.current;
       window.dispatchEvent(
         new CustomEvent('tsehay-hero-video-inview', {
-          detail: { inView: true, hasSound: true }
+          detail: { inView: true, hasSound }
         })
       );
       window.removeEventListener('pointerdown', onUserGesture);
@@ -382,16 +393,23 @@ export default function Hero3DPopoutStage({
                 detail: { inView: false, hasSound: false }
               })
             );
+            window.dispatchEvent(new CustomEvent('restore-ambient-audio'));
+            window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: false } }));
           } else {
             // Viewport Scroll Auto-Resume: resume when scrolled back into view if paused by scroll
             if (wasAutoPausedByScrollRef.current && !isPlayingRef.current) {
               executePlay(true);
             }
+            const hasSound = isPlayingRef.current && !isMutedRef.current;
             window.dispatchEvent(
               new CustomEvent('tsehay-hero-video-inview', {
-                detail: { inView: true, hasSound: isPlayingRef.current && !isMutedRef.current }
+                detail: { inView: true, hasSound }
               })
             );
+            if (hasSound) {
+              window.dispatchEvent(new CustomEvent('duck-ambient-audio'));
+              window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: true } }));
+            }
           }
         },
         { threshold: [0, 0.2, 0.5, 0.8] }

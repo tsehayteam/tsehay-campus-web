@@ -314,102 +314,169 @@ export default function TsehayAudio() {
     }
   }, [scrollMode]);
 
-  // Autoplay Unlock on First User Action (Mobile touch/click) or Preloader Completion
+  // Autoplay Unlock on First User Action (Mobile touch/click/scroll) & Persistent Reload State
   useEffect(() => {
-    const ensureAudioActive = () => {
-      const ctx = initAudioEngine();
+    const resumeAudioContext = () => {
+      const ctx = audioCtxRef.current || initAudioEngine();
       if (ctx) {
-        if (ctx.state === 'suspended') {
+        if (ctx.state === 'suspended' || (ctx as any).state === 'interrupted') {
           ctx.resume().then(() => {
             setIsUnlocked(true);
+            try {
+              localStorage.setItem('tsehay_audio_persisted', 'true');
+            } catch (e) {}
           }).catch(() => {});
         } else if (ctx.state === 'running') {
           setIsUnlocked(true);
+          try {
+            localStorage.setItem('tsehay_audio_persisted', 'true');
+          } catch (e) {}
         }
       }
     };
 
+    // Mobile gesture handler - ensures audio awakens and remains lifetime active on mobile
     const handleUserGesture = () => {
-      ensureAudioActive();
-      if (audioCtxRef.current && audioCtxRef.current.state === 'running') {
-        window.removeEventListener('touchstart', handleUserGesture);
-        window.removeEventListener('touchend', handleUserGesture);
-        window.removeEventListener('pointerdown', handleUserGesture);
-        window.removeEventListener('click', handleUserGesture);
-      }
+      resumeAudioContext();
     };
 
-    // Mobile strict autoplay requires direct user touch (touchstart, touchend, pointerdown, click)
     window.addEventListener('touchstart', handleUserGesture, { passive: true });
     window.addEventListener('touchend', handleUserGesture, { passive: true });
     window.addEventListener('pointerdown', handleUserGesture, { passive: true });
     window.addEventListener('click', handleUserGesture, { passive: true });
+    window.addEventListener('scroll', handleUserGesture, { passive: true });
     window.addEventListener('keydown', handleUserGesture, { passive: true });
-    window.addEventListener('tsehay-preloader-complete', ensureAudioActive);
+    window.addEventListener('tsehay-preloader-complete', resumeAudioContext);
 
-    // Resume when returning from mobile background/lockscreen
+    // Visibility observer (mobile app switch / screen lock/unlock)
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') {
-        const ctx = audioCtxRef.current;
-        if (ctx && ctx.state === 'suspended' && isUnlocked) {
+        const ctx = audioCtxRef.current || initAudioEngine();
+        if (ctx && (ctx.state === 'suspended' || (ctx as any).state === 'interrupted')) {
           ctx.resume().catch(() => {});
         }
       }
     };
     document.addEventListener('visibilitychange', handleVisibility);
 
+    // Initial check: if audio was previously unlocked, attempt instant initialization
+    try {
+      if (localStorage.getItem('tsehay_audio_persisted') === 'true') {
+        resumeAudioContext();
+      }
+    } catch (e) {}
+
     return () => {
       window.removeEventListener('touchstart', handleUserGesture);
       window.removeEventListener('touchend', handleUserGesture);
       window.removeEventListener('pointerdown', handleUserGesture);
       window.removeEventListener('click', handleUserGesture);
+      window.removeEventListener('scroll', handleUserGesture);
       window.removeEventListener('keydown', handleUserGesture);
-      window.removeEventListener('tsehay-preloader-complete', ensureAudioActive);
+      window.removeEventListener('tsehay-preloader-complete', resumeAudioContext);
       document.removeEventListener('visibilitychange', handleVisibility);
     };
-  }, [initAudioEngine, isUnlocked]);
+  }, [initAudioEngine]);
 
-  // Universal Audio Ducking Listener (Hero Video, Course Player, Modal Video, Native HTML Media)
+  // Universal Audio Ducking Listener (Hero Video, YouTube Embeds, Modals, HTMLMediaElements)
   useEffect(() => {
+    // 1. Hero video in-view & sound sync
     const handleVideoInView = (e: Event) => {
-      const inView = (e as CustomEvent)?.detail?.inView ?? false;
-      setIsDucked(inView);
+      const detail = (e as CustomEvent)?.detail;
+      const inView = detail?.inView ?? false;
+      const hasSound = detail?.hasSound ?? false;
+
+      // Auto-duck ONLY when the hero video is in viewport AND actively playing sound!
+      if (inView && hasSound) {
+        setIsDucked(true);
+      } else {
+        // If hero video is out of view, paused, or muted, verify if any other media is playing sound
+        const allMedia = Array.from(document.querySelectorAll('video, audio')) as HTMLMediaElement[];
+        const anyAudible = allMedia.some(m => !m.paused && !m.ended && !m.muted && m.volume > 0);
+        if (!anyAudible) {
+          setIsDucked(false);
+        }
+      }
     };
 
+    // 2. Explicit custom duck/restore events
     const handleUniversalDuck = (e: Event) => {
       const duck = (e as CustomEvent)?.detail?.duck ?? true;
       setIsDucked(duck);
     };
 
-    // Auto-duck whenever any HTML video or audio element starts playing anywhere in the DOM
+    // 3. HTMLMediaElement (<video>, <audio>) detection across the entire DOM
     const handleMediaPlay = (e: Event) => {
       if (e.target instanceof HTMLMediaElement) {
-        setIsDucked(true);
+        // Only duck if media is not muted and has audible volume
+        if (!e.target.muted && e.target.volume > 0) {
+          setIsDucked(true);
+        }
       }
     };
 
     const handleMediaPauseOrEnd = (e: Event) => {
       if (e.target instanceof HTMLMediaElement) {
         const allMedia = Array.from(document.querySelectorAll('video, audio')) as HTMLMediaElement[];
-        const anyPlaying = allMedia.some(m => !m.paused && !m.ended && m.readyState > 2);
-        if (!anyPlaying) {
+        const anyAudible = allMedia.some(m => !m.paused && !m.ended && !m.muted && m.volume > 0);
+        if (!anyAudible) {
           setIsDucked(false);
         }
       }
     };
 
+    const handleMediaVolume = (e: Event) => {
+      if (e.target instanceof HTMLMediaElement) {
+        if (e.target.muted || e.target.volume === 0) {
+          const allMedia = Array.from(document.querySelectorAll('video, audio')) as HTMLMediaElement[];
+          const anyAudible = allMedia.some(m => !m.paused && !m.ended && !m.muted && m.volume > 0);
+          if (!anyAudible) {
+            setIsDucked(false);
+          }
+        } else if (!e.target.paused && !e.target.ended) {
+          setIsDucked(true);
+        }
+      }
+    };
+
+    // 4. YouTube Iframe postMessage state sync (captures embedded YouTube play/pause events)
+    const handleWindowMessage = (event: MessageEvent) => {
+      try {
+        let data = event.data;
+        if (typeof data === 'string') {
+          data = JSON.parse(data);
+        }
+        if (data?.event === 'onStateChange') {
+          // 1 = PLAYING
+          if (data.info === 1) {
+            setIsDucked(true);
+          } else if (data.info === 2 || data.info === 0) {
+            // 2 = PAUSED, 0 = ENDED
+            setIsDucked(false);
+          }
+        }
+      } catch (err) {}
+    };
+
     window.addEventListener('tsehay-hero-video-inview', handleVideoInView);
     window.addEventListener('tsehay-audio-duck', handleUniversalDuck);
+    window.addEventListener('duck-ambient-audio', () => setIsDucked(true));
+    window.addEventListener('restore-ambient-audio', () => setIsDucked(false));
+    window.addEventListener('message', handleWindowMessage);
+
     document.addEventListener('play', handleMediaPlay, true);
     document.addEventListener('pause', handleMediaPauseOrEnd, true);
     document.addEventListener('ended', handleMediaPauseOrEnd, true);
+    document.addEventListener('volumechange', handleMediaVolume, true);
 
     return () => {
       window.removeEventListener('tsehay-hero-video-inview', handleVideoInView);
       window.removeEventListener('tsehay-audio-duck', handleUniversalDuck);
+      window.removeEventListener('message', handleWindowMessage);
       document.removeEventListener('play', handleMediaPlay, true);
       document.removeEventListener('pause', handleMediaPauseOrEnd, true);
       document.removeEventListener('ended', handleMediaPauseOrEnd, true);
+      document.removeEventListener('volumechange', handleMediaVolume, true);
     };
   }, []);
 
@@ -424,11 +491,11 @@ export default function TsehayAudio() {
 
     master.gain.cancelScheduledValues(now);
     if (shouldMute) {
-      // Immediate silence when hero video is active or in classroom
-      master.gain.linearRampToValueAtTime(0.0001, now + 0.4);
+      // Fast, clean fade to silence (0.25s) when any media has sound
+      master.gain.linearRampToValueAtTime(0.0001, now + 0.25);
     } else if (isUnlocked) {
-      // Smooth fade-in to pleasant listening volume
-      master.gain.linearRampToValueAtTime(0.30, now + 1.2);
+      // Smooth restoration to pleasant ambient volume (0.8s) when media pauses or leaves view
+      master.gain.linearRampToValueAtTime(0.28, now + 0.8);
     }
   }, [isQuietRoute, isDucked, isUnlocked]);
 
