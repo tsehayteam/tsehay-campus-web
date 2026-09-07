@@ -85,14 +85,6 @@ export default function LusionPreloader() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    // Fast skip if already seen in current session
-    const hasSeen = sessionStorage.getItem('tsehay_preloader_seen');
-    if (hasSeen === 'true') {
-      setShouldRemove(true);
-      window.dispatchEvent(new CustomEvent('tsehay-preloader-complete'));
-      return;
-    }
-
     let fontsReady = false;
     let imagesReady = false;
     let windowReady = false;
@@ -231,6 +223,11 @@ export default function LusionPreloader() {
           sessionStorage.setItem('tsehay_preloader_seen', 'true');
         } catch (e) {}
 
+        // Smoothly reveal main page content by removing tsehay-loading gatekeeper
+        if (typeof document !== 'undefined') {
+          document.documentElement.classList.remove('tsehay-loading');
+        }
+
         // Strictly notify hero video to begin playback ONLY when preloader is 100% ready
         window.dispatchEvent(new CustomEvent('tsehay-preloader-complete'));
 
@@ -243,10 +240,18 @@ export default function LusionPreloader() {
       }
     };
 
+    // Safety fallback: guaranteed unblock after 3.2s in case of slow network
+    const safetyUnblockTimer = setTimeout(() => {
+      if (typeof document !== 'undefined') {
+        document.documentElement.classList.remove('tsehay-loading');
+      }
+    }, 3200);
+
     animationFrameRef.current = requestAnimationFrame(updateProgress);
 
     return () => {
       clearTimeout(videoSafetyTimer);
+      clearTimeout(safetyUnblockTimer);
       window.removeEventListener('tsehay-4k-video-buffered', handle4KBuffered);
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);

@@ -105,7 +105,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="am" className="dark notranslate" translate="no" suppressHydrationWarning>
+    <html lang="am" className="dark notranslate tsehay-loading" translate="no" suppressHydrationWarning>
       <head>
         <meta name="google" content="notranslate" />
         <meta name="googlebot" content="notranslate" />
@@ -132,6 +132,21 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://images.unsplash.com" />
         <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossOrigin="anonymous" />
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+        <style
+          id="tsehay-preloader-shield"
+          dangerouslySetInnerHTML={{
+            __html: `
+              html.tsehay-loading #tsehay-page-wrapper {
+                opacity: 0 !important;
+                visibility: hidden !important;
+                pointer-events: none !important;
+              }
+              #tsehay-page-wrapper {
+                transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.5s;
+              }
+            `,
+          }}
+        />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased pt-0 notranslate`}
@@ -195,22 +210,24 @@ export default function RootLayout({
               {/* 🌟 Lusion.co-Level Solar Gravity Atmosphere & Synesthetic Audio Engine */}
               <TsehayExperienceProvider />
               
-              <ContentProtection />
-              <Navbar />
-              
-              <PageTransitionWrapper>
-                {children}
-              </PageTransitionWrapper>
-              
-              <Suspense fallback={null}>
-                <ReferralTracker />
-              </Suspense>
-              
-              <TermsModal />
-              <PaymentModal />
-              <PWAInstallBanner />
-              <FloatingAIButton />
-              <StudentFeedbackModal />
+              <div id="tsehay-page-wrapper" className="w-full min-h-screen">
+                <ContentProtection />
+                <Navbar />
+                
+                <PageTransitionWrapper>
+                  {children}
+                </PageTransitionWrapper>
+                
+                <Suspense fallback={null}>
+                  <ReferralTracker />
+                </Suspense>
+                
+                <TermsModal />
+                <PaymentModal />
+                <PWAInstallBanner />
+                <FloatingAIButton />
+                <StudentFeedbackModal />
+              </div>
             </SmoothScrollAndScrollyProvider>
           </AuthProvider>
         </LanguageProvider>

@@ -30,14 +30,18 @@ export default function Hero3DPopoutStage({
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const [isVideoReady, setIsVideoReady] = useState<boolean>(false);
-  const [showInitialThumbnail, setShowInitialThumbnail] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      return sessionStorage.getItem('tsehay_preloader_seen') !== 'true';
-    }
-    return false;
-  });
+  const [showInitialThumbnail, setShowInitialThumbnail] = useState<boolean>(true);
   const [customThumbnail, setCustomThumbnail] = useState<string>(initialThumbnail || '');
   const [siteOrigin, setSiteOrigin] = useState<string>('');
+
+  // Synchronized refs for zero-latency instant video control and scroll auto-pause
+  const isPlayingRef = useRef<boolean>(true);
+  const isMutedRef = useRef<boolean>(false);
+  const wasAutoPausedByScrollRef = useRef<boolean>(false);
+
+  useEffect(() => {
+    isMutedRef.current = isMuted;
+  }, [isMuted]);
 
   // 3D Glassmorphic Flash Pop Feedback State
   const [flashAction, setFlashAction] = useState<'play' | 'pause' | null>(null);
@@ -225,54 +229,80 @@ export default function Hero3DPopoutStage({
     ? `https://www.youtube.com/embed/${parsedVideo.youtubeId}?autoplay=1&mute=0&loop=1&playlist=${parsedVideo.youtubeId}&controls=0&playsinline=1&enablejsapi=1&origin=${encodeURIComponent(siteOrigin || 'http://localhost:3000')}&rel=0&modestbranding=1&iv_load_policy=3&vq=hd2160&quality=hd2160&hd=1`
     : '';
 
-  // 🚀 Guaranteed Immediate Video Auto-play & Viewport Sync for Audio Ducking
-  useEffect(() => {
+  // Execute instant pause with zero delay
+  const executePause = useCallback((byScroll = false) => {
+    isPlayingRef.current = false;
+    setIsPlaying(false);
+    if (byScroll) {
+      wasAutoPausedByScrollRef.current = true;
+    } else {
+      wasAutoPausedByScrollRef.current = false;
+    }
+
+    if (parsedVideo.isYouTube && iframeRef.current?.contentWindow) {
+      iframeRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'pauseVideo', args: [] }), '*');
+    } else if (videoRef.current) {
+      videoRef.current.pause();
+    }
+  }, [parsedVideo.isYouTube]);
+
+  // Execute instant play with zero delay
+  const executePlay = useCallback((isScrollResume = false) => {
+    isPlayingRef.current = true;
     setIsPlaying(true);
+    wasAutoPausedByScrollRef.current = false;
 
-    const triggerPlay = () => {
-      if (parsedVideo.isYouTube && iframeRef.current?.contentWindow) {
-        iframeRef.current.contentWindow.postMessage(
-          JSON.stringify({ event: 'command', func: 'setPlaybackQuality', args: ['hd2160'] }),
-          '*'
-        );
-        iframeRef.current.contentWindow.postMessage(
-          JSON.stringify({ event: 'command', func: 'unMute', args: [] }),
-          '*'
-        );
-        iframeRef.current.contentWindow.postMessage(
-          JSON.stringify({ event: 'command', func: 'setVolume', args: [100] }),
-          '*'
-        );
-        iframeRef.current.contentWindow.postMessage(
-          JSON.stringify({ event: 'command', func: 'playVideo', args: [] }),
-          '*'
-        );
-      } else if (videoRef.current) {
-        videoRef.current.muted = isMuted;
-        videoRef.current.play().catch(() => {
-          if (videoRef.current) {
-            videoRef.current.muted = true;
-            videoRef.current.play().catch(() => {});
-          }
-        });
+    if (parsedVideo.isYouTube && iframeRef.current?.contentWindow) {
+      if (!isMutedRef.current) {
+        iframeRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'unMute', args: [] }), '*');
+        iframeRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'setVolume', args: [100] }), '*');
       }
-    };
+      iframeRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'playVideo', args: [] }), '*');
+    } else if (videoRef.current) {
+      videoRef.current.muted = isMutedRef.current;
+      videoRef.current.play().catch(() => {
+        if (videoRef.current) {
+          videoRef.current.muted = true;
+          videoRef.current.play().catch(() => {});
+        }
+      });
+    }
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('duck-ambient-audio'));
+    }
+  }, [parsedVideo.isYouTube]);
 
+  // 100% Functional Zero-Latency Interactive Play/Pause Toggle Handler
+  const togglePlayPause = useCallback((e?: React.MouseEvent | React.TouchEvent) => {
+    if (e) {
+      e.stopPropagation();
+    }
+    if (isPlayingRef.current) {
+      executePause(false);
+      triggerFlashFeedback('pause');
+    } else {
+      executePlay(false);
+      triggerFlashFeedback('play');
+    }
+  }, [executePause, executePlay]);
+
+  // 🚀 Guaranteed Immediate Video Auto-play & Viewport Sync for Audio Ducking + Scroll Auto-Pause
+  useEffect(() => {
     // Strictly Gatekeep Playback: Only trigger immediate play if preloader is already finished
-    const hasPreloaderFinished = typeof window !== 'undefined' && sessionStorage.getItem('tsehay_preloader_seen') === 'true';
+    const hasPreloaderFinished = typeof window !== 'undefined' && !document.documentElement.classList.contains('tsehay-loading') && sessionStorage.getItem('tsehay_preloader_seen') === 'true';
     let playTimer: NodeJS.Timeout | null = null;
     if (hasPreloaderFinished) {
-      triggerPlay();
-      playTimer = setTimeout(triggerPlay, 300);
+      executePlay(false);
+      playTimer = setTimeout(() => executePlay(false), 300);
       setShowInitialThumbnail(false);
     }
 
     // Preloader reveal event: kick off video immediately and only when preloader reaches 100%
     const onPreloaderComplete = () => {
       setShowInitialThumbnail(false);
-      triggerPlay();
-      setTimeout(triggerPlay, 150);
-      setTimeout(triggerPlay, 500);
+      executePlay(false);
+      setTimeout(() => executePlay(false), 150);
+      setTimeout(() => executePlay(false), 500);
       // Immediately notify ambient audio to remain silent while hero video is on screen
       window.dispatchEvent(
         new CustomEvent('tsehay-hero-video-inview', {
@@ -285,7 +315,7 @@ export default function Hero3DPopoutStage({
     // Browser policy gesture fallback: kick off autoplay on first interaction
     const onUserGesture = () => {
       setShowInitialThumbnail(false);
-      triggerPlay();
+      executePlay(false);
       window.dispatchEvent(
         new CustomEvent('tsehay-hero-video-inview', {
           detail: { inView: true, hasSound: true }
@@ -300,40 +330,37 @@ export default function Hero3DPopoutStage({
     window.addEventListener('scroll', onUserGesture, { once: true, passive: true });
     window.addEventListener('keydown', onUserGesture, { once: true, passive: true });
 
-    // 🎧 Viewport IntersectionObserver to trigger Audio Ducking & Scroll-based Video Control
+    // 🎧 Viewport IntersectionObserver to trigger Audio Ducking & Scroll-based Auto Pause/Resume
     let observer: IntersectionObserver | null = null;
     if (stageRef.current && typeof window !== 'undefined' && 'IntersectionObserver' in window) {
       observer = new IntersectionObserver(
         (entries) => {
           const entry = entries[0];
-          const inView = entry.isIntersecting && entry.intersectionRatio > 0.25;
-          window.dispatchEvent(
-            new CustomEvent('tsehay-hero-video-inview', {
-              detail: { inView, hasSound: inView && isPlaying && !isMuted }
-            })
-          );
+          const inView = entry.isIntersecting && entry.intersectionRatio >= 0.2;
 
-          // Scroll-based auto control: mute and pause when scrolled out, resume when scrolled in
           if (!inView) {
-            if (videoRef.current && !videoRef.current.paused) {
-              videoRef.current.muted = true;
-              videoRef.current.pause();
-            } else if (iframeRef.current?.contentWindow) {
-              iframeRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'mute', args: [] }), '*');
-              iframeRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'pauseVideo', args: [] }), '*');
+            // Viewport Scroll Auto-Pause: pause when scrolled out of view
+            if (isPlayingRef.current) {
+              executePause(true); // true = paused by scroll
             }
+            window.dispatchEvent(
+              new CustomEvent('tsehay-hero-video-inview', {
+                detail: { inView: false, hasSound: false }
+              })
+            );
           } else {
-            if (videoRef.current && videoRef.current.paused) {
-              videoRef.current.muted = false;
-              videoRef.current.play().catch(() => {});
-            } else if (iframeRef.current?.contentWindow) {
-              iframeRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'unMute', args: [] }), '*');
-              iframeRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'setVolume', args: [100] }), '*');
-              iframeRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'playVideo', args: [] }), '*');
+            // Viewport Scroll Auto-Resume: resume when scrolled back into view if paused by scroll
+            if (wasAutoPausedByScrollRef.current && !isPlayingRef.current) {
+              executePlay(true);
             }
+            window.dispatchEvent(
+              new CustomEvent('tsehay-hero-video-inview', {
+                detail: { inView: true, hasSound: isPlayingRef.current && !isMutedRef.current }
+              })
+            );
           }
         },
-        { threshold: [0, 0.25, 0.5, 0.8] }
+        { threshold: [0, 0.2, 0.5, 0.8] }
       );
       observer.observe(stageRef.current);
     }
@@ -351,36 +378,7 @@ export default function Hero3DPopoutStage({
         })
       );
     };
-  }, [activeVideoUrl, parsedVideo.isYouTube, parsedVideo.youtubeId, isMuted, siteOrigin]);
-
-  // 100% Functional Interactive 3D Glassmorphic Play/Pause Toggle Handler
-  const togglePlayPause = (e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
-    if (isPlaying) {
-      if (parsedVideo.isYouTube && iframeRef.current?.contentWindow) {
-        iframeRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'pauseVideo', args: [] }), '*');
-      } else if (videoRef.current) {
-        videoRef.current.pause();
-      }
-      setIsPlaying(false);
-      triggerFlashFeedback('pause');
-    } else {
-      if (parsedVideo.isYouTube && iframeRef.current?.contentWindow) {
-        iframeRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'unMute', args: [] }), '*');
-        iframeRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'setVolume', args: [100] }), '*');
-        iframeRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'playVideo', args: [] }), '*');
-      } else if (videoRef.current) {
-        videoRef.current.muted = false;
-        videoRef.current.play().catch(() => {});
-      }
-      setIsPlaying(true);
-      setIsMuted(false);
-      triggerFlashFeedback('play');
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('duck-ambient-audio'));
-      }
-    }
-  };
+  }, [activeVideoUrl, parsedVideo.isYouTube, parsedVideo.youtubeId, siteOrigin, executePlay, executePause]);
 
   // Subtle Audio (Mute / Unmute) Toggle Handler with Universal Ducking
   const toggleMute = (e?: React.MouseEvent) => {
@@ -499,7 +497,7 @@ export default function Hero3DPopoutStage({
       >
         {/* Layer 1: Frame Glass Housing with Cyber Neon Bezel & Auto-playing Video */}
         <div 
-          className="relative w-full aspect-video rounded-[1.8rem] sm:rounded-[2.4rem] shadow-[0_30px_90px_rgba(0,0,0,0.85)] border-2 border-white/20 dark:border-[#f9b03c]/45 overflow-hidden bg-black group select-none cursor-pointer"
+          className="relative w-full aspect-video rounded-[1.8rem] sm:rounded-[2.4rem] shadow-[0_30px_90px_rgba(0,0,0,0.85)] border-2 border-white/20 dark:border-[#f9b03c]/45 overflow-hidden bg-black group select-none cursor-pointer touch-manipulation"
           style={{ transform: 'translateZ(0px)' }}
           onClick={togglePlayPause}
         >
@@ -578,6 +576,7 @@ export default function Hero3DPopoutStage({
             className={`absolute inset-0 w-full h-full overflow-hidden bg-black flex items-center justify-center transition-opacity duration-700 ease-out z-15 ${
               showInitialThumbnail ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
             }`}
+            onClick={togglePlayPause}
           >
             <img 
               src={displayThumbnail} 

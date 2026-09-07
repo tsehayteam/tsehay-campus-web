@@ -3,7 +3,9 @@
 import React from 'react';
 import dynamic from 'next/dynamic';
 
-// 🌟 Lusion.co-Level Solar Gravity Particle Engine, Preloader & Synesthetic Audio (SSR Disabled)
+import LusionPreloader from '@/components/experience/LusionPreloader';
+
+// 🌟 Lusion.co-Level Solar Gravity Particle Engine & Synesthetic Audio (SSR Disabled for Three.js & Web Audio)
 const TsehayAtmosphere = dynamic(
   () => import('@/components/experience/TsehayAtmosphere'),
   { ssr: false }
@@ -11,11 +13,6 @@ const TsehayAtmosphere = dynamic(
 
 const TsehayAudio = dynamic(
   () => import('@/components/experience/TsehayAudio'),
-  { ssr: false }
-);
-
-const LusionPreloader = dynamic(
-  () => import('@/components/experience/LusionPreloader'),
   { ssr: false }
 );
 

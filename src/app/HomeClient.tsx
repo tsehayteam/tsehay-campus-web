@@ -300,9 +300,9 @@ export default function HomeClient({
 
   // Seamless Slow Headline Typewriter Effect
   const headlinePhrases = [
-    { white: 'ከሺን በላይ ተማሪዎች፤', gold: 'ክህሎትዎን ዛሬውኑ ያሳድጉ።' },
-    { white: 'የዩቲዩብ ቻናልዎን', gold: 'ወደ ከፍተኛ ገቢ ይቀይሩ።' },
-    { white: 'የሺን እና ኢ-ኮሜርስ', gold: 'ንግድዎን በተግባር ይገንቡ።' },
+    { white: 'የወደፊት ክህሎትዎን', gold: 'በ AI በተደገፈ የትምህርት መድረክ ይገንቡ!' },
+    { white: 'ከንድፈ-ሐሳብ ባለፈ፤', gold: 'በተግባር የተፈተኑ የገበያ ክህሎቶችን ዛሬውኑ ይማሩ!' },
+    { white: 'ከ 500+ በላይ ሰልጣኞች ጋር ይቀላቀሉ፤', gold: 'የወደፊት የስራ ዕድልዎን አሁን ይጀምሩ!' },
     { white: 'በ AI የታገዘ ዘመናዊ', gold: 'ዲጂታል ገቢን ይፍጠሩ።' }
   ];
   const [currentPhraseIdx, setCurrentPhraseIdx] = useState(0);
@@ -546,7 +546,7 @@ export default function HomeClient({
           {/* Well-organized, high-impact Subheadline & Value Pillars */}
           <div className="max-w-3xl mx-auto mb-6 sm:mb-8 space-y-4">
             <p className="text-gray-200 dark:text-slate-200 font-body text-base sm:text-lg md:text-xl font-medium leading-relaxed drop-shadow-xs">
-              በኢትዮጵያ የኦንላይን ክህሎት ስልጠና ቀዳሚ ፕላትፎርም — በገበያ ላይ የተፈተኑ፣ በ AI የታገዙ የቢዝነስ እና የዲጂታል ክህሎቶችን በተግባር ይማሩ።
+              ተግባር ተኮር ስልጠና ከ 24/7 የፀሐይ AI የግል ረዳት ድጋፍ ጋር — ገበያ ላይ ወዲያውኑ ገቢ የሚያስገኙ ዲጂታል እና የቢዝነስ ክህሎቶችን በተግባር ይማሩ።
             </p>
 
             {/* Core Value Pillars (Glass Badges) */}
