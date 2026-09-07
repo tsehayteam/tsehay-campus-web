@@ -16,8 +16,8 @@ const NO_CACHE_HEADERS = {
 
 const DEFAULT_SETTINGS: Record<string, any> = {
   landing_video: {
-    url: 'https://player.mediadelivery.net/play/738515/e5140f50-c80d-424d-9830-6f1e2c5a0139',
-    videoUrl: 'https://player.mediadelivery.net/play/738515/e5140f50-c80d-424d-9830-6f1e2c5a0139',
+    url: 'https://iframe.mediadelivery.net/embed/738515/e5140f50-c80d-424d-9830-6f1e2c5a0139',
+    videoUrl: 'https://iframe.mediadelivery.net/embed/738515/e5140f50-c80d-424d-9830-6f1e2c5a0139',
     thumbnail: '/assets/hero-bg-new.jpg',
   },
   youtube_portfolio: {
@@ -25,7 +25,7 @@ const DEFAULT_SETTINGS: Record<string, any> = {
     internationalVideoUrl: 'https://youtu.be/6Ssyn7H3nWk?si=CGFugLZIcMiAW4oe',
   },
   about_video: {
-    videoUrl: 'https://player.mediadelivery.net/play/738515/250574a7-8f25-4496-b31f-2fed1cd9d83a',
+    videoUrl: 'https://iframe.mediadelivery.net/embed/738515/250574a7-8f25-4496-b31f-2fed1cd9d83a',
     thumbnail: '/assets/about_video_cover.jpg',
   }
 };

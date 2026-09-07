@@ -333,21 +333,28 @@ export function parseVideoUrl(rawUrl: string, autoplay: boolean = false): Parsed
   }
 
   // 7. Bunny Stream / mediadelivery.net URL
-  if (trimmed.includes('mediadelivery.net') || trimmed.includes('bunnycdn.com')) {
-    let bunnySrc = trimmed.replace('/play/', '/embed/').replace('video.mediadelivery.net', 'iframe.mediadelivery.net');
-    
+  if (trimmed.includes('mediadelivery.net') || trimmed.includes('bunnycdn.com') || trimmed.includes('b-cdn.net')) {
     // Check if it's direct mp4 or m3u8 playlist on Bunny
-    if (bunnySrc.endsWith('.mp4') || bunnySrc.endsWith('.m3u8') || bunnySrc.includes('.mp4?') || bunnySrc.includes('.m3u8?')) {
+    if (trimmed.endsWith('.mp4') || trimmed.endsWith('.m3u8') || trimmed.includes('.mp4?') || trimmed.includes('.m3u8?')) {
       return {
         type: 'video',
-        src: bunnySrc,
+        src: trimmed,
         isDirectVideo: true,
         isYouTube: false,
         isGoogleDrive: false,
         isDropbox: false,
         isVimeo: false,
-        thumbnailUrl: parseImageUrl(bunnySrc)
+        thumbnailUrl: parseImageUrl(trimmed)
       };
+    }
+
+    let bunnySrc = trimmed
+      .replace('/play/', '/embed/')
+      .replace('player.mediadelivery.net', 'iframe.mediadelivery.net')
+      .replace('video.mediadelivery.net', 'iframe.mediadelivery.net');
+    
+    if (!bunnySrc.startsWith('https://') && !bunnySrc.startsWith('http://')) {
+      bunnySrc = `https://${bunnySrc.replace(/^\/+/, '')}`;
     }
 
     // Embed player URL

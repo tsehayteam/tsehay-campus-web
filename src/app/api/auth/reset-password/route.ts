@@ -24,10 +24,10 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
-    // 2. Strict Gmail validation
-    if (!cleanEmail.endsWith('@gmail.com')) {
+    // 2. Email format validation
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
       return NextResponse.json({ 
-        error: 'ይቅርታ! የፀሐይ ካምፓስ የሚቀበለው ትክክለኛ የ Gmail (@gmail.com) አድራሻዎችን ብቻ ነው።' 
+        error: 'እባክዎ ትክክለኛ የኢሜይል አድራሻ ያስገቡ።' 
       }, { status: 400 });
     }
 

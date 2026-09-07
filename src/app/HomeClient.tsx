@@ -302,7 +302,7 @@ export default function HomeClient({
 
   // Seamless Slow Headline Typewriter Effect
   const headlinePhrases = [
-    { white: 'ክህሎትዎን ያሳድጉ፤', gold: 'ቢዝነስዎን ዛሬውኑ ይጀምሩ።' },
+    { white: 'ከሺህ በላይ ተማሪዎች፤', gold: 'ክህሎትዎን ዛሬውኑ ያሳድጉ።' },
     { white: 'የዩቲዩብ ቻናልዎን', gold: 'ወደ ከፍተኛ ገቢ ይቀይሩ።' },
     { white: 'የሼን እና ኢ-ኮሜርስ', gold: 'ንግድዎን በተግባር ይገንቡ።' },
     { white: 'በ AI የታገዘ ዘመናዊ', gold: 'ዲጂታል ገቢን ይፍጠሩ።' }

@@ -8,15 +8,15 @@ export async function POST(req: NextRequest) {
     const { email } = body;
 
     if (!email || typeof email !== 'string') {
-      return NextResponse.json({ error: 'እባክዎ ትክክለኛ የ Gmail አድራሻ ያስገቡ።' }, { status: 400 });
+      return NextResponse.json({ error: 'እባክዎ ትክክለኛ የኢሜይል አድራሻ ያስገቡ።' }, { status: 400 });
     }
 
     const cleanEmail = email.trim().toLowerCase();
 
-    // Strict Gmail Domain Verification
-    if (!cleanEmail.endsWith('@gmail.com') || cleanEmail.split('@')[0].length < 3) {
+    // Standard Email Format Verification
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail) || cleanEmail.split('@')[0].length < 2) {
       return NextResponse.json({ 
-        error: 'ይቅርታ! የፀሐይ ካምፓስ የሚቀበለው ትክክለኛ የ Gmail (@gmail.com) አድራሻዎችን ብቻ ነው።' 
+        error: 'እባክዎ ትክክለኛ የኢሜይል አድራሻ ያስገቡ።' 
       }, { status: 400 });
     }
 

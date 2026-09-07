@@ -2330,3 +2330,23 @@ img, video, canvas {
   scrollbar-color: #f9b03c rgba(11, 19, 41, 0.7);
 }
 
+/* 📷 QR Code Live Camera Scanner Animation */
+@keyframes qrLaserScan {
+  0% {
+    top: 6%;
+    opacity: 0.6;
+  }
+  50% {
+    top: 92%;
+    opacity: 1;
+  }
+  100% {
+    top: 6%;
+    opacity: 0.6;
+  }
+}
+
+.qr-scanner-laser {
+  animation: qrLaserScan 2.4s ease-in-out infinite;
+}
+

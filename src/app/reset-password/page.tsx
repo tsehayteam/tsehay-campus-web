@@ -61,12 +61,12 @@ function ResetPasswordForm() {
     const targetOobCode = oobCode || (cleanCode.length > 10 ? cleanCode : '');
 
     if (!cleanEmail) {
-      setError('እባክዎ የ Gmail አድራሻዎን ያስገቡ።');
+      setError('እባክዎ የኢሜይል አድራሻዎን ያስገቡ።');
       return;
     }
 
-    if (!cleanEmail.endsWith('@gmail.com')) {
-      setError('ይቅርታ! የፀሐይ ካምፓስ የሚቀበለው ትክክለኛ የ Gmail (@gmail.com) አድራሻዎችን ብቻ ነው።');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      setError('እባክዎ ትክክለኛ የኢሜይል አድራሻ ያስገቡ።');
       return;
     }
 

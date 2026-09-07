@@ -26,16 +26,25 @@ export default function Hero3DPopoutStage({
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
-  const [studentCount, setStudentCount] = useState(1250);
+  const [studentCount, setStudentCount] = useState(500);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeVideoUrl, setActiveVideoUrl] = useState<string>(videoSrc || DEFAULT_LANDING_VIDEO);
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
   const [isMuted, setIsMuted] = useState<boolean>(true);
   const [isVideoReady, setIsVideoReady] = useState<boolean>(false);
+  const [showInitialThumbnail, setShowInitialThumbnail] = useState<boolean>(true);
   const [customThumbnail, setCustomThumbnail] = useState<string>(initialThumbnail || '');
 
   const isInteractingRef = useRef(false);
   const rafIdRef = useRef<number | null>(null);
+
+  // Decouple Thumbnail & Video: Show clean thumbnail for 2.6s, then start video playback smoothly
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowInitialThumbnail(false);
+    }, 2600);
+    return () => clearTimeout(timer);
+  }, [activeVideoUrl]);
 
   // Sync prop changes from SSR into active state (Latest Video always takes priority)
   useEffect(() => {
@@ -377,10 +386,10 @@ export default function Hero3DPopoutStage({
     }
   };
 
-  // Live student counter pulse (1250+)
+  // Live student counter pulse (500+)
   useEffect(() => {
     const interval = setInterval(() => {
-      setStudentCount(prev => (prev >= 1280 ? 1250 : prev + 1));
+      setStudentCount(prev => (prev >= 520 ? 500 : prev + 1));
     }, 5000);
     return () => clearInterval(interval);
   }, []);
@@ -460,7 +469,7 @@ export default function Hero3DPopoutStage({
           style={{ transform: 'translateZ(0px)' }}
           onClick={togglePlayPause}
         >
-          {/* Autoplaying Video: YouTube iframe or Direct HTML5 Video */}
+          {/* Autoplaying Video: YouTube iframe, Bunny.net / Other Embed iframe, or Direct HTML5 Video */}
           {parsedVideo.isYouTube && parsedVideo.youtubeId ? (
             <div className="absolute inset-0 w-full h-full overflow-hidden bg-black flex items-center justify-center pointer-events-none">
               <iframe
@@ -478,6 +487,21 @@ export default function Hero3DPopoutStage({
                       '*'
                     );
                   }
+                }}
+              />
+            </div>
+          ) : parsedVideo.type === 'embed' && parsedVideo.src ? (
+            <div className="absolute inset-0 w-full h-full overflow-hidden bg-black flex items-center justify-center">
+              <iframe
+                ref={iframeRef}
+                src={parsedVideo.src}
+                title="Tsehay Campus Hero Video"
+                className="w-full h-full border-0 object-cover"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+                allowFullScreen
+                onLoad={() => {
+                  setIsVideoReady(true);
+                  setIsPlaying(true);
                 }}
               />
             </div>
@@ -501,17 +525,21 @@ export default function Hero3DPopoutStage({
                 }}
               />
             </div>
-          ) : (
-            /* High-Definition Poster Image Fallback */
-            <div className="absolute inset-0 w-full h-full overflow-hidden bg-black flex items-center justify-center">
-              <img 
-                src={displayThumbnail} 
-                alt="Tsehay Campus Hero Preview" 
-                className="w-full h-full object-cover scale-100 group-hover:scale-105 transition-transform duration-700 ease-out"
-                onError={(e) => { e.currentTarget.src = '/assets/hero-bg-new.jpg'; }}
-              />
-            </div>
-          )}
+          ) : null}
+
+          {/* Clean Initial Thumbnail Layer: Displayed for first 2.6s, smoothly fades out with ZERO control buttons */}
+          <div 
+            className={`absolute inset-0 w-full h-full overflow-hidden bg-black flex items-center justify-center transition-opacity duration-700 ease-out z-15 ${
+              showInitialThumbnail ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+            }`}
+          >
+            <img 
+              src={displayThumbnail} 
+              alt="Tsehay Campus Hero Preview" 
+              className="w-full h-full object-cover scale-100 group-hover:scale-105 transition-transform duration-700 ease-out"
+              onError={(e) => { e.currentTarget.src = '/assets/hero-bg-new.jpg'; }}
+            />
+          </div>
 
           {/* Cinematic subtle dark gradient vignette */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/25 pointer-events-none z-10" />
@@ -526,44 +554,46 @@ export default function Hero3DPopoutStage({
           />
 
 
-          {/* 🎛️ Minimalist Subtle Video Controls Bar (Bottom-Right, non-distracting) */}
-          <div 
-            className="absolute bottom-3.5 sm:bottom-5 right-3.5 sm:right-6 z-25 flex items-center gap-2 pointer-events-auto select-none"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Subtle Minimalist Pause / Play Button */}
-            <button
-              type="button"
-              onClick={togglePlayPause}
-              className="group/btn relative px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full bg-black/65 hover:bg-black/90 backdrop-blur-xl border border-white/20 hover:border-[#f9b03c] text-white hover:text-[#f9b03c] transition-all duration-300 flex items-center gap-2 text-xs font-bold shadow-[0_4px_20px_rgba(0,0,0,0.6)] cursor-pointer active:scale-95"
-              title={isPlaying ? "ቪዲዮውን አቁም (Pause Video)" : "ቪዲዮውን አስጀምር (Play Video)"}
+          {/* 🎛️ Minimalist Subtle Video Controls Bar: STRICTLY ONLY shown when video is playing, NEVER on initial thumbnail */}
+          {!showInitialThumbnail && isVideoReady && (
+            <div 
+              className="absolute bottom-3.5 sm:bottom-5 right-3.5 sm:right-6 z-25 flex items-center gap-2 pointer-events-auto select-none animate-in fade-in duration-500"
+              onClick={(e) => e.stopPropagation()}
             >
-              <i className={`fa-solid ${isPlaying ? 'fa-pause text-amber-300' : 'fa-play text-[#f9b03c]'} text-xs transition-transform group-hover/btn:scale-110`}></i>
-              <span className="text-[11px] sm:text-xs font-mono font-bold tracking-tight text-white/90 group-hover/btn:text-white">
-                {isPlaying ? 'አቁም' : 'አጫውት'}
-              </span>
-            </button>
+              {/* Subtle Minimalist Pause / Play Button */}
+              <button
+                type="button"
+                onClick={togglePlayPause}
+                className="group/btn relative px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full bg-black/65 hover:bg-black/90 backdrop-blur-xl border border-white/20 hover:border-[#f9b03c] text-white hover:text-[#f9b03c] transition-all duration-300 flex items-center gap-2 text-xs font-bold shadow-[0_4px_20px_rgba(0,0,0,0.6)] cursor-pointer active:scale-95"
+                title={isPlaying ? "ቪዲዮውን አቁም (Pause Video)" : "ቪዲዮውን አስጀምር (Play Video)"}
+              >
+                <i className={`fa-solid ${isPlaying ? 'fa-pause text-amber-300' : 'fa-play text-[#f9b03c]'} text-xs transition-transform group-hover/btn:scale-110`}></i>
+                <span className="text-[11px] sm:text-xs font-mono font-bold tracking-tight text-white/90 group-hover/btn:text-white">
+                  {isPlaying ? 'አቁም' : 'አጫውት'}
+                </span>
+              </button>
 
-            {/* Subtle Audio Toggle (Mute / Unmute) */}
-            <button
-              type="button"
-              onClick={toggleMute}
-              className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-black/65 hover:bg-black/90 backdrop-blur-xl border border-white/20 hover:border-[#3268ba] text-white hover:text-cyan-300 transition-all duration-300 flex items-center justify-center text-xs shadow-[0_4px_20px_rgba(0,0,0,0.6)] cursor-pointer active:scale-95"
-              title={isMuted ? "ድምጽ ክፈት (Unmute Sound)" : "ድምጽ አጥፋ (Mute Sound)"}
-            >
-              <i className={`fa-solid ${isMuted ? 'fa-volume-xmark text-slate-300' : 'fa-volume-high text-emerald-400'}`}></i>
-            </button>
+              {/* Subtle Audio Toggle (Mute / Unmute) */}
+              <button
+                type="button"
+                onClick={toggleMute}
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-black/65 hover:bg-black/90 backdrop-blur-xl border border-white/20 hover:border-[#3268ba] text-white hover:text-cyan-300 transition-all duration-300 flex items-center justify-center text-xs shadow-[0_4px_20px_rgba(0,0,0,0.6)] cursor-pointer active:scale-95"
+                title={isMuted ? "ድምጽ ክፈት (Unmute Sound)" : "ድምጽ አጥፋ (Mute Sound)"}
+              >
+                <i className={`fa-solid ${isMuted ? 'fa-volume-xmark text-slate-300' : 'fa-volume-high text-emerald-400'}`}></i>
+              </button>
 
-            {/* Subtle Fullscreen / Expand Button */}
-            <button
-              type="button"
-              onClick={handleOpenModal}
-              className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-black/65 hover:bg-black/90 backdrop-blur-xl border border-white/20 hover:border-white/50 text-white hover:text-[#f9b03c] transition-all duration-300 flex items-center justify-center text-xs shadow-[0_4px_20px_rgba(0,0,0,0.6)] cursor-pointer active:scale-95"
-              title="ቪዲዮውን በሙሉ ስክሪን ይመልከቱ (Expand Video)"
-            >
-              <i className="fa-solid fa-expand"></i>
-            </button>
-          </div>
+              {/* Subtle Fullscreen / Expand Button */}
+              <button
+                type="button"
+                onClick={handleOpenModal}
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-black/65 hover:bg-black/90 backdrop-blur-xl border border-white/20 hover:border-white/50 text-white hover:text-[#f9b03c] transition-all duration-300 flex items-center justify-center text-xs shadow-[0_4px_20px_rgba(0,0,0,0.6)] cursor-pointer active:scale-95"
+                title="ቪዲዮውን በሙሉ ስክሪን ይመልከቱ (Expand Video)"
+              >
+                <i className="fa-solid fa-expand"></i>
+              </button>
+            </div>
+          )}
         </div>
 
         {/* ------------------------------------------------------------------ */}

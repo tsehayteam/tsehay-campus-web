@@ -684,11 +684,11 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
     e.preventDefault();
     const cleanEmail = email.trim().toLowerCase();
     if (!cleanEmail) {
-      setError('እባክዎ የ Gmail አድራሻዎን ያስገቡ።');
+      setError('እባክዎ የኢሜይል አድራሻዎን ያስገቡ።');
       return;
     }
-    if (!cleanEmail.endsWith('@gmail.com')) {
-      setError('ይቅርታ! የፀሐይ ካምፓስ የሚቀበለው ትክክለኛ የ Gmail (@gmail.com) አድራሻዎችን ብቻ ነው።');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      setError('እባክዎ ትክክለኛ የኢሜይል አድራሻ ያስገቡ።');
       return;
     }
 
@@ -1083,6 +1083,8 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
     }
   };
 
+  if (!isOpen) return null;
+
   return (
     <div 
       className="fixed inset-0 bg-black/85 z-[99999] flex items-center justify-center backdrop-blur-md p-4 animate-in fade-in duration-200" 
@@ -1148,7 +1150,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
                       <i className="fa-solid fa-key"></i>
                     </div>
                     <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">
-                      የይለፍ ቃልዎን ለመቀየር የተመዘገቡበትን የ Gmail አድራሻ ያስገቡ።
+                      የይለፍ ቃልዎን ለመቀየር የተመዘገቡበትን የኢሜይል አድራሻ ያስገቡ።
                     </p>
                   </div>
 
@@ -1162,7 +1164,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
                   <div>
                     <div className="flex items-center justify-between mb-1.5">
                       <label className="block text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-300">
-                        የ Gmail አድራሻ (Gmail) <span className="text-red-500">*</span>
+                        የኢሜይል አድራሻ (Email / Gmail) <span className="text-red-500">*</span>
                       </label>
                       {!email.includes('@') && email.trim().length > 0 && (
                         <button

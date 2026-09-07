@@ -338,21 +338,6 @@ export default function Navbar() {
               )}
             </span>
           </button>
-
-          {!user && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                openAuthModal(false);
-              }}
-              className="relative pointer-events-auto px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full flex items-center gap-1.5 font-heading font-black text-xs text-slate-950 bg-gradient-to-r from-[#f9b03c] via-amber-300 to-[#f9b03c] border border-amber-300 shadow-[0_0_20px_rgba(249,176,60,0.5)] active:scale-95 transition-all cursor-pointer hover:brightness-110"
-              title="ይግቡ (Login)"
-            >
-              <i className="fa-solid fa-arrow-right-to-bracket text-[11px]"></i>
-              <span className="tracking-wide">{lang === 'en' ? 'Login' : 'ይግቡ'}</span>
-            </button>
-          )}
         </div>
       )}
 
@@ -520,6 +505,21 @@ export default function Navbar() {
                   <span>ሰርተፊኬት</span>
                 </span>
               </Link>
+
+              {/* ይግቡ (Login) in Main Navigation Menu */}
+              {!user && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeCurtain();
+                    openAuthModal(false);
+                  }}
+                  className="py-1.5 px-3.5 rounded-full bg-[#f9b03c]/15 hover:bg-[#f9b03c]/25 border border-[#f9b03c]/50 hover:border-[#f9b03c] text-white hover:text-[#f9b03c] text-[13px] lg:text-[14px] font-black tracking-wide transition-all duration-200 flex items-center gap-1.5 cursor-pointer active:scale-95 shadow-[0_0_12px_rgba(249,176,60,0.15)] ml-1"
+                >
+                  <i className="fa-solid fa-arrow-right-to-bracket text-xs text-[#f9b03c]"></i>
+                  <span>{lang === 'en' ? 'Login' : 'ይግቡ'}</span>
+                </button>
+              )}
             </div>
 
             {/* 3. RIGHT: Search Input + Tsehay AI + Install + Lang/Theme + Integrated Close Toggle */}

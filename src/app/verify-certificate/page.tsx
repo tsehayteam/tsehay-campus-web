@@ -9,6 +9,7 @@ import { db } from '@/lib/firebase/config';
 import { doc, getDoc } from 'firebase/firestore';
 import { QRCodeSVG } from 'qrcode.react';
 import html2canvas from 'html2canvas';
+import jsQR from 'jsqr';
 
 interface CertificateRecord {
   id: string;
@@ -52,7 +53,23 @@ export default function CertificateVerificationPage() {
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedCaption, setCopiedCaption] = useState(false);
 
+  // 📷 Native Camera QR Scanner States
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [cameraPermission, setCameraPermission] = useState<'idle' | 'prompt' | 'granted' | 'denied' | 'unsupported'>('idle');
+  const [scannerError, setScannerError] = useState<string | null>(null);
+  const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment');
+  const [hasMultipleCameras, setHasMultipleCameras] = useState(false);
+  const [isTorchAvailable, setIsTorchAvailable] = useState(false);
+  const [isTorchOn, setIsTorchOn] = useState(false);
+  const [isDecodingFile, setIsDecodingFile] = useState(false);
+
   const certificateRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const animFrameRef = useRef<number | null>(null);
+  const isScanningActiveRef = useRef(false);
 
   // Read URL search params on client mount
   useEffect(() => {
@@ -66,6 +83,265 @@ export default function CertificateVerificationPage() {
       }
     }
   }, []);
+
+  // Cleanup camera stream on unmount
+  useEffect(() => {
+    return () => {
+      stopCamera();
+    };
+  }, []);
+
+  // 🎵 Web Audio API Success Chime
+  const playSuccessChime = () => {
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+      osc.frequency.setValueAtTime(880, ctx.currentTime + 0.08); // A5
+      gain.gain.setValueAtTime(0.25, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.35);
+    } catch {
+      // AudioContext unavailable or suppressed
+    }
+  };
+
+  // 🛑 Stop Camera
+  const stopCamera = () => {
+    isScanningActiveRef.current = false;
+    if (animFrameRef.current) {
+      cancelAnimationFrame(animFrameRef.current);
+      animFrameRef.current = null;
+    }
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    setIsTorchOn(false);
+  };
+
+  // 📷 Start Camera Stream
+  const startCameraStream = async (mode: 'environment' | 'user') => {
+    stopCamera();
+    setScannerError(null);
+
+    if (typeof navigator === 'undefined' || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      setCameraPermission('unsupported');
+      setScannerError('ይህ ብሮውዘር የቀጥታ ካሜራ ስካን አይደግፍም። እባክዎ የ QR ፎቶ ይጫኑ ወይም ኮዱን በእጅ ያስገቡ።');
+      return;
+    }
+
+    try {
+      // Check multiple cameras
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = devices.filter((d) => d.kind === 'videoinput');
+        setHasMultipleCameras(videoDevices.length > 1);
+      } catch {}
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: { ideal: mode },
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
+        audio: false,
+      });
+
+      streamRef.current = stream;
+      setCameraPermission('granted');
+
+      // Check torch support
+      const videoTrack = stream.getVideoTracks()[0];
+      if (videoTrack) {
+        const capabilities = (videoTrack.getCapabilities ? videoTrack.getCapabilities() : {}) as any;
+        setIsTorchAvailable(Boolean(capabilities && 'torch' in capabilities));
+      }
+
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play().catch(() => {});
+      }
+
+      isScanningActiveRef.current = true;
+      startScanLoop();
+    } catch (err: any) {
+      console.error('Camera access error:', err);
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        setCameraPermission('denied');
+        setScannerError('የካሜራ ፍቃድ አልተሰጠም። እባክዎ በብሮውዘርዎ የካሜራ ፍቃድ ይስጡ ወይም የሰርተፊኬቱን QR ፎቶ ይጫኑ።');
+      } else {
+        setScannerError('ካሜራውን መክፈት አልተቻለም። እባክዎ የ QR ምስል ይጫኑ ወይም ኮዱን በእጅ ያስገቡ።');
+      }
+    }
+  };
+
+  // 🔄 Continuous Frame Scan Loop (Native BarcodeDetector + jsQR fallback)
+  const startScanLoop = () => {
+    if (!isScanningActiveRef.current) return;
+
+    const scanFrame = async () => {
+      if (!isScanningActiveRef.current) return;
+
+      const video = videoRef.current;
+      if (video && video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0) {
+        let detectedString: string | null = null;
+
+        // 1. Hardware accelerated BarcodeDetector (Android Chrome, iOS Safari 17+, Desktop Chrome)
+        if (typeof window !== 'undefined' && 'BarcodeDetector' in window) {
+          try {
+            const detector = new (window as any).BarcodeDetector({ formats: ['qr_code'] });
+            const barcodes = await detector.detect(video);
+            if (barcodes && barcodes.length > 0 && barcodes[0].rawValue) {
+              detectedString = barcodes[0].rawValue;
+            }
+          } catch {
+            // Fall through to jsQR
+          }
+        }
+
+        // 2. Ultra-reliable jsQR canvas fallback
+        if (!detectedString && canvasRef.current) {
+          const canvas = canvasRef.current;
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          const ctx = canvas.getContext('2d', { willReadFrequently: true });
+          if (ctx) {
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const qr = jsQR(imgData.data, imgData.width, imgData.height, {
+              inversionAttempts: 'attemptBoth',
+            });
+            if (qr && qr.data) {
+              detectedString = qr.data;
+            }
+          }
+        }
+
+        if (detectedString) {
+          handleScannedResult(detectedString);
+          return;
+        }
+      }
+
+      if (isScanningActiveRef.current) {
+        animFrameRef.current = requestAnimationFrame(scanFrame);
+      }
+    };
+
+    animFrameRef.current = requestAnimationFrame(scanFrame);
+  };
+
+  // 🎯 Process Scanned Code / URL
+  const handleScannedResult = (raw: string) => {
+    stopCamera();
+    playSuccessChime();
+    setIsScannerOpen(false);
+
+    let extracted = raw.trim();
+    try {
+      if (extracted.includes('verify-certificate') || extracted.includes('code=') || extracted.includes('id=')) {
+        const url = new URL(extracted, 'https://tsehaycampus.com');
+        const codeParam = url.searchParams.get('code') || url.searchParams.get('id');
+        if (codeParam) {
+          extracted = codeParam;
+        }
+      }
+    } catch {}
+
+    const cleanCode = extracted.toUpperCase();
+    setInputCode(cleanCode);
+    verifyCode(cleanCode);
+  };
+
+  // 🚀 Open Scanner
+  const openScannerModal = () => {
+    setScannerError(null);
+    setIsScannerOpen(true);
+    setCameraPermission('prompt');
+    startCameraStream(facingMode);
+  };
+
+  // 🛑 Close Scanner Modal
+  const closeScannerModal = () => {
+    stopCamera();
+    setIsScannerOpen(false);
+    setScannerError(null);
+  };
+
+  // 🔄 Flip Camera Front/Back
+  const toggleCameraFacing = () => {
+    const next = facingMode === 'environment' ? 'user' : 'environment';
+    setFacingMode(next);
+    startCameraStream(next);
+  };
+
+  // 💡 Toggle Torch / Flashlight
+  const toggleTorch = async () => {
+    if (!streamRef.current) return;
+    const track = streamRef.current.getVideoTracks()[0];
+    if (track && (track as any).applyConstraints) {
+      try {
+        const nextTorch = !isTorchOn;
+        await (track as any).applyConstraints({
+          advanced: [{ torch: nextTorch }],
+        });
+        setIsTorchOn(nextTorch);
+      } catch (e) {
+        console.warn('Torch toggle not supported:', e);
+      }
+    }
+  };
+
+  // 🖼️ Upload QR Image File Fallback
+  const handleImageFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsDecodingFile(true);
+    setScannerError(null);
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth || img.width;
+        canvas.height = img.naturalHeight || img.height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0);
+          const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const qr = jsQR(imgData.data, imgData.width, imgData.height, {
+            inversionAttempts: 'attemptBoth',
+          });
+          setIsDecodingFile(false);
+          if (qr && qr.data) {
+            handleScannedResult(qr.data);
+          } else {
+            setScannerError('በተመረጠው ምስል ላይ የ QR ኮድ ማግኘት አልተቻለም። እባክዎ ጥራቱ የጠራ ምስል ይሞክሩ።');
+          }
+        } else {
+          setIsDecodingFile(false);
+        }
+      };
+      img.onerror = () => {
+        setIsDecodingFile(false);
+        setScannerError('ምስሉን ማንበብ አልተቻለም። እባክዎ እንደገና ይሞክሩ።');
+      };
+      img.src = reader.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
 
   const verifyCode = async (codeToVerify: string) => {
     const cleanCode = codeToVerify.trim().toUpperCase();
@@ -229,7 +505,7 @@ export default function CertificateVerificationPage() {
           </nav>
 
           {/* Page Hero Header */}
-          <div className="text-center max-w-3xl mx-auto mb-12 sm:mb-16">
+          <div className="text-center max-w-3xl mx-auto mb-10 sm:mb-14">
             <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-400/30 text-cyan-300 text-xs sm:text-sm font-black uppercase tracking-widest mb-4 shadow-[0_0_20px_rgba(6,182,212,0.25)]">
               <i className="fa-solid fa-shield-check text-cyan-400 text-sm animate-pulse"></i>
               <span>OFFICIAL CREDENTIAL VERIFICATION • ይፋዊ ማረጋገጫ ፖርታል</span>
@@ -238,14 +514,59 @@ export default function CertificateVerificationPage() {
               እውቅና ያለው <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-sky-300 to-[#f9b03c]">ሰርተፊኬት ማረጋገጫ</span>
             </h1>
             <p className="text-slate-300 font-body text-sm sm:text-base md:text-lg leading-relaxed max-w-2xl mx-auto">
-              በፀሐይ ካምፓስ የተሰጡ ይፋዊ ዲጂታል ሰርተፊኬቶችን በመለያ ኮዳቸው (Credential ID) ትክክለኛነታቸውን በቅጽበት በኦንላይን ያረጋግጡ።
+              በፀሐይ ካምፓስ የተሰጡ ይፋዊ ዲጂታል ሰርተፊኬቶችን በስልክዎ/ኮምፒውተርዎ ካሜራ QR ኮዱን ስካን በማድረግ ወይም በመለያ ኮዳቸው (Credential ID) ትክክለኛነታቸውን በቅጽበት ያረጋግጡ።
             </p>
           </div>
 
-          {/* 🔍 Interactive Code Verification Input Section */}
+          {/* 🔍 Glassmorphic Verification Hub (Camera QR Scanner + Code Input) */}
           <div className="max-w-3xl mx-auto mb-12 sm:mb-16">
-            <div className="rounded-3xl p-6 sm:p-8 bg-gradient-to-b from-[#0a1120]/95 via-[#080d1a]/95 to-[#040810]/95 border-2 border-cyan-400/40 shadow-[0_20px_60px_rgba(0,0,0,0.8),0_0_35px_rgba(6,182,212,0.2)] backdrop-blur-2xl">
+            <div className="rounded-3xl p-6 sm:p-8 bg-gradient-to-b from-[#0d1627]/90 via-[#09101d]/90 to-[#040810]/95 border border-cyan-400/30 shadow-[0_20px_60px_rgba(0,0,0,0.8),0_0_40px_rgba(6,182,212,0.15)] backdrop-blur-2xl relative overflow-hidden">
               
+              {/* Subtle Ambient Radial Glow inside the card */}
+              <div className="absolute -top-20 -right-20 w-56 h-56 bg-cyan-500/15 rounded-full blur-3xl pointer-events-none"></div>
+              <div className="absolute -bottom-20 -left-20 w-56 h-56 bg-[#f9b03c]/10 rounded-full blur-3xl pointer-events-none"></div>
+
+              {/* 📷 Highlighted Action: Live Camera Scanner Quick Launcher */}
+              <div className="mb-6 p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-cyan-500/15 via-blue-500/10 to-[#f9b03c]/15 border border-cyan-400/40 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-lg">
+                <div className="flex items-center gap-3.5 text-left">
+                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-cyan-500 to-blue-600 text-slate-950 flex items-center justify-center text-xl font-black shrink-0 shadow-[0_0_20px_rgba(6,182,212,0.4)]">
+                    <i className="fa-solid fa-camera"></i>
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-heading font-black text-white text-sm sm:text-base">
+                        በካሜራ QR ኮድ ስካን ያድርጉ
+                      </h4>
+                      <span className="px-2 py-0.5 rounded-full bg-cyan-400/20 text-cyan-300 text-[10px] font-bold border border-cyan-400/30 animate-pulse">
+                        ቀጥታ ስካነር
+                      </span>
+                    </div>
+                    <p className="text-slate-300 text-xs mt-0.5">
+                      በሰርተፊኬቱ ላይ ያለውን QR Code በስልክዎ ወይም ላፕቶፕዎ ካሜራ በቅጽበት ያረጋግጡ
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={openScannerModal}
+                  className="w-full sm:w-auto px-5 py-3 rounded-xl bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 hover:from-cyan-300 hover:to-blue-400 text-slate-950 font-black text-xs sm:text-sm tracking-wide shadow-[0_0_25px_rgba(6,182,212,0.4)] hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0"
+                >
+                  <i className="fa-solid fa-qrcode text-base"></i>
+                  <span>ካሜራውን ክፈት (Scan QR)</span>
+                </button>
+              </div>
+
+              {/* Divider */}
+              <div className="relative flex items-center justify-center my-6">
+                <div className="border-t border-white/10 w-full"></div>
+                <span className="bg-[#09101d] px-3 text-[11px] font-bold text-slate-400 uppercase tracking-wider relative z-10">
+                  ወይም መለያ ኮድ በማስገባት (Or Enter ID)
+                </span>
+                <div className="border-t border-white/10 w-full"></div>
+              </div>
+
+              {/* Manual Input Form */}
               <form onSubmit={handleSubmit} className="space-y-4">
                 <label className="block text-left text-xs sm:text-sm font-bold text-slate-200 uppercase tracking-wider font-heading">
                   የሰርተፊኬት መለያ ኮድ (Enter Certificate ID):
@@ -261,23 +582,36 @@ export default function CertificateVerificationPage() {
                       value={inputCode}
                       onChange={(e) => setInputCode(e.target.value)}
                       placeholder="ለምሳሌ፡ TC-2026-X8F9 ወይም TSC-SHEIN-2025"
-                      className="w-full pl-11 pr-4 py-3.5 sm:py-4 rounded-2xl bg-black/60 border-2 border-white/15 focus:border-cyan-400 text-white placeholder-slate-500 text-sm sm:text-base font-mono font-bold tracking-wide outline-hidden transition-all duration-300 shadow-inner"
+                      className="w-full pl-11 pr-24 py-3.5 sm:py-4 rounded-2xl bg-black/60 border border-white/15 focus:border-cyan-400 text-white placeholder-slate-500 text-sm sm:text-base font-mono font-bold tracking-wide outline-hidden transition-all duration-300 shadow-inner"
                     />
-                    {inputCode && (
+                    
+                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center gap-1.5">
+                      {inputCode && (
+                        <button
+                          type="button"
+                          onClick={() => setInputCode('')}
+                          className="p-1.5 text-slate-400 hover:text-white transition-colors"
+                          title="አጽዳ"
+                        >
+                          <i className="fa-solid fa-circle-xmark text-sm"></i>
+                        </button>
+                      )}
+                      {/* Mini Camera icon shortcut inside input */}
                       <button
                         type="button"
-                        onClick={() => setInputCode('')}
-                        className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-white transition-colors"
+                        onClick={openScannerModal}
+                        className="p-2 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-400/30 transition-all text-xs"
+                        title="በካሜራ ስካን ያድርጉ"
                       >
-                        <i className="fa-solid fa-circle-xmark text-sm"></i>
+                        <i className="fa-solid fa-camera"></i>
                       </button>
-                    )}
+                    </div>
                   </div>
 
                   <button
                     type="submit"
                     disabled={isSearching || !inputCode.trim()}
-                    className="px-7 py-3.5 sm:py-4 rounded-2xl bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 hover:from-cyan-300 hover:to-blue-400 text-slate-950 font-black text-sm sm:text-base tracking-wide shadow-[0_0_25px_rgba(6,182,212,0.5)] hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+                    className="px-7 py-3.5 sm:py-4 rounded-2xl bg-gradient-to-r from-amber-400 via-[#f9b03c] to-amber-500 hover:brightness-110 text-slate-950 font-black text-sm sm:text-base tracking-wide shadow-[0_0_25px_rgba(249,176,60,0.4)] hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
                   >
                     {isSearching ? (
                       <>
@@ -336,7 +670,7 @@ export default function CertificateVerificationPage() {
 
           {/* ✅ Verified Status Banner & Certificate Control Hub */}
           {certificateData && !isNotFound && (
-            <div className="mb-8 p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-emerald-950/60 via-slate-900/90 to-cyan-950/60 border-2 border-emerald-500/50 backdrop-blur-2xl shadow-[0_15px_45px_rgba(0,0,0,0.8),0_0_30px_rgba(16,185,129,0.25)] flex flex-col md:flex-row items-center justify-between gap-5">
+            <div className="mb-8 p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-emerald-950/70 via-slate-900/90 to-cyan-950/70 border border-emerald-500/40 backdrop-blur-2xl shadow-[0_15px_45px_rgba(0,0,0,0.8),0_0_30px_rgba(16,185,129,0.2)] flex flex-col md:flex-row items-center justify-between gap-5">
               <div className="flex items-center gap-4 text-left w-full md:w-auto">
                 <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-emerald-500/20 border-2 border-emerald-400 text-emerald-400 flex items-center justify-center text-2xl sm:text-3xl shrink-0 shadow-[0_0_20px_rgba(16,185,129,0.4)]">
                   <i className="fa-solid fa-shield-check"></i>
@@ -566,47 +900,53 @@ export default function CertificateVerificationPage() {
             </div>
           </div>
 
-          {/* 🌟 Verification Metadata Breakdown Card (Coursera / Udemy Standard) */}
-          <div className="max-w-4xl mx-auto rounded-3xl bg-slate-900/70 border border-white/10 p-6 sm:p-8 backdrop-blur-xl shadow-xl mb-16">
-            <h3 className="text-base sm:text-lg font-black text-white font-heading mb-5 flex items-center gap-2.5">
-              <i className="fa-solid fa-file-circle-check text-cyan-400 text-lg"></i>
+          {/* 🌟 Professional Glassmorphic Credential Metadata Breakdown */}
+          <div className="max-w-4xl mx-auto rounded-3xl bg-gradient-to-b from-slate-900/80 via-slate-950/80 to-[#040810]/90 border border-white/10 p-6 sm:p-8 backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.6)] mb-14">
+            <h3 className="text-base sm:text-lg font-black text-white font-heading mb-6 flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center text-sm border border-cyan-400/30">
+                <i className="fa-solid fa-file-circle-check"></i>
+              </div>
               <span>የሰርተፊኬት ማረጋገጫ ዝርዝር መረጃ (Official Credential Metadata)</span>
             </h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.06]">
-                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-                  የተመራቂ ስም (Graduate Name)
+              <div className="p-4 rounded-2xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.08] hover:border-cyan-400/40 transition-all">
+                <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+                  <i className="fa-solid fa-user-graduate text-cyan-400"></i>
+                  <span>የተመራቂ ስም (Graduate)</span>
                 </div>
-                <div className="text-sm font-black text-white font-heading">
+                <div className="text-sm sm:text-base font-black text-white font-heading">
                   {certificateData?.studentName}
                 </div>
               </div>
 
-              <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.06]">
-                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-                  የተጠናቀቀው ኮርስ (Completed Masterclass)
+              <div className="p-4 rounded-2xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.08] hover:border-amber-400/40 transition-all">
+                <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+                  <i className="fa-solid fa-graduation-cap text-amber-400"></i>
+                  <span>የተጠናቀቀው ኮርስ (Masterclass)</span>
                 </div>
                 <div className="text-xs sm:text-sm font-bold text-amber-300 font-heading line-clamp-2">
                   {certificateData?.courseTitle}
                 </div>
               </div>
 
-              <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.06]">
-                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-                  የማጠቃለያ ውጤት (Final Score)
+              <div className="p-4 rounded-2xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.08] hover:border-emerald-400/40 transition-all">
+                <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+                  <i className="fa-solid fa-chart-line text-emerald-400"></i>
+                  <span>የማጠቃለያ ውጤት (Score)</span>
                 </div>
-                <div className="text-sm font-black text-emerald-400 font-mono flex items-center gap-1.5">
+                <div className="text-sm sm:text-base font-black text-emerald-400 font-mono flex items-center gap-1.5">
                   <span>{certificateData?.score}%</span>
                   <span className="text-[10px] text-emerald-300 font-bold">(ያለፈ / Passed)</span>
                 </div>
               </div>
 
-              <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.06]">
-                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-                  የማረጋገጫ ሁኔታ (Status)
+              <div className="p-4 rounded-2xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.08] hover:border-cyan-400/40 transition-all">
+                <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+                  <i className="fa-solid fa-shield-halved text-cyan-400"></i>
+                  <span>የማረጋገጫ ሁኔታ (Status)</span>
                 </div>
-                <div className="text-xs font-bold text-cyan-300 flex items-center gap-1.5">
+                <div className="text-xs sm:text-sm font-bold text-cyan-300 flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_#22d3ee]"></span>
                   <span>ይፋዊ እና የተረጋገጠ (Active)</span>
                 </div>
@@ -614,47 +954,209 @@ export default function CertificateVerificationPage() {
             </div>
           </div>
 
-          {/* 🌟 Why Verification Matters / Trust Section */}
+          {/* 🌟 Why Verification Matters / Trust Section (Glassmorphic Cards) */}
           <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
-            <div className="p-6 rounded-3xl bg-white/[0.02] border border-white/[0.08] backdrop-blur-xl">
-              <div className="w-12 h-12 rounded-2xl bg-[#f9b03c]/15 text-[#f9b03c] border border-[#f9b03c]/30 flex items-center justify-center text-xl mb-4">
-                <i className="fa-solid fa-qrcode"></i>
+            <div className="p-6 sm:p-7 rounded-3xl bg-gradient-to-b from-white/[0.04] to-white/[0.01] border border-white/10 hover:border-cyan-400/40 backdrop-blur-2xl shadow-lg transition-all group">
+              <div className="w-12 h-12 rounded-2xl bg-cyan-500/15 text-cyan-300 border border-cyan-400/30 flex items-center justify-center text-xl mb-4 group-hover:scale-110 transition-transform">
+                <i className="fa-solid fa-camera-rotate"></i>
               </div>
               <h4 className="font-heading font-black text-white text-base mb-2">
-                በ QR ኮድ የሚረጋገጥ
+                በቀጥታ ካሜራ ስካን
               </h4>
               <p className="text-slate-400 font-body text-xs sm:text-sm leading-relaxed">
-                ማንኛውም አሰሪ ወይም ተቋም በሰርተፊኬቱ ላይ ያለውን QR ኮድ በስልካቸው ስካን በማድረግ የትምህርቱን ትክክለኛነት በቅጽበት ማረጋገጥ ይችላል።
+                ማንኛውም አሰሪ ወይም ተቋም በሰርተፊኬቱ ላይ ያለውን QR ኮድ በስልካቸው ወይም በላፕቶፕ ካሜራ በመቃኘት ትክክለኛነቱን በቅጽበት ያረጋግጣል።
               </p>
             </div>
 
-            <div className="p-6 rounded-3xl bg-white/[0.02] border border-white/[0.08] backdrop-blur-xl">
-              <div className="w-12 h-12 rounded-2xl bg-cyan-500/15 text-cyan-300 border border-cyan-400/30 flex items-center justify-center text-xl mb-4">
+            <div className="p-6 sm:p-7 rounded-3xl bg-gradient-to-b from-white/[0.04] to-white/[0.01] border border-white/10 hover:border-[#f9b03c]/40 backdrop-blur-2xl shadow-lg transition-all group">
+              <div className="w-12 h-12 rounded-2xl bg-[#f9b03c]/15 text-[#f9b03c] border border-[#f9b03c]/30 flex items-center justify-center text-xl mb-4 group-hover:scale-110 transition-transform">
                 <i className="fa-solid fa-lock"></i>
               </div>
               <h4 className="font-heading font-black text-white text-base mb-2">
                 የማይደለዝ ዲጂታል መለያ
               </h4>
               <p className="text-slate-400 font-body text-xs sm:text-sm leading-relaxed">
-                እያንዳንዱ ሰርተፊኬት ልዩ የ Serial ID ስለሚሰጠው ሊባዛ ወይም ሊሰረቅ የማይችል አስተማማኝ ክብርን ያረጋግጣል።
+                እያንዳንዱ ሰርተፊኬት ልዩ የ Serial ID ስለሚሰጠው ሊባዛ ወይም ሊሰረቅ የማይችል አስተማማኝ ይፋዊ እውቅናን ያረጋግጣል።
               </p>
             </div>
 
-            <div className="p-6 rounded-3xl bg-white/[0.02] border border-white/[0.08] backdrop-blur-xl">
-              <div className="w-12 h-12 rounded-2xl bg-emerald-500/15 text-emerald-300 border border-emerald-400/30 flex items-center justify-center text-xl mb-4">
+            <div className="p-6 sm:p-7 rounded-3xl bg-gradient-to-b from-white/[0.04] to-white/[0.01] border border-white/10 hover:border-emerald-400/40 backdrop-blur-2xl shadow-lg transition-all group">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-500/15 text-emerald-300 border border-emerald-400/30 flex items-center justify-center text-xl mb-4 group-hover:scale-110 transition-transform">
                 <i className="fa-brands fa-linkedin-in"></i>
               </div>
               <h4 className="font-heading font-black text-white text-base mb-2">
                 ለስራ ማመልከቻ እና CV
               </h4>
               <p className="text-slate-400 font-body text-xs sm:text-sm leading-relaxed">
-                በቀላሉ ለስራ ማመልከቻ፣ ለሲቪ ማሳመሪያ ወይም በሊንክድኢን ፕሮፋይል ላይ ለማካተት ምቹ ሆኖ የተዘጋጀ ነው።
+                በቀላሉ ለስራ ማመልከቻ፣ ለሲቪ ማሳመሪያ ወይም በሊንክድኢን ፕሮፋይል ላይ ለማካተት ምቹ ሆኖ የተዘጋጀ ይፋዊ ማረጋገጫ ነው።
               </p>
             </div>
           </div>
 
         </div>
       </main>
+
+      {/* 📷 LIVE CAMERA QR SCANNER MODAL */}
+      {isScannerOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="w-full max-w-md bg-gradient-to-b from-slate-900 via-[#0a1120] to-[#040810] border-2 border-cyan-400/50 rounded-3xl p-5 sm:p-6 shadow-[0_25px_80px_rgba(0,0,0,0.9),0_0_50px_rgba(6,182,212,0.3)] relative overflow-hidden flex flex-col">
+            
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-4 border-b border-white/10 mb-4">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center text-sm border border-cyan-400/30">
+                  <i className="fa-solid fa-camera"></i>
+                </div>
+                <div>
+                  <h3 className="text-sm sm:text-base font-black font-heading text-white">
+                    የ QR ኮድ ካሜራ ስካነር
+                  </h3>
+                  <p className="text-[11px] text-slate-400">Live Certificate QR Scanner</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={closeScannerModal}
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+              >
+                <i className="fa-solid fa-xmark text-sm"></i>
+              </button>
+            </div>
+
+            {/* Hidden Canvas for QR decoding */}
+            <canvas ref={canvasRef} className="hidden" />
+
+            {/* Hidden File Input for QR Image Upload */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleImageFileUpload}
+            />
+
+            {/* Viewfinder Frame Container */}
+            <div className="relative w-full aspect-square rounded-2xl overflow-hidden bg-black border border-white/15 shadow-inner flex items-center justify-center">
+              
+              {/* Video Stream Element */}
+              <video
+                ref={videoRef}
+                playsInline
+                autoPlay
+                muted
+                className="w-full h-full object-cover"
+              />
+
+              {/* Scanning Target Box with HUD Neon Corners */}
+              <div className="absolute inset-8 sm:inset-10 border-2 border-cyan-400/60 rounded-2xl pointer-events-none flex items-center justify-center shadow-[0_0_20px_rgba(6,182,212,0.25)]">
+                {/* 4 Neon Target Corners */}
+                <div className="absolute -top-1 -left-1 w-6 h-6 border-t-4 border-l-4 border-cyan-400 rounded-tl-lg"></div>
+                <div className="absolute -top-1 -right-1 w-6 h-6 border-t-4 border-r-4 border-cyan-400 rounded-tr-lg"></div>
+                <div className="absolute -bottom-1 -left-1 w-6 h-6 border-b-4 border-l-4 border-cyan-400 rounded-bl-lg"></div>
+                <div className="absolute -bottom-1 -right-1 w-6 h-6 border-b-4 border-r-4 border-cyan-400 rounded-br-lg"></div>
+
+                {/* Animated Laser Scanning Beam */}
+                <div className="qr-scanner-laser absolute inset-x-2 h-0.5 bg-gradient-to-r from-transparent via-cyan-400 to-transparent shadow-[0_0_12px_#22d3ee]"></div>
+              </div>
+
+              {/* Viewfinder Guidance Pill */}
+              <div className="absolute bottom-3 inset-x-0 flex justify-center pointer-events-none">
+                <span className="px-3 py-1 rounded-full bg-black/75 backdrop-blur-md text-cyan-300 text-[11px] font-bold border border-cyan-400/30 shadow-md">
+                  የሰርተፊኬቱን QR ኮድ በመሃል ያድርጉ
+                </span>
+              </div>
+
+              {/* Loading / Error States Overlays */}
+              {cameraPermission === 'prompt' && !scannerError && (
+                <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center gap-3 p-4 text-center">
+                  <i className="fa-solid fa-spinner fa-spin text-3xl text-cyan-400"></i>
+                  <p className="text-xs font-bold text-slate-200">ካሜራውን በመክፈት ላይ... እባክዎ ፍቃድ ይስጡ</p>
+                </div>
+              )}
+
+              {cameraPermission === 'denied' && (
+                <div className="absolute inset-0 bg-black/90 flex flex-col items-center justify-center gap-3 p-5 text-center">
+                  <div className="w-12 h-12 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center text-xl">
+                    <i className="fa-solid fa-video-slash"></i>
+                  </div>
+                  <p className="text-xs font-bold text-rose-300">የካሜራ ፍቃድ አልተሰጠም</p>
+                  <p className="text-[11px] text-slate-400">እባክዎ በብሮውዘርዎ የካሜራ ፍቃድ ይስጡ ወይም ከታች ያለውን በተን ተጠቅመው የ QR ፎቶ ይጫኑ።</p>
+                </div>
+              )}
+
+              {scannerError && cameraPermission !== 'denied' && (
+                <div className="absolute inset-0 bg-black/90 flex flex-col items-center justify-center gap-2 p-5 text-center">
+                  <i className="fa-solid fa-triangle-exclamation text-2xl text-amber-400"></i>
+                  <p className="text-xs font-bold text-amber-300">{scannerError}</p>
+                </div>
+              )}
+
+              {isDecodingFile && (
+                <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center gap-3 p-4 text-center">
+                  <i className="fa-solid fa-spinner fa-spin text-3xl text-amber-400"></i>
+                  <p className="text-xs font-bold text-slate-200">የተጫነውን ምስል በመመርመር ላይ...</p>
+                </div>
+              )}
+            </div>
+
+            {/* Viewfinder Controls Toolbar */}
+            <div className="mt-4 pt-4 border-t border-white/10 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                {/* Flip Camera */}
+                {hasMultipleCameras && (
+                  <button
+                    type="button"
+                    onClick={toggleCameraFacing}
+                    className="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+                    title="ካሜራ ቀይር"
+                  >
+                    <i className="fa-solid fa-camera-rotate"></i>
+                    <span className="hidden sm:inline">ቀይር</span>
+                  </button>
+                )}
+
+                {/* Torch / Flashlight */}
+                {isTorchAvailable && (
+                  <button
+                    type="button"
+                    onClick={toggleTorch}
+                    className={`px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 ${
+                      isTorchOn
+                        ? 'bg-amber-400 text-slate-950 shadow-[0_0_15px_rgba(249,176,60,0.5)]'
+                        : 'bg-white/10 hover:bg-white/20 text-white'
+                    }`}
+                    title="መብራት (Flash)"
+                  >
+                    <i className="fa-solid fa-bolt"></i>
+                    <span className="hidden sm:inline">መብራት</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Upload QR Image fallback button */}
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-cyan-300 text-xs font-bold border border-cyan-400/30 transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 ml-auto"
+                title="ከስልክ ጋለሪ የ QR ምስል ይጫኑ"
+              >
+                <i className="fa-solid fa-image"></i>
+                <span>ከጋለሪ ምረጥ</span>
+              </button>
+
+              {/* Cancel / Close button */}
+              <button
+                type="button"
+                onClick={closeScannerModal}
+                className="px-3.5 py-2 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 text-xs font-bold border border-rose-500/30 transition-all cursor-pointer active:scale-95"
+              >
+                ዝጋ
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
 
       <Footer />
     </div>
