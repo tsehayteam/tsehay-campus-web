@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase/admin';
+import { supabaseServer } from '@/lib/supabase/server';
 
 export async function GET(req: NextRequest) {
   try {
@@ -13,42 +13,38 @@ export async function GET(req: NextRequest) {
       }, { status: 400 });
     }
 
-    if (!adminDb) {
-      return NextResponse.json({
-        success: false,
-        error: 'Database connection is initializing'
-      }, { status: 503 });
-    }
-
     // 1. Fetch user profile stats
-    const profileRef = adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('users').doc(uid).collection('profile').doc('info');
-    const profileSnap = await profileRef.get();
-    const profileData = profileSnap.exists ? (profileSnap.data() || {}) : {};
+    const { data: profileData } = await supabaseServer
+      .from('profiles')
+      .select('*')
+      .eq('id', uid)
+      .maybeSingle();
 
-    const referralCount = Number(profileData.referralCount || 0);
-    const hasFreeCourseReward = Boolean(profileData.hasFreeCourseReward || referralCount >= 5);
-    const hasMentorshipReward = Boolean(profileData.hasMentorshipReward || referralCount >= 10);
-    const claimedFreeCourse = Boolean(profileData.claimedFreeCourse);
-    const claimedMentorship = Boolean(profileData.claimedMentorship);
+    const referralCount = Number(profileData?.referral_count || profileData?.referralCount || 0);
+    const hasFreeCourseReward = Boolean(profileData?.has_free_course_reward || referralCount >= 5);
+    const hasMentorshipReward = Boolean(profileData?.has_mentorship_reward || referralCount >= 10);
+    const claimedFreeCourse = Boolean(profileData?.claimed_free_course);
+    const claimedMentorship = Boolean(profileData?.claimed_mentorship);
 
     // 2. Query referred friends list
-    const referralsRef = adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('referrals');
-    const qSnap = await referralsRef.where('referrerUid', '==', uid).limit(50).get();
+    const { data: refRows } = await supabaseServer
+      .from('referrals')
+      .select('*')
+      .eq('referrer_id', uid)
+      .limit(50);
 
-    const referredFriends = qSnap.docs.map(doc => {
-      const d = doc.data();
-      // Mask email for student privacy: e.g. e***@gmail.com
-      let maskedEmail = d.referredEmail || '';
+    const referredFriends = (refRows || []).map((d: any) => {
+      let maskedEmail = d.referred_email || d.email || '';
       if (maskedEmail && maskedEmail.includes('@')) {
         const [local, domain] = maskedEmail.split('@');
         maskedEmail = `${local.charAt(0)}***@${domain}`;
       }
 
       return {
-        id: doc.id,
-        name: d.referredName || 'አዲስ ተማሪ',
+        id: d.id,
+        name: d.referred_name || d.name || 'አዲስ ተማሪ',
         email: maskedEmail,
-        createdAt: d.createdAt || '',
+        createdAt: d.created_at || '',
         status: d.status || 'completed'
       };
     });

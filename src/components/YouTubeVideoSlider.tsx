@@ -1,8 +1,6 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { db } from '@/lib/firebase/config';
-import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import CinematicVideoModal from '@/components/CinematicVideoModal';
 
 import { supabase } from '@/lib/supabase/client';

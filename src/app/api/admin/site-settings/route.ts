@@ -4,7 +4,6 @@ export const fetchCache = 'force-no-store';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase/server';
-import { adminDb, hasAdminCredentials } from '@/lib/firebase/admin';
 import { sharedSiteSettingsCache, savePersistedSetting } from '@/lib/memoryStore';
 
 export const memorySiteSettingsCache = sharedSiteSettingsCache;
@@ -46,31 +45,6 @@ export async function GET(req: NextRequest) {
         { success: true, settingKey, data: memorySiteSettingsCache.get(settingKey) },
         { headers: NO_CACHE_HEADERS }
       );
-    }
-
-    // 3. Firebase Admin fallback
-    if (adminDb && hasAdminCredentials) {
-      try {
-        const settingsDocRef = adminDb.collection('settings').doc(settingKey);
-        const settingsSnap = await settingsDocRef.get();
-        if (settingsSnap.exists) {
-          return NextResponse.json(
-            { success: true, settingKey, data: settingsSnap.data() },
-            { headers: NO_CACHE_HEADERS }
-          );
-        }
-      } catch (e) {}
-
-      try {
-        const rootDocRef = adminDb.collection('site_settings').doc(settingKey);
-        const rootSnap = await rootDocRef.get();
-        if (rootSnap.exists) {
-          return NextResponse.json(
-            { success: true, settingKey, data: rootSnap.data() },
-            { headers: NO_CACHE_HEADERS }
-          );
-        }
-      } catch (e) {}
     }
 
     return NextResponse.json(
@@ -122,25 +96,6 @@ export async function POST(req: NextRequest) {
     // 2. In-Memory & File Store Cache
     memorySiteSettingsCache.set(settingKey, payload);
     savePersistedSetting(settingKey, payload);
-
-    // 3. Mirror to Firebase Admin if available
-    if (adminDb && hasAdminCredentials) {
-      try {
-        const docRef = adminDb
-          .collection('artifacts')
-          .doc('tsehaycampus-e1a6d')
-          .collection('public')
-          .doc('data')
-          .collection('site_settings')
-          .doc(settingKey);
-        
-        await docRef.set(payload, { merge: true });
-        await adminDb.collection('site_settings').doc(settingKey).set(payload, { merge: true });
-        await adminDb.collection('settings').doc(settingKey).set(payload, { merge: true });
-      } catch (dbErr) {
-        console.warn('Firebase Admin mirror write warning in site-settings:', dbErr);
-      }
-    }
 
     return NextResponse.json({ 
       success: true, 

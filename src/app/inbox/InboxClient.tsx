@@ -4,9 +4,8 @@ import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import RequireAuthModal from '@/components/RequireAuthModal';
-import { auth, db } from '@/lib/firebase/config';
-import { onAuthStateChanged, User } from 'firebase/auth';
-import { doc, getDoc, collection, getDocs, query, limit } from 'firebase/firestore';
+import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/lib/supabase/client';
 import { 
   Conversation, 
   DirectMessage,
@@ -26,10 +25,9 @@ function InboxContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const targetUserId = searchParams.get('user');
+  const { user: currentUser, loading: authLoading } = useAuth();
 
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<{ displayName: string; photoURL: string; email: string; isPro: boolean; isAdmin: boolean } | null>(null);
-  const [authLoading, setAuthLoading] = useState(true);
   const [showAuthModal, setShowAuthModal] = useState(false);
 
   // Conversations & Chat State
@@ -64,35 +62,19 @@ function InboxContent() {
 
   // Auth & Profile Listener
   useEffect(() => {
-    const unsubAuth = onAuthStateChanged(auth, async (user) => {
-      setCurrentUser(user);
-      setAuthLoading(false);
-
-      if (user) {
-        let isPro = false;
-        try {
-          const userDoc = await getDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid));
-          if (userDoc.exists()) {
-            const data = userDoc.data();
-            isPro = Boolean(data?.enrolledCourses?.length > 0 || data?.isPro);
-          }
-        } catch (e) {}
-
-        const isAdmin = isUserAdmin(user.email);
-        setUserProfile({
-          displayName: user.displayName || user.email?.split('@')[0] || 'ተማሪ',
-          photoURL: user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || 'User')}&background=f9b03c&color=111827&bold=true`,
-          email: user.email || '',
-          isPro,
-          isAdmin,
-        });
-      } else {
-        setUserProfile(null);
-      }
-    });
-
-    return () => unsubAuth();
-  }, []);
+    if (currentUser) {
+      const isAdmin = isUserAdmin(currentUser.email);
+      setUserProfile({
+        displayName: currentUser.displayName || currentUser.email?.split('@')[0] || 'ተማሪ',
+        photoURL: currentUser.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.displayName || 'User')}&background=f9b03c&color=111827&bold=true`,
+        email: currentUser.email || '',
+        isPro: true,
+        isAdmin,
+      });
+    } else {
+      setUserProfile(null);
+    }
+  }, [currentUser]);
 
   // Fetch Available Contacts for New Chat Modal
   useEffect(() => {
@@ -127,26 +109,22 @@ function InboxContent() {
       const isCurrentAdmin = isUserAdmin(currentUser?.email);
       if (isCurrentAdmin) {
         try {
-          const usersRef = collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'users');
-          const q = query(usersRef, limit(20));
-          const snap = await getDocs(q);
-          const fetchedList: any[] = [];
-          snap.forEach((d) => {
-            if (currentUser && d.id === currentUser.uid) return;
-            const u = d.data();
-            fetchedList.push({
-              uid: d.id,
-              name: u.displayName || u.email?.split('@')[0] || 'ተማሪ',
-              photo: u.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.displayName || 'User')}&background=f9b03c&color=111827&bold=true`,
-              email: u.email || '',
-              isAdmin: isUserAdmin(u.email, u.role),
-              isPro: Boolean(u.enrolledCourses?.length > 0 || u.isPro),
-            });
-          });
-
-          if (fetchedList.length > 0) {
-            setAvailableContacts([...defaultContacts, ...fetchedList]);
-            return;
+          const { data } = await supabase.from('profiles').select('*').limit(20);
+          if (data && data.length > 0) {
+            const fetchedList = data
+              .filter(p => p.id !== currentUser?.uid)
+              .map(p => ({
+                uid: p.id,
+                name: p.full_name || p.display_name || p.email?.split('@')[0] || 'ተማሪ',
+                photo: p.avatar_url || p.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(p.display_name || 'User')}&background=f9b03c&color=111827&bold=true`,
+                email: p.email || '',
+                isAdmin: isUserAdmin(p.email, p.role),
+                isPro: true
+              }));
+            if (fetchedList.length > 0) {
+              setAvailableContacts([...defaultContacts, ...fetchedList]);
+              return;
+            }
           }
         } catch (e) {}
       }

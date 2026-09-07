@@ -4,7 +4,6 @@ export const fetchCache = 'force-no-store';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase/server';
-import { adminDb } from '@/lib/firebase/admin';
 import { 
   loadPersistedCommunityComments, 
   savePersistedCommunityComment, 

@@ -3,13 +3,8 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { auth } from '@/lib/firebase/config';
-import { 
-  signInWithCustomToken, 
-  signInWithEmailAndPassword,
-  confirmPasswordReset,
-  verifyPasswordResetCode 
-} from 'firebase/auth';
+import { supabase } from '@/lib/supabase/client';
+import { formatSupabaseUser } from '@/context/AuthContext';
 
 function ResetPasswordForm() {
   const searchParams = useSearchParams();
@@ -17,11 +12,9 @@ function ResetPasswordForm() {
 
   const urlEmail = searchParams.get('email') || '';
   const urlCode = searchParams.get('code') || searchParams.get('oobCode') || '';
-  const urlOobCode = searchParams.get('oobCode') || '';
 
   const [email, setEmail] = useState(urlEmail);
   const [code, setCode] = useState(urlCode);
-  const [oobCode, setOobCode] = useState(urlOobCode);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -34,21 +27,7 @@ function ResetPasswordForm() {
   useEffect(() => {
     if (urlEmail) setEmail(urlEmail);
     if (urlCode) setCode(urlCode);
-    if (urlOobCode) setOobCode(urlOobCode);
-
-    const checkCode = urlOobCode || (urlCode.length > 10 ? urlCode : '');
-    if (checkCode) {
-      verifyPasswordResetCode(auth, checkCode)
-        .then((verifiedEmail) => {
-          if (verifiedEmail) {
-            setEmail(verifiedEmail);
-          }
-        })
-        .catch((err) => {
-          console.warn('Firebase action code verification notice:', err);
-        });
-    }
-  }, [urlEmail, urlCode, urlOobCode]);
+  }, [urlEmail, urlCode]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,7 +37,6 @@ function ResetPasswordForm() {
     const cleanCode = code.trim();
     const cleanPass = newPassword.trim();
     const cleanConfirm = confirmPassword.trim();
-    const targetOobCode = oobCode || (cleanCode.length > 10 ? cleanCode : '');
 
     if (!cleanEmail) {
       setError('እባክዎ የኢሜይል አድራሻዎን ያስገቡ።');
@@ -70,8 +48,8 @@ function ResetPasswordForm() {
       return;
     }
 
-    if (!cleanCode && !targetOobCode) {
-      setError('እባክዎ የማረጋገጫ ኮድ ወይም ሊንክ ያስገቡ።');
+    if (!cleanCode) {
+      setError('እባክዎ የማረጋገጫ ኮድ ያስገቡ።');
       return;
     }
 
@@ -88,24 +66,7 @@ function ResetPasswordForm() {
     setIsSubmitting(true);
 
     try {
-      let resetSuccess = false;
-
-      // 1. If an action code is available, attempt native client-side reset
-      if (targetOobCode) {
-        try {
-          await confirmPasswordReset(auth, targetOobCode, cleanPass);
-          resetSuccess = true;
-          console.log('[reset-password] Native confirmPasswordReset succeeded');
-        } catch (fbErr: any) {
-          console.warn('[reset-password] Native confirmPasswordReset notice:', fbErr);
-          const fbErrCode = fbErr?.code || '';
-          if (fbErrCode === 'auth/expired-action-code') {
-            // Action code expired; will proceed with API route fallback
-          }
-        }
-      }
-
-      // 2. Call API route (handles 6-digit OTP, Identity Toolkit REST, or Firebase Admin update/create)
+      // Call Supabase-backed API route
       const res = await fetch('/api/auth/reset-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -113,33 +74,28 @@ function ResetPasswordForm() {
           email: cleanEmail,
           code: cleanCode,
           newPassword: cleanPass,
-          oobCode: targetOobCode || undefined,
-          alreadyReset: resetSuccess
         }),
       });
 
       const data = await res.json().catch(() => ({}));
 
-      if (!resetSuccess && (!res.ok || !data.success)) {
+      if (!res.ok || !data.success) {
         throw new Error(data.error || 'የይለፍ ቃል መቀየር አልተቻለም። እባክዎ እንደገና ይሞክሩ።');
-      }
-
-      // Auto sign in with customToken if provided
-      if (data.customToken) {
-        try {
-          const cred = await signInWithCustomToken(auth, data.customToken);
-          window.dispatchEvent(new CustomEvent('tsehay_auth_state_changed', { detail: cred.user }));
-          window.dispatchEvent(new CustomEvent('tsehay_user_logged_in', { detail: cred.user }));
-        } catch (tokenErr) {}
       }
 
       setIsSuccess(true);
 
-      // Attempt immediate password sign in if not already logged in
+      // Attempt immediate sign in with Supabase
       try {
-        const cred = await signInWithEmailAndPassword(auth, cleanEmail, cleanPass);
-        window.dispatchEvent(new CustomEvent('tsehay_auth_state_changed', { detail: cred.user }));
-        window.dispatchEvent(new CustomEvent('tsehay_user_logged_in', { detail: cred.user }));
+        const { data: signData } = await supabase.auth.signInWithPassword({
+          email: cleanEmail,
+          password: cleanPass
+        });
+        if (signData?.user) {
+          const formatted = formatSupabaseUser(signData.user);
+          window.dispatchEvent(new CustomEvent('tsehay_auth_state_changed', { detail: formatted }));
+          window.dispatchEvent(new CustomEvent('tsehay_user_logged_in', { detail: formatted }));
+        }
       } catch (passErr) {
         console.warn('Password login notice:', passErr);
       }
@@ -250,7 +206,7 @@ function ResetPasswordForm() {
               <label className="block text-xs font-bold text-slate-300">
                 ባለ 6-አሃዝ የማረጋገጫ ኮድ (Verification Code)
               </label>
-              {(urlCode || urlOobCode) && (
+              {urlCode && (
                 <span className="text-[10px] text-emerald-400 font-bold flex items-center gap-1">
                   <i className="fa-solid fa-circle-check"></i> ከሊንኩ ተያይዟል
                 </span>

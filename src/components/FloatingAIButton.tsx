@@ -4,8 +4,6 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
-import { db } from '@/lib/firebase/config';
-import { collection, doc, getDocs, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import FormattedAiText from '@/components/FormattedAiText';
 import { getCourseBySlugOrId, subscribeToCourses } from '@/lib/courseCache';
 import { getCoursePinnedPrompts } from '@/lib/aiPrompts';
@@ -197,7 +195,7 @@ export default function FloatingAIButton() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    const loadHistory = async () => {
+    const loadHistory = () => {
       try {
         const storageKey = user?.uid ? `tsehay_floating_ai_${user.uid}` : 'tsehay_floating_ai_guest';
         const local = localStorage.getItem(storageKey);
@@ -206,14 +204,6 @@ export default function FloatingAIButton() {
             const parsed = JSON.parse(local);
             if (Array.isArray(parsed) && parsed.length > 0) setMessages(parsed);
           } catch (e) {}
-        }
-
-        if (user?.uid) {
-          const docRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'ai_chat', 'floating_history');
-          const snap = await getDoc(docRef);
-          if (snap.exists() && snap.data()?.messages) {
-            setMessages(snap.data().messages);
-          }
         }
       } catch (err) {
         console.warn("Could not load floating AI history:", err);
@@ -342,13 +332,6 @@ export default function FloatingAIButton() {
       playSoundEffect('receive');
 
       try { localStorage.setItem(storageKey, JSON.stringify(finalMsgs)); } catch (e) {}
-
-      if (user?.uid) {
-        try {
-          const docRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'ai_chat', 'floating_history');
-          await setDoc(docRef, { messages: finalMsgs, updatedAt: serverTimestamp() }, { merge: true });
-        } catch (dbErr) {}
-      }
     } catch (err) {
       const errMsgs: Message[] = [
         ...newMsgs,
@@ -554,8 +537,6 @@ export default function FloatingAIButton() {
 
       if (user?.uid) {
         localStorage.setItem(`tsehay_user_notes_${user.uid}`, JSON.stringify(updated));
-        const noteDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'notes', newNote.id);
-        await setDoc(noteDocRef, newNote);
       }
     } catch (e) {
       console.warn("Could not save note:", e);
@@ -583,12 +564,6 @@ export default function FloatingAIButton() {
     }
     const storageKey = user?.uid ? `tsehay_floating_ai_${user.uid}` : 'tsehay_floating_ai_guest';
     try { localStorage.removeItem(storageKey); } catch (e) {}
-    if (user?.uid) {
-      try {
-        const docRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'ai_chat', 'floating_history');
-        await setDoc(docRef, { messages: initialMsg, updatedAt: serverTimestamp() });
-      } catch (e) {}
-    }
   };
 
   const quickPrompts = getCoursePinnedPrompts(selectedCourse, aiLang);

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { supabaseServer } from '@/lib/supabase/server';
 
 async function getPayPalAccessToken() {
   const clientId = (
@@ -53,10 +54,10 @@ export async function POST(request: Request) {
     const authHeader = request.headers.get('authorization');
     if (authHeader && authHeader.startsWith('Bearer ')) {
       try {
-        const { adminAuth } = await import('@/lib/firebase/admin');
-        if (adminAuth) {
-          const decoded = await adminAuth.verifyIdToken(authHeader.split('Bearer ')[1].trim());
-          authenticatedUserId = decoded.uid;
+        const token = authHeader.split('Bearer ')[1].trim();
+        const { data: { user } } = await supabaseServer.auth.getUser(token);
+        if (user) {
+          authenticatedUserId = user.id;
         }
       } catch (tokenErr) {
         console.warn("PayPal create-order token verification note:", tokenErr);

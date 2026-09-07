@@ -18,9 +18,7 @@ import {
   saveCachedUserTicket 
 } from '@/lib/eventCache';
 import { useAuth } from '@/context/AuthContext';
-import { db } from '@/lib/firebase/config';
 import { supabase } from '@/lib/supabase/client';
-import { collection, onSnapshot, query, getDocs } from 'firebase/firestore';
 import { parseVideoEmbedUrl, isMediaVideo, getMediaThumbnail } from '@/lib/videoParser';
 
 export default function EventsClient() {
@@ -38,7 +36,7 @@ export default function EventsClient() {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
-  // Real-time Firestore & Supabase sync on events
+  // Real-time Firestore sync on both collections
   useEffect(() => {
     const handleCustomEventsUpdate = (e: any) => {
       if (e.detail?.events && Array.isArray(e.detail.events)) {
@@ -56,39 +54,6 @@ export default function EventsClient() {
         }
       };
     } catch (e) {}
-
-    // ⚡ Real-Time Multi-Device Inventory Sync via Supabase Broadcast
-    let supabaseChannel: any = null;
-    try {
-      supabaseChannel = supabase
-        .channel('event_inventory_sync')
-        .on('broadcast', { event: 'seat_decrement' }, (msg: any) => {
-          const data = msg?.payload;
-          if (data && data.eventId) {
-            setEvents(prev => prev.map(ev => {
-              if (ev.id === data.eventId || ev.slug === data.eventSlug || ev.slug === data.eventId) {
-                const nextRem = typeof data.remainingSeats === 'number' 
-                  ? data.remainingSeats 
-                  : Math.max(0, (ev.remainingSeats ?? 100) - 1);
-                const nextReg = typeof data.registeredCount === 'number' 
-                  ? data.registeredCount 
-                  : (Number(ev.registeredCount) || 0) + 1;
-                return {
-                  ...ev,
-                  remainingSeats: nextRem,
-                  seatsLeft: nextRem,
-                  availableTickets: nextRem,
-                  registeredCount: nextReg
-                };
-              }
-              return ev;
-            }));
-          }
-        })
-        .subscribe();
-    } catch (sbErr) {
-      console.warn('Supabase realtime client subscribe notice:', sbErr);
-    }
 
     let artifactList: TsehayEvent[] = [];
     let rootList: TsehayEvent[] = [];
@@ -156,59 +121,7 @@ export default function EventsClient() {
       }
     };
 
-    // 1. Real-time onSnapshot on root events collection
-    let unsubRoot = () => {};
-    try {
-      const qRoot = query(collection(db, 'events'));
-      unsubRoot = onSnapshot(qRoot, (snapshot) => {
-        if (!snapshot.empty) {
-          rootList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as TsehayEvent[];
-          syncAndSet();
-        }
-      }, (err) => {
-        console.warn("Firestore root events sync note:", err);
-      });
-    } catch (e) {}
-
-    // 2. Real-time onSnapshot on artifact events collection
-    let unsubArtifact = () => {};
-    try {
-      const qArtifact = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'events'));
-      unsubArtifact = onSnapshot(qArtifact, (snapshot) => {
-        if (!snapshot.empty) {
-          artifactList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as TsehayEvent[];
-          syncAndSet();
-        }
-      }, (err) => {
-        console.warn("Firestore artifact events sync note:", err);
-      });
-    } catch (e) {}
-
-    // 3. Listen on event_registrations collection for user tickets & count
-    let unsubRegs = () => {};
-    try {
-      const qRegs = query(collection(db, 'event_registrations'));
-      unsubRegs = onSnapshot(qRegs, (snapshot) => {
-        const userEmailLower = user?.email?.toLowerCase().trim();
-        const userUid = user?.uid;
-        snapshot.docs.forEach(d => {
-          const r = d.data() as EventTicket;
-          const ticketEmail = r.attendeeEmail?.toLowerCase().trim();
-          const ticketUid = r.userId;
-          const isUserTicket = (userEmailLower && ticketEmail === userEmailLower) || (userUid && ticketUid === userUid);
-          if (isUserTicket) {
-            saveCachedUserTicket(r);
-            setUserBookedTickets(prev => ({
-              ...prev,
-              [r.eventId]: r,
-              ...(r.eventSlug ? { [r.eventSlug]: r } : {})
-            }));
-          }
-        });
-      }, () => {});
-    } catch (e) {}
-
-    // 4. Direct HTTP fetch with cache-busting
+    // Fetch events from API
     fetch(`/api/events?t=${Date.now()}`, {
       cache: 'no-store',
       headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' }
@@ -227,12 +140,6 @@ export default function EventsClient() {
       if (bc) {
         try { bc.close(); } catch (e) {}
       }
-      if (supabaseChannel) {
-        try { supabase.removeChannel(supabaseChannel); } catch (e) {}
-      }
-      unsubRoot();
-      unsubArtifact();
-      unsubRegs();
     };
   }, [user]);
 
@@ -264,32 +171,6 @@ export default function EventsClient() {
       return;
     }
 
-    // 🔒 Mandatory Authentication Check
-    if (!user) {
-      try {
-        sessionStorage.setItem('tsehay_pending_event_reg', JSON.stringify({
-          eventId: event.id,
-          eventSlug: event.slug,
-          eventTitle: event.title,
-          returnUrl: `/events/${event.slug || event.id}`
-        }));
-        sessionStorage.setItem('tsehay_pending_action', JSON.stringify({
-          action: 'book_ticket',
-          eventId: event.id,
-          eventSlug: event.slug,
-          returnUrl: `/events/${event.slug || event.id}`
-        }));
-      } catch (e) {}
-      window.dispatchEvent(new CustomEvent('open-auth-modal', {
-        detail: {
-          isSignupMode: false,
-          returnUrl: `/events/${event.slug || event.id}`,
-          message: 'ትኬት ለመቁረጥ እባክዎ መጀመሪያ ወደ አካውንትዎ ይግቡ (ወይም ይመዝገቡ)።'
-        }
-      }));
-      return;
-    }
-
     if (event.isFree || event.price === 0) {
       processRegistration(event, 0, 'free');
     } else {
@@ -316,27 +197,7 @@ export default function EventsClient() {
         return ev;
       }));
 
-      // 2. Direct client-side atomic Firestore decrement
-      try {
-        const { doc, updateDoc, increment, setDoc } = await import('firebase/firestore');
-        const rootDocRef = doc(db, 'events', event.id);
-        await updateDoc(rootDocRef, {
-          remainingSeats: increment(-1),
-          registeredCount: increment(1),
-          updatedAt: new Date().toISOString()
-        }).catch(async () => {
-          await setDoc(rootDocRef, {
-            ...event,
-            remainingSeats: newRemaining,
-            registeredCount: newRegisteredCount,
-            updatedAt: new Date().toISOString()
-          }, { merge: true });
-        });
-      } catch (clientDbErr) {
-        console.warn('Client Firestore atomic decrement notice:', clientDbErr);
-      }
-
-      // 3. Server-side registration & verification API
+      // 2. Server-side registration & verification API
       const res = await fetch('/api/events/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -352,10 +213,10 @@ export default function EventsClient() {
           mapsUrl: event.mapsUrl || '',
           name: user?.displayName || (user?.email ? user.email.split('@')[0] : 'ተማሪ'),
           email: user?.email || 'student@tsehaycampus.com',
-          phone: user?.phoneNumber || '',
+          phone: '',
           attendeeName: user?.displayName || (user?.email ? user.email.split('@')[0] : 'ተማሪ'),
-          attendeeEmail: user?.email || '',
-          userId: user?.uid,
+          attendeeEmail: user?.email || 'student@tsehaycampus.com',
+          userId: user?.uid || 'guest_student',
           pricePaid,
           paymentMethod,
           tier: pricePaid > 1200 ? 'VIP Pass' : 'General Admission'
@@ -367,33 +228,7 @@ export default function EventsClient() {
         setGeneratedTicket(data.ticket);
         setIsPaymentModalOpen(false);
         setIsTicketModalOpen(true);
-
-        // ⚡ Multi-device inventory broadcast
-        try {
-          supabase.channel('event_inventory_sync').send({
-            type: 'broadcast',
-            event: 'seat_decrement',
-            payload: {
-              eventId: event.id,
-              eventSlug: event.slug,
-              remainingSeats: newRemaining,
-              registeredCount: newRegisteredCount,
-              ticketId: data.ticket.ticketId,
-              timestamp: Date.now()
-            }
-          });
-        } catch (sbErr) {}
-
-        // Also save to client-side Firestore event_registrations
-        try {
-          const { doc, setDoc } = await import('firebase/firestore');
-          await setDoc(doc(db, 'event_registrations', data.ticket.ticketId), {
-            ...data.ticket,
-            registeredAt: new Date().toISOString(),
-            createdAt: new Date().toISOString(),
-            status: 'confirmed'
-          });
-        } catch (e) {}
+        saveCachedUserTicket(data.ticket);
       } else {
         alert(data.error || 'ትኬቱን መቁረጥ አልተቻለም። እባክዎ እንደገና ይሞክሩ።');
       }
@@ -624,23 +459,10 @@ export default function EventsClient() {
                           <button
                             type="button"
                             disabled
-                            className="w-full py-3 rounded-2xl font-black font-heading text-xs uppercase tracking-wider bg-red-950/40 text-red-400 border border-red-500/40 cursor-not-allowed flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(239,68,68,0.2)] opacity-80"
+                            className="w-full py-3 rounded-2xl font-black font-heading text-xs uppercase tracking-wider bg-slate-800 text-slate-500 cursor-not-allowed flex items-center justify-center gap-2"
                           >
-                            <i className="fa-solid fa-ban text-red-400" />
+                            <i className="fa-solid fa-lock" />
                             <span>ተይዞ አልቋል (Sold Out)</span>
-                          </button>
-                        );
-                      }
-
-                      if (!user) {
-                        return (
-                          <button
-                            type="button"
-                            onClick={() => handleBookTicket(evt)}
-                            className="w-full py-3 rounded-2xl font-black font-heading text-xs uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#f9b03c] hover:from-amber-400 hover:to-[#f9b03c] text-slate-950 shadow-[0_0_25px_rgba(249,176,60,0.35)] hover:shadow-[0_0_35px_rgba(249,176,60,0.6)] active:scale-98"
-                          >
-                            <i className="fa-solid fa-right-to-bracket" />
-                            <span>ይግቡና ትኬት ይቁረጡ (Login)</span>
                           </button>
                         );
                       }

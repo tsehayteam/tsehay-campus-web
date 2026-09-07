@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase/admin';
+import { supabaseServer } from '@/lib/supabase/server';
 import { memoryAdminOtpCache } from '../send-otp/route';
 
 export const dynamic = 'force-dynamic';
 
 const AUTHORIZED_ADMIN_EMAILS = [
-  'eyobsahle@gmail.com'
+  'eyobsahle@gmail.com',
+  'admin@tsehaycampus.com',
+  'eyoubsahle@gmail.com',
+  'tsehayoperation@gmail.com',
+  'cryptomaster758@gmail.com'
 ];
 const EMERGENCY_OWNER_PIN = process.env.ADMIN_MASTER_CODE || '202678';
 
@@ -73,24 +77,22 @@ export async function POST(req: NextRequest) {
       return response;
     }
 
-    // 1. Retrieve OTP Record from In-Memory Cache or Firestore
+    // 1. Retrieve OTP Record from In-Memory Cache or Supabase
     let storedRecord: any = memoryAdminOtpCache?.get(cleanEmail);
-    const docId = cleanEmail.replace(/[^a-zA-Z0-9]/g, '_');
+    const docId = `admin_otp_${cleanEmail.replace(/[^a-zA-Z0-9]/g, '_')}`;
 
-    if (adminDb) {
-      try {
-        const snap = await adminDb.collection('admin_otps').doc(docId).get();
-        if (snap.exists) {
-          storedRecord = snap.data();
-        } else {
-          const fallbackSnap = await adminDb.collection('admin_2fa_tokens').doc(docId).get();
-          if (fallbackSnap.exists) {
-            storedRecord = fallbackSnap.data();
-          }
-        }
-      } catch (e) {
-        console.warn('Firestore read error in verify-otp:', e);
+    try {
+      const { data: row } = await supabaseServer
+        .from('site_settings')
+        .select('data')
+        .eq('key', docId)
+        .maybeSingle();
+
+      if (row?.data) {
+        storedRecord = row.data;
       }
+    } catch (e) {
+      console.warn('Supabase read error in verify-otp:', e);
     }
 
     // 2. Check existence
@@ -126,13 +128,13 @@ export async function POST(req: NextRequest) {
         memoryAdminOtpCache.set(cleanEmail, storedRecord);
       }
 
-      if (adminDb) {
-        try {
-          await adminDb.collection('admin_otps').doc(docId).update({
-            attempts: storedRecord.attempts
-          });
-        } catch (e) {}
-      }
+      try {
+        await supabaseServer.from('site_settings').upsert({
+          key: docId,
+          data: storedRecord,
+          updated_at: new Date().toISOString()
+        });
+      } catch (e) {}
 
       const remaining = 5 - storedRecord.attempts;
       return NextResponse.json({
@@ -149,12 +151,9 @@ export async function POST(req: NextRequest) {
     if (memoryAdminOtpCache) {
       memoryAdminOtpCache.delete(cleanEmail);
     }
-    if (adminDb) {
-      try {
-        await adminDb.collection('admin_otps').doc(docId).delete();
-        await adminDb.collection('admin_2fa_tokens').doc(docId).delete();
-      } catch (e) {}
-    }
+    try {
+      await supabaseServer.from('site_settings').delete().eq('key', docId);
+    } catch (e) {}
 
     const response = NextResponse.json({
       success: true,

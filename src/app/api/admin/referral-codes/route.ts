@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase/admin';
+import { supabaseServer } from '@/lib/supabase/server';
+
+export const dynamic = 'force-dynamic';
 
 export interface PromoCodeItem {
   id: string;
@@ -17,29 +19,14 @@ export interface PromoCodeItem {
 
 export async function GET() {
   try {
-    if (adminDb) {
-      const snap = await adminDb
-        .collection('artifacts')
-        .doc('tsehaycampus-e1a6d')
-        .collection('public')
-        .doc('data')
-        .collection('referral_codes')
-        .get();
+    const { data: row } = await supabaseServer
+      .from('site_settings')
+      .select('data')
+      .eq('key', 'referral_codes')
+      .maybeSingle();
 
-      const list: PromoCodeItem[] = snap.docs.map(d => ({ id: d.id, ...(d.data() as any) }));
-
-      // Also check root promo_codes collection if any exist
-      try {
-        const rootSnap = await adminDb.collection('promo_codes').get();
-        rootSnap.docs.forEach(d => {
-          const docData = d.data() as any;
-          const codeVal = docData?.code || d.id;
-          if (!list.some(item => item.id === d.id || item.code === codeVal)) {
-            list.push({ id: d.id, ...docData });
-          }
-        });
-      } catch (e) {}
-
+    if (row?.data) {
+      const list: PromoCodeItem[] = Array.isArray(row.data) ? row.data : Object.values(row.data);
       return NextResponse.json({ success: true, codes: list });
     }
 
@@ -61,39 +48,40 @@ export async function POST(req: NextRequest) {
 
     const cleanCode = code.trim().toUpperCase();
 
-    if (adminDb) {
-      const codeRef = adminDb
-        .collection('artifacts')
-        .doc('tsehaycampus-e1a6d')
-        .collection('public')
-        .doc('data')
-        .collection('referral_codes')
-        .doc(cleanCode);
+    const codeData: PromoCodeItem = {
+      id: cleanCode,
+      code: cleanCode,
+      discountPercent: Number(discountPercent) || 0,
+      targetCourseId: targetCourseId || 'all',
+      description: description?.trim() || '',
+      isActive: isActive !== false,
+      usageCount: Number(body.usageCount) || 0,
+      maxUsageLimit: Number(maxUsageLimit) || 0,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
 
-      const codeData: PromoCodeItem = {
-        id: cleanCode,
-        code: cleanCode,
-        discountPercent: Number(discountPercent) || 0,
-        targetCourseId: targetCourseId || 'all',
-        description: description?.trim() || '',
-        isActive: isActive !== false,
-        usageCount: Number(body.usageCount) || 0,
-        maxUsageLimit: Number(maxUsageLimit) || 0,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
+    const { data: existingRow } = await supabaseServer
+      .from('site_settings')
+      .select('data')
+      .eq('key', 'referral_codes')
+      .maybeSingle();
 
-      await codeRef.set(codeData, { merge: true });
-
-      // Also mirror to root promo_codes
-      try {
-        await adminDb.collection('promo_codes').doc(cleanCode).set(codeData, { merge: true });
-      } catch (e) {}
-
-      return NextResponse.json({ success: true, message: `Code ${cleanCode} saved successfully`, data: codeData });
+    let list: PromoCodeItem[] = existingRow?.data && Array.isArray(existingRow.data) ? existingRow.data : [];
+    const idx = list.findIndex(c => c.id === cleanCode || c.code === cleanCode);
+    if (idx >= 0) {
+      list[idx] = { ...list[idx], ...codeData };
+    } else {
+      list.push(codeData);
     }
 
-    return NextResponse.json({ success: true, message: 'Saved via client sync' });
+    await supabaseServer.from('site_settings').upsert({
+      key: 'referral_codes',
+      data: list,
+      updated_at: new Date().toISOString()
+    });
+
+    return NextResponse.json({ success: true, message: `Code ${cleanCode} saved successfully`, data: codeData });
   } catch (error: any) {
     console.error('Error creating referral code in API route:', error);
     return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
@@ -111,25 +99,22 @@ export async function DELETE(req: NextRequest) {
 
     const cleanCode = codeId.trim().toUpperCase();
 
-    if (adminDb) {
-      const codeRef = adminDb
-        .collection('artifacts')
-        .doc('tsehaycampus-e1a6d')
-        .collection('public')
-        .doc('data')
-        .collection('referral_codes')
-        .doc(cleanCode);
+    const { data: existingRow } = await supabaseServer
+      .from('site_settings')
+      .select('data')
+      .eq('key', 'referral_codes')
+      .maybeSingle();
 
-      await codeRef.delete();
-
-      try {
-        await adminDb.collection('promo_codes').doc(cleanCode).delete();
-      } catch (e) {}
-
-      return NextResponse.json({ success: true, message: `Code ${cleanCode} deleted successfully` });
+    if (existingRow?.data && Array.isArray(existingRow.data)) {
+      const list = existingRow.data.filter((c: PromoCodeItem) => c.id !== cleanCode && c.code !== cleanCode);
+      await supabaseServer.from('site_settings').upsert({
+        key: 'referral_codes',
+        data: list,
+        updated_at: new Date().toISOString()
+      });
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, message: `Code ${cleanCode} deleted successfully` });
   } catch (error: any) {
     console.error('Error deleting referral code in API route:', error);
     return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
@@ -147,28 +132,30 @@ export async function PATCH(req: NextRequest) {
 
     const cleanCode = codeId.trim().toUpperCase();
 
-    if (adminDb) {
-      const codeRef = adminDb
-        .collection('artifacts')
-        .doc('tsehaycampus-e1a6d')
-        .collection('public')
-        .doc('data')
-        .collection('referral_codes')
-        .doc(cleanCode);
+    const { data: existingRow } = await supabaseServer
+      .from('site_settings')
+      .select('data')
+      .eq('key', 'referral_codes')
+      .maybeSingle();
 
-      const updateData: any = {
-        updatedAt: new Date().toISOString()
-      };
-      if (isActive !== undefined) updateData.isActive = Boolean(isActive);
-      if (maxUsageLimit !== undefined) updateData.maxUsageLimit = Number(maxUsageLimit) || 0;
+    if (existingRow?.data && Array.isArray(existingRow.data)) {
+      const list = existingRow.data.map((c: PromoCodeItem) => {
+        if (c.id === cleanCode || c.code === cleanCode) {
+          return {
+            ...c,
+            isActive: isActive !== undefined ? Boolean(isActive) : c.isActive,
+            maxUsageLimit: maxUsageLimit !== undefined ? Number(maxUsageLimit) : c.maxUsageLimit,
+            updatedAt: new Date().toISOString()
+          };
+        }
+        return c;
+      });
 
-      await codeRef.set(updateData, { merge: true });
-
-      try {
-        await adminDb.collection('promo_codes').doc(cleanCode).set(updateData, { merge: true });
-      } catch (e) {}
-
-      return NextResponse.json({ success: true });
+      await supabaseServer.from('site_settings').upsert({
+        key: 'referral_codes',
+        data: list,
+        updated_at: new Date().toISOString()
+      });
     }
 
     return NextResponse.json({ success: true });

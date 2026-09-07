@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase/admin';
+import { supabaseServer } from '@/lib/supabase/server';
 
 const AUTHORIZED_ADMIN_EMAILS = [
-  'eyobsahle@gmail.com'
+  'eyobsahle@gmail.com',
+  'admin@tsehaycampus.com',
+  'eyoubsahle@gmail.com',
+  'tsehayoperation@gmail.com',
+  'cryptomaster758@gmail.com'
 ];
 
-// In-memory fallback cache in case Firestore is unreachable
+// In-memory fallback cache
 const memoryOtpCache = new Map<string, { code: string; expiresAt: number; attempts: number }>();
 
 export async function POST(req: NextRequest) {
@@ -32,34 +36,33 @@ export async function POST(req: NextRequest) {
     // ACTION 1: SEND 6-DIGIT OTP TO ADMIN EMAIL
     // ==========================================
     if (action === 'send') {
-      // 1. Generate cryptographically strong 6-digit numerical code
       const min = 100000;
       const max = 999999;
       const otpCode = Math.floor(Math.random() * (max - min + 1) + min).toString();
       const now = Date.now();
       const expiresAt = now + 10 * 60 * 1000; // 10 minutes validity
 
-      // 2. Save in Memory and Firestore
       memoryOtpCache.set(cleanEmail, { code: otpCode, expiresAt, attempts: 0 });
 
-      if (adminDb) {
-        try {
-          const docId = cleanEmail.replace(/[^a-zA-Z0-9]/g, '_');
-          const ref = adminDb.collection('admin_2fa_tokens').doc(docId);
-          await ref.set({
+      const docId = `admin_2fa_${cleanEmail.replace(/[^a-zA-Z0-9]/g, '_')}`;
+      try {
+        await supabaseServer.from('site_settings').upsert({
+          key: docId,
+          data: {
             code: otpCode,
             email: cleanEmail,
             createdAt: now,
             expiresAt,
             attempts: 0,
             verified: false
-          });
-        } catch (dbErr) {
-          console.warn('Firestore 2FA save notice:', dbErr);
-        }
+          },
+          updated_at: new Date().toISOString()
+        });
+      } catch (dbErr) {
+        console.warn('Supabase 2FA save notice:', dbErr);
       }
 
-      // 3. Send HTML Email via Resend
+      // Send HTML Email via Resend
       const resendApiKey = process.env.RESEND_API_KEY;
       /**
        * 💡 ADMIN NOTICE REGARDING EMAIL SENDER PROFILE AVATAR / BRANDING:
@@ -69,7 +72,6 @@ export async function POST(req: NextRequest) {
        */
       const fromEmail = process.env.RESEND_FROM_EMAIL || 'Tsehay Campus <support@tsehaycampus.com>';
       const fallbackFrom = 'Tsehay Campus <support@tsehaycampus.com>';
-      const websiteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.tsehaycampus.com';
 
       const emailHtml = `
       <!DOCTYPE html>
@@ -149,7 +151,6 @@ export async function POST(req: NextRequest) {
           });
 
           if (!res.ok) {
-            // Fallback to onboarding@resend.dev
             await fetch('https://api.resend.com/emails', {
               method: 'POST',
               headers: {
@@ -191,17 +192,19 @@ export async function POST(req: NextRequest) {
       }
 
       let storedRecord: any = memoryOtpCache.get(cleanEmail);
+      const docId = `admin_2fa_${cleanEmail.replace(/[^a-zA-Z0-9]/g, '_')}`;
 
-      // Check Firestore if available
-      if (adminDb) {
-        try {
-          const docId = cleanEmail.replace(/[^a-zA-Z0-9]/g, '_');
-          const snap = await adminDb.collection('admin_2fa_tokens').doc(docId).get();
-          if (snap.exists) {
-            storedRecord = snap.data();
-          }
-        } catch (e) {}
-      }
+      try {
+        const { data: row } = await supabaseServer
+          .from('site_settings')
+          .select('data')
+          .eq('key', docId)
+          .maybeSingle();
+
+        if (row?.data) {
+          storedRecord = row.data;
+        }
+      } catch (e) {}
 
       // Check existence
       if (!storedRecord || !storedRecord.code) {
@@ -245,12 +248,9 @@ export async function POST(req: NextRequest) {
 
       // Clean up used OTP
       memoryOtpCache.delete(cleanEmail);
-      if (adminDb) {
-        try {
-          const docId = cleanEmail.replace(/[^a-zA-Z0-9]/g, '_');
-          await adminDb.collection('admin_2fa_tokens').doc(docId).delete();
-        } catch (e) {}
-      }
+      try {
+        await supabaseServer.from('site_settings').delete().eq('key', docId);
+      } catch (e) {}
 
       const response = NextResponse.json({
         success: true,

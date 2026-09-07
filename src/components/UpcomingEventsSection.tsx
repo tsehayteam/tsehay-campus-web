@@ -13,8 +13,6 @@ import {
   saveCachedUserTicket
 } from '@/lib/eventCache';
 import { useAuth } from '@/context/AuthContext';
-import { db } from '@/lib/firebase/config';
-import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { supabase } from '@/lib/supabase/client';
 import DigitalTicketModal from '@/components/DigitalTicketModal';
 import { parseVideoEmbedUrl, isMediaVideo, getMediaThumbnail } from '@/lib/videoParser';
@@ -150,68 +148,7 @@ export default function UpcomingEventsSection() {
       }
     };
 
-    // 1. Live Firestore listener on root events collection
-    let unsubRoot: any = null;
-    try {
-      const rootRef = collection(db, 'events');
-      unsubRoot = onSnapshot(rootRef, (snapshot) => {
-        if (!snapshot.empty) {
-          rootList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as TsehayEvent));
-          syncAndSet();
-        }
-      }, (err) => {});
-    } catch (e) {}
-
-    // 2. Live Firestore listener for artifact events collection
-    let unsubNested: any = null;
-    try {
-      const nestedRef = collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'events');
-      unsubNested = onSnapshot(nestedRef, (snapshot) => {
-        if (!snapshot.empty) {
-          artifactList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as TsehayEvent));
-          syncAndSet();
-        }
-      }, (err) => {});
-    } catch (e) {}
-
-    // 3. Live Firestore listener for event registrations to accurately decrement seats & detect user registration
-    let unsubRegs: any = null;
-    try {
-      const regsRef = collection(db, 'event_registrations');
-      unsubRegs = onSnapshot(regsRef, (snapshot) => {
-        const counts: Record<string, number> = {};
-        const userEmailLower = user?.email?.toLowerCase().trim();
-        const userUid = user?.uid;
-
-        snapshot.docs.forEach(doc => {
-          const d = doc.data() as EventTicket;
-          const eId = d.eventId || d.eventSlug;
-          if (eId) {
-            counts[eId] = (counts[eId] || 0) + 1;
-          }
-          if (d.eventSlug && d.eventSlug !== eId) {
-            counts[d.eventSlug] = (counts[d.eventSlug] || 0) + 1;
-          }
-
-          // Check if registered ticket belongs to current user
-          const ticketEmail = d.attendeeEmail?.toLowerCase().trim();
-          const ticketUid = d.userId;
-          const isUserTicket = (userEmailLower && ticketEmail === userEmailLower) || (userUid && ticketUid === userUid);
-
-          if (isUserTicket) {
-            saveCachedUserTicket(d);
-            setUserBookedTickets(prev => ({
-              ...prev,
-              [d.eventId]: d,
-              ...(d.eventSlug ? { [d.eventSlug]: d } : {})
-            }));
-          }
-        });
-        setRegistrationsCountByEvent(counts);
-      }, (err) => {});
-    } catch (e) {}
-
-    // 4. Fetch live events from API with cache-busting
+    // 1. Fetch live events from API with cache-busting
     const fetchEvents = async () => {
       try {
         const res = await fetch(`/api/events?t=${Date.now()}`, {
@@ -229,7 +166,7 @@ export default function UpcomingEventsSection() {
     };
     fetchEvents();
 
-    // 5. Supabase Realtime WebSocket subscription for live event updates
+    // 2. Supabase Realtime WebSocket subscription for live event updates
     const eventsChannel = supabase
       .channel('realtime_events_section_sync')
       .on(
@@ -281,9 +218,6 @@ export default function UpcomingEventsSection() {
       window.removeEventListener('focus', fetchEvents);
       document.removeEventListener('visibilitychange', handleVisibility);
       if (bc) bc.close();
-      if (unsubRoot) unsubRoot();
-      if (unsubNested) unsubNested();
-      if (unsubRegs) unsubRegs();
     };
   }, [user]);
 

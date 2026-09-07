@@ -1,29 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase/admin';
+import { supabaseServer } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
   try {
-    if (!adminDb) {
-      return NextResponse.json({ success: true, count: 0, waitlists: [] });
-    }
-
     const { searchParams } = new URL(req.url);
     const courseId = searchParams.get('courseId');
 
-    let query: any = adminDb
-      .collection('artifacts')
-      .doc('tsehaycampus-e1a6d')
-      .collection('course_waitlists')
-      .orderBy('timestamp', 'desc');
+    let query = supabaseServer
+      .from('waitlists')
+      .select('*')
+      .order('created_at', { ascending: false });
 
     if (courseId && courseId !== 'all') {
-      query = query.where('courseId', '==', courseId);
+      query = query.eq('course_id', courseId);
     }
 
-    const snapshot = await query.limit(500).get();
-    const waitlists = snapshot.docs.map((doc: any) => ({ ...doc.data() }));
+    const { data: rows, error } = await query.limit(500);
+
+    const waitlists = (rows || []).map((r: any) => ({
+      id: r.id,
+      name: r.name,
+      email: r.email,
+      phone: r.phone,
+      courseId: r.course_id,
+      courseTitle: r.course_title,
+      timestamp: r.created_at || r.timestamp
+    }));
 
     return NextResponse.json({
       success: true,
@@ -45,22 +49,13 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Missing waitlist ID' }, { status: 400 });
     }
 
-    if (adminDb) {
-      try {
-        await adminDb
-          .collection('artifacts')
-          .doc('tsehaycampus-e1a6d')
-          .collection('course_waitlists')
-          .doc(id)
-          .delete();
-
-        await adminDb
-          .collection('course_waitlists')
-          .doc(id)
-          .delete();
-      } catch (dbErr) {
-        console.warn('Firestore delete notice:', dbErr);
-      }
+    try {
+      await supabaseServer
+        .from('waitlists')
+        .delete()
+        .eq('id', id);
+    } catch (dbErr) {
+      console.warn('Supabase waitlist delete notice:', dbErr);
     }
 
     return NextResponse.json({

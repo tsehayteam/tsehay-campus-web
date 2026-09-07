@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase/admin';
+import { supabaseServer } from '@/lib/supabase/server';
 import {
   getWelcomeEmailHtml,
   getCourseReminderEmailHtml,
@@ -119,19 +119,17 @@ export async function POST(req: Request) {
       dispatchedCount = targetEmails.length;
     }
 
-    // Log automation to Firestore
+    // Log automation to Supabase
     try {
-      if (adminDb && typeof adminDb.collection === 'function') {
-        await adminDb.collection('email_campaign_logs').add({
-          type,
-          recipientsCount: targetEmails.length,
-          dispatchedCount,
-          subject,
-          timestamp: new Date().toISOString()
-        });
-      }
+      await supabaseServer.from('email_campaign_logs').insert({
+        type,
+        recipients_count: targetEmails.length,
+        dispatched_count: dispatchedCount,
+        subject,
+        created_at: new Date().toISOString()
+      });
     } catch (dbErr) {
-      console.warn('Firestore campaign log error:', dbErr);
+      console.warn('Supabase campaign log error:', dbErr);
     }
 
     return NextResponse.json({

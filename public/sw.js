@@ -28,12 +28,11 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Only handle GET requests, avoid intercepting Firebase/API/Media requests
+  // Only handle GET requests, avoid intercepting API/Media requests
   if (
     event.request.method !== 'GET' ||
     event.request.url.includes('/api/') ||
-    event.request.url.includes('firestore.googleapis.com') ||
-    event.request.url.includes('identitytoolkit') ||
+    event.request.url.includes('supabase.co') ||
     event.request.url.includes('googleapis') ||
     event.request.url.includes('youtube.com') ||
     event.request.url.includes('vimeo.com')
@@ -60,4 +59,3 @@ self.addEventListener('fetch', (event) => {
       })
   );
 });
-

@@ -7,9 +7,6 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import RequireAuthModal from '@/components/RequireAuthModal';
 import { useAuth } from '@/context/AuthContext';
-import { auth, db } from '@/lib/firebase/config';
-import { onAuthStateChanged, User } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
 
 function getLocalCachedUser(): { uid: string; email?: string | null; displayName?: string | null; photoURL?: string | null } | null {
   if (typeof window === 'undefined') return null;
@@ -65,20 +62,17 @@ const TRENDING_TAGS = [
 export default function CommunityClient({ initialPosts }: { initialPosts?: CommunityPost[] }) {
   const router = useRouter();
   const { user: contextUser } = useAuth();
-  const [currentUser, setCurrentUser] = useState<User | null>(() => auth.currentUser);
   const [userProfile, setUserProfile] = useState<{ displayName: string; photoURL: string; email: string; isPro: boolean; isAdmin: boolean } | null>(null);
   const [authLoading, setAuthLoading] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authModalTitle, setAuthModalTitle] = useState('ለመቀጠል እባክዎ አስቀድመው ይመዝገቡ');
   const [authModalDescription, setAuthModalDescription] = useState('በማህበረሰቡ ውስጥ ፖስት ለማድረግ፣ አስተያየት ለመስጠት እና መልዕክት ለመላክ መጀመሪያ መለያዎን ይክፈቱ።');
 
-  // Compute effective user from Firebase auth, contextUser, or local cache
+  // Compute effective user from auth context or local cache
   const effectiveUser = useMemo(() => {
-    if (currentUser) return currentUser;
     if (contextUser) return contextUser;
-    if (auth.currentUser) return auth.currentUser;
     return getLocalCachedUser();
-  }, [currentUser, contextUser]);
+  }, [contextUser]);
 
   // Compute effective profile with instant fallback so authenticated users never see logged-out state
   const effectiveProfile = useMemo(() => {
@@ -141,16 +135,6 @@ export default function CommunityClient({ initialPosts }: { initialPosts?: Commu
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
 
-  // Auth Listener
-  useEffect(() => {
-    const unsubAuth = onAuthStateChanged(auth, (user) => {
-      setCurrentUser(user);
-      setAuthLoading(false);
-    });
-
-    return () => unsubAuth();
-  }, []);
-
   // Sync profile metadata & pro status when effective user is active
   useEffect(() => {
     if (!effectiveUser) {
@@ -162,14 +146,6 @@ export default function CommunityClient({ initialPosts }: { initialPosts?: Commu
     let isMounted = true;
     async function syncProfile(user: { uid: string; email?: string | null; displayName?: string | null; photoURL?: string | null }) {
       let isPro = false;
-      try {
-        const userDoc = await getDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid));
-        if (userDoc.exists()) {
-          const data = userDoc.data();
-          isPro = Boolean(data?.enrolledCourses?.length > 0 || data?.isPro || data?.purchasedCourses?.length > 0);
-        }
-      } catch (e) {}
-
       if (typeof window !== 'undefined') {
         try {
           const cachedCourses = localStorage.getItem('tsehay_user_purchased_courses');

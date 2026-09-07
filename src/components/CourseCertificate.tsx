@@ -1,7 +1,5 @@
 'use client';
 import React, { useRef, useState, useEffect } from 'react';
-import { db } from '@/lib/firebase/config';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 interface CourseCertificateProps {
   course: any;
@@ -42,35 +40,11 @@ export default function CourseCertificate({ course, user, score = 90, issueDate 
       setIsDismissed(true);
     }
 
-    const fetchCertData = async () => {
+    const fetchCertData = () => {
       try {
-        const certDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'certificates', courseId);
-        const docSnap = await getDoc(certDocRef);
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          setPhysicalCopyClaimed(data.physical_copy_claimed ?? false);
-        } else {
-          setPhysicalCopyClaimed(false);
-        }
-
-        // Also publish to public certificates collection for public verification
-        const publicCertRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'certificates', certId);
-        await setDoc(publicCertRef, {
-          certId,
-          studentName,
-          studentEmail: user?.email || '',
-          userId: user?.uid,
-          courseId,
-          courseTitle,
-          instructor: course?.instructor || 'ኢዮብ ሳህሌ',
-          instructorTitle: course?.instructorTitle || '(መስራች እና ዋና አሰልጣኝ)',
-          issueDate: formattedDate,
-          score,
-          verified: true,
-          updatedAt: serverTimestamp()
-        }, { merge: true });
+        const claimed = localStorage.getItem(`cert_claimed_${courseId}`) === 'true';
+        setPhysicalCopyClaimed(claimed);
       } catch (err) {
-        console.error('Error loading certificate claim state:', err);
         setPhysicalCopyClaimed(false);
       }
     };
@@ -100,7 +74,6 @@ export default function CourseCertificate({ course, user, score = 90, issueDate 
 
   const handleOpenLinkedInPost = () => {
     if (typeof window !== 'undefined') {
-      // Auto copy caption to clipboard so user can just paste into LinkedIn
       navigator.clipboard.writeText(linkedInCaption);
       setCaptionCopied(true);
       
@@ -113,36 +86,18 @@ export default function CourseCertificate({ course, user, score = 90, issueDate 
     }
   };
 
-  // Record download / print action in database
-  const recordDownloadInDb = async () => {
-    if (!user?.uid || !courseId) return;
+  // Record download / print action
+  const recordDownloadInDb = () => {
     try {
-      const certDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'certificates', courseId);
-      await setDoc(certDocRef, {
-        courseId,
-        courseTitle,
-        certificate_downloaded: true,
-        downloadedAt: serverTimestamp(),
-        physical_copy_claimed: physicalCopyClaimed ?? false,
-        score,
-        updatedAt: serverTimestamp(),
-      }, { merge: true });
-    } catch (err) {
-      console.error('Error saving certificate download action to firestore:', err);
-    }
+      localStorage.setItem(`cert_downloaded_${courseId}`, 'true');
+    } catch (e) {}
   };
 
   // Claim physical copy button handler
-  const handleClaimPhysicalCopy = async () => {
-    if (!user?.uid || !courseId) return;
+  const handleClaimPhysicalCopy = () => {
     setIsClaimingInDb(true);
     try {
-      const certDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'certificates', courseId);
-      await setDoc(certDocRef, {
-        physical_copy_claimed: true,
-        claimedAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      }, { merge: true });
+      localStorage.setItem(`cert_claimed_${courseId}`, 'true');
       setPhysicalCopyClaimed(true);
     } catch (err) {
       console.error('Error updating physical copy claimed status:', err);

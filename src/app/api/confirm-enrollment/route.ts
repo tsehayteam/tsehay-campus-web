@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { adminAuth, adminDb } from '@/lib/firebase/admin';
+import { supabaseServer } from '@/lib/supabase/server';
 
 export async function POST(request: Request) {
   try {
@@ -8,19 +8,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const idToken = authHeader.split('Bearer ')[1].trim();
-    if (!adminAuth || !adminDb) {
-      return NextResponse.json({ error: 'Database service unavailable' }, { status: 500 });
+    const token = authHeader.split('Bearer ')[1].trim();
+    const { data: { user }, error: authErr } = await supabaseServer.auth.getUser(token);
+
+    if (authErr || !user) {
+      return NextResponse.json({ error: 'Unauthorized token' }, { status: 401 });
     }
 
-    const decodedToken = await adminAuth.verifyIdToken(idToken);
-    const isAdmin = decodedToken.admin === true || 
-                    decodedToken.email === 'eyobsahle@gmail.com' ||
-                    decodedToken.email === 'eyoubsahle@gmail.com' ||
-                    decodedToken.email === 'admin@tsehaycampus.com' || 
-                    decodedToken.email === 'tsehayoperation@gmail.com' ||
-                    decodedToken.email === 'habte@gmail.com' ||
-                    decodedToken.email === 'cryptomaster758@gmail.com';
+    const userEmail = user.email || '';
+    const isAdmin = user.user_metadata?.role === 'admin' ||
+                    userEmail === 'eyobsahle@gmail.com' ||
+                    userEmail === 'eyoubsahle@gmail.com' ||
+                    userEmail === 'admin@tsehaycampus.com' || 
+                    userEmail === 'tsehayoperation@gmail.com' ||
+                    userEmail === 'habte@gmail.com' ||
+                    userEmail === 'cryptomaster758@gmail.com';
 
     const { courseId, userId, paymentMethod, amount, tx_ref } = await request.json();
 
@@ -28,36 +30,22 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    const isSelf = decodedToken.uid === userId;
+    const isSelf = user.id === userId;
     if (!isAdmin && !isSelf) {
       return NextResponse.json({ error: 'Forbidden: Unauthorized enrollment target' }, { status: 403 });
     }
 
-    const userDocRef = adminDb
-      .collection('artifacts')
-      .doc('tsehaycampus-e1a6d')
-      .collection('users')
-      .doc(userId);
-
-    // 1. Save to purchased_courses collection
-    await userDocRef.collection('purchased_courses').doc(courseId).set({
-      courseId,
+    // Save to enrollments table
+    await supabaseServer.from('enrollments').upsert({
+      id: `${userId}_${courseId}`,
+      user_id: userId,
+      course_id: courseId,
       amount: Number(amount) || 0,
-      paymentMethod: paymentMethod || 'manual_admin',
+      payment_method: paymentMethod || 'manual_admin',
       tx_ref: tx_ref || `admin_tx_${Date.now()}`,
-      purchasedAt: new Date(),
-      status: 'active'
+      status: 'active',
+      created_at: new Date().toISOString()
     });
-
-    // 2. Update user root document enrolledCourses array
-    try {
-      const { FieldValue } = await import('firebase-admin/firestore');
-      await userDocRef.set({
-        enrolledCourses: FieldValue.arrayUnion(courseId)
-      }, { merge: true });
-    } catch (arrayErr) {
-      console.warn("Could not update enrolledCourses array via FieldValue, proceeding:", arrayErr);
-    }
 
     return NextResponse.json({ success: true, courseId, userId }, { status: 200 });
 

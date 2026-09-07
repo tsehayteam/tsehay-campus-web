@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase/admin';
-import { FieldValue } from 'firebase-admin/firestore';
+import { supabaseServer } from '@/lib/supabase/server';
 
 export async function POST(req: NextRequest) {
   try {
@@ -31,20 +30,16 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
-    if (!adminDb) {
-      return NextResponse.json({
-        success: false,
-        error: 'Database connection is initializing'
-      }, { status: 503 });
-    }
-
     const referralDocId = `ref_${newUserUid}`;
-    const referralRef = adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('referrals').doc(referralDocId);
-    const rootReferralRef = adminDb.collection('referrals').doc(referralDocId);
 
     // Check if this user was already attributed
-    const existingSnap = await referralRef.get();
-    if (existingSnap.exists) {
+    const { data: existing } = await supabaseServer
+      .from('referrals')
+      .select('id')
+      .eq('id', referralDocId)
+      .maybeSingle();
+
+    if (existing) {
       return NextResponse.json({
         success: true,
         message: 'Referral already credited',
@@ -55,68 +50,56 @@ export async function POST(req: NextRequest) {
     const nowIso = new Date().toISOString();
     const referralData = {
       id: referralDocId,
-      referrerUid,
-      referredUid: newUserUid,
-      referredName: newUserName,
-      referredEmail: newUserEmail,
-      createdAt: nowIso,
+      referrer_id: referrerUid,
+      referred_id: newUserUid,
+      referred_name: newUserName,
+      referred_email: newUserEmail,
+      created_at: nowIso,
       status: 'completed',
-      pointsAwarded: 50
+      points_awarded: 50
     };
 
-    // 1. Save Referral Audit Log to Firestore
-    await Promise.allSettled([
-      referralRef.set({ ...referralData, timestamp: FieldValue.serverTimestamp() }, { merge: true }),
-      rootReferralRef.set({ ...referralData, timestamp: FieldValue.serverTimestamp() }, { merge: true })
-    ]);
+    // 1. Save Referral Audit Log to Supabase
+    await supabaseServer.from('referrals').upsert(referralData);
 
-    // 2. Set 'referredBy' on the new user's profile
-    const newUserProfileRef1 = adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('users').doc(newUserUid).collection('profile').doc('info');
-    const newUserProfileRef2 = adminDb.collection('users').doc(newUserUid);
-    await Promise.allSettled([
-      newUserProfileRef1.set({ referredBy: referrerUid, referredAt: nowIso }, { merge: true }),
-      newUserProfileRef2.set({ referredBy: referrerUid, referredAt: nowIso }, { merge: true })
-    ]);
+    // 2. Set 'referred_by' on the new user's profile
+    await supabaseServer.from('profiles').upsert({
+      id: newUserUid,
+      name: newUserName,
+      email: newUserEmail,
+      referred_by: referrerUid,
+      referred_at: nowIso
+    });
 
-    // 3. Atomically increment referrer's referral count and check reward milestones
-    const referrerProfileRef1 = adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('users').doc(referrerUid).collection('profile').doc('info');
-    const referrerProfileRef2 = adminDb.collection('users').doc(referrerUid);
-
+    // 3. Increment referrer's referral count and check reward milestones
     let updatedReferralCount = 1;
     try {
-      const snap = await referrerProfileRef1.get();
-      if (snap.exists) {
-        const currentData = snap.data() || {};
-        const currentCount = Number(currentData.referralCount || 0);
-        updatedReferralCount = currentCount + 1;
+      const { data: refProfile } = await supabaseServer
+        .from('profiles')
+        .select('*')
+        .eq('id', referrerUid)
+        .maybeSingle();
 
-        const updatePayload: Record<string, any> = {
-          referralCount: FieldValue.increment(1),
-          lastReferralAt: nowIso
-        };
+      const currentCount = Number(refProfile?.referral_count || refProfile?.referralCount || 0);
+      updatedReferralCount = currentCount + 1;
 
-        // Milestone 1 (5 Invites) = 1 Free Course
-        if (updatedReferralCount >= 5 && !currentData.hasFreeCourseReward) {
-          updatePayload.hasFreeCourseReward = true;
-          updatePayload.freeCourseUnlockedAt = nowIso;
-        }
+      const updatePayload: Record<string, any> = {
+        id: referrerUid,
+        referral_count: updatedReferralCount,
+        last_referral_at: nowIso
+      };
 
-        // Milestone 2 (10 Invites) = Free 1-on-1 Mentorship
-        if (updatedReferralCount >= 10 && !currentData.hasMentorshipReward) {
-          updatePayload.hasMentorshipReward = true;
-          updatePayload.mentorshipUnlockedAt = nowIso;
-        }
-
-        await Promise.allSettled([
-          referrerProfileRef1.set(updatePayload, { merge: true }),
-          referrerProfileRef2.set(updatePayload, { merge: true })
-        ]);
-      } else {
-        await Promise.allSettled([
-          referrerProfileRef1.set({ referralCount: 1, lastReferralAt: nowIso }, { merge: true }),
-          referrerProfileRef2.set({ referralCount: 1, lastReferralAt: nowIso }, { merge: true })
-        ]);
+      if (updatedReferralCount >= 5 && !refProfile?.has_free_course_reward) {
+        updatePayload.has_free_course_reward = true;
+        updatePayload.free_course_unlocked_at = nowIso;
       }
+
+      if (updatedReferralCount >= 10 && !refProfile?.has_mentorship_reward) {
+        updatePayload.has_mentorship_reward = true;
+        updatePayload.mentorship_unlocked_at = nowIso;
+      }
+
+      await supabaseServer.from('profiles').upsert(updatePayload);
     } catch (incErr) {
       console.error('Error incrementing referrer count:', incErr);
     }

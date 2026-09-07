@@ -2,8 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '@/context/AuthContext';
-import { db } from '@/lib/firebase/config';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { supabase } from '@/lib/supabase/client';
 import { validateReferralCode, recordReferralUsage } from '@/lib/referralService';
 import { getCleanCourseImage } from '@/lib/courseCache';
 
@@ -206,17 +205,6 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
     // 2. Handle 100% Free (Either Course Free or 100% Discount via Promo/Referral Code)
     if (isFreeAfterDiscount) {
       try {
-        const purchaseRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'purchased_courses', targetCourseId);
-        await setDoc(purchaseRef, {
-          courseId: targetCourseId,
-          amount: 0,
-          paymentMethod: appliedCode ? 'referral_code' : 'free',
-          referralCode: appliedCode || null,
-          discountPercent: discountPercent,
-          purchasedAt: serverTimestamp(),
-          status: 'active'
-        }, { merge: true });
-
         if (appliedCode) {
           await recordReferralUsage(appliedCode);
         }
@@ -229,7 +217,8 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
         } catch (e) {}
 
         try {
-          const idToken = await user.getIdToken();
+          const { data: sessionData } = await supabase.auth.getSession();
+          const idToken = sessionData?.session?.access_token || '';
           fetch('/api/enroll-free', {
             method: 'POST',
             headers: {

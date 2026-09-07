@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
-import { adminDb } from '@/lib/firebase/admin';
+import { supabaseServer } from '@/lib/supabase/server';
 
 export async function POST(request: Request) {
   try {
@@ -52,36 +52,40 @@ export async function POST(request: Request) {
           }
         }
 
-        if (adminDb && (!courseId || !userId)) {
+        if (!courseId || !userId) {
           try {
-            const pendingDoc = await adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('pending_payments').doc(tx_ref).get();
-            if (pendingDoc.exists) {
-              const pendingData = pendingDoc.data();
-              courseId = pendingData?.courseId;
-              userId = pendingData?.userId;
+            const { data: pendingDoc } = await supabaseServer
+              .from('pending_payments')
+              .select('*')
+              .eq('id', tx_ref)
+              .maybeSingle();
+
+            if (pendingDoc) {
+              courseId = pendingDoc.course_id || pendingDoc.courseId;
+              userId = pendingDoc.user_id || pendingDoc.userId;
             }
           } catch (dbErr) {
-            console.error("Firestore lookup error in nowpayments webhook:", dbErr);
+            console.error("Supabase lookup error in nowpayments webhook:", dbErr);
           }
         }
 
-        if (adminDb && userId && userId !== 'anonymous' && courseId) {
-          const userDocRef = adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('users').doc(userId);
-          await userDocRef.collection('purchased_courses').doc(courseId).set({
-            courseId,
-            tx_ref,
-            amount: event.price_amount || event.pay_amount || 0,
-            paymentMethod: 'crypto',
-            purchasedAt: new Date(),
-            status: 'active'
-          });
+        if (userId && userId !== 'anonymous' && courseId) {
+          try {
+            await supabaseServer.from('enrollments').upsert({
+              id: `${userId}_${courseId}`,
+              user_id: userId,
+              course_id: courseId,
+              tx_ref,
+              amount: event.price_amount || event.pay_amount || 0,
+              payment_method: 'crypto',
+              status: 'active',
+              created_at: new Date().toISOString()
+            });
 
-          const { FieldValue } = await import('firebase-admin/firestore');
-          await userDocRef.set({
-            enrolledCourses: FieldValue.arrayUnion(courseId)
-          }, { merge: true });
-
-          console.log(`NOWPayments: Granted course ${courseId} to user ${userId}`);
+            console.log(`NOWPayments: Granted course ${courseId} to user ${userId}`);
+          } catch (err) {
+            console.error("Error saving enrollment in NOWPayments webhook:", err);
+          }
         }
       }
       return NextResponse.json({ status: 'success' }, { status: 200 });

@@ -1,23 +1,4 @@
-import { 
-  collection, 
-  doc, 
-  setDoc, 
-  getDoc, 
-  getDocs, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  query, 
-  orderBy, 
-  where, 
-  limit, 
-  onSnapshot, 
-  serverTimestamp, 
-  arrayUnion, 
-  arrayRemove,
-  increment
-} from 'firebase/firestore';
-import { db } from './firebase/config';
+import { supabase } from '@/lib/supabase/client';
 
 export interface CommunityPost {
   id: string;
@@ -164,8 +145,6 @@ export const isUserAdmin = (email?: string | null, role?: string): boolean => {
   return adminEmails.includes(email.trim().toLowerCase());
 };
 
-import { supabase } from '@/lib/supabase/client';
-
 // Helper to get instantly cached community posts
 export const getCachedCommunityPosts = (): CommunityPost[] => {
   if (typeof window === 'undefined') return INITIAL_COMMUNITY_POSTS;
@@ -250,7 +229,7 @@ export const subscribeCommunityPosts = (
         commentsCount: Number(data.commentsCount || 0),
         isPinned: Boolean(data.isPinned),
         isFeatured: Boolean(data.isFeatured),
-        createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : (data.createdAt || new Date().toISOString()),
+        createdAt: data.createdAt || new Date().toISOString(),
         updatedAt: data.updatedAt,
       });
     });
@@ -724,8 +703,6 @@ export const deleteCommentFromPost = async (postId: string, commentId: string) =
 // 💬 DIRECT MESSAGING & INBOX CHAT SYSTEM
 // ==========================================
 
-// Helper to generate deterministic conversation ID for 1-on-1 chats
-// Helper to generate deterministic conversation ID for 1-on-1 chats
 export const getConversationId = (uid1: string, uid2: string): string => {
   if (!uid1 || !uid2) return '';
   const clean1 = uid1.trim();
@@ -734,7 +711,6 @@ export const getConversationId = (uid1: string, uid2: string): string => {
   return `${sorted[0]}_${sorted[1]}`;
 };
 
-// Cache messages locally so they NEVER disappear upon refresh or component unmount
 export const getCachedConversationMessages = (conversationId: string): DirectMessage[] => {
   if (typeof window === 'undefined' || !conversationId) return [];
   try {
@@ -754,7 +730,7 @@ export const saveCachedConversationMessages = (conversationId: string, messages:
   } catch (e) {}
 };
 
-// Subscribe to User's Conversations with Dual-Collection Resilience
+// Subscribe to User's Conversations
 export const subscribeUserConversations = (
   userId: string,
   onConversationsUpdate: (conversations: Conversation[]) => void
@@ -773,59 +749,46 @@ export const subscribeUserConversations = (
     onConversationsUpdate(list);
   };
 
-  const processDoc = (docSnap: any) => {
-    const data = docSnap.data();
-    const id = docSnap.id;
-    const existing = convMap.get(id) || ({} as any);
-
-    convMap.set(id, {
-      id,
-      participants: data.participants || existing.participants || [],
-      participantDetails: {
-        ...(existing.participantDetails || {}),
-        ...(data.participantDetails || {})
-      },
-      lastMessage: data.lastMessage || existing.lastMessage || '',
-      lastMessageSenderId: data.lastMessageSenderId || existing.lastMessageSenderId || '',
-      lastMessageTime: data.lastMessageTime?.toDate
-        ? data.lastMessageTime.toDate().toISOString()
-        : (data.lastMessageTime || existing.lastMessageTime || new Date().toISOString()),
-      unreadCount: {
-        ...(existing.unreadCount || {}),
-        ...(data.unreadCount || {})
-      },
-    });
+  const fetchConversations = async () => {
+    try {
+      const res = await fetch(`/api/messages?userId=${encodeURIComponent(userId)}&t=${Date.now()}`, { cache: 'no-store' });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && Array.isArray(json.conversations)) {
+          json.conversations.forEach((c: any) => {
+            if (c && c.id) convMap.set(c.id, c);
+          });
+          publish();
+        }
+      }
+    } catch (e) {}
   };
 
-  // 1. Listen on Artifact collection
-  let unsubArtifact = () => {};
-  try {
-    const convRefArt = collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_conversations');
-    const qArt = query(convRefArt, where('participants', 'array-contains', userId), limit(50));
-    unsubArtifact = onSnapshot(qArt, (snapshot) => {
-      snapshot.forEach(processDoc);
-      publish();
-    }, () => {});
-  } catch (e) {}
+  fetchConversations();
 
-  // 2. Listen on Root collection
-  let unsubRoot = () => {};
-  try {
-    const convRefRoot = collection(db, 'community_conversations');
-    const qRoot = query(convRefRoot, where('participants', 'array-contains', userId), limit(50));
-    unsubRoot = onSnapshot(qRoot, (snapshot) => {
-      snapshot.forEach(processDoc);
-      publish();
-    }, () => {});
-  } catch (e) {}
+  // Supabase Realtime for conversations
+  const channel = supabase
+    .channel(`realtime_user_convs_${userId}_${Date.now()}`)
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'site_settings',
+        filter: 'key=eq.community_conversations'
+      },
+      () => {
+        fetchConversations();
+      }
+    )
+    .subscribe();
 
   return () => {
-    unsubArtifact();
-    unsubRoot();
+    supabase.removeChannel(channel);
   };
 };
 
-// Subscribe to Messages in a Conversation with Real-Time Multi-Collection Sync
+// Subscribe to Messages in a Conversation
 export const subscribeConversationMessages = (
   conversationId: string,
   onMessagesUpdate: (messages: DirectMessage[]) => void
@@ -852,93 +815,68 @@ export const subscribeConversationMessages = (
     onMessagesUpdate(list);
   };
 
-  const processMsg = (docSnap: any) => {
-    const data = docSnap.data();
-    const id = docSnap.id;
-    const isRead = Boolean(data.isRead || data.read || data.status === 'read');
-    const status: 'sent' | 'delivered' | 'read' = isRead
-      ? 'read'
-      : (data.status === 'delivered' ? 'delivered' : (data.status || 'delivered'));
-
-    messageMap.set(id, {
-      id,
-      conversationId: data.conversationId || conversationId,
-      senderId: data.senderId || '',
-      senderName: data.senderName || 'ተማሪ',
-      senderPhoto: data.senderPhoto || '',
-      senderEmail: data.senderEmail || '',
-      receiverId: data.receiverId || '',
-      receiverName: data.receiverName || '',
-      receiverPhoto: data.receiverPhoto || '',
-      receiverEmail: data.receiverEmail || '',
-      content: data.content || '',
-      imageUrl: data.imageUrl || null,
-      createdAt: data.createdAt?.toDate
-        ? data.createdAt.toDate().toISOString()
-        : (data.createdAt || new Date().toISOString()),
-      updatedAt: data.updatedAt?.toDate
-        ? data.updatedAt.toDate().toISOString()
-        : (data.updatedAt || null),
-      isRead,
-      status,
-      readAt: data.readAt || null,
-      isEdited: Boolean(data.isEdited),
-      isDeleted: Boolean(data.isDeleted),
-    });
+  const fetchMessages = async () => {
+    try {
+      const res = await fetch(`/api/messages?conversationId=${encodeURIComponent(conversationId)}&t=${Date.now()}`, { cache: 'no-store' });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && Array.isArray(json.messages)) {
+          json.messages.forEach((m: any) => {
+            if (m && m.id) {
+              messageMap.set(m.id, {
+                id: m.id,
+                conversationId: m.conversationId || conversationId,
+                senderId: m.senderId || '',
+                senderName: m.senderName || 'ተማሪ',
+                senderPhoto: m.senderPhoto || '',
+                senderEmail: m.senderEmail || '',
+                receiverId: m.receiverId || '',
+                receiverName: m.receiverName || '',
+                receiverPhoto: m.receiverPhoto || '',
+                receiverEmail: m.receiverEmail || '',
+                content: m.content || '',
+                imageUrl: m.imageUrl || null,
+                createdAt: m.createdAt || new Date().toISOString(),
+                updatedAt: m.updatedAt || null,
+                isRead: Boolean(m.isRead),
+                status: m.status || 'sent',
+                readAt: m.readAt || null,
+                isEdited: Boolean(m.isEdited),
+                isDeleted: Boolean(m.isDeleted),
+              });
+            }
+          });
+          publish();
+        }
+      }
+    } catch (e) {}
   };
 
-  // Listeners across all potential subcollection locations
-  const convIdVariations = [conversationId];
-  if (!conversationId.startsWith('conv_')) {
-    convIdVariations.push(`conv_${conversationId}`);
-  } else {
-    convIdVariations.push(conversationId.replace(/^conv_/, ''));
-  }
+  fetchMessages();
 
-  const unsubs: Array<() => void> = [];
-
-  convIdVariations.forEach(cId => {
-    // 1. Artifact subcollection
-    try {
-      const artRef = collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_conversations', cId, 'messages');
-      const qArt = query(artRef, orderBy('createdAt', 'asc'), limit(150));
-      unsubs.push(onSnapshot(qArt, (snap) => {
-        snap.forEach(processMsg);
-        publish();
-      }, () => {}));
-    } catch (e) {}
-
-    // 2. Root subcollection
-    try {
-      const rootRef = collection(db, 'community_conversations', cId, 'messages');
-      const qRoot = query(rootRef, orderBy('createdAt', 'asc'), limit(150));
-      unsubs.push(onSnapshot(qRoot, (snap) => {
-        snap.forEach(processMsg);
-        publish();
-      }, () => {}));
-    } catch (e) {}
-
-    // 3. Root direct_messages collection (Directly queried by conversationId)
-    try {
-      const dmRef = collection(db, 'direct_messages');
-      const qDm = query(dmRef, where('conversationId', '==', cId), limit(150));
-      unsubs.push(onSnapshot(qDm, (snap) => {
-        snap.forEach(processMsg);
-        publish();
-      }, (err) => {
-        console.warn('direct_messages query notice:', err);
-      }));
-    } catch (e) {}
-  });
+  // Supabase Realtime for Direct Messages
+  const channel = supabase
+    .channel(`realtime_conv_msgs_${conversationId}_${Date.now()}`)
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'site_settings',
+        filter: 'key=eq.direct_messages'
+      },
+      () => {
+        fetchMessages();
+      }
+    )
+    .subscribe();
 
   return () => {
-    unsubs.forEach(u => {
-      try { u(); } catch (e) {}
-    });
+    supabase.removeChannel(channel);
   };
 };
 
-// Send a Direct Message with Multi-tier Resilience & WhatsApp-style Sent Status
+// Send a Direct Message
 export const sendDirectMessage = async (
   conversationId: string,
   message: {
@@ -979,42 +917,9 @@ export const sendDirectMessage = async (
     isDeleted: false,
   };
 
-  const convPayload = {
-    id: conversationId,
-    participants: [message.senderId, message.receiverId],
-    participantDetails: {
-      [message.senderId]: {
-        name: message.senderName,
-        photo: message.senderPhoto,
-        email: message.senderEmail,
-        isAdmin: isUserAdmin(message.senderEmail),
-      },
-      [message.receiverId]: {
-        name: message.receiverName,
-        photo: message.receiverPhoto,
-        email: message.receiverEmail,
-        isAdmin: isUserAdmin(message.receiverEmail),
-      },
-    },
-    lastMessage: message.content || (message.imageUrl ? '📷 ምስል ተልኳል' : ''),
-    lastMessageSenderId: message.senderId,
-    lastMessageTime: nowIso,
-    [`unreadCount.${message.receiverId}`]: increment(1),
-  };
-
-  // 1. Client Direct Writes (Root + Artifact + Direct collections)
-  try {
-    const writes: Promise<any>[] = [
-      setDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_conversations', conversationId, 'messages', messageId), msgPayload),
-      setDoc(doc(db, 'community_conversations', conversationId, 'messages', messageId), msgPayload),
-      setDoc(doc(db, 'direct_messages', messageId), msgPayload),
-      setDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_conversations', conversationId), convPayload, { merge: true }),
-      setDoc(doc(db, 'community_conversations', conversationId), convPayload, { merge: true }),
-    ];
-    await Promise.allSettled(writes);
-  } catch (clientErr) {
-    console.warn('Client direct message write notice:', clientErr);
-  }
+  // 1. Client cache
+  const cached = getCachedConversationMessages(conversationId);
+  saveCachedConversationMessages(conversationId, [...cached.filter(m => m.id !== messageId), msgPayload]);
 
   // 2. Server API Dispatch
   try {
@@ -1053,14 +958,13 @@ export const sendDirectMessage = async (
   return { success: true, messageId, message: msgPayload };
 };
 
-// Mark Incoming Messages in a Conversation as Read (WhatsApp Blue Ticks)
+// Mark Incoming Messages in a Conversation as Read
 export const markMessagesAsRead = async (conversationId: string, readerUid: string) => {
   if (!conversationId || !readerUid) return;
 
   const nowIso = new Date().toISOString();
 
   try {
-    // 1. Mark in client cache
     const cached = getCachedConversationMessages(conversationId);
     let hasChanges = false;
     const updatedCached = cached.map(m => {
@@ -1074,7 +978,6 @@ export const markMessagesAsRead = async (conversationId: string, readerUid: stri
       saveCachedConversationMessages(conversationId, updatedCached);
     }
 
-    // 2. Update via server API
     fetch('/api/messages', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -1084,22 +987,12 @@ export const markMessagesAsRead = async (conversationId: string, readerUid: stri
         readerUid,
       })
     }).catch(() => {});
-
-    // 3. Clear unread count on conversation
-    try {
-      const convRef1 = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_conversations', conversationId);
-      const convRef2 = doc(db, 'community_conversations', conversationId);
-      await Promise.allSettled([
-        updateDoc(convRef1, { [`unreadCount.${readerUid}`]: 0 }),
-        updateDoc(convRef2, { [`unreadCount.${readerUid}`]: 0 }),
-      ]);
-    } catch (e) {}
   } catch (e) {
     console.warn('markMessagesAsRead notice:', e);
   }
 };
 
-// Edit a Sent Message (Only allowed if status !== 'read')
+// Edit a Sent Message
 export const editDirectMessage = async (
   conversationId: string,
   messageId: string,
@@ -1114,27 +1007,10 @@ export const editDirectMessage = async (
     ? existingMessageOrIsRead
     : Boolean(existingMessageOrIsRead?.status === 'read' || existingMessageOrIsRead?.isRead);
 
-  // WhatsApp-style restriction: If recipient has already read it, sender cannot edit!
   if (isRead && !isAdmin) {
     throw new Error('ተቀባዩ መልዕክቱን አንብቦታል፤ ስለዚህ ማስተካከል አይቻልም። (Message already read by recipient)');
   }
 
-  const nowIso = new Date().toISOString();
-  const updatePayload = {
-    content: newContent.trim(),
-    isEdited: true,
-    updatedAt: nowIso,
-  };
-
-  // 1. Client Firestore
-  try {
-    const p1 = updateDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_conversations', conversationId, 'messages', messageId), updatePayload);
-    const p2 = updateDoc(doc(db, 'community_conversations', conversationId, 'messages', messageId), updatePayload);
-    const p3 = updateDoc(doc(db, 'direct_messages', messageId), updatePayload);
-    await Promise.allSettled([p1, p2, p3]);
-  } catch (e) {}
-
-  // 2. Server API Dispatch
   try {
     await fetch('/api/messages', {
       method: 'PATCH',
@@ -1152,7 +1028,7 @@ export const editDirectMessage = async (
   return { success: true };
 };
 
-// Delete a Sent Message (Only allowed if status !== 'read', or if user is Admin)
+// Delete a Sent Message
 export const deleteDirectMessage = async (
   conversationId: string,
   messageId: string,
@@ -1170,28 +1046,10 @@ export const deleteDirectMessage = async (
     ? Boolean(isAdminOrExistingMessage.status === 'read' || isAdminOrExistingMessage.isRead)
     : false;
 
-  // WhatsApp-style restriction: If recipient has already read it, normal sender cannot delete it!
   if (!isAdmin && isRead) {
     throw new Error('ተቀባዩ መልዕክቱን አንብቦታል፤ ስለዚህ መሰረዝ አይቻልም። (Message already read by recipient)');
   }
 
-  const nowIso = new Date().toISOString();
-  const deletePayload = {
-    content: '🚫 ይህ መልእክት ተሰርዟል (This message was deleted)',
-    imageUrl: null,
-    isDeleted: true,
-    updatedAt: nowIso,
-  };
-
-  // 1. Client Firestore Soft-Delete (WhatsApp Style)
-  try {
-    const p1 = updateDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'community_conversations', conversationId, 'messages', messageId), deletePayload);
-    const p2 = updateDoc(doc(db, 'community_conversations', conversationId, 'messages', messageId), deletePayload);
-    const p3 = updateDoc(doc(db, 'direct_messages', messageId), deletePayload);
-    await Promise.allSettled([p1, p2, p3]);
-  } catch (e) {}
-
-  // 2. Server API Dispatch
   try {
     await fetch('/api/messages', {
       method: 'DELETE',

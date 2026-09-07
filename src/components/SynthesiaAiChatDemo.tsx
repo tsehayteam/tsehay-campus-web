@@ -3,9 +3,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCachedCourses, getCourseSlug, getCourseBySlugOrId } from '@/lib/courseCache';
-import { db } from '@/lib/firebase/config';
-import { collection, getDocs, query } from 'firebase/firestore';
-
 export interface QuestionScenario {
   id: string;
   category: string;
@@ -67,7 +64,7 @@ export default function SynthesiaAiChatDemo({ isActive = true }: SynthesiaAiChat
 
   const currentScenario = SCENARIOS[scenarioIndex];
 
-  // Fetch cached or live courses to resolve dynamic IDs
+  // Fetch cached courses to resolve dynamic IDs
   useEffect(() => {
     try {
       const cached = getCachedCourses();
@@ -75,20 +72,6 @@ export default function SynthesiaAiChatDemo({ isActive = true }: SynthesiaAiChat
         setCoursesList(cached);
       }
     } catch(e) {}
-
-    const fetchLiveCourses = async () => {
-      try {
-        const q = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses'));
-        const snap = await getDocs(q);
-        if (!snap.empty) {
-          const list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          setCoursesList(list);
-        }
-      } catch (err) {
-        console.warn("Courses fetch for AI demo:", err);
-      }
-    };
-    fetchLiveCourses();
   }, []);
 
   // Reset or pause when inactive

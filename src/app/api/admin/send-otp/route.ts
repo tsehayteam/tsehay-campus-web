@@ -1,13 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase/admin';
+import { supabaseServer } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
 const AUTHORIZED_ADMIN_EMAILS = [
-  'eyobsahle@gmail.com'
+  'eyobsahle@gmail.com',
+  'admin@tsehaycampus.com',
+  'eyoubsahle@gmail.com',
+  'tsehayoperation@gmail.com',
+  'cryptomaster758@gmail.com'
 ];
 
-// In-memory fallback cache so OTP verification works seamlessly even without Firestore network access
+// In-memory fallback cache so OTP verification works seamlessly
 export const memoryAdminOtpCache = new Map<string, { otp: string; expiresAt: number; createdAt: number; attempts: number }>();
 
 export async function POST(req: NextRequest) {
@@ -48,11 +52,12 @@ export async function POST(req: NextRequest) {
       attempts: 0
     });
 
-    // 4. Save to Firestore `admin_otps` collection
-    const docId = cleanEmail.replace(/[^a-zA-Z0-9]/g, '_');
+    // 4. Save to Supabase `site_settings` under `admin_otp_<cleanEmail>`
+    const docId = `admin_otp_${cleanEmail.replace(/[^a-zA-Z0-9]/g, '_')}`;
     try {
-      if (adminDb) {
-        await adminDb.collection('admin_otps').doc(docId).set({
+      await supabaseServer.from('site_settings').upsert({
+        key: docId,
+        data: {
           email: cleanEmail,
           otp: generatedOtp,
           code: generatedOtp,
@@ -61,20 +66,11 @@ export async function POST(req: NextRequest) {
           attempts: 0,
           verified: false,
           updatedAt: now
-        }, { merge: true });
-
-        // Also update legacy 2FA collection for backward compatibility
-        await adminDb.collection('admin_2fa_tokens').doc(docId).set({
-          email: cleanEmail,
-          code: generatedOtp,
-          createdAt: now,
-          expiresAt: expiresAt,
-          attempts: 0,
-          verified: false
-        }, { merge: true });
-      }
+        },
+        updated_at: new Date().toISOString()
+      });
     } catch (dbErr) {
-      console.warn('Firestore admin_otps save notice:', dbErr);
+      console.warn('Supabase admin_otps save notice:', dbErr);
     }
 
     // 5. Dispatch email via Resend

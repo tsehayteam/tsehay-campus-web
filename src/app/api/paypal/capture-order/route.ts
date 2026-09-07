@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase/admin';
+import { supabaseServer } from '@/lib/supabase/server';
 
 async function getPayPalAccessToken() {
   const clientId = (process.env.PAYPAL_CLIENT_ID || '').trim();
@@ -59,27 +59,20 @@ export async function POST(request: Request) {
     const customId = unit?.payments?.captures?.[0]?.custom_id || unit?.custom_id || '';
     const [userId, courseId] = customId.split(':');
 
-    if (userId && courseId && adminDb) {
-      const userDocRef = adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('users').doc(userId);
-      
-      // 1. Save purchased_courses doc
-      await userDocRef.collection('purchased_courses').doc(courseId).set({
-        courseId,
-        amount: unit?.payments?.captures?.[0]?.amount?.value || 0,
-        paymentMethod: 'paypal',
-        tx_ref: orderID,
-        purchasedAt: new Date(),
-        status: 'active'
-      });
-
-      // 2. Add courseId to enrolledCourses array
+    if (userId && courseId) {
       try {
-        const { FieldValue } = await import('firebase-admin/firestore');
-        await userDocRef.set({
-          enrolledCourses: FieldValue.arrayUnion(courseId)
-        }, { merge: true });
+        await supabaseServer.from('enrollments').upsert({
+          id: `${userId}_${courseId}`,
+          user_id: userId,
+          course_id: courseId,
+          amount: unit?.payments?.captures?.[0]?.amount?.value || 0,
+          payment_method: 'paypal',
+          tx_ref: orderID,
+          status: 'active',
+          created_at: new Date().toISOString()
+        });
       } catch (err) {
-        console.warn("Could not update enrolledCourses array:", err);
+        console.warn("Could not save PayPal enrollment to Supabase:", err);
       }
     }
 

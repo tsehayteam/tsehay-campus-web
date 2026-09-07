@@ -3,8 +3,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { db } from '@/lib/firebase/config';
-import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
 import { EventTicket } from '@/lib/eventCache';
 
 export default function AdminGateScannerPage() {

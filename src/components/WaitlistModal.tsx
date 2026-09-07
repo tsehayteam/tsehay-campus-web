@@ -1,8 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { db } from '@/lib/firebase/config';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useAuth } from '@/context/AuthContext';
 import { ComingSoonCourse } from '@/lib/courseCache';
 
@@ -29,7 +27,7 @@ export default function WaitlistModal({ isOpen, onClose, course }: WaitlistModal
       if (user) {
         setStudentName(user.displayName || '');
         setEmail(user.email || '');
-        setPhone(user.phoneNumber || '');
+        setPhone((user as any)?.phone || (user as any)?.user_metadata?.phone || '');
       } else {
         setStudentName('');
         setEmail('');
@@ -79,30 +77,12 @@ export default function WaitlistModal({ isOpen, onClose, course }: WaitlistModal
     };
 
     try {
-      // 1. Direct resilient client Firestore write
-      try {
-        await setDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'course_waitlists', waitlistId), {
-          ...waitlistPayload,
-          serverCreated: serverTimestamp()
-        });
-        await setDoc(doc(db, 'course_waitlists', waitlistId), {
-          ...waitlistPayload,
-          serverCreated: serverTimestamp()
-        });
-      } catch (dbErr) {
-        console.warn('Client Firestore waitlist write attempt:', dbErr);
-      }
-
-      // 2. Server API call
-      try {
-        await fetch('/api/waitlist', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(waitlistPayload)
-        });
-      } catch (apiErr) {
-        console.warn('Waitlist API call notice:', apiErr);
-      }
+      // Server API call to Supabase
+      await fetch('/api/waitlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(waitlistPayload)
+      });
 
       setIsSuccess(true);
     } catch (err: any) {

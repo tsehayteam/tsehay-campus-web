@@ -3,10 +3,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { db, storage } from '@/lib/firebase/config';
-import { collection, addDoc, doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import DirectCameraViewfinder from '@/components/camera/DirectCameraViewfinder';
 
 export interface StudentFeedbackModalProps {
   initialOpen?: boolean;
@@ -29,7 +25,6 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
   // 📷 Image/Screenshot Attachment State
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
-  const [isDirectCameraOpen, setIsDirectCameraOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // 🎙️ Voice Recording State
@@ -290,35 +285,18 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
     let uploadedAudioUrl: string | null = null;
 
     try {
-      // 1. Audio Processing: Fast Base64 conversion + Quick Cloud Storage Upload Attempt
+      // 1. Audio Processing
       if (audioBlob) {
         try {
           uploadedAudioUrl = await blobToDataURL(audioBlob);
         } catch (bErr) {
           console.warn('Blob to data URL notice:', bErr);
         }
-
-        // Parallel non-blocking cloud storage upload attempt (3.5s timeout)
-        try {
-          const audioStorageRef = ref(storage, `feedback_audio/${feedbackId}.webm`);
-          const uploadTask = uploadBytes(audioStorageRef, audioBlob).then(snap => getDownloadURL(snap.ref));
-          const storageUrl = await withTimeout(uploadTask, 3500, null);
-          if (storageUrl) uploadedAudioUrl = storageUrl;
-        } catch (uploadErr) {
-          console.warn('Fast storage audio upload notice:', uploadErr);
-        }
       }
 
       // 2. Image Processing
       if (imageFile) {
-        try {
-          const imageStorageRef = ref(storage, `feedback_attachments/${feedbackId}_${imageFile.name}`);
-          const uploadTask = uploadBytes(imageStorageRef, imageFile).then(snap => getDownloadURL(snap.ref));
-          const storageUrl = await withTimeout(uploadTask, 3500, null);
-          if (storageUrl) uploadedImageUrl = storageUrl;
-        } catch (uploadErr) {
-          console.warn('Fast storage image upload notice:', uploadErr);
-        }
+        uploadedImageUrl = imagePreviewUrl;
       }
 
       const feedbackPayload = {
@@ -337,23 +315,6 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
         createdAt: Date.now(),
         createdAtISO: new Date().toISOString()
       };
-
-      // 3. Direct Client Firestore Writes to user_feedbacks & student_feedback
-      try {
-        await setDoc(doc(db, 'user_feedbacks', feedbackId), {
-          ...feedbackPayload,
-          createdAt: serverTimestamp(),
-          createdAtClient: new Date().toISOString()
-        }, { merge: true });
-      } catch (fsErr) {}
-
-      try {
-        await setDoc(doc(db, 'student_feedback', feedbackId), {
-          ...feedbackPayload,
-          createdAt: serverTimestamp(),
-          createdAtClient: new Date().toISOString()
-        }, { merge: true });
-      } catch (fsErr) {}
 
       // 4. Server API Dispatch
       try {
@@ -397,7 +358,7 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
 
   return (
     <>
-      {/* 🌟 1. FLOATING FEEDBACK TRIGGER BUTTON (Draggable, Single Clean Icon, Mobile Circular FAB & Desktop Pill) */}
+      {/* 🌟 1. FLOATING FEEDBACK TRIGGER BUTTON (Draggable, Pulsing, Positioned below AI at fixed bottom-6 right-6 z-[9999]) */}
       {!isClassroomOrAdmin && (
         <div
           className="fixed bottom-6 right-6 z-[9999] font-body select-none"
@@ -413,20 +374,19 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
             onClick={() => {
               if (!hasMovedRef.current) setIsOpen(true);
             }}
-            className="group relative flex items-center justify-center p-3 sm:px-4 sm:py-2.5 rounded-full bg-gradient-to-r from-[#0d1527] via-[#13203f] to-[#0d1527] border border-[#f9b03c]/40 hover:border-[#f9b03c] text-white shadow-[0_10px_30px_rgba(0,0,0,0.8),0_0_25px_rgba(249,176,60,0.4)] hover:shadow-[0_0_35px_rgba(249,176,60,0.6)] backdrop-blur-xl transition-all duration-300 hover:scale-105 active:scale-95 cursor-grab active:cursor-grabbing select-none w-12 h-12 sm:w-auto sm:h-auto"
-            title="አስተያየት ይስጡ (Give Feedback)"
-            aria-label="Give Feedback"
+            className="group relative flex items-center gap-2.5 px-4 py-2.5 rounded-full bg-gradient-to-r from-[#0d1527] via-[#13203f] to-[#0d1527] border border-[#f9b03c]/40 hover:border-[#f9b03c] text-white shadow-[0_10px_30px_rgba(0,0,0,0.8),0_0_25px_rgba(249,176,60,0.4)] hover:shadow-[0_0_35px_rgba(249,176,60,0.6)] backdrop-blur-xl transition-all duration-300 hover:scale-105 active:scale-95 cursor-grab active:cursor-grabbing select-none"
+            title="ጠቅ አድርገው ይክፈቱ ወይም ወደ ፈለጉበት ቦታ ይጎትቱ (Click to give feedback or drag)"
           >
             <span className="absolute -inset-0.5 rounded-full bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#3268ba] opacity-35 group-hover:opacity-100 blur-xs transition duration-500 animate-pulse pointer-events-none"></span>
 
             <div className="relative flex items-center gap-2">
-              <span className="relative flex h-2.5 w-2.5">
+              <span className="relative flex h-3 w-3">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#f9b03c] opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#f9b03c]"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-[#f9b03c]"></span>
               </span>
               <i className="fa-solid fa-comment-dots text-[#f9b03c] text-sm group-hover:rotate-12 transition-transform"></i>
-              <span className="hidden sm:inline text-xs font-heading font-black text-slate-200 group-hover:text-white tracking-wide">
-                አስተያየት (Feedback)
+              <span className="text-xs font-heading font-black text-slate-200 group-hover:text-white tracking-wide">
+                💬 አስተያየት (Feedback)
               </span>
             </div>
           </button>
@@ -640,50 +600,36 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
                       )}
                     </div>
 
-                    {/* Camera & Screenshot Attachment Control */}
+                    {/* Screenshot Attachment Control */}
                     <div className="p-3 rounded-2xl bg-white/5 border border-white/10 flex flex-col justify-between gap-2">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-                          <i className="fa-solid fa-camera text-cyan-400"></i>
-                          <span>ካሜራ እና ፎቶ</span>
+                          <i className="fa-solid fa-image text-blue-400"></i>
+                          <span>ምስል / ስክሪንሾት</span>
                         </span>
                       </div>
 
                       {!imagePreviewUrl ? (
-                        <div className="grid grid-cols-2 gap-2">
-                          {/* Direct Camera Button */}
-                          <button
-                            type="button"
-                            onClick={() => setIsDirectCameraOpen(true)}
-                            className="w-full py-2 px-2.5 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-400/40 text-cyan-300 text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer active:scale-95"
-                            title="በቀጥታ በመሳሪያዎ ካሜራ ፎቶ አንሳ"
+                        <div>
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => {
+                              if (e.target.files && e.target.files[0]) {
+                                handleImageSelected(e.target.files[0]);
+                              }
+                            }}
+                            className="hidden"
+                            id="feedback-image-upload"
+                          />
+                          <label
+                            htmlFor="feedback-image-upload"
+                            className="w-full py-2 px-3 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/40 text-blue-400 text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer active:scale-95"
                           >
-                            <i className="fa-solid fa-camera"></i>
-                            <span>ፎቶ አንሳ</span>
-                          </button>
-
-                          {/* File Upload Button */}
-                          <div>
-                            <input
-                              ref={fileInputRef}
-                              type="file"
-                              accept="image/*"
-                              onChange={(e) => {
-                                if (e.target.files && e.target.files[0]) {
-                                  handleImageSelected(e.target.files[0]);
-                                }
-                              }}
-                              className="hidden"
-                              id="feedback-image-upload"
-                            />
-                            <label
-                              htmlFor="feedback-image-upload"
-                              className="w-full py-2 px-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-slate-300 text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer active:scale-95 block text-center"
-                            >
-                              <i className="fa-solid fa-paperclip"></i>
-                              <span>ከፋይል</span>
-                            </label>
-                          </div>
+                            <i className="fa-solid fa-paperclip"></i>
+                            <span>ፎቶ ምረጥ (Attach)</span>
+                          </label>
                         </div>
                       ) : (
                         <div className="flex items-center justify-between gap-2 bg-white/5 p-1.5 rounded-xl border border-white/10">
@@ -694,7 +640,7 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
                               className="w-8 h-8 rounded-lg object-cover border border-white/20 shrink-0"
                             />
                             <span className="text-[10px] text-emerald-400 font-bold truncate">
-                              ✓ ፎቶ ተያይዟል
+                              ✓ ምስል ተያይዟል
                             </span>
                           </div>
                           <button
@@ -757,17 +703,6 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
           </div>
         </div>
       )}
-
-      {/* Direct Device Camera Viewfinder Modal */}
-      <DirectCameraViewfinder
-        isOpen={isDirectCameraOpen}
-        onClose={() => setIsDirectCameraOpen(false)}
-        title="አስተያየት • የቀጥታ ካሜራ"
-        onCapture={(file, previewUrl) => {
-          setImageFile(file);
-          setImagePreviewUrl(previewUrl);
-        }}
-      />
     </>
   );
 }

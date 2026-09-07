@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { supabaseServer } from '@/lib/supabase/server';
+import { DEFAULT_COURSES } from '@/lib/courseCache';
 
 function generateCleanTxRef() {
   const randHex = Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -53,31 +55,38 @@ export async function POST(request: Request) {
     const payDetails = formatPaymentDetails(title);
     const selectedMethod = (paymethod || 'lakipay').toLowerCase();
 
-    // Verify authentic course price from Firestore to prevent client price tampering
+    // Verify authentic course price from Supabase or default cache
     try {
-      const { adminDb } = await import('@/lib/firebase/admin');
-      if (adminDb) {
-        const courseDoc = await adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('public').doc('data').collection('courses').doc(courseId).get();
-        if (courseDoc.exists) {
-          const dbCourse = courseDoc.data();
-          const dbPrice = typeof dbCourse?.price === 'number' ? dbCourse.price : Number(String(dbCourse?.price || '').replace(/[^0-9.]/g, ''));
-          if (dbPrice && dbPrice > 0) {
-            numericPrice = dbPrice;
-          }
-        }
+      const { data: dbCourse } = await supabaseServer
+        .from('courses')
+        .select('*')
+        .eq('id', courseId)
+        .maybeSingle();
 
-        await adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('pending_payments').doc(tx_ref).set({
-          courseId,
-          userId: userId || 'anonymous',
-          price: numericPrice,
-          userEmail: email,
-          tx_ref,
-          title: title || 'Course',
-          createdAt: new Date()
-        });
+      if (dbCourse) {
+        const dbPrice = typeof dbCourse?.price === 'number' ? dbCourse.price : Number(String(dbCourse?.price || '').replace(/[^0-9.]/g, ''));
+        if (dbPrice && dbPrice > 0) {
+          numericPrice = dbPrice;
+        }
+      } else {
+        const defaultMatch = DEFAULT_COURSES.find(c => c.id === courseId);
+        if (defaultMatch && defaultMatch.price > 0) {
+          numericPrice = defaultMatch.price;
+        }
       }
+
+      await supabaseServer.from('pending_payments').upsert({
+        id: tx_ref,
+        course_id: courseId,
+        user_id: userId || 'anonymous',
+        price: numericPrice,
+        user_email: email,
+        tx_ref,
+        title: title || 'Course',
+        created_at: new Date().toISOString()
+      });
     } catch (dbErr) {
-      console.warn("Firestore pending payment notice:", dbErr);
+      console.warn("Supabase pending payment notice:", dbErr);
     }
 
     const numAmount = numericPrice;

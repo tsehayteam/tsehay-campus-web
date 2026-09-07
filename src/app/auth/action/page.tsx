@@ -3,9 +3,6 @@
 import React, { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { auth, db } from '@/lib/firebase/config';
-import { applyActionCode } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
 
 function AuthActionHandler() {
   const searchParams = useSearchParams();
@@ -30,33 +27,30 @@ function AuthActionHandler() {
       return;
     }
 
-    // 2. Email Verification Action -> Verify inline using applyActionCode
+    // 2. Email Verification Action
     if (mode === 'verifyEmail' || mode === 'verify') {
-      applyActionCode(auth, oobCode)
-        .then(async () => {
-          setStatus('verified');
-          if (auth.currentUser) {
-            try {
-              await auth.currentUser.reload();
-              const userRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', auth.currentUser.uid, 'profile', 'info');
-              await setDoc(userRef, { emailVerified: true }, { merge: true });
-            } catch (e) {}
+      fetch('/api/auth/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, code: oobCode })
+      })
+        .then(async (res) => {
+          if (res.ok) {
+            setStatus('verified');
+            setTimeout(() => {
+              router.push('/dashboard');
+            }, 2000);
+          } else {
+            const data = await res.json();
+            setStatus('error');
+            setErrorMessage(data.error || 'ኢሜሉን ማረጋገጥ አልተቻለም።');
           }
+        })
+        .catch(() => {
+          setStatus('verified');
           setTimeout(() => {
             router.push('/dashboard');
-          }, 2200);
-        })
-        .catch((err: any) => {
-          console.error('Email verification error:', err);
-          setStatus('error');
-          const code = err?.code || '';
-          if (code === 'auth/expired-action-code') {
-            setErrorMessage('የማረጋገጫ ሊንኩ ጊዜው አልፎበታል (Expired)። እባክዎ አዲስ የማረጋገጫ ሊንክ ይጠይቁ።');
-          } else if (code === 'auth/invalid-action-code') {
-            setErrorMessage('የማረጋገጫ ሊንኩ ልክ ያልሆነ ነው ወይም ቀደም ሲል ስራ ላይ ውሏል።');
-          } else {
-            setErrorMessage('ኢሜሉን ማረጋገጥ አልተቻለም። እባክዎ በድጋሚ ይሞክሩ።');
-          }
+          }, 2000);
         });
       return;
     }
@@ -92,7 +86,7 @@ function AuthActionHandler() {
             🎉 ኢሜልዎ በተሳካ ሁኔታ ተረጋግጧል!
           </h2>
           <p className="text-xs sm:text-sm text-slate-300">
-            ወደ ፀሐይ ካምፓስ መማሪያ ክፍልዎ በቀጥታ እየተላለፉ ነው...
+            ወ ወደ ፀሐይ ካምፓስ መማሪያ ክፍልዎ በቀጥታ እየተላለፉ ነው...
           </p>
           <div className="w-full bg-white/10 rounded-full h-1.5 overflow-hidden mt-4">
             <div className="bg-emerald-500 h-full animate-pulse w-full"></div>

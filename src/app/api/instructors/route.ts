@@ -3,7 +3,7 @@ export const revalidate = 0;
 export const fetchCache = 'force-no-store';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase/admin';
+import { supabaseServer } from '@/lib/supabase/server';
 
 const NO_CACHE_HEADERS = {
   'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
@@ -34,38 +34,24 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
 
-    if (!adminDb) {
-      return NextResponse.json({
-        success: true,
-        instructors: [DEFAULT_INSTRUCTOR]
-      }, { headers: NO_CACHE_HEADERS });
-    }
-
     let instructorsList: any[] = [];
     try {
-      const snap = await adminDb.collection('instructors').get();
-      if (!snap.empty) {
-        instructorsList = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      }
-    } catch (e) {}
+      const { data: row, error: sbErr } = await supabaseServer
+        .from('site_settings')
+        .select('data')
+        .eq('key', 'instructors')
+        .maybeSingle();
 
-    try {
-      const artifactSnap = await adminDb
-        .collection('artifacts')
-        .doc('tsehaycampus-e1a6d')
-        .collection('public')
-        .doc('data')
-        .collection('instructors')
-        .get();
-      
-      if (!artifactSnap.empty) {
-        artifactSnap.docs.forEach(doc => {
-          if (!instructorsList.some(i => i.id === doc.id)) {
-            instructorsList.push({ id: doc.id, ...doc.data() });
-          }
-        });
+      if (!sbErr && row?.data) {
+        if (Array.isArray(row.data)) {
+          instructorsList = row.data;
+        } else if (typeof row.data === 'object') {
+          instructorsList = Object.values(row.data);
+        }
       }
-    } catch (e) {}
+    } catch (e) {
+      console.warn('Supabase instructors fetch error:', e);
+    }
 
     if (instructorsList.length === 0) {
       instructorsList = [DEFAULT_INSTRUCTOR];

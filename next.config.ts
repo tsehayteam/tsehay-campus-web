@@ -1,7 +1,6 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ['firebase-admin'],
   compress: true,
   poweredByHeader: false,
   reactStrictMode: true,
@@ -70,15 +69,6 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-  async rewrites() {
-    return [
-      {
-        source: '/__/auth/:path*',
-        destination: 'https://tsehaycampus-e1a6d.firebaseapp.com/__/auth/:path*',
-      },
-    ];
-  },
 };
 
 export default nextConfig;
-// Build trigger: 2026-09-05T02:04:00+03:00 - UI/UX & Tsehay AI TTS Updates

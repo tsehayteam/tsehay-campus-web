@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminAuth, adminDb } from '@/lib/firebase/admin';
+import { supabaseServer } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,44 +24,21 @@ export async function POST(req: NextRequest) {
     let photoURL = '';
     let uid = '';
 
-    // 1. Check with Firebase Admin Auth
-    if (adminAuth) {
-      try {
-        const userRecord = await adminAuth.getUserByEmail(cleanEmail);
-        if (userRecord && userRecord.uid) {
-          userExists = true;
-          uid = userRecord.uid;
-          displayName = userRecord.displayName || '';
-          photoURL = userRecord.photoURL || '';
-        }
-      } catch (err: any) {
-        if (err?.code !== 'auth/user-not-found') {
-          console.warn('[check-email] adminAuth warning:', err?.message || err);
-        }
-      }
-    }
+    try {
+      const { data: profile } = await supabaseServer
+        .from('profiles')
+        .select('*')
+        .eq('email', cleanEmail)
+        .maybeSingle();
 
-    // 2. Fallback check in Firestore if Admin Auth didn't find or errored
-    if (!userExists && adminDb) {
-      try {
-        const userQuery = await adminDb
-          .collection('artifacts')
-          .doc('tsehaycampus-e1a6d')
-          .collection('users')
-          .where('email', '==', cleanEmail)
-          .limit(1)
-          .get();
-
-        if (!userQuery.empty) {
-          const docData = userQuery.docs[0].data();
-          userExists = true;
-          uid = userQuery.docs[0].id;
-          displayName = docData.name || docData.displayName || docData.fullName || '';
-          photoURL = docData.photoURL || '';
-        }
-      } catch (dbErr) {
-        console.warn('[check-email] Firestore lookup warning:', dbErr);
+      if (profile) {
+        userExists = true;
+        uid = profile.id;
+        displayName = profile.name || profile.displayName || profile.full_name || '';
+        photoURL = profile.avatar_url || profile.photoURL || '';
       }
+    } catch (err: any) {
+      console.warn('[check-email] Supabase profile check warning:', err?.message || err);
     }
 
     return NextResponse.json({

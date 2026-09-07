@@ -5,8 +5,6 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
-import { db } from '@/lib/firebase/config';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 import { subscribeToCourses, getCachedCourses } from '@/lib/courseCache';
 
@@ -87,20 +85,12 @@ export default function CertificateGeneratorPage() {
       setIsDismissed(true);
     }
 
-    const fetchCertStatus = async () => {
-      try {
-        const certDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'certificates', courseKey);
-        const docSnap = await getDoc(certDocRef);
-        if (docSnap.exists()) {
-          setPhysicalCopyClaimed(docSnap.data()?.physical_copy_claimed ?? false);
-        } else {
-          setPhysicalCopyClaimed(false);
-        }
-      } catch (err) {
-        setPhysicalCopyClaimed(false);
-      }
-    };
-    fetchCertStatus();
+    try {
+      const claimed = localStorage.getItem(`cert_gen_claimed_${courseKey}`) === 'true';
+      setPhysicalCopyClaimed(claimed);
+    } catch (err) {
+      setPhysicalCopyClaimed(false);
+    }
   }, [user?.uid, courseKey]);
 
   // Responsive scaling for the 1123px wide certificate preview
@@ -120,36 +110,16 @@ export default function CertificateGeneratorPage() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const recordDownloadInDb = async () => {
-    if (!user?.uid) return;
+  const recordDownloadInDb = () => {
     try {
-      const certDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'certificates', courseKey);
-      await setDoc(certDocRef, {
-        courseTitle: selectedCourse,
-        studentName,
-        certificate_downloaded: true,
-        downloadedAt: serverTimestamp(),
-        physical_copy_claimed: physicalCopyClaimed ?? false,
-        updatedAt: serverTimestamp(),
-      }, { merge: true });
-    } catch (err) {
-      console.error('Error tracking download action in DB:', err);
-    }
+      localStorage.setItem(`cert_gen_downloaded_${courseKey}`, 'true');
+    } catch (err) {}
   };
 
-  const handleClaimPhysicalCopy = async () => {
-    if (!user?.uid) {
-      setPhysicalCopyClaimed(true);
-      return;
-    }
+  const handleClaimPhysicalCopy = () => {
     setIsClaimingInDb(true);
     try {
-      const certDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'certificates', courseKey);
-      await setDoc(certDocRef, {
-        physical_copy_claimed: true,
-        claimedAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      }, { merge: true });
+      localStorage.setItem(`cert_gen_claimed_${courseKey}`, 'true');
       setPhysicalCopyClaimed(true);
     } catch (err) {
       console.error('Error claiming physical copy:', err);

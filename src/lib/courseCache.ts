@@ -1,7 +1,6 @@
-// @ts-nocheck
-import { db } from '@/lib/firebase/config';
-import { collection, onSnapshot, query } from 'firebase/firestore';
+import { supabase } from '@/lib/supabase/client';
 import { getMediaThumbnail } from './videoParser';
+
 
 export const DEFAULT_COURSES = [
   {
@@ -597,42 +596,25 @@ export function subscribeToCourses(callback: (courses: any[]) => void): () => vo
     })
     .catch(err => console.warn('API courses fetch note:', err));
 
-  // 3. Real-Time Firestore Live Listener on the Authoritative Admin Courses Collection:
-  // artifacts/tsehaycampus-e1a6d/public/data/courses
-  let unsubNested = () => {};
-  try {
-    const nestedQuery = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses'));
-    unsubNested = onSnapshot(nestedQuery, (snap) => {
-      if (!isCleanedUp && !snap.empty) {
-        const list = snap.docs
-          .map(doc => ({ id: doc.id, ...doc.data() }))
-          .filter(isValidCourse);
-        if (list.length > 0) {
-          emitIfChanged(list, true);
-        }
+  // 3. Real-Time Supabase WebSocket Subscription on courses table
+  const supabaseChannel = supabase
+    .channel(`realtime_courses_cache_${Date.now()}`)
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'courses' },
+      () => {
+        fetch(`/api/courses?t=${Date.now()}`)
+          .then(res => res.json())
+          .then(data => {
+            if (!isCleanedUp && data.courses && Array.isArray(data.courses)) {
+              emitIfChanged(data.courses, true);
+            }
+          })
+          .catch(() => {});
       }
-    }, (err) => {
-      console.warn('Nested Firestore listener sync note:', err.message);
-    });
-  } catch (e) {
-    console.warn('Nested Firestore listener init note:', e);
-  }
+    )
+    .subscribe();
 
-  // b) Root courses collection
-  let unsubRoot = () => {};
-  try {
-    const rootQuery = query(collection(db, 'courses'));
-    unsubRoot = onSnapshot(rootQuery, (snap) => {
-      if (!isCleanedUp && !snap.empty) {
-        const list = snap.docs
-          .map(doc => ({ id: doc.id, ...doc.data() }))
-          .filter(isValidCourse);
-        if (list.length > 0) {
-          emitIfChanged(list, false);
-        }
-      }
-    }, (err) => {});
-  } catch (e) {}
 
   // 4. Cross-Tab Broadcast Channel Listener (Nanosecond Live Sync across multiple browser tabs)
   let bc: BroadcastChannel | null = null;
@@ -669,14 +651,14 @@ export function subscribeToCourses(callback: (courses: any[]) => void): () => vo
   // Return comprehensive cleanup function
   return () => {
     isCleanedUp = true;
-    unsubNested();
-    unsubRoot();
+    supabase.removeChannel(supabaseChannel);
     if (bc) {
       bc.close();
     }
     window.removeEventListener('tsehay_courses_updated', handleCustomUpdate);
     window.removeEventListener('storage', handleStorage);
   };
+
 }
 
 export interface ComingSoonCourse {

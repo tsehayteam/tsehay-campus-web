@@ -1,7 +1,48 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase/admin';
+import { supabaseServer } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
+
+const NO_CACHE_HEADERS = {
+  'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+  'CDN-Cache-Control': 'no-store',
+  'Vercel-CDN-Cache-Control': 'no-store',
+  'Pragma': 'no-cache',
+  'Expires': '0',
+};
+
+async function getWaitlists(): Promise<any[]> {
+  try {
+    const { data: row, error } = await supabaseServer
+      .from('site_settings')
+      .select('data')
+      .eq('key', 'course_waitlists')
+      .maybeSingle();
+
+    if (!error && row?.data && Array.isArray(row.data)) {
+      return row.data;
+    }
+  } catch (e) {
+    console.warn('Supabase waitlist fetch warning:', e);
+  }
+  return [];
+}
+
+async function saveWaitlists(waitlists: any[]) {
+  try {
+    await supabaseServer
+      .from('site_settings')
+      .upsert({
+        key: 'course_waitlists',
+        data: waitlists,
+        updated_at: new Date().toISOString()
+      });
+  } catch (e) {
+    console.warn('Supabase waitlist save error:', e);
+  }
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -11,7 +52,7 @@ export async function POST(req: NextRequest) {
     if (!studentName || !phone) {
       return NextResponse.json(
         { success: false, error: 'እባክዎ ሙሉ ስምዎን እና ስልክ ቁጥርዎን ያስገቡ (Full name and phone are required).' },
-        { status: 400 }
+        { status: 400, headers: NO_CACHE_HEADERS }
       );
     }
 
@@ -28,24 +69,9 @@ export async function POST(req: NextRequest) {
       status: 'pending'
     };
 
-    if (adminDb) {
-      try {
-        // Dual write for nested artifacts and root collection
-        await adminDb
-          .collection('artifacts')
-          .doc('tsehaycampus-e1a6d')
-          .collection('course_waitlists')
-          .doc(waitlistId)
-          .set(newEntry);
-
-        await adminDb
-          .collection('course_waitlists')
-          .doc(waitlistId)
-          .set(newEntry);
-      } catch (dbErr) {
-        console.warn('Firestore waitlist write notice:', dbErr);
-      }
-    }
+    const waitlists = await getWaitlists();
+    const updated = [newEntry, ...waitlists.filter(w => w.id !== waitlistId)];
+    await saveWaitlists(updated);
 
     // 🌟 Automated VIP Pre-registration Confirmation Email via Resend
     if (newEntry.email && newEntry.email.includes('@')) {
@@ -168,45 +194,34 @@ export async function POST(req: NextRequest) {
       success: true,
       message: 'የተጠባባቂዎች ዝርዝር ውስጥ በተሳካ ሁኔታ ተመዝግበዋል!',
       waitlist: newEntry
-    });
+    }, { headers: NO_CACHE_HEADERS });
   } catch (error: any) {
     console.error('Waitlist submission error:', error);
     return NextResponse.json(
       { success: false, error: error.message || 'Server error occurred' },
-      { status: 500 }
+      { status: 500, headers: NO_CACHE_HEADERS }
     );
   }
 }
 
 export async function GET(req: NextRequest) {
   try {
-    if (!adminDb) {
-      return NextResponse.json({ success: true, count: 0, waitlists: [] });
-    }
-
     const { searchParams } = new URL(req.url);
     const courseId = searchParams.get('courseId');
 
-    let query: any = adminDb
-      .collection('artifacts')
-      .doc('tsehaycampus-e1a6d')
-      .collection('course_waitlists')
-      .orderBy('timestamp', 'desc');
+    let waitlists = await getWaitlists();
 
     if (courseId && courseId !== 'all') {
-      query = query.where('courseId', '==', courseId);
+      waitlists = waitlists.filter(w => w.courseId === courseId);
     }
-
-    const snapshot = await query.limit(100).get();
-    const waitlists = snapshot.docs.map((doc: any) => ({ ...doc.data() }));
 
     return NextResponse.json({
       success: true,
       count: waitlists.length,
       waitlists
-    });
+    }, { headers: NO_CACHE_HEADERS });
   } catch (error: any) {
     console.warn('Waitlist GET error:', error);
-    return NextResponse.json({ success: true, count: 0, waitlists: [] });
+    return NextResponse.json({ success: true, count: 0, waitlists: [] }, { headers: NO_CACHE_HEADERS });
   }
 }

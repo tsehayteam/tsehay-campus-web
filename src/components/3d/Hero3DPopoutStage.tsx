@@ -4,8 +4,6 @@ import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
 import { gsap } from 'gsap';
 import { parseVideoEmbedUrl, parseImageUrl } from '@/lib/videoParser';
-import { db } from '@/lib/firebase/config';
-import { doc, onSnapshot } from 'firebase/firestore';
 import { supabase } from '@/lib/supabase/client';
 import CinematicVideoModal from '@/components/CinematicVideoModal';
 

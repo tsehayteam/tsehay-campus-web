@@ -4,10 +4,13 @@ export const fetchCache = 'force-no-store';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase/server';
-import { adminDb, adminAuth } from '@/lib/firebase/admin';
 
 const AUTHORIZED_ADMIN_EMAILS = [
-  'eyobsahle@gmail.com'
+  'eyobsahle@gmail.com',
+  'admin@tsehaycampus.com',
+  'eyoubsahle@gmail.com',
+  'tsehayoperation@gmail.com',
+  'cryptomaster758@gmail.com'
 ];
 
 const NO_CACHE_HEADERS = {
@@ -27,14 +30,15 @@ async function verifyAdminAuth(req: NextRequest, emailParam?: string | null): Pr
   }
 
   const authHeader = req.headers.get('authorization');
-  if (authHeader && authHeader.startsWith('Bearer ') && adminAuth) {
+  if (authHeader && authHeader.startsWith('Bearer ')) {
     try {
       const idToken = authHeader.split('Bearer ')[1].trim();
       if (idToken) {
-        const decoded = await adminAuth.verifyIdToken(idToken);
+        const { data: { user } } = await supabaseServer.auth.getUser(idToken);
         if (
-          decoded.admin === true || 
-          (decoded.email && AUTHORIZED_ADMIN_EMAILS.includes(decoded.email.toLowerCase()))
+          user &&
+          (user.user_metadata?.role === 'admin' ||
+           (user.email && AUTHORIZED_ADMIN_EMAILS.includes(user.email.toLowerCase())))
         ) {
           return true;
         }
@@ -99,20 +103,6 @@ export async function GET(req: NextRequest) {
         timestamp: r.timestamp,
         updatedAt: r.updated_at
       }));
-    } else if (adminDb) {
-      // Fallback to Firebase if Supabase has 0 rows
-      try {
-        const snapshot = await adminDb
-          .collection('artifacts')
-          .doc('tsehaycampus-e1a6d')
-          .collection('public')
-          .doc('data')
-          .collection('youtube_videos')
-          .orderBy('order', 'asc')
-          .get();
-
-        videos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      } catch (e) {}
     }
 
     return NextResponse.json({ success: true, count: videos.length, videos }, { headers: NO_CACHE_HEADERS });
@@ -147,63 +137,41 @@ export async function POST(req: NextRequest) {
     const formattedPayload = {
       id: docId,
       title: videoData.title ? videoData.title.trim() : 'ነፃ የዩቲዩብ ስልጠና',
-      youtubeUrl: videoData.youtubeUrl ? videoData.youtubeUrl.trim() : '',
-      youtubeId: videoData.youtubeId || '',
+      youtube_url: videoData.youtubeUrl ? videoData.youtubeUrl.trim() : '',
+      youtube_id: videoData.youtubeId || '',
       thumbnail: videoData.thumbnail ? videoData.thumbnail.trim() : '',
-      videoSrc: videoData.videoSrc ? videoData.videoSrc.trim() : '',
-      order: orderNum,
-      timestamp,
-      updatedAt: nowIso,
+      video_src: videoData.videoSrc ? videoData.videoSrc.trim() : '',
+      order_num: orderNum,
+      is_public: true,
+      status: 'Active',
+      timestamp: timestamp,
+      updated_at: nowIso,
     };
 
-    // 1. Primary: Save to Supabase youtube_videos table
-    try {
-      const { error: sbErr } = await supabaseServer
-        .from('youtube_videos')
-        .upsert({
-          id: docId,
-          title: formattedPayload.title,
-          youtube_url: formattedPayload.youtubeUrl,
-          youtube_id: formattedPayload.youtubeId,
-          thumbnail: formattedPayload.thumbnail,
-          video_src: formattedPayload.videoSrc,
-          order_num: orderNum,
-          is_public: true,
-          status: 'Active',
-          timestamp: timestamp,
-          updated_at: nowIso
-        });
+    // Save to Supabase youtube_videos table
+    const { error: sbErr } = await supabaseServer
+      .from('youtube_videos')
+      .upsert(formattedPayload);
 
-      if (sbErr) {
-        console.warn('Supabase youtube_videos upsert warning:', sbErr);
-      }
-    } catch (e) {
-      console.warn('Supabase youtube_videos exception:', e);
-    }
-
-    // 2. Mirror to Firebase Admin if available
-    if (adminDb) {
-      try {
-        const nestedRef = adminDb
-          .collection('artifacts')
-          .doc('tsehaycampus-e1a6d')
-          .collection('public')
-          .doc('data')
-          .collection('youtube_videos')
-          .doc(docId);
-
-        await nestedRef.set(formattedPayload, { merge: true });
-        await adminDb.collection('youtube_videos').doc(docId).set(formattedPayload, { merge: true });
-      } catch (mirrorErr) {
-        console.warn('Firebase mirror warning:', mirrorErr);
-      }
+    if (sbErr) {
+      console.warn('Supabase youtube_videos upsert warning:', sbErr);
     }
 
     return NextResponse.json({
       success: true,
       message: 'የዩቲዩብ ቪዲዮው በተሳካ ሁኔታ ተቀምጧል! (YouTube Video Saved Successfully)',
       docId,
-      video: formattedPayload
+      video: {
+        id: docId,
+        title: formattedPayload.title,
+        youtubeUrl: formattedPayload.youtube_url,
+        youtubeId: formattedPayload.youtube_id,
+        thumbnail: formattedPayload.thumbnail,
+        videoSrc: formattedPayload.video_src,
+        order: orderNum,
+        timestamp,
+        updatedAt: nowIso
+      }
     }, { headers: NO_CACHE_HEADERS });
 
   } catch (error: any) {
@@ -230,7 +198,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Missing videoId' }, { status: 400, headers: NO_CACHE_HEADERS });
     }
 
-    // 1. Delete from Supabase
+    // Delete from Supabase
     try {
       await supabaseServer
         .from('youtube_videos')
@@ -238,21 +206,6 @@ export async function DELETE(req: NextRequest) {
         .eq('id', videoId);
     } catch (e) {
       console.warn('Supabase delete warning:', e);
-    }
-
-    // 2. Delete from Firebase mirror
-    if (adminDb) {
-      try {
-        await adminDb
-          .collection('artifacts')
-          .doc('tsehaycampus-e1a6d')
-          .collection('public')
-          .doc('data')
-          .collection('youtube_videos')
-          .doc(videoId)
-          .delete();
-        await adminDb.collection('youtube_videos').doc(videoId).delete();
-      } catch (e) {}
     }
 
     return NextResponse.json({

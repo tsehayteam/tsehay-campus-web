@@ -6,8 +6,6 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import PaymentModal from '@/components/PaymentModal';
 import { useAuth } from '@/context/AuthContext';
-import { db } from '@/lib/firebase/config';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 interface MentorshipTier {
   id: string;
@@ -151,7 +149,7 @@ export default function MentorshipClient() {
       const confirmed = {
         id: bId,
         name: fullName || user?.displayName || 'ተማሪ',
-        phone: phone || user?.phoneNumber || '',
+        phone: phone || (user as any)?.phone || (user as any)?.user_metadata?.phone || '',
         email: email || user?.email || '',
         date: selectedDate,
         time: selectedTime,
@@ -434,21 +432,6 @@ export default function MentorshipClient() {
     };
 
     try {
-      try {
-        await addDoc(collection(db, 'mentorship_bookings'), {
-          ...bookingPayload,
-          status: 'confirmed',
-          createdAtServer: serverTimestamp()
-        });
-        await addDoc(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'mentorship_bookings'), {
-          ...bookingPayload,
-          status: 'confirmed',
-          createdAtServer: serverTimestamp()
-        });
-      } catch (firestoreErr) {
-        console.warn('Direct client firestore save warning:', firestoreErr);
-      }
-
       try {
         await fetch('/api/mentorship', {
           method: 'POST',

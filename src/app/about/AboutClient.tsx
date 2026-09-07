@@ -3,8 +3,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
 import Footer from '@/components/Footer';
-import { db } from '@/lib/firebase/config';
-import { doc, onSnapshot, collection, query, orderBy } from 'firebase/firestore';
 import { supabase } from '@/lib/supabase/client';
 import { parseVideoEmbedUrl, parseImageUrl, getMediaThumbnail } from '@/lib/videoParser';
 
@@ -451,21 +449,6 @@ function AboutHeroPlayer({
   });
   const [isPlaying, setIsPlaying] = useState(false);
 
-  // Auto-mute background music when About hero video is playing
-  useEffect(() => {
-    if (isPlaying) {
-      window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: true } }));
-      window.dispatchEvent(new CustomEvent('duck-ambient-audio'));
-    } else {
-      window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: false } }));
-      window.dispatchEvent(new CustomEvent('restore-ambient-audio'));
-    }
-    return () => {
-      window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: false } }));
-      window.dispatchEvent(new CustomEvent('restore-ambient-audio'));
-    };
-  }, [isPlaying]);
-
   // Sync prop changes from SSR into active state
   useEffect(() => {
     if (initialVideoUrl && initialVideoUrl.trim()) {
@@ -714,7 +697,7 @@ function AboutHeroPlayer({
                   frameBorder="0" 
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen" 
                   allowFullScreen
-                  loading="lazy"
+                  loading="eager"
                 ></iframe>
               )}
             </div>
@@ -731,7 +714,6 @@ function AboutHeroPlayer({
 interface ShortReel {
   id: string;
   src: string;
-  poster?: string;
   title?: string;
 }
 
@@ -739,13 +721,11 @@ const DEFAULT_REELS: ShortReel[] = [
   {
     id: 'reel-1',
     src: '/assets/videos/Tsehay.mp4',
-    poster: '/assets/about_video_cover.jpg',
     title: 'የካምፓሳችን አጭር ቪዲዮ (Campus Reel 1)'
   },
   {
     id: 'reel-2',
     src: '/assets/videos/Marketing%20and%20psyco.mp4',
-    poster: '/assets/hero-bg-new.jpg',
     title: 'የማርኬቲንግ እና ሳይኮሎጂ ስልጠና (Campus Reel 2)'
   }
 ];
@@ -758,43 +738,7 @@ function AboutSingleReelSlider() {
   const touchStartX = useRef<number | null>(null);
   const touchEndX = useRef<number | null>(null);
 
-  // Auto-mute background music when short reels are playing
-  useEffect(() => {
-    if (isPlaying) {
-      window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: true } }));
-      window.dispatchEvent(new CustomEvent('duck-ambient-audio'));
-    } else {
-      window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: false } }));
-      window.dispatchEvent(new CustomEvent('restore-ambient-audio'));
-    }
-    return () => {
-      window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: false } }));
-      window.dispatchEvent(new CustomEvent('restore-ambient-audio'));
-    };
-  }, [isPlaying]);
-
-  useEffect(() => {
-    try {
-      const q = query(
-        collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'about_reels'),
-        orderBy('order', 'asc')
-      );
-      const unsubscribe = onSnapshot(q, (snapshot) => {
-        if (!snapshot.empty) {
-          const list: ShortReel[] = snapshot.docs.map((d) => ({
-            id: d.id,
-            src: d.data().src || d.data().videoUrl || '/assets/videos/Tsehay.mp4',
-            poster: d.data().poster || d.data().thumbnail || d.data().thumbnailUrl || '/assets/about_video_cover.jpg',
-            title: d.data().title || ''
-          }));
-          if (list.length > 0) setReels(list);
-        }
-      }, (error) => {
-        // Silent graceful fallback
-      });
-      return () => unsubscribe();
-    } catch (e) {}
-  }, []);
+  // Default reels initialized seamlessly
 
   useEffect(() => {
     Object.values(videoRefs.current).forEach((vid) => {
@@ -937,12 +881,11 @@ function AboutSingleReelSlider() {
                 }
               }}
               src={`${reel.src}#t=0.001`}
-              poster={reel.poster || '/assets/about_video_cover.jpg'}
               playsInline
               webkit-playsinline="true"
               disablePictureInPicture
               controlsList="nodownload noremoteplayback"
-              preload={idx === currentIndex ? 'auto' : 'metadata'}
+              preload="auto"
               onPlay={() => {
                 if (idx === currentIndex) setIsPlaying(true);
               }}
@@ -959,7 +902,7 @@ function AboutSingleReelSlider() {
             />
           ))}
 
-          <div className={`absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-black/15 z-15 pointer-events-none transition-opacity duration-300 ${isPlaying ? 'opacity-0' : 'opacity-100'}`} />
+          <div className={`absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/30 z-15 pointer-events-none transition-opacity duration-300 ${isPlaying ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'}`} />
 
           <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
             {!isPlaying && (
@@ -1009,22 +952,7 @@ function AboutSingleCleanPhoto() {
   const [photoSrc, setPhotoSrc] = useState<string>('https://i.postimg.cc/qvqt1bJK/about-photo-1.jpg');
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
 
-  useEffect(() => {
-    try {
-      const q = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'about_photos'), orderBy('order', 'asc'));
-      const unsubscribe = onSnapshot(q, (snapshot) => {
-        if (!snapshot.empty) {
-          const firstDoc = snapshot.docs[0].data();
-          if (firstDoc && (firstDoc.src || firstDoc.imageUrl)) {
-            setPhotoSrc(firstDoc.src || firstDoc.imageUrl);
-          }
-        }
-      }, (error) => {
-        // Silent fallback
-      });
-      return () => unsubscribe();
-    } catch (e) {}
-  }, []);
+  // Clean community photo state initialized seamlessly
 
   return (
     <div className="max-w-4xl mx-auto flex justify-center">
@@ -1043,8 +971,6 @@ function AboutSingleCleanPhoto() {
         <img
           src={photoSrc}
           alt="Tsehay Campus Community"
-          loading="lazy"
-          decoding="async"
           className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
           onError={(e) => {
             (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=1200&auto=format&fit=crop';

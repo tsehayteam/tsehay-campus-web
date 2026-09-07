@@ -3,10 +3,7 @@
 import React, { useEffect, useState, useRef, Suspense } from 'react';
 
 
-import { db, auth } from '@/lib/firebase/config';
-import { collection, getDocs, query, orderBy, doc, getDoc, updateDoc, setDoc, serverTimestamp, where, onSnapshot } from 'firebase/firestore';
 import { useAuth } from '@/context/AuthContext';
-import { updateProfile } from 'firebase/auth';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useLanguage } from '@/context/LanguageContext';
 import nextDynamic from 'next/dynamic';
@@ -67,7 +64,7 @@ function StudentDashboardContent() {
   const validViews = ['classroom', 'courses', 'referrals', 'messages', 'ai', 'certificates', 'settings'];
   const initialView = (urlViewParam && validViews.includes(urlViewParam))
     ? urlViewParam
-    : (typeof window !== 'undefined' && localStorage.getItem('tsehay_dashboard_last_view')) || 'courses';
+    : (typeof window !== 'undefined' && localStorage.getItem('tsehay_dashboard_last_view')) || 'classroom';
 
   const [currentView, _setCurrentView] = useState<string>(initialView);
 
@@ -107,7 +104,6 @@ function StudentDashboardContent() {
 
   const setCurrentView = (newView: string) => {
     _setCurrentView(newView);
-    setIsMobileDrawerOpen(false);
     if (newView === 'classroom') {
       updateUrlState({ 
         view: 'classroom', 
@@ -119,7 +115,7 @@ function StudentDashboardContent() {
     }
   };
 
-  // Auth Guard: Only redirect if explicitly confirmed NOT authenticated after Firebase check completes
+  // Auth Guard: Only redirect if explicitly confirmed NOT authenticated after auth check completes
   useEffect(() => {
     if (authInitialized && !authLoading && !user) {
       if (typeof window !== 'undefined') {
@@ -436,49 +432,6 @@ function StudentDashboardContent() {
   ]);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<any>(null);
-  const videoContainerRef = useRef<HTMLDivElement | null>(null);
-  const [isPlayerFullscreen, setIsPlayerFullscreen] = useState(false);
-
-  useEffect(() => {
-    const handleFsChange = () => {
-      setIsPlayerFullscreen(Boolean(document.fullscreenElement));
-    };
-    document.addEventListener('fullscreenchange', handleFsChange);
-    document.addEventListener('webkitfullscreenchange', handleFsChange);
-    return () => {
-      document.removeEventListener('fullscreenchange', handleFsChange);
-      document.removeEventListener('webkitfullscreenchange', handleFsChange);
-    };
-  }, []);
-
-  const togglePlayerFullscreen = () => {
-    if (!videoContainerRef.current) return;
-    if (!document.fullscreenElement) {
-      const el = videoContainerRef.current as any;
-      if (el.requestFullscreen) {
-        el.requestFullscreen().catch(() => {});
-      } else if (el.webkitRequestFullscreen) {
-        el.webkitRequestFullscreen();
-      } else if (el.mozRequestFullScreen) {
-        el.mozRequestFullScreen();
-      } else if (el.msRequestFullscreen) {
-        el.msRequestFullscreen();
-      }
-      setIsPlayerFullscreen(true);
-    } else {
-      const doc = document as any;
-      if (doc.exitFullscreen) {
-        doc.exitFullscreen().catch(() => {});
-      } else if (doc.webkitExitFullscreen) {
-        doc.webkitExitFullscreen();
-      } else if (doc.mozCancelFullScreen) {
-        doc.mozCancelFullScreen();
-      } else if (doc.msExitFullscreen) {
-        doc.msExitFullscreen();
-      }
-      setIsPlayerFullscreen(false);
-    }
-  };
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [selectedAiCourse, setSelectedAiCourse] = useState<any>(null);
   const [dashboardAiLang, setDashboardAiLang] = useState<'am' | 'en'>('am');
@@ -531,8 +484,6 @@ function StudentDashboardContent() {
   const aiRecognitionRef = useRef<any>(null);
   const aiTimerRef = useRef<any>(null);
   const aiFileInputRef = useRef<HTMLInputElement>(null);
-  const aiCameraInputRef = useRef<HTMLInputElement>(null);
-  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [currentVideoPlayedFraction, setCurrentVideoPlayedFraction] = useState(0);
 
   // Enterprise Classroom States
@@ -546,64 +497,8 @@ function StudentDashboardContent() {
   const [isLessonAiLoading, setIsLessonAiLoading] = useState(false);
   const [lessonAiAttachedImage, setLessonAiAttachedImage] = useState<string | null>(null);
   const [isLessonVoiceRecording, setIsLessonVoiceRecording] = useState(false);
-  const [isAiPillMinimized, setIsAiPillMinimized] = useState(false);
-  const [playingLessonAiAudioIdx, setPlayingLessonAiAudioIdx] = useState<number | null>(null);
-  const [copiedLessonAiIdx, setCopiedLessonAiIdx] = useState<number | null>(null);
   const lessonFileInputRef = useRef<HTMLInputElement>(null);
-  const lessonCameraInputRef = useRef<HTMLInputElement>(null);
   const lessonVoiceRecRef = useRef<any>(null);
-
-  const playLessonAiVoice = (text: string, idx: number) => {
-    if (typeof window === 'undefined') return;
-    if (playingLessonAiAudioIdx === idx) {
-      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-      if (currentAiAudioRef.current) {
-        currentAiAudioRef.current.pause();
-        currentAiAudioRef.current = null;
-      }
-      setPlayingLessonAiAudioIdx(null);
-      return;
-    }
-
-    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-    if (currentAiAudioRef.current) {
-      currentAiAudioRef.current.pause();
-      currentAiAudioRef.current = null;
-    }
-
-    const cleanText = text
-      .replace(/```[\s\S]*?```/g, ' ')
-      .replace(/`([^`]+)`/g, '$1')
-      .replace(/[*_~#>\[\]()]/g, ' ')
-      .replace(/https?:\/\/\S+/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
-
-    if (!cleanText) return;
-
-    setPlayingLessonAiAudioIdx(idx);
-
-    try {
-      const encodedText = encodeURIComponent(cleanText.slice(0, 300));
-      const audioUrl = `/api/ai/tts?text=${encodedText}&lang=${dashboardAiLang === 'en' ? 'en' : 'am'}`;
-      const audio = new Audio(audioUrl);
-      currentAiAudioRef.current = audio;
-      audio.onended = () => {
-        setPlayingLessonAiAudioIdx(null);
-        currentAiAudioRef.current = null;
-      };
-      audio.onerror = () => {
-        setPlayingLessonAiAudioIdx(null);
-        currentAiAudioRef.current = null;
-      };
-      audio.play().catch(() => {
-        setPlayingLessonAiAudioIdx(null);
-        currentAiAudioRef.current = null;
-      });
-    } catch(e) {
-      setPlayingLessonAiAudioIdx(null);
-    }
-  };
 
   // Auto-Resume Timestamp Tracker
   useEffect(() => {
@@ -823,27 +718,15 @@ function StudentDashboardContent() {
 
     const fetchUserProfile = async () => {
       try {
-        const profileRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'profile', 'info');
-        const profileSnap = await getDoc(profileRef);
-        if (profileSnap.exists()) {
-          const data = profileSnap.data();
-          if (data.name || data.displayName) setSettingsName(data.name || data.displayName);
-          if (data.photoURL || data.photoUrl || data.avatar) setSettingsPhotoUrl(data.photoURL || data.photoUrl || data.avatar);
+        const { data } = await supabase.from('profiles').select('*').eq('id', user.uid).single();
+        if (data) {
+          if (data.full_name || data.display_name) setSettingsName(data.full_name || data.display_name);
+          if (data.avatar_url || data.photoURL) setSettingsPhotoUrl(data.avatar_url || data.photoURL);
           if (data.phone) setSettingsPhone(data.phone);
           if (data.city) setSettingsCity(data.city);
-        } else {
-          const userDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid);
-          const userDocSnap = await getDoc(userDocRef);
-          if (userDocSnap.exists()) {
-            const uData = userDocSnap.data();
-            if (uData.name || uData.displayName) setSettingsName(uData.name || uData.displayName);
-            if (uData.photoURL || uData.photoUrl || uData.avatar) setSettingsPhotoUrl(uData.photoURL || uData.photoUrl || uData.avatar);
-            if (uData.phone) setSettingsPhone(uData.phone);
-            if (uData.city) setSettingsCity(uData.city);
-          }
         }
       } catch (err) {
-        console.error("Error fetching user profile:", err);
+        console.warn("Notice fetching user profile:", err);
       }
     };
 
@@ -898,14 +781,15 @@ function StudentDashboardContent() {
           }
         } catch (e) {}
 
-        // Fallback: check local purchasesRef
+        // Fallback: check cached enrollments in local storage
         if (userCourses.length === 0) {
           try {
-            const purchasesRef = collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'purchased_courses');
-            const purchasesSnap = await getDocs(purchasesRef);
-            if (!purchasesSnap.empty) {
-              const enrolledIds = purchasesSnap.docs.map(doc => doc.data().courseId || doc.id);
-              userCourses = allCatalogCourses.filter(c => enrolledIds.includes(c.id) || enrolledIds.includes(c.slug));
+            const cachedEnr = localStorage.getItem(`tsehay_enrolled_courses_${user.uid}`);
+            if (cachedEnr) {
+              const enrolledIds = JSON.parse(cachedEnr);
+              if (Array.isArray(enrolledIds)) {
+                userCourses = allCatalogCourses.filter(c => enrolledIds.includes(c.id) || enrolledIds.includes(c.slug));
+              }
             }
           } catch (e) {}
         }
@@ -1003,9 +887,7 @@ function StudentDashboardContent() {
             } else if (activeCourse.modules && activeCourse.modules.length > 0) {
                 fetchedModules = activeCourse.modules;
             } else {
-                const q = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses', activeCourse.id, 'modules'), orderBy('order', 'asc'));
-                const snap = await getDocs(q);
-                fetchedModules = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as any[];
+                fetchedModules = [{ id: 'default', title: 'Course Content', order: 1, lessons: [] }];
             }
             
             setModules(fetchedModules);
@@ -1085,7 +967,7 @@ function StudentDashboardContent() {
   // Persistent Global Notes Sync
   useEffect(() => {
     let isMounted = true;
-    const currentUser = user || auth.currentUser;
+    const currentUser = user;
     let uid = currentUser?.uid || '';
     if (!uid && typeof window !== 'undefined') {
       try {
@@ -1116,32 +998,6 @@ function StudentDashboardContent() {
       }
     } catch (e) {}
 
-    // 2. Fetch permanent notes list from Firestore
-    if (uid) {
-      const fetchGlobalNotes = async () => {
-        try {
-          const globalNotesRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', uid, 'notes', 'all_notes');
-          const snap = await getDoc(globalNotesRef);
-          if (isMounted && snap.exists() && Array.isArray(snap.data().list) && snap.data().list.length > 0) {
-            const firestoreNotes = snap.data().list;
-            setStudentNotes(prev => {
-              const existingIds = new Set(prev.map(n => n.id));
-              const newOnes = firestoreNotes.filter((n: any) => !existingIds.has(n.id));
-              const merged = [...prev, ...newOnes];
-              try { 
-                localStorage.setItem(`tsehay_user_notes_${uid}`, JSON.stringify(merged));
-                localStorage.setItem('tsehay_user_notes_all', JSON.stringify(merged));
-              } catch (e) {}
-              return merged;
-            });
-          }
-        } catch (err) {
-          console.warn("Could not load global notes from Firestore:", err);
-        }
-      };
-      fetchGlobalNotes();
-    }
-
     return () => { isMounted = false; };
   }, [user]);
 
@@ -1149,42 +1005,18 @@ function StudentDashboardContent() {
     if (!activeCourse || !user) return;
     const fetchUserData = async () => {
       try {
-        const userRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'purchased_courses', activeCourse.id);
-        const userDoc = await getDoc(userRef);
-        if (userDoc.exists()) {
-          const data = userDoc.data();
-          const completed = data.completedLessons || [];
-          setProgress(completed);
-          if (data.isCompleted) {
-            setIsCourseCompleted(true);
+        if (typeof window !== 'undefined') {
+          const cachedProgress = localStorage.getItem(`tsehay_course_progress_${user.uid}_${activeCourse.id}`);
+          if (cachedProgress) {
+            const completed = JSON.parse(cachedProgress);
+            if (Array.isArray(completed)) setProgress(completed);
           }
-          if (data.hasRated) {
-            setRatedCourses(prev => ({ ...prev, [activeCourse.id]: true }));
-            try { localStorage.setItem(`rated_course_${activeCourse.id}`, 'true'); } catch (e) {}
-          } else if (typeof window !== 'undefined' && localStorage.getItem(`rated_course_${activeCourse.id}`)) {
+          if (localStorage.getItem(`rated_course_${activeCourse.id}`)) {
             setRatedCourses(prev => ({ ...prev, [activeCourse.id]: true }));
           }
-          // Merge course notes with existing student notes if any
-          if (data.notes && Array.isArray(data.notes) && data.notes.length > 0) {
-            setStudentNotes(prev => {
-              const existingIds = new Set(prev.map(n => n.id));
-              const newItems = data.notes.filter((n: any) => !existingIds.has(n.id));
-              if (newItems.length > 0) {
-                const merged = [...newItems, ...prev];
-                try { 
-                  localStorage.setItem(`tsehay_user_notes_${user.uid}`, JSON.stringify(merged));
-                  localStorage.setItem('tsehay_user_notes_all', JSON.stringify(merged));
-                } catch (e) {}
-                return merged;
-              }
-              return prev;
-            });
-          }
-        } else if (typeof window !== 'undefined' && localStorage.getItem(`rated_course_${activeCourse.id}`)) {
-          setRatedCourses(prev => ({ ...prev, [activeCourse.id]: true }));
         }
       } catch (e) {
-        console.error("Error loading user progress & notes:", e);
+        console.warn("Error loading user progress:", e);
       }
     };
     fetchUserData();
@@ -1194,7 +1026,7 @@ function StudentDashboardContent() {
     const text = (textToSave || noteInput || '').trim();
     if (!text) return;
 
-    const currentUser = user || auth.currentUser;
+    const currentUser = user;
     let uid = currentUser?.uid || '';
     if (!uid && typeof window !== 'undefined') {
       try {
@@ -1249,23 +1081,6 @@ function StudentDashboardContent() {
       setTimeout(() => setNoteSavedMessage(""), 3500);
     }
 
-    // 3. Asynchronously persist to Firestore if uid is available
-    if (uid) {
-      try {
-        const globalNotesRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', uid, 'notes', 'all_notes');
-        const currentSaved = localStorage.getItem(`tsehay_user_notes_${uid}`) || localStorage.getItem('tsehay_user_notes_all');
-        const notesToSave = currentSaved ? JSON.parse(currentSaved) : [newNote];
-        await setDoc(globalNotesRef, { list: notesToSave, updatedAt: serverTimestamp() }, { merge: true });
-
-        if (targetCourse?.id && targetCourse.id !== 'general') {
-          const userRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', uid, 'purchased_courses', targetCourse.id);
-          await setDoc(userRef, { notes: notesToSave }, { merge: true });
-        }
-      } catch (err) {
-        console.warn("Error persisting note to Firestore:", err);
-      }
-    }
-
     return newNote.id;
   };
 
@@ -1287,8 +1102,7 @@ function StudentDashboardContent() {
   };
 
   const handleDeleteNote = async (noteId: string) => {
-    const currentUser = user || auth.currentUser;
-    let uid = currentUser?.uid || '';
+    let uid = user?.uid || '';
     if (!uid && typeof window !== 'undefined') {
       try {
         const cached = localStorage.getItem('tsehay_auth_user_cache');
@@ -1304,22 +1118,6 @@ function StudentDashboardContent() {
         }
         localStorage.setItem('tsehay_user_notes_all', JSON.stringify(updatedNotes));
       } catch (e) {}
-
-      if (uid) {
-        (async () => {
-          try {
-            const globalNotesRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', uid, 'notes', 'all_notes');
-            await setDoc(globalNotesRef, { list: updatedNotes, updatedAt: serverTimestamp() }, { merge: true });
-
-            if (activeCourse?.id) {
-              const userRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', uid, 'purchased_courses', activeCourse.id);
-              await setDoc(userRef, { notes: updatedNotes }, { merge: true });
-            }
-          } catch (err) {
-            console.error("Error deleting note from Firestore:", err);
-          }
-        })();
-      }
 
       return updatedNotes;
     });
@@ -1343,24 +1141,11 @@ function StudentDashboardContent() {
   useEffect(() => {
     if (!user) return;
     try {
-      const q = query(
-        collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'support', 'messages', 'tickets'),
-        where('userId', '==', user.uid)
-      );
-      const unsubscribe = onSnapshot(q, (snapshot) => {
-        const list = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-        list.sort((a: any, b: any) => {
-          const tA = a.createdAt?.seconds || 0;
-          const tB = b.createdAt?.seconds || 0;
-          return tB - tA;
-        });
-        setStudentTickets(list);
-      }, (err) => console.error("Error subscribing to Q&A tickets:", err));
-
-      return () => unsubscribe();
-    } catch (e) {
-      console.error(e);
-    }
+      const cached = localStorage.getItem(`tsehay_qa_tickets_${user.uid}`);
+      if (cached) {
+        setStudentTickets(JSON.parse(cached));
+      }
+    } catch (e) {}
   }, [user]);
 
   const [qaAttachment, setQaAttachment] = useState<{ url: string; type: 'image' | 'document' | 'audio'; name: string } | null>(null);
@@ -1439,9 +1224,8 @@ function StudentDashboardContent() {
     setShowAttachmentMenu(false);
 
     try {
-      const ticketRef = doc(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'support', 'messages', 'tickets'));
-      await setDoc(ticketRef, {
-        id: ticketRef.id,
+      const newTicket = {
+        id: 'ticket_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
         userId: user.uid,
         userName: user.displayName || user.email || 'Student',
         userEmail: user.email || '',
@@ -1449,14 +1233,19 @@ function StudentDashboardContent() {
         courseName: activeCourse.title,
         message: qText || (currentAttachment ? `[${currentAttachment.type.toUpperCase()}] ${currentAttachment.name}` : ''),
         attachment: currentAttachment || null,
-        createdAt: new Date(),
+        createdAt: new Date().toISOString(),
         status: 'pending',
         replies: []
+      };
+      setStudentTickets(prev => {
+        const updated = [newTicket, ...prev];
+        try { localStorage.setItem(`tsehay_qa_tickets_${user.uid}`, JSON.stringify(updated)); } catch (e) {}
+        return updated;
       });
       setQuestionSentMessage("ጥያቄዎ ወደ መምህሩ በተሳካ ሁኔታ ተልኳል!");
       setTimeout(() => setQuestionSentMessage(''), 4000);
     } catch (e) {
-      console.error("Error submitting Q&A ticket:", e);
+      console.warn("Notice submitting Q&A ticket:", e);
     }
   };
 
@@ -1508,40 +1297,6 @@ function StudentDashboardContent() {
         }
       }
     } catch (e) {}
-
-    // 3. Load permanent chat and trash from Firestore
-    const fetchChatAndTrashHistory = async () => {
-      try {
-        // Chat History
-        const chatHistoryRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'ai_chat', 'history');
-        const snap = await getDoc(chatHistoryRef);
-        if (isMounted && snap.exists() && Array.isArray(snap.data().messages) && snap.data().messages.length > 0) {
-          setChatMessages(snap.data().messages);
-          try { localStorage.setItem(`tsehay-ai-chat_${user.uid}`, JSON.stringify(snap.data().messages)); } catch (e) {}
-        }
-
-        // Trash History with 15-day Auto-Purge
-        const trashDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'ai_chat', 'trash');
-        const trashSnap = await getDoc(trashDocRef);
-        if (isMounted && trashSnap.exists() && Array.isArray(trashSnap.data().items)) {
-          const now = Date.now();
-          const validItems = trashSnap.data().items.filter((item: any) => new Date(item.expiresAt).getTime() > now);
-          setAiTrashList(validItems);
-          try {
-            localStorage.setItem(`tsehay_ai_chat_trash_${user.uid}`, JSON.stringify(validItems));
-            localStorage.setItem('tsehay_ai_chat_trash', JSON.stringify(validItems));
-          } catch (e) {}
-
-          // If expired items were removed, sync back to Firestore
-          if (validItems.length !== trashSnap.data().items.length) {
-            setDoc(trashDocRef, { items: validItems, updatedAt: serverTimestamp() }).catch(() => {});
-          }
-        }
-      } catch (err) {
-        console.warn("Could not load AI chat history or trash from Firestore:", err);
-      }
-    };
-    fetchChatAndTrashHistory();
 
     return () => { isMounted = false; };
   }, [user]);
@@ -1725,12 +1480,6 @@ function StudentDashboardContent() {
 
     if (user?.uid) {
       try { localStorage.setItem(`tsehay-ai-chat_${user.uid}`, JSON.stringify(newMsgs)); } catch (e) {}
-      (async () => {
-        try {
-          const chatHistoryRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'ai_chat', 'history');
-          await setDoc(chatHistoryRef, { messages: newMsgs, updatedAt: serverTimestamp() }, { merge: true });
-        } catch (e) {}
-      })();
     }
 
     const courseToUse = selectedAiCourse || activeCourse;
@@ -1774,12 +1523,6 @@ function StudentDashboardContent() {
 
       if (user?.uid) {
         try { localStorage.setItem(`tsehay-ai-chat_${user.uid}`, JSON.stringify(finalMsgs)); } catch (e) {}
-        try {
-          const chatHistoryRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'ai_chat', 'history');
-          await setDoc(chatHistoryRef, { messages: finalMsgs, updatedAt: serverTimestamp() }, { merge: true });
-        } catch (dbErr) {
-          console.warn("Could not save AI chat history to Firestore:", dbErr);
-        }
       }
     } catch (error: any) {
       const errorMsgs = [...newMsgs, { role: 'ai', text: "ይቅርታ፣ የሲስተም ችግር አጋጥሟል! እባክዎ ትንሽ ቆይተው እንደገና ይሞክሩ።", timestamp: nowTime }];
@@ -1801,8 +1544,6 @@ function StudentDashboardContent() {
       localStorage.setItem('tsehay_ai_chat_trash', JSON.stringify(cleanList));
       if (user?.uid) {
         localStorage.setItem(`tsehay_ai_chat_trash_${user.uid}`, JSON.stringify(cleanList));
-        const trashDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'ai_chat', 'trash');
-        await setDoc(trashDocRef, { items: cleanList, updatedAt: serverTimestamp() });
       }
     } catch (e) {}
   };
@@ -1838,14 +1579,10 @@ function StudentDashboardContent() {
     setSavedAiNotes({});
     setSavedAiNoteIds({});
 
-    // 4. Clear local storage and Firestore active chat history asynchronously
+    // 4. Clear local storage active chat history asynchronously
     if (user?.uid) {
       try { localStorage.removeItem(`tsehay-ai-chat_${user.uid}`); } catch (e) {}
       try { localStorage.removeItem('tsehay-ai-chat'); } catch (e) {}
-      try {
-        const chatHistoryRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'ai_chat', 'history');
-        await setDoc(chatHistoryRef, { messages: defaultGreeting, updatedAt: serverTimestamp() });
-      } catch (e) {}
     }
   };
 
@@ -1854,10 +1591,6 @@ function StudentDashboardContent() {
     setChatMessages(trashed.messages);
     if (user?.uid) {
       try { localStorage.setItem(`tsehay-ai-chat_${user.uid}`, JSON.stringify(trashed.messages)); } catch (e) {}
-      try {
-        const chatHistoryRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'ai_chat', 'history');
-        setDoc(chatHistoryRef, { messages: trashed.messages, updatedAt: serverTimestamp() }).catch(() => {});
-      } catch (e) {}
     }
     // Remove from trash upon restore
     const updated = aiTrashList.filter(t => t.id !== trashed.id);
@@ -1899,35 +1632,12 @@ function StudentDashboardContent() {
       setIsCourseCompleted(true);
     }
 
-    const pointsToAward = target.points || 25;
-
     try {
-      const userRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'purchased_courses', activeCourse.id);
-      const userDoc = await getDoc(userRef);
-
-      if (userDoc.exists()) {
-        const data = userDoc.data();
-        const curPoints = data.points || 0;
-        const totalPoints = alreadyDone ? curPoints : curPoints + pointsToAward;
-
-        await setDoc(userRef, {
-          completedLessons: newCompletedLessons,
-          points: totalPoints,
-          isCompleted: isFinished || data.isCompleted || false,
-          lastPlayedAt: new Date()
-        }, { merge: true });
-      } else {
-        await setDoc(userRef, {
-          courseId: activeCourse.id,
-          completedLessons: newCompletedLessons,
-          points: pointsToAward,
-          isCompleted: isFinished,
-          enrolledAt: new Date(),
-          lastPlayedAt: new Date()
-        }, { merge: true });
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(`tsehay_course_progress_${user.uid}_${activeCourse.id}`, JSON.stringify(newCompletedLessons));
       }
     } catch (err) {
-      console.error("Error saving lesson completion:", err);
+      console.warn("Notice saving lesson completion:", err);
     }
   };
 
@@ -2007,16 +1717,16 @@ function StudentDashboardContent() {
 
     if (user?.uid) {
       try {
-        const certDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'certificates', targetCourseId);
-        await setDoc(certDocRef, {
-          courseId: targetCourseId,
-          courseTitle: activeCourse?.title || 'Tsehay Campus Course',
-          score,
-          passedAt,
-          updatedAt: serverTimestamp()
-        }, { merge: true });
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(`tsehay_certificate_${user.uid}_${targetCourseId}`, JSON.stringify({
+            courseId: targetCourseId,
+            courseTitle: activeCourse?.title || 'Tsehay Campus Course',
+            score,
+            passedAt
+          }));
+        }
       } catch (e) {
-        console.error("Error saving certificate to firestore:", e);
+        console.warn("Notice saving certificate locally:", e);
       }
     }
   };
@@ -2030,35 +1740,28 @@ function StudentDashboardContent() {
       const finalPhoto = settingsPhotoUrl || user.photoURL || '';
 
       try {
-        await updateProfile(user, {
-          displayName: finalName,
-          photoURL: finalPhoto || undefined
+        await supabase.auth.updateUser({
+          data: {
+            display_name: finalName,
+            avatar_url: finalPhoto
+          }
         });
       } catch (authErr) {
         console.warn("Client auth update warning:", authErr);
       }
       
-      const userDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid);
-      await setDoc(userDocRef, {
-         displayName: finalName,
-         name: finalName,
-         photoURL: finalPhoto,
-         email: user.email || '',
-         phone: settingsPhone,
-         city: settingsCity,
-         updatedAt: serverTimestamp()
-      }, { merge: true });
-      
-      const profileRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'profile', 'info');
-      await setDoc(profileRef, {
-          name: finalName,
-          displayName: finalName,
+      try {
+        await supabase.from('profiles').upsert({
+          id: user.uid,
+          full_name: finalName,
+          display_name: finalName,
+          avatar_url: finalPhoto,
           photoURL: finalPhoto,
           phone: settingsPhone,
           city: settingsCity,
-          email: user.email || '',
-          updatedAt: serverTimestamp()
-      }, { merge: true });
+          updated_at: new Date().toISOString()
+        });
+      } catch (e) {}
 
       try {
         const cachedAuth = localStorage.getItem('tsehay_auth_user_cache');
@@ -2107,16 +1810,23 @@ function StudentDashboardContent() {
     if (isLoggingOut) return;
     setIsLoggingOut(true);
     try {
-      const { signOut } = await import('firebase/auth');
-      const { auth } = await import('@/lib/firebase/config');
-      const { clearUserSessionData } = await import('@/context/AuthContext');
-      clearUserSessionData(user?.uid);
-      await signOut(auth);
+      await supabase.auth.signOut();
     } catch (err) {
       console.warn("Sign out auth error:", err);
     } finally {
+      try {
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('tsehay_auth_user_cache');
+          localStorage.removeItem('tsehay_auth_is_admin');
+          localStorage.removeItem('tsehay_user_role');
+          localStorage.removeItem('tsehay_user_active_course');
+          localStorage.removeItem('tsehay_user_active_lesson');
+          sessionStorage.clear();
+        }
+      } catch (e) {}
+
       if (typeof window !== 'undefined') {
-        window.location.replace('/');
+        window.location.href = '/';
       } else {
         router.push('/');
       }
@@ -2156,26 +1866,14 @@ function StudentDashboardContent() {
       {/* Sidebar Navigation - Deep Glassmorphism (Hidden in Focus Mode) */}
       <aside className={`${isFocusMode ? 'hidden' : 'w-full md:w-24 lg:w-72'} bg-[#030509]/95 backdrop-blur-2xl border-b md:border-b-0 md:border-r border-white/[0.08] flex flex-col items-center lg:items-start shadow-2xl z-20 shrink-0 transition-all duration-500`}>
         <div className="h-16 md:h-20 w-full flex items-center justify-between md:justify-center lg:justify-start px-4 lg:px-6 border-b border-white/[0.06]">
-          <div className="flex items-center gap-2.5">
-            <button
-              type="button"
-              onClick={() => setIsMobileDrawerOpen(true)}
-              className="md:hidden p-2 rounded-xl bg-white/5 hover:bg-[#f9b03c]/20 text-[#f9b03c] border border-white/10 hover:border-[#f9b03c]/40 transition active:scale-95 cursor-pointer shadow-sm flex items-center justify-center"
-              aria-label="Open Mobile Drawer Menu"
-              title="የጎን ማውጫ (Open Menu)"
-            >
-              <i className="fa-solid fa-bars text-base"></i>
-            </button>
-
-            <a href="/" className="flex items-center cursor-pointer group brand-entrance">
-              <div className="w-8 h-8 md:w-10 md:h-10 bg-white rounded-xl mx-auto flex items-center justify-center shadow-lg p-0.5 border border-white/20 brand-logo-img">
-                <img src="/tc-logo.jpg" alt="Tsehay Campus Logo" className="w-full h-full object-contain rounded-xl" />
-              </div>
-              <span className="ml-2.5 sm:ml-3 font-heading font-black text-base sm:text-lg md:text-xl tracking-tight notranslate select-none">
-                <span className="text-[#f9b03c]">Tsehay</span> <span className="text-[#3268ba]">Campus</span>
-              </span>
-            </a>
-          </div>
+          <a href="/" className="flex items-center cursor-pointer group brand-entrance">
+            <div className="w-8 h-8 md:w-10 md:h-10 bg-white rounded-xl mx-auto flex items-center justify-center shadow-lg p-0.5 border border-white/20 brand-logo-img">
+              <img src="/tc-logo.jpg" alt="Tsehay Campus Logo" className="w-full h-full object-contain rounded-xl" />
+            </div>
+            <span className="ml-3 font-heading font-black text-lg md:text-xl tracking-tight notranslate select-none">
+              <span className="text-[#f9b03c]">Tsehay</span> <span className="text-[#3268ba]">Campus</span>
+            </span>
+          </a>
           
           <div className="md:hidden flex items-center gap-2">
              <button 
@@ -2600,6 +2298,91 @@ function StudentDashboardContent() {
                       })()} Pts
                     </span>
                 </div>
+
+                {/* Notifications Bell Icon Next to Points */}
+                <div className="relative">
+                  <button 
+                    onClick={() => setShowNotifications(!showNotifications)} 
+                    className="relative text-gray-300 hover:text-[#f9b03c] transition shrink-0 p-2 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 shadow-sm cursor-pointer active:scale-95"
+                    title="ማሳወቂያዎች (Notifications)"
+                  >
+                      <svg className="w-4 h-4 text-current" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
+                      </svg>
+                      <span className="absolute -top-1 -right-1 bg-gradient-to-r from-red-600 to-rose-500 text-white font-black text-[9px] px-1.5 py-0.2 rounded-full ring-2 ring-[#050811] shadow-md animate-pulse">
+                        10+
+                      </span>
+                  </button>
+
+                  {showNotifications && (
+                    <>
+                      {/* Backdrop for outside click */}
+                      <div 
+                        onClick={() => setShowNotifications(false)} 
+                        className="fixed inset-0 z-40 bg-transparent" 
+                      />
+
+                      {/* Clean Modern Notification Card */}
+                      <div className="absolute top-12 right-0 w-80 sm:w-88 bg-[#0c121e] border border-slate-800 shadow-2xl rounded-2xl p-4 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                         {/* Header */}
+                         <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-3">
+                           <div className="flex items-center gap-2">
+                             <div className="w-7 h-7 rounded-lg bg-[#f9b03c]/15 text-[#f9b03c] flex items-center justify-center text-xs">
+                               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                 <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
+                               </svg>
+                             </div>
+                             <h4 className="text-sm font-black text-white font-heading">ማሳወቂያዎች</h4>
+                             {notificationsList.filter(n => !n.read).length > 0 && (
+                               <span className="text-[10px] font-bold bg-[#f9b03c]/20 text-[#f9b03c] px-2 py-0.5 rounded-full">
+                                 {notificationsList.filter(n => !n.read).length} አዲስ
+                               </span>
+                             )}
+                           </div>
+                           <button 
+                             onClick={handleMarkAllNotificationsRead} 
+                             className="text-xs font-bold text-gray-400 hover:text-[#f9b03c] transition cursor-pointer"
+                           >
+                             ሁሉንም አንብብ
+                           </button>
+                         </div>
+
+                         {/* Notifications List */}
+                         <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
+                            {notificationsList.length === 0 ? (
+                              <div className="text-center py-6 text-gray-400 text-xs">
+                                ምንም ማሳወቂያ የለም
+                              </div>
+                            ) : (
+                              notificationsList.map(n => (
+                                <div 
+                                  key={n.id} 
+                                  className={`flex items-start gap-3 p-3 rounded-xl transition-all ${
+                                    n.read 
+                                      ? 'bg-transparent hover:bg-slate-800/50 opacity-70' 
+                                      : 'bg-amber-500/10 border border-amber-500/20'
+                                  }`}
+                                >
+                                    <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#f9b03c] to-amber-400 text-slate-950 flex items-center justify-center shrink-0 mt-0.5 shadow-sm text-xs">
+                                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M10.34 15.84c-.688-.06-1.386-.09-2.09-.09H7.5a4.5 4.5 0 1 1 0-9h.75c.704 0 1.402-.03 2.09-.09m0 9.18c.253.962.584 1.892.985 2.783.247.55.06 1.21-.463 1.511l-.657.38c-.551.318-1.26.117-1.527-.455a28.047 28.047 0 0 1-1.38-3.419m3.042-.799c.306-.03.612-.063.918-.1M10.34 6.66c.253-.962.584-1.892.985-2.783.247-.55.06-1.21-.463-1.511l-.657-.38c-.551-.318-1.26-.117-1.527.455a28.047 28.047 0 0 0-1.38 3.419m3.042.799c.306.03.612.063.918.1m0 0a25.55 25.55 0 0 1 5.316.634 3.75 3.75 0 0 1 2.934 3.666v1.44a3.75 3.75 0 0 1-2.934 3.666 25.545 25.545 0 0 1-5.316.634" />
+                                      </svg>
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center justify-between gap-1">
+                                          <p className="text-xs font-bold text-white truncate">{n.title}</p>
+                                          <span className="text-[10px] text-gray-400 whitespace-nowrap">{n.createdAt}</span>
+                                        </div>
+                                        <p className="text-xs text-gray-300 font-body leading-relaxed mt-0.5">{n.message}</p>
+                                    </div>
+                                </div>
+                              ))
+                            )}
+                         </div>
+                      </div>
+                    </>
+                  )}
+                </div>
             </div>
         </header>
 
@@ -2609,20 +2392,9 @@ function StudentDashboardContent() {
         {currentView === 'classroom' && (
           <div className="max-w-[1600px] mx-auto">
             <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setIsMobileDrawerOpen(true)}
-                      className="md:hidden p-2.5 rounded-2xl bg-white/5 hover:bg-[#f9b03c]/20 text-[#f9b03c] border border-white/10 hover:border-[#f9b03c]/40 transition active:scale-95 cursor-pointer shadow-sm shrink-0 flex items-center justify-center"
-                      title="የጎን ማውጫ (Open Menu)"
-                      aria-label="Open Drawer Menu"
-                    >
-                      <i className="fa-solid fa-bars-staggered text-sm"></i>
-                    </button>
-                    <div>
-                        <h1 className="text-xl sm:text-2xl lg:text-3xl font-black font-heading text-white mb-1">{(activeCourse || courses[0] || DEFAULT_COURSES[0])?.title || 'የመማሪያ ክፍል (Classroom)'}</h1>
-                        <p className="text-slate-400 font-body text-xs sm:text-sm">{(activeCourse || courses[0] || DEFAULT_COURSES[0])?.category || 'Tsehay Campus Course'}</p>
-                    </div>
+                <div>
+                    <h1 className="text-2xl sm:text-3xl font-black font-heading text-white mb-1.5">{(activeCourse || courses[0] || DEFAULT_COURSES[0])?.title || 'የመማሪያ ክፍል (Classroom)'}</h1>
+                    <p className="text-slate-400 font-body text-sm">{(activeCourse || courses[0] || DEFAULT_COURSES[0])?.category || 'Tsehay Campus Course'}</p>
                 </div>
 
                 {/* 🌟 Prominent "የትኩረት ሁኔታ" (Focus Mode) Action Button */}
@@ -2669,8 +2441,8 @@ function StudentDashboardContent() {
                     : 'lg:col-span-2 xl:col-span-3'
                 }`}>
                     
-                    {/* Cinematic Video Player with One-Click Fullscreen */}
-                    <div ref={videoContainerRef} className="bg-dark rounded-2xl overflow-hidden shadow-2xl relative border border-gray-800 aspect-video flex items-center justify-center group/player">
+                    {/* Cinematic Video Player */}
+                    <div className="bg-dark rounded-2xl overflow-hidden shadow-2xl relative border border-gray-800 aspect-video flex items-center justify-center group/player">
                         
                         {/* Auto-Resume Floating Toast */}
                         {resumeToast && (
@@ -2781,20 +2553,8 @@ function StudentDashboardContent() {
                                     width="100%"
                                     height="100%"
                                     controls={true}
-                                    playing={true}
-                                    playbackRate={playbackSpeed}
-                                    onPlay={() => {
-                                        setShowLessonAiModal(false);
-                                        setIsAiPillMinimized(true);
-                                        if (typeof window !== 'undefined') {
-                                            window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: true } }));
-                                        }
-                                    }}
-                                    onPause={() => {
-                                        if (typeof window !== 'undefined') {
-                                            window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: false } }));
-                                        }
-                                    }}
+                                        playing={true}
+                                        playbackRate={playbackSpeed}
                                         onProgress={({ played, playedSeconds }: { played: number; playedSeconds: number }) => {
                                             setCurrentVideoPlayedFraction(played);
                                             if (activeCourse?.id && activeLesson?.title && playedSeconds > 5) {
@@ -2830,25 +2590,6 @@ function StudentDashboardContent() {
                                 </div>
                             </>
                         )}
-
-                        {/* 🌟 One-Click Prominent Fullscreen Button */}
-                        <button
-                          type="button"
-                          onClick={togglePlayerFullscreen}
-                          className="absolute bottom-3 right-3 z-30 px-3 py-1.5 rounded-xl bg-slate-950/85 hover:bg-slate-900 backdrop-blur-md border border-white/20 hover:border-[#f9b03c] text-white hover:text-[#f9b03c] transition-all flex items-center gap-1.5 text-xs font-bold shadow-2xl cursor-pointer active:scale-95 group/fs opacity-85 hover:opacity-100"
-                          title={isPlayerFullscreen ? "ሙሉ ስክሪን ዝጋ (Exit Fullscreen)" : "በሙሉ ስክሪን ተመልከት (Full Screen)"}
-                        >
-                          <svg className="w-4 h-4 text-current transition-transform group-hover/fs:scale-110" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2">
-                            {isPlayerFullscreen ? (
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M9 9V4.5M9 9H4.5M9 9 3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5 5.25 5.25" />
-                            ) : (
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
-                            )}
-                          </svg>
-                          <span className="text-[11px] font-mono tracking-tight font-bold">
-                            {isPlayerFullscreen ? 'ውጣ (Exit)' : 'ሙሉ ስክሪን'}
-                          </span>
-                        </button>
                     </div>
 
                     {/* Lesson Action & Navigation Bar */}
@@ -3922,123 +3663,30 @@ function StudentDashboardContent() {
               </button>
             </div>
 
-            {/* Hub Header & Status */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-              <div>
-                <span className="text-[11px] font-black uppercase tracking-wider text-[#f9b03c] px-3 py-1 rounded-full bg-[#f9b03c]/15 border border-[#f9b03c]/30 inline-block mb-2">
-                  ✦ የተማሪው መሸጋገሪያ • Student Dashboard Hub
-                </span>
-                <h2 className="text-2xl sm:text-3xl font-black text-white font-heading">የእኔ ኮርሶች (My Enrolled Courses)</h2>
-                <p className="text-xs sm:text-sm text-slate-400 mt-1">የተመዘገቡባቸውን ኮርሶች ይምረጡና በቀጥታ ወደ መማሪያ ክፍሉ ይግቡ።</p>
-              </div>
-              <button
-                onClick={() => router.push('/courses')}
-                className="px-4 py-2.5 rounded-2xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 hover:border-[#f9b03c]/40 text-white hover:text-[#f9b03c] transition-all font-bold text-xs flex items-center gap-2 cursor-pointer shrink-0"
-              >
-                <span>ሁሉንም ኮርሶች እይ</span>
-                <i className="fa-solid fa-arrow-up-right-from-square text-xs"></i>
-              </button>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-dark dark:text-white font-heading">የእኔ ኮርሶች (My Courses)</h2>
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {courses.length === 0 ? (
-                <div className="col-span-full text-center py-20 px-6 rounded-3xl bg-slate-900/60 backdrop-blur-2xl border border-white/10 shadow-2xl">
-                  <div className="w-20 h-20 rounded-3xl bg-amber-500/10 border border-[#f9b03c]/30 text-[#f9b03c] flex items-center justify-center text-3xl mx-auto mb-4 shadow-lg shadow-[#f9b03c]/10">
-                    <i className="fa-solid fa-graduation-cap"></i>
-                  </div>
-                  <h3 className="text-xl font-black text-white font-heading mb-2">እስካሁን የተመዘገቡበት ኮርስ የለም</h3>
-                  <p className="text-xs sm:text-sm text-slate-400 max-w-md mx-auto mb-6">
-                    የፀሐይ ካምፓስ የቴክኖሎጂ፣ ዲጂታል ክህሎት እና የፈጠራ ስራ ኮርሶችን በመመዝገብ የወደፊት የሙያ ጉዞዎን ዛሬ ይጀምሩ!
-                  </p>
-                  <button
-                    onClick={() => router.push('/courses')}
-                    className="px-6 py-3 rounded-2xl bg-gradient-to-r from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 font-black text-xs sm:text-sm shadow-xl hover:brightness-110 transition cursor-pointer"
-                  >
-                    ኮርሶችን ያስሱ (Browse Courses)
-                  </button>
+                <div className="col-span-full text-center py-20">
+                  <h2 className="text-xl font-bold text-slate-500">ምንም የተገዛ ኮርስ የለም</h2>
                 </div>
               ) : (
-                courses.map(course => {
-                  const courseProgressVal = course.isCompleted ? 100 : (Number(course.progress) || 0);
-                  return (
-                    <div 
-                      key={course.id} 
-                      className="bg-slate-900/75 backdrop-blur-2xl rounded-3xl p-5 border border-white/10 hover:border-[#f9b03c]/60 shadow-xl hover:shadow-[0_12px_40px_rgba(249,176,60,0.18)] transition-all duration-300 flex flex-col justify-between group hover:-translate-y-1"
-                    >
-                      <div>
-                        {/* Course Image Banner with Glass Badges */}
-                        <div className="relative w-full h-52 rounded-2xl overflow-hidden mb-4 shadow-md bg-slate-950">
-                          <img 
-                            src={getCleanCourseImage(course) || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1200'} 
-                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
-                            alt={course.title}
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent" />
-                          
-                          {/* Badges */}
-                          <div className="absolute top-3 left-3 right-3 flex items-center justify-between pointer-events-none">
-                            <span className="text-[10px] font-black uppercase tracking-wider bg-slate-950/80 backdrop-blur-md text-[#f9b03c] border border-[#f9b03c]/40 px-2.5 py-1 rounded-full shadow-sm">
-                              {course.category || 'ኮርስ'}
-                            </span>
-                            <span className="text-[10px] font-bold bg-slate-950/80 backdrop-blur-md text-white border border-white/20 px-2.5 py-1 rounded-full shadow-sm">
-                              {course.level || 'ሁሉም ደረጃ'}
-                            </span>
-                          </div>
-
-                          {/* Completed status tag */}
-                          {course.isCompleted && (
-                            <div className="absolute bottom-3 left-3 bg-emerald-500/90 text-slate-950 text-[10px] font-black px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-md">
-                              <i className="fa-solid fa-check-circle"></i>
-                              <span>ተጠናቋል</span>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Title & Metadata */}
-                        <h3 className="font-heading font-black text-lg text-white mb-2 line-clamp-2 group-hover:text-[#f9b03c] transition-colors">
-                          {course.title}
-                        </h3>
-
-                        {/* Progress Bar Container */}
-                        <div className="my-3 p-3 rounded-2xl bg-white/[0.03] border border-white/5">
-                          <div className="flex items-center justify-between text-xs font-bold mb-1.5">
-                            <span className="text-slate-400 text-[11px]">የትምህርት ሂደት</span>
-                            <span className="text-[#f9b03c] font-mono text-[11px] font-black">
-                              {courseProgressVal > 0 ? `${courseProgressVal}%` : 'አዲስ (0%)'}
-                            </span>
-                          </div>
-                          <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
-                            <div 
-                              className="h-full bg-gradient-to-r from-[#f9b03c] to-amber-300 transition-all duration-500 rounded-full"
-                              style={{ width: `${Math.max(4, Math.min(100, courseProgressVal))}%` }}
-                            />
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Prominent Enter Classroom CTA Button */}
-                      <div className="mt-4 pt-3 border-t border-white/10">
-                        <button 
-                          type="button"
-                          onClick={() => { 
-                            setActiveCourse(course); 
-                            try { localStorage.setItem('tsehay_user_active_course', JSON.stringify(course)); } catch(e) {}
-                            setCurrentView('classroom'); 
-                            updateUrlState({ view: 'classroom', courseId: course.id, lesson: 0 });
-                          }} 
-                          className="w-full py-3 px-4 bg-gradient-to-r from-[#f9b03c] via-amber-400 to-yellow-300 hover:from-amber-400 hover:to-yellow-200 text-slate-950 font-black rounded-2xl transition-all shadow-[0_0_20px_rgba(249,176,60,0.3)] hover:shadow-[0_0_30px_rgba(249,176,60,0.55)] cursor-pointer active:scale-95 flex items-center justify-center gap-2.5 text-sm font-heading group/btn"
-                        >
-                          <div className="w-6 h-6 rounded-lg bg-slate-950/15 flex items-center justify-center transition-transform group-hover/btn:scale-110">
-                            <svg className="w-3.5 h-3.5 fill-current text-slate-950" viewBox="0 0 24 24">
-                              <path d="M8 5v14l11-7z" />
-                            </svg>
-                          </div>
-                          <span>ወደ መማሪያ ክፍል ግባ (Enter Classroom)</span>
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })
+                courses.map(course => (
+                  <div key={course.id} className="bg-white dark:bg-slate-800 rounded-3xl p-4 shadow-sm border border-slate-100 dark:border-slate-700">
+                    <img src={getCleanCourseImage(course) || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1200'} className="w-full h-48 object-cover rounded-2xl mb-4" />
+                    <h3 className="font-bold text-lg mb-3 line-clamp-2 text-dark dark:text-white font-heading">{course.title}</h3>
+                    <button onClick={() => { 
+                      setActiveCourse(course); 
+                      try { localStorage.setItem('tsehay_user_active_course', JSON.stringify(course)); } catch(e) {}
+                      setCurrentView('classroom'); 
+                      updateUrlState({ view: 'classroom', courseId: course.id, lesson: 0 });
+                    }} className="w-full py-2.5 bg-primary text-dark font-black rounded-xl hover:bg-yellow-400 transition shadow-sm cursor-pointer active:scale-95 flex items-center justify-center gap-2">
+                      <i className="fa-solid fa-play"></i>
+                      <span>ወደ ትምህርቱ</span>
+                    </button>
+                  </div>
+                ))
               )}
             </div>
           </div>
@@ -4114,15 +3762,7 @@ function StudentDashboardContent() {
 
         {currentView === 'ai' && (
           <div className="max-w-4xl mx-auto py-4 space-y-4">
-             {/* Hidden File Inputs for Camera & Image Attachment */}
-             <input 
-               ref={aiCameraInputRef}
-               type="file"
-               accept="image/*"
-               capture="environment"
-               onChange={handleAiImageUpload}
-               className="hidden"
-             />
+             {/* Hidden File Input for Image Attachment */}
              <input 
                ref={aiFileInputRef}
                type="file"
@@ -4348,7 +3988,7 @@ function StudentDashboardContent() {
                  </div>
 
                  {/* Chat Messages Body */}
-                 <div className="relative z-10 flex-1 overflow-y-auto p-3 sm:p-4 space-y-4 bg-gray-50/80 dark:bg-slate-950/60 rounded-2xl border border-gray-100 dark:border-white/5 tsehay-ai-scrollbar">
+                 <div className="relative z-10 flex-1 overflow-y-auto p-3 sm:p-4 space-y-4 bg-gray-50/80 dark:bg-slate-950/60 rounded-2xl border border-gray-100 dark:border-white/5">
                      {chatMessages.map((m: any, i: number) => {
                        const isUser = m.role === 'user';
                        return (
@@ -4516,16 +4156,6 @@ function StudentDashboardContent() {
 
                   {/* ✍️ Clean Single Persistent Input Bar (Photo, Text Input, Live Mic / Send) */}
                   <form onSubmit={(e) => handleSendAiMessage(e)} className="relative z-10 flex items-center gap-2">
-                      {/* Live Camera Capture Button */}
-                      <button
-                        type="button"
-                        onClick={() => aiCameraInputRef.current?.click()}
-                        className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-gray-100 dark:bg-white/5 hover:bg-[#f9b03c]/20 hover:text-[#f9b03c] text-[#f9b03c] border border-gray-200 dark:border-white/15 flex items-center justify-center transition active:scale-90 cursor-pointer shrink-0"
-                        title="በካሜራ ፎቶ አንሳ (Take Photo via Camera)"
-                      >
-                        <i className="fa-solid fa-camera text-sm"></i>
-                      </button>
-
                       {/* Photo Upload Button */}
                       <button
                         type="button"
@@ -4659,14 +4289,7 @@ function StudentDashboardContent() {
             <StudentReferralSection 
               courses={courses} 
               onCourseUnlocked={(unlockedId) => {
-                try {
-                  const userRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user?.uid || '', 'purchased_courses', unlockedId);
-                  getDoc(userRef).then(snap => {
-                    if (snap.exists()) {
-                      setCourses(prev => [...prev.filter(c => c.id !== unlockedId), { id: unlockedId, ...snap.data() }]);
-                    }
-                  }).catch(() => {});
-                } catch (e) {}
+                setCourses(prev => prev.map(c => c.id === unlockedId ? { ...c, unlocked: true } : c));
               }}
             />
           </div>
@@ -5215,15 +4838,7 @@ function StudentDashboardContent() {
       {/* In-Lesson Contextual AI Tutor Modal */}
       {showLessonAiModal && (
           <div className="fixed inset-0 z-[10000] bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4">
-              {/* Hidden File Inputs for Lesson AI Image & Camera Attachment */}
-              <input 
-                ref={lessonCameraInputRef}
-                type="file"
-                accept="image/*"
-                capture="environment"
-                onChange={handleLessonImageUpload}
-                className="hidden"
-              />
+              {/* Hidden File Input for Lesson AI Image Attachment */}
               <input 
                 ref={lessonFileInputRef}
                 type="file"
@@ -5253,32 +4868,17 @@ function StudentDashboardContent() {
                               </p>
                           </div>
                       </div>
-                      <div className="flex items-center gap-1.5">
-                          <button
-                              onClick={() => {
-                                  setShowLessonAiModal(false);
-                                  setIsAiPillMinimized(true);
-                              }}
-                              className="w-8 h-8 rounded-xl bg-white/5 hover:bg-[#f9b03c]/20 text-gray-400 hover:text-[#f9b03c] flex items-center justify-center text-xs transition cursor-pointer"
-                              title="ሚኒማይዝ አድርግ (Minimize)"
-                          >
-                              🗕
-                          </button>
-                          <button
-                              onClick={() => {
-                                  setShowLessonAiModal(false);
-                                  setIsAiPillMinimized(false);
-                              }}
-                              className="w-8 h-8 rounded-xl bg-white/5 hover:bg-red-500 text-gray-400 hover:text-white flex items-center justify-center text-sm transition cursor-pointer"
-                              title="ዝጋ (Close)"
-                          >
-                              ✕
-                          </button>
-                      </div>
+                      <button
+                          onClick={() => setShowLessonAiModal(false)}
+                          className="w-8 h-8 rounded-xl bg-white/5 hover:bg-red-500 text-gray-400 hover:text-white flex items-center justify-center text-sm transition cursor-pointer"
+                          title="ዝጋ (Close)"
+                      >
+                          ✕
+                      </button>
                   </div>
 
                   {/* Chat Body */}
-                  <div className="relative z-10 flex-1 overflow-y-auto p-4 space-y-3 min-h-[260px] max-h-[420px] bg-[#050811]/60 tsehay-ai-scrollbar">
+                  <div className="relative z-10 flex-1 overflow-y-auto p-4 space-y-3 min-h-[260px] max-h-[420px] bg-[#050811]/60">
                       {lessonAiMessages.length === 0 ? (
                           <div className="text-center py-8 text-gray-300 space-y-3">
                               <div className="w-14 h-14 rounded-3xl bg-[#f9b03c]/10 text-[#f9b03c] mx-auto flex items-center justify-center text-2xl border border-[#f9b03c]/20 shadow-inner">
@@ -5331,58 +4931,6 @@ function StudentDashboardContent() {
                                             {msg.text}
                                         </div>
                                     </div>
-
-                                    {!isUser && (
-                                      <div className="flex items-center gap-2 mt-1.5 ml-8 flex-wrap">
-                                        <button
-                                          onClick={() => playLessonAiVoice(msg.text, idx)}
-                                          className={`text-[11px] font-bold px-3 py-1 rounded-xl border flex items-center gap-1.5 transition cursor-pointer active:scale-95 shadow-xs ${
-                                            playingLessonAiAudioIdx === idx
-                                              ? 'bg-amber-500/25 text-[#f9b03c] border-amber-500/50 shadow-[0_0_15px_rgba(249,176,60,0.4)]'
-                                              : 'bg-white/5 hover:bg-white/15 text-gray-300 border-white/10'
-                                          }`}
-                                          title={playingLessonAiAudioIdx === idx ? 'ድምፁን አቁም (Stop Voice)' : 'በድምፅ አዳምጥ (Listen via Voice)'}
-                                        >
-                                          {playingLessonAiAudioIdx === idx ? (
-                                            <>
-                                              <div className="flex items-center gap-0.5 h-3">
-                                                <span className="w-1 h-3 bg-[#f9b03c] rounded-full animate-bounce [animation-delay:-0.3s]"></span>
-                                                <span className="w-1 h-2 bg-[#f9b03c] rounded-full animate-bounce [animation-delay:-0.15s]"></span>
-                                                <span className="w-1 h-3.5 bg-[#f9b03c] rounded-full animate-bounce"></span>
-                                              </div>
-                                              <span>አቁም</span>
-                                            </>
-                                          ) : (
-                                            <>
-                                              <i className="fa-solid fa-volume-high text-[#f9b03c]"></i>
-                                              <span>አዳምጥ</span>
-                                            </>
-                                          )}
-                                        </button>
-
-                                        <button
-                                          onClick={() => {
-                                            navigator.clipboard.writeText(msg.text);
-                                            setCopiedLessonAiIdx(idx);
-                                            setTimeout(() => setCopiedLessonAiIdx(null), 2000);
-                                          }}
-                                          className="text-[11px] font-bold px-2.5 py-1 rounded-xl bg-white/5 hover:bg-white/15 text-gray-400 hover:text-white border border-white/10 flex items-center gap-1 transition cursor-pointer active:scale-95"
-                                          title="ኮፒ አድርግ (Copy)"
-                                        >
-                                          {copiedLessonAiIdx === idx ? (
-                                            <>
-                                              <i className="fa-solid fa-check text-emerald-400"></i>
-                                              <span className="text-emerald-400">ተቀድቷል</span>
-                                            </>
-                                          ) : (
-                                            <>
-                                              <i className="fa-regular fa-copy"></i>
-                                              <span>ቅዳ</span>
-                                            </>
-                                          )}
-                                        </button>
-                                      </div>
-                                    )}
                                 </div>
                               );
                           })
@@ -5438,15 +4986,6 @@ function StudentDashboardContent() {
                   <div className="relative z-10 p-3 bg-gradient-to-t from-[#060a14] to-[#0c1222] border-t border-white/10 flex items-center gap-2">
                       <button
                         type="button"
-                        onClick={() => lessonCameraInputRef.current?.click()}
-                        className="w-10 h-10 rounded-2xl bg-white/5 hover:bg-[#f9b03c]/20 text-[#f9b03c] border border-white/15 flex items-center justify-center transition active:scale-90 cursor-pointer shrink-0"
-                        title="በካሜራ ፎቶ አንሳ (Take Photo via Camera)"
-                      >
-                        <i className="fa-solid fa-camera text-sm"></i>
-                      </button>
-
-                      <button
-                        type="button"
                         onClick={() => lessonFileInputRef.current?.click()}
                         className="w-10 h-10 rounded-2xl bg-white/5 hover:bg-white/15 text-gray-300 hover:text-[#f9b03c] border border-white/15 flex items-center justify-center transition active:scale-90 cursor-pointer shrink-0"
                         title="ፎቶ / ስክሪንሾት አያይዝ"
@@ -5488,25 +5027,6 @@ function StudentDashboardContent() {
           </div>
       )}
 
-      {/* 🤖 Floating Minimized Tsehay AI Pill */}
-      {isAiPillMinimized && !showLessonAiModal && (
-        <button
-          type="button"
-          onClick={() => {
-            setShowLessonAiModal(true);
-            setIsAiPillMinimized(false);
-          }}
-          className="fixed bottom-6 right-6 z-50 px-4 py-2.5 rounded-full bg-slate-900/95 hover:bg-slate-800 text-white border border-[#f9b03c]/60 shadow-[0_0_25px_rgba(249,176,60,0.35)] backdrop-blur-md flex items-center gap-2.5 cursor-pointer hover:scale-105 active:scale-95 transition-all animate-in slide-in-from-bottom-4"
-          title="Tsehay AI ን ክፈት (Open Tsehay AI)"
-        >
-          <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-[#f9b03c] to-amber-400 text-slate-950 flex items-center justify-center text-xs font-black shadow-sm">
-            <i className="fa-solid fa-robot"></i>
-          </div>
-          <span className="text-xs font-heading font-black text-[#f9b03c]">Tsehay AI</span>
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-        </button>
-      )}
-
       {/* 💡 Floating Glassmorphism Feedback Trigger Button (Silicon Valley Style) */}
       <div className="fixed bottom-22 sm:bottom-24 right-4 sm:right-6 z-40">
         <button
@@ -5530,270 +5050,6 @@ function StudentDashboardContent() {
         onClose={() => setShowFeedbackModal(false)} 
         user={user} 
       />
-
-      {/* ===================== 📱 ULTRA-LUXURY MOBILE SLIDE-OVER DRAWER MENU ===================== */}
-      {/* 1. Backdrop Overlay */}
-      <div 
-        className={`fixed inset-0 bg-black/80 backdrop-blur-md z-[10000] transition-opacity duration-300 md:hidden ${
-          isMobileDrawerOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-        }`}
-        onClick={() => setIsMobileDrawerOpen(false)}
-      />
-
-      {/* 2. Slide Drawer Panel */}
-      <aside
-        className={`fixed inset-y-0 left-0 w-[300px] max-w-[85vw] bg-[#070b14]/98 backdrop-blur-2xl border-r border-white/10 shadow-[20px_0_60px_rgba(0,0,0,0.9)] z-[10001] flex flex-col transition-transform duration-300 ease-out md:hidden ${
-          isMobileDrawerOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
-      >
-        {/* Drawer Header with Brand & Close Button */}
-        <div className="h-16 px-4 border-b border-white/[0.08] flex items-center justify-between bg-white/[0.02]">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-white p-0.5 border border-white/20 shadow-md">
-              <img src="/tc-logo.jpg" alt="Tsehay Campus" className="w-full h-full object-contain rounded-lg" />
-            </div>
-            <span className="font-heading font-black text-base tracking-tight notranslate">
-              <span className="text-[#f9b03c]">Tsehay</span> <span className="text-[#3268ba]">Campus</span>
-            </span>
-          </div>
-          <button
-            type="button"
-            onClick={() => setIsMobileDrawerOpen(false)}
-            className="w-8 h-8 rounded-xl bg-white/5 hover:bg-white/15 text-slate-300 hover:text-white flex items-center justify-center transition active:scale-95 cursor-pointer border border-white/10"
-            title="ዝጋ (Close)"
-          >
-            <i className="fa-solid fa-xmark text-sm"></i>
-          </button>
-        </div>
-
-        {/* Drawer Scrollable Content */}
-        <div className="flex-1 overflow-y-auto p-3 space-y-4 tsehay-ai-scrollbar">
-          {/* User Profile Preview Card */}
-          <div className="p-3.5 rounded-2xl bg-gradient-to-br from-white/[0.06] to-white/[0.02] border border-white/10 space-y-2.5">
-            <div className="flex items-center gap-3">
-              <img 
-                src={studentPhotoUrl} 
-                alt={studentDisplayName}
-                className="w-12 h-12 rounded-2xl object-cover ring-2 ring-[#f9b03c]/60 shadow-md shrink-0"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(studentDisplayName)}&background=f9b03c&color=111827&bold=true`;
-                }}
-              />
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <h4 className="font-black text-xs text-white truncate font-heading">{studentDisplayName}</h4>
-                  <span className="text-[9px] font-black px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                    ተማሪ
-                  </span>
-                </div>
-                <p className="text-[11px] text-slate-400 truncate">{user?.email}</p>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => {
-                setCurrentView('settings');
-                setIsMobileDrawerOpen(false);
-              }}
-              className="w-full py-2 px-3 rounded-xl bg-white/5 hover:bg-[#f9b03c]/20 text-slate-300 hover:text-[#f9b03c] border border-white/10 hover:border-[#f9b03c]/40 font-bold text-[11px] transition flex items-center justify-center gap-2 cursor-pointer active:scale-95"
-            >
-              <i className="fa-solid fa-user-gear text-xs text-[#f9b03c]"></i>
-              <span>ፕሮፋይል ማስተካከያ (Profile Settings)</span>
-            </button>
-          </div>
-
-          {/* SECTION 1: 🎓 ትምህርት እና ኮርሶች (Learning & Courses) */}
-          <div className="space-y-1">
-            <span className="text-[10px] font-black text-[#f9b03c] uppercase tracking-wider px-2 block">
-              ትምህርት እና ኮርሶች
-            </span>
-            
-            {/* Classroom */}
-            <button
-              type="button"
-              onClick={() => {
-                setCurrentView('classroom');
-                setIsMobileDrawerOpen(false);
-              }}
-              className={`w-full p-2.5 rounded-xl font-bold text-xs flex items-center justify-between transition cursor-pointer active:scale-95 ${
-                currentView === 'classroom'
-                  ? 'bg-gradient-to-r from-[#3268ba] to-[#254f8e] text-white shadow-md border border-white/20 font-black'
-                  : 'text-slate-300 hover:text-white hover:bg-white/5 border border-transparent'
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <i className="fa-solid fa-chalkboard-user text-xs text-blue-400"></i>
-                <span>መማሪያ ክፍል (Classroom)</span>
-              </div>
-              {currentView === 'classroom' && <i className="fa-solid fa-chevron-right text-[10px] text-white/80"></i>}
-            </button>
-
-            {/* My Courses */}
-            <button
-              type="button"
-              onClick={() => {
-                setCurrentView('courses');
-                setIsMobileDrawerOpen(false);
-              }}
-              className={`w-full p-2.5 rounded-xl font-bold text-xs flex items-center justify-between transition cursor-pointer active:scale-95 ${
-                currentView === 'courses'
-                  ? 'bg-gradient-to-r from-[#3268ba] to-[#254f8e] text-white shadow-md border border-white/20 font-black'
-                  : 'text-slate-300 hover:text-white hover:bg-white/5 border border-transparent'
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <i className="fa-solid fa-book-open text-xs text-amber-400"></i>
-                <span>የእኔ ኮርሶች (My Courses)</span>
-              </div>
-              {currentView === 'courses' && <i className="fa-solid fa-chevron-right text-[10px] text-white/80"></i>}
-            </button>
-
-            {/* Certificates */}
-            <button
-              type="button"
-              onClick={() => {
-                setCurrentView('certificates');
-                setIsMobileDrawerOpen(false);
-              }}
-              className={`w-full p-2.5 rounded-xl font-bold text-xs flex items-center justify-between transition cursor-pointer active:scale-95 ${
-                currentView === 'certificates'
-                  ? 'bg-gradient-to-r from-[#3268ba] to-[#254f8e] text-white shadow-md border border-white/20 font-black'
-                  : 'text-slate-300 hover:text-white hover:bg-white/5 border border-transparent'
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <i className="fa-solid fa-award text-xs text-emerald-400"></i>
-                <span>የብቃት ሰርተፊኬቶች (Certificates)</span>
-              </div>
-              {currentView === 'certificates' && <i className="fa-solid fa-chevron-right text-[10px] text-white/80"></i>}
-            </button>
-          </div>
-
-          {/* SECTION 2: 🤖 ብልህ አጋዥ እና ማህበረሰብ (AI & Community) */}
-          <div className="space-y-1">
-            <span className="text-[10px] font-black text-cyan-400 uppercase tracking-wider px-2 block">
-              ብልህ አጋዥ እና ማህበረሰብ
-            </span>
-
-            {/* Tsehay AI Tutor */}
-            <button
-              type="button"
-              onClick={() => {
-                setCurrentView('ai');
-                setIsMobileDrawerOpen(false);
-              }}
-              className={`w-full p-2.5 rounded-xl font-bold text-xs flex items-center justify-between transition cursor-pointer active:scale-95 ${
-                currentView === 'ai'
-                  ? 'bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#e59b2b] text-slate-950 font-black shadow-md border border-white/30'
-                  : 'text-slate-300 hover:text-white hover:bg-[#f9b03c]/10 border border-[#f9b03c]/20'
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <i className="fa-solid fa-robot text-xs text-[#f9b03c]"></i>
-                <span>Tsehay AI Tutor (አጋዥ)</span>
-              </div>
-              <span className="text-[9px] font-black px-1.5 py-0.2 rounded bg-amber-400/20 text-[#f9b03c]">24/7</span>
-            </button>
-
-            {/* Mentor Messages */}
-            <button
-              type="button"
-              onClick={() => {
-                setCurrentView('messages');
-                setIsMobileDrawerOpen(false);
-              }}
-              className={`w-full p-2.5 rounded-xl font-bold text-xs flex items-center justify-between transition cursor-pointer active:scale-95 ${
-                currentView === 'messages'
-                  ? 'bg-gradient-to-r from-[#3268ba] to-[#254f8e] text-white shadow-md border border-white/20 font-black'
-                  : 'text-slate-300 hover:text-white hover:bg-white/5 border border-transparent'
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <i className="fa-solid fa-comment-dots text-xs text-indigo-400"></i>
-                <span>መልዕክቶች እና ድጋፍ (Messages)</span>
-              </div>
-              {currentView === 'messages' && <i className="fa-solid fa-chevron-right text-[10px] text-white/80"></i>}
-            </button>
-
-            {/* Community */}
-            <a
-              href="/community"
-              className="w-full p-2.5 rounded-xl font-bold text-xs flex items-center justify-between text-slate-300 hover:text-white hover:bg-white/5 border border-transparent transition cursor-pointer active:scale-95"
-            >
-              <div className="flex items-center gap-2.5">
-                <i className="fa-solid fa-users text-xs text-purple-400"></i>
-                <span>ማህበረሰብ (Community)</span>
-              </div>
-              <i className="fa-solid fa-arrow-up-right-from-square text-[10px] text-slate-400"></i>
-            </a>
-          </div>
-
-          {/* SECTION 3: 🎁 ሽልማቶች እና መለያ (Rewards & Account) */}
-          <div className="space-y-1">
-            <span className="text-[10px] font-black text-rose-400 uppercase tracking-wider px-2 block">
-              ሽልማቶች እና መለያ
-            </span>
-
-            {/* Referral */}
-            <button
-              type="button"
-              onClick={() => {
-                setCurrentView('referrals');
-                setIsMobileDrawerOpen(false);
-              }}
-              className={`w-full p-2.5 rounded-xl font-bold text-xs flex items-center justify-between transition cursor-pointer active:scale-95 ${
-                currentView === 'referrals'
-                  ? 'bg-gradient-to-r from-amber-500 to-[#f9b03c] text-slate-950 font-black shadow-md'
-                  : 'text-slate-300 hover:text-white hover:bg-white/5 border border-transparent'
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <i className="fa-solid fa-gift text-xs text-rose-400"></i>
-                <span>ጓደኛዎን ይጋብዙ (Refer & Earn)</span>
-              </div>
-              {currentView === 'referrals' && <i className="fa-solid fa-chevron-right text-[10px] text-slate-950"></i>}
-            </button>
-
-            {/* Settings */}
-            <button
-              type="button"
-              onClick={() => {
-                setCurrentView('settings');
-                setIsMobileDrawerOpen(false);
-              }}
-              className={`w-full p-2.5 rounded-xl font-bold text-xs flex items-center justify-between transition cursor-pointer active:scale-95 ${
-                currentView === 'settings'
-                  ? 'bg-gradient-to-r from-[#3268ba] to-[#254f8e] text-white shadow-md border border-white/20 font-black'
-                  : 'text-slate-300 hover:text-white hover:bg-white/5 border border-transparent'
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <i className="fa-solid fa-gear text-xs text-slate-400"></i>
-                <span>ማስተካከያ (Settings)</span>
-              </div>
-              {currentView === 'settings' && <i className="fa-solid fa-chevron-right text-[10px] text-white/80"></i>}
-            </button>
-          </div>
-        </div>
-
-        {/* Drawer Footer with Logout */}
-        <div className="p-3 border-t border-white/[0.08] bg-white/[0.02]">
-          <button
-            type="button"
-            onClick={() => {
-              setIsMobileDrawerOpen(false);
-              handleLogout();
-            }}
-            disabled={isLoggingOut}
-            className="w-full py-2.5 px-3 rounded-xl bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white border border-red-500/25 font-bold text-xs transition flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
-          >
-            {isLoggingOut ? <i className="fa-solid fa-spinner fa-spin text-xs"></i> : <i className="fa-solid fa-arrow-right-from-bracket text-xs"></i>}
-            <span>{isLoggingOut ? 'በመውጣት ላይ...' : 'ከመለያ ውጣ (Log Out)'}</span>
-          </button>
-        </div>
-      </aside>
-
     </div>
   );
 }

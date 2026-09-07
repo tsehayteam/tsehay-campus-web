@@ -4,7 +4,6 @@ export const fetchCache = 'force-no-store';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase/server';
-import { adminDb } from '@/lib/firebase/admin';
 import { loadPersistedCommunityPosts, savePersistedCommunityPosts } from '@/lib/memoryStore';
 import { INITIAL_SERVER_COMMUNITY_POSTS } from '@/lib/serverCourses';
 
@@ -80,11 +79,7 @@ export async function POST(req: NextRequest) {
         });
     } catch (e) {}
 
-    if (adminDb) {
-      try {
-        await adminDb.collection('site_settings').doc('community_posts').set({ posts: postsList }, { merge: true });
-      } catch (e) {}
-    }
+
 
     return NextResponse.json({
       success: true,

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { supabaseServer } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,36 +27,29 @@ export async function POST(req: NextRequest) {
     const otpCode = Math.floor(Math.random() * (max - min + 1) + min).toString();
     const now = Date.now();
     const expiresAt = now + 15 * 60 * 1000; // 15 minutes validity
-    const docId = cleanEmail.replace(/[^a-zA-Z0-9]/g, '_');
+    const docKey = `otp_${cleanEmail.replace(/[^a-zA-Z0-9]/g, '_')}`;
 
-    // 3. Save to Firestore safely if adminDb is available
+    const payload = {
+      code: otpCode,
+      email: cleanEmail,
+      createdAt: now,
+      expiresAt: expiresAt,
+      attempts: 0,
+      verified: false,
+      updatedAt: now
+    };
+
+    // 3. Save to Supabase site_settings safely
     try {
-      const { adminDb } = await import('@/lib/firebase/admin');
-      if (adminDb) {
-        const resetOtpRef = adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('public').doc('data').collection('password_reset_otps').doc(docId);
-        await resetOtpRef.set({
-          code: otpCode,
-          email: cleanEmail,
-          createdAt: now,
-          expiresAt: expiresAt,
-          attempts: 0,
-          verified: false,
-          updatedAt: now
-        }, { merge: true });
-
-        const generalOtpRef = adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('public').doc('data').collection('otp_verifications').doc(docId);
-        await generalOtpRef.set({
-          code: otpCode,
-          email: cleanEmail,
-          createdAt: now,
-          expiresAt: expiresAt,
-          attempts: 0,
-          verified: false,
-          updatedAt: now
-        }, { merge: true });
-      }
+      await supabaseServer
+        .from('site_settings')
+        .upsert({
+          key: docKey,
+          data: payload,
+          updated_at: new Date().toISOString()
+        });
     } catch (dbErr) {
-      console.warn('adminDb safe write notice in send-otp:', dbErr);
+      console.warn('Supabase OTP write notice:', dbErr);
     }
 
     // 4. Send Premium HTML Email via Resend
@@ -79,7 +73,6 @@ export async function POST(req: NextRequest) {
     });
   } catch (error: any) {
     console.error('Error in send-otp API:', error);
-    // Fallback response with success so user can proceed with client-side verification
     return NextResponse.json({ 
       success: true,
       message: 'የማረጋገጫ ኮድ ወደ ኢሜልዎ ተልኳል!'

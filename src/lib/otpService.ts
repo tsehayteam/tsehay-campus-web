@@ -1,10 +1,8 @@
 /**
  * Tsehay Campus Email Verification OTP Service
  * Generates and validates 6-digit verification codes for @gmail.com accounts
+ * Uses SessionStorage + Server API without external legacy database dependencies.
  */
-
-import { db } from './firebase/config';
-import { doc, setDoc, getDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
 
 export interface OtpRecord {
   code: string;
@@ -25,7 +23,7 @@ export function generateOtpCode(): string {
 }
 
 /**
- * Saves or updates an OTP code for a given Gmail address
+ * Saves or updates an OTP code for a given Gmail address locally in SessionStorage
  */
 export async function saveOtpForEmail(email: string, code: string): Promise<OtpRecord> {
   const cleanEmail = email.trim().toLowerCase();
@@ -41,18 +39,6 @@ export async function saveOtpForEmail(email: string, code: string): Promise<OtpR
     verified: false
   };
 
-  // 1. Save to Client Firestore (resilient against permission errors)
-  try {
-    const otpDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'otp_verifications', cleanEmail.replace(/[^a-zA-Z0-9]/g, '_'));
-    await setDoc(otpDocRef, {
-      ...record,
-      updatedAt: serverTimestamp()
-    }, { merge: true });
-  } catch (err) {
-    console.warn("Client Firestore OTP write warning (falling back):", err);
-  }
-
-  // 2. Save to SessionStorage as instant local fallback
   if (typeof window !== 'undefined') {
     try {
       sessionStorage.setItem(`tsehay_otp_${cleanEmail}`, JSON.stringify(record));
@@ -73,22 +59,36 @@ export async function verifyOtpForEmail(email: string, inputCode: string): Promi
     return { success: false, message: 'እባክዎ ትክክለኛ 6-አሃዝ ኮድ ያስገቡ።' };
   }
 
-  const docId = cleanEmail.replace(/[^a-zA-Z0-9]/g, '_');
-  let data: OtpRecord | null = null;
-
-  // 1. Try reading from Firestore
+  // 1. Try server verification API first
   try {
-    const otpDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'otp_verifications', docId);
-    const docSnap = await getDoc(otpDocRef);
-    if (docSnap.exists()) {
-      data = docSnap.data() as OtpRecord;
+    const res = await fetch('/api/auth/verify-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: cleanEmail, code: cleanCode })
+    });
+    if (res.ok) {
+      const result = await res.json();
+      if (result.success) {
+        if (typeof window !== 'undefined') {
+          try {
+            const raw = sessionStorage.getItem(`tsehay_otp_${cleanEmail}`);
+            if (raw) {
+              const data = JSON.parse(raw);
+              data.verified = true;
+              sessionStorage.setItem(`tsehay_otp_${cleanEmail}`, JSON.stringify(data));
+            }
+          } catch (e) {}
+        }
+        return { success: true, message: result.message || 'ኢሜልዎ በተሳካ ሁኔታ ተረጋግጧል!' };
+      }
     }
   } catch (err) {
-    console.warn("Client Firestore OTP read warning:", err);
+    console.warn('Server OTP verification fallback to local:', err);
   }
 
-  // 2. Fallback to SessionStorage if Firestore not accessible
-  if (!data && typeof window !== 'undefined') {
+  // 2. Local SessionStorage verification
+  let data: OtpRecord | null = null;
+  if (typeof window !== 'undefined') {
     try {
       const raw = sessionStorage.getItem(`tsehay_otp_${cleanEmail}`);
       if (raw) {
@@ -120,10 +120,6 @@ export async function verifyOtpForEmail(email: string, inputCode: string): Promi
         sessionStorage.setItem(`tsehay_otp_${cleanEmail}`, JSON.stringify(data));
       } catch (e) {}
     }
-    try {
-      const otpDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'otp_verifications', docId);
-      await setDoc(otpDocRef, { attempts: newAttempts }, { merge: true });
-    } catch (e) {}
 
     const remaining = 5 - newAttempts;
     return { 
@@ -139,10 +135,6 @@ export async function verifyOtpForEmail(email: string, inputCode: string): Promi
       sessionStorage.setItem(`tsehay_otp_${cleanEmail}`, JSON.stringify(data));
     } catch (e) {}
   }
-  try {
-    const otpDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'otp_verifications', docId);
-    await setDoc(otpDocRef, { verified: true, verifiedAt: serverTimestamp() }, { merge: true });
-  } catch (e) {}
 
   return { success: true, message: 'ኢሜልዎ በተሳካ ሁኔታ ተረጋግጧል!' };
 }

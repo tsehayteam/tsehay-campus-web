@@ -1,7 +1,5 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { db } from '@/lib/firebase/config';
-import { collection, addDoc, doc, setDoc, updateDoc, serverTimestamp, getDocs, query, where } from 'firebase/firestore';
 
 interface CourseRatingModalProps {
   isOpen: boolean;
@@ -27,103 +25,51 @@ export default function CourseRatingModal({
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [hasExistingReview, setHasExistingReview] = useState(false);
 
-  // Load existing user review if already submitted
+  // Load existing user review if already submitted from localStorage
   useEffect(() => {
-    if (!isOpen || !user?.uid || !courseId) return;
+    if (!isOpen || !courseId) return;
 
-    let isMounted = true;
-    const loadUserExistingReview = async () => {
-      try {
-        const reviewsRef = collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'reviews');
-        const q = query(reviewsRef, where('courseId', '==', courseId), where('userId', '==', user.uid));
-        const snap = await getDocs(q);
-        if (isMounted && !snap.empty) {
-          const data = snap.docs[0].data();
-          if (data.rating) setRating(data.rating);
-          if (data.comment) setComment(data.comment);
-          setHasExistingReview(true);
-        } else {
-          setHasExistingReview(false);
-        }
-      } catch (err) {
-        console.warn("Could not fetch previous review:", err);
+    try {
+      const existing = localStorage.getItem(`rated_course_${courseId}`);
+      if (existing) {
+        setHasExistingReview(true);
       }
-    };
-    loadUserExistingReview();
-
-    return () => { isMounted = false; };
-  }, [isOpen, user?.uid, courseId]);
+    } catch (e) {}
+  }, [isOpen, courseId]);
 
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !courseId) return;
+    if (!courseId) return;
 
     setIsSubmitting(true);
     try {
-      const reviewsRef = collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'reviews');
-      const qUserReview = query(reviewsRef, where('courseId', '==', courseId), where('userId', '==', user.uid));
-      const userReviewSnap = await getDocs(qUserReview);
+      const payload = {
+        id: `rating_${courseId}_${user?.uid || Date.now()}`,
+        courseId,
+        courseTitle,
+        rating,
+        type: 'course',
+        category: 'course',
+        message: comment.trim() || `Course Rating: ${rating}/5`,
+        userId: user?.uid || 'student',
+        userName: user?.displayName || 'ተማሪ',
+        userEmail: user?.email || 'student@tsehaycampus.com',
+        userPhoto: user?.photoURL || '',
+      };
 
-      // 1. Ensure 1 review per user per course (update existing or create new)
-      if (!userReviewSnap.empty) {
-        const existingDocRef = userReviewSnap.docs[0].ref;
-        await setDoc(existingDocRef, {
-          courseId,
-          userId: user.uid,
-          userName: user.displayName || 'Tsehay Student',
-          userPhoto: user.photoURL || '',
-          rating,
-          comment: comment.trim(),
-          updatedAt: serverTimestamp()
-        }, { merge: true });
-      } else {
-        await addDoc(reviewsRef, {
-          courseId,
-          userId: user.uid,
-          userName: user.displayName || 'Tsehay Student',
-          userPhoto: user.photoURL || '',
-          rating,
-          comment: comment.trim(),
-          createdAt: serverTimestamp()
-        });
-      }
+      // 1. Post to feedback API
+      fetch('/api/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      }).catch(() => {});
 
-      // 2. Recalculate average course rating
-      const allCourseReviewsQuery = query(reviewsRef, where('courseId', '==', courseId));
-      const allReviewsSnap = await getDocs(allCourseReviewsQuery);
-      let totalRating = 0;
-      let count = 0;
-      allReviewsSnap.forEach(docSnap => {
-        totalRating += docSnap.data().rating || 5;
-        count++;
-      });
-
-      const avgRating = count > 0 ? Number((totalRating / count).toFixed(1)) : rating;
-      const courseRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses', courseId);
-      await setDoc(courseRef, {
-        ratingAvg: avgRating,
-        ratingCount: count,
-        instructorRatingAvg: avgRating
-      }, { merge: true });
-
-      // 3. Mark hasRated in user's purchased_courses
+      // 2. Save in localStorage
       try {
-        const userPurchasedRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'purchased_courses', courseId);
-        await setDoc(userPurchasedRef, {
-          hasRated: true,
-          userRating: rating,
-          userComment: comment.trim(),
-          ratedAt: serverTimestamp()
-        }, { merge: true });
-      } catch (userErr) {
-        console.warn("Could not save hasRated in user doc:", userErr);
-      }
-
-      // 4. Save to localStorage
-      try {
-        localStorage.setItem('rated_course_' + courseId, 'true');
+        localStorage.setItem(`rated_course_${courseId}`, 'true');
+        localStorage.setItem(`rated_course_val_${courseId}`, String(rating));
       } catch (e) {}
 
       setIsSubmitted(true);
@@ -134,8 +80,7 @@ export default function CourseRatingModal({
         onClose();
       }, 1200);
     } catch (err) {
-      console.error("Rating submission error:", err);
-      // Fallback gracefully so user experience is not blocked
+      console.error('Rating submission error:', err);
       setIsSubmitted(true);
       setTimeout(() => {
         setIsSubmitted(false);
@@ -242,4 +187,3 @@ export default function CourseRatingModal({
     </div>
   );
 }
-

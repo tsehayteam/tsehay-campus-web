@@ -2,8 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { db } from '@/lib/firebase/config';
-import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import Tilt3DCard from '@/components/3d/Tilt3DCard';
 import CinematicVideoModal from '@/components/CinematicVideoModal';
 

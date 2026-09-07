@@ -1,6 +1,3 @@
-import { db } from '@/lib/firebase/config';
-import { doc, getDoc, setDoc, serverTimestamp, increment, collection, getDocs, query, where } from 'firebase/firestore';
-
 export interface PromoCode {
   id?: string;
   code: string;
@@ -16,7 +13,7 @@ export interface PromoCode {
 export type ReferralCodeData = PromoCode;
 
 /**
- * Validate a Promo / Referral code against Firestore and return discount details
+ * Validate a Promo / Referral code against Server API / Cache and return discount details
  */
 export async function validateReferralCode(
   inputCode: string, 
@@ -32,76 +29,28 @@ export async function validateReferralCode(
     let data: PromoCode | null = null;
     let foundId = cleanCode;
 
-    // 1. Check direct client Firestore paths (Prioritize root promo_codes)
-    const possibleDocPaths = [
-      doc(db, 'promo_codes', cleanCode),
-      doc(db, 'referral_codes', cleanCode),
-      doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'promo_codes', cleanCode),
-      doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'referral_codes', cleanCode),
-    ];
-
-    for (const docRef of possibleDocPaths) {
-      try {
-        const snap = await getDoc(docRef);
-        if (snap.exists()) {
-          data = snap.data() as PromoCode;
-          foundId = snap.id;
-          break;
-        }
-      } catch (err) {
-        // Continue checking next path
-      }
-    }
-
-    // 2. Query collections by 'code' field if doc ID wasn't uppercase match
-    if (!data) {
-      const collectionsToQuery = [
-        collection(db, 'promo_codes'),
-        collection(db, 'referral_codes'),
-        collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'promo_codes'),
-        collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'referral_codes'),
-      ];
-
-      for (const colRef of collectionsToQuery) {
-        try {
-          const q = query(colRef, where('code', '==', cleanCode));
-          const querySnap = await getDocs(q);
-          if (!querySnap.empty) {
-            const firstDoc = querySnap.docs[0];
-            data = firstDoc.data() as PromoCode;
-            foundId = firstDoc.id;
-            break;
-          }
-        } catch (err) {
-          // Continue checking next query
-        }
-      }
-    }
-
-    // 3. Fallback to Server API (Bypasses all client security rules)
-    if (!data) {
-      try {
-        let res = await fetch('/api/referral-codes');
-        if (!res.ok) res = await fetch('/api/admin/referral-codes');
-        if (res.ok) {
-          const json = await res.json();
-          if (json.codes && Array.isArray(json.codes)) {
-            const match = json.codes.find((c: any) => 
-              c.code?.trim().toUpperCase() === cleanCode || 
-              c.id?.trim().toUpperCase() === cleanCode
-            );
-            if (match) {
-              data = match;
-              foundId = match.id || cleanCode;
-            }
+    // 1. Fetch from Server API
+    try {
+      let res = await fetch('/api/referral-codes', { cache: 'no-store' });
+      if (!res.ok) res = await fetch('/api/admin/referral-codes', { cache: 'no-store' });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.codes && Array.isArray(json.codes)) {
+          const match = json.codes.find((c: any) => 
+            c.code?.trim().toUpperCase() === cleanCode || 
+            c.id?.trim().toUpperCase() === cleanCode
+          );
+          if (match) {
+            data = match;
+            foundId = match.id || cleanCode;
           }
         }
-      } catch (apiErr) {
-        console.warn("API referral codes validation fallback:", apiErr);
       }
+    } catch (apiErr) {
+      console.warn("API referral codes validation fallback:", apiErr);
     }
 
-    // 4. Local storage fallback cache
+    // 2. Local storage fallback cache
     if (!data && typeof window !== 'undefined') {
       try {
         const cached = localStorage.getItem('tsehay_referral_codes_cache');
@@ -202,21 +151,13 @@ export async function recordReferralUsage(code: string) {
   if (!code) return;
   const cleanCode = code.trim().toUpperCase();
   try {
-    const rootRef = doc(db, 'promo_codes', cleanCode);
-    await setDoc(rootRef, {
-      usageCount: increment(1),
-      lastUsedAt: serverTimestamp()
-    }, { merge: true });
-
-    // Also mirror to artifacts referral_codes
-    try {
-      const codeRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'referral_codes', cleanCode);
-      await setDoc(codeRef, {
-        usageCount: increment(1),
-        lastUsedAt: serverTimestamp()
-      }, { merge: true });
-    } catch (e) {}
+    await fetch('/api/referrals/record', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: cleanCode })
+    });
   } catch (e) {
-    console.warn("Could not record promo code usage via client:", e);
+    console.warn("Could not record promo code usage via API:", e);
   }
 }
+

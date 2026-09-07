@@ -7,6 +7,7 @@ import { NextResponse } from 'next/server';
 
 const RATE_LIMIT_WINDOW_MS = 60000;
 const MAX_REQUESTS_PER_WINDOW = 60;
+const chatRateLimitMap = new Map<string, { count: number; startTime: number }>();
 
 function getSmartFallbackReply(userPrompt: string, courseContext?: any, hasImage?: boolean, hasAudio?: boolean, preferredLanguage?: string): string {
     const raw = (userPrompt || '').trim();
@@ -359,50 +360,43 @@ export async function POST(req: Request) {
 
   // Security: Token Verification & Rate Limiting
   const authHeader = req.headers.get('authorization');
-  let userId;
-  let adminDbInstance = null;
+  let userId = 'anonymous_user';
 
   try {
-      const { adminAuth, adminDb } = await import('@/lib/firebase/admin');
-      adminDbInstance = adminDb;
-      if (authHeader && authHeader.startsWith('Bearer ')) {
-          const token = authHeader.substring(7);
-          try {
-              const decodedToken = await adminAuth.verifyIdToken(token);
-              userId = decodedToken.uid;
-          } catch (e) {
-              console.warn("Invalid ID token provided in chat API, proceeding with rate limiter");
-          }
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      try {
+        const { supabaseServer } = await import('@/lib/supabase/server');
+        const { data: { user } } = await supabaseServer.auth.getUser(token);
+        if (user) {
+          userId = user.id;
+        }
+      } catch (e) {
+        console.warn("Invalid token provided in chat API, proceeding with rate limiter");
       }
-      
-      // Fallback rate limiting key
-      const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'anonymous_ip';
-      userId = userId || `ip_${ip.split(',')[0].trim()}`;
+    }
+    
+    // Fallback rate limiting key
+    const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'anonymous_ip';
+    const rateLimitKey = userId !== 'anonymous_user' ? userId : `ip_${ip.split(',')[0].trim()}`;
 
-      // Rate limit check
-      if (adminDbInstance) {
-          const { FieldValue } = await import('firebase-admin/firestore');
-          const rateLimitRef = adminDbInstance.collection('artifacts').doc('tsehaycampus-e1a6d').collection('rate_limits').doc(userId);
-          const rateDoc = await rateLimitRef.get();
-          const now = Date.now();
-          
-          if (rateDoc.exists) {
-              const data = rateDoc.data();
-              if (now - data.startTime < RATE_LIMIT_WINDOW_MS) {
-                  if (data.count >= MAX_REQUESTS_PER_WINDOW) {
-                      return NextResponse.json({ error: "Too many requests. Please wait a minute." }, { status: 429 });
-                  }
-                  await rateLimitRef.update({ count: FieldValue.increment(1) });
-              } else {
-                  await rateLimitRef.set({ count: 1, startTime: now });
-              }
-          } else {
-              await rateLimitRef.set({ count: 1, startTime: now });
-          }
+    // Rate limit check
+    const now = Date.now();
+    const existingRate = chatRateLimitMap.get(rateLimitKey);
+    if (existingRate) {
+      if (now - existingRate.startTime < RATE_LIMIT_WINDOW_MS) {
+        if (existingRate.count >= MAX_REQUESTS_PER_WINDOW) {
+          return NextResponse.json({ error: "Too many requests. Please wait a minute." }, { status: 429 });
+        }
+        existingRate.count += 1;
+      } else {
+        chatRateLimitMap.set(rateLimitKey, { count: 1, startTime: now });
       }
+    } else {
+      chatRateLimitMap.set(rateLimitKey, { count: 1, startTime: now });
+    }
   } catch (err) {
-      console.error("Rate limiting / Auth error:", err);
-      userId = userId || 'anonymous_user';
+    console.error("Rate limiting / Auth error:", err);
   }
 
   try {
@@ -420,22 +414,16 @@ export async function POST(req: Request) {
         return NextResponse.json({ reply: getSmartFallbackReply("", courseContext, false, false, preferredLanguage) }, { status: 200 });
     }
 
-    // 🔑 Retrieve Gemini API Key dynamically from Firestore site settings or Environment variables
+    // 🔑 Retrieve Gemini API Key dynamically from Supabase site settings or Environment variables
     let dbApiKey = '';
     try {
-        if (adminDbInstance) {
-            const nestedDoc = await adminDbInstance.collection('artifacts').doc('tsehaycampus-e1a6d').collection('public').doc('data').collection('site_settings').doc('ai_settings').get();
-            if (nestedDoc.exists && nestedDoc.data()?.apiKey) {
-                dbApiKey = nestedDoc.data().apiKey;
-            } else {
-                const rootDoc = await adminDbInstance.collection('site_settings').doc('ai_settings').get();
-                if (rootDoc.exists && rootDoc.data()?.apiKey) {
-                    dbApiKey = rootDoc.data().apiKey;
-                }
-            }
+        const { supabaseServer: supabaseAdmin } = await import('@/lib/supabase/server');
+        const { data } = await supabaseAdmin.from('site_settings').select('*').eq('id', 'ai_settings').maybeSingle();
+        if (data?.apiKey || (data?.data && (data.data as any).apiKey)) {
+            dbApiKey = data?.apiKey || (data?.data as any).apiKey;
         }
     } catch (e) {
-        console.warn("Could not read dynamic AI settings from Firestore:", e);
+        console.warn("Could not read dynamic AI settings from Supabase:", e);
     }
 
     const apiKeys = [

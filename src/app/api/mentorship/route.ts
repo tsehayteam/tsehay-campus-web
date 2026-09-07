@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getMentorshipUserEmailHtml, getMentorshipAdminEmailHtml, MentorshipBooking } from '@/lib/premiumEmailTemplates';
-import { adminDb } from '@/lib/firebase/admin';
+import { supabaseServer } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -44,40 +44,28 @@ export async function POST(req: Request) {
       createdAt: new Date().toISOString()
     };
 
-    const dbPayload = {
-      ...bookingData,
-      transactionRef: transactionRef ? String(transactionRef).trim() : null,
-      receiptFile: receiptFile || null,
-      status: 'confirmed',
-      createdAtServer: new Date()
-    };
-
-    // 1. Save booking to Firestore collections & user sub-collection
-    if (adminDb) {
-      try {
-        const batchPromises: Promise<any>[] = [
-          adminDb.collection('mentorship_bookings').doc(bookingId).set(dbPayload),
-          adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('mentorship_bookings').doc(bookingId).set(dbPayload)
-        ];
-
-        // If user is authenticated, strictly link to their user profile subcollection
-        if (validUserId && !validUserId.startsWith('guest_')) {
-          batchPromises.push(
-            adminDb
-              .collection('artifacts')
-              .doc('tsehaycampus-e1a6d')
-              .collection('users')
-              .doc(validUserId)
-              .collection('mentorship_bookings')
-              .doc(bookingId)
-              .set(dbPayload)
-          );
-        }
-
-        await Promise.allSettled(batchPromises);
-      } catch (dbErr) {
-        console.warn('Firestore admin mentorship save warning:', dbErr);
-      }
+    // 1. Save booking to Supabase
+    try {
+      await supabaseServer.from('mentorship_bookings').upsert({
+        id: bookingId,
+        user_id: validUserId,
+        name: bookingData.name,
+        phone: bookingData.phone,
+        email: bookingData.email,
+        date: bookingData.date,
+        time: bookingData.time,
+        topic: bookingData.topic,
+        tier: bookingData.tier,
+        amount: bookingData.amount,
+        meeting_mode: bookingData.meetingMode,
+        payment_method: bookingData.paymentMethod,
+        transaction_ref: transactionRef ? String(transactionRef).trim() : null,
+        receipt_file: receiptFile || null,
+        status: 'confirmed',
+        created_at: new Date().toISOString()
+      });
+    } catch (dbErr) {
+      console.warn('Supabase mentorship save warning:', dbErr);
     }
 
     // 2. Dispatch Confirmation Emails via Resend (Safe & Non-blocking)

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
-import { adminDb } from '@/lib/firebase/admin';
+import { supabaseServer } from '@/lib/supabase/server';
 
 export async function POST(request: Request) {
   try {
@@ -49,39 +49,40 @@ export async function POST(request: Request) {
         }
       }
 
-      // If reference format is short or clean, look up pending_payments in Firestore
-      if (adminDb && (!courseId || !userId)) {
+      // If reference format is short or clean, look up pending_payments in Supabase
+      if (!courseId || !userId) {
         try {
-          const pendingDoc = await adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('pending_payments').doc(tx_ref).get();
-          if (pendingDoc.exists) {
-            const pendingData = pendingDoc.data();
-            courseId = pendingData?.courseId;
-            userId = pendingData?.userId;
+          const { data: pendingDoc } = await supabaseServer
+            .from('pending_payments')
+            .select('*')
+            .eq('id', tx_ref)
+            .maybeSingle();
+
+          if (pendingDoc) {
+            courseId = pendingDoc.course_id || pendingDoc.courseId;
+            userId = pendingDoc.user_id || pendingDoc.userId;
           }
         } catch (dbLookupErr) {
-          console.error("Error looking up pending payment:", dbLookupErr);
+          console.error("Error looking up pending payment in Supabase:", dbLookupErr);
         }
       }
 
-      if (adminDb && userId && userId !== 'anonymous' && courseId) {
+      if (userId && userId !== 'anonymous' && courseId) {
          try {
-            const userDocRef = adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('users').doc(userId);
-            await userDocRef.collection('purchased_courses').doc(courseId).set({
-               courseId,
+            await supabaseServer.from('enrollments').upsert({
+               id: `${userId}_${courseId}`,
+               user_id: userId,
+               course_id: courseId,
                tx_ref,
                amount: amount || 0,
-               purchasedAt: new Date(),
-               status: 'active'
+               payment_method: 'lakipay',
+               status: 'active',
+               created_at: new Date().toISOString()
             });
-
-            const { FieldValue } = await import('firebase-admin/firestore');
-            await userDocRef.set({
-              enrolledCourses: FieldValue.arrayUnion(courseId)
-            }, { merge: true });
 
             console.log(`Successfully verified and granted course ${courseId} access to user ${userId}`);
          } catch (err) {
-            console.error("Error saving purchase to Firestore:", err);
+            console.error("Error saving enrollment to Supabase:", err);
          }
       }
       

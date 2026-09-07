@@ -4,7 +4,6 @@ export const fetchCache = 'force-no-store';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase/server';
-import { adminDb, hasAdminCredentials } from '@/lib/firebase/admin';
 
 const NO_CACHE_HEADERS = {
   'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
@@ -84,28 +83,6 @@ export async function GET(req: NextRequest) {
       }
     } catch (e) {
       console.warn('Supabase youtube_videos GET error in public API:', e);
-    }
-
-    // 2. Firebase Admin fallback
-    if (hasAdminCredentials && adminDb && typeof adminDb.collection === 'function') {
-      try {
-        const snap = await adminDb
-          .collection('artifacts')
-          .doc('tsehaycampus-e1a6d')
-          .collection('public')
-          .doc('data')
-          .collection('youtube_videos')
-          .orderBy('order', 'asc')
-          .get();
-
-        if (!snap.empty) {
-          const list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          return NextResponse.json(
-            { success: true, count: list.length, videos: list },
-            { headers: NO_CACHE_HEADERS }
-          );
-        }
-      } catch (e) {}
     }
 
     return NextResponse.json(

@@ -2,8 +2,6 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
-import { db } from '@/lib/firebase/config';
-import { collection, onSnapshot, query, doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import PaymentModal from '@/components/PaymentModal';
 import RequireAuthModal from '@/components/RequireAuthModal';
 import { useLanguage } from '@/context/LanguageContext';
@@ -228,21 +226,7 @@ export default function CoursesClient({ initialCourses }: { initialCourses?: any
 
       setIsEnrolling(true);
       try {
-        // 1. Direct resilient client-side Firestore registration
-        try {
-          const purchaseRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'purchased_courses', course.id);
-          await setDoc(purchaseRef, {
-            courseId: course.id,
-            amount: 0,
-            paymentMethod: 'free',
-            purchasedAt: serverTimestamp(),
-            status: 'active'
-          }, { merge: true });
-        } catch (dbErr) {
-          console.warn("Client Firestore write attempt:", dbErr);
-        }
-
-        // 2. Set active course & lesson cache
+        // 1. Set active course & lesson cache
         try {
           localStorage.setItem('tsehay_user_active_course', JSON.stringify(course));
           if (course.lessons && course.lessons.length > 0) {

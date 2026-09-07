@@ -4,8 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { getCachedCourses, getCourseSlug, getCourseBySlugOrId } from '@/lib/courseCache';
-import { db } from '@/lib/firebase/config';
-import { collection, getDocs, query } from 'firebase/firestore';
+// Courses cache helper
 import Tilt3DCard from '@/components/3d/Tilt3DCard';
 import { useLanguage } from '@/context/LanguageContext';
 import { speakWithLanguageDetection, stopSpeech } from '@/lib/ttsHelper';
@@ -92,11 +91,12 @@ export default function AITutorSection() {
 
     const fetchLive = async () => {
       try {
-        const q = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses'));
-        const snap = await getDocs(q);
-        if (!snap.empty) {
-          const list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          setCoursesList(list);
+        const res = await fetch('/api/courses');
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            setCoursesList(data);
+          }
         }
       } catch (err) {
         console.warn("Course fetch in AITutorSection:", err);

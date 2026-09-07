@@ -4,7 +4,6 @@ export const fetchCache = 'force-no-store';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase/server';
-import { adminDb } from '@/lib/firebase/admin';
 import { 
   loadPersistedCommunityPosts, 
   savePersistedCommunityPosts, 
@@ -61,13 +60,6 @@ async function saveSupabaseCommunityPosts(posts: any[]) {
     }
   } catch (e) {
     console.warn('Supabase community_posts save exception:', e);
-  }
-
-  // Firebase Admin fallback mirror
-  if (adminDb) {
-    try {
-      await adminDb.collection('site_settings').doc('community_posts').set({ posts, updatedAt: nowIso }, { merge: true });
-    } catch (e) {}
   }
 }
 

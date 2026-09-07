@@ -1,7 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { db } from '@/lib/firebase/config';
-import { collection, getDocs, query } from 'firebase/firestore';
+import { getCachedCourses } from '@/lib/courseCache';
 
 export default function AssessmentModal({ onClose, onRecommend }: { onClose: () => void, onRecommend: (courseId: string) => void }) {
   const [step, setStep] = useState(1);
@@ -15,9 +14,17 @@ export default function AssessmentModal({ onClose, onRecommend }: { onClose: () 
     setStep(3);
     try {
       // Fetch all courses
-      const q = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses'));
-      const snap = await getDocs(q);
-      const courses = snap.docs.map(doc => ({ id: doc.id, title: doc.data().title, description: doc.data().description, category: doc.data().category }));
+      let courses: any[] = [];
+      const cached = getCachedCourses();
+      if (cached && cached.length > 0) {
+        courses = cached.map(c => ({ id: c.id, title: c.title, description: c.description, category: c.category }));
+      } else {
+        const res = await fetch('/api/courses');
+        if (res.ok) {
+          const list = await res.json();
+          courses = (list || []).map((c: any) => ({ id: c.id, title: c.title, description: c.description, category: c.category }));
+        }
+      }
 
       const prompt = `
       A student wants to learn: ${goal}.

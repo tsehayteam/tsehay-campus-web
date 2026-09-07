@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase/admin';
-import { FieldValue } from 'firebase-admin/firestore';
+import { supabaseServer } from '@/lib/supabase/server';
 
 export async function POST(req: NextRequest) {
   try {
@@ -25,30 +24,25 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
-    if (!adminDb) {
-      return NextResponse.json({
-        success: false,
-        error: 'Database connection is initializing'
-      }, { status: 503 });
-    }
-
     // Verify student's referral eligibility
-    const userProfileRef = adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('users').doc(uid).collection('profile').doc('info');
-    const profileSnap = await userProfileRef.get();
+    const { data: profileData } = await supabaseServer
+      .from('profiles')
+      .select('*')
+      .eq('id', uid)
+      .maybeSingle();
 
-    if (!profileSnap.exists) {
+    if (!profileData) {
       return NextResponse.json({
         success: false,
         error: 'User profile not found'
       }, { status: 404 });
     }
 
-    const profileData = profileSnap.data() || {};
-    const referralCount = Number(profileData.referralCount || 0);
+    const referralCount = Number(profileData.referral_count || profileData.referralCount || 0);
     const nowIso = new Date().toISOString();
 
     if (rewardType === 'free_course') {
-      if (referralCount < 5 && !profileData.hasFreeCourseReward) {
+      if (referralCount < 5 && !profileData.has_free_course_reward) {
         return NextResponse.json({
           success: false,
           error: 'ነፃ ኮርስ ለመውሰድ ቢያንስ 5 ጓደኞችዎን መጋበዝ አለብዎት (Minimum 5 referrals required).'
@@ -62,25 +56,26 @@ export async function POST(req: NextRequest) {
         }, { status: 400 });
       }
 
-      // Provision free course access directly in Firestore
-      const purchasedCourseRef = adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('users').doc(uid).collection('purchased_courses').doc(courseId);
-      await purchasedCourseRef.set({
-        courseId,
+      // Provision free course access directly in Supabase enrollments
+      await supabaseServer.from('enrollments').upsert({
+        id: `${uid}_${courseId}`,
+        user_id: uid,
+        course_id: courseId,
         title: courseTitle,
-        isUnlocked: true,
-        grantedBy: 'Referral Reward (5 Invites)',
-        purchasedAt: nowIso,
-        progress: 0,
-        completedLessons: []
-      }, { merge: true });
+        payment_method: 'referral_reward',
+        amount: 0,
+        status: 'active',
+        created_at: nowIso
+      });
 
       // Update user profile reward state
-      await userProfileRef.set({
-        claimedFreeCourse: true,
-        freeCourseClaimedAt: nowIso,
-        claimedCourseId: courseId,
-        claimedCourseTitle: courseTitle
-      }, { merge: true });
+      await supabaseServer.from('profiles').upsert({
+        id: uid,
+        claimed_free_course: true,
+        free_course_claimed_at: nowIso,
+        claimed_course_id: courseId,
+        claimed_course_title: courseTitle
+      });
 
       return NextResponse.json({
         success: true,
@@ -89,7 +84,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (rewardType === 'mentorship') {
-      if (referralCount < 10 && !profileData.hasMentorshipReward) {
+      if (referralCount < 10 && !profileData.has_mentorship_reward) {
         return NextResponse.json({
           success: false,
           error: 'የግል ማማከር (Mentorship) ለማግኘት ቢያንስ 10 ጓደኞችዎን መጋበዝ አለብዎት (Minimum 10 referrals required).'
@@ -97,23 +92,27 @@ export async function POST(req: NextRequest) {
       }
 
       // Record VIP mentorship booking
-      const mentorshipRef = adminDb.collection('artifacts').doc('tsehaycampus-e1a6d').collection('mentorship_requests').doc(`mentor_${uid}`);
-      await mentorshipRef.set({
-        userId: uid,
-        userName: profileData.name || 'ተማሪ',
-        userEmail: profileData.email || '',
-        userPhone: phone || profileData.phone || '',
+      await supabaseServer.from('mentorship_bookings').upsert({
+        id: `MNTR-REF-${uid}`,
+        user_id: uid,
+        name: profileData.name || 'ተማሪ',
+        email: profileData.email || '',
+        phone: phone || profileData.phone || '',
+        topic: notes || '1-on-1 Mentorship earned via 10 Referrals Milestone',
+        tier: '5-Hour VIP Intensive Blueprint',
+        amount: 0,
+        meeting_mode: 'online',
+        payment_method: 'referral_milestone',
         status: 'pending_scheduling',
-        notes: notes || '1-on-1 Mentorship earned via 10 Referrals Milestone',
-        requestedAt: nowIso,
-        timestamp: FieldValue.serverTimestamp()
-      }, { merge: true });
+        created_at: nowIso
+      });
 
       // Update user profile reward state
-      await userProfileRef.set({
-        claimedMentorship: true,
-        mentorshipClaimedAt: nowIso
-      }, { merge: true });
+      await supabaseServer.from('profiles').upsert({
+        id: uid,
+        claimed_mentorship: true,
+        mentorship_claimed_at: nowIso
+      });
 
       return NextResponse.json({
         success: true,

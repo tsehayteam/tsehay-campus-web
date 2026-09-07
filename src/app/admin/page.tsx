@@ -1,10 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { db, auth } from '@/lib/firebase/config';
 import { useAuth, ADMIN_EMAILS, isEmailAdmin } from '@/context/AuthContext';
-import { collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc, serverTimestamp, query, orderBy, collectionGroup } from 'firebase/firestore';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile } from 'firebase/auth';
+import { supabase } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { DEFAULT_COURSES, COMING_SOON_COURSES, getComingSoonCourses, getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl, getCourseSlug, getCourseBySlugOrId, generateCourseSlug, broadcastCourseUpdate } from '@/lib/courseCache';
 import { DEFAULT_EVENTS, getCachedEvents, saveCachedEvents, getRemainingSeats, generateEventSlug, TsehayEvent, EventTicket } from '@/lib/eventCache';
@@ -718,23 +716,6 @@ export default function AdminDashboard() {
           adminEmail: 'Admin Panel'
         })
       });
-
-      // Mirror directly in Firestore
-      try {
-        const updatePayload = {
-          isUsed: !isCurrentlyAttended,
-          checkedIn: !isCurrentlyAttended,
-          usedAt: !isCurrentlyAttended ? nowIso : null,
-          verifiedBy: !isCurrentlyAttended ? 'Admin Manual Check-in' : null,
-          status: !isCurrentlyAttended ? 'checked_in' : 'confirmed'
-        };
-        const ref1 = doc(db, 'event_registrations', ticket.ticketId);
-        const ref2 = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'event_tickets', ticket.ticketId);
-        await Promise.allSettled([
-          setDoc(ref1, updatePayload, { merge: true }),
-          setDoc(ref2, updatePayload, { merge: true })
-        ]);
-      } catch (fErr) {}
     } catch (err) {
       console.error('Error toggling ticket attendance:', err);
     } finally {
@@ -868,16 +849,11 @@ export default function AdminDashboard() {
       setIsAuthenticated(true);
     }
 
-    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
-      if (user && (isEmailAdmin(user.email) || localStorage.getItem('adminAuth') === 'true')) {
-        setIsAuthenticated(true);
-        localStorage.setItem('adminAuth', 'true');
-      } else if (localStorage.getItem('adminAuth') === 'true') {
-        setIsAuthenticated(true);
-      } else {
-        setIsAuthenticated(false);
-      }
-    });
+    if (user && (isEmailAdmin(user.email) || localStorage.getItem('adminAuth') === 'true')) {
+      setIsAuthenticated(true);
+      localStorage.setItem('adminAuth', 'true');
+    }
+    const unsubscribeAuth = () => {};
     
     // 1. Authoritative Server API Fetch for Courses
     const fetchCoursesFromApi = async () => {
@@ -980,19 +956,7 @@ export default function AdminDashboard() {
       })
       .catch(e => console.warn("AI Settings load error:", e));
 
-    const yq = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'youtube_videos'), orderBy('order', 'asc'));
-    const unsubscribeYouTube = onSnapshot(yq, (snapshot) => {
-      const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setYoutubeVideos(list);
-      try {
-        localStorage.setItem('tsehay_youtube_videos_cache', JSON.stringify(list));
-      } catch (e) {}
-    }, (err) => {
-      console.warn("YouTube videos Firestore sync:", err);
-      fetchApiYouTubeVideos();
-    });
-
-    // 🌟 Primary Supabase Sync for Students and Enrollments
+    // 🌟 Supabase API Sync for Students and Enrollments
     const fetchSupabaseStudents = async () => {
       try {
         const res = await fetch('/api/admin/students');
@@ -1010,192 +974,6 @@ export default function AdminDashboard() {
       }
     };
     fetchSupabaseStudents();
-
-    // 🌟 1. Multi-source Real-time Sync for User Profiles (Subcollections)
-    let unsubscribeProfiles: any = () => {};
-    try {
-      const profileQuery = query(collectionGroup(db, 'profile'));
-      unsubscribeProfiles = onSnapshot(profileQuery, (snapshot) => {
-        if (!snapshot.empty) {
-          const list = snapshot.docs.map(doc => ({ 
-            id: doc.id, 
-            uid: doc.ref.parent.parent?.id || doc.id, 
-            ...doc.data() 
-          }));
-          setRawProfiles(list);
-        }
-      }, (err) => {
-        console.warn("Profile collectionGroup sync notice:", err);
-      });
-    } catch (e) {}
-
-    // 🌟 2. Real-time Sync for Artifacts Root Users
-    let unsubscribeArtifactUsers: any = () => {};
-    try {
-      const uQuery = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'users'));
-      unsubscribeArtifactUsers = onSnapshot(uQuery, (snapshot) => {
-        if (!snapshot.empty) {
-          const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          setRawUsers(prev => {
-            const map = new Map();
-            [...prev, ...list].forEach(item => map.set(item.id, { ...(map.get(item.id) || {}), ...item }));
-            return Array.from(map.values());
-          });
-        }
-      }, (err) => {
-        console.warn("Artifacts users sync notice:", err);
-      });
-    } catch (e) {}
-
-    // 🌟 3. Real-time Sync for Root Users Collection
-    let unsubscribeRootUsers: any = () => {};
-    try {
-      const rootUQuery = query(collection(db, 'users'));
-      unsubscribeRootUsers = onSnapshot(rootUQuery, (snapshot) => {
-        if (!snapshot.empty) {
-          const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          setRawUsers(prev => {
-            const map = new Map();
-            [...prev, ...list].forEach(item => map.set(item.id, { ...(map.get(item.id) || {}), ...item }));
-            return Array.from(map.values());
-          });
-        }
-      }, (err) => {
-        console.warn("Root users sync notice:", err);
-      });
-    } catch (e) {}
-
-    // 🌟 4. Real-time Sync for All Course Purchases & Free Enrollments
-    const pq = query(collectionGroup(db, 'purchased_courses'));
-    const unsubscribePayments = onSnapshot(pq, (snapshot) => {
-      setPayments(snapshot.docs.map(doc => ({ id: doc.id, userId: doc.ref.parent.parent?.id, ...doc.data() })));
-    }, (err) => {
-      console.warn("Purchased courses sync notice:", err);
-    });
-
-    // 🌟 5. Real-time Sync for Support Tickets & Student Inquiries
-    const tq = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'support', 'messages', 'tickets'), orderBy('createdAt', 'desc'));
-    const unsubscribeTickets = onSnapshot(tq, (snapshot) => {
-      setTickets(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    }, (err) => {
-      console.warn("Support tickets sync notice:", err);
-    });
-
-    // 🌟 [CRITICAL FIX 3: REAL-TIME ADMIN EVENT REGISTRATIONS & TICKETS SYNC]
-    let unsubscribeEventRegs: any = () => {};
-    let unsubscribeArtifactEventRegs: any = () => {};
-    let unsubscribeEventsRoot: any = () => {};
-    let unsubscribeEventsArtifact: any = () => {};
-
-    try {
-      const regCol = collection(db, 'event_registrations');
-      unsubscribeEventRegs = onSnapshot(regCol, (snapshot) => {
-        if (!snapshot.empty) {
-          const list = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as unknown as EventTicket));
-          setEventTickets(prev => {
-            const map = new Map<string, EventTicket>();
-            [...list, ...prev].forEach(t => {
-              if (t.ticketId || t.id) map.set(t.ticketId || t.id || '', t);
-            });
-            return Array.from(map.values());
-          });
-        }
-      }, (err) => {
-        console.warn('Real-time event_registrations sync fallback:', err);
-      });
-    } catch (e) {}
-
-    try {
-      const artRegCol = collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'event_registrations');
-      unsubscribeArtifactEventRegs = onSnapshot(artRegCol, (snapshot) => {
-        if (!snapshot.empty) {
-          const list = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as unknown as EventTicket));
-          setEventTickets(prev => {
-            const map = new Map<string, EventTicket>();
-            [...list, ...prev].forEach(t => {
-              if (t.ticketId || t.id) map.set(t.ticketId || t.id || '', t);
-            });
-            return Array.from(map.values());
-          });
-        }
-      }, () => {});
-    } catch (e) {}
-
-    // Real-Time Events Document Sync in Admin with Unified Multi-Source Merge
-    const artifactEventsMap = new Map<string, TsehayEvent>();
-    const rootEventsMap = new Map<string, TsehayEvent>();
-
-    const getDeletedEventIds = (): string[] => {
-      if (typeof window === 'undefined') return [];
-      try {
-        const raw = localStorage.getItem('tsehay_deleted_events');
-        return raw ? JSON.parse(raw) : [];
-      } catch (e) {
-        return [];
-      }
-    };
-
-    const syncAndSetAdminEvents = () => {
-      const deletedIds = getDeletedEventIds();
-      const eventMap = new Map<string, TsehayEvent>();
-
-      // 1. Preload DEFAULT_EVENTS
-      DEFAULT_EVENTS.forEach(ev => {
-        if (!deletedIds.includes(ev.id)) {
-          eventMap.set(ev.id, { ...ev });
-        }
-      });
-
-      // 2. Overlay LocalStorage Cached Events (preserves edits immediately across refresh)
-      getCachedEvents().forEach(ev => {
-        if (ev && ev.id && !deletedIds.includes(ev.id)) {
-          eventMap.set(ev.id, { ...(eventMap.get(ev.id) || {}), ...ev });
-        }
-      });
-
-      // 3. Overlay Live Firestore Artifact & Root Documents
-      artifactEventsMap.forEach((ev, id) => {
-        if (ev && !deletedIds.includes(id)) {
-          eventMap.set(id, { ...(eventMap.get(id) || {}), ...ev });
-        }
-      });
-
-      rootEventsMap.forEach((ev, id) => {
-        if (ev && !deletedIds.includes(id)) {
-          eventMap.set(id, { ...(eventMap.get(id) || {}), ...ev });
-        }
-      });
-
-      const mergedList = Array.from(eventMap.values());
-      if (mergedList.length > 0) {
-        setEvents(mergedList);
-        saveCachedEvents(mergedList);
-      }
-    };
-
-    try {
-      const evCol = collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'events');
-      unsubscribeEventsArtifact = onSnapshot(evCol, (snapshot) => {
-        if (!snapshot.empty) {
-          snapshot.docs.forEach(d => {
-            artifactEventsMap.set(d.id, { id: d.id, ...d.data() } as TsehayEvent);
-          });
-          syncAndSetAdminEvents();
-        }
-      }, () => {});
-    } catch (e) {}
-
-    try {
-      const evRootCol = collection(db, 'events');
-      unsubscribeEventsRoot = onSnapshot(evRootCol, (snapshot) => {
-        if (!snapshot.empty) {
-          snapshot.docs.forEach(d => {
-            rootEventsMap.set(d.id, { id: d.id, ...d.data() } as TsehayEvent);
-          });
-          syncAndSetAdminEvents();
-        }
-      }, () => {});
-    } catch (e) {}
 
     // 🌟 Live Events & QR Tickets Data Loader
     const fetchEventsData = async () => {
@@ -1233,8 +1011,7 @@ export default function AdminDashboard() {
     };
     fetchEventsData();
 
-    // 🌟 Live Real-Time Firestore Listener for Course Waitlists
-    let unsubscribeWaitlists: any = () => {};
+    // 🌟 Course Waitlists Data Loader
     const fetchWaitlistsData = async () => {
       try {
         const wlRes = await fetch('/api/admin/waitlists');
@@ -1248,65 +1025,7 @@ export default function AdminDashboard() {
     };
     fetchWaitlistsData();
 
-    try {
-      const wlCol = collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'course_waitlists');
-      unsubscribeWaitlists = onSnapshot(wlCol, (snapshot) => {
-        if (!snapshot.empty) {
-          const list = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-          list.sort((a: any, b: any) => (b.timestamp || 0) - (a.timestamp || 0));
-          setWaitlists(list);
-        }
-      }, (err) => {
-        console.warn('Real-time waitlists sync fallback:', err);
-      });
-    } catch (e) {}
-
-    let unsubAbout1: any = null;
-    let unsubAbout2: any = null;
-    let unsubAbout3: any = null;
-    let unsubAbout4: any = null;
-
-    const handleAboutDocUpdate = (docSnap: any) => {
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        const url = data?.url || data?.videoUrl || data?.youtubeUrl;
-        const thumb = data?.thumbnail || data?.thumbnailUrl || data?.thumbUrl || data?.poster;
-        if (url) setAboutVideoUrl(url);
-        if (data?.title) setAboutVideoTitle(data.title);
-        if (thumb) setAboutVideoThumbnail(thumb);
-      }
-    };
-
-    try {
-      const cachedAbout = localStorage.getItem('tsehay_about_video_cache');
-      if (cachedAbout) {
-        const parsed = JSON.parse(cachedAbout);
-        if (parsed?.videoUrl) setAboutVideoUrl(parsed.videoUrl);
-        if (parsed?.title) setAboutVideoTitle(parsed.title);
-        if (parsed?.thumbnail) setAboutVideoThumbnail(parsed.thumbnail);
-      }
-    } catch (e) {}
-
-    try {
-      const aboutVidRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'site_settings', 'about_video');
-      unsubAbout1 = onSnapshot(aboutVidRef, handleAboutDocUpdate, () => {});
-    } catch (e) {}
-
-    try {
-      const rootAboutVidRef = doc(db, 'site_settings', 'about_video');
-      unsubAbout2 = onSnapshot(rootAboutVidRef, handleAboutDocUpdate, () => {});
-    } catch (e) {}
-
-    try {
-      const settingsAboutVidRef1 = doc(db, 'settings', 'about_video');
-      unsubAbout3 = onSnapshot(settingsAboutVidRef1, handleAboutDocUpdate, () => {});
-    } catch (e) {}
-
-    try {
-      const settingsAboutVidRef2 = doc(db, 'settings', 'aboutVideo');
-      unsubAbout4 = onSnapshot(settingsAboutVidRef2, handleAboutDocUpdate, () => {});
-    } catch (e) {}
-
+    // 🌟 Site Settings Loaders
     fetch('/api/admin/site-settings?settingKey=about_video')
       .then(res => res.json())
       .then(json => {
@@ -1316,129 +1035,9 @@ export default function AdminDashboard() {
           if (url) setAboutVideoUrl(url);
           if (json.data.title) setAboutVideoTitle(json.data.title);
           if (thumb) setAboutVideoThumbnail(thumb);
-          try {
-            localStorage.setItem('tsehay_about_video_cache', JSON.stringify({
-              videoUrl: url,
-              thumbnail: thumb,
-              title: json.data.title
-            }));
-          } catch (e) {}
         }
       })
       .catch(e => console.warn("About video API load error:", e));
-
-    const portfolioDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'site_settings', 'youtube_portfolio');
-    const unsubscribePortfolio1 = onSnapshot(portfolioDocRef, (docSnap) => {
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        if (data) {
-          if (data.localVideoUrl) setPortfolioLocalUrl(data.localVideoUrl);
-          if (data.internationalVideoUrl) setPortfolioInternationalUrl(data.internationalVideoUrl);
-          try {
-            localStorage.setItem('tsehay_youtube_portfolio_cache', JSON.stringify({
-              localVideoUrl: data.localVideoUrl,
-              internationalVideoUrl: data.internationalVideoUrl
-            }));
-          } catch (e) {}
-        }
-      }
-    }, (err) => {
-      console.warn("Portfolio video nested Firestore sync:", err);
-    });
-
-    const rootPortfolioDocRef = doc(db, 'site_settings', 'youtube_portfolio');
-    const unsubscribePortfolio2 = onSnapshot(rootPortfolioDocRef, (docSnap) => {
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        if (data) {
-          if (data.localVideoUrl) setPortfolioLocalUrl(data.localVideoUrl);
-          if (data.internationalVideoUrl) setPortfolioInternationalUrl(data.internationalVideoUrl);
-          try {
-            localStorage.setItem('tsehay_youtube_portfolio_cache', JSON.stringify({
-              localVideoUrl: data.localVideoUrl,
-              internationalVideoUrl: data.internationalVideoUrl
-            }));
-          } catch (e) {}
-        }
-      }
-    }, (err) => {
-      console.warn("Portfolio video root Firestore sync:", err);
-    });
-
-    // Root 'settings' collection listener for YouTube Portfolio
-    const settingsPortfolioDocRef = doc(db, 'settings', 'youtube_portfolio');
-    const unsubscribePortfolio3 = onSnapshot(settingsPortfolioDocRef, (docSnap) => {
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        if (data) {
-          if (data.localVideoUrl) setPortfolioLocalUrl(data.localVideoUrl);
-          if (data.internationalVideoUrl) setPortfolioInternationalUrl(data.internationalVideoUrl);
-          try {
-            localStorage.setItem('tsehay_youtube_portfolio_cache', JSON.stringify({
-              localVideoUrl: data.localVideoUrl,
-              internationalVideoUrl: data.internationalVideoUrl
-            }));
-          } catch (e) {}
-        }
-      }
-    }, () => {});
-
-    // 🎬 Landing Video Real-Time Sync & API Fetch
-    try {
-      const cachedLanding = localStorage.getItem('tsehay_landing_video_cache');
-      if (cachedLanding && cachedLanding.trim()) {
-        setLandingVideoUrl(cachedLanding.trim());
-      }
-      const cachedLandingThumb = localStorage.getItem('tsehay_landing_video_thumb');
-      if (cachedLandingThumb && cachedLandingThumb.trim()) {
-        setLandingVideoThumbnail(cachedLandingThumb.trim());
-      }
-    } catch (e) {}
-
-    const landingVidRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'site_settings', 'landing_video');
-    const unsubscribeLandingVid1 = onSnapshot(landingVidRef, (docSnap) => {
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        const url = data?.url || data?.videoUrl || data?.youtubeUrl;
-        const thumb = data?.landingVideoThumbnail || data?.thumbnail || data?.thumbnailUrl || data?.thumbUrl || data?.poster;
-        if (url) setLandingVideoUrl(url);
-        if (thumb) setLandingVideoThumbnail(thumb);
-      }
-    }, () => {});
-
-    const rootLandingVidRef = doc(db, 'site_settings', 'landing_video');
-    const unsubscribeLandingVid2 = onSnapshot(rootLandingVidRef, (docSnap) => {
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        const url = data?.url || data?.videoUrl || data?.youtubeUrl;
-        const thumb = data?.landingVideoThumbnail || data?.thumbnail || data?.thumbnailUrl || data?.thumbUrl || data?.poster;
-        if (url) setLandingVideoUrl(url);
-        if (thumb) setLandingVideoThumbnail(thumb);
-      }
-    }, () => {});
-
-    // Root 'settings' collection listener for Landing Video
-    const settingsLandingVidRef = doc(db, 'settings', 'landing_video');
-    const unsubscribeLandingVid3 = onSnapshot(settingsLandingVidRef, (docSnap) => {
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        const url = data?.url || data?.videoUrl || data?.youtubeUrl;
-        const thumb = data?.landingVideoThumbnail || data?.thumbnail || data?.thumbnailUrl || data?.thumbUrl || data?.poster;
-        if (url) setLandingVideoUrl(url);
-        if (thumb) setLandingVideoThumbnail(thumb);
-      }
-    }, () => {});
-
-    const settingsLandingVidRef2 = doc(db, 'settings', 'landingVideo');
-    const unsubscribeLandingVid4 = onSnapshot(settingsLandingVidRef2, (docSnap) => {
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        const url = data?.url || data?.videoUrl || data?.youtubeUrl;
-        const thumb = data?.landingVideoThumbnail || data?.thumbnail || data?.thumbnailUrl || data?.thumbUrl || data?.poster;
-        if (url) setLandingVideoUrl(url);
-        if (thumb) setLandingVideoThumbnail(thumb);
-      }
-    }, () => {});
 
     fetch('/api/admin/site-settings?settingKey=landing_video')
       .then(res => res.json())
@@ -1448,43 +1047,21 @@ export default function AdminDashboard() {
           const thumb = json.data.landingVideoThumbnail || json.data.thumbnail || json.data.thumbnailUrl || json.data.thumbUrl || json.data.poster;
           if (url) setLandingVideoUrl(url);
           if (thumb) setLandingVideoThumbnail(thumb);
-          try {
-            if (url) localStorage.setItem('tsehay_landing_video_cache', url);
-            if (thumb) localStorage.setItem('tsehay_landing_video_thumb', thumb);
-          } catch (e) {}
         }
       })
       .catch(e => console.warn("Landing video API load error:", e));
 
-    // Also fetch current portfolio settings from server API
     fetch('/api/admin/site-settings?settingKey=youtube_portfolio')
       .then(res => res.json())
       .then(json => {
-        if (json.data) {
+        if (json?.data) {
           if (json.data.localVideoUrl) setPortfolioLocalUrl(json.data.localVideoUrl);
           if (json.data.internationalVideoUrl) setPortfolioInternationalUrl(json.data.internationalVideoUrl);
-          try {
-            localStorage.setItem('tsehay_youtube_portfolio_cache', JSON.stringify({
-              localVideoUrl: json.data.localVideoUrl,
-              internationalVideoUrl: json.data.internationalVideoUrl
-            }));
-          } catch (e) {}
         }
       })
       .catch(e => console.warn("Portfolio API load error:", e));
 
-    // 1. Instant local storage cache for Promo Codes
-    try {
-      const cachedRef = localStorage.getItem('tsehay_referral_codes_cache');
-      if (cachedRef) {
-        const parsed = JSON.parse(cachedRef);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setReferralCodes(parsed);
-        }
-      }
-    } catch (e) {}
-
-    // 2. Fetch Promo Codes from Server-Side Admin API
+    // 🌟 Promo / Referral Codes Loader
     const fetchApiReferralCodes = async () => {
       try {
         const res = await fetch('/api/admin/referral-codes');
@@ -1503,126 +1080,17 @@ export default function AdminDashboard() {
     };
     fetchApiReferralCodes();
 
-    const refQuery = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'referral_codes'));
-    const unsubscribeReferrals = onSnapshot(refQuery, (snapshot) => {
-      if (!snapshot.empty) {
-        const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setReferralCodes(prev => {
-          const map = new Map();
-          [...prev, ...list].forEach(item => map.set(item.id, item));
-          return Array.from(map.values());
-        });
-      }
-    }, (err) => {
-      console.warn("Referral codes sync fallback:", err);
-      fetchApiReferralCodes();
-    });
-
-    // Root 'promo_codes' collection listener
-    const promoCodesQuery = query(collection(db, 'promo_codes'));
-    const unsubscribePromoCodes = onSnapshot(promoCodesQuery, (snapshot) => {
-      if (!snapshot.empty) {
-        const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setReferralCodes(prev => {
-          const map = new Map();
-          [...prev, ...list].forEach(item => map.set(item.id, item));
-          const merged = Array.from(map.values());
-          try {
-            localStorage.setItem('tsehay_referral_codes_cache', JSON.stringify(merged));
-          } catch (e) {}
-          return merged;
-        });
-      }
-    }, () => {});
-
-    // 🌟 Real-time Sync for Community Posts & Discussions
+    // 🌟 Community Posts Subscription
     const unsubscribeCommunity = subscribeCommunityPosts((posts) => {
       setCommunityPosts(posts);
     }, 'all');
 
-    // 🌟 Live User Feedbacks Listener (Listens to both user_feedbacks & student_feedback)
-    let unsubscribeFeedbacks: any = () => {};
-    let unsubscribeStudentFeedbacks: any = () => {};
-    try {
-      const fbRef = collection(db, 'user_feedbacks');
-      unsubscribeFeedbacks = onSnapshot(fbRef, (snapshot) => {
-        if (!snapshot.empty) {
-          const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          setFeedbacks(prev => {
-            const map = new Map();
-            [...prev, ...list].forEach(item => map.set(item.id, { ...(map.get(item.id) || {}), ...item }));
-            const merged = Array.from(map.values());
-            merged.sort((a: any, b: any) => {
-              const timeA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : (a.createdAtClient ? new Date(a.createdAtClient).getTime() : (a.createdAtTimestamp || 0));
-              const timeB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : (b.createdAtClient ? new Date(b.createdAtClient).getTime() : (b.createdAtTimestamp || 0));
-              return timeB - timeA;
-            });
-            try {
-              localStorage.setItem('tsehay_user_feedbacks', JSON.stringify(merged));
-            } catch (e) {}
-            return merged;
-          });
-        }
-      }, (err) => {
-        console.warn("User feedbacks sync notice:", err);
-      });
-
-      const sFbRef = collection(db, 'student_feedback');
-      unsubscribeStudentFeedbacks = onSnapshot(sFbRef, (snapshot) => {
-        if (!snapshot.empty) {
-          const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          setFeedbacks(prev => {
-            const map = new Map();
-            [...prev, ...list].forEach(item => map.set(item.id, { ...(map.get(item.id) || {}), ...item }));
-            const merged = Array.from(map.values());
-            merged.sort((a: any, b: any) => {
-              const timeA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : (a.createdAtClient ? new Date(a.createdAtClient).getTime() : (a.createdAtTimestamp || 0));
-              const timeB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : (b.createdAtClient ? new Date(b.createdAtClient).getTime() : (b.createdAtTimestamp || 0));
-              return timeB - timeA;
-            });
-            try {
-              localStorage.setItem('tsehay_user_feedbacks', JSON.stringify(merged));
-            } catch (e) {}
-            return merged;
-          });
-        }
-      }, (err) => {
-        console.warn("Student feedback sync notice:", err);
-      });
-    } catch (e) {}
-
     return () => {
-        unsubscribeAuth();
-        unsubscribe();
-        if (typeof unsubscribeCoursesRoot === 'function') unsubscribeCoursesRoot();
-        unsubscribeYouTube();
-        unsubscribeProfiles();
-        unsubscribeArtifactUsers();
-        unsubscribeRootUsers();
-        unsubscribePayments();
-        unsubscribeTickets();
-        unsubscribeEventRegs();
-        unsubscribeArtifactEventRegs();
-        unsubscribeEventsRoot();
-        unsubscribeEventsArtifact();
-        if (typeof unsubAbout1 === 'function') unsubAbout1();
-        if (typeof unsubAbout2 === 'function') unsubAbout2();
-        if (typeof unsubAbout3 === 'function') unsubAbout3();
-        if (typeof unsubAbout4 === 'function') unsubAbout4();
-        unsubscribePortfolio1();
-        unsubscribePortfolio2();
-        if (typeof unsubscribePortfolio3 === 'function') unsubscribePortfolio3();
-        if (typeof unsubscribeLandingVid1 === 'function') unsubscribeLandingVid1();
-        if (typeof unsubscribeLandingVid2 === 'function') unsubscribeLandingVid2();
-        if (typeof unsubscribeLandingVid3 === 'function') unsubscribeLandingVid3();
-        if (typeof unsubscribeLandingVid4 === 'function') unsubscribeLandingVid4();
-        unsubscribeReferrals();
-        if (typeof unsubscribePromoCodes === 'function') unsubscribePromoCodes();
-        unsubscribeFeedbacks();
-        unsubscribeStudentFeedbacks();
-        if (typeof unsubscribeWaitlists === 'function') unsubscribeWaitlists();
-        if (typeof unsubscribeCommunity === 'function') unsubscribeCommunity();
-        clearTimeout(safetyTimer);
+      unsubscribeAuth();
+      unsubscribe();
+      if (typeof unsubscribeCoursesRoot === 'function') unsubscribeCoursesRoot();
+      if (typeof unsubscribeCommunity === 'function') unsubscribeCommunity();
+      clearTimeout(safetyTimer);
     };
   }, []);
 
@@ -1668,28 +1136,6 @@ export default function AdminDashboard() {
     });
 
     try {
-      // 2. Direct client Firestore write attempt across promo_codes and referral_codes
-      try {
-        const promoDoc = {
-          code: cleanCode,
-          discountPercent: Number(newDiscountPercent),
-          targetCourseId: newTargetCourseId || 'all',
-          maxUsageLimit: parsedLimit,
-          description: newCodeDesc.trim() || '',
-          isActive: true,
-          usageCount: 0,
-          createdAt: serverTimestamp()
-        };
-
-        const rootPromoRef = doc(db, 'promo_codes', cleanCode);
-        await setDoc(rootPromoRef, promoDoc, { merge: true });
-
-        const codeRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'referral_codes', cleanCode);
-        await setDoc(codeRef, promoDoc, { merge: true });
-      } catch (clientErr) {
-        console.warn("Client Firestore write attempt:", clientErr);
-      }
-
       // 3. Robust Server-Side Admin API write (bypasses security rules constraints)
       const res = await fetch('/api/admin/referral-codes', {
         method: 'POST',
@@ -1751,15 +1197,6 @@ export default function AdminDashboard() {
     });
 
     try {
-      // 2. Direct client write to root promo_codes and artifacts
-      try {
-        await setDoc(doc(db, 'promo_codes', codeItem.id), { isActive: updatedStatus }, { merge: true });
-        const codeRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'referral_codes', codeItem.id);
-        await setDoc(codeRef, { isActive: updatedStatus }, { merge: true });
-      } catch (clientErr) {
-        console.warn("Client Firestore toggle attempt:", clientErr);
-      }
-
       // 3. Server-Side Admin API patch
       await fetch('/api/admin/referral-codes', {
         method: 'PATCH',
@@ -1791,14 +1228,6 @@ export default function AdminDashboard() {
       });
 
       try {
-        // 2. Direct client delete from root promo_codes and artifacts
-        try {
-          await deleteDoc(doc(db, 'promo_codes', codeId));
-          await deleteDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'referral_codes', codeId));
-        } catch (clientErr) {
-          console.warn("Client Firestore delete attempt:", clientErr);
-        }
-
         // 3. Server-Side Admin API delete
         await fetch(`/api/admin/referral-codes?codeId=${encodeURIComponent(codeId)}`, {
           method: 'DELETE'
@@ -1818,16 +1247,6 @@ export default function AdminDashboard() {
     setFeedbacks(prev => prev.map(f => f.id === feedback.id ? { ...f, status: nextStatus } : f));
     
     try {
-      // 1. Client Firestore Update
-      try {
-        const ref = doc(db, 'user_feedbacks', feedback.id);
-        await updateDoc(ref, { status: nextStatus, updatedAt: serverTimestamp() });
-      } catch (err) {}
-      try {
-        const ref2 = doc(db, 'student_feedback', feedback.id);
-        await updateDoc(ref2, { status: nextStatus, updatedAt: serverTimestamp() });
-      } catch (err) {}
-
       // 2. Server API Dispatch
       try {
         await fetch(`/api/admin/feedback?id=${encodeURIComponent(feedback.id)}`, {
@@ -1853,16 +1272,6 @@ export default function AdminDashboard() {
     setFeedbacks(prev => prev.filter(f => f.id !== id));
     
     try {
-      // 1. Client Firestore Delete
-      try {
-        const ref = doc(db, 'user_feedbacks', id);
-        await deleteDoc(ref);
-      } catch (err) {}
-      try {
-        const ref2 = doc(db, 'student_feedback', id);
-        await deleteDoc(ref2);
-      } catch (err) {}
-
       // 2. Server API Dispatch
       try {
         await fetch(`/api/admin/feedback?id=${encodeURIComponent(id)}`, {
@@ -1920,24 +1329,6 @@ export default function AdminDashboard() {
     } catch (e) {}
 
     try {
-      const fsPayload = {
-        ...videoPayload,
-        settingKey: 'about_video',
-        updatedAt: serverTimestamp()
-      };
-
-      // 2. Direct client Firestore write across multiple namespaces
-      try {
-        await Promise.allSettled([
-          setDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'site_settings', 'about_video'), fsPayload, { merge: true }),
-          setDoc(doc(db, 'site_settings', 'about_video'), fsPayload, { merge: true }),
-          setDoc(doc(db, 'settings', 'about_video'), fsPayload, { merge: true }),
-          setDoc(doc(db, 'settings', 'aboutVideo'), fsPayload, { merge: true })
-        ]);
-      } catch (clientErr) {
-        console.warn("Client Firestore write attempt:", clientErr);
-      }
-
       // 3. Robust Server-Side Admin API write (bypasses security rules constraints)
       await fetch('/api/admin/site-settings', {
         method: 'POST',
@@ -1995,28 +1386,6 @@ export default function AdminDashboard() {
     } catch (e) {}
 
     try {
-      const payload = {
-        url: cleanUrl,
-        videoUrl: cleanUrl,
-        youtubeUrl: cleanUrl,
-        thumbnail: cleanThumb,
-        landingVideoThumbnail: cleanThumb,
-        thumbnailUrl: cleanThumb,
-        thumbUrl: cleanThumb,
-        poster: cleanThumb,
-        updatedAt: serverTimestamp()
-      };
-
-      // 2. Direct client Firestore write across dual namespaces
-      try {
-        await setDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'site_settings', 'landing_video'), payload, { merge: true });
-        await setDoc(doc(db, 'site_settings', 'landing_video'), payload, { merge: true });
-        await setDoc(doc(db, 'settings', 'landing_video'), payload, { merge: true });
-        await setDoc(doc(db, 'settings', 'landingVideo'), payload, { merge: true });
-      } catch (clientErr) {
-        console.warn("Client Firestore write attempt for landing video:", clientErr);
-      }
-
       // 3. Robust Server-Side Admin API writes (dual endpoints to guarantee persistence)
       await fetch('/api/admin/site-settings', {
         method: 'POST',
@@ -2100,32 +1469,6 @@ export default function AdminDashboard() {
     } catch (e) {}
 
     try {
-      // 2. Direct client Firestore write (dual path: root settings, nested artifacts and site_settings)
-      try {
-        const settingsPortfolioRef = doc(db, 'settings', 'youtube_portfolio');
-        await setDoc(settingsPortfolioRef, {
-          localVideoUrl: portfolioLocalUrl.trim(),
-          internationalVideoUrl: portfolioInternationalUrl.trim(),
-          updatedAt: serverTimestamp()
-        }, { merge: true });
-
-        const portfolioDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'site_settings', 'youtube_portfolio');
-        await setDoc(portfolioDocRef, {
-          localVideoUrl: portfolioLocalUrl.trim(),
-          internationalVideoUrl: portfolioInternationalUrl.trim(),
-          updatedAt: serverTimestamp()
-        }, { merge: true });
-
-        const rootDocRef = doc(db, 'site_settings', 'youtube_portfolio');
-        await setDoc(rootDocRef, {
-          localVideoUrl: portfolioLocalUrl.trim(),
-          internationalVideoUrl: portfolioInternationalUrl.trim(),
-          updatedAt: serverTimestamp()
-        }, { merge: true });
-      } catch (clientErr) {
-        console.warn("Client Firestore write attempt:", clientErr);
-      }
-
       // 3. Robust Server-Side Admin API write (bypasses security rules constraints)
       await fetch('/api/admin/site-settings', {
         method: 'POST',
@@ -2198,13 +1541,17 @@ export default function AdminDashboard() {
   };
 
   const handleUpdateAdminProfile = async () => {
-    if (!auth.currentUser) return;
+    if (!user) return;
     setIsUpdatingSettings(true);
     try {
-      await updateProfile(auth.currentUser, {
-        displayName: settingsName || auth.currentUser.displayName,
-        photoURL: settingsPhotoUrl || auth.currentUser.photoURL
-      });
+      if (settingsName || settingsPhotoUrl) {
+        await supabase.auth.updateUser({
+          data: {
+            displayName: settingsName || user.displayName,
+            photoURL: settingsPhotoUrl || user.photoURL
+          }
+        });
+      }
       alert('የአድሚን መረጃ በተሳካ ሁኔታ ተስተካክሏል! (Profile updated!)');
       window.location.reload();
     } catch (error) {
@@ -2216,12 +1563,12 @@ export default function AdminDashboard() {
   };
 
   const handleAdminPasswordReset = async () => {
-    if (!auth.currentUser?.email) return;
+    if (!user?.email) return;
     try {
       await fetch('/api/auth/send-reset-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: auth.currentUser.email })
+        body: JSON.stringify({ email: user.email })
       });
       alert('የይለፍ ቃል መቀየሪያ ማረጋገጫ ኮድ ተልኳል! እባክዎ ኢሜልዎን ይክፈቱ።');
     } catch (error) {
@@ -2344,20 +1691,12 @@ export default function AdminDashboard() {
     });
 
     try {
-      // 2. Direct client Firestore write attempt
-      try {
-        const docRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'youtube_videos', docId);
-        await setDoc(docRef, videoPayload, { merge: true });
-      } catch (clientErr) {
-        console.warn("Client Firestore write warning for youtube video:", clientErr);
-      }
-
       // 3. Server-side Admin API write
       await fetch('/api/admin/youtube-videos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email: auth.currentUser?.email || user?.email,
+          email: user?.email,
           videoData: videoPayload
         })
       });
@@ -2408,15 +1747,8 @@ export default function AdminDashboard() {
       });
 
       try {
-        // 2. Direct client delete
-        try {
-          await deleteDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'youtube_videos', id));
-        } catch (clientErr) {
-          console.warn("Client delete warning:", clientErr);
-        }
-
         // 3. Server-side API delete
-        await fetch(`/api/admin/youtube-videos?id=${encodeURIComponent(id)}&email=${encodeURIComponent(auth.currentUser?.email || user?.email || '')}`, {
+        await fetch(`/api/admin/youtube-videos?id=${encodeURIComponent(id)}&email=${encodeURIComponent(user?.email || '')}`, {
           method: 'DELETE'
         });
 
@@ -2453,7 +1785,7 @@ export default function AdminDashboard() {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email: auth.currentUser?.email || user?.email,
+          email: user?.email,
           reorderUpdates: [
             { id: current.id, order: index - 1 },
             { id: prev.id, order: index }
@@ -2487,7 +1819,7 @@ export default function AdminDashboard() {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email: auth.currentUser?.email || user?.email,
+          email: user?.email,
           reorderUpdates: [
             { id: current.id, order: index + 1 },
             { id: next.id, order: index }
@@ -2847,41 +2179,13 @@ export default function AdminDashboard() {
 
       // Get authenticated user identity
       const adminEmail = user?.email || (typeof window !== 'undefined' ? localStorage.getItem('adminEmail') : '') || 'tsehayoperation@gmail.com';
-      let idToken = '';
-      try {
-        if (user) {
-          idToken = await user.getIdToken();
-        }
-      } catch (tokenErr) {}
 
-      // 🚀 1. Direct client Firestore write (dual path for instant live listeners)
-      try {
-        await setDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses', docId), coursePayload, { merge: true });
-        await setDoc(doc(db, 'courses', docId), coursePayload, { merge: true });
-      } catch (clientWriteErr) {
-        console.warn('Client Firestore write warning:', clientWriteErr);
-      }
-
-      // 🚀 3. Server Admin API Call (Sync & Admin SDK write)
+      // 🚀 3. Server Admin API Call (Sync)
       try {
         await fetch('/api/admin/courses', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            courseId: docId,
-            courseData: coursePayload
-          })
-        });
-
-        await fetch('/api/admin/save-course', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(idToken ? { 'Authorization': `Bearer ${idToken}` } : {})
-          },
-          body: JSON.stringify({
-            email: adminEmail,
-            idToken,
             courseId: docId,
             courseData: coursePayload
           })
@@ -2988,26 +2292,7 @@ export default function AdminDashboard() {
         return updated;
       });
 
-      // Direct client Firestore delete (dual path)
       try {
-        await deleteDoc(doc(db, 'courses', id));
-        await deleteDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses', id));
-      } catch (clientDelErr) {
-        console.warn('Client delete warning:', clientDelErr);
-      }
-
-      try {
-        // 2. Immediate Direct Client Firestore Deletion
-        try {
-          const nestedDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses', id);
-          await deleteDoc(nestedDocRef);
-        } catch (e) {}
-
-        try {
-          const rootDocRef = doc(db, 'courses', id);
-          await deleteDoc(rootDocRef);
-        } catch (e) {}
-
         // 3. Server Admin API Deletions with safe JSON handling
         try {
           const res = await fetch(`/api/admin/courses?id=${encodeURIComponent(id)}`, {
@@ -3071,14 +2356,6 @@ export default function AdminDashboard() {
     };
 
     try {
-      // 1. Direct Client Firestore Write
-      try {
-        await setDoc(doc(db, 'instructors', updatedInstructor.id), updatedInstructor, { merge: true });
-        await setDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'instructors', updatedInstructor.id), updatedInstructor, { merge: true });
-      } catch (clientFsErr) {
-        console.warn('Client Firestore instructor write notice:', clientFsErr);
-      }
-
       // 2. Server Admin API Call
       await fetch(`/api/admin/instructors?id=${encodeURIComponent(updatedInstructor.id)}`, {
         method: 'PUT',
@@ -3109,12 +2386,6 @@ export default function AdminDashboard() {
                 instructorBio: updatedInstructor.bio,
                 instructorTelegram: updatedInstructor.telegram
               };
-
-              // Background client Firestore course write
-              try {
-                setDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses', c.id), updatedCourse, { merge: true });
-                setDoc(doc(db, 'courses', c.id), updatedCourse, { merge: true });
-              } catch (e) {}
 
               return updatedCourse;
             }
@@ -3364,31 +2635,6 @@ export default function AdminDashboard() {
         if (v !== undefined) sanitizedPayload[k] = v;
       });
 
-      // 1. Direct Client-Side Firestore Persistence using updateDoc for existing events, setDoc for new
-      const rootDocRef = doc(db, 'events', eventId);
-      const nestedDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'events', eventId);
-
-      if (editingEvent) {
-        // Use updateDoc to explicitly update the specific event document in Firestore
-        try {
-          await updateDoc(rootDocRef, sanitizedPayload);
-        } catch (uErr) {
-          // If document does not exist yet in root collection, create/merge
-          await setDoc(rootDocRef, sanitizedPayload, { merge: true });
-        }
-
-        try {
-          await updateDoc(nestedDocRef, sanitizedPayload);
-        } catch (uErr) {
-          // If document does not exist yet in nested collection, create/merge
-          await setDoc(nestedDocRef, sanitizedPayload, { merge: true });
-        }
-      } else {
-        // Create new event documents
-        await setDoc(rootDocRef, sanitizedPayload, { merge: true });
-        await setDoc(nestedDocRef, sanitizedPayload, { merge: true });
-      }
-
       // 2. Server API Route Persistence
       try {
         await fetch('/api/events', {
@@ -3456,15 +2702,6 @@ export default function AdminDashboard() {
       } catch (e) {}
 
       try {
-        const nestedDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'events', id);
-        await deleteDoc(nestedDocRef);
-        const rootDocRef = doc(db, 'events', id);
-        await deleteDoc(rootDocRef);
-      } catch (dbErr) {
-        console.warn("Client Firestore event delete warning:", dbErr);
-      }
-
-      try {
         await fetch(`/api/events?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
       } catch (e) {}
 
@@ -3480,11 +2717,6 @@ export default function AdminDashboard() {
     setWaitlists(prev => prev.filter(w => w.id !== id));
 
     try {
-      try {
-        await deleteDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'course_waitlists', id));
-        await deleteDoc(doc(db, 'course_waitlists', id));
-      } catch (e) {}
-
       await fetch(`/api/admin/waitlists?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
       showToast('የተጠባባቂ መረጃው ተሰርዟል! (Deleted)', 'success');
     } catch (err: any) {
@@ -6206,18 +5438,15 @@ export default function AdminDashboard() {
                                 
                                 <div className="flex gap-2">
                                     <input type="text" placeholder="ምላሽዎን ይፃፉ (Write a reply)..." id={`reply-${ticket.id}`} className="flex-1 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm outline-none focus:border-primary" />
-                                    <button onClick={async () => {
+                                    <button onClick={() => {
                                         const input = document.getElementById(`reply-${ticket.id}`) as HTMLInputElement;
                                         if(!input.value.trim()) return;
-                                        try {
-                                            await setDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'support', 'messages', 'tickets', ticket.id), {
-                                                replies: [...(ticket.replies || []), { message: input.value, createdAt: new Date() }],
-                                                status: 'replied'
-                                            }, { merge: true });
-                                            input.value = '';
-                                        } catch (e) {
-                                            console.error(e);
-                                        }
+                                        setTickets(prev => prev.map(t => t.id === ticket.id ? {
+                                            ...t,
+                                            replies: [...(t.replies || []), { message: input.value, createdAt: new Date() }],
+                                            status: 'replied'
+                                        } : t));
+                                        input.value = '';
                                     }} className="bg-primary text-dark px-4 py-2 rounded-lg text-sm font-bold hover:bg-yellow-400 transition">ላክ</button>
                                 </div>
                             </div>
@@ -8117,7 +7346,7 @@ export default function AdminDashboard() {
                        <input 
                          type="text" 
                          className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 outline-none focus:border-primary" 
-                         defaultValue={auth.currentUser?.displayName || 'Admin'} 
+                         defaultValue={user?.displayName || 'Admin'} 
                          onChange={(e) => setSettingsName(e.target.value)}
                        />
                    </div>
@@ -8126,7 +7355,7 @@ export default function AdminDashboard() {
                        <input 
                          type="text" 
                          className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 outline-none focus:border-primary" 
-                         defaultValue={auth.currentUser?.photoURL || ''}
+                         defaultValue={user?.photoURL || ''}
                          placeholder="https://..."
                          onChange={(e) => setSettingsPhotoUrl(e.target.value)}
                        />

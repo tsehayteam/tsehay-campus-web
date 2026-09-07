@@ -2,8 +2,6 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { db } from '@/lib/firebase/config';
-import { doc, getDoc, collection, getDocs, query, orderBy, setDoc, serverTimestamp, where } from 'firebase/firestore';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter, useParams } from 'next/navigation';
@@ -108,40 +106,6 @@ function CoursePreviewContent() {
           }
         } catch (e) {}
 
-        // 1. Fallback Fetch from artifacts/tsehaycampus-e1a6d/public/data/courses
-        if (!loadedCourseData) {
-          try {
-            const courseRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses', id);
-            const courseSnap = await getDoc(courseRef);
-            if (courseSnap.exists()) {
-              loadedCourseData = courseSnap.data();
-              loadedCourseId = courseSnap.id;
-            }
-          } catch (e) {}
-        }
-
-        // 2. Fetch from root /courses
-        if (!loadedCourseData) {
-          try {
-            const rootRef = doc(db, 'courses', id);
-            const rootSnap = await getDoc(rootRef);
-            if (rootSnap.exists()) {
-              loadedCourseData = rootSnap.data();
-              loadedCourseId = rootSnap.id;
-            }
-          } catch (e) {}
-        }
-
-
-        try {
-          const altQuery = query(collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'courses'));
-          const altSnap = await getDocs(altQuery);
-          if (!altSnap.empty) {
-            const altDocs = altSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-            allList = mergeCoursesLists(allList, altDocs);
-          }
-        } catch (altErr) {}
-
         if (allList.length > 0 && isMounted) {
           setAllCourses(allList);
           saveCachedCourses(allList);
@@ -169,14 +133,6 @@ function CoursePreviewContent() {
             modulesList = loadedCourseData.modules;
           } else if (loadedCourseData.lessons && Array.isArray(loadedCourseData.lessons) && loadedCourseData.lessons.length > 0) {
             modulesList = [{ id: 'main', title: 'የኮርሱ ይዘትና ክፍሎች', lessons: loadedCourseData.lessons }];
-          } else {
-            try {
-              const subCollRef = collection(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses', loadedCourseId, 'modules');
-              const subCollSnap = await getDocs(subCollRef);
-              if (!subCollSnap.empty) {
-                modulesList = subCollSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-              }
-            } catch (subErr) {}
           }
           
           setModules(modulesList);
@@ -186,22 +142,10 @@ function CoursePreviewContent() {
           }
         }
 
-        // Fetch verified course reviews
-        try {
-          const realReviews: any[] = [];
-          if (loadedCourseData?.reviews && Array.isArray(loadedCourseData.reviews)) {
-            realReviews.push(...loadedCourseData.reviews);
-          }
-          const reviewsRef = collection(db, "artifacts", "tsehaycampus-e1a6d", "public", "data", "reviews");
-          const qReviews = query(reviewsRef, where("courseId", "==", loadedCourseId));
-          const reviewSnaps = await getDocs(qReviews);
-          reviewSnaps.forEach((doc) => {
-            realReviews.push({ id: doc.id, ...doc.data() });
-          });
-          if (realReviews.length > 0 && isMounted) {
-            setCourseReviews(realReviews);
-          }
-        } catch (revErr) {}
+        // Verified course reviews
+        if (loadedCourseData?.reviews && Array.isArray(loadedCourseData.reviews) && isMounted) {
+          setCourseReviews(loadedCourseData.reviews);
+        }
 
       } catch (error) {
         console.error("Error fetching live course data:", error);
@@ -321,17 +265,6 @@ function CoursePreviewContent() {
     if (isFree) {
       setIsEnrolling(true);
       try {
-        try {
-          const purchaseRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'users', user.uid, 'purchased_courses', course.id);
-          await setDoc(purchaseRef, {
-            courseId: course.id,
-            amount: 0,
-            paymentMethod: 'free',
-            purchasedAt: serverTimestamp(),
-            status: 'active'
-          }, { merge: true });
-        } catch (dbErr) {}
-
         try {
           localStorage.setItem('tsehay_user_active_course', JSON.stringify(course));
           if (course.lessons && course.lessons.length > 0) {

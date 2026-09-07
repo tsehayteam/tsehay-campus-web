@@ -1,8 +1,6 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { db } from '@/lib/firebase/config';
-import { doc, getDoc, updateDoc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { EventTicket } from '@/lib/eventCache';
 
 interface AdminQrScannerProps {
@@ -206,152 +204,24 @@ export default function AdminQrScanner({ onTicketScanned }: AdminQrScannerProps)
               message: 'የገባው የትኬት መለያ በትምህርት ክፍሉ ዳታቤዝ ውስጥ አልተገኘም',
               ticketId
             });
-          } else {
-            apiSuccess = false; // Fallback to client Firestore check
           }
         }
       } catch (apiErr) {
-        console.warn('Server API verification notice, switching to direct client Firestore query:', apiErr);
+        console.warn('Server API verification notice:', apiErr);
       }
 
-      // 2. Direct Client Firestore Fallback if server API did not complete
-      if (!apiSuccess && db) {
-        try {
-          let foundDocRef: any = null;
-          let foundTicketData: any = null;
-
-          // Candidate collections in Firestore
-          const candidateCollections = [
-            'event_registrations',
-            'event_tickets',
-            'tickets'
-          ];
-
-          // A. Try direct document lookup
-          for (const colName of candidateCollections) {
-            const docRef = doc(db, colName, ticketId);
-            const snap = await getDoc(docRef);
-            if (snap.exists()) {
-              foundDocRef = docRef;
-              foundTicketData = { id: snap.id, ...snap.data() };
-              break;
-            }
-          }
-
-          // B. Try nested collection lookup
-          if (!foundTicketData) {
-            const nestedRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'event_tickets', ticketId);
-            const nestedSnap = await getDoc(nestedRef);
-            if (nestedSnap.exists()) {
-              foundDocRef = nestedRef;
-              foundTicketData = { id: nestedSnap.id, ...nestedSnap.data() };
-            }
-          }
-
-          // C. Try where('ticketId', '==', ticketId) query
-          if (!foundTicketData) {
-            for (const colName of candidateCollections) {
-              const q = query(collection(db, colName), where('ticketId', '==', ticketId));
-              const qSnap = await getDocs(q);
-              if (!qSnap.empty) {
-                const first = qSnap.docs[0];
-                foundDocRef = first.ref;
-                foundTicketData = { id: first.id, ...first.data() };
-                break;
-              }
-            }
-          }
-
-          // State 1: NOT FOUND
-          if (!foundTicketData) {
-            playBeep('error');
-            setScanResult({
-              status: 'not_found',
-              message: 'ይቅርታ፣ ይህ ቲኬት አልተገኘም (Invalid Ticket).'
-            });
-            showToastNotification({
-              type: 'error',
-              title: '❌ ያልተገኘ ቲኬት (Invalid Ticket)',
-              message: 'የገባው የትኬት መለያ በትምህርት ክፍሉ ዳታቤዝ ውስጥ አልተገኘም',
-              ticketId
-            });
-            return;
-          }
-
-          // State 2: ALREADY USED
-          if (foundTicketData.isUsed) {
-            playBeep('warning');
-            setScanResult({
-              status: 'already_used',
-              message: 'ይህ ቲኬት ከዚህ በፊት ጥቅም ላይ ውሏል (Ticket already used).',
-              ticket: foundTicketData
-            });
-            showToastNotification({
-              type: 'warning',
-              title: '⚠️ ይህ ቲኬት ከዚህ በፊት ጥቅም ላይ ውሏል!',
-              message: `ይህ ቲኬት ቀደም ሲል ጥቅም ላይ ውሏል (${foundTicketData.attendeeName || 'ተሳታፊ'})`,
-              attendee: foundTicketData.attendeeName,
-              ticketId: foundTicketData.ticketId
-            });
-            return;
-          }
-
-          // State 3: SUCCESS (VALID)
-          const nowIso = new Date().toISOString();
-          const updateData = {
-            isUsed: true,
-            checkedIn: true,
-            usedAt: nowIso,
-            status: 'checked_in',
-            verifiedBy: 'Admin Scanner (Client)'
-          };
-
-          if (foundDocRef) {
-            await setDoc(foundDocRef, updateData, { merge: true });
-          }
-
-          try {
-            await setDoc(doc(db, 'event_registrations', ticketId), updateData, { merge: true });
-            await setDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'event_registrations', ticketId), updateData, { merge: true });
-          } catch (e) {}
-
-          const updated = {
-            ...foundTicketData,
-            isUsed: true,
-            checkedIn: true,
-            usedAt: nowIso,
-            status: 'checked_in'
-          };
-
-          playBeep('success');
-          setScanResult({
-            status: 'success',
-            message: 'ትክክለኛ ቲኬት! ተማሪውን ማሳለፍ ይችላሉ (Valid Ticket, Access Granted).',
-            ticket: updated
-          });
-
-          showToastNotification({
-            type: 'success',
-            title: '✅ ትኬት በተሳካ ሁኔታ ተረጋግጧል! (Ticket Verified)',
-            message: `${updated.attendeeName || 'ተማሪ'} መገኘታቸው ተረጋግጧል (Access Granted)`,
-            attendee: updated.attendeeName,
-            ticketId: updated.ticketId,
-            tier: updated.tier
-          });
-
-          try {
-            window.dispatchEvent(new CustomEvent('tsehay_ticket_scanned', { detail: { ticket: updated } }));
-          } catch(e) {}
-
-          if (onTicketScanned) onTicketScanned(updated);
-        } catch (clientDbErr: any) {
-          console.error('Client Firestore Verification Error:', clientDbErr);
-          playBeep('error');
-          setScanResult({
-            status: 'network_error',
-            message: 'የኔትወርክ ወይም የዳታቤዝ ግንኙነት ችግር አጋጥሟል (Network error).'
-          });
-        }
+      if (!apiSuccess) {
+        playBeep('error');
+        setScanResult({
+          status: 'not_found',
+          message: 'ይቅርታ፣ ይህ ቲኬት አልተገኘም (Invalid Ticket).'
+        });
+        showToastNotification({
+          type: 'error',
+          title: '❌ ያልተገኘ ቲኬት (Invalid Ticket)',
+          message: 'የገባው የትኬት መለያ በትምህርት ክፍሉ ዳታቤዝ ውስጥ አልተገኘም',
+          ticketId
+        });
       }
     } catch (outerErr: any) {
       console.error('Unhandled Verification Exception:', outerErr);
