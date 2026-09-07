@@ -30,7 +30,7 @@ export default function Hero3DPopoutStage({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeVideoUrl, setActiveVideoUrl] = useState<string>(videoSrc || DEFAULT_LANDING_VIDEO);
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
-  const [isMuted, setIsMuted] = useState<boolean>(true);
+  const [isMuted, setIsMuted] = useState<boolean>(false);
   const [isVideoReady, setIsVideoReady] = useState<boolean>(false);
   const [showInitialThumbnail, setShowInitialThumbnail] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
@@ -39,9 +39,28 @@ export default function Hero3DPopoutStage({
     return false;
   });
   const [customThumbnail, setCustomThumbnail] = useState<string>(initialThumbnail || '');
+  const [siteOrigin, setSiteOrigin] = useState<string>('');
+
+  // 3D Glassmorphic Flash Pop Feedback State
+  const [flashAction, setFlashAction] = useState<'play' | 'pause' | null>(null);
+  const flashTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const isInteractingRef = useRef(false);
   const rafIdRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setSiteOrigin(window.location.origin);
+    }
+  }, []);
+
+  const triggerFlashFeedback = (action: 'play' | 'pause') => {
+    if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
+    setFlashAction(action);
+    flashTimerRef.current = setTimeout(() => {
+      setFlashAction(null);
+    }, 950);
+  };
 
 
 
@@ -232,7 +251,7 @@ export default function Hero3DPopoutStage({
 
   // Generate YouTube Autoplay Embed URL with loop and mute enabled for browser compliance & 4K UHD preference
   const ytAutoplaySrc = parsedVideo.youtubeId
-    ? `https://www.youtube-nocookie.com/embed/${parsedVideo.youtubeId}?autoplay=1&mute=1&loop=1&playlist=${parsedVideo.youtubeId}&controls=0&playsinline=1&enablejsapi=1&rel=0&modestbranding=1&iv_load_policy=3&vq=hd2160&quality=hd2160&hd=1`
+    ? `https://www.youtube.com/embed/${parsedVideo.youtubeId}?autoplay=1&mute=0&loop=1&playlist=${parsedVideo.youtubeId}&controls=0&playsinline=1&enablejsapi=1&origin=${encodeURIComponent(siteOrigin || 'http://localhost:3000')}&rel=0&modestbranding=1&iv_load_policy=3&vq=hd2160&quality=hd2160&hd=1`
     : '';
 
   // 🚀 Guaranteed Immediate Video Auto-play & Viewport Sync for Audio Ducking
@@ -246,12 +265,25 @@ export default function Hero3DPopoutStage({
           '*'
         );
         iframeRef.current.contentWindow.postMessage(
-          JSON.stringify({ event: 'command', func: 'playVideo', args: '' }),
+          JSON.stringify({ event: 'command', func: 'unMute', args: [] }),
+          '*'
+        );
+        iframeRef.current.contentWindow.postMessage(
+          JSON.stringify({ event: 'command', func: 'setVolume', args: [100] }),
+          '*'
+        );
+        iframeRef.current.contentWindow.postMessage(
+          JSON.stringify({ event: 'command', func: 'playVideo', args: [] }),
           '*'
         );
       } else if (videoRef.current) {
         videoRef.current.muted = isMuted;
-        videoRef.current.play().catch(() => {});
+        videoRef.current.play().catch(() => {
+          if (videoRef.current) {
+            videoRef.current.muted = true;
+            videoRef.current.play().catch(() => {});
+          }
+        });
       }
     };
 
@@ -270,6 +302,12 @@ export default function Hero3DPopoutStage({
       triggerPlay();
       setTimeout(triggerPlay, 150);
       setTimeout(triggerPlay, 500);
+      // Immediately notify ambient audio to remain silent while hero video is on screen
+      window.dispatchEvent(
+        new CustomEvent('tsehay-hero-video-inview', {
+          detail: { inView: true, hasSound: true }
+        })
+      );
     };
     window.addEventListener('tsehay-preloader-complete', onPreloaderComplete);
 
@@ -277,6 +315,11 @@ export default function Hero3DPopoutStage({
     const onUserGesture = () => {
       setShowInitialThumbnail(false);
       triggerPlay();
+      window.dispatchEvent(
+        new CustomEvent('tsehay-hero-video-inview', {
+          detail: { inView: true, hasSound: true }
+        })
+      );
       window.removeEventListener('pointerdown', onUserGesture);
       window.removeEventListener('scroll', onUserGesture);
       window.removeEventListener('keydown', onUserGesture);
@@ -292,29 +335,34 @@ export default function Hero3DPopoutStage({
       observer = new IntersectionObserver(
         (entries) => {
           const entry = entries[0];
-          const inView = entry.isIntersecting && entry.intersectionRatio > 0.2;
+          const inView = entry.isIntersecting && entry.intersectionRatio > 0.25;
           window.dispatchEvent(
             new CustomEvent('tsehay-hero-video-inview', {
-              detail: { inView, hasSound: inView && !isMuted }
+              detail: { inView, hasSound: inView && isPlaying && !isMuted }
             })
           );
 
-          // Scroll-based auto control: pause when scrolled out, resume when scrolled in
+          // Scroll-based auto control: mute and pause when scrolled out, resume when scrolled in
           if (!inView) {
             if (videoRef.current && !videoRef.current.paused) {
+              videoRef.current.muted = true;
               videoRef.current.pause();
             } else if (iframeRef.current?.contentWindow) {
-              iframeRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'pauseVideo', args: '' }), '*');
+              iframeRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'mute', args: [] }), '*');
+              iframeRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'pauseVideo', args: [] }), '*');
             }
           } else {
             if (videoRef.current && videoRef.current.paused) {
+              videoRef.current.muted = false;
               videoRef.current.play().catch(() => {});
             } else if (iframeRef.current?.contentWindow) {
-              iframeRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'playVideo', args: '' }), '*');
+              iframeRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'unMute', args: [] }), '*');
+              iframeRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'setVolume', args: [100] }), '*');
+              iframeRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'playVideo', args: [] }), '*');
             }
           }
         },
-        { threshold: [0, 0.2, 0.5, 0.8] }
+        { threshold: [0, 0.25, 0.5, 0.8] }
       );
       observer.observe(stageRef.current);
     }
@@ -332,25 +380,34 @@ export default function Hero3DPopoutStage({
         })
       );
     };
-  }, [activeVideoUrl, parsedVideo.isYouTube, parsedVideo.youtubeId, isMuted]);
+  }, [activeVideoUrl, parsedVideo.isYouTube, parsedVideo.youtubeId, isMuted, siteOrigin]);
 
-  // Minimalist Play/Pause Toggle Handler (Works with YouTube postMessage and HTML5 video)
+  // 100% Functional Interactive 3D Glassmorphic Play/Pause Toggle Handler
   const togglePlayPause = (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     if (isPlaying) {
       if (parsedVideo.isYouTube && iframeRef.current?.contentWindow) {
-        iframeRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'pauseVideo', args: '' }), '*');
+        iframeRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'pauseVideo', args: [] }), '*');
       } else if (videoRef.current) {
         videoRef.current.pause();
       }
       setIsPlaying(false);
+      triggerFlashFeedback('pause');
     } else {
       if (parsedVideo.isYouTube && iframeRef.current?.contentWindow) {
-        iframeRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'playVideo', args: '' }), '*');
+        iframeRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'unMute', args: [] }), '*');
+        iframeRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'setVolume', args: [100] }), '*');
+        iframeRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'playVideo', args: [] }), '*');
       } else if (videoRef.current) {
+        videoRef.current.muted = false;
         videoRef.current.play().catch(() => {});
       }
       setIsPlaying(true);
+      setIsMuted(false);
+      triggerFlashFeedback('play');
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('duck-ambient-audio'));
+      }
     }
   };
 
@@ -359,8 +416,8 @@ export default function Hero3DPopoutStage({
     if (e) e.stopPropagation();
     if (isMuted) {
       if (parsedVideo.isYouTube && iframeRef.current?.contentWindow) {
-        iframeRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'unMute', args: '' }), '*');
-        iframeRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'setVolume', args: [90] }), '*');
+        iframeRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'unMute', args: [] }), '*');
+        iframeRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'setVolume', args: [100] }), '*');
       } else if (videoRef.current) {
         videoRef.current.muted = false;
       }
@@ -371,7 +428,7 @@ export default function Hero3DPopoutStage({
       }
     } else {
       if (parsedVideo.isYouTube && iframeRef.current?.contentWindow) {
-        iframeRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'mute', args: '' }), '*');
+        iframeRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'mute', args: [] }), '*');
       } else if (videoRef.current) {
         videoRef.current.muted = true;
       }
@@ -572,30 +629,64 @@ export default function Hero3DPopoutStage({
           />
 
 
-          {/* ⏸️ / ▶️ Minimalist Heavy-Blurred Center Pause / Play Button */}
-          <div 
-            className="absolute inset-0 z-25 flex items-center justify-center pointer-events-none"
-          >
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                togglePlayPause(e);
-              }}
-              aria-label={isPlaying ? "ቪዲዮውን አቁም (Pause Video)" : "ቪዲዮውን አስጀምር (Play Video)"}
-              className={`pointer-events-auto w-14 h-14 sm:w-20 sm:h-20 rounded-full bg-black/35 hover:bg-black/60 backdrop-blur-2xl border border-white/20 hover:border-[#f9b03c]/70 text-white hover:text-[#f9b03c] shadow-[0_10px_40px_rgba(0,0,0,0.85),0_0_20px_rgba(249,176,60,0.25)] transition-all duration-300 flex items-center justify-center cursor-pointer active:scale-90 hover:scale-105 ${
-                isPlaying 
-                  ? 'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100' 
-                  : 'opacity-100'
-              }`}
+          {/* 🌟 3D Glassmorphic Flash Pop Feedback Animation */}
+          {flashAction && (
+            <div 
+              key={flashAction + '_' + Date.now()}
+              className="absolute inset-0 z-30 flex items-center justify-center pointer-events-none"
+              style={{ transform: 'translateZ(90px)' }}
             >
-              {isPlaying ? (
-                <i className="fa-solid fa-pause text-base sm:text-2xl text-white/90 drop-shadow-md"></i>
-              ) : (
-                <i className="fa-solid fa-play text-base sm:text-2xl text-[#f9b03c] translate-x-0.5 drop-shadow-md"></i>
-              )}
-            </button>
-          </div>
+              <div className="flex flex-col items-center justify-center w-28 h-28 sm:w-36 sm:h-36 rounded-3xl bg-[#040814]/85 backdrop-blur-2xl border-2 border-white/30 shadow-[0_20px_60px_rgba(0,0,0,0.95),0_0_40px_rgba(249,176,60,0.45)] animate-[flashPop_0.95s_cubic-bezier(0.16,1,0.3,1)_forwards]">
+                {flashAction === 'pause' ? (
+                  <>
+                    <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center shadow-[0_0_25px_rgba(249,176,60,0.5)]">
+                      <i className="fa-solid fa-pause text-2xl sm:text-4xl text-[#f9b03c] drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]" />
+                    </div>
+                    <span className="mt-2.5 font-heading font-black text-[11px] sm:text-xs text-white uppercase tracking-wider drop-shadow-md">
+                      ተቋርጧል
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center shadow-[0_0_25px_rgba(52,211,153,0.5)]">
+                      <i className="fa-solid fa-play text-2xl sm:text-4xl text-emerald-400 translate-x-0.5 drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]" />
+                    </div>
+                    <span className="mt-2.5 font-heading font-black text-[11px] sm:text-xs text-white uppercase tracking-wider drop-shadow-md">
+                      እየተጫወተ ነው
+                    </span>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ⏸️ / ▶️ Persistent 3D Glassmorphic Center Play/Pause Button */}
+          {!flashAction && (
+            <div 
+              className="absolute inset-0 z-25 flex items-center justify-center pointer-events-none"
+              style={{ transform: 'translateZ(60px)' }}
+            >
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  togglePlayPause(e);
+                }}
+                aria-label={isPlaying ? "ቪዲዮውን አቁም (Pause Video)" : "ቪዲዮውን አስጀምር (Play Video)"}
+                className={`pointer-events-auto w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-black/45 hover:bg-black/75 backdrop-blur-2xl border-2 border-white/30 hover:border-[#f9b03c] text-white hover:text-[#f9b03c] shadow-[0_15px_45px_rgba(0,0,0,0.9),0_0_25px_rgba(249,176,60,0.35)] transition-all duration-300 flex items-center justify-center cursor-pointer active:scale-90 hover:scale-110 ${
+                  isPlaying 
+                    ? 'opacity-0 group-hover:opacity-90 group-focus-within:opacity-90' 
+                    : 'opacity-100 ring-4 ring-[#f9b03c]/40 animate-pulse'
+                }`}
+              >
+                {isPlaying ? (
+                  <i className="fa-solid fa-pause text-xl sm:text-2xl text-white/90 drop-shadow-md"></i>
+                ) : (
+                  <i className="fa-solid fa-play text-xl sm:text-2xl text-[#f9b03c] translate-x-0.5 drop-shadow-md"></i>
+                )}
+              </button>
+            </div>
+          )}
         </div>
 
         {/* ------------------------------------------------------------------ */}

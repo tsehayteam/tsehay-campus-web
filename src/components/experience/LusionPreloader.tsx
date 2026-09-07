@@ -9,7 +9,7 @@ import React, { useState, useEffect, useRef } from 'react';
 function AnalogRollingDigit({ value, max = 9 }: { value: number; max?: number }) {
   const digits = Array.from({ length: max + 1 }, (_, i) => i);
   return (
-    <div className="relative h-[68px] sm:h-[96px] md:h-[120px] overflow-hidden leading-none select-none inline-flex items-center">
+    <div className="relative h-[70px] sm:h-[96px] md:h-[116px] overflow-hidden leading-none select-none inline-flex items-center">
       <div
         className="transition-transform duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] flex flex-col"
         style={{ transform: `translateY(-${value * (100 / digits.length)}%)` }}
@@ -17,7 +17,7 @@ function AnalogRollingDigit({ value, max = 9 }: { value: number; max?: number })
         {digits.map((d) => (
           <div
             key={d}
-            className="h-[68px] sm:h-[96px] md:h-[120px] flex items-center justify-center font-mono font-black text-6xl sm:text-8xl md:text-9xl tracking-tighter text-white drop-shadow-[0_10px_35px_rgba(249,176,60,0.5)]"
+            className="h-[70px] sm:h-[96px] md:h-[116px] flex items-center justify-center font-mono font-black text-6xl sm:text-8xl md:text-9xl tracking-tighter text-white antialiased subpixel-antialiased drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)]"
           >
             {d}
           </div>
@@ -29,10 +29,11 @@ function AnalogRollingDigit({ value, max = 9 }: { value: number; max?: number })
 
 /**
  * LusionPreloader - Luxury Minimalist Fullscreen Preloader
- * - Analog-style Vertical Rolling Odometer Counter (Zero Percent Sign)
- * - Strict Asset Gatekeeping: Screen NEVER reveals and video NEVER plays until 4K buffer & assets are 100% complete
- * - Animated 3D Central Logo with rotating solar rings
- * - Smooth curtain reveal on confirmed 100% completion
+ * - Analog-style Vertical Rolling Odometer Counter (Sharp & High Contrast)
+ * - Minimalist Header (Zero technical clutter, no 4K/Ultra labels)
+ * - Fluid Animated 3D Central Logo with rotating solar rings
+ * - Dynamic Subtitle Typing Animation
+ * - Strict Asset Gatekeeping
  */
 export default function LusionPreloader() {
   const [progress, setProgress] = useState(0);
@@ -41,6 +42,45 @@ export default function LusionPreloader() {
   const [is4KBuffered, setIs4KBuffered] = useState(false);
   const progressRef = useRef(0);
   const animationFrameRef = useRef<number | null>(null);
+
+  // Dynamic Subtitle Typing Animation State
+  const [typedText, setTypedText] = useState('');
+  const [phraseIdx, setPhraseIdx] = useState(0);
+  const [charIdx, setCharIdx] = useState(0);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    const TYPING_PHRASES = [
+      'የወደፊት የቢዝነስ እና የክህሎት ጉዞዎን ዛሬ ይጀምሩ...',
+      'በኢትዮጵያ ቀዳሚው የተግባራዊ ክህሎት ማዕከል...',
+      'የሺን፣ ዲጂታል ማርኬቲንግ እና የቪዲዮ ኤዲቲንግ ስልጠናዎች...',
+      'እውቀትዎን ወደ ገቢ የሚቀይሩበት ትክክለኛ ካምፓስ...',
+    ];
+
+    const currentPhrase = TYPING_PHRASES[phraseIdx % TYPING_PHRASES.length];
+    let timer: NodeJS.Timeout;
+
+    if (!isDeleting && charIdx < currentPhrase.length) {
+      timer = setTimeout(() => {
+        setTypedText(currentPhrase.slice(0, charIdx + 1));
+        setCharIdx(charIdx + 1);
+      }, 45);
+    } else if (!isDeleting && charIdx === currentPhrase.length) {
+      timer = setTimeout(() => {
+        setIsDeleting(true);
+      }, 1600);
+    } else if (isDeleting && charIdx > 0) {
+      timer = setTimeout(() => {
+        setTypedText(currentPhrase.slice(0, charIdx - 1));
+        setCharIdx(charIdx - 1);
+      }, 22);
+    } else if (isDeleting && charIdx === 0) {
+      setIsDeleting(false);
+      setPhraseIdx(prev => (prev + 1) % TYPING_PHRASES.length);
+    }
+
+    return () => clearTimeout(timer);
+  }, [charIdx, isDeleting, phraseIdx]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -227,24 +267,16 @@ export default function LusionPreloader() {
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] h-[650px] bg-radial from-[#f9b03c]/18 via-[#3268ba]/12 to-transparent rounded-full blur-3xl pointer-events-none" />
       <div className="absolute inset-0 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:32px_32px] opacity-10 pointer-events-none" />
 
-      {/* Top Header Bar */}
-      <div className="relative z-10 px-6 py-6 sm:px-12 sm:py-8 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <span className="w-2 h-2 rounded-full bg-[#f9b03c] animate-ping" />
-          <span className="font-mono text-[11px] sm:text-xs tracking-widest text-slate-400 uppercase">
-            TSEHAY CAMPUS
-          </span>
-        </div>
-
-        <div className="font-mono text-[10px] sm:text-xs text-[#f9b03c] border border-[#f9b03c]/40 px-3 py-1 rounded-full bg-[#f9b03c]/10 backdrop-blur-md flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#f9b03c] animate-pulse" />
-          <span>4K ULTRA HD STREAMING</span>
+      {/* Top Bar - Ultra Minimalist (No static text, no 4K/Ultra labels) */}
+      <div className="relative z-10 px-6 py-6 sm:px-12 sm:py-8 flex items-center justify-between pointer-events-none">
+        <div className="flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-[#f9b03c] animate-pulse shadow-[0_0_8px_#f9b03c]" />
         </div>
       </div>
 
-      {/* Center 3D Animated Logo */}
+      {/* Center 3D Animated Logo with Fluid Floating Animation & Dynamic Typing Subtitle */}
       <div className="relative z-10 flex flex-col items-center justify-center my-auto">
-        <div className="relative group">
+        <div className="relative group animate-[float_5s_ease-in-out_infinite]">
           {/* Outer Rotating Dashed Ring */}
           <div className="absolute -inset-7 rounded-full border border-dashed border-[#f9b03c]/40 animate-[spin_12s_linear_infinite] pointer-events-none" />
           {/* Inner Counter-Rotating Ring */}
@@ -266,18 +298,22 @@ export default function LusionPreloader() {
           </div>
         </div>
 
-        {/* Minimalist Logo Title */}
-        <h2 className="mt-6 font-heading font-black text-xl sm:text-2xl tracking-wider text-white flex items-center gap-2">
-          <span>TSEHAY</span>
-          <span className="text-[#f9b03c]">CAMPUS</span>
-        </h2>
+        {/* Dynamic Subtitle Typing Animation Under Logo */}
+        <div className="mt-8 flex flex-col items-center justify-center text-center px-4 max-w-xl">
+          <div className="min-h-[32px] sm:min-h-[38px] flex items-center justify-center gap-1.5">
+            <p className="font-heading font-semibold text-sm sm:text-base md:text-lg text-slate-100 tracking-wide drop-shadow-md">
+              {typedText}
+            </p>
+            <span className="brand-typing-cursor" />
+          </div>
+        </div>
       </div>
 
-      {/* Bottom Area: Analog-Style Vertical Rolling Counter (NO PERCENT SIGN) */}
+      {/* Bottom Area: Razor-Sharp Analog-Style Vertical Rolling Counter */}
       <div className="relative z-10 px-6 py-6 sm:px-12 sm:py-8 flex items-end justify-between">
-        {/* Bottom-Left Analog Rolling Counter */}
+        {/* Bottom-Left Sharp High-Contrast Analog Rolling Counter */}
         <div className="flex flex-col">
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-black/40 border border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.8),inset_0_2px_8px_rgba(255,255,255,0.05)] backdrop-blur-xl">
+          <div className="flex items-center gap-1.5 px-4 py-2 rounded-2xl bg-[#040814]/95 border border-white/20 shadow-[0_12px_40px_rgba(0,0,0,0.95),inset_0_1px_1px_rgba(255,255,255,0.2)]">
             {/* Hundreds Reel */}
             {progress >= 100 && (
               <AnalogRollingDigit value={1} max={1} />
@@ -289,9 +325,9 @@ export default function LusionPreloader() {
           </div>
 
           <div className="flex items-center gap-2 mt-2 px-1">
-            <span className={`w-1.5 h-1.5 rounded-full ${is4KBuffered ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400 animate-ping'}`} />
-            <span className="font-mono text-[10px] sm:text-[11px] tracking-widest text-slate-400 uppercase">
-              {progress < 100 ? '4K ULTRA HD BUFFERING' : '4K ULTRA HD READY'}
+            <span className={`w-2 h-2 rounded-full ${progress >= 100 ? 'bg-emerald-400 shadow-[0_0_8px_#34d399]' : 'bg-[#f9b03c] animate-pulse shadow-[0_0_8px_#f9b03c]'}`} />
+            <span className="font-mono text-[11px] sm:text-xs tracking-widest text-slate-300 uppercase font-semibold">
+              {progress < 100 ? 'በመጫን ላይ...' : 'ዝግጁ ነው'}
             </span>
           </div>
         </div>

@@ -26,12 +26,13 @@ export default function AmbientIntroAudio() {
   const intervalRef = useRef<any>(null);
   const isInitializedRef = useRef(false);
   const isDuckedRef = useRef(false);
+  const isHeroInViewRef = useRef(true); // Hero video is in view on initial page load
 
   // Initialize the Continuous Ambient Synthesis Engine
   const startAmbientEngine = useCallback(() => {
     if (typeof window === 'undefined') return;
     if (isInitializedRef.current && audioCtxRef.current) {
-      if (audioCtxRef.current.state === 'suspended') {
+      if (audioCtxRef.current.state === 'suspended' && !isHeroInViewRef.current) {
         audioCtxRef.current.resume().then(() => {
           setIsPlaying(true);
         }).catch(() => {});
@@ -48,11 +49,11 @@ export default function AmbientIntroAudio() {
 
       const now = ctx.currentTime;
 
-      // Master Gain for smooth volume transitions
+      // Master Gain for smooth volume transitions - strictly start at 0.0001 (silent on page load)
       const masterGain = ctx.createGain();
       const initialMuted = localStorage.getItem('tsehay_ambient_sound_muted') === 'true';
       masterGain.gain.setValueAtTime(0.0001, now);
-      if (!initialMuted) {
+      if (!initialMuted && !isHeroInViewRef.current) {
         masterGain.gain.exponentialRampToValueAtTime(0.09, now + 2.0);
       }
       masterGainRef.current = masterGain;
@@ -160,12 +161,18 @@ export default function AmbientIntroAudio() {
 
     startAmbientEngine();
 
-    // Browser policy unlock: resume immediately upon any user gesture
+    // Browser policy unlock: resume immediately upon any user gesture ONLY if hero is NOT in view
     const unlockAudio = () => {
+      if (isHeroInViewRef.current) {
+        // Hero video takes absolute priority: keep ambient audio silent
+        setIsPlaying(false);
+        return;
+      }
+
       if (audioCtxRef.current && audioCtxRef.current.state === 'suspended') {
         audioCtxRef.current.resume().then(() => {
           const isCurrentlyMuted = localStorage.getItem('tsehay_ambient_sound_muted') === 'true';
-          if (!isCurrentlyMuted && masterGainRef.current && audioCtxRef.current) {
+          if (!isCurrentlyMuted && !isDuckedRef.current && masterGainRef.current && audioCtxRef.current) {
             masterGainRef.current.gain.cancelScheduledValues(audioCtxRef.current.currentTime);
             masterGainRef.current.gain.exponentialRampToValueAtTime(
               0.09,
@@ -176,7 +183,7 @@ export default function AmbientIntroAudio() {
         }).catch(() => {});
       } else if (audioCtxRef.current?.state === 'running') {
         const isCurrentlyMuted = localStorage.getItem('tsehay_ambient_sound_muted') === 'true';
-        setIsPlaying(!isCurrentlyMuted);
+        setIsPlaying(!isCurrentlyMuted && !isDuckedRef.current);
       }
     };
 
@@ -190,22 +197,56 @@ export default function AmbientIntroAudio() {
       if (masterGainRef.current && audioCtxRef.current) {
         const cTime = audioCtxRef.current.currentTime;
         masterGainRef.current.gain.cancelScheduledValues(cTime);
-        masterGainRef.current.gain.exponentialRampToValueAtTime(0.0001, cTime + 0.6);
+        masterGainRef.current.gain.exponentialRampToValueAtTime(0.0001, cTime + 0.3);
       }
+      setIsPlaying(false);
     };
 
     const handleRestore = () => {
       isDuckedRef.current = false;
+      if (isHeroInViewRef.current) return; // Keep muted if hero video is still in view
       const isCurrentlyMuted = localStorage.getItem('tsehay_ambient_sound_muted') === 'true';
       if (!isCurrentlyMuted && masterGainRef.current && audioCtxRef.current) {
         const cTime = audioCtxRef.current.currentTime;
         masterGainRef.current.gain.cancelScheduledValues(cTime);
         masterGainRef.current.gain.exponentialRampToValueAtTime(0.09, cTime + 1.0);
+        setIsPlaying(true);
+      }
+    };
+
+    // 🌊 Scroll-based Hero Video Viewport Sync
+    const handleHeroInView = (e: any) => {
+      const inView = !!e.detail?.inView;
+      isHeroInViewRef.current = inView;
+
+      if (inView) {
+        // Hero video is in viewport: Duck ambient audio to complete silence immediately
+        if (masterGainRef.current && audioCtxRef.current) {
+          const cTime = audioCtxRef.current.currentTime;
+          masterGainRef.current.gain.cancelScheduledValues(cTime);
+          masterGainRef.current.gain.setValueAtTime(Math.max(0.0001, masterGainRef.current.gain.value), cTime);
+          masterGainRef.current.gain.exponentialRampToValueAtTime(0.0001, cTime + 0.25);
+          setIsPlaying(false);
+        }
+      } else {
+        // Hero video scrolled out of viewport: Smoothly fade in ambient soundscape
+        const isCurrentlyMuted = localStorage.getItem('tsehay_ambient_sound_muted') === 'true';
+        if (!isCurrentlyMuted && !isDuckedRef.current && masterGainRef.current && audioCtxRef.current) {
+          if (audioCtxRef.current.state === 'suspended') {
+            audioCtxRef.current.resume().catch(() => {});
+          }
+          const cTime = audioCtxRef.current.currentTime;
+          masterGainRef.current.gain.cancelScheduledValues(cTime);
+          masterGainRef.current.gain.setValueAtTime(Math.max(0.0001, masterGainRef.current.gain.value), cTime);
+          masterGainRef.current.gain.exponentialRampToValueAtTime(0.09, cTime + 1.6);
+          setIsPlaying(true);
+        }
       }
     };
 
     window.addEventListener('duck-ambient-audio', handleDuck);
     window.addEventListener('restore-ambient-audio', handleRestore);
+    window.addEventListener('tsehay-hero-video-inview', handleHeroInView);
 
     return () => {
       window.removeEventListener('pointerdown', unlockAudio);
@@ -213,6 +254,7 @@ export default function AmbientIntroAudio() {
       window.removeEventListener('scroll', unlockAudio);
       window.removeEventListener('duck-ambient-audio', handleDuck);
       window.removeEventListener('restore-ambient-audio', handleRestore);
+      window.removeEventListener('tsehay-hero-video-inview', handleHeroInView);
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, [startAmbientEngine]);
