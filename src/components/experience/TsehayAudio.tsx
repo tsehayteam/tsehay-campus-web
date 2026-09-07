@@ -29,6 +29,7 @@ export default function TsehayAudio() {
   const droneGainRef = useRef<GainNode | null>(null);
   const rhythmGainRef = useRef<GainNode | null>(null);
   const melodyGainRef = useRef<GainNode | null>(null);
+  const uiGainRef = useRef<GainNode | null>(null);
 
   const sequencerTimerRef = useRef<NodeJS.Timeout | null>(null);
   const stepRef = useRef(0);
@@ -85,64 +86,40 @@ export default function TsehayAudio() {
     const ctx = new AudioContextClass();
     audioCtxRef.current = ctx;
 
-    // 1. Master Output Gain with Sub-Bass Hum Filter (85Hz HighPass)
+    // 1. Master Output Gain with Sub-Bass & Hum Removal Filter (160Hz HighPass)
     const masterGain = ctx.createGain();
     masterGain.gain.setValueAtTime(0.0001, ctx.currentTime);
 
     const highPassFilter = ctx.createBiquadFilter();
     highPassFilter.type = 'highpass';
-    highPassFilter.frequency.setValueAtTime(85, ctx.currentTime); // Strips sub-audible electrical hum/buzz
+    highPassFilter.frequency.setValueAtTime(160, ctx.currentTime); // Completely wipes out low-frequency hum, buzz, and mud
 
     masterGain.connect(highPassFilter);
     highPassFilter.connect(ctx.destination);
     masterGainRef.current = masterGain;
 
-    // 2. Pure Solar Ambient Tone (Clean Pentatonic Overture, No Low Drone Hum)
-    const droneGain = ctx.createGain();
-    droneGain.gain.setValueAtTime(0.18, ctx.currentTime);
-    droneGain.connect(masterGain);
-    droneGainRef.current = droneGain;
+    // 2. Dedicated UI Click & Feedback Gain (Direct to destination, NEVER silenced by video ducking)
+    const uiGain = ctx.createGain();
+    uiGain.gain.setValueAtTime(0.22, ctx.currentTime);
+    uiGain.connect(ctx.destination);
+    uiGainRef.current = uiGain;
 
-    // Gentle Ambient Filter
-    const droneFilter = ctx.createBiquadFilter();
-    droneFilter.type = 'lowpass';
-    droneFilter.frequency.setValueAtTime(420, ctx.currentTime);
-    droneFilter.Q.setValueAtTime(1.5, ctx.currentTime);
-    droneFilter.connect(droneGain);
-
-    // Warm, Pure Sine Harmonics (Clean 216Hz & 432Hz only - No 54Hz/108Hz buzzing)
-    const harmonics = [
-      { freq: 216.0, type: 'sine' as OscillatorType, gain: 0.08 },
-      { freq: 432.0, type: 'sine' as OscillatorType, gain: 0.05 },
-    ];
-
-    harmonics.forEach(({ freq, type, gain: vol }) => {
-      const osc = ctx.createOscillator();
-      osc.type = type;
-      osc.frequency.setValueAtTime(freq, ctx.currentTime);
-      const g = ctx.createGain();
-      g.gain.setValueAtTime(vol, ctx.currentTime);
-      osc.connect(g);
-      g.connect(droneFilter);
-      osc.start();
-    });
-
-    // 3. Rhythm Gain (Kebero Sub-Bass & Traditional Shaker)
+    // 3. Rhythm Gain (Traditional Ethiopian Kebero & Shaker Beat)
     const rhythmGain = ctx.createGain();
-    rhythmGain.gain.setValueAtTime(0.08, ctx.currentTime); // Starts subtle in ambient overture
+    rhythmGain.gain.setValueAtTime(0.12, ctx.currentTime);
     rhythmGain.connect(masterGain);
     rhythmGainRef.current = rhythmGain;
 
-    // 4. Melody Gain (Tizita Krar/Harp Plucks)
+    // 4. Melody Gain (Ethiopian Tizita Pentatonic Krar Plucks)
     const melodyGain = ctx.createGain();
-    melodyGain.gain.setValueAtTime(0.24, ctx.currentTime);
+    melodyGain.gain.setValueAtTime(0.26, ctx.currentTime);
     melodyGain.connect(masterGain);
     melodyGainRef.current = melodyGain;
 
     return ctx;
   }, []);
 
-  // Synthesize Traditional Kebero (Warm Pitch-Drop Sub Drum)
+  // Synthesize Traditional Kebero (Warm Acoustic Percussion, Zero Sub-Rumble)
   const playKeberoKick = (time: number, accent: boolean = false) => {
     const ctx = audioCtxRef.current;
     const rhythmGain = rhythmGainRef.current;
@@ -150,17 +127,17 @@ export default function TsehayAudio() {
 
     const osc = ctx.createOscillator();
     osc.type = 'sine';
-    osc.frequency.setValueAtTime(accent ? 95 : 75, time);
-    osc.frequency.exponentialRampToValueAtTime(38, time + 0.18);
+    osc.frequency.setValueAtTime(accent ? 125 : 100, time);
+    osc.frequency.exponentialRampToValueAtTime(60, time + 0.12);
 
     const gain = ctx.createGain();
-    gain.gain.setValueAtTime(accent ? 0.38 : 0.25, time);
-    gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.22);
+    gain.gain.setValueAtTime(accent ? 0.26 : 0.18, time);
+    gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.15);
 
     osc.connect(gain);
     gain.connect(rhythmGain);
     osc.start(time);
-    osc.stop(time + 0.25);
+    osc.stop(time + 0.16);
   };
 
   // Synthesize Traditional Acoustic Shaker (Senasel / Woven Reed Shaker)
@@ -316,24 +293,24 @@ export default function TsehayAudio() {
   useEffect(() => {
     const ctx = audioCtxRef.current;
     const rhythmGain = rhythmGainRef.current;
-    const droneGain = droneGainRef.current;
-    if (!ctx || !rhythmGain || !droneGain) return;
+    const melodyGain = melodyGainRef.current;
+    if (!ctx || !rhythmGain || !melodyGain) return;
 
     const now = ctx.currentTime;
     if (scrollMode === 'groove') {
-      // Swell rhythm energy when user explores courses/features
+      // Swell rhythm & melody energy when user explores courses/features
       rhythmGain.gain.cancelScheduledValues(now);
-      rhythmGain.gain.linearRampToValueAtTime(0.48, now + 1.2);
+      rhythmGain.gain.linearRampToValueAtTime(0.38, now + 1.0);
 
-      droneGain.gain.cancelScheduledValues(now);
-      droneGain.gain.linearRampToValueAtTime(0.25, now + 1.2);
+      melodyGain.gain.cancelScheduledValues(now);
+      melodyGain.gain.linearRampToValueAtTime(0.32, now + 1.0);
     } else {
-      // Settle down to ethereal ambient overture near the top
+      // Settle down to gentle ambient melody near the top
       rhythmGain.gain.cancelScheduledValues(now);
-      rhythmGain.gain.linearRampToValueAtTime(0.09, now + 1.5);
+      rhythmGain.gain.linearRampToValueAtTime(0.10, now + 1.2);
 
-      droneGain.gain.cancelScheduledValues(now);
-      droneGain.gain.linearRampToValueAtTime(0.38, now + 1.5);
+      melodyGain.gain.cancelScheduledValues(now);
+      melodyGain.gain.linearRampToValueAtTime(0.24, now + 1.2);
     }
   }, [scrollMode]);
 
@@ -400,72 +377,76 @@ export default function TsehayAudio() {
     }
   }, [isQuietRoute, isDucked, isUnlocked]);
 
-  // 🔔 Distinct Interactive Click & Hover Audio Feedback
+  // 🔔 Distinct Interactive Click & Hover Audio Feedback (Always active, NEVER blocked by video ducking)
   useEffect(() => {
-    // Crisp Tactile Micro-Click
+    // Crisp Tactile Micro-Tick on Hover
     const onHover = () => {
-      if (isQuietRoute || isDucked) return;
+      if (isQuietRoute) return;
       const ctx = audioCtxRef.current;
-      const master = masterGainRef.current;
-      if (!ctx || !master || ctx.state !== 'running') return;
+      const uiGain = uiGainRef.current;
+      if (!ctx || !uiGain || ctx.state !== 'running') return;
 
       const now = ctx.currentTime;
       const osc = ctx.createOscillator();
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(1760, now);
-      osc.frequency.exponentialRampToValueAtTime(880, now + 0.06);
+      osc.frequency.setValueAtTime(1800, now);
+      osc.frequency.exponentialRampToValueAtTime(1200, now + 0.035);
 
       const gain = ctx.createGain();
-      gain.gain.setValueAtTime(0.025, now);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.08);
+      gain.gain.setValueAtTime(0.02, now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.04);
 
       osc.connect(gain);
-      gain.connect(master);
+      gain.connect(uiGain);
       osc.start(now);
-      osc.stop(now + 0.09);
+      osc.stop(now + 0.045);
     };
 
     // Primary vs Standard Button Click Feedback
     const onPulse = (e: Event) => {
-      if (isQuietRoute || isDucked) return;
+      if (isQuietRoute) return;
       const ctx = audioCtxRef.current;
-      const master = masterGainRef.current;
-      if (!ctx || !master || ctx.state !== 'running') return;
+      const uiGain = uiGainRef.current;
+      if (!ctx || !uiGain) return;
+      if (ctx.state === 'suspended') {
+        ctx.resume().catch(() => {});
+      }
 
       const isPrimary = (e as CustomEvent)?.detail?.isPrimary ?? false;
       const now = ctx.currentTime;
 
       if (isPrimary) {
-        // Golden Tizita Chord Chime for Primary CTAs (C5 + E5)
-        [523.25, 659.25].forEach((freq) => {
+        // Golden Tizita Tri-Tone Chime for Primary CTAs (C5 + E5 + G5)
+        [523.25, 659.25, 783.99].forEach((freq, idx) => {
           const osc = ctx.createOscillator();
           osc.type = 'triangle';
-          osc.frequency.setValueAtTime(freq, now);
+          osc.frequency.setValueAtTime(freq, now + idx * 0.015);
 
           const gain = ctx.createGain();
-          gain.gain.setValueAtTime(0.08, now);
-          gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.22);
+          gain.gain.setValueAtTime(0.001, now + idx * 0.015);
+          gain.gain.linearRampToValueAtTime(0.08, now + idx * 0.015 + 0.01);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.015 + 0.22);
 
           osc.connect(gain);
-          gain.connect(master);
-          osc.start(now);
-          osc.stop(now + 0.24);
+          gain.connect(uiGain);
+          osc.start(now + idx * 0.015);
+          osc.stop(now + idx * 0.015 + 0.25);
         });
       } else {
-        // Crisp Luxury Snap for standard controls
+        // Crisp Modern Tactile Snap for standard controls & links (1200Hz -> 550Hz, zero mud)
         const osc = ctx.createOscillator();
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(120, now);
-        osc.frequency.exponentialRampToValueAtTime(45, now + 0.08);
+        osc.frequency.setValueAtTime(1200, now);
+        osc.frequency.exponentialRampToValueAtTime(550, now + 0.035);
 
         const gain = ctx.createGain();
-        gain.gain.setValueAtTime(0.07, now);
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.10);
+        gain.gain.setValueAtTime(0.09, now);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.04);
 
         osc.connect(gain);
-        gain.connect(master);
+        gain.connect(uiGain);
         osc.start(now);
-        osc.stop(now + 0.11);
+        osc.stop(now + 0.045);
       }
     };
 
@@ -476,7 +457,7 @@ export default function TsehayAudio() {
       window.removeEventListener('tsehay-audio-hover', onHover);
       window.removeEventListener('tsehay-audio-pulse', onPulse);
     };
-  }, [isQuietRoute, isDucked]);
+  }, [isQuietRoute]);
 
   // Zero DOM rendering: Seamless invisible audio experience like lusion.co (no mute button)
   return null;

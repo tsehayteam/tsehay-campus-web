@@ -138,16 +138,16 @@ export default function PWAInstallBanner() {
           : 'translate-y-12 opacity-0 pointer-events-none'
       }`}
     >
-      {/* Rectangular Glassmorphic Modal with Attractive Amber Border */}
+      {/* Compact Rectangular Glassmorphic Card with Attractive Amber Border */}
       <div 
-        className="relative p-4 border border-[#f9b03c]/60 rounded-xl flex items-center gap-3.5 shadow-[0_10px_40px_rgba(0,0,0,0.9),0_0_25px_rgba(249,176,60,0.3)] select-none backdrop-blur-2xl bg-[#03060d]/95"
+        className="relative p-3.5 sm:p-4 border border-[#f9b03c]/50 rounded-2xl flex items-center gap-3.5 shadow-[0_12px_45px_rgba(0,0,0,0.9),0_0_30px_rgba(249,176,60,0.25)] select-none backdrop-blur-2xl bg-[#03060d]/95"
       >
         {/* App Icon */}
         <div className="relative shrink-0">
           <img 
             src="/tc-logo.jpg" 
             alt="Tsehay Campus" 
-            className="w-12 h-12 object-cover rounded-xl shadow-md border border-[#f9b03c]/40"
+            className="w-11 h-11 sm:w-12 sm:h-12 object-cover rounded-xl shadow-md border border-[#f9b03c]/40"
           />
           <span className="absolute -top-1 -right-1 flex h-3 w-3">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#f9b03c] opacity-75"></span>
@@ -155,18 +155,18 @@ export default function PWAInstallBanner() {
           </span>
         </div>
 
-        {/* Short, Attractive & Action-Oriented Text Details */}
+        {/* Short, Attractive & Action-Oriented Text Details (Mobile & Desktop) */}
         <div className="flex-1 min-w-0 pr-1">
-          <div className="flex items-center gap-1.5 mb-1">
+          <div className="flex items-center gap-1.5 mb-1 flex-wrap">
             <span className="text-xs sm:text-sm font-black text-white font-heading truncate tracking-wide">
-              ፀሐይ ካምፓስን በስልክዎ ይጫኑ
+              የፀሐይ ካምፓስ አፕሊኬሽን
             </span>
-            <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-[#f9b03c]/20 text-[#f9b03c] border border-[#f9b03c]/35">
-              PWA
+            <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-[#f9b03c]/20 text-[#f9b03c] border border-[#f9b03c]/35 whitespace-nowrap">
+              📱💻 PWA
             </span>
           </div>
-          <p className="text-[11px] text-slate-300 font-medium leading-tight">
-            ⚡ ፈጣን ትምህርት፣ ዳታ ቆጣቢ እና የቀጥታ ማሳወቂያዎች ለማግኘት አሁኑኑ በነፃ ይጫኑ!
+          <p className="text-[11px] text-slate-300 font-medium leading-snug">
+            🚀 በ1 ክሊክ ፈጣን ትምህርት፣ ከመስመር ውጭ ዝግጁነት እና የቀጥታ ማሳወቂያዎች ያግኙ!
           </p>
         </div>
 
@@ -188,7 +188,7 @@ export default function PWAInstallBanner() {
             className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#f9b03c] hover:brightness-110 active:scale-95 text-slate-950 font-black text-xs transition shadow-[0_0_15px_rgba(249,176,60,0.5)] cursor-pointer whitespace-nowrap flex items-center gap-1.5"
           >
             <i className="fa-solid fa-download text-[11px] animate-bounce"></i>
-            <span>አሁኑኑ ጫን</span>
+            <span>ጫን (Install)</span>
           </button>
         </div>
       </div>

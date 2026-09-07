@@ -2109,23 +2109,14 @@ function StudentDashboardContent() {
     try {
       const { signOut } = await import('firebase/auth');
       const { auth } = await import('@/lib/firebase/config');
+      const { clearUserSessionData } = await import('@/context/AuthContext');
+      clearUserSessionData(user?.uid);
       await signOut(auth);
     } catch (err) {
       console.warn("Sign out auth error:", err);
     } finally {
-      try {
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem('tsehay_auth_user_cache');
-          localStorage.removeItem('tsehay_auth_is_admin');
-          localStorage.removeItem('tsehay_user_role');
-          localStorage.removeItem('tsehay_user_active_course');
-          localStorage.removeItem('tsehay_user_active_lesson');
-          sessionStorage.clear();
-        }
-      } catch (e) {}
-
       if (typeof window !== 'undefined') {
-        window.location.href = '/';
+        window.location.replace('/');
       } else {
         router.push('/');
       }

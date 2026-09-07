@@ -23,8 +23,16 @@ export const clearUserSessionData = (previousUid?: string) => {
     localStorage.removeItem('tsehay_user_active_modules');
     localStorage.removeItem('tsehay_user_active_lesson');
     localStorage.removeItem('tsehay_user_purchased_courses');
+    localStorage.removeItem('tsehay_user_enrolled_courses');
+    localStorage.removeItem('tsehay_user_role');
+    localStorage.removeItem('adminAuth');
+    localStorage.removeItem('adminEmail');
     sessionStorage.removeItem('tsehay_pending_course_action');
     sessionStorage.removeItem('tsehay_pending_action');
+    sessionStorage.removeItem('tsehay_admin_verified');
+    sessionStorage.removeItem('tsehay_admin_2fa_token');
+    sessionStorage.removeItem('tc_admin_session');
+    sessionStorage.clear();
 
     if (previousUid) {
       localStorage.removeItem(`tsehay_user_courses_${previousUid}`);
@@ -128,18 +136,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const logout = async () => {
     try {
       clearUserSessionData(user?.uid);
-      if (typeof window !== 'undefined') {
-        sessionStorage.removeItem('tsehay_admin_verified');
-        sessionStorage.removeItem('tsehay_admin_2fa_token');
-        sessionStorage.removeItem('tc_admin_session');
-        localStorage.removeItem('adminAuth');
-        localStorage.removeItem('adminEmail');
-      }
       setIsAdmin(false);
       setUser(null);
       await signOut(auth);
     } catch (err) {
       console.warn("Logout error:", err);
+    } finally {
+      if (typeof window !== 'undefined') {
+        window.location.replace('/');
+      }
     }
   };
 

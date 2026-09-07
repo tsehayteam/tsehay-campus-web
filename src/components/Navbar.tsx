@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth, clearUserSessionData } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useState, useEffect, useRef } from "react";
 import AuthModal from "./AuthModal";
@@ -286,21 +286,14 @@ export default function Navbar() {
 
   const handleSignOut = async () => {
     try {
+      setShowProfileDropdown(false);
+      clearUserSessionData(user?.uid);
       await signOut(auth);
     } catch (e) {
       console.warn("Signout warning:", e);
     } finally {
-      try {
-        localStorage.removeItem('tsehay_auth_user_cache');
-        localStorage.removeItem('tsehay_auth_is_admin');
-        localStorage.removeItem('tsehay_user_role');
-        localStorage.removeItem('tsehay_user_active_course');
-        localStorage.removeItem('tsehay_user_active_lesson');
-        sessionStorage.clear();
-      } catch (e) {}
-      setShowProfileDropdown(false);
-      if (pathname?.startsWith('/dashboard') || pathname?.startsWith('/admin')) {
-        router.push('/');
+      if (typeof window !== 'undefined') {
+        window.location.replace('/');
       }
     }
   };
@@ -995,63 +988,76 @@ export default function Navbar() {
           onClick={() => setShowAppDownloadModal(false)}
         >
           <div 
-            className="relative w-full max-w-md rounded-3xl bg-[#080d18] border border-[#f9b03c]/40 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.9),0_0_40px_rgba(249,176,60,0.25)] text-center space-y-4 animate-in zoom-in-95 duration-200"
+            className="relative w-full max-w-md rounded-2xl bg-[#080d18]/95 border border-[#f9b03c]/45 p-5 shadow-[0_20px_60px_rgba(0,0,0,0.9),0_0_35px_rgba(249,176,60,0.25)] space-y-4 animate-in zoom-in-95 duration-200 backdrop-blur-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Ambient Glow */}
-            <div className="absolute -top-12 left-1/2 -translate-x-1/2 w-32 h-32 bg-[#f9b03c]/20 rounded-full blur-2xl pointer-events-none" />
+            <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-32 h-20 bg-[#f9b03c]/20 rounded-full blur-2xl pointer-events-none" />
 
-            {/* App Icon */}
-            <div className="relative mx-auto w-20 h-20 rounded-2xl p-1 bg-gradient-to-tr from-[#f9b03c] via-yellow-400 to-[#3268ba] shadow-[0_0_25px_rgba(249,176,60,0.4)]">
-              <img 
-                src="/tc-logo.jpg" 
-                alt="Tsehay Campus" 
-                className="w-full h-full object-cover rounded-xl"
-              />
-              <span className="absolute -bottom-1 -right-1 px-2 py-0.5 rounded-full bg-emerald-500 text-slate-950 font-black text-[9px] shadow">
-                OFFICIAL
-              </span>
+            {/* Header: App Icon + Title + Device Badge + Close */}
+            <div className="flex items-start gap-3.5 relative">
+              <div className="relative shrink-0 w-12 h-12 rounded-xl p-0.5 bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-[#3268ba] shadow-[0_0_15px_rgba(249,176,60,0.4)]">
+                <img 
+                  src="/tc-logo.jpg" 
+                  alt="Tsehay Campus" 
+                  className="w-full h-full object-cover rounded-[10px]"
+                />
+                <span className="absolute -bottom-1 -right-1 px-1.5 py-0.2 rounded-full bg-emerald-500 text-slate-950 font-black text-[8px] shadow">
+                  PRO
+                </span>
+              </div>
+
+              <div className="flex-1 min-w-0 pr-6">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <h3 className="text-base font-black font-heading text-white tracking-tight">
+                    የፀሐይ ካምፓስን አፕሊኬሽን ይጫኑ
+                  </h3>
+                  <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-[#f9b03c]/20 text-[#f9b03c] border border-[#f9b03c]/35 whitespace-nowrap">
+                    📱💻 Mobile & PC
+                  </span>
+                </div>
+                <p className="text-xs text-slate-300 leading-snug mt-1">
+                  🚀 በስልክዎም ሆነ በኮምፒውተርዎ ላይ አፑን ጭነው እጅግ ፈጣን ትምህርት፣ ከመስመር ውጭ ዝግጁነት እና የቀጥታ ማሳወቂያዎችን ያግኙ!
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowAppDownloadModal(false)}
+                className="absolute top-0 right-0 w-7 h-7 rounded-lg bg-white/5 hover:bg-white/15 text-slate-400 hover:text-white flex items-center justify-center transition cursor-pointer border border-white/10 text-xs"
+                title="ዝጋ (Close)"
+                aria-label="Close"
+              >
+                <i className="fa-solid fa-xmark"></i>
+              </button>
             </div>
 
-            {/* Content */}
-            <div className="space-y-2">
-              <span className="text-[11px] font-black tracking-widest text-[#f9b03c] uppercase">
-                Tsehay Campus App Download
-              </span>
-              <h3 className="text-lg sm:text-xl font-black font-heading text-white">
-                የፀሐይ ካምፓስን አፕሊኬሽን ማውረድ ይፈልጋሉ?
-              </h3>
-              <p className="text-xs text-slate-300 leading-relaxed max-w-xs mx-auto">
-                የፀሐይ ካምፓስን ይፋዊ አፕሊኬሽን በስልክዎ ወይም በኮምፒውተርዎ ላይ ጭነው ያለ ምንም መቆራረጥ፣ በከፍተኛ ፍጥነት እና ዳታ በመቆጠብ ይማሩ።
-              </p>
-            </div>
-
-            {/* Benefits Badge List */}
-            <div className="grid grid-cols-2 gap-2 text-left p-3 rounded-2xl bg-white/5 border border-white/10 text-[11px]">
+            {/* Feature Highlights Grid */}
+            <div className="grid grid-cols-2 gap-2 text-left p-2.5 rounded-xl bg-white/5 border border-white/10 text-[11px]">
               <div className="flex items-center gap-2 text-slate-200">
                 <i className="fa-solid fa-bolt text-[#f9b03c]"></i>
-                <span>እጅግ ፈጣን አሰራር</span>
+                <span>3x እጅግ ፈጣን አሰራር</span>
               </div>
               <div className="flex items-center gap-2 text-slate-200">
                 <i className="fa-solid fa-bell text-[#f9b03c]"></i>
-                <span>የቀጥታ ማሳወቂያዎች</span>
+                <span>ቅጽበታዊ ማሳወቂያዎች</span>
               </div>
               <div className="flex items-center gap-2 text-slate-200">
                 <i className="fa-solid fa-wifi-slash text-[#f9b03c]"></i>
                 <span>ከመስመር ውጭ ዝግጁ</span>
               </div>
               <div className="flex items-center gap-2 text-slate-200">
-                <i className="fa-solid fa-database text-[#f9b03c]"></i>
+                <i className="fa-solid fa-gauge-high text-[#f9b03c]"></i>
                 <span>አነስተኛ ዳታ ቆጣቢ</span>
               </div>
             </div>
 
             {/* Actions */}
-            <div className="grid grid-cols-2 gap-2.5 pt-1">
+            <div className="grid grid-cols-2 gap-2.5 pt-0.5">
               <button
                 type="button"
                 onClick={() => setShowAppDownloadModal(false)}
-                className="py-3 px-4 rounded-xl border border-white/10 hover:border-white/20 bg-white/5 hover:bg-white/10 text-slate-300 font-bold text-xs transition cursor-pointer active:scale-95"
+                className="py-2.5 px-4 rounded-xl border border-white/10 hover:border-white/20 bg-white/5 hover:bg-white/10 text-slate-300 font-bold text-xs transition cursor-pointer active:scale-95"
               >
                 ይቅር (Cancel)
               </button>
@@ -1063,10 +1069,10 @@ export default function Navbar() {
                   window.dispatchEvent(new CustomEvent('tsehay_trigger_install_now'));
                   window.dispatchEvent(new CustomEvent('open-pwa-install'));
                 }}
-                className="py-3 px-4 rounded-xl bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#f9b03c] hover:brightness-110 active:scale-95 text-slate-950 font-black text-xs transition cursor-pointer shadow-[0_0_20px_rgba(249,176,60,0.4)] flex items-center justify-center gap-2"
+                className="py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#f9b03c] hover:brightness-110 active:scale-95 text-slate-950 font-black text-xs transition cursor-pointer shadow-[0_0_20px_rgba(249,176,60,0.4)] flex items-center justify-center gap-2"
               >
                 <i className="fa-solid fa-download"></i>
-                <span>አዎ፣ አውርድ (Yes)</span>
+                <span>አሁኑኑ ጫን (Install)</span>
               </button>
             </div>
           </div>
