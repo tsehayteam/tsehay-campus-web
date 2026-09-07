@@ -323,10 +323,13 @@ export default function Navbar() {
           <button
             type="button"
             onClick={openCurtain}
-            className="relative pointer-events-auto px-4 sm:px-6 py-1.5 sm:py-2 rounded-full flex items-center gap-2 group transition-all duration-300 active:scale-95 cursor-pointer whitespace-nowrap backdrop-blur-2xl bg-black/90 border border-white/20 hover:border-[#f9b03c] text-white hover:text-[#f9b03c] shadow-[0_10px_30px_rgba(0,0,0,0.8),0_0_20px_rgba(249,176,60,0.25)]"
+            className="relative pointer-events-auto px-5 sm:px-6 py-2 rounded-full flex items-center gap-2 group transition-all duration-300 active:scale-95 cursor-pointer whitespace-nowrap backdrop-blur-2xl bg-black/90 border border-white/20 hover:border-[#f9b03c] text-white hover:text-[#f9b03c] shadow-[0_10px_30px_rgba(0,0,0,0.8),0_0_20px_rgba(249,176,60,0.25)]"
           >
+            <div className="w-5 h-5 rounded-full bg-[#f9b03c]/20 border border-[#f9b03c]/40 flex items-center justify-center text-[#f9b03c] text-[10px] group-hover:translate-y-0.5 transition-transform">
+              <i className="fa-solid fa-chevron-down"></i>
+            </div>
             <span className="text-xs sm:text-[13px] font-black tracking-wide whitespace-nowrap flex items-center gap-1.5 font-heading text-white group-hover:text-[#f9b03c] transition-colors">
-              🧭 ዋና ማውጫ ▾
+              🧭 ማውጫውን ዘርጋ (Expand Menu) ▾
               {unreadMessagesCount > 0 && (
                 <span className="relative flex h-2 w-2 ml-0.5">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
@@ -862,12 +865,12 @@ export default function Navbar() {
               </span>
             </button>
 
-            {/* User Profile & Auth Trigger */}
-            <div className="w-full pt-1">
+            {/* User Profile & Auth Trigger - Persistent Edge Placement */}
+            <div className="w-full pt-1 px-1">
               {!mounted || !user ? (
                 <div className="w-full flex justify-center">
                   <Tilt3DLoginButton
-                    className="w-full justify-center py-3.5"
+                    className="w-full justify-center py-3.5 shadow-[0_8px_25px_rgba(249,176,60,0.25)]"
                     onClick={() => {
                       openAuthModal(false);
                       closeCurtain();
@@ -876,7 +879,7 @@ export default function Navbar() {
                   />
                 </div>
               ) : (
-                <div className="space-y-2.5 p-3.5 rounded-2xl bg-white/5 border border-white/10 text-center">
+                <div className="w-full space-y-2.5 p-3.5 rounded-2xl bg-white/5 border border-white/10 text-center">
                   <div className="flex items-center justify-between gap-3 pb-2 border-b border-white/10">
                     <div className="flex items-center gap-2.5 text-left">
                       <img 
@@ -938,18 +941,18 @@ export default function Navbar() {
               )}
             </div>
 
-            {/* Mobile Menu Collapse / Fold Toggle Button */}
-            <div className="w-full flex justify-center pt-2 pb-1">
+            {/* Mobile Menu Collapse / Fold Toggle Button Right Under Login */}
+            <div className="w-full flex justify-center pt-2 pb-1 px-1">
               <button
                 type="button"
                 onClick={closeCurtain}
-                className="w-full sm:w-auto py-3 px-7 rounded-2xl bg-gradient-to-r from-black/80 via-[#0d1527] to-black/80 hover:bg-[#13203f] text-slate-200 hover:text-white border border-[#f9b03c]/40 hover:border-[#f9b03c] flex items-center justify-center gap-2.5 text-xs font-heading font-black tracking-wide shadow-[0_10px_25px_rgba(0,0,0,0.8),0_0_20px_rgba(249,176,60,0.2)] hover:shadow-[0_0_30px_rgba(249,176,60,0.4)] transition-all duration-300 cursor-pointer active:scale-95 group"
+                className="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-black/90 via-[#0d1527] to-black/90 hover:bg-[#13203f] text-slate-100 hover:text-white border border-[#f9b03c]/50 hover:border-[#f9b03c] flex items-center justify-center gap-2.5 text-xs font-heading font-black tracking-wide shadow-[0_10px_30px_rgba(0,0,0,0.85),0_0_20px_rgba(249,176,60,0.25)] hover:shadow-[0_0_30px_rgba(249,176,60,0.45)] transition-all duration-300 cursor-pointer active:scale-95 group"
                 title="ማውጫውን ወደ ላይ ሰብስብ (Collapse Menu)"
               >
                 <div className="w-6 h-6 rounded-full bg-[#f9b03c]/20 border border-[#f9b03c]/40 flex items-center justify-center text-[#f9b03c] text-xs group-hover:-translate-y-0.5 transition-transform">
                   <i className="fa-solid fa-chevron-up"></i>
                 </div>
-                <span>ማውጫውን ሰብስብ (Collapse Menu) ▴</span>
+                <span>ማውጫውን ወደ ላይ ሰብስብ (Collapse Menu) ▴</span>
               </button>
             </div>
 
@@ -963,10 +966,13 @@ export default function Navbar() {
           <button 
             type="button"
             onClick={closeCurtain}
-            className="pointer-events-auto bg-black/95 text-white border-x border-b border-[#f9b03c]/40 hover:border-[#f9b03c] text-xs font-black font-heading px-5 sm:px-6 py-2 rounded-b-xl shadow-xl hover:shadow-[0_10px_25px_rgba(0,0,0,0.9),0_0_20px_rgba(249,176,60,0.35)] transition-all duration-200 active:scale-95 cursor-pointer flex items-center gap-1.5 whitespace-nowrap"
-            title="ማውጫ ዝጋ / Close Menu"
+            className="pointer-events-auto bg-black/95 text-white border-x border-b border-[#f9b03c]/50 hover:border-[#f9b03c] text-xs font-black font-heading px-6 sm:px-7 py-2.5 rounded-b-2xl shadow-2xl hover:shadow-[0_10px_25px_rgba(0,0,0,0.9),0_0_25px_rgba(249,176,60,0.4)] transition-all duration-200 active:scale-95 cursor-pointer flex items-center gap-2 whitespace-nowrap group"
+            title="ማውጫውን ወደ ላይ ሰብስብ (Collapse Menu)"
           >
-            <span>🧭 ማውጫ ዝጋ ▴</span>
+            <div className="w-5 h-5 rounded-full bg-[#f9b03c]/20 border border-[#f9b03c]/40 flex items-center justify-center text-[#f9b03c] text-[10px] group-hover:-translate-y-0.5 transition-transform">
+              <i className="fa-solid fa-chevron-up"></i>
+            </div>
+            <span>🧭 ማውጫውን ሰብስብ ▴</span>
           </button>
         </div>
       )}
