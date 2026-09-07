@@ -340,8 +340,25 @@ export default function CoursesClient({ initialCourses }: { initialCourses?: any
   };
 
   const getFilteredCourses = () => {
-    const comingSoonList = getComingSoonCourses().map(c => ({ ...c, isComingSoon: true }));
-    let result = [...courses, ...comingSoonList];
+    const liveCoursesList = courses.filter(c => c.status !== 'coming_soon' && c.status !== 'Coming Soon' && !c.isComingSoon);
+    const comingSoonList = getComingSoonCourses().map(c => ({ ...c, isComingSoon: true, status: 'coming_soon' }));
+    const seen = new Set<string>();
+    const combined: any[] = [];
+    liveCoursesList.forEach(c => {
+      const id = c.id || c.slug;
+      if (!seen.has(id)) {
+        seen.add(id);
+        combined.push(c);
+      }
+    });
+    comingSoonList.forEach(c => {
+      const id = c.id || c.slug;
+      if (!seen.has(id)) {
+        seen.add(id);
+        combined.push(c);
+      }
+    });
+    let result = combined;
 
     if (searchQuery.trim()) {
       result = searchCourses(result, searchQuery);

@@ -3,21 +3,24 @@
 import React, { useState } from 'react';
 import Tilt3DCard from '@/components/3d/Tilt3DCard';
 import WaitlistModal from '@/components/WaitlistModal';
-import { COMING_SOON_COURSES, ComingSoonCourse } from '@/lib/courseCache';
+import { COMING_SOON_COURSES, getComingSoonCourses, ComingSoonCourse } from '@/lib/courseCache';
 
 interface ComingSoonCoursesSectionProps {
   id?: string;
   className?: string;
   showTitle?: boolean;
+  courses?: ComingSoonCourse[];
 }
 
 export default function ComingSoonCoursesSection({
   id = 'coming-soon',
   className = '',
-  showTitle = true
+  showTitle = true,
+  courses
 }: ComingSoonCoursesSectionProps) {
   const [selectedWaitlistCourse, setSelectedWaitlistCourse] = useState<ComingSoonCourse | null>(null);
   const [isWaitlistModalOpen, setIsWaitlistModalOpen] = useState(false);
+  const displayedCourses = courses && courses.length > 0 ? courses : getComingSoonCourses();
 
   const handleOpenWaitlist = (course: ComingSoonCourse) => {
     setSelectedWaitlistCourse(course);
@@ -53,7 +56,7 @@ export default function ComingSoonCoursesSection({
 
         {/* 4 Coming Soon Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-7">
-          {COMING_SOON_COURSES.map((course, index) => (
+          {displayedCourses.map((course, index) => (
             <Tilt3DCard
               key={course.id}
               maxTilt={10}
@@ -140,14 +143,16 @@ export default function ComingSoonCoursesSection({
                     </div>
 
                     {/* Key Highlights Bullet points */}
-                    <div className="space-y-1.5 pt-2 border-t border-white/[0.06]">
-                      {course.benefits.slice(0, 3).map((benefit, bIdx) => (
-                        <div key={bIdx} className="flex items-center gap-2 text-[11.5px] text-gray-300">
-                          <i className="fa-solid fa-circle-check text-[#f9b03c] text-[10px] shrink-0"></i>
-                          <span className="truncate">{benefit}</span>
-                        </div>
-                      ))}
-                    </div>
+                    {course.benefits && course.benefits.length > 0 && (
+                      <div className="space-y-1.5 pt-2 border-t border-white/[0.06]">
+                        {course.benefits.slice(0, 3).map((benefit, bIdx) => (
+                          <div key={bIdx} className="flex items-center gap-2 text-[11.5px] text-gray-300">
+                            <i className="fa-solid fa-circle-check text-[#f9b03c] text-[10px] shrink-0"></i>
+                            <span className="truncate">{benefit}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
 

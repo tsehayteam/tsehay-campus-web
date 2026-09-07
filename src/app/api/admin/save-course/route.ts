@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
       image: payload.image || null,
       banner: payload.banner || payload.image || null,
       video: payload.video || null,
-      status: payload.status || 'Active',
+      status: payload.status || (payload.isComingSoon ? 'coming_soon' : 'Active'),
       is_published: payload.isPublished ?? payload.is_published ?? true,
       category: payload.category || 'Digital Marketing',
       lessons: Array.isArray(payload.lessons) ? payload.lessons : [],

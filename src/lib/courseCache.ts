@@ -683,17 +683,24 @@ export interface ComingSoonCourse {
   id: string;
   slug: string;
   title: string;
-  titleEn: string;
-  tag: string;
-  category: string;
+  titleEn?: string;
+  tag?: string;
+  category?: string;
   description: string;
-  level: string;
-  duration: string;
-  instructor: string;
+  desc?: string;
+  level?: string;
+  duration?: string;
+  instructor?: string;
   image: string;
-  highlightBadge: string;
-  benefits: string[];
+  banner?: string;
+  highlightBadge?: string;
+  benefits?: string[];
   expectedDate?: string;
+  status?: string;
+  isComingSoon?: boolean;
+  enableWaitlist?: boolean;
+  price?: number | string;
+  isFree?: boolean;
 }
 
 export function formatCleanCategory(rawCat: string = ''): string {
@@ -826,6 +833,24 @@ export const COMING_SOON_COURSES: ComingSoonCourse[] = [
 ];
 
 export function getComingSoonCourses(): ComingSoonCourse[] {
+  if (typeof window !== 'undefined') {
+    try {
+      const cached = getCachedCourses();
+      if (Array.isArray(cached) && cached.length > 0) {
+        const dynamicCS = cached.filter(c => c && (c.status === 'coming_soon' || c.status === 'Coming Soon' || c.isComingSoon));
+        if (dynamicCS.length > 0) {
+          const map = new Map<string, ComingSoonCourse>();
+          COMING_SOON_COURSES.forEach(c => map.set(c.id, c));
+          dynamicCS.forEach(c => {
+            const id = c.id || c.slug;
+            const existing = map.get(id) || {};
+            map.set(id, { ...existing, ...c } as ComingSoonCourse);
+          });
+          return Array.from(map.values());
+        }
+      }
+    } catch (e) {}
+  }
   return COMING_SOON_COURSES;
 }
 

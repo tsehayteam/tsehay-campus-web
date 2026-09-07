@@ -846,8 +846,28 @@ export default function HomeClient({
                 className="flex items-stretch gap-6 sm:gap-8 overflow-x-auto scroll-smooth snap-x snap-mandatory py-4 px-1 scrollbar-none no-scrollbar select-none will-change-transform"
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
               >
-                {[...courses, ...getComingSoonCourses().map(c => ({ ...c, isComingSoon: true }))].slice(0, 8).map((course, index) => {
-                  const isComingSoon = Boolean(course.isComingSoon || course.status === 'Coming Soon');
+                {(() => {
+                  const liveList = courses.filter(c => c.status !== 'coming_soon' && c.status !== 'Coming Soon' && !c.isComingSoon);
+                  const csList = getComingSoonCourses().map(c => ({ ...c, isComingSoon: true, status: 'coming_soon' }));
+                  const seen = new Set<string>();
+                  const combined: any[] = [];
+                  liveList.forEach(c => {
+                    const id = c.id || c.slug;
+                    if (!seen.has(id)) {
+                      seen.add(id);
+                      combined.push(c);
+                    }
+                  });
+                  csList.forEach(c => {
+                    const id = c.id || c.slug;
+                    if (!seen.has(id)) {
+                      seen.add(id);
+                      combined.push(c);
+                    }
+                  });
+                  return combined.slice(0, 8);
+                })().map((course, index) => {
+                  const isComingSoon = Boolean(course.isComingSoon || course.status === 'Coming Soon' || course.status === 'coming_soon');
                   const isFree = !isComingSoon && (course.isFree || course.price === 0 || course.price === '0' || course.price === 'Free');
 
                   return (

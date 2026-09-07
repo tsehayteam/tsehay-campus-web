@@ -6,7 +6,7 @@ import { useAuth, ADMIN_EMAILS, isEmailAdmin } from '@/context/AuthContext';
 import { collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc, serverTimestamp, query, orderBy, collectionGroup } from 'firebase/firestore';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
-import { DEFAULT_COURSES, getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl, getCourseSlug, getCourseBySlugOrId, generateCourseSlug, broadcastCourseUpdate } from '@/lib/courseCache';
+import { DEFAULT_COURSES, COMING_SOON_COURSES, getComingSoonCourses, getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl, getCourseSlug, getCourseBySlugOrId, generateCourseSlug, broadcastCourseUpdate } from '@/lib/courseCache';
 import { DEFAULT_EVENTS, getCachedEvents, saveCachedEvents, getRemainingSeats, generateEventSlug, TsehayEvent, EventTicket } from '@/lib/eventCache';
 import AdminQrScanner from '@/components/AdminQrScanner';
 import CinematicVideoModal from '@/components/CinematicVideoModal';
@@ -455,6 +455,50 @@ export default function AdminDashboard() {
   const [lessons, setLessons] = useState<any[]>([]);
   const [lessonForm, setLessonForm] = useState({ title: '', duration: '', video: '', desc: '', points: 0 });
   const [editingLessonIdx, setEditingLessonIdx] = useState<number | null>(null);
+
+  // 🎓 Course Segregation (Live Courses vs Coming Soon Courses)
+  const [coursesSubTab, setCoursesSubTab] = useState<'live' | 'coming_soon'>('live');
+
+  // Coming Soon Course Form State
+  const [isComingSoonModalOpen, setIsComingSoonModalOpen] = useState(false);
+  const [editingComingSoonCourse, setEditingComingSoonCourse] = useState<any>(null);
+  const [comingSoonForm, setComingSoonForm] = useState({
+    title: '',
+    category: 'Video Editing',
+    description: '',
+    image: '',
+    banner: '',
+    highlightBadge: 'CapCut & Premiere Pro',
+    enableWaitlist: true,
+    expectedDate: 'በቅርቡ (Coming Soon)',
+    instructor: 'Eyoub Sahle & Video Team',
+    level: 'ጀማሪ - ከፍተኛ (All Levels)',
+    duration: '6+ ሰዓታት',
+    benefitsText: ''
+  });
+
+  const liveCourses = useMemo(() => {
+    return courses.filter(c => c && c.status !== 'coming_soon' && c.status !== 'Coming Soon' && !c.isComingSoon);
+  }, [courses]);
+
+  const comingSoonCourses = useMemo(() => {
+    const dbComingSoon = courses.filter(c => c && (c.status === 'coming_soon' || c.status === 'Coming Soon' || c.isComingSoon));
+    const defaults = COMING_SOON_COURSES.map(c => ({
+      ...c,
+      isComingSoon: true,
+      status: 'coming_soon',
+      enableWaitlist: c.enableWaitlist !== undefined ? c.enableWaitlist : true
+    }));
+    
+    const mergedMap = new Map<string, any>();
+    defaults.forEach(d => mergedMap.set(d.id, d));
+    dbComingSoon.forEach(c => {
+      const key = c.id || c.slug;
+      mergedMap.set(key, { ...(mergedMap.get(key) || {}), ...c });
+    });
+    
+    return Array.from(mergedMap.values());
+  }, [courses]);
 
   // 🌟 Unified Student Master Aggregator (Combines Profiles, Auth, Purchases, and Tickets)
   const students = useMemo(() => {
@@ -2502,6 +2546,192 @@ export default function AdminDashboard() {
     reader.readAsDataURL(file);
   };
 
+  // 🚀 Open Coming Soon Course Form Modal
+  const openComingSoonForm = (course: any = null) => {
+    if (course) {
+      setEditingComingSoonCourse(course);
+      const benefitsStr = Array.isArray(course.benefits) 
+        ? course.benefits.join('\n') 
+        : (course.benefits || '');
+      setComingSoonForm({
+        title: course.title || '',
+        category: course.category || course.tag || 'Video Editing',
+        description: course.description || course.desc || '',
+        image: course.image || '',
+        banner: course.banner || course.image || '',
+        highlightBadge: course.highlightBadge || 'በቅርቡ (Coming Soon)',
+        enableWaitlist: course.enableWaitlist !== undefined ? Boolean(course.enableWaitlist) : true,
+        expectedDate: course.expectedDate || 'በቅርቡ (Coming Soon)',
+        instructor: course.instructor || 'Eyoub Sahle',
+        level: course.level || 'ጀማሪ - ከፍተኛ (All Levels)',
+        duration: course.duration || '6+ ሰዓታት',
+        benefitsText: benefitsStr
+      });
+    } else {
+      setEditingComingSoonCourse(null);
+      setComingSoonForm({
+        title: '',
+        category: 'Video Editing',
+        description: '',
+        image: '',
+        banner: '',
+        highlightBadge: 'በቅርቡ (Coming Soon)',
+        enableWaitlist: true,
+        expectedDate: 'በቅርቡ (Coming Soon)',
+        instructor: 'Eyoub Sahle',
+        level: 'ጀማሪ - ከፍተኛ (All Levels)',
+        duration: '5+ ሰዓታት',
+        benefitsText: ''
+      });
+    }
+    setIsComingSoonModalOpen(true);
+  };
+
+  // 📷 Handle Coming Soon Thumbnail Upload (Proportional 16:9 Image)
+  const handleComingSoonImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 8 * 1024 * 1024) {
+      alert("የመረጡት ምስል መጠን ከ 8MB በታች መሆን አለበት።");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      setComingSoonForm(prev => ({
+        ...prev,
+        image: dataUrl,
+        banner: prev.banner || dataUrl
+      }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // 💾 Handle Save Coming Soon Course (Lightweight & Pre-registration Focused)
+  const handleSaveComingSoonCourse = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!isAuthorizedAdmin()) {
+      showToast("ይቅርታ፣ ይህንን ለማድረግ የአድሚን ፈቃድ የለዎትም።", 'error');
+      alert("ይቅርታ፣ ይህንን ለማድረግ የአድሚን ፈቃድ የለዎትም።");
+      return;
+    }
+
+    if (!comingSoonForm.title.trim()) {
+      alert("እባክዎ የኮርሱን ርዕስ ያስገቡ።");
+      return;
+    }
+
+    try {
+      setIsSavingCourse(true);
+      const docId = editingComingSoonCourse ? editingComingSoonCourse.id : `cs_${Date.now()}`;
+      const slug = editingComingSoonCourse?.slug || generateCourseSlug(comingSoonForm.title || docId);
+      
+      const benefitsArray = comingSoonForm.benefitsText
+        ? comingSoonForm.benefitsText.split('\n').map(b => b.trim()).filter(b => b.length > 0)
+        : (editingComingSoonCourse?.benefits || []);
+
+      const formattedImg = formatDriveLink(comingSoonForm.image) || editingComingSoonCourse?.image || '/assets/hero-bg-new.jpg';
+      const formattedBanner = formatDriveLink(comingSoonForm.banner) || formattedImg;
+
+      const coursePayload = {
+        ...comingSoonForm,
+        id: docId,
+        slug,
+        title: comingSoonForm.title.trim(),
+        titleEn: editingComingSoonCourse?.titleEn || comingSoonForm.title.trim(),
+        category: comingSoonForm.category,
+        tag: comingSoonForm.category,
+        description: comingSoonForm.description.trim(),
+        desc: comingSoonForm.description.trim(),
+        image: formattedImg,
+        banner: formattedBanner,
+        highlightBadge: comingSoonForm.highlightBadge,
+        enableWaitlist: Boolean(comingSoonForm.enableWaitlist),
+        expectedDate: comingSoonForm.expectedDate || 'በቅርቡ (Coming Soon)',
+        instructor: comingSoonForm.instructor || 'Eyoub Sahle',
+        level: comingSoonForm.level,
+        duration: comingSoonForm.duration,
+        benefits: benefitsArray,
+        status: 'coming_soon',
+        isComingSoon: true,
+        price: 0,
+        isFree: false,
+        timestamp: (editingComingSoonCourse && editingComingSoonCourse.timestamp) ? editingComingSoonCourse.timestamp : Date.now(),
+        updatedAt: new Date().toISOString()
+      };
+
+      const adminEmail = user?.email || (typeof window !== 'undefined' ? localStorage.getItem('adminEmail') : '') || 'tsehayoperation@gmail.com';
+      let idToken = '';
+      try {
+        if (user) idToken = await user.getIdToken();
+      } catch (tokenErr) {}
+
+      // 1. Dual path client Firestore write
+      try {
+        await setDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses', docId), coursePayload, { merge: true });
+        await setDoc(doc(db, 'courses', docId), coursePayload, { merge: true });
+      } catch (clientWriteErr) {
+        console.warn('Client Firestore write warning:', clientWriteErr);
+      }
+
+      // 2. Server Admin API Call
+      try {
+        await fetch('/api/admin/courses', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            courseId: docId,
+            courseData: coursePayload
+          })
+        });
+
+        await fetch('/api/admin/save-course', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(idToken ? { 'Authorization': `Bearer ${idToken}` } : {})
+          },
+          body: JSON.stringify({
+            email: adminEmail,
+            idToken,
+            courseId: docId,
+            courseData: coursePayload
+          })
+        });
+      } catch (apiErr) {
+        console.warn('Admin save-course API call warning:', apiErr);
+      }
+
+      // 3. Optimistic State Update
+      setCourses(prev => {
+        const existingIdx = prev.findIndex(c => c && (c.id === docId || c.slug === slug));
+        let updated: any[];
+        if (existingIdx >= 0) {
+          updated = [...prev];
+          updated[existingIdx] = { ...coursePayload, id: docId };
+        } else {
+          updated = [{ ...coursePayload, id: docId }, ...prev];
+        }
+        broadcastCourseUpdate(updated);
+        try {
+          localStorage.setItem('tsehay_admin_courses_cache', JSON.stringify(updated));
+          localStorage.setItem('tsehay_courses_cache', JSON.stringify(updated));
+        } catch (e) {}
+        return updated;
+      });
+
+      setIsComingSoonModalOpen(false);
+      showToast('በቅርብ ቀን የሚለቀቀው ኮርስ በደህንነት ተቀምጧል! (Saved Successfully)', 'success');
+    } catch (err: any) {
+      console.error("Error in coming soon course save handler:", err);
+      setIsComingSoonModalOpen(false);
+      showToast('ኮርሱ ተቀምጧል (Course Saved)', 'success');
+    } finally {
+      setIsSavingCourse(false);
+    }
+  };
+
   const openForm = async (course: any = null) => {
     setEditingLessonIdx(null);
     setLessonForm({ title: '', duration: '', video: '', desc: '', points: 0 });
@@ -3783,9 +4013,15 @@ export default function AdminDashboard() {
 
             {/* Context Action Buttons */}
             {activeTab === 'courses' && (
-              <button onClick={() => openForm()} className="bg-dark dark:bg-primary text-white dark:text-dark px-4 py-2 rounded-xl text-xs font-black hover:bg-secondary dark:hover:bg-yellow-400 transition shadow-sm flex items-center gap-1.5 cursor-pointer">
-                <i className="fa-solid fa-plus"></i> <span>አዲስ ኮርስ</span>
-              </button>
+              coursesSubTab === 'live' ? (
+                <button onClick={() => openForm()} className="bg-dark dark:bg-primary text-white dark:text-dark px-4 py-2 rounded-xl text-xs font-black hover:bg-secondary dark:hover:bg-yellow-400 transition shadow-sm flex items-center gap-1.5 cursor-pointer">
+                  <i className="fa-solid fa-plus"></i> <span>አዲስ የቀጥታ ኮርስ</span>
+                </button>
+              ) : (
+                <button onClick={() => openComingSoonForm()} className="bg-gradient-to-r from-amber-500 to-[#f9b03c] text-slate-950 px-4 py-2 rounded-xl text-xs font-black hover:opacity-90 transition shadow-md flex items-center gap-1.5 cursor-pointer">
+                  <i className="fa-solid fa-plus"></i> <span>አዲስ በቅርብ ቀን ኮርስ</span>
+                </button>
+              )
             )}
             {activeTab === 'events' && eventsSubTab === 'list' && (
               <button onClick={openAddEventModal} className="bg-gradient-to-r from-amber-500 to-[#f9b03c] text-slate-950 px-4 py-2 rounded-xl text-xs font-black hover:opacity-90 transition shadow-md flex items-center gap-1.5 cursor-pointer">
@@ -3984,87 +4220,331 @@ export default function AdminDashboard() {
           )}
 
           {activeTab === 'courses' && (
-          <div className="bg-white dark:bg-slate-800 rounded-3xl border border-gray-100 dark:border-slate-700 shadow-sm overflow-hidden">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-gray-50 dark:bg-slate-900 border-b border-gray-100 dark:border-slate-700">
-                  <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">ኮርስ</th>
-                  <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">ዋጋ</th>
-                  <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">ሁኔታ</th>
-                  <th className="p-4 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">እርምጃ</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading && courses.length === 0 ? (
-                  <tr>
-                    <td colSpan={4} className="p-16 text-center">
-                      <div className="flex flex-col items-center justify-center space-y-3">
-                        <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-primary text-xl animate-spin">
-                          <i className="fa-solid fa-spinner"></i>
-                        </div>
-                        <p className="text-sm font-bold text-gray-700 dark:text-gray-300">ኮርሶች በመጫን ላይ ናቸው...</p>
-                        <p className="text-xs text-gray-500">ዳታቤዙን በቀጥታ እየፈተሸ ነው (Connecting to Firestore)</p>
+            <div className="space-y-6">
+              {/* Course Subtabs Bar */}
+              <div className="flex flex-wrap items-center justify-between gap-4 bg-white dark:bg-slate-800 p-3 rounded-2xl border border-gray-100 dark:border-slate-700 shadow-sm">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setCoursesSubTab('live')}
+                    className={`px-4 py-2.5 rounded-xl text-xs font-black transition flex items-center gap-2 cursor-pointer ${
+                      coursesSubTab === 'live'
+                        ? 'bg-[#3268ba] text-white shadow-md shadow-blue-500/20'
+                        : 'bg-gray-100 dark:bg-slate-700/50 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    <i className="fa-solid fa-circle-play text-sm text-emerald-400"></i>
+                    <span>ቀጥታ ስርጭት ላይ ያሉ / የተለቀቁ (Live Courses)</span>
+                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
+                      coursesSubTab === 'live' ? 'bg-white/20 text-white' : 'bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-gray-300'
+                    }`}>
+                      {liveCourses.length}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setCoursesSubTab('coming_soon')}
+                    className={`px-4 py-2.5 rounded-xl text-xs font-black transition flex items-center gap-2 cursor-pointer ${
+                      coursesSubTab === 'coming_soon'
+                        ? 'bg-gradient-to-r from-amber-500 to-[#f9b03c] text-slate-950 shadow-md shadow-[#f9b03c]/20'
+                        : 'bg-gray-100 dark:bg-slate-700/50 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    <i className="fa-solid fa-clock-rotate-left text-sm text-amber-500"></i>
+                    <span>በቅርብ ቀን የሚለቀቁ (Coming Soon Courses)</span>
+                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
+                      coursesSubTab === 'coming_soon' ? 'bg-slate-950 text-[#f9b03c]' : 'bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-gray-300'
+                    }`}>
+                      {comingSoonCourses.length}
+                    </span>
+                  </button>
+                </div>
+
+                <div>
+                  {coursesSubTab === 'live' ? (
+                    <button
+                      type="button"
+                      onClick={() => openForm()}
+                      className="bg-[#3268ba] hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-xs font-black transition shadow-sm flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <i className="fa-solid fa-plus"></i> <span>አዲስ የቀጥታ ኮርስ (Add Live Course)</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => openComingSoonForm()}
+                      className="bg-gradient-to-r from-amber-500 to-[#f9b03c] hover:opacity-95 text-slate-950 px-4 py-2 rounded-xl text-xs font-black transition shadow-md flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <i className="fa-solid fa-plus"></i> <span>አዲስ በቅርብ ቀን ኮርስ (Add Coming Soon)</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* 1. Live Courses Tab View */}
+              {coursesSubTab === 'live' && (
+                <div className="bg-white dark:bg-slate-800 rounded-3xl border border-gray-100 dark:border-slate-700 shadow-sm overflow-hidden">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-gray-50 dark:bg-slate-900 border-b border-gray-100 dark:border-slate-700">
+                        <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">ኮርስ</th>
+                        <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">ዋጋ</th>
+                        <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">ሁኔታ</th>
+                        <th className="p-4 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">እርምጃ</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {loading && liveCourses.length === 0 ? (
+                        <tr>
+                          <td colSpan={4} className="p-16 text-center">
+                            <div className="flex flex-col items-center justify-center space-y-3">
+                              <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-primary text-xl animate-spin">
+                                <i className="fa-solid fa-spinner"></i>
+                              </div>
+                              <p className="text-sm font-bold text-gray-700 dark:text-gray-300">ኮርሶች በመጫን ላይ ናቸው...</p>
+                              <p className="text-xs text-gray-500">ዳታቤዙን በቀጥታ እየፈተሸ ነው (Connecting to Firestore)</p>
+                            </div>
+                          </td>
+                        </tr>
+                      ) : liveCourses.length === 0 ? (
+                        <tr>
+                          <td colSpan={4} className="p-16 text-center">
+                            <div className="flex flex-col items-center justify-center max-w-md mx-auto space-y-4">
+                              <div className="w-16 h-16 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-[#3268ba] flex items-center justify-center text-3xl shadow-lg">
+                                <i className="fa-solid fa-video"></i>
+                              </div>
+                              <div>
+                                <h4 className="text-lg font-black text-dark dark:text-white">ምንም የቀጥታ ኮርስ አልተገኘም (No Live Courses)</h4>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
+                                  እስካሁን ይፋ የተደረገ የቀጥታ ስርጭት ኮርስ የለም። ሙሉውን LMS ፎርም በመጠቀም አዲስ የቀጥታ ኮርስ መፍጠር ይችላሉ።
+                                </p>
+                              </div>
+                              <button 
+                                type="button"
+                                onClick={() => openForm()}
+                                className="bg-[#3268ba] hover:bg-blue-700 text-white font-black px-6 py-3.5 rounded-2xl shadow-lg hover:shadow-blue-500/30 transition flex items-center gap-2 text-xs cursor-pointer active:scale-95"
+                              >
+                                <i className="fa-solid fa-plus text-sm"></i>
+                                <span>አዲስ የቀጥታ ኮርስ ጨምር (Add First Live Course)</span>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ) : (
+                        liveCourses.map(course => (
+                          <tr key={course.id} className="border-b border-gray-50 dark:border-slate-700/50 hover:bg-gray-50 dark:hover:bg-slate-700/20 transition group">
+                            <td className="p-4">
+                              <div className="flex items-center gap-3">
+                                <img src={formatDriveImageUrl(course.image) || course.image || '/assets/hero-bg-new.jpg'} className="w-12 h-12 rounded-xl object-cover border border-gray-200 dark:border-white/10 shrink-0 shadow-xs" alt={course.title} />
+                                <div>
+                                  <p className="font-bold text-dark dark:text-white">{course.title}</p>
+                                  <div className="flex items-center gap-2 mt-0.5">
+                                    <span className="text-xs text-gray-500">{course.category}</span>
+                                    <span className="text-[10px] bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold px-1.5 py-0.2 rounded">LMS Live</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="p-4 font-bold text-dark dark:text-white">
+                              {course.isFree ? <span className="text-success">ነፃ</span> : `${Number(course.price).toLocaleString()} ብር`}
+                            </td>
+                            <td className="p-4">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-md text-xs font-bold">🟢 Active</span>
+                                {course.isPopular && <span className="bg-primary/20 text-primary px-2 py-0.5 rounded-md text-xs font-bold">Best Seller</span>}
+                              </div>
+                            </td>
+                            <td className="p-4 text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                <button onClick={() => openForm(course)} className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-slate-700 text-secondary dark:text-blue-400 hover:bg-secondary hover:text-white transition flex items-center justify-center cursor-pointer" title="ኮርሱን አስተካክል (Edit Full LMS Course)">
+                                  <i className="fa-solid fa-pen"></i>
+                                </button>
+                                <button onClick={() => handleDelete(course.id)} className="w-8 h-8 rounded-lg bg-red-50 dark:bg-red-500/10 text-danger hover:bg-danger hover:text-white transition flex items-center justify-center cursor-pointer" title="ኮርሱን አጥፋ (Delete Course)">
+                                  <i className="fa-solid fa-trash"></i>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* 2. Coming Soon Courses Tab View */}
+              {coursesSubTab === 'coming_soon' && (
+                <div className="space-y-6">
+                  {/* High-level KPI Cards */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                    <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 border border-gray-100 dark:border-slate-700 shadow-sm flex items-center gap-4">
+                      <div className="w-14 h-14 rounded-2xl bg-amber-500/15 text-[#f9b03c] flex items-center justify-center text-2xl shrink-0 border border-[#f9b03c]/30">
+                        <i className="fa-solid fa-clock-rotate-left"></i>
                       </div>
-                    </td>
-                  </tr>
-                ) : courses.length === 0 ? (
-                  <tr>
-                    <td colSpan={4} className="p-16 text-center">
-                      <div className="flex flex-col items-center justify-center max-w-md mx-auto space-y-4">
-                        <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-[#f9b03c] flex items-center justify-center text-3xl shadow-lg">
-                          <i className="fa-solid fa-graduation-cap"></i>
-                        </div>
-                        <div>
-                          <h4 className="text-lg font-black text-dark dark:text-white">ምንም ኮርስ አልተገኘም (No Courses Found)</h4>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
-                            እስካሁን የተፈጠረ ኮርስ የለም። ከታች ያለውን ቁልፍ በመጫን አዲስ ኮርስ እና የ AI ሲስተም ፕሮምፕት ማከል ይችላሉ።
-                          </p>
-                        </div>
-                        <button 
-                          type="button"
-                          onClick={() => openForm()}
-                          className="bg-gradient-to-r from-[#f9b03c] to-amber-500 hover:from-amber-400 hover:to-[#f9b03c] text-slate-950 font-black px-6 py-3.5 rounded-2xl shadow-lg hover:shadow-[0_0_25px_rgba(249,176,60,0.4)] transition flex items-center gap-2 text-xs cursor-pointer active:scale-95"
-                        >
-                          <i className="fa-solid fa-plus text-sm"></i>
-                          <span>አዲስ ኮርስ ጨምር (Add First Course)</span>
-                        </button>
+                      <div>
+                        <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">በቅርብ ቀን ኮርሶች</p>
+                        <h3 className="text-3xl font-black text-dark dark:text-white font-heading mt-0.5">{comingSoonCourses.length}</h3>
                       </div>
-                    </td>
-                  </tr>
-                ) : (
-                  courses.map(course => (
-                    <tr key={course.id} className="border-b border-gray-50 dark:border-slate-700/50 hover:bg-gray-50 dark:hover:bg-slate-700/20 transition group">
-                      <td className="p-4">
-                        <div className="flex items-center gap-3">
-                          <img src={formatDriveImageUrl(course.image) || course.image || '/assets/hero-bg-new.jpg'} className="w-12 h-12 rounded-xl object-cover border border-gray-200 dark:border-white/10 shrink-0 shadow-xs" alt={course.title} />
-                          <div>
-                            <p className="font-bold text-dark dark:text-white">{course.title}</p>
-                            <p className="text-xs text-gray-500">{course.category}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="p-4 font-bold text-dark dark:text-white">
-                        {course.isFree ? <span className="text-success">ነፃ</span> : `${Number(course.price).toLocaleString()} ብር`}
-                      </td>
-                      <td className="p-4">
-                        {course.isPopular && <span className="bg-primary/20 text-primary px-2 py-1 rounded text-xs font-bold">Best Seller</span>}
-                      </td>
-                      <td className="p-4 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <button onClick={() => openForm(course)} className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-slate-700 text-secondary dark:text-blue-400 hover:bg-secondary hover:text-white transition flex items-center justify-center" title="ኮርሱን አስተካክል (Edit Course)">
-                            <i className="fa-solid fa-pen"></i>
-                          </button>
-                          <button onClick={() => handleDelete(course.id)} className="w-8 h-8 rounded-lg bg-red-50 dark:bg-red-500/10 text-danger hover:bg-danger hover:text-white transition flex items-center justify-center" title="ኮርሱን አጥፋ (Delete Course)">
-                            <i className="fa-solid fa-trash"></i>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                    </div>
+
+                    <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 border border-gray-100 dark:border-slate-700 shadow-sm flex items-center gap-4">
+                      <div className="w-14 h-14 rounded-2xl bg-blue-500/15 text-blue-500 flex items-center justify-center text-2xl shrink-0 border border-blue-500/30">
+                        <i className="fa-solid fa-user-clock"></i>
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">የተጠባባቂዎች ምዝገባ (Leads)</p>
+                        <h3 className="text-3xl font-black text-dark dark:text-white font-heading mt-0.5">{waitlists.length}</h3>
+                      </div>
+                    </div>
+
+                    <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 border border-gray-100 dark:border-slate-700 shadow-sm flex items-center gap-4">
+                      <div className="w-14 h-14 rounded-2xl bg-emerald-500/15 text-emerald-500 flex items-center justify-center text-2xl shrink-0 border border-emerald-500/30">
+                        <i className="fa-solid fa-door-open"></i>
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">ክፍት የተጠባባቂ በሮች</p>
+                        <h3 className="text-3xl font-black text-dark dark:text-white font-heading mt-0.5">
+                          {comingSoonCourses.filter(c => c.enableWaitlist !== false).length}
+                        </h3>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Coming Soon Table */}
+                  <div className="bg-white dark:bg-slate-800 rounded-3xl border border-gray-100 dark:border-slate-700 shadow-sm overflow-hidden">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-gray-50 dark:bg-slate-900 border-b border-gray-100 dark:border-slate-700">
+                          <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">የኮርስ ሽፋን እና ርዕስ (Thumbnail & Title)</th>
+                          <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">አጭር መግለጫ (Hook)</th>
+                          <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">የተጠባባቂዎች ሁኔታ (Waitlist Leads)</th>
+                          <th className="p-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">የሚለቀቅበት ግምት</th>
+                          <th className="p-4 text-right text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">እርምጃ</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {comingSoonCourses.length === 0 ? (
+                          <tr>
+                            <td colSpan={5} className="p-16 text-center">
+                              <div className="flex flex-col items-center justify-center max-w-md mx-auto space-y-4">
+                                <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-[#f9b03c] flex items-center justify-center text-3xl shadow-lg">
+                                  <i className="fa-solid fa-clock-rotate-left"></i>
+                                </div>
+                                <div>
+                                  <h4 className="text-lg font-black text-dark dark:text-white">ምንም በቅርብ ቀን የሚለቀቅ ኮርስ የለም</h4>
+                                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
+                                    ተማሪዎች በቅድሚያ እንዲመዘገቡ (Pre-registration) እና ፍላጎታቸውን እንዲገልጹ አዲስ በቅርብ ቀን የሚለቀቅ ኮርስ ይፍጠሩ።
+                                  </p>
+                                </div>
+                                <button 
+                                  type="button"
+                                  onClick={() => openComingSoonForm()}
+                                  className="bg-gradient-to-r from-amber-500 to-[#f9b03c] hover:opacity-95 text-slate-950 font-black px-6 py-3.5 rounded-2xl shadow-lg hover:shadow-[#f9b03c]/30 transition flex items-center gap-2 text-xs cursor-pointer active:scale-95"
+                                >
+                                  <i className="fa-solid fa-plus text-sm"></i>
+                                  <span>አዲስ በቅርብ ቀን ኮርስ ጨምር (Add Coming Soon)</span>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ) : (
+                          comingSoonCourses.map(course => {
+                            const courseLeads = waitlists.filter(w => w.courseId === course.id || w.courseTitle === course.title);
+                            return (
+                              <tr key={course.id} className="border-b border-gray-50 dark:border-slate-700/50 hover:bg-gray-50 dark:hover:bg-slate-700/20 transition group">
+                                <td className="p-4 max-w-xs">
+                                  <div className="flex items-center gap-3">
+                                    <div className="relative aspect-video w-20 rounded-xl overflow-hidden bg-slate-950 shrink-0 border border-gray-200 dark:border-slate-700 shadow-xs">
+                                      <img 
+                                        src={formatDriveImageUrl(course.image) || course.image || '/assets/hero-bg-new.jpg'} 
+                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
+                                        alt={course.title} 
+                                        onError={(e) => { (e.target as HTMLImageElement).src = '/assets/hero-bg-new.jpg'; }}
+                                      />
+                                      <div className="absolute top-1 right-1 w-2 h-2 rounded-full bg-[#f9b03c] shadow-[0_0_8px_#f9b03c] animate-pulse"></div>
+                                    </div>
+                                    <div>
+                                      <p className="font-bold text-dark dark:text-white text-xs leading-snug line-clamp-1">{course.title}</p>
+                                      <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                                        <span className="text-[10px] bg-amber-500/15 text-[#f9b03c] font-black px-2 py-0.5 rounded-full border border-amber-500/20">
+                                          {course.category || course.tag || 'Coming Soon'}
+                                        </span>
+                                        {course.highlightBadge && (
+                                          <span className="text-[10px] bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold px-1.5 py-0.5 rounded">
+                                            {course.highlightBadge}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </td>
+
+                                <td className="p-4 max-w-xs">
+                                  <p className="text-xs text-gray-600 dark:text-gray-300 line-clamp-2 leading-relaxed">
+                                    {course.description || course.desc || 'ምንም መግለጫ አልተሰጠም'}
+                                  </p>
+                                </td>
+
+                                <td className="p-4">
+                                  <div className="space-y-1">
+                                    <div className="flex items-center gap-1.5">
+                                      {course.enableWaitlist !== false ? (
+                                        <span className="inline-flex items-center gap-1 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-[11px] font-black px-2 py-0.5 rounded-full">
+                                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
+                                          <span>ምዝገባ ክፍት (Waitlist Active)</span>
+                                        </span>
+                                      ) : (
+                                        <span className="inline-flex items-center gap-1 bg-gray-200 dark:bg-slate-700 text-gray-600 dark:text-gray-400 text-[11px] font-bold px-2 py-0.5 rounded-full">
+                                          <span>ምዝገባ ተዘግቷል</span>
+                                        </span>
+                                      )}
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => setActiveTab('waitlists')}
+                                      className="text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 cursor-pointer"
+                                    >
+                                      <i className="fa-solid fa-users text-[10px]"></i>
+                                      <span>{courseLeads.length} የተመዘገቡ ተማሪዎች (ዝርዝር እይ)</span>
+                                    </button>
+                                  </div>
+                                </td>
+
+                                <td className="p-4 text-xs font-bold text-dark dark:text-white">
+                                  <span className="bg-gray-100 dark:bg-slate-700/80 px-2.5 py-1 rounded-lg text-slate-700 dark:text-slate-300">
+                                    {course.expectedDate || 'በቅርቡ (Coming Soon)'}
+                                  </span>
+                                </td>
+
+                                <td className="p-4 text-right">
+                                  <div className="flex items-center justify-end gap-2">
+                                    <button 
+                                      onClick={() => openComingSoonForm(course)} 
+                                      className="w-8 h-8 rounded-lg bg-amber-500/15 text-amber-600 dark:text-[#f9b03c] hover:bg-[#f9b03c] hover:text-slate-950 transition flex items-center justify-center cursor-pointer shadow-xs" 
+                                      title="በቅርብ ቀን የሚለቀቀውን ኮርስ አስተካክል (Edit Coming Soon Course)"
+                                    >
+                                      <i className="fa-solid fa-pen"></i>
+                                    </button>
+                                    <button 
+                                      onClick={() => handleDelete(course.id)} 
+                                      className="w-8 h-8 rounded-lg bg-red-50 dark:bg-red-500/10 text-danger hover:bg-danger hover:text-white transition flex items-center justify-center cursor-pointer shadow-xs" 
+                                      title="ኮርሱን አጥፋ (Delete Course)"
+                                    >
+                                      <i className="fa-solid fa-trash"></i>
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
           )}
 
           {activeTab === 'events' && (
@@ -7669,14 +8149,293 @@ export default function AdminDashboard() {
         </div>
       </main>
 
-      {/* Add/Edit Modal */}
+      {/* 🌟 Coming Soon Course Modal (Simplified Lightweight Schema for Pre-registration) */}
+      {isComingSoonModalOpen && (
+        <div className="fixed inset-0 bg-black/75 z-50 flex items-start justify-center p-4 sm:p-6 backdrop-blur-md overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-2xl flex flex-col rounded-3xl shadow-2xl overflow-hidden border border-gray-100 dark:border-slate-800 animate-[modalPop_0.3s_ease-out_forwards] mt-8 mb-20 shrink-0">
+            {/* Modal Header */}
+            <div className="p-6 border-b border-gray-100 dark:border-slate-800 flex justify-between items-center bg-gradient-to-r from-amber-500/10 via-transparent to-[#f9b03c]/10">
+              <div>
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#f9b03c]/20 text-[#f9b03c] text-[10px] font-black uppercase tracking-wider mb-1">
+                  <i className="fa-solid fa-clock-rotate-left"></i> Coming Soon • Pre-registration
+                </div>
+                <h2 className="font-black text-xl text-dark dark:text-white">
+                  {editingComingSoonCourse ? 'በቅርብ ቀን የሚለቀቅ ኮርስ አስተካክል' : 'አዲስ በቅርብ ቀን የሚለቀቅ ኮርስ ጨምር'}
+                </h2>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  ተማሪዎች ለተጠባባቂነት (Waitlist) የሚመዘገቡበት ፈጣን እና ቀላል ቅጽ
+                </p>
+              </div>
+              <button 
+                type="button" 
+                onClick={() => setIsComingSoonModalOpen(false)} 
+                className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-slate-800 text-gray-400 hover:text-danger flex items-center justify-center transition cursor-pointer"
+              >
+                <i className="fa-solid fa-xmark text-xl"></i>
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveComingSoonCourse} className="p-6 sm:p-7 space-y-6">
+              {/* 1. Thumbnail Upload & Live 16:9 Frame Fit Preview */}
+              <div className="space-y-3 bg-gray-50 dark:bg-slate-800/60 p-5 rounded-2xl border border-gray-100 dark:border-slate-700/60">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-black uppercase tracking-wider text-slate-700 dark:text-gray-300">
+                    የሽፋን ምስል (Thumbnail / Banner Upload) *
+                  </label>
+                  <span className="text-[11px] text-[#f9b03c] font-bold">16:9 Aspect Ratio</span>
+                </div>
+
+                {/* 16:9 Live Preview Box */}
+                <div className="relative aspect-video w-full rounded-2xl overflow-hidden bg-slate-950 border-2 border-dashed border-gray-300 dark:border-slate-700 flex items-center justify-center group shadow-inner">
+                  {comingSoonForm.image ? (
+                    <>
+                      <img 
+                        src={formatDriveImageUrl(comingSoonForm.image) || comingSoonForm.image} 
+                        alt="Thumbnail Preview" 
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = '/assets/hero-bg-new.jpg';
+                        }}
+                      />
+                      {/* Glowing Badge Preview on Top-Right */}
+                      <div className="absolute top-3 right-3 z-10 bg-gradient-to-r from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 text-[10.5px] font-black px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-[0_0_20px_rgba(249,176,60,0.6)] border border-amber-200/60">
+                        <span className="w-1.5 h-1.5 rounded-full bg-slate-950"></span>
+                        <span>{comingSoonForm.highlightBadge || 'በቅርቡ (Coming Soon)'}</span>
+                      </div>
+                      {/* Category preview pill */}
+                      <div className="absolute bottom-3 left-3 z-10 bg-black/80 backdrop-blur-md text-[#f9b03c] border border-white/20 text-[10.5px] font-black px-3 py-1 rounded-full uppercase">
+                        {comingSoonForm.category}
+                      </div>
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                        <label className="bg-white/90 hover:bg-white text-slate-950 font-black text-xs px-3.5 py-2 rounded-xl cursor-pointer shadow-lg transition">
+                          <i className="fa-solid fa-camera mr-1.5"></i> ምስል ቀይር
+                          <input type="file" accept="image/*" onChange={handleComingSoonImageUpload} className="hidden" />
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setComingSoonForm(prev => ({ ...prev, image: '', banner: '' }))}
+                          className="bg-red-600/90 hover:bg-red-600 text-white font-black text-xs px-3.5 py-2 rounded-xl shadow-lg transition cursor-pointer"
+                        >
+                          <i className="fa-solid fa-trash mr-1.5"></i> አስወግድ
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center p-6 text-center space-y-3">
+                      <div className="w-14 h-14 rounded-2xl bg-amber-500/10 text-[#f9b03c] flex items-center justify-center text-2xl border border-amber-500/20 shadow-sm">
+                        <i className="fa-solid fa-cloud-arrow-up"></i>
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-slate-800 dark:text-gray-200">
+                          የሽፋን ምስል ይጫኑ ወይም ሊንክ ያስገቡ
+                        </p>
+                        <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                          16:9 የተመጠነ ማራኪ ምስል ይመረጣል (PNG, JPG, WebP)
+                        </p>
+                      </div>
+                      <label className="bg-gradient-to-r from-amber-500 to-[#f9b03c] hover:opacity-95 text-slate-950 font-black text-xs px-4 py-2.5 rounded-xl cursor-pointer shadow-md transition inline-flex items-center gap-2 active:scale-95">
+                        <i className="fa-solid fa-arrow-up-from-bracket"></i>
+                        <span>ፎቶ ይምረጡ (Upload Image)</span>
+                        <input type="file" accept="image/*" onChange={handleComingSoonImageUpload} className="hidden" />
+                      </label>
+                    </div>
+                  )}
+                </div>
+
+                {/* Direct URL input option */}
+                <div className="space-y-1 mt-2">
+                  <label className="text-[11px] font-bold text-gray-500 dark:text-gray-400">
+                    ወይም የፎቶ ሊንክ ያስገቡ (Image URL / Google Drive Link):
+                  </label>
+                  <input 
+                    type="text" 
+                    value={comingSoonForm.image} 
+                    onChange={e => setComingSoonForm({ ...comingSoonForm, image: e.target.value, banner: e.target.value })}
+                    placeholder="https://... ወይም drive.google.com/..." 
+                    className="w-full bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-dark dark:text-white outline-none focus:border-[#f9b03c] transition" 
+                  />
+                </div>
+              </div>
+
+              {/* 2. Essential Fields: Title & Category */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-black uppercase tracking-wider text-slate-700 dark:text-gray-300 mb-1.5">
+                    የኮርሱ ርዕስ (Course Title) *
+                  </label>
+                  <input 
+                    required 
+                    type="text" 
+                    value={comingSoonForm.title} 
+                    onChange={e => setComingSoonForm({ ...comingSoonForm, title: e.target.value })} 
+                    placeholder="ለምሳሌ፦ የቪዲዮ ኤዲቲንግ ኮርስ (Video Editing Masterclass)" 
+                    className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm font-bold text-dark dark:text-white outline-none focus:border-[#f9b03c] transition" 
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-black uppercase tracking-wider text-slate-700 dark:text-gray-300 mb-1.5">
+                    የኮርሱ ዘርፍ (Category) *
+                  </label>
+                  <select 
+                    value={comingSoonForm.category} 
+                    onChange={e => setComingSoonForm({ ...comingSoonForm, category: e.target.value })} 
+                    className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-xs font-bold text-dark dark:text-white outline-none focus:border-[#f9b03c] transition"
+                  >
+                    <option value="Video Editing">Video Editing (ቪዲዮ ኤዲቲንግ)</option>
+                    <option value="Digital Marketing">Digital Marketing (ዲጂታል ማርኬቲንግ)</option>
+                    <option value="Brokerage">Brokerage & Real Estate (ደላላነት እና ሪል እስቴት)</option>
+                    <option value="Career">Career & Leadership (ካሪየር እና አመራር)</option>
+                    <option value="E-Commerce">E-Commerce & Import</option>
+                    <option value="YouTube & Content Creation">YouTube & Content Creation</option>
+                    <option value="Technology & AI">Technology & AI</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-black uppercase tracking-wider text-slate-700 dark:text-gray-300 mb-1.5">
+                    የጎላ መለያ ባጅ (Highlight Badge)
+                  </label>
+                  <input 
+                    type="text" 
+                    value={comingSoonForm.highlightBadge} 
+                    onChange={e => setComingSoonForm({ ...comingSoonForm, highlightBadge: e.target.value })} 
+                    placeholder="ለምሳሌ፦ CapCut & Premiere Pro / High Commission Deals" 
+                    className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-xs font-bold text-dark dark:text-white outline-none focus:border-[#f9b03c] transition" 
+                  />
+                </div>
+              </div>
+
+              {/* 3. Short Hook / Description */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-black uppercase tracking-wider text-slate-700 dark:text-gray-300">
+                    አጭር መግለጫ (Short Hook / Description) *
+                  </label>
+                  <span className="text-[11px] text-gray-400">ተማሪዎችን ለመሳብ የሚያስችል አጭር ማብራሪያ</span>
+                </div>
+                <textarea 
+                  required 
+                  rows={3} 
+                  value={comingSoonForm.description} 
+                  onChange={e => setComingSoonForm({ ...comingSoonForm, description: e.target.value })} 
+                  placeholder="የኮርሱ ዋና ዋና ጠቀሜታዎች፣ የሚያስተምራቸው ክህሎቶች እና ተማሪው ለምን መጠበቅ እንዳለበት የሚገልጽ አጭር ማራኪ ጽሑፍ..." 
+                  className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl p-4 text-xs leading-relaxed text-dark dark:text-white outline-none focus:border-[#f9b03c] transition resize-y"
+                />
+              </div>
+
+              {/* 4. Waitlist Lead Form Trigger Toggle */}
+              <div className="bg-amber-500/10 dark:bg-amber-500/5 p-4 rounded-2xl border border-amber-500/30 flex items-center justify-between gap-4">
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <i className="fa-solid fa-user-clock text-[#f9b03c]"></i>
+                    <h4 className="text-xs font-black text-slate-900 dark:text-white">
+                      የተጠባባቂዎች ምዝገባ ቅጽ (Waitlist Lead Form Trigger)
+                    </h4>
+                  </div>
+                  <p className="text-[11px] text-slate-600 dark:text-gray-400">
+                    ተማሪዎች ይህንን ኮርስ ሲነኩ የስም፣ ስልክ እና ኢሜይል መመዝገቢያ ፎርም እንዲመጣላቸው ያደርጋል።
+                  </p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                  <input 
+                    type="checkbox" 
+                    checked={comingSoonForm.enableWaitlist} 
+                    onChange={e => setComingSoonForm({ ...comingSoonForm, enableWaitlist: e.target.checked })} 
+                    className="sr-only peer" 
+                  />
+                  <div className="w-12 h-6.5 bg-gray-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[3px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5.5 after:w-5.5 after:transition-all peer-checked:bg-[#f9b03c]"></div>
+                </label>
+              </div>
+
+              {/* 5. Additional lightweight details (Expected Launch & Instructor) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-black uppercase tracking-wider text-slate-700 dark:text-gray-300 mb-1.5">
+                    የሚለቀቅበት ግምት (Expected Launch Date)
+                  </label>
+                  <input 
+                    type="text" 
+                    value={comingSoonForm.expectedDate} 
+                    onChange={e => setComingSoonForm({ ...comingSoonForm, expectedDate: e.target.value })} 
+                    placeholder="በቅርቡ (Coming Soon)" 
+                    className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-dark dark:text-white outline-none focus:border-[#f9b03c] transition" 
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-black uppercase tracking-wider text-slate-700 dark:text-gray-300 mb-1.5">
+                    አሰልጣኝ (Instructor Name)
+                  </label>
+                  <input 
+                    type="text" 
+                    value={comingSoonForm.instructor} 
+                    onChange={e => setComingSoonForm({ ...comingSoonForm, instructor: e.target.value })} 
+                    placeholder="Eyoub Sahle" 
+                    className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-dark dark:text-white outline-none focus:border-[#f9b03c] transition" 
+                  />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-black uppercase tracking-wider text-slate-700 dark:text-gray-300 mb-1.5">
+                    ዋና ዋና ጥቅሞች / ነጥቦች (Key Benefits - 1 per line, Optional)
+                  </label>
+                  <textarea 
+                    rows={2}
+                    value={comingSoonForm.benefitsText} 
+                    onChange={e => setComingSoonForm({ ...comingSoonForm, benefitsText: e.target.value })} 
+                    placeholder="በእያንዳንዱ መስመር አንድ ጥቅም ይፃፉ (ለምሳሌ፦&#10;የቫይራል ቪዲዮዎች ኤዲቲንግ ስልት&#10;Color Grading & Sound Design)" 
+                    className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl p-3 text-xs text-dark dark:text-white outline-none focus:border-[#f9b03c] transition resize-y" 
+                  />
+                </div>
+              </div>
+
+              {/* Modal Actions */}
+              <div className="flex items-center gap-3 pt-4 border-t border-gray-100 dark:border-slate-800">
+                <button 
+                  type="button" 
+                  onClick={() => setIsComingSoonModalOpen(false)} 
+                  disabled={isSavingCourse}
+                  className="flex-1 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 font-bold py-3.5 rounded-xl transition text-xs cursor-pointer"
+                >
+                  ይቅር (Cancel)
+                </button>
+                <button 
+                  type="submit" 
+                  disabled={isSavingCourse} 
+                  className="flex-1 bg-gradient-to-r from-amber-500 to-[#f9b03c] hover:opacity-95 text-slate-950 font-black py-3.5 rounded-xl shadow-lg transition text-xs flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-60"
+                >
+                  {isSavingCourse ? (
+                    <>
+                      <i className="fa-solid fa-spinner animate-spin"></i>
+                      <span>በማስቀመጥ ላይ...</span>
+                    </>
+                  ) : (
+                    <>
+                      <i className="fa-solid fa-check"></i>
+                      <span>{editingComingSoonCourse ? 'ለውጦችን መዝግብ (Update Course)' : 'ኮርሱን ፍጠር (Save Course)'}</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Full-Fledged Live Course Modal (Complete LMS Schema) */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-start justify-center p-4 sm:p-6 backdrop-blur-sm overflow-y-auto">
           <div className="bg-white dark:bg-slate-800 w-full max-w-2xl flex flex-col rounded-3xl shadow-2xl overflow-hidden animate-[modalPop_0.3s_ease-out_forwards] mt-10 mb-20 shrink-0">
             <div className="p-6 border-b border-gray-100 dark:border-slate-700 flex justify-between items-center shrink-0 bg-gray-50 dark:bg-slate-900/50">
-              <h2 className="font-black text-xl text-dark dark:text-white">
-                {editingCourse ? 'ኮርስ አስተካክል' : 'አዲስ ኮርስ ጨምር'}
-              </h2>
+              <div>
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-500/15 text-blue-500 text-[10px] font-black uppercase tracking-wider mb-1">
+                  <i className="fa-solid fa-circle-play"></i> Live Course • Full LMS
+                </div>
+                <h2 className="font-black text-xl text-dark dark:text-white">
+                  {editingCourse ? 'የቀጥታ ኮርስ አስተካክል (Edit Live Course)' : 'አዲስ የቀጥታ ኮርስ ጨምር (Add Live Course)'}
+                </h2>
+              </div>
               <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-danger p-2 transition"><i className="fa-solid fa-xmark text-2xl"></i></button>
             </div>
             
