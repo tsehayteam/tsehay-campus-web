@@ -8,5 +8,5 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET() {
-  return new Response('Webhook Listener Active', { status: 200 });
+  return new Response('LakiPay Webhook Listener Active', { status: 200 });
 }

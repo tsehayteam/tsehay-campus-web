@@ -245,7 +245,71 @@ export default function TwoStageEventBookingModal({
     }
   };
 
-  const handleCompletePayment = () => {
+  const handleCompletePayment = async () => {
+    // 🌟 If Paid Event with LakiPay, initiate dynamic hosted checkout session
+    if (finalPrice > 0 && paymethod === 'lakipay') {
+      setIsProcessing(true);
+      setGeneralError(null);
+
+      const trimmedName = attendeeName.trim() || user?.displayName || 'Student';
+      const trimmedEmail = attendeeEmail.trim().toLowerCase() || user?.email || '';
+      const trimmedPhone = attendeePhone.trim();
+
+      try {
+        const checkoutRes = await fetch('/api/initiate-payment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            courseId: event.id,
+            title: `ትኬት - ${event.title}`,
+            price: finalPrice,
+            originalPrice: originalPrice,
+            referralCode: appliedCode || null,
+            discountPercent: discountPercent,
+            userEmail: trimmedEmail,
+            userId: user?.uid || `guest_${Date.now()}`,
+            phone: trimmedPhone,
+            paymethod: 'lakipay',
+            isEventTicket: true,
+            eventId: event.id,
+            eventSlug: event.slug,
+            eventTitle: event.title,
+            eventDate: event.date,
+            eventTime: event.time,
+            eventLocation: event.location,
+            isOnline: event.isOnline,
+            meetingLink: event.meetingLink,
+            mapsUrl: event.mapsUrl,
+            eventImage: event.image,
+            attendeeName: trimmedName,
+            attendeeEmail: trimmedEmail,
+            attendeePhone: trimmedPhone,
+            tier: finalPrice > 1200 ? 'VIP Pass' : 'General Admission'
+          })
+        });
+
+        const checkoutData = await checkoutRes.json().catch(() => null);
+        const redirectUrl = checkoutData?.paymentUrl || checkoutData?.payment_url || checkoutData?.checkoutUrl || checkoutData?.checkout_url;
+
+        if (redirectUrl) {
+          if (appliedCode) {
+            recordReferralUsage(appliedCode).catch(() => {});
+          }
+          window.location.href = redirectUrl;
+          return;
+        } else {
+          setGeneralError(checkoutData?.error || 'የLakiPay ክፍያ ማስጀመሪያ አልተሳካም። እባክዎ በድጋሚ ይሞክሩ።');
+          setIsProcessing(false);
+          return;
+        }
+      } catch (err: any) {
+        setGeneralError('የክፍያ ስርዓቱን ማገናኘት አልተቻለም። እባክዎ በድጋሚ ይሞክሩ።');
+        setIsProcessing(false);
+        return;
+      }
+    }
+
+    // Free ticket or manual CBE direct bank deposit
     executeRegistration(finalPrice, paymethod);
   };
 
@@ -539,7 +603,7 @@ export default function TwoStageEventBookingModal({
                   <div className="space-y-2.5">
                     <h4 className="font-bold text-xs text-gray-400 uppercase tracking-wider">የክፍያ አማራጭ ይምረጡ (Payment Method)</h4>
 
-                    {/* Option 1: LakiPay / Telebirr */}
+                    {/* Option 1: LakiPay */}
                     <label
                       className={`payment-option flex items-center justify-between p-3 sm:p-3.5 rounded-2xl border cursor-pointer transition-all duration-200 ${
                         paymethod === 'lakipay'
@@ -556,9 +620,16 @@ export default function TwoStageEventBookingModal({
                           onChange={() => setPaymethod('lakipay')}
                           className="w-4 h-4 text-amber-500 focus:ring-amber-500 accent-amber-500 cursor-pointer shrink-0"
                         />
-                        <div>
-                          <span className="font-black text-white text-sm sm:text-base block leading-tight">LakiPay / ቴሌብር (Telebirr)</span>
-                          <span className="text-[11px] text-[#a0aec0] font-medium block mt-0.5">Telebirr • Chapa • CBEBirr • Cards</span>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-black text-white text-sm sm:text-base block leading-tight">LakiPay</span>
+                            <span className="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-black">
+                              8+ አማራጮች
+                            </span>
+                          </div>
+                          <span className="text-[11px] text-[#a0aec0] font-medium block mt-0.5">
+                            ቴሌብር • CBE Birr • አዋሽ ባንክ • ኦሮሚያ • ገዳ • M-Pesa • ካርዶች
+                          </span>
                         </div>
                       </div>
                       <div className="bg-white w-20 sm:w-24 h-8 px-2 rounded-xl flex items-center justify-center shadow-md border border-gray-200 shrink-0">

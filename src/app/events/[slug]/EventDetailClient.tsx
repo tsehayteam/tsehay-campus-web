@@ -387,8 +387,9 @@ export default function EventDetailClient() {
 
         if (checkoutRes.ok) {
           const checkoutData = await checkoutRes.json().catch(() => null);
-          if (checkoutData && checkoutData.checkoutUrl) {
-            window.location.href = checkoutData.checkoutUrl;
+          const redirectUrl = checkoutData?.paymentUrl || checkoutData?.payment_url || checkoutData?.checkoutUrl || checkoutData?.checkout_url;
+          if (redirectUrl) {
+            window.location.href = redirectUrl;
             return;
           }
         }

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase/server';
 import { DEFAULT_COURSES } from '@/lib/courseCache';
+import { initializeLakiPaySession, formatEthiopianPhone } from '@/lib/lakipayService';
 
 function generateCleanTxRef() {
   const randHex = Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -55,23 +56,42 @@ export async function POST(request: Request) {
     const payDetails = formatPaymentDetails(title);
     const selectedMethod = (paymethod || 'lakipay').toLowerCase();
 
-    // Verify authentic course price from Supabase or default cache
-    try {
-      const { data: dbCourse } = await supabaseServer
-        .from('courses')
-        .select('*')
-        .eq('id', courseId)
-        .maybeSingle();
+    // 🌟 Identify whether this transaction is for a Course, Event Ticket, or Mentorship
+    const isEventTicket = Boolean(
+      body.isEventTicket || 
+      body.isEvent ||
+      String(courseId).startsWith('evt_') || 
+      String(courseId).startsWith('EVT-') || 
+      String(title).includes('ትኬት') || 
+      String(title).includes('Ticket')
+    );
 
-      if (dbCourse) {
-        const dbPrice = typeof dbCourse?.price === 'number' ? dbCourse.price : Number(String(dbCourse?.price || '').replace(/[^0-9.]/g, ''));
-        if (dbPrice && dbPrice > 0) {
-          numericPrice = dbPrice;
+    const rawPhone = body.phone_number || body.phoneNumber || body.phone || '';
+    const validEthPhone = formatEthiopianPhone(rawPhone);
+
+    // Verify authentic price from Supabase or default cache
+    try {
+      if (isEventTicket) {
+        if (body.price && Number(body.price) >= 0) {
+          numericPrice = Number(body.price);
         }
       } else {
-        const defaultMatch = DEFAULT_COURSES.find(c => c.id === courseId);
-        if (defaultMatch && defaultMatch.price > 0) {
-          numericPrice = defaultMatch.price;
+        const { data: dbCourse } = await supabaseServer
+          .from('courses')
+          .select('*')
+          .eq('id', courseId)
+          .maybeSingle();
+
+        if (dbCourse) {
+          const dbPrice = typeof dbCourse?.price === 'number' ? dbCourse.price : Number(String(dbCourse?.price || '').replace(/[^0-9.]/g, ''));
+          if (dbPrice && dbPrice > 0) {
+            numericPrice = dbPrice;
+          }
+        } else {
+          const defaultMatch = DEFAULT_COURSES.find(c => c.id === courseId);
+          if (defaultMatch && defaultMatch.price > 0) {
+            numericPrice = defaultMatch.price;
+          }
         }
       }
 
@@ -82,7 +102,22 @@ export async function POST(request: Request) {
         price: numericPrice,
         user_email: email,
         tx_ref,
-        title: title || 'Course',
+        title: title || (isEventTicket ? 'Event Ticket' : 'Course'),
+        is_event_ticket: isEventTicket,
+        event_id: body.eventId || (isEventTicket ? courseId : null),
+        event_slug: body.eventSlug || '',
+        event_title: body.eventTitle || title,
+        event_date: body.eventDate || '',
+        event_time: body.eventTime || '',
+        event_location: body.eventLocation || '',
+        is_online: Boolean(body.isOnline),
+        meeting_link: body.meetingLink || '',
+        maps_url: body.mapsUrl || '',
+        event_image: body.eventImage || body.image || '',
+        attendee_name: body.attendeeName || firstName || 'Student',
+        attendee_email: body.attendeeEmail || email,
+        attendee_phone: validEthPhone || rawPhone,
+        tier: body.tier || (numericPrice > 1200 ? 'VIP Pass' : 'General Admission'),
         created_at: new Date().toISOString()
       });
     } catch (dbErr) {
@@ -92,107 +127,50 @@ export async function POST(request: Request) {
     const numAmount = numericPrice;
     const usdPrice = (Number(numAmount) / 125).toFixed(2);
 
-    const formatEthPhone = (raw: string) => {
-      let cleaned = String(raw || '').replace(/[^0-9]/g, '');
-      if (cleaned.startsWith('0') && cleaned.length === 10) {
-        cleaned = '251' + cleaned.slice(1);
-      } else if (cleaned.length === 9 && (cleaned.startsWith('9') || cleaned.startsWith('7'))) {
-        cleaned = '251' + cleaned;
-      } else if (cleaned.length === 12 && cleaned.startsWith('251')) {
-        // already 251...
-      } else {
-        cleaned = '';
-      }
-      return cleaned;
-    };
-
-    const rawPhone = body.phone_number || body.phoneNumber || body.phone || '';
-    const validEthPhone = formatEthPhone(rawPhone);
-
-    // 1. LAKIPAY V2 API INTEGRATION (Telebirr, CBE, Siinqee, MPESA, EthSwitch, Cards)
+    // 1. LAKIPAY DYNAMIC HOSTED CHECKOUT (Telebirr, CBE Birr, M-Pesa, Awash, Cybersource, EthSwitch, Oromia, Geda)
     if (selectedMethod === 'lakipay' || selectedMethod === 'addispay') {
-      const pubKey = (process.env.LAKIPAY_PUBLIC_KEY || "").trim().replace(/^["']|["']$/g, '');
-      const secKey = (process.env.LAKIPAY_SECRET_KEY || "").trim().replace(/^["']|["']$/g, '');
-      const rawApiKey = (process.env.LAKIPAY_API_KEY || "").trim().replace(/^["']|["']$/g, '');
-      const lakipayDirectUrl = (process.env.LAKIPAY_DIRECT_URL || process.env.LAKIPAY_CHECKOUT_URL || '').trim();
-
-      const formattedApiKey = (pubKey && secKey) 
-        ? `${pubKey}:${secKey}` 
-        : (rawApiKey || `${pubKey}:${secKey}`);
-
       const isMentorship = String(courseId).startsWith('mentorship_') || String(courseId).startsWith('MNTR-') || String(title).includes('ማማከር') || String(title).includes('Mentorship');
-      const successUrl = isMentorship 
+      
+      const successUrl = isEventTicket
+        ? `${origin}/events?success=true&ticket=confirmed&reference=${tx_ref}`
+        : isMentorship 
         ? `${origin}/mentorship?success=true&bookingId=${courseId}&reference=${tx_ref}` 
         : `${origin}/dashboard?success=true&courseId=${courseId}&reference=${tx_ref}`;
-      const failedUrl = isMentorship 
+
+      const failedUrl = isEventTicket
+        ? `${origin}/events?failed=true`
+        : isMentorship 
         ? `${origin}/mentorship?failed=true` 
         : `${origin}/dashboard?failed=true`;
 
-      const lakipayPayload = {
+      // Webhook listener: LakiPay callback endpoint
+      const webhookCallbackUrl = `${origin}/api/payments/lakipay/webhook`;
+
+      // Initialize session via official LakiPay dynamic flow (POST https://api.lakipay.co/api/v1/payment/initialize)
+      const lakipayResult = await initializeLakiPaySession({
         amount: Number(numAmount),
         currency: "ETB",
         reference: tx_ref,
-        title: String(title || "Tsehay Campus Course"),
-        description: "For Local Payments",
-        supported_mediums: ["TELEBIRR", "CBE", "MPESA", "ETHSWITCH", "CYBERSOURCE"],
-        callback_url: `${origin}/api/webhook`,
-        redirects: {
-          success: successUrl,
-          failed: failedUrl
-        }
-      };
+        title: String(payDetails.title || (isEventTicket ? "Tsehay Campus Event Ticket" : "Tsehay Campus Course")),
+        description: isEventTicket ? "Event Ticket Purchase" : "For Local Payments",
+        email: email,
+        firstName: firstName,
+        lastName: lastName,
+        phoneNumber: validEthPhone || rawPhone,
+        callbackUrl: webhookCallbackUrl,
+        successUrl,
+        failedUrl
+      });
 
-      const endpoints = Array.from(new Set([
-        process.env.LAKIPAY_ENDPOINT,
-        'https://api.lakipay.co/api/v2/payment/checkout',
-        'https://api.lakipay.co/v2/payment/checkout'
-      ].filter(Boolean))) as string[];
-
-      let lastLakipayError: string | null = null;
-
-      for (const endpoint of endpoints) {
-        try {
-          const response = await fetch(endpoint, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-API-Key': formattedApiKey
-            },
-            body: JSON.stringify(lakipayPayload)
-          });
-
-          const resData = await response.json().catch(() => null);
-
-          if (resData) {
-            const returnedRef = resData.reference || resData.data?.reference || resData.transaction_id || resData.data?.transaction_id || tx_ref;
-            const checkoutUrl = 
-              resData.data?.checkout_url || 
-              resData.data?.payment_url || 
-              resData.data?.url || 
-              resData.checkout_url || 
-              resData.payment_url || 
-              resData.checkoutUrl || 
-              resData.url ||
-              resData.redirect_url ||
-              resData.data?.redirect_url;
-
-            if (checkoutUrl && typeof checkoutUrl === 'string' && checkoutUrl.startsWith('http')) {
-              return NextResponse.json({ 
-                success: true, 
-                checkout_url: checkoutUrl, 
-                checkoutUrl: checkoutUrl, 
-                reference: returnedRef 
-              });
-            }
-
-            if (resData.message || resData.error || resData.detail || resData.data?.message) {
-              lastLakipayError = resData.message || resData.error || resData.detail || resData.data?.message;
-            }
-          }
-        } catch (gatewayErr: any) {
-          console.error(`LakiPay Error on ${endpoint}:`, gatewayErr);
-          lastLakipayError = gatewayErr.message || 'LakiPay connection error';
-        }
+      if (lakipayResult.success && lakipayResult.paymentUrl) {
+        return NextResponse.json({ 
+          success: true, 
+          paymentUrl: lakipayResult.paymentUrl,
+          payment_url: lakipayResult.paymentUrl,
+          checkout_url: lakipayResult.paymentUrl, 
+          checkoutUrl: lakipayResult.paymentUrl, 
+          reference: lakipayResult.reference 
+        });
       }
 
       // Secondary check: Chapa Integration for Telebirr/CBE if Chapa keys or direct URL are set
@@ -202,7 +180,12 @@ export async function POST(request: Request) {
       if (chapaDirectUrl && chapaDirectUrl.startsWith('http')) {
         const separator = chapaDirectUrl.includes('?') ? '&' : '?';
         const finalChapaUrl = `${chapaDirectUrl}${separator}amount=${numAmount}&reference=${tx_ref}&title=${encodeURIComponent(payDetails.title)}`;
-        return NextResponse.json({ checkoutUrl: finalChapaUrl, reference: tx_ref });
+        return NextResponse.json({ 
+          success: true,
+          checkoutUrl: finalChapaUrl, 
+          paymentUrl: finalChapaUrl,
+          reference: tx_ref 
+        });
       }
 
       if (chapaSecret) {
@@ -221,7 +204,7 @@ export async function POST(request: Request) {
               last_name: lastName || "Campus",
               tx_ref: tx_ref,
               callback_url: `${origin}/api/webhook`,
-              return_url: `${origin}/dashboard?success=true&course=${courseId}&reference=${tx_ref}`,
+              return_url: successUrl,
               customization: {
                 title: "Tsehay Campus",
                 description: payDetails.description
@@ -233,7 +216,12 @@ export async function POST(request: Request) {
           const chapaUrl = chapaData?.data?.checkout_url || chapaData?.checkout_url;
 
           if (chapaUrl && typeof chapaUrl === 'string' && chapaUrl.startsWith('http')) {
-            return NextResponse.json({ checkoutUrl: chapaUrl, reference: tx_ref });
+            return NextResponse.json({ 
+              success: true,
+              checkoutUrl: chapaUrl, 
+              paymentUrl: chapaUrl,
+              reference: tx_ref 
+            });
           }
         } catch (chapaErr) {
           console.error("Chapa API Error:", chapaErr);
@@ -241,21 +229,27 @@ export async function POST(request: Request) {
       }
 
       // Fallback: If configured direct URL exists, format it correctly
+      const lakipayDirectUrl = (process.env.LAKIPAY_DIRECT_URL || process.env.LAKIPAY_CHECKOUT_URL || '').trim();
       if (lakipayDirectUrl && lakipayDirectUrl.startsWith('http')) {
         let baseCheckoutUrl = lakipayDirectUrl;
-        // If they just provided the root domain, use the proper checkout path
         if (baseCheckoutUrl.match(/^https?:\/\/(www\.)?lakipay\.co\/?$/i)) {
           baseCheckoutUrl = `https://checkout.lakipay.co/pay/${tx_ref}`;
         }
         const separator = baseCheckoutUrl.includes('?') ? '&' : '?';
         const finalUrl = baseCheckoutUrl.includes('amount=') ? baseCheckoutUrl : `${baseCheckoutUrl}${separator}amount=${numAmount}&reference=${tx_ref}&title=${encodeURIComponent(payDetails.title)}&description=${encodeURIComponent(payDetails.description)}`;
-        return NextResponse.json({ checkoutUrl: finalUrl, reference: tx_ref });
+        return NextResponse.json({ 
+          success: true,
+          checkoutUrl: finalUrl, 
+          paymentUrl: finalUrl,
+          reference: tx_ref 
+        });
       }
 
       return NextResponse.json({ 
-        error: lastLakipayError || 'የLakiPay ሂሳብ ቁልፎች (LAKIPAY_PUBLIC_KEY / LAKIPAY_SECRET_KEY) በ Vercel ላይ በደንብ አልተገኙም። እባክዎ Vercel ላይ Environment Variables መቀመጣቸውን እና Redeploy መደረጉን ያረጋግጡ።' 
+        error: lakipayResult.error || 'የLakiPay ክፍያ ማስጀመሪያ አልተሳካም። እባክዎ በድጋሚ ይሞክሩ።' 
       }, { status: 400 });
     }
+
 
     // 2. PAYPAL INTEGRATION
     if (selectedMethod === 'paypal') {

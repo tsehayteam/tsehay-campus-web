@@ -273,7 +273,7 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
       });
       
       const data = await res.json().catch(() => null);
-      const checkoutUrl = data?.checkout_url || data?.checkoutUrl || data?.payment_url;
+      const checkoutUrl = data?.paymentUrl || data?.payment_url || data?.checkout_url || data?.checkoutUrl;
       
       if (checkoutUrl) {
         if (appliedCode) {
@@ -476,8 +476,15 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
                       className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500 focus:ring-amber-500 accent-amber-500 cursor-pointer shrink-0" 
                     />
                     <div className="min-w-0">
-                      <span className="font-black text-white text-base sm:text-lg block leading-tight">LakiPay</span>
-                      <span className="text-[11px] sm:text-xs text-[#a0aec0] font-medium block mt-0.5">For Local Payments</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-black text-white text-base sm:text-lg block leading-tight">LakiPay</span>
+                        <span className="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-black">
+                          8+ አማራጮች
+                        </span>
+                      </div>
+                      <span className="text-[11px] sm:text-xs text-[#a0aec0] font-medium block mt-0.5">
+                        ቴሌብር • CBE Birr • አዋሽ ባንክ • ኦሮሚያ • ገዳ • M-Pesa • ካርዶች
+                      </span>
                     </div>
                   </div>
                   <div className="bg-white w-24 sm:w-32 h-9 sm:h-10 px-2 rounded-xl flex items-center justify-center shadow-md border border-gray-200 shrink-0">
