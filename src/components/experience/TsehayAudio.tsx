@@ -314,31 +314,62 @@ export default function TsehayAudio() {
     }
   }, [scrollMode]);
 
-  // Autoplay Unlock on First User Action or Preloader Completion
+  // Autoplay Unlock on First User Action (Mobile touch/click) or Preloader Completion
   useEffect(() => {
-    const unlock = () => {
+    const ensureAudioActive = () => {
       const ctx = initAudioEngine();
-      if (ctx && ctx.state === 'suspended') {
-        ctx.resume().catch(() => {});
+      if (ctx) {
+        if (ctx.state === 'suspended') {
+          ctx.resume().then(() => {
+            setIsUnlocked(true);
+          }).catch(() => {});
+        } else if (ctx.state === 'running') {
+          setIsUnlocked(true);
+        }
       }
-      setIsUnlocked(true);
-      window.removeEventListener('pointerdown', unlock);
-      window.removeEventListener('keydown', unlock);
-      window.removeEventListener('tsehay-preloader-complete', unlock);
     };
 
-    window.addEventListener('tsehay-preloader-complete', unlock, { once: true });
-    window.addEventListener('pointerdown', unlock, { once: true });
-    window.addEventListener('keydown', unlock, { once: true });
+    const handleUserGesture = () => {
+      ensureAudioActive();
+      if (audioCtxRef.current && audioCtxRef.current.state === 'running') {
+        window.removeEventListener('touchstart', handleUserGesture);
+        window.removeEventListener('touchend', handleUserGesture);
+        window.removeEventListener('pointerdown', handleUserGesture);
+        window.removeEventListener('click', handleUserGesture);
+      }
+    };
+
+    // Mobile strict autoplay requires direct user touch (touchstart, touchend, pointerdown, click)
+    window.addEventListener('touchstart', handleUserGesture, { passive: true });
+    window.addEventListener('touchend', handleUserGesture, { passive: true });
+    window.addEventListener('pointerdown', handleUserGesture, { passive: true });
+    window.addEventListener('click', handleUserGesture, { passive: true });
+    window.addEventListener('keydown', handleUserGesture, { passive: true });
+    window.addEventListener('tsehay-preloader-complete', ensureAudioActive);
+
+    // Resume when returning from mobile background/lockscreen
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        const ctx = audioCtxRef.current;
+        if (ctx && ctx.state === 'suspended' && isUnlocked) {
+          ctx.resume().catch(() => {});
+        }
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
 
     return () => {
-      window.removeEventListener('tsehay-preloader-complete', unlock);
-      window.removeEventListener('pointerdown', unlock);
-      window.removeEventListener('keydown', unlock);
+      window.removeEventListener('touchstart', handleUserGesture);
+      window.removeEventListener('touchend', handleUserGesture);
+      window.removeEventListener('pointerdown', handleUserGesture);
+      window.removeEventListener('click', handleUserGesture);
+      window.removeEventListener('keydown', handleUserGesture);
+      window.removeEventListener('tsehay-preloader-complete', ensureAudioActive);
+      document.removeEventListener('visibilitychange', handleVisibility);
     };
-  }, [initAudioEngine]);
+  }, [initAudioEngine, isUnlocked]);
 
-  // Universal Audio Ducking Listener (Hero Video, Course Player, Modal Video)
+  // Universal Audio Ducking Listener (Hero Video, Course Player, Modal Video, Native HTML Media)
   useEffect(() => {
     const handleVideoInView = (e: Event) => {
       const inView = (e as CustomEvent)?.detail?.inView ?? false;
@@ -350,11 +381,35 @@ export default function TsehayAudio() {
       setIsDucked(duck);
     };
 
+    // Auto-duck whenever any HTML video or audio element starts playing anywhere in the DOM
+    const handleMediaPlay = (e: Event) => {
+      if (e.target instanceof HTMLMediaElement) {
+        setIsDucked(true);
+      }
+    };
+
+    const handleMediaPauseOrEnd = (e: Event) => {
+      if (e.target instanceof HTMLMediaElement) {
+        const allMedia = Array.from(document.querySelectorAll('video, audio')) as HTMLMediaElement[];
+        const anyPlaying = allMedia.some(m => !m.paused && !m.ended && m.readyState > 2);
+        if (!anyPlaying) {
+          setIsDucked(false);
+        }
+      }
+    };
+
     window.addEventListener('tsehay-hero-video-inview', handleVideoInView);
     window.addEventListener('tsehay-audio-duck', handleUniversalDuck);
+    document.addEventListener('play', handleMediaPlay, true);
+    document.addEventListener('pause', handleMediaPauseOrEnd, true);
+    document.addEventListener('ended', handleMediaPauseOrEnd, true);
+
     return () => {
       window.removeEventListener('tsehay-hero-video-inview', handleVideoInView);
       window.removeEventListener('tsehay-audio-duck', handleUniversalDuck);
+      document.removeEventListener('play', handleMediaPlay, true);
+      document.removeEventListener('pause', handleMediaPauseOrEnd, true);
+      document.removeEventListener('ended', handleMediaPauseOrEnd, true);
     };
   }, []);
 

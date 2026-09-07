@@ -14,8 +14,8 @@
   --color-danger: #ef4444;
   --color-warning: #f59e0b;
 
-  --font-heading: Montserrat, 'Noto Sans Ethiopic', sans-serif;
-  --font-body: Inter, Roboto, 'Noto Sans Ethiopic', sans-serif;
+  --font-heading: var(--font-heading-var), Montserrat, 'Noto Sans Ethiopic', sans-serif;
+  --font-body: var(--font-ethiopic-var), var(--font-heading-var), Inter, Roboto, sans-serif;
   --font-serif: 'Playfair Display', serif;
   --font-script: 'Great Vibes', cursive;
 

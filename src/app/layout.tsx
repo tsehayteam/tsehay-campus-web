@@ -1,22 +1,18 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import Script from "next/script";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Montserrat, Noto_Sans_Ethiopic } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import Navbar from "@/components/Navbar";
-import AuthModal from "@/components/AuthModal";
-import PaymentModal from "@/components/PaymentModal";
-import TermsModal from "@/components/TermsModal";
 import ContentProtection from "@/components/ContentProtection";
-import PWAInstallBanner from "@/components/PWAInstallBanner";
-import FloatingAIButton from "@/components/FloatingAIButton";
-import StudentFeedbackModal from "@/components/StudentFeedbackModal";
 import ReferralTracker from "@/components/ReferralTracker";
 import { LanguageProvider } from "@/context/LanguageContext";
 import SmoothScrollAndScrollyProvider from "@/components/scrollytelling/SmoothScrollAndScrollyProvider";
 import PageTransitionWrapper from "@/components/scrollytelling/PageTransitionWrapper";
 import TsehayExperienceProvider from "@/components/experience/TsehayExperienceProvider";
+
+import GlobalModals from "@/components/GlobalModals";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -26,6 +22,20 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+});
+
+const montserrat = Montserrat({
+  variable: "--font-heading-var",
+  subsets: ["latin"],
+  display: "swap",
+  weight: ["400", "500", "600", "700", "800", "900"],
+});
+
+const notoSansEthiopic = Noto_Sans_Ethiopic({
+  variable: "--font-ethiopic-var",
+  subsets: ["ethiopic"],
+  display: "swap",
+  weight: ["400", "500", "600", "700", "800", "900"],
 });
 
 export const metadata: Metadata = {
@@ -149,7 +159,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased pt-0 notranslate`}
+        className={`${geistSans.variable} ${geistMono.variable} ${montserrat.variable} ${notoSansEthiopic.variable} antialiased pt-0 notranslate`}
         translate="no"
         suppressHydrationWarning
       >
@@ -222,11 +232,7 @@ export default function RootLayout({
                   <ReferralTracker />
                 </Suspense>
                 
-                <TermsModal />
-                <PaymentModal />
-                <PWAInstallBanner />
-                <FloatingAIButton />
-                <StudentFeedbackModal />
+                <GlobalModals />
               </div>
             </SmoothScrollAndScrollyProvider>
           </AuthProvider>

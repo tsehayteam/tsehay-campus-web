@@ -16,6 +16,9 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: '*.dropboxusercontent.com' },
       { protocol: 'https', hostname: 'www.dropbox.com' },
       { protocol: 'https', hostname: 'dropbox.com' },
+      { protocol: 'https', hostname: 'img.youtube.com' },
+      { protocol: 'https', hostname: 'i.ytimg.com' },
+      { protocol: 'https', hostname: 'media.licdn.com' },
       { protocol: 'https', hostname: 'www.tsehaycampus.com' },
       { protocol: 'https', hostname: 'tsehaycampus.com' }
     ],

@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { EventTicket, DEFAULT_EVENT_BANNER, formatEventBannerUrl, getCachedEvents } from '@/lib/eventCache';
 import { QRCodeSVG, QRCodeCanvas } from 'qrcode.react';
 import { drawQrToCanvas } from '@/lib/qrCodeGenerator';
+import { X, Calendar, MapPin, Download, Mail, CheckCircle2, Loader2 } from 'lucide-react';
 
 interface DigitalTicketModalProps {
   isOpen: boolean;
@@ -19,6 +20,46 @@ export default function DigitalTicketModal({ isOpen, onClose, ticket }: DigitalT
   const [showConfetti, setShowConfetti] = useState(false);
   const ticketRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  // 🌟 Persistent, Non-Flashing Banner URL Resolution for Mobile & Desktop
+  const initialBanner = useMemo(() => {
+    if (!ticket) return DEFAULT_EVENT_BANNER;
+    const raw = ticket.eventImage || ticket.image;
+    if (raw && typeof raw === 'string' && raw.trim()) {
+      return formatEventBannerUrl(raw.trim());
+    }
+    const allEvents = getCachedEvents();
+    const matched = allEvents.find(
+      e => e.id === ticket.eventId || (ticket.eventSlug && e.slug === ticket.eventSlug)
+    );
+    if (matched && matched.image) {
+      return formatEventBannerUrl(matched.image);
+    }
+    return DEFAULT_EVENT_BANNER;
+  }, [ticket?.eventId, ticket?.eventSlug, ticket?.eventImage, ticket?.image]);
+
+  const [bannerSrc, setBannerSrc] = useState<string>(initialBanner);
+  const fallbackAppliedRef = useRef(false);
+
+  useEffect(() => {
+    setBannerSrc(initialBanner);
+    fallbackAppliedRef.current = false;
+  }, [initialBanner]);
+
+  const handleBannerError = () => {
+    if (!fallbackAppliedRef.current) {
+      fallbackAppliedRef.current = true;
+      const allEvents = getCachedEvents();
+      const matched = allEvents.find(
+        ev => ev.id === ticket?.eventId || (ticket?.eventSlug && ev.slug === ticket?.eventSlug)
+      );
+      if (matched?.image && matched.image !== bannerSrc) {
+        setBannerSrc(formatEventBannerUrl(matched.image));
+      } else {
+        setBannerSrc(DEFAULT_EVENT_BANNER);
+      }
+    }
+  };
 
   // Lock body scroll & trigger celebratory confetti
   useEffect(() => {
@@ -200,7 +241,7 @@ export default function DigitalTicketModal({ isOpen, onClose, ticket }: DigitalT
             className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/5 hover:bg-white/15 text-gray-400 hover:text-white flex items-center justify-center transition cursor-pointer z-20 border border-white/10"
             title="ዝጋ"
           >
-            <i className="fa-solid fa-xmark text-sm"></i>
+            <X className="w-4 h-4" />
           </button>
 
           {/* Top Header & Official Tsehay Campus Logo */}
@@ -228,52 +269,27 @@ export default function DigitalTicketModal({ isOpen, onClose, ticket }: DigitalT
             </div>
           </div>
 
-          {/* Official Event Banner Thumbnail (Exact consistency with outside card and preview) */}
-          {(() => {
-            const bannerSrc = (() => {
-              const raw = ticket.eventImage || ticket.image;
-              if (raw && typeof raw === 'string' && raw.trim()) {
-                return formatEventBannerUrl(raw.trim());
-              }
-              const allEvents = getCachedEvents();
-              const matched = allEvents.find(e => e.id === ticket.eventId || (ticket.eventSlug && e.slug === ticket.eventSlug));
-              if (matched && matched.image) {
-                return formatEventBannerUrl(matched.image);
-              }
-              return DEFAULT_EVENT_BANNER;
-            })();
-
-            return (
-              <div className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden mb-3.5 border border-white/15 shadow-md bg-slate-900">
-                <img 
-                  src={bannerSrc} 
-                  alt={ticket.eventTitle} 
-                  className="w-full h-full object-cover"
-                  loading="eager"
-                  decoding="async"
-                  onError={(e) => {
-                    const allEvents = getCachedEvents();
-                    const matched = allEvents.find(ev => ev.id === ticket.eventId || (ticket.eventSlug && ev.slug === ticket.eventSlug));
-                    if (matched?.image && (e.target as HTMLImageElement).src !== matched.image) {
-                      (e.target as HTMLImageElement).src = formatEventBannerUrl(matched.image);
-                    } else {
-                      (e.target as HTMLImageElement).src = DEFAULT_EVENT_BANNER;
-                    }
-                  }}
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent pointer-events-none" />
-                <div className="absolute bottom-2 left-3 right-3 flex items-center justify-between text-[10.5px] font-black">
-                  <span className="px-2.5 py-0.5 rounded-full bg-[#f9b03c] text-slate-950 font-heading shadow-sm">
-                    {ticket.tier || 'VIP Access Pass'}
-                  </span>
-                  <span className="text-white drop-shadow-md flex items-center gap-1 font-mono">
-                    <i className="fa-solid fa-calendar-day text-[10px] text-[#f9b03c]"></i>
-                    <span>{ticket.eventDate}</span>
-                  </span>
-                </div>
-              </div>
-            );
-          })()}
+          {/* Official Event Banner Thumbnail (Persistent, Fixed Mobile Aspect Ratio, Never Warps or Flashes) */}
+          <div className="relative w-full aspect-[16/9] min-h-[165px] sm:min-h-[195px] rounded-2xl overflow-hidden mb-3.5 border border-white/15 shadow-md bg-slate-900 shrink-0">
+            <img 
+              src={bannerSrc} 
+              alt={ticket.eventTitle} 
+              className="w-full h-full object-cover select-none"
+              loading="eager"
+              decoding="async"
+              onError={handleBannerError}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent pointer-events-none" />
+            <div className="absolute bottom-2.5 left-3 right-3 flex items-center justify-between text-[10.5px] font-black pointer-events-none">
+              <span className="px-2.5 py-0.5 rounded-full bg-[#f9b03c] text-slate-950 font-heading shadow-sm">
+                {ticket.tier || 'VIP Access Pass'}
+              </span>
+              <span className="text-white drop-shadow-md flex items-center gap-1 font-mono">
+                <Calendar className="w-3 h-3 text-[#f9b03c]" />
+                <span>{ticket.eventDate}</span>
+              </span>
+            </div>
+          </div>
 
           {/* Event Title */}
           <div className="mb-3.5">
@@ -305,7 +321,7 @@ export default function DigitalTicketModal({ isOpen, onClose, ticket }: DigitalT
             <div className="col-span-2 pt-1 border-t border-white/5">
               <p className="text-[10px] text-slate-400 uppercase font-semibold">ቦታ (Venue / Location)</p>
               <p className="font-bold text-slate-200 truncate mt-0.5 flex items-center gap-1">
-                <i className="fa-solid fa-location-dot text-[#f9b03c] text-[10px]"></i>
+                <MapPin className="w-3 h-3 text-[#f9b03c] shrink-0" />
                 <span>{ticket.eventLocation}</span>
               </p>
             </div>
@@ -366,7 +382,11 @@ export default function DigitalTicketModal({ isOpen, onClose, ticket }: DigitalT
               className="mt-2.5 px-3 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-900 font-mono text-xs font-black tracking-wider flex items-center gap-1.5 cursor-pointer transition active:scale-95"
               title="የትኬት ቁጥር ቅዳ"
             >
-              <i className={`fa-solid ${copiedCode ? 'fa-check text-emerald-600' : 'fa-copy text-slate-600'}`}></i>
+              {copiedCode ? (
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+              ) : (
+                <Download className="w-3.5 h-3.5 text-slate-600 rotate-270" />
+              )}
               <span>{ticket.ticketId}</span>
               {copiedCode && <span className="text-[10px] text-emerald-600 font-bold">(ተቀድቷል!)</span>}
             </button>
@@ -394,7 +414,11 @@ export default function DigitalTicketModal({ isOpen, onClose, ticket }: DigitalT
               disabled={isDownloading}
               className="bg-white/10 hover:bg-white/20 text-white font-bold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 transition border border-white/10 cursor-pointer active:scale-95 disabled:opacity-60"
             >
-              <i className={`fa-solid ${isDownloading ? 'fa-spinner fa-spin' : 'fa-download'} text-[#f9b03c]`}></i>
+              {isDownloading ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-[#f9b03c]" />
+              ) : (
+                <Download className="w-3.5 h-3.5 text-[#f9b03c]" />
+              )}
               <span>{isDownloading ? 'እያዘጋጀ ነው...' : 'ትኬት አውርድ'}</span>
             </button>
             <button
@@ -403,7 +427,11 @@ export default function DigitalTicketModal({ isOpen, onClose, ticket }: DigitalT
               disabled={isSendingEmail}
               className="btn-buy-now-vibe py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 font-bold cursor-pointer active:scale-95 disabled:opacity-50"
             >
-              <i className={`fa-solid ${isSendingEmail ? 'fa-spinner fa-spin' : 'fa-envelope'}`}></i>
+              {isSendingEmail ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Mail className="w-3.5 h-3.5" />
+              )}
               <span>{isSendingEmail ? 'በመላክ ላይ...' : 'ኢሜይል ላክ'}</span>
             </button>
           </div>

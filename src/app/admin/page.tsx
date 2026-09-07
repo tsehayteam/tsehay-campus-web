@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useAuth, ADMIN_EMAILS, isEmailAdmin } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
@@ -364,6 +364,43 @@ export default function AdminDashboard() {
   const [feedbackTypeFilter, setFeedbackTypeFilter] = useState<'all' | 'course' | 'bug' | 'idea' | 'general'>('all');
   const [feedbackStatusFilter, setFeedbackStatusFilter] = useState<'all' | 'pending' | 'resolved'>('all');
   const [isUpdatingFeedbackId, setIsUpdatingFeedbackId] = useState<string | null>(null);
+  const [isLoadingFeedbacks, setIsLoadingFeedbacks] = useState(false);
+  const [lastFeedbackSyncTime, setLastFeedbackSyncTime] = useState<string | null>(null);
+
+  // 🌟 Authoritative Server API Fetch for Feedbacks
+  const fetchFeedbacksFromApi = useCallback(async (isManual = false) => {
+    try {
+      setIsLoadingFeedbacks(true);
+      const res = await fetch('/api/admin/feedback', {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache' }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.feedbacks && Array.isArray(data.feedbacks)) {
+          setFeedbacks(data.feedbacks);
+          setLastFeedbackSyncTime(new Date().toLocaleTimeString('am-ET', { hour: '2-digit', minute: '2-digit' }));
+          try {
+            localStorage.setItem('tsehay_user_feedbacks', JSON.stringify(data.feedbacks));
+          } catch (e) {}
+          if (isManual) {
+            showToast(`በአጠቃላይ ${data.feedbacks.length} የተማሪ አስተያየቶች በቅጽበት ተመሳስለዋል!`, 'success');
+          }
+        }
+      }
+    } catch (err) {
+      console.warn("API feedbacks sync notice:", err);
+    } finally {
+      setIsLoadingFeedbacks(false);
+    }
+  }, []);
+
+  // Sync Feedbacks immediately when switching to 'feedbacks' tab
+  useEffect(() => {
+    if (activeTab === 'feedbacks') {
+      fetchFeedbacksFromApi();
+    }
+  }, [activeTab, fetchFeedbacksFromApi]);
 
   // 🌟 Instructors / Teachers Management State
   const [instructorsList, setInstructorsList] = useState<any[]>(() => {
@@ -1097,14 +1134,39 @@ export default function AdminDashboard() {
       setCommunityPosts(posts);
     }, 'all');
 
+    // 🌟 Real-time Server API Fetch for Student Feedbacks
+    fetchFeedbacksFromApi();
+
+    const handleFeedbackSync = () => {
+      fetchFeedbacksFromApi();
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('tsehay_feedback_submitted', handleFeedbackSync);
+      window.addEventListener('storage', (e) => {
+        if (e.key === 'tsehay_user_feedbacks') {
+          fetchFeedbacksFromApi();
+        }
+      });
+    }
+
+    // Periodic live sync every 25 seconds for new visitor feedbacks
+    const feedbackPollInterval = setInterval(() => {
+      fetchFeedbacksFromApi();
+    }, 25000);
+
     return () => {
       unsubscribeAuth();
       unsubscribe();
       if (typeof unsubscribeCoursesRoot === 'function') unsubscribeCoursesRoot();
       if (typeof unsubscribeCommunity === 'function') unsubscribeCommunity();
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('tsehay_feedback_submitted', handleFeedbackSync);
+      }
+      clearInterval(feedbackPollInterval);
       clearTimeout(safetyTimer);
     };
-  }, []);
+  }, [fetchFeedbacksFromApi]);
 
   const handleCreateReferralCode = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1255,8 +1317,12 @@ export default function AdminDashboard() {
     const nextStatus = feedback.status === 'resolved' ? 'pending' : 'resolved';
     setIsUpdatingFeedbackId(feedback.id);
     
-    // Optimistic UI update
-    setFeedbacks(prev => prev.map(f => f.id === feedback.id ? { ...f, status: nextStatus } : f));
+    // Optimistic UI update & Local Cache persistence
+    setFeedbacks(prev => {
+      const updated = prev.map(f => f.id === feedback.id ? { ...f, status: nextStatus } : f);
+      try { localStorage.setItem('tsehay_user_feedbacks', JSON.stringify(updated)); } catch (e) {}
+      return updated;
+    });
     
     try {
       // 2. Server API Dispatch
@@ -1280,8 +1346,12 @@ export default function AdminDashboard() {
   const handleDeleteFeedback = async (id: string) => {
     if (!confirm('ይህንን የተማሪ አስተያየት በእርግጥ መሰረዝ ይፈልጋሉ? (Are you sure you want to delete this feedback?)')) return;
     
-    // Optimistic UI update
-    setFeedbacks(prev => prev.filter(f => f.id !== id));
+    // Optimistic UI update & Local Cache persistence
+    setFeedbacks(prev => {
+      const updated = prev.filter(f => f.id !== id);
+      try { localStorage.setItem('tsehay_user_feedbacks', JSON.stringify(updated)); } catch (e) {}
+      return updated;
+    });
     
     try {
       // 2. Server API Dispatch
@@ -7042,7 +7112,21 @@ export default function AdminDashboard() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 self-start md:self-auto">
+                <div className="flex flex-wrap items-center gap-2 self-start md:self-auto">
+                  <button
+                    type="button"
+                    onClick={() => fetchFeedbacksFromApi(true)}
+                    disabled={isLoadingFeedbacks}
+                    className="px-4 py-2.5 rounded-xl bg-[#f9b03c]/20 hover:bg-[#f9b03c]/30 border border-[#f9b03c]/40 text-xs font-bold text-[#f9b03c] transition flex items-center gap-2 cursor-pointer disabled:opacity-50 active:scale-95 shadow-sm"
+                    title="አስተያየቶችን ከዳታቤዝ በቀጥታ አመሳስል"
+                  >
+                    <i className={`fa-solid fa-arrows-rotate ${isLoadingFeedbacks ? 'fa-spin' : ''}`}></i>
+                    <span>{isLoadingFeedbacks ? 'እያመሳሰለ ነው...' : 'ቀጥታ አድስ (Sync Live)'}</span>
+                    {lastFeedbackSyncTime && (
+                      <span className="text-[10px] opacity-75 font-normal">({lastFeedbackSyncTime})</span>
+                    )}
+                  </button>
+
                   <button
                     type="button"
                     onClick={() => {
@@ -7202,6 +7286,20 @@ export default function AdminDashboard() {
                     (item.message || '').toLowerCase().includes(q);
                   return matchType && matchStatus && matchSearch;
                 });
+
+                if (isLoadingFeedbacks && feedbacks.length === 0) {
+                  return (
+                    <div className="bg-white dark:bg-slate-800/80 rounded-3xl p-12 text-center border border-gray-100 dark:border-slate-700/80">
+                      <div className="w-16 h-16 rounded-3xl bg-amber-500/10 text-[#f9b03c] flex items-center justify-center text-2xl mx-auto mb-4">
+                        <i className="fa-solid fa-spinner fa-spin"></i>
+                      </div>
+                      <h4 className="text-lg font-black text-dark dark:text-white mb-1">አስተያየቶችን እያመጣ ነው...</h4>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 max-w-sm mx-auto">
+                        የተማሪዎችን አስተያየት ከሰርቨር እያመሳሰለ ነው፣ እባክዎ ትንሽ ይጠብቁ...
+                      </p>
+                    </div>
+                  );
+                }
 
                 if (filtered.length === 0) {
                   return (

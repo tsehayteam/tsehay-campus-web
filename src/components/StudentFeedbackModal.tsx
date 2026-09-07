@@ -294,37 +294,46 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
         }
       }
 
-      // 2. Image Processing
+      // 2. Image Processing (Encode to persistent Data URL so admin dashboard can view it)
       if (imageFile) {
-        uploadedImageUrl = imagePreviewUrl;
+        try {
+          uploadedImageUrl = await blobToDataURL(imageFile);
+        } catch (iErr) {
+          uploadedImageUrl = null;
+        }
       }
+
+      const trimmedEmail = contactEmail.trim();
+      const trimmedName = contactName.trim();
 
       const feedbackPayload = {
         id: feedbackId,
         category,
         type: category,
         rating: Number(rating) || 5,
-        message: message.trim() || (uploadedAudioUrl ? '🎙️ [የድምፅ መልዕክት ተልኳል]' : ''),
+        message: message.trim() || (uploadedAudioUrl ? '[የድምፅ መልዕክት ተልኳል]' : ''),
         audioUrl: uploadedAudioUrl || null,
         imageUrl: uploadedImageUrl || null,
-        userEmail: contactEmail.trim() || user?.email || 'student@tsehaycampus.com',
-        userName: contactName.trim() || user?.displayName || (user?.email ? user.email.split('@')[0] : 'ተማሪ'),
-        userId: user?.uid || 'guest_student',
+        userEmail: trimmedEmail || user?.email || 'visitor@tsehaycampus.com',
+        userName: trimmedName || user?.displayName || (user?.email ? user.email.split('@')[0] : (trimmedEmail ? trimmedEmail.split('@')[0] : 'እንግዳ ተጠቃሚ (Guest Visitor)')),
+        userId: user?.uid || `guest_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
         pageUrl: typeof window !== 'undefined' ? window.location.pathname : '/',
         status: 'pending',
         createdAt: Date.now(),
         createdAtISO: new Date().toISOString()
       };
 
-      // 4. Server API Dispatch
+      // 4. Server API Dispatch with guaranteed persistence
       try {
         const apiCall = fetch('/api/feedback', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(feedbackPayload),
         });
-        await withTimeout(apiCall, 4000, null);
-      } catch (apiErr) {}
+        await withTimeout(apiCall, 6000, null);
+      } catch (apiErr) {
+        console.warn('Feedback API dispatch notice:', apiErr);
+      }
 
       // 5. Local Cache & Custom Event for Admin & Dashboard
       try {

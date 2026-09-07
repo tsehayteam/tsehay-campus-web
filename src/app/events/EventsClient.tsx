@@ -38,6 +38,16 @@ export default function EventsClient() {
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
+  // Auto-duck background music when trailer video is opened
+  useEffect(() => {
+    if (previewVideoEvent) {
+      window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: true } }));
+      return () => {
+        window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: false } }));
+      };
+    }
+  }, [previewVideoEvent]);
+
   // Real-time Firestore sync on both collections
   useEffect(() => {
     const handleCustomEventsUpdate = (e: any) => {

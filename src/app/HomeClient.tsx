@@ -2,6 +2,8 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
+import dynamic from 'next/dynamic';
+import Image from 'next/image';
 import { useLanguage } from '@/context/LanguageContext';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -13,16 +15,18 @@ import Footer from '@/components/Footer';
 import PaymentModal from '@/components/PaymentModal';
 import RequireAuthModal from '@/components/RequireAuthModal';
 import SmartSearchInput from '@/components/SmartSearchInput';
-import YouTubeVideoSlider from '@/components/YouTubeVideoSlider';
-import InstructorYouTubePortfolio from '@/components/InstructorYouTubePortfolio';
 import UpcomingEventsSection from '@/components/UpcomingEventsSection';
 import CourseCardSkeleton from '@/components/CourseCardSkeleton';
-import CoursePreviewModal from '@/components/CoursePreviewModal';
 import Hero3DPopoutStage from '@/components/3d/Hero3DPopoutStage';
 import Tilt3DCard from '@/components/3d/Tilt3DCard';
 import { scrollTriggerEngine } from '@/lib/scrollTriggerEngine';
-import WaitlistModal from '@/components/WaitlistModal';
 import TypingCoursesHeadline from '@/components/TypingCoursesHeadline';
+
+// Dynamic Code Splitting for heavy non-critical components
+const YouTubeVideoSlider = dynamic(() => import('@/components/YouTubeVideoSlider'), { ssr: false });
+const InstructorYouTubePortfolio = dynamic(() => import('@/components/InstructorYouTubePortfolio'), { ssr: false });
+const CoursePreviewModal = dynamic(() => import('@/components/CoursePreviewModal'), { ssr: false });
+const WaitlistModal = dynamic(() => import('@/components/WaitlistModal'), { ssr: false });
 import { 
   getCachedCourses, 
   saveCachedCourses, 
@@ -878,17 +882,25 @@ export default function HomeClient({
                               className="relative aspect-video w-full overflow-hidden bg-slate-950 flex items-center justify-center m-0"
                               style={{ transform: 'translateZ(30px)' }}
                             >
-                              <img 
-                                src={getCleanCourseImage(course) || `https://placehold.co/600x400/3268BA/FFFFFF?text=${encodeURIComponent(course.title || 'Tsehay Campus')}&font=Montserrat`} 
+                              <Image 
+                                src={getCleanCourseImage(course) || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1200'} 
                                 alt="" 
                                 aria-hidden="true" 
+                                fill
+                                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                                 className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-40 scale-125 pointer-events-none select-none" 
+                                loading="lazy"
                               />
-                              <img 
-                                src={getCleanCourseImage(course) || `https://placehold.co/600x400/3268BA/FFFFFF?text=${encodeURIComponent(course.title || 'Tsehay Campus')}&font=Montserrat`} 
-                                alt={course.title} 
-                                className="relative z-10 w-full h-full object-contain p-2 group-hover:scale-[1.04] transition-transform duration-500" 
-                              />
+                              <div className="relative z-10 w-full h-full p-2 group-hover:scale-[1.04] transition-transform duration-500 flex items-center justify-center">
+                                <Image 
+                                  src={getCleanCourseImage(course) || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1200'} 
+                                  alt={course.title || 'Course'} 
+                                  fill
+                                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                                  className="object-contain p-2" 
+                                  loading="lazy"
+                                />
+                              </div>
                               
                               {/* Floating Popout Badges */}
                               {isComingSoon ? (

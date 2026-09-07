@@ -32,6 +32,16 @@ export default function UpcomingEventsSection() {
   // Video Trailer Lightbox State
   const [previewVideoEvent, setPreviewVideoEvent] = useState<TsehayEvent | null>(null);
 
+  // Auto-duck background music when trailer video is opened
+  useEffect(() => {
+    if (previewVideoEvent) {
+      window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: true } }));
+      return () => {
+        window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: false } }));
+      };
+    }
+  }, [previewVideoEvent]);
+
   // Booking Modal State
   const [selectedEvent, setSelectedEvent] = useState<TsehayEvent | null>(null);
   const [isBookingOpen, setIsBookingOpen] = useState(false);

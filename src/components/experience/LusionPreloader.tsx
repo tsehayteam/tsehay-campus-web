@@ -4,20 +4,28 @@ import React, { useState, useEffect, useRef } from 'react';
 
 /**
  * AnalogRollingDigit - Vertical Rolling Odometer / Chronometer Digit Column
- * Scrolls vertically from 0 to max like a high-precision analog stopwatch.
+ * Scrolls vertically from bottom to top in ordered succession like a luxury analog chronograph.
  */
-function AnalogRollingDigit({ value, max = 9 }: { value: number; max?: number }) {
-  const digits = Array.from({ length: max + 1 }, (_, i) => i);
+function AnalogRollingDigit({ 
+  value, 
+  digits = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] 
+}: { 
+  value: number; 
+  digits?: number[]; 
+}) {
+  const itemHeightPercent = 100 / digits.length;
+  const targetIndex = Math.min(digits.length - 1, Math.max(0, value));
+
   return (
-    <div className="relative h-[70px] sm:h-[96px] md:h-[116px] overflow-hidden leading-none select-none inline-flex items-center">
+    <div className="relative h-[68px] sm:h-[88px] md:h-[108px] overflow-hidden leading-none select-none inline-flex items-center">
       <div
-        className="transition-transform duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] flex flex-col"
-        style={{ transform: `translateY(-${value * (100 / digits.length)}%)` }}
+        className="transition-transform duration-200 ease-out flex flex-col will-change-transform"
+        style={{ transform: `translate3d(0, -${targetIndex * itemHeightPercent}%, 0)` }}
       >
-        {digits.map((d) => (
+        {digits.map((d, idx) => (
           <div
-            key={d}
-            className="h-[70px] sm:h-[96px] md:h-[116px] flex items-center justify-center font-mono font-black text-6xl sm:text-8xl md:text-9xl tracking-tighter text-white antialiased subpixel-antialiased drop-shadow-[0_2px_8px_rgba(0,0,0,0.95)]"
+            key={idx}
+            className="h-[68px] sm:h-[88px] md:h-[108px] flex items-center justify-center font-mono font-black text-6xl sm:text-7xl md:text-8xl tracking-tight text-white antialiased subpixel-antialiased drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)]"
           >
             {d}
           </div>
@@ -212,9 +220,10 @@ export default function LusionPreloader() {
       window.addEventListener('load', handleLoad, { once: true });
     }
 
-    // 4. Strict Asset Gatekeeping & Analog Digital Progress Lerper
+    // 4. Strict Asset Gatekeeping & Calibrated Analog Chronometer Lerper
     const startTime = performance.now();
-    const minDurationMs = 1300;
+    const minDurationMs = 1750;
+    let lastRecordedProgress = 0;
 
     const updateProgress = (now: number) => {
       const elapsed = now - startTime;
@@ -222,9 +231,9 @@ export default function LusionPreloader() {
 
       // Milestone Target: Scales to 75% with time, strictly requires 4K buffer + fonts + images for 100%
       let targetProgress = timeRatio * 75;
-      if (fontsReady) targetProgress += 6;
-      if (imagesReady) targetProgress += 6;
-      if (video4KReady) targetProgress += 13;
+      if (fontsReady) targetProgress += 8;
+      if (imagesReady) targetProgress += 8;
+      if (video4KReady) targetProgress += 9;
 
       // Strict Gatekeeping: ONLY allow 100% when 4K video buffer and all critical assets are confirmed ready
       const allAssetsReady = fontsReady && imagesReady && video4KReady;
@@ -232,9 +241,12 @@ export default function LusionPreloader() {
         targetProgress = 100;
       }
 
-      // Smooth fast lerp towards target
-      progressRef.current += (targetProgress - progressRef.current) * 0.16;
-      if (progressRef.current >= 99.2 && elapsed >= minDurationMs && allAssetsReady) {
+      // Smooth monotonic lerp towards target - numbers roll smoothly forward
+      const lerped = progressRef.current + (targetProgress - progressRef.current) * 0.12;
+      progressRef.current = Math.max(lastRecordedProgress, lerped);
+      lastRecordedProgress = progressRef.current;
+
+      if (progressRef.current >= 99.4 && elapsed >= minDurationMs && allAssetsReady) {
         progressRef.current = 100;
       }
 
@@ -343,17 +355,32 @@ export default function LusionPreloader() {
 
       {/* Bottom Area: Razor-Sharp Analog-Style Vertical Rolling Counter */}
       <div className="relative z-10 px-6 py-6 sm:px-12 sm:py-8 flex items-end justify-between">
-        {/* Bottom-Left Sharp High-Contrast Analog Rolling Counter (Clean & Noticeable Digital Counter) */}
+        {/* Bottom-Left Sharp High-Contrast Analog Rolling Counter (Calibrated Digital Odometer) */}
         <div className="flex flex-col">
-          <div className="flex items-baseline gap-1 sm:gap-1.5 px-4 sm:px-5 py-2 sm:py-2.5 rounded-2xl bg-[#040814]/95 border border-white/20 shadow-[0_12px_40px_rgba(0,0,0,0.95),inset_0_1px_1px_rgba(255,255,255,0.2)]">
-            {/* Hundreds Reel */}
-            {progress >= 100 && (
-              <AnalogRollingDigit value={1} max={1} />
-            )}
-            {/* Tens Reel */}
-            <AnalogRollingDigit value={progress >= 100 ? 0 : Math.floor((progress % 100) / 10)} max={9} />
-            {/* Ones Reel */}
-            <AnalogRollingDigit value={progress >= 100 ? 0 : progress % 10} max={9} />
+          <div className="flex items-baseline gap-0.5 sm:gap-1 px-4 sm:px-6 py-2 sm:py-3 rounded-2xl bg-[#040814]/95 border border-white/20 shadow-[0_12px_40px_rgba(0,0,0,0.95),inset_0_1px_1px_rgba(255,255,255,0.2)]">
+            {/* Hundreds Reel - reveals smoothly when reaching 100 */}
+            <div className={`transition-all duration-300 ease-out overflow-hidden flex items-center ${
+              progress >= 100 ? 'max-w-[80px] opacity-100 mr-0.5' : 'max-w-0 opacity-0'
+            }`}>
+              <AnalogRollingDigit value={1} digits={[0, 1]} />
+            </div>
+
+            {/* Tens Reel - 0 to 9, plus rolling 0 at 100% so it rolls forward smoothly */}
+            <AnalogRollingDigit 
+              value={progress >= 100 ? 10 : Math.floor((progress % 100) / 10)} 
+              digits={[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0]} 
+            />
+
+            {/* Ones Reel - 0 to 9 ordered succession */}
+            <AnalogRollingDigit 
+              value={progress >= 100 ? 0 : progress % 10} 
+              digits={[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]} 
+            />
+
+            {/* Glowing Amber Percent Sign */}
+            <span className="font-mono font-black text-xl sm:text-2xl md:text-3xl text-[#f9b03c] ml-1.5 drop-shadow-[0_0_10px_rgba(249,176,60,0.6)] select-none">
+              %
+            </span>
           </div>
         </div>
 
