@@ -153,12 +153,16 @@ export function isMediaVideo(url?: string): boolean {
     trimmed.endsWith('.mov') || 
     trimmed.endsWith('.ogg') ||
     trimmed.endsWith('.m4v') ||
+    trimmed.endsWith('.m3u8') ||
     trimmed.includes('.mp4?') ||
     trimmed.includes('.webm?') ||
     trimmed.includes('.mov?') ||
+    trimmed.includes('.m3u8?') ||
     trimmed.includes('/assets/videos/') ||
     trimmed.includes('vimeo.com') ||
     trimmed.includes('mediadelivery.net') ||
+    trimmed.includes('b-cdn.net') ||
+    trimmed.includes('bunnycdn.com') ||
     trimmed.includes('cloudflarestream.com')
   ) {
     return true;
@@ -328,11 +332,53 @@ export function parseVideoUrl(rawUrl: string, autoplay: boolean = false): Parsed
     };
   }
 
-  // 7. General Player / Embed URL (BunnyCDN mediadelivery.net, Cloudflare Stream, Custom Player)
-  let generalSrc = trimmed;
-  if (generalSrc.includes('mediadelivery.net')) {
-    generalSrc = generalSrc.replace('/play/', '/embed/').replace('video.mediadelivery.net', 'iframe.mediadelivery.net');
+  // 7. Bunny Stream / mediadelivery.net URL
+  if (trimmed.includes('mediadelivery.net') || trimmed.includes('bunnycdn.com')) {
+    let bunnySrc = trimmed.replace('/play/', '/embed/').replace('video.mediadelivery.net', 'iframe.mediadelivery.net');
+    
+    // Check if it's direct mp4 or m3u8 playlist on Bunny
+    if (bunnySrc.endsWith('.mp4') || bunnySrc.endsWith('.m3u8') || bunnySrc.includes('.mp4?') || bunnySrc.includes('.m3u8?')) {
+      return {
+        type: 'video',
+        src: bunnySrc,
+        isDirectVideo: true,
+        isYouTube: false,
+        isGoogleDrive: false,
+        isDropbox: false,
+        isVimeo: false,
+        thumbnailUrl: parseImageUrl(bunnySrc)
+      };
+    }
+
+    // Embed player URL
+    const params = new URLSearchParams();
+    if (autoplay) params.set('autoplay', 'true');
+    params.set('preload', 'true');
+    params.set('responsive', 'true');
+    const paramStr = params.toString();
+    const finalEmbed = bunnySrc + (bunnySrc.includes('?') ? '&' : '?') + paramStr;
+
+    // Extract Bunny videoId and libraryId for thumbnail if available
+    let thumb = parseImageUrl(trimmed);
+    const bunnyMatch = trimmed.match(/(?:embed|play)\/([a-zA-Z0-9_-]+)\/([a-zA-Z0-9_-]+)/);
+    if (bunnyMatch && bunnyMatch[1] && bunnyMatch[2]) {
+      thumb = `https://vz-${bunnyMatch[1]}.b-cdn.net/${bunnyMatch[2]}/thumbnail.jpg`;
+    }
+
+    return {
+      type: 'embed',
+      src: finalEmbed,
+      isDirectVideo: false,
+      isYouTube: false,
+      isGoogleDrive: false,
+      isDropbox: false,
+      isVimeo: false,
+      thumbnailUrl: thumb
+    };
   }
+
+  // 8. General Player / Embed URL (Cloudflare Stream, Custom Player)
+  let generalSrc = trimmed;
   if (autoplay) {
     if (!generalSrc.includes('autoplay=')) {
       generalSrc += (generalSrc.includes('?') ? '&' : '?') + 'autoplay=1';

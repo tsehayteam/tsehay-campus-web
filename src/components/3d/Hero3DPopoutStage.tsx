@@ -26,7 +26,7 @@ export default function Hero3DPopoutStage({
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
-  const [studentCount, setStudentCount] = useState(530);
+  const [studentCount, setStudentCount] = useState(1250);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeVideoUrl, setActiveVideoUrl] = useState<string>(videoSrc || DEFAULT_LANDING_VIDEO);
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
@@ -269,20 +269,35 @@ export default function Hero3DPopoutStage({
     window.addEventListener('scroll', onUserGesture, { once: true, passive: true });
     window.addEventListener('keydown', onUserGesture, { once: true, passive: true });
 
-    // 🎧 Viewport IntersectionObserver to trigger Audio Ducking
+    // 🎧 Viewport IntersectionObserver to trigger Audio Ducking & Scroll-based Video Control
     let observer: IntersectionObserver | null = null;
     if (stageRef.current && typeof window !== 'undefined' && 'IntersectionObserver' in window) {
       observer = new IntersectionObserver(
         (entries) => {
           const entry = entries[0];
-          const inView = entry.isIntersecting && entry.intersectionRatio > 0.25;
+          const inView = entry.isIntersecting && entry.intersectionRatio > 0.2;
           window.dispatchEvent(
             new CustomEvent('tsehay-hero-video-inview', {
               detail: { inView, hasSound: inView && !isMuted }
             })
           );
+
+          // Scroll-based auto control: pause when scrolled out, resume when scrolled in
+          if (!inView) {
+            if (videoRef.current && !videoRef.current.paused) {
+              videoRef.current.pause();
+            } else if (iframeRef.current?.contentWindow) {
+              iframeRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'pauseVideo', args: '' }), '*');
+            }
+          } else {
+            if (videoRef.current && videoRef.current.paused) {
+              videoRef.current.play().catch(() => {});
+            } else if (iframeRef.current?.contentWindow) {
+              iframeRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'playVideo', args: '' }), '*');
+            }
+          }
         },
-        { threshold: [0, 0.25, 0.5, 0.75, 1.0] }
+        { threshold: [0, 0.2, 0.5, 0.8] }
       );
       observer.observe(stageRef.current);
     }
@@ -324,7 +339,7 @@ export default function Hero3DPopoutStage({
     }
   };
 
-  // Subtle Audio (Mute / Unmute) Toggle Handler
+  // Subtle Audio (Mute / Unmute) Toggle Handler with Universal Ducking
   const toggleMute = (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     if (isMuted) {
@@ -337,6 +352,7 @@ export default function Hero3DPopoutStage({
       setIsMuted(false);
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('duck-ambient-audio'));
+        window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: true } }));
       }
     } else {
       if (parsedVideo.isYouTube && iframeRef.current?.contentWindow) {
@@ -347,6 +363,7 @@ export default function Hero3DPopoutStage({
       setIsMuted(true);
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('restore-ambient-audio'));
+        window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: false } }));
       }
     }
   };
@@ -356,13 +373,14 @@ export default function Hero3DPopoutStage({
     setIsModalOpen(true);
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('duck-ambient-audio'));
+      window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: true } }));
     }
   };
 
-  // Live student counter pulse
+  // Live student counter pulse (1250+)
   useEffect(() => {
     const interval = setInterval(() => {
-      setStudentCount(prev => (prev >= 560 ? 530 : prev + 1));
+      setStudentCount(prev => (prev >= 1280 ? 1250 : prev + 1));
     }, 5000);
     return () => clearInterval(interval);
   }, []);

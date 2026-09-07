@@ -85,41 +85,35 @@ export default function TsehayAudio() {
     const ctx = new AudioContextClass();
     audioCtxRef.current = ctx;
 
-    // 1. Master Output Gain
+    // 1. Master Output Gain with Sub-Bass Hum Filter (85Hz HighPass)
     const masterGain = ctx.createGain();
     masterGain.gain.setValueAtTime(0.0001, ctx.currentTime);
-    masterGain.connect(ctx.destination);
+
+    const highPassFilter = ctx.createBiquadFilter();
+    highPassFilter.type = 'highpass';
+    highPassFilter.frequency.setValueAtTime(85, ctx.currentTime); // Strips sub-audible electrical hum/buzz
+
+    masterGain.connect(highPassFilter);
+    highPassFilter.connect(ctx.destination);
     masterGainRef.current = masterGain;
 
-    // 2. Continuous 432Hz Solar Ambient Drone
+    // 2. Pure Solar Ambient Tone (Clean Pentatonic Overture, No Low Drone Hum)
     const droneGain = ctx.createGain();
-    droneGain.gain.setValueAtTime(0.35, ctx.currentTime);
+    droneGain.gain.setValueAtTime(0.18, ctx.currentTime);
     droneGain.connect(masterGain);
     droneGainRef.current = droneGain;
 
-    // Ambient Filter
+    // Gentle Ambient Filter
     const droneFilter = ctx.createBiquadFilter();
     droneFilter.type = 'lowpass';
-    droneFilter.frequency.setValueAtTime(360, ctx.currentTime);
-    droneFilter.Q.setValueAtTime(3.0, ctx.currentTime);
+    droneFilter.frequency.setValueAtTime(420, ctx.currentTime);
+    droneFilter.Q.setValueAtTime(1.5, ctx.currentTime);
     droneFilter.connect(droneGain);
 
-    // LFO for breathing drone filter
-    const lfo = ctx.createOscillator();
-    lfo.type = 'sine';
-    lfo.frequency.setValueAtTime(0.065, ctx.currentTime);
-    const lfoGain = ctx.createGain();
-    lfoGain.gain.setValueAtTime(120, ctx.currentTime);
-    lfo.connect(lfoGain);
-    lfoGain.connect(droneFilter.frequency);
-    lfo.start();
-
-    // 432Hz Harmonic Base Stack
+    // Warm, Pure Sine Harmonics (Clean 216Hz & 432Hz only - No 54Hz/108Hz buzzing)
     const harmonics = [
-      { freq: 54.0, type: 'sine' as OscillatorType, gain: 0.32 },
-      { freq: 108.0, type: 'triangle' as OscillatorType, gain: 0.22 },
-      { freq: 216.0, type: 'sine' as OscillatorType, gain: 0.16 },
-      { freq: 432.0, type: 'sine' as OscillatorType, gain: 0.10 },
+      { freq: 216.0, type: 'sine' as OscillatorType, gain: 0.08 },
+      { freq: 432.0, type: 'sine' as OscillatorType, gain: 0.05 },
     ];
 
     harmonics.forEach(({ freq, type, gain: vol }) => {
@@ -186,14 +180,15 @@ export default function TsehayAudio() {
     const whiteNoise = ctx.createBufferSource();
     whiteNoise.buffer = buffer;
 
+    // Gentle bandpass filter for organic rustle, eliminating harsh hiss
     const filter = ctx.createBiquadFilter();
     filter.type = 'bandpass';
-    filter.frequency.setValueAtTime(isAccent ? 5200 : 4400, time);
-    filter.Q.setValueAtTime(3.5, time);
+    filter.frequency.setValueAtTime(isAccent ? 3200 : 2800, time);
+    filter.Q.setValueAtTime(2.0, time);
 
     const gain = ctx.createGain();
-    gain.gain.setValueAtTime(isAccent ? 0.08 : 0.04, time);
-    gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.045);
+    gain.gain.setValueAtTime(isAccent ? 0.02 : 0.012, time);
+    gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.035);
 
     whiteNoise.connect(filter);
     filter.connect(gain);
@@ -366,16 +361,23 @@ export default function TsehayAudio() {
     };
   }, [initAudioEngine]);
 
-  // Listen for Hero Video Viewport status to Duck Audio
+  // Universal Audio Ducking Listener (Hero Video, Course Player, Modal Video)
   useEffect(() => {
     const handleVideoInView = (e: Event) => {
       const inView = (e as CustomEvent)?.detail?.inView ?? false;
       setIsDucked(inView);
     };
 
+    const handleUniversalDuck = (e: Event) => {
+      const duck = (e as CustomEvent)?.detail?.duck ?? true;
+      setIsDucked(duck);
+    };
+
     window.addEventListener('tsehay-hero-video-inview', handleVideoInView);
+    window.addEventListener('tsehay-audio-duck', handleUniversalDuck);
     return () => {
       window.removeEventListener('tsehay-hero-video-inview', handleVideoInView);
+      window.removeEventListener('tsehay-audio-duck', handleUniversalDuck);
     };
   }, []);
 

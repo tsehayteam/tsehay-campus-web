@@ -311,3 +311,195 @@ export async function sendTicketEmail(ticket: EventTicket): Promise<{ success: b
   console.error('[Ticket Email Service] ❌ All sender attempts exhausted for ticket email:', lastError);
   return { success: false, error: lastError || 'Email delivery failed across all sender profiles' };
 }
+
+/**
+ * 📅 Automated Event Reminder Dispatcher
+ * Sends multi-stage reminders (3 days before & 1 day before) with scannable QR pass included
+ */
+export async function sendEventReminderEmail(
+  ticket: EventTicket,
+  stage: '3days' | '1day'
+): Promise<{ success: boolean; error?: string }> {
+  if (!ticket || !ticket.attendeeEmail) {
+    return { success: false, error: 'Recipient email is missing' };
+  }
+
+  const normalizedEmail = ticket.attendeeEmail.trim().toLowerCase();
+  const ticketId = ticket.ticketId || `TC-EVT-${Date.now().toString(36).toUpperCase()}`;
+  const dedupeKey = `reminder_${stage}_${normalizedEmail}_${ticketId}`;
+
+  if (isRecentlyDispatched(dedupeKey)) {
+    console.log(`[Ticket Email Service] 🛡️ Duplicate reminder dispatch prevented for ${dedupeKey}`);
+    return { success: true };
+  }
+
+  const resendApiKey = (process.env.RESEND_API_KEY || process.env.RESEND_KEY || '').trim();
+  const attendeeName = ticket.attendeeName || 'የተከበሩ ተማሪ';
+  const eventTitle = ticket.eventTitle || 'Tsehay Campus Live Event';
+  const eventDate = ticket.eventDate || 'Upcoming';
+  const eventTime = ticket.eventTime || '02:00 PM';
+  const eventLocation = ticket.eventLocation || (ticket.isOnline ? 'Online Google Meet' : 'Bole, Addis Ababa, Ethiopia');
+  const isOnline = !!ticket.isOnline || eventLocation.toLowerCase().includes('online') || eventLocation.toLowerCase().includes('meet');
+  const meetingLink = ticket.meetingLink || 'https://meet.google.com/tsehay-live';
+  const mapsUrl = ticket.mapsUrl || 'https://maps.google.com/?q=Bole+Addis+Ababa';
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&format=png&data=${encodeURIComponent(ticket.qrCodeData || ticketId)}&color=0c1017&bgcolor=ffffff&qzone=2`;
+
+  const isThreeDays = stage === '3days';
+  const subject = isThreeDays
+    ? `⏳ ማሳሰቢያ፦ የ"${eventTitle}" ስልጠና 3 ቀናት ቀርተውታል! (Tsehay Campus)`
+    : `🚨 አስቸኳይ ማሳሰቢያ፦ የ"${eventTitle}" ስልጠና ነገ ይካሄዳል! (Tsehay Campus)`;
+
+  const badgeText = isThreeDays ? '📅 3 ቀናት ቀርተዋል • REMINDER (3 DAYS TO GO)' : '⚡ ነገ ይገናኛሉ • TOMORROW (1 DAY LEFT)';
+  const badgeColor = isThreeDays ? '#f9b03c' : '#ef4444';
+  const badgeBg = isThreeDays ? 'rgba(249, 176, 60, 0.15)' : 'rgba(239, 68, 68, 0.15)';
+  const headline = isThreeDays 
+    ? 'ዝግጅትዎ እንዴት ነው? ስልጠናው ሊጀመር 3 ቀናት ብቻ ቀርተዋል!'
+    : 'ነገ የምንገናኝበት ቀን ደርሷል! ለመግቢያ ዝግጁ ኖት?';
+
+  const htmlEmail = `
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${subject}</title>
+  </head>
+  <body style="margin: 0; padding: 0; background-color: #050811; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #f8fafc;">
+    <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; margin: 30px auto; background-color: #0c121e; border-radius: 24px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);">
+      
+      <!-- Header Banner -->
+      <tr>
+        <td style="padding: 36px 28px 24px; text-align: center; background: radial-gradient(circle at top, rgba(249, 176, 60, 0.15) 0%, transparent 70%);">
+          <div style="display: inline-block; background: ${badgeBg}; border: 1px solid ${badgeColor}; color: ${badgeColor}; font-size: 11px; font-weight: 900; padding: 6px 16px; border-radius: 100px; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 14px;">
+            ${badgeText}
+          </div>
+          <h1 style="color: #ffffff; font-size: 24px; font-weight: 900; margin: 0 0 10px 0; line-height: 1.3;">${headline}</h1>
+          <p style="color: #94a3b8; font-size: 14px; margin: 0; line-height: 1.6;">ሰላም <strong>${attendeeName}</strong>፣ ለተመዘገቡበት <strong>${eventTitle}</strong> ልዩ የቀጥታ ስልጠና የቀረውን ጊዜ ለማስታወስ የተዘጋጀ መልዕክት ነው።</p>
+        </td>
+      </tr>
+
+      <!-- Event Details Card -->
+      <tr>
+        <td style="padding: 0 28px 20px;">
+          <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 20px; padding: 22px;">
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td style="padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.06);">
+                  <span style="font-size: 11px; text-transform: uppercase; color: #94a3b8; font-weight: 700;">ዝግጅት (Event)</span>
+                  <div style="font-size: 16px; font-weight: 900; color: #f9b03c; margin-top: 2px;">${eventTitle}</div>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.06);">
+                  <span style="font-size: 11px; text-transform: uppercase; color: #94a3b8; font-weight: 700;">ቀን እና ሰዓት (Date & Time)</span>
+                  <div style="font-size: 14px; font-weight: 800; color: #ffffff; margin-top: 2px;">📅 ${eventDate} • ⏰ ${eventTime}</div>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding-top: 12px;">
+                  <span style="font-size: 11px; text-transform: uppercase; color: #94a3b8; font-weight: 700;">ቦታ / አድራሻ (Venue)</span>
+                  <div style="font-size: 14px; font-weight: 800; color: #ffffff; margin-top: 2px;">📍 ${eventLocation}</div>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </td>
+      </tr>
+
+      <!-- ONLINE OR IN-PERSON ACTION -->
+      ${isOnline ? `
+      <tr>
+        <td style="padding: 0 28px 24px;">
+          <div style="background: rgba(16, 185, 129, 0.1); border: 1.5px solid #10b981; border-radius: 18px; padding: 20px; text-align: center;">
+            <div style="font-size: 12px; font-weight: 800; color: #10b981; text-transform: uppercase; margin-bottom: 6px;">🎥 ቀጥታ የኦንላይን መግቢያ ሊንክ</div>
+            <a href="${meetingLink}" target="_blank" style="display: block; background: #10b981; color: #022c22; font-weight: 900; font-size: 14px; padding: 12px 24px; border-radius: 12px; text-decoration: none; margin-top: 8px;">
+              የቀጥታ ስብሰባውን ይቀላቀሉ (Open Google Meet)
+            </a>
+          </div>
+        </td>
+      </tr>
+      ` : `
+      <tr>
+        <td style="padding: 0 28px 20px;">
+          <a href="${mapsUrl}" target="_blank" style="display: block; background: rgba(56, 189, 248, 0.1); border: 1px solid #38bdf8; border-radius: 14px; padding: 12px; text-align: center; color: #38bdf8; font-weight: 800; font-size: 13px; text-decoration: none;">
+            🗺️ በአድራሻው በቀላሉ ለመድረስ Google Maps ይክፈቱ
+          </a>
+        </td>
+      </tr>
+      `}
+
+      <!-- SCANNABLE QR PASS SECTION (MANDATORY REQUIREMENT) -->
+      <tr>
+        <td style="padding: 0 28px 30px; text-align: center;">
+          <div style="background: linear-gradient(135deg, rgba(249, 176, 60, 0.08) 0%, rgba(255,255,255,0.02) 100%); border: 2px dashed rgba(249, 176, 60, 0.4); border-radius: 20px; padding: 24px;">
+            <span style="font-size: 11px; font-weight: 900; color: #f9b03c; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 8px;">
+              🎟️ የእርስዎ መግቢያ ዲጂታል QR ኮድ (Scannable Pass)
+            </span>
+            <p style="font-size: 12px; color: #94a3b8; margin: 0 0 16px 0;">
+              ወደ ስልጠናው አዳራሽ ወይም ኦንላይን መግቢያ ላይ ይህን QR Code በስልክዎ ማሳየት አለብዎት።
+            </p>
+            <div style="display: inline-block; padding: 12px; background: #ffffff; border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,0.5);">
+              <img src="${qrCodeUrl}" alt="Event Ticket QR Pass" width="180" height="180" style="display: block; border-radius: 8px;" />
+            </div>
+            <div style="font-family: monospace; font-size: 13px; font-weight: 900; color: #ffffff; margin-top: 14px; letter-spacing: 1px;">
+              TICKET ID: <span style="color: #f9b03c;">${ticketId}</span>
+            </div>
+          </div>
+        </td>
+      </tr>
+
+      <!-- Footer -->
+      <tr>
+        <td style="padding: 20px 28px; background-color: #080b11; border-top: 1px solid rgba(255,255,255,0.06); text-align: center; font-size: 11px; color: #64748b; line-height: 1.6;">
+          <p style="margin: 0 0 6px 0; color: #94a3b8; font-weight: 700;">Tsehay Campus • ቦሌ፣ አዲስ አበባ፣ ኢትዮጵያ</p>
+          <p style="margin: 0 0 6px 0;">ጥያቄ ካለዎት በ <strong>0980209090</strong> ወይም በቴሌግራም <strong>@TsehayTeam</strong> ያግኙን።</p>
+          <p style="margin: 0; font-size: 10px; color: #475569;">© ${new Date().getFullYear()} Tsehay Campus. All rights reserved.</p>
+        </td>
+      </tr>
+
+    </table>
+  </body>
+  </html>
+  `;
+
+  if (!resendApiKey) {
+    console.warn('[Ticket Email Service] RESEND_API_KEY is not configured for reminder.');
+    return { success: false, error: 'RESEND_API_KEY is not configured' };
+  }
+
+  const sendersToTry = [
+    process.env.RESEND_FROM_EMAIL || 'Tsehay Campus <support@tsehaycampus.com>',
+    'Tsehay Campus <support@tsehaycampus.com>',
+    'Tsehay Campus <events@tsehaycampus.com>',
+    'Tsehay Campus <onboarding@resend.dev>'
+  ];
+
+  for (const fromSender of sendersToTry) {
+    try {
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${resendApiKey}`
+        },
+        body: JSON.stringify({
+          from: fromSender,
+          to: [normalizedEmail],
+          subject,
+          html: htmlEmail,
+          reply_to: 'support@tsehaycampus.com'
+        })
+      });
+
+      const responseJson = await res.json().catch(() => ({}));
+      if (res.ok && responseJson.id) {
+        markAsDispatched(dedupeKey);
+        return { success: true };
+      }
+    } catch (err: any) {
+      console.warn(`[Reminder Service] Send attempt failed with "${fromSender}":`, err.message);
+    }
+  }
+
+  return { success: false, error: 'Failed to send event reminder email' };
+}

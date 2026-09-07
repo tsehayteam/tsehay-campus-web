@@ -67,7 +67,7 @@ function StudentDashboardContent() {
   const validViews = ['classroom', 'courses', 'referrals', 'messages', 'ai', 'certificates', 'settings'];
   const initialView = (urlViewParam && validViews.includes(urlViewParam))
     ? urlViewParam
-    : (typeof window !== 'undefined' && localStorage.getItem('tsehay_dashboard_last_view')) || 'classroom';
+    : (typeof window !== 'undefined' && localStorage.getItem('tsehay_dashboard_last_view')) || 'courses';
 
   const [currentView, _setCurrentView] = useState<string>(initialView);
 
@@ -435,6 +435,49 @@ function StudentDashboardContent() {
   ]);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<any>(null);
+  const videoContainerRef = useRef<HTMLDivElement | null>(null);
+  const [isPlayerFullscreen, setIsPlayerFullscreen] = useState(false);
+
+  useEffect(() => {
+    const handleFsChange = () => {
+      setIsPlayerFullscreen(Boolean(document.fullscreenElement));
+    };
+    document.addEventListener('fullscreenchange', handleFsChange);
+    document.addEventListener('webkitfullscreenchange', handleFsChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFsChange);
+      document.removeEventListener('webkitfullscreenchange', handleFsChange);
+    };
+  }, []);
+
+  const togglePlayerFullscreen = () => {
+    if (!videoContainerRef.current) return;
+    if (!document.fullscreenElement) {
+      const el = videoContainerRef.current as any;
+      if (el.requestFullscreen) {
+        el.requestFullscreen().catch(() => {});
+      } else if (el.webkitRequestFullscreen) {
+        el.webkitRequestFullscreen();
+      } else if (el.mozRequestFullScreen) {
+        el.mozRequestFullScreen();
+      } else if (el.msRequestFullscreen) {
+        el.msRequestFullscreen();
+      }
+      setIsPlayerFullscreen(true);
+    } else {
+      const doc = document as any;
+      if (doc.exitFullscreen) {
+        doc.exitFullscreen().catch(() => {});
+      } else if (doc.webkitExitFullscreen) {
+        doc.webkitExitFullscreen();
+      } else if (doc.mozCancelFullScreen) {
+        doc.mozCancelFullScreen();
+      } else if (doc.msExitFullscreen) {
+        doc.msExitFullscreen();
+      }
+      setIsPlayerFullscreen(false);
+    }
+  };
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [selectedAiCourse, setSelectedAiCourse] = useState<any>(null);
   const [dashboardAiLang, setDashboardAiLang] = useState<'am' | 'en'>('am');
@@ -500,8 +543,63 @@ function StudentDashboardContent() {
   const [isLessonAiLoading, setIsLessonAiLoading] = useState(false);
   const [lessonAiAttachedImage, setLessonAiAttachedImage] = useState<string | null>(null);
   const [isLessonVoiceRecording, setIsLessonVoiceRecording] = useState(false);
+  const [isAiPillMinimized, setIsAiPillMinimized] = useState(false);
+  const [playingLessonAiAudioIdx, setPlayingLessonAiAudioIdx] = useState<number | null>(null);
+  const [copiedLessonAiIdx, setCopiedLessonAiIdx] = useState<number | null>(null);
   const lessonFileInputRef = useRef<HTMLInputElement>(null);
   const lessonVoiceRecRef = useRef<any>(null);
+
+  const playLessonAiVoice = (text: string, idx: number) => {
+    if (typeof window === 'undefined') return;
+    if (playingLessonAiAudioIdx === idx) {
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      if (currentAiAudioRef.current) {
+        currentAiAudioRef.current.pause();
+        currentAiAudioRef.current = null;
+      }
+      setPlayingLessonAiAudioIdx(null);
+      return;
+    }
+
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    if (currentAiAudioRef.current) {
+      currentAiAudioRef.current.pause();
+      currentAiAudioRef.current = null;
+    }
+
+    const cleanText = text
+      .replace(/```[\s\S]*?```/g, ' ')
+      .replace(/`([^`]+)`/g, '$1')
+      .replace(/[*_~#>\[\]()]/g, ' ')
+      .replace(/https?:\/\/\S+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (!cleanText) return;
+
+    setPlayingLessonAiAudioIdx(idx);
+
+    try {
+      const encodedText = encodeURIComponent(cleanText.slice(0, 300));
+      const audioUrl = `/api/ai/tts?text=${encodedText}&lang=${dashboardAiLang === 'en' ? 'en' : 'am'}`;
+      const audio = new Audio(audioUrl);
+      currentAiAudioRef.current = audio;
+      audio.onended = () => {
+        setPlayingLessonAiAudioIdx(null);
+        currentAiAudioRef.current = null;
+      };
+      audio.onerror = () => {
+        setPlayingLessonAiAudioIdx(null);
+        currentAiAudioRef.current = null;
+      };
+      audio.play().catch(() => {
+        setPlayingLessonAiAudioIdx(null);
+        currentAiAudioRef.current = null;
+      });
+    } catch(e) {
+      setPlayingLessonAiAudioIdx(null);
+    }
+  };
 
   // Auto-Resume Timestamp Tracker
   useEffect(() => {
@@ -2495,91 +2593,6 @@ function StudentDashboardContent() {
                       })()} Pts
                     </span>
                 </div>
-
-                {/* Notifications Bell Icon Next to Points */}
-                <div className="relative">
-                  <button 
-                    onClick={() => setShowNotifications(!showNotifications)} 
-                    className="relative text-gray-300 hover:text-[#f9b03c] transition shrink-0 p-2 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 shadow-sm cursor-pointer active:scale-95"
-                    title="ማሳወቂያዎች (Notifications)"
-                  >
-                      <svg className="w-4 h-4 text-current" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
-                      </svg>
-                      <span className="absolute -top-1 -right-1 bg-gradient-to-r from-red-600 to-rose-500 text-white font-black text-[9px] px-1.5 py-0.2 rounded-full ring-2 ring-[#050811] shadow-md animate-pulse">
-                        10+
-                      </span>
-                  </button>
-
-                  {showNotifications && (
-                    <>
-                      {/* Backdrop for outside click */}
-                      <div 
-                        onClick={() => setShowNotifications(false)} 
-                        className="fixed inset-0 z-40 bg-transparent" 
-                      />
-
-                      {/* Clean Modern Notification Card */}
-                      <div className="absolute top-12 right-0 w-80 sm:w-88 bg-[#0c121e] border border-slate-800 shadow-2xl rounded-2xl p-4 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-                         {/* Header */}
-                         <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-3">
-                           <div className="flex items-center gap-2">
-                             <div className="w-7 h-7 rounded-lg bg-[#f9b03c]/15 text-[#f9b03c] flex items-center justify-center text-xs">
-                               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                 <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
-                               </svg>
-                             </div>
-                             <h4 className="text-sm font-black text-white font-heading">ማሳወቂያዎች</h4>
-                             {notificationsList.filter(n => !n.read).length > 0 && (
-                               <span className="text-[10px] font-bold bg-[#f9b03c]/20 text-[#f9b03c] px-2 py-0.5 rounded-full">
-                                 {notificationsList.filter(n => !n.read).length} አዲስ
-                               </span>
-                             )}
-                           </div>
-                           <button 
-                             onClick={handleMarkAllNotificationsRead} 
-                             className="text-xs font-bold text-gray-400 hover:text-[#f9b03c] transition cursor-pointer"
-                           >
-                             ሁሉንም አንብብ
-                           </button>
-                         </div>
-
-                         {/* Notifications List */}
-                         <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
-                            {notificationsList.length === 0 ? (
-                              <div className="text-center py-6 text-gray-400 text-xs">
-                                ምንም ማሳወቂያ የለም
-                              </div>
-                            ) : (
-                              notificationsList.map(n => (
-                                <div 
-                                  key={n.id} 
-                                  className={`flex items-start gap-3 p-3 rounded-xl transition-all ${
-                                    n.read 
-                                      ? 'bg-transparent hover:bg-slate-800/50 opacity-70' 
-                                      : 'bg-amber-500/10 border border-amber-500/20'
-                                  }`}
-                                >
-                                    <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#f9b03c] to-amber-400 text-slate-950 flex items-center justify-center shrink-0 mt-0.5 shadow-sm text-xs">
-                                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M10.34 15.84c-.688-.06-1.386-.09-2.09-.09H7.5a4.5 4.5 0 1 1 0-9h.75c.704 0 1.402-.03 2.09-.09m0 9.18c.253.962.584 1.892.985 2.783.247.55.06 1.21-.463 1.511l-.657.38c-.551.318-1.26.117-1.527-.455a28.047 28.047 0 0 1-1.38-3.419m3.042-.799c.306-.03.612-.063.918-.1M10.34 6.66c.253-.962.584-1.892.985-2.783.247-.55.06-1.21-.463-1.511l-.657-.38c-.551-.318-1.26-.117-1.527.455a28.047 28.047 0 0 0-1.38 3.419m3.042.799c.306.03.612.063.918.1m0 0a25.55 25.55 0 0 1 5.316.634 3.75 3.75 0 0 1 2.934 3.666v1.44a3.75 3.75 0 0 1-2.934 3.666 25.545 25.545 0 0 1-5.316.634" />
-                                      </svg>
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center justify-between gap-1">
-                                          <p className="text-xs font-bold text-white truncate">{n.title}</p>
-                                          <span className="text-[10px] text-gray-400 whitespace-nowrap">{n.createdAt}</span>
-                                        </div>
-                                        <p className="text-xs text-gray-300 font-body leading-relaxed mt-0.5">{n.message}</p>
-                                    </div>
-                                </div>
-                              ))
-                            )}
-                         </div>
-                      </div>
-                    </>
-                  )}
-                </div>
             </div>
         </header>
 
@@ -2638,8 +2651,8 @@ function StudentDashboardContent() {
                     : 'lg:col-span-2 xl:col-span-3'
                 }`}>
                     
-                    {/* Cinematic Video Player */}
-                    <div className="bg-dark rounded-2xl overflow-hidden shadow-2xl relative border border-gray-800 aspect-video flex items-center justify-center group/player">
+                    {/* Cinematic Video Player with One-Click Fullscreen */}
+                    <div ref={videoContainerRef} className="bg-dark rounded-2xl overflow-hidden shadow-2xl relative border border-gray-800 aspect-video flex items-center justify-center group/player">
                         
                         {/* Auto-Resume Floating Toast */}
                         {resumeToast && (
@@ -2750,8 +2763,20 @@ function StudentDashboardContent() {
                                     width="100%"
                                     height="100%"
                                     controls={true}
-                                        playing={true}
-                                        playbackRate={playbackSpeed}
+                                    playing={true}
+                                    playbackRate={playbackSpeed}
+                                    onPlay={() => {
+                                        setShowLessonAiModal(false);
+                                        setIsAiPillMinimized(true);
+                                        if (typeof window !== 'undefined') {
+                                            window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: true } }));
+                                        }
+                                    }}
+                                    onPause={() => {
+                                        if (typeof window !== 'undefined') {
+                                            window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: false } }));
+                                        }
+                                    }}
                                         onProgress={({ played, playedSeconds }: { played: number; playedSeconds: number }) => {
                                             setCurrentVideoPlayedFraction(played);
                                             if (activeCourse?.id && activeLesson?.title && playedSeconds > 5) {
@@ -2787,6 +2812,25 @@ function StudentDashboardContent() {
                                 </div>
                             </>
                         )}
+
+                        {/* 🌟 One-Click Prominent Fullscreen Button */}
+                        <button
+                          type="button"
+                          onClick={togglePlayerFullscreen}
+                          className="absolute bottom-3 right-3 z-30 px-3 py-1.5 rounded-xl bg-slate-950/85 hover:bg-slate-900 backdrop-blur-md border border-white/20 hover:border-[#f9b03c] text-white hover:text-[#f9b03c] transition-all flex items-center gap-1.5 text-xs font-bold shadow-2xl cursor-pointer active:scale-95 group/fs opacity-85 hover:opacity-100"
+                          title={isPlayerFullscreen ? "ሙሉ ስክሪን ዝጋ (Exit Fullscreen)" : "በሙሉ ስክሪን ተመልከት (Full Screen)"}
+                        >
+                          <svg className="w-4 h-4 text-current transition-transform group-hover/fs:scale-110" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2">
+                            {isPlayerFullscreen ? (
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M9 9V4.5M9 9H4.5M9 9 3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5 5.25 5.25" />
+                            ) : (
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
+                            )}
+                          </svg>
+                          <span className="text-[11px] font-mono tracking-tight font-bold">
+                            {isPlayerFullscreen ? 'ውጣ (Exit)' : 'ሙሉ ስክሪን'}
+                          </span>
+                        </button>
                     </div>
 
                     {/* Lesson Action & Navigation Bar */}
@@ -3860,30 +3904,123 @@ function StudentDashboardContent() {
               </button>
             </div>
 
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-dark dark:text-white font-heading">የእኔ ኮርሶች (My Courses)</h2>
+            {/* Hub Header & Status */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+              <div>
+                <span className="text-[11px] font-black uppercase tracking-wider text-[#f9b03c] px-3 py-1 rounded-full bg-[#f9b03c]/15 border border-[#f9b03c]/30 inline-block mb-2">
+                  ✦ የተማሪው መሸጋገሪያ • Student Dashboard Hub
+                </span>
+                <h2 className="text-2xl sm:text-3xl font-black text-white font-heading">የእኔ ኮርሶች (My Enrolled Courses)</h2>
+                <p className="text-xs sm:text-sm text-slate-400 mt-1">የተመዘገቡባቸውን ኮርሶች ይምረጡና በቀጥታ ወደ መማሪያ ክፍሉ ይግቡ።</p>
+              </div>
+              <button
+                onClick={() => router.push('/courses')}
+                className="px-4 py-2.5 rounded-2xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 hover:border-[#f9b03c]/40 text-white hover:text-[#f9b03c] transition-all font-bold text-xs flex items-center gap-2 cursor-pointer shrink-0"
+              >
+                <span>ሁሉንም ኮርሶች እይ</span>
+                <i className="fa-solid fa-arrow-up-right-from-square text-xs"></i>
+              </button>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
               {courses.length === 0 ? (
-                <div className="col-span-full text-center py-20">
-                  <h2 className="text-xl font-bold text-slate-500">ምንም የተገዛ ኮርስ የለም</h2>
+                <div className="col-span-full text-center py-20 px-6 rounded-3xl bg-slate-900/60 backdrop-blur-2xl border border-white/10 shadow-2xl">
+                  <div className="w-20 h-20 rounded-3xl bg-amber-500/10 border border-[#f9b03c]/30 text-[#f9b03c] flex items-center justify-center text-3xl mx-auto mb-4 shadow-lg shadow-[#f9b03c]/10">
+                    <i className="fa-solid fa-graduation-cap"></i>
+                  </div>
+                  <h3 className="text-xl font-black text-white font-heading mb-2">እስካሁን የተመዘገቡበት ኮርስ የለም</h3>
+                  <p className="text-xs sm:text-sm text-slate-400 max-w-md mx-auto mb-6">
+                    የፀሐይ ካምፓስ የቴክኖሎጂ፣ ዲጂታል ክህሎት እና የፈጠራ ስራ ኮርሶችን በመመዝገብ የወደፊት የሙያ ጉዞዎን ዛሬ ይጀምሩ!
+                  </p>
+                  <button
+                    onClick={() => router.push('/courses')}
+                    className="px-6 py-3 rounded-2xl bg-gradient-to-r from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 font-black text-xs sm:text-sm shadow-xl hover:brightness-110 transition cursor-pointer"
+                  >
+                    ኮርሶችን ያስሱ (Browse Courses)
+                  </button>
                 </div>
               ) : (
-                courses.map(course => (
-                  <div key={course.id} className="bg-white dark:bg-slate-800 rounded-3xl p-4 shadow-sm border border-slate-100 dark:border-slate-700">
-                    <img src={getCleanCourseImage(course) || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1200'} className="w-full h-48 object-cover rounded-2xl mb-4" />
-                    <h3 className="font-bold text-lg mb-3 line-clamp-2 text-dark dark:text-white font-heading">{course.title}</h3>
-                    <button onClick={() => { 
-                      setActiveCourse(course); 
-                      try { localStorage.setItem('tsehay_user_active_course', JSON.stringify(course)); } catch(e) {}
-                      setCurrentView('classroom'); 
-                      updateUrlState({ view: 'classroom', courseId: course.id, lesson: 0 });
-                    }} className="w-full py-2.5 bg-primary text-dark font-black rounded-xl hover:bg-yellow-400 transition shadow-sm cursor-pointer active:scale-95 flex items-center justify-center gap-2">
-                      <i className="fa-solid fa-play"></i>
-                      <span>ወደ ትምህርቱ</span>
-                    </button>
-                  </div>
-                ))
+                courses.map(course => {
+                  const courseProgressVal = course.isCompleted ? 100 : (Number(course.progress) || 0);
+                  return (
+                    <div 
+                      key={course.id} 
+                      className="bg-slate-900/75 backdrop-blur-2xl rounded-3xl p-5 border border-white/10 hover:border-[#f9b03c]/60 shadow-xl hover:shadow-[0_12px_40px_rgba(249,176,60,0.18)] transition-all duration-300 flex flex-col justify-between group hover:-translate-y-1"
+                    >
+                      <div>
+                        {/* Course Image Banner with Glass Badges */}
+                        <div className="relative w-full h-52 rounded-2xl overflow-hidden mb-4 shadow-md bg-slate-950">
+                          <img 
+                            src={getCleanCourseImage(course) || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1200'} 
+                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
+                            alt={course.title}
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent" />
+                          
+                          {/* Badges */}
+                          <div className="absolute top-3 left-3 right-3 flex items-center justify-between pointer-events-none">
+                            <span className="text-[10px] font-black uppercase tracking-wider bg-slate-950/80 backdrop-blur-md text-[#f9b03c] border border-[#f9b03c]/40 px-2.5 py-1 rounded-full shadow-sm">
+                              {course.category || 'ኮርስ'}
+                            </span>
+                            <span className="text-[10px] font-bold bg-slate-950/80 backdrop-blur-md text-white border border-white/20 px-2.5 py-1 rounded-full shadow-sm">
+                              {course.level || 'ሁሉም ደረጃ'}
+                            </span>
+                          </div>
+
+                          {/* Completed status tag */}
+                          {course.isCompleted && (
+                            <div className="absolute bottom-3 left-3 bg-emerald-500/90 text-slate-950 text-[10px] font-black px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-md">
+                              <i className="fa-solid fa-check-circle"></i>
+                              <span>ተጠናቋል</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Title & Metadata */}
+                        <h3 className="font-heading font-black text-lg text-white mb-2 line-clamp-2 group-hover:text-[#f9b03c] transition-colors">
+                          {course.title}
+                        </h3>
+
+                        {/* Progress Bar Container */}
+                        <div className="my-3 p-3 rounded-2xl bg-white/[0.03] border border-white/5">
+                          <div className="flex items-center justify-between text-xs font-bold mb-1.5">
+                            <span className="text-slate-400 text-[11px]">የትምህርት ሂደት</span>
+                            <span className="text-[#f9b03c] font-mono text-[11px] font-black">
+                              {courseProgressVal > 0 ? `${courseProgressVal}%` : 'አዲስ (0%)'}
+                            </span>
+                          </div>
+                          <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
+                            <div 
+                              className="h-full bg-gradient-to-r from-[#f9b03c] to-amber-300 transition-all duration-500 rounded-full"
+                              style={{ width: `${Math.max(4, Math.min(100, courseProgressVal))}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Prominent Enter Classroom CTA Button */}
+                      <div className="mt-4 pt-3 border-t border-white/10">
+                        <button 
+                          type="button"
+                          onClick={() => { 
+                            setActiveCourse(course); 
+                            try { localStorage.setItem('tsehay_user_active_course', JSON.stringify(course)); } catch(e) {}
+                            setCurrentView('classroom'); 
+                            updateUrlState({ view: 'classroom', courseId: course.id, lesson: 0 });
+                          }} 
+                          className="w-full py-3 px-4 bg-gradient-to-r from-[#f9b03c] via-amber-400 to-yellow-300 hover:from-amber-400 hover:to-yellow-200 text-slate-950 font-black rounded-2xl transition-all shadow-[0_0_20px_rgba(249,176,60,0.3)] hover:shadow-[0_0_30px_rgba(249,176,60,0.55)] cursor-pointer active:scale-95 flex items-center justify-center gap-2.5 text-sm font-heading group/btn"
+                        >
+                          <div className="w-6 h-6 rounded-lg bg-slate-950/15 flex items-center justify-center transition-transform group-hover/btn:scale-110">
+                            <svg className="w-3.5 h-3.5 fill-current text-slate-950" viewBox="0 0 24 24">
+                              <path d="M8 5v14l11-7z" />
+                            </svg>
+                          </div>
+                          <span>ወደ መማሪያ ክፍል ግባ (Enter Classroom)</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
               )}
             </div>
           </div>
@@ -5072,13 +5209,28 @@ function StudentDashboardContent() {
                               </p>
                           </div>
                       </div>
-                      <button
-                          onClick={() => setShowLessonAiModal(false)}
-                          className="w-8 h-8 rounded-xl bg-white/5 hover:bg-red-500 text-gray-400 hover:text-white flex items-center justify-center text-sm transition cursor-pointer"
-                          title="ዝጋ (Close)"
-                      >
-                          ✕
-                      </button>
+                      <div className="flex items-center gap-1.5">
+                          <button
+                              onClick={() => {
+                                  setShowLessonAiModal(false);
+                                  setIsAiPillMinimized(true);
+                              }}
+                              className="w-8 h-8 rounded-xl bg-white/5 hover:bg-[#f9b03c]/20 text-gray-400 hover:text-[#f9b03c] flex items-center justify-center text-xs transition cursor-pointer"
+                              title="ሚኒማይዝ አድርግ (Minimize)"
+                          >
+                              🗕
+                          </button>
+                          <button
+                              onClick={() => {
+                                  setShowLessonAiModal(false);
+                                  setIsAiPillMinimized(false);
+                              }}
+                              className="w-8 h-8 rounded-xl bg-white/5 hover:bg-red-500 text-gray-400 hover:text-white flex items-center justify-center text-sm transition cursor-pointer"
+                              title="ዝጋ (Close)"
+                          >
+                              ✕
+                          </button>
+                      </div>
                   </div>
 
                   {/* Chat Body */}
@@ -5135,6 +5287,58 @@ function StudentDashboardContent() {
                                             {msg.text}
                                         </div>
                                     </div>
+
+                                    {!isUser && (
+                                      <div className="flex items-center gap-2 mt-1.5 ml-8 flex-wrap">
+                                        <button
+                                          onClick={() => playLessonAiVoice(msg.text, idx)}
+                                          className={`text-[11px] font-bold px-3 py-1 rounded-xl border flex items-center gap-1.5 transition cursor-pointer active:scale-95 shadow-xs ${
+                                            playingLessonAiAudioIdx === idx
+                                              ? 'bg-amber-500/25 text-[#f9b03c] border-amber-500/50 shadow-[0_0_15px_rgba(249,176,60,0.4)]'
+                                              : 'bg-white/5 hover:bg-white/15 text-gray-300 border-white/10'
+                                          }`}
+                                          title={playingLessonAiAudioIdx === idx ? 'ድምፁን አቁም (Stop Voice)' : 'በድምፅ አዳምጥ (Listen via Voice)'}
+                                        >
+                                          {playingLessonAiAudioIdx === idx ? (
+                                            <>
+                                              <div className="flex items-center gap-0.5 h-3">
+                                                <span className="w-1 h-3 bg-[#f9b03c] rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                                                <span className="w-1 h-2 bg-[#f9b03c] rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                                                <span className="w-1 h-3.5 bg-[#f9b03c] rounded-full animate-bounce"></span>
+                                              </div>
+                                              <span>አቁም</span>
+                                            </>
+                                          ) : (
+                                            <>
+                                              <i className="fa-solid fa-volume-high text-[#f9b03c]"></i>
+                                              <span>አዳምጥ</span>
+                                            </>
+                                          )}
+                                        </button>
+
+                                        <button
+                                          onClick={() => {
+                                            navigator.clipboard.writeText(msg.text);
+                                            setCopiedLessonAiIdx(idx);
+                                            setTimeout(() => setCopiedLessonAiIdx(null), 2000);
+                                          }}
+                                          className="text-[11px] font-bold px-2.5 py-1 rounded-xl bg-white/5 hover:bg-white/15 text-gray-400 hover:text-white border border-white/10 flex items-center gap-1 transition cursor-pointer active:scale-95"
+                                          title="ኮፒ አድርግ (Copy)"
+                                        >
+                                          {copiedLessonAiIdx === idx ? (
+                                            <>
+                                              <i className="fa-solid fa-check text-emerald-400"></i>
+                                              <span className="text-emerald-400">ተቀድቷል</span>
+                                            </>
+                                          ) : (
+                                            <>
+                                              <i className="fa-regular fa-copy"></i>
+                                              <span>ቅዳ</span>
+                                            </>
+                                          )}
+                                        </button>
+                                      </div>
+                                    )}
                                 </div>
                               );
                           })
@@ -5229,6 +5433,25 @@ function StudentDashboardContent() {
                   </div>
               </div>
           </div>
+      )}
+
+      {/* 🤖 Floating Minimized Tsehay AI Pill */}
+      {isAiPillMinimized && !showLessonAiModal && (
+        <button
+          type="button"
+          onClick={() => {
+            setShowLessonAiModal(true);
+            setIsAiPillMinimized(false);
+          }}
+          className="fixed bottom-6 right-6 z-50 px-4 py-2.5 rounded-full bg-slate-900/95 hover:bg-slate-800 text-white border border-[#f9b03c]/60 shadow-[0_0_25px_rgba(249,176,60,0.35)] backdrop-blur-md flex items-center gap-2.5 cursor-pointer hover:scale-105 active:scale-95 transition-all animate-in slide-in-from-bottom-4"
+          title="Tsehay AI ን ክፈት (Open Tsehay AI)"
+        >
+          <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-[#f9b03c] to-amber-400 text-slate-950 flex items-center justify-center text-xs font-black shadow-sm">
+            <i className="fa-solid fa-robot"></i>
+          </div>
+          <span className="text-xs font-heading font-black text-[#f9b03c]">Tsehay AI</span>
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        </button>
       )}
 
       {/* 💡 Floating Glassmorphism Feedback Trigger Button (Silicon Valley Style) */}

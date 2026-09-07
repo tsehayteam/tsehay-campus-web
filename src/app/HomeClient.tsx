@@ -604,7 +604,7 @@ export default function HomeClient({
           <div className="inline-flex items-center gap-3 bg-[#3268ba]/20 border border-[#3268ba]/40 rounded-full px-6 py-2.5 shadow-lg backdrop-blur-md">
             <span className="w-2.5 h-2.5 rounded-full bg-[#f9b03c] animate-pulse shadow-[0_0_10px_#f9b03c]"></span>
             <p className="font-heading text-[#f9b03c] font-black tracking-widest text-xs sm:text-sm uppercase drop-shadow-sm">
-              ከ 500+ በላይ ተማሪዎች እና ታላላቅ ተቋማት የታመነ
+              ከ 1,000+ በላይ ተማሪዎች እና ታላላቅ ተቋማት የታመነ
             </p>
           </div>
         </div>
