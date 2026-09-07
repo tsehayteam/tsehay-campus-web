@@ -446,15 +446,17 @@ export default function Navbar() {
                 />
               </div>
 
-              {/* 3D Magnetic Hover Tilt "ይግቡ / Login" Button or User Profile with Sleek Dropdown */}
+              {/* 3D Magnetic Hover Tilt "ይግቡ / Login" Button or User Profile with Sleek Dropdown (Desktop Only in Top Bar) */}
               {!mounted || !user ? (
-                <Tilt3DLoginButton
-                  onClick={() => {
-                    openAuthModal(false);
-                    closeCurtain();
-                  }}
-                  label={lang === 'en' ? 'Login' : 'ይግቡ (Login)'}
-                />
+                <div className="hidden sm:block">
+                  <Tilt3DLoginButton
+                    onClick={() => {
+                      openAuthModal(false);
+                      closeCurtain();
+                    }}
+                    label={lang === 'en' ? 'Login' : 'ይግቡ (Login)'}
+                  />
+                </div>
               ) : (
                 <div className="relative" ref={profileDropdownRef}>
                   <button

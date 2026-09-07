@@ -652,7 +652,7 @@ export default function EventDetailClient() {
 
                   if (hasVideo && isPlayingVideo && parsedVideo && parsedVideo.src) {
                     return (
-                      <div className="relative rounded-3xl overflow-hidden border-2 border-[#f9b03c]/40 shadow-[0_20px_60px_rgba(0,0,0,0.95)] aspect-[4/3] bg-black group">
+                      <div className="relative rounded-3xl overflow-hidden border-2 border-[#f9b03c]/40 shadow-[0_20px_60px_rgba(0,0,0,0.95)] aspect-[16/9] bg-black group">
                         {parsedVideo.type === 'video' ? (
                           <video 
                             src={parsedVideo.src} 
@@ -685,7 +685,7 @@ export default function EventDetailClient() {
                   }
 
                   return (
-                    <div className="relative rounded-3xl overflow-hidden border-2 border-white/15 shadow-[0_20px_60px_rgba(0,0,0,0.9)] group aspect-[4/3] bg-slate-900">
+                    <div className="relative rounded-3xl overflow-hidden border-2 border-white/15 shadow-[0_20px_60px_rgba(0,0,0,0.9)] group aspect-[16/9] bg-slate-900">
                       <img
                         src={posterUrl}
                         alt={event.title}
@@ -703,11 +703,6 @@ export default function EventDetailClient() {
                       {/* Video Indicator / Play Trailer Button */}
                       {hasVideo && (
                         <>
-                          <div className="absolute top-4 left-4 z-10 px-3 py-1 rounded-full bg-red-600/90 text-white text-[11px] font-black flex items-center gap-1.5 shadow-lg backdrop-blur-md border border-white/20">
-                            <i className="fa-solid fa-film text-[9px]"></i>
-                            <span>የቪዲዮ ማስተዋወቂያ አለው</span>
-                          </div>
-
                           <div className="absolute inset-0 flex items-center justify-center z-10">
                             <button
                               type="button"

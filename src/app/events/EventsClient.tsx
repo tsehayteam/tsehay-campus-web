@@ -374,12 +374,6 @@ export default function EventsClient() {
 
                       {/* Badges */}
                       <div className="absolute top-3 right-3 flex items-center gap-1.5 z-20 pointer-events-none">
-                        {hasVideo && (
-                          <span className="px-2 py-0.5 rounded-full bg-red-600/90 backdrop-blur-md text-white font-bold text-[10px] shadow-sm flex items-center gap-1">
-                            <i className="fa-solid fa-film text-[8px]"></i>
-                            <span>ቪዲዮ</span>
-                          </span>
-                        )}
                         <div className="px-3 py-1 rounded-full bg-[#f9b03c] text-slate-950 font-black text-[11px] shadow-[0_0_15px_rgba(249,176,60,0.5)]">
                           {evt.isFree || evt.price === 0 ? 'ነፃ (FREE)' : `${evt.price} ETB`}
                         </div>

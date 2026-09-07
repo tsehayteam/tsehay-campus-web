@@ -587,12 +587,6 @@ export default function UpcomingEventsSection() {
                         <i className={`fa-solid ${event.isOnline ? 'fa-globe' : 'fa-location-dot'} text-[11px]`}></i>
                         <span>{event.isOnline ? 'Virtual Live Stream' : 'In-Person (አካል)'}</span>
                       </span>
-                      {hasVideo && (
-                        <span className="px-2.5 py-1 rounded-full bg-red-600/90 text-white text-[10px] font-black tracking-wider uppercase shadow-md flex items-center gap-1 backdrop-blur-md border border-white/20">
-                          <i className="fa-solid fa-film text-[8px]"></i>
-                          <span>ቪዲዮ</span>
-                        </span>
-                      )}
                       {isAlreadyRegistered ? (
                         <span className="px-2.5 py-1 rounded-full bg-emerald-600/95 text-white text-[10px] font-black tracking-wider uppercase shadow-md flex items-center gap-1">
                           <i className="fa-solid fa-circle-check text-[10px]"></i>

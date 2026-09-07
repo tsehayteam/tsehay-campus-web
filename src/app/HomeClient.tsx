@@ -524,52 +524,39 @@ export default function HomeClient({
             <span className="w-2.5 h-2.5 rounded-full bg-[#f9b03c] shadow-[0_0_12px_#f9b03c] animate-pulse"></span>
           </div>
 
-          {/* Main Cinematic Typewriter Headline with Strict Max 2-Lines Constraint */}
+          {/* Main Cinematic Typewriter Headline with Strict Max 2-Lines Constraint & Mobile Auto-Scaling (No Ellipsis) */}
           <h1 
-            className="font-heading font-black text-3xl sm:text-5xl md:text-6xl lg:text-[62px] tracking-tight leading-[1.18] sm:leading-[1.12] text-white mb-4 sm:mb-5 min-h-[76px] sm:min-h-[135px] max-w-4xl headline-glow-pulse line-clamp-2 overflow-hidden"
-            style={{
-              display: '-webkit-box',
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: 'vertical',
-              overflow: 'hidden',
-              wordWrap: 'break-word',
-              overflowWrap: 'break-word',
-            }}
+            className="font-heading font-black text-[22px] xs:text-[25px] sm:text-4xl md:text-5xl lg:text-[58px] tracking-tight leading-[1.28] sm:leading-[1.15] text-white mb-5 sm:mb-6 min-h-[62px] xs:min-h-[72px] sm:min-h-[105px] md:min-h-[135px] max-w-4xl headline-glow-pulse select-none"
           >
-            <span>{typedWhite}</span>{' '}
-            <span className="relative inline-block mt-1 sm:mt-0">
-              <span className="relative z-10 text-transparent bg-clip-text bg-gradient-to-r from-[#f9b03c] via-[#ffc66b] to-yellow-400 drop-shadow-[0_0_35px_rgba(249,176,60,0.4)]">
+            <span className="block sm:inline">{typedWhite}</span>{' '}
+            <span className="relative inline-block mt-0.5 sm:mt-0">
+              <span className="relative z-10 text-transparent bg-clip-text bg-gradient-to-r from-[#f9b03c] via-[#ffe082] to-[#f9b03c] drop-shadow-[0_0_35px_rgba(249,176,60,0.45)]">
                 {typedGold}
               </span>
-              <span className="absolute -bottom-2 left-0 w-full h-3 bg-gradient-to-r from-[#f9b03c]/30 to-transparent blur-xs -z-0"></span>
+              <span className="absolute -bottom-1 sm:-bottom-2 left-0 w-full h-2.5 sm:h-3 bg-gradient-to-r from-[#f9b03c]/30 to-transparent blur-xs -z-0"></span>
             </span>
           </h1>
 
-          {/* Well-organized, high-impact Subheadline & Value Pillars */}
-          <div className="max-w-3xl mx-auto mb-6 sm:mb-8 space-y-4">
-            <p className="text-gray-200 dark:text-slate-200 font-body text-base sm:text-lg md:text-xl font-medium leading-relaxed drop-shadow-xs">
-              ተግባር ተኮር ስልጠና ከ 24/7 የፀሐይ AI የግል ረዳት ድጋፍ ጋር — ገበያ ላይ ወዲያውኑ ገቢ የሚያስገኙ ዲጂታል እና የቢዝነስ ክህሎቶችን በተግባር ይማሩ።
-            </p>
-
-            {/* Core Value Pillars (Glass Badges) */}
-            <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 pt-1">
-              <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-amber-400/10 border border-[#f9b03c]/35 text-[#f9b03c] text-xs sm:text-[13px] font-semibold backdrop-blur-md shadow-xs hover:border-[#f9b03c] transition-colors">
+          {/* Core Value Pillars (Glass Badges) - Strictly Tsehay Brand Palette */}
+          <div className="max-w-3xl mx-auto mb-6 sm:mb-8">
+            <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
+              <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#f9b03c]/10 border border-[#f9b03c]/35 text-[#f9b03c] text-xs sm:text-[13px] font-semibold backdrop-blur-md shadow-xs hover:border-[#f9b03c] transition-colors">
                 <i className="fa-solid fa-laptop-code text-[11px]"></i>
                 <span>100% የተግባር ስልጠና</span>
               </span>
-              <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-purple-500/10 border border-purple-400/35 text-purple-300 text-xs sm:text-[13px] font-semibold backdrop-blur-md shadow-xs hover:border-purple-400 transition-colors">
+              <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#3268ba]/15 border border-[#3268ba]/40 text-blue-300 text-xs sm:text-[13px] font-semibold backdrop-blur-md shadow-xs hover:border-[#3268ba] transition-colors">
                 <i className="fa-solid fa-robot text-[11px]"></i>
                 <span>24/7 የግል AI መምህር</span>
               </span>
               <Link 
                 href="/verify-certificate" 
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-400/35 text-cyan-300 hover:text-white text-xs sm:text-[13px] font-semibold backdrop-blur-md shadow-xs hover:border-cyan-400 hover:bg-cyan-500/20 transition-all cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/5 border border-white/20 text-white hover:text-[#f9b03c] text-xs sm:text-[13px] font-semibold backdrop-blur-md shadow-xs hover:border-[#f9b03c]/50 transition-all cursor-pointer"
                 title="እውቅና ያለው ሰርተፊኬት ያረጋግጡ"
               >
-                <i className="fa-solid fa-award text-[11px] text-cyan-400"></i>
+                <i className="fa-solid fa-award text-[11px] text-[#f9b03c]"></i>
                 <span>እውቅና ያለው ሰርተፍኬት</span>
               </Link>
-              <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-400/35 text-emerald-300 text-xs sm:text-[13px] font-semibold backdrop-blur-md shadow-xs hover:border-emerald-400 transition-colors">
+              <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#f9b03c]/10 border border-[#f9b03c]/35 text-[#f9b03c] text-xs sm:text-[13px] font-semibold backdrop-blur-md shadow-xs hover:border-[#f9b03c] transition-colors">
                 <i className="fa-solid fa-briefcase text-[11px]"></i>
                 <span>ቀጥታ ገቢ ማስገኛ</span>
               </span>
