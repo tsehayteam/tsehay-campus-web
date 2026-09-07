@@ -9,7 +9,7 @@ import { DEFAULT_EVENTS, getCachedEvents, saveCachedEvents, getRemainingSeats, g
 import AdminQrScanner from '@/components/AdminQrScanner';
 import CinematicVideoModal from '@/components/CinematicVideoModal';
 
-import { parseVideoUrl, parseVideoEmbedUrl, parseImageUrl, isMediaVideo, getMediaThumbnail, extractYouTubeId } from '@/lib/videoParser';
+import { parseVideoUrl, parseVideoEmbedUrl, parseImageUrl, isMediaVideo, getMediaThumbnail, extractYouTubeId, formatCloudStorageUrl } from '@/lib/videoParser';
 import { 
   CommunityPost, 
   subscribeCommunityPosts, 
@@ -1579,6 +1579,8 @@ export default function AdminDashboard() {
 
   const formatDriveLink = (url: string) => {
     if (!url) return url;
+    const cloud = formatCloudStorageUrl(url);
+    if (cloud) return cloud;
     const match = url.match(/(?:file\/d\/|id=|thumbnail\?id=|\/d\/)([a-zA-Z0-9_-]{20,})/);
     if (match && match[1]) {
       return `https://lh3.googleusercontent.com/d/${match[1]}`;
@@ -7445,16 +7447,40 @@ export default function AdminDashboard() {
 
                 {/* Direct URL input option */}
                 <div className="space-y-1 mt-2">
-                  <label className="text-[11px] font-bold text-gray-500 dark:text-gray-400">
-                    ወይም የፎቶ ሊንክ ያስገቡ (Image URL / Google Drive Link):
-                  </label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] font-bold text-gray-500 dark:text-gray-400">
+                      ወይም የፎቶ ሊንክ ያስገቡ (Image URL / Google Drive / Dropbox Link):
+                    </label>
+                    {(() => {
+                      if (!comingSoonForm.image) return null;
+                      const val = comingSoonForm.image.toLowerCase();
+                      if (val.includes('dropbox.com') || val.includes('dropboxusercontent.com')) {
+                        return (
+                          <span className="text-[10px] font-bold text-sky-500 bg-sky-500/15 border border-sky-500/30 px-1.5 py-0.5 rounded flex items-center gap-1">
+                            <i className="fa-brands fa-dropbox"></i> Dropbox
+                          </span>
+                        );
+                      }
+                      if (val.includes('drive.google.com') || val.includes('googleusercontent.com')) {
+                        return (
+                          <span className="text-[10px] font-bold text-amber-500 bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.5 rounded flex items-center gap-1">
+                            <i className="fa-brands fa-google-drive"></i> Google Drive
+                          </span>
+                        );
+                      }
+                      return null;
+                    })()}
+                  </div>
                   <input 
                     type="text" 
                     value={comingSoonForm.image} 
                     onChange={e => setComingSoonForm({ ...comingSoonForm, image: e.target.value, banner: e.target.value })}
-                    placeholder="https://... ወይም drive.google.com/..." 
+                    placeholder="https://... ወይም drive.google.com/... ወይም dropbox.com/..." 
                     className="w-full bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-dark dark:text-white outline-none focus:border-[#f9b03c] transition" 
                   />
+                  <p className="text-[10.5px] text-gray-400">
+                    💡 የ Google Drive ወይም Dropbox ሊንክ ማስገባት ይችላሉ፤ ሲስተሙ በራሱ በቀጥታ ያሳየዋል።
+                  </p>
                 </div>
               </div>
 
@@ -7669,8 +7695,48 @@ export default function AdminDashboard() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">የአሰልጣኝ ፎቶ (Instructor Image URL)</label>
-                  <input type="text" value={formData.instructorImage} onChange={e => setFormData({...formData, instructorImage: e.target.value})} className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-dark dark:text-white outline-none focus:border-primary transition" />
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300">
+                      የአሰልጣኝ ፎቶ (Instructor Image URL)
+                    </label>
+                    {(() => {
+                      if (!formData.instructorImage) return null;
+                      const val = formData.instructorImage.toLowerCase();
+                      if (val.includes('dropbox.com') || val.includes('dropboxusercontent.com')) {
+                        return (
+                          <span className="text-[11px] font-bold text-sky-500 bg-sky-500/15 border border-sky-500/30 px-2 py-0.5 rounded flex items-center gap-1">
+                            <i className="fa-brands fa-dropbox"></i> Dropbox
+                          </span>
+                        );
+                      }
+                      if (val.includes('drive.google.com') || val.includes('googleusercontent.com')) {
+                        return (
+                          <span className="text-[11px] font-bold text-amber-500 bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded flex items-center gap-1">
+                            <i className="fa-brands fa-google-drive"></i> Google Drive
+                          </span>
+                        );
+                      }
+                      return null;
+                    })()}
+                  </div>
+                  <input 
+                    type="text" 
+                    value={formData.instructorImage} 
+                    onChange={e => setFormData({...formData, instructorImage: e.target.value})} 
+                    placeholder="e.g. Google Drive, Dropbox (dropbox.com/s/...), ወይም ምስል URL"
+                    className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-dark dark:text-white outline-none focus:border-primary transition text-sm" 
+                  />
+                  {formData.instructorImage && (
+                    <div className="mt-2 flex items-center gap-3 p-2 rounded-xl bg-slate-900/60 border border-gray-200 dark:border-slate-800">
+                      <img 
+                        src={formatDriveImageUrl(formData.instructorImage) || formData.instructorImage} 
+                        alt="Instructor Preview" 
+                        className="w-10 h-10 rounded-lg object-cover border border-primary/40"
+                        onError={(e) => { (e.target as HTMLImageElement).src = '/assets/eyob_new.png'; }}
+                      />
+                      <span className="text-xs text-gray-400">የአሰልጣኝ ፎቶ ቅድመ-እይታ (Live Preview)</span>
+                    </div>
+                  )}
                 </div>
 
                 <div>
@@ -7721,13 +7787,95 @@ export default function AdminDashboard() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">የሽፋን ፎቶ (Cover Image URL) *</label>
-                  <input required type="text" value={formData.image} onChange={e => setFormData({...formData, image: e.target.value})} className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-dark dark:text-white outline-none focus:border-primary transition" />
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300">
+                      የሽፋን ፎቶ (Cover Image URL) *
+                    </label>
+                    {(() => {
+                      if (!formData.image) return null;
+                      const val = formData.image.toLowerCase();
+                      if (val.includes('dropbox.com') || val.includes('dropboxusercontent.com')) {
+                        return (
+                          <span className="text-[11px] font-bold text-sky-500 bg-sky-500/15 border border-sky-500/30 px-2 py-0.5 rounded flex items-center gap-1">
+                            <i className="fa-brands fa-dropbox"></i> Dropbox
+                          </span>
+                        );
+                      }
+                      if (val.includes('drive.google.com') || val.includes('googleusercontent.com')) {
+                        return (
+                          <span className="text-[11px] font-bold text-amber-500 bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded flex items-center gap-1">
+                            <i className="fa-brands fa-google-drive"></i> Google Drive
+                          </span>
+                        );
+                      }
+                      return null;
+                    })()}
+                  </div>
+                  <input 
+                    required 
+                    type="text" 
+                    value={formData.image} 
+                    onChange={e => setFormData({...formData, image: e.target.value})} 
+                    placeholder="e.g. Google Drive, Dropbox (dropbox.com/s/...), ወይም ምስል URL"
+                    className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-dark dark:text-white outline-none focus:border-primary transition text-sm" 
+                  />
+                  {formData.image && (
+                    <div className="mt-2 relative aspect-video w-full max-w-[220px] rounded-xl overflow-hidden bg-black border border-gray-200 dark:border-slate-800 shadow-xs">
+                      <img 
+                        src={formatDriveImageUrl(formData.image) || formData.image} 
+                        alt="Cover Preview" 
+                        className="w-full h-full object-cover"
+                        onError={(e) => { (e.target as HTMLImageElement).src = '/assets/hero-bg-new.jpg'; }}
+                      />
+                    </div>
+                  )}
+                  <p className="text-[11px] text-gray-400 mt-1">
+                    💡 የ Google Drive ወይም Dropbox ሊንክ ሲያስገቡ ሲስተሙ በቀጥታ ወደ ሚታይ ምስል ይቀይረዋል።
+                  </p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">የጀርባ ፎቶ (Background Banner URL)</label>
-                  <input type="text" value={formData.banner || ''} onChange={e => setFormData({...formData, banner: e.target.value})} className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-dark dark:text-white outline-none focus:border-primary transition" placeholder="Optional" />
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300">
+                      የጀርባ ፎቶ (Background Banner URL)
+                    </label>
+                    {(() => {
+                      if (!formData.banner) return null;
+                      const val = formData.banner.toLowerCase();
+                      if (val.includes('dropbox.com') || val.includes('dropboxusercontent.com')) {
+                        return (
+                          <span className="text-[11px] font-bold text-sky-500 bg-sky-500/15 border border-sky-500/30 px-2 py-0.5 rounded flex items-center gap-1">
+                            <i className="fa-brands fa-dropbox"></i> Dropbox
+                          </span>
+                        );
+                      }
+                      if (val.includes('drive.google.com') || val.includes('googleusercontent.com')) {
+                        return (
+                          <span className="text-[11px] font-bold text-amber-500 bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded flex items-center gap-1">
+                            <i className="fa-brands fa-google-drive"></i> Google Drive
+                          </span>
+                        );
+                      }
+                      return null;
+                    })()}
+                  </div>
+                  <input 
+                    type="text" 
+                    value={formData.banner || ''} 
+                    onChange={e => setFormData({...formData, banner: e.target.value})} 
+                    placeholder="e.g. Google Drive, Dropbox, ወይም Image URL (Optional)"
+                    className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 text-dark dark:text-white outline-none focus:border-primary transition text-sm" 
+                  />
+                  {formData.banner && (
+                    <div className="mt-2 relative aspect-video w-full max-w-[220px] rounded-xl overflow-hidden bg-black border border-gray-200 dark:border-slate-800 shadow-xs">
+                      <img 
+                        src={formatDriveImageUrl(formData.banner) || formData.banner} 
+                        alt="Banner Preview" 
+                        className="w-full h-full object-cover"
+                        onError={(e) => { (e.target as HTMLImageElement).src = '/assets/hero-bg-new.jpg'; }}
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <div>
@@ -8947,19 +9095,40 @@ export default function AdminDashboard() {
                   />
                 </div>
                 <div className="flex-1 w-full space-y-2">
-                  <label className="block text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-300">
-                    የፕሮፋይል ፎቶ ሊንክ (Photo URL / Google Drive Link) *
-                  </label>
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-black uppercase tracking-wider text-gray-700 dark:text-gray-300">
+                      የፕሮፋይል ፎቶ ሊንክ (Photo URL / Google Drive / Dropbox Link) *
+                    </label>
+                    {(() => {
+                      if (!instructorForm.image) return null;
+                      const val = instructorForm.image.toLowerCase();
+                      if (val.includes('dropbox.com') || val.includes('dropboxusercontent.com')) {
+                        return (
+                          <span className="text-[10px] font-bold text-sky-500 bg-sky-500/15 border border-sky-500/30 px-1.5 py-0.5 rounded flex items-center gap-1">
+                            <i className="fa-brands fa-dropbox"></i> Dropbox
+                          </span>
+                        );
+                      }
+                      if (val.includes('drive.google.com') || val.includes('googleusercontent.com')) {
+                        return (
+                          <span className="text-[10px] font-bold text-amber-500 bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.5 rounded flex items-center gap-1">
+                            <i className="fa-brands fa-google-drive"></i> Google Drive
+                          </span>
+                        );
+                      }
+                      return null;
+                    })()}
+                  </div>
                   <input
                     type="text"
                     required
                     value={instructorForm.image}
                     onChange={(e) => setInstructorForm({ ...instructorForm, image: e.target.value })}
-                    placeholder="https://... ወይም /assets/eyob_white.jpg"
+                    placeholder="https://... ወይም drive.google.com/... ወይም dropbox.com/..."
                     className="w-full bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-dark dark:text-white outline-none focus:border-[#f9b03c] font-mono transition"
                   />
                   <p className="text-[11px] text-gray-400">
-                    💡 የ Google Drive ወይም ቀጥታ የምስል ሊንክ ማስገባት ይችላሉ፤ ሲስተሙ በራሱ ያስተካክለዋል።
+                    💡 የ Google Drive፣ Dropbox ወይም ቀጥታ የምስል ሊንክ ማስገባት ይችላሉ፤ ሲስተሙ በራሱ በቀጥታ ያስተካክለዋል።
                   </p>
                 </div>
               </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { parseVideoUrl, parseImageUrl } from '@/lib/videoParser';
+import { parseVideoUrl, parseImageUrl, formatCloudStorageUrl } from '@/lib/videoParser';
 
 export const COURSE_CATEGORIES = [
   'E-Commerce',
@@ -58,14 +58,20 @@ export default function AdminCourseModal({
     e.preventDefault();
     setSaving(true);
     try {
+      const rawImage = formData.thumbnailUrl || formData.image || formData.thumbnail;
+      const cleanImg = formatCloudStorageUrl(rawImage) || rawImage;
+      const cleanInstructorImg = formatCloudStorageUrl(formData.instructorImage) || formData.instructorImage;
+
       await onSave({
         ...formData,
         previewVideoUrl: formData.previewVideoUrl || formData.video || formData.videoUrl,
         videoUrl: formData.previewVideoUrl || formData.video || formData.videoUrl,
         video: formData.previewVideoUrl || formData.video || formData.videoUrl,
-        thumbnailUrl: formData.thumbnailUrl || formData.image || formData.thumbnail,
-        image: formData.thumbnailUrl || formData.image || formData.thumbnail,
-        thumbnail: formData.thumbnailUrl || formData.image || formData.thumbnail,
+        thumbnailUrl: cleanImg,
+        image: cleanImg,
+        thumbnail: cleanImg,
+        instructorImage: cleanInstructorImg,
+        instructorPhoto: cleanInstructorImg,
       });
       onClose();
     } catch (err) {
@@ -200,16 +206,53 @@ export default function AdminCourseModal({
 
           {/* Thumbnail / Image URL */}
           <div>
-            <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
-              የኮርሱ ምስል ሊንክ (Thumbnail URL)
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider">
+                የኮርሱ ምስል ሊንክ (Thumbnail URL)
+              </label>
+              {(() => {
+                const curImg = formData.image || formData.thumbnail || formData.thumbnailUrl;
+                if (!curImg) return null;
+                const lower = curImg.toLowerCase();
+                if (lower.includes('dropbox.com') || lower.includes('dropboxusercontent.com')) {
+                  return (
+                    <span className="text-[10px] bg-sky-500/20 text-sky-400 border border-sky-500/30 font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                      <i className="fa-brands fa-dropbox text-[9px]"></i>
+                      <span>Dropbox</span>
+                    </span>
+                  );
+                }
+                if (lower.includes('drive.google.com') || lower.includes('googleusercontent.com')) {
+                  return (
+                    <span className="text-[10px] bg-amber-500/20 text-[#f9b03c] border border-amber-500/30 font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                      <i className="fa-brands fa-google-drive text-[9px]"></i>
+                      <span>Google Drive</span>
+                    </span>
+                  );
+                }
+                return null;
+              })()}
+            </div>
             <input
               type="text"
               value={formData.image || formData.thumbnail || formData.thumbnailUrl}
               onChange={(e) => setFormData({ ...formData, image: e.target.value, thumbnail: e.target.value, thumbnailUrl: e.target.value })}
-              placeholder="https://..."
+              placeholder="e.g. Google Drive, Dropbox (dropbox.com/s/...), ወይም ምስል URL"
               className="w-full bg-slate-900/80 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-[#f9b03c] outline-none transition"
             />
+            {(formData.image || formData.thumbnail || formData.thumbnailUrl) && (
+              <div className="mt-2 relative aspect-video w-full max-w-[200px] rounded-xl overflow-hidden bg-black border border-white/10 shadow-md">
+                <img 
+                  src={parseImageUrl(formData.image || formData.thumbnail || formData.thumbnailUrl)} 
+                  alt="Thumbnail Preview" 
+                  className="w-full h-full object-cover"
+                  onError={(e) => { (e.target as HTMLImageElement).src = '/assets/hero-bg-new.jpg'; }}
+                />
+              </div>
+            )}
+            <p className="text-[11px] text-slate-400 mt-1">
+              💡 Google Drive ወይም Dropbox ሊንኮችን ሲስተሙ በራሱ በቀጥታ ያሳያል።
+            </p>
           </div>
 
           {/* Preview Video / Embed URL */}

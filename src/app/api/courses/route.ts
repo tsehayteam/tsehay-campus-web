@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase/client';
-import { generateCourseSlug, DEFAULT_COURSES, isValidCourse } from '@/lib/courseCache';
+import { generateCourseSlug, DEFAULT_COURSES, isValidCourse, formatDriveImageUrl, getCleanCourseImage } from '@/lib/courseCache';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -13,6 +13,23 @@ const NO_CACHE_HEADERS = {
   'Pragma': 'no-cache',
   'Expires': '0',
 };
+
+function sanitizeCourseImages(course: any) {
+  if (!course || typeof course !== 'object') return course;
+  const image = getCleanCourseImage(course) || formatDriveImageUrl(course.image) || course.image;
+  const banner = formatDriveImageUrl(course.banner) || course.banner || image;
+  const instructorImg = formatDriveImageUrl(course.instructorImage || course.instructorPhoto || course.instructor_image || course.instructor_photo) || course.instructorImage || course.instructorPhoto || course.instructor_image || course.instructor_photo;
+
+  return {
+    ...course,
+    image,
+    banner,
+    instructor_image: instructorImg,
+    instructor_photo: instructorImg,
+    instructorImage: instructorImg,
+    instructorPhoto: instructorImg
+  };
+}
 
 export async function GET(req: NextRequest) {
   try {
@@ -51,7 +68,7 @@ export async function GET(req: NextRequest) {
 
         if (sbCourse && !sbErr && isValidCourse(sbCourse) && sbCourse.status !== 'Deleted' && !sbCourse.isDeleted) {
           return NextResponse.json(
-            { success: true, course: { ...sbCourse, ...(sbCourse.raw_data || {}) } },
+            { success: true, course: sanitizeCourseImages({ ...sbCourse, ...(sbCourse.raw_data || {}) }) },
             { headers: NO_CACHE_HEADERS }
           );
         }
@@ -61,7 +78,7 @@ export async function GET(req: NextRequest) {
       const defMatch = DEFAULT_COURSES.find(c => (c.id === cleanId || c.slug === cleanLower) && !deletedCourses.includes(c.id) && !deletedCourses.includes(c.slug));
       if (defMatch) {
         return NextResponse.json(
-          { success: true, course: defMatch },
+          { success: true, course: sanitizeCourseImages(defMatch) },
           { headers: NO_CACHE_HEADERS }
         );
       }
@@ -91,7 +108,7 @@ export async function GET(req: NextRequest) {
           !deletedCourses.includes(item.id) && 
           !deletedCourses.includes(item.slug)
         )
-        .map(item => ({
+        .map(item => sanitizeCourseImages({
           ...item,
           ...(item.raw_data || {})
         }));
@@ -99,7 +116,9 @@ export async function GET(req: NextRequest) {
 
     // If Supabase table has 0 rows and no courses have been deleted, seed defaults
     if (activeCourses.length === 0 && (!sbCourses || sbCourses.length === 0) && deletedCourses.length === 0) {
-      activeCourses = DEFAULT_COURSES.filter(c => !deletedCourses.includes(c.id) && !deletedCourses.includes(c.slug));
+      activeCourses = DEFAULT_COURSES
+        .filter(c => !deletedCourses.includes(c.id) && !deletedCourses.includes(c.slug))
+        .map(sanitizeCourseImages);
     }
 
     return NextResponse.json({

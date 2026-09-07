@@ -67,20 +67,85 @@ export function extractGoogleDriveId(url: string): string {
 }
 
 /**
- * Normalizes Dropbox links for direct streaming (transforms dl=0 or dl=1 to raw=1).
+ * Normalizes any Dropbox URL to a direct binary download / raw CDN embed URL.
+ * Converts:
+ * - https://www.dropbox.com/s/.../img.png?dl=0 -> https://dl.dropboxusercontent.com/s/.../img.png?raw=1
+ * - https://www.dropbox.com/scl/fi/.../img.jpg?rlkey=...&dl=0 -> https://dl.dropboxusercontent.com/scl/fi/.../img.jpg?rlkey=...&raw=1
+ * - Preserves security keys (rlkey, st, etc.)
+ */
+export function parseDropboxImageUrl(url?: string): string {
+  if (!url || typeof url !== 'string') return '';
+  let clean = url.trim();
+
+  // Extract from iframe src if present
+  if (clean.includes('<iframe')) {
+    const srcMatch = clean.match(/src=["']([^"']+)["']/i);
+    if (srcMatch && srcMatch[1]) {
+      clean = srcMatch[1].trim();
+    }
+  }
+
+  // Not a dropbox link
+  if (!clean.includes('dropbox.com') && !clean.includes('dropboxusercontent.com')) {
+    return clean;
+  }
+
+  try {
+    let fullUrl = clean;
+    if (!/^https?:\/\//i.test(fullUrl)) {
+      fullUrl = 'https://' + fullUrl;
+    }
+    const parsed = new URL(fullUrl);
+    if (parsed.hostname.includes('dropbox.com')) {
+      parsed.hostname = 'dl.dropboxusercontent.com';
+    }
+    parsed.searchParams.delete('dl');
+    parsed.searchParams.set('raw', '1');
+    return parsed.toString();
+  } catch (e) {
+    let res = clean.replace(/^https?:\/\/(?:www\.|m\.)?dropbox\.com\//i, 'https://dl.dropboxusercontent.com/');
+    if (res.includes('dl=0') || res.includes('dl=1')) {
+      res = res.replace(/([?&])dl=[01]/g, '$1raw=1');
+    } else if (!res.includes('raw=1')) {
+      res += (res.includes('?') ? '&' : '?') + 'raw=1';
+    }
+    return res;
+  }
+}
+
+/**
+ * Universal Multi-Provider Cloud Storage URL Normalizer
+ * Automatically converts Google Drive links and Dropbox links to high-speed, direct CDN embed URLs:
+ * - Google Drive -> https://lh3.googleusercontent.com/d/{id}
+ * - Dropbox -> https://dl.dropboxusercontent.com/...&raw=1
+ */
+export function formatCloudStorageUrl(url?: string): string {
+  if (!url || typeof url !== 'string') return '';
+  const trimmed = url.trim();
+  if (!trimmed) return '';
+
+  // 1. Google Drive Links
+  const gDriveId = extractGoogleDriveId(trimmed);
+  if (gDriveId) {
+    return `https://lh3.googleusercontent.com/d/${gDriveId}`;
+  }
+
+  // 2. Dropbox Links
+  if (trimmed.includes('dropbox.com') || trimmed.includes('dropboxusercontent.com')) {
+    return parseDropboxImageUrl(trimmed);
+  }
+
+  return trimmed;
+}
+
+/**
+ * Normalizes Dropbox links for direct streaming (transforms dl=0 or dl=1 to raw=1 and uses dl.dropboxusercontent.com).
  */
 export function parseDropboxUrl(url: string): { isDropbox: boolean; streamUrl: string } {
   if (!url) return { isDropbox: false, streamUrl: '' };
   const trimmed = url.trim();
   if (trimmed.includes('dropbox.com') || trimmed.includes('dropboxusercontent.com')) {
-    let streamUrl = trimmed;
-    if (streamUrl.includes('dl=0')) {
-      streamUrl = streamUrl.replace(/([?&])dl=0/g, '$1raw=1');
-    } else if (streamUrl.includes('dl=1')) {
-      streamUrl = streamUrl.replace(/([?&])dl=1/g, '$1raw=1');
-    } else if (!streamUrl.includes('raw=1')) {
-      streamUrl += (streamUrl.includes('?') ? '&' : '?') + 'raw=1';
-    }
+    const streamUrl = parseDropboxImageUrl(trimmed);
     return { isDropbox: true, streamUrl };
   }
   return { isDropbox: false, streamUrl: '' };
@@ -113,10 +178,9 @@ export function parseImageUrl(rawUrl?: string): string {
     return `https://lh3.googleusercontent.com/d/${gDriveId}`;
   }
 
-  // 3. Dropbox image link: convert dl=0/1 to raw=1
+  // 3. Dropbox image link: direct CDN binary raw=1
   if (trimmed.includes('dropbox.com') || trimmed.includes('dropboxusercontent.com')) {
-    const { streamUrl } = parseDropboxUrl(trimmed);
-    return streamUrl;
+    return parseDropboxImageUrl(trimmed);
   }
 
   return trimmed;

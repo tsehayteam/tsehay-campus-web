@@ -10,6 +10,12 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       { protocol: 'https', hostname: 'images.unsplash.com' },
       { protocol: 'https', hostname: 'drive.google.com' },
+      { protocol: 'https', hostname: 'lh3.googleusercontent.com' },
+      { protocol: 'https', hostname: '*.googleusercontent.com' },
+      { protocol: 'https', hostname: 'dl.dropboxusercontent.com' },
+      { protocol: 'https', hostname: '*.dropboxusercontent.com' },
+      { protocol: 'https', hostname: 'www.dropbox.com' },
+      { protocol: 'https', hostname: 'dropbox.com' },
       { protocol: 'https', hostname: 'www.tsehaycampus.com' },
       { protocol: 'https', hostname: 'tsehaycampus.com' }
     ],

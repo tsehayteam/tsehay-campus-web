@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase/client';
-import { generateCourseSlug, DEFAULT_COURSES } from '@/lib/courseCache';
+import { generateCourseSlug, DEFAULT_COURSES, formatDriveImageUrl, getCleanCourseImage } from '@/lib/courseCache';
 import { saveSinglePersistedCourse, deletePersistedCourse } from '@/lib/memoryStore';
 
 export const dynamic = 'force-dynamic';
@@ -14,6 +14,23 @@ const NO_CACHE_HEADERS = {
   'Pragma': 'no-cache',
   'Expires': '0',
 };
+
+function sanitizeCourseImages(course: any) {
+  if (!course || typeof course !== 'object') return course;
+  const image = getCleanCourseImage(course) || formatDriveImageUrl(course.image) || course.image;
+  const banner = formatDriveImageUrl(course.banner) || course.banner || image;
+  const instructorImg = formatDriveImageUrl(course.instructorImage || course.instructorPhoto || course.instructor_image || course.instructor_photo) || course.instructorImage || course.instructorPhoto || course.instructor_image || course.instructor_photo;
+
+  return {
+    ...course,
+    image,
+    banner,
+    instructor_image: instructorImg,
+    instructor_photo: instructorImg,
+    instructorImage: instructorImg,
+    instructorPhoto: instructorImg
+  };
+}
 
 export async function GET(req: NextRequest) {
   try {
@@ -50,7 +67,7 @@ export async function GET(req: NextRequest) {
           .maybeSingle();
 
         if (sbCourse && !sbErr && sbCourse.status !== 'Deleted' && !sbCourse.isDeleted) {
-          const merged = { ...sbCourse, ...(sbCourse.raw_data || {}) };
+          const merged = sanitizeCourseImages({ ...sbCourse, ...(sbCourse.raw_data || {}) });
           return NextResponse.json({ success: true, course: merged }, { headers: NO_CACHE_HEADERS });
         }
       } catch (sbE) {}
@@ -58,7 +75,7 @@ export async function GET(req: NextRequest) {
       // Fallback to DEFAULT_COURSES only if matching ID/slug
       const defMatch = DEFAULT_COURSES.find(c => (c.id === cleanId || c.slug === cleanLower) && !deletedCourses.includes(c.id) && !deletedCourses.includes(c.slug));
       if (defMatch) {
-        return NextResponse.json({ success: true, course: defMatch }, { headers: NO_CACHE_HEADERS });
+        return NextResponse.json({ success: true, course: sanitizeCourseImages(defMatch) }, { headers: NO_CACHE_HEADERS });
       }
 
       return NextResponse.json({ success: false, error: 'Course not found' }, { status: 404, headers: NO_CACHE_HEADERS });
@@ -82,7 +99,7 @@ export async function GET(req: NextRequest) {
           !deletedCourses.includes(item.id) && 
           !deletedCourses.includes(item.slug)
         )
-        .map(item => ({
+        .map(item => sanitizeCourseImages({
           ...item,
           ...(item.raw_data || {})
         }));
@@ -90,7 +107,9 @@ export async function GET(req: NextRequest) {
 
     // If Supabase table is completely empty and no courses were deleted by user, seed default courses
     if (activeCourses.length === 0 && (!sbCourses || sbCourses.length === 0) && deletedCourses.length === 0) {
-      activeCourses = DEFAULT_COURSES.filter(c => !deletedCourses.includes(c.id) && !deletedCourses.includes(c.slug));
+      activeCourses = DEFAULT_COURSES
+        .filter(c => !deletedCourses.includes(c.id) && !deletedCourses.includes(c.slug))
+        .map(sanitizeCourseImages);
     }
 
     return NextResponse.json({ 
@@ -111,10 +130,18 @@ export async function POST(req: NextRequest) {
     const courseId = raw.courseId || body.id || body.courseId || `course_${Date.now()}`;
     const slug = body.slug || generateCourseSlug(body.title || courseId);
 
+    const cleanImage = formatDriveImageUrl(body.image || body.thumbnailUrl || body.thumbnail);
+    const cleanBanner = formatDriveImageUrl(body.banner) || cleanImage;
+    const cleanInstructor = formatDriveImageUrl(body.instructorImage || body.instructorPhoto || body.instructor_image || body.instructor_photo);
+
     const payload = {
       ...body,
       id: courseId,
       slug,
+      image: cleanImage || body.image || null,
+      banner: cleanBanner || body.banner || cleanImage || null,
+      instructorImage: cleanInstructor || body.instructorImage || body.instructorPhoto || null,
+      instructorPhoto: cleanInstructor || body.instructorPhoto || body.instructorImage || null,
       video: body.video || body.previewVideo || body.previewVideoUrl || body.videoUrl || '',
       status: body.status || 'Active',
       isDeleted: false,
