@@ -442,7 +442,9 @@ function StudentDashboardContent() {
   const [playingAiAudioIdx, setPlayingAiAudioIdx] = useState<number | null>(null);
   const currentAiAudioRef = useRef<HTMLAudioElement | null>(null);
   const [showDashboardClearAiModal, setShowDashboardClearAiModal] = useState(false);
-  const [isNavDrawerExpanded, setIsNavDrawerExpanded] = useState(false);
+  const [isNavDrawerExpanded, setIsNavDrawerExpanded] = useState(true);
+  const [isCurriculumSubmenuOpen, setIsCurriculumSubmenuOpen] = useState(true);
+  const [openSidebarModuleIdx, setOpenSidebarModuleIdx] = useState<number | null>(0);
   const [isSyllabusCollapsed, setIsSyllabusCollapsed] = useState(false);
   const [isFocusMode, setIsFocusMode] = useState(false);
   
@@ -1864,8 +1866,8 @@ function StudentDashboardContent() {
       )}
 
       {/* Sidebar Navigation - Deep Glassmorphism (Hidden in Focus Mode) */}
-      <aside className={`${isFocusMode ? 'hidden' : 'w-full md:w-24 lg:w-72'} bg-[#030509]/95 backdrop-blur-2xl border-b md:border-b-0 md:border-r border-white/[0.08] flex flex-col items-center lg:items-start shadow-2xl z-20 shrink-0 transition-all duration-500`}>
-        <div className="h-16 md:h-20 w-full flex items-center justify-between md:justify-center lg:justify-start px-4 lg:px-6 border-b border-white/[0.06]">
+      <aside className={`${isFocusMode ? 'hidden' : 'w-full md:w-80 lg:w-84 xl:w-96'} bg-[#030509]/95 backdrop-blur-2xl border-b md:border-b-0 md:border-r border-white/[0.08] flex flex-col items-stretch shadow-2xl z-20 shrink-0 transition-all duration-300 md:h-screen md:sticky md:top-0`}>
+        <div className="h-16 md:h-20 w-full flex items-center justify-between px-4 lg:px-6 border-b border-white/[0.06]">
           <a href="/" className="flex items-center cursor-pointer group brand-entrance">
             <div className="w-8 h-8 md:w-10 md:h-10 bg-white rounded-xl mx-auto flex items-center justify-center shadow-lg p-0.5 border border-white/20 brand-logo-img">
               <img src="/tc-logo.jpg" alt="Tsehay Campus Logo" className="w-full h-full object-contain rounded-xl" />
@@ -1902,10 +1904,10 @@ function StudentDashboardContent() {
           </div>
         </div>
 
-        <nav className="flex-1 overflow-x-auto md:overflow-y-auto py-2 md:py-3 px-3 space-y-1 font-body no-scrollbar w-full flex flex-row md:flex-col gap-2 md:gap-0 items-center md:items-stretch">
+        <nav className="flex-1 overflow-y-auto py-2 md:py-3 px-3 space-y-1 font-body no-scrollbar w-full flex flex-col gap-2 items-stretch">
           
           {/* 🌟 ULTRA-CLEAN CONSOLIDATED SINGLE MENU BUTTON (ACCORDION SLIDE-DOWN) */}
-          <div className="w-full mb-2">
+          <div className="w-full mb-1">
             <button
               type="button"
               onClick={() => setIsNavDrawerExpanded(prev => !prev)}
@@ -1951,47 +1953,200 @@ function StudentDashboardContent() {
             </button>
           </div>
 
-          {/* 🌟 SMOOTH SLIDE-DOWN ACCORDION MENU CONTAINER (translateY + max-height) */}
-          <div className={`space-y-1.5 w-full transition-all duration-500 ease-in-out flex flex-row md:flex-col gap-1.5 items-center md:items-stretch overflow-hidden ${
+          {/* 🌟 SMOOTH SLIDE-DOWN ACCORDION MENU CONTAINER */}
+          <div className={`space-y-1.5 w-full transition-all duration-500 ease-in-out flex flex-col gap-1.5 items-stretch ${
             isNavDrawerExpanded 
-              ? 'max-h-[600px] opacity-100 transform translate-y-0 py-1' 
-              : 'max-h-0 lg:max-h-0 opacity-0 transform -translate-y-2 pointer-events-none lg:pointer-events-none'
+              ? 'max-h-[85vh] overflow-y-auto opacity-100 transform translate-y-0 py-1 no-scrollbar' 
+              : 'max-h-0 opacity-0 transform -translate-y-2 pointer-events-none overflow-hidden'
           }`}>
 
-            {/* 1. Classroom (መማሪያ ክፍል) */}
-            <button 
-              onClick={() => setCurrentView('classroom')} 
-              className={`flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-auto md:w-full text-left text-sm cursor-pointer ${
-                currentView === 'classroom' 
-                  ? 'bg-gradient-to-r from-[#3268ba] via-[#3b75d6] to-[#254f8e] text-white shadow-lg shadow-[#3268ba]/35 font-black scale-[1.01] border border-white/20' 
-                  : 'text-white hover:bg-white/[0.08] hover:text-[#f9b03c] border border-transparent font-black'
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <span className={`w-8 h-8 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 ${
-                  currentView === 'classroom'
-                    ? 'bg-white/20 text-white shadow-inner'
-                    : 'bg-white/[0.08] text-white group-hover:bg-[#3268ba]/20 group-hover:text-[#5a93e8]'
-                }`}>
-                  <svg className="w-4 h-4 text-current" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4.26 10.147a60.438 60.438 0 0 0-.491 6.347A48.62 48.62 0 0 1 12 20.904a48.62 48.62 0 0 1 8.232-4.41 60.46 60.46 0 0 0-.491-6.347m-15.482 0a50.636 50.636 0 0 0-2.658-.813A59.906 59.906 0 0 1 12 3.493a59.903 59.903 0 0 1 10.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.717 50.717 0 0 1 12 13.489a50.702 50.702 0 0 1 7.74-3.342M6.75 15a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v-3.675A55.378 55.378 0 0 1 12 8.443m-5.25 6.557q0 .178.026.353" />
-                  </svg>
-                </span>
-                <span className="whitespace-nowrap md:whitespace-normal md:hidden lg:block font-black text-sm tracking-tight drop-shadow-xs">
-                  {t('classroom')}
-                </span>
-              </div>
+            {/* 1. Classroom (መማሪያ ክፍል) & Embedded Course Curriculum */}
+            <div className="w-full flex flex-col gap-1.5">
+              <button 
+                onClick={() => setCurrentView('classroom')} 
+                className={`flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-full text-left text-sm cursor-pointer ${
+                  currentView === 'classroom' 
+                    ? 'bg-gradient-to-r from-[#3268ba] via-[#3b75d6] to-[#254f8e] text-white shadow-lg shadow-[#3268ba]/35 font-black scale-[1.01] border border-white/20' 
+                    : 'text-white hover:bg-white/[0.08] hover:text-[#f9b03c] border border-transparent font-black'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <span className={`w-8 h-8 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 ${
+                    currentView === 'classroom'
+                      ? 'bg-white/20 text-white shadow-inner'
+                      : 'bg-white/[0.08] text-white group-hover:bg-[#3268ba]/20 group-hover:text-[#5a93e8]'
+                  }`}>
+                    <svg className="w-4 h-4 text-current" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.26 10.147a60.438 60.438 0 0 0-.491 6.347A48.62 48.62 0 0 1 12 20.904a48.62 48.62 0 0 1 8.232-4.41 60.46 60.46 0 0 0-.491-6.347m-15.482 0a50.636 50.636 0 0 0-2.658-.813A59.906 59.906 0 0 1 12 3.493a59.903 59.903 0 0 1 10.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.717 50.717 0 0 1 12 13.489a50.702 50.702 0 0 1 7.74-3.342M6.75 15a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Zm0 0v-3.675A55.378 55.378 0 0 1 12 8.443m-5.25 6.557q0 .178.026.353" />
+                    </svg>
+                  </span>
+                  <span className="font-black text-sm tracking-tight drop-shadow-xs">
+                    {t('classroom') || 'መማሪያ ክፍል'}
+                  </span>
+                </div>
+                {currentView === 'classroom' && (
+                  <span className="w-2 h-2 rounded-full bg-[#f9b03c] shadow-[0_0_8px_#f9b03c]"></span>
+                )}
+              </button>
+
+              {/* 🌟 EMBEDDED COURSE CURRICULUM (ACCORDION DRAWER SHELF) */}
               {currentView === 'classroom' && (
-                <svg className="hidden lg:block w-3.5 h-3.5 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                </svg>
+                <div className="w-full pl-1 sm:pl-2 pr-1 pt-1 pb-2 space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                  {/* Curriculum Header & Shelf Toggle */}
+                  <button
+                    type="button"
+                    onClick={() => setIsCurriculumSubmenuOpen(prev => !prev)}
+                    className="w-full flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-left transition-all group cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-6 h-6 rounded-lg bg-[#f9b03c]/20 text-[#f9b03c] flex items-center justify-center text-xs shrink-0">
+                        <i className="fa-solid fa-list-check"></i>
+                      </div>
+                      <div className="min-w-0">
+                        <span className="text-xs font-black text-white group-hover:text-[#f9b03c] transition-colors block truncate">
+                          የኮርስ ይዘት (Curriculum)
+                        </span>
+                        {(() => {
+                          let totalLessons = 0;
+                          modules.forEach((m: any) => { totalLessons += (m.lessons || []).length; });
+                          const pct = totalLessons > 0 ? Math.min(100, Math.round((progress.length / totalLessons) * 100)) : 0;
+                          return (
+                            <span className="text-[10px] text-slate-400 font-bold block">
+                              {progress.length}/{totalLessons} ትምህርቶች ({pct}%)
+                            </span>
+                          );
+                        })()}
+                      </div>
+                    </div>
+                    <div className={`w-5 h-5 rounded-md flex items-center justify-center text-slate-400 group-hover:text-white transition-transform duration-200 ${isCurriculumSubmenuOpen ? 'rotate-180' : 'rotate-0'}`}>
+                      <i className="fa-solid fa-chevron-down text-[10px]"></i>
+                    </div>
+                  </button>
+
+                  {/* Expandable Curriculum Shelf Modules List */}
+                  {isCurriculumSubmenuOpen && (
+                    <div className="space-y-2 max-h-[50vh] overflow-y-auto pr-1 no-scrollbar animate-in fade-in duration-200">
+                      {modules.length === 0 ? (
+                        <div className="p-3 text-center text-slate-500 text-xs font-bold bg-white/[0.02] rounded-xl border border-white/5">
+                          ምንም ትምህርት አልተገኘም
+                        </div>
+                      ) : (
+                        (() => {
+                          const allFlatLessons: any[] = [];
+                          modules.forEach((m: any) => {
+                            (m.lessons || []).forEach((l: any) => allFlatLessons.push(l));
+                          });
+                          let currentGlobalIdx = 0;
+
+                          return modules.map((mod: any, mIdx: number) => {
+                            const isModOpen = openSidebarModuleIdx === mIdx || openSidebarModuleIdx === null;
+                            const modLessons = mod.lessons || [];
+                            const modCompletedCount = modLessons.filter((l: any) => progress.includes(l.title)).length;
+                            const isModAllCompleted = modLessons.length > 0 && modCompletedCount === modLessons.length;
+
+                            return (
+                              <div key={mod.id || mIdx} className="rounded-xl bg-[#070d1a] border border-white/[0.08] overflow-hidden">
+                                {/* Module Accordion Header */}
+                                <button
+                                  type="button"
+                                  onClick={() => setOpenSidebarModuleIdx(openSidebarModuleIdx === mIdx ? null : mIdx)}
+                                  className="w-full flex items-center justify-between p-2.5 text-left hover:bg-white/[0.04] transition cursor-pointer"
+                                >
+                                  <div className="flex items-center gap-2 min-w-0 pr-1">
+                                    <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-white/10 text-slate-300 shrink-0">
+                                      ክፍል {mIdx + 1}
+                                    </span>
+                                    <span className="text-xs font-extrabold text-slate-200 truncate">
+                                      {mod.title}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-1.5 shrink-0">
+                                    {isModAllCompleted ? (
+                                      <i className="fa-solid fa-circle-check text-emerald-400 text-xs"></i>
+                                    ) : (
+                                      <span className="text-[10px] text-slate-400 font-bold">
+                                        {modCompletedCount}/{modLessons.length}
+                                      </span>
+                                    )}
+                                    <i className={`fa-solid fa-chevron-right text-[9px] text-slate-500 transition-transform duration-200 ${isModOpen ? 'rotate-90' : ''}`}></i>
+                                  </div>
+                                </button>
+
+                                {/* Module Lessons Shelf */}
+                                {isModOpen && (
+                                  <div className="p-1.5 space-y-1 bg-black/20 border-t border-white/[0.04]">
+                                    {modLessons.map((lesson: any, lIdx: number) => {
+                                      const globalIdx = currentGlobalIdx++;
+                                      const isActive = activeLesson?.title === lesson.title;
+                                      const isCompleted = progress.includes(lesson.title);
+                                      const prevLessonTitle = globalIdx > 0 ? allFlatLessons[globalIdx - 1]?.title : null;
+                                      const isUnlocked = isCourseCompleted || globalIdx === 0 || (prevLessonTitle ? progress.includes(prevLessonTitle) : true);
+
+                                      return (
+                                        <button
+                                          key={lIdx}
+                                          type="button"
+                                          disabled={!isUnlocked}
+                                          onClick={() => {
+                                            if (!isUnlocked) {
+                                              alert("🔒 ይህ ትምህርት አልተከፈተም! እባክዎ መጀመሪያ የቀደመውን ትምህርት አይተው ያጠናቁ።");
+                                              return;
+                                            }
+                                            const selectedLesson = { ...lesson, moduleIndex: mIdx, lessonIndex: lIdx };
+                                            setActiveLesson(selectedLesson);
+                                            try {
+                                              localStorage.setItem('tsehay_user_active_lesson', JSON.stringify(selectedLesson));
+                                            } catch (e) {}
+                                            updateUrlState({ view: 'classroom', courseId: activeCourse?.id, lesson: lIdx });
+                                          }}
+                                          className={`w-full flex items-center justify-between p-2 rounded-lg text-left transition text-xs cursor-pointer ${
+                                            !isUnlocked
+                                              ? 'opacity-40 cursor-not-allowed bg-transparent'
+                                              : isActive
+                                                ? 'bg-gradient-to-r from-[#f9b03c]/20 via-[#f9b03c]/10 to-transparent border border-[#f9b03c]/50 text-white font-black shadow-sm'
+                                                : 'hover:bg-white/[0.06] text-slate-300 font-medium'
+                                          }`}
+                                        >
+                                          <div className="flex items-center gap-2 min-w-0 pr-1">
+                                            {isActive ? (
+                                              <i className="fa-solid fa-circle-play text-[#f9b03c] text-xs shrink-0 animate-pulse"></i>
+                                            ) : isCompleted ? (
+                                              <i className="fa-solid fa-circle-check text-emerald-400 text-xs shrink-0"></i>
+                                            ) : !isUnlocked ? (
+                                              <i className="fa-solid fa-lock text-slate-500 text-[10px] shrink-0"></i>
+                                            ) : (
+                                              <i className="fa-regular fa-circle-play text-slate-400 text-xs shrink-0"></i>
+                                            )}
+                                            <span className={`truncate text-xs ${isActive ? 'text-[#f9b03c] font-black' : isCompleted ? 'text-emerald-400' : 'text-slate-200'}`}>
+                                              {lesson.title}
+                                            </span>
+                                          </div>
+                                          <div className="shrink-0 text-[10px] text-slate-400 flex items-center gap-1.5">
+                                            {lesson.duration && <span>{lesson.duration}</span>}
+                                            {isActive && (
+                                              <span className="w-1.5 h-1.5 rounded-full bg-[#f9b03c] animate-ping"></span>
+                                            )}
+                                          </div>
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          });
+                        })()
+                      )}
+                    </div>
+                  )}
+                </div>
               )}
-            </button>
+            </div>
             
             {/* 2. My Courses (የእኔ ኮርሶች) */}
             <button 
               onClick={() => setCurrentView('courses')} 
-              className={`flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-auto md:w-full text-left text-sm cursor-pointer ${
+              className={`flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-full text-left text-sm cursor-pointer ${
                 currentView === 'courses' 
                   ? 'bg-gradient-to-r from-[#3268ba] via-[#3b75d6] to-[#254f8e] text-white shadow-lg shadow-[#3268ba]/35 font-black scale-[1.01] border border-white/20' 
                   : 'text-white hover:bg-white/[0.08] hover:text-[#f9b03c] border border-transparent font-black'
@@ -2007,12 +2162,12 @@ function StudentDashboardContent() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
                   </svg>
                 </span>
-                <span className="whitespace-nowrap md:whitespace-normal md:hidden lg:block font-black text-sm tracking-tight drop-shadow-xs">
+                <span className="font-black text-sm tracking-tight drop-shadow-xs">
                   {t('my_courses')}
                 </span>
               </div>
               {currentView === 'courses' && (
-                <svg className="hidden lg:block w-3.5 h-3.5 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                <svg className="w-3.5 h-3.5 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
                 </svg>
               )}
@@ -2021,7 +2176,7 @@ function StudentDashboardContent() {
             {/* 3. Messages & Support (መልዕክቶች እና ድጋፍ) */}
             <button 
               onClick={() => setCurrentView('messages')} 
-              className={`flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-auto md:w-full text-left text-sm cursor-pointer ${
+              className={`flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-full text-left text-sm cursor-pointer ${
                 currentView === 'messages' 
                   ? 'bg-gradient-to-r from-[#3268ba] via-[#3b75d6] to-[#254f8e] text-white shadow-lg shadow-[#3268ba]/35 font-black scale-[1.01] border border-white/20' 
                   : 'text-white hover:bg-white/[0.08] hover:text-[#f9b03c] border border-transparent font-black'
@@ -2037,12 +2192,12 @@ function StudentDashboardContent() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a6 6 0 0 0 6-6v-1.5m-6 7.5a6 6 0 0 1-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 1.5a9 9 0 0 0-9 9v3.75a3 3 0 0 0 3 3h1.5a1.5 1.5 0 0 0 1.5-1.5v-4.5a1.5 1.5 0 0 0-1.5-1.5H4.5v-1.25a7.5 7.5 0 0 1 15 0v1.25h-2.25a1.5 1.5 0 0 0-1.5 1.5v4.5a1.5 1.5 0 0 0 1.5 1.5H19.5a3 3 0 0 0 3-3V10.5a9 9 0 0 0-9-9Z" />
                   </svg>
                 </span>
-                <span className="whitespace-nowrap md:whitespace-normal md:hidden lg:block font-black text-sm tracking-tight drop-shadow-xs">
+                <span className="font-black text-sm tracking-tight drop-shadow-xs">
                   {t('messages')}
                 </span>
               </div>
               {currentView === 'messages' && (
-                <svg className="hidden lg:block w-3.5 h-3.5 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                <svg className="w-3.5 h-3.5 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
                 </svg>
               )}
@@ -2051,7 +2206,7 @@ function StudentDashboardContent() {
             {/* 3.5. Community & Social Feed */}
             <a 
               href="/community" 
-              className="flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-auto md:w-full text-left text-sm text-white hover:bg-white/[0.08] hover:text-[#f9b03c] border border-transparent cursor-pointer"
+              className="flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-full text-left text-sm text-white hover:bg-white/[0.08] hover:text-[#f9b03c] border border-transparent cursor-pointer"
             >
               <div className="flex items-center gap-3">
                 <span className="w-8 h-8 rounded-xl flex items-center justify-center bg-white/[0.08] text-white group-hover:bg-[#f9b03c]/20 group-hover:text-[#f9b03c] transition-all">
@@ -2059,7 +2214,7 @@ function StudentDashboardContent() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
                   </svg>
                 </span>
-                <span className="whitespace-nowrap md:whitespace-normal md:hidden lg:block font-black text-sm tracking-tight">
+                <span className="font-black text-sm tracking-tight">
                   ማህበረሰብ (Community)
                 </span>
               </div>
@@ -2068,7 +2223,7 @@ function StudentDashboardContent() {
             {/* 4. Tsehay AI Tutor */}
             <button 
               onClick={() => setCurrentView('ai')} 
-              className={`flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-auto md:w-full text-left text-sm cursor-pointer ${
+              className={`flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-full text-left text-sm cursor-pointer ${
                 currentView === 'ai' 
                   ? 'bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#e59b2b] text-slate-950 shadow-xl shadow-[#f9b03c]/40 font-black border border-white/30 scale-[1.02]' 
                   : 'text-white bg-[#f9b03c]/[0.09] hover:bg-[#f9b03c]/20 border border-[#f9b03c]/35 hover:border-[#f9b03c]/60 shadow-[0_0_18px_rgba(249,176,60,0.15)] font-black'
@@ -2088,7 +2243,7 @@ function StudentDashboardContent() {
                   <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-[#f9b03c] border-2 border-slate-900 rounded-full shadow-[0_0_8px_#f9b03c]"></span>
                 </div>
                 <div className="flex flex-col">
-                  <span className="whitespace-nowrap md:whitespace-normal md:hidden lg:block font-heading font-black text-sm tracking-tight drop-shadow-xs">
+                  <span className="font-heading font-black text-sm tracking-tight drop-shadow-xs">
                     Tsehay AI
                   </span>
                 </div>
@@ -2098,7 +2253,7 @@ function StudentDashboardContent() {
             {/* 5. Certificates (የብቃት ሰርተፊኬት) */}
             <button 
               onClick={() => setCurrentView('certificates')} 
-              className={`flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-auto md:w-full text-left text-sm cursor-pointer ${
+              className={`flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-full text-left text-sm cursor-pointer ${
                 currentView === 'certificates' 
                   ? 'bg-gradient-to-r from-[#3268ba] via-[#3b75d6] to-[#254f8e] text-white shadow-lg shadow-[#3268ba]/35 font-black scale-[1.01] border border-white/20' 
                   : 'text-white hover:bg-white/[0.08] hover:text-[#f9b03c] border border-transparent font-black'
@@ -2114,12 +2269,12 @@ function StudentDashboardContent() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 0 1 3 3h-15a3 3 0 0 1 3-3m9 0v-3.375c0-.621-.504-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.003 0H9.497m5.003 0a3 3 0 0 0 2.875-2.12l1.125-4.5A3 3 0 0 0 15.625 4.5h-7.25a3 3 0 0 0-2.875 3.38l1.125 4.5a3 3 0 0 0 2.875 2.12Z" />
                   </svg>
                 </span>
-                <span className="whitespace-nowrap md:whitespace-normal md:hidden lg:block font-black text-sm tracking-tight drop-shadow-xs">
+                <span className="font-black text-sm tracking-tight drop-shadow-xs">
                   {t('certificates')}
                 </span>
               </div>
               {currentView === 'certificates' && (
-                <svg className="hidden lg:block w-3.5 h-3.5 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                <svg className="w-3.5 h-3.5 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
                 </svg>
               )}
@@ -2128,7 +2283,7 @@ function StudentDashboardContent() {
             {/* 6. Refer a Friend */}
             <button 
               onClick={() => setCurrentView('referrals')} 
-              className={`flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-auto md:w-full text-left text-sm cursor-pointer ${
+              className={`flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-full text-left text-sm cursor-pointer ${
                 currentView === 'referrals' 
                   ? 'bg-gradient-to-r from-amber-500 via-[#f9b03c] to-yellow-400 text-slate-950 shadow-xl shadow-[#f9b03c]/40 font-black border border-white/30 scale-[1.02]' 
                   : 'text-white bg-white/[0.04] hover:bg-[#f9b03c]/15 hover:text-[#f9b03c] border border-amber-400/25 hover:border-[#f9b03c]/50 font-black'
@@ -2144,12 +2299,12 @@ function StudentDashboardContent() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M21 11.25v8.25a1.5 1.5 0 0 1-1.5 1.5H4.5a1.5 1.5 0 0 1-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 1 0 9.375 7.5H12m0-2.625V7.5m0-2.625A2.625 2.625 0 1 1 14.625 7.5H12m0 0V21m-8.625-9.75h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z" />
                   </svg>
                 </span>
-                <span className="whitespace-nowrap md:whitespace-normal md:hidden lg:block font-black text-sm tracking-tight drop-shadow-xs">
+                <span className="font-black text-sm tracking-tight drop-shadow-xs">
                   ጓደኛዎን ይጋብዙ
                 </span>
               </div>
               {currentView === 'referrals' && (
-                <svg className="hidden lg:block w-3.5 h-3.5 text-slate-950" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                <svg className="w-3.5 h-3.5 text-slate-950" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
                 </svg>
               )}
@@ -2158,7 +2313,7 @@ function StudentDashboardContent() {
             {/* 7. Settings */}
             <button 
               onClick={() => setCurrentView('settings')} 
-              className={`flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-auto md:w-full text-left text-sm cursor-pointer ${
+              className={`flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-full text-left text-sm cursor-pointer ${
                 currentView === 'settings' 
                   ? 'bg-gradient-to-r from-[#3268ba] via-[#3b75d6] to-[#254f8e] text-white shadow-lg shadow-[#3268ba]/35 font-black scale-[1.01] border border-white/20' 
                   : 'text-white hover:bg-white/[0.08] hover:text-[#f9b03c] border border-transparent font-black'
@@ -2174,12 +2329,12 @@ function StudentDashboardContent() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" />
                   </svg>
                 </span>
-                <span className="whitespace-nowrap md:whitespace-normal md:hidden lg:block font-black text-sm tracking-tight drop-shadow-xs">
+                <span className="font-black text-sm tracking-tight drop-shadow-xs">
                   {t('settings')}
                 </span>
               </div>
               {currentView === 'settings' && (
-                <svg className="hidden lg:block w-3.5 h-3.5 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                <svg className="w-3.5 h-3.5 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
                 </svg>
               )}
@@ -2298,91 +2453,6 @@ function StudentDashboardContent() {
                       })()} Pts
                     </span>
                 </div>
-
-                {/* Notifications Bell Icon Next to Points */}
-                <div className="relative">
-                  <button 
-                    onClick={() => setShowNotifications(!showNotifications)} 
-                    className="relative text-gray-300 hover:text-[#f9b03c] transition shrink-0 p-2 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 shadow-sm cursor-pointer active:scale-95"
-                    title="ማሳወቂያዎች (Notifications)"
-                  >
-                      <svg className="w-4 h-4 text-current" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
-                      </svg>
-                      <span className="absolute -top-1 -right-1 bg-gradient-to-r from-red-600 to-rose-500 text-white font-black text-[9px] px-1.5 py-0.2 rounded-full ring-2 ring-[#050811] shadow-md animate-pulse">
-                        10+
-                      </span>
-                  </button>
-
-                  {showNotifications && (
-                    <>
-                      {/* Backdrop for outside click */}
-                      <div 
-                        onClick={() => setShowNotifications(false)} 
-                        className="fixed inset-0 z-40 bg-transparent" 
-                      />
-
-                      {/* Clean Modern Notification Card */}
-                      <div className="absolute top-12 right-0 w-80 sm:w-88 bg-[#0c121e] border border-slate-800 shadow-2xl rounded-2xl p-4 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-                         {/* Header */}
-                         <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-3">
-                           <div className="flex items-center gap-2">
-                             <div className="w-7 h-7 rounded-lg bg-[#f9b03c]/15 text-[#f9b03c] flex items-center justify-center text-xs">
-                               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                 <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
-                               </svg>
-                             </div>
-                             <h4 className="text-sm font-black text-white font-heading">ማሳወቂያዎች</h4>
-                             {notificationsList.filter(n => !n.read).length > 0 && (
-                               <span className="text-[10px] font-bold bg-[#f9b03c]/20 text-[#f9b03c] px-2 py-0.5 rounded-full">
-                                 {notificationsList.filter(n => !n.read).length} አዲስ
-                               </span>
-                             )}
-                           </div>
-                           <button 
-                             onClick={handleMarkAllNotificationsRead} 
-                             className="text-xs font-bold text-gray-400 hover:text-[#f9b03c] transition cursor-pointer"
-                           >
-                             ሁሉንም አንብብ
-                           </button>
-                         </div>
-
-                         {/* Notifications List */}
-                         <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
-                            {notificationsList.length === 0 ? (
-                              <div className="text-center py-6 text-gray-400 text-xs">
-                                ምንም ማሳወቂያ የለም
-                              </div>
-                            ) : (
-                              notificationsList.map(n => (
-                                <div 
-                                  key={n.id} 
-                                  className={`flex items-start gap-3 p-3 rounded-xl transition-all ${
-                                    n.read 
-                                      ? 'bg-transparent hover:bg-slate-800/50 opacity-70' 
-                                      : 'bg-amber-500/10 border border-amber-500/20'
-                                  }`}
-                                >
-                                    <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#f9b03c] to-amber-400 text-slate-950 flex items-center justify-center shrink-0 mt-0.5 shadow-sm text-xs">
-                                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M10.34 15.84c-.688-.06-1.386-.09-2.09-.09H7.5a4.5 4.5 0 1 1 0-9h.75c.704 0 1.402-.03 2.09-.09m0 9.18c.253.962.584 1.892.985 2.783.247.55.06 1.21-.463 1.511l-.657.38c-.551.318-1.26.117-1.527-.455a28.047 28.047 0 0 1-1.38-3.419m3.042-.799c.306-.03.612-.063.918-.1M10.34 6.66c.253-.962.584-1.892.985-2.783.247-.55.06-1.21-.463-1.511l-.657-.38c-.551-.318-1.26-.117-1.527.455a28.047 28.047 0 0 0-1.38 3.419m3.042.799c.306.03.612.063.918.1m0 0a25.55 25.55 0 0 1 5.316.634 3.75 3.75 0 0 1 2.934 3.666v1.44a3.75 3.75 0 0 1-2.934 3.666 25.545 25.545 0 0 1-5.316.634" />
-                                      </svg>
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center justify-between gap-1">
-                                          <p className="text-xs font-bold text-white truncate">{n.title}</p>
-                                          <span className="text-[10px] text-gray-400 whitespace-nowrap">{n.createdAt}</span>
-                                        </div>
-                                        <p className="text-xs text-gray-300 font-body leading-relaxed mt-0.5">{n.message}</p>
-                                    </div>
-                                </div>
-                              ))
-                            )}
-                         </div>
-                      </div>
-                    </>
-                  )}
-                </div>
             </div>
         </header>
 
@@ -2428,18 +2498,10 @@ function StudentDashboardContent() {
                 </div>
             </div>
 
-            <div className={`grid grid-cols-1 gap-6 lg:gap-8 transition-all duration-500 ${
-              (isFocusMode || isSyllabusCollapsed) 
-                ? 'grid-cols-1 max-w-7xl mx-auto' 
-                : 'lg:grid-cols-3 xl:grid-cols-4'
-            }`}>
+            <div className="w-full max-w-6xl mx-auto flex flex-col gap-6 lg:gap-8 transition-all duration-500">
                 
-                {/* Left Side: Video & Tabs */}
-                <div className={`flex flex-col gap-6 transition-all duration-500 ${
-                  (isFocusMode || isSyllabusCollapsed) 
-                    ? 'w-full col-span-1' 
-                    : 'lg:col-span-2 xl:col-span-3'
-                }`}>
+                {/* Dedicated Video Player & Learning Arena */}
+                <div className="flex flex-col gap-6 w-full">
                     
                     {/* Cinematic Video Player */}
                     <div className="bg-dark rounded-2xl overflow-hidden shadow-2xl relative border border-gray-800 aspect-video flex items-center justify-center group/player">
@@ -2660,37 +2722,6 @@ function StudentDashboardContent() {
                                             </span>
                                         )}
                                     </button>
-
-                                    <button 
-                                        type="button"
-                                        onClick={() => {
-                                          setIsFocusMode(prev => !prev);
-                                          setIsSyllabusCollapsed(true);
-                                        }}
-                                        className={`px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl text-xs font-black transition-all duration-300 flex items-center gap-2 cursor-pointer border active:scale-95 shadow-md ${
-                                            isFocusMode
-                                                ? 'bg-gradient-to-r from-[#f9b03c] via-amber-400 to-yellow-400 text-slate-950 border-[#f9b03c] shadow-[0_0_20px_rgba(249,176,60,0.5)] scale-105'
-                                                : 'bg-[#3268ba]/20 hover:bg-[#3268ba]/30 text-blue-200 hover:text-white border-[#3268ba]/50 hover:border-[#3268ba] shadow-[0_0_15px_rgba(50,104,186,0.3)]'
-                                        }`}
-                                        title={isFocusMode ? "የትኩረት ሁነታን ዝጋ (Exit Focus Mode)" : "የትኩረት ሁኔታ (Enter Focus Mode)"}
-                                    >
-                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2">
-                                          <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
-                                        </svg>
-                                        <span className="font-extrabold tracking-tight">
-                                            {isFocusMode ? (lang === 'am' ? 'የትኩረት ሁኔታ ✓' : 'Focus Mode ✓') : (lang === 'am' ? 'የትኩረት ሁኔታ' : 'Focus Mode')}
-                                        </span>
-                                    </button>
-
-                                    <button 
-                                        type="button"
-                                        onClick={() => window.dispatchEvent(new CustomEvent('tsehay_open_feedback_modal', { detail: { category: 'course' } }))}
-                                        className="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl sm:rounded-2xl text-xs font-bold text-slate-300 hover:text-[#f9b03c] bg-slate-800/80 hover:bg-slate-800 border border-slate-700/60 transition cursor-pointer"
-                                        title="ስለዚህ ትምህርት አስተያየት ይስጡ (Lesson Feedback)"
-                                    >
-                                        <i className="fa-regular fa-comment-dots text-[#f9b03c]"></i>
-                                        <span>አስተያየት</span>
-                                    </button>
                                 </div>
 
                                 {/* Next / Quiz Button */}
@@ -2730,57 +2761,45 @@ function StudentDashboardContent() {
                         );
                     })()}
 
-                    {/* Tabs */}
-                    <div id="classroom-tabs-section" className="bg-white dark:bg-[#070b14]/95 backdrop-blur-3xl rounded-3xl shadow-xl border border-gray-200 dark:border-white/10 overflow-hidden min-h-[300px] scroll-mt-6">
-                        <div className="flex overflow-x-auto border-b border-gray-200 dark:border-white/10 no-scrollbar bg-gray-50/80 dark:bg-[#0b1222]/90 px-3 pt-3 gap-1.5 sm:gap-2">
-                            <button 
-                                onClick={() => setActiveTab("syllabus")} 
-                                className={`lg:hidden px-4 sm:px-5 py-3 rounded-t-2xl font-heading text-xs sm:text-[14px] font-black whitespace-nowrap flex items-center gap-2 shrink-0 transition-all duration-200 cursor-pointer active:scale-95 group ${
-                                    activeTab === "syllabus" 
-                                        ? "bg-gradient-to-b from-[#f9b03c]/20 via-[#f9b03c]/10 to-transparent text-amber-900 dark:text-[#f9b03c] border-b-[3px] border-[#f9b03c] shadow-[inset_0_-2px_8px_rgba(249,176,60,0.35)]" 
-                                        : "text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 border-b-[3px] border-transparent font-bold"
-                                }`}
-                            >
-                                <i className="fa-solid fa-list-ol text-amber-400 text-sm group-hover:scale-110 transition-transform"></i> 
-                                <span>ትምህርቶች (Syllabus)</span>
-                            </button>
-
+                    {/* Sharp High-Contrast Action Tabs Container */}
+                    <div id="classroom-tabs-section" className="bg-[#0b1329] rounded-3xl shadow-2xl border border-white/10 overflow-hidden min-h-[300px] scroll-mt-6">
+                        <div className="flex overflow-x-auto border-b border-white/10 no-scrollbar bg-[#070c1a] p-2.5 sm:p-3 gap-2">
                             <button 
                                 onClick={() => setActiveTab("overview")} 
-                                className={`px-4 sm:px-5 py-3 rounded-t-2xl font-heading text-xs sm:text-[14px] font-black whitespace-nowrap flex items-center gap-2 shrink-0 transition-all duration-200 cursor-pointer active:scale-95 group ${
+                                className={`px-4 sm:px-5 py-2.5 rounded-xl font-heading text-xs sm:text-sm font-black whitespace-nowrap flex items-center gap-2 shrink-0 transition-all duration-200 cursor-pointer active:scale-95 ${
                                     activeTab === "overview" 
-                                        ? "bg-gradient-to-b from-[#f9b03c]/20 via-[#f9b03c]/10 to-transparent text-amber-900 dark:text-[#f9b03c] border-b-[3px] border-[#f9b03c] shadow-[inset_0_-2px_8px_rgba(249,176,60,0.35)]" 
-                                        : "text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 border-b-[3px] border-transparent font-bold"
+                                        ? "bg-gradient-to-r from-[#f9b03c] via-amber-400 to-yellow-400 text-slate-950 font-black shadow-lg shadow-[#f9b03c]/25 scale-[1.02] border border-amber-300" 
+                                        : "bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 hover:text-white border border-white/10 font-bold"
                                 }`}
                             >
-                                <i className="fa-solid fa-compass text-sky-400 text-sm group-hover:scale-110 transition-transform"></i>
-                                <span>{t("overview")}</span>
+                                <i className={`fa-solid fa-compass ${activeTab === 'overview' ? 'text-slate-950' : 'text-sky-400'} text-sm`}></i>
+                                <span>{t("overview") || "አጠቃላይ እይታ"}</span>
                             </button>
 
                             <button 
                                 onClick={() => setActiveTab("resources")} 
-                                className={`px-4 sm:px-5 py-3 rounded-t-2xl font-heading text-xs sm:text-[14px] font-black whitespace-nowrap flex items-center gap-2 shrink-0 transition-all duration-200 cursor-pointer active:scale-95 group ${
+                                className={`px-4 sm:px-5 py-2.5 rounded-xl font-heading text-xs sm:text-sm font-black whitespace-nowrap flex items-center gap-2 shrink-0 transition-all duration-200 cursor-pointer active:scale-95 ${
                                     activeTab === "resources" 
-                                        ? "bg-gradient-to-b from-[#f9b03c]/20 via-[#f9b03c]/10 to-transparent text-amber-900 dark:text-[#f9b03c] border-b-[3px] border-[#f9b03c] shadow-[inset_0_-2px_8px_rgba(249,176,60,0.35)]" 
-                                        : "text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 border-b-[3px] border-transparent font-bold"
+                                        ? "bg-gradient-to-r from-[#f9b03c] via-amber-400 to-yellow-400 text-slate-950 font-black shadow-lg shadow-[#f9b03c]/25 scale-[1.02] border border-amber-300" 
+                                        : "bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 hover:text-white border border-white/10 font-bold"
                                 }`}
                             >
-                                <i className="fa-solid fa-folder-open text-amber-500 text-sm group-hover:scale-110 transition-transform"></i> 
-                                <span>ፋይሎች (Resources)</span>
+                                <i className={`fa-solid fa-folder-open ${activeTab === 'resources' ? 'text-slate-950' : 'text-amber-400'} text-sm`}></i> 
+                                <span>ፋይሎችና ግብዓቶች (Resources)</span>
                             </button>
 
                             <button 
                                 onClick={() => setActiveTab("notes")} 
-                                className={`px-4 sm:px-5 py-3 rounded-t-2xl font-heading text-xs sm:text-[14px] font-black whitespace-nowrap flex items-center gap-2 shrink-0 transition-all duration-200 cursor-pointer active:scale-95 group ${
+                                className={`px-4 sm:px-5 py-2.5 rounded-xl font-heading text-xs sm:text-sm font-black whitespace-nowrap flex items-center gap-2 shrink-0 transition-all duration-200 cursor-pointer active:scale-95 ${
                                     activeTab === "notes" 
-                                        ? "bg-gradient-to-b from-[#f9b03c]/20 via-[#f9b03c]/10 to-transparent text-amber-900 dark:text-[#f9b03c] border-b-[3px] border-[#f9b03c] shadow-[inset_0_-2px_8px_rgba(249,176,60,0.35)]" 
-                                        : "text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 border-b-[3px] border-transparent font-bold"
+                                        ? "bg-gradient-to-r from-[#f9b03c] via-amber-400 to-yellow-400 text-slate-950 font-black shadow-lg shadow-[#f9b03c]/25 scale-[1.02] border border-amber-300" 
+                                        : "bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 hover:text-white border border-white/10 font-bold"
                                 }`}
                             >
-                                <i className="fa-solid fa-feather-pointed text-emerald-400 text-sm group-hover:scale-110 transition-transform"></i> 
-                                <span>{t("notes")}</span>
+                                <i className={`fa-solid fa-feather-pointed ${activeTab === 'notes' ? 'text-slate-950' : 'text-emerald-400'} text-sm`}></i> 
+                                <span>{t("notes") || "የግል ማስታወሻዎች"}</span>
                                 {studentNotes.length > 0 && (
-                                    <span className="text-[10px] bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.2 rounded-full font-black">
+                                    <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${activeTab === 'notes' ? 'bg-slate-950/20 text-slate-950' : 'bg-emerald-500/20 text-emerald-400'}`}>
                                         {studentNotes.length}
                                     </span>
                                 )}
@@ -2788,50 +2807,50 @@ function StudentDashboardContent() {
 
                             <button 
                                 onClick={() => setActiveTab("qa")} 
-                                className={`px-4 sm:px-5 py-3 rounded-t-2xl font-heading text-xs sm:text-[14px] font-black whitespace-nowrap flex items-center gap-2 shrink-0 transition-all duration-200 cursor-pointer active:scale-95 group ${
+                                className={`px-4 sm:px-5 py-2.5 rounded-xl font-heading text-xs sm:text-sm font-black whitespace-nowrap flex items-center gap-2 shrink-0 transition-all duration-200 cursor-pointer active:scale-95 ${
                                     activeTab === "qa" 
-                                        ? "bg-gradient-to-b from-[#f9b03c]/20 via-[#f9b03c]/10 to-transparent text-amber-900 dark:text-[#f9b03c] border-b-[3px] border-[#f9b03c] shadow-[inset_0_-2px_8px_rgba(249,176,60,0.35)]" 
-                                        : "text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 border-b-[3px] border-transparent font-bold"
+                                        ? "bg-gradient-to-r from-[#f9b03c] via-amber-400 to-yellow-400 text-slate-950 font-black shadow-lg shadow-[#f9b03c]/25 scale-[1.02] border border-amber-300" 
+                                        : "bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 hover:text-white border border-white/10 font-bold"
                                 }`}
                             >
-                                <i className="fa-solid fa-comments text-violet-400 text-sm group-hover:scale-110 transition-transform"></i>
-                                <span>{t("qa")}</span>
+                                <i className={`fa-solid fa-comments ${activeTab === 'qa' ? 'text-slate-950' : 'text-violet-400'} text-sm`}></i>
+                                <span>{t("qa") || "ጥያቄና መልስ (Q&A)"}</span>
                             </button>
 
                             <button 
                                 onClick={() => setActiveTab("community")} 
-                                className={`px-4 sm:px-5 py-3 rounded-t-2xl font-heading text-xs sm:text-[14px] font-black whitespace-nowrap flex items-center gap-2 shrink-0 transition-all duration-200 cursor-pointer active:scale-95 group ${
+                                className={`px-4 sm:px-5 py-2.5 rounded-xl font-heading text-xs sm:text-sm font-black whitespace-nowrap flex items-center gap-2 shrink-0 transition-all duration-200 cursor-pointer active:scale-95 ${
                                     activeTab === "community" 
-                                        ? "bg-gradient-to-b from-[#f9b03c]/20 via-[#f9b03c]/10 to-transparent text-amber-900 dark:text-[#f9b03c] border-b-[3px] border-[#f9b03c] shadow-[inset_0_-2px_8px_rgba(249,176,60,0.35)]" 
-                                        : "text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 border-b-[3px] border-transparent font-bold"
+                                        ? "bg-gradient-to-r from-[#f9b03c] via-amber-400 to-yellow-400 text-slate-950 font-black shadow-lg shadow-[#f9b03c]/25 scale-[1.02] border border-amber-300" 
+                                        : "bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 hover:text-white border border-white/10 font-bold"
                                 }`}
                             >
-                                <i className="fa-brands fa-telegram text-[#26A5E4] text-base group-hover:scale-110 transition-transform"></i> 
+                                <i className="fa-brands fa-telegram text-[#26A5E4] text-base"></i> 
                                 <span>VIP ማህበረሰብ</span>
                             </button>
 
                             <button 
                                 onClick={() => setActiveTab("quiz")} 
-                                className={`px-4 sm:px-5 py-3 rounded-t-2xl font-heading text-xs sm:text-[14px] font-black whitespace-nowrap flex items-center gap-2 shrink-0 transition-all duration-200 cursor-pointer active:scale-95 group ${
+                                className={`px-4 sm:px-5 py-2.5 rounded-xl font-heading text-xs sm:text-sm font-black whitespace-nowrap flex items-center gap-2 shrink-0 transition-all duration-200 cursor-pointer active:scale-95 ${
                                     activeTab === "quiz" 
-                                        ? "bg-gradient-to-b from-[#f9b03c]/20 via-[#f9b03c]/10 to-transparent text-amber-900 dark:text-[#f9b03c] border-b-[3px] border-[#f9b03c] shadow-[inset_0_-2px_8px_rgba(249,176,60,0.35)]" 
-                                        : "text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 border-b-[3px] border-transparent font-bold"
+                                        ? "bg-gradient-to-r from-[#f9b03c] via-amber-400 to-yellow-400 text-slate-950 font-black shadow-lg shadow-[#f9b03c]/25 scale-[1.02] border border-amber-300" 
+                                        : "bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 hover:text-white border border-white/10 font-bold"
                                 }`}
                             >
-                                <i className="fa-solid fa-clipboard-question text-rose-400 text-sm group-hover:scale-110 transition-transform"></i>
-                                <span>{t("quiz")}</span>
+                                <i className={`fa-solid fa-clipboard-question ${activeTab === 'quiz' ? 'text-slate-950' : 'text-rose-400'} text-sm`}></i>
+                                <span>{t("quiz") || "ፈተና (Quiz)"}</span>
                             </button>
 
                             <button 
                                 onClick={() => setActiveTab("certificate")} 
-                                className={`px-4 sm:px-5 py-3 rounded-t-2xl font-heading text-xs sm:text-[14px] font-black whitespace-nowrap flex items-center gap-2 shrink-0 transition-all duration-200 cursor-pointer active:scale-95 group ${
+                                className={`px-4 sm:px-5 py-2.5 rounded-xl font-heading text-xs sm:text-sm font-black whitespace-nowrap flex items-center gap-2 shrink-0 transition-all duration-200 cursor-pointer active:scale-95 ${
                                     activeTab === "certificate" 
-                                        ? "bg-gradient-to-b from-[#f9b03c]/20 via-[#f9b03c]/10 to-transparent text-amber-900 dark:text-[#f9b03c] border-b-[3px] border-[#f9b03c] shadow-[inset_0_-2px_8px_rgba(249,176,60,0.35)]" 
-                                        : "text-gray-500 dark:text-gray-400 hover:text-dark dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 border-b-[3px] border-transparent font-bold"
+                                        ? "bg-gradient-to-r from-[#f9b03c] via-amber-400 to-yellow-400 text-slate-950 font-black shadow-lg shadow-[#f9b03c]/25 scale-[1.02] border border-amber-300" 
+                                        : "bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 hover:text-white border border-white/10 font-bold"
                                 }`}
                             >
-                                <i className="fa-solid fa-award text-[#f9b03c] text-sm group-hover:scale-110 transition-transform"></i>
-                                <span>{t("certificate")}</span>
+                                <i className={`fa-solid fa-award ${activeTab === 'certificate' ? 'text-slate-950' : 'text-[#f9b03c]'} text-sm`}></i>
+                                <span>{t("certificate") || "ሰርተፊኬት"}</span>
                             </button>
                         </div>
                         <div className="p-4 sm:p-6 lg:p-8">
@@ -3490,141 +3509,6 @@ function StudentDashboardContent() {
                         </div>
                     </div>
                 </div>
-
-                {/* Right Side: Curriculum/Course Content (Desktop Only, Collapsible Focus Mode) */}
-                {!isFocusMode && !isSyllabusCollapsed && (
-                  <div className="hidden lg:block lg:col-span-1 xl:col-span-1 animate-in fade-in slide-in-from-right-4 duration-300">
-                    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-200 dark:border-slate-700 flex flex-col h-full lg:h-[calc(100vh-160px)] lg:sticky lg:top-4 overflow-hidden transition-colors duration-300">
-                        
-                        <div className="p-5 border-b border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 z-10 shadow-sm flex items-start justify-between gap-2">
-                            <div className="flex-1 min-w-0">
-                              <h3 className="font-heading font-black text-lg text-dark dark:text-white">የኮርስ ይዘት (Course Content)</h3>
-                              {(() => {
-                                  let totalCount = 0;
-                                  modules.forEach((m: any) => { totalCount += (m.lessons || []).length; });
-                                  if (totalCount === 0) totalCount = 1;
-                                  
-                                  const percent = Math.min(100, Math.round((progress.length / totalCount) * 100));
-
-                                  return (
-                                      <>
-                                          <div className="flex justify-between items-end mt-3 mb-1">
-                                              <p className="text-[11px] text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wide">የኮርሱ ሂደት</p>
-                                              <p className="text-sm text-secondary dark:text-primary font-black">{percent}%</p>
-                                          </div>
-                                          <div className="w-full bg-gray-100 dark:bg-slate-700 rounded-full h-2.5 overflow-hidden">
-                                              <div className="bg-gradient-to-r from-amber-400 to-emerald-500 h-2.5 rounded-full transition-all duration-500 shadow-sm" style={{ width: `${percent}%` }}></div>
-                                          </div>
-                                      </>
-                                  );
-                              })()}
-                            </div>
-
-                            <button
-                              type="button"
-                              onClick={() => setIsSyllabusCollapsed(true)}
-                              className="w-7 h-7 rounded-xl bg-white/5 hover:bg-white/15 text-gray-400 hover:text-white border border-white/10 text-xs transition-all cursor-pointer flex items-center justify-center shadow-sm shrink-0 mt-0.5"
-                              title="ይዘቱን እጠፍ (Collapse Sidebar)"
-                            >
-                              <i className="fa-solid fa-xmark"></i>
-                            </button>
-                        </div>
-
-                        <div className="flex-1 overflow-y-auto no-scrollbar">
-                            {modules.length === 0 ? (
-                                <div className="p-8 text-center text-gray-500 text-sm font-bold">
-                                    ምንም ትምህርት አልተገኘም
-                                </div>
-                            ) : (
-                                (() => {
-                                    const allFlatLessons: any[] = [];
-                                    modules.forEach((m: any) => {
-                                        (m.lessons || []).forEach((l: any) => allFlatLessons.push(l));
-                                    });
-
-                                    let currentGlobalIdx = 0;
-
-                                    return modules.map((mod: any, idx: number) => (
-                                        <div key={mod.id || idx} className="border-b border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/80 p-4">
-                                            <h4 className="font-bold text-sm text-dark dark:text-white">ክፍል {idx + 1}: {mod.title}</h4>
-                                            <div className="mt-3 space-y-2">
-                                                {(mod.lessons || []).map((lesson: any, lidx: number) => {
-                                                    const globalIdx = currentGlobalIdx++;
-                                                    const isActive = activeLesson?.title === lesson.title;
-                                                    const isCompleted = progress.includes(lesson.title);
-                                                    
-                                                    const prevLessonTitle = globalIdx > 0 ? allFlatLessons[globalIdx - 1]?.title : null;
-                                                    const isUnlocked = isCourseCompleted || globalIdx === 0 || (prevLessonTitle ? progress.includes(prevLessonTitle) : true);
-
-                                                    return (
-                                                    <div 
-                                                        key={lidx} 
-                                                        onClick={() => {
-                                                            if (!isUnlocked) {
-                                                                alert("🔒 ይህ ትምህርት አልተከፈተም! እባክዎ መጀመሪያ የቀደመውን ትምህርት አይተው ያጠናቁ።");
-                                                                return;
-                                                            }
-                                                            const selectedLesson = {...lesson, moduleIndex: idx, lessonIndex: lidx};
-                                                            setActiveLesson(selectedLesson);
-                                                            try {
-                                                              localStorage.setItem('tsehay_user_active_lesson', JSON.stringify(selectedLesson));
-                                                            } catch(e) {}
-                                                            updateUrlState({ view: 'classroom', courseId: activeCourse?.id, lesson: lidx });
-                                                        }}
-                                                        className={`flex items-center justify-between p-2.5 rounded-xl transition ${
-                                                            !isUnlocked
-                                                                ? 'opacity-60 cursor-not-allowed bg-gray-100/40 dark:bg-slate-900/20'
-                                                                : isActive 
-                                                                    ? 'bg-white dark:bg-slate-700 border-l-4 border-primary shadow-sm cursor-pointer' 
-                                                                    : 'hover:bg-white dark:hover:bg-slate-700/80 bg-gray-100/50 dark:bg-slate-900/40 cursor-pointer'
-                                                        }`}
-                                                    >
-                                                        <div className="flex items-center gap-3 min-w-0 pr-2">
-                                                            {isActive ? (
-                                                                <i className="fa-solid fa-circle-play text-primary text-sm animate-pulse shrink-0"></i>
-                                                            ) : isCompleted ? (
-                                                                <i className="fa-solid fa-circle-check text-emerald-500 text-sm shrink-0"></i>
-                                                            ) : !isUnlocked ? (
-                                                                <i className="fa-solid fa-lock text-gray-400 dark:text-gray-500 text-xs shrink-0"></i>
-                                                            ) : (
-                                                                <i className="fa-solid fa-circle-play text-gray-400 text-xs shrink-0"></i>
-                                                            )}
-                                                            <div className="min-w-0">
-                                                                <p className={`text-xs font-bold truncate ${isActive ? 'text-primary' : isCompleted ? 'text-emerald-600 dark:text-emerald-400' : !isUnlocked ? 'text-gray-400 dark:text-gray-500' : 'text-dark dark:text-white'}`}>
-                                                                    {lesson.title}
-                                                                </p>
-                                                                <div className="flex items-center gap-2 mt-0.5 text-[10px] text-gray-500">
-                                                                    <span><i className="fa-solid fa-video"></i> {lesson.duration || '00:00'}</span>
-                                                                    <span className="text-primary font-bold">+{lesson.points || 25} ነጥብ</span>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        {isCompleted ? (
-                                                            <span className="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-md font-bold shrink-0 flex items-center gap-1">
-                                                                <i className="fa-solid fa-check"></i> ተጠናቋል
-                                                            </span>
-                                                        ) : isActive ? (
-                                                            <span className="text-[10px] bg-primary/20 text-dark dark:text-primary px-2 py-0.5 rounded-md font-bold shrink-0 animate-pulse">
-                                                                እየታየ ነው
-                                                            </span>
-                                                        ) : !isUnlocked ? (
-                                                            <span className="text-[10px] bg-gray-200 dark:bg-slate-700 text-gray-500 dark:text-gray-400 px-2 py-0.5 rounded-md font-bold shrink-0 flex items-center gap-1">
-                                                                <i className="fa-solid fa-lock text-[9px]"></i> ተቆልፏል
-                                                            </span>
-                                                        ) : null}
-                                                    </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        </div>
-                                    ));
-                                })()
-                            )}
-                        </div>
-                    </div>
-                  </div>
-                )}
-
             </div>
           </div>
         )}
@@ -5027,22 +4911,24 @@ function StudentDashboardContent() {
           </div>
       )}
 
-      {/* 💡 Floating Glassmorphism Feedback Trigger Button (Silicon Valley Style) */}
-      <div className="fixed bottom-22 sm:bottom-24 right-4 sm:right-6 z-40">
-        <button
-          type="button"
-          onClick={() => setShowFeedbackModal(true)}
-          className="group relative flex items-center gap-2.5 bg-[#0c1224]/90 hover:bg-[#131e38] border border-[#f9b03c]/40 hover:border-[#f9b03c] px-3.5 py-2.5 rounded-full shadow-[0_10px_35px_rgba(0,0,0,0.65)] hover:shadow-[0_0_35px_rgba(249,176,60,0.45)] backdrop-blur-xl transition-all duration-300 active:scale-90 hover:-translate-y-1 cursor-pointer text-white"
-          title="ለ ፀሐይ ካምፓስ አስተያየት ይስጡ (Send Feedback)"
-        >
-          <span className="w-6 h-6 rounded-full bg-[#f9b03c]/20 text-[#f9b03c] group-hover:bg-[#f9b03c] group-hover:text-slate-950 flex items-center justify-center text-xs font-black transition-colors shadow-xs">
-            💡
-          </span>
-          <span className="font-heading font-black text-xs text-white group-hover:text-[#f9b03c] transition-colors pr-1">
-            አስተያየት
-          </span>
-        </button>
-      </div>
+      {/* 💡 Floating Feedback Trigger Button (Hidden in Classroom to eliminate clutter) */}
+      {currentView !== 'classroom' && (
+        <div className="fixed bottom-22 sm:bottom-24 right-4 sm:right-6 z-40">
+          <button
+            type="button"
+            onClick={() => setShowFeedbackModal(true)}
+            className="group relative flex items-center gap-2.5 bg-[#0c1224]/90 hover:bg-[#131e38] border border-[#f9b03c]/40 hover:border-[#f9b03c] px-3.5 py-2.5 rounded-full shadow-[0_10px_35px_rgba(0,0,0,0.65)] hover:shadow-[0_0_35px_rgba(249,176,60,0.45)] backdrop-blur-xl transition-all duration-300 active:scale-90 hover:-translate-y-1 cursor-pointer text-white"
+            title="ለ ፀሐይ ካምፓስ አስተያየት ይስጡ (Send Feedback)"
+          >
+            <span className="w-6 h-6 rounded-full bg-[#f9b03c]/20 text-[#f9b03c] group-hover:bg-[#f9b03c] group-hover:text-slate-950 flex items-center justify-center text-xs font-black transition-colors shadow-xs">
+              💡
+            </span>
+            <span className="font-heading font-black text-xs text-white group-hover:text-[#f9b03c] transition-colors pr-1">
+              አስተያየት
+            </span>
+          </button>
+        </div>
+      )}
 
       {/* 💡 Feedback Modal */}
       <FeedbackModal 
