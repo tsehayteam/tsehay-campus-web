@@ -24,9 +24,13 @@ export default function CinematicVideoModal({
     setMounted(true);
   }, []);
 
-  // Lock body scroll and listen for Escape key when open
+  // Lock body scroll and listen for Escape key when open + Auto-duck background audio
   useEffect(() => {
     if (!isOpen) return;
+
+    // Auto-mute website background music when video modal is open
+    window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: true } }));
+    window.dispatchEvent(new CustomEvent('duck-ambient-audio'));
 
     const originalOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
@@ -42,6 +46,9 @@ export default function CinematicVideoModal({
     return () => {
       document.body.style.overflow = originalOverflow;
       window.removeEventListener('keydown', handleKeyDown);
+      // Restore background music when modal is closed
+      window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: false } }));
+      window.dispatchEvent(new CustomEvent('restore-ambient-audio'));
     };
   }, [isOpen, onClose]);
 

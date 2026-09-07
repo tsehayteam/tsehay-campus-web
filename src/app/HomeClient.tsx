@@ -304,7 +304,7 @@ export default function HomeClient({
   const headlinePhrases = [
     { white: 'ከሺን በላይ ተማሪዎች፤', gold: 'ክህሎትዎን ዛሬውኑ ያሳድጉ።' },
     { white: 'የዩቲዩብ ቻናልዎን', gold: 'ወደ ከፍተኛ ገቢ ይቀይሩ።' },
-    { white: 'የሼን እና ኢ-ኮሜርስ', gold: 'ንግድዎን በተግባር ይገንቡ።' },
+    { white: 'የሺን እና ኢ-ኮሜርስ', gold: 'ንግድዎን በተግባር ይገንቡ።' },
     { white: 'በ AI የታገዘ ዘመናዊ', gold: 'ዲጂታል ገቢን ይፍጠሩ።' }
   ];
   const [currentPhraseIdx, setCurrentPhraseIdx] = useState(0);
@@ -719,7 +719,7 @@ export default function HomeClient({
                 <div className="absolute -top-16 -right-16 w-52 h-52 bg-gradient-to-br from-purple-600/35 via-fuchsia-600/25 to-transparent rounded-full blur-3xl -z-10 group-hover:scale-150 transition-transform duration-700 pointer-events-none"></div>
                 <div className="absolute -bottom-12 -left-12 w-36 h-36 bg-purple-900/20 rounded-full blur-2xl pointer-events-none"></div>
                 <div className="absolute top-4 sm:top-6 right-4 sm:right-6 bg-gradient-to-r from-purple-500 to-fuchsia-500 text-white text-xs font-black px-3.5 py-1 rounded-full shadow-[0_0_20px_rgba(168,85,247,0.7)] animate-pulse tracking-wide" style={{ transform: 'translateZ(40px)' }}>
-                  ✨ አዲስ AI
+                  አዲስ AI
                 </div>
                 <div className="relative z-10">
                   <div 

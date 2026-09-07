@@ -503,20 +503,6 @@ export default function Navbar() {
                 </span>
               </Link>
 
-              {/* ይግቡ (Login) in Main Navigation Menu */}
-              {!user && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    closeCurtain();
-                    openAuthModal(false);
-                  }}
-                  className="py-1.5 px-3.5 rounded-full bg-[#f9b03c]/15 hover:bg-[#f9b03c]/25 border border-[#f9b03c]/50 hover:border-[#f9b03c] text-white hover:text-[#f9b03c] text-[13px] lg:text-[14px] font-black tracking-wide transition-all duration-200 flex items-center gap-1.5 cursor-pointer active:scale-95 shadow-[0_0_12px_rgba(249,176,60,0.15)] ml-1"
-                >
-                  <i className="fa-solid fa-arrow-right-to-bracket text-xs text-[#f9b03c]"></i>
-                  <span>{lang === 'en' ? 'Login' : 'ይግቡ'}</span>
-                </button>
-              )}
             </div>
 
             {/* 3. RIGHT: Search Input + Tsehay AI + Install + Lang/Theme + Integrated Close Toggle */}

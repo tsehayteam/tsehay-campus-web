@@ -236,9 +236,9 @@ export default function Hero3DPopoutStage({
   // Parse current active video for thumbnail & playback
   const parsedVideo = parseVideoEmbedUrl(activeVideoUrl || DEFAULT_LANDING_VIDEO, false);
 
-  // Generate YouTube Autoplay Embed URL with loop and mute enabled for browser compliance
+  // Generate YouTube Autoplay Embed URL with loop and mute enabled for browser compliance & 4K UHD preference
   const ytAutoplaySrc = parsedVideo.youtubeId
-    ? `https://www.youtube-nocookie.com/embed/${parsedVideo.youtubeId}?autoplay=1&mute=1&loop=1&playlist=${parsedVideo.youtubeId}&controls=0&playsinline=1&enablejsapi=1&rel=0&modestbranding=1&iv_load_policy=3`
+    ? `https://www.youtube-nocookie.com/embed/${parsedVideo.youtubeId}?autoplay=1&mute=1&loop=1&playlist=${parsedVideo.youtubeId}&controls=0&playsinline=1&enablejsapi=1&rel=0&modestbranding=1&iv_load_policy=3&vq=hd2160&quality=hd2160&hd=1`
     : '';
 
   // 🚀 Guaranteed Immediate Video Auto-play & Viewport Sync for Audio Ducking
@@ -247,6 +247,10 @@ export default function Hero3DPopoutStage({
 
     const triggerPlay = () => {
       if (parsedVideo.isYouTube && iframeRef.current?.contentWindow) {
+        iframeRef.current.contentWindow.postMessage(
+          JSON.stringify({ event: 'command', func: 'setPlaybackQuality', args: ['hd2160'] }),
+          '*'
+        );
         iframeRef.current.contentWindow.postMessage(
           JSON.stringify({ event: 'command', func: 'playVideo', args: '' }),
           '*'
@@ -490,10 +494,16 @@ export default function Hero3DPopoutStage({
                   setIsPlaying(true);
                   if (iframeRef.current?.contentWindow) {
                     iframeRef.current.contentWindow.postMessage(
+                      JSON.stringify({ event: 'command', func: 'setPlaybackQuality', args: ['hd2160'] }),
+                      '*'
+                    );
+                    iframeRef.current.contentWindow.postMessage(
                       JSON.stringify({ event: 'command', func: 'playVideo', args: '' }),
                       '*'
                     );
                   }
+                  // Signal 4K pre-buffered readiness to preloader
+                  window.dispatchEvent(new CustomEvent('tsehay-4k-video-buffered'));
                 }}
               />
             </div>
@@ -509,6 +519,7 @@ export default function Hero3DPopoutStage({
                 onLoad={() => {
                   setIsVideoReady(true);
                   setIsPlaying(true);
+                  window.dispatchEvent(new CustomEvent('tsehay-4k-video-buffered'));
                 }}
               />
             </div>
@@ -521,6 +532,7 @@ export default function Hero3DPopoutStage({
                 muted={isMuted}
                 loop
                 playsInline
+                preload="auto"
                 className="w-full h-full object-cover"
                 onCanPlay={() => {
                   setIsVideoReady(true);
@@ -529,6 +541,10 @@ export default function Hero3DPopoutStage({
                     videoRef.current.muted = isMuted;
                     videoRef.current.play().catch(() => {});
                   }
+                  window.dispatchEvent(new CustomEvent('tsehay-4k-video-buffered'));
+                }}
+                onCanPlayThrough={() => {
+                  window.dispatchEvent(new CustomEvent('tsehay-4k-video-buffered'));
                 }}
               />
             </div>

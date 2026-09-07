@@ -451,6 +451,21 @@ function AboutHeroPlayer({
   });
   const [isPlaying, setIsPlaying] = useState(false);
 
+  // Auto-mute background music when About hero video is playing
+  useEffect(() => {
+    if (isPlaying) {
+      window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: true } }));
+      window.dispatchEvent(new CustomEvent('duck-ambient-audio'));
+    } else {
+      window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: false } }));
+      window.dispatchEvent(new CustomEvent('restore-ambient-audio'));
+    }
+    return () => {
+      window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: false } }));
+      window.dispatchEvent(new CustomEvent('restore-ambient-audio'));
+    };
+  }, [isPlaying]);
+
   // Sync prop changes from SSR into active state
   useEffect(() => {
     if (initialVideoUrl && initialVideoUrl.trim()) {
@@ -742,6 +757,21 @@ function AboutSingleReelSlider() {
   const videoRefs = useRef<{ [key: number]: HTMLVideoElement | null }>({});
   const touchStartX = useRef<number | null>(null);
   const touchEndX = useRef<number | null>(null);
+
+  // Auto-mute background music when short reels are playing
+  useEffect(() => {
+    if (isPlaying) {
+      window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: true } }));
+      window.dispatchEvent(new CustomEvent('duck-ambient-audio'));
+    } else {
+      window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: false } }));
+      window.dispatchEvent(new CustomEvent('restore-ambient-audio'));
+    }
+    return () => {
+      window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: false } }));
+      window.dispatchEvent(new CustomEvent('restore-ambient-audio'));
+    };
+  }, [isPlaying]);
 
   useEffect(() => {
     try {
