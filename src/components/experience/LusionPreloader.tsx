@@ -36,12 +36,36 @@ function AnalogRollingDigit({ value, max = 9 }: { value: number; max?: number })
  * - Strict Asset Gatekeeping
  */
 export default function LusionPreloader() {
+  const [shouldRemove, setShouldRemove] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      const navEntry = window.performance?.getEntriesByType?.('navigation')?.[0] as PerformanceNavigationTiming | undefined;
+      const isReload = navEntry?.type === 'reload';
+      
+      if (isReload) {
+        sessionStorage.removeItem('tsehay_preloader_shown');
+        return false;
+      }
+
+      return sessionStorage.getItem('tsehay_preloader_shown') === 'true';
+    } catch (e) {
+      return false;
+    }
+  });
+
   const [progress, setProgress] = useState(0);
   const [isDone, setIsDone] = useState(false);
-  const [shouldRemove, setShouldRemove] = useState(false);
   const [is4KBuffered, setIs4KBuffered] = useState(false);
   const progressRef = useRef(0);
   const animationFrameRef = useRef<number | null>(null);
+
+  // If already shown in this session, immediately unblock document and dispatch complete
+  useEffect(() => {
+    if (shouldRemove && typeof document !== 'undefined') {
+      document.documentElement.classList.remove('tsehay-loading');
+      window.dispatchEvent(new CustomEvent('tsehay-preloader-complete'));
+    }
+  }, [shouldRemove]);
 
   // Dynamic Subtitle Typing Animation State
   const [typedText, setTypedText] = useState('');
@@ -50,6 +74,8 @@ export default function LusionPreloader() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
+    if (shouldRemove) return;
+
     const TYPING_PHRASES = [
       'የወደፊት የቢዝነስ እና የክህሎት ጉዞዎን ዛሬ ይጀምሩ...',
       'በኢትዮጵያ ቀዳሚው የተግባራዊ ክህሎት ማዕከል...',
@@ -80,10 +106,10 @@ export default function LusionPreloader() {
     }
 
     return () => clearTimeout(timer);
-  }, [charIdx, isDeleting, phraseIdx]);
+  }, [charIdx, isDeleting, phraseIdx, shouldRemove]);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || shouldRemove) return;
 
     let fontsReady = false;
     let imagesReady = false;
@@ -218,8 +244,9 @@ export default function LusionPreloader() {
       if (progressRef.current < 100) {
         animationFrameRef.current = requestAnimationFrame(updateProgress);
       } else {
-        // Mark completed
+        // Mark completed in sessionStorage to guard against route change replay
         try {
+          sessionStorage.setItem('tsehay_preloader_shown', 'true');
           sessionStorage.setItem('tsehay_preloader_seen', 'true');
         } catch (e) {}
 

@@ -660,9 +660,13 @@ function StudentDashboardContent() {
     }
   };
 
-  // Student Display Name and Photo Computed Helpers
+  // Student Display Name, Photo and Pro Status Computed Helpers
   const studentDisplayName = settingsName?.trim() || user?.displayName || (user?.email ? user.email.split('@')[0] : '') || 'ተማሪ (Student)';
   const studentPhotoUrl = settingsPhotoUrl || user?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(studentDisplayName)}&background=f9b03c&color=111827&bold=true`;
+  const isProStudent = courses.some(c => {
+    const isFree = c.isFree === true || c.price === 'Free' || c.price === '0' || c.price === 0 || Number(c.price) === 0;
+    return !isFree;
+  }) || Boolean((user as any)?.isPro || (user as any)?.role === 'pro' || (user as any)?.role === 'admin');
 
   const handleProfilePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -1846,21 +1850,24 @@ function StudentDashboardContent() {
   return (
     <div className="min-h-screen bg-[#030509] text-slate-200 flex flex-col md:flex-row font-body relative overflow-x-hidden selection:bg-[#f9b03c]/30">
       
-      {/* 🌟 Floating Exit Focus Mode Button */}
+      {/* 🌟 Floating Distraction-Free Focus Mode Exit Button (Icon Only - Zero Text, Bold Glowing/Pulsing Visual Feedback) */}
       {isFocusMode && (
-        <div className="fixed top-5 right-5 z-[9999] animate-in fade-in zoom-in-95 duration-300">
+        <div className="fixed top-4 right-4 sm:top-6 sm:right-6 z-[9999] animate-in fade-in zoom-in-95 duration-300">
           <button
             type="button"
             onClick={() => setIsFocusMode(false)}
-            className="flex items-center gap-2.5 px-5 py-2.5 rounded-full bg-[#050811]/90 hover:bg-[#050811] text-white border border-[#3268ba]/70 hover:border-[#f9b03c] shadow-[0_0_30px_rgba(50,104,186,0.6)] backdrop-blur-2xl transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer text-xs font-black"
+            className="relative w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-[#3268ba] text-slate-950 border-2 border-white shadow-[0_0_35px_rgba(249,176,60,0.9)] flex items-center justify-center cursor-pointer active:scale-90 transition-all duration-300 group hover:rotate-12"
             title="የትኩረት ሁነታን ዝጋ (Exit Focus Mode)"
+            aria-label="Exit Focus Mode"
           >
-            <div className="w-5 h-5 rounded-full bg-[#f9b03c]/20 text-[#f9b03c] flex items-center justify-center">
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+            {/* Blinking / Pulsing Aura */}
+            <span className="absolute -inset-1 rounded-2xl bg-[#f9b03c] opacity-75 blur-sm animate-ping pointer-events-none"></span>
+            <span className="absolute inset-0 rounded-2xl bg-gradient-to-r from-[#f9b03c] to-[#3268ba] animate-pulse opacity-60 pointer-events-none"></span>
+            <div className="relative z-10 flex items-center justify-center">
+              <svg className="w-6 h-6 text-slate-950 font-black drop-shadow-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.8">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 9V4.5M9 9H4.5M9 9 3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5 5.25 5.25" />
               </svg>
             </div>
-            <span>የትኩረት ሁነታን ዝጋ (Exit Focus Mode)</span>
           </button>
         </div>
       )}
@@ -1880,26 +1887,39 @@ function StudentDashboardContent() {
           <div className="md:hidden flex items-center gap-2">
              <button 
                onClick={() => setCurrentView('settings')}
-               className="p-1 rounded-xl bg-white/5 text-slate-200 cursor-pointer border border-white/10"
-               title="ማስተካከያ (Settings)"
+               className="p-1.5 rounded-xl bg-white/5 text-slate-200 cursor-pointer border border-white/10 hover:bg-white/10 transition relative group"
+               title="መገለጫ ማስተካከያ (Profile Settings & Sign Out)"
              >
-               <img 
-                 src={studentPhotoUrl} 
-                 className="w-7 h-7 rounded-full object-cover ring-2 ring-primary/40" 
-                 alt={studentDisplayName}
-                 onError={(e) => {
-                   (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(studentDisplayName)}&background=f9b03c&color=111827&bold=true`;
-                 }}
-               />
-             </button>
-             <button
-               onClick={handleLogout}
-               disabled={isLoggingOut}
-               className="px-2.5 py-1.5 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded-xl text-xs font-black border border-red-500/20 transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-               title="ውጣ (Logout)"
-             >
-               {isLoggingOut ? <i className="fa-solid fa-spinner fa-spin"></i> : <i className="fa-solid fa-arrow-right-from-bracket"></i>}
-               <span>{isLoggingOut ? '...' : (t('logout') || 'ውጣ')}</span>
+               {isProStudent ? (
+                 <div className="relative flex items-center justify-center">
+                   <div 
+                     className="absolute -inset-1 rounded-full bg-gradient-to-tr from-[#f9b03c] via-[#3268ba] to-[#f9b03c] opacity-90 blur-[0.5px]"
+                     style={{ animation: 'spin 5s linear infinite' }}
+                   ></div>
+                   <div className="relative p-0.5 rounded-full bg-[#030509]">
+                     <img 
+                       src={studentPhotoUrl} 
+                       className="w-7 h-7 rounded-full object-cover shadow-sm" 
+                       alt={studentDisplayName}
+                       onError={(e) => {
+                         (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(studentDisplayName)}&background=f9b03c&color=111827&bold=true`;
+                       }}
+                     />
+                   </div>
+                   <span className="absolute -bottom-1 -right-1 px-1 py-0.2 rounded-full bg-[#f9b03c] text-[8px] font-black text-slate-950 shadow-sm animate-pulse">
+                     PRO
+                   </span>
+                 </div>
+               ) : (
+                 <img 
+                   src={studentPhotoUrl} 
+                   className="w-7 h-7 rounded-full object-cover ring-2 ring-primary/40" 
+                   alt={studentDisplayName}
+                   onError={(e) => {
+                     (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(studentDisplayName)}&background=f9b03c&color=111827&bold=true`;
+                   }}
+                 />
+               )}
              </button>
           </div>
         </div>
@@ -2343,53 +2363,70 @@ function StudentDashboardContent() {
         </nav>
 
         <div className="hidden md:block p-4 w-full border-t border-white/[0.06]">
+          {/* 🌟 Student Profile & Settings Navigation (Logout cleanly managed inside Settings) */}
           <div 
             onClick={() => setCurrentView('settings')}
-            className="flex items-center justify-center lg:justify-start gap-3 p-2 mb-2 rounded-2xl hover:bg-white/[0.06] transition cursor-pointer group"
-            title="መገለጫዎን ለማስተካከል ይጫኑ"
+            className="flex items-center justify-center lg:justify-start gap-3.5 p-2.5 rounded-2xl hover:bg-white/[0.06] transition cursor-pointer group border border-transparent hover:border-white/10"
+            title="መገለጫ ማስተካከያ (Profile Settings & Sign Out)"
           >
-            <div className="relative shrink-0">
-              <img 
-                src={studentPhotoUrl} 
-                className="w-10 h-10 rounded-full object-cover shadow-sm ring-2 ring-[#3268ba]/40 group-hover:ring-[#f9b03c] transition" 
-                alt={studentDisplayName}
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(studentDisplayName)}&background=f9b03c&color=111827&bold=true`;
-                }}
-              />
-              <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-[#030509]"></span>
-            </div>
-            <div className="hidden lg:block overflow-hidden">
+            {isProStudent ? (
+              <div className="relative shrink-0 flex items-center justify-center">
+                {/* 🌟 Rotating & Pulsing Glow Ring in Primary (#f9b03c) and Secondary (#3268ba) */}
+                <div 
+                  className="absolute -inset-1 rounded-full bg-gradient-to-tr from-[#f9b03c] via-[#3268ba] to-[#f9b03c] opacity-90 blur-[1px]"
+                  style={{ animation: 'spin 5s linear infinite' }}
+                ></div>
+                <div className="absolute -inset-0.5 rounded-full bg-gradient-to-r from-[#f9b03c] to-[#3268ba] animate-pulse opacity-75"></div>
+                
+                <div className="relative p-0.5 rounded-full bg-[#030509]">
+                  <img 
+                    src={studentPhotoUrl} 
+                    className="w-10 h-10 rounded-full object-cover shadow-lg" 
+                    alt={studentDisplayName}
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(studentDisplayName)}&background=f9b03c&color=111827&bold=true`;
+                    }}
+                  />
+                </div>
+
+                {/* Sparkling Pro Badge Pill */}
+                <span className="absolute -bottom-1 -right-1 px-1.5 py-0.5 rounded-full bg-gradient-to-r from-[#f9b03c] to-[#3268ba] text-[9px] font-black text-slate-950 tracking-wider shadow-[0_0_12px_rgba(249,176,60,0.8)] ring-1 ring-white/60 flex items-center gap-0.5 animate-pulse">
+                  PRO
+                </span>
+              </div>
+            ) : (
+              <div className="relative shrink-0">
+                <img 
+                  src={studentPhotoUrl} 
+                  className="w-10 h-10 rounded-full object-cover shadow-sm ring-2 ring-white/10 group-hover:ring-[#f9b03c] transition" 
+                  alt={studentDisplayName}
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(studentDisplayName)}&background=f9b03c&color=111827&bold=true`;
+                  }}
+                />
+                <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-[#030509]"></span>
+              </div>
+            )}
+
+            <div className="hidden lg:block overflow-hidden flex-1 min-w-0">
               <p className="text-sm font-bold text-white leading-tight truncate group-hover:text-[#f9b03c] transition">
                 {studentDisplayName}
               </p>
-              <p className="text-[11px] text-slate-400">
-                {courses.some(c => {
-                  const isFree = c.isFree === true || c.price === 'Free' || c.price === '0' || c.price === 0 || Number(c.price) === 0;
-                  return !isFree;
-                }) ? (
-                  <span className="text-[#f9b03c] font-bold flex items-center gap-1">
-                    👑 {t('pro_member')}
-                  </span>
-                ) : 'Free Member'}
-              </p>
+              <div className="flex items-center justify-between mt-0.5">
+                <p className="text-[11px] text-slate-400 truncate">
+                  {isProStudent ? (
+                    <span className="text-[#f9b03c] font-black flex items-center gap-1 drop-shadow-[0_0_8px_rgba(249,176,60,0.4)]">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#f9b03c] animate-ping inline-block"></span>
+                      👑 {t('pro_member') || 'PRO አባል (Pro Member)'}
+                    </span>
+                  ) : 'Free Member'}
+                </p>
+                <span className="text-[10px] text-slate-500 group-hover:text-slate-300 font-medium">
+                  <i className="fa-solid fa-gear text-[10px]"></i>
+                </span>
+              </div>
             </div>
           </div>
-          <button 
-            onClick={handleLogout}
-            disabled={isLoggingOut}
-            className="w-full flex items-center justify-center lg:justify-center gap-2 p-2.5 rounded-xl text-red-400 hover:text-white border border-red-500/20 hover:bg-red-500 font-bold transition duration-200 text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed group shadow-xs active:scale-95"
-            title="ከአካውንትዎ ይውጡ (Sign Out)"
-          >
-             {isLoggingOut ? (
-               <i className="fa-solid fa-spinner fa-spin"></i>
-             ) : (
-               <svg className="w-4 h-4 text-current" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
-               </svg>
-             )}
-             <span className="hidden lg:block">{isLoggingOut ? (t('logging_out') || 'በመውጣት ላይ...') : (t('logout') || 'ውጣ (Logout)')}</span>
-          </button>
         </div>
       </aside>
 
@@ -2457,54 +2494,46 @@ function StudentDashboardContent() {
         </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 overflow-y-auto bg-gray-50 dark:bg-[#111111] p-4 lg:p-8">
+      <main className={`flex-1 overflow-y-auto bg-gray-50 dark:bg-[#030509] ${isFocusMode ? 'p-1 sm:p-3 lg:p-4' : 'p-4 lg:p-8'} transition-all duration-300`}>
         
         {currentView === 'classroom' && (
-          <div className="max-w-[1600px] mx-auto">
-            <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl sm:text-3xl font-black font-heading text-white mb-1.5">{(activeCourse || courses[0] || DEFAULT_COURSES[0])?.title || 'የመማሪያ ክፍል (Classroom)'}</h1>
-                    <p className="text-slate-400 font-body text-sm">{(activeCourse || courses[0] || DEFAULT_COURSES[0])?.category || 'Tsehay Campus Course'}</p>
-                </div>
+          <div className={`${isFocusMode ? 'max-w-[1700px] w-full' : 'max-w-[1600px]'} mx-auto transition-all duration-500`}>
+            {/* 🌟 Top Course Title & Action Header (Completely hidden during Focus Mode to eliminate clutter) */}
+            {!isFocusMode && (
+              <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                      <h1 className="text-2xl sm:text-3xl font-black font-heading text-white mb-1.5">{(activeCourse || courses[0] || DEFAULT_COURSES[0])?.title || 'የመማሪያ ክፍል (Classroom)'}</h1>
+                      <p className="text-slate-400 font-body text-sm">{(activeCourse || courses[0] || DEFAULT_COURSES[0])?.category || 'Tsehay Campus Course'}</p>
+                  </div>
 
-                {/* 🌟 Prominent "የትኩረት ሁኔታ" (Focus Mode) Action Button */}
-                <div className="flex items-center gap-3">
-                    <button
-                        type="button"
-                        onClick={() => {
-                          setIsFocusMode(prev => !prev);
-                          setIsSyllabusCollapsed(true);
-                        }}
-                        className={`px-4 sm:px-5 py-2.5 rounded-2xl font-heading text-xs sm:text-sm font-black transition-all duration-300 flex items-center gap-2.5 cursor-pointer active:scale-95 border backdrop-blur-xl ${
-                          isFocusMode
-                            ? 'bg-gradient-to-r from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 border-amber-300/80 shadow-[0_0_30px_rgba(249,176,60,0.6)] scale-105'
-                            : 'bg-[#3268ba]/20 hover:bg-[#3268ba]/30 text-blue-200 hover:text-white border-[#3268ba]/50 hover:border-[#3268ba] shadow-[0_0_25px_rgba(50,104,186,0.35)]'
-                        }`}
-                        title={isFocusMode ? "የትኩረት ሁነታን ዝጋ (Exit Focus Mode)" : "የትኩረት ሁኔታ (Distraction-Free Focus Mode)"}
-                    >
-                        <div className="w-4 h-4 flex items-center justify-center">
-                          {isFocusMode ? (
-                            <svg className="w-4 h-4 text-slate-950" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M9 9V4.5M9 9H4.5M9 9 3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5 5.25 5.25" />
-                            </svg>
-                          ) : (
-                            <svg className="w-4 h-4 text-[#5a93e8]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
-                            </svg>
-                          )}
-                        </div>
-                        <span>{isFocusMode ? 'የትኩረት ሁነታ ✓ (Exit Focus)' : 'የትኩረት ሁኔታ (Focus Mode)'}</span>
-                    </button>
-                </div>
-            </div>
+                  {/* 🌟 Standalone Glowing Focus Mode Toggle Button (Icon Button Only - Zero Text) */}
+                  <div className="flex items-center gap-3">
+                      <button
+                          type="button"
+                          onClick={() => {
+                            setIsFocusMode(true);
+                            setIsSyllabusCollapsed(true);
+                          }}
+                          className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-[#3268ba]/20 hover:bg-[#3268ba]/35 text-[#5a93e8] hover:text-white border border-[#3268ba]/50 hover:border-[#f9b03c] shadow-[0_0_20px_rgba(50,104,186,0.35)] hover:shadow-[0_0_25px_rgba(249,176,60,0.5)] transition-all duration-300 flex items-center justify-center cursor-pointer active:scale-95 group"
+                          title="የትኩረት ሁነታ (Focus Theater Mode)"
+                          aria-label="Focus Theater Mode"
+                      >
+                          <svg className="w-5 h-5 text-blue-200 group-hover:text-white group-hover:scale-110 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
+                          </svg>
+                      </button>
+                  </div>
+              </div>
+            )}
 
-            <div className="w-full max-w-6xl mx-auto flex flex-col gap-6 lg:gap-8 transition-all duration-500">
+            {/* Seamless Theater Video Arena (Expands to Full Theater View in Focus Mode) */}
+            <div className={`w-full ${isFocusMode ? 'max-w-7xl 2xl:max-w-[1700px]' : 'max-w-6xl'} mx-auto flex flex-col gap-6 lg:gap-8 transition-all duration-500`}>
                 
                 {/* Dedicated Video Player & Learning Arena */}
                 <div className="flex flex-col gap-6 w-full">
                     
                     {/* Cinematic Video Player */}
-                    <div className="bg-dark rounded-2xl overflow-hidden shadow-2xl relative border border-gray-800 aspect-video flex items-center justify-center group/player">
+                    <div className={`bg-dark ${isFocusMode ? 'rounded-2xl sm:rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.95)] border-slate-700/80 ring-1 ring-white/10' : 'rounded-2xl shadow-2xl border-gray-800'} overflow-hidden relative border aspect-video flex items-center justify-center group/player transition-all duration-500`}>
                         
                         {/* Auto-Resume Floating Toast */}
                         {resumeToast && (
