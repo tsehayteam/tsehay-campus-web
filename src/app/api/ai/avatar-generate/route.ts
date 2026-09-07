@@ -45,8 +45,16 @@ export async function POST(req: NextRequest) {
     // Try Gemini Multimodal analysis if API key is present
     const apiKeys = [
       process.env.GEMINI_API_KEY,
+      process.env.GOOGLE_GENERATIVE_AI_API_KEY,
       process.env.NEXT_PUBLIC_GEMINI_API_KEY,
-      process.env.GOOGLE_API_KEY
+      process.env.GOOGLE_API_KEY,
+      process.env.GOOGLE_GENAI_API_KEY,
+      process.env.VERCEL_GEMINI_API_KEY,
+      process.env.GEMINI_APIKEY,
+      process.env.GEMINI_KEY,
+      process.env.GENINI_API_KEY,
+      process.env.GEMINI,
+      process.env.API_KEY,
     ].filter(Boolean);
 
     let analysisDescription = 'የተሳካ የ AI አቫታር ተዘጋጅቷል! (Custom AI Avatar Generated)';

@@ -107,6 +107,7 @@ function StudentDashboardContent() {
 
   const setCurrentView = (newView: string) => {
     _setCurrentView(newView);
+    setIsMobileDrawerOpen(false);
     if (newView === 'classroom') {
       updateUrlState({ 
         view: 'classroom', 
@@ -530,6 +531,8 @@ function StudentDashboardContent() {
   const aiRecognitionRef = useRef<any>(null);
   const aiTimerRef = useRef<any>(null);
   const aiFileInputRef = useRef<HTMLInputElement>(null);
+  const aiCameraInputRef = useRef<HTMLInputElement>(null);
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [currentVideoPlayedFraction, setCurrentVideoPlayedFraction] = useState(0);
 
   // Enterprise Classroom States
@@ -547,6 +550,7 @@ function StudentDashboardContent() {
   const [playingLessonAiAudioIdx, setPlayingLessonAiAudioIdx] = useState<number | null>(null);
   const [copiedLessonAiIdx, setCopiedLessonAiIdx] = useState<number | null>(null);
   const lessonFileInputRef = useRef<HTMLInputElement>(null);
+  const lessonCameraInputRef = useRef<HTMLInputElement>(null);
   const lessonVoiceRecRef = useRef<any>(null);
 
   const playLessonAiVoice = (text: string, idx: number) => {
@@ -2161,14 +2165,26 @@ function StudentDashboardContent() {
       {/* Sidebar Navigation - Deep Glassmorphism (Hidden in Focus Mode) */}
       <aside className={`${isFocusMode ? 'hidden' : 'w-full md:w-24 lg:w-72'} bg-[#030509]/95 backdrop-blur-2xl border-b md:border-b-0 md:border-r border-white/[0.08] flex flex-col items-center lg:items-start shadow-2xl z-20 shrink-0 transition-all duration-500`}>
         <div className="h-16 md:h-20 w-full flex items-center justify-between md:justify-center lg:justify-start px-4 lg:px-6 border-b border-white/[0.06]">
-          <a href="/" className="flex items-center cursor-pointer group brand-entrance">
-            <div className="w-8 h-8 md:w-10 md:h-10 bg-white rounded-xl mx-auto flex items-center justify-center shadow-lg p-0.5 border border-white/20 brand-logo-img">
-              <img src="/tc-logo.jpg" alt="Tsehay Campus Logo" className="w-full h-full object-contain rounded-xl" />
-            </div>
-            <span className="ml-3 font-heading font-black text-lg md:text-xl tracking-tight notranslate select-none">
-              <span className="text-[#f9b03c]">Tsehay</span> <span className="text-[#3268ba]">Campus</span>
-            </span>
-          </a>
+          <div className="flex items-center gap-2.5">
+            <button
+              type="button"
+              onClick={() => setIsMobileDrawerOpen(true)}
+              className="md:hidden p-2 rounded-xl bg-white/5 hover:bg-[#f9b03c]/20 text-[#f9b03c] border border-white/10 hover:border-[#f9b03c]/40 transition active:scale-95 cursor-pointer shadow-sm flex items-center justify-center"
+              aria-label="Open Mobile Drawer Menu"
+              title="የጎን ማውጫ (Open Menu)"
+            >
+              <i className="fa-solid fa-bars text-base"></i>
+            </button>
+
+            <a href="/" className="flex items-center cursor-pointer group brand-entrance">
+              <div className="w-8 h-8 md:w-10 md:h-10 bg-white rounded-xl mx-auto flex items-center justify-center shadow-lg p-0.5 border border-white/20 brand-logo-img">
+                <img src="/tc-logo.jpg" alt="Tsehay Campus Logo" className="w-full h-full object-contain rounded-xl" />
+              </div>
+              <span className="ml-2.5 sm:ml-3 font-heading font-black text-base sm:text-lg md:text-xl tracking-tight notranslate select-none">
+                <span className="text-[#f9b03c]">Tsehay</span> <span className="text-[#3268ba]">Campus</span>
+              </span>
+            </a>
+          </div>
           
           <div className="md:hidden flex items-center gap-2">
              <button 
@@ -2602,9 +2618,20 @@ function StudentDashboardContent() {
         {currentView === 'classroom' && (
           <div className="max-w-[1600px] mx-auto">
             <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl sm:text-3xl font-black font-heading text-white mb-1.5">{(activeCourse || courses[0] || DEFAULT_COURSES[0])?.title || 'የመማሪያ ክፍል (Classroom)'}</h1>
-                    <p className="text-slate-400 font-body text-sm">{(activeCourse || courses[0] || DEFAULT_COURSES[0])?.category || 'Tsehay Campus Course'}</p>
+                <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setIsMobileDrawerOpen(true)}
+                      className="md:hidden p-2.5 rounded-2xl bg-white/5 hover:bg-[#f9b03c]/20 text-[#f9b03c] border border-white/10 hover:border-[#f9b03c]/40 transition active:scale-95 cursor-pointer shadow-sm shrink-0 flex items-center justify-center"
+                      title="የጎን ማውጫ (Open Menu)"
+                      aria-label="Open Drawer Menu"
+                    >
+                      <i className="fa-solid fa-bars-staggered text-sm"></i>
+                    </button>
+                    <div>
+                        <h1 className="text-xl sm:text-2xl lg:text-3xl font-black font-heading text-white mb-1">{(activeCourse || courses[0] || DEFAULT_COURSES[0])?.title || 'የመማሪያ ክፍል (Classroom)'}</h1>
+                        <p className="text-slate-400 font-body text-xs sm:text-sm">{(activeCourse || courses[0] || DEFAULT_COURSES[0])?.category || 'Tsehay Campus Course'}</p>
+                    </div>
                 </div>
 
                 {/* 🌟 Prominent "የትኩረት ሁኔታ" (Focus Mode) Action Button */}
@@ -4096,7 +4123,15 @@ function StudentDashboardContent() {
 
         {currentView === 'ai' && (
           <div className="max-w-4xl mx-auto py-4 space-y-4">
-             {/* Hidden File Input for Image Attachment */}
+             {/* Hidden File Inputs for Camera & Image Attachment */}
+             <input 
+               ref={aiCameraInputRef}
+               type="file"
+               accept="image/*"
+               capture="environment"
+               onChange={handleAiImageUpload}
+               className="hidden"
+             />
              <input 
                ref={aiFileInputRef}
                type="file"
@@ -4322,7 +4357,7 @@ function StudentDashboardContent() {
                  </div>
 
                  {/* Chat Messages Body */}
-                 <div className="relative z-10 flex-1 overflow-y-auto p-3 sm:p-4 space-y-4 bg-gray-50/80 dark:bg-slate-950/60 rounded-2xl border border-gray-100 dark:border-white/5">
+                 <div className="relative z-10 flex-1 overflow-y-auto p-3 sm:p-4 space-y-4 bg-gray-50/80 dark:bg-slate-950/60 rounded-2xl border border-gray-100 dark:border-white/5 tsehay-ai-scrollbar">
                      {chatMessages.map((m: any, i: number) => {
                        const isUser = m.role === 'user';
                        return (
@@ -4490,6 +4525,16 @@ function StudentDashboardContent() {
 
                   {/* ✍️ Clean Single Persistent Input Bar (Photo, Text Input, Live Mic / Send) */}
                   <form onSubmit={(e) => handleSendAiMessage(e)} className="relative z-10 flex items-center gap-2">
+                      {/* Live Camera Capture Button */}
+                      <button
+                        type="button"
+                        onClick={() => aiCameraInputRef.current?.click()}
+                        className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-gray-100 dark:bg-white/5 hover:bg-[#f9b03c]/20 hover:text-[#f9b03c] text-[#f9b03c] border border-gray-200 dark:border-white/15 flex items-center justify-center transition active:scale-90 cursor-pointer shrink-0"
+                        title="በካሜራ ፎቶ አንሳ (Take Photo via Camera)"
+                      >
+                        <i className="fa-solid fa-camera text-sm"></i>
+                      </button>
+
                       {/* Photo Upload Button */}
                       <button
                         type="button"
@@ -5179,7 +5224,15 @@ function StudentDashboardContent() {
       {/* In-Lesson Contextual AI Tutor Modal */}
       {showLessonAiModal && (
           <div className="fixed inset-0 z-[10000] bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4">
-              {/* Hidden File Input for Lesson AI Image Attachment */}
+              {/* Hidden File Inputs for Lesson AI Image & Camera Attachment */}
+              <input 
+                ref={lessonCameraInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={handleLessonImageUpload}
+                className="hidden"
+              />
               <input 
                 ref={lessonFileInputRef}
                 type="file"
@@ -5234,7 +5287,7 @@ function StudentDashboardContent() {
                   </div>
 
                   {/* Chat Body */}
-                  <div className="relative z-10 flex-1 overflow-y-auto p-4 space-y-3 min-h-[260px] max-h-[420px] bg-[#050811]/60">
+                  <div className="relative z-10 flex-1 overflow-y-auto p-4 space-y-3 min-h-[260px] max-h-[420px] bg-[#050811]/60 tsehay-ai-scrollbar">
                       {lessonAiMessages.length === 0 ? (
                           <div className="text-center py-8 text-gray-300 space-y-3">
                               <div className="w-14 h-14 rounded-3xl bg-[#f9b03c]/10 text-[#f9b03c] mx-auto flex items-center justify-center text-2xl border border-[#f9b03c]/20 shadow-inner">
@@ -5394,6 +5447,15 @@ function StudentDashboardContent() {
                   <div className="relative z-10 p-3 bg-gradient-to-t from-[#060a14] to-[#0c1222] border-t border-white/10 flex items-center gap-2">
                       <button
                         type="button"
+                        onClick={() => lessonCameraInputRef.current?.click()}
+                        className="w-10 h-10 rounded-2xl bg-white/5 hover:bg-[#f9b03c]/20 text-[#f9b03c] border border-white/15 flex items-center justify-center transition active:scale-90 cursor-pointer shrink-0"
+                        title="በካሜራ ፎቶ አንሳ (Take Photo via Camera)"
+                      >
+                        <i className="fa-solid fa-camera text-sm"></i>
+                      </button>
+
+                      <button
+                        type="button"
                         onClick={() => lessonFileInputRef.current?.click()}
                         className="w-10 h-10 rounded-2xl bg-white/5 hover:bg-white/15 text-gray-300 hover:text-[#f9b03c] border border-white/15 flex items-center justify-center transition active:scale-90 cursor-pointer shrink-0"
                         title="ፎቶ / ስክሪንሾት አያይዝ"
@@ -5477,6 +5539,270 @@ function StudentDashboardContent() {
         onClose={() => setShowFeedbackModal(false)} 
         user={user} 
       />
+
+      {/* ===================== 📱 ULTRA-LUXURY MOBILE SLIDE-OVER DRAWER MENU ===================== */}
+      {/* 1. Backdrop Overlay */}
+      <div 
+        className={`fixed inset-0 bg-black/80 backdrop-blur-md z-[10000] transition-opacity duration-300 md:hidden ${
+          isMobileDrawerOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        }`}
+        onClick={() => setIsMobileDrawerOpen(false)}
+      />
+
+      {/* 2. Slide Drawer Panel */}
+      <aside
+        className={`fixed inset-y-0 left-0 w-[300px] max-w-[85vw] bg-[#070b14]/98 backdrop-blur-2xl border-r border-white/10 shadow-[20px_0_60px_rgba(0,0,0,0.9)] z-[10001] flex flex-col transition-transform duration-300 ease-out md:hidden ${
+          isMobileDrawerOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        {/* Drawer Header with Brand & Close Button */}
+        <div className="h-16 px-4 border-b border-white/[0.08] flex items-center justify-between bg-white/[0.02]">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-white p-0.5 border border-white/20 shadow-md">
+              <img src="/tc-logo.jpg" alt="Tsehay Campus" className="w-full h-full object-contain rounded-lg" />
+            </div>
+            <span className="font-heading font-black text-base tracking-tight notranslate">
+              <span className="text-[#f9b03c]">Tsehay</span> <span className="text-[#3268ba]">Campus</span>
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsMobileDrawerOpen(false)}
+            className="w-8 h-8 rounded-xl bg-white/5 hover:bg-white/15 text-slate-300 hover:text-white flex items-center justify-center transition active:scale-95 cursor-pointer border border-white/10"
+            title="ዝጋ (Close)"
+          >
+            <i className="fa-solid fa-xmark text-sm"></i>
+          </button>
+        </div>
+
+        {/* Drawer Scrollable Content */}
+        <div className="flex-1 overflow-y-auto p-3 space-y-4 tsehay-ai-scrollbar">
+          {/* User Profile Preview Card */}
+          <div className="p-3.5 rounded-2xl bg-gradient-to-br from-white/[0.06] to-white/[0.02] border border-white/10 space-y-2.5">
+            <div className="flex items-center gap-3">
+              <img 
+                src={studentPhotoUrl} 
+                alt={studentDisplayName}
+                className="w-12 h-12 rounded-2xl object-cover ring-2 ring-[#f9b03c]/60 shadow-md shrink-0"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(studentDisplayName)}&background=f9b03c&color=111827&bold=true`;
+                }}
+              />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <h4 className="font-black text-xs text-white truncate font-heading">{studentDisplayName}</h4>
+                  <span className="text-[9px] font-black px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    ተማሪ
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-400 truncate">{user?.email}</p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                setCurrentView('settings');
+                setIsMobileDrawerOpen(false);
+              }}
+              className="w-full py-2 px-3 rounded-xl bg-white/5 hover:bg-[#f9b03c]/20 text-slate-300 hover:text-[#f9b03c] border border-white/10 hover:border-[#f9b03c]/40 font-bold text-[11px] transition flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+            >
+              <i className="fa-solid fa-user-gear text-xs text-[#f9b03c]"></i>
+              <span>ፕሮፋይል ማስተካከያ (Profile Settings)</span>
+            </button>
+          </div>
+
+          {/* SECTION 1: 🎓 ትምህርት እና ኮርሶች (Learning & Courses) */}
+          <div className="space-y-1">
+            <span className="text-[10px] font-black text-[#f9b03c] uppercase tracking-wider px-2 block">
+              ትምህርት እና ኮርሶች
+            </span>
+            
+            {/* Classroom */}
+            <button
+              type="button"
+              onClick={() => {
+                setCurrentView('classroom');
+                setIsMobileDrawerOpen(false);
+              }}
+              className={`w-full p-2.5 rounded-xl font-bold text-xs flex items-center justify-between transition cursor-pointer active:scale-95 ${
+                currentView === 'classroom'
+                  ? 'bg-gradient-to-r from-[#3268ba] to-[#254f8e] text-white shadow-md border border-white/20 font-black'
+                  : 'text-slate-300 hover:text-white hover:bg-white/5 border border-transparent'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <i className="fa-solid fa-chalkboard-user text-xs text-blue-400"></i>
+                <span>መማሪያ ክፍል (Classroom)</span>
+              </div>
+              {currentView === 'classroom' && <i className="fa-solid fa-chevron-right text-[10px] text-white/80"></i>}
+            </button>
+
+            {/* My Courses */}
+            <button
+              type="button"
+              onClick={() => {
+                setCurrentView('courses');
+                setIsMobileDrawerOpen(false);
+              }}
+              className={`w-full p-2.5 rounded-xl font-bold text-xs flex items-center justify-between transition cursor-pointer active:scale-95 ${
+                currentView === 'courses'
+                  ? 'bg-gradient-to-r from-[#3268ba] to-[#254f8e] text-white shadow-md border border-white/20 font-black'
+                  : 'text-slate-300 hover:text-white hover:bg-white/5 border border-transparent'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <i className="fa-solid fa-book-open text-xs text-amber-400"></i>
+                <span>የእኔ ኮርሶች (My Courses)</span>
+              </div>
+              {currentView === 'courses' && <i className="fa-solid fa-chevron-right text-[10px] text-white/80"></i>}
+            </button>
+
+            {/* Certificates */}
+            <button
+              type="button"
+              onClick={() => {
+                setCurrentView('certificates');
+                setIsMobileDrawerOpen(false);
+              }}
+              className={`w-full p-2.5 rounded-xl font-bold text-xs flex items-center justify-between transition cursor-pointer active:scale-95 ${
+                currentView === 'certificates'
+                  ? 'bg-gradient-to-r from-[#3268ba] to-[#254f8e] text-white shadow-md border border-white/20 font-black'
+                  : 'text-slate-300 hover:text-white hover:bg-white/5 border border-transparent'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <i className="fa-solid fa-award text-xs text-emerald-400"></i>
+                <span>የብቃት ሰርተፊኬቶች (Certificates)</span>
+              </div>
+              {currentView === 'certificates' && <i className="fa-solid fa-chevron-right text-[10px] text-white/80"></i>}
+            </button>
+          </div>
+
+          {/* SECTION 2: 🤖 ብልህ አጋዥ እና ማህበረሰብ (AI & Community) */}
+          <div className="space-y-1">
+            <span className="text-[10px] font-black text-cyan-400 uppercase tracking-wider px-2 block">
+              ብልህ አጋዥ እና ማህበረሰብ
+            </span>
+
+            {/* Tsehay AI Tutor */}
+            <button
+              type="button"
+              onClick={() => {
+                setCurrentView('ai');
+                setIsMobileDrawerOpen(false);
+              }}
+              className={`w-full p-2.5 rounded-xl font-bold text-xs flex items-center justify-between transition cursor-pointer active:scale-95 ${
+                currentView === 'ai'
+                  ? 'bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#e59b2b] text-slate-950 font-black shadow-md border border-white/30'
+                  : 'text-slate-300 hover:text-white hover:bg-[#f9b03c]/10 border border-[#f9b03c]/20'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <i className="fa-solid fa-robot text-xs text-[#f9b03c]"></i>
+                <span>Tsehay AI Tutor (አጋዥ)</span>
+              </div>
+              <span className="text-[9px] font-black px-1.5 py-0.2 rounded bg-amber-400/20 text-[#f9b03c]">24/7</span>
+            </button>
+
+            {/* Mentor Messages */}
+            <button
+              type="button"
+              onClick={() => {
+                setCurrentView('messages');
+                setIsMobileDrawerOpen(false);
+              }}
+              className={`w-full p-2.5 rounded-xl font-bold text-xs flex items-center justify-between transition cursor-pointer active:scale-95 ${
+                currentView === 'messages'
+                  ? 'bg-gradient-to-r from-[#3268ba] to-[#254f8e] text-white shadow-md border border-white/20 font-black'
+                  : 'text-slate-300 hover:text-white hover:bg-white/5 border border-transparent'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <i className="fa-solid fa-comment-dots text-xs text-indigo-400"></i>
+                <span>መልዕክቶች እና ድጋፍ (Messages)</span>
+              </div>
+              {currentView === 'messages' && <i className="fa-solid fa-chevron-right text-[10px] text-white/80"></i>}
+            </button>
+
+            {/* Community */}
+            <a
+              href="/community"
+              className="w-full p-2.5 rounded-xl font-bold text-xs flex items-center justify-between text-slate-300 hover:text-white hover:bg-white/5 border border-transparent transition cursor-pointer active:scale-95"
+            >
+              <div className="flex items-center gap-2.5">
+                <i className="fa-solid fa-users text-xs text-purple-400"></i>
+                <span>ማህበረሰብ (Community)</span>
+              </div>
+              <i className="fa-solid fa-arrow-up-right-from-square text-[10px] text-slate-400"></i>
+            </a>
+          </div>
+
+          {/* SECTION 3: 🎁 ሽልማቶች እና መለያ (Rewards & Account) */}
+          <div className="space-y-1">
+            <span className="text-[10px] font-black text-rose-400 uppercase tracking-wider px-2 block">
+              ሽልማቶች እና መለያ
+            </span>
+
+            {/* Referral */}
+            <button
+              type="button"
+              onClick={() => {
+                setCurrentView('referrals');
+                setIsMobileDrawerOpen(false);
+              }}
+              className={`w-full p-2.5 rounded-xl font-bold text-xs flex items-center justify-between transition cursor-pointer active:scale-95 ${
+                currentView === 'referrals'
+                  ? 'bg-gradient-to-r from-amber-500 to-[#f9b03c] text-slate-950 font-black shadow-md'
+                  : 'text-slate-300 hover:text-white hover:bg-white/5 border border-transparent'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <i className="fa-solid fa-gift text-xs text-rose-400"></i>
+                <span>ጓደኛዎን ይጋብዙ (Refer & Earn)</span>
+              </div>
+              {currentView === 'referrals' && <i className="fa-solid fa-chevron-right text-[10px] text-slate-950"></i>}
+            </button>
+
+            {/* Settings */}
+            <button
+              type="button"
+              onClick={() => {
+                setCurrentView('settings');
+                setIsMobileDrawerOpen(false);
+              }}
+              className={`w-full p-2.5 rounded-xl font-bold text-xs flex items-center justify-between transition cursor-pointer active:scale-95 ${
+                currentView === 'settings'
+                  ? 'bg-gradient-to-r from-[#3268ba] to-[#254f8e] text-white shadow-md border border-white/20 font-black'
+                  : 'text-slate-300 hover:text-white hover:bg-white/5 border border-transparent'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <i className="fa-solid fa-gear text-xs text-slate-400"></i>
+                <span>ማስተካከያ (Settings)</span>
+              </div>
+              {currentView === 'settings' && <i className="fa-solid fa-chevron-right text-[10px] text-white/80"></i>}
+            </button>
+          </div>
+        </div>
+
+        {/* Drawer Footer with Logout */}
+        <div className="p-3 border-t border-white/[0.08] bg-white/[0.02]">
+          <button
+            type="button"
+            onClick={() => {
+              setIsMobileDrawerOpen(false);
+              handleLogout();
+            }}
+            disabled={isLoggingOut}
+            className="w-full py-2.5 px-3 rounded-xl bg-red-500/10 hover:bg-red-500 text-red-400 hover:text-white border border-red-500/25 font-bold text-xs transition flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
+          >
+            {isLoggingOut ? <i className="fa-solid fa-spinner fa-spin text-xs"></i> : <i className="fa-solid fa-arrow-right-from-bracket text-xs"></i>}
+            <span>{isLoggingOut ? 'በመውጣት ላይ...' : 'ከመለያ ውጣ (Log Out)'}</span>
+          </button>
+        </div>
+      </aside>
+
     </div>
   );
 }

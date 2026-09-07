@@ -113,6 +113,14 @@ export default function PWAInstallBanner() {
     }
   };
 
+  useEffect(() => {
+    const handleDirectInstall = () => {
+      handleInstall();
+    };
+    window.addEventListener('tsehay_trigger_install_now', handleDirectInstall);
+    return () => window.removeEventListener('tsehay_trigger_install_now', handleDirectInstall);
+  }, [deferredPrompt, isIOS]);
+
   const handleDismiss = () => {
     setShowToast(false);
     if (hideTimerRef.current) clearTimeout(hideTimerRef.current);

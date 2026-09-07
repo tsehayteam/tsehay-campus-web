@@ -441,12 +441,18 @@ export async function POST(req: Request) {
     const apiKeys = [
         dbApiKey,
         process.env.GEMINI_API_KEY,
+        process.env.GOOGLE_GENERATIVE_AI_API_KEY,
         process.env.GOOGLE_API_KEY,
         process.env.NEXT_PUBLIC_GEMINI_API_KEY,
         process.env.GOOGLE_GENAI_API_KEY,
-        process.env.GENINI_API_KEY,
+        process.env.VERCEL_GEMINI_API_KEY,
+        process.env.GEMINI_APIKEY,
+        process.env.NEXT_PUBLIC_GOOGLE_API_KEY,
         process.env.GEMINI_KEY,
+        process.env.GENINI_API_KEY,
         process.env.GENINI_KEY,
+        process.env.GEMINI,
+        process.env.API_KEY,
     ].filter(Boolean);
 
     let contextualCourseSection = '';

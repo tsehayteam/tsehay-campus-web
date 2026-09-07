@@ -66,7 +66,18 @@ export async function POST(req: NextRequest) {
     }
 
     // 2. Intelligent Gemini API Call with Structured JSON Output
-    const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+    const apiKey = 
+      process.env.GEMINI_API_KEY || 
+      process.env.GOOGLE_GENERATIVE_AI_API_KEY || 
+      process.env.GOOGLE_API_KEY || 
+      process.env.NEXT_PUBLIC_GEMINI_API_KEY ||
+      process.env.GOOGLE_GENAI_API_KEY ||
+      process.env.VERCEL_GEMINI_API_KEY ||
+      process.env.GEMINI_APIKEY ||
+      process.env.GEMINI_KEY ||
+      process.env.GENINI_API_KEY ||
+      process.env.GEMINI ||
+      process.env.API_KEY;
 
     if (apiKey) {
       const systemInstruction = `You are "Tsehay AI", the invisible, voice-activated AI mentor and assistant for "Tsehay Campus" (tsehaycampus.com) founded by Eyoub Sahle (ኢዮብ ሳህሌ).

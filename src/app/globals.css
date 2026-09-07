@@ -27,13 +27,13 @@
 }
 
 :root {
-  --background: #030509;
-  --foreground: #ededed;
-  --plyr-color-main: #facc15;
-  --bodyBg: #030509;
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --plyr-color-main: #f59e0b;
+  --bodyBg: #f8fafc;
 }
 
-:root.dark, html.dark, body {
+:root.dark, html.dark {
   --background: #030509;
   --foreground: #ededed;
   --plyr-color-main: #facc15;
@@ -48,20 +48,29 @@ html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-tap-highlight-color: transparent;
-  background-color: #030509;
   overflow-x: hidden;
   max-width: 100%;
 }
 
-body {
-  color: var(--foreground);
+html.dark, html.dark body {
   background-color: #030509 !important;
   background: #030509 !important;
+  color: #ededed !important;
+}
+
+html:not(.dark), html:not(.dark) body {
+  background-color: #f1f5f9 !important;
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+body {
   font-family: var(--font-body), Arial, Helvetica, sans-serif;
   overflow-x: hidden;
   max-width: 100%;
   width: 100%;
   padding-bottom: env(safe-area-inset-bottom);
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .safe-area-bottom {

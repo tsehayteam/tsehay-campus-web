@@ -22,6 +22,7 @@ export default function Navbar() {
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isSignupMode, setIsSignupMode] = useState(false);
+  const [showAppDownloadModal, setShowAppDownloadModal] = useState(false);
   const [theme, setTheme] = useState('dark');
   const { lang, toggleLanguage, t } = useLanguage();
   const [animationKey, setAnimationKey] = useState(0);
@@ -268,11 +269,14 @@ export default function Navbar() {
     const newTheme = theme === 'dark' ? 'light' : 'dark';
     if (newTheme === 'dark') {
       document.documentElement.classList.add('dark');
+      document.documentElement.classList.remove('light');
     } else {
       document.documentElement.classList.remove('dark');
+      document.documentElement.classList.add('light');
     }
     setTheme(newTheme);
     localStorage.setItem('theme', newTheme);
+    window.dispatchEvent(new CustomEvent('tsehay_theme_changed', { detail: { theme: newTheme } }));
   };
 
   const openAuthModal = (signup: boolean) => {
@@ -722,10 +726,10 @@ export default function Navbar() {
                 </div>
               )}
 
-              {/* Animated Phone + Download App Action Button */}
+              {/* Animated Phone + Download App Action Button (With Confirmation Modal) */}
               <button 
                 type="button"
-                onClick={() => window.dispatchEvent(new CustomEvent('open-pwa-install'))}
+                onClick={() => setShowAppDownloadModal(true)}
                 className="btn-install-pwa hidden md:flex items-center gap-2 px-3 sm:px-3.5 py-1.5 rounded-full font-heading font-black text-xs cursor-pointer notranslate border border-[#f9b03c]/45 bg-[#f9b03c]/10 hover:bg-[#f9b03c]/20 text-white hover:text-[#f9b03c] shadow-[0_0_15px_rgba(249,176,60,0.25)] hover:shadow-[0_0_25px_rgba(249,176,60,0.5)] group transition-all duration-300 animate-pulse hover:animate-none active:scale-95"
                 title="አፕሊኬሽኑን በስልክዎ ወይም በኮምፒተርዎ ላይ ይጫኑ (Install App)"
               >
@@ -739,14 +743,29 @@ export default function Navbar() {
               {/* Sliding Language Switcher Toggle */}
               <LanguageToggleSwitch compact />
 
-              {/* Dark/Light Mode Toggle */}
+              {/* Dark/Light Theme Switcher with Clear High-Contrast Icons */}
               <button 
+                type="button"
                 onClick={toggleTheme} 
-                className="w-8 h-8 rounded-full border border-white/10 hover:border-white/20 bg-white/5 text-yellow-400 flex items-center justify-center text-xs transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+                className={`h-8 px-2.5 rounded-full border transition-all duration-300 flex items-center gap-1.5 text-xs cursor-pointer active:scale-95 ${
+                  theme === 'dark'
+                    ? 'border-white/15 bg-white/5 hover:bg-white/10 text-amber-400 hover:border-amber-400/40 shadow-sm'
+                    : 'border-amber-500/40 bg-amber-500/15 text-amber-600 dark:text-amber-400 font-black shadow-[0_0_10px_rgba(245,158,11,0.25)]'
+                }`}
                 aria-label="Toggle dark/light mode"
-                title="ሞድ ይቀይሩ / Toggle theme"
+                title={theme === 'dark' ? "ገጽታ፡ ጨለማ (Dark) • ወደ ብርሃን ለመቀየር ይጫኑ" : "ገጽታ፡ ብርሃን (Light) • ወደ ጨለማ ለመቀየር ይጫኑ"}
               >
-                <i className={`fa-solid ${theme === 'dark' ? 'fa-moon' : 'fa-sun'}`}></i>
+                {theme === 'dark' ? (
+                  <>
+                    <i className="fa-solid fa-moon text-amber-400 text-xs transition-transform duration-300"></i>
+                    <span className="text-[10px] font-bold text-slate-300 hidden sm:inline">Dark</span>
+                  </>
+                ) : (
+                  <>
+                    <i className="fa-solid fa-sun text-amber-500 text-xs transition-transform duration-300"></i>
+                    <span className="text-[10px] font-black text-amber-600 hidden sm:inline">Light</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -844,12 +863,12 @@ export default function Navbar() {
               </button>
             </div>
 
-            {/* Install App Trigger Pill with Animated Phone + Download */}
+            {/* Install App Trigger Pill with Animated Phone + Download (With Confirmation Modal) */}
             <button 
               type="button" 
               onClick={() => {
                 closeCurtain();
-                window.dispatchEvent(new CustomEvent('open-pwa-install'));
+                setShowAppDownloadModal(true);
               }} 
               className="w-full py-3 px-4 rounded-2xl mobile-nav-card bg-gradient-to-r from-[#f9b03c]/15 via-amber-400/10 to-[#3268ba]/15 border border-[#f9b03c]/40 hover:border-[#f9b03c] flex items-center justify-center gap-2.5 text-center cursor-pointer group transition-all duration-200 active:scale-95 shadow-[0_0_15px_rgba(249,176,60,0.15)]"
             >
@@ -968,6 +987,91 @@ export default function Navbar() {
     </div>
       
       <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} isSignupMode={isSignupMode} setIsSignupMode={setIsSignupMode} />
+
+      {/* ===================== 📲 APP DOWNLOAD CONFIRMATION MODAL ===================== */}
+      {showAppDownloadModal && (
+        <div 
+          className="fixed inset-0 z-[100000] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200"
+          onClick={() => setShowAppDownloadModal(false)}
+        >
+          <div 
+            className="relative w-full max-w-md rounded-3xl bg-[#080d18] border border-[#f9b03c]/40 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.9),0_0_40px_rgba(249,176,60,0.25)] text-center space-y-4 animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Ambient Glow */}
+            <div className="absolute -top-12 left-1/2 -translate-x-1/2 w-32 h-32 bg-[#f9b03c]/20 rounded-full blur-2xl pointer-events-none" />
+
+            {/* App Icon */}
+            <div className="relative mx-auto w-20 h-20 rounded-2xl p-1 bg-gradient-to-tr from-[#f9b03c] via-yellow-400 to-[#3268ba] shadow-[0_0_25px_rgba(249,176,60,0.4)]">
+              <img 
+                src="/tc-logo.jpg" 
+                alt="Tsehay Campus" 
+                className="w-full h-full object-cover rounded-xl"
+              />
+              <span className="absolute -bottom-1 -right-1 px-2 py-0.5 rounded-full bg-emerald-500 text-slate-950 font-black text-[9px] shadow">
+                OFFICIAL
+              </span>
+            </div>
+
+            {/* Content */}
+            <div className="space-y-2">
+              <span className="text-[11px] font-black tracking-widest text-[#f9b03c] uppercase">
+                Tsehay Campus App Download
+              </span>
+              <h3 className="text-lg sm:text-xl font-black font-heading text-white">
+                የፀሐይ ካምፓስን አፕሊኬሽን ማውረድ ይፈልጋሉ?
+              </h3>
+              <p className="text-xs text-slate-300 leading-relaxed max-w-xs mx-auto">
+                የፀሐይ ካምፓስን ይፋዊ አፕሊኬሽን በስልክዎ ወይም በኮምፒውተርዎ ላይ ጭነው ያለ ምንም መቆራረጥ፣ በከፍተኛ ፍጥነት እና ዳታ በመቆጠብ ይማሩ።
+              </p>
+            </div>
+
+            {/* Benefits Badge List */}
+            <div className="grid grid-cols-2 gap-2 text-left p-3 rounded-2xl bg-white/5 border border-white/10 text-[11px]">
+              <div className="flex items-center gap-2 text-slate-200">
+                <i className="fa-solid fa-bolt text-[#f9b03c]"></i>
+                <span>እጅግ ፈጣን አሰራር</span>
+              </div>
+              <div className="flex items-center gap-2 text-slate-200">
+                <i className="fa-solid fa-bell text-[#f9b03c]"></i>
+                <span>የቀጥታ ማሳወቂያዎች</span>
+              </div>
+              <div className="flex items-center gap-2 text-slate-200">
+                <i className="fa-solid fa-wifi-slash text-[#f9b03c]"></i>
+                <span>ከመስመር ውጭ ዝግጁ</span>
+              </div>
+              <div className="flex items-center gap-2 text-slate-200">
+                <i className="fa-solid fa-database text-[#f9b03c]"></i>
+                <span>አነስተኛ ዳታ ቆጣቢ</span>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="grid grid-cols-2 gap-2.5 pt-1">
+              <button
+                type="button"
+                onClick={() => setShowAppDownloadModal(false)}
+                className="py-3 px-4 rounded-xl border border-white/10 hover:border-white/20 bg-white/5 hover:bg-white/10 text-slate-300 font-bold text-xs transition cursor-pointer active:scale-95"
+              >
+                ይቅር (Cancel)
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowAppDownloadModal(false);
+                  window.dispatchEvent(new CustomEvent('tsehay_trigger_install_now'));
+                  window.dispatchEvent(new CustomEvent('open-pwa-install'));
+                }}
+                className="py-3 px-4 rounded-xl bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#f9b03c] hover:brightness-110 active:scale-95 text-slate-950 font-black text-xs transition cursor-pointer shadow-[0_0_20px_rgba(249,176,60,0.4)] flex items-center justify-center gap-2"
+              >
+                <i className="fa-solid fa-download"></i>
+                <span>አዎ፣ አውርድ (Yes)</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

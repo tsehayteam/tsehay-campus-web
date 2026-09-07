@@ -23,9 +23,10 @@ export default function FeedbackModal({ isOpen, onClose, user }: FeedbackModalPr
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // 📷 Screenshot / Photo Attachment State
+  // 📷 Screenshot & Camera Attachment State
   const [screenshotUrl, setScreenshotUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   // 🎙️ Voice Recording State
   const [isRecording, setIsRecording] = useState(false);
@@ -363,9 +364,21 @@ export default function FeedbackModal({ isOpen, onClose, user }: FeedbackModalPr
                 />
               </div>
 
-              {/* 4. 🎙️ Voice & 📷 Screenshot Attachment Controls */}
-              <div className="grid grid-cols-2 gap-2">
-                {/* Screenshot Trigger */}
+              {/* 4. 🎙️ Voice, 📸 Camera & 🖼️ Screenshot Attachment Controls */}
+              <div className="space-y-1.5">
+                <label className="block text-[11px] font-bold text-slate-300">
+                  ማስረጃ ወይም ማብራሪያ ያያይዙ (ካሜራ፣ ስክሪንሾት ወይም ድምፅ)
+                </label>
+
+                {/* Hidden Inputs */}
+                <input 
+                  ref={cameraInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handleImageFileChange}
+                  className="hidden"
+                />
                 <input 
                   ref={fileInputRef}
                   type="file"
@@ -373,43 +386,64 @@ export default function FeedbackModal({ isOpen, onClose, user }: FeedbackModalPr
                   onChange={handleImageFileChange}
                   className="hidden"
                 />
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className={`p-2.5 rounded-xl border flex items-center justify-center gap-2 text-xs font-bold transition cursor-pointer active:scale-95 ${
-                    screenshotUrl 
-                      ? 'bg-blue-500/15 border-blue-400 text-blue-300'
-                      : 'bg-white/5 hover:bg-white/10 border-white/10 text-slate-300 hover:text-white'
-                  }`}
-                >
-                  <i className="fa-solid fa-camera text-blue-400"></i>
-                  <span>{screenshotUrl ? 'ፎቶ ተያይዟል (ቀይር)' : 'ስክሪንሾት አያይዝ'}</span>
-                </button>
 
-                {/* Voice Record Trigger */}
-                {isRecording ? (
+                <div className="grid grid-cols-3 gap-1.5">
+                  {/* Camera Direct Capture Trigger */}
                   <button
                     type="button"
-                    onClick={stopVoiceRecording}
-                    className="p-2.5 rounded-xl bg-red-500 text-white font-black text-xs flex items-center justify-center gap-2 animate-pulse cursor-pointer shadow-md"
-                  >
-                    <span className="w-2 h-2 rounded-full bg-white animate-ping"></span>
-                    <span>አቁም ({formatSeconds(recordingSeconds)})</span>
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={startVoiceRecording}
-                    className={`p-2.5 rounded-xl border flex items-center justify-center gap-2 text-xs font-bold transition cursor-pointer active:scale-95 ${
-                      voiceAudioUrl
-                        ? 'bg-amber-500/15 border-amber-400 text-[#f9b03c]'
+                    onClick={() => cameraInputRef.current?.click()}
+                    className={`p-2 sm:p-2.5 rounded-xl border flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 text-[11px] font-bold transition cursor-pointer active:scale-95 text-center ${
+                      screenshotUrl 
+                        ? 'bg-amber-500/15 border-[#f9b03c]/40 text-[#f9b03c]'
                         : 'bg-white/5 hover:bg-white/10 border-white/10 text-slate-300 hover:text-white'
                     }`}
+                    title="በስልክዎ ወይም በኮምፒውተርዎ ካሜራ ፎቶ ያንሱ"
                   >
-                    <i className="fa-solid fa-microphone text-[#f9b03c]"></i>
-                    <span>{voiceAudioUrl ? 'ድምፅ ተቀርጿል (ድጋሚ)' : 'በድምፅ ቅረጽ'}</span>
+                    <i className="fa-solid fa-camera text-[#f9b03c] text-sm"></i>
+                    <span className="truncate">በካሜራ አንሳ</span>
                   </button>
-                )}
+
+                  {/* Screenshot / File Trigger */}
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className={`p-2 sm:p-2.5 rounded-xl border flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 text-[11px] font-bold transition cursor-pointer active:scale-95 text-center ${
+                      screenshotUrl 
+                        ? 'bg-blue-500/15 border-blue-400 text-blue-300'
+                        : 'bg-white/5 hover:bg-white/10 border-white/10 text-slate-300 hover:text-white'
+                    }`}
+                    title="ከጋለሪ ወይም ከፋይል ስክሪንሾት ይምረጡ"
+                  >
+                    <i className="fa-solid fa-image text-blue-400 text-sm"></i>
+                    <span className="truncate">ስክሪንሾት</span>
+                  </button>
+
+                  {/* Voice Record Trigger */}
+                  {isRecording ? (
+                    <button
+                      type="button"
+                      onClick={stopVoiceRecording}
+                      className="p-2 sm:p-2.5 rounded-xl bg-red-500 text-white font-black text-[11px] flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 animate-pulse cursor-pointer shadow-md text-center"
+                    >
+                      <span className="w-2 h-2 rounded-full bg-white animate-ping"></span>
+                      <span className="truncate">አቁም ({formatSeconds(recordingSeconds)})</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={startVoiceRecording}
+                      className={`p-2 sm:p-2.5 rounded-xl border flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 text-[11px] font-bold transition cursor-pointer active:scale-95 text-center ${
+                        voiceAudioUrl
+                          ? 'bg-emerald-500/15 border-emerald-400 text-emerald-300'
+                          : 'bg-white/5 hover:bg-white/10 border-white/10 text-slate-300 hover:text-white'
+                      }`}
+                      title="በድምፅ አስተያየት ይቅረጹ"
+                    >
+                      <i className="fa-solid fa-microphone text-emerald-400 text-sm"></i>
+                      <span className="truncate">{voiceAudioUrl ? 'ድምፅ ተቀርጿል' : 'በድምፅ'}</span>
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* 📷 Attached Screenshot Preview */}
