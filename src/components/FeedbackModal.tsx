@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { db } from '@/lib/firebase/config';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { db, storage } from '@/lib/firebase/config';
+import { collection, addDoc, doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import DirectCameraViewfinder from '@/components/camera/DirectCameraViewfinder';
 
 export interface FeedbackModalProps {
   isOpen: boolean;
@@ -25,6 +26,7 @@ export default function FeedbackModal({ isOpen, onClose, user }: FeedbackModalPr
 
   // 📷 Screenshot & Camera Attachment State
   const [screenshotUrl, setScreenshotUrl] = useState<string | null>(null);
+  const [isDirectCameraOpen, setIsDirectCameraOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
@@ -391,13 +393,13 @@ export default function FeedbackModal({ isOpen, onClose, user }: FeedbackModalPr
                   {/* Camera Direct Capture Trigger */}
                   <button
                     type="button"
-                    onClick={() => cameraInputRef.current?.click()}
+                    onClick={() => setIsDirectCameraOpen(true)}
                     className={`p-2 sm:p-2.5 rounded-xl border flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 text-[11px] font-bold transition cursor-pointer active:scale-95 text-center ${
                       screenshotUrl 
                         ? 'bg-amber-500/15 border-[#f9b03c]/40 text-[#f9b03c]'
                         : 'bg-white/5 hover:bg-white/10 border-white/10 text-slate-300 hover:text-white'
                     }`}
-                    title="በስልክዎ ወይም በኮምፒውተርዎ ካሜራ ፎቶ ያንሱ"
+                    title="በቀጥታ በመሳሪያዎ ካሜራ ፎቶ አንሳ"
                   >
                     <i className="fa-solid fa-camera text-[#f9b03c] text-sm"></i>
                     <span className="truncate">በካሜራ አንሳ</span>
@@ -505,6 +507,15 @@ export default function FeedbackModal({ isOpen, onClose, user }: FeedbackModalPr
         )}
 
       </div>
+      {/* Direct Device Camera Viewfinder */}
+      <DirectCameraViewfinder
+        isOpen={isDirectCameraOpen}
+        onClose={() => setIsDirectCameraOpen(false)}
+        title="አስተያየት • የቀጥታ ካሜራ"
+        onCapture={(file, previewUrl) => {
+          setScreenshotUrl(previewUrl);
+        }}
+      />
     </div>
   );
 }

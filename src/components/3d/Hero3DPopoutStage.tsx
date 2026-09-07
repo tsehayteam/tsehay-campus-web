@@ -43,13 +43,7 @@ export default function Hero3DPopoutStage({
   const isInteractingRef = useRef(false);
   const rafIdRef = useRef<number | null>(null);
 
-  // Auto-play immediately when preloader completes or fallback timer expires
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setShowInitialThumbnail(false);
-    }, 1200);
-    return () => clearTimeout(timer);
-  }, [activeVideoUrl]);
+
 
   // Sync prop changes from SSR into active state (Latest Video always takes priority)
   useEffect(() => {
@@ -261,13 +255,16 @@ export default function Hero3DPopoutStage({
       }
     };
 
-    // Immediate and staged triggers to handle iframe/player initialization delays
-    triggerPlay();
-    const timer1 = setTimeout(triggerPlay, 300);
-    const timer2 = setTimeout(triggerPlay, 800);
-    const timer3 = setTimeout(triggerPlay, 1800);
+    // Strictly Gatekeep Playback: Only trigger immediate play if preloader is already finished
+    const hasPreloaderFinished = typeof window !== 'undefined' && sessionStorage.getItem('tsehay_preloader_seen') === 'true';
+    let playTimer: NodeJS.Timeout | null = null;
+    if (hasPreloaderFinished) {
+      triggerPlay();
+      playTimer = setTimeout(triggerPlay, 300);
+      setShowInitialThumbnail(false);
+    }
 
-    // Preloader reveal event: kick off video immediately when counter reaches 100
+    // Preloader reveal event: kick off video immediately and only when preloader reaches 100%
     const onPreloaderComplete = () => {
       setShowInitialThumbnail(false);
       triggerPlay();
@@ -323,9 +320,7 @@ export default function Hero3DPopoutStage({
     }
 
     return () => {
-      clearTimeout(timer1);
-      clearTimeout(timer2);
-      clearTimeout(timer3);
+      if (playTimer) clearTimeout(playTimer);
       window.removeEventListener('tsehay-preloader-complete', onPreloaderComplete);
       window.removeEventListener('pointerdown', onUserGesture);
       window.removeEventListener('scroll', onUserGesture);

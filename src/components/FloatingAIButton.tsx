@@ -10,6 +10,7 @@ import FormattedAiText from '@/components/FormattedAiText';
 import { getCourseBySlugOrId, subscribeToCourses } from '@/lib/courseCache';
 import { getCoursePinnedPrompts } from '@/lib/aiPrompts';
 import { speakWithLanguageDetection, stopSpeech } from '@/lib/ttsHelper';
+import DirectCameraViewfinder from '@/components/camera/DirectCameraViewfinder';
 
 interface Message {
   role: 'user' | 'ai';
@@ -63,6 +64,7 @@ export default function FloatingAIButton() {
   const currentAudioRef = useRef<HTMLAudioElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+  const [isDirectCameraOpen, setIsDirectCameraOpen] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -513,6 +515,15 @@ export default function FloatingAIButton() {
     reader.readAsDataURL(file);
   };
 
+  const handleDirectCameraCapture = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64 = event.target?.result as string;
+      setAttachedImage(base64);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleCopyMessage = (text: string, idx: number) => {
     try {
       navigator.clipboard.writeText(text);
@@ -947,9 +958,9 @@ export default function FloatingAIButton() {
             {/* Direct Camera Capture Button */}
             <button
               type="button"
-              onClick={() => cameraInputRef.current?.click()}
+              onClick={() => setIsDirectCameraOpen(true)}
               className="w-10 h-10 rounded-2xl bg-white/5 hover:bg-white/15 text-gray-300 hover:text-[#f9b03c] border border-white/15 flex items-center justify-center transition active:scale-90 cursor-pointer shrink-0"
-              title="በካሜራ ፎቶ አንሳ (Take Photo)"
+              title="በቀጥታ ካሜራ ፎቶ አንሳ (Direct Camera)"
             >
               <i className="fa-solid fa-camera text-sm"></i>
             </button>
@@ -1054,6 +1065,13 @@ export default function FloatingAIButton() {
         </button>
       )}
 
+      {/* Direct Device Camera Viewfinder Modal */}
+      <DirectCameraViewfinder
+        isOpen={isDirectCameraOpen}
+        onClose={() => setIsDirectCameraOpen(false)}
+        title="ፀሐይ AI • የቀጥታ ካሜራ"
+        onCapture={handleDirectCameraCapture}
+      />
     </div>
   );
 }

@@ -519,15 +519,17 @@ export default function Navbar() {
               </div>
 
 
-              {/* 3D Magnetic Hover Tilt "ይግቡ / Login" Button or User Profile with Sleek Dropdown */}
+              {/* 3D Magnetic Hover Tilt "ይግቡ / Login" Button (Desktop Only: Mobile has single login inside menu) */}
               {!mounted || !user ? (
-                <Tilt3DLoginButton
-                  onClick={() => {
-                    openAuthModal(false);
-                    closeCurtain();
-                  }}
-                  label={lang === 'en' ? 'Login' : 'ይግቡ (Login)'}
-                />
+                <div className="hidden xl:block">
+                  <Tilt3DLoginButton
+                    onClick={() => {
+                      openAuthModal(false);
+                      closeCurtain();
+                    }}
+                    label={lang === 'en' ? 'Login' : 'ይግቡ (Login)'}
+                  />
+                </div>
               ) : (
                 <div className="flex items-center gap-2">
                   {/* 🔔 Real-Time Notification Bell with Live Unread Badge */}
@@ -936,15 +938,20 @@ export default function Navbar() {
               )}
             </div>
 
-            {/* Integrated Mobile Roll Up Button */}
-            <button
-              type="button"
-              onClick={closeCurtain}
-              className="mt-2 py-2 px-6 rounded-full bg-white/10 hover:bg-white/15 text-slate-300 hover:text-white border border-white/10 flex items-center gap-2 text-xs font-bold transition cursor-pointer active:scale-95"
-            >
-              <i className="fa-solid fa-chevron-up text-[10px] text-[#f9b03c]"></i>
-              <span>ዝጋ ▴</span>
-            </button>
+            {/* Mobile Menu Collapse / Fold Toggle Button */}
+            <div className="w-full flex justify-center pt-2 pb-1">
+              <button
+                type="button"
+                onClick={closeCurtain}
+                className="w-full sm:w-auto py-3 px-7 rounded-2xl bg-gradient-to-r from-black/80 via-[#0d1527] to-black/80 hover:bg-[#13203f] text-slate-200 hover:text-white border border-[#f9b03c]/40 hover:border-[#f9b03c] flex items-center justify-center gap-2.5 text-xs font-heading font-black tracking-wide shadow-[0_10px_25px_rgba(0,0,0,0.8),0_0_20px_rgba(249,176,60,0.2)] hover:shadow-[0_0_30px_rgba(249,176,60,0.4)] transition-all duration-300 cursor-pointer active:scale-95 group"
+                title="ማውጫውን ወደ ላይ ሰብስብ (Collapse Menu)"
+              >
+                <div className="w-6 h-6 rounded-full bg-[#f9b03c]/20 border border-[#f9b03c]/40 flex items-center justify-center text-[#f9b03c] text-xs group-hover:-translate-y-0.5 transition-transform">
+                  <i className="fa-solid fa-chevron-up"></i>
+                </div>
+                <span>ማውጫውን ሰብስብ (Collapse Menu) ▴</span>
+              </button>
+            </div>
 
           </div>
         </div>

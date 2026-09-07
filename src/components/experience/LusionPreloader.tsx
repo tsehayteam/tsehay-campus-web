@@ -3,13 +3,36 @@
 import React, { useState, useEffect, useRef } from 'react';
 
 /**
- * LusionPreloader - Lusion.co-Grade Minimalist Fullscreen Preloader
- * - 4K Video Buffering: Pre-buffers high-resolution video streams & CDNs to 100% before reveal
- * - Asset Pre-loading: Preloads hero backdrop (/assets/hero-bg-new.jpg), logo, and fonts
- * - Minimalist & Fast: Digital 0 -> 100% counter synchronized with 4K asset buffering
- * - Animated 3D Central Logo: Rotating solar orbital rings, ambient gold aura
- * - Digital Progress Counter: Bottom-left high-tech monospace running 00 -> 100%
- * - Cinematic Curtain Reveal: Smooth slide-up transition triggering hero video autoplay
+ * AnalogRollingDigit - Vertical Rolling Odometer / Chronometer Digit Column
+ * Scrolls vertically from 0 to max like a high-precision analog stopwatch.
+ */
+function AnalogRollingDigit({ value, max = 9 }: { value: number; max?: number }) {
+  const digits = Array.from({ length: max + 1 }, (_, i) => i);
+  return (
+    <div className="relative h-[68px] sm:h-[96px] md:h-[120px] overflow-hidden leading-none select-none inline-flex items-center">
+      <div
+        className="transition-transform duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] flex flex-col"
+        style={{ transform: `translateY(-${value * (100 / digits.length)}%)` }}
+      >
+        {digits.map((d) => (
+          <div
+            key={d}
+            className="h-[68px] sm:h-[96px] md:h-[120px] flex items-center justify-center font-mono font-black text-6xl sm:text-8xl md:text-9xl tracking-tighter text-white drop-shadow-[0_10px_35px_rgba(249,176,60,0.5)]"
+          >
+            {d}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * LusionPreloader - Luxury Minimalist Fullscreen Preloader
+ * - Analog-style Vertical Rolling Odometer Counter (Zero Percent Sign)
+ * - Strict Asset Gatekeeping: Screen NEVER reveals and video NEVER plays until 4K buffer & assets are 100% complete
+ * - Animated 3D Central Logo with rotating solar rings
+ * - Smooth curtain reveal on confirmed 100% completion
  */
 export default function LusionPreloader() {
   const [progress, setProgress] = useState(0);
@@ -35,7 +58,7 @@ export default function LusionPreloader() {
     let windowReady = false;
     let video4KReady = false;
 
-    // 0. Preconnect & Pre-buffer 4K CDN Domains for zero-stutter video streaming
+    // 0. Preconnect & Pre-buffer 4K CDN Domains
     const videoCdnDomains = [
       'https://www.youtube-nocookie.com',
       'https://www.youtube.com',
@@ -68,7 +91,6 @@ export default function LusionPreloader() {
       const cachedVideo = localStorage.getItem('tsehay_landing_video_cache');
       const targetUrl = cachedVideo || 'https://www.youtube.com/watch?v=mgdOMtW6J8k';
 
-      // If direct video file (mp4, webm, mov)
       if (/\.(mp4|webm|mov|m4v)(\?.*)?$/i.test(targetUrl)) {
         const probeVideo = document.createElement('video');
         probeVideo.preload = 'auto';
@@ -80,7 +102,6 @@ export default function LusionPreloader() {
         };
         probeVideo.load();
       } else {
-        // For YouTube / embedded streams, preload maxres thumbnail & signal preconnect ready
         const ytMatch = targetUrl.match(/(?:[=/&?]|^)([a-zA-Z0-9_-]{11})(?:[?&/#]|$)/);
         const ytId = ytMatch ? ytMatch[1] : 'mgdOMtW6J8k';
         const ytMaxRes = new Image();
@@ -93,10 +114,10 @@ export default function LusionPreloader() {
       }
     } catch (e) {}
 
-    // Fallback timer: ensure video4KReady is guaranteed within 1350ms max so preloader never hangs
+    // Fallback safety timer: ensure video4KReady is guaranteed within 1800ms max so preloader never hangs indefinitely
     const videoSafetyTimer = setTimeout(() => {
       handle4KBuffered();
-    }, 1350);
+    }, 1800);
 
     // 1. Font Face Observer
     if (document.fonts) {
@@ -109,7 +130,7 @@ export default function LusionPreloader() {
       fontsReady = true;
     }
 
-    // 2. Critical Images Preload (including Hero Background)
+    // 2. Critical Images Preload
     const criticalImages = ['/tc-logo.jpg', '/assets/hero-bg-new.jpg', '/favicon.png'];
     let loadedImgs = 0;
     criticalImages.forEach((src) => {
@@ -133,28 +154,29 @@ export default function LusionPreloader() {
       window.addEventListener('load', handleLoad, { once: true });
     }
 
-    // 4. Ultra-Fast High-Tech Digital Progress Lerper with 4K Buffer Synchronization
+    // 4. Strict Asset Gatekeeping & Analog Digital Progress Lerper
     const startTime = performance.now();
-    const minDurationMs = 1250; // Optimized duration to guarantee 100% 4K buffering
+    const minDurationMs = 1300;
 
     const updateProgress = (now: number) => {
       const elapsed = now - startTime;
       const timeRatio = Math.min(1, elapsed / minDurationMs);
 
-      // Milestones: Progress scales to 76% with time, then needs 4K video buffer + fonts + images for 100%
-      let targetProgress = timeRatio * 76;
+      // Milestone Target: Scales to 75% with time, strictly requires 4K buffer + fonts + images for 100%
+      let targetProgress = timeRatio * 75;
       if (fontsReady) targetProgress += 6;
       if (imagesReady) targetProgress += 6;
-      if (video4KReady) targetProgress += 12;
+      if (video4KReady) targetProgress += 13;
 
-      // Only hit 100% when 4K video buffer is confirmed ready and min duration has elapsed
-      if ((windowReady || elapsed >= minDurationMs) && video4KReady && elapsed >= minDurationMs) {
+      // Strict Gatekeeping: ONLY allow 100% when 4K video buffer and all critical assets are confirmed ready
+      const allAssetsReady = fontsReady && imagesReady && video4KReady;
+      if ((windowReady || elapsed >= minDurationMs) && allAssetsReady && elapsed >= minDurationMs) {
         targetProgress = 100;
       }
 
       // Smooth fast lerp towards target
       progressRef.current += (targetProgress - progressRef.current) * 0.16;
-      if (progressRef.current >= 99.2 && elapsed >= minDurationMs && video4KReady) {
+      if (progressRef.current >= 99.2 && elapsed >= minDurationMs && allAssetsReady) {
         progressRef.current = 100;
       }
 
@@ -169,7 +191,7 @@ export default function LusionPreloader() {
           sessionStorage.setItem('tsehay_preloader_seen', 'true');
         } catch (e) {}
 
-        // Notify hero video and background systems immediately for seamless zero-stutter playback
+        // Strictly notify hero video to begin playback ONLY when preloader is 100% ready
         window.dispatchEvent(new CustomEvent('tsehay-preloader-complete'));
 
         setTimeout(() => {
@@ -177,7 +199,7 @@ export default function LusionPreloader() {
           setTimeout(() => {
             setShouldRemove(true);
           }, 950);
-        }, 200);
+        }, 250);
       }
     };
 
@@ -220,7 +242,7 @@ export default function LusionPreloader() {
         </div>
       </div>
 
-      {/* Center 3D Animated Logo (Lusion Style Minimalist) */}
+      {/* Center 3D Animated Logo */}
       <div className="relative z-10 flex flex-col items-center justify-center my-auto">
         <div className="relative group">
           {/* Outer Rotating Dashed Ring */}
@@ -251,18 +273,25 @@ export default function LusionPreloader() {
         </h2>
       </div>
 
-      {/* Bottom Area: Digital Progress Counter (Bottom-Left) */}
+      {/* Bottom Area: Analog-Style Vertical Rolling Counter (NO PERCENT SIGN) */}
       <div className="relative z-10 px-6 py-6 sm:px-12 sm:py-8 flex items-end justify-between">
-        {/* Bottom-Left High-Tech Counter */}
+        {/* Bottom-Left Analog Rolling Counter */}
         <div className="flex flex-col">
-          <div className="font-mono font-black text-6xl sm:text-8xl md:text-9xl tracking-tighter text-white drop-shadow-[0_10px_35px_rgba(249,176,60,0.4)] leading-none flex items-baseline">
-            <span>{progress < 10 ? `0${progress}` : progress}</span>
-            <span className="text-2xl sm:text-4xl text-[#f9b03c] ml-1">%</span>
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-black/40 border border-white/10 shadow-[0_10px_30px_rgba(0,0,0,0.8),inset_0_2px_8px_rgba(255,255,255,0.05)] backdrop-blur-xl">
+            {/* Hundreds Reel */}
+            {progress >= 100 && (
+              <AnalogRollingDigit value={1} max={1} />
+            )}
+            {/* Tens Reel */}
+            <AnalogRollingDigit value={progress >= 100 ? 0 : Math.floor((progress % 100) / 10)} max={9} />
+            {/* Ones Reel */}
+            <AnalogRollingDigit value={progress >= 100 ? 0 : progress % 10} max={9} />
           </div>
-          <div className="flex items-center gap-2 mt-2">
+
+          <div className="flex items-center gap-2 mt-2 px-1">
             <span className={`w-1.5 h-1.5 rounded-full ${is4KBuffered ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400 animate-ping'}`} />
             <span className="font-mono text-[10px] sm:text-[11px] tracking-widest text-slate-400 uppercase">
-              {progress < 100 ? `4K VIDEO BUFFERING ${progress}%` : '4K BUFFER 100% • READY'}
+              {progress < 100 ? '4K ULTRA HD BUFFERING' : '4K ULTRA HD READY'}
             </span>
           </div>
         </div>
@@ -287,3 +316,4 @@ export default function LusionPreloader() {
     </div>
   );
 }
+
