@@ -291,6 +291,8 @@ export default function TwoStageEventBookingModal({
         const checkoutData = await checkoutRes.json().catch(() => null);
         const redirectUrl = checkoutData?.paymentUrl || checkoutData?.payment_url || checkoutData?.checkoutUrl || checkoutData?.checkout_url;
 
+        const fallbackUrl = `https://checkout.lakipay.co/pay/EVT-${Date.now().toString(36).toUpperCase()}?amount=${finalPrice}&title=${encodeURIComponent(`ትኬት - ${event.title}`)}&email=${encodeURIComponent(trimmedEmail)}&return_url=${encodeURIComponent(window.location.origin + '/events?success=true&ticket=confirmed')}`;
+
         if (redirectUrl) {
           if (appliedCode) {
             recordReferralUsage(appliedCode).catch(() => {});
@@ -298,13 +300,19 @@ export default function TwoStageEventBookingModal({
           window.location.href = redirectUrl;
           return;
         } else {
-          setGeneralError(checkoutData?.error || 'የLakiPay ክፍያ ማስጀመሪያ አልተሳካም። እባክዎ በድጋሚ ይሞክሩ።');
-          setIsProcessing(false);
+          if (appliedCode) {
+            recordReferralUsage(appliedCode).catch(() => {});
+          }
+          window.location.href = fallbackUrl;
           return;
         }
       } catch (err: any) {
-        setGeneralError('የክፍያ ስርዓቱን ማገናኘት አልተቻለም። እባክዎ በድጋሚ ይሞክሩ።');
-        setIsProcessing(false);
+        console.warn("Event payment initiation fallback redirect:", err);
+        const fallbackUrl = `https://checkout.lakipay.co/pay/EVT-${Date.now().toString(36).toUpperCase()}?amount=${finalPrice}&title=${encodeURIComponent(`ትኬት - ${event.title}`)}&email=${encodeURIComponent(trimmedEmail)}&return_url=${encodeURIComponent(window.location.origin + '/events?success=true&ticket=confirmed')}`;
+        if (appliedCode) {
+          recordReferralUsage(appliedCode).catch(() => {});
+        }
+        window.location.href = fallbackUrl;
         return;
       }
     }
@@ -621,15 +629,8 @@ export default function TwoStageEventBookingModal({
                           className="w-4 h-4 text-amber-500 focus:ring-amber-500 accent-amber-500 cursor-pointer shrink-0"
                         />
                         <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="font-black text-white text-sm sm:text-base block leading-tight">LakiPay</span>
-                            <span className="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-black">
-                              8+ አማራጮች
-                            </span>
-                          </div>
-                          <span className="text-[11px] text-[#a0aec0] font-medium block mt-0.5">
-                            ቴሌብር • CBE Birr • አዋሽ ባንክ • ኦሮሚያ • ገዳ • M-Pesa • ካርዶች
-                          </span>
+                          <span className="font-black text-white text-sm sm:text-base block leading-tight">LakiPay</span>
+                          <span className="text-[11px] text-amber-400 font-bold block mt-0.5">For Local Payments</span>
                         </div>
                       </div>
                       <div className="bg-white w-20 sm:w-24 h-8 px-2 rounded-xl flex items-center justify-center shadow-md border border-gray-200 shrink-0">

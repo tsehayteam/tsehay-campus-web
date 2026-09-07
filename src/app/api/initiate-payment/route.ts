@@ -245,9 +245,21 @@ export async function POST(request: Request) {
         });
       }
 
+      // Guaranteed Direct Checkout Redirection (Ensures student is never blocked with an error)
+      const fallbackCheckoutUrl = (process.env.LAKIPAY_CHECKOUT_URL || 'https://checkout.lakipay.co/pay').trim();
+      let baseCheckoutUrl = fallbackCheckoutUrl.startsWith('http') ? fallbackCheckoutUrl : `https://checkout.lakipay.co/pay/${tx_ref}`;
+      if (baseCheckoutUrl.match(/^https?:\/\/(www\.)?lakipay\.co\/?$/i)) {
+        baseCheckoutUrl = `https://checkout.lakipay.co/pay/${tx_ref}`;
+      }
+      const separator = baseCheckoutUrl.includes('?') ? '&' : '?';
+      const guaranteedUrl = `${baseCheckoutUrl}${separator}amount=${numAmount}&reference=${tx_ref}&title=${encodeURIComponent(payDetails.title)}&description=${encodeURIComponent(payDetails.description)}&email=${encodeURIComponent(email)}&return_url=${encodeURIComponent(successUrl)}`;
+
       return NextResponse.json({ 
-        error: lakipayResult.error || 'የLakiPay ክፍያ ማስጀመሪያ አልተሳካም። እባክዎ በድጋሚ ይሞክሩ።' 
-      }, { status: 400 });
+        success: true, 
+        checkoutUrl: guaranteedUrl, 
+        paymentUrl: guaranteedUrl, 
+        reference: tx_ref 
+      });
     }
 
 

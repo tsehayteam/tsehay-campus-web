@@ -220,71 +220,73 @@ export default function LusionPreloader() {
       window.addEventListener('load', handleLoad, { once: true });
     }
 
-    // 4. Strict Asset Gatekeeping & Calibrated Analog Chronometer Lerper
+    // 4. Calibrated Smooth Stop-Watch Progression & Immediate Unlock at 99
     const startTime = performance.now();
-    const minDurationMs = 1750;
-    let lastRecordedProgress = 0;
+    const durationMs = 1850;
+    let isUnlocked = false;
 
     const updateProgress = (now: number) => {
+      if (isUnlocked) return;
+
       const elapsed = now - startTime;
-      const timeRatio = Math.min(1, elapsed / minDurationMs);
+      const ratio = Math.min(1, elapsed / durationMs);
 
-      // Milestone Target: Scales to 75% with time, strictly requires 4K buffer + fonts + images for 100%
-      let targetProgress = timeRatio * 75;
-      if (fontsReady) targetProgress += 8;
-      if (imagesReady) targetProgress += 8;
-      if (video4KReady) targetProgress += 9;
+      // Steady, monotonic stopwatch tick from 0 to 99
+      const calculatedTick = Math.min(99, Math.floor(ratio * 99));
 
-      // Strict Gatekeeping: ONLY allow 100% when 4K video buffer and all critical assets are confirmed ready
-      const allAssetsReady = fontsReady && imagesReady && video4KReady;
-      if ((windowReady || elapsed >= minDurationMs) && allAssetsReady && elapsed >= minDurationMs) {
-        targetProgress = 100;
-      }
+      setProgress(calculatedTick);
+      progressRef.current = calculatedTick;
 
-      // Smooth monotonic lerp towards target - numbers roll smoothly forward
-      const lerped = progressRef.current + (targetProgress - progressRef.current) * 0.12;
-      progressRef.current = Math.max(lastRecordedProgress, lerped);
-      lastRecordedProgress = progressRef.current;
-
-      if (progressRef.current >= 99.4 && elapsed >= minDurationMs && allAssetsReady) {
-        progressRef.current = 100;
-      }
-
-      const displayVal = Math.min(100, Math.floor(progressRef.current));
-      setProgress(displayVal);
-
-      if (progressRef.current < 100) {
+      if (calculatedTick < 99) {
         animationFrameRef.current = requestAnimationFrame(updateProgress);
       } else {
-        // Mark completed in sessionStorage to guard against route change replay
+        // Strict Cap at 99 & Seamless Immediate Unlock
+        isUnlocked = true;
+        setProgress(99);
+        progressRef.current = 99;
+
+        // 1. Mark completed in sessionStorage
         try {
           sessionStorage.setItem('tsehay_preloader_shown', 'true');
           sessionStorage.setItem('tsehay_preloader_seen', 'true');
         } catch (e) {}
 
-        // Smoothly reveal main page content by removing tsehay-loading gatekeeper
+        // 2. Smoothly reveal main page content by removing tsehay-loading gatekeeper
         if (typeof document !== 'undefined') {
           document.documentElement.classList.remove('tsehay-loading');
         }
 
-        // Strictly notify hero video to begin playback ONLY when preloader is 100% ready
+        // 3. Notify hero video and background media to begin playback immediately
         window.dispatchEvent(new CustomEvent('tsehay-preloader-complete'));
 
+        // 4. Instant slide-up fade-out transition with zero lag
+        setIsDone(true);
         setTimeout(() => {
-          setIsDone(true);
-          setTimeout(() => {
-            setShouldRemove(true);
-          }, 950);
-        }, 250);
+          setShouldRemove(true);
+        }, 850);
       }
     };
 
-    // Safety fallback: guaranteed unblock after 3.2s in case of slow network
+    // Safety fallback: guaranteed unblock after 2.6s in case of any animation delay
     const safetyUnblockTimer = setTimeout(() => {
-      if (typeof document !== 'undefined') {
-        document.documentElement.classList.remove('tsehay-loading');
+      if (!isUnlocked) {
+        isUnlocked = true;
+        setProgress(99);
+        progressRef.current = 99;
+        try {
+          sessionStorage.setItem('tsehay_preloader_shown', 'true');
+          sessionStorage.setItem('tsehay_preloader_seen', 'true');
+        } catch (e) {}
+        if (typeof document !== 'undefined') {
+          document.documentElement.classList.remove('tsehay-loading');
+        }
+        window.dispatchEvent(new CustomEvent('tsehay-preloader-complete'));
+        setIsDone(true);
+        setTimeout(() => {
+          setShouldRemove(true);
+        }, 850);
       }
-    }, 3200);
+    }, 2600);
 
     animationFrameRef.current = requestAnimationFrame(updateProgress);
 
@@ -311,30 +313,41 @@ export default function LusionPreloader() {
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] h-[650px] bg-radial from-[#f9b03c]/18 via-[#3268ba]/12 to-transparent rounded-full blur-3xl pointer-events-none" />
       <div className="absolute inset-0 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:32px_32px] opacity-10 pointer-events-none" />
 
-      {/* Top Bar - Ultra Minimalist (No static text, no 4K/Ultra labels) */}
-      <div className="relative z-10 px-6 py-6 sm:px-12 sm:py-8 flex items-center justify-between pointer-events-none">
-        <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-[#f9b03c] animate-pulse shadow-[0_0_8px_#f9b03c]" />
-        </div>
-      </div>
+      {/* Top Bar - Completely Clean & Minimalist (Zero noise, zero blinking dots) */}
+      <div className="relative z-10 px-6 py-6 sm:px-12 sm:py-8 flex items-center justify-between pointer-events-none" />
 
-      {/* Center 3D Animated Logo with Fluid Floating Animation & Dynamic Typing Subtitle */}
+      {/* Center Motion Graphics Animated Logo with Dynamic Video Intro Aesthetic */}
       <div className="relative z-10 flex flex-col items-center justify-center my-auto">
-        <div className="relative group animate-[float_5s_ease-in-out_infinite]">
-          {/* Outer Rotating Dashed Ring */}
-          <div className="absolute -inset-7 rounded-full border border-dashed border-[#f9b03c]/40 animate-[spin_12s_linear_infinite] pointer-events-none" />
-          {/* Inner Counter-Rotating Ring */}
-          <div className="absolute -inset-3.5 rounded-full border border-[#3268ba]/50 animate-[spin_8s_linear_infinite_reverse] pointer-events-none" />
+        <div className="relative flex items-center justify-center animate-[mgLogoReveal_1.1s_cubic-bezier(0.16,1,0.3,1)_forwards]">
+          {/* Concentric Expanding Shockwave Waves */}
+          <div className="absolute w-36 h-36 sm:w-44 sm:h-44 rounded-full border border-[#f9b03c]/35 animate-[mgEnergyPulse_2.6s_ease-out_infinite] pointer-events-none" />
+          <div className="absolute w-36 h-36 sm:w-44 sm:h-44 rounded-full border border-[#3268ba]/40 animate-[mgEnergyPulse_2.6s_ease-out_infinite_1.3s] pointer-events-none" />
 
-          {/* Glowing Aura */}
-          <div className="absolute -inset-4 rounded-3xl bg-gradient-to-r from-[#f9b03c]/35 via-amber-400/25 to-[#3268ba]/35 blur-xl animate-pulse" />
+          {/* Outer Rotating Dashed Celestial Ring */}
+          <div className="absolute -inset-8 sm:-inset-10 rounded-full border border-dashed border-[#f9b03c]/45 animate-[mgRingSpin_9s_linear_infinite] pointer-events-none shadow-[0_0_25px_rgba(249,176,60,0.25)]" />
+          
+          {/* Inner Counter-Rotating Dotted Ring */}
+          <div className="absolute -inset-4 sm:-inset-5 rounded-full border border-dotted border-[#3268ba]/55 animate-[mgRingReverseSpin_6s_linear_infinite] pointer-events-none" />
 
-          {/* Logo Container */}
-          <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-3xl p-1 bg-gradient-to-tr from-[#f9b03c] via-amber-300 to-[#3268ba] shadow-[0_0_50px_rgba(249,176,60,0.5)] transform transition-transform duration-500 hover:scale-105">
+          {/* Orbiting Luminous Photon Particle */}
+          <div className="absolute w-full h-full flex items-center justify-center pointer-events-none animate-[mgOrbitParticle_3.8s_linear_infinite]">
+            <span className="w-2.5 h-2.5 rounded-full bg-gradient-to-r from-amber-300 to-[#f9b03c] shadow-[0_0_12px_#f9b03c,0_0_20px_#ffffff]" />
+          </div>
+
+          {/* Glowing Aura Halo */}
+          <div className="absolute -inset-6 rounded-3xl bg-gradient-to-tr from-[#f9b03c]/45 via-amber-400/30 to-[#3268ba]/45 blur-2xl animate-[mgHaloBreathe_3.2s_ease-in-out_infinite]" />
+
+          {/* Logo Container with High-End Holographic Sheen Sweep */}
+          <div className="relative w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-3xl p-[3px] bg-gradient-to-tr from-[#f9b03c] via-amber-300 to-[#3268ba] shadow-[0_0_55px_rgba(249,176,60,0.5)] overflow-hidden">
+            {/* Dynamic Laser Light Sheen Overlay */}
+            <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden rounded-[22px]">
+              <div className="w-24 h-[250%] -top-3/4 bg-gradient-to-r from-transparent via-white/70 to-transparent animate-[mgSheenSweep_2.8s_ease-in-out_infinite]" />
+            </div>
+
             <img
               src="/tc-logo.jpg"
               alt="Tsehay Campus Logo"
-              className="w-full h-full object-cover rounded-[22px] bg-slate-950"
+              className="w-full h-full object-cover rounded-[21px] bg-slate-950 relative z-10 select-none pointer-events-none"
               onError={(e) => {
                 (e.currentTarget as HTMLImageElement).src = '/favicon.png';
               }}
@@ -343,7 +356,7 @@ export default function LusionPreloader() {
         </div>
 
         {/* Dynamic Subtitle Typing Animation Under Logo */}
-        <div className="mt-8 flex flex-col items-center justify-center text-center px-4 max-w-xl">
+        <div className="mt-8 sm:mt-10 flex flex-col items-center justify-center text-center px-4 max-w-xl">
           <div className="min-h-[32px] sm:min-h-[38px] flex items-center justify-center gap-1.5">
             <p className="font-heading font-semibold text-sm sm:text-base md:text-lg text-slate-100 tracking-wide drop-shadow-md">
               {typedText}
@@ -353,34 +366,22 @@ export default function LusionPreloader() {
         </div>
       </div>
 
-      {/* Bottom Area: Razor-Sharp Analog-Style Vertical Rolling Counter */}
+      {/* Bottom Area: Precision Stop-Watch Vertical Rolling Counter */}
       <div className="relative z-10 px-6 py-6 sm:px-12 sm:py-8 flex items-end justify-between">
-        {/* Bottom-Left Sharp High-Contrast Analog Rolling Counter (Calibrated Digital Odometer) */}
+        {/* Bottom-Left Sharp Stop-Watch Counter (Monotonic 0-99 Succession, No Percent Sign) */}
         <div className="flex flex-col">
-          <div className="flex items-baseline gap-0.5 sm:gap-1 px-4 sm:px-6 py-2 sm:py-3 rounded-2xl bg-[#040814]/95 border border-white/20 shadow-[0_12px_40px_rgba(0,0,0,0.95),inset_0_1px_1px_rgba(255,255,255,0.2)]">
-            {/* Hundreds Reel - reveals smoothly when reaching 100 */}
-            <div className={`transition-all duration-300 ease-out overflow-hidden flex items-center ${
-              progress >= 100 ? 'max-w-[80px] opacity-100 mr-0.5' : 'max-w-0 opacity-0'
-            }`}>
-              <AnalogRollingDigit value={1} digits={[0, 1]} />
-            </div>
-
-            {/* Tens Reel - 0 to 9, plus rolling 0 at 100% so it rolls forward smoothly */}
+          <div className="flex items-baseline px-4 sm:px-6 py-2 sm:py-3 rounded-2xl bg-[#040814]/95 border border-white/20 shadow-[0_12px_40px_rgba(0,0,0,0.95),inset_0_1px_1px_rgba(255,255,255,0.2)]">
+            {/* Tens Reel - 0 to 9 */}
             <AnalogRollingDigit 
-              value={progress >= 100 ? 10 : Math.floor((progress % 100) / 10)} 
-              digits={[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0]} 
-            />
-
-            {/* Ones Reel - 0 to 9 ordered succession */}
-            <AnalogRollingDigit 
-              value={progress >= 100 ? 0 : progress % 10} 
+              value={Math.floor(progress / 10)} 
               digits={[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]} 
             />
 
-            {/* Glowing Amber Percent Sign */}
-            <span className="font-mono font-black text-xl sm:text-2xl md:text-3xl text-[#f9b03c] ml-1.5 drop-shadow-[0_0_10px_rgba(249,176,60,0.6)] select-none">
-              %
-            </span>
+            {/* Ones Reel - 0 to 9 */}
+            <AnalogRollingDigit 
+              value={progress % 10} 
+              digits={[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]} 
+            />
           </div>
         </div>
 
@@ -394,13 +395,100 @@ export default function LusionPreloader() {
         </div>
       </div>
 
-      {/* Bottom Sleek Micro-Progress Bar */}
+      {/* Bottom Sleek Micro-Progress Bar (Hits 100% full exactly at 99) */}
       <div className="absolute bottom-0 inset-x-0 h-[3px] bg-white/10">
         <div
           className="h-full bg-gradient-to-r from-[#3268ba] via-amber-400 to-[#f9b03c] shadow-[0_0_15px_#f9b03c] transition-all duration-100 ease-out"
-          style={{ width: `${progress}%` }}
+          style={{ width: `${(progress / 99) * 100}%` }}
         />
       </div>
+
+      {/* Embedded CSS Keyframes for Motion Graphics Intro & Sleek Animations */}
+      <style dangerouslySetInnerHTML={{__html: `
+        @keyframes mgLogoReveal {
+          0% {
+            transform: scale(0.62) rotate(-6deg);
+            opacity: 0;
+            filter: blur(12px) brightness(1.7);
+          }
+          45% {
+            transform: scale(1.07) rotate(1.5deg);
+            opacity: 1;
+            filter: blur(0px) brightness(1.2);
+          }
+          75% {
+            transform: scale(0.97) rotate(-0.5deg);
+          }
+          100% {
+            transform: scale(1) rotate(0deg);
+            opacity: 1;
+            filter: blur(0px) brightness(1);
+          }
+        }
+        @keyframes mgRingSpin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        @keyframes mgRingReverseSpin {
+          from { transform: rotate(360deg); }
+          to { transform: rotate(0deg); }
+        }
+        @keyframes mgEnergyPulse {
+          0% {
+            transform: scale(0.85);
+            opacity: 0.8;
+          }
+          50% {
+            transform: scale(1.22);
+            opacity: 0.35;
+          }
+          100% {
+            transform: scale(1.5);
+            opacity: 0;
+          }
+        }
+        @keyframes mgSheenSweep {
+          0% {
+            transform: translateX(-160%) skewX(-25deg);
+            opacity: 0;
+          }
+          15% {
+            opacity: 0.95;
+          }
+          40% {
+            transform: translateX(260%) skewX(-25deg);
+            opacity: 0;
+          }
+          100% {
+            transform: translateX(260%) skewX(-25deg);
+            opacity: 0;
+          }
+        }
+        @keyframes mgHaloBreathe {
+          0%, 100% {
+            transform: scale(1);
+            opacity: 0.65;
+          }
+          50% {
+            transform: scale(1.1);
+            opacity: 0.95;
+          }
+        }
+        @keyframes mgOrbitParticle {
+          0% {
+            transform: rotate(0deg) translateX(70px) rotate(0deg);
+            opacity: 0.8;
+          }
+          50% {
+            transform: rotate(180deg) translateX(74px) rotate(-180deg);
+            opacity: 1;
+          }
+          100% {
+            transform: rotate(360deg) translateX(70px) rotate(-360deg);
+            opacity: 0.8;
+          }
+        }
+      `}} />
     </div>
   );
 }

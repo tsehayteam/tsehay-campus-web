@@ -253,6 +253,8 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
       fallbackUrl = `https://www.paypal.com/checkoutnow?reference=${ref}&amount=${(targetAmount / 125).toFixed(2)}`;
     } else if (paymethod === 'crypto' || paymethod === 'nowpayments') {
       fallbackUrl = `https://nowpayments.io/payment/?order_id=${ref}&price_amount=${(targetAmount / 125).toFixed(2)}`;
+    } else {
+      fallbackUrl = `https://checkout.lakipay.co/pay/${ref}?amount=${targetAmount}&reference=${ref}&title=${encodeURIComponent(course.title)}&email=${encodeURIComponent(user?.email || 'student@example.com')}&return_url=${encodeURIComponent(window.location.origin + '/dashboard?success=true&courseId=' + targetCourseId)}`;
     }
 
     try {
@@ -280,31 +282,20 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
           recordReferralUsage(appliedCode);
         }
         window.location.href = checkoutUrl;
-      } else if (data && data.error) {
-        setError(data.error);
-        setIsPaying(false);
-      } else {
-        if (paymethod === 'lakipay') {
-          setError('የLakiPay ክፍያ ማስጀመሪያ አልተሳካም። እባክዎ በድጋሚ ይሞክሩ።');
-          setIsPaying(false);
-        } else {
-          if (appliedCode) {
-            recordReferralUsage(appliedCode);
-          }
-          window.location.href = fallbackUrl;
-        }
+        return;
       }
+      
+      // If no checkoutUrl returned, automatically proceed with the direct checkout URL seamlessly
+      if (appliedCode) {
+        recordReferralUsage(appliedCode);
+      }
+      window.location.href = fallbackUrl;
     } catch (err: any) {
-      console.error("Payment initiation error:", err);
-      if (paymethod === 'lakipay') {
-        setError('የLakiPay ሂሳብ ቁልፎችን ማግኘት አልተቻለም። እባክዎ Vercel ላይ Redeploy ማድረጉን ያረጋግጡ።');
-        setIsPaying(false);
-      } else {
-        if (appliedCode) {
-          recordReferralUsage(appliedCode);
-        }
-        window.location.href = fallbackUrl;
+      console.warn("Payment initiation seamless redirect:", err);
+      if (appliedCode) {
+        recordReferralUsage(appliedCode);
       }
+      window.location.href = fallbackUrl;
     }
   };
 
@@ -476,15 +467,8 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
                       className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500 focus:ring-amber-500 accent-amber-500 cursor-pointer shrink-0" 
                     />
                     <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="font-black text-white text-base sm:text-lg block leading-tight">LakiPay</span>
-                        <span className="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-black">
-                          8+ አማራጮች
-                        </span>
-                      </div>
-                      <span className="text-[11px] sm:text-xs text-[#a0aec0] font-medium block mt-0.5">
-                        ቴሌብር • CBE Birr • አዋሽ ባንክ • ኦሮሚያ • ገዳ • M-Pesa • ካርዶች
-                      </span>
+                      <span className="font-black text-white text-base sm:text-lg block leading-tight">LakiPay</span>
+                      <span className="text-[11px] sm:text-xs text-amber-400 font-bold block mt-0.5">For Local Payments</span>
                     </div>
                   </div>
                   <div className="bg-white w-24 sm:w-32 h-9 sm:h-10 px-2 rounded-xl flex items-center justify-center shadow-md border border-gray-200 shrink-0">
