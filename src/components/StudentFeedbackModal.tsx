@@ -374,20 +374,23 @@ export default function StudentFeedbackModal({ initialOpen = false }: StudentFee
             onClick={() => {
               if (!hasMovedRef.current) setIsOpen(true);
             }}
-            className="group relative flex items-center justify-center w-12 h-12 sm:w-auto sm:h-auto sm:px-4 sm:py-2.5 rounded-full bg-gradient-to-r from-[#0d1527] via-[#13203f] to-[#0d1527] border border-[#f9b03c]/40 hover:border-[#f9b03c] text-white shadow-[0_10px_30px_rgba(0,0,0,0.8),0_0_25px_rgba(249,176,60,0.5)] hover:shadow-[0_0_35px_rgba(249,176,60,0.7)] backdrop-blur-xl transition-all duration-300 hover:scale-105 active:scale-95 cursor-grab active:cursor-grabbing select-none"
+            className="group relative flex items-center justify-center w-12 h-12 sm:w-auto sm:h-auto sm:px-4 sm:py-2.5 rounded-full bg-[#0d1527] hover:bg-[#13203f] border border-[#f9b03c]/40 hover:border-[#f9b03c] text-white shadow-[0_10px_30px_rgba(0,0,0,0.85),0_0_20px_rgba(249,176,60,0.25)] hover:shadow-[0_0_35px_rgba(249,176,60,0.5)] backdrop-blur-xl transition-all duration-300 hover:scale-105 active:scale-95 cursor-grab active:cursor-grabbing select-none"
             title="አስተያየት ይስጡ (Give Feedback)"
             aria-label="Feedback"
           >
-            {/* Glowing Radial Aura */}
-            <span className="absolute -inset-1 sm:-inset-0.5 rounded-full bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#3268ba] opacity-50 sm:opacity-35 group-hover:opacity-100 blur-sm sm:blur-xs transition duration-500 animate-pulse pointer-events-none"></span>
+            {/* Dedicated Top-Right Notification Dot (Positioned like Tsehay AI dot on the outer perimeter) */}
+            <span className="absolute -top-0.5 -right-0.5 z-20 flex h-3 w-3 pointer-events-none">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#f9b03c] opacity-80"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-[#f9b03c] border-2 border-[#0d1527]"></span>
+            </span>
 
+            {/* Subtle Desktop Border Glow */}
+            <span className="hidden sm:inline-block absolute -inset-0.5 rounded-full bg-gradient-to-r from-[#3268ba] via-[#f9b03c] to-[#3268ba] opacity-30 group-hover:opacity-75 blur-xs transition duration-300 pointer-events-none"></span>
+
+            {/* Distinct & Contrasting Center Content */}
             <div className="relative flex items-center justify-center gap-2">
-              <span className="absolute -top-1 -right-1 sm:static sm:flex h-2.5 w-2.5 sm:h-3 sm:w-3">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#f9b03c] opacity-80"></span>
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 sm:h-3 sm:w-3 bg-[#f9b03c]"></span>
-              </span>
-              <i className="fa-solid fa-comment-dots text-[#f9b03c] text-lg sm:text-sm group-hover:rotate-12 transition-transform drop-shadow-[0_0_8px_rgba(249,176,60,0.8)]"></i>
-              <span className="hidden sm:inline-block text-xs font-heading font-black text-slate-200 group-hover:text-white tracking-wide">
+              <i className="fa-solid fa-comment-dots text-[#f9b03c] text-xl sm:text-sm group-hover:rotate-12 transition-transform drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]"></i>
+              <span className="hidden sm:inline-block text-xs font-heading font-black text-slate-100 group-hover:text-white tracking-wide">
                 💬 አስተያየት (Feedback)
               </span>
             </div>

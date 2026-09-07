@@ -354,9 +354,6 @@ export default function LusionPreloader() {
             <AnalogRollingDigit value={progress >= 100 ? 0 : Math.floor((progress % 100) / 10)} max={9} />
             {/* Ones Reel */}
             <AnalogRollingDigit value={progress >= 100 ? 0 : progress % 10} max={9} />
-            <span className="font-mono font-black text-xl sm:text-3xl md:text-4xl text-[#f9b03c] ml-1 select-none drop-shadow-[0_0_12px_rgba(249,176,60,0.8)]">
-              %
-            </span>
           </div>
         </div>
 

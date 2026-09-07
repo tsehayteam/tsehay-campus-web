@@ -2389,3 +2389,14 @@ img, video, canvas {
   animation: qrLaserScan 2.4s ease-in-out infinite;
 }
 
+@keyframes authModalPop {
+  0% {
+    opacity: 0;
+    transform: scale(0.91) translateY(22px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
