@@ -11,6 +11,8 @@ import {
   TsehayEvent, 
   EventTicket, 
   DEFAULT_EVENTS, 
+  DEFAULT_EVENT_BANNER,
+  formatEventBannerUrl,
   getCachedEvents, 
   getRemainingSeats, 
   formatDriveImageUrl,
@@ -51,6 +53,9 @@ export default function EventsClient() {
       bc.onmessage = (msg) => {
         if (msg.data?.events && Array.isArray(msg.data.events)) {
           setEvents(msg.data.events);
+        } else if (msg.data?.event) {
+          const single = msg.data.event;
+          setEvents(prev => [single, ...prev.filter(p => p.id !== single.id)]);
         }
       };
     } catch (e) {}
@@ -135,10 +140,32 @@ export default function EventsClient() {
       })
       .catch(() => {});
 
+    // Supabase Realtime subscription for instant updates across devices
+    let rtChannel: any = null;
+    try {
+      rtChannel = supabase
+        .channel('public_events_realtime')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'events' }, () => {
+          fetch(`/api/events?t=${Date.now()}`, { cache: 'no-store' })
+            .then(res => res.json())
+            .then(data => {
+              if (data && Array.isArray(data.events) && data.events.length > 0) {
+                artifactList = data.events;
+                syncAndSet();
+              }
+            })
+            .catch(() => {});
+        })
+        .subscribe();
+    } catch (e) {}
+
     return () => {
       window.removeEventListener('tsehay_events_updated', handleCustomEventsUpdate);
       if (bc) {
         try { bc.close(); } catch (e) {}
+      }
+      if (rtChannel) {
+        try { supabase.removeChannel(rtChannel); } catch (e) {}
       }
     };
   }, [user]);
@@ -319,7 +346,7 @@ export default function EventsClient() {
               const isSoldOut = remaining <= 0;
               const hasVideo = Boolean(evt.videoUrl || (evt.image && isMediaVideo(evt.image)));
               const effectiveVideoUrl = evt.videoUrl || (evt.image && isMediaVideo(evt.image) ? evt.image : '');
-              const imageUrl = formatDriveImageUrl(evt.image || '') || (effectiveVideoUrl ? getMediaThumbnail(effectiveVideoUrl) : '') || 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?q=80&w=1200';
+              const imageUrl = formatEventBannerUrl(evt.image || '') || (effectiveVideoUrl ? getMediaThumbnail(effectiveVideoUrl) : '') || DEFAULT_EVENT_BANNER;
 
               return (
                 <div
@@ -333,8 +360,10 @@ export default function EventsClient() {
                         src={imageUrl}
                         alt={evt.title}
                         className="w-full h-full object-cover group-hover/banner:scale-105 transition-transform duration-500"
+                        referrerPolicy="no-referrer"
+                        crossOrigin="anonymous"
                         onError={(e) => {
-                          (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?q=80&w=1200';
+                          (e.target as HTMLImageElement).src = DEFAULT_EVENT_BANNER;
                         }}
                       />
 

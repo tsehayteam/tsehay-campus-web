@@ -11,6 +11,8 @@ import {
   TsehayEvent, 
   EventTicket, 
   DEFAULT_EVENTS, 
+  DEFAULT_EVENT_BANNER,
+  formatEventBannerUrl,
   getCachedEvents, 
   saveCachedEvents,
   getEventBySlugOrId, 
@@ -68,6 +70,11 @@ export default function EventDetailClient() {
         if (msg.data?.events && Array.isArray(msg.data.events)) {
           const found = getEventBySlugOrId(slug, msg.data.events);
           if (found) setEvent(found);
+        } else if (msg.data?.event) {
+          const ev = msg.data.event;
+          if (ev.slug === slug || ev.id === slug || (event && ev.id === event.id)) {
+            setEvent(ev);
+          }
         }
       };
     } catch (e) {}
@@ -99,10 +106,24 @@ export default function EventDetailClient() {
     };
     loadEvent();
 
+    // Supabase Realtime channel subscription
+    let rtChannel: any = null;
+    try {
+      rtChannel = supabase
+        .channel(`public_event_detail_${slug}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'events' }, () => {
+          loadEvent();
+        })
+        .subscribe();
+    } catch (e) {}
+
     return () => {
       window.removeEventListener('tsehay_events_updated', handleEventsUpdate);
       if (bc) {
         try { bc.close(); } catch (e) {}
+      }
+      if (rtChannel) {
+        try { supabase.removeChannel(rtChannel); } catch (e) {}
       }
     };
   }, [slug, event?.id]);
@@ -626,7 +647,7 @@ export default function EventDetailClient() {
                   const hasVideo = Boolean(event.videoUrl || (event.image && isMediaVideo(event.image)));
                   const effectiveVideoUrl = event.videoUrl || (event.image && isMediaVideo(event.image) ? event.image : '');
                   const parsedVideo = effectiveVideoUrl ? parseVideoEmbedUrl(effectiveVideoUrl, true) : null;
-                  const posterUrl = formatDriveImageUrl(event.image) || (effectiveVideoUrl ? getMediaThumbnail(effectiveVideoUrl) : '') || 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?q=80&w=1200';
+                  const posterUrl = formatEventBannerUrl(event.image) || (effectiveVideoUrl ? getMediaThumbnail(effectiveVideoUrl) : '') || DEFAULT_EVENT_BANNER;
 
                   if (hasVideo && isPlayingVideo && parsedVideo && parsedVideo.src) {
                     return (
@@ -668,8 +689,10 @@ export default function EventDetailClient() {
                         src={posterUrl}
                         alt={event.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                        referrerPolicy="no-referrer"
+                        crossOrigin="anonymous"
                         onError={(e) => {
-                          (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?q=80&w=1200';
+                          (e.target as HTMLImageElement).src = DEFAULT_EVENT_BANNER;
                         }}
                       />
 

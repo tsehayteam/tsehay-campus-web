@@ -67,11 +67,27 @@ export interface EventTicket {
   [key: string]: any;
 }
 
+export const DEFAULT_EVENT_BANNER = 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?q=80&w=1200';
+
 export function formatDriveImageUrl(url: any): string {
   if (!url || typeof url !== 'string') return '';
   const clean = url.trim();
   if (!clean) return '';
+  if (clean.startsWith('data:image/') || clean.startsWith('blob:')) {
+    return clean;
+  }
   return getMediaThumbnail(clean, clean);
+}
+
+export function formatEventBannerUrl(url: any, fallback: string = DEFAULT_EVENT_BANNER): string {
+  if (!url || typeof url !== 'string') return fallback;
+  const clean = url.trim();
+  if (!clean) return fallback;
+  if (clean.startsWith('data:image/') || clean.startsWith('blob:')) {
+    return clean;
+  }
+  const formatted = formatDriveImageUrl(clean);
+  return formatted || fallback;
 }
 
 export function generateEventSlug(title: string, fallbackId?: string): string {

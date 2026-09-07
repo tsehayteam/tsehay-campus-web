@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useAuth, ADMIN_EMAILS, isEmailAdmin } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { DEFAULT_COURSES, COMING_SOON_COURSES, getComingSoonCourses, getCachedCourses, saveCachedCourses, formatCourseDesc, formatDriveImageUrl, getCourseSlug, getCourseBySlugOrId, generateCourseSlug, broadcastCourseUpdate } from '@/lib/courseCache';
-import { DEFAULT_EVENTS, getCachedEvents, saveCachedEvents, getRemainingSeats, generateEventSlug, TsehayEvent, EventTicket } from '@/lib/eventCache';
+import { DEFAULT_EVENTS, DEFAULT_EVENT_BANNER, formatEventBannerUrl, getCachedEvents, saveCachedEvents, getRemainingSeats, generateEventSlug, TsehayEvent, EventTicket } from '@/lib/eventCache';
 import AdminQrScanner from '@/components/AdminQrScanner';
 import CinematicVideoModal from '@/components/CinematicVideoModal';
 
@@ -119,6 +119,9 @@ export default function AdminDashboard() {
     tags: 'YouTube, Workshop',
     status: 'upcoming'
   });
+  const [isUploadingEventBanner, setIsUploadingEventBanner] = useState(false);
+  const [eventBannerError, setEventBannerError] = useState(false);
+  const eventBannerFileInputRef = useRef<HTMLInputElement>(null);
 
   // 🔒 Strict Admin Email OTP State & Verification Handlers (Decoupled from student session)
   const STRICT_ADMIN_EMAILS = [
@@ -983,14 +986,23 @@ export default function AdminDashboard() {
           const evData = await evRes.json();
           if (evData.events && Array.isArray(evData.events) && evData.events.length > 0) {
             setEvents(prev => {
-              const currentIds = new Set(prev.map(p => p.id));
-              const newItems = evData.events.filter((apiEv: TsehayEvent) => apiEv && apiEv.id && !currentIds.has(apiEv.id));
-              if (newItems.length > 0) {
-                const combined = [...prev, ...newItems];
-                saveCachedEvents(combined);
-                return combined;
-              }
-              return prev;
+              const map = new Map<string, TsehayEvent>();
+              prev.forEach(ev => {
+                if (ev && ev.id) map.set(ev.id, ev);
+              });
+              evData.events.forEach((apiEv: TsehayEvent) => {
+                if (apiEv && apiEv.id) {
+                  const existing = map.get(apiEv.id);
+                  map.set(apiEv.id, {
+                    ...existing,
+                    ...apiEv,
+                    image: formatDriveImageUrl(apiEv.image) || apiEv.image || existing?.image || DEFAULT_EVENT_BANNER
+                  });
+                }
+              });
+              const combined = Array.from(map.values());
+              saveCachedEvents(combined);
+              return combined;
             });
           }
         }
@@ -2492,6 +2504,8 @@ export default function AdminDashboard() {
   // 🌟 Event CRUD Handlers
   const openAddEventModal = () => {
     setEditingEvent(null);
+    setEventBannerError(false);
+    setIsUploadingEventBanner(false);
     setEventForm({
       slug: '',
       title: '',
@@ -2508,7 +2522,7 @@ export default function AdminDashboard() {
       isFree: false,
       speaker: 'ኢዮብ ሳህሌ (Eyoub Sahle)',
       speakerRole: 'የፀሐይ ካምፓስ መስራች እና የዩቲዩብ ስፔሻሊስት',
-      image: 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?q=80&w=1200',
+      image: DEFAULT_EVENT_BANNER,
       videoUrl: '',
       tags: 'YouTube, Workshop',
       status: 'upcoming'
@@ -2519,6 +2533,9 @@ export default function AdminDashboard() {
 
   const openEditEventModal = (event: TsehayEvent) => {
     setEditingEvent(event);
+    setEventBannerError(false);
+    setIsUploadingEventBanner(false);
+    const existingImg = event.image ? (formatEventBannerUrl(event.image) || event.image) : DEFAULT_EVENT_BANNER;
     setEventForm({
       slug: event.slug || '',
       title: event.title || '',
@@ -2535,13 +2552,64 @@ export default function AdminDashboard() {
       isFree: event.isFree || event.price === 0,
       speaker: event.speaker || 'ኢዮብ ሳህሌ',
       speakerRole: event.speakerRole || 'Lead Mentor',
-      image: event.image || '',
+      image: existingImg,
       videoUrl: event.videoUrl || '',
       tags: Array.isArray(event.tags) ? event.tags.join(', ') : (event.tags || ''),
       status: event.status || 'upcoming'
     });
     setEventSuccessMsg('');
     setIsEventModalOpen(true);
+  };
+
+  // 🎟️ Direct Event Ticket Banner Upload with Client-Side Canvas Compression
+  const handleEventBannerUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 15 * 1024 * 1024) {
+      showToast("የመረጡት ምስል መጠን ከ 15MB በታች መሆን አለበት።", 'error');
+      return;
+    }
+    setIsUploadingEventBanner(true);
+    setEventBannerError(false);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const rawData = event.target?.result as string;
+      const img = new Image();
+      img.onload = () => {
+        const maxW = 1600;
+        const maxH = 900;
+        let w = img.width;
+        let h = img.height;
+        if (w > maxW || h > maxH) {
+          const ratio = Math.min(maxW / w, maxH / h);
+          w = Math.round(w * ratio);
+          h = Math.round(h * ratio);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          ctx.drawImage(img, 0, 0, w, h);
+          const optimized = canvas.toDataURL('image/jpeg', 0.88);
+          setEventForm(prev => ({ ...prev, image: optimized }));
+          setEventBannerError(false);
+          showToast("የቲኬት ባነር ምስል በተሳካ ሁኔታ ተመርጧል! ✓", 'success');
+        } else {
+          setEventForm(prev => ({ ...prev, image: rawData }));
+          setEventBannerError(false);
+        }
+        setIsUploadingEventBanner(false);
+      };
+      img.onerror = () => {
+        setEventForm(prev => ({ ...prev, image: rawData }));
+        setIsUploadingEventBanner(false);
+      };
+      img.src = rawData;
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSaveEvent = async (e: React.FormEvent) => {
@@ -2567,11 +2635,11 @@ export default function AdminDashboard() {
       // If image is empty or default, but cleanVideoUrl exists, extract high-res thumbnail
       let cleanImage = '';
       if (rawImage && !isMediaVideo(rawImage)) {
-        cleanImage = formatDriveImageUrl(rawImage) || rawImage;
+        cleanImage = formatEventBannerUrl(rawImage) || rawImage;
       } else if (cleanVideoUrl) {
         cleanImage = getMediaThumbnail(cleanVideoUrl);
       } else {
-        cleanImage = 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?q=80&w=1200';
+        cleanImage = DEFAULT_EVENT_BANNER;
       }
 
       const nowIso = new Date().toISOString();
@@ -2603,13 +2671,37 @@ export default function AdminDashboard() {
         updatedAt: nowIso
       };
 
-      // Sanitize payload to guarantee no field is undefined for Firestore Web SDK
-      const sanitizedPayload: Record<string, any> = {};
-      Object.entries(payload).forEach(([k, v]) => {
-        if (v !== undefined) sanitizedPayload[k] = v;
-      });
+      // 1. Direct Supabase events table persistence
+      try {
+        const dbRow: Record<string, any> = {
+          id: eventId,
+          slug: cleanSlug,
+          title: payload.title,
+          title_en: payload.titleEn || null,
+          description: payload.description || '',
+          date: payload.date || '',
+          time: payload.time || '',
+          location: payload.location || '',
+          is_online: Boolean(payload.isOnline),
+          meeting_link: payload.meetingLink || null,
+          maps_url: payload.mapsUrl || null,
+          capacity: Number(payload.capacity) || 100,
+          registered_count: Number(payload.registeredCount) || 0,
+          price: Number(payload.price) || 0,
+          is_free: Boolean(payload.isFree),
+          speaker: payload.speaker || '',
+          speaker_role: payload.speakerRole || null,
+          image: payload.image,
+          tags: Array.isArray(payload.tags) ? payload.tags : [],
+          status: payload.status || 'upcoming',
+          updated_at: nowIso
+        };
+        await supabase.from('events').upsert(dbRow);
+      } catch (sbErr) {
+        console.warn("Direct Supabase client event save notice:", sbErr);
+      }
 
-      // 2. Server API Route Persistence
+      // 2. Server API Route Persistence (failover layer & in-memory backup)
       try {
         await fetch('/api/events', {
           method: 'POST',
@@ -2628,7 +2720,7 @@ export default function AdminDashboard() {
         }
       } catch (e) {}
 
-      // 3. React State & Synchronous LocalStorage & Global Broadcast
+      // 3. React State & Synchronous LocalStorage & Global Real-time Broadcast
       const updatedEvents = editingEvent
         ? events.map(ev => ev.id === eventId ? payload : ev)
         : [payload, ...events.filter(ev => ev.id !== eventId)];
@@ -2643,8 +2735,8 @@ export default function AdminDashboard() {
         bc.close();
       } catch (e) {}
 
-      setEventSuccessMsg('ክንውኑ በተሳካ ሁኔታ ተቀምጧል! (Event saved successfully)');
-      showToast('ክንውኑ በተሳካ ሁኔታ ተቀምጧል!', 'success');
+      setEventSuccessMsg('ክንውኑ እና የቲኬት ባነሩ በተሳካ ሁኔታ ተቀምጧል! (Event saved successfully)');
+      showToast('ክንውኑ እና ባነሩ በተሳካ ሁኔታ ተቀምጧል!', 'success');
       setTimeout(() => setIsEventModalOpen(false), 900);
     } catch (err: any) {
       console.error("Error saving event:", err);
@@ -3847,11 +3939,13 @@ export default function AdminDashboard() {
                               <div className="flex items-center gap-3">
                                 <div className="relative w-12 h-12 rounded-xl overflow-hidden shrink-0 border border-gray-200 dark:border-white/10 bg-slate-900">
                                   <img 
-                                    src={formatDriveImageUrl(event.image) || (event.videoUrl ? getMediaThumbnail(event.videoUrl) : '') || 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?q=80&w=1200'} 
+                                    src={formatEventBannerUrl(event.image) || (event.videoUrl ? getMediaThumbnail(event.videoUrl) : '') || DEFAULT_EVENT_BANNER} 
                                     className="w-full h-full object-cover" 
                                     alt={event.title}
+                                    referrerPolicy="no-referrer"
+                                    crossOrigin="anonymous"
                                     onError={(e) => {
-                                      (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?q=80&w=1200';
+                                      (e.target as HTMLImageElement).src = DEFAULT_EVENT_BANNER;
                                     }}
                                   />
                                   {Boolean(event.videoUrl || (event.image && isMediaVideo(event.image))) && (
@@ -8661,38 +8755,132 @@ export default function AdminDashboard() {
                   />
                 </div>
 
-                {/* 1. Banner Image Input */}
-                <div className="sm:col-span-2">
-                  <div className="flex items-center justify-between mb-1">
+                {/* 1. Banner Image Input & Direct Uploader */}
+                <div className="sm:col-span-2 space-y-2">
+                  <div className="flex items-center justify-between">
                     <label className="block text-xs font-bold flex items-center gap-1.5 text-gray-700 dark:text-gray-200">
                       <i className="fa-regular fa-image text-emerald-500"></i>
-                      <span>የባነር ፎቶ ሊንክ (Banner Image / Cover URL)</span>
+                      <span>የክንውን ባነር ምስል (Event Ticket Banner)</span>
                     </label>
-                    {eventForm.videoUrl && (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="file"
+                        ref={eventBannerFileInputRef}
+                        accept="image/*"
+                        onChange={handleEventBannerUpload}
+                        className="hidden"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => eventBannerFileInputRef.current?.click()}
+                        disabled={isUploadingEventBanner}
+                        className="text-[11px] bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-600 dark:text-emerald-400 font-bold px-3 py-1 rounded-xl transition flex items-center gap-1.5 cursor-pointer border border-emerald-500/20 disabled:opacity-50"
+                        title="ከኮምፒውተር ወይም ስልክ ፎቶ ስቀል"
+                      >
+                        {isUploadingEventBanner ? (
+                          <>
+                            <i className="fa-solid fa-spinner fa-spin text-[10px]"></i>
+                            <span>በማዘጋጀት ላይ...</span>
+                          </>
+                        ) : (
+                          <>
+                            <i className="fa-solid fa-cloud-arrow-up text-[11px]"></i>
+                            <span>ፎቶ ስቀል (Upload File)</span>
+                          </>
+                        )}
+                      </button>
+
+                      {eventForm.videoUrl && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const thumb = getMediaThumbnail(eventForm.videoUrl);
+                            if (thumb) {
+                              setEventForm(prev => ({ ...prev, image: thumb }));
+                              setEventBannerError(false);
+                            }
+                          }}
+                          className="text-[11px] bg-amber-500/15 hover:bg-amber-500/25 text-amber-600 dark:text-amber-400 font-bold px-2.5 py-1 rounded-xl transition flex items-center gap-1 cursor-pointer border border-amber-500/20"
+                          title="ከቪዲዮው ተምኔል አስመጣ"
+                        >
+                          <i className="fa-solid fa-wand-magic-sparkles text-[10px]"></i>
+                          <span>ከቪዲዮው</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={eventForm.image}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setEventForm(prev => ({ ...prev, image: val }));
+                        setEventBannerError(false);
+                      }}
+                      placeholder="https://drive.google.com/file/d/... ወይም Dropbox ወይም የምስል ሊንክ"
+                      className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-dark dark:text-white outline-none focus:border-[#f9b03c] font-mono pr-24"
+                    />
+                    {eventForm.image && (
                       <button
                         type="button"
                         onClick={() => {
-                          const thumb = getMediaThumbnail(eventForm.videoUrl);
-                          if (thumb) setEventForm({ ...eventForm, image: thumb });
+                          setEventForm(prev => ({ ...prev, image: DEFAULT_EVENT_BANNER }));
+                          setEventBannerError(false);
                         }}
-                        className="text-[10px] bg-amber-500/15 hover:bg-amber-500/25 text-amber-600 dark:text-amber-400 font-bold px-2 py-0.5 rounded-lg transition flex items-center gap-1 cursor-pointer"
-                        title="ከቪዲዮው ተምኔል አስመጣ"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] bg-gray-200 dark:bg-slate-800 text-gray-500 hover:text-red-500 dark:hover:text-red-400 font-semibold px-2 py-1 rounded-lg transition"
+                        title="ወደ ነባሪ መልስ"
                       >
-                        <i className="fa-solid fa-wand-magic-sparkles text-[10px]"></i>
-                        <span>ከቪዲዮው ፎቶ አምጣ</span>
+                        ወደ ነባሪ መልስ
                       </button>
                     )}
                   </div>
-                  <input
-                    type="text"
-                    value={eventForm.image}
-                    onChange={(e) => setEventForm({ ...eventForm, image: e.target.value })}
-                    placeholder="https://drive.google.com/file/d/... ወይም Unsplash ወይም የምስል ሊንክ"
-                    className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-dark dark:text-white outline-none focus:border-[#f9b03c] font-mono"
-                  />
-                  <p className="text-[10px] text-gray-400 mt-1">
-                    ማስታወሻ፡ የ Google Drive፣ Unsplash ወይም ሌላ ማንኛውንም የፎቶ ሊንክ በቀጥታ ይቀበላል።
-                  </p>
+
+                  {/* Preset Banner Quick Selection Pills */}
+                  <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                    <span className="text-[10px] text-gray-400 font-semibold mr-1">ፈጣን ምርጫዎች፡</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEventForm(prev => ({ ...prev, image: 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?q=80&w=1200' }));
+                        setEventBannerError(false);
+                      }}
+                      className="text-[10px] bg-gray-100 dark:bg-slate-800 hover:bg-amber-500/20 hover:text-amber-500 text-gray-600 dark:text-gray-300 font-medium px-2 py-0.5 rounded-lg border border-gray-200 dark:border-white/5 transition cursor-pointer"
+                    >
+                      ዩቲዩብ / ኮንፈረንስ
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEventForm(prev => ({ ...prev, image: 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?q=80&w=1200' }));
+                        setEventBannerError(false);
+                      }}
+                      className="text-[10px] bg-gray-100 dark:bg-slate-800 hover:bg-amber-500/20 hover:text-amber-500 text-gray-600 dark:text-gray-300 font-medium px-2 py-0.5 rounded-lg border border-gray-200 dark:border-white/5 transition cursor-pointer"
+                    >
+                      ሼን / ኢ-ኮሜርስ
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEventForm(prev => ({ ...prev, image: 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?q=80&w=1200' }));
+                        setEventBannerError(false);
+                      }}
+                      className="text-[10px] bg-gray-100 dark:bg-slate-800 hover:bg-amber-500/20 hover:text-amber-500 text-gray-600 dark:text-gray-300 font-medium px-2 py-0.5 rounded-lg border border-gray-200 dark:border-white/5 transition cursor-pointer"
+                    >
+                      ዲጂታል ማርኬቲንግ
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEventForm(prev => ({ ...prev, image: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1200' }));
+                        setEventBannerError(false);
+                      }}
+                      className="text-[10px] bg-gray-100 dark:bg-slate-800 hover:bg-amber-500/20 hover:text-amber-500 text-gray-600 dark:text-gray-300 font-medium px-2 py-0.5 rounded-lg border border-gray-200 dark:border-white/5 transition cursor-pointer"
+                    >
+                      AI & ቴክኖሎጂ
+                    </button>
+                  </div>
                 </div>
 
                 {/* 2. Video Promo URL Input */}
@@ -8709,7 +8897,7 @@ export default function AdminDashboard() {
                       setEventForm(prev => {
                         const next = { ...prev, videoUrl: val };
                         const yId = extractYouTubeId(val);
-                        if (yId && (!prev.image || prev.image.includes('unsplash'))) {
+                        if (yId && (!prev.image || prev.image === DEFAULT_EVENT_BANNER)) {
                           next.image = `https://img.youtube.com/vi/${yId}/maxresdefault.jpg`;
                         }
                         return next;
@@ -8728,7 +8916,7 @@ export default function AdminDashboard() {
                   </div>
                 </div>
 
-                {/* 3. Live Media Preview Stage (Banner & Video) */}
+                {/* 3. Live Media Preview Stage (Resilient, No Red Cross / Failed State) */}
                 {(eventForm.videoUrl || eventForm.image) && (
                   <div className="sm:col-span-2 bg-slate-900 p-4 rounded-2xl border border-white/10 space-y-3">
                     <div className="flex items-center justify-between">
@@ -8793,16 +8981,75 @@ export default function AdminDashboard() {
                         return null;
                       })()
                     ) : (
-                      /* Live Banner Image Preview */
-                      <div className="relative aspect-video w-full rounded-xl overflow-hidden bg-black border border-white/10">
+                      /* Resilient Live Banner Image Preview (Guaranteed Zero Red-Cross / Error State) */
+                      <div className="relative aspect-video w-full rounded-2xl overflow-hidden bg-slate-950 border border-white/15 shadow-xl group/prev">
                         <img 
-                          src={formatDriveImageUrl(eventForm.image) || parseImageUrl(eventForm.image) || eventForm.image} 
+                          src={formatEventBannerUrl(eventForm.image) || eventForm.image || DEFAULT_EVENT_BANNER} 
                           alt="Event Banner Preview" 
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover transition duration-300"
+                          referrerPolicy="no-referrer"
+                          crossOrigin="anonymous"
                           onError={(e) => {
-                            (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?q=80&w=1200';
+                            setEventBannerError(true);
+                            const target = e.currentTarget as HTMLImageElement;
+                            if (target.src !== DEFAULT_EVENT_BANNER) {
+                              target.src = DEFAULT_EVENT_BANNER;
+                            }
                           }}
+                          onLoad={() => setEventBannerError(false)}
                         />
+                        {/* Gradient Shadow Overlay */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
+
+                        {/* Top Info Badge */}
+                        <div className="absolute top-3 left-3 right-3 flex items-center justify-between">
+                          {eventBannerError ? (
+                            <span className="text-[10px] bg-amber-500/90 text-slate-950 font-bold px-2.5 py-1 rounded-full flex items-center gap-1 shadow">
+                              <i className="fa-solid fa-triangle-exclamation text-[9px]"></i>
+                              <span>ነባሪ ባነር እየታየ ነው (Fallback Ready)</span>
+                            </span>
+                          ) : (
+                            <span className="text-[10px] bg-emerald-500/90 text-slate-950 font-black px-2.5 py-1 rounded-full flex items-center gap-1 shadow">
+                              <i className="fa-solid fa-circle-check text-[9px]"></i>
+                              <span>✓ ባነሩ ዝግጁ ነው (Active Banner)</span>
+                            </span>
+                          )}
+
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => eventBannerFileInputRef.current?.click()}
+                              className="px-2.5 py-1 rounded-lg bg-black/70 hover:bg-black/90 text-white text-[10px] font-bold backdrop-blur-md border border-white/20 flex items-center gap-1 transition cursor-pointer"
+                              title="አዲስ ፎቶ ምረጥ"
+                            >
+                              <i className="fa-solid fa-camera text-[9px]"></i>
+                              <span>ቀይር</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEventForm(prev => ({ ...prev, image: DEFAULT_EVENT_BANNER }));
+                                setEventBannerError(false);
+                              }}
+                              className="px-2 py-1 rounded-lg bg-red-500/80 hover:bg-red-500 text-white text-[10px] font-bold backdrop-blur-md flex items-center gap-1 transition cursor-pointer"
+                              title="ወደ ነባሪ ባነር መልስ"
+                            >
+                              <i className="fa-solid fa-rotate-left text-[9px]"></i>
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Live Title & Meta Inscription */}
+                        <div className="absolute bottom-3 left-3 right-3 pointer-events-none">
+                          <p className="text-white font-bold text-xs line-clamp-1 drop-shadow-md">
+                            {eventForm.title || 'የክንውን ርዕስ (Event Title Preview)'}
+                          </p>
+                          <p className="text-amber-400 text-[10px] font-semibold flex items-center gap-1.5 mt-0.5">
+                            <span>{eventForm.date || 'ቀን'}</span>
+                            <span>•</span>
+                            <span>{eventForm.location || 'ቦታ'}</span>
+                          </p>
+                        </div>
                       </div>
                     )}
                   </div>

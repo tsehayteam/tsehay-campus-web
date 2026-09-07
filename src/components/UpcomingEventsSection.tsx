@@ -6,6 +6,8 @@ import {
   TsehayEvent, 
   EventTicket, 
   DEFAULT_EVENTS, 
+  DEFAULT_EVENT_BANNER,
+  formatEventBannerUrl,
   getCachedEvents, 
   getRemainingSeats, 
   formatDriveImageUrl,
@@ -48,6 +50,9 @@ export default function UpcomingEventsSection() {
     const handleEventsUpdate = (e: any) => {
       if (e.detail?.events && Array.isArray(e.detail.events)) {
         setEvents(e.detail.events);
+      } else if (e.detail?.event) {
+        const single = e.detail.event;
+        setEvents(prev => [single, ...prev.filter(p => p.id !== single.id)]);
       }
     };
     window.addEventListener('tsehay_events_updated', handleEventsUpdate);
@@ -71,6 +76,9 @@ export default function UpcomingEventsSection() {
       bc.onmessage = (msg) => {
         if (msg.data?.events && Array.isArray(msg.data.events)) {
           setEvents(msg.data.events);
+        } else if (msg.data?.event) {
+          const single = msg.data.event;
+          setEvents(prev => [single, ...prev.filter(p => p.id !== single.id)]);
         }
         if (msg.data?.type === 'ticket_registered' && msg.data?.eventId) {
           const eId = msg.data.eventId;
@@ -169,6 +177,13 @@ export default function UpcomingEventsSection() {
     // 2. Supabase Realtime WebSocket subscription for live event updates
     const eventsChannel = supabase
       .channel('realtime_events_section_sync')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'events' },
+        () => {
+          fetchEvents();
+        }
+      )
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'site_settings' },
@@ -535,7 +550,7 @@ export default function UpcomingEventsSection() {
             const isAlreadyRegistered = Boolean(userTicket);
             const hasVideo = Boolean(event.videoUrl || (event.image && isMediaVideo(event.image)));
             const effectiveVideoUrl = event.videoUrl || (event.image && isMediaVideo(event.image) ? event.image : '');
-            const posterUrl = formatDriveImageUrl(event.image) || (effectiveVideoUrl ? getMediaThumbnail(effectiveVideoUrl) : '') || 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?q=80&w=1000';
+            const posterUrl = formatEventBannerUrl(event.image) || (effectiveVideoUrl ? getMediaThumbnail(effectiveVideoUrl) : '') || DEFAULT_EVENT_BANNER;
 
             return (
               <div 
@@ -552,10 +567,12 @@ export default function UpcomingEventsSection() {
                   <div className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden mb-5 border border-white/10 group/img bg-slate-900">
                     <img 
                       src={posterUrl} 
-                      alt={event.title}
+                      alt={event.title} 
                       className="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-700"
+                      referrerPolicy="no-referrer"
+                      crossOrigin="anonymous"
                       onError={(e) => {
-                        (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?q=80&w=1000';
+                        (e.target as HTMLImageElement).src = DEFAULT_EVENT_BANNER;
                       }}
                     />
 

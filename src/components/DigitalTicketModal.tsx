@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { EventTicket } from '@/lib/eventCache';
+import { EventTicket, DEFAULT_EVENT_BANNER, formatEventBannerUrl } from '@/lib/eventCache';
 import { QRCodeSVG, QRCodeCanvas } from 'qrcode.react';
 import { drawQrToCanvas } from '@/lib/qrCodeGenerator';
 
@@ -231,12 +231,13 @@ export default function DigitalTicketModal({ isOpen, onClose, ticket }: DigitalT
           {/* Official Event Banner Thumbnail (Exact consistency with outside card) */}
           <div className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden mb-3.5 border border-white/15 shadow-md bg-slate-900">
             <img 
-              src={ticket.eventImage || ticket.image || 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?q=80&w=1200'} 
+              src={formatEventBannerUrl(ticket.eventImage || ticket.image || '') || DEFAULT_EVENT_BANNER} 
               alt={ticket.eventTitle} 
               className="w-full h-full object-cover"
               crossOrigin="anonymous"
+              referrerPolicy="no-referrer"
               onError={(e) => {
-                (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?q=80&w=1200';
+                (e.target as HTMLImageElement).src = DEFAULT_EVENT_BANNER;
               }}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent pointer-events-none" />

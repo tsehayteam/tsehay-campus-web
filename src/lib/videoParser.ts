@@ -158,11 +158,16 @@ export function parseImageUrl(rawUrl?: string): string {
   if (!rawUrl || !rawUrl.trim()) return '/assets/hero-bg-new.jpg';
   let trimmed = rawUrl.trim();
 
+  // If already a base64 data URL or local blob, return immediately
+  if (trimmed.startsWith('data:image/') || trimmed.startsWith('blob:')) {
+    return trimmed;
+  }
+
   // If raw iframe was passed, extract src
   if (trimmed.includes('<iframe')) {
     const srcMatch = trimmed.match(/src=["']([^"']+)["']/i);
     if (srcMatch && srcMatch[1]) {
-      trimmed = srcMatch[1];
+      trimmed = srcMatch[1].trim();
     }
   }
 
@@ -175,7 +180,7 @@ export function parseImageUrl(rawUrl?: string): string {
   // 2. Google Drive Links: Extract ID and use Google's direct CDN high-res image rendering
   const gDriveId = extractGoogleDriveId(trimmed);
   if (gDriveId) {
-    return `https://lh3.googleusercontent.com/d/${gDriveId}`;
+    return `https://lh3.googleusercontent.com/d/${gDriveId}=w1200`;
   }
 
   // 3. Dropbox image link: direct CDN binary raw=1
