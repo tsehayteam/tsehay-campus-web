@@ -1993,40 +1993,12 @@ export default function AdminDashboard() {
         updatedAt: new Date().toISOString()
       };
 
-      const adminEmail = user?.email || (typeof window !== 'undefined' ? localStorage.getItem('adminEmail') : '') || 'tsehayoperation@gmail.com';
-      let idToken = '';
-      try {
-        if (user) idToken = await user.getIdToken();
-      } catch (tokenErr) {}
-
-      // 1. Dual path client Firestore write
-      try {
-        await setDoc(doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'courses', docId), coursePayload, { merge: true });
-        await setDoc(doc(db, 'courses', docId), coursePayload, { merge: true });
-      } catch (clientWriteErr) {
-        console.warn('Client Firestore write warning:', clientWriteErr);
-      }
-
       // 2. Server Admin API Call
       try {
         await fetch('/api/admin/courses', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            courseId: docId,
-            courseData: coursePayload
-          })
-        });
-
-        await fetch('/api/admin/save-course', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(idToken ? { 'Authorization': `Bearer ${idToken}` } : {})
-          },
-          body: JSON.stringify({
-            email: adminEmail,
-            idToken,
             courseId: docId,
             courseData: coursePayload
           })

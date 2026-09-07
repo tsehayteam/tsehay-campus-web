@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase/admin';
+import { supabaseServer } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,13 +15,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (!adminDb) {
-      return NextResponse.json(
-        { success: false, error: 'Database connection unavailable' },
-        { status: 500 }
-      );
-    }
-
     const resendApiKey = process.env.RESEND_API_KEY;
     const fromEmail = process.env.RESEND_FROM_EMAIL || 'Tsehay Campus <support@tsehaycampus.com>';
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.tsehaycampus.com';
@@ -29,45 +22,22 @@ export async function POST(req: NextRequest) {
     let waitlistDocs: any[] = [];
 
     if (waitlistId) {
-      // Individual notification
-      const singleDoc = await adminDb.collection('course_waitlists').doc(waitlistId).get();
-      if (singleDoc.exists) {
-        waitlistDocs.push({ id: singleDoc.id, ...singleDoc.data() });
-      } else {
-        const artDoc = await adminDb
-          .collection('artifacts')
-          .doc('tsehaycampus-e1a6d')
-          .collection('course_waitlists')
-          .doc(waitlistId)
-          .get();
-        if (artDoc.exists) {
-          waitlistDocs.push({ id: artDoc.id, ...artDoc.data() });
-        }
+      const { data } = await supabaseServer
+        .from('course_waitlists')
+        .select('*')
+        .eq('id', waitlistId)
+        .maybeSingle();
+      if (data) {
+        waitlistDocs.push(data);
       }
     } else {
-      // Course-wide broadcast
-      let query: any = adminDb.collection('course_waitlists');
+      let query = supabaseServer.from('course_waitlists').select('*');
       if (courseId !== 'all') {
-        query = query.where('courseId', '==', courseId);
+        query = query.eq('courseId', courseId);
       }
-      const snapshot = await query.get();
-      if (!snapshot.empty) {
-        snapshot.forEach((doc: any) => {
-          waitlistDocs.push({ id: doc.id, ...doc.data() });
-        });
-      } else {
-        // Fallback to artifacts collection
-        let artQuery: any = adminDb
-          .collection('artifacts')
-          .doc('tsehaycampus-e1a6d')
-          .collection('course_waitlists');
-        if (courseId !== 'all') {
-          artQuery = artQuery.where('courseId', '==', courseId);
-        }
-        const artSnapshot = await artQuery.get();
-        artSnapshot.forEach((doc: any) => {
-          waitlistDocs.push({ id: doc.id, ...doc.data() });
-        });
+      const { data } = await query;
+      if (data && Array.isArray(data)) {
+        waitlistDocs = data;
       }
     }
 
@@ -101,8 +71,6 @@ export async function POST(req: NextRequest) {
         </head>
         <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #050811; margin: 0; padding: 30px 15px; color: #ffffff;">
           <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 580px; margin: 0 auto; background-color: #0b0f19; border: 1.5px solid #f9b03c; border-radius: 24px; overflow: hidden; box-shadow: 0 25px 70px rgba(0,0,0,0.95), 0 0 40px rgba(249,176,60,0.25);">
-            
-            <!-- Brand Header -->
             <tr>
               <td align="center" style="padding: 28px 20px 18px; background: linear-gradient(180deg, #131a2d 0%, #0b0f19 100%); border-bottom: 1px dashed rgba(249, 176, 60, 0.35);">
                 <div style="display: inline-block; background: #ffffff; padding: 6px 14px; border-radius: 12px; margin-bottom: 12px;">
@@ -114,14 +82,11 @@ export async function POST(req: NextRequest) {
                 </div>
               </td>
             </tr>
-
-            <!-- Content Body -->
             <tr>
               <td style="padding: 32px 32px 20px;">
                 <p style="font-size: 15px; color: #cbd5e1; margin: 0 0 16px 0;">
                   ሰላም <strong>${studentName}</strong>፣
                 </p>
-
                 <div style="background: rgba(249, 176, 60, 0.08); border: 1px solid rgba(249, 176, 60, 0.3); border-radius: 18px; padding: 24px; margin-bottom: 24px; text-align: center;">
                   <div style="font-size: 38px; margin-bottom: 10px;">🎓✨</div>
                   <h2 style="color: #ffffff; font-size: 20px; font-weight: 900; margin: 0 0 10px 0; line-height: 1.4;">
@@ -136,8 +101,6 @@ export async function POST(req: NextRequest) {
                     </div>
                   ` : ''}
                 </div>
-
-                <!-- Action Button -->
                 <table align="center" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom: 20px;">
                   <tr>
                     <td align="center">
@@ -147,20 +110,16 @@ export async function POST(req: NextRequest) {
                     </td>
                   </tr>
                 </table>
-
                 <p style="text-align: center; color: #64748b; font-size: 11px; margin: 18px 0 0; line-height: 1.5;">
                   ይህ ማሳወቂያ የተላከው በ Tsehay Campus ለተጠባባቂ ተማሪዎች በተዘጋጀው አውቶማቲክ የLaunch ሲስተም በኩል ነው።
                 </p>
               </td>
             </tr>
-
-            <!-- Footer -->
             <tr>
               <td align="center" style="padding: 16px 20px; background-color: #060913; border-top: 1px solid rgba(255, 255, 255, 0.08); font-size: 11px; color: #64748b;">
                 © ${new Date().getFullYear()} Tsehay Campus. All rights reserved. • <a href="${siteUrl}" style="color: #f9b03c; text-decoration: none;">tsehaycampus.com</a>
               </td>
             </tr>
-
           </table>
         </body>
         </html>
@@ -185,19 +144,15 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // Mark status as notified in Firestore
+      // Mark status as notified in Supabase
       try {
-        const updatePayload = {
-          status: 'notified',
-          notifiedAt: nowIso
-        };
-        await adminDb.collection('course_waitlists').doc(item.id).set(updatePayload, { merge: true });
-        await adminDb
-          .collection('artifacts')
-          .doc('tsehaycampus-e1a6d')
-          .collection('course_waitlists')
-          .doc(item.id)
-          .set(updatePayload, { merge: true });
+        await supabaseServer
+          .from('course_waitlists')
+          .update({
+            status: 'notified',
+            notifiedAt: nowIso
+          })
+          .eq('id', item.id);
       } catch (uErr) {}
 
       notifiedCount++;

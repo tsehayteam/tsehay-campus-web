@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { adminDb } from '@/lib/firebase/admin';
+import { supabaseServer } from '@/lib/supabase/server';
 import { sendEventReminderEmail } from '@/lib/ticketEmailService';
 import { EventTicket } from '@/lib/eventCache';
 
@@ -38,13 +38,6 @@ async function handleReminders(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (!adminDb) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Firestore Admin DB is not initialized on this server instance.' 
-      }, { status: 500 });
-    }
-
     const now = new Date();
     let scannedCount = 0;
     let sent3dCount = 0;
@@ -52,12 +45,15 @@ async function handleReminders(req: NextRequest) {
     const errors: any[] = [];
 
     // Query event_registrations
-    const registrationsSnap = await adminDb.collection('event_registrations').get();
-    const docs = registrationsSnap.docs;
+    const { data: tickets } = await supabaseServer
+      .from('event_registrations')
+      .select('*');
+
+    const docs = tickets || [];
     scannedCount = docs.length;
 
-    for (const doc of docs) {
-      const data = doc.data() as EventTicket;
+    for (const item of docs) {
+      const data = item as EventTicket;
       if (!data || !data.attendeeEmail || data.checkedIn || data.isUsed) {
         continue;
       }
@@ -75,10 +71,13 @@ async function handleReminders(req: NextRequest) {
           const res = await sendEventReminderEmail(data, '3days');
           if (res.success) {
             sent3dCount++;
-            await doc.ref.set({
-              reminder3dSent: true,
-              reminder3dSentAt: new Date().toISOString()
-            }, { merge: true });
+            await supabaseServer
+              .from('event_registrations')
+              .update({
+                reminder3dSent: true,
+                reminder3dSentAt: new Date().toISOString()
+              })
+              .eq('ticketId', data.ticketId);
           } else {
             errors.push({ ticketId: data.ticketId, stage: '3days', error: res.error });
           }
@@ -93,10 +92,13 @@ async function handleReminders(req: NextRequest) {
           const res = await sendEventReminderEmail(data, '1day');
           if (res.success) {
             sent1dCount++;
-            await doc.ref.set({
-              reminder1dSent: true,
-              reminder1dSentAt: new Date().toISOString()
-            }, { merge: true });
+            await supabaseServer
+              .from('event_registrations')
+              .update({
+                reminder1dSent: true,
+                reminder1dSentAt: new Date().toISOString()
+              })
+              .eq('ticketId', data.ticketId);
           } else {
             errors.push({ ticketId: data.ticketId, stage: '1day', error: res.error });
           }

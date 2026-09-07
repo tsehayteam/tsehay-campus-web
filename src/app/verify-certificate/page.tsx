@@ -5,10 +5,10 @@ import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { useLanguage } from '@/context/LanguageContext';
-import { db } from '@/lib/firebase/config';
-import { doc, getDoc } from 'firebase/firestore';
+import { supabase } from '@/lib/supabase/client';
 import { QRCodeSVG } from 'qrcode.react';
 import html2canvas from 'html2canvas';
+// @ts-ignore
 import jsQR from 'jsqr';
 
 interface CertificateRecord {
@@ -352,15 +352,14 @@ export default function CertificateVerificationPage() {
     setIsNotFound(false);
 
     try {
-      // 1. Check in Firestore public certificates collection
-      let docSnap: any = null;
+      // 1. Check in Supabase public certificates collection
+      let data: any = null;
       try {
-        const certDocRef = doc(db, 'artifacts', 'tsehaycampus-e1a6d', 'public', 'data', 'certificates', cleanCode);
-        docSnap = await getDoc(certDocRef);
+        const { data: certData } = await supabase.from('certificates').select('*').eq('id', cleanCode).maybeSingle();
+        data = certData;
       } catch (e) {}
 
-      if (docSnap && docSnap.exists()) {
-        const data = docSnap.data();
+      if (data) {
         setCertificateData({
           id: cleanCode,
           studentName: data.studentName || 'Tsehay Graduate',
