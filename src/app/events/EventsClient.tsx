@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import DigitalTicketModal from '@/components/DigitalTicketModal';
-import PaymentModal from '@/components/PaymentModal';
+import TwoStageEventBookingModal from '@/components/TwoStageEventBookingModal';
 import RequireAuthModal from '@/components/RequireAuthModal';
 import { 
   TsehayEvent, 
@@ -35,7 +35,7 @@ export default function EventsClient() {
   const [isRegistering, setIsRegistering] = useState(false);
   const [generatedTicket, setGeneratedTicket] = useState<EventTicket | null>(null);
   const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
-  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   // Real-time Firestore sync on both collections
@@ -197,12 +197,7 @@ export default function EventsClient() {
       alert('ይህ ዝግጅት ሙሉ በሙሉ ተይዟል (Sold Out)!');
       return;
     }
-
-    if (event.isFree || event.price === 0) {
-      processRegistration(event, 0, 'free');
-    } else {
-      setIsPaymentModalOpen(true);
-    }
+    setIsBookingOpen(true);
   };
 
   const processRegistration = async (event: TsehayEvent, pricePaid: number, paymentMethod: string) => {
@@ -253,7 +248,7 @@ export default function EventsClient() {
       const data = await res.json();
       if (data.success && data.ticket) {
         setGeneratedTicket(data.ticket);
-        setIsPaymentModalOpen(false);
+        setIsBookingOpen(false);
         setIsTicketModalOpen(true);
         saveCachedUserTicket(data.ticket);
       } else {
@@ -354,8 +349,12 @@ export default function EventsClient() {
                   className="group rounded-3xl bg-[#090d16]/90 border border-white/10 hover:border-[#f9b03c]/60 transition-all duration-300 flex flex-col justify-between overflow-hidden shadow-[0_15px_40px_rgba(0,0,0,0.7)] backdrop-blur-2xl hover:-translate-y-1.5"
                 >
                   <div>
-                    {/* Event Banner */}
-                    <div className="relative h-48 w-full overflow-hidden bg-slate-900 group/banner">
+                    {/* Event Banner - Clean & Direct Link to Preview */}
+                    <Link
+                      href={`/events/${evt.slug || evt.id}`}
+                      className="block relative h-48 w-full overflow-hidden bg-slate-900 group/banner cursor-pointer"
+                      title={`${evt.title} - ዝርዝር መረጃ ይመልከቱ`}
+                    >
                       <img
                         src={imageUrl}
                         alt={evt.title}
@@ -367,27 +366,6 @@ export default function EventsClient() {
                         }}
                       />
 
-                      {/* Video Trailer Overlay Button */}
-                      {hasVideo && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setPreviewVideoEvent(evt);
-                          }}
-                          className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 hover:bg-black/60 transition-colors cursor-pointer group/vbtn z-10"
-                          title="የክንውኑን ማስተዋወቂያ ቪዲዮ ይመልከቱ"
-                        >
-                          <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-amber-500 to-[#f9b03c] text-slate-950 flex items-center justify-center shadow-[0_0_25px_rgba(249,176,60,0.8)] border border-white/50 group-hover/vbtn:scale-115 transition-transform">
-                            <i className="fa-solid fa-play text-base ml-0.5 text-slate-950"></i>
-                          </div>
-                          <span className="mt-2 px-2.5 py-0.5 rounded-full bg-black/80 backdrop-blur-md text-[10px] font-bold text-white border border-white/20 whitespace-nowrap shadow-md">
-                            ቪዲዮውን ተመልከት (Watch Trailer)
-                          </span>
-                        </button>
-                      )}
-
                       {/* Online / Location Badge */}
                       <div className="absolute top-3 left-3 flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/80 backdrop-blur-md border border-white/15 text-[10px] font-bold text-white z-20 pointer-events-none">
                         <i className={`fa-solid ${evt.isOnline ? 'fa-video text-blue-400' : 'fa-location-dot text-red-400'}`} />
@@ -395,18 +373,18 @@ export default function EventsClient() {
                       </div>
 
                       {/* Badges */}
-                      <div className="absolute top-3 right-3 flex items-center gap-1.5 z-20">
+                      <div className="absolute top-3 right-3 flex items-center gap-1.5 z-20 pointer-events-none">
                         {hasVideo && (
-                          <span className="px-2 py-0.5 rounded-full bg-red-600/90 backdrop-blur-md text-white font-bold text-[10px] shadow-sm flex items-center gap-1 pointer-events-none">
+                          <span className="px-2 py-0.5 rounded-full bg-red-600/90 backdrop-blur-md text-white font-bold text-[10px] shadow-sm flex items-center gap-1">
                             <i className="fa-solid fa-film text-[8px]"></i>
                             <span>ቪዲዮ</span>
                           </span>
                         )}
-                        <div className="px-3 py-1 rounded-full bg-[#f9b03c] text-slate-950 font-black text-[11px] shadow-[0_0_15px_rgba(249,176,60,0.5)] pointer-events-none">
+                        <div className="px-3 py-1 rounded-full bg-[#f9b03c] text-slate-950 font-black text-[11px] shadow-[0_0_15px_rgba(249,176,60,0.5)]">
                           {evt.isFree || evt.price === 0 ? 'ነፃ (FREE)' : `${evt.price} ETB`}
                         </div>
                       </div>
-                    </div>
+                    </Link>
 
                     {/* Content Body */}
                     <div className="p-5 space-y-3">
@@ -517,25 +495,27 @@ export default function EventsClient() {
       </section>
 
       {/* Modals */}
-      {selectedEvent && (
-        <PaymentModal
-          isOpen={isPaymentModalOpen}
-          onClose={() => setIsPaymentModalOpen(false)}
-          course={{
-            id: selectedEvent.id,
-            title: `[ኢቨንት ትኬት] ${selectedEvent.title}`,
-            price: selectedEvent.price,
-            originalPrice: (selectedEvent as any).originalPrice || selectedEvent.price * 1.5,
-            usdPrice: (selectedEvent as any).usdPrice || Math.round(selectedEvent.price / 130),
-            thumbnailUrl: selectedEvent.image || '',
-            category: 'Events'
-          }}
-          customTitle={`የኢቨንት ትኬት ክፍያ፦ ${selectedEvent.title}`}
-          onSuccess={() => {
-            processRegistration(selectedEvent, selectedEvent.price, 'lakipay_unified');
-          }}
-        />
-      )}
+      {/* Two-Stage Ticket Checkout Modal (Step 1 Attendee Info -> Step 2 Full LMS Payment Modal) */}
+      <TwoStageEventBookingModal
+        isOpen={isBookingOpen}
+        onClose={() => setIsBookingOpen(false)}
+        event={selectedEvent}
+        initialAttendeeName={user?.displayName || ''}
+        initialAttendeeEmail={user?.email || ''}
+        onSuccess={(ticket) => {
+          saveCachedUserTicket(ticket);
+          if (selectedEvent) {
+            setUserBookedTickets(prev => ({
+              ...prev,
+              [selectedEvent.id]: ticket,
+              ...(selectedEvent.slug ? { [selectedEvent.slug]: ticket } : {})
+            }));
+          }
+          setGeneratedTicket(ticket);
+          setIsBookingOpen(false);
+          setIsTicketModalOpen(true);
+        }}
+      />
 
       <DigitalTicketModal
         isOpen={isTicketModalOpen}

@@ -17,6 +17,7 @@ import {
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/lib/supabase/client';
 import DigitalTicketModal from '@/components/DigitalTicketModal';
+import TwoStageEventBookingModal from '@/components/TwoStageEventBookingModal';
 import { parseVideoEmbedUrl, isMediaVideo, getMediaThumbnail } from '@/lib/videoParser';
 
 export default function UpcomingEventsSection() {
@@ -563,8 +564,12 @@ export default function UpcomingEventsSection() {
                 <div className="absolute inset-0 rounded-3xl bg-gradient-to-b from-[#f9b03c]/10 via-transparent to-[#3268ba]/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
 
                 <div>
-                  {/* Event Thumbnail & Badges - Unified 16:9 Banner */}
-                  <div className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden mb-5 border border-white/10 group/img bg-slate-900">
+                  {/* Event Thumbnail & Badges - Clean & Direct Link to Preview */}
+                  <Link
+                    href={`/events/${event.slug || event.id}`}
+                    className="block relative w-full aspect-[16/9] rounded-2xl overflow-hidden mb-5 border border-white/10 group/img bg-slate-900 cursor-pointer"
+                    title={`${event.title} - ዝርዝር መረጃ ይመልከቱ`}
+                  >
                     <img 
                       src={posterUrl} 
                       alt={event.title} 
@@ -575,27 +580,6 @@ export default function UpcomingEventsSection() {
                         (e.target as HTMLImageElement).src = DEFAULT_EVENT_BANNER;
                       }}
                     />
-
-                    {/* Video Trailer Overlay Button */}
-                    {hasVideo && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setPreviewVideoEvent(event);
-                        }}
-                        className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 hover:bg-black/60 transition-colors cursor-pointer group/vbtn z-10"
-                        title="የክንውኑን ማስተዋወቂያ ቪዲዮ ይመልከቱ"
-                      >
-                        <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-amber-500 to-[#f9b03c] text-slate-950 flex items-center justify-center shadow-[0_0_25px_rgba(249,176,60,0.8)] border border-white/50 group-hover/vbtn:scale-115 transition-transform">
-                          <i className="fa-solid fa-play text-base ml-0.5 text-slate-950"></i>
-                        </div>
-                        <span className="mt-2 px-2.5 py-0.5 rounded-full bg-black/80 backdrop-blur-md text-[10px] font-bold text-white border border-white/20 whitespace-nowrap shadow-md">
-                          ቪዲዮውን ተመልከት (Watch Trailer)
-                        </span>
-                      </button>
-                    )}
                     
                     {/* Top Status Capsules */}
                     <div className="absolute top-3 left-3 flex flex-wrap items-center gap-2 z-20 pointer-events-none">
@@ -627,7 +611,7 @@ export default function UpcomingEventsSection() {
                         {event.price === 0 || event.isFree ? '100% ነፃ (FREE)' : `${event.price.toLocaleString()} ብር`}
                       </span>
                     </div>
-                  </div>
+                  </Link>
 
                   {/* Date & Time Capsule */}
                   <div className="flex items-center gap-2.5 text-xs text-slate-300 mb-3.5 font-semibold">
@@ -748,111 +732,28 @@ export default function UpcomingEventsSection() {
 
       </div>
 
-      {/* Booking Form Modal */}
-      {isBookingOpen && selectedEvent && (
-        <div 
-          className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200"
-          onClick={(e) => { if (e.target === e.currentTarget) setIsBookingOpen(false); }}
-        >
-          <div className="relative w-full max-w-md bg-[#0c1017] border border-amber-400/40 rounded-3xl p-6 shadow-[0_25px_80px_rgba(0,0,0,0.9)] text-white animate-in zoom-in-95 duration-200">
-            
-            {/* Modal Header */}
-            <div className="flex items-center justify-between pb-4 mb-4 border-b border-white/10">
-              <div>
-                <span className="text-[10px] font-black text-[#f9b03c] uppercase tracking-widest block">
-                  {selectedEvent.price === 0 || selectedEvent.isFree ? 'ነፃ ምዝገባ (FREE REGISTRATION)' : 'የቲኬት መቁረጫ (TICKET BOOKING)'}
-                </span>
-                <h3 className="text-base font-black text-white line-clamp-1">{selectedEvent.title}</h3>
-              </div>
-              <button 
-                type="button" 
-                onClick={() => setIsBookingOpen(false)}
-                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-slate-400 hover:text-white flex items-center justify-center text-xs transition"
-              >
-                <i className="fa-solid fa-xmark"></i>
-              </button>
-            </div>
-
-            {/* Error Message */}
-            {bookingError && (
-              <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs font-semibold flex items-center gap-2">
-                <i className="fa-solid fa-circle-exclamation text-red-400 shrink-0"></i>
-                <span>{bookingError}</span>
-              </div>
-            )}
-
-            {/* Event Overview Pill */}
-            <div className="p-3 rounded-2xl bg-white/5 border border-white/10 mb-4 flex items-center gap-3 text-xs">
-              <div className="w-10 h-10 rounded-xl bg-[#f9b03c]/20 text-[#f9b03c] flex items-center justify-center text-base shrink-0 font-black">
-                <i className="fa-solid fa-calendar-check"></i>
-              </div>
-              <div className="min-w-0">
-                <div className="font-bold text-white truncate">{selectedEvent.date} • {selectedEvent.time}</div>
-                <div className="text-[11px] text-slate-400 truncate">{selectedEvent.location}</div>
-              </div>
-            </div>
-
-            {/* Attendee Form */}
-            <form onSubmit={handleConfirmBooking} className="space-y-3.5">
-              <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">ሙሉ ስም (Full Name) *</label>
-                <input 
-                  type="text"
-                  required
-                  placeholder="ስምዎን ያስገቡ"
-                  value={attendeeName}
-                  onChange={(e) => setAttendeeName(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/15 focus:border-[#f9b03c] text-white text-xs outline-none transition"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">ኢሜይል አድራሻ (Email Address) *</label>
-                <input 
-                  type="email"
-                  required
-                  placeholder="name@example.com (ትኬቱ የሚላክበት)"
-                  value={attendeeEmail}
-                  onChange={(e) => setAttendeeEmail(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/15 focus:border-[#f9b03c] text-white text-xs outline-none transition"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">ስልክ ቁጥር (Phone Number) *</label>
-                <input 
-                  type="tel"
-                  required
-                  placeholder="0911223344"
-                  value={attendeePhone}
-                  onChange={(e) => setAttendeePhone(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/15 focus:border-[#f9b03c] text-white text-xs outline-none transition"
-                />
-              </div>
-
-              <div className="pt-2">
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#f9b03c] hover:brightness-110 text-slate-950 font-black text-sm flex items-center justify-center gap-2 shadow-[0_0_30px_rgba(249,176,60,0.4)] active:scale-98 transition disabled:opacity-50"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <i className="fa-solid fa-circle-notch fa-spin text-xs"></i>
-                      <span>ትኬትዎ እየተዘጋጀ ነው...</span>
-                    </>
-                  ) : (
-                    <>
-                      <i className="fa-solid fa-ticket text-xs"></i>
-                      <span>{selectedEvent.price === 0 || selectedEvent.isFree ? 'ምዝገባውን አጠናቅቅ (Confirm Ticket)' : `ክፍያ ፈጽመህ ትኬት ቁረጥ • ${selectedEvent.price.toLocaleString()} ብር`}</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {/* Two-Stage Ticket Checkout Modal (Step 1 Attendee Info -> Step 2 Full LMS Payment Modal) */}
+      <TwoStageEventBookingModal
+        isOpen={isBookingOpen}
+        onClose={() => setIsBookingOpen(false)}
+        event={selectedEvent}
+        initialAttendeeName={attendeeName}
+        initialAttendeeEmail={attendeeEmail}
+        initialAttendeePhone={attendeePhone}
+        onSuccess={(ticket) => {
+          saveCachedUserTicket(ticket);
+          if (selectedEvent) {
+            setUserBookedTickets(prev => ({
+              ...prev,
+              [selectedEvent.id]: ticket,
+              ...(selectedEvent.slug ? { [selectedEvent.slug]: ticket } : {})
+            }));
+          }
+          setActiveTicket(ticket);
+          setIsBookingOpen(false);
+          setIsTicketModalOpen(true);
+        }}
+      />
 
       {/* Universal Video Trailer Lightbox Modal */}
       {previewVideoEvent && (

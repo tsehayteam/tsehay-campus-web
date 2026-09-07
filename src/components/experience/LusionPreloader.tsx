@@ -316,9 +316,9 @@ export default function LusionPreloader() {
 
       {/* Bottom Area: Razor-Sharp Analog-Style Vertical Rolling Counter */}
       <div className="relative z-10 px-6 py-6 sm:px-12 sm:py-8 flex items-end justify-between">
-        {/* Bottom-Left Sharp High-Contrast Analog Rolling Counter */}
+        {/* Bottom-Left Sharp High-Contrast Analog Rolling Counter (Clean & Noticeable Digital Counter) */}
         <div className="flex flex-col">
-          <div className="flex items-center gap-1.5 px-4 py-2 rounded-2xl bg-[#040814]/95 border border-white/20 shadow-[0_12px_40px_rgba(0,0,0,0.95),inset_0_1px_1px_rgba(255,255,255,0.2)]">
+          <div className="flex items-baseline gap-1 sm:gap-1.5 px-4 sm:px-5 py-2 sm:py-2.5 rounded-2xl bg-[#040814]/95 border border-white/20 shadow-[0_12px_40px_rgba(0,0,0,0.95),inset_0_1px_1px_rgba(255,255,255,0.2)]">
             {/* Hundreds Reel */}
             {progress >= 100 && (
               <AnalogRollingDigit value={1} max={1} />
@@ -327,12 +327,8 @@ export default function LusionPreloader() {
             <AnalogRollingDigit value={progress >= 100 ? 0 : Math.floor((progress % 100) / 10)} max={9} />
             {/* Ones Reel */}
             <AnalogRollingDigit value={progress >= 100 ? 0 : progress % 10} max={9} />
-          </div>
-
-          <div className="flex items-center gap-2 mt-2 px-1">
-            <span className={`w-2 h-2 rounded-full ${progress >= 100 ? 'bg-emerald-400 shadow-[0_0_8px_#34d399]' : 'bg-[#f9b03c] animate-pulse shadow-[0_0_8px_#f9b03c]'}`} />
-            <span className="font-mono text-[11px] sm:text-xs tracking-widest text-slate-300 uppercase font-semibold">
-              {progress < 100 ? 'በመጫን ላይ...' : 'ዝግጁ ነው'}
+            <span className="font-mono font-black text-xl sm:text-3xl md:text-4xl text-[#f9b03c] ml-1 select-none drop-shadow-[0_0_12px_rgba(249,176,60,0.8)]">
+              %
             </span>
           </div>
         </div>

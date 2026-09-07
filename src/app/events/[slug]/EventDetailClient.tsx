@@ -6,6 +6,7 @@ import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import DigitalTicketModal from '@/components/DigitalTicketModal';
+import TwoStageEventBookingModal from '@/components/TwoStageEventBookingModal';
 import ShareEventModal from '@/components/ShareEventModal';
 import { 
   TsehayEvent, 
@@ -752,160 +753,26 @@ export default function EventDetailClient() {
         </div>
       </main>
 
-      {/* Direct Glassmorphism Booking & Checkout Modal */}
-      {isBookingOpen && (
-        <div 
-          className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/85 backdrop-blur-xl animate-in fade-in duration-200"
-          onClick={(e) => { if (e.target === e.currentTarget) setIsBookingOpen(false); }}
-        >
-          <div 
-            className="relative w-full max-w-lg rounded-[2rem] p-6 sm:p-8 text-white animate-in zoom-in-95 duration-200"
-            style={{
-              background: 'rgba(12, 16, 23, 0.96)',
-              border: '1px solid rgba(249, 176, 60, 0.4)',
-              boxShadow: '0 30px 90px rgba(0,0,0,0.95), 0 0 40px rgba(249,176,60,0.2)'
-            }}
-          >
-            {/* Close Button */}
-            <button
-              type="button"
-              onClick={() => setIsBookingOpen(false)}
-              className="absolute top-5 right-5 w-8 h-8 rounded-full bg-white/5 hover:bg-white/15 text-slate-400 hover:text-white flex items-center justify-center transition cursor-pointer border border-white/10"
-            >
-              <i className="fa-solid fa-xmark text-sm"></i>
-            </button>
-
-            <div className="text-center mb-6">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#f9b03c] to-amber-400 text-slate-950 flex items-center justify-center text-xl mx-auto mb-3 shadow-[0_0_20px_rgba(249,176,60,0.4)]">
-                <i className="fa-solid fa-ticket"></i>
-              </div>
-              <h3 className="text-xl font-black font-heading text-white">የትኬት ምዝገባ ማረጋገጫ</h3>
-              <p className="text-xs text-[#f9b03c] font-bold mt-1 line-clamp-1">{event.title}</p>
-            </div>
-
-            {bookingError && (
-              <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 text-xs text-red-300 mb-4">
-                {bookingError}
-              </div>
-            )}
-
-            <form onSubmit={handleConfirmBooking} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-200 mb-1.5">
-                  ሙሉ ስም (Full Name) <span className="text-red-400 font-black">* (ግዴታ)</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={attendeeName}
-                  onChange={(e) => setAttendeeName(e.target.value)}
-                  placeholder="ለምሳሌ፡ ኢዮብ ሳህሌ (Eyoub Sahle)"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-hidden focus:border-[#f9b03c]"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-200 mb-1.5">
-                  ኢሜይል (Email Address) <span className="text-red-400 font-black">* (ግዴታ)</span>
-                </label>
-                <input
-                  type="email"
-                  required
-                  value={attendeeEmail}
-                  onChange={(e) => setAttendeeEmail(e.target.value)}
-                  placeholder="eyoubsahle1@gmail.com (ዲጂታል ቲኬቱ የሚላክበት)"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-hidden focus:border-[#f9b03c]"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-200 mb-1.5">
-                  ስልክ ቁጥር (Phone Number) <span className="text-red-400 font-black">* (ግዴታ)</span>
-                </label>
-                <input
-                  type="tel"
-                  required
-                  value={attendeePhone}
-                  onChange={(e) => setAttendeePhone(e.target.value)}
-                  placeholder="0911223344 ወይም +251911223344"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-hidden focus:border-[#f9b03c]"
-                />
-                <p className="text-[10px] text-amber-400/80 mt-1 flex items-center gap-1">
-                  <i className="fa-solid fa-shield-check"></i>
-                  <span>የማረጋገጫ SMS እና የትኬት QR ኮድ ወደዚህ ቁጥር ይላካል</span>
-                </p>
-              </div>
-
-              {/* Payment Method Selector for Paid Events */}
-              {event.price > 0 && !event.isFree && (
-                <div className="space-y-2 pt-1">
-                  <label className="block text-xs font-bold text-slate-300">የክፍያ ዘዴ ይምረጡ (Payment Method)</label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedPaymentMethod('lakipay')}
-                      className={`p-3 rounded-xl border text-left transition flex items-center gap-2.5 cursor-pointer ${
-                        selectedPaymentMethod === 'lakipay'
-                          ? 'bg-amber-400/15 border-[#f9b03c] text-white'
-                          : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'
-                      }`}
-                    >
-                      <div className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-black">
-                        ET
-                      </div>
-                      <div>
-                        <p className="text-xs font-bold">LakiPay / Telebirr</p>
-                        <p className="text-[10px] text-slate-400">ሀገር ውስጥ ክፍያ</p>
-                      </div>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setSelectedPaymentMethod('paypal')}
-                      className={`p-3 rounded-xl border text-left transition flex items-center gap-2.5 cursor-pointer ${
-                        selectedPaymentMethod === 'paypal'
-                          ? 'bg-amber-400/15 border-[#f9b03c] text-white'
-                          : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'
-                      }`}
-                    >
-                      <div className="w-7 h-7 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center text-xs font-black">
-                        💳
-                      </div>
-                      <div>
-                        <p className="text-xs font-bold">PayPal / Cards</p>
-                        <p className="text-[10px] text-slate-400">International</p>
-                      </div>
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Price summary row */}
-              <div className="p-4 rounded-xl bg-white/[0.04] border border-white/[0.08] text-xs flex justify-between items-center">
-                <span className="text-slate-300 font-semibold">የትኬት ዋጋ</span>
-                <span className="font-black text-[#f9b03c] text-base">
-                  {event.price === 0 || event.isFree ? '100% ነፃ (Free)' : `${event.price.toLocaleString()} ብር`}
-                </span>
-              </div>
-
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full btn-buy-now-vibe py-4 rounded-xl text-sm font-black flex items-center justify-center gap-2 cursor-pointer active:scale-98 disabled:opacity-50 mt-3"
-              >
-                <span>
-                  {isSubmitting 
-                    ? 'በማዘጋጀት ላይ...' 
-                    : event.price === 0 || event.isFree 
-                    ? 'ትኬቴን አዘጋጅልኝ (Get Free Ticket)' 
-                    : 'ወደ ክፍያ ቀጥል (Proceed to Pay)'}
-                </span>
-                <i className="fa-solid fa-arrow-right text-xs"></i>
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
+      {/* Two-Stage Ticket Checkout Modal (Step 1 Attendee Info -> Step 2 Full LMS Payment Modal) */}
+      <TwoStageEventBookingModal
+        isOpen={isBookingOpen}
+        onClose={() => setIsBookingOpen(false)}
+        event={event}
+        initialAttendeeName={attendeeName}
+        initialAttendeeEmail={attendeeEmail}
+        initialAttendeePhone={attendeePhone}
+        onSuccess={(ticket) => {
+          saveCachedUserTicket(ticket);
+          setUserBookedTickets(prev => ({
+            ...prev,
+            [event.id]: ticket,
+            ...(event.slug ? { [event.slug]: ticket } : {})
+          }));
+          setActiveTicket(ticket);
+          setIsBookingOpen(false);
+          setIsTicketModalOpen(true);
+        }}
+      />
 
       {/* Apple Wallet Pass Modal */}
       <DigitalTicketModal

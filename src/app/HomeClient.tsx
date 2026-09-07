@@ -298,12 +298,11 @@ export default function HomeClient({
     };
   }, []);
 
-  // Seamless Slow Headline Typewriter Effect
+  // Seamless Slow Headline Typewriter Effect (Constrained to 3 Catchy Curiosity Phrases, Max 2 Lines)
   const headlinePhrases = [
-    { white: 'የወደፊት ክህሎትዎን', gold: 'በ AI በተደገፈ የትምህርት መድረክ ይገንቡ!' },
-    { white: 'ከንድፈ-ሐሳብ ባለፈ፤', gold: 'በተግባር የተፈተኑ የገበያ ክህሎቶችን ዛሬውኑ ይማሩ!' },
-    { white: 'ከ 500+ በላይ ሰልጣኞች ጋር ይቀላቀሉ፤', gold: 'የወደፊት የስራ ዕድልዎን አሁን ይጀምሩ!' },
-    { white: 'በ AI የታገዘ ዘመናዊ', gold: 'ዲጂታል ገቢን ይፍጠሩ።' }
+    { white: 'የወደፊት ገቢዎን', gold: 'በ AI እና ዲጂታል ክህሎት ይጀምሩ' },
+    { white: 'በተግባር የተፈተኑ ሚስጥሮችን', gold: 'ዛሬውኑ ከባለሙያዎች ይማሩ' },
+    { white: 'የስኬት ጉዞዎን አሁን ይቀላቀሉ፤', gold: 'ኮርሶቹን መርምረው ይጀምሩ' }
   ];
   const [currentPhraseIdx, setCurrentPhraseIdx] = useState(0);
   const [typedCharCount, setTypedCharCount] = useState(0);
@@ -525,12 +524,15 @@ export default function HomeClient({
             <span className="w-2.5 h-2.5 rounded-full bg-[#f9b03c] shadow-[0_0_12px_#f9b03c] animate-pulse"></span>
           </div>
 
-          {/* Main Cinematic Typewriter Headline with Continuous Glow Pulse (Cursor Removed) */}
+          {/* Main Cinematic Typewriter Headline with Strict Max 2-Lines Constraint */}
           <h1 
-            className="font-heading font-black text-4xl sm:text-6xl md:text-7xl lg:text-[76px] tracking-tight leading-[1.15] sm:leading-[1.1] text-white mb-4 sm:mb-5 min-h-[90px] sm:min-h-[140px] max-w-4xl headline-glow-pulse"
+            className="font-heading font-black text-3xl sm:text-5xl md:text-6xl lg:text-[62px] tracking-tight leading-[1.18] sm:leading-[1.12] text-white mb-4 sm:mb-5 min-h-[76px] sm:min-h-[135px] max-w-4xl headline-glow-pulse line-clamp-2 overflow-hidden"
             style={{
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
               wordWrap: 'break-word',
-              whiteSpace: 'pre-wrap',
               overflowWrap: 'break-word',
             }}
           >
