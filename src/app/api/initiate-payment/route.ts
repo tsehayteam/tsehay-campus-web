@@ -146,7 +146,15 @@ export async function POST(request: Request) {
       // Webhook listener: LakiPay callback endpoint
       const webhookCallbackUrl = `${origin}/api/payments/lakipay/webhook`;
 
-      // Initialize session via official LakiPay dynamic flow (POST https://api.lakipay.co/api/v1/payment/initialize)
+      // If phone number is missing, reject early with clear message
+      if (!validEthPhone) {
+        return NextResponse.json({ 
+          success: false,
+          error: 'እባክዎ ትክክለኛ የኢትዮጵያ ስልክ ቁጥር ያስገቡ (ለምሳሌ 0911223344 ወይም 0711223344)።' 
+        }, { status: 400 });
+      }
+
+      // Initialize session via official LakiPay dynamic flow (POST https://api.lakipay.co/api/v2/payment/checkout)
       const lakipayResult = await initializeLakiPaySession({
         amount: Number(numAmount),
         currency: "ETB",
@@ -156,19 +164,20 @@ export async function POST(request: Request) {
         email: email,
         firstName: firstName,
         lastName: lastName,
-        phoneNumber: validEthPhone || rawPhone,
+        phoneNumber: validEthPhone,
         callbackUrl: webhookCallbackUrl,
         successUrl,
         failedUrl
       });
 
-      if (lakipayResult.success && lakipayResult.paymentUrl) {
+      if (lakipayResult.success && (lakipayResult.checkoutUrl || lakipayResult.paymentUrl)) {
+        const finalUrl = lakipayResult.checkoutUrl || lakipayResult.paymentUrl;
         return NextResponse.json({ 
           success: true, 
-          paymentUrl: lakipayResult.paymentUrl,
-          payment_url: lakipayResult.paymentUrl,
-          checkout_url: lakipayResult.paymentUrl, 
-          checkoutUrl: lakipayResult.paymentUrl, 
+          paymentUrl: finalUrl,
+          payment_url: finalUrl,
+          checkout_url: finalUrl, 
+          checkoutUrl: finalUrl, 
           reference: lakipayResult.reference 
         });
       }
@@ -228,15 +237,11 @@ export async function POST(request: Request) {
         }
       }
 
-      // Fallback: If configured direct URL exists, format it correctly
-      const lakipayDirectUrl = (process.env.LAKIPAY_DIRECT_URL || process.env.LAKIPAY_CHECKOUT_URL || '').trim();
-      if (lakipayDirectUrl && lakipayDirectUrl.startsWith('http')) {
-        let baseCheckoutUrl = lakipayDirectUrl;
-        if (baseCheckoutUrl.match(/^https?:\/\/(www\.)?lakipay\.co\/?$/i)) {
-          baseCheckoutUrl = `https://checkout.lakipay.co/pay/${tx_ref}`;
-        }
-        const separator = baseCheckoutUrl.includes('?') ? '&' : '?';
-        const finalUrl = baseCheckoutUrl.includes('amount=') ? baseCheckoutUrl : `${baseCheckoutUrl}${separator}amount=${numAmount}&reference=${tx_ref}&title=${encodeURIComponent(payDetails.title)}&description=${encodeURIComponent(payDetails.description)}`;
+      // Fallback: If configured external custom direct URL exists (never construct broken checkout.lakipay.co/pay?...)
+      const lakipayDirectUrl = (process.env.LAKIPAY_DIRECT_URL || '').trim();
+      if (lakipayDirectUrl && lakipayDirectUrl.startsWith('http') && !lakipayDirectUrl.includes('lakipay.co')) {
+        const separator = lakipayDirectUrl.includes('?') ? '&' : '?';
+        const finalUrl = `${lakipayDirectUrl}${separator}amount=${numAmount}&reference=${tx_ref}&title=${encodeURIComponent(payDetails.title)}&description=${encodeURIComponent(payDetails.description)}`;
         return NextResponse.json({ 
           success: true,
           checkoutUrl: finalUrl, 
@@ -245,21 +250,11 @@ export async function POST(request: Request) {
         });
       }
 
-      // Guaranteed Direct Checkout Redirection (Ensures student is never blocked with an error)
-      const fallbackCheckoutUrl = (process.env.LAKIPAY_CHECKOUT_URL || 'https://checkout.lakipay.co/pay').trim();
-      let baseCheckoutUrl = fallbackCheckoutUrl.startsWith('http') ? fallbackCheckoutUrl : `https://checkout.lakipay.co/pay/${tx_ref}`;
-      if (baseCheckoutUrl.match(/^https?:\/\/(www\.)?lakipay\.co\/?$/i)) {
-        baseCheckoutUrl = `https://checkout.lakipay.co/pay/${tx_ref}`;
-      }
-      const separator = baseCheckoutUrl.includes('?') ? '&' : '?';
-      const guaranteedUrl = `${baseCheckoutUrl}${separator}amount=${numAmount}&reference=${tx_ref}&title=${encodeURIComponent(payDetails.title)}&description=${encodeURIComponent(payDetails.description)}&email=${encodeURIComponent(email)}&return_url=${encodeURIComponent(successUrl)}`;
-
+      // Return explicit error so student is not redirected to a 404 page
       return NextResponse.json({ 
-        success: true, 
-        checkoutUrl: guaranteedUrl, 
-        paymentUrl: guaranteedUrl, 
-        reference: tx_ref 
-      });
+        success: false, 
+        error: lakipayResult.error || 'የLakiPay ክፍያ ማስጀመር አልተሳካም። እባክዎ የስልክ ቁጥርዎን አረጋግጠው በድጋሚ ይሞክሩ ወይም አስተዳዳሪውን ያነጋግሩ።' 
+      }, { status: 400 });
     }
 
 

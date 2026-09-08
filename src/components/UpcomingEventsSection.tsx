@@ -340,6 +340,8 @@ export default function UpcomingEventsSection() {
               price: selectedEvent.price,
               userEmail: trimmedEmail,
               userId: user?.uid || 'guest_user',
+              phone_number: trimmedPhone,
+              phoneNumber: trimmedPhone,
               paymethod: 'lakipay'
             })
           });

@@ -380,6 +380,8 @@ export default function EventDetailClient() {
             price: event.price,
             userEmail: attendeeEmail.trim(),
             userId: user?.uid || 'guest_user',
+            phone_number: attendeePhone.trim(),
+            phoneNumber: attendeePhone.trim(),
             paymethod: selectedPaymentMethod,
             returnUrl: typeof window !== 'undefined' ? `${window.location.origin}/events/${event.slug || event.id}?payment=success` : undefined
           })

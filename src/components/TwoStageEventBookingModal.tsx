@@ -269,6 +269,8 @@ export default function TwoStageEventBookingModal({
             userEmail: trimmedEmail,
             userId: user?.uid || `guest_${Date.now()}`,
             phone: trimmedPhone,
+            phone_number: trimmedPhone,
+            phoneNumber: trimmedPhone,
             paymethod: 'lakipay',
             isEventTicket: true,
             eventId: event.id,

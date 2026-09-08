@@ -209,17 +209,35 @@ export async function initializeLakiPaySession(params: LakiPayInitParams): Promi
     ? `${pubKey}:${secKey}` 
     : (rawApiKey || `${pubKey}:${secKey}`);
 
-  // Base dynamic payload: Omitting supported_mediums enables ALL merchant-configured channels
+  if (!formattedApiKey || (!pubKey && !rawApiKey)) {
+    return {
+      success: false,
+      reference: params.reference,
+      error: 'የLakiPay ሂሳብ ቁልፎች (LAKIPAY_PUBLIC_KEY / LAKIPAY_SECRET_KEY) በ Vercel Environment Variables ውስጥ አልተገኙም።'
+    };
+  }
+
+  const formattedPhone = params.phoneNumber ? formatEthiopianPhone(params.phoneNumber) : '';
+  if (!formattedPhone) {
+    return {
+      success: false,
+      reference: params.reference,
+      error: 'ትክክለኛ የኢትዮጵያ ስልክ ቁጥር ያስፈልጋል (ለምሳሌ 0911223344 ወይም 0711223344)።'
+    };
+  }
+
+  // Base payload: LakiPay Hosted Checkout v2 requires phone_number and accepts supported_mediums
   const dynamicPayload = {
     amount: Number(params.amount),
     currency: params.currency || 'ETB',
+    phone_number: formattedPhone,
     reference: params.reference,
     title: String(params.title || 'Tsehay Campus'),
     description: params.description || 'Tsehay Campus Education & Events',
     email: params.email,
     first_name: params.firstName || (params.email ? params.email.split('@')[0] : 'Student'),
     last_name: params.lastName || 'Campus',
-    phone_number: params.phoneNumber ? formatEthiopianPhone(params.phoneNumber) : undefined,
+    supported_mediums: ["TELEBIRR", "CBE", "MPESA", "ETHSWITCH", "OROMIA_BANK", "AWASH"],
     callback_url: params.callbackUrl,
     callbackUrl: params.callbackUrl,
     return_url: params.successUrl,
@@ -230,18 +248,19 @@ export async function initializeLakiPaySession(params: LakiPayInitParams): Promi
     }
   };
 
-  // Endpoint sequence: Primary official v1 initialize -> fallback v2 checkout
+  // Endpoint sequence: Primary official v2 checkout -> fallback v1 initialize
   const endpoints = Array.from(new Set([
     process.env.LAKIPAY_ENDPOINT,
-    'https://api.lakipay.co/api/v1/payment/initialize',
     'https://api.lakipay.co/api/v2/payment/checkout',
-    'https://api.lakipay.co/v2/payment/checkout'
+    'https://api.lakipay.co/v2/payment/checkout',
+    'https://api.lakipay.co/api/v1/payment/initialize'
   ].filter(Boolean))) as string[];
 
   let lastError: string | null = null;
 
   for (const endpoint of endpoints) {
     try {
+      console.log(`[LakiPay Checkout] Requesting session from ${endpoint} for ref: ${params.reference}, phone: ${formattedPhone}`);
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
@@ -252,24 +271,25 @@ export async function initializeLakiPaySession(params: LakiPayInitParams): Promi
       });
 
       const resData = await response.json().catch(() => null);
+      console.log(`[LakiPay Checkout] Response status [${response.status}] from ${endpoint}:`, resData);
 
       if (resData) {
-        const returnedRef = resData.reference || resData.data?.reference || resData.transaction_id || resData.data?.transaction_id || params.reference;
+        const returnedRef = resData.data?.reference || resData.reference || resData.data?.transaction_id || resData.transaction_id || params.reference;
         
-        // Extract paymentUrl across all standard LakiPay response schema variations
+        // Extract checkoutUrl / paymentUrl across standard LakiPay response schema variations
         const targetUrl = 
-          resData.paymentUrl ||
-          resData.payment_url ||
-          resData.data?.paymentUrl ||
-          resData.data?.payment_url ||
-          resData.checkoutUrl ||
-          resData.checkout_url ||
-          resData.data?.checkoutUrl ||
           resData.data?.checkout_url ||
-          resData.url ||
+          resData.checkout_url ||
+          resData.data?.payment_url ||
+          resData.payment_url ||
+          resData.data?.checkoutUrl ||
+          resData.checkoutUrl ||
+          resData.data?.paymentUrl ||
+          resData.paymentUrl ||
           resData.data?.url ||
-          resData.redirect_url ||
-          resData.data?.redirect_url;
+          resData.url ||
+          resData.data?.redirect_url ||
+          resData.redirect_url;
 
         if (targetUrl && typeof targetUrl === 'string' && targetUrl.startsWith('http')) {
           return {
@@ -280,12 +300,10 @@ export async function initializeLakiPaySession(params: LakiPayInitParams): Promi
           };
         }
 
-        // If the API explicitly requires supported_mediums, retry with full inclusive array
+        // If the API explicitly complains about supported_mediums, retry without it
         if (resData.error?.includes?.('supported_mediums') || resData.message?.includes?.('supported_mediums')) {
-          const fallbackPayload = {
-            ...dynamicPayload,
-            supported_mediums: LAKIPAY_ALL_SUPPORTED_MEDIUMS
-          };
+          const fallbackPayload: any = { ...dynamicPayload };
+          delete fallbackPayload.supported_mediums;
 
           const retryRes = await fetch(endpoint, {
             method: 'POST',
@@ -298,28 +316,28 @@ export async function initializeLakiPaySession(params: LakiPayInitParams): Promi
 
           const retryData = await retryRes.json().catch(() => null);
           const retryUrl = 
-            retryData?.paymentUrl ||
+            retryData?.data?.checkout_url ||
+            retryData?.checkout_url ||
+            retryData?.data?.payment_url ||
             retryData?.payment_url ||
             retryData?.data?.paymentUrl ||
-            retryData?.data?.payment_url ||
-            retryData?.checkoutUrl ||
-            retryData?.checkout_url ||
+            retryData?.paymentUrl ||
             retryData?.data?.checkoutUrl ||
-            retryData?.data?.checkout_url ||
-            retryData?.url ||
-            retryData?.data?.url;
+            retryData?.checkoutUrl ||
+            retryData?.data?.url ||
+            retryData?.url;
 
           if (retryUrl && typeof retryUrl === 'string' && retryUrl.startsWith('http')) {
             return {
               success: true,
               paymentUrl: retryUrl,
               checkoutUrl: retryUrl,
-              reference: retryData.reference || returnedRef
+              reference: retryData.data?.reference || retryData.reference || returnedRef
             };
           }
         }
 
-        lastError = resData.message || resData.error || resData.detail || resData.data?.message;
+        lastError = resData.data?.message || resData.message || resData.error?.message || resData.error || resData.detail;
       }
     } catch (err: any) {
       console.warn(`LakiPay initialization warning on ${endpoint}:`, err?.message || err);
@@ -327,15 +345,12 @@ export async function initializeLakiPaySession(params: LakiPayInitParams): Promi
     }
   }
 
-  // Fallback: If merchant configured a direct checkout base URL in environment
-  const lakipayDirectUrl = (process.env.LAKIPAY_DIRECT_URL || process.env.LAKIPAY_CHECKOUT_URL || '').trim();
-  if (lakipayDirectUrl && lakipayDirectUrl.startsWith('http')) {
-    let baseCheckoutUrl = lakipayDirectUrl;
-    if (baseCheckoutUrl.match(/^https?:\/\/(www\.)?lakipay\.co\/?$/i)) {
-      baseCheckoutUrl = `https://checkout.lakipay.co/pay/${params.reference}`;
-    }
-    const separator = baseCheckoutUrl.includes('?') ? '&' : '?';
-    const finalUrl = `${baseCheckoutUrl}${separator}amount=${params.amount}&reference=${params.reference}&title=${encodeURIComponent(params.title)}`;
+  // NOTE: checkout.lakipay.co does NOT support query checkouts (/pay?amount=...) and returns 404.
+  // We strictly avoid redirecting users to broken query URLs.
+  const customDirectUrl = (process.env.LAKIPAY_DIRECT_URL || '').trim();
+  if (customDirectUrl && customDirectUrl.startsWith('http') && !customDirectUrl.includes('lakipay.co')) {
+    const separator = customDirectUrl.includes('?') ? '&' : '?';
+    const finalUrl = `${customDirectUrl}${separator}amount=${params.amount}&reference=${params.reference}&title=${encodeURIComponent(params.title)}`;
     return {
       success: true,
       paymentUrl: finalUrl,
@@ -347,6 +362,6 @@ export async function initializeLakiPaySession(params: LakiPayInitParams): Promi
   return {
     success: false,
     reference: params.reference,
-    error: lastError || 'LakiPay initialization failed'
+    error: lastError ? (typeof lastError === 'string' ? lastError : JSON.stringify(lastError)) : 'የLakiPay ክፍያ ማስጀመር አልተሳካም። እባክዎ የስልክ ቁጥርዎን እና የኢንተርኔት ግንኙነትዎን ያረጋግጡ።'
   };
 }

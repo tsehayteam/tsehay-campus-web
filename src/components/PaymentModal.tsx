@@ -19,6 +19,9 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
 
+  // 🌟 Phone Number State for LakiPay (Telebirr / CBE Birr / M-Pesa)
+  const [phoneNumber, setPhoneNumber] = useState('');
+
   // 🌟 Referral / Promo Code States
   const [referralInput, setReferralInput] = useState('');
   const [appliedCode, setAppliedCode] = useState<string | null>(null);
@@ -28,7 +31,13 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    try {
+      const savedPhone = localStorage.getItem('tsehay_user_phone') || (user as any)?.phone || (user as any)?.phoneNumber || '';
+      if (savedPhone) {
+        setPhoneNumber(savedPhone);
+      }
+    } catch (e) {}
+  }, [user]);
 
   // Listen for global open events if not controlled
   useEffect(() => {
@@ -246,15 +255,23 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
 
     // 3. Paid Course Checkout with applied discount
     const targetAmount = finalPrice;
-    const ref = `TC-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
     
-    let fallbackUrl = '';
-    if (paymethod === 'paypal') {
-      fallbackUrl = `https://www.paypal.com/checkoutnow?reference=${ref}&amount=${(targetAmount / 125).toFixed(2)}`;
-    } else if (paymethod === 'crypto' || paymethod === 'nowpayments') {
-      fallbackUrl = `https://nowpayments.io/payment/?order_id=${ref}&price_amount=${(targetAmount / 125).toFixed(2)}`;
-    } else {
-      fallbackUrl = `https://checkout.lakipay.co/pay/${ref}?amount=${targetAmount}&reference=${ref}&title=${encodeURIComponent(course.title)}&email=${encodeURIComponent(user?.email || 'student@example.com')}&return_url=${encodeURIComponent(window.location.origin + '/dashboard?success=true&courseId=' + targetCourseId)}`;
+    // Validate phone number if LakiPay is selected
+    if (paymethod === 'lakipay') {
+      const cleanPhone = phoneNumber.replace(/[^0-9]/g, '');
+      const isValid = 
+        (cleanPhone.length === 10 && (cleanPhone.startsWith('09') || cleanPhone.startsWith('07'))) ||
+        (cleanPhone.length === 9 && (cleanPhone.startsWith('9') || cleanPhone.startsWith('7'))) ||
+        (cleanPhone.length === 12 && (cleanPhone.startsWith('2519') || cleanPhone.startsWith('2517')));
+
+      if (!isValid) {
+        setError('እባክዎ ትክክለኛ የኢትዮጵያ ስልክ ቁጥር ያስገቡ (ለምሳሌ 0911223344 ወይም 0711223344)።');
+        setIsPaying(false);
+        return;
+      }
+      try {
+        localStorage.setItem('tsehay_user_phone', phoneNumber.trim());
+      } catch (e) {}
     }
 
     try {
@@ -270,6 +287,8 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
           discountPercent: discountPercent,
           userEmail: user?.email || 'student@example.com',
           userId: user?.uid || 'anonymous',
+          phone_number: phoneNumber.trim(),
+          phoneNumber: phoneNumber.trim(),
           paymethod: paymethod,
         })
       });
@@ -277,7 +296,7 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
       const data = await res.json().catch(() => null);
       const checkoutUrl = data?.paymentUrl || data?.payment_url || data?.checkout_url || data?.checkoutUrl;
       
-      if (checkoutUrl) {
+      if (checkoutUrl && typeof checkoutUrl === 'string' && checkoutUrl.startsWith('http')) {
         if (appliedCode) {
           recordReferralUsage(appliedCode);
         }
@@ -285,17 +304,12 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
         return;
       }
       
-      // If no checkoutUrl returned, automatically proceed with the direct checkout URL seamlessly
-      if (appliedCode) {
-        recordReferralUsage(appliedCode);
-      }
-      window.location.href = fallbackUrl;
+      setIsPaying(false);
+      setError(data?.error || data?.message || 'የክፍያ ሂደቱን ማስጀመር አልተሳካም። እባክዎ የስልክ ቁጥርዎን አረጋግጠው በድጋሚ ይሞክሩ።');
     } catch (err: any) {
-      console.warn("Payment initiation seamless redirect:", err);
-      if (appliedCode) {
-        recordReferralUsage(appliedCode);
-      }
-      window.location.href = fallbackUrl;
+      console.error("Payment initiation error:", err);
+      setIsPaying(false);
+      setError(err?.message || 'የክፍያ ጥያቄውን ማስተናገድ አልተቻለም። እባክዎ የኢንተርኔት ግንኙነትዎን አረጋግጠው በድጋሚ ይሞክሩ።');
     }
   };
 
@@ -475,6 +489,43 @@ export default function PaymentModal({ course: propCourse, onClose: propOnClose 
                     <img src="/lakipay-logo.svg" alt="LakiPay" className="h-5 sm:h-6 w-auto max-w-full object-contain" />
                   </div>
                 </label>
+
+                {/* LakiPay Phone Number Input Field */}
+                {paymethod === 'lakipay' && (
+                  <div className="bg-[#0b1329] border border-amber-500/40 rounded-2xl p-3.5 space-y-2 animate-in fade-in slide-in-from-top-2 duration-300 shadow-inner">
+                    <div className="flex items-center justify-between text-xs font-bold text-gray-300">
+                      <span className="flex items-center gap-1.5 text-amber-400">
+                        <i className="fa-solid fa-mobile-screen-button"></i>
+                        <span>የክፍያ ስልክ ቁጥር (Telebirr / CBE Birr / M-Pesa)</span>
+                      </span>
+                      <span className="text-[10px] text-amber-300/90 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20 font-bold">ግዴታ ነው</span>
+                    </div>
+
+                    <div className="relative flex items-center">
+                      <div className="absolute left-3.5 flex items-center gap-1.5 text-xs text-gray-400 pointer-events-none select-none">
+                        <span className="text-base">🇪🇹</span>
+                        <span className="font-mono text-amber-300 font-bold">+251</span>
+                      </div>
+                      <input 
+                        type="tel"
+                        placeholder="9... ወይም 07... ያስገቡ"
+                        value={phoneNumber}
+                        onChange={(e) => {
+                          setPhoneNumber(e.target.value);
+                          if (error) setError(null);
+                        }}
+                        disabled={isPaying}
+                        className="w-full bg-[#070b16] border border-gray-700/80 rounded-xl pl-20 pr-3.5 py-2.5 text-sm font-mono text-white placeholder-gray-500 outline-none focus:border-amber-400 transition"
+                      />
+                    </div>
+                    <div className="flex items-center justify-between text-[11px] text-gray-400 px-1 pt-0.5">
+                      <span>በቴሌብር ወይም በሲቢኢ ብር የተመዘገበውን ቁጥር ያስገቡ</span>
+                      <span className="flex items-center gap-1 text-[10px] text-gray-400">
+                        <i className="fa-solid fa-shield-halved text-emerald-400 text-xs"></i> የተጠበቀ
+                      </span>
+                    </div>
+                  </div>
+                )}
 
                 {/* Option 2: PayPal */}
                 <label 
