@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase/client';
+import { verifyAdminRequest } from '@/lib/adminAuthHelper';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
   try {
+    const adminCheck = await verifyAdminRequest(req);
+    if (!adminCheck.authorized) {
+      return NextResponse.json({ success: false, error: 'Unauthorized: Admin privileges required.', profiles: [], enrollments: [] }, { status: 401 });
+    }
+
     // 1. Fetch all student profiles from Supabase
     const { data: profiles, error: profileError } = await supabase
       .from('profiles')
@@ -74,6 +80,11 @@ export async function GET(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
+    const adminCheck = await verifyAdminRequest(req);
+    if (!adminCheck.authorized) {
+      return NextResponse.json({ success: false, error: 'Unauthorized: Admin privileges required.' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
     const type = searchParams.get('type') || 'profile';

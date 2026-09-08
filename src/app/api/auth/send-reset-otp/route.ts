@@ -21,11 +21,10 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
-    // Generate or use provided 6-Digit OTP Code
-    const clientCode = typeof body.code === 'string' && body.code.trim().length === 6 ? body.code.trim() : null;
+    // Always generate secure random 6-Digit OTP Code on server
     const min = 100000;
     const max = 999999;
-    const otpCode = clientCode || Math.floor(Math.random() * (max - min + 1) + min).toString();
+    const otpCode = Math.floor(Math.random() * (max - min + 1) + min).toString();
     const now = Date.now();
     const expiresAt = now + 15 * 60 * 1000; // 15 minutes validity
     const docKey = `otp_${cleanEmail.replace(/[^a-zA-Z0-9]/g, '_')}`;

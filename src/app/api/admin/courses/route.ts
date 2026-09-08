@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase/client';
 import { generateCourseSlug, DEFAULT_COURSES, formatDriveImageUrl, getCleanCourseImage } from '@/lib/courseCache';
 import { saveSinglePersistedCourse, deletePersistedCourse } from '@/lib/memoryStore';
+import { verifyAdminRequest } from '@/lib/adminAuthHelper';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -125,6 +126,11 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const adminCheck = await verifyAdminRequest(req);
+    if (!adminCheck.authorized) {
+      return NextResponse.json({ success: false, error: 'Unauthorized: Admin privileges required.' }, { status: 401 });
+    }
+
     const raw = await req.json().catch(() => ({}));
     const body = raw.courseData || raw;
     const courseId = raw.courseId || body.id || body.courseId || `course_${Date.now()}`;
@@ -220,6 +226,11 @@ export async function PUT(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
+    const adminCheck = await verifyAdminRequest(req);
+    if (!adminCheck.authorized) {
+      return NextResponse.json({ success: false, error: 'Unauthorized: Admin privileges required.' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(req.url);
     const courseId = searchParams.get('id') || searchParams.get('courseId');
 

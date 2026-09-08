@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase/server';
+import { verifyAdminRequest } from '@/lib/adminAuthHelper';
 
 export const dynamic = 'force-dynamic';
 
@@ -39,6 +40,11 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
+    const adminCheck = await verifyAdminRequest(req);
+    if (!adminCheck.authorized) {
+      return NextResponse.json({ success: false, error: 'Unauthorized: Admin privileges required.' }, { status: 401 });
+    }
+
     const body = await req.json();
     const { code, discountPercent, targetCourseId, description, isActive, maxUsageLimit } = body;
 
@@ -90,6 +96,11 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
+    const adminCheck = await verifyAdminRequest(req);
+    if (!adminCheck.authorized) {
+      return NextResponse.json({ success: false, error: 'Unauthorized: Admin privileges required.' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(req.url);
     const codeId = searchParams.get('codeId');
 
@@ -123,6 +134,11 @@ export async function DELETE(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   try {
+    const adminCheck = await verifyAdminRequest(req);
+    if (!adminCheck.authorized) {
+      return NextResponse.json({ success: false, error: 'Unauthorized: Admin privileges required.' }, { status: 401 });
+    }
+
     const body = await req.json();
     const { codeId, isActive, maxUsageLimit } = body;
 

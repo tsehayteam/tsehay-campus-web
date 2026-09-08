@@ -5,6 +5,7 @@ export const fetchCache = 'force-no-store';
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase/server';
 import { sharedSiteSettingsCache, savePersistedSetting } from '@/lib/memoryStore';
+import { verifyAdminRequest } from '@/lib/adminAuthHelper';
 
 export const memorySiteSettingsCache = sharedSiteSettingsCache;
 
@@ -16,10 +17,29 @@ const NO_CACHE_HEADERS = {
   'Expires': '0',
 };
 
+const ALLOWED_PUBLIC_KEYS = [
+  'landing_video',
+  'youtube_portfolio',
+  'about_video',
+  'landing_page_video',
+  'public_announcements',
+  'deleted_courses',
+  'site_announcement',
+  'maintenance_mode'
+];
+
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const settingKey = searchParams.get('settingKey') || searchParams.get('key') || 'youtube_portfolio';
+
+    // Disallow unauthenticated access to sensitive non-public site_settings keys
+    if (!ALLOWED_PUBLIC_KEYS.includes(settingKey)) {
+      const auth = await verifyAdminRequest(req);
+      if (!auth.authorized) {
+        return NextResponse.json({ success: false, error: 'Unauthorized key access' }, { status: 403, headers: NO_CACHE_HEADERS });
+      }
+    }
 
     // 1. Primary: Supabase site_settings table
     try {
@@ -62,6 +82,11 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const adminCheck = await verifyAdminRequest(req);
+    if (!adminCheck.authorized) {
+      return NextResponse.json({ success: false, error: 'Unauthorized: Admin privileges required.' }, { status: 401 });
+    }
+
     const body = await req.json();
     const { settingKey, data } = body;
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase/server';
 import { sendEventReminderEmail } from '@/lib/ticketEmailService';
 import { EventTicket } from '@/lib/eventCache';
+import { verifyAdminRequest } from '@/lib/adminAuthHelper';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,11 +32,14 @@ async function handleReminders(req: NextRequest) {
   try {
     const authHeader = req.headers.get('authorization');
     const cronSecret = process.env.CRON_SECRET;
+    const isCronAuthorized = cronSecret && (authHeader === `Bearer ${cronSecret}` || req.nextUrl.searchParams.get('secret') === cronSecret);
     
-    // Optional secret check if CRON_SECRET is configured
-    if (cronSecret && authHeader !== `Bearer ${cronSecret}` && req.nextUrl.searchParams.get('secret') !== cronSecret) {
-      console.warn('[Event Reminders Cron] Unauthorized trigger attempt.');
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!isCronAuthorized) {
+      const adminAuth = await verifyAdminRequest(req);
+      if (!adminAuth.authorized) {
+        console.warn('[Event Reminders Cron] Unauthorized trigger attempt.');
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
     }
 
     const now = new Date();

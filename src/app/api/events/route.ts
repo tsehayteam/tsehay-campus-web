@@ -7,6 +7,7 @@ import {
   saveSinglePersistedEvent, 
   deletePersistedEvent 
 } from '@/lib/memoryStore';
+import { verifyAdminRequest } from '@/lib/adminAuthHelper';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -202,6 +203,11 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const auth = await verifyAdminRequest(req);
+  if (!auth.authorized) {
+    return NextResponse.json({ success: false, error: auth.error || 'Unauthorized' }, { status: 401, headers: NO_CACHE_HEADERS });
+  }
+
   try {
     const body = await req.json();
     const eventData = body.event || body;
@@ -239,6 +245,11 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const auth = await verifyAdminRequest(req);
+  if (!auth.authorized) {
+    return NextResponse.json({ success: false, error: auth.error || 'Unauthorized' }, { status: 401, headers: NO_CACHE_HEADERS });
+  }
+
   try {
     const { searchParams } = new URL(req.url);
     const eventId = searchParams.get('id') || searchParams.get('eventId');

@@ -1,17 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase/server';
 import { memoryAdminOtpCache } from '../send-otp/route';
+import { AUTHORIZED_ADMIN_EMAILS, registerAdminSession } from '@/lib/adminAuthHelper';
 
 export const dynamic = 'force-dynamic';
-
-const AUTHORIZED_ADMIN_EMAILS = [
-  'eyobsahle@gmail.com',
-  'admin@tsehaycampus.com',
-  'eyoubsahle@gmail.com',
-  'tsehayoperation@gmail.com',
-  'cryptomaster758@gmail.com'
-];
-const EMERGENCY_OWNER_PIN = process.env.ADMIN_MASTER_CODE || '202678';
 
 export async function POST(req: NextRequest) {
   try {
@@ -41,17 +33,16 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
-    // 🔑 Fast-path Emergency Master Owner PIN & Access Codes
-    const isMasterPin = 
-      inputCode === EMERGENCY_OWNER_PIN ||
-      inputCode === '202678' ||
-      inputCode === 'Eyoub TC' || 
-      inputCode.toLowerCase() === 'eyoubtc';
+    // Optional environment-configured emergency owner master code (must be explicitly set in .env)
+    const envMasterCode = process.env.ADMIN_MASTER_CODE?.trim();
+    const isEnvMasterPin = Boolean(envMasterCode && envMasterCode.length >= 6 && inputCode === envMasterCode);
 
-    if (isMasterPin) {
+    if (isEnvMasterPin) {
       const timeHex = Date.now().toString(36).toUpperCase();
       const token = `TC-ADM-AUTH-MASTER-${timeHex}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
       
+      await registerAdminSession(token, cleanEmail);
+
       const response = NextResponse.json({
         success: true,
         token,
@@ -146,6 +137,9 @@ export async function POST(req: NextRequest) {
     // 🛡️ Code is 100% Valid!
     const timeHex = Date.now().toString(36).toUpperCase();
     const token = `TC-ADM-AUTH-OTP-${timeHex}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+
+    // Register valid active session in Supabase
+    await registerAdminSession(token, cleanEmail);
 
     // Clean up used OTP
     if (memoryAdminOtpCache) {

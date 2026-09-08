@@ -45,8 +45,7 @@ export async function POST(req: NextRequest) {
       exists: userExists,
       email: cleanEmail,
       displayName,
-      photoURL,
-      uid: userExists ? uid : undefined
+      photoURL
     });
 
   } catch (error: any) {

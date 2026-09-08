@@ -12,7 +12,25 @@ export function middleware(request: NextRequest) {
   ) {
     return NextResponse.redirect(new URL('/maintenance', request.url));
   }
-  return NextResponse.next();
+
+  // Protect sensitive admin subroutes like /admin/seed from unauthenticated direct access
+  if (request.nextUrl.pathname.startsWith('/admin/seed')) {
+    const adminSessionCookie = request.cookies.get('tc_admin_session')?.value;
+    if (!adminSessionCookie) {
+      return NextResponse.redirect(new URL('/admin', request.url));
+    }
+  }
+
+  const response = NextResponse.next();
+
+  // Defense-in-depth security headers
+  response.headers.set('X-Frame-Options', 'SAMEORIGIN');
+  response.headers.set('X-Content-Type-Options', 'nosniff');
+  response.headers.set('X-XSS-Protection', '1; mode=block');
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  response.headers.set('Permissions-Policy', 'camera=(self), microphone=(), geolocation=()');
+
+  return response;
 }
 
 export const config = {

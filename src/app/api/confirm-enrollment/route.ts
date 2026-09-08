@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase/server';
+import { isAuthorizedAdminEmail } from '@/lib/adminAuthHelper';
 
 export async function POST(request: Request) {
   try {
     const authHeader = request.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized: Missing Authorization header' }, { status: 401 });
     }
 
     const token = authHeader.split('Bearer ')[1].trim();
@@ -16,26 +17,48 @@ export async function POST(request: Request) {
     }
 
     const userEmail = user.email || '';
-    const isAdmin = user.user_metadata?.role === 'admin' ||
-                    userEmail === 'eyobsahle@gmail.com' ||
-                    userEmail === 'eyoubsahle@gmail.com' ||
-                    userEmail === 'admin@tsehaycampus.com' || 
-                    userEmail === 'tsehayoperation@gmail.com' ||
-                    userEmail === 'habte@gmail.com' ||
-                    userEmail === 'cryptomaster758@gmail.com';
+    const isAdmin = isAuthorizedAdminEmail(userEmail) || user.app_metadata?.role === 'admin';
 
-    const { courseId, userId, paymentMethod, amount, tx_ref } = await request.json();
+    const { courseId, userId, paymentMethod, amount, tx_ref } = await request.json().catch(() => ({}));
 
     if (!courseId || !userId) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    const isSelf = user.id === userId;
-    if (!isAdmin && !isSelf) {
-      return NextResponse.json({ error: 'Forbidden: Unauthorized enrollment target' }, { status: 403 });
+    // Security Gate: If not an admin, verify against authentic pending_payments transaction
+    if (!isAdmin) {
+      if (user.id !== userId) {
+        return NextResponse.json({ error: 'Forbidden: Cannot confirm enrollment for another user' }, { status: 403 });
+      }
+
+      if (!tx_ref) {
+        return NextResponse.json({ error: 'Forbidden: Missing verified payment transaction reference' }, { status: 403 });
+      }
+
+      // Check if valid pending transaction exists in Supabase
+      const { data: pendingPayment } = await supabaseServer
+        .from('pending_payments')
+        .select('*')
+        .eq('id', tx_ref)
+        .maybeSingle();
+
+      if (!pendingPayment) {
+        return NextResponse.json({ error: 'Invalid or unverified transaction reference' }, { status: 403 });
+      }
+
+      const pendingUser = pendingPayment.user_id || pendingPayment.userId;
+      const pendingCourse = pendingPayment.course_id || pendingPayment.courseId;
+
+      if (pendingUser && pendingUser !== user.id) {
+        return NextResponse.json({ error: 'Transaction reference belongs to another user' }, { status: 403 });
+      }
+
+      if (pendingCourse && pendingCourse !== courseId) {
+        return NextResponse.json({ error: 'Transaction reference does not match course' }, { status: 403 });
+      }
     }
 
-    // Save to enrollments table
+    // Save/Upsert to enrollments table
     await supabaseServer.from('enrollments').upsert({
       id: `${userId}_${courseId}`,
       user_id: userId,

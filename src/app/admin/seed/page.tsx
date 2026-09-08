@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { DEFAULT_COURSES } from '@/lib/courseCache';
 
@@ -7,7 +7,20 @@ export default function SeedDatabase() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState('');
 
+  useEffect(() => {
+    const hasAuth = !!sessionStorage.getItem('tc_admin_session') || document.cookie.includes('tc_admin_session=');
+    if (!hasAuth) {
+      window.location.href = '/admin';
+    }
+  }, []);
+
   const seedData = async () => {
+    const hasAuth = !!sessionStorage.getItem('tc_admin_session') || document.cookie.includes('tc_admin_session=');
+    if (!hasAuth) {
+      setSuccess('Unauthorized: Admin access required.');
+      return;
+    }
+
     setLoading(true);
     setSuccess('');
     

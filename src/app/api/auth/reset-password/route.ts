@@ -6,9 +6,9 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}));
-    const { email, code, newPassword, alreadyReset } = body;
+    const { email, code, newPassword } = body;
 
-    if (!email || (!code && !alreadyReset) || !newPassword) {
+    if (!email || !code || !newPassword) {
       return NextResponse.json({ 
         error: 'ኢሜል፣ የማረጋገጫ ኮድ እና አዲስ የይለፍ ቃል ያስፈልጋል።' 
       }, { status: 400 });
@@ -34,60 +34,48 @@ export async function POST(req: NextRequest) {
 
     const docKey = `otp_${cleanEmail.replace(/[^a-zA-Z0-9]/g, '_')}`;
 
-    // 3. Verify OTP in Supabase site_settings
-    let otpValid = Boolean(alreadyReset);
-    if (!otpValid) {
-      try {
-        const { data: record } = await supabaseServer
-          .from('site_settings')
-          .select('data')
-          .eq('key', docKey)
-          .maybeSingle();
+    // 3. Strictly Verify OTP in Supabase site_settings
+    const { data: record } = await supabaseServer
+      .from('site_settings')
+      .select('data')
+      .eq('key', docKey)
+      .maybeSingle();
 
-        if (record && record.data) {
-          const otpData = record.data;
-          if (otpData.expiresAt && Date.now() > otpData.expiresAt) {
-            return NextResponse.json({ 
-              error: 'የማረጋገጫ ኮዱ ጊዜው አልፎበታል (Expired)። እባክዎ አዲስ ኮድ ይጠይቁ።' 
-            }, { status: 400 });
-          }
-
-          if ((otpData.attempts || 0) >= 5) {
-            return NextResponse.json({ 
-              error: 'ኮዱን ደጋግመው ተሳስተዋል! እባክዎ አዲስ ኮድ ይጠይቁ።' 
-            }, { status: 429 });
-          }
-
-          if (otpData.code === cleanCode || otpData.verified === true) {
-            otpValid = true;
-          } else {
-            await supabaseServer
-              .from('site_settings')
-              .upsert({
-                key: docKey,
-                data: { ...otpData, attempts: (otpData.attempts || 0) + 1 },
-                updated_at: new Date().toISOString()
-              });
-
-            const remaining = 4 - (otpData.attempts || 0);
-            return NextResponse.json({ 
-              error: `የተሳሳተ ኮድ አስገብተዋል። ${remaining > 0 ? `(የቀሩ ሙከራዎች፡ ${remaining})` : 'እባክዎ አዲስ ኮድ ይጠይቁ።'}` 
-            }, { status: 400 });
-          }
-        } else {
-          // If no OTP stored on server, allow valid 6-digit code format
-          if (cleanCode.length === 6) {
-            otpValid = true;
-          }
-        }
-      } catch (err) {
-        console.warn('Supabase OTP check fallback:', err);
-        if (cleanCode.length === 6) otpValid = true;
-      }
+    if (!record || !record.data) {
+      return NextResponse.json({ 
+        error: 'የማረጋገጫ ኮድ አልተገኘም። እባክዎ አዲስ ኮድ ይጠይቁ።' 
+      }, { status: 400 });
     }
 
-    if (!otpValid) {
-      return NextResponse.json({ error: 'የተሳሳተ የማረጋገጫ ኮድ ነው።' }, { status: 400 });
+    const otpData = record.data;
+    if (otpData.expiresAt && Date.now() > otpData.expiresAt) {
+      return NextResponse.json({ 
+        error: 'የማረጋገጫ ኮዱ ጊዜው አልፎበታል (Expired)። እባክዎ አዲስ ኮድ ይጠይቁ።' 
+      }, { status: 400 });
+    }
+
+    if ((otpData.attempts || 0) >= 5) {
+      return NextResponse.json({ 
+        error: 'ኮዱን ደጋግመው ተሳስተዋል! እባክዎ አዲስ ኮድ ይጠይቁ።' 
+      }, { status: 429 });
+    }
+
+    const expectedCode = String(otpData.code || '').trim();
+    const isCodeValid = expectedCode === cleanCode || otpData.verified === true;
+
+    if (!isCodeValid) {
+      await supabaseServer
+        .from('site_settings')
+        .upsert({
+          key: docKey,
+          data: { ...otpData, attempts: (otpData.attempts || 0) + 1 },
+          updated_at: new Date().toISOString()
+        });
+
+      const remaining = 4 - (otpData.attempts || 0);
+      return NextResponse.json({ 
+        error: `የተሳሳተ ኮድ አስገብተዋል። ${remaining > 0 ? `(የቀሩ ሙከራዎች፡ ${remaining})` : 'እባክዎ አዲስ ኮድ ይጠይቁ።'}` 
+      }, { status: 400 });
     }
 
     // 4. Update or Create User in Supabase Auth
@@ -120,7 +108,7 @@ export async function POST(req: NextRequest) {
       console.warn('Supabase auth update notice:', authErr);
     }
 
-    // 5. Invalidate OTP key in site_settings
+    // 5. Invalidate OTP key in site_settings immediately upon successful reset
     try {
       await supabaseServer.from('site_settings').delete().eq('key', docKey);
     } catch (e) {}

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase/server';
 import { EventTicket } from '@/lib/eventCache';
+import { verifyAdminRequest } from '@/lib/adminAuthHelper';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -36,6 +37,14 @@ export async function GET(req: NextRequest) {
     const eventId = searchParams.get('eventId');
     const ticketId = searchParams.get('ticketId');
     const email = searchParams.get('email');
+
+    // Unfiltered / bulk ticket listing is strictly admin-only
+    if (!userId && !eventId && !ticketId && !email) {
+      const auth = await verifyAdminRequest(req);
+      if (!auth.authorized) {
+        return NextResponse.json({ success: false, error: auth.error || 'Unauthorized' }, { status: 401, headers: NO_CACHE_HEADERS });
+      }
+    }
 
     let tickets = await getTickets();
 

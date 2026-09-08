@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase/server';
+import { verifyAdminRequest } from '@/lib/adminAuthHelper';
 import {
   getWelcomeEmailHtml,
   getCourseReminderEmailHtml,
@@ -9,7 +10,7 @@ import {
 
 export const dynamic = 'force-dynamic';
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const { type, userEmail, recipients, userName, payload } = body;
@@ -31,6 +32,14 @@ export async function POST(req: Request) {
         { success: false, error: 'At least one recipient email is required.' },
         { status: 400 }
       );
+    }
+
+    // For non-welcome campaigns or multi-recipient broadcasts, require admin authorization
+    if (type !== 'welcome' || targetEmails.length > 1) {
+      const auth = await verifyAdminRequest(req);
+      if (!auth.authorized) {
+        return NextResponse.json({ success: false, error: auth.error || 'Unauthorized' }, { status: 401 });
+      }
     }
 
     const resendApiKey = process.env.RESEND_API_KEY;

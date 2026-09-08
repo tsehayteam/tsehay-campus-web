@@ -41,16 +41,21 @@ export async function handleLakiPayWebhook(request: Request): Promise<Response> 
 
     const secret = (process.env.LAKIPAY_SECRET_KEY || process.env.CHAPA_SECRET_KEY || '').trim().replace(/^["']|["']$/g, '');
 
-    // Mandatory signature verification if secret is configured
-    if (secret && signature) {
-      const hash = crypto.createHmac('sha256', secret).update(rawBody).digest('hex');
-      if (hash !== signature) {
-        console.error("Webhook Error: Invalid LakiPay signature hash verification failed.");
-        return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
-      }
-    } else if (secret && !signature) {
-      console.warn("Webhook Warning: Request missing signature header while secret is configured.");
+    // Mandatory signature verification
+    if (!secret) {
+      console.error("Webhook Error: LAKIPAY_SECRET_KEY / CHAPA_SECRET_KEY is not configured on server.");
+      return NextResponse.json({ error: 'Server webhook configuration error' }, { status: 500 });
+    }
+
+    if (!signature) {
+      console.warn("Webhook Warning: Request missing signature header.");
       return NextResponse.json({ error: 'Missing signature header' }, { status: 401 });
+    }
+
+    const hash = crypto.createHmac('sha256', secret).update(rawBody).digest('hex');
+    if (hash !== signature) {
+      console.error("Webhook Error: Invalid signature hash verification failed.");
+      return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
     }
 
     let event: any = {};

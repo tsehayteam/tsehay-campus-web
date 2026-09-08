@@ -4,6 +4,7 @@ export const fetchCache = 'force-no-store';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase/server';
+import { verifyAdminRequest } from '@/lib/adminAuthHelper';
 
 const NO_CACHE_HEADERS = {
   'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
@@ -12,6 +13,17 @@ const NO_CACHE_HEADERS = {
   'Pragma': 'no-cache',
   'Expires': '0',
 };
+
+const ALLOWED_PUBLIC_KEYS = [
+  'landing_video',
+  'youtube_portfolio',
+  'about_video',
+  'landing_page_video',
+  'public_announcements',
+  'deleted_courses',
+  'site_announcement',
+  'maintenance_mode'
+];
 
 const DEFAULT_SETTINGS: Record<string, any> = {
   landing_video: {
@@ -33,6 +45,14 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const settingKey = searchParams.get('settingKey') || searchParams.get('key') || 'youtube_portfolio';
+
+    // Disallow unauthenticated access to non-public / sensitive site_settings rows
+    if (!ALLOWED_PUBLIC_KEYS.includes(settingKey)) {
+      const auth = await verifyAdminRequest(req);
+      if (!auth.authorized) {
+        return NextResponse.json({ success: false, error: 'Unauthorized key access' }, { status: 403, headers: NO_CACHE_HEADERS });
+      }
+    }
 
     // 1. Primary: Supabase site_settings table
     try {

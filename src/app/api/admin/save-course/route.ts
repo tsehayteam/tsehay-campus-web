@@ -2,12 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase/client';
 import { generateCourseSlug } from '@/lib/courseCache';
 import { saveSinglePersistedCourse } from '@/lib/memoryStore';
+import { verifyAdminRequest } from '@/lib/adminAuthHelper';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 export const fetchCache = 'force-no-store';
 
 export async function POST(req: NextRequest) {
+  const auth = await verifyAdminRequest(req);
+  if (!auth.authorized) {
+    return NextResponse.json({ success: false, error: auth.error || 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const raw = await req.json().catch(() => ({}));
     const body = raw.courseData || raw;

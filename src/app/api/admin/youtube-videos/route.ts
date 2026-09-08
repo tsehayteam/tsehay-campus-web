@@ -4,14 +4,7 @@ export const fetchCache = 'force-no-store';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase/server';
-
-const AUTHORIZED_ADMIN_EMAILS = [
-  'eyobsahle@gmail.com',
-  'admin@tsehaycampus.com',
-  'eyoubsahle@gmail.com',
-  'tsehayoperation@gmail.com',
-  'cryptomaster758@gmail.com'
-];
+import { verifyAdminRequest } from '@/lib/adminAuthHelper';
 
 const NO_CACHE_HEADERS = {
   'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
@@ -20,36 +13,6 @@ const NO_CACHE_HEADERS = {
   'Pragma': 'no-cache',
   'Expires': '0',
 };
-
-async function verifyAdminAuth(req: NextRequest, emailParam?: string | null): Promise<boolean> {
-  if (emailParam && typeof emailParam === 'string') {
-    const cleanEmail = emailParam.trim().toLowerCase();
-    if (AUTHORIZED_ADMIN_EMAILS.includes(cleanEmail)) {
-      return true;
-    }
-  }
-
-  const authHeader = req.headers.get('authorization');
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    try {
-      const idToken = authHeader.split('Bearer ')[1].trim();
-      if (idToken) {
-        const { data: { user } } = await supabaseServer.auth.getUser(idToken);
-        if (
-          user &&
-          (user.user_metadata?.role === 'admin' ||
-           (user.email && AUTHORIZED_ADMIN_EMAILS.includes(user.email.toLowerCase())))
-        ) {
-          return true;
-        }
-      }
-    } catch (e) {
-      console.warn('ID Token verification failed in youtube-videos route:', e);
-    }
-  }
-
-  return true;
-}
 
 export async function GET(req: NextRequest) {
   try {
@@ -113,17 +76,17 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const auth = await verifyAdminRequest(req);
+  if (!auth.authorized) {
+    return NextResponse.json(
+      { success: false, error: auth.error || 'ይቅርታ፣ ይህንን ለማድረግ የአድሚን ፈቃድ የለዎትም።' },
+      { status: 403, headers: NO_CACHE_HEADERS }
+    );
+  }
+
   try {
     const body = await req.json();
-    const { email, videoData } = body;
-
-    const isAuthorized = await verifyAdminAuth(req, email);
-    if (!isAuthorized) {
-      return NextResponse.json(
-        { success: false, error: 'ይቅርታ፣ ይህንን ለማድረግ የአድሚን ፈቃድ የለዎትም።' },
-        { status: 403, headers: NO_CACHE_HEADERS }
-      );
-    }
+    const { videoData } = body;
 
     if (!videoData) {
       return NextResponse.json({ success: false, error: 'Missing videoData payload' }, { status: 400, headers: NO_CACHE_HEADERS });
@@ -184,15 +147,14 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const auth = await verifyAdminRequest(req);
+  if (!auth.authorized) {
+    return NextResponse.json({ success: false, error: auth.error || 'ይቅርታ፣ ይህንን ለማድረግ የአድሚን ፈቃድ የለዎትም።' }, { status: 403, headers: NO_CACHE_HEADERS });
+  }
+
   try {
     const { searchParams } = new URL(req.url);
     const videoId = searchParams.get('id') || searchParams.get('videoId');
-    const email = searchParams.get('email');
-
-    const isAuthorized = await verifyAdminAuth(req, email);
-    if (!isAuthorized) {
-      return NextResponse.json({ success: false, error: 'ይቅርታ፣ ይህንን ለማድረግ የአድሚን ፈቃድ የለዎትም።' }, { status: 403, headers: NO_CACHE_HEADERS });
-    }
 
     if (!videoId) {
       return NextResponse.json({ success: false, error: 'Missing videoId' }, { status: 400, headers: NO_CACHE_HEADERS });
@@ -220,14 +182,14 @@ export async function DELETE(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
+  const auth = await verifyAdminRequest(req);
+  if (!auth.authorized) {
+    return NextResponse.json({ success: false, error: auth.error || 'ይቅርታ፣ ይህንን ለማድረግ የአድሚን ፈቃድ የለዎትም።' }, { status: 403, headers: NO_CACHE_HEADERS });
+  }
+
   try {
     const body = await req.json();
-    const { email, videos, reorderUpdates } = body;
-
-    const isAuthorized = await verifyAdminAuth(req, email);
-    if (!isAuthorized) {
-      return NextResponse.json({ success: false, error: 'ይቅርታ፣ ይህንን ለማድረግ የአድሚን ፈቃድ የለዎትም።' }, { status: 403, headers: NO_CACHE_HEADERS });
-    }
+    const { videos, reorderUpdates } = body;
 
     const updates = reorderUpdates || videos || [];
     if (!Array.isArray(updates) || updates.length === 0) {

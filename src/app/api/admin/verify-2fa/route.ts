@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase/server';
+import { registerAdminSession } from '@/lib/adminAuthHelper';
 
 const AUTHORIZED_ADMIN_EMAILS = [
   'eyobsahle@gmail.com',
@@ -245,6 +246,13 @@ export async function POST(req: NextRequest) {
       // 🛡️ Code is 100% Valid!
       const timeHex = Date.now().toString(36).toUpperCase();
       const token = `TC-ADM-AUTH-2FA-${timeHex}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+
+      // Register session in Supabase so verifyAdminRequest recognizes it
+      try {
+        await registerAdminSession(token, cleanEmail);
+      } catch (sessErr) {
+        console.warn('Could not register admin session token:', sessErr);
+      }
 
       // Clean up used OTP
       memoryOtpCache.delete(cleanEmail);

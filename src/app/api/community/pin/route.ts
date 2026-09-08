@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase/server';
 import { loadPersistedCommunityPosts, savePersistedCommunityPosts } from '@/lib/memoryStore';
 import { INITIAL_SERVER_COMMUNITY_POSTS } from '@/lib/serverCourses';
+import { verifyAdminRequest } from '@/lib/adminAuthHelper';
 
 const NO_CACHE_HEADERS = {
   'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
@@ -16,6 +17,11 @@ const NO_CACHE_HEADERS = {
 };
 
 export async function POST(req: NextRequest) {
+  const auth = await verifyAdminRequest(req);
+  if (!auth.authorized) {
+    return NextResponse.json({ success: false, error: auth.error || 'ይቅርታ፣ ፖስት ለመሰካት የአድሚን ፈቃድ ያስፈልጋል።' }, { status: 401 });
+  }
+
   try {
     let body: any = {};
     try {

@@ -11,6 +11,7 @@ import {
   deletePersistedCommunityPost 
 } from '@/lib/memoryStore';
 import { INITIAL_SERVER_COMMUNITY_POSTS } from '@/lib/serverCourses';
+import { verifyAdminRequest } from '@/lib/adminAuthHelper';
 
 const NO_CACHE_HEADERS = {
   'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
@@ -111,6 +112,11 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const auth = await verifyAdminRequest(req);
+  if (!auth.authorized) {
+    return NextResponse.json({ success: false, error: auth.error || 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     let body: any = {};
     try {
@@ -165,6 +171,11 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
+  const auth = await verifyAdminRequest(req);
+  if (!auth.authorized) {
+    return NextResponse.json({ success: false, error: auth.error || 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     let body: any = {};
     try {
@@ -218,6 +229,11 @@ export async function PUT(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const auth = await verifyAdminRequest(req);
+  if (!auth.authorized) {
+    return NextResponse.json({ success: false, error: auth.error || 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const { searchParams } = new URL(req.url);
     let postId = searchParams.get('id') || searchParams.get('postId');
