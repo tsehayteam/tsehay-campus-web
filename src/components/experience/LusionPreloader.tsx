@@ -383,15 +383,6 @@ export default function LusionPreloader() {
             />
           </div>
         </div>
-
-        {/* Bottom-Right Pulse Indicator */}
-        <div className="hidden sm:flex items-end gap-1 h-5 pb-2">
-          <span className="w-1 bg-[#f9b03c] rounded-full animate-[bounce_0.8s_infinite_100ms] h-2" />
-          <span className="w-1 bg-[#f9b03c] rounded-full animate-[bounce_0.9s_infinite_300ms] h-4" />
-          <span className="w-1 bg-[#f9b03c] rounded-full animate-[bounce_0.7s_infinite_200ms] h-3" />
-          <span className="w-1 bg-[#f9b03c] rounded-full animate-[bounce_1.0s_infinite_400ms] h-5" />
-          <span className="w-1 bg-[#f9b03c] rounded-full animate-[bounce_0.8s_infinite_150ms] h-2.5" />
-        </div>
       </div>
 
       {/* Bottom Sleek Micro-Progress Bar (Hits 100% full exactly at 99) */}

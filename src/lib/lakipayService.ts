@@ -217,14 +217,9 @@ export async function initializeLakiPaySession(params: LakiPayInitParams): Promi
     };
   }
 
-  const formattedPhone = params.phoneNumber ? formatEthiopianPhone(params.phoneNumber) : '';
-  if (!formattedPhone) {
-    return {
-      success: false,
-      reference: params.reference,
-      error: 'ትክክለኛ የኢትዮጵያ ስልክ ቁጥር ያስፈልጋል (ለምሳሌ 0911223344 ወይም 0711223344)።'
-    };
-  }
+  const rawPhone = params.phoneNumber ? formatEthiopianPhone(params.phoneNumber) : '';
+  const defaultMerchantPhone = (process.env.LAKIPAY_DEFAULT_PHONE || process.env.LAKIPAY_MERCHANT_PHONE || '251911000000').replace(/[^0-9]/g, '');
+  const formattedPhone = rawPhone || defaultMerchantPhone;
 
   // Base payload: LakiPay Hosted Checkout v2 requires phone_number and accepts supported_mediums
   const dynamicPayload = {

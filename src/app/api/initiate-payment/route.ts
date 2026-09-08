@@ -146,13 +146,9 @@ export async function POST(request: Request) {
       // Webhook listener: LakiPay callback endpoint
       const webhookCallbackUrl = `${origin}/api/payments/lakipay/webhook`;
 
-      // If phone number is missing, reject early with clear message
-      if (!validEthPhone) {
-        return NextResponse.json({ 
-          success: false,
-          error: 'እባክዎ ትክክለኛ የኢትዮጵያ ስልክ ቁጥር ያስገቡ (ለምሳሌ 0911223344 ወይም 0711223344)።' 
-        }, { status: 400 });
-      }
+      // Use customer's phone if available; otherwise use merchant fallback since customer enters phone on LakiPay checkout page
+      const merchantDefaultPhone = (process.env.LAKIPAY_DEFAULT_PHONE || process.env.LAKIPAY_MERCHANT_PHONE || '251911000000').replace(/[^0-9]/g, '');
+      const phoneForLakipay = validEthPhone || merchantDefaultPhone;
 
       // Initialize session via official LakiPay dynamic flow (POST https://api.lakipay.co/api/v2/payment/checkout)
       const lakipayResult = await initializeLakiPaySession({
@@ -164,7 +160,7 @@ export async function POST(request: Request) {
         email: email,
         firstName: firstName,
         lastName: lastName,
-        phoneNumber: validEthPhone,
+        phoneNumber: phoneForLakipay,
         callbackUrl: webhookCallbackUrl,
         successUrl,
         failedUrl
