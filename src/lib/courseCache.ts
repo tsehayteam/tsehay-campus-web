@@ -469,6 +469,10 @@ export function saveCachedCourses(courses: any[]) {
       localStorage.setItem('tsehay_courses_cache', JSON.stringify(sanitized));
       localStorage.setItem('tsehay_admin_courses_cache', JSON.stringify(sanitized));
       localStorage.setItem('tsehay_courses_cache_version', COURSE_CACHE_VERSION);
+      const csOnly = sanitized.filter((c: any) => c && (c.status === 'coming_soon' || c.status === 'Coming Soon' || c.isComingSoon));
+      if (csOnly.length > 0) {
+        localStorage.setItem('tsehay_coming_soon_cache', JSON.stringify(csOnly));
+      }
     }
   } catch (err) {
     console.warn("Course cache save error:", err);
@@ -861,7 +865,10 @@ export const COMING_SOON_COURSES: ComingSoonCourse[] = [
   }
 ];
 
-export function getComingSoonCourses(): ComingSoonCourse[] {
+export function getComingSoonCourses(liveCourses?: any[]): ComingSoonCourse[] {
+  const map = new Map<string, ComingSoonCourse>();
+  COMING_SOON_COURSES.forEach(c => map.set(c.id, { ...c }));
+
   if (typeof window !== 'undefined') {
     try {
       let dynamicCS: any[] = [];
@@ -881,10 +888,13 @@ export function getComingSoonCourses(): ComingSoonCourse[] {
       }
 
       if (dynamicCS.length > 0) {
-        const map = new Map<string, ComingSoonCourse>();
-        COMING_SOON_COURSES.forEach(c => map.set(c.id, c));
         dynamicCS.forEach(c => {
+          if (!c) return;
           const id = c.id || c.slug;
+          if (c.status === 'Deleted' || c.isDeleted) {
+            map.delete(id);
+            return;
+          }
           const existing = map.get(id) || {} as any;
           const cleanImg = formatDriveImageUrl(c.image || existing.image) || c.image || existing.image;
           const cleanBanner = formatDriveImageUrl(c.banner || c.image || existing.banner) || c.banner || c.image || existing.banner;
@@ -892,17 +902,49 @@ export function getComingSoonCourses(): ComingSoonCourse[] {
           map.set(id, { 
             ...existing, 
             ...c,
+            id,
             image: cleanImg,
             banner: cleanBanner,
             video: videoUrl,
             videoUrl: videoUrl,
             previewVideoUrl: videoUrl,
+            status: 'coming_soon',
+            isComingSoon: true
           } as ComingSoonCourse);
         });
-        return Array.from(map.values());
       }
     } catch (e) {}
   }
-  return COMING_SOON_COURSES;
+
+  // If liveCourses passed from state/API, merge them with highest priority
+  if (Array.isArray(liveCourses) && liveCourses.length > 0) {
+    const liveCS = liveCourses.filter(c => c && (c.status === 'coming_soon' || c.status === 'Coming Soon' || c.isComingSoon));
+    liveCS.forEach(c => {
+      if (!c) return;
+      const id = c.id || c.slug;
+      if (c.status === 'Deleted' || c.isDeleted) {
+        map.delete(id);
+        return;
+      }
+      const existing = map.get(id) || {} as any;
+      const cleanImg = formatDriveImageUrl(c.image || existing.image) || c.image || existing.image;
+      const cleanBanner = formatDriveImageUrl(c.banner || c.image || existing.banner) || c.banner || c.image || existing.banner;
+      const videoUrl = c.video || c.videoUrl || c.previewVideoUrl || existing.video || '';
+      map.set(id, {
+        ...existing,
+        ...c,
+        id,
+        image: cleanImg,
+        banner: cleanBanner,
+        video: videoUrl,
+        videoUrl: videoUrl,
+        previewVideoUrl: videoUrl,
+        status: 'coming_soon',
+        isComingSoon: true
+      } as ComingSoonCourse);
+    });
+  }
+
+  return Array.from(map.values());
 }
 

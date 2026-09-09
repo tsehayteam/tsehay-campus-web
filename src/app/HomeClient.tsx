@@ -829,7 +829,7 @@ export default function HomeClient({
               >
                 {(() => {
                   const liveList = courses.filter(c => c.status !== 'coming_soon' && c.status !== 'Coming Soon' && !c.isComingSoon);
-                  const csList = getComingSoonCourses().map(c => ({ ...c, isComingSoon: true, status: 'coming_soon' }));
+                  const csList = getComingSoonCourses(courses).map(c => ({ ...c, isComingSoon: true, status: 'coming_soon' }));
                   const seen = new Set<string>();
                   const combined: any[] = [];
                   liveList.forEach(c => {

@@ -211,9 +211,24 @@ export default function AdminDashboard() {
     // Fast-path Emergency Master Owner PIN & Access Codes
     if (cleanInput === '202678' || cleanInput === 'Eyoub TC' || cleanInput.toLowerCase() === 'eyoubtc') {
       setOtpSuccessMsg('ማረጋገጫው ተሳክቷል! ወደ አድሚን ዳሽቦርድ በመግባት ላይ...');
-      setTimeout(() => {
-        setIs2faVerified(true);
-        setIsAuthenticated(true);
+      const targetEmail = (email && isAuthorizedAdminEmail(email)) ? email.trim().toLowerCase() : 'eyobsahle@gmail.com';
+      try {
+        const res = await fetch('/api/admin/verify-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: targetEmail, otp: cleanInput, code: cleanInput })
+        });
+        const data = await res.json().catch(() => ({}));
+        const token = data.token || `master_token_${Date.now()}`;
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('tsehay_admin_verified', 'true');
+          sessionStorage.setItem('tc_admin_session', token);
+          sessionStorage.setItem('tsehay_admin_2fa_token', token);
+          localStorage.setItem('tsehay_admin_verified', 'true');
+          document.cookie = `tc_admin_session=${token}; path=/; max-age=604800; SameSite=Lax`;
+          document.cookie = `tsehay_admin_token=${token}; path=/; max-age=604800; SameSite=Lax`;
+        }
+      } catch (e) {
         if (typeof window !== 'undefined') {
           const token = `master_token_${Date.now()}`;
           sessionStorage.setItem('tsehay_admin_verified', 'true');
@@ -223,8 +238,10 @@ export default function AdminDashboard() {
           document.cookie = `tc_admin_session=${token}; path=/; max-age=604800; SameSite=Lax`;
           document.cookie = `tsehay_admin_token=${token}; path=/; max-age=604800; SameSite=Lax`;
         }
-        setIsVerifying2faOtp(false);
-      }, 300);
+      }
+      setIs2faVerified(true);
+      setIsAuthenticated(true);
+      setIsVerifying2faOtp(false);
       return;
     }
 
@@ -275,6 +292,30 @@ export default function AdminDashboard() {
       if (hasCookie || isVerified || is2faVerified) return true;
     }
     return is2faVerified;
+  };
+
+  // 🔑 Central Admin Auth Headers Generator for All Secure Server Calls
+  const getAdminAuthHeaders = (extraHeaders: Record<string, string> = {}): Record<string, string> => {
+    let token = '';
+    if (typeof window !== 'undefined') {
+      token = sessionStorage.getItem('tc_admin_session') ||
+              sessionStorage.getItem('tsehay_admin_2fa_token') ||
+              localStorage.getItem('tc_admin_session') ||
+              localStorage.getItem('tsehay_admin_2fa_token') ||
+              '';
+      if (!token) {
+        const m = document.cookie.match(/(?:tc_admin_session|tsehay_admin_token)=([^;]+)/);
+        if (m && m[1]) token = decodeURIComponent(m[1].trim());
+      }
+    }
+    return {
+      'Content-Type': 'application/json',
+      ...(token ? {
+        'x-admin-token': token,
+        'Authorization': `Bearer ${token}`
+      } : {}),
+      ...extraHeaders
+    };
   };
   
   // Login State
@@ -899,7 +940,10 @@ export default function AdminDashboard() {
     // 1. Authoritative Server API Fetch for Courses
     const fetchCoursesFromApi = async () => {
       try {
-        const res = await fetch('/api/admin/courses', { cache: 'no-store' });
+        const res = await fetch('/api/admin/courses', {
+          cache: 'no-store',
+          headers: getAdminAuthHeaders({ 'Cache-Control': 'no-cache, no-store, must-revalidate' })
+        });
         let serverCourses: any[] = [];
         if (res.ok) {
           const data = await res.json();
@@ -910,7 +954,10 @@ export default function AdminDashboard() {
 
         // Guaranteed lifetime persistence: Load mirrored coming soon courses from site_settings
         try {
-          const csRes = await fetch('/api/admin/site-settings?settingKey=coming_soon_courses', { cache: 'no-store' });
+          const csRes = await fetch('/api/admin/site-settings?settingKey=coming_soon_courses', {
+            cache: 'no-store',
+            headers: getAdminAuthHeaders({ 'Cache-Control': 'no-cache, no-store, must-revalidate' })
+          });
           if (csRes.ok) {
             const csJson = await csRes.json();
             const csList = Array.isArray(csJson?.data) ? csJson.data : [];
@@ -2219,17 +2266,30 @@ export default function AdminDashboard() {
       };
 
       // 1. Server Admin API Call
+      let savedSuccessfully = false;
+      let lastErrMsg = '';
       try {
-        await fetch('/api/admin/courses', {
+        const res = await fetch('/api/admin/courses', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getAdminAuthHeaders(),
           body: JSON.stringify({
             courseId: docId,
             courseData: coursePayload
           })
         });
-      } catch (apiErr) {
-        console.warn('Admin save-course API call warning:', apiErr);
+        if (res.ok) {
+          const resData = await res.json().catch(() => ({}));
+          if (resData.success) {
+            savedSuccessfully = true;
+          } else {
+            lastErrMsg = resData.error || 'Server rejected course save';
+          }
+        } else {
+          const errData = await res.json().catch(() => ({}));
+          lastErrMsg = errData.error || `Server error (${res.status})`;
+        }
+      } catch (apiErr: any) {
+        lastErrMsg = apiErr.message || 'Network error';
       }
 
       // 2. Direct Mirror to site_settings for 100% Lifetime Persistence across Page Refreshes
@@ -2237,17 +2297,24 @@ export default function AdminDashboard() {
         const currentCsList = courses.filter(c => c && (c.status === 'coming_soon' || c.isComingSoon));
         const filtered = currentCsList.filter(c => c.id !== docId && c.slug !== slug);
         const updatedCS = [coursePayload, ...filtered];
-        await fetch('/api/admin/site-settings', {
+        const mirrorRes = await fetch('/api/admin/site-settings', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getAdminAuthHeaders(),
           body: JSON.stringify({
             settingKey: 'coming_soon_courses',
             data: updatedCS
           })
         });
+        if (mirrorRes.ok) {
+          savedSuccessfully = true;
+        }
         localStorage.setItem('tsehay_coming_soon_cache', JSON.stringify(updatedCS));
       } catch (mirrorErr) {
         console.warn('site-settings coming_soon_courses mirror warning:', mirrorErr);
+      }
+
+      if (!savedSuccessfully) {
+        throw new Error(lastErrMsg || 'ኮርሱን ወደ ዳታቤዝ ማስቀመጥ አልተቻለም (Database save failed)');
       }
 
       // 3. Optimistic State Update
@@ -2274,8 +2341,7 @@ export default function AdminDashboard() {
       showToast('በቅርብ ቀን የሚለቀቀው ኮርስ በደህንነት ተቀምጧል! (Saved Successfully)', 'success');
     } catch (err: any) {
       console.error("Error in coming soon course save handler:", err);
-      setIsComingSoonModalOpen(false);
-      showToast('ኮርሱ ተቀምጧል (Course Saved)', 'success');
+      showToast(`የኮርስ ዳታቤዝ ምዝገባ አልተሳካም፡ ${err.message || 'ስህተት ተፈጥሯል'}`, 'error');
     } finally {
       setIsSavingCourse(false);
     }
@@ -2398,17 +2464,34 @@ export default function AdminDashboard() {
       const adminEmail = user?.email || (typeof window !== 'undefined' ? localStorage.getItem('adminEmail') : '') || 'tsehayoperation@gmail.com';
 
       // 🚀 3. Server Admin API Call (Sync)
+      let savedSuccessfully = false;
+      let lastErrMsg = '';
       try {
-        await fetch('/api/admin/courses', {
+        const res = await fetch('/api/admin/courses', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getAdminAuthHeaders(),
           body: JSON.stringify({
             courseId: docId,
             courseData: coursePayload
           })
         });
-      } catch (apiErr) {
-        console.warn('Admin save-course API call warning:', apiErr);
+        if (res.ok) {
+          const resData = await res.json().catch(() => ({}));
+          if (resData.success) {
+            savedSuccessfully = true;
+          } else {
+            lastErrMsg = resData.error || 'Server rejected course save';
+          }
+        } else {
+          const errData = await res.json().catch(() => ({}));
+          lastErrMsg = errData.error || `Server error (${res.status})`;
+        }
+      } catch (apiErr: any) {
+        lastErrMsg = apiErr.message || 'Network error';
+      }
+
+      if (!savedSuccessfully) {
+        throw new Error(lastErrMsg || 'ኮርሱን ወደ ዳታቤዝ ማስቀመጥ አልተቻለም');
       }
 
       // 🚀 4. Optimistic State Update for Instant Visual Responsiveness & Nanosecond Cross-Tab Broadcast
@@ -2422,6 +2505,10 @@ export default function AdminDashboard() {
           updated = [{ ...coursePayload, id: docId }, ...prev];
         }
         broadcastCourseUpdate(updated);
+        try {
+          localStorage.setItem('tsehay_admin_courses_cache', JSON.stringify(updated));
+          localStorage.setItem('tsehay_courses_cache', JSON.stringify(updated));
+        } catch (e) {}
         return updated;
       });
 
@@ -2429,9 +2516,7 @@ export default function AdminDashboard() {
       showToast('ኮርሱ እና የ AI ሲስተም ፕሮምፕቱ በደህንነት ተቀምጧል! (Saved Successfully)', 'success');
     } catch (err: any) {
       console.error("Error in course save handler:", err);
-      // Still update UI gracefully
-      setIsModalOpen(false);
-      showToast('ኮርሱ ተቀምጧል (Course Saved)', 'success');
+      showToast(`የኮርስ ዳታቤዝ ምዝገባ አልተሳካም፡ ${err.message || 'ስህተት ተፈጥሯል'}`, 'error');
     } finally {
       setIsSavingCourse(false);
     }
@@ -2511,26 +2596,26 @@ export default function AdminDashboard() {
 
       try {
         // 3. Server Admin API Deletions with safe JSON handling
-        try {
-          const res = await fetch(`/api/admin/courses?id=${encodeURIComponent(id)}`, {
-            method: 'DELETE'
-          });
-          if (!res.ok) {
-            const errData = await res.json().catch(() => ({}));
-            console.warn("Admin delete course notice:", errData);
-          }
-        } catch (e) {}
+        const res = await fetch(`/api/admin/courses?id=${encodeURIComponent(id)}`, {
+          method: 'DELETE',
+          headers: getAdminAuthHeaders()
+        });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          console.warn("Admin delete course notice:", errData);
+        }
 
         try {
           await fetch(`/api/admin/save-course?id=${encodeURIComponent(id)}`, {
-            method: 'DELETE'
+            method: 'DELETE',
+            headers: getAdminAuthHeaders()
           }).catch(() => {});
         } catch (e) {}
 
         showToast("ኮርሱ በተሳካ ሁኔታ ተሰርዟል! (Course deleted successfully)", 'success');
       } catch (err: any) {
         console.error("Error deleting course:", err);
-        showToast("ኮርሱ ተሰርዟል", 'success');
+        showToast("ኮርሱን ማጥፋት አልተቻለም", 'error');
       }
     }
   };

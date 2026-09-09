@@ -119,7 +119,7 @@ export async function GET(req: NextRequest) {
       const { data: csSettings } = await supabaseServer
         .from('site_settings')
         .select('data')
-        .or('key.eq.coming_soon_courses,id.eq.coming_soon_courses')
+        .eq('key', 'coming_soon_courses')
         .maybeSingle();
 
       if (Array.isArray(csSettings?.data) && csSettings.data.length > 0) {
@@ -263,7 +263,8 @@ export async function POST(req: NextRequest) {
     });
 
     if (sbErr) {
-      console.warn('Supabase save course warning:', sbErr);
+      console.error('Supabase save course error:', sbErr);
+      return NextResponse.json({ success: false, error: 'Database save failed: ' + sbErr.message }, { status: 500, headers: NO_CACHE_HEADERS });
     }
 
     // 🌟 If Coming Soon: Mirror to site_settings (key: 'coming_soon_courses') for 100% Lifetime Persistence
@@ -272,7 +273,7 @@ export async function POST(req: NextRequest) {
         const { data: currentCS } = await supabaseServer
           .from('site_settings')
           .select('data')
-          .or('key.eq.coming_soon_courses,id.eq.coming_soon_courses')
+          .eq('key', 'coming_soon_courses')
           .maybeSingle();
 
         const csList: any[] = Array.isArray(currentCS?.data) ? currentCS.data : [];
@@ -281,13 +282,30 @@ export async function POST(req: NextRequest) {
 
         await supabaseServer.from('site_settings').upsert({
           key: 'coming_soon_courses',
-          id: 'coming_soon_courses',
           data: updatedCS,
           updated_at: new Date().toISOString()
         });
       } catch (csSaveErr) {
         console.warn('Mirror coming soon courses to site_settings warning:', csSaveErr);
       }
+    } else {
+      // If course is active, ensure it is pruned from coming_soon_courses mirror
+      try {
+        const { data: currentCS } = await supabaseServer
+          .from('site_settings')
+          .select('data')
+          .eq('key', 'coming_soon_courses')
+          .maybeSingle();
+
+        if (Array.isArray(currentCS?.data)) {
+          const updatedCS = currentCS.data.filter(c => c && c.id !== courseId && c.slug !== slug);
+          await supabaseServer.from('site_settings').upsert({
+            key: 'coming_soon_courses',
+            data: updatedCS,
+            updated_at: new Date().toISOString()
+          });
+        }
+      } catch (e) {}
     }
 
     return NextResponse.json({ 

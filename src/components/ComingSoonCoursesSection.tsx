@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Tilt3DCard from '@/components/3d/Tilt3DCard';
 import WaitlistModal from '@/components/WaitlistModal';
 import CinematicVideoModal from '@/components/CinematicVideoModal';
@@ -23,7 +23,49 @@ export default function ComingSoonCoursesSection({
   const [selectedWaitlistCourse, setSelectedWaitlistCourse] = useState<ComingSoonCourse | null>(null);
   const [isWaitlistModalOpen, setIsWaitlistModalOpen] = useState(false);
   const [activeVideoCourse, setActiveVideoCourse] = useState<ComingSoonCourse | null>(null);
-  const displayedCourses = courses && courses.length > 0 ? courses : getComingSoonCourses();
+  
+  const [internalCourses, setInternalCourses] = useState<ComingSoonCourse[]>(() => {
+    return courses && courses.length > 0 ? courses : getComingSoonCourses();
+  });
+
+  useEffect(() => {
+    if (courses && courses.length > 0) {
+      setInternalCourses(courses);
+    } else {
+      setInternalCourses(getComingSoonCourses());
+    }
+  }, [courses]);
+
+  // Zero-Refresh Real-Time Sync on cross-tab broadcasts and custom events
+  useEffect(() => {
+    const handleCoursesUpdated = (e?: any) => {
+      const updatedList = e?.detail?.courses;
+      setInternalCourses(getComingSoonCourses(updatedList));
+    };
+
+    window.addEventListener('tsehay_courses_updated', handleCoursesUpdated);
+    window.addEventListener('storage', handleCoursesUpdated);
+
+    let bc: BroadcastChannel | null = null;
+    try {
+      if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+        bc = new BroadcastChannel('tsehay_courses_sync_channel');
+        bc.onmessage = (event) => {
+          if (event.data?.type === 'COURSES_UPDATED' && Array.isArray(event.data.courses)) {
+            setInternalCourses(getComingSoonCourses(event.data.courses));
+          }
+        };
+      }
+    } catch (e) {}
+
+    return () => {
+      window.removeEventListener('tsehay_courses_updated', handleCoursesUpdated);
+      window.removeEventListener('storage', handleCoursesUpdated);
+      if (bc) bc.close();
+    };
+  }, []);
+
+  const displayedCourses = internalCourses;
 
   const handleOpenWaitlist = (course: ComingSoonCourse) => {
     setSelectedWaitlistCourse(course);

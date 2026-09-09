@@ -329,7 +329,7 @@ export default function CoursesClient({ initialCourses }: { initialCourses?: any
 
   const getFilteredCourses = () => {
     const liveCoursesList = courses.filter(c => c.status !== 'coming_soon' && c.status !== 'Coming Soon' && !c.isComingSoon);
-    const comingSoonList = getComingSoonCourses().map(c => ({ ...c, isComingSoon: true, status: 'coming_soon' }));
+    const comingSoonList = getComingSoonCourses(courses).map(c => ({ ...c, isComingSoon: true, status: 'coming_soon' }));
     const seen = new Set<string>();
     const combined: any[] = [];
     liveCoursesList.forEach(c => {

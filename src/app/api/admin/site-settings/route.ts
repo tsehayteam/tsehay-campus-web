@@ -25,7 +25,8 @@ const ALLOWED_PUBLIC_KEYS = [
   'public_announcements',
   'deleted_courses',
   'site_announcement',
-  'maintenance_mode'
+  'maintenance_mode',
+  'coming_soon_courses'
 ];
 
 export async function GET(req: NextRequest) {
@@ -95,11 +96,13 @@ export async function POST(req: NextRequest) {
     }
 
     const nowIso = new Date().toISOString();
-    const payload = {
-      ...data,
-      settingKey,
-      updatedAt: nowIso
-    };
+    const payload = Array.isArray(data)
+      ? data
+      : {
+          ...data,
+          settingKey,
+          updatedAt: nowIso
+        };
 
     // 1. Primary: Save to Supabase site_settings table
     try {

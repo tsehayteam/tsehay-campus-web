@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
       const { data: csData } = await supabaseServer
         .from('site_settings')
         .select('data')
-        .or('key.eq.coming_soon_courses,id.eq.coming_soon_courses')
+        .eq('key', 'coming_soon_courses')
         .maybeSingle();
       if (Array.isArray(csData?.data)) {
         persistentComingSoon = csData.data;
