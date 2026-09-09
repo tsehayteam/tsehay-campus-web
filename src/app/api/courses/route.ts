@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
       const { data: delData } = await supabaseServer
         .from('site_settings')
         .select('data')
-        .or('key.eq.deleted_courses,id.eq.deleted_courses')
+        .eq('key', 'deleted_courses')
         .maybeSingle();
       if (Array.isArray(delData?.data)) {
         deletedCourses = delData.data;

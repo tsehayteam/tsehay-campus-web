@@ -300,6 +300,7 @@ export default function CoursesClient({ initialCourses }: { initialCourses?: any
 
   const COURSE_CATEGORY_TABS = [
     { id: 'All', label: 'All Courses', icon: 'fa-layer-group' },
+    { id: 'Coding', label: 'Coding & Tech', icon: 'fa-code' },
     { id: 'Ecommerce', label: 'E-Commerce', icon: 'fa-cart-shopping' },
     { id: 'YouTube', label: 'YouTube', icon: 'fa-youtube' },
     { id: 'ContentCreation', label: 'Content Creation', icon: 'fa-clapperboard' },
@@ -315,6 +316,7 @@ export default function CoursesClient({ initialCourses }: { initialCourses?: any
   const isCategoryMatch = (courseCat: string = '', tabId: string) => {
     if (!courseCat) return false;
     const catLower = courseCat.toLowerCase();
+    if (tabId === 'Coding' && (catLower.includes('code') || catLower.includes('coding') || catLower.includes('tech') || catLower.includes('web') || catLower.includes('programming') || catLower.includes('full-stack') || catLower.includes('software') || catLower.includes('ኮዲንግ') || catLower.includes('ፉል ስታክ') || catLower.includes('ቴክኖሎጂ'))) return true;
     if (tabId === 'Ecommerce' && (catLower.includes('e-commerce') || catLower.includes('ecommerce') || catLower.includes('shein') || catLower.includes('ሼን') || catLower.includes('ኢምፖርት'))) return true;
     if (tabId === 'YouTube' && (catLower.includes('youtube') || catLower.includes('ዩቲዩብ'))) return true;
     if (tabId === 'ContentCreation' && (catLower.includes('content') || catLower.includes('ይዘት'))) return true;

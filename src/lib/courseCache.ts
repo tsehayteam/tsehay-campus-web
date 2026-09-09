@@ -989,6 +989,10 @@ export function getComingSoonCourses(liveCourses?: any[]): ComingSoonCourse[] {
     });
   }
 
-  return Array.from(map.values()).filter(c => c && c.status !== 'Deleted' && !c.isDeleted);
+  const allCourses = Array.from(map.values()).filter(c => c && c.status !== 'Deleted' && !c.isDeleted);
+  const defaultIds = new Set(COMING_SOON_COURSES.map(c => c.id));
+  const customCourses = allCourses.filter(c => !defaultIds.has(c.id));
+  const defaultList = allCourses.filter(c => defaultIds.has(c.id));
+  return [...customCourses, ...defaultList];
 }
 

@@ -248,7 +248,7 @@ export default function HomeClient({
         'postgres_changes',
         { event: '*', schema: 'public', table: 'site_settings' },
         (payload: any) => {
-          if (payload?.new && payload.new.key === 'deleted_courses') {
+          if (payload?.new && (payload.new.key === 'deleted_courses' || payload.new.key === 'coming_soon_courses')) {
             fetchLiveCourses();
           }
         }
@@ -846,7 +846,7 @@ export default function HomeClient({
                       combined.push(c);
                     }
                   });
-                  return combined.slice(0, 8);
+                  return combined;
                 })().map((course, index) => {
                   const isComingSoon = Boolean(course.isComingSoon || course.status === 'Coming Soon' || course.status === 'coming_soon');
                   const isFree = !isComingSoon && (course.isFree || course.price === 0 || course.price === '0' || course.price === 'Free');

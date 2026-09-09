@@ -43,6 +43,7 @@ export default function Hero3DPopoutStage({
   const isPlayingRef = useRef<boolean>(true);
   const isMutedRef = useRef<boolean>(true);
   const wasAutoPausedByScrollRef = useRef<boolean>(false);
+  const lastUserActionTimeRef = useRef<number>(0);
 
   useEffect(() => {
     isMutedRef.current = isMuted;
@@ -51,6 +52,10 @@ export default function Hero3DPopoutStage({
   // ⚡ Instant YouTube Player State Synchronization via Window Message Events
   useEffect(() => {
     const handleYouTubeMessage = (event: MessageEvent) => {
+      // Prevent delayed YouTube buffering/state bounceback from reversing user action within 900ms
+      if (Date.now() - lastUserActionTimeRef.current < 900) {
+        return;
+      }
       try {
         let data = event.data;
         if (typeof data === 'string') {
@@ -257,12 +262,25 @@ export default function Hero3DPopoutStage({
   const parsedVideo = parseVideoEmbedUrl(activeVideoUrl || DEFAULT_LANDING_VIDEO, false);
 
   // Generate YouTube Autoplay Embed URL with loop and mute enabled for browser compliance & 4K UHD preference
+  const currentOrigin = typeof window !== 'undefined' && window.location.origin ? window.location.origin : (siteOrigin || 'http://localhost:3000');
   const ytAutoplaySrc = parsedVideo.youtubeId
-    ? `https://www.youtube.com/embed/${parsedVideo.youtubeId}?autoplay=1&mute=1&loop=1&playlist=${parsedVideo.youtubeId}&controls=0&playsinline=1&enablejsapi=1&origin=${encodeURIComponent(siteOrigin || 'http://localhost:3000')}&rel=0&modestbranding=1&iv_load_policy=3&vq=hd2160&quality=hd2160&hd=1`
+    ? `https://www.youtube.com/embed/${parsedVideo.youtubeId}?autoplay=1&mute=1&loop=1&playlist=${parsedVideo.youtubeId}&controls=0&playsinline=1&enablejsapi=1&origin=${encodeURIComponent(currentOrigin)}&rel=0&modestbranding=1&iv_load_policy=3&vq=hd2160&quality=hd2160&hd=1`
     : '';
+
+  // Direct safe YouTube postMessage dispatcher
+  const sendYouTubeCommand = useCallback((func: string, args: any[] = []) => {
+    if (!iframeRef.current?.contentWindow) return;
+    try {
+      iframeRef.current.contentWindow.postMessage(
+        JSON.stringify({ event: 'command', func, args }),
+        '*'
+      );
+    } catch (_) {}
+  }, []);
 
   // Execute instant pause with zero delay
   const executePause = useCallback((byScroll = false) => {
+    lastUserActionTimeRef.current = Date.now();
     isPlayingRef.current = false;
     setIsPlaying(false);
     if (byScroll) {
@@ -271,9 +289,9 @@ export default function Hero3DPopoutStage({
       wasAutoPausedByScrollRef.current = false;
     }
 
-    if (parsedVideo.isYouTube && iframeRef.current?.contentWindow) {
-      iframeRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'pauseVideo', args: [] }), '*');
-      iframeRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'pauseVideo', args: '' }), '*');
+    if (parsedVideo.isYouTube) {
+      sendYouTubeCommand('pauseVideo');
+      sendYouTubeCommand('mute');
     } else if (videoRef.current) {
       videoRef.current.pause();
     }
@@ -281,22 +299,27 @@ export default function Hero3DPopoutStage({
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('restore-ambient-audio'));
       window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: false } }));
+      window.dispatchEvent(
+        new CustomEvent('tsehay-hero-video-inview', {
+          detail: { inView: false, hasSound: false }
+        })
+      );
     }
-  }, [parsedVideo.isYouTube]);
+  }, [parsedVideo.isYouTube, sendYouTubeCommand]);
 
   // Execute instant play with zero delay
   const executePlay = useCallback((isScrollResume = false) => {
+    lastUserActionTimeRef.current = Date.now();
     isPlayingRef.current = true;
     setIsPlaying(true);
     wasAutoPausedByScrollRef.current = false;
 
-    if (parsedVideo.isYouTube && iframeRef.current?.contentWindow) {
+    if (parsedVideo.isYouTube) {
+      sendYouTubeCommand('playVideo');
       if (!isMutedRef.current) {
-        iframeRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'unMute', args: [] }), '*');
-        iframeRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'setVolume', args: [100] }), '*');
+        sendYouTubeCommand('unMute');
+        sendYouTubeCommand('setVolume', [100]);
       }
-      iframeRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'playVideo', args: [] }), '*');
-      iframeRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'playVideo', args: '' }), '*');
     } else if (videoRef.current) {
       videoRef.current.muted = isMutedRef.current;
       videoRef.current.play().catch(() => {
@@ -312,9 +335,71 @@ export default function Hero3DPopoutStage({
       if (hasSound) {
         window.dispatchEvent(new CustomEvent('duck-ambient-audio'));
         window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: true } }));
+        window.dispatchEvent(
+          new CustomEvent('tsehay-hero-video-inview', {
+            detail: { inView: true, hasSound: true }
+          })
+        );
+      } else {
+        window.dispatchEvent(new CustomEvent('restore-ambient-audio'));
+        window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: false } }));
       }
     }
-  }, [parsedVideo.isYouTube]);
+  }, [parsedVideo.isYouTube, sendYouTubeCommand]);
+
+  // 📜 Dedicated Instant Scroll Audio Handler: Mute video sound immediately and play background ambient music
+  useEffect(() => {
+    let scrollTicking = false;
+
+    const handleScroll = () => {
+      if (scrollTicking) return;
+      scrollTicking = true;
+
+      window.requestAnimationFrame(() => {
+        const scrollY = window.scrollY || window.pageYOffset || 0;
+
+        // When scrolling down past hero stage (e.g. scrollY > 60px):
+        if (scrollY > 60) {
+          // 1. Immediately mute video audio
+          if (!isMutedRef.current) {
+            isMutedRef.current = true;
+            setIsMuted(true);
+            if (parsedVideo.isYouTube) {
+              sendYouTubeCommand('mute');
+            } else if (videoRef.current) {
+              videoRef.current.muted = true;
+            }
+          }
+
+          // 2. Immediately restore background ambient music
+          window.dispatchEvent(new CustomEvent('restore-ambient-audio'));
+          window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: false } }));
+          window.dispatchEvent(
+            new CustomEvent('tsehay-hero-video-inview', {
+              detail: { inView: false, hasSound: false }
+            })
+          );
+        } else {
+          // When scrolled back up near top (scrollY <= 60):
+          const hasSound = isPlayingRef.current && !isMutedRef.current;
+          window.dispatchEvent(
+            new CustomEvent('tsehay-hero-video-inview', {
+              detail: { inView: true, hasSound }
+            })
+          );
+          if (hasSound) {
+            window.dispatchEvent(new CustomEvent('duck-ambient-audio'));
+            window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: true } }));
+          }
+        }
+
+        scrollTicking = false;
+      });
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [parsedVideo.isYouTube, sendYouTubeCommand]);
 
   // 100% Functional Zero-Latency Interactive Play/Pause Toggle Handler
   const togglePlayPause = useCallback((e?: React.MouseEvent | React.TouchEvent) => {

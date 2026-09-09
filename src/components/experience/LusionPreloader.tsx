@@ -14,7 +14,8 @@ function AnalogRollingDigit({
   digits?: number[]; 
 }) {
   const itemHeightPercent = 100 / digits.length;
-  const targetIndex = Math.min(digits.length - 1, Math.max(0, value));
+  const foundIdx = digits.indexOf(value);
+  const targetIndex = foundIdx !== -1 ? foundIdx : Math.min(digits.length - 1, Math.max(0, value));
 
   return (
     <div className="relative h-[68px] sm:h-[88px] md:h-[108px] overflow-hidden leading-none select-none inline-flex items-center">
@@ -220,31 +221,18 @@ export default function LusionPreloader() {
       window.addEventListener('load', handleLoad, { once: true });
     }
 
-    // 4. Calibrated Smooth Stop-Watch Progression & Immediate Unlock at 99
+    // 4. Calibrated Smooth Stop-Watch Progression & Immediate Unlock at 100
     const startTime = performance.now();
-    const durationMs = 1850;
+    const durationMs = 1900;
     let isUnlocked = false;
 
-    const updateProgress = (now: number) => {
+    const finishPreloader = () => {
       if (isUnlocked) return;
+      isUnlocked = true;
+      setProgress(100);
+      progressRef.current = 100;
 
-      const elapsed = now - startTime;
-      const ratio = Math.min(1, elapsed / durationMs);
-
-      // Steady, monotonic stopwatch tick from 0 to 99
-      const calculatedTick = Math.min(99, Math.floor(ratio * 99));
-
-      setProgress(calculatedTick);
-      progressRef.current = calculatedTick;
-
-      if (calculatedTick < 99) {
-        animationFrameRef.current = requestAnimationFrame(updateProgress);
-      } else {
-        // Strict Cap at 99 & Seamless Immediate Unlock
-        isUnlocked = true;
-        setProgress(99);
-        progressRef.current = 99;
-
+      setTimeout(() => {
         // 1. Mark completed in sessionStorage
         try {
           sessionStorage.setItem('tsehay_preloader_shown', 'true');
@@ -264,29 +252,34 @@ export default function LusionPreloader() {
         setTimeout(() => {
           setShouldRemove(true);
         }, 850);
+      }, 250);
+    };
+
+    const updateProgress = (now: number) => {
+      if (isUnlocked) return;
+
+      const elapsed = now - startTime;
+      const ratio = Math.min(1, elapsed / durationMs);
+
+      // Steady, monotonic stopwatch tick from 0 to 100
+      const calculatedTick = Math.min(100, Math.floor(ratio * 100));
+
+      setProgress(calculatedTick);
+      progressRef.current = calculatedTick;
+
+      if (calculatedTick < 100) {
+        animationFrameRef.current = requestAnimationFrame(updateProgress);
+      } else {
+        finishPreloader();
       }
     };
 
-    // Safety fallback: guaranteed unblock after 2.6s in case of any animation delay
+    // Safety fallback: guaranteed unblock after 2.8s in case of any animation delay
     const safetyUnblockTimer = setTimeout(() => {
       if (!isUnlocked) {
-        isUnlocked = true;
-        setProgress(99);
-        progressRef.current = 99;
-        try {
-          sessionStorage.setItem('tsehay_preloader_shown', 'true');
-          sessionStorage.setItem('tsehay_preloader_seen', 'true');
-        } catch (e) {}
-        if (typeof document !== 'undefined') {
-          document.documentElement.classList.remove('tsehay-loading');
-        }
-        window.dispatchEvent(new CustomEvent('tsehay-preloader-complete'));
-        setIsDone(true);
-        setTimeout(() => {
-          setShouldRemove(true);
-        }, 850);
+        finishPreloader();
       }
-    }, 2600);
+    }, 2800);
 
     animationFrameRef.current = requestAnimationFrame(updateProgress);
 
@@ -367,29 +360,41 @@ export default function LusionPreloader() {
 
       {/* Bottom Area: Precision Stop-Watch Vertical Rolling Counter */}
       <div className="relative z-10 px-6 py-6 sm:px-12 sm:py-8 flex items-end justify-between">
-        {/* Bottom-Left Sharp Stop-Watch Counter (Monotonic 0-99 Succession, No Percent Sign) */}
+        {/* Bottom-Left Sharp Stop-Watch Counter (1 digit for 0-9, 2 digits for 10-99, 3 digits for 100) */}
         <div className="flex flex-col">
           <div className="flex items-baseline px-4 sm:px-6 py-2 sm:py-3 rounded-2xl bg-[#040814]/95 border border-white/20 shadow-[0_12px_40px_rgba(0,0,0,0.95),inset_0_1px_1px_rgba(255,255,255,0.2)]">
-            {/* Tens Reel - 0 to 9 */}
-            <AnalogRollingDigit 
-              value={Math.floor(progress / 10)} 
-              digits={[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]} 
-            />
-
-            {/* Ones Reel - 0 to 9 */}
-            <AnalogRollingDigit 
-              value={progress % 10} 
-              digits={[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]} 
-            />
+            {progress >= 100 ? (
+              <div className="flex items-baseline">
+                <AnalogRollingDigit value={1} digits={[0, 1]} />
+                <AnalogRollingDigit value={0} digits={[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]} />
+                <AnalogRollingDigit value={0} digits={[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]} />
+              </div>
+            ) : progress >= 10 ? (
+              <div className="flex items-baseline">
+                <AnalogRollingDigit 
+                  value={Math.floor(progress / 10)} 
+                  digits={[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]} 
+                />
+                <AnalogRollingDigit 
+                  value={progress % 10} 
+                  digits={[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]} 
+                />
+              </div>
+            ) : (
+              <AnalogRollingDigit 
+                value={progress} 
+                digits={[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]} 
+              />
+            )}
           </div>
         </div>
       </div>
 
-      {/* Bottom Sleek Micro-Progress Bar (Hits 100% full exactly at 99) */}
+      {/* Bottom Sleek Micro-Progress Bar (Hits 100% full exactly at 100) */}
       <div className="absolute bottom-0 inset-x-0 h-[3px] bg-white/10">
         <div
           className="h-full bg-gradient-to-r from-[#3268ba] via-amber-400 to-[#f9b03c] shadow-[0_0_15px_#f9b03c] transition-all duration-100 ease-out"
-          style={{ width: `${(progress / 99) * 100}%` }}
+          style={{ width: `${(progress / 100) * 100}%` }}
         />
       </div>
 

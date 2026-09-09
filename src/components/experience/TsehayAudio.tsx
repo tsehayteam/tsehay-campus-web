@@ -447,11 +447,8 @@ export default function TsehayAudio() {
           data = JSON.parse(data);
         }
         if (data?.event === 'onStateChange') {
-          // 1 = PLAYING
-          if (data.info === 1) {
-            setIsDucked(true);
-          } else if (data.info === 2 || data.info === 0) {
-            // 2 = PAUSED, 0 = ENDED
+          // Only unduck on pause/ended. Ducking is handled via explicit events (duck-ambient-audio / tsehay-hero-video-inview)
+          if (data.info === 2 || data.info === 0) {
             setIsDucked(false);
           }
         }
