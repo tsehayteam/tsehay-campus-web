@@ -22,7 +22,7 @@ import FeedbackModal from '@/components/FeedbackModal';
 import { speakWithLanguageDetection } from '@/lib/ttsHelper';
 import { parseVideoUrl } from '@/lib/videoParser';
 import { supabase } from '@/lib/supabase/client';
-import { Crown, Check, Clock, X, Target, BookOpen, Sparkles, PartyPopper, Lightbulb, Rocket, Camera, FolderOpen, Palette } from 'lucide-react';
+import { Crown, Check, Clock, X, Target, BookOpen, Sparkles, PartyPopper, Lightbulb, Rocket, Camera, FolderOpen, Palette, ChevronDown, ChevronUp } from 'lucide-react';
 
 function DashboardLoadingScreen({ message }: { message?: string }) {
   return (
@@ -491,14 +491,40 @@ function StudentDashboardContent() {
   const [aiRecordingSeconds, setAiRecordingSeconds] = useState(0);
   const [playingAiAudioIdx, setPlayingAiAudioIdx] = useState<number | null>(null);
   const currentAiAudioRef = useRef<HTMLAudioElement | null>(null);
-  const [showDashboardClearAiModal, setShowDashboardClearAiModal] = useState(false);
-  const [isNavDrawerExpanded, setIsNavDrawerExpanded] = useState(true);
+  const [isNavDrawerExpanded, setIsNavDrawerExpanded] = useState(false);
+
+  const getActiveViewSubtitle = () => {
+    switch (currentView) {
+      case 'classroom':
+        return 'ኮርስ';
+      case 'courses':
+        return 'ኮርሶች';
+      case 'referrals':
+        return 'ሪፈራል';
+      case 'messages':
+        return 'መልዕክቶች';
+      case 'ai':
+        return 'የAI ረዳት';
+      case 'certificates':
+        return 'ሰርተፊኬቶች';
+      case 'settings':
+        return 'ማስተካከያ';
+      default:
+        return 'ኮርስ';
+    }
+  };
+
+  const handleNavSelect = (view: string) => {
+    setCurrentView(view);
+    setIsNavDrawerExpanded(false);
+  };
   const [isCurriculumSubmenuOpen, setIsCurriculumSubmenuOpen] = useState(true);
   const [openSidebarModuleIdx, setOpenSidebarModuleIdx] = useState<number | null>(0);
   const [isSyllabusCollapsed, setIsSyllabusCollapsed] = useState(false);
   const [isFocusMode, setIsFocusMode] = useState(false);
   
   // 🗑️ Tsehay AI 15-Day Recycle Bin State
+  const [showDashboardClearAiModal, setShowDashboardClearAiModal] = useState(false);
   const [showAiTrashModal, setShowAiTrashModal] = useState(false);
   const [aiTrashList, setAiTrashList] = useState<Array<{
     id: string;
@@ -1987,48 +2013,53 @@ function StudentDashboardContent() {
 
         <nav className="flex-1 overflow-y-auto py-2 md:py-3 px-3 space-y-1 font-body no-scrollbar w-full flex flex-col gap-2 items-stretch">
           
-          {/* ULTRA-CLEAN CONSOLIDATED SINGLE MENU BUTTON (ACCORDION SLIDE-DOWN) */}
-          <div className="w-full mb-1">
+          {/* CENTERED COLLAPSIBLE FLOATING MASTER NAVIGATION BAR */}
+          <div className="w-full px-1 mb-2">
             <button
               type="button"
               onClick={() => setIsNavDrawerExpanded(prev => !prev)}
-              className={`w-full flex items-center justify-between p-3 rounded-2xl transition-all duration-300 group cursor-pointer active:scale-[0.98] border ${
+              className={`w-full relative overflow-hidden flex flex-col items-center justify-center py-2.5 px-3.5 rounded-2xl transition-all duration-300 group cursor-pointer active:scale-[0.98] select-none border ${
                 isNavDrawerExpanded
-                  ? 'bg-white/[0.06] border-white/15 shadow-md'
-                  : 'bg-gradient-to-r from-[#3268ba]/20 via-[#3268ba]/10 to-transparent border-[#3268ba]/50 hover:border-[#f9b03c] shadow-[0_0_20px_rgba(50,104,186,0.25)] hover:shadow-[0_0_25px_rgba(249,176,60,0.3)]'
+                  ? 'bg-gradient-to-b from-[#14203b]/95 via-[#0e1628]/95 to-[#080d1a] border-[#3268ba]/60 shadow-[0_8px_30px_rgba(0,0,0,0.6),0_0_20px_rgba(50,104,186,0.3)]'
+                  : 'bg-gradient-to-b from-[#142240]/90 via-[#0b1326]/90 to-[#070b16] border-[#f9b03c]/40 hover:border-[#f9b03c] shadow-[0_10px_35px_rgba(0,0,0,0.7),0_0_25px_rgba(249,176,60,0.25)] hover:shadow-[0_0_35px_rgba(249,176,60,0.45)]'
               }`}
-              title={isNavDrawerExpanded ? "ማውጫውን እጠፍ (Collapse Menu)" : "ማውጫውን ክፈት (Open Menu)"}
+              title={isNavDrawerExpanded ? "ዋና ሜኑን እጠፍ (Collapse Menu)" : "ዋና ሜኑን ዘርጋ (Open Main Menu)"}
+              aria-expanded={isNavDrawerExpanded}
             >
-              <div className="flex items-center gap-3">
-                <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs shadow-sm transition-all duration-300 ${
-                  isNavDrawerExpanded
-                    ? 'bg-white/10 text-white border border-white/20'
-                    : 'bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-yellow-300 text-slate-950 shadow-[0_0_15px_rgba(249,176,60,0.6)]'
-                }`}>
-                  <svg className="w-4 h-4 text-current" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-                  </svg>
-                </div>
-                <div className="text-left">
-                  <span className="font-heading font-black text-xs sm:text-[13px] text-white tracking-wide block leading-tight">
-                    {t('main_menu') || 'ዋና ማውጫ'}
-                  </span>
-                  <span className="text-[10px] text-[#f9b03c] font-black block leading-tight mt-0.5">
-                    {currentView === 'classroom' && '• መማሪያ ክፍል'}
-                    {currentView === 'courses' && '• የእኔ ኮርሶች'}
-                    {currentView === 'messages' && '• መልዕክቶች'}
-                    {currentView === 'ai' && '• AI ረዳት'}
-                    {currentView === 'certificates' && '• ሰርተፊኬት'}
-                    {currentView === 'settings' && '• ማስተካከያ'}
-                  </span>
-                </div>
+              {/* Ambient Glow Aura */}
+              <div 
+                className={`absolute inset-0 bg-gradient-to-r from-transparent via-[#f9b03c]/15 to-transparent transition-opacity duration-500 pointer-events-none ${
+                  isNavDrawerExpanded ? 'opacity-30' : 'opacity-80 animate-pulse'
+                }`}
+              />
+
+              {/* Centered Main Title: "ዋና ሜኑ" */}
+              <div className="relative z-10 flex items-center justify-center gap-2">
+                <span className="font-heading font-black text-sm sm:text-base text-white tracking-wide drop-shadow-md text-center">
+                  {t('main_menu') || 'ዋና ሜኑ'}
+                </span>
+                <span className="w-1.5 h-1.5 rounded-full bg-[#f9b03c] animate-ping inline-block"></span>
               </div>
 
-              <div className="flex items-center gap-1.5">
-                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-slate-300 transition-transform duration-300 ${isNavDrawerExpanded ? 'rotate-180 text-[#f9b03c]' : 'rotate-0'}`}>
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-                  </svg>
+              {/* Dynamic Active-State Subtitle / Contextual Indicator */}
+              <div className="relative z-10 mt-1 flex items-center justify-center gap-1.5 text-center">
+                <span className="text-[11px] font-black uppercase tracking-wider text-[#f9b03c] bg-[#f9b03c]/15 px-3 py-0.5 rounded-full border border-[#f9b03c]/30 shadow-inner">
+                  {getActiveViewSubtitle()}
+                </span>
+              </div>
+
+              {/* Centered Pulsing / Blinking Arrow Cue */}
+              <div className="relative z-10 mt-1.5 flex items-center justify-center">
+                <div className={`p-1 rounded-full bg-white/[0.06] border border-white/10 transition-all duration-300 group-hover:scale-110 ${
+                  isNavDrawerExpanded 
+                    ? 'text-slate-300' 
+                    : 'text-[#f9b03c] shadow-[0_0_12px_rgba(249,176,60,0.6)]'
+                }`}>
+                  {isNavDrawerExpanded ? (
+                    <ChevronUp className="w-4 h-4 transition-transform duration-300 text-slate-300" strokeWidth={2.8} />
+                  ) : (
+                    <ChevronDown className="w-4 h-4 animate-bounce text-[#f9b03c]" strokeWidth={2.8} />
+                  )}
                 </div>
               </div>
             </button>
@@ -2040,11 +2071,10 @@ function StudentDashboardContent() {
               ? 'max-h-[85vh] overflow-y-auto opacity-100 transform translate-y-0 py-1 no-scrollbar' 
               : 'max-h-0 opacity-0 transform -translate-y-2 pointer-events-none overflow-hidden'
           }`}>
-
             {/* 1. Classroom (መማሪያ ክፍል) & Embedded Course Curriculum */}
             <div className="w-full flex flex-col gap-1.5">
               <button 
-                onClick={() => setCurrentView('classroom')} 
+                onClick={() => handleNavSelect('classroom')} 
                 className={`flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-full text-left text-sm cursor-pointer ${
                   currentView === 'classroom' 
                     ? 'bg-gradient-to-r from-[#3268ba] via-[#3b75d6] to-[#254f8e] text-white shadow-lg shadow-[#3268ba]/35 font-black scale-[1.01] border border-white/20' 
@@ -2179,6 +2209,7 @@ function StudentDashboardContent() {
                                               localStorage.setItem('tsehay_user_active_lesson', JSON.stringify(selectedLesson));
                                             } catch (e) {}
                                             updateUrlState({ view: 'classroom', courseId: activeCourse?.id, lesson: lIdx });
+                                            setIsNavDrawerExpanded(false);
                                           }}
                                           className={`w-full flex items-center justify-between p-2 rounded-lg text-left transition text-xs cursor-pointer ${
                                             !isUnlocked
@@ -2226,7 +2257,7 @@ function StudentDashboardContent() {
             
             {/* 2. My Courses (የእኔ ኮርሶች) */}
             <button 
-              onClick={() => setCurrentView('courses')} 
+              onClick={() => handleNavSelect('courses')} 
               className={`flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-full text-left text-sm cursor-pointer ${
                 currentView === 'courses' 
                   ? 'bg-gradient-to-r from-[#3268ba] via-[#3b75d6] to-[#254f8e] text-white shadow-lg shadow-[#3268ba]/35 font-black scale-[1.01] border border-white/20' 
@@ -2256,7 +2287,7 @@ function StudentDashboardContent() {
 
             {/* 3. Messages & Support (መልዕክቶች እና ድጋፍ) */}
             <button 
-              onClick={() => setCurrentView('messages')} 
+              onClick={() => handleNavSelect('messages')} 
               className={`flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-full text-left text-sm cursor-pointer ${
                 currentView === 'messages' 
                   ? 'bg-gradient-to-r from-[#3268ba] via-[#3b75d6] to-[#254f8e] text-white shadow-lg shadow-[#3268ba]/35 font-black scale-[1.01] border border-white/20' 
@@ -2287,6 +2318,7 @@ function StudentDashboardContent() {
             {/* 3.5. Community & Social Feed */}
             <a 
               href="/community" 
+              onClick={() => setIsNavDrawerExpanded(false)}
               className="flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-full text-left text-sm text-white hover:bg-white/[0.08] hover:text-[#f9b03c] border border-transparent cursor-pointer"
             >
               <div className="flex items-center gap-3">
@@ -2303,7 +2335,7 @@ function StudentDashboardContent() {
 
             {/* 4. Tsehay AI Tutor */}
             <button 
-              onClick={() => setCurrentView('ai')} 
+              onClick={() => handleNavSelect('ai')} 
               className={`flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-full text-left text-sm cursor-pointer ${
                 currentView === 'ai' 
                   ? 'bg-gradient-to-r from-[#f9b03c] via-amber-400 to-[#e59b2b] text-slate-950 shadow-xl shadow-[#f9b03c]/40 font-black border border-white/30 scale-[1.02]' 
@@ -2333,7 +2365,7 @@ function StudentDashboardContent() {
             
             {/* 5. Certificates (የብቃት ሰርተፊኬት) */}
             <button 
-              onClick={() => setCurrentView('certificates')} 
+              onClick={() => handleNavSelect('certificates')} 
               className={`flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-full text-left text-sm cursor-pointer ${
                 currentView === 'certificates' 
                   ? 'bg-gradient-to-r from-[#3268ba] via-[#3b75d6] to-[#254f8e] text-white shadow-lg shadow-[#3268ba]/35 font-black scale-[1.01] border border-white/20' 
@@ -2363,7 +2395,7 @@ function StudentDashboardContent() {
 
             {/* 6. Refer a Friend */}
             <button 
-              onClick={() => setCurrentView('referrals')} 
+              onClick={() => handleNavSelect('referrals')} 
               className={`flex items-center justify-between gap-2.5 p-2.5 lg:p-3 rounded-2xl font-black transition-all duration-300 flex-shrink-0 group w-full text-left text-sm cursor-pointer ${
                 currentView === 'referrals' 
                   ? 'bg-gradient-to-r from-amber-500 via-[#f9b03c] to-yellow-400 text-slate-950 shadow-xl shadow-[#f9b03c]/40 font-black border border-white/30 scale-[1.02]' 
