@@ -5,7 +5,7 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import AuthModal from "./AuthModal";
 import SmartSearchInput from "./SmartSearchInput";
 import { getCachedCourses, subscribeToCourses } from "@/lib/courseCache";
@@ -241,10 +241,10 @@ export default function Navbar() {
     localStorage.setItem('theme', newTheme);
   };
 
-  const openAuthModal = (signup: boolean) => {
+  const openAuthModal = useCallback((signup: boolean) => {
     setIsSignupMode(signup);
     setIsAuthModalOpen(true);
-  };
+  }, []);
 
   const handleSignOut = async () => {
     try {

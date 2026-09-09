@@ -35,6 +35,11 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
   const resetOtpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const [showPassword, setShowPassword] = useState(false);
+  const [hasMounted, setHasMounted] = useState(false);
+
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
   
   // 🌟 Smart User Existence Detection States
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
@@ -263,7 +268,7 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
     return msg || 'የሆነ ችግር አጋጥሟል። እባክዎ በድጋሚ ይሞክሩ።';
   };
 
-  if (!isOpen) return null;
+  if (!hasMounted) return null;
 
   // Handle Forgot Password
   const handlePasswordReset = async (e: React.FormEvent) => {
@@ -951,10 +956,17 @@ export default function AuthModal({ isOpen, onClose, isSignupMode, setIsSignupMo
 
   return (
     <div 
-      className="fixed inset-0 bg-black/85 z-[99999] flex items-center justify-center backdrop-blur-md p-4 animate-in fade-in duration-200" 
-      onClick={(e) => { if (e.target === e.currentTarget && !loading) onClose(); }}
+      className={`fixed inset-0 bg-black/85 z-[99999] flex items-center justify-center backdrop-blur-md p-4 transition-all duration-200 ${
+        isOpen 
+          ? 'opacity-100 pointer-events-auto visible' 
+          : 'opacity-0 pointer-events-none invisible'
+      }`} 
+      onClick={(e) => { if (e.target === e.currentTarget && !loading && isOpen) onClose(); }}
+      aria-hidden={!isOpen}
     >
-      <div className="bg-white dark:bg-[#050811] w-full max-w-lg rounded-3xl shadow-[0_25px_80px_rgba(0,0,0,0.95)] overflow-hidden flex flex-col relative modal-animate border border-amber-400/30 dark:border-white/[0.1] max-h-[92vh] will-change-transform animate-[authModalPop_0.32s_cubic-bezier(0.16,1,0.3,1)_forwards]">
+      <div className={`bg-white dark:bg-[#050811] w-full max-w-lg rounded-3xl shadow-[0_25px_80px_rgba(0,0,0,0.95)] overflow-hidden flex flex-col relative modal-animate border border-amber-400/30 dark:border-white/[0.1] max-h-[92vh] will-change-transform transition-all duration-200 ${
+        isOpen ? 'scale-100 translate-y-0 opacity-100' : 'scale-95 translate-y-3 opacity-0'
+      }`}>
         
         {/* Modal Header */}
         <div className="bg-gradient-to-r from-[#182a4d] to-[#0a1224] dark:bg-[#030509] p-5 sm:p-6 text-white text-center relative border-b border-amber-400/20 dark:border-white/[0.08] shrink-0">

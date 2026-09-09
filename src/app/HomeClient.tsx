@@ -19,6 +19,7 @@ import UpcomingEventsSection from '@/components/UpcomingEventsSection';
 import CourseCardSkeleton from '@/components/CourseCardSkeleton';
 import Hero3DPopoutStage from '@/components/3d/Hero3DPopoutStage';
 import Tilt3DCard from '@/components/3d/Tilt3DCard';
+import EventBanner from '@/components/EventBanner';
 import { scrollTriggerEngine } from '@/lib/scrollTriggerEngine';
 import TypingCoursesHeadline from '@/components/TypingCoursesHeadline';
 
@@ -576,6 +577,9 @@ export default function HomeClient({
 
         </div>
       </section>
+
+      {/* 🌟 Dynamic Public Event Banner (Auto-synced with Admin & Database) */}
+      <EventBanner />
 
       {/* =========================================================================
           2. TRUST LOGO MARQUEE (Synthesia Style)

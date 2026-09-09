@@ -22,7 +22,9 @@ const ALLOWED_PUBLIC_KEYS = [
   'public_announcements',
   'deleted_courses',
   'site_announcement',
-  'maintenance_mode'
+  'maintenance_mode',
+  'event_banner',
+  'active_event_banner'
 ];
 
 const DEFAULT_SETTINGS: Record<string, any> = {

@@ -17,9 +17,17 @@ export default function Tilt3DLoginButton({
   const [tilt, setTilt] = useState({ rotateX: 0, rotateY: 0, glareX: 50, glareY: 50, isHovered: false });
   const rafId = useRef<number | null>(null);
 
-  // Instant 1-Click Activation Handler (0ms latency on desktop and mobile)
+  const isClickLockedRef = useRef(false);
+
+  // Instant 1-Click Zero-Lag Activation Handler with Multi-Click Debounce (Under 50ms)
   const handleClick = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
+    if (isClickLockedRef.current) return;
+    isClickLockedRef.current = true;
+    setTimeout(() => {
+      isClickLockedRef.current = false;
+    }, 450);
+
     onClick();
   }, [onClick]);
 

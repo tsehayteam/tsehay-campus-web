@@ -3229,6 +3229,27 @@ export default function AdminDashboard() {
         bc.close();
       } catch (e) {}
 
+      // 4. Sync with /api/events/banner if status is active or inactive
+      try {
+        const adminToken = localStorage.getItem('tsehay_admin_token') || sessionStorage.getItem('tsehay_admin_token') || '';
+        await fetch('/api/events/banner', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${adminToken}`
+          },
+          body: JSON.stringify({
+            eventId: eventId,
+            active: payload.status === 'active',
+            status: payload.status,
+            banner: payload
+          })
+        });
+        window.dispatchEvent(new CustomEvent('tsehay_banner_updated'));
+      } catch (bannerErr) {
+        console.warn("Banner sync warning in save:", bannerErr);
+      }
+
       setEventSuccessMsg('ክንውኑ እና የቲኬት ባነሩ በተሳካ ሁኔታ ተቀምጧል! (Event saved successfully)');
       showToast('ክንውኑ እና ባነሩ በተሳካ ሁኔታ ተቀምጧል!', 'success');
       setTimeout(() => setIsEventModalOpen(false), 900);
@@ -3237,6 +3258,50 @@ export default function AdminDashboard() {
       showToast(err.message || 'ክንውኑን ማስቀመጥ አልተቻለም', 'error');
     } finally {
       setIsSavingEvent(false);
+    }
+  };
+
+  const handleToggleActiveBanner = async (event: TsehayEvent) => {
+    const isCurrentlyActive = event.status === 'active';
+    const newStatus = isCurrentlyActive ? 'upcoming' : 'active';
+    
+    // Optimistic state update
+    const updated = events.map(e => {
+      if (e.id === event.id) return { ...e, status: newStatus as any };
+      if (newStatus === 'active') return { ...e, status: (e.status === 'active' ? 'upcoming' : e.status) as any };
+      return e;
+    });
+    setEvents(updated);
+    saveCachedEvents(updated);
+
+    try {
+      const adminToken = localStorage.getItem('tsehay_admin_token') || sessionStorage.getItem('tsehay_admin_token') || '';
+      await fetch('/api/events/banner', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${adminToken}`
+        },
+        body: JSON.stringify({
+          eventId: event.id,
+          active: !isCurrentlyActive,
+          status: newStatus,
+          banner: { ...event, status: newStatus }
+        })
+      });
+      
+      window.dispatchEvent(new CustomEvent('tsehay_events_updated', { detail: { events: updated } }));
+      window.dispatchEvent(new CustomEvent('tsehay_banner_updated'));
+      try {
+        const bc = new BroadcastChannel('tsehay_events_sync');
+        bc.postMessage({ type: 'BANNER_SYNC', events: updated });
+        bc.close();
+      } catch (_) {}
+      
+      showToast(isCurrentlyActive ? 'የኢቨንት ባነሩ ከዋናው ገጽ ተነስቷል' : 'ክስተቱ በዋናው ገጽ ባነር ላይ ተሰይሟል!', 'success');
+    } catch (err) {
+      console.error('Banner toggle failed:', err);
+      showToast('ባነሩን ማስተካከል አልተቻለም', 'error');
     }
   };
 
@@ -4452,6 +4517,17 @@ export default function AdminDashboard() {
                                   <p className="font-bold text-sm text-dark dark:text-white line-clamp-1">{event.title}</p>
                                   <div className="text-xs text-gray-500 font-semibold flex items-center gap-1.5">
                                     <span>{event.speaker}</span>
+                                    {event.status === 'active' && (
+                                      <span className="text-[10px] bg-amber-500/20 text-[#f9b03c] border border-amber-500/40 px-1.5 py-0.2 rounded-md font-black flex items-center gap-1">
+                                        <i className="fa-solid fa-star text-[7px] text-[#f9b03c] animate-pulse"></i>
+                                        <span>ንቁ ባነር (Active Banner)</span>
+                                      </span>
+                                    )}
+                                    {event.status === 'inactive' && (
+                                      <span className="text-[10px] bg-red-500/15 text-red-400 px-1.5 py-0.2 rounded-md font-bold">
+                                        የተደበቀ (Inactive)
+                                      </span>
+                                    )}
                                     {Boolean(event.videoUrl || (event.image && isMediaVideo(event.image))) && (
                                       <span className="text-[10px] bg-red-500/15 text-red-500 px-1.5 py-0.2 rounded-md font-bold flex items-center gap-1">
                                         <i className="fa-solid fa-play text-[7px]"></i>
@@ -4489,6 +4565,18 @@ export default function AdminDashboard() {
                             </td>
                             <td className="p-4 text-right">
                               <div className="flex items-center justify-end gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleActiveBanner(event)}
+                                  className={`w-8 h-8 rounded-lg transition flex items-center justify-center cursor-pointer ${
+                                    event.status === 'active'
+                                      ? 'bg-amber-500 text-slate-950 shadow-[0_0_12px_rgba(249,176,60,0.6)] font-bold'
+                                      : 'bg-gray-100 dark:bg-slate-700 text-gray-400 hover:text-amber-500 hover:bg-amber-500/10'
+                                  }`}
+                                  title={event.status === 'active' ? 'የዋናውን ገጽ ባነር አጥፋ (Remove from Banner)' : 'ይህን ክስተት በዋናው ገጽ ባነር ላይ አሳይ (Set as Active Banner)'}
+                                >
+                                  <i className={`fa-solid fa-star text-xs ${event.status === 'active' ? 'animate-pulse' : ''}`}></i>
+                                </button>
                                 <a
                                   href={`/events/${event.slug || event.id}`}
                                   target="_blank"
@@ -9305,6 +9393,22 @@ export default function AdminDashboard() {
                     placeholder="ኢዮብ ሳህሌ (Eyoub Sahle)"
                     className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-dark dark:text-white outline-none focus:border-[#f9b03c]"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold mb-1 flex items-center gap-1.5">
+                    <i className="fa-solid fa-tower-broadcast text-[#f9b03c]"></i>
+                    <span>የክንውን ሁኔታ እና የባነር ማሳያ (Status & Banner)</span>
+                  </label>
+                  <select
+                    value={eventForm.status || 'upcoming'}
+                    onChange={(e) => setEventForm({ ...eventForm, status: e.target.value })}
+                    className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-xs text-dark dark:text-white outline-none focus:border-[#f9b03c] font-bold cursor-pointer"
+                  >
+                    <option value="active">🟢 ንቁ ባነር (በዋናው ገጽ ባነር ላይ የሚታይ - Active Banner)</option>
+                    <option value="upcoming">⚪ መደበኛ ክንውን (Upcoming Event)</option>
+                    <option value="inactive">🔴 የተደበቀ / የማይታይ (Inactive / Draft)</option>
+                  </select>
                 </div>
 
                 {/* 1. Banner Image Input & Direct Uploader */}

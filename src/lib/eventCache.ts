@@ -26,7 +26,7 @@ export interface TsehayEvent {
   videoUrl?: string;
   tags: string[];
   isFeatured?: boolean;
-  status: 'upcoming' | 'ongoing' | 'completed' | 'sold_out';
+  status: 'upcoming' | 'ongoing' | 'completed' | 'sold_out' | 'active' | 'published' | 'inactive';
   createdAt?: any;
   updatedAt?: any;
 }

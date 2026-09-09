@@ -6,6 +6,7 @@ import { gsap } from 'gsap';
 import { parseVideoEmbedUrl, parseImageUrl } from '@/lib/videoParser';
 import { supabase } from '@/lib/supabase/client';
 import CinematicVideoModal from '@/components/CinematicVideoModal';
+import { Volume2, VolumeX } from 'lucide-react';
 
 interface Hero3DPopoutStageProps {
   videoSrc?: string;
@@ -446,6 +447,42 @@ export default function Hero3DPopoutStage({
     }
   }, [executePause, executePlay, triggerFlashFeedback]);
 
+  // 🔊 Single Tap Unmute & Playback Action Handler (Unmutes, ducks ambient audio, and smoothly fades badge)
+  const handleVideoClick = useCallback((e?: React.MouseEvent | React.TouchEvent) => {
+    if (e) {
+      e.stopPropagation();
+    }
+    setShowInitialThumbnail(false);
+
+    if (isMutedRef.current) {
+      // 1. Unmute video audio immediately
+      setIsMuted(false);
+      isMutedRef.current = false;
+      sendUniversalPlaybackCommand('unmute');
+
+      // 2. Ensure video playback is running
+      if (!isPlayingRef.current) {
+        isPlayingRef.current = true;
+        setIsPlaying(true);
+        sendUniversalPlaybackCommand('play');
+      }
+
+      // 3. Auto-duck / silence background ambient audio to prevent audio overlap
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('duck-ambient-audio'));
+        window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: true } }));
+        window.dispatchEvent(
+          new CustomEvent('tsehay-hero-video-inview', {
+            detail: { inView: true, hasSound: true }
+          })
+        );
+      }
+      triggerFlashFeedback('play');
+    } else {
+      togglePlayPause(e);
+    }
+  }, [sendUniversalPlaybackCommand, togglePlayPause, triggerFlashFeedback]);
+
   // 🚀 Unified Playback & Scroll Viewport Manager
   // - Auto-plays when preloader completes
   // - Automatically PAUSES video when user scrolls down away from the landing video
@@ -541,19 +578,24 @@ export default function Hero3DPopoutStage({
 
     window.addEventListener('scroll', handleScroll, { passive: true });
 
-    // 4. Viewport IntersectionObserver to supplement fast scroll jumps
+    // 4. Viewport IntersectionObserver with strict 0.25 threshold
     let observer: IntersectionObserver | null = null;
     if (stageRef.current && typeof window !== 'undefined' && 'IntersectionObserver' in window) {
       observer = new IntersectionObserver(
         (entries) => {
           const entry = entries[0];
-          const inView = entry.isIntersecting && entry.intersectionRatio >= 0.2;
+          const inView = entry.isIntersecting && entry.intersectionRatio >= 0.25;
           const scrollY = window.scrollY || window.pageYOffset || 0;
 
           if (!inView && scrollY > 150) {
             wasAutoPausedByScrollRef.current = true;
             if (isPlayingRef.current) {
               executePause(true);
+            }
+            if (!isMutedRef.current) {
+              isMutedRef.current = true;
+              setIsMuted(true);
+              sendUniversalPlaybackCommand('mute');
             }
             window.dispatchEvent(
               new CustomEvent('tsehay-hero-video-inview', {
@@ -578,7 +620,7 @@ export default function Hero3DPopoutStage({
             }
           }
         },
-        { threshold: [0, 0.15, 0.2, 0.6, 0.9] }
+        { threshold: [0, 0.15, 0.25, 0.5, 0.75, 1.0] }
       );
       observer.observe(stageRef.current);
     }
@@ -708,7 +750,7 @@ export default function Hero3DPopoutStage({
         <div 
           className="relative w-full aspect-video rounded-[1.8rem] sm:rounded-[2.4rem] shadow-[0_30px_90px_rgba(0,0,0,0.85)] border-2 border-white/20 dark:border-[#f9b03c]/45 overflow-hidden bg-black group select-none cursor-pointer touch-manipulation"
           style={{ transform: 'translateZ(0px)' }}
-          onClick={togglePlayPause}
+          onClick={handleVideoClick}
         >
           {/* Autoplaying Video: YouTube iframe, Bunny.net / Other Embed iframe, or Direct HTML5 Video */}
           {parsedVideo.isYouTube && parsedVideo.youtubeId ? (
@@ -844,31 +886,65 @@ export default function Hero3DPopoutStage({
             </div>
           )}
 
-          {/* ⏸️ / ▶️ Persistent 3D Glassmorphic Center Play/Pause Button */}
+          {/* 🔊 Frosted Glass Center Tap-to-Unmute Card Overlay */}
           <div 
-            className="absolute inset-0 z-25 flex items-center justify-center pointer-events-none"
+            className={`absolute inset-0 z-25 flex items-center justify-center transition-all duration-500 pointer-events-none ${
+              isMuted ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'
+            }`}
             style={{ transform: 'translateZ(60px)' }}
           >
             <button
               type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                togglePlayPause(e);
-              }}
-              aria-label={isPlaying ? "ቪዲዮውን አቁም (Pause Video)" : "ቪዲዮውን አስጀምር (Play Video)"}
-              className={`pointer-events-auto w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-black/55 hover:bg-black/80 backdrop-blur-2xl border-2 border-white/30 hover:border-[#f9b03c] text-white hover:text-[#f9b03c] shadow-[0_15px_45px_rgba(0,0,0,0.9),0_0_25px_rgba(249,176,60,0.35)] transition-all duration-200 flex items-center justify-center cursor-pointer active:scale-90 hover:scale-110 ${
-                isPlaying 
-                  ? 'opacity-0 group-hover:opacity-90 group-focus-within:opacity-90' 
-                  : 'opacity-100 ring-4 ring-[#f9b03c]/40 animate-pulse'
-              }`}
+              onClick={handleVideoClick}
+              className="pointer-events-auto group/unmute flex items-center gap-3.5 sm:gap-4.5 px-5 sm:px-7 py-3 sm:py-4 rounded-2xl sm:rounded-3xl bg-slate-950/85 hover:bg-black/95 backdrop-blur-2xl border-2 border-[#f9b03c]/70 hover:border-[#f9b03c] shadow-[0_20px_60px_rgba(0,0,0,0.95),0_0_35px_rgba(249,176,60,0.4)] transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer touch-manipulation select-none"
+              aria-label="ድምፁን ለመክፈት ይጫኑ"
             >
-              {isPlaying ? (
-                <i className="fa-solid fa-pause text-xl sm:text-2xl text-white/90 drop-shadow-md"></i>
-              ) : (
-                <i className="fa-solid fa-play text-xl sm:text-2xl text-[#f9b03c] translate-x-0.5 drop-shadow-md"></i>
-              )}
+              {/* Circular Speaker Icon with Gold Glow */}
+              <div className="relative w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-gradient-to-tr from-[#f9b03c] via-amber-400 to-[#ffe082] text-slate-950 flex items-center justify-center shrink-0 shadow-[0_0_20px_rgba(249,176,60,0.6)] group-hover/unmute:scale-110 transition-transform">
+                <Volume2 className="w-5 h-5 sm:w-6 sm:h-6 text-slate-950 animate-pulse" />
+                <span className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-emerald-400 rounded-full border-2 border-black shadow-[0_0_8px_#34d399] animate-ping" />
+              </div>
+
+              {/* Text Stack */}
+              <div className="text-left select-none pr-1">
+                <p className="font-heading font-black text-sm sm:text-base text-white tracking-wide leading-snug drop-shadow-md">
+                  ቪዲዮዋ እየታየ ነው
+                </p>
+                <p className="font-heading font-black text-xs sm:text-sm text-[#f9b03c] tracking-normal flex items-center gap-1.5 mt-0.5 group-hover/unmute:text-amber-300 transition-colors">
+                  <span>ድምፁን ለመክፈት ይጫኑ</span>
+                  <i className="fa-solid fa-volume-high text-[11px] group-hover/unmute:scale-110 transition-transform" />
+                </p>
+              </div>
             </button>
           </div>
+
+          {/* ⏸️ / ▶️ Persistent 3D Glassmorphic Center Play/Pause Button (Shown when unmuted) */}
+          {!isMuted && (
+            <div 
+              className="absolute inset-0 z-25 flex items-center justify-center pointer-events-none transition-opacity duration-300"
+              style={{ transform: 'translateZ(60px)' }}
+            >
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  togglePlayPause(e);
+                }}
+                aria-label={isPlaying ? "ቪዲዮውን አቁም (Pause Video)" : "ቪዲዮውን አስጀምር (Play Video)"}
+                className={`pointer-events-auto w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-black/55 hover:bg-black/80 backdrop-blur-2xl border-2 border-white/30 hover:border-[#f9b03c] text-white hover:text-[#f9b03c] shadow-[0_15px_45px_rgba(0,0,0,0.9),0_0_25px_rgba(249,176,60,0.35)] transition-all duration-200 flex items-center justify-center cursor-pointer active:scale-90 hover:scale-110 ${
+                  isPlaying 
+                    ? 'opacity-0 group-hover:opacity-90 group-focus-within:opacity-90' 
+                    : 'opacity-100 ring-4 ring-[#f9b03c]/40 animate-pulse'
+                }`}
+              >
+                {isPlaying ? (
+                  <i className="fa-solid fa-pause text-xl sm:text-2xl text-white/90 drop-shadow-md"></i>
+                ) : (
+                  <i className="fa-solid fa-play text-xl sm:text-2xl text-[#f9b03c] translate-x-0.5 drop-shadow-md"></i>
+                )}
+              </button>
+            </div>
+          )}
         </div>
 
         {/* ------------------------------------------------------------------ */}
