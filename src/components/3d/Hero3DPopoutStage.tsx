@@ -44,6 +44,7 @@ export default function Hero3DPopoutStage({
   const isPlayingRef = useRef<boolean>(true);
   const isMutedRef = useRef<boolean>(true);
   const wasAutoPausedByScrollRef = useRef<boolean>(false);
+  const wasAutoPausedByTabSwitchRef = useRef<boolean>(false);
   const lastUserActionTimeRef = useRef<number>(0);
 
   useEffect(() => {
@@ -625,10 +626,30 @@ export default function Hero3DPopoutStage({
       observer.observe(stageRef.current);
     }
 
+    // 5. Tab Visibility Handler (Page Visibility API)
+    const handleVisibilityChange = () => {
+      if (document.hidden || document.visibilityState === 'hidden') {
+        if (isPlayingRef.current) {
+          wasAutoPausedByTabSwitchRef.current = true;
+          executePause(true); // true = auto-paused by tab switch
+        }
+      } else {
+        if (wasAutoPausedByTabSwitchRef.current) {
+          wasAutoPausedByTabSwitchRef.current = false;
+          const scrollY = window.scrollY || window.pageYOffset || 0;
+          if (scrollY <= 220) {
+            executePlay(true);
+          }
+        }
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     return () => {
       if (playTimer) clearTimeout(playTimer);
       window.removeEventListener('tsehay-preloader-complete', onPreloaderComplete);
       window.removeEventListener('scroll', handleScroll);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       if (observer) observer.disconnect();
       window.dispatchEvent(
         new CustomEvent('tsehay-hero-video-inview', {

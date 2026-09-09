@@ -3,26 +3,48 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { usePathname } from 'next/navigation';
 import { useTsehayInteractions } from '@/hooks/useTsehayInteractions';
+import { useLanguage } from '@/context/LanguageContext';
+import { VolumeX } from 'lucide-react';
 
 /**
  * TsehayAudio - Synesthetic Sound System & Ethiopian Rhythmic Soundscape
- * - No Mute Button (Lusion.co philosophy: invisible, continuous, seamless audio)
- * - Rhythmic Beat & Ethiopian Touch: Algorithmic Tizita (ትዝታ) pentatonic melody,
- *   soft Kebero-inspired sub-kick, and traditional acoustic shaker syncopation
- * - Context-Aware Tracks:
- *   * Above the fold (Hero): Serene, spacious ambient solar drone & harp overture
- *   * Scrolled down (Courses/Preview/Workshops): Upbeat rhythmic groove swells
- *   * Video playback/viewport: Complete instant ducking to silence
- * - Interactive Audio Feedback: Distinct pleasant clicks for primary CTAs vs standard controls
+ * Features:
+ * - Algorithmic Tizita (ትዝታ) pentatonic melody, soft Kebero-inspired sub-kick,
+ *   and traditional acoustic shaker syncopation
+ * - Page Visibility API lifecycle: automatically fades out and pauses when tab is hidden,
+ *   smoothly cross-fades back in when tab is visible
+ * - User Preference Respect: strictly keeps audio muted if user previously muted it
+ * - Interactive Audio Feedback: clicks for primary CTAs vs standard controls
  */
 export default function TsehayAudio() {
   // Global non-invasive interaction observer
   useTsehayInteractions();
 
   const pathname = usePathname();
+  const { lang } = useLanguage();
+
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [isDucked, setIsDucked] = useState(false);
   const [scrollMode, setScrollMode] = useState<'ambient' | 'groove'>('ambient');
+
+  // Mute state synced with localStorage
+  const [isMuted, setIsMuted] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      return localStorage.getItem('tsehay_ambient_sound_muted') === 'true';
+    } catch (e) {
+      return false;
+    }
+  });
+  const [isTabHidden, setIsTabHidden] = useState(false);
+
+  const isMutedRef = useRef(isMuted);
+  const isTabHiddenRef = useRef(false);
+  const wasPlayingBeforeTabHideRef = useRef(false);
+
+  useEffect(() => {
+    isMutedRef.current = isMuted;
+  }, [isMuted]);
 
   const audioCtxRef = useRef<AudioContext | null>(null);
   const masterGainRef = useRef<GainNode | null>(null);
@@ -35,9 +57,10 @@ export default function TsehayAudio() {
   const stepRef = useRef(0);
   const nextNoteTimeRef = useRef(0);
 
-  // Quiet / classroom / admin routes
+  // Quiet / classroom / admin / dashboard routes
   const isQuietRoute =
     pathname?.startsWith('/classroom') ||
+    pathname?.startsWith('/dashboard') ||
     pathname?.startsWith('/admin');
 
   // Ethiopian Tizita Pentatonic Scale Frequencies (Major Pentatonic: C, D, E, G, A)
@@ -314,6 +337,37 @@ export default function TsehayAudio() {
     }
   }, [scrollMode]);
 
+  // Toggle Mute / Unmute with silky smooth gain ramping
+  const toggleMute = useCallback(() => {
+    const nextMuted = !isMuted;
+    setIsMuted(nextMuted);
+    isMutedRef.current = nextMuted;
+    try {
+      localStorage.setItem('tsehay_ambient_sound_muted', nextMuted ? 'true' : 'false');
+    } catch (e) {}
+
+    const ctx = audioCtxRef.current || initAudioEngine();
+    const master = masterGainRef.current;
+    if (ctx && master) {
+      const now = ctx.currentTime;
+      master.gain.cancelScheduledValues(now);
+      if (nextMuted) {
+        // Mute: smooth quick fade to silence
+        master.gain.setValueAtTime(Math.max(0.0001, master.gain.value), now);
+        master.gain.linearRampToValueAtTime(0.0001, now + 0.25);
+      } else {
+        // Unmute: Resume ctx if needed, fade up to pleasant ambient volume
+        if (ctx.state === 'suspended' || (ctx as any).state === 'interrupted') {
+          ctx.resume().catch(() => {});
+        }
+        setIsUnlocked(true);
+        nextNoteTimeRef.current = ctx.currentTime + 0.1;
+        master.gain.setValueAtTime(0.0001, now);
+        master.gain.linearRampToValueAtTime(0.28, now + 0.6);
+      }
+    }
+  }, [initAudioEngine, isMuted]);
+
   // Autoplay Unlock on First User Action (Mobile touch/click/scroll) & Persistent Reload State
   useEffect(() => {
     const resumeAudioContext = () => {
@@ -348,16 +402,86 @@ export default function TsehayAudio() {
     window.addEventListener('keydown', handleUserGesture, { passive: true });
     window.addEventListener('tsehay-preloader-complete', resumeAudioContext);
 
-    // Visibility observer (mobile app switch / screen lock/unlock)
+    // 👁️ Page Visibility API Integration (Tab Visibility Audio Lifecycle)
     const handleVisibility = () => {
-      if (document.visibilityState === 'visible') {
-        const ctx = audioCtxRef.current || initAudioEngine();
-        if (ctx && (ctx.state === 'suspended' || (ctx as any).state === 'interrupted')) {
-          ctx.resume().catch(() => {});
+      const isHidden = document.hidden || document.visibilityState === 'hidden';
+      setIsTabHidden(isHidden);
+      isTabHiddenRef.current = isHidden;
+
+      const ctx = audioCtxRef.current;
+      const master = masterGainRef.current;
+
+      if (isHidden) {
+        // --- 1. TAB IS HIDDEN (User switched tabs or minimized browser) ---
+        const userMuted = isMutedRef.current || (typeof window !== 'undefined' && localStorage.getItem('tsehay_ambient_sound_muted') === 'true');
+        const wasAudible = isUnlocked && !userMuted && !isDucked && !isQuietRoute;
+        wasPlayingBeforeTabHideRef.current = wasAudible;
+
+        if (ctx && master) {
+          const now = ctx.currentTime;
+          // Smooth quick fade-out (150ms) to eliminate audio clicks/pops
+          master.gain.cancelScheduledValues(now);
+          master.gain.setValueAtTime(Math.max(0.0001, master.gain.value), now);
+          master.gain.linearRampToValueAtTime(0.0001, now + 0.15);
+
+          // Gracefully suspend audio context slightly after fade-out to guarantee complete silence and save system resources
+          setTimeout(() => {
+            if ((document.hidden || document.visibilityState === 'hidden') && ctx.state === 'running') {
+              ctx.suspend().catch(() => {});
+            }
+          }, 180);
+        }
+      } else {
+        // --- 2. TAB IS VISIBLE (User returned to Tsehay Campus tab) ---
+        // REQUIREMENT 2: Respect user preference!
+        // If user manually muted the sound beforehand, DO NOT force play!
+        const userMuted = isMutedRef.current || (typeof window !== 'undefined' && localStorage.getItem('tsehay_ambient_sound_muted') === 'true');
+        if (userMuted || isQuietRoute || isDucked) {
+          if (master && ctx) {
+            const now = ctx.currentTime;
+            master.gain.cancelScheduledValues(now);
+            master.gain.setValueAtTime(0.0001, now);
+          }
+          return;
+        }
+
+        // Only restore if it was actively playing before tab switch or unlocked
+        if (wasPlayingBeforeTabHideRef.current || isUnlocked) {
+          if (ctx) {
+            // Re-align nextNoteTime to avoid backlog burst of notes upon resume
+            nextNoteTimeRef.current = ctx.currentTime + 0.1;
+
+            if (ctx.state === 'suspended' || (ctx as any).state === 'interrupted') {
+              ctx.resume().then(() => {
+                if (master && audioCtxRef.current && !isMutedRef.current && !isDucked && !isQuietRoute) {
+                  const now = audioCtxRef.current.currentTime;
+                  nextNoteTimeRef.current = now + 0.1;
+                  master.gain.cancelScheduledValues(now);
+                  master.gain.setValueAtTime(0.0001, now);
+                  master.gain.linearRampToValueAtTime(0.28, now + 0.6); // Smooth cross-fade in (600ms)
+                }
+              }).catch(() => {});
+            } else if (ctx.state === 'running') {
+              if (master) {
+                const now = ctx.currentTime;
+                nextNoteTimeRef.current = now + 0.1;
+                master.gain.cancelScheduledValues(now);
+                master.gain.setValueAtTime(Math.max(0.0001, master.gain.value), now);
+                master.gain.linearRampToValueAtTime(0.28, now + 0.6); // Smooth cross-fade in (600ms)
+              }
+            }
+          }
         }
       }
     };
+
     document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('blur', () => {
+      if (document.hidden) handleVisibility();
+    });
+    window.addEventListener('focus', () => {
+      if (!document.hidden) handleVisibility();
+    });
 
     // Initial check: if audio was previously unlocked, attempt instant initialization
     try {
@@ -376,7 +500,7 @@ export default function TsehayAudio() {
       window.removeEventListener('tsehay-preloader-complete', resumeAudioContext);
       document.removeEventListener('visibilitychange', handleVisibility);
     };
-  }, [initAudioEngine]);
+  }, [initAudioEngine, isUnlocked, isDucked, isQuietRoute]);
 
   // Universal Audio Ducking Listener (Hero Video, YouTube Embeds, Modals, HTMLMediaElements)
   useEffect(() => {
@@ -497,17 +621,17 @@ export default function TsehayAudio() {
     if (!ctx || !master) return;
 
     const now = ctx.currentTime;
-    const shouldMute = isQuietRoute || isDucked;
+    const shouldMute = isQuietRoute || isDucked || isMuted || isTabHidden;
 
     master.gain.cancelScheduledValues(now);
     if (shouldMute) {
-      // Fast, clean fade to silence (0.25s) when any media has sound
+      // Fast, clean fade to silence (0.25s) when muted, hidden, or media has sound
       master.gain.linearRampToValueAtTime(0.0001, now + 0.25);
-    } else if (isUnlocked) {
-      // Smooth restoration to pleasant ambient volume (0.8s) when media pauses or leaves view
+    } else if (isUnlocked && !isTabHidden) {
+      // Smooth restoration to pleasant ambient volume (0.8s) when active
       master.gain.linearRampToValueAtTime(0.28, now + 0.8);
     }
-  }, [isQuietRoute, isDucked, isUnlocked]);
+  }, [isQuietRoute, isDucked, isUnlocked, isMuted, isTabHidden]);
 
   // 🔔 Distinct Interactive Click & Hover Audio Feedback (Always active, NEVER blocked by video ducking)
   useEffect(() => {
@@ -591,6 +715,90 @@ export default function TsehayAudio() {
     };
   }, [isQuietRoute]);
 
-  // Zero DOM rendering: Seamless invisible audio experience like lusion.co (no mute button)
-  return null;
+  if (isQuietRoute) return null;
+
+  const isActuallyPlaying = isUnlocked && !isMuted && !isDucked && !isTabHidden;
+
+  return (
+    <div className="fixed bottom-5 left-5 z-40 select-none notranslate" translate="no">
+      <style jsx>{`
+        @keyframes eq1 {
+          0%, 100% { height: 4px; }
+          50% { height: 16px; }
+        }
+        @keyframes eq2 {
+          0%, 100% { height: 14px; }
+          50% { height: 5px; }
+        }
+        @keyframes eq3 {
+          0%, 100% { height: 7px; }
+          50% { height: 17px; }
+        }
+        @keyframes eq4 {
+          0%, 100% { height: 15px; }
+          50% { height: 6px; }
+        }
+        .animate-eq-1 { animation: eq1 1.1s ease-in-out infinite; }
+        .animate-eq-2 { animation: eq2 0.85s ease-in-out infinite; }
+        .animate-eq-3 { animation: eq3 1.3s ease-in-out infinite; }
+        .animate-eq-4 { animation: eq4 0.95s ease-in-out infinite; }
+      `}</style>
+
+      <button
+        type="button"
+        onClick={toggleMute}
+        className={`group relative flex items-center gap-2.5 px-3.5 py-2 rounded-full backdrop-blur-2xl border transition-all duration-300 shadow-[0_10px_30px_rgba(0,0,0,0.7)] cursor-pointer text-xs active:scale-95 ${
+          isActuallyPlaying
+            ? 'bg-[#0b1222]/90 hover:bg-[#0f1b33] border-[#f9b03c]/60 hover:border-[#f9b03c] text-white shadow-[0_0_25px_rgba(249,176,60,0.3)] ring-1 ring-[#f9b03c]/30'
+            : isMuted
+            ? 'bg-black/75 hover:bg-black/90 border-white/10 text-slate-400 hover:text-slate-200'
+            : 'bg-[#080d1a]/85 hover:bg-[#0c1428] border-white/15 hover:border-[#f9b03c]/50 text-slate-300'
+        }`}
+        title={
+          isMuted
+            ? (lang === 'en' ? 'Unmute Background Music' : 'የጀርባ ሙዚቃ ክፈት')
+            : (lang === 'en' ? 'Mute Background Music' : 'የጀርባ ሙዚቃ አጥፋ')
+        }
+        aria-label={
+          isMuted
+            ? (lang === 'en' ? 'Unmute Background Music' : 'የጀርባ ሙዚቃ ክፈት')
+            : (lang === 'en' ? 'Mute Background Music' : 'የጀርባ ሙዚቃ አጥፋ')
+        }
+      >
+        {/* Glow ambient bloom */}
+        {isActuallyPlaying && (
+          <span className="absolute -inset-0.5 rounded-full bg-gradient-to-r from-[#f9b03c]/30 via-amber-500/20 to-[#3268ba]/30 blur-sm pointer-events-none -z-10 animate-pulse" />
+        )}
+
+        {/* Dynamic 4-Bar Equalizer Visualizer */}
+        <div className="flex items-end gap-[2px] h-4 w-4 shrink-0 pb-0.5 justify-center">
+          {isActuallyPlaying ? (
+            <>
+              <span className="w-[2.5px] rounded-full bg-[#f9b03c] animate-eq-1" />
+              <span className="w-[2.5px] rounded-full bg-[#f9b03c] animate-eq-2" />
+              <span className="w-[2.5px] rounded-full bg-[#f9b03c] animate-eq-3" />
+              <span className="w-[2.5px] rounded-full bg-[#f9b03c] animate-eq-4" />
+            </>
+          ) : (
+            <div className="flex items-center justify-center text-slate-400 group-hover:text-white transition-colors">
+              <VolumeX className="w-3.5 h-3.5" />
+            </div>
+          )}
+        </div>
+
+        {/* Text & Status Badge */}
+        <div className="flex items-center gap-1.5 font-mono text-[11px] font-bold tracking-tight">
+          <span className={isActuallyPlaying ? 'text-[#f9b03c]' : 'text-slate-400'}>
+            {isActuallyPlaying ? 'SOUND' : 'MUTED'}
+          </span>
+          <span className="w-1 h-1 rounded-full bg-slate-500 hidden sm:inline-block" />
+          <span className="text-[10px] text-slate-400 hidden sm:inline font-sans">
+            {isActuallyPlaying 
+              ? (lang === 'en' ? 'Ambient' : 'የጀርባ ሙዚቃ') 
+              : (lang === 'en' ? 'Off' : 'ጠፍቷል')}
+          </span>
+        </div>
+      </button>
+    </div>
+  );
 }

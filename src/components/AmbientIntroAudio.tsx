@@ -244,9 +244,35 @@ export default function AmbientIntroAudio() {
       }
     };
 
+    // 👁️ Page Visibility API Integration
+    const handleVisibility = () => {
+      const isHidden = document.hidden || document.visibilityState === 'hidden';
+      if (isHidden) {
+        if (masterGainRef.current && audioCtxRef.current) {
+          const cTime = audioCtxRef.current.currentTime;
+          masterGainRef.current.gain.cancelScheduledValues(cTime);
+          masterGainRef.current.gain.linearRampToValueAtTime(0.0001, cTime + 0.15);
+        }
+        setIsPlaying(false);
+      } else {
+        const isCurrentlyMuted = localStorage.getItem('tsehay_ambient_sound_muted') === 'true';
+        if (!isCurrentlyMuted && !isDuckedRef.current && !isHeroInViewRef.current && masterGainRef.current && audioCtxRef.current) {
+          if (audioCtxRef.current.state === 'suspended') {
+            audioCtxRef.current.resume().catch(() => {});
+          }
+          const cTime = audioCtxRef.current.currentTime;
+          masterGainRef.current.gain.cancelScheduledValues(cTime);
+          masterGainRef.current.gain.setValueAtTime(0.0001, cTime);
+          masterGainRef.current.gain.exponentialRampToValueAtTime(0.09, cTime + 0.8);
+          setIsPlaying(true);
+        }
+      }
+    };
+
     window.addEventListener('duck-ambient-audio', handleDuck);
     window.addEventListener('restore-ambient-audio', handleRestore);
     window.addEventListener('tsehay-hero-video-inview', handleHeroInView);
+    document.addEventListener('visibilitychange', handleVisibility);
 
     return () => {
       window.removeEventListener('pointerdown', unlockAudio);
@@ -255,6 +281,7 @@ export default function AmbientIntroAudio() {
       window.removeEventListener('duck-ambient-audio', handleDuck);
       window.removeEventListener('restore-ambient-audio', handleRestore);
       window.removeEventListener('tsehay-hero-video-inview', handleHeroInView);
+      document.removeEventListener('visibilitychange', handleVisibility);
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, [startAmbientEngine]);
