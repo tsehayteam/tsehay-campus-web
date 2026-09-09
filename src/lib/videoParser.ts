@@ -428,7 +428,11 @@ export function parseVideoUrl(rawUrl: string, autoplay: boolean = false): Parsed
 
     // Embed player URL
     const params = new URLSearchParams();
-    if (autoplay) params.set('autoplay', 'true');
+    if (autoplay) {
+      params.set('autoplay', 'true');
+      params.set('muted', 'true');
+      params.set('loop', 'true');
+    }
     params.set('preload', 'true');
     params.set('responsive', 'true');
     const paramStr = params.toString();

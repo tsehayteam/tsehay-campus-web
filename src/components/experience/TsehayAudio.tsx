@@ -439,13 +439,26 @@ export default function TsehayAudio() {
       }
     };
 
-    // 4. YouTube Iframe postMessage state sync (captures embedded YouTube play/pause events)
+    // 4. Embedded Iframe postMessage state sync (captures Bunny Stream, Player.js, and YouTube play/pause events)
     const handleWindowMessage = (event: MessageEvent) => {
       try {
         let data = event.data;
         if (typeof data === 'string') {
-          data = JSON.parse(data);
+          try { data = JSON.parse(data); } catch (_) {}
         }
+        // Bunny Stream
+        if (data?.channel === 'bunnystream') {
+          if (data.event === 'pause' || data.event === 'ended') {
+            setIsDucked(false);
+          }
+        }
+        // Player.js
+        if (data?.context === 'player.js') {
+          if (data.event === 'pause' || data.event === 'ended') {
+            setIsDucked(false);
+          }
+        }
+        // YouTube API onStateChange
         if (data?.event === 'onStateChange') {
           // Only unduck on pause/ended. Ducking is handled via explicit events (duck-ambient-audio / tsehay-hero-video-inview)
           if (data.info === 2 || data.info === 0) {

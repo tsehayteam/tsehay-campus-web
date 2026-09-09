@@ -49,10 +49,10 @@ export default function Hero3DPopoutStage({
     isMutedRef.current = isMuted;
   }, [isMuted]);
 
-  // ⚡ Instant YouTube Player State Synchronization via Window Message Events
+  // ⚡ Universal Player State Synchronization via Window Message Events (Bunny Stream, Player.js, YouTube)
   useEffect(() => {
-    const handleYouTubeMessage = (event: MessageEvent) => {
-      // Prevent delayed YouTube buffering/state bounceback from reversing user action within 900ms
+    const handleUniversalMessage = (event: MessageEvent) => {
+      // Prevent delayed buffering/state bounceback from reversing user action within 900ms
       if (Date.now() - lastUserActionTimeRef.current < 900) {
         return;
       }
@@ -62,7 +62,31 @@ export default function Hero3DPopoutStage({
           try { data = JSON.parse(data); } catch (_) {}
         }
         if (data && typeof data === 'object') {
-          // YouTube API onStateChange: 1 = Playing, 2 = Paused, 0 = Ended
+          // 1. Bunny.net Stream event: { channel: "bunnystream", event: "play" | "pause" | "ended" }
+          if (data.channel === 'bunnystream') {
+            if (data.event === 'play' || data.event === 'playing') {
+              isPlayingRef.current = true;
+              setIsPlaying(true);
+            } else if (data.event === 'pause' || data.event === 'ended') {
+              isPlayingRef.current = false;
+              setIsPlaying(false);
+            }
+            return;
+          }
+
+          // 2. Player.js event (used by Bunny.net Stream, Vimeo, etc.)
+          if (data.context === 'player.js') {
+            if (data.event === 'play' || data.event === 'playing') {
+              isPlayingRef.current = true;
+              setIsPlaying(true);
+            } else if (data.event === 'pause' || data.event === 'ended') {
+              isPlayingRef.current = false;
+              setIsPlaying(false);
+            }
+            return;
+          }
+
+          // 3. YouTube API onStateChange: 1 = Playing, 2 = Paused, 0 = Ended
           const info = data.info;
           const state = typeof info === 'number' ? info : info?.playerState;
           if (state === 1) {
@@ -76,8 +100,8 @@ export default function Hero3DPopoutStage({
       } catch (_) {}
     };
 
-    window.addEventListener('message', handleYouTubeMessage);
-    return () => window.removeEventListener('message', handleYouTubeMessage);
+    window.addEventListener('message', handleUniversalMessage);
+    return () => window.removeEventListener('message', handleUniversalMessage);
   }, []);
 
   // 3D Glassmorphic Flash Pop Feedback State
@@ -267,28 +291,88 @@ export default function Hero3DPopoutStage({
     ? `https://www.youtube.com/embed/${parsedVideo.youtubeId}?autoplay=1&mute=1&loop=1&playlist=${parsedVideo.youtubeId}&controls=0&playsinline=1&enablejsapi=1&origin=${encodeURIComponent(currentOrigin)}&rel=0&modestbranding=1&iv_load_policy=3&vq=hd2160&quality=hd2160&hd=1`
     : '';
 
-  // Direct safe YouTube postMessage dispatcher with listening handshake and fallback format
-  const sendYouTubeCommand = useCallback((func: string, args: any[] = []) => {
-    if (!iframeRef.current?.contentWindow) return;
-    try {
-      // 1. Establish listening handshake
-      iframeRef.current.contentWindow.postMessage(
-        JSON.stringify({ event: 'listening' }),
-        '*'
-      );
-      // 2. Standard YouTube command with array arguments
-      iframeRef.current.contentWindow.postMessage(
-        JSON.stringify({ event: 'command', func, args }),
-        '*'
-      );
-      // 3. Fallback format with empty string for zero-arg commands
-      if (!args || args.length === 0) {
-        iframeRef.current.contentWindow.postMessage(
-          JSON.stringify({ event: 'command', func, args: '' }),
-          '*'
-        );
+  // Generate Universal Embed URL with autoplay, muted, loop, preload, responsive enabled (for Bunny Stream, Vimeo, etc.)
+  const embedAutoplaySrc = React.useMemo(() => {
+    if (!parsedVideo.src) return '';
+    let src = parsedVideo.src;
+    if (src.includes('mediadelivery.net') || src.includes('bunnycdn.com') || src.includes('b-cdn.net')) {
+      if (!src.includes('autoplay=')) {
+        src += (src.includes('?') ? '&' : '?') + 'autoplay=true';
       }
-    } catch (_) {}
+      if (!src.includes('muted=')) {
+        src += (src.includes('?') ? '&' : '?') + 'muted=true';
+      }
+      if (!src.includes('loop=')) {
+        src += (src.includes('?') ? '&' : '?') + 'loop=true';
+      }
+      if (!src.includes('preload=')) {
+        src += (src.includes('?') ? '&' : '?') + 'preload=true';
+      }
+      if (!src.includes('responsive=')) {
+        src += (src.includes('?') ? '&' : '?') + 'responsive=true';
+      }
+    } else if (src.includes('vimeo.com')) {
+      if (!src.includes('autoplay=')) {
+        src += (src.includes('?') ? '&' : '?') + 'autoplay=1&muted=1&loop=1&background=1';
+      }
+    }
+    return src;
+  }, [parsedVideo.src]);
+
+  // Universal Video Playback Command Dispatcher (Bunny Stream, Player.js, Vimeo, YouTube, HTML5 Video)
+  const sendUniversalPlaybackCommand = useCallback((action: 'play' | 'pause' | 'mute' | 'unmute') => {
+    // 1. Direct HTML5 video tag control
+    if (videoRef.current) {
+      try {
+        if (action === 'play') {
+          videoRef.current.muted = isMutedRef.current;
+          videoRef.current.play().catch(() => {
+            if (videoRef.current) {
+              videoRef.current.muted = true;
+              videoRef.current.play().catch(() => {});
+            }
+          });
+        } else if (action === 'pause') {
+          videoRef.current.pause();
+        } else if (action === 'mute') {
+          videoRef.current.muted = true;
+        } else if (action === 'unmute') {
+          videoRef.current.muted = false;
+        }
+      } catch (_) {}
+    }
+
+    // 2. Universal iframe control (Bunny.net Stream, Player.js, Vimeo, YouTube)
+    if (iframeRef.current?.contentWindow) {
+      const cw = iframeRef.current.contentWindow;
+
+      // A. Player.js protocol (Bunny.net Stream, Vimeo, generic Player.js)
+      const pjsObj = {
+        context: 'player.js',
+        version: '0.0.11',
+        method: action,
+      };
+      const pjsSimple = {
+        context: 'player.js',
+        method: action,
+      };
+      try { cw.postMessage(pjsObj, '*'); } catch (_) {}
+      try { cw.postMessage(JSON.stringify(pjsObj), '*'); } catch (_) {}
+      try { cw.postMessage(pjsSimple, '*'); } catch (_) {}
+      try { cw.postMessage(JSON.stringify(pjsSimple), '*'); } catch (_) {}
+
+      // B. Vimeo / generic postMessage protocol
+      try { cw.postMessage({ method: action }, '*'); } catch (_) {}
+      try { cw.postMessage(JSON.stringify({ method: action }), '*'); } catch (_) {}
+
+      // C. YouTube IFrame API protocol
+      const ytFunc = action === 'play' ? 'playVideo' : action === 'pause' ? 'pauseVideo' : action === 'mute' ? 'mute' : 'unMute';
+      try {
+        cw.postMessage(JSON.stringify({ event: 'listening' }), '*');
+        cw.postMessage(JSON.stringify({ event: 'command', func: ytFunc, args: [] }), '*');
+        cw.postMessage(JSON.stringify({ event: 'command', func: ytFunc, args: '' }), '*');
+      } catch (_) {}
+    }
   }, []);
 
   // Execute instant pause with zero delay
@@ -302,12 +386,8 @@ export default function Hero3DPopoutStage({
       wasAutoPausedByScrollRef.current = false;
     }
 
-    if (parsedVideo.isYouTube) {
-      sendYouTubeCommand('pauseVideo');
-      sendYouTubeCommand('mute');
-    } else if (videoRef.current) {
-      videoRef.current.pause();
-    }
+    // Send pause & mute to active video player (Bunny, YouTube, HTML5, etc.)
+    sendUniversalPlaybackCommand('pause');
 
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('restore-ambient-audio'));
@@ -318,7 +398,7 @@ export default function Hero3DPopoutStage({
         })
       );
     }
-  }, [parsedVideo.isYouTube, sendYouTubeCommand]);
+  }, [sendUniversalPlaybackCommand]);
 
   // Execute instant play with zero delay
   const executePlay = useCallback((isScrollResume = false) => {
@@ -327,20 +407,10 @@ export default function Hero3DPopoutStage({
     setIsPlaying(true);
     wasAutoPausedByScrollRef.current = false;
 
-    if (parsedVideo.isYouTube) {
-      sendYouTubeCommand('playVideo');
-      if (!isMutedRef.current) {
-        sendYouTubeCommand('unMute');
-        sendYouTubeCommand('setVolume', [100]);
-      }
-    } else if (videoRef.current) {
-      videoRef.current.muted = isMutedRef.current;
-      videoRef.current.play().catch(() => {
-        if (videoRef.current) {
-          videoRef.current.muted = true;
-          videoRef.current.play().catch(() => {});
-        }
-      });
+    // Send play to active video player (Bunny, YouTube, HTML5, etc.)
+    sendUniversalPlaybackCommand('play');
+    if (!isMutedRef.current) {
+      sendUniversalPlaybackCommand('unmute');
     }
 
     if (typeof window !== 'undefined') {
@@ -358,7 +428,7 @@ export default function Hero3DPopoutStage({
         window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: false } }));
       }
     }
-  }, [parsedVideo.isYouTube, sendYouTubeCommand]);
+  }, [sendUniversalPlaybackCommand]);
 
   // 100% Functional Zero-Latency Interactive Play/Pause Toggle Handler (1-Click Guarantee)
   const togglePlayPause = useCallback((e?: React.MouseEvent | React.TouchEvent) => {
@@ -418,31 +488,28 @@ export default function Hero3DPopoutStage({
 
         if (stageRef.current) {
           const rect = stageRef.current.getBoundingClientRect();
-          // Video bottom is scrolled past top of viewport
-          if (rect.bottom < 150) {
+          // Video bottom is scrolled past top threshold or scrollY > 200
+          if (rect.bottom < 160 || scrollY > 220) {
             isPastVideo = true;
-          } else if (rect.top <= window.innerHeight * 0.75 && rect.bottom >= 150) {
+          } else if (rect.bottom >= 160 && rect.top <= window.innerHeight * 0.8) {
             isPastVideo = false;
           } else {
-            isPastVideo = scrollY > 180;
+            isPastVideo = scrollY > 220;
           }
         } else {
-          isPastVideo = scrollY > 180;
+          isPastVideo = scrollY > 220;
         }
 
         if (isPastVideo) {
-          // ⬇️ Scrolled down: PAUSE VIDEO, MUTE SOUND, PLAY BACKGROUND MUSIC!
+          // ⬇️ Scrolled down: PAUSE VIDEO, MUTE SOUND, RESTORE BACKGROUND MUSIC!
+          wasAutoPausedByScrollRef.current = true;
           if (isPlayingRef.current) {
             executePause(true); // true = auto-paused by scroll
           }
           if (!isMutedRef.current) {
             isMutedRef.current = true;
             setIsMuted(true);
-            if (parsedVideo.isYouTube) {
-              sendYouTubeCommand('mute');
-            } else if (videoRef.current) {
-              videoRef.current.muted = true;
-            }
+            sendUniversalPlaybackCommand('mute');
           }
           window.dispatchEvent(new CustomEvent('restore-ambient-audio'));
           window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: false } }));
@@ -480,11 +547,12 @@ export default function Hero3DPopoutStage({
       observer = new IntersectionObserver(
         (entries) => {
           const entry = entries[0];
-          const inView = entry.isIntersecting && entry.intersectionRatio >= 0.25;
+          const inView = entry.isIntersecting && entry.intersectionRatio >= 0.2;
+          const scrollY = window.scrollY || window.pageYOffset || 0;
 
-          if (!inView) {
-            const scrollY = window.scrollY || window.pageYOffset || 0;
-            if (scrollY > 150 && isPlayingRef.current) {
+          if (!inView && scrollY > 150) {
+            wasAutoPausedByScrollRef.current = true;
+            if (isPlayingRef.current) {
               executePause(true);
             }
             window.dispatchEvent(
@@ -494,7 +562,7 @@ export default function Hero3DPopoutStage({
             );
             window.dispatchEvent(new CustomEvent('restore-ambient-audio'));
             window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: false } }));
-          } else {
+          } else if (inView) {
             if (wasAutoPausedByScrollRef.current && !isPlayingRef.current) {
               executePlay(true);
             }
@@ -510,7 +578,7 @@ export default function Hero3DPopoutStage({
             }
           }
         },
-        { threshold: [0, 0.15, 0.25, 0.6, 0.9] }
+        { threshold: [0, 0.15, 0.2, 0.6, 0.9] }
       );
       observer.observe(stageRef.current);
     }
@@ -526,30 +594,23 @@ export default function Hero3DPopoutStage({
         })
       );
     };
-  }, [activeVideoUrl, parsedVideo.isYouTube, parsedVideo.youtubeId, siteOrigin, executePlay, executePause, sendYouTubeCommand]);
+  }, [activeVideoUrl, parsedVideo.isYouTube, parsedVideo.youtubeId, siteOrigin, executePlay, executePause, sendUniversalPlaybackCommand]);
 
   // Subtle Audio (Mute / Unmute) Toggle Handler with Universal Ducking
   const toggleMute = (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     if (isMuted) {
-      if (parsedVideo.isYouTube && iframeRef.current?.contentWindow) {
-        iframeRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'unMute', args: [] }), '*');
-        iframeRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'setVolume', args: [100] }), '*');
-      } else if (videoRef.current) {
-        videoRef.current.muted = false;
-      }
+      sendUniversalPlaybackCommand('unmute');
       setIsMuted(false);
+      isMutedRef.current = false;
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('duck-ambient-audio'));
         window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: true } }));
       }
     } else {
-      if (parsedVideo.isYouTube && iframeRef.current?.contentWindow) {
-        iframeRef.current.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'mute', args: [] }), '*');
-      } else if (videoRef.current) {
-        videoRef.current.muted = true;
-      }
+      sendUniversalPlaybackCommand('mute');
       setIsMuted(true);
+      isMutedRef.current = true;
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('restore-ambient-audio'));
         window.dispatchEvent(new CustomEvent('tsehay-audio-duck', { detail: { duck: false } }));
@@ -680,11 +741,12 @@ export default function Hero3DPopoutStage({
                 }}
               />
             </div>
-          ) : parsedVideo.type === 'embed' && parsedVideo.src ? (
+          ) : parsedVideo.type === 'embed' && (embedAutoplaySrc || parsedVideo.src) ? (
             <div className="absolute inset-0 w-full h-full overflow-hidden bg-black flex items-center justify-center pointer-events-none">
               <iframe
                 ref={iframeRef}
-                src={parsedVideo.src}
+                id="tsehay_hero_embed_iframe"
+                src={embedAutoplaySrc || parsedVideo.src}
                 title="Tsehay Campus Hero Video"
                 className="w-full h-full border-0 object-cover pointer-events-none"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
@@ -692,6 +754,7 @@ export default function Hero3DPopoutStage({
                 onLoad={() => {
                   setIsVideoReady(true);
                   setIsPlaying(true);
+                  sendUniversalPlaybackCommand('play');
                   window.dispatchEvent(new CustomEvent('tsehay-4k-video-buffered'));
                 }}
               />
